@@ -301,7 +301,7 @@ describe('init development credentials', () => {
     );
   });
 
-  it('uses the only creatable organization without asking', async () => {
+  it('uses the only accessible organization without asking', async () => {
     vi.mocked(promptSelect).mockResolvedValueOnce(null); // Create a new project
     vi.mocked(api.listOrgs).mockResolvedValue([{ id: 'o1', name: 'Acme' }]);
     vi.mocked(promptText).mockResolvedValueOnce('New App');
@@ -320,12 +320,12 @@ describe('init development credentials', () => {
     expect(api.createProject).toHaveBeenCalledWith('o1', expect.anything());
   });
 
-  it('fails with guidance when the user cannot create in any organization', async () => {
+  it('fails with guidance when no organizations are accessible', async () => {
     vi.mocked(api.listProjects).mockResolvedValue([]);
     vi.mocked(api.listOrgs).mockResolvedValue([]);
 
     await expect(runInit()).rejects.toThrow(
-      'not a member of an organization that can create projects'
+      'No accessible organizations were found'
     );
     expect(api.createProjectApiKey).not.toHaveBeenCalled();
     expect(fs.existsSync(envPath())).toBe(false);
@@ -334,13 +334,12 @@ describe('init development credentials', () => {
   it('reports a forbidden API response for an explicit key without falling back to login', async () => {
     vi.stubEnv('GT_API_KEY', 'gtx-project-key');
     vi.mocked(hasLogin).mockResolvedValue(false);
-    vi.mocked(api.listProjects).mockResolvedValue([]);
-    vi.mocked(api.listOrgs).mockRejectedValue(
-      new Error('user tokens only (403)')
+    vi.mocked(api.listProjects).mockRejectedValueOnce(
+      new Error('Missing required permission: project:files:read (403)')
     );
 
     await expect(runInit()).rejects.toThrow(
-      /Failed to set up the development credentials[\s\S]*user tokens only/
+      /Failed to set up the development credentials[\s\S]*project:files:read/
     );
     expect(login).not.toHaveBeenCalled();
     expect(api.createProjectApiKey).not.toHaveBeenCalled();

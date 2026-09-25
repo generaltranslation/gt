@@ -222,10 +222,13 @@ class Logger {
 
   /**
    * Noninteractive setup reports progress as plain log lines instead of
-   * redrawing spinners and progress bars on the console.
+   * redrawing spinners and progress bars on the console. Returns the previous
+   * mode so a run can restore it.
    */
-  setAnimatedProgress(animated: boolean): void {
+  setAnimatedProgress(animated: boolean): boolean {
+    const previous = this.animatedProgress;
     this.animatedProgress = animated;
+    return previous;
   }
 
   isQuiet(): boolean {

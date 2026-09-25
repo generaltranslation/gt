@@ -754,7 +754,7 @@ describe('library-managed device authorization', () => {
       expect(instructions.split('\n')).toContain(
         chalk.cyan(String(deviceResponse().verification_uri_complete))
       );
-      expect(instructions).toContain('confirm the code');
+      expect(instructions).not.toContain('confirm the code');
       expect(instructions).toContain('ABCD-EFGH');
       expect(instructions).toContain('Waiting for authentication...');
       expect(message).not.toHaveBeenCalledWith(

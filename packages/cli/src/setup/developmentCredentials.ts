@@ -1,7 +1,11 @@
 import path from 'node:path';
 import chalk from 'chalk';
 import { ProjectApiKeyPermission } from 'generaltranslation/api';
-import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
+import {
+  createDiagnosticMessage,
+  formatDiagnosticErrorDetails,
+} from 'generaltranslation/diagnostics';
+import { ApiError } from 'generaltranslation/errors';
 import { logger } from '../console/logger.js';
 import { promptConfirm, promptSelect, promptText } from '../console/logging.js';
 import type { Settings, SupportedFrameworks } from '../types/index.js';
@@ -24,13 +28,23 @@ export type DevelopmentProjectOptions = {
   projectName?: string;
 };
 
-function noCreatableOrgError(dashboardUrl: string): string {
+function noAccessibleOrgError(dashboardUrl: string): string {
   return createDiagnosticMessage({
     source: 'gt',
     severity: 'Error',
-    whatHappened:
-      'You are not a member of an organization that can create projects',
+    whatHappened: 'No accessible organizations were found',
     fix: `Create an organization in the dashboard ${dashboardUrl} or ask an admin for access, then rerun the setup wizard`,
+  });
+}
+
+function projectCreationDeniedError(orgId: string, error: unknown): string {
+  return createDiagnosticMessage({
+    source: 'gt',
+    severity: 'Error',
+    whatHappened: `Project creation was denied for organization ${orgId}`,
+    why: 'Listing an organization does not confirm permission to create projects in it',
+    fix: 'Ask an organization admin for org:projects:create, or use credentials that have that permission for this organization',
+    details: formatDiagnosticErrorDetails(error),
   });
 }
 
@@ -48,15 +62,15 @@ async function resolveNewProject(
   options: DevelopmentProjectOptions,
   cwd: string
 ): Promise<DevelopmentProject | undefined> {
-  // Organizations are only needed to create; picking an existing project
-  // must work for members without create access.
+  // Discovery lists accessible organizations, not creation permissions.
+  // The API enforces creation permission when provisioning the project.
   const orgs = await api.listOrgs();
   if (orgs.length === 0) {
-    throw new OnboardingError(noCreatableOrgError(settings.dashboardUrl));
+    throw new OnboardingError(noAccessibleOrgError(settings.dashboardUrl));
   }
   if (options.orgId && !orgs.some((org) => org.id === options.orgId)) {
     session.reject(
-      `--org-id ${options.orgId} is not an organization you can create projects in`
+      `--org-id ${options.orgId} is not an accessible organization`
     );
   }
   const orgId = await session.answer('--org-id', {
@@ -159,10 +173,13 @@ export async function provisionDevelopmentCredentials(
   if ('id' in project) {
     projectId = project.id;
   } else {
-    const { project: created } = await api.createProject(project.create.orgId, {
-      name: project.create.name,
-      defaultLocale: settings.defaultLocale,
-    });
+    const { orgId, name } = project.create;
+    const { project: created } = await api
+      .createProject(orgId, { name, defaultLocale: settings.defaultLocale })
+      .catch((error: unknown) => {
+        if (!(error instanceof ApiError) || error.code !== 403) throw error;
+        throw new OnboardingError(projectCreationDeniedError(orgId, error));
+      });
     logger.info(`Created ${created.name} (${created.id})`);
     session.step(`created project ${created.id}`);
     projectId = created.id;

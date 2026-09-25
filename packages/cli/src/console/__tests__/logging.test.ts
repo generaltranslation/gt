@@ -1,3 +1,4 @@
+import { PassThrough } from 'node:stream';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const clack = vi.hoisted(() => ({
@@ -86,6 +87,39 @@ describe('logging prompts', () => {
     expect(values('zh-Hans-CN')).toContain('zh-Hans-CN');
     expect(values('not_a_locale')).not.toContain('not_a_locale');
     expect(values('', ['zh-Hans-CN'])).toContain('zh-Hans-CN');
+  });
+
+  it('keeps the real single-locale prompt open until a locale is selected', async () => {
+    const actual =
+      await vi.importActual<typeof import('@clack/prompts')>('@clack/prompts');
+    const input = new PassThrough();
+    const output = new PassThrough();
+    let rendered = '';
+    output.on('data', (chunk) => (rendered += chunk));
+    clack.autocomplete.mockImplementationOnce((options) =>
+      actual.autocomplete({ ...options, input, output })
+    );
+    const { promptLocale } = await import('../logging.js');
+    let submitted: unknown = 'pending';
+    const answer = promptLocale({ message: 'Default?' }).then((value) => {
+      submitted = value;
+      return value;
+    });
+    const type = async (keys: string) => {
+      input.write(keys);
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    };
+
+    // No option matches, so Enter submits nothing.
+    await type('not_a_locale');
+    await type('\r');
+    expect(submitted).toBe('pending');
+    expect(rendered).toContain('No locale matches the search.');
+
+    await type('\x15'); // Ctrl+U clears the search
+    await type('french');
+    await type('\r');
+    await expect(answer).resolves.toBe('fr');
   });
 
   it('refuses to prompt once prompts are disabled', async () => {

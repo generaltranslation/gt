@@ -365,8 +365,9 @@ export async function runOnboarding(
 ): Promise<void> {
   const session = new OnboardingSession(command, options);
   if (session.json) logger.setConsoleOutput('stderr');
-  setPromptsDisabled(!session.interactive);
-  logger.setAnimatedProgress(session.interactive);
+  // Per-run modes; console routing is reset per command by BaseCLI.
+  const promptsWereDisabled = setPromptsDisabled(!session.interactive);
+  const progressWasAnimated = logger.setAnimatedProgress(session.interactive);
   const reportExit = (code: number) => session.reportUnexpectedExit(code);
   process.once('exit', reportExit);
   try {
@@ -406,6 +407,8 @@ export async function runOnboarding(
     return logErrorAndExit(message);
   } finally {
     process.removeListener('exit', reportExit);
+    setPromptsDisabled(promptsWereDisabled);
+    logger.setAnimatedProgress(progressWasAnimated);
   }
 }
 

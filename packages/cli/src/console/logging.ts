@@ -24,9 +24,14 @@ import {
 
 let promptsDisabled = false;
 
-/** Noninteractive commands disable prompts so a stray question fails instead of waiting. */
-export function setPromptsDisabled(disabled: boolean): void {
+/**
+ * Noninteractive commands disable prompts so a stray question fails instead
+ * of waiting. Returns the previous mode so a run can restore it.
+ */
+export function setPromptsDisabled(disabled: boolean): boolean {
+  const previous = promptsDisabled;
   promptsDisabled = disabled;
+  return previous;
 }
 
 function assertPromptAllowed(message: string): void {
@@ -215,6 +220,12 @@ export function getLocalePromptOptions(
   ];
 }
 
+// Body-only: Clack shows it inline under the prompt.
+const noLocaleSelectedError = createDiagnosticMessage({
+  whatHappened: 'No locale matches the search',
+  fix: 'Change the search and select a locale from the list',
+});
+
 export async function promptLocale({
   message,
   defaultValue,
@@ -232,6 +243,8 @@ export async function promptLocale({
     options: function (this: LocalePromptContext) {
       return getLocalePromptOptions(this.userInput ?? '', [], customMapping);
     },
+    // Enter with no matching option submits nothing; keep asking.
+    validate: (value) => (value ? undefined : noLocaleSelectedError),
   });
   return exitIfCancelled(result);
 }

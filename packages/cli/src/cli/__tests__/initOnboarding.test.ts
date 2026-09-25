@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { ApiError } from 'generaltranslation/errors';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../utils/api.js', () => ({
@@ -551,6 +552,71 @@ describe('init and configure onboarding', () => {
       expect(readConfig()).toMatchObject({ defaultLocale: 'es' });
     });
 
+    it.each([403, 500])(
+      'reports a project creation failure (%s) without creating a key or claiming success',
+      async (status) => {
+        vi.mocked(api.listOrgs).mockResolvedValue([{ id: 'o1', name: 'Acme' }]);
+        const details =
+          status === 403
+            ? 'Missing required permission: org:projects:create'
+            : 'Service unavailable';
+        vi.mocked(api.createProject).mockRejectedValueOnce(
+          new ApiError(details, status, details)
+        );
+
+        await expect(
+          run(
+            'init',
+            '--json',
+            '--defaults',
+            '--locales',
+            'fr',
+            '--dev-credentials',
+            '--create-project',
+            '--org-id',
+            'o1',
+            '--project-name',
+            'App'
+          )
+        ).rejects.toThrow(
+          status === 403 ? 'Ask an organization admin' : details
+        );
+
+        expect(events()).toContainEqual(
+          expect.objectContaining({
+            outcome: 'failed',
+            error: expect.stringContaining(details),
+          })
+        );
+        expect(api.createProject).toHaveBeenCalledTimes(1);
+        expect(api.createProjectApiKey).not.toHaveBeenCalled();
+        expect(fs.existsSync(file('.env.local'))).toBe(false);
+      }
+    );
+
+    it('rejects an organization that is not accessible', async () => {
+      vi.mocked(api.listOrgs).mockResolvedValue([{ id: 'o2', name: 'Other' }]);
+
+      await expect(
+        run(
+          'init',
+          ...local,
+          '--locales',
+          'fr',
+          '--dev-credentials',
+          '--create-project',
+          '--org-id',
+          'o1',
+          '--project-name',
+          'App'
+        )
+      ).rejects.toThrow('--org-id o1 is not an accessible organization');
+
+      expect(api.createProject).not.toHaveBeenCalled();
+      expect(api.createProjectApiKey).not.toHaveBeenCalled();
+      expect(fs.readdirSync(appDirectory)).toEqual(['package.json']);
+    });
+
     it('validates the resolved locales before any change', async () => {
       await expect(
         run(
@@ -924,6 +990,202 @@ describe('init and configure onboarding', () => {
       expect(logger.warn).toHaveBeenCalledWith(
         expect.stringContaining('loadTranslations.js')
       );
+    });
+
+    describe('Vite loader', () => {
+      const viteLoader = () =>
+        fs.readFileSync(file('src/loadTranslations.ts'), 'utf8');
+
+      beforeEach(async () => {
+        vi.mocked(detectFramework).mockResolvedValue({
+          name: 'vite',
+          type: 'react',
+        });
+        fs.writeFileSync(
+          file('index.html'),
+          '<script type="module" src="/src/main.tsx"></script>\n'
+        );
+        fs.mkdirSync(file('src'));
+        fs.writeFileSync(file('src/main.tsx'), '// app');
+        await configure('--locales', 'fr', '--translations-dir', 'old-tx');
+        await run(
+          'init',
+          '--json',
+          '--defaults',
+          '--no-dev-credentials',
+          '--react-setup'
+        );
+        expect(viteLoader()).toContain('import(`../old-tx/${locale}.json`)');
+        stdoutEvents = [];
+      });
+
+      it('preserves an app-owned GT bootstrap and reports the review action', async () => {
+        const html = '<script type="module" src="/src/index.ts"></script>\n';
+        const bootstrap = `import { initializeGTSPA } from 'gt-react';
+import config from '../gt.config.json';
+import loadTranslations from './loadTranslations';
+await initializeGTSPA({ ...config, loadTranslations });
+await import('./main');
+`;
+        fs.writeFileSync(file('index.html'), html);
+        fs.writeFileSync(file('src/index.ts'), bootstrap);
+        const loader = viteLoader();
+        await run(
+          'init',
+          '--json',
+          '--defaults',
+          '--no-dev-credentials',
+          '--react-setup',
+          '--translations-dir',
+          'new-tx'
+        );
+        expect(fs.readFileSync(file('index.html'), 'utf8')).toBe(html);
+        expect(fs.readFileSync(file('src/index.ts'), 'utf8')).toBe(bootstrap);
+        expect(viteLoader()).toBe(loader);
+        expect(events().at(-1)).toMatchObject({
+          outcome: 'needs_human_action',
+          actions: [
+            expect.stringMatching(/src\/index\.ts.*gt\.config\.json.*new-tx/),
+          ],
+        });
+        expect(events().at(-1)?.completedSteps).not.toContain(
+          'configured initializeGTSPA'
+        );
+      });
+
+      it('configure points the generated loader at a changed directory', async () => {
+        await configure('--translations-dir', 'new-tx');
+
+        expect(viteLoader()).toContain('import(`../new-tx/${locale}.json`)');
+        expect(fs.existsSync(file('new-tx/fr.json'))).toBe(true);
+        expect(events().at(-1)).toMatchObject({
+          outcome: 'success',
+          completedSteps: [
+            'updated src/loadTranslations.ts',
+            'updated gt.config.json',
+          ],
+        });
+      });
+
+      it('configure keeps the loader and config when the directory cannot be created', async () => {
+        const loader = viteLoader();
+        const config = fs.readFileSync(file('gt.config.json'), 'utf8');
+        fs.writeFileSync(file('blocked'), 'not a directory');
+
+        await expect(
+          configure('--translations-dir', 'blocked/tx')
+        ).rejects.toThrow(/ENOTDIR|EEXIST/);
+
+        expect(viteLoader()).toBe(loader);
+        expect(fs.readFileSync(file('gt.config.json'), 'utf8')).toBe(config);
+        expect(events().at(-1)).toMatchObject({
+          outcome: 'failed',
+          completedSteps: [],
+        });
+      });
+
+      it('init --no-react-setup keeps the generated loader and asks for a manual update', async () => {
+        const loader = viteLoader();
+
+        await run(
+          'init',
+          '--json',
+          '--defaults',
+          '--no-dev-credentials',
+          '--no-react-setup',
+          '--translations-dir',
+          'new-tx'
+        );
+
+        expect(viteLoader()).toBe(loader);
+        expect(readConfig().files.gt.output).toBe(
+          path.join('new-tx', '[locale].json')
+        );
+        const result = events().at(-1);
+        expect(result).toMatchObject({
+          outcome: 'needs_human_action',
+          completedSteps: ['updated gt.config.json'],
+          actions: [expect.stringMatching(/src\/loadTranslations\.ts.*new-tx/)],
+        });
+        expect(result.actions[0]).not.toContain('custom');
+      });
+
+      it.each([
+        ['configure', []],
+        ['init', ['--react-setup']],
+      ])(
+        '%s asks for a manual update of a custom loader',
+        async (command, args) => {
+          const custom = 'export default async () => ({ custom: true });\n';
+          fs.writeFileSync(file('src/loadTranslations.ts'), custom);
+
+          await run(
+            command,
+            '--json',
+            '--defaults',
+            '--no-dev-credentials',
+            '--translations-dir',
+            'new-tx',
+            ...args
+          );
+
+          expect(viteLoader()).toBe(custom);
+          expect(readConfig().files.gt.output).toBe(
+            path.join('new-tx', '[locale].json')
+          );
+          expect(events().at(-1)).toMatchObject({
+            outcome: 'needs_human_action',
+            actions: [
+              expect.stringMatching(/src\/loadTranslations\.ts.*new-tx/),
+            ],
+          });
+        }
+      );
+    });
+
+    it('matches the framework project to its development key', async () => {
+      vi.mocked(detectFramework).mockResolvedValue({
+        name: 'vite',
+        type: 'react',
+      });
+      vi.stubEnv('GT_PROJECT_ID', 'p2');
+      vi.stubEnv('VITE_GT_PROJECT_ID', 'p1');
+      vi.stubEnv('VITE_GT_DEV_API_KEY', 'gtx-fake-p1-key');
+      const args = [
+        'init',
+        '--json',
+        '--defaults',
+        '--no-react-setup',
+        '--locales',
+        'fr',
+        '--project-id',
+        'p2',
+      ];
+
+      await expect(run(...args, '--no-dev-credentials')).rejects.toThrow(
+        'belong to project p1, not p2'
+      );
+      await run(...args, '--dev-credentials');
+
+      expect(api.createProjectApiKey).toHaveBeenCalledWith(
+        'p2',
+        expect.anything()
+      );
+      expect(fs.readFileSync(file('.env.local'), 'utf8')).toBe(
+        `VITE_GT_PROJECT_ID=p2\nVITE_GT_DEV_API_KEY=${SECRET_KEY}\n`
+      );
+    });
+
+    it('restores the prompt mode after a noninteractive run', async () => {
+      logging.setPromptsDisabled(false);
+
+      await configure('--locales', 'fr');
+      await expect(run('configure', '--no-interactive')).rejects.toThrow(
+        'Setup needs these options'
+      );
+
+      // The setter returns the mode the runs left behind.
+      expect(logging.setPromptsDisabled(false)).toBe(false);
     });
 
     it.each([

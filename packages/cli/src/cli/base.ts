@@ -25,6 +25,7 @@ import { lottieTranslateError } from '../console/index.js';
 import { parseGlobPatterns } from '../console/promptParsing.js';
 import path from 'node:path';
 import fs from 'node:fs';
+import YAML from 'yaml';
 import {
   FilesOptions,
   FrameworkObject,
@@ -50,6 +51,7 @@ import {
 import { getDesiredLocales } from '../setup/userInput.js';
 import {
   areCredentialsSet,
+  getDevelopmentEnvNames,
   inspectCredentialsEnvFile,
 } from '../utils/credentials.js';
 import {
@@ -126,7 +128,11 @@ import {
 } from '../auth/oauth.js';
 import { UserAuthError } from '../auth/errors.js';
 import { resolveConfig } from '../config/resolveConfig.js';
-import { inspectViteSPA, setupViteSPA } from '../setup/setupViteSPA.js';
+import {
+  inspectViteSPA,
+  setupViteSPA,
+  writeViteLoader,
+} from '../setup/setupViteSPA.js';
 import { manifestDirectlyDeclaresGTVue } from '@generaltranslation/vue-extractor/integration';
 import { api } from '../utils/api.js';
 import { handleApiCommand, type ApiCommandOptions } from './commands/api.js';
@@ -195,7 +201,7 @@ async function loginInteractively(
       const { userCode, verificationUri, verificationUriComplete } = deviceCode;
       onDeviceCode?.(deviceCode);
       logger.message(
-        `Visit:\n\n${chalk.cyan(verificationUriComplete ?? verificationUri)}\n\nThen ${verificationUriComplete ? 'confirm' : 'enter'} the code ${chalk.bold(userCode)}.\nWaiting for authentication...`
+        `Visit:\n\n${chalk.cyan(verificationUriComplete ?? verificationUri)}\n\n${verificationUriComplete ? '' : `Then enter the code ${chalk.bold(userCode)}.\n`}Waiting for authentication...`
       );
     },
     onAuthorizationUrl: (url) => {
@@ -236,18 +242,49 @@ function createUserAuthError(whatHappened: string, error: unknown): string {
   });
 }
 
+/**
+ * Whether workspace package patterns name packages besides the root itself.
+ * A single app may list only '.' (or nothing, keeping pnpm settings there).
+ */
+function listsChildPackages(patterns: unknown): boolean {
+  if (patterns === undefined || patterns === null) return false;
+  if (!Array.isArray(patterns)) return true;
+  return patterns.some(
+    (pattern) =>
+      typeof pattern !== 'string' || !/^(?:\.\/?|!.*)$/.test(pattern.trim())
+  );
+}
+
+function isMonorepoRoot(packageJson: Record<string, unknown> | null): boolean {
+  const pnpmWorkspace = path.join(process.cwd(), 'pnpm-workspace.yaml');
+  if (fs.existsSync(pnpmWorkspace)) {
+    let packages: unknown;
+    try {
+      packages = asRecord(
+        YAML.parse(fs.readFileSync(pnpmWorkspace, 'utf8'))
+      )?.packages;
+    } catch {
+      return true; // Unreadable: keep refusing, as for any workspace file.
+    }
+    if (listsChildPackages(packages)) return true;
+  }
+  const workspaces = packageJson?.workspaces;
+  return listsChildPackages(
+    Array.isArray(workspaces) ? workspaces : asRecord(workspaces)?.packages
+  );
+}
+
 async function exitIfUnsupportedSetupTarget(): Promise<void> {
   const packageJson = await searchForPackageJson();
   if (packageJson && isPackageInstalled('electron', packageJson, false, true)) {
     throw new OnboardingError(electronSetupError);
   }
-  if (
-    fs.existsSync(path.join(process.cwd(), 'pnpm-workspace.yaml')) ||
-    packageJson?.workspaces
-  ) {
+  if (isMonorepoRoot(packageJson)) {
     throw new OnboardingError(workspaceRootSetupError);
   }
 }
+
+const VITE_LOADER_FILE = 'src/loadTranslations.ts';
 
 const INIT_SOURCE_HELP =
   "Space-separated list of glob patterns containing the app's source code, by default 'src/**/*.{js,jsx,ts,tsx}' 'app/**/*.{js,jsx,ts,tsx}' 'pages/**/*.{js,jsx,ts,tsx}' 'components/**/*.{js,jsx,ts,tsx}'";
@@ -1030,6 +1067,7 @@ export class BaseCLI {
         framework,
         saveFramework: Boolean(reactSetup || options.framework),
         reactSetup,
+        keepAppSource: !reactSetup,
       });
 
       logger.endCommand(
@@ -1172,6 +1210,8 @@ See https://www.npmjs.com/package/gt-vue`);
       /** Write the framework even when it is not Vite. */
       saveFramework?: boolean;
       reactSetup?: ReactSetupPlan;
+      /** Init without the React setup never changes application source. */
+      keepAppSource?: boolean;
     }
   ): Promise<void> {
     const { configFilepath, isVite, reactSetup } = setup;
@@ -1383,8 +1423,11 @@ See https://www.npmjs.com/package/gt-vue`);
       { resolvedConfig: effectiveConfig }
     );
     const envFramework = setup.framework ?? settings.framework;
-    // Runtime credentials only count for the project this setup uses.
-    const runtimeProjectId = resolveProjectId();
+    // Runtime credentials only count for the project this setup uses; the
+    // framework's project variable is the one paired with its dev key.
+    const runtimeProjectId =
+      process.env[getDevelopmentEnvNames(envFramework).projectId] ??
+      resolveProjectId();
     const runtimeProjectMatches =
       runtimeProjectId === undefined || runtimeProjectId === settings.projectId;
     const credentialsSet =
@@ -1479,7 +1522,61 @@ See https://www.npmjs.com/package/gt-vue`);
       logger.startCommand('Setting up project config...');
     }
 
+    // A loader left unchanged may not read the newly chosen directory.
+    const reportLoaderUpdate = (loaderFile: string, custom = true) => {
+      if (translationsDir === configuredTranslationsDir) return;
+      const action = `Update ${custom ? 'your custom ' : ''}${loaderFile} to load translations from ${translationsDir}`;
+      session.humanActions.push(action);
+      logger.warn(
+        createDiagnosticMessage({
+          source: 'gt',
+          severity: 'Warning',
+          whatHappened: custom
+            ? `Your custom ${loaderFile} was left unchanged, but translations now go to ${translationsDir}`
+            : `${loaderFile} was left unchanged because the React setup was skipped, but translations now go to ${translationsDir}`,
+          fix: action,
+        })
+      );
+    };
+    const translationFilesError = (error: unknown) =>
+      new Error(
+        createDiagnosticMessage({
+          source: 'gt',
+          severity: 'Error',
+          whatHappened: `Could not create the translation files in ${translationsDir}`,
+          details: formatDiagnosticErrorDetails(error),
+          fix: 'Choose another --translations-dir or fix the path, then rerun the command',
+        })
+      );
+
     if (storage === 'local' && translationsDir) {
+      // Without the React setup, configure keeps an existing Vite loader in
+      // sync; init leaves application source to the person.
+      if (
+        isVite &&
+        !reactSetup &&
+        translationsDir !== configuredTranslationsDir
+      ) {
+        if (setup.keepAppSource) {
+          if (fs.existsSync(path.join(cwd, VITE_LOADER_FILE))) {
+            reportLoaderUpdate(VITE_LOADER_FILE, false);
+          }
+        } else {
+          const loader = await writeViteLoader({
+            appDirectory: cwd,
+            defaultLocale: settings.defaultLocale,
+            locales: resolvedLocales,
+            translationsDir,
+            create: false,
+          }).catch((error: unknown) => {
+            throw translationFilesError(error);
+          });
+          if (loader === 'written') {
+            session.step(`updated ${VITE_LOADER_FILE}`);
+          }
+          if (loader === 'custom') reportLoaderUpdate(VITE_LOADER_FILE);
+        }
+      }
       const generatedLoader = this.shouldGenerateLocalTranslationLoader(
         isVite,
         runtimeSetup
@@ -1490,35 +1587,12 @@ See https://www.npmjs.com/package/gt-vue`);
           translationsDir,
           resolvedLocales
         ).catch((error: unknown) => {
-          throw new Error(
-            createDiagnosticMessage({
-              source: 'gt',
-              severity: 'Error',
-              whatHappened: `Could not create the translation files in ${translationsDir}`,
-              details: formatDiagnosticErrorDetails(error),
-              fix: 'Choose another --translations-dir or fix the path, then rerun the command',
-            })
-          );
+          throw translationFilesError(error);
         });
         if (loader === 'created' || loader === 'updated') {
           session.step(`${loader} loadTranslations.js`);
         }
-        // A custom loader may not read the newly chosen directory.
-        if (
-          loader === 'custom' &&
-          translationsDir !== configuredTranslationsDir
-        ) {
-          const action = `Update your custom loadTranslations.js to load translations from ${translationsDir}`;
-          session.humanActions.push(action);
-          logger.warn(
-            createDiagnosticMessage({
-              source: 'gt',
-              severity: 'Warning',
-              whatHappened: `Your custom loadTranslations.js was left unchanged, but translations now go to ${translationsDir}`,
-              fix: action,
-            })
-          );
-        }
+        if (loader === 'custom') reportLoaderUpdate('loadTranslations.js');
       }
       const guidance = this.getLocalTranslationGuidance({
         generatedLoader,
@@ -1538,14 +1612,27 @@ See https://www.npmjs.com/package/gt-vue`);
     );
 
     if (reactSetup && isVite) {
-      await setupViteSPA({
+      const result = await setupViteSPA({
         appDirectory: cwd,
         configFilepath,
         defaultLocale: settings.defaultLocale,
         locales: resolvedLocales,
         translationsDir: storage === 'local' ? translationsDir : undefined,
       });
-      session.step('configured initializeGTSPA');
+      if (result.manualAction) {
+        session.humanActions.push(result.manualAction);
+        logger.warn(
+          createDiagnosticMessage({
+            source: 'gt',
+            severity: 'Warning',
+            whatHappened: 'The existing Vite setup needs a manual review',
+            fix: result.manualAction,
+          })
+        );
+      } else {
+        session.step('configured initializeGTSPA');
+        if (result.loader === 'custom') reportLoaderUpdate(VITE_LOADER_FILE);
+      }
     }
 
     if (installGT && packageManager) {
