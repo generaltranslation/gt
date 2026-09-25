@@ -43,6 +43,7 @@ const supportedLocales = {
     'en-AU', // Australia
     'en-CA', // Canada
     'en-GB', // United Kingdom
+    'en-MX', // Mexico
     'en-NZ', // New Zealand
     'en-US', // United States
   ],

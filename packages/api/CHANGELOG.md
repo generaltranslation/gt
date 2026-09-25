@@ -1,5 +1,11 @@
 # @generaltranslation/api
 
+## 0.4.1
+
+### Patch Changes
+
+- [#2340](https://github.com/generaltranslation/gt/pull/2340) [`5d75eb4`](https://github.com/generaltranslation/gt/commit/5d75eb475a9e36a61845f0368566a9d40466251c) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add SubRip (`.srt`) subtitle files as a supported file type, uploaded verbatim under the `SRT` format
+
 ## 0.4.0
 
 ### Minor Changes

@@ -1,5 +1,32 @@
 # gtx-cli
 
+## 2.22.3
+
+### Patch Changes
+
+- Updated dependencies [[`226a4c4`](https://github.com/generaltranslation/gt/commit/226a4c406db415a299c9ce909fc6068642d7a705)]:
+  - @generaltranslation/supported-locales@2.1.36
+
+## 2.22.2
+
+### Patch Changes
+
+- [#2340](https://github.com/generaltranslation/gt/pull/2340) [`5d75eb4`](https://github.com/generaltranslation/gt/commit/5d75eb475a9e36a61845f0368566a9d40466251c) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add SubRip (`.srt`) subtitle files as a supported file type, uploaded verbatim under the `SRT` format
+
+- Updated dependencies [[`5d75eb4`](https://github.com/generaltranslation/gt/commit/5d75eb475a9e36a61845f0368566a9d40466251c)]:
+  - generaltranslation@9.5.1
+  - @generaltranslation/python-extractor@0.2.55
+  - @generaltranslation/supported-locales@2.1.35
+  - @generaltranslation/vue-extractor@0.1.15
+
+## 2.22.1
+
+### Patch Changes
+
+- [#2337](https://github.com/generaltranslation/gt/pull/2337) [`61c78cc`](https://github.com/generaltranslation/gt/commit/61c78ccf818f801ed8aa87ee3901b583c7c101e0) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Skip untranslated file paths when localizing static URLs in postprocessing
+
+- [#2334](https://github.com/generaltranslation/gt/pull/2334) [`a9d5143`](https://github.com/generaltranslation/gt/commit/a9d51435cdfb05a98253838aa78ffbfa2703fa16) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Automatically use device-code login in SSH sessions and display the verification URL on its own line. Clarify login prompts and show browser success or failure only after authentication and credential storage complete.
+
 ## 2.22.0
 
 ### Minor Changes

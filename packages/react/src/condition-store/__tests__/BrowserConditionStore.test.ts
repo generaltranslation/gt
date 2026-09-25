@@ -6,9 +6,10 @@ const mockCookieNames = vi.hoisted(() => ({
   region: 'generaltranslation.region',
   enableI18n: 'generaltranslation.enable-i18n',
 }));
+const mockGetCookieValue = vi.hoisted(() => vi.fn());
 
 vi.mock('../cookies', () => ({
-  getCookieValue: vi.fn(),
+  getCookieValue: mockGetCookieValue,
   setCookieValue: (...args: unknown[]) => mockSetCookieValue(...args),
 }));
 
@@ -38,6 +39,7 @@ import { BrowserConditionStore } from '../BrowserConditionStore';
 describe('BrowserConditionStore', () => {
   beforeEach(() => {
     mockSetCookieValue.mockReset();
+    mockGetCookieValue.mockReset();
     mockCookieNames.locale = 'generaltranslation.locale';
     mockCookieNames.region = 'generaltranslation.region';
     mockCookieNames.enableI18n = 'generaltranslation.enable-i18n';
@@ -114,6 +116,16 @@ describe('BrowserConditionStore', () => {
     expect(mockSetCookieValue).toHaveBeenCalledWith({
       cookieName: 'generaltranslation.locale-reset',
       value: 'true',
+    });
+  });
+
+  it('continues to read the locale cookie in SPA mode', () => {
+    mockGetCookieValue.mockReturnValue('fr');
+    const conditionStore = new BrowserConditionStore({ locale: 'en' });
+
+    expect(conditionStore.getLocale()).toBe('fr');
+    expect(mockGetCookieValue).toHaveBeenCalledWith({
+      cookieName: 'generaltranslation.locale',
     });
   });
 });

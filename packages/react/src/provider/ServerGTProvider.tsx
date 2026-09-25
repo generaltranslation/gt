@@ -2,8 +2,7 @@ import {
   I18nStore,
   InternalGTProvider,
 } from '@generaltranslation/react-core/components';
-import { ReadonlyConditionStore } from '@generaltranslation/react-core/pure';
-import { useMemo, useRef } from 'react';
+import { useRef } from 'react';
 import type { SharedGTProviderProps } from './GTProviderProps';
 import { useHandleMissingTranslations } from '../hooks/useHandleMissingTranslations';
 
@@ -17,10 +16,6 @@ export function ServerGTProvider({
   enableI18n,
   ...props
 }: SharedGTProviderProps) {
-  const conditionStore = useMemo(() => {
-    return new ReadonlyConditionStore({ locale, region, enableI18n });
-  }, [locale, region, enableI18n]);
-
   const i18nStoreRef = useRef<I18nStore | null>(null);
   if (i18nStoreRef.current == null) {
     i18nStoreRef.current = new I18nStore();
@@ -35,7 +30,12 @@ export function ServerGTProvider({
   return (
     <InternalGTProvider
       {...props}
-      conditionStore={conditionStore}
+      locale={locale}
+      region={region}
+      enableI18n={enableI18n ?? true}
+      setLocale={noopSetLocale}
+      setRegion={noopSetRegion}
+      setEnableI18n={noopSetEnableI18n}
       i18nStore={i18nStoreRef.current}
       onMissingTranslation={onMissingTranslation}
       onMissingDictionaryEntry={onMissingDictionaryEntry}
@@ -43,3 +43,7 @@ export function ServerGTProvider({
     />
   );
 }
+
+const noopSetLocale = (_locale: string) => undefined;
+const noopSetRegion = (_region: string | undefined) => undefined;
+const noopSetEnableI18n = (_enabled: boolean) => undefined;

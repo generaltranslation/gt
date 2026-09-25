@@ -1,9 +1,4 @@
-import {
-  Dictionary,
-  Hash,
-  Locale,
-  ReadonlyConditionStoreInterface,
-} from 'gt-i18n/internal/types';
+import { Dictionary, Hash, Locale } from 'gt-i18n/internal/types';
 import { Translation } from 'gt-i18n/types';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { createGlobalSingleton } from 'gt-i18n/internal';
@@ -29,11 +24,12 @@ export type GTContextType = {
    * with renders
    */
   i18nStore: I18nStore;
-  /**
-   * ConditionStore should always remain separate from i18nStore as
-   * it manages how we perform lookups
-   */
-  conditionStore: ReadonlyConditionStoreInterface;
+  locale: string;
+  region: string | undefined;
+  enableI18n: boolean;
+  setLocale: (locale: string) => void;
+  setRegion: (region: string | undefined) => void;
+  setEnableI18n: (enabled: boolean) => void;
   /**
    * Custom override behavior on missing translations
    * Used for server triggering tx hmr b/c no access to useEffect

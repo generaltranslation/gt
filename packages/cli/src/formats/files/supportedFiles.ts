@@ -14,6 +14,7 @@ export const SUPPORTED_FILE_EXTENSIONS = [
   'dotStringsdict',
   'androidStrings',
   'xcstrings',
+  'srt',
 ] as const;
 
 export const FILE_EXT_TO_EXT_LABEL = {
@@ -32,4 +33,5 @@ export const FILE_EXT_TO_EXT_LABEL = {
   dotStringsdict: '.stringsdict',
   androidStrings: 'Android strings.xml',
   xcstrings: '.xcstrings',
+  srt: 'SubRip subtitles (.srt)',
 };

@@ -1,6 +1,6 @@
 {
   "name": "gt-react",
-  "version": "11.4.3",
+  "version": "11.4.5",
   "description": "A React library for automatic internationalization.",
   "main": "./dist/index.server.cjs",
   "module": "./dist/index.server.mjs",
@@ -49,6 +49,7 @@
     "@types/node": "catalog:",
     "@types/react": ">=18.0.0 <20.0.0",
     "@types/react-dom": ">=18.0.0 <20.0.0",
+    "jsdom": "^26.1.0",
     "tsdown": "catalog:",
     "typescript": "catalog:"
   },

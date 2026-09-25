@@ -2,9 +2,16 @@ import {
   createOrUpdateBrowserConditionStore,
   initializeGT as initializeReactGT,
 } from 'gt-react';
+import type { SharedGTProviderProps } from 'gt-react';
 import { determineLocaleClient } from '../functions/parseLocale';
 import { getPathnameForLocale } from '../functions/localeRouting';
 import type { InitializeGTParams } from '../types/InitializeGTParams';
+
+let clientReload: SharedGTProviderProps['_reload'];
+
+export function getClientReload(): SharedGTProviderProps['_reload'] {
+  return clientReload;
+}
 
 /** Initialize GT and its browser condition store from the locale cookie. */
 export function initializeGT(config: InitializeGTParams): void {
@@ -29,4 +36,5 @@ export function initializeGT(config: InitializeGTParams): void {
     ...browserConfig,
     locale: determineLocaleClient(config),
   });
+  clientReload = browserConfig._reload;
 }

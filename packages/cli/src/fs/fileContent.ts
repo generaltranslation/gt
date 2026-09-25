@@ -29,11 +29,13 @@ export type FileEncoding =
 /**
  * Formats whose bytes on disk may carry an encoding other than UTF-8, so reads
  * decode by byte order mark and writes restore it. Older Xcode wrote both of
- * Apple's localization formats as UTF-16.
+ * Apple's localization formats as UTF-16, and Windows subtitle tools write
+ * SubRip files that way too.
  */
 const BYTE_ORDER_MARK_FORMATS: ReadonlySet<FileFormat> = new Set<FileFormat>([
   'DOT_STRINGS',
   'DOT_STRINGSDICT',
+  'SRT',
 ]);
 
 /**

@@ -10,7 +10,7 @@ import { NativeConditionStore } from '../condition-store/NativeConditionStore';
 
 export type NativeGTProviderProps = Omit<
   InternalGTProviderProps,
-  'conditionStore' | 'i18nStore'
+  'i18nStore' | 'setLocale' | 'setRegion' | 'setEnableI18n'
 > &
   Omit<NativeConditionStoreParams, 'locale'> & {
     locale: LocaleCandidates;
@@ -29,7 +29,12 @@ export function NativeGTProvider(props: NativeGTProviderProps) {
   return (
     <InternalGTProvider
       {...props}
-      conditionStore={conditionStore}
+      locale={conditionStore.getLocale()}
+      region={conditionStore.getRegion()}
+      enableI18n={conditionStore.getEnableI18n()}
+      setLocale={conditionStore.setLocale}
+      setRegion={conditionStore.setRegion}
+      setEnableI18n={conditionStore.setEnableI18n}
       i18nStore={i18nStoreRef.current}
     />
   );

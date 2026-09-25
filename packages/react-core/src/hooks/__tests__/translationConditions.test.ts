@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getI18nConfig } from 'gt-i18n/internal';
-import { useConditionStore } from '../condition-store';
+import { useEnableI18n, useLocale } from '../condition-store';
 import { useTranslationConditions } from '../utils';
 
 vi.mock('gt-i18n/internal', () => ({
@@ -8,7 +8,6 @@ vi.mock('gt-i18n/internal', () => ({
 }));
 
 vi.mock('../condition-store', () => ({
-  useConditionStore: vi.fn(),
   useEnableI18n: vi.fn(),
   useLocale: vi.fn(),
 }));
@@ -23,10 +22,8 @@ describe('useTranslationConditions', () => {
     getLocale.mockReturnValue('fr');
     getEnableI18n.mockReturnValue(true);
     requiresTranslation.mockReturnValue(true);
-    vi.mocked(useConditionStore).mockReturnValue({
-      getLocale,
-      getEnableI18n,
-    });
+    vi.mocked(useLocale).mockImplementation(getLocale);
+    vi.mocked(useEnableI18n).mockImplementation(getEnableI18n);
     vi.mocked(getI18nConfig).mockReturnValue({
       requiresTranslation,
     } as ReturnType<typeof getI18nConfig>);

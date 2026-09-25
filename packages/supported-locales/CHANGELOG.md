@@ -1,5 +1,18 @@
 # @generaltranslation/supported-locales
 
+## 2.1.36
+
+### Patch Changes
+
+- [#2342](https://github.com/generaltranslation/gt/pull/2342) [`226a4c4`](https://github.com/generaltranslation/gt/commit/226a4c406db415a299c9ce909fc6068642d7a705) Thanks [@eoinest](https://github.com/eoinest)! - Add English (Mexico) as a supported locale.
+
+## 2.1.35
+
+### Patch Changes
+
+- Updated dependencies [[`5d75eb4`](https://github.com/generaltranslation/gt/commit/5d75eb475a9e36a61845f0368566a9d40466251c)]:
+  - generaltranslation@9.5.1
+
 ## 2.1.34
 
 ### Patch Changes

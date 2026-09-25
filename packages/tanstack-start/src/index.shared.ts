@@ -21,7 +21,6 @@ export {
   RelativeTime,
   Var,
   Num,
-  GTProvider,
   // ===== Hooks ===== //
   useLocale,
   useSetLocale,

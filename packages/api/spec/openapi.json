@@ -102,7 +102,8 @@
           "XCSTRINGS",
           "DOT_STRINGS",
           "DOT_STRINGSDICT",
-          "ANDROID_STRINGS"
+          "ANDROID_STRINGS",
+          "SRT"
         ]
       },
       "Branch": {
@@ -8171,7 +8172,8 @@
                                 "XCSTRINGS",
                                 "DOT_STRINGS",
                                 "DOT_STRINGSDICT",
-                                "ANDROID_STRINGS"
+                                "ANDROID_STRINGS",
+                                "SRT"
                               ]
                             },
                             "dataFormat": {
@@ -8489,7 +8491,8 @@
                             "XCSTRINGS",
                             "DOT_STRINGS",
                             "DOT_STRINGSDICT",
-                            "ANDROID_STRINGS"
+                            "ANDROID_STRINGS",
+                            "SRT"
                           ]
                         }
                       },
@@ -9117,7 +9120,8 @@
                                 "XCSTRINGS",
                                 "DOT_STRINGS",
                                 "DOT_STRINGSDICT",
-                                "ANDROID_STRINGS"
+                                "ANDROID_STRINGS",
+                                "SRT"
                               ]
                             },
                             "dataFormat": {
@@ -9191,7 +9195,8 @@
                                   "XCSTRINGS",
                                   "DOT_STRINGS",
                                   "DOT_STRINGSDICT",
-                                  "ANDROID_STRINGS"
+                                  "ANDROID_STRINGS",
+                                  "SRT"
                                 ]
                               },
                               "dataFormat": {
@@ -9221,7 +9226,8 @@
                                   "XCSTRINGS",
                                   "DOT_STRINGS",
                                   "DOT_STRINGSDICT",
-                                  "ANDROID_STRINGS"
+                                  "ANDROID_STRINGS",
+                                  "SRT"
                                 ]
                               }
                             },

@@ -9,14 +9,13 @@ import { BrowserConditionStoreParams } from '../condition-store/BrowserCondition
  */
 export type SharedGTProviderProps = Omit<
   InternalGTProviderProps,
-  'conditionStore' | 'i18nStore'
+  | 'i18nStore'
+  | 'region'
+  | 'enableI18n'
+  | 'setLocale'
+  | 'setRegion'
+  | 'setEnableI18n'
 > &
   Omit<BrowserConditionStoreParams, 'locale'> & {
     locale: string;
-    /** Internal App Router snapshot; a new object represents a new server result. */
-    _serverConditions?: {
-      locale: string;
-      region?: string;
-      enableI18n?: boolean;
-    };
   };
