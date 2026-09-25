@@ -5,46 +5,57 @@ import {
   isCancel,
   cancel,
   multiselect,
+  autocomplete,
+  autocompleteMultiselect,
 } from '@clack/prompts';
 import type { Option } from '@clack/prompts';
 import chalk from 'chalk';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { getCLIVersion } from '../utils/packageJson.js';
 import { logger } from './logger.js';
 import { TEMPLATE_FILE_NAME } from '../utils/constants.js';
 import type { CustomMapping, FileToUpload } from 'generaltranslation/types';
-import { endTerminalSession, shouldUseInkPrompts } from './terminalSession.js';
-import {
-  parseLocaleList,
-  validateLocale,
-  validateLocaleList,
-} from './promptParsing.js';
+import { parseTypedLocale } from './promptParsing.js';
+import { getFilteredLocaleOptions } from './localeOptions.js';
 import {
   getInlineElementsLabel,
   type InlineLibrary,
 } from '../types/libraries.js';
 
-function cancelPromptAndExit(message: string): never {
-  endTerminalSession();
-  cancel(message);
-  return exitSync(0);
+let promptsDisabled = false;
+
+/**
+ * Noninteractive commands disable prompts so a stray question fails instead
+ * of waiting. Returns the previous mode so a run can restore it.
+ */
+export function setPromptsDisabled(disabled: boolean): boolean {
+  const previous = promptsDisabled;
+  promptsDisabled = disabled;
+  return previous;
 }
 
-async function loadInkPrompts() {
-  return import('./inkPrompts.js');
+function assertPromptAllowed(message: string): void {
+  if (!promptsDisabled) return;
+  throw new Error(
+    createDiagnosticMessage({
+      source: 'gt',
+      severity: 'Error',
+      whatHappened: 'A question needs an answer, but prompts are disabled',
+      details: stripAnsi(message).split('\n')[0],
+      fix: 'Pass the matching option (see --help) or rerun in an interactive terminal',
+    })
+  );
 }
 
-async function runInkPrompt<T>(
-  prompt: (prompts: Awaited<ReturnType<typeof loadInkPrompts>>) => Promise<{
-    value?: T;
-    cancelled: boolean;
-  }>,
-  cancelMessage = 'Operation cancelled'
-) {
-  const result = await prompt(await loadInkPrompts());
-  if (result.cancelled) {
-    return cancelPromptAndExit(cancelMessage);
+function exitIfCancelled<T>(
+  result: T | symbol,
+  message = 'Operation cancelled'
+): T {
+  if (isCancel(result)) {
+    cancel(message);
+    return exitSync(0);
   }
-  return result.value;
+  return result as T;
 }
 
 /**
@@ -55,7 +66,15 @@ export function stripAnsi(str: string): string {
   return str.replace(/\x1B\[[0-9;]*m/g, '');
 }
 
+let lastExitError: string | undefined;
+
+/** The message of the last logErrorAndExit call, for exit-time reporting. */
+export function getLastExitError(): string | undefined {
+  return lastExitError;
+}
+
 export function logErrorAndExit(message: string): never {
+  lastExitError = message;
   logger.error(message);
   return exitSync(1);
 }
@@ -145,17 +164,11 @@ export async function promptText({
   defaultValue?: string;
   validate?: (value: string) => boolean | string;
 }) {
-  if (shouldUseInkPrompts()) {
-    return (
-      (await runInkPrompt<string>((prompts) =>
-        prompts.inkPromptText({ message, defaultValue, validate })
-      )) ?? ''
-    );
-  }
-
+  assertPromptAllowed(message);
   const result = await text({
     message,
     placeholder: defaultValue,
+    defaultValue,
     validate: validate
       ? (value) => {
           const validation = validate(value || '');
@@ -163,14 +176,55 @@ export async function promptText({
         }
       : undefined,
   });
-
-  if (isCancel(result)) {
-    cancel('Operation cancelled');
-    return exitSync(0);
-  }
-
-  return result;
+  return exitIfCancelled(result);
 }
+
+type LocalePromptContext = {
+  userInput: string;
+  selectedValues: string[];
+};
+
+/**
+ * Searchable locale options: supported locales ranked by the query, the
+ * configured customMapping aliases, and any other valid locale typed or
+ * already selected, so aliases and custom tags stay selectable.
+ */
+export function getLocalePromptOptions(
+  query: string,
+  selected: string[] = [],
+  customMapping?: CustomMapping
+): Option<string>[] {
+  const normalizedQuery = query.trim().toLowerCase();
+  const supported = getFilteredLocaleOptions(query).map((option) => ({
+    value: option.code,
+    label: option.label,
+  }));
+  const known = new Set(supported.map((option) => option.value));
+  const aliases = Object.keys(customMapping ?? {})
+    .filter((alias) => alias.toLowerCase().includes(normalizedQuery))
+    .map((alias) => ({ value: alias, label: alias, hint: 'custom mapping' }));
+  const typed = parseTypedLocale(query, customMapping);
+  const extras = [...selected, ...(typed ? [typed] : [])]
+    .filter(
+      (locale) =>
+        !known.has(locale) && !aliases.some((alias) => alias.value === locale)
+    )
+    .map((locale) => ({ value: locale, label: locale }));
+  return [
+    ...new Map(
+      [...aliases, ...extras, ...supported].map((option) => [
+        option.value,
+        option,
+      ])
+    ).values(),
+  ];
+}
+
+// Body-only: Clack shows it inline under the prompt.
+const noLocaleSelectedError = createDiagnosticMessage({
+  whatHappened: 'No locale matches the search',
+  fix: 'Change the search and select a locale from the list',
+});
 
 export async function promptLocale({
   message,
@@ -181,19 +235,18 @@ export async function promptLocale({
   defaultValue?: string;
   customMapping?: CustomMapping;
 }) {
-  if (shouldUseInkPrompts()) {
-    return (
-      (await runInkPrompt<string>((prompts) =>
-        prompts.inkPromptLocale({ message, defaultValue, customMapping })
-      )) ?? ''
-    );
-  }
-
-  return promptText({
+  assertPromptAllowed(message);
+  const result = await autocomplete<string>({
     message,
-    defaultValue,
-    validate: (value) => validateLocale(value, customMapping),
+    placeholder: 'Type to search locales',
+    initialValue: defaultValue,
+    options: function (this: LocalePromptContext) {
+      return getLocalePromptOptions(this.userInput ?? '', [], customMapping);
+    },
+    // Enter with no matching option submits nothing; keep asking.
+    validate: (value) => (value ? undefined : noLocaleSelectedError),
   });
+  return exitIfCancelled(result);
 }
 
 export async function promptLocaleList({
@@ -207,46 +260,38 @@ export async function promptLocaleList({
   required?: boolean;
   customMapping?: CustomMapping;
 }) {
-  if (shouldUseInkPrompts()) {
-    return (
-      (await runInkPrompt<string[]>((prompts) =>
-        prompts.inkPromptLocaleMulti({
-          message,
-          defaultValue,
-          required,
-          customMapping,
-        })
-      )) ?? []
-    );
-  }
-
-  return promptText({
+  assertPromptAllowed(message);
+  const result = await autocompleteMultiselect<string>({
     message,
-    defaultValue: defaultValue?.join(' '),
-    validate: (value) => validateLocaleList(value, customMapping),
-  }).then(parseLocaleList);
+    placeholder: 'Type to search, Tab or Space to select',
+    initialValues: defaultValue,
+    required,
+    options: function (this: LocalePromptContext) {
+      return getLocalePromptOptions(
+        this.userInput ?? '',
+        this.selectedValues ?? [],
+        customMapping
+      );
+    },
+  });
+  return exitIfCancelled(result);
 }
 
 export async function promptGlobPatterns({
-  label,
   message,
   defaultValue,
+  validate,
 }: {
   label: string;
   message: string;
   defaultValue?: string;
+  validate?: (value: string) => boolean | string;
 }) {
-  if (shouldUseInkPrompts()) {
-    return (
-      (await runInkPrompt<string>((prompts) =>
-        prompts.inkPromptGlob({ label, message, defaultValue })
-      )) ?? ''
-    );
-  }
-
   return promptText({
     message,
     defaultValue,
+    // Clack validates the typed text before applying the default.
+    validate: validate && ((value) => validate(value || defaultValue || '')),
   });
 }
 
@@ -259,31 +304,13 @@ export async function promptSelect<T>({
   options: Array<{ value: T; label: string; hint?: string }>;
   defaultValue?: T;
 }) {
-  if (shouldUseInkPrompts()) {
-    return (await runInkPrompt<T>((prompts) =>
-      prompts.inkPromptSelect({ message, options, defaultValue })
-    )) as T;
-  }
-
-  // Convert options to the format expected by clack
-  const clackOptions = options.map((opt) => ({
-    value: opt.value,
-    label: opt.label,
-    hint: opt.hint,
-  })) as Option<T>[];
-
+  assertPromptAllowed(message);
   const result = await select({
     message,
-    options: clackOptions,
+    options: options as Option<T>[],
     initialValue: defaultValue,
   });
-
-  if (isCancel(result)) {
-    cancel('Operation cancelled');
-    return exitSync(0);
-  }
-
-  return result as T;
+  return exitIfCancelled(result);
 }
 
 export async function promptMultiSelect<T extends string>({
@@ -295,37 +322,13 @@ export async function promptMultiSelect<T extends string>({
   options: Array<{ value: T; label: string; hint?: string }>;
   required?: boolean;
 }) {
-  if (shouldUseInkPrompts()) {
-    return (
-      (await runInkPrompt<Array<T>>((prompts) =>
-        prompts.inkPromptMultiSelect({
-          message,
-          options,
-          required,
-        })
-      )) ?? []
-    );
-  }
-
-  // Convert options to the format expected by clack
-  const clackOptions = options.map((opt) => ({
-    value: opt.value,
-    label: opt.label,
-    hint: opt.hint,
-  })) as Option<T>[];
-
+  assertPromptAllowed(message);
   const result = await multiselect({
     message,
-    options: clackOptions,
+    options: options as Option<T>[],
     required,
   });
-
-  if (isCancel(result)) {
-    cancel('Operation cancelled');
-    return exitSync(0);
-  }
-
-  return result as Array<T>;
+  return exitIfCancelled(result);
 }
 
 export async function promptConfirm({
@@ -337,26 +340,12 @@ export async function promptConfirm({
   defaultValue?: boolean;
   cancelMessage?: string;
 }) {
-  if (shouldUseInkPrompts()) {
-    return (
-      (await runInkPrompt<boolean>(
-        (prompts) => prompts.inkPromptConfirm({ message, defaultValue }),
-        cancelMessage
-      )) ?? defaultValue
-    );
-  }
-
+  assertPromptAllowed(message);
   const result = await confirm({
     message,
     initialValue: defaultValue,
   });
-
-  if (isCancel(result)) {
-    cancel(cancelMessage);
-    return exitSync(0);
-  }
-
-  return result;
+  return exitIfCancelled(result, cancelMessage);
 }
 
 // Warning display functions
