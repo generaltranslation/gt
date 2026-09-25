@@ -16,4 +16,10 @@ describe('@generaltranslation/supported-locales', () => {
     expect(getSupportedLocale('ar-OM')).toBe('ar-OM');
     expect(getSupportedLocale('ar-Arab-OM')).toBe('ar-OM');
   });
+
+  it('supports Mexican English', () => {
+    expect(listSupportedLocales()).toContain('en-MX');
+    expect(getSupportedLocale('en-MX')).toBe('en-MX');
+    expect(getSupportedLocale('en-Latn-MX')).toBe('en-MX');
+  });
 });
