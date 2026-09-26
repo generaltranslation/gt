@@ -112,6 +112,7 @@ const STYLES = `
     font-size: 13px;
     line-height: 1.45;
     color: var(--titanium);
+    overflow-wrap: anywhere;
   }
   .note code, .note .ink { color: var(--ink); }
   code {
