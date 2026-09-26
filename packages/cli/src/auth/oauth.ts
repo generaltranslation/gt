@@ -311,32 +311,43 @@ export async function login(options: LoginOptions = {}): Promise<OAuthTokens> {
       code_challenge_method: 'S256',
     });
     assertEndpoint(authorizationUrl, new URL(authBaseUrl));
-    const callback = loopback.waitForCallback(async (callbackUrl) => {
-      const result = await oidc
-        .authorizationCodeGrant(
-          config,
-          callbackUrl,
-          {
-            pkceCodeVerifier: codeVerifier,
-            expectedState: state,
-            idTokenExpected: true,
-          },
-          { resource }
-        )
-        .catch((error: unknown) => {
-          throw oauthError(error, 'Failed to authenticate via web browser');
-        });
-      const tokens = { ...parseTokens(result), resource };
-      await writeOAuthTokens(tokens, authBaseUrl);
-      return tokens;
-    }, options.timeoutMs);
+    const callback = loopback.waitForCallback(
+      async (callbackUrl) => {
+        const result = await oidc
+          .authorizationCodeGrant(
+            config,
+            callbackUrl,
+            {
+              pkceCodeVerifier: codeVerifier,
+              expectedState: state,
+              idTokenExpected: true,
+            },
+            { resource }
+          )
+          .catch((error: unknown) => {
+            throw oauthError(error, 'Failed to authenticate via web browser');
+          });
+        const tokens = { ...parseTokens(result), resource };
+        await writeOAuthTokens(tokens, authBaseUrl);
+        // The browser page names the account. Identity is best effort here:
+        // the login is already stored, so a failed lookup only leaves the
+        // name off the page.
+        const email = await oidc
+          .fetchUserInfo(config, tokens.accessToken, tokens.subject)
+          .then((user) => user.email)
+          .catch(() => undefined);
+        return { tokens, email };
+      },
+      options.timeoutMs,
+      { describe: (outcome) => ({ email: outcome.email }) }
+    );
     // Printing/launching may fail before we await the listener.
     callback.catch(() => undefined);
     options.onAuthorizationUrl?.(authorizationUrl.href);
     void (options.openBrowser ?? open)(authorizationUrl.href).catch(
       () => undefined
     );
-    return await callback;
+    return (await callback).tokens;
   } finally {
     loopback.close();
   }
