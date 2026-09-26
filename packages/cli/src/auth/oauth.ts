@@ -280,6 +280,40 @@ async function loginWithDeviceCode(
   return tokens;
 }
 
+/** How long the callback page waits to learn the account's name. */
+export const ACCOUNT_LOOKUP_TIMEOUT_MS = 3000;
+
+/**
+ * The email, else the profile name, from the userinfo endpoint, within the
+ * lookup budget; undefined when the endpoint fails, stalls, or returns
+ * claims that are not strings. Never throws.
+ */
+async function lookupAccountName(
+  config: oidc.Configuration,
+  accessToken: string,
+  subject: string
+): Promise<string | undefined> {
+  let timer: NodeJS.Timeout | undefined;
+  const budget = new Promise<undefined>((resolve) => {
+    timer = setTimeout(() => resolve(undefined), ACCOUNT_LOOKUP_TIMEOUT_MS);
+  });
+  const lookup = oidc
+    .fetchUserInfo(config, accessToken, subject)
+    .then((user) =>
+      typeof user.email === 'string'
+        ? user.email
+        : typeof user.name === 'string'
+          ? user.name
+          : undefined
+    )
+    .catch(() => undefined);
+  try {
+    return await Promise.race([lookup, budget]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** Browser S256/loopback, or device login for SSH, --no-browser and bind failure. */
 export async function login(options: LoginOptions = {}): Promise<OAuthTokens> {
   if (
@@ -311,32 +345,45 @@ export async function login(options: LoginOptions = {}): Promise<OAuthTokens> {
       code_challenge_method: 'S256',
     });
     assertEndpoint(authorizationUrl, new URL(authBaseUrl));
-    const callback = loopback.waitForCallback(async (callbackUrl) => {
-      const result = await oidc
-        .authorizationCodeGrant(
+    const callback = loopback.waitForCallback(
+      async (callbackUrl) => {
+        const result = await oidc
+          .authorizationCodeGrant(
+            config,
+            callbackUrl,
+            {
+              pkceCodeVerifier: codeVerifier,
+              expectedState: state,
+              idTokenExpected: true,
+            },
+            { resource }
+          )
+          .catch((error: unknown) => {
+            throw oauthError(error, 'Failed to authenticate via web browser');
+          });
+        const tokens = { ...parseTokens(result), resource };
+        await writeOAuthTokens(tokens, authBaseUrl);
+        // The browser page names the account: the email when the userinfo
+        // carries one, else the profile name. The login is already stored,
+        // so the lookup is best effort: a failure, a malformed claim or a
+        // slow endpoint only leaves the name off the page.
+        const account = await lookupAccountName(
           config,
-          callbackUrl,
-          {
-            pkceCodeVerifier: codeVerifier,
-            expectedState: state,
-            idTokenExpected: true,
-          },
-          { resource }
-        )
-        .catch((error: unknown) => {
-          throw oauthError(error, 'Failed to authenticate via web browser');
-        });
-      const tokens = { ...parseTokens(result), resource };
-      await writeOAuthTokens(tokens, authBaseUrl);
-      return tokens;
-    }, options.timeoutMs);
+          tokens.accessToken,
+          tokens.subject
+        );
+        return { tokens, account };
+      },
+      options.timeoutMs,
+      { describe: (outcome) => ({ account: outcome.account }) }
+    );
     // Printing/launching may fail before we await the listener.
     callback.catch(() => undefined);
     options.onAuthorizationUrl?.(authorizationUrl.href);
     void (options.openBrowser ?? open)(authorizationUrl.href).catch(
       () => undefined
     );
-    return await callback;
+    return (await callback).tokens;
   } finally {
     loopback.close();
   }

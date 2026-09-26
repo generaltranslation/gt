@@ -35,6 +35,7 @@ import {
   type OAuthTokens,
 } from '../credentialStore.js';
 import {
+  ACCOUNT_LOOKUP_TIMEOUT_MS,
   createUserTokenProvider,
   hasLogin,
   login,
@@ -117,6 +118,7 @@ function provider(
     token?: (init?: RequestInit) => Promise<Response>;
     device?: () => Promise<Response>;
     jwks?: (init?: RequestInit) => Promise<Response>;
+    userinfo?: () => Promise<Response>;
     user?: string;
   } = {}
 ) {
@@ -140,11 +142,13 @@ function provider(
     if (url === `${issuer}/oauth2/revoke`)
       return new Response(null, { status: 200 });
     if (url === `${issuer}/oauth2/userinfo`)
-      return json({
-        sub: options.user ?? 'user-1',
-        name: 'Dev',
-        email: 'dev@example.com',
-      });
+      return options.userinfo
+        ? options.userinfo()
+        : json({
+            sub: options.user ?? 'user-1',
+            name: 'Dev',
+            email: 'dev@example.com',
+          });
     throw new Error(`Unexpected fixture request: ${url}`);
   });
 }
@@ -385,14 +389,21 @@ describe('discovery and browser authorization', () => {
       const html = await page;
       expect(html).toContain(
         outcome === 'success'
-          ? '<h1>Successfully authenticated gt CLI</h1>'
-          : '<h1>Authentication failed</h1>'
+          ? 'Signed in to the gt CLI'
+          : outcome === 'denied'
+            ? 'Request denied'
+            : 'Sign-in failed'
       );
-      expect(html).toContain(
-        'You may now close this tab and return to the terminal.'
-      );
-      if (outcome !== 'success') {
-        expect(html).not.toContain('Successfully authenticated');
+      if (outcome === 'success') {
+        expect(html).toContain(
+          'You can close this tab and return to your terminal.'
+        );
+        expect(html).toContain(
+          'Signed in as <span class="ink">dev@example.com</span>.'
+        );
+      } else {
+        expect(html).toContain('npx gt login');
+        expect(html).not.toContain('Signed in to the gt CLI');
         expect(html).not.toContain('Disk full');
       }
     }
@@ -430,15 +441,46 @@ describe('discovery and browser authorization', () => {
         )
       ).toString('base64url')
     ).toBe(authorize.searchParams.get('code_challenge'));
+    // The userinfo call only names the account on the browser page; the
+    // login is stored before it and does not depend on it.
     expect(fetcher.mock.calls.map(([url]) => String(url))).toEqual([
       `${authBaseUrl}/.well-known/openid-configuration`,
       `${authBaseUrl}/oauth2/token`,
       `${authBaseUrl}/jwks`,
+      `${authBaseUrl}/oauth2/userinfo`,
     ]);
     expect(
       fetcher.mock.calls.every(([, init]) => init?.redirect === 'manual')
     ).toBe(true);
   });
+  it.each([
+    ['a malformed email', async () => json({ sub: 'user-1', email: {} })],
+    ['a stalled userinfo endpoint', () => new Promise<Response>(() => {})],
+    ['a failing userinfo endpoint', async () => json({ error: 'nope' }, 500)],
+  ])(
+    'keeps the stored login and shows success without the note for %s',
+    async (_case, userinfo) => {
+      let page!: Promise<string>;
+      const started = Date.now();
+      const result = await browserLogin({
+        fetch: provider({ userinfo }),
+        openBrowser: (url) => {
+          page = callback(url);
+          return page;
+        },
+      });
+      expect(result.subject).toBe('user-1');
+      expect(await readOAuthTokens(authBaseUrl)).toEqual(result);
+      // Well inside openid-client's 30 second request timeout.
+      expect(Date.now() - started).toBeLessThan(
+        ACCOUNT_LOOKUP_TIMEOUT_MS + 2000
+      );
+      const html = await page;
+      expect(html).toContain('Signed in to the gt CLI');
+      expect(html).not.toContain('class="note"');
+    },
+    10_000
+  );
   it('requests a token for the configured API, letting GT_API_URL override it', async () => {
     const resources: (string | null)[] = [];
     const record = async (url: string) => {
