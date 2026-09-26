@@ -119,6 +119,40 @@ describe('createLoadTranslationsFile', () => {
     expect(fs.existsSync(path.join(translationsPath, 'es.json'))).toBe(true);
   });
 
+  it('creates missing locale files on reruns without changing existing translations or the loader', async () => {
+    await createLoadTranslationsFile(tmpDir, DEFAULT_TRANSLATIONS_DIR, [
+      'es',
+      'fr',
+    ]);
+    const translationsPath = path.resolve(tmpDir, DEFAULT_TRANSLATIONS_DIR);
+    const loaderPath = path.join(tmpDir, 'loadTranslations.js');
+    const loader = fs.readFileSync(loaderPath, 'utf8');
+    fs.writeFileSync(
+      path.join(translationsPath, 'es.json'),
+      '{"hello":"hola"}'
+    );
+    fs.unlinkSync(path.join(translationsPath, 'fr.json'));
+
+    await expect(
+      createLoadTranslationsFile(tmpDir, DEFAULT_TRANSLATIONS_DIR, [
+        'es',
+        'fr',
+        'de',
+      ])
+    ).resolves.toBe('unchanged');
+
+    expect(
+      fs.readFileSync(path.join(translationsPath, 'fr.json'), 'utf8')
+    ).toBe('{}');
+    expect(
+      fs.readFileSync(path.join(translationsPath, 'de.json'), 'utf8')
+    ).toBe('{}');
+    expect(
+      fs.readFileSync(path.join(translationsPath, 'es.json'), 'utf8')
+    ).toBe('{"hello":"hola"}');
+    expect(fs.readFileSync(loaderPath, 'utf8')).toBe(loader);
+  });
+
   it('does not overwrite existing loadTranslations.js', async () => {
     fs.mkdirSync(path.join(tmpDir, 'src'), { recursive: true });
     const filePath = path.join(tmpDir, 'src', 'loadTranslations.js');
@@ -129,6 +163,57 @@ describe('createLoadTranslationsFile', () => {
     const content = fs.readFileSync(filePath, 'utf-8');
     expect(content).toBe('// custom content');
   });
+
+  it.each([
+    './public/_gt/${import.meta.env.VITE_BRAND}/',
+    './public/_gt/brand/',
+  ])(
+    'keeps a generated loader whose import path was customized to %s',
+    async (importPath) => {
+      await createLoadTranslationsFile(tmpDir, DEFAULT_TRANSLATIONS_DIR, [
+        'es',
+      ]);
+      const filePath = path.join(tmpDir, 'loadTranslations.js');
+      const custom = fs
+        .readFileSync(filePath, 'utf-8')
+        .replace('./public/_gt/', importPath);
+      fs.writeFileSync(filePath, custom);
+
+      await expect(
+        createLoadTranslationsFile(
+          tmpDir,
+          'public/translations',
+          ['es'],
+          DEFAULT_TRANSLATIONS_DIR
+        )
+      ).resolves.toBe('custom');
+      expect(fs.readFileSync(filePath, 'utf-8')).toBe(custom);
+    }
+  );
+
+  it.each([DEFAULT_TRANSLATIONS_DIR, undefined])(
+    'refreshes a loader only with known previous config: %s',
+    async (previousTranslationsDir) => {
+      await createLoadTranslationsFile(tmpDir, DEFAULT_TRANSLATIONS_DIR, [
+        'es',
+      ]);
+      const loaderPath = path.join(tmpDir, 'loadTranslations.js');
+      const original = fs.readFileSync(loaderPath, 'utf8');
+
+      const result = await createLoadTranslationsFile(
+        tmpDir,
+        'public/new',
+        ['es'],
+        previousTranslationsDir
+      );
+
+      expect(result).toBe(previousTranslationsDir ? 'updated' : 'custom');
+      const loader = fs.readFileSync(loaderPath, 'utf8');
+      if (previousTranslationsDir)
+        expect(loader).toContain('import(`./public/new/${locale}.json`)');
+      else expect(loader).toBe(original);
+    }
+  );
 
   it('does not overwrite existing locale JSON files', async () => {
     const translationsPath = path.resolve(tmpDir, DEFAULT_TRANSLATIONS_DIR);

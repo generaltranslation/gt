@@ -1044,6 +1044,13 @@ See https://www.npmjs.com/package/gt-vue`);
         ? 'src/gt.config.json'
         : 'gt.config.json');
     const existingConfig = loadConfig(configFilepath);
+    const previousOutput = (existingConfig.files as FilesOptions | undefined)
+      ?.gt?.output;
+    const previousTranslationsDir =
+      typeof previousOutput === 'string' &&
+      path.basename(previousOutput) === '[locale].json'
+        ? path.dirname(previousOutput)
+        : undefined;
     const { defaultLocale, locales } = await getDesiredLocales(existingConfig);
 
     const packageJson = await searchForPackageJson();
@@ -1096,26 +1103,6 @@ See https://www.npmjs.com/package/gt-vue`);
     // Determine final translations directory with fallback
     const finalTranslationsDir =
       translationsDir?.trim() || defaultTranslationsDir;
-
-    if (isUsingGT && !usingCDN) {
-      const generatedLoader = this.shouldGenerateLocalTranslationLoader(
-        isVite,
-        runtimeSetup
-      );
-      if (generatedLoader) {
-        await createLoadTranslationsFile(
-          process.cwd(),
-          finalTranslationsDir,
-          locales
-        );
-      }
-      const guidance = this.getLocalTranslationGuidance({
-        generatedLoader,
-        runtimeSetup,
-        translationsDir: finalTranslationsDir,
-      });
-      if (guidance) logger.message(guidance);
-    }
 
     const message = !isUsingGT
       ? 'What is the format of your language resource files? Select as many as applicable.\nAdditionally, you can translate any other files you have in your project.'
@@ -1171,6 +1158,38 @@ See https://www.npmjs.com/package/gt-vue`);
       clearPublish: runtimeSetup.hasVueRuntime && !usingCDN,
     });
 
+    // After every prompt and the config write, so cancelling setup cannot
+    // leave the loader pointing somewhere the config does not.
+    if (isUsingGT && !usingCDN) {
+      const generatedLoader = this.shouldGenerateLocalTranslationLoader(
+        isVite,
+        runtimeSetup
+      );
+      const loader = generatedLoader
+        ? await createLoadTranslationsFile(
+            process.cwd(),
+            finalTranslationsDir,
+            locales,
+            previousTranslationsDir
+          )
+        : undefined;
+      if (loader === 'custom') {
+        const diagnostic = createDiagnosticMessage({
+          source: 'gt',
+          severity: 'Warning',
+          whatHappened: 'The existing translation loader was preserved',
+          fix: `Verify loadTranslations.js loads translations from ${finalTranslationsDir}`,
+        });
+        logger.warn(diagnostic);
+      }
+      const guidance = this.getLocalTranslationGuidance({
+        generatedLoader: generatedLoader && loader !== 'custom',
+        runtimeSetup,
+        translationsDir: finalTranslationsDir,
+      });
+      if (guidance) logger.message(guidance);
+    }
+
     logger.success(
       `Edit ${chalk.cyan(
         configFilepath
@@ -1178,13 +1197,24 @@ See https://www.npmjs.com/package/gt-vue`);
     );
 
     if (ranReactSetup && isVite) {
-      await setupViteSPA({
+      const result = await setupViteSPA({
         appDirectory: process.cwd(),
         configFilepath,
         defaultLocale,
         locales,
         translationsDir: usingCDN ? undefined : finalTranslationsDir,
+        previousTranslationsDir,
       });
+      if (result.manualAction) {
+        logger.warn(
+          createDiagnosticMessage({
+            source: 'gt',
+            severity: 'Warning',
+            whatHappened: 'The existing Vite setup needs a manual review',
+            fix: result.manualAction,
+          })
+        );
+      }
     }
 
     // Install gt if not installed

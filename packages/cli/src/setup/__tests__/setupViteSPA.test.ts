@@ -91,6 +91,153 @@ await import('./main');
     ).toBe('// custom loader');
   });
 
+  it.each([
+    `import { initializeGTSPA } from 'gt-react';
+import gtConfig from '../gt.config.json';
+import { loadTranslations } from './loadTranslations';
+await initializeGTSPA({ ...gtConfig, loadTranslations });
+await import('./main');
+`,
+    `import * as gt from 'gt-react';
+import gtConfig from '../gt.config.json';
+await gt.initializeGTSPA(gtConfig);
+await import('./main');
+`,
+    `import { initializeGTSPA } from 'gt-react';\n`,
+    `import { initializeGTSPA as initialize } from 'gt-react';
+startApp(initialize);
+`,
+    // Decorators need a parser plugin the inspector does not enable.
+    `import { initializeGTSPA } from 'gt-react';
+import gtConfig from '../gt.config.json';
+@sealed
+class App {}
+await initializeGTSPA(gtConfig);
+`,
+  ])(
+    'leaves initializer imports for manual review instead of nesting initialization: %s',
+    async (bootstrap) => {
+      const html = '<script type="module" src="/src/index.ts"></script>\n';
+      fs.writeFileSync(path.join(appDirectory, 'index.html'), html);
+      fs.writeFileSync(path.join(appDirectory, 'src/index.ts'), bootstrap);
+
+      const result = await setupViteSPA({
+        appDirectory,
+        configFilepath: 'gt.config.json',
+        defaultLocale: 'en',
+        locales: ['fr'],
+        translationsDir: 'src/_gt',
+      });
+
+      expect(
+        fs.readFileSync(path.join(appDirectory, 'index.html'), 'utf8')
+      ).toBe(html);
+      expect(
+        fs.readFileSync(path.join(appDirectory, 'src/index.ts'), 'utf8')
+      ).toBe(bootstrap);
+      expect(fs.existsSync(path.join(appDirectory, 'src/gt-entry.ts'))).toBe(
+        false
+      );
+      expect(result).toMatchObject({
+        manualAction: expect.stringMatching(
+          /src\/index\.ts.*gt\.config\.json.*src\/_gt/
+        ),
+      });
+    }
+  );
+
+  it('bootstraps a .ts entry with an angle-bracket type assertion', async () => {
+    const entry =
+      "const root = <HTMLElement>document.getElementById('root');\n";
+    fs.writeFileSync(
+      path.join(appDirectory, 'index.html'),
+      '<script type="module" src="/src/main.ts"></script>\n'
+    );
+    fs.writeFileSync(path.join(appDirectory, 'src', 'main.ts'), entry);
+
+    await setupViteSPA({
+      appDirectory,
+      configFilepath: 'gt.config.json',
+      defaultLocale: 'en',
+      locales: ['fr'],
+    });
+
+    expect(
+      fs.readFileSync(path.join(appDirectory, 'src', 'gt-entry.ts'), 'utf8')
+    ).toContain("await import('./main');");
+    expect(
+      fs.readFileSync(path.join(appDirectory, 'src', 'main.ts'), 'utf8')
+    ).toBe(entry);
+  });
+
+  it.each([
+    'export async function loadTranslations(locale: string) { return {}; }\n',
+    'export const loadTranslations = async (locale: string) => ({});\n',
+    'const load = async (locale: string) => ({}); export { load as loadTranslations };\n',
+  ])(
+    'uses a named custom loader without breaking reruns: %s',
+    async (loader) => {
+      fs.writeFileSync(
+        path.join(appDirectory, 'src/loadTranslations.ts'),
+        loader
+      );
+      const options = {
+        appDirectory,
+        configFilepath: 'gt.config.json',
+        defaultLocale: 'en',
+        locales: ['fr'],
+        translationsDir: 'src/_gt',
+      };
+      await setupViteSPA(options);
+      const first = fs.readFileSync(
+        path.join(appDirectory, 'src/gt-entry.ts'),
+        'utf8'
+      );
+      expect(first).toContain(
+        "import { loadTranslations } from './loadTranslations';"
+      );
+      await setupViteSPA(options);
+      expect(
+        fs.readFileSync(path.join(appDirectory, 'src/gt-entry.ts'), 'utf8')
+      ).toBe(first);
+      expect(
+        fs.readFileSync(
+          path.join(appDirectory, 'src/loadTranslations.ts'),
+          'utf8'
+        )
+      ).toBe(loader);
+    }
+  );
+
+  it.each([
+    'export type loadTranslations = string;\n',
+    'export default interface LoadTranslations {}\n',
+  ])(
+    'does not generate a broken import for a custom loader without a runtime export: %s',
+    async (loader) => {
+      fs.writeFileSync(
+        path.join(appDirectory, 'src/loadTranslations.ts'),
+        loader
+      );
+      const result = await setupViteSPA({
+        appDirectory,
+        configFilepath: 'gt.config.json',
+        defaultLocale: 'en',
+        locales: ['fr'],
+        translationsDir: 'src/_gt',
+      });
+      expect(fs.existsSync(path.join(appDirectory, 'src/gt-entry.ts'))).toBe(
+        false
+      );
+      expect(
+        fs.readFileSync(path.join(appDirectory, 'index.html'), 'utf8')
+      ).toContain('/src/main.tsx');
+      expect(result).toMatchObject({
+        manualAction: expect.stringContaining('loadTranslations'),
+      });
+    }
+  );
+
   it('uses CDN loading when no translations directory is configured', async () => {
     await setupViteSPA({
       appDirectory,
@@ -221,6 +368,7 @@ await import('./main');
       defaultLocale: 'en',
       locales: ['fr'],
       translationsDir: 'src/translations',
+      previousTranslationsDir: 'src/_gt',
     });
 
     const loader = fs.readFileSync(
@@ -229,6 +377,55 @@ await import('./main');
     );
     expect(loader).toContain('import(`./translations/${locale}.json`)');
     expect(loader).not.toContain('import(`./_gt/${locale}.json`)');
+  });
+
+  it.each(['./_gt/${import.meta.env.VITE_BRAND}/', './_gt/brand/'])(
+    'keeps a generated loader whose import path was customized to %s',
+    async (importPath) => {
+      const loaderPath = path.join(appDirectory, 'src', 'loadTranslations.ts');
+      const options = {
+        appDirectory,
+        configFilepath: 'gt.config.json',
+        defaultLocale: 'en',
+        locales: ['fr'],
+        translationsDir: 'src/_gt',
+      };
+      await setupViteSPA(options);
+      const custom = fs
+        .readFileSync(loaderPath, 'utf8')
+        .replace('./_gt/', importPath);
+      fs.writeFileSync(loaderPath, custom);
+
+      const result = await setupViteSPA({
+        ...options,
+        translationsDir: 'src/translations',
+        previousTranslationsDir: options.translationsDir,
+      });
+
+      expect(fs.readFileSync(loaderPath, 'utf8')).toBe(custom);
+      expect(result.manualAction).toContain('src/translations');
+    }
+  );
+
+  it('preserves a loader with unknown previous config', async () => {
+    const options = {
+      appDirectory,
+      configFilepath: 'gt.config.json',
+      defaultLocale: 'en',
+      locales: ['fr'],
+      translationsDir: 'src/_gt',
+    };
+    await setupViteSPA(options);
+    const loaderPath = path.join(appDirectory, 'src/loadTranslations.ts');
+    const original = fs.readFileSync(loaderPath, 'utf8');
+
+    const result = await setupViteSPA({
+      ...options,
+      translationsDir: 'src/new',
+    });
+
+    expect(fs.readFileSync(loaderPath, 'utf8')).toBe(original);
+    expect(result.manualAction).toContain('src/new');
   });
 
   it('does not overwrite an existing non-GT bootstrap', async () => {
