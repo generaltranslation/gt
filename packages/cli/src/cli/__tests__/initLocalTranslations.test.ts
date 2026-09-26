@@ -8,8 +8,19 @@ import { BaseCLI } from '../base.js';
 import { promptMultiSelect } from '../../console/logging.js';
 import { setupViteSPA } from '../../setup/setupViteSPA.js';
 
+vi.mock('../../auth/oauth.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../auth/oauth.js')>()),
+  hasLogin: vi.fn(async () => true),
+  login: vi.fn(async () => {
+    throw new Error('Unexpected OAuth login in loader test');
+  }),
+}));
+
 vi.mock('../../console/logging.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../console/logging.js')>()),
+  logErrorAndExit: vi.fn((message: string) => {
+    throw new Error(message);
+  }),
   promptConfirm: vi.fn(async () => false),
   promptSelect: vi.fn(async () => 'local'),
   promptText: vi.fn(async () => 'public/new'),
@@ -39,6 +50,7 @@ describe('init local translations', () => {
     originalCwd = process.cwd();
     appDirectory = fs.mkdtempSync(path.join(tmpdir(), 'gt-init-local-'));
     process.chdir(appDirectory);
+    vi.stubEnv('XDG_STATE_HOME', path.join(appDirectory, 'state'));
     fs.writeFileSync(
       'package.json',
       '{"name":"app","devDependencies":{"gt":"*"}}'
@@ -51,6 +63,7 @@ describe('init local translations', () => {
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     process.chdir(originalCwd);
     fs.rmSync(appDirectory, { recursive: true, force: true });
   });
