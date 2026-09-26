@@ -1567,6 +1567,7 @@ See https://www.npmjs.com/package/gt-vue`);
             defaultLocale: settings.defaultLocale,
             locales: resolvedLocales,
             translationsDir,
+            previousTranslationsDir: configuredTranslationsDir,
             create: false,
           }).catch((error: unknown) => {
             throw translationFilesError(error);
@@ -1581,21 +1582,22 @@ See https://www.npmjs.com/package/gt-vue`);
         isVite,
         runtimeSetup
       );
-      if (generatedLoader) {
-        const loader = await createLoadTranslationsFile(
-          cwd,
-          translationsDir,
-          resolvedLocales
-        ).catch((error: unknown) => {
-          throw translationFilesError(error);
-        });
-        if (loader === 'created' || loader === 'updated') {
-          session.step(`${loader} loadTranslations.js`);
-        }
-        if (loader === 'custom') reportLoaderUpdate('loadTranslations.js');
+      const loader = generatedLoader
+        ? await createLoadTranslationsFile(
+            cwd,
+            translationsDir,
+            resolvedLocales,
+            configuredTranslationsDir
+          ).catch((error: unknown) => {
+            throw translationFilesError(error);
+          })
+        : undefined;
+      if (loader === 'created' || loader === 'updated') {
+        session.step(`${loader} loadTranslations.js`);
       }
+      if (loader === 'custom') reportLoaderUpdate('loadTranslations.js');
       const guidance = this.getLocalTranslationGuidance({
-        generatedLoader,
+        generatedLoader: generatedLoader && loader !== 'custom',
         runtimeSetup,
         translationsDir,
       });
@@ -1618,6 +1620,7 @@ See https://www.npmjs.com/package/gt-vue`);
         defaultLocale: settings.defaultLocale,
         locales: resolvedLocales,
         translationsDir: storage === 'local' ? translationsDir : undefined,
+        previousTranslationsDir: configuredTranslationsDir,
       });
       if (result.manualAction) {
         session.humanActions.push(result.manualAction);

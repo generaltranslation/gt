@@ -970,7 +970,7 @@ describe('init and configure onboarding', () => {
       run('configure', '--json', '--defaults', '--no-dev-credentials', ...args);
 
     it('points the generated loader at a changed translations directory', async () => {
-      await configure('--locales', 'fr', '--translations-dir', 'old-tx');
+      await configure('--locales', 'fr', '--translations-dir', './old-tx');
       fs.mkdirSync(file('new-tx'));
       fs.writeFileSync(file('new-tx/fr.json'), '{"kept":"yes"}');
       stdoutEvents = [];
@@ -1079,19 +1079,30 @@ await import('./main');
         );
       });
 
-      it('configure points the generated loader at a changed directory', async () => {
-        await configure('--translations-dir', 'new-tx');
+      it.each(['configure', 'init'])(
+        '%s points the generated loader at a changed directory',
+        async (command) => {
+          await run(
+            command,
+            '--json',
+            '--defaults',
+            '--no-dev-credentials',
+            '--translations-dir',
+            'new-tx',
+            ...(command === 'init' ? ['--react-setup'] : [])
+          );
 
-        expect(viteLoader()).toContain('import(`../new-tx/${locale}.json`)');
-        expect(fs.existsSync(file('new-tx/fr.json'))).toBe(true);
-        expect(events().at(-1)).toMatchObject({
-          outcome: 'success',
-          completedSteps: [
-            'updated src/loadTranslations.ts',
-            'updated gt.config.json',
-          ],
-        });
-      });
+          expect(viteLoader()).toContain('import(`../new-tx/${locale}.json`)');
+          expect(fs.existsSync(file('new-tx/fr.json'))).toBe(true);
+          expect(events().at(-1)).toMatchObject({ outcome: 'success' });
+          if (command === 'configure') {
+            expect(events().at(-1)?.completedSteps).toEqual([
+              'updated src/loadTranslations.ts',
+              'updated gt.config.json',
+            ]);
+          }
+        }
+      );
 
       it('configure keeps the loader and config when the directory cannot be created', async () => {
         const loader = viteLoader();
@@ -1137,12 +1148,16 @@ await import('./main');
       });
 
       it.each([
-        ['configure', []],
-        ['init', ['--react-setup']],
-      ])(
-        '%s asks for a manual update of a custom loader',
-        async (command, args) => {
-          const custom = 'export default async () => ({ custom: true });\n';
+        ['configure', [], false],
+        ['init', ['--react-setup'], false],
+        ['configure', [], true],
+        ['init', ['--react-setup'], true],
+      ] as const)(
+        '%s %j asks for a manual update of a custom loader (static path: %s)',
+        async (command, args, staticPath) => {
+          const custom = staticPath
+            ? viteLoader().replace('../old-tx/', '../old-tx/brand/')
+            : 'export default async () => ({ custom: true });\n';
           fs.writeFileSync(file('src/loadTranslations.ts'), custom);
 
           await run(
