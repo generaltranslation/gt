@@ -3,7 +3,7 @@ import { renderCallbackPage } from './callbackPage.js';
 
 describe('callback page', () => {
   it('names the account on success and never asks to log in again', () => {
-    const page = renderCallbackPage({ ok: true, email: 'dev@example.com' });
+    const page = renderCallbackPage({ ok: true, account: 'dev@example.com' });
     expect(page).toContain('Signed in to the gt CLI');
     expect(page).toContain(
       'You can close this tab and return to your terminal.'
@@ -16,11 +16,11 @@ describe('callback page', () => {
     expect(page).not.toContain('npx gt login');
   });
 
-  it('leaves the note off when the account is unknown and escapes the email', () => {
+  it('leaves the note off when the account is unknown and escapes it', () => {
     expect(renderCallbackPage({ ok: true })).not.toContain('class="note"');
     const page = renderCallbackPage({
       ok: true,
-      email: '<b>x</b>@example.com',
+      account: '<b>x</b>@example.com',
     });
     expect(page).toContain('&lt;b&gt;x&lt;/b&gt;@example.com');
     expect(page).not.toContain('<b>x</b>');

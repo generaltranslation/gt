@@ -28,16 +28,16 @@ describe('loopback authorization server', () => {
   it('names the signed-in account when the callback describes it', async () => {
     const server = await startLoopbackServer();
     const pending = server.waitForCallback(
-      async (url) => ({ url, email: 'dev@example.com' }),
+      async (url) => ({ url, account: 'dev@example.com' }),
       5000,
-      { describe: (outcome) => ({ email: outcome.email }) }
+      { describe: (outcome) => ({ account: outcome.account }) }
     );
     const response = await fetch(`${server.redirectUri}?code=abc&state=xyz`);
     const page = await response.text();
     expect(page).toContain(
       'Signed in as <span class="ink">dev@example.com</span>.'
     );
-    expect((await pending).email).toBe('dev@example.com');
+    expect((await pending).account).toBe('dev@example.com');
   });
   it('shows a denied request as denied, without exposing callback errors', async () => {
     const server = await startLoopbackServer();

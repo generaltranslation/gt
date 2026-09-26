@@ -329,17 +329,18 @@ export async function login(options: LoginOptions = {}): Promise<OAuthTokens> {
           });
         const tokens = { ...parseTokens(result), resource };
         await writeOAuthTokens(tokens, authBaseUrl);
-        // The browser page names the account. Identity is best effort here:
+        // The browser page names the account: the email when the userinfo
+        // carries one, else the profile name. Identity is best effort here;
         // the login is already stored, so a failed lookup only leaves the
         // name off the page.
-        const email = await oidc
+        const account = await oidc
           .fetchUserInfo(config, tokens.accessToken, tokens.subject)
-          .then((user) => user.email)
+          .then((user) => user.email ?? user.name)
           .catch(() => undefined);
-        return { tokens, email };
+        return { tokens, account };
       },
       options.timeoutMs,
-      { describe: (outcome) => ({ email: outcome.email }) }
+      { describe: (outcome) => ({ account: outcome.account }) }
     );
     // Printing/launching may fail before we await the listener.
     callback.catch(() => undefined);
