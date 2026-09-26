@@ -14,17 +14,32 @@ describe('loopback authorization server', () => {
     const response = await fetch(callback);
     expect(response.status).toBe(200);
     expect(response.headers.get('cache-control')).toBe('no-store');
-    expect(response.headers.get('content-security-policy')).toContain(
-      "default-src 'none'"
+    expect(response.headers.get('content-security-policy')).toBe(
+      "default-src 'none'; style-src 'unsafe-inline'; img-src data:"
     );
     const page = await response.text();
-    expect(page).toContain('<h1>Successfully authenticated gt CLI</h1>');
+    expect(page).toContain('Signed in to the gt CLI');
     expect(page).toContain(
-      'You may now close this tab and return to the terminal.'
+      'You can close this tab and return to your terminal.'
     );
+    expect(page).not.toContain('class="note"');
     expect((await pending).href).toBe(callback);
   });
-  it('shows failure without exposing callback errors', async () => {
+  it('names the signed-in account when the callback describes it', async () => {
+    const server = await startLoopbackServer();
+    const pending = server.waitForCallback(
+      async (url) => ({ url, email: 'dev@example.com' }),
+      5000,
+      { describe: (outcome) => ({ email: outcome.email }) }
+    );
+    const response = await fetch(`${server.redirectUri}?code=abc&state=xyz`);
+    const page = await response.text();
+    expect(page).toContain(
+      'Signed in as <span class="ink">dev@example.com</span>.'
+    );
+    expect((await pending).email).toBe('dev@example.com');
+  });
+  it('shows a denied request as denied, without exposing callback errors', async () => {
     const server = await startLoopbackServer();
     const error = new Error('Sensitive callback details');
     const pending = server.waitForCallback(async (url) => {
@@ -37,11 +52,49 @@ describe('loopback authorization server', () => {
     );
     expect(response.status).toBe(200);
     const page = await response.text();
-    expect(page).toContain('<h1>Authentication failed</h1>');
-    expect(page).toContain('class="error"');
-    expect(page).not.toContain('Successfully authenticated');
+    expect(page).toContain('Request denied');
+    expect(page).toContain('class="glyph error"');
+    expect(page).not.toContain('Signed in to the gt CLI');
     expect(page).not.toContain(error.message);
     await rejected;
+  });
+  it('shows any other callback failure as a failed sign-in', async () => {
+    const server = await startLoopbackServer();
+    const error = new Error('Sensitive exchange details');
+    const pending = server.waitForCallback(async () => {
+      throw error;
+    }, 5000);
+    const rejected = expect(pending).rejects.toBe(error);
+    const page = await (
+      await fetch(`${server.redirectUri}?code=abc&state=xyz`)
+    ).text();
+    expect(page).toContain('Sign-in failed');
+    expect(page).toContain('npx gt login');
+    expect(page).not.toContain(error.message);
+    await rejected;
+  });
+  it('serves the same page to a repeated request for the same callback', async () => {
+    const server = await startLoopbackServer();
+    let release!: () => void;
+    const exchange = new Promise<void>((resolve) => (release = resolve));
+    const pending = server.waitForCallback(async (url) => {
+      await exchange;
+      return url;
+    }, 5000);
+    const callback = `${server.redirectUri}?code=abc&state=xyz`;
+    // A browser that aborts and repeats the navigation while the exchange
+    // runs, then a repeat with another code, which is not this login.
+    const first = fetch(callback);
+    const second = fetch(callback);
+    const other = fetch(`${server.redirectUri}?code=other&state=xyz`);
+    expect((await other).status).toBe(404);
+    release();
+    const pages = await Promise.all([first, second]);
+    expect(pages.map((r) => r.status)).toEqual([200, 200]);
+    for (const response of pages) {
+      expect(await response.text()).toContain('Signed in to the gt CLI');
+    }
+    expect((await pending).href).toBe(callback);
   });
   it('ignores unrelated paths, methods and absolute targets with another origin', async () => {
     const server = await startLoopbackServer();

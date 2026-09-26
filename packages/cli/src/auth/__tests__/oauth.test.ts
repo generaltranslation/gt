@@ -385,14 +385,21 @@ describe('discovery and browser authorization', () => {
       const html = await page;
       expect(html).toContain(
         outcome === 'success'
-          ? '<h1>Successfully authenticated gt CLI</h1>'
-          : '<h1>Authentication failed</h1>'
+          ? 'Signed in to the gt CLI'
+          : outcome === 'denied'
+            ? 'Request denied'
+            : 'Sign-in failed'
       );
-      expect(html).toContain(
-        'You may now close this tab and return to the terminal.'
-      );
-      if (outcome !== 'success') {
-        expect(html).not.toContain('Successfully authenticated');
+      if (outcome === 'success') {
+        expect(html).toContain(
+          'You can close this tab and return to your terminal.'
+        );
+        expect(html).toContain(
+          'Signed in as <span class="ink">dev@example.com</span>.'
+        );
+      } else {
+        expect(html).toContain('npx gt login');
+        expect(html).not.toContain('Signed in to the gt CLI');
         expect(html).not.toContain('Disk full');
       }
     }
@@ -430,10 +437,13 @@ describe('discovery and browser authorization', () => {
         )
       ).toString('base64url')
     ).toBe(authorize.searchParams.get('code_challenge'));
+    // The userinfo call only names the account on the browser page; the
+    // login is stored before it and does not depend on it.
     expect(fetcher.mock.calls.map(([url]) => String(url))).toEqual([
       `${authBaseUrl}/.well-known/openid-configuration`,
       `${authBaseUrl}/oauth2/token`,
       `${authBaseUrl}/jwks`,
+      `${authBaseUrl}/oauth2/userinfo`,
     ]);
     expect(
       fetcher.mock.calls.every(([, init]) => init?.redirect === 'manual')
