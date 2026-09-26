@@ -13,11 +13,11 @@ import { FIELD_IMAGE } from './callbackField.js';
 
 /** What the page says: a signed-in account, or why the login did not finish. */
 export type CallbackPageView =
-  | { ok: true; email?: string }
+  | { ok: true; account?: string }
   | { ok: false; reason: 'denied' | 'failed' };
 
 /** The part of a success view the login flow can add after the exchange. */
-export type CallbackPageDetails = { email?: string };
+export type CallbackPageDetails = { account?: string };
 
 const FIELD_MASK =
   'linear-gradient(90deg, rgba(0,0,0,0.14) 0%, rgba(0,0,0,0.22) 36%, rgba(0,0,0,0.55) 60%, #000 82%, #000 100%)';
@@ -161,8 +161,8 @@ function copy(view: CallbackPageView): {
       title: 'Signed in to the gt CLI',
       glyph: CHECK_CIRCLE,
       lede: 'You can close this tab and return to your terminal.',
-      note: view.email
-        ? `Signed in as <span class="ink">${escapeHtml(view.email)}</span>.`
+      note: view.account
+        ? `Signed in as <span class="ink">${escapeHtml(view.account)}</span>.`
         : '',
     };
   }
