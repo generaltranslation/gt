@@ -1044,6 +1044,13 @@ See https://www.npmjs.com/package/gt-vue`);
         ? 'src/gt.config.json'
         : 'gt.config.json');
     const existingConfig = loadConfig(configFilepath);
+    const previousOutput = (existingConfig.files as FilesOptions | undefined)
+      ?.gt?.output;
+    const previousTranslationsDir =
+      typeof previousOutput === 'string' &&
+      path.basename(previousOutput) === '[locale].json'
+        ? path.dirname(previousOutput)
+        : undefined;
     const { defaultLocale, locales } = await getDesiredLocales(existingConfig);
 
     const packageJson = await searchForPackageJson();
@@ -1158,15 +1165,25 @@ See https://www.npmjs.com/package/gt-vue`);
         isVite,
         runtimeSetup
       );
-      if (generatedLoader) {
-        await createLoadTranslationsFile(
-          process.cwd(),
-          finalTranslationsDir,
-          locales
-        );
+      const loader = generatedLoader
+        ? await createLoadTranslationsFile(
+            process.cwd(),
+            finalTranslationsDir,
+            locales,
+            previousTranslationsDir
+          )
+        : undefined;
+      if (loader === 'custom') {
+        const diagnostic = createDiagnosticMessage({
+          source: 'gt',
+          severity: 'Warning',
+          whatHappened: 'The existing translation loader was preserved',
+          fix: `Verify loadTranslations.js loads translations from ${finalTranslationsDir}`,
+        });
+        logger.warn(diagnostic);
       }
       const guidance = this.getLocalTranslationGuidance({
-        generatedLoader,
+        generatedLoader: generatedLoader && loader !== 'custom',
         runtimeSetup,
         translationsDir: finalTranslationsDir,
       });
@@ -1186,6 +1203,7 @@ See https://www.npmjs.com/package/gt-vue`);
         defaultLocale,
         locales,
         translationsDir: usingCDN ? undefined : finalTranslationsDir,
+        previousTranslationsDir,
       });
       if (result.manualAction) {
         logger.warn(

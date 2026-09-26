@@ -10,6 +10,7 @@ type SetupViteSPAOptions = {
   defaultLocale: string;
   locales: string[];
   translationsDir?: string;
+  previousTranslationsDir?: string;
 };
 
 const defaultBootstrapFilename = 'gt-entry.ts';
@@ -31,12 +32,6 @@ function getLoaderContent(translationsImport: string): string {
   return translations.default;
 }
 `;
-}
-
-function isGeneratedLoader(content: string): boolean {
-  return /^export default async function loadTranslations\(locale: string\) \{\r?\n  const translations = await import\(`[^`$]+\/\$\{locale\}\.json`\);\r?\n  return translations\.default;\r?\n\}\r?\n?$/.test(
-    content
-  );
 }
 
 /**
@@ -200,14 +195,16 @@ export type ViteLoaderResult = 'written' | 'custom' | 'missing';
 
 /**
  * Points the generated src/loadTranslations.ts at translationsDir and adds
- * empty locale stubs. A custom loader is left unchanged; an absent one is
- * only created with `create`.
+ * empty locale stubs. Only a template matching the previous config is
+ * refreshed; other existing loaders are left unchanged. An absent loader
+ * is only created with `create`.
  */
 export async function writeViteLoader({
   appDirectory,
   defaultLocale,
   locales,
   translationsDir,
+  previousTranslationsDir,
   create,
 }: Omit<SetupViteSPAOptions, 'configFilepath' | 'translationsDir'> & {
   translationsDir: string;
@@ -220,7 +217,23 @@ export async function writeViteLoader({
     ? await fs.promises.readFile(loaderPath, 'utf8')
     : undefined;
   if (existingLoader === undefined && !create) return 'missing';
-  const custom = !!existingLoader && !isGeneratedLoader(existingLoader);
+  const content = getLoaderContent(
+    toRelativeImport(sourceDirectory, translationsPath)
+  );
+  const previousContent =
+    previousTranslationsDir === undefined
+      ? undefined
+      : getLoaderContent(
+          toRelativeImport(
+            sourceDirectory,
+            path.resolve(appDirectory, previousTranslationsDir)
+          )
+        );
+  const normalizedLoader = existingLoader?.replace(/\r\n/g, '\n').trimEnd();
+  const custom =
+    existingLoader !== undefined &&
+    normalizedLoader !== content.trimEnd() &&
+    normalizedLoader !== previousContent?.trimEnd();
 
   // Stubs first, so a directory failure leaves no loader pointing at it.
   await fs.promises.mkdir(translationsPath, { recursive: true });
@@ -232,10 +245,7 @@ export async function writeViteLoader({
     }
   }
   if (custom) return 'custom';
-  await fs.promises.writeFile(
-    loaderPath,
-    getLoaderContent(toRelativeImport(sourceDirectory, translationsPath))
-  );
+  await fs.promises.writeFile(loaderPath, content);
   return 'written';
 }
 
@@ -295,6 +305,7 @@ export async function setupViteSPA({
   defaultLocale,
   locales,
   translationsDir,
+  previousTranslationsDir,
 }: SetupViteSPAOptions): Promise<{
   loader?: ViteLoaderResult;
   manualAction?: string;
@@ -331,6 +342,7 @@ export async function setupViteSPA({
       defaultLocale,
       locales,
       translationsDir,
+      previousTranslationsDir,
       create: true,
     });
     const loaderExport =
@@ -379,5 +391,10 @@ await import('${entryImport}');
   }
 
   logger.success('Configured initializeGTSPA for this Vite application.');
-  return { loader };
+  return {
+    loader,
+    ...(loader === 'custom' && {
+      manualAction: `Verify your preserved custom src/loadTranslations.ts loads translations from ${translationsDir}`,
+    }),
+  };
 }
