@@ -177,6 +177,21 @@ describe('logging prompts', () => {
     await expect(name).resolves.toBe('my-app');
   });
 
+  it('refuses to prompt once prompts are disabled', async () => {
+    const { setPromptsDisabled, promptConfirm, promptLocale } =
+      await import('../logging.js');
+    setPromptsDisabled(true);
+
+    await expect(promptConfirm({ message: 'Continue?' })).rejects.toThrow(
+      'prompts are disabled'
+    );
+    await expect(promptLocale({ message: 'Default?' })).rejects.toThrow(
+      'prompts are disabled'
+    );
+    expect(clack.confirm).not.toHaveBeenCalled();
+    expect(clack.autocomplete).not.toHaveBeenCalled();
+  });
+
   it('labels Vue and React inline catalogs without conflating frameworks', async () => {
     const { logCollectedFiles } = await import('../logging.js');
 

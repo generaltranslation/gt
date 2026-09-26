@@ -24,6 +24,7 @@ vi.mock('../../console/logging.js', async (importOriginal) => {
 });
 
 describe('workspace root setup guard', () => {
+  const originalCwd = process.cwd();
   let workspaceRoot: string;
   let packageJsonContents: string;
 
@@ -43,11 +44,13 @@ describe('workspace root setup guard', () => {
       path.join(workspaceRoot, 'pnpm-workspace.yaml'),
       "packages:\n  - 'apps/*'\n"
     );
+    process.chdir(workspaceRoot);
     vi.spyOn(process, 'cwd').mockReturnValue(workspaceRoot);
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    process.chdir(originalCwd);
     rmSync(workspaceRoot, { recursive: true, force: true });
   });
 
@@ -74,6 +77,64 @@ describe('workspace root setup guard', () => {
       expect(
         readFileSync(path.join(workspaceRoot, 'package.json'), 'utf8')
       ).toBe(packageJsonContents);
+    }
+  );
+
+  it.each([
+    [
+      'a pnpm list with child packages',
+      "packages:\n  - '.'\n  - 'apps/*'\n",
+      {},
+    ],
+    ['package.json workspaces', undefined, { workspaces: ['packages/*'] }],
+    [
+      'Yarn workspaces.packages',
+      undefined,
+      { workspaces: { packages: ['packages/*'] } },
+    ],
+    ['an unreadable pnpm-workspace.yaml', 'packages: [\n', {}],
+  ])('stops configure at a monorepo root with %s', async (_case, pnpm, pkg) => {
+    if (pnpm === undefined)
+      rmSync(path.join(workspaceRoot, 'pnpm-workspace.yaml'));
+    else writeFileSync(path.join(workspaceRoot, 'pnpm-workspace.yaml'), pnpm);
+    writeFileSync(
+      path.join(workspaceRoot, 'package.json'),
+      JSON.stringify({ name: 'example-monorepo', ...pkg })
+    );
+
+    const program = new Command();
+    new BaseCLI(program, 'base');
+
+    await expect(
+      program.parseAsync(['configure', '--no-interactive'], { from: 'user' })
+    ).rejects.toThrow(
+      'The setup wizard cannot run from a monorepo workspace root'
+    );
+  });
+
+  it.each([
+    [
+      'lists only the app itself',
+      "packages:\n  - '.'\n\nenableGlobalVirtualStore: true\nhoist: false\n",
+    ],
+    ['only holds settings', 'enableGlobalVirtualStore: true\n'],
+  ])(
+    'runs setup in a single app whose pnpm-workspace.yaml %s',
+    async (_case, pnpm) => {
+      writeFileSync(path.join(workspaceRoot, 'pnpm-workspace.yaml'), pnpm);
+
+      for (const command of ['init', 'configure']) {
+        const program = new Command();
+        new BaseCLI(program, 'base');
+        // Past the guard, the noninteractive run stops on its missing
+        // answers before changing any file.
+        await expect(
+          program.parseAsync([command, '--no-interactive'], { from: 'user' })
+        ).rejects.toThrow('Setup needs these options');
+      }
+      expect(existsSync(path.join(workspaceRoot, 'gt.config.json'))).toBe(
+        false
+      );
     }
   );
 

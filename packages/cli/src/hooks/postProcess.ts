@@ -3,7 +3,7 @@ import { spawn } from 'node:child_process';
 import chalk from 'chalk';
 import { logger } from '../console/logger.js';
 
-type Formatter = 'prettier' | 'biome' | 'eslint';
+export type Formatter = 'prettier' | 'biome' | 'eslint';
 
 export async function detectFormatter(): Promise<Formatter | null> {
   // Try Prettier
@@ -88,8 +88,9 @@ export async function formatFiles(
             ...filesUpdated.map((file) => file),
           ];
 
+          // Formatter output is diagnostics; keep stdout free for commands' data.
           const child = spawn('npx', args, {
-            stdio: ['ignore', 'inherit', 'inherit'],
+            stdio: ['ignore', process.stderr, 'inherit'],
           });
 
           child.on('error', (error: Error) => {

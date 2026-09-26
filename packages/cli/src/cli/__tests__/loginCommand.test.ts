@@ -61,7 +61,7 @@ describe('login device prompt', () => {
       expect(logger.message).toHaveBeenCalledWith(
         expect.stringContaining(`\n${chalk.cyan(verificationUriComplete)}\n`)
       );
-      expect(logger.message).toHaveBeenCalledWith(
+      expect(logger.message).not.toHaveBeenCalledWith(
         expect.stringContaining('confirm the code')
       );
       expect(logger.message).not.toHaveBeenCalledWith(
