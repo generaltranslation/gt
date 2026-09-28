@@ -291,16 +291,8 @@ const VITE_LOADER_FILE = 'src/loadTranslations.ts';
 const INIT_SOURCE_HELP =
   "Space-separated list of glob patterns containing the app's source code, by default 'src/**/*.{js,jsx,ts,tsx}' 'app/**/*.{js,jsx,ts,tsx}' 'pages/**/*.{js,jsx,ts,tsx}' 'components/**/*.{js,jsx,ts,tsx}'";
 
-function setupConfigPath(
-  options: Pick<ConfigureOptions, 'config'>,
-  isVite: boolean
-): string {
-  return (
-    options.config ||
-    (!isVite && fs.existsSync('src/gt.config.json')
-      ? 'src/gt.config.json'
-      : 'gt.config.json')
-  );
+function setupConfigPath(options: Pick<ConfigureOptions, 'config'>): string {
+  return options.config || 'gt.config.json';
 }
 
 function getConfiguredFramework(
@@ -995,8 +987,7 @@ export class BaseCLI {
           '--framework applies only to projects detected as React applications'
         );
       }
-      // One config file for the whole run, even if the framework changes.
-      const configFilepath = setupConfigPath(options, detected.name === 'vite');
+      const configFilepath = setupConfigPath(options);
       const configured = getConfiguredFramework(
         readSetupConfig(configFilepath)
       );
@@ -1107,8 +1098,7 @@ export class BaseCLI {
       // Configure only offers the defaults when asked with --defaults.
       session.defaults = options.defaults ?? false;
       const detected = await detectFramework();
-      // One config file for the whole run, even if the framework changes.
-      const configFilepath = setupConfigPath(options, detected.name === 'vite');
+      const configFilepath = setupConfigPath(options);
       // Detection only picks env names here; it is not saved.
       const framework =
         getConfiguredFramework(readSetupConfig(configFilepath)) ??

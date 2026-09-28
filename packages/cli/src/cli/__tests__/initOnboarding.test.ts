@@ -1383,54 +1383,5 @@ await import('./main');
       // The setter returns the mode the runs left behind.
       expect(logging.setPromptsDisabled(false)).toBe(false);
     });
-
-    it.each([
-      [
-        'init',
-        { name: 'next-pages', type: 'react' } as const,
-        ['--no-react-setup', '--framework', 'vite'],
-        {},
-      ],
-      [
-        'configure',
-        { name: 'next-pages', type: 'react' } as const,
-        [],
-        { framework: 'vite' },
-      ],
-    ])(
-      '%s keeps using src/gt.config.json across the Vite boundary',
-      async (command, detected, args, existing) => {
-        vi.mocked(detectFramework).mockResolvedValue(detected);
-        fs.mkdirSync(file('src'));
-        fs.writeFileSync(
-          file('src/gt.config.json'),
-          JSON.stringify({
-            defaultLocale: 'de',
-            custom: { keep: 1 },
-            ...existing,
-          })
-        );
-
-        await run(
-          command,
-          '--json',
-          '--defaults',
-          '--locales',
-          'ja',
-          '--no-dev-credentials',
-          ...args
-        );
-
-        expect(fs.existsSync(file('gt.config.json'))).toBe(false);
-        expect(
-          JSON.parse(fs.readFileSync(file('src/gt.config.json'), 'utf8'))
-        ).toMatchObject({
-          defaultLocale: 'de',
-          locales: ['ja'],
-          custom: { keep: 1 },
-          framework: 'vite',
-        });
-      }
-    );
   });
 });
