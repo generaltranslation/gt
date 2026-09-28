@@ -47,33 +47,34 @@ export async function resolveReactSetup(
   const setupApp = await session.answer('--react-setup', {
     explicit: options.reactSetup,
     recommended: true,
-    ask: () =>
-      promptConfirm({
+    ask: async () => {
+      const answer = await promptConfirm({
         message:
           detected.name === 'vite'
             ? `Would you like to install ${library} and configure initializeGTSPA? See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`
             : `Would you like to install ${library} and add the GTProvider? See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`,
         defaultValue: true,
-      }),
-  });
-  if (!setupApp) return undefined;
-
-  // A prompted opt-in gets a last warning; flags and defaults already chose.
-  if (!session.defaults && options.reactSetup === undefined) {
-    const answer = await promptConfirm({
-      message: chalk.yellow(
-        `This wizard will configure your ${getFrameworkDisplayName(detected)} project for internationalization with GT. If your project is already using a different i18n library, this wizard may cause issues.
+      });
+      // A prompted opt-in gets a last warning; flags and defaults already chose.
+      if (
+        answer &&
+        !(await promptConfirm({
+          message: chalk.yellow(
+            `This wizard will configure your ${getFrameworkDisplayName(detected)} project for internationalization with GT. If your project is already using a different i18n library, this wizard may cause issues.
 
 Make sure you have committed or stashed any changes. Do you want to continue?`
-      ),
-      defaultValue: true,
-      cancelMessage: cancelledMessage,
-    });
-    if (!answer) {
-      logger.info(cancelledMessage);
-      return exitSync(0);
-    }
-  }
+          ),
+          defaultValue: true,
+          cancelMessage: cancelledMessage,
+        }))
+      ) {
+        logger.info(cancelledMessage);
+        return exitSync(0);
+      }
+      return answer;
+    },
+  });
+  if (!setupApp) return undefined;
 
   const framework = await session.answer<SupportedReactFrameworks | 'other'>(
     '--framework',

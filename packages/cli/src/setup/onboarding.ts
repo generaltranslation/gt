@@ -8,7 +8,6 @@ import findFilepath from '../fs/findFilepath.js';
 import { logger } from '../console/logger.js';
 import {
   displayHeader,
-  setPromptsDisabled,
   getLastExitError,
   logErrorAndExit,
   stripAnsi,
@@ -257,8 +256,8 @@ export class OnboardingSession {
 
   /**
    * Explicit flag, then existing config, then the recommended value when
-   * defaults were accepted, then a prompt. Noninteractive runs record the
-   * option as missing instead of prompting.
+   * defaults were accepted, then a prompt. Noninteractive runs use the
+   * fallback of an optional question, or record the option as missing.
    */
   async answer<T>(
     option: string,
@@ -266,11 +265,13 @@ export class OnboardingSession {
       explicit,
       configured,
       recommended,
+      fallback,
       ask,
     }: {
       explicit?: T;
       configured?: T;
       recommended?: T;
+      fallback?: T;
       ask: () => Promise<T>;
     }
   ): Promise<T | undefined> {
@@ -278,6 +279,7 @@ export class OnboardingSession {
     if (configured !== undefined) return configured;
     if (this.defaults && recommended !== undefined) return recommended;
     if (this.interactive) return ask();
+    if (fallback !== undefined) return fallback;
     this.require(option);
     return undefined;
   }
@@ -362,7 +364,6 @@ export async function runOnboarding(
   const session = new OnboardingSession(command, options);
   if (session.json) logger.setConsoleOutput('stderr');
   // Per-run modes; console routing is reset per command by BaseCLI.
-  const promptsWereDisabled = setPromptsDisabled(!session.interactive);
   const progressWasAnimated = logger.setAnimatedProgress(session.interactive);
   const reportExit = (code: number) => session.reportUnexpectedExit(code);
   process.once('exit', reportExit);
@@ -403,7 +404,6 @@ export async function runOnboarding(
     return logErrorAndExit(message);
   } finally {
     process.removeListener('exit', reportExit);
-    setPromptsDisabled(promptsWereDisabled);
     logger.setAnimatedProgress(progressWasAnimated);
   }
 }

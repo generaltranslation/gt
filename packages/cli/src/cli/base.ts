@@ -867,14 +867,17 @@ export class BaseCLI {
         ...reactDetected,
         name: options.framework ?? configuredReact ?? reactDetected.name,
       };
+      // Without --defaults, a noninteractive run uses no defaults.
       session.defaults =
-        options.defaults ??
-        (session.interactive
-          ? await promptConfirm({
+        (await session.answer('--defaults', {
+          explicit: options.defaults,
+          fallback: false,
+          ask: () =>
+            promptConfirm({
               message: `Would you like to use the recommended General Translation defaults? ${chalk.dim(`(${describeDefaults(shownFramework)})`)}`,
               defaultValue: true,
-            })
-          : false);
+            }),
+        })) === true;
 
       const reactSetup = reactDetected
         ? await resolveReactSetup(

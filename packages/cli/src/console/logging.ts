@@ -22,31 +22,6 @@ import {
   type InlineLibrary,
 } from '../types/libraries.js';
 
-let promptsDisabled = false;
-
-/**
- * Noninteractive commands disable prompts so a stray question fails instead
- * of waiting. Returns the previous mode so a run can restore it.
- */
-export function setPromptsDisabled(disabled: boolean): boolean {
-  const previous = promptsDisabled;
-  promptsDisabled = disabled;
-  return previous;
-}
-
-function assertPromptAllowed(message: string): void {
-  if (!promptsDisabled) return;
-  throw new Error(
-    createDiagnosticMessage({
-      source: 'gt',
-      severity: 'Error',
-      whatHappened: 'A question needs an answer, but prompts are disabled',
-      details: stripAnsi(message).split('\n')[0],
-      fix: 'Pass the matching option (see --help) or rerun in an interactive terminal',
-    })
-  );
-}
-
 function exitIfCancelled<T>(
   result: T | symbol,
   message = 'Operation cancelled'
@@ -164,7 +139,6 @@ export async function promptText({
   defaultValue?: string;
   validate?: (value: string) => boolean | string;
 }) {
-  assertPromptAllowed(message);
   const result = await text({
     message,
     placeholder: defaultValue,
@@ -260,7 +234,6 @@ export async function promptLocale({
   defaultValue?: string;
   customMapping?: CustomMapping;
 }) {
-  assertPromptAllowed(message);
   const result = await autocomplete<string>({
     message,
     placeholder: 'Type to search locales',
@@ -285,7 +258,6 @@ export async function promptLocaleList({
   required?: boolean;
   customMapping?: CustomMapping;
 }) {
-  assertPromptAllowed(message);
   const result = await autocompleteMultiselect<string>({
     message,
     placeholder: 'Type to search, Tab or Space to select',
@@ -322,7 +294,6 @@ export async function promptSelect<T>({
   options: Array<{ value: T; label: string; hint?: string }>;
   defaultValue?: T;
 }) {
-  assertPromptAllowed(message);
   const result = await select({
     message,
     options: options as Option<T>[],
@@ -340,7 +311,6 @@ export async function promptMultiSelect<T extends string>({
   options: Array<{ value: T; label: string; hint?: string }>;
   required?: boolean;
 }) {
-  assertPromptAllowed(message);
   const result = await multiselect({
     message,
     options: options as Option<T>[],
@@ -358,7 +328,6 @@ export async function promptConfirm({
   defaultValue?: boolean;
   cancelMessage?: string;
 }) {
-  assertPromptAllowed(message);
   const result = await confirm({
     message,
     initialValue: defaultValue,

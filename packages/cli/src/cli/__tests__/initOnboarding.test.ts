@@ -70,6 +70,9 @@ import { logger } from '../../console/logger.js';
 import * as logging from '../../console/logging.js';
 import { createLoadTranslationsFile } from '../../fs/createLoadTranslationsFile.js';
 import { detectFramework } from '../../setup/detectFramework.js';
+import { resolveDevelopmentProject } from '../../setup/developmentCredentials.js';
+import { OnboardingSession } from '../../setup/onboarding.js';
+import type { Settings } from '../../types/index.js';
 import { api } from '../../utils/api.js';
 import { installPackage } from '../../utils/installPackage.js';
 import { BaseCLI } from '../base.js';
@@ -243,6 +246,7 @@ describe('init and configure onboarding', () => {
 
   it.each([
     ['with --no-interactive in a terminal', true, ['--no-interactive']],
+    ['with --json in a terminal', true, ['--json']],
     ['without a terminal', false, []],
   ])(
     'never prompts %s and lists missing options before any change',
@@ -1372,16 +1376,19 @@ await import('./main');
       );
     });
 
-    it('restores the prompt mode after a noninteractive run', async () => {
-      logging.setPromptsDisabled(false);
+    it('lists a missing project instead of asking under --json in a terminal', async () => {
+      for (const accountProjects of [[], projects]) {
+        vi.mocked(api.listProjects).mockResolvedValue(accountProjects);
+        const session = new OnboardingSession('init', { json: true });
 
-      await configure('--locales', 'fr');
-      await expect(run('configure', '--no-interactive')).rejects.toThrow(
-        'Setup needs these options'
-      );
-
-      // The setter returns the mode the runs left behind.
-      expect(logging.setPromptsDisabled(false)).toBe(false);
+        await expect(
+          resolveDevelopmentProject(session, {} as Settings, {})
+        ).resolves.toBeUndefined();
+        expect(() => session.assertResolved()).toThrow(
+          'Setup needs these options: --project-id or --create-project'
+        );
+      }
+      for (const prompt of prompts) expect(prompt).not.toHaveBeenCalled();
     });
   });
 });

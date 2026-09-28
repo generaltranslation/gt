@@ -160,24 +160,36 @@ export async function resolveDevelopmentProject(
   const projects = await api.listProjects();
   if (projects.length === 0) {
     // Creating a project is its own choice, separate from creating a key.
-    const create = await promptConfirm({
-      message: 'No projects found for your account. Create a new project?',
-      defaultValue: true,
+    const create = await session.answer('--project-id or --create-project', {
+      ask: () =>
+        promptConfirm({
+          message: 'No projects found for your account. Create a new project?',
+          defaultValue: true,
+        }),
     });
-    if (!create) throw new OnboardingError(noProjectChosenError);
-    return resolveNewProject(session, settings, options, cwd);
+    if (create === false) throw new OnboardingError(noProjectChosenError);
+    return create
+      ? resolveNewProject(session, settings, options, cwd)
+      : undefined;
   }
-  const choice = await promptSelect<ProjectChoice | null>({
-    message: 'Which project should this app use?',
-    options: [
-      ...projects.map((project) => ({
-        value: project,
-        label: project.name,
-        hint: project.orgName,
-      })),
-      { value: null, label: 'Create a new project' },
-    ],
-  });
+  const choice = await session.answer<ProjectChoice | null>(
+    '--project-id or --create-project',
+    {
+      ask: () =>
+        promptSelect<ProjectChoice | null>({
+          message: 'Which project should this app use?',
+          options: [
+            ...projects.map((project) => ({
+              value: project,
+              label: project.name,
+              hint: project.orgName,
+            })),
+            { value: null, label: 'Create a new project' },
+          ],
+        }),
+    }
+  );
+  if (choice === undefined) return undefined;
   return choice
     ? { id: choice.id }
     : resolveNewProject(session, settings, options, cwd);
