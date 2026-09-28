@@ -4,7 +4,7 @@ This project is using [General Translation](https://generaltranslation.com/docs/
 
 ## Configuration
 
-The General Translation configuration file is called `gt.config.json`. It is usually located in the root or src directory of a project.
+The General Translation configuration file is called `gt.config.json`. It is located in the root of a project; pass `--config` to use a different path.
 
 ```json
 {
