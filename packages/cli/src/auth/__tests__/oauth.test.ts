@@ -8,6 +8,8 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import * as fs from 'node:fs/promises';
+import { createServer } from 'node:http';
+import type { AddressInfo, Socket } from 'node:net';
 import * as os from 'node:os';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -118,7 +120,7 @@ function provider(
     token?: (init?: RequestInit) => Promise<Response>;
     device?: () => Promise<Response>;
     jwks?: (init?: RequestInit) => Promise<Response>;
-    userinfo?: () => Promise<Response>;
+    userinfo?: (init?: RequestInit) => Promise<Response>;
     user?: string;
   } = {}
 ) {
@@ -143,7 +145,7 @@ function provider(
       return new Response(null, { status: 200 });
     if (url === `${issuer}/oauth2/userinfo`)
       return options.userinfo
-        ? options.userinfo()
+        ? options.userinfo(init)
         : json({
             sub: options.user ?? 'user-1',
             name: 'Dev',
@@ -453,9 +455,55 @@ describe('discovery and browser authorization', () => {
       fetcher.mock.calls.every(([, init]) => init?.redirect === 'manual')
     ).toBe(true);
   });
+  it('cancels a stalled userinfo request when the display budget expires', async () => {
+    // Real pending I/O: a server that accepts the request and never answers.
+    const stalled = createServer(() => {});
+    await new Promise<void>((resolve) =>
+      stalled.listen(0, '127.0.0.1', resolve)
+    );
+    const { port } = stalled.address() as AddressInfo;
+    const sockets = new Set<Socket>();
+    stalled.on('connection', (socket) => {
+      sockets.add(socket);
+      socket.on('close', () => sockets.delete(socket));
+    });
+    let requestSignal: AbortSignal | null | undefined;
+    try {
+      let page!: Promise<string>;
+      const started = Date.now();
+      const result = await browserLogin({
+        fetch: provider({
+          userinfo: (init) => {
+            requestSignal = init?.signal;
+            return networkFetch(`http://127.0.0.1:${port}/userinfo`, {
+              signal: init?.signal,
+            });
+          },
+        }),
+        openBrowser: (url) => {
+          page = callback(url);
+          return page;
+        },
+      });
+      expect(result.subject).toBe('user-1');
+      expect(await readOAuthTokens(authBaseUrl)).toEqual(result);
+      expect(Date.now() - started).toBeLessThan(
+        ACCOUNT_LOOKUP_TIMEOUT_MS + 2000
+      );
+      const html = await page;
+      expect(html).toContain('Signed in to the gt CLI');
+      expect(html).not.toContain('class="note"');
+      // The budget aborted the request and its connection is gone, so no
+      // socket keeps the process alive until the library's own timeout.
+      expect(requestSignal?.aborted).toBe(true);
+      await vi.waitFor(() => expect(sockets.size).toBe(0), { timeout: 2000 });
+    } finally {
+      for (const socket of sockets) socket.destroy();
+      await new Promise<void>((resolve) => stalled.close(() => resolve()));
+    }
+  }, 10_000);
   it.each([
     ['a malformed email', async () => json({ sub: 'user-1', email: {} })],
-    ['a stalled userinfo endpoint', () => new Promise<Response>(() => {})],
     ['a failing userinfo endpoint', async () => json({ error: 'nope' }, 500)],
   ])(
     'keeps the stored login and shows success without the note for %s',
@@ -471,7 +519,6 @@ describe('discovery and browser authorization', () => {
       });
       expect(result.subject).toBe('user-1');
       expect(await readOAuthTokens(authBaseUrl)).toEqual(result);
-      // Well inside openid-client's 30 second request timeout.
       expect(Date.now() - started).toBeLessThan(
         ACCOUNT_LOOKUP_TIMEOUT_MS + 2000
       );

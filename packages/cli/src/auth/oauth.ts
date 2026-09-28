@@ -286,16 +286,23 @@ export const ACCOUNT_LOOKUP_TIMEOUT_MS = 3000;
 /**
  * The email, else the profile name, from the userinfo endpoint, within the
  * lookup budget; undefined when the endpoint fails, stalls, or returns
- * claims that are not strings. Never throws.
+ * claims that are not strings. Never throws. When the budget expires the
+ * request itself is aborted through `cancel`, which the configuration's
+ * fetch honors, so a stalled endpoint holds no socket open after the page
+ * has been served and the command can exit.
  */
 async function lookupAccountName(
   config: oidc.Configuration,
   accessToken: string,
-  subject: string
+  subject: string,
+  cancel: AbortController
 ): Promise<string | undefined> {
   let timer: NodeJS.Timeout | undefined;
   const budget = new Promise<undefined>((resolve) => {
-    timer = setTimeout(() => resolve(undefined), ACCOUNT_LOOKUP_TIMEOUT_MS);
+    timer = setTimeout(() => {
+      cancel.abort();
+      resolve(undefined);
+    }, ACCOUNT_LOOKUP_TIMEOUT_MS);
   });
   const lookup = oidc
     .fetchUserInfo(config, accessToken, subject)
@@ -326,11 +333,15 @@ export async function login(options: LoginOptions = {}): Promise<OAuthTokens> {
   }
   const authBaseUrl = options.authBaseUrl ?? getAuthBaseUrl();
   const resource = loginResource(options);
-  const config = await configuration({ ...options, authBaseUrl }).catch(
-    (error: unknown) => {
-      throw oauthError(error, 'Could not discover the authorization server');
-    }
-  );
+  // Fired only by the account lookup's budget, after the exchange has
+  // stored the login; nothing else is in flight on this configuration then.
+  const cancelLookup = new AbortController();
+  const config = await configuration(
+    { ...options, authBaseUrl },
+    cancelLookup.signal
+  ).catch((error: unknown) => {
+    throw oauthError(error, 'Could not discover the authorization server');
+  });
   const loopback = await startLoopbackServer().catch(() => undefined);
   if (!loopback) return loginWithDeviceCode(options);
   try {
@@ -370,7 +381,8 @@ export async function login(options: LoginOptions = {}): Promise<OAuthTokens> {
         const account = await lookupAccountName(
           config,
           tokens.accessToken,
-          tokens.subject
+          tokens.subject,
+          cancelLookup
         );
         return { tokens, account };
       },
