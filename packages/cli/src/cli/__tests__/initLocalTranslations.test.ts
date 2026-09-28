@@ -59,7 +59,12 @@ describe('init local translations', () => {
       'gt.config.json',
       JSON.stringify({ files: { gt: { output: 'public/old/[locale].json' } } })
     );
-    await createLoadTranslationsFile(appDirectory, 'public/old', ['fr']);
+    await createLoadTranslationsFile({
+      appDirectory,
+      translationsDir: 'public/old',
+      defaultLocale: 'en',
+      locales: ['fr'],
+    });
   });
 
   afterEach(() => {
@@ -90,7 +95,12 @@ describe('init local translations', () => {
         });
       } else {
         fs.unlinkSync(loaderPath);
-        await createLoadTranslationsFile(appDirectory, './public/old', ['fr']);
+        await createLoadTranslationsFile({
+          appDirectory,
+          translationsDir: './public/old',
+          defaultLocale: 'en',
+          locales: ['fr'],
+        });
       }
       vi.mocked(promptMultiSelect).mockResolvedValueOnce([]);
 

@@ -1166,12 +1166,13 @@ See https://www.npmjs.com/package/gt-vue`);
         runtimeSetup
       );
       const loader = generatedLoader
-        ? await createLoadTranslationsFile(
-            process.cwd(),
-            finalTranslationsDir,
+        ? await createLoadTranslationsFile({
+            appDirectory: process.cwd(),
+            translationsDir: finalTranslationsDir,
+            defaultLocale,
             locales,
-            previousTranslationsDir
-          )
+            previousTranslationsDir,
+          })
         : undefined;
       if (loader === 'custom') {
         const diagnostic = createDiagnosticMessage({
