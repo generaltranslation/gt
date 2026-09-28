@@ -69,8 +69,8 @@ export async function createLoadTranslationsFile(
   );
   const filePath = path.join(loadTranslationsDir, 'loadTranslations.js');
   const content = getLoaderContent(translationsDir, publicPath);
-  // Config paths lose a leading ./ through path.join, but the generated
-  // comment may retain it. Both spellings must describe the same old path.
+  // Config paths lose leading ./ and trailing / through path.join, but
+  // legacy generated comments retain them. Keep the import and body exact.
   const previousContents =
     previousTranslationsDir === undefined
       ? []
@@ -79,17 +79,19 @@ export async function createLoadTranslationsFile(
           ...(!path.isAbsolute(previousTranslationsDir)
             ? [`./${previousTranslationsDir}`]
             : []),
-        ].map((directory) =>
-          getLoaderContent(
-            directory,
-            toRelativeImportPath(
-              path.relative(
-                loadTranslationsDir,
-                path.resolve(appDirectory, previousTranslationsDir)
+        ]
+          .flatMap((directory) => [directory, `${directory}/`])
+          .map((directory) =>
+            getLoaderContent(
+              directory,
+              toRelativeImportPath(
+                path.relative(
+                  loadTranslationsDir,
+                  path.resolve(appDirectory, previousTranslationsDir)
+                )
               )
             )
-          )
-        );
+          );
 
   const existing = fs.existsSync(filePath)
     ? await fs.promises.readFile(filePath, 'utf8')

@@ -153,6 +153,39 @@ describe('createLoadTranslationsFile', () => {
     expect(fs.readFileSync(loaderPath, 'utf8')).toBe(loader);
   });
 
+  it.each([
+    ['public/old/', 'public/old'],
+    ['./public/old/', 'public/old'],
+    ['public/old/', 'public/new'],
+    ['./public/old/', 'public/new'],
+  ])(
+    'recognizes legacy directory spelling %s when rerunning with %s',
+    async (original, directory) => {
+      await createLoadTranslationsFile(tmpDir, original, ['fr']);
+      const translatedPath = path.join(tmpDir, 'public/old/fr.json');
+      fs.writeFileSync(translatedPath, '{"hello":"bonjour"}');
+
+      await expect(
+        createLoadTranslationsFile(
+          tmpDir,
+          directory,
+          ['fr', 'de'],
+          'public/old'
+        )
+      ).resolves.toBe('updated');
+
+      expect(
+        fs.readFileSync(path.join(tmpDir, directory, 'de.json'), 'utf8')
+      ).toBe('{}');
+      expect(fs.readFileSync(translatedPath, 'utf8')).toBe(
+        '{"hello":"bonjour"}'
+      );
+      expect(
+        fs.readFileSync(path.join(tmpDir, 'loadTranslations.js'), 'utf8')
+      ).toContain(`import(\`./${directory}/\${locale}.json\`)`);
+    }
+  );
+
   it('does not overwrite existing loadTranslations.js', async () => {
     fs.mkdirSync(path.join(tmpDir, 'src'), { recursive: true });
     const filePath = path.join(tmpDir, 'src', 'loadTranslations.js');
