@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.22.4
+
+### Patch Changes
+
+- [#2347](https://github.com/generaltranslation/gt/pull/2347) [`f3f7051`](https://github.com/generaltranslation/gt/commit/f3f7051c0e27ae4b6521805e610164c2a768d168) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Skip localizing root index paths when file doesn't exist
+
 ## 2.22.3
 
 ### Patch Changes
