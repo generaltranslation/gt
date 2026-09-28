@@ -82,10 +82,11 @@ function gitCheckFailedError(file: string, stderr: string): string {
 
 export type Credentials = { apiKey: string; projectId: string };
 
-// Client-side frameworks only expose variables carrying their public prefix.
+// Include server-rendered frameworks with client-side development translation.
 const FRAMEWORK_ENV_PREFIXES: Partial<
   Record<NonNullable<SupportedFrameworks>, string>
 > = {
+  'next-app': 'NEXT_PUBLIC_',
   'next-pages': 'NEXT_PUBLIC_',
   vite: 'VITE_',
   gatsby: 'GATSBY_',
@@ -103,21 +104,22 @@ export function getDevelopmentEnvNames(framework?: SupportedFrameworks) {
 }
 
 /**
- * Whether the project already has a runtime key: the framework's development
- * key, or an explicit production key for server runtimes (gt-next, gt-node).
- * Browser frameworks only read their prefixed key, so there `settings.apiKey`
- * is tooling auth alone. `settings.projectId` already resolves every
- * framework prefix. Login is checked separately.
+ * Whether the project has the framework's development key, or an explicit
+ * API key for a server-only runtime. A tooling key cannot enable client-side
+ * hot reload, including in Next.js App Router. `settings.projectId` already
+ * resolves every framework prefix. Login is checked separately.
  */
 export function areCredentialsSet(
   settings: Pick<Settings, 'projectId' | 'apiKey'>,
   framework?: SupportedFrameworks
 ): boolean {
   const { devApiKey } = getDevelopmentEnvNames(framework);
-  const browserOnly = Boolean(framework && FRAMEWORK_ENV_PREFIXES[framework]);
+  const needsPublicKey = Boolean(
+    framework && FRAMEWORK_ENV_PREFIXES[framework]
+  );
   return Boolean(
     settings.projectId &&
-    (process.env[devApiKey] || (!browserOnly && settings.apiKey))
+    (process.env[devApiKey] || (!needsPublicKey && settings.apiKey))
   );
 }
 

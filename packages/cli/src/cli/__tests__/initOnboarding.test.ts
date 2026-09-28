@@ -386,6 +386,68 @@ describe('init and configure onboarding', () => {
     expect(installPackage).not.toHaveBeenCalled();
   });
 
+  it('detects the declared package manager without prompting before the first install', async () => {
+    useFreshApp({
+      name: 'example-app',
+      packageManager: 'pnpm@10.20.0',
+      dependencies: { 'gt-react': '*' },
+    });
+
+    await run(
+      'init',
+      '--json',
+      '--defaults',
+      '--locales',
+      'fr',
+      '--no-dev-credentials'
+    );
+
+    expect(installPackage).toHaveBeenCalledWith(
+      'gt',
+      expect.objectContaining({ id: 'pnpm' }),
+      true
+    );
+    for (const prompt of prompts) expect(prompt).not.toHaveBeenCalled();
+    expect(events().at(-1)).toMatchObject({ outcome: 'success' });
+  });
+
+  it('writes and reuses App Router public development credentials without a tooling key', async () => {
+    vi.mocked(detectFramework).mockResolvedValue({
+      name: 'next-app',
+      type: 'react',
+    });
+    const args = [
+      'init',
+      '--json',
+      '--defaults',
+      '--no-react-setup',
+      '--locales',
+      'fr',
+      '--dev-credentials',
+      '--project-id',
+      'p1',
+    ];
+
+    await run(...args);
+
+    expect(fs.readFileSync(file('.env.local'), 'utf8')).toBe(
+      `NEXT_PUBLIC_GT_PROJECT_ID=p1\nNEXT_PUBLIC_GT_DEV_API_KEY=${SECRET_KEY}\n`
+    );
+    expect(api.createProjectApiKey).toHaveBeenCalledTimes(1);
+    vi.stubEnv('NEXT_PUBLIC_GT_PROJECT_ID', 'p1');
+    vi.stubEnv('NEXT_PUBLIC_GT_DEV_API_KEY', SECRET_KEY);
+    // A stale server-only pair must not override the public runtime project.
+    vi.stubEnv('GT_PROJECT_ID', 'old-project');
+    vi.stubEnv('GT_DEV_API_KEY', 'gtx-old-key');
+    vi.mocked(hasLogin).mockClear();
+
+    await run(...args);
+
+    expect(api.createProjectApiKey).toHaveBeenCalledTimes(1);
+    expect(hasLogin).not.toHaveBeenCalled();
+    expect(events().at(-1)).toMatchObject({ outcome: 'success' });
+  });
+
   it('requires explicit consent and inputs for remote projects and keys', async () => {
     const base = ['init', '--no-interactive', '--defaults', '--locales', 'fr'];
     await expect(run(...base)).rejects.toThrow(

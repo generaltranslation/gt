@@ -914,14 +914,17 @@ describe('withGTConfig', () => {
       expect(params.apiKey).toBeUndefined();
     });
 
-    it('NEXT_PUBLIC_GT_DEV_API_KEY is not serialized', async () => {
+    it('public development credentials enable services without GT_API_KEY and are not serialized', async () => {
       const withGTConfig = await getWithGTConfig();
       process.env.NODE_ENV = 'development';
+      process.env.NEXT_PUBLIC_GT_PROJECT_ID = 'proj';
       process.env.NEXT_PUBLIC_GT_DEV_API_KEY = 'public-dev-key-value';
 
       const result = withGTConfig();
       const params = parseConfigParams(result);
 
+      expect(process.env.GT_API_KEY).toBeUndefined();
+      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('true');
       expect(params.devApiKey).toBeUndefined();
     });
 
@@ -1240,6 +1243,17 @@ describe('withGTConfig', () => {
         /development API key/i
       );
     });
+
+    it.each(['GT_DEV_API_KEY', 'NEXT_PUBLIC_GT_DEV_API_KEY'])(
+      'rejects %s in the production environment',
+      async (name) => {
+        const withGTConfig = await getWithGTConfig();
+        process.env.NODE_ENV = 'production';
+        process.env[name] = 'gtx-development-key';
+
+        expect(() => withGTConfig()).toThrow(/development API key/i);
+      }
+    );
 
     it('invalid locales + GT services enabled throws invalidLocalesError', async () => {
       const withGTConfig = await getWithGTConfig();
