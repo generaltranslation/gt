@@ -7,6 +7,7 @@ import {
 import findFilepath from '../fs/findFilepath.js';
 import { logger } from '../console/logger.js';
 import {
+  displayHeader,
   setPromptsDisabled,
   getLastExitError,
   logErrorAndExit,
@@ -14,8 +15,17 @@ import {
 } from '../console/logging.js';
 import {
   SUPPORTED_REACT_FRAMEWORKS,
+  type FrameworkObject,
   type SupportedReactFrameworks,
 } from '../types/index.js';
+import {
+  DEFAULT_TRANSLATIONS_DIR,
+  DEFAULT_VITE_TRANSLATIONS_DIR,
+} from '../utils/constants.js';
+import {
+  getFrameworkDisplayName,
+  getReactFrameworkLibrary,
+} from './frameworkUtils.js';
 import {
   SETUP_FILE_FORMATS,
   type SetupFileFormat,
@@ -429,6 +439,51 @@ export function readSetupConfig(
       })
     );
   }
+}
+
+export const INIT_SOURCE_HELP =
+  "Space-separated list of glob patterns containing the app's source code, by default 'src/**/*.{js,jsx,ts,tsx}' 'app/**/*.{js,jsx,ts,tsx}' 'pages/**/*.{js,jsx,ts,tsx}' 'components/**/*.{js,jsx,ts,tsx}'";
+
+export function setupConfigPath(
+  options: Pick<ConfigureOptions, 'config'>
+): string {
+  return options.config || 'gt.config.json';
+}
+
+export function getConfiguredFramework(
+  config: Record<string, unknown>
+): SupportedReactFrameworks | 'mintlify' | undefined {
+  const framework = config.framework;
+  return typeof framework === 'string' &&
+    [...SUPPORTED_REACT_FRAMEWORKS, 'mintlify'].includes(
+      framework as SupportedReactFrameworks
+    )
+    ? (framework as SupportedReactFrameworks | 'mintlify')
+    : undefined;
+}
+
+/** JSON mode keeps the banner off stdout. */
+export function displaySetupHeader(
+  session: OnboardingSession,
+  message: string
+) {
+  if (session.json) logger.startCommand(message);
+  else displayHeader(message);
+}
+
+export function describeDefaults(
+  framework: FrameworkObject | undefined
+): string {
+  const translationsDir =
+    framework?.name === 'vite'
+      ? DEFAULT_VITE_TRANSLATIONS_DIR
+      : DEFAULT_TRANSLATIONS_DIR;
+  if (framework?.type !== 'react') {
+    return `Files saved locally in ${translationsDir}`;
+  }
+  const library = getReactFrameworkLibrary(framework);
+  const setup = framework.name === 'vite' ? 'initializeGTSPA' : 'GTProvider';
+  return `${library} & ${setup}, ${getFrameworkDisplayName(framework)}, Files saved locally in ${translationsDir}`;
 }
 
 /** Setup patterns name where each locale's files live, so they need [locale]. */

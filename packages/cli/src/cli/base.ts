@@ -25,17 +25,13 @@ import { lottieTranslateError } from '../console/index.js';
 import { parseGlobPatterns } from '../console/promptParsing.js';
 import path from 'node:path';
 import fs from 'node:fs';
-import YAML from 'yaml';
 import {
   FilesOptions,
-  FrameworkObject,
   Settings,
   SupportedFrameworks,
   SupportedLibraries,
-  SupportedReactFrameworks,
   TranslateFlags,
   SharedFlags,
-  SUPPORTED_REACT_FRAMEWORKS,
 } from '../types/index.js';
 import { generateSettings } from '../config/generateSettings.js';
 import chalk from 'chalk';
@@ -61,19 +57,27 @@ import {
 } from '../utils/credentials.js';
 import {
   checkDevelopmentProjectInputs,
+  productionRuntimeKeyGuidance,
   provisionDevelopmentCredentials,
   resolveDevelopmentProject,
+  signInForSetup,
 } from '../setup/developmentCredentials.js';
+import { exitIfUnsupportedSetupTarget } from '../setup/setupTarget.js';
 import {
   asRecord,
   attachConfigureFlags,
   attachInitFlags,
+  describeDefaults,
+  displaySetupHeader,
+  getConfiguredFramework,
+  INIT_SOURCE_HELP,
   installWithProgress,
   OnboardingError,
   parseFilePatterns,
   readSetupConfig,
   resolvePackageManager,
   runOnboarding,
+  setupConfigPath,
   validateSetupPattern,
   type ConfigureOptions,
   type InitOptions,
@@ -107,10 +111,6 @@ import processSharedStaticAssets, {
 } from '../utils/sharedStaticAssets.js';
 import { setupLocadex } from '../locadex/setupFlow.js';
 import { detectFramework } from '../setup/detectFramework.js';
-import {
-  getFrameworkDisplayName,
-  getReactFrameworkLibrary,
-} from '../setup/frameworkUtils.js';
 import { INLINE_LIBRARIES, Libraries } from '../types/libraries.js';
 import { handleEnqueue } from './commands/enqueue.js';
 import { splitMintlifyLanguageRefs } from '../utils/splitMintlifyLanguageRefs.js';
@@ -121,14 +121,9 @@ import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/diagnostics';
-import {
-  hasLogin,
-  login,
-  logout,
-  whoAmI,
-  type DeviceCode,
-} from '../auth/oauth.js';
-import { UserAuthError } from '../auth/errors.js';
+import { hasLogin, logout, whoAmI } from '../auth/oauth.js';
+import { createUserAuthError, UserAuthError } from '../auth/errors.js';
+import { loginInteractively } from '../auth/interactiveLogin.js';
 import { resolveConfig } from '../config/resolveConfig.js';
 import {
   inspectViteSPA,
@@ -148,13 +143,6 @@ const ID_COMPATIBILITY_WARNING_COMMANDS = new Set([
   'translate',
   'validate',
 ]);
-const workspaceRootSetupError = createDiagnosticMessage({
-  source: 'gt',
-  severity: 'Error',
-  whatHappened: 'The setup wizard cannot run from a monorepo workspace root',
-  why: 'GT must be configured in the specific app you want to localize',
-  fix: "Change to that app's directory and rerun `npx gt@latest`",
-});
 function createProjectCommandError(
   whatHappened: string,
   error: unknown
@@ -178,153 +166,7 @@ function parseApiKeyName(value: string): string {
   return name;
 }
 
-const electronSetupError = createDiagnosticMessage({
-  source: 'gt',
-  severity: 'Error',
-  whatHappened:
-    'The automatic setup wizard is not ready for Electron applications',
-  docsUrl: 'https://generaltranslation.com/docs/react',
-});
-
-/** .env.local never reaches production; the runtime key there is set on the host. */
-function productionRuntimeKeyGuidance(dashboardUrl: string): string {
-  return `${chalk.dim('For runtime translation in production, create an API key in the dashboard')} ${chalk.cyan(dashboardUrl)} ${chalk.dim('and set GT_API_KEY and GT_PROJECT_ID in your hosting environment.')}`;
-}
-
-async function loginInteractively(
-  baseUrl: string | undefined,
-  useBrowser = true,
-  onDeviceCode?: (deviceCode: DeviceCode) => void
-): Promise<void> {
-  await login({
-    baseUrl,
-    noBrowser: !useBrowser,
-    onDeviceCode: (deviceCode) => {
-      const { userCode, verificationUri, verificationUriComplete } = deviceCode;
-      onDeviceCode?.(deviceCode);
-      logger.message(
-        `Visit:\n\n${chalk.cyan(verificationUriComplete ?? verificationUri)}\n\n${verificationUriComplete ? '' : `Then enter the code ${chalk.bold(userCode)}.\n`}Waiting for authentication...`
-      );
-    },
-    onAuthorizationUrl: (url) => {
-      logger.message(
-        `Opening your browser to sign in. If it does not open, visit:\n${chalk.cyan(url)}`
-      );
-    },
-  });
-}
-
-/**
- * Interactive setup keeps the browser login with its device fallback;
- * noninteractive setup always shows a device code (and emits it as a JSON
- * event) and waits for a person to approve it, without opening a browser.
- */
-async function signInForSetup(
-  session: OnboardingSession,
-  baseUrl: string | undefined
-): Promise<void> {
-  try {
-    await loginInteractively(baseUrl, session.interactive, (deviceCode) =>
-      session.emit({ type: 'authorization_required', ...deviceCode })
-    );
-  } catch (error) {
-    throw new OnboardingError(createUserAuthError('Sign in failed', error));
-  }
-  logger.message('You are now signed in.');
-}
-
-function createUserAuthError(whatHappened: string, error: unknown): string {
-  if (error instanceof UserAuthError) return error.message;
-  return createDiagnosticMessage({
-    source: 'gt',
-    severity: 'Error',
-    whatHappened,
-    details: formatDiagnosticErrorDetails(error),
-    fix: 'Run `gt login` and try again',
-  });
-}
-
-/**
- * Whether workspace package patterns name packages besides the root itself.
- * A single app may list only '.' (or nothing, keeping pnpm settings there).
- */
-function listsChildPackages(patterns: unknown): boolean {
-  if (patterns === undefined || patterns === null) return false;
-  if (!Array.isArray(patterns)) return true;
-  return patterns.some(
-    (pattern) =>
-      typeof pattern !== 'string' || !/^(?:\.\/?|!.*)$/.test(pattern.trim())
-  );
-}
-
-function isMonorepoRoot(packageJson: Record<string, unknown> | null): boolean {
-  const pnpmWorkspace = path.join(process.cwd(), 'pnpm-workspace.yaml');
-  if (fs.existsSync(pnpmWorkspace)) {
-    let packages: unknown;
-    try {
-      packages = asRecord(
-        YAML.parse(fs.readFileSync(pnpmWorkspace, 'utf8'))
-      )?.packages;
-    } catch {
-      return true; // Unreadable: keep refusing, as for any workspace file.
-    }
-    if (listsChildPackages(packages)) return true;
-  }
-  const workspaces = packageJson?.workspaces;
-  return listsChildPackages(
-    Array.isArray(workspaces) ? workspaces : asRecord(workspaces)?.packages
-  );
-}
-
-async function exitIfUnsupportedSetupTarget(): Promise<void> {
-  const packageJson = await searchForPackageJson();
-  if (packageJson && isPackageInstalled('electron', packageJson, false, true)) {
-    throw new OnboardingError(electronSetupError);
-  }
-  if (isMonorepoRoot(packageJson)) {
-    throw new OnboardingError(workspaceRootSetupError);
-  }
-}
-
 const VITE_LOADER_FILE = 'src/loadTranslations.ts';
-
-const INIT_SOURCE_HELP =
-  "Space-separated list of glob patterns containing the app's source code, by default 'src/**/*.{js,jsx,ts,tsx}' 'app/**/*.{js,jsx,ts,tsx}' 'pages/**/*.{js,jsx,ts,tsx}' 'components/**/*.{js,jsx,ts,tsx}'";
-
-function setupConfigPath(options: Pick<ConfigureOptions, 'config'>): string {
-  return options.config || 'gt.config.json';
-}
-
-function getConfiguredFramework(
-  config: Record<string, unknown>
-): SupportedReactFrameworks | 'mintlify' | undefined {
-  const framework = config.framework;
-  return typeof framework === 'string' &&
-    [...SUPPORTED_REACT_FRAMEWORKS, 'mintlify'].includes(
-      framework as SupportedReactFrameworks
-    )
-    ? (framework as SupportedReactFrameworks | 'mintlify')
-    : undefined;
-}
-
-/** JSON mode keeps the banner off stdout. */
-function displaySetupHeader(session: OnboardingSession, message: string) {
-  if (session.json) logger.startCommand(message);
-  else displayHeader(message);
-}
-
-function describeDefaults(framework: FrameworkObject | undefined): string {
-  const translationsDir =
-    framework?.name === 'vite'
-      ? DEFAULT_VITE_TRANSLATIONS_DIR
-      : DEFAULT_TRANSLATIONS_DIR;
-  if (framework?.type !== 'react') {
-    return `Files saved locally in ${translationsDir}`;
-  }
-  const library = getReactFrameworkLibrary(framework);
-  const setup = framework.name === 'vite' ? 'initializeGTSPA' : 'GTProvider';
-  return `${library} & ${setup}, ${getFrameworkDisplayName(framework)}, Files saved locally in ${translationsDir}`;
-}
 
 /** Credential failures keep their own diagnostic or get the setup context. */
 async function withCredentialsError<T>(run: () => Promise<T>): Promise<T> {

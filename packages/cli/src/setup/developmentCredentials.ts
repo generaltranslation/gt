@@ -11,9 +11,35 @@ import { promptConfirm, promptSelect, promptText } from '../console/logging.js';
 import type { Settings, SupportedFrameworks } from '../types/index.js';
 import { api } from '../utils/api.js';
 import { setCredentials } from '../utils/credentials.js';
+import { createUserAuthError } from '../auth/errors.js';
+import { loginInteractively } from '../auth/interactiveLogin.js';
 import { OnboardingError, type OnboardingSession } from './onboarding.js';
 
 const DEVELOPMENT_KEY_NAME = 'Development key (gt init)';
+
+/** .env.local never reaches production; the runtime key there is set on the host. */
+export function productionRuntimeKeyGuidance(dashboardUrl: string): string {
+  return `${chalk.dim('For runtime translation in production, create an API key in the dashboard')} ${chalk.cyan(dashboardUrl)} ${chalk.dim('and set GT_API_KEY and GT_PROJECT_ID in your hosting environment.')}`;
+}
+
+/**
+ * Interactive setup keeps the browser login with its device fallback;
+ * noninteractive setup always shows a device code (and emits it as a JSON
+ * event) and waits for a person to approve it, without opening a browser.
+ */
+export async function signInForSetup(
+  session: OnboardingSession,
+  baseUrl: string | undefined
+): Promise<void> {
+  try {
+    await loginInteractively(baseUrl, session.interactive, (deviceCode) =>
+      session.emit({ type: 'authorization_required', ...deviceCode })
+    );
+  } catch (error) {
+    throw new OnboardingError(createUserAuthError('Sign in failed', error));
+  }
+  logger.message('You are now signed in.');
+}
 
 type ProjectChoice = Awaited<ReturnType<typeof api.listProjects>>[number];
 
