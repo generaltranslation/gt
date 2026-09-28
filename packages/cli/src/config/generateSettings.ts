@@ -22,13 +22,13 @@ import { createUserTokenProvider } from '../auth/oauth.js';
 import crypto from 'node:crypto';
 import { execSync } from 'node:child_process';
 import path from 'node:path';
+import fs from 'node:fs';
 import chalk from 'chalk';
 import { resolveConfig } from './resolveConfig.js';
 import { configureApiClient } from '../utils/api.js';
 import { generatePreset } from './optionPresets.js';
 import { GT_PARSING_FLAGS_DEFAULT } from './defaults.js';
 import { normalizeFilesOptions } from '../formats/files/transformFormat.js';
-import { determineLibrary } from '../fs/determineFramework/index.js';
 import { logger } from '../console/logger.js';
 
 export const DEFAULT_SRC_PATTERNS = [
@@ -189,8 +189,10 @@ export async function generateSettings(
   const mergedOptions: Settings = { ...gtConfig, ...flags } as Settings;
 
   if (
-    determineLibrary().library === 'base' &&
-    !hasConfiguredTranslationFiles(mergedOptions.files)
+    !hasConfiguredTranslationFiles(mergedOptions.files) &&
+    !['package.json', 'pyproject.toml', 'requirements.txt', 'setup.py'].some(
+      (file) => fs.existsSync(path.join(cwd, file))
+    )
   ) {
     logger.warn(
       chalk.yellow(
