@@ -47,17 +47,24 @@ export type LoadTranslationsFileResult =
 
 /**
  * Creates or updates the generated loadTranslations.js for translationsDir
- * (relative to appDirectory) and its empty locale stubs. A loader that was
- * not matching the previous config's generated template is left untouched
- * and reported as 'custom'.
+ * (relative to appDirectory) and empty stubs for non-default locales. A
+ * loader that was not matching the previous config's generated template is
+ * left untouched and reported as 'custom'.
  * Directory and stub failures propagate.
  */
-export async function createLoadTranslationsFile(
-  appDirectory: string,
-  translationsDir: string = DEFAULT_TRANSLATIONS_DIR,
-  locales: string[],
-  previousTranslationsDir?: string
-): Promise<LoadTranslationsFileResult> {
+export async function createLoadTranslationsFile({
+  appDirectory,
+  translationsDir = DEFAULT_TRANSLATIONS_DIR,
+  defaultLocale,
+  locales,
+  previousTranslationsDir,
+}: {
+  appDirectory: string;
+  translationsDir?: string;
+  defaultLocale: string;
+  locales: string[];
+  previousTranslationsDir?: string;
+}): Promise<LoadTranslationsFileResult> {
   const usingSrcDirectory = fs.existsSync(path.join(appDirectory, 'src'));
 
   const loadTranslationsDir = usingSrcDirectory
@@ -111,7 +118,9 @@ export async function createLoadTranslationsFile(
 
   // Stubs first, so a directory failure leaves no loader pointing at it.
   await fs.promises.mkdir(translationsPath, { recursive: true });
-  for (const locale of locales) {
+  for (const locale of new Set(locales)) {
+    // Default-locale content lives in source, so it never needs a stub.
+    if (locale === defaultLocale) continue;
     const stubPath = path.join(translationsPath, `${locale}.json`);
     if (!fs.existsSync(stubPath)) await fs.promises.writeFile(stubPath, '{}');
   }

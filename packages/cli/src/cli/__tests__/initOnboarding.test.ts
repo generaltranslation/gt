@@ -268,7 +268,12 @@ describe('init and configure onboarding', () => {
         files: { gt: { output: 'public/old/[locale].json' } },
       })
     );
-    await createLoadTranslationsFile(appDirectory, 'public/old', ['fr']);
+    await createLoadTranslationsFile({
+      appDirectory,
+      translationsDir: 'public/old',
+      defaultLocale: 'en',
+      locales: ['fr'],
+    });
     const loader = fs.readFileSync(file('loadTranslations.js'), 'utf8');
     const config = fs.readFileSync(file('gt.config.json'), 'utf8');
     vi.mocked(logging.promptMultiSelect).mockRejectedValue(

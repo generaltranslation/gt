@@ -3,6 +3,7 @@ import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import fs from 'node:fs';
 import path from 'node:path';
 import { logger } from '../console/logger.js';
+import { Libraries } from '../types/libraries.js';
 
 type SetupViteSPAOptions = {
   appDirectory: string;
@@ -120,7 +121,7 @@ export async function inspectViteSPA(appDirectory: string) {
       parseModule(entry, declaredEntryPath)?.some(
         (statement) =>
           statement.type === 'ImportDeclaration' &&
-          statement.source.value === 'gt-react' &&
+          statement.source.value === Libraries.GT_REACT &&
           statement.importKind !== 'type' &&
           statement.specifiers.some(
             (specifier) =>
@@ -361,7 +362,7 @@ export async function setupViteSPA({
   );
   await fs.promises.writeFile(
     bootstrapPath,
-    `import { initializeGTSPA } from 'gt-react';
+    `import { initializeGTSPA } from '${Libraries.GT_REACT}';
 import gtConfig from '${configImport}';
 ${loadTranslationsImport}
 await initializeGTSPA(${loadTranslationsOption});

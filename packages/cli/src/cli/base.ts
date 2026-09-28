@@ -1579,12 +1579,13 @@ See https://www.npmjs.com/package/gt-vue`);
         runtimeSetup
       );
       const loader = generatedLoader
-        ? await createLoadTranslationsFile(
-            cwd,
+        ? await createLoadTranslationsFile({
+            appDirectory: cwd,
             translationsDir,
-            resolvedLocales,
-            configuredTranslationsDir
-          ).catch((error: unknown) => {
+            defaultLocale: settings.defaultLocale,
+            locales: resolvedLocales,
+            previousTranslationsDir: configuredTranslationsDir,
+          }).catch((error: unknown) => {
             throw translationFilesError(error);
           })
         : undefined;
