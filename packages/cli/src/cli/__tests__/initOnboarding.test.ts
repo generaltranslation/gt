@@ -429,15 +429,12 @@ describe('init and configure onboarding', () => {
       '--locales',
       'fr',
       '--dev-credentials',
-      '--project-id',
-      'p1',
     ];
 
-    await run(...args);
+    await run(...args, '--project-id', 'p1');
 
-    expect(fs.readFileSync(file('.env.local'), 'utf8')).toBe(
-      `NEXT_PUBLIC_GT_PROJECT_ID=p1\nNEXT_PUBLIC_GT_DEV_API_KEY=${SECRET_KEY}\n`
-    );
+    const envFile = `NEXT_PUBLIC_GT_PROJECT_ID=p1\nNEXT_PUBLIC_GT_DEV_API_KEY=${SECRET_KEY}\n`;
+    expect(fs.readFileSync(file('.env.local'), 'utf8')).toBe(envFile);
     expect(api.createProjectApiKey).toHaveBeenCalledTimes(1);
     vi.stubEnv('NEXT_PUBLIC_GT_PROJECT_ID', 'p1');
     vi.stubEnv('NEXT_PUBLIC_GT_DEV_API_KEY', SECRET_KEY);
@@ -450,6 +447,33 @@ describe('init and configure onboarding', () => {
 
     expect(api.createProjectApiKey).toHaveBeenCalledTimes(1);
     expect(hasLogin).not.toHaveBeenCalled();
+    expect(fs.readFileSync(file('.env.local'), 'utf8')).toBe(envFile);
+    expect(events().at(-1)).toMatchObject({ outcome: 'success' });
+  });
+
+  it('lets configure match an unsaved detected framework to its development key', async () => {
+    vi.mocked(detectFramework).mockResolvedValue({
+      name: 'next-app',
+      type: 'react',
+    });
+    vi.stubEnv('NEXT_PUBLIC_GT_PROJECT_ID', 'p1');
+    vi.stubEnv('NEXT_PUBLIC_GT_DEV_API_KEY', SECRET_KEY);
+
+    await run(
+      'init',
+      '--json',
+      '--defaults',
+      '--no-react-setup',
+      '--locales',
+      'fr'
+    );
+    expect(readConfig().framework).toBeUndefined();
+
+    await run('configure', '--json', '--defaults');
+
+    expect(api.createProjectApiKey).not.toHaveBeenCalled();
+    expect(readConfig().framework).toBeUndefined();
+    expect(fs.existsSync(file('.env.local'))).toBe(false);
     expect(events().at(-1)).toMatchObject({ outcome: 'success' });
   });
 

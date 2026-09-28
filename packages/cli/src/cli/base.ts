@@ -1107,9 +1107,10 @@ export class BaseCLI {
       const detected = await detectFramework();
       // One config file for the whole run, even if the framework changes.
       const configFilepath = setupConfigPath(options, detected.name === 'vite');
+      // Detection only picks env names here; it is not saved.
       const framework =
         getConfiguredFramework(readSetupConfig(configFilepath)) ??
-        (detected.name === 'vite' ? 'vite' : undefined);
+        detected.name;
       await this.handleInitCommand(session, options, {
         configFilepath,
         isVite: framework === 'vite',
@@ -1381,12 +1382,16 @@ See https://www.npmjs.com/package/gt-vue`);
       files.gt = { output: path.join(translationsDir, `[locale].json`) };
     }
 
-    // The effective project: an explicit ID replaces a configured one.
+    const envFramework =
+      setup.framework ?? getConfiguredFramework(existingConfig);
+    // The effective project: an explicit ID replaces a configured one. The
+    // framework's runtime project outranks a stale generic GT_PROJECT_ID.
     const projectId =
       options.projectId ||
       (typeof existingConfig.projectId === 'string'
         ? existingConfig.projectId
-        : undefined);
+        : undefined) ||
+      process.env[getDevelopmentEnvNames(envFramework).projectId];
     const configUpdate: SetupConfigUpdate = {
       defaultLocale,
       locales,
@@ -1422,7 +1427,6 @@ See https://www.npmjs.com/package/gt-vue`);
       cwd,
       { resolvedConfig: effectiveConfig }
     );
-    const envFramework = setup.framework ?? settings.framework;
     // Runtime credentials only count for the project this setup uses; the
     // framework's project variable is the one paired with its dev key.
     const runtimeProjectId =
