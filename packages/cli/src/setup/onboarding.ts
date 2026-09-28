@@ -12,7 +12,14 @@ import {
   logErrorAndExit,
   stripAnsi,
 } from '../console/logging.js';
-import type { SupportedReactFrameworks } from '../types/index.js';
+import {
+  SUPPORTED_REACT_FRAMEWORKS,
+  type SupportedReactFrameworks,
+} from '../types/index.js';
+import {
+  SETUP_FILE_FORMATS,
+  type SetupFileFormat,
+} from '../formats/files/supportedFiles.js';
 import {
   getPackageManager,
   NoPackageManagerError,
@@ -20,25 +27,6 @@ import {
   type PackageManager,
 } from '../utils/packageManager.js';
 import { installPackage } from '../utils/installPackage.js';
-
-export const SETUP_FILE_FORMATS = [
-  'json',
-  'md',
-  'mdx',
-  'ts',
-  'js',
-  'yaml',
-] as const;
-export type SetupFileFormat = (typeof SETUP_FILE_FORMATS)[number];
-
-export const SETUP_REACT_FRAMEWORKS: SupportedReactFrameworks[] = [
-  'next-app',
-  'next-pages',
-  'vite',
-  'gatsby',
-  'react',
-  'redwood',
-];
 
 /** Answers accepted by `gt configure` (and the gt-vue `gt init`). */
 export type ConfigureOptions = {
@@ -191,7 +179,7 @@ export function attachInitFlags(command: Command, sourceHelp: string) {
       new Option(
         '--framework <framework>',
         'React framework for --react-setup; overrides detection'
-      ).choices(SETUP_REACT_FRAMEWORKS)
+      ).choices(SUPPORTED_REACT_FRAMEWORKS)
     )
     .option(
       '--format',

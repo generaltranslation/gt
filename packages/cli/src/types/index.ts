@@ -123,13 +123,22 @@ export type Framework =
   | typeof Libraries.GT_REACT_NATIVE
   | typeof Libraries.GT_TANSTACK_START;
 
+export const SUPPORTED_REACT_FRAMEWORKS = [
+  'next-app',
+  'next-pages',
+  'vite',
+  'gatsby',
+  'react',
+  'redwood',
+] as const;
+
 export type FrameworkObject =
   | {
       name: 'mintlify';
       type?: undefined;
     }
   | {
-      name: 'next-app' | 'next-pages' | 'vite' | 'gatsby' | 'redwood' | 'react';
+      name: (typeof SUPPORTED_REACT_FRAMEWORKS)[number];
       type: 'react';
     };
 export type ReactFrameworkObject = Extract<FrameworkObject, { type: 'react' }>;

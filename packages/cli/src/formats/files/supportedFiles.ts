@@ -17,6 +17,17 @@ export const SUPPORTED_FILE_EXTENSIONS = [
   'srt',
 ] as const;
 
+/** The formats setup offers: an intentional subset of the supported ones. */
+export const SETUP_FILE_FORMATS = [
+  'json',
+  'md',
+  'mdx',
+  'ts',
+  'js',
+  'yaml',
+] as const satisfies readonly (typeof SUPPORTED_FILE_EXTENSIONS)[number][];
+export type SetupFileFormat = (typeof SETUP_FILE_FORMATS)[number];
+
 export const FILE_EXT_TO_EXT_LABEL = {
   json: 'JSON',
   pot: 'POT',

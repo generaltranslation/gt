@@ -35,10 +35,15 @@ import {
   SupportedReactFrameworks,
   TranslateFlags,
   SharedFlags,
+  SUPPORTED_REACT_FRAMEWORKS,
 } from '../types/index.js';
 import { generateSettings } from '../config/generateSettings.js';
 import chalk from 'chalk';
-import { FILE_EXT_TO_EXT_LABEL } from '../formats/files/supportedFiles.js';
+import {
+  FILE_EXT_TO_EXT_LABEL,
+  SETUP_FILE_FORMATS,
+  type SetupFileFormat,
+} from '../formats/files/supportedFiles.js';
 import {
   executeReactSetup,
   resolveReactSetup,
@@ -69,13 +74,10 @@ import {
   readSetupConfig,
   resolvePackageManager,
   runOnboarding,
-  SETUP_FILE_FORMATS,
-  SETUP_REACT_FRAMEWORKS,
   validateSetupPattern,
   type ConfigureOptions,
   type InitOptions,
   type OnboardingSession,
-  type SetupFileFormat,
 } from '../setup/onboarding.js';
 import { upload } from './commands/upload.js';
 import { attachSharedFlags, attachTranslateFlags } from './flags.js';
@@ -306,7 +308,7 @@ function getConfiguredFramework(
 ): SupportedReactFrameworks | 'mintlify' | undefined {
   const framework = config.framework;
   return typeof framework === 'string' &&
-    [...SETUP_REACT_FRAMEWORKS, 'mintlify'].includes(
+    [...SUPPORTED_REACT_FRAMEWORKS, 'mintlify'].includes(
       framework as SupportedReactFrameworks
     )
     ? (framework as SupportedReactFrameworks | 'mintlify')
