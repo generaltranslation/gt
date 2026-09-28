@@ -204,7 +204,11 @@ export function getLocalePromptOptions(
         option,
       ])
     ).values(),
-  ];
+  ].sort(
+    (a, b) =>
+      Number(b.value.toLowerCase() === normalizedQuery) -
+      Number(a.value.toLowerCase() === normalizedQuery)
+  );
 }
 
 // Body-only: Clack shows it inline under the prompt.

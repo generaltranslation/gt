@@ -154,6 +154,66 @@ describe('logging prompts', () => {
     await expect(locales).resolves.toEqual(['fr']);
   });
 
+  it.each([undefined, { french: { code: 'fr' } }])(
+    'prioritizes exact codes over overlapping custom defaults and aliases %j',
+    async (customMapping) => {
+      const { type } = await withRealClack('autocompleteMultiselect');
+      const { promptLocaleList } = await import('../logging.js');
+      const locales = promptLocaleList({
+        message: 'Locales?',
+        defaultValue: ['es', 'fr-MX'],
+        customMapping,
+      });
+      await type('f');
+      await type('r');
+      await type('\t');
+      await type('\r');
+      await expect(locales).resolves.toEqual(['es', 'fr-MX', 'fr']);
+    }
+  );
+
+  it.each(['fr-MX', 'french'])(
+    'allows intentionally deselecting the exact custom option %s',
+    async (value) => {
+      const { type } = await withRealClack('autocompleteMultiselect');
+      const { promptLocaleList } = await import('../logging.js');
+      const locales = promptLocaleList({
+        message: 'Locales?',
+        defaultValue: ['es', value],
+        customMapping: { french: { code: 'fr' } },
+      });
+      await type(value);
+      await type('\t');
+      await type('\r');
+      await expect(locales).resolves.toEqual(['es']);
+    }
+  );
+
+  it('preserves arrow navigation after an exact search', async () => {
+    const { type } = await withRealClack('autocomplete');
+    const { promptLocale } = await import('../logging.js');
+    const locale = promptLocale({
+      message: 'Default?',
+      customMapping: { french: { code: 'fr' } },
+    });
+    await type('fr');
+    await type('\x1b[B');
+    await type('\r');
+    await expect(locale).resolves.toBe('french');
+  });
+
+  it('submits existing multiselect choices with an unmatched search', async () => {
+    const { type } = await withRealClack('autocompleteMultiselect');
+    const { promptLocaleList } = await import('../logging.js');
+    const locales = promptLocaleList({
+      message: 'Locales?',
+      defaultValue: ['es'],
+    });
+    await type('not_a_locale');
+    await type('\r');
+    await expect(locales).resolves.toEqual(['es']);
+  });
+
   it('preselects custom locale defaults in the real multiselect', async () => {
     const { type } = await withRealClack('autocompleteMultiselect');
     const { promptLocaleList } = await import('../logging.js');
