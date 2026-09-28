@@ -268,17 +268,13 @@ export async function promptLocaleList({
   return exitIfCancelled(result);
 }
 
-export async function promptGlobPatterns({
-  message,
-  defaultValue,
-  validate,
-}: {
+export async function promptGlobPatterns(options: {
   label: string;
   message: string;
   defaultValue?: string;
   validate?: (value: string) => boolean | string;
 }) {
-  return promptText({ message, defaultValue, validate });
+  return promptText(options);
 }
 
 export async function promptSelect<T>({
