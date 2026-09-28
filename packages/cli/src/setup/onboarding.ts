@@ -18,10 +18,8 @@ import {
   type FrameworkObject,
   type SupportedReactFrameworks,
 } from '../types/index.js';
-import {
-  DEFAULT_TRANSLATIONS_DIR,
-  DEFAULT_VITE_TRANSLATIONS_DIR,
-} from '../utils/constants.js';
+import { DEFAULT_TRANSLATIONS_DIR } from '../utils/constants.js';
+import { getBuildToolSetup } from './buildTools/index.js';
 import {
   getFrameworkDisplayName,
   getReactFrameworkLibrary,
@@ -474,15 +472,14 @@ export function displaySetupHeader(
 export function describeDefaults(
   framework: FrameworkObject | undefined
 ): string {
+  const buildTool = getBuildToolSetup(framework?.name);
   const translationsDir =
-    framework?.name === 'vite'
-      ? DEFAULT_VITE_TRANSLATIONS_DIR
-      : DEFAULT_TRANSLATIONS_DIR;
+    buildTool?.defaultTranslationsDir ?? DEFAULT_TRANSLATIONS_DIR;
   if (framework?.type !== 'react') {
     return `Files saved locally in ${translationsDir}`;
   }
   const library = getReactFrameworkLibrary(framework);
-  const setup = framework.name === 'vite' ? 'initializeGTSPA' : 'GTProvider';
+  const setup = buildTool?.initializer ?? 'GTProvider';
   return `${library} & ${setup}, ${getFrameworkDisplayName(framework)}, Files saved locally in ${translationsDir}`;
 }
 

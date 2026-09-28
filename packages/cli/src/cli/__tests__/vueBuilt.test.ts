@@ -315,7 +315,6 @@ describe('built Vue CLI', () => {
                     ['src/**/*.vue'],
                     {
                       configFilepath: 'custom.gt.config.json',
-                      isVite: true,
                       framework: 'vite',
                     },
                   ],
@@ -326,7 +325,6 @@ describe('built Vue CLI', () => {
                     undefined,
                     {
                       configFilepath: 'gt.config.json',
-                      isVite: true,
                       framework: 'vite',
                     },
                   ],

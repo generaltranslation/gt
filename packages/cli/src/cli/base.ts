@@ -1,9 +1,6 @@
 import { Command, InvalidArgumentError, Option } from 'commander';
 import { ProjectApiKeyPermission } from 'generaltranslation/api';
-import {
-  DEFAULT_TRANSLATIONS_DIR,
-  DEFAULT_VITE_TRANSLATIONS_DIR,
-} from '../utils/constants.js';
+import { DEFAULT_TRANSLATIONS_DIR } from '../utils/constants.js';
 import {
   createOrUpdateConfig,
   mergeSetupConfig,
@@ -24,7 +21,6 @@ import { logger } from '../console/logger.js';
 import { lottieTranslateError } from '../console/index.js';
 import { parseGlobPatterns } from '../console/promptParsing.js';
 import path from 'node:path';
-import fs from 'node:fs';
 import {
   FilesOptions,
   Settings,
@@ -126,10 +122,10 @@ import { createUserAuthError, UserAuthError } from '../auth/errors.js';
 import { loginInteractively } from '../auth/interactiveLogin.js';
 import { resolveConfig } from '../config/resolveConfig.js';
 import {
-  inspectViteSPA,
-  setupViteSPA,
-  writeViteLoader,
-} from '../setup/setupViteSPA.js';
+  getBuildToolSetup,
+  type ManualAction,
+  type SetupResult,
+} from '../setup/buildTools/index.js';
 import { manifestDirectlyDeclaresGTVue } from '@generaltranslation/vue-extractor/integration';
 import { api } from '../utils/api.js';
 import { handleApiCommand, type ApiCommandOptions } from './commands/api.js';
@@ -165,8 +161,6 @@ function parseApiKeyName(value: string): string {
   if (!name) throw new InvalidArgumentError(emptyApiKeyNameError);
   return name;
 }
-
-const VITE_LOADER_FILE = 'src/loadTranslations.ts';
 
 /** Credential failures keep their own diagnostic or get the setup context. */
 async function withCredentialsError<T>(run: () => Promise<T>): Promise<T> {
@@ -898,7 +892,6 @@ export class BaseCLI {
         detected.name;
       await this.handleInitCommand(session, options, {
         configFilepath,
-        isVite: framework === 'vite',
         framework,
         saveFramework: Boolean(reactSetup || options.framework),
         reactSetup,
@@ -947,7 +940,6 @@ export class BaseCLI {
         detected.name;
       await this.handleInitCommand(session, options, {
         configFilepath,
-        isVite: framework === 'vite',
         framework,
       });
 
@@ -1000,10 +992,10 @@ export class BaseCLI {
 
   /** Returns whether setup should generate a local runtime loader. */
   protected shouldGenerateLocalTranslationLoader(
-    isVite: boolean,
+    buildToolOwnsLoader: boolean,
     runtimeSetup: InlineRuntimeSetup
   ): boolean {
-    if (isVite) return false;
+    if (buildToolOwnsLoader) return false;
     if (!runtimeSetup.hasVueRuntime) return true;
     return runtimeSetup.hasOtherInlineRuntime || runtimeSetup.ranReactSetup;
   }
@@ -1039,17 +1031,17 @@ See https://www.npmjs.com/package/gt-vue`);
     setup: {
       /** Chosen once by the entry point from the detected framework. */
       configFilepath: string;
-      isVite: boolean;
-      /** Resolved framework; drives storage, env names and Vite setup. */
+      /** Resolved framework; drives storage, env names and build-tool setup. */
       framework?: SupportedFrameworks;
-      /** Write the framework even when it is not Vite. */
+      /** Write the framework even when no build-tool setup saves it. */
       saveFramework?: boolean;
       reactSetup?: ReactSetupPlan;
       /** Init without the React setup never changes application source. */
       keepAppSource?: boolean;
     }
   ): Promise<void> {
-    const { configFilepath, isVite, reactSetup } = setup;
+    const { configFilepath, reactSetup } = setup;
+    const buildTool = getBuildToolSetup(setup.framework);
     const cwd = process.cwd();
     const existingConfig = readSetupConfig(configFilepath);
     const { defaultLocale, locales } = await getDesiredLocales(
@@ -1107,9 +1099,8 @@ See https://www.npmjs.com/package/gt-vue`);
               }),
           });
 
-    const defaultTranslationsDir = isVite
-      ? DEFAULT_VITE_TRANSLATIONS_DIR
-      : DEFAULT_TRANSLATIONS_DIR;
+    const defaultTranslationsDir =
+      buildTool?.defaultTranslationsDir ?? DEFAULT_TRANSLATIONS_DIR;
     const configuredTranslationsDir = configuredOutput?.match(
       /^(.+)[\\/]\[locale\]\.json$/
     )?.[1];
@@ -1232,8 +1223,7 @@ See https://www.npmjs.com/package/gt-vue`);
       src: options.src,
       files: Object.keys(files).length > 0 ? files : undefined,
       framework:
-        (setup.saveFramework && setup.framework) ||
-        (isVite ? 'vite' : undefined),
+        (setup.saveFramework && setup.framework) || buildTool?.framework,
       publish: storage === 'cdn',
       // Selecting local storage drops stale CDN intent; a config that
       // already combines local files with publishing keeps it.
@@ -1270,10 +1260,12 @@ See https://www.npmjs.com/package/gt-vue`);
       runtimeProjectId === undefined || runtimeProjectId === settings.projectId;
     const credentialsSet =
       runtimeProjectMatches && areCredentialsSet(settings, envFramework);
-    const localVite = isVite && storage === 'local';
+    const credentialsOption =
+      (storage === 'local' && buildTool?.devCredentialsOption) ||
+      '--dev-credentials';
     const provision =
       !credentialsSet &&
-      (localVite
+      (credentialsOption === '--live-translations'
         ? await session.answer('--live-translations', {
             explicit: options.liveTranslations ?? options.devCredentials,
             recommended: false,
@@ -1311,11 +1303,11 @@ See https://www.npmjs.com/package/gt-vue`);
       );
     }
 
-    if (reactSetup && isVite) await inspectViteSPA(cwd);
+    if (reactSetup && buildTool) await buildTool.preflight(cwd);
     const installGT =
       packageJson !== null &&
       !isPackageInstalled('gt', packageJson, true, true) &&
-      !(isUsingGT && isVite);
+      !buildTool?.skipsGTInstall(isUsingGT);
     const packageManager =
       reactSetup?.install || installGT
         ? await resolvePackageManager(session, options.packageManager)
@@ -1360,21 +1352,20 @@ See https://www.npmjs.com/package/gt-vue`);
       logger.startCommand('Setting up project config...');
     }
 
-    // A loader left unchanged may not read the newly chosen directory.
-    const reportLoaderUpdate = (loaderFile: string, custom = true) => {
-      if (translationsDir === configuredTranslationsDir) return;
-      const action = `Update ${custom ? 'your custom ' : ''}${loaderFile} to load translations from ${translationsDir}`;
-      session.humanActions.push(action);
+    const reportManualAction = ({ whatHappened, fix }: ManualAction) => {
+      session.humanActions.push(fix);
       logger.warn(
         createDiagnosticMessage({
           source: 'gt',
           severity: 'Warning',
-          whatHappened: custom
-            ? `Your custom ${loaderFile} was left unchanged, but translations now go to ${translationsDir}`
-            : `${loaderFile} was left unchanged because the React setup was skipped, but translations now go to ${translationsDir}`,
-          fix: action,
+          whatHappened,
+          fix,
         })
       );
+    };
+    const reportSetupResult = ({ steps, manualActions }: SetupResult) => {
+      for (const step of steps) session.step(step);
+      manualActions.forEach(reportManualAction);
     };
     const translationFilesError = (error: unknown) =>
       new Error(
@@ -1386,34 +1377,31 @@ See https://www.npmjs.com/package/gt-vue`);
           fix: 'Choose another --translations-dir or fix the path, then rerun the command',
         })
       );
+    const buildToolContext = {
+      appDirectory: cwd,
+      configFilepath,
+      defaultLocale: settings.defaultLocale,
+      locales: resolvedLocales,
+      translationsDir: storage === 'local' ? translationsDir : undefined,
+      previousTranslationsDir: configuredTranslationsDir,
+    };
 
     if (storage === 'local' && translationsDir) {
-      // Without the React setup, configure keeps an existing Vite loader in
-      // sync; init leaves application source to the person.
-      if (isVite && !reactSetup) {
-        if (setup.keepAppSource) {
-          if (fs.existsSync(path.join(cwd, VITE_LOADER_FILE))) {
-            reportLoaderUpdate(VITE_LOADER_FILE, false);
-          }
-        } else {
-          const loader = await writeViteLoader({
-            appDirectory: cwd,
-            defaultLocale: settings.defaultLocale,
-            locales: resolvedLocales,
-            translationsDir,
-            previousTranslationsDir: configuredTranslationsDir,
-            create: false,
-          }).catch((error: unknown) => {
-            throw translationFilesError(error);
-          });
-          if (loader === 'written') {
-            session.step(`updated ${VITE_LOADER_FILE}`);
-          }
-          if (loader === 'custom') reportLoaderUpdate(VITE_LOADER_FILE);
-        }
+      if (buildTool && !reactSetup) {
+        reportSetupResult(
+          await buildTool
+            .syncLoader({
+              ...buildToolContext,
+              translationsDir,
+              keepAppSource: setup.keepAppSource,
+            })
+            .catch((error: unknown) => {
+              throw translationFilesError(error);
+            })
+        );
       }
       const generatedLoader = this.shouldGenerateLocalTranslationLoader(
-        isVite,
+        buildTool?.ownsLoader ?? false,
         runtimeSetup
       );
       const loader = generatedLoader
@@ -1430,7 +1418,16 @@ See https://www.npmjs.com/package/gt-vue`);
       if (loader === 'created' || loader === 'updated') {
         session.step(`${loader} loadTranslations.js`);
       }
-      if (loader === 'custom') reportLoaderUpdate('loadTranslations.js');
+      // A loader left unchanged may not read the newly chosen directory.
+      if (
+        loader === 'custom' &&
+        translationsDir !== configuredTranslationsDir
+      ) {
+        reportManualAction({
+          whatHappened: `Your custom loadTranslations.js was left unchanged, but translations now go to ${translationsDir}`,
+          fix: `Update your custom loadTranslations.js to load translations from ${translationsDir}`,
+        });
+      }
       const guidance = this.getLocalTranslationGuidance({
         generatedLoader: generatedLoader && loader !== 'custom',
         runtimeSetup,
@@ -1448,28 +1445,8 @@ See https://www.npmjs.com/package/gt-vue`);
       )} to customize your translation setup. Docs: https://generaltranslation.com/docs/cli/reference/config`
     );
 
-    if (reactSetup && isVite) {
-      const result = await setupViteSPA({
-        appDirectory: cwd,
-        configFilepath,
-        defaultLocale: settings.defaultLocale,
-        locales: resolvedLocales,
-        translationsDir: storage === 'local' ? translationsDir : undefined,
-        previousTranslationsDir: configuredTranslationsDir,
-      });
-      if (result.manualAction) {
-        session.humanActions.push(result.manualAction);
-        logger.warn(
-          createDiagnosticMessage({
-            source: 'gt',
-            severity: 'Warning',
-            whatHappened: 'The existing Vite setup needs a manual review',
-            fix: result.manualAction,
-          })
-        );
-      } else {
-        session.step('configured initializeGTSPA');
-      }
+    if (reactSetup && buildTool) {
+      reportSetupResult(await buildTool.apply(buildToolContext));
     }
 
     if (installGT && packageManager) {
