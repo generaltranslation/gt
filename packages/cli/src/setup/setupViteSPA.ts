@@ -67,17 +67,6 @@ function getEntryPath(appDirectory: string, source: string): string {
     : path.resolve(appDirectory, sourcePath);
 }
 
-function getEntryImport(
-  appDirectory: string,
-  sourceDirectory: string,
-  source: string
-): string {
-  return toRelativeImport(
-    sourceDirectory,
-    getEntryPath(appDirectory, source)
-  ).replace(/\.(?:[cm]?[jt]sx?)$/i, '');
-}
-
 function getBootstrapEntry(bootstrap: string): string | undefined {
   return bootstrap.match(/await\s+import\(\s*(['"])([^'"]+)\1\s*\)/)?.[2];
 }
@@ -113,15 +102,14 @@ export async function inspectViteSPA(appDirectory: string) {
   const sourceDirectory = path.join(appDirectory, 'src');
   const indexHtml = await fs.promises.readFile(indexHtmlPath, 'utf8');
   const { script, source } = getModuleEntry(indexHtml);
-  const declaredEntryImport = getEntryImport(
-    appDirectory,
+  const declaredEntryPath = getEntryPath(appDirectory, source);
+  const declaredEntryImport = toRelativeImport(
     sourceDirectory,
-    source
-  );
+    declaredEntryPath
+  ).replace(/\.(?:[cm]?[jt]sx?)$/i, '');
   const configuredBootstrap = source.match(
     /^\/?src\/(gt-entry\.ts|gt-bootstrap\.ts)(?:[?#].*)?$/
   )?.[1];
-  const declaredEntryPath = getEntryPath(appDirectory, source);
   let customBootstrap: string | undefined;
   if (!configuredBootstrap && fs.existsSync(declaredEntryPath)) {
     const entry = await fs.promises.readFile(declaredEntryPath, 'utf8');
