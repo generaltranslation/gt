@@ -1630,7 +1630,6 @@ See https://www.npmjs.com/package/gt-vue`);
         );
       } else {
         session.step('configured initializeGTSPA');
-        if (result.loader === 'custom') reportLoaderUpdate(VITE_LOADER_FILE);
       }
     }
 
