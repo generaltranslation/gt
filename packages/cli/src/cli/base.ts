@@ -1552,11 +1552,7 @@ See https://www.npmjs.com/package/gt-vue`);
     if (storage === 'local' && translationsDir) {
       // Without the React setup, configure keeps an existing Vite loader in
       // sync; init leaves application source to the person.
-      if (
-        isVite &&
-        !reactSetup &&
-        translationsDir !== configuredTranslationsDir
-      ) {
+      if (isVite && !reactSetup) {
         if (setup.keepAppSource) {
           if (fs.existsSync(path.join(cwd, VITE_LOADER_FILE))) {
             reportLoaderUpdate(VITE_LOADER_FILE, false);

@@ -995,6 +995,39 @@ describe('init and configure onboarding', () => {
       });
     });
 
+    it.each(['public/old/', './public/old/'])(
+      'repairs locales and updates the generated loader after configuring %s',
+      async (directory) => {
+        await configure('--locales', 'fr', '--translations-dir', directory);
+        fs.writeFileSync(file('public/old/fr.json'), '{"hello":"bonjour"}');
+        stdoutEvents = [];
+
+        await configure('--locales', 'fr', 'de');
+
+        expect(fs.readFileSync(file('public/old/de.json'), 'utf8')).toBe('{}');
+        expect(fs.readFileSync(file('public/old/fr.json'), 'utf8')).toBe(
+          '{"hello":"bonjour"}'
+        );
+        expect(events().at(-1)).toMatchObject({ outcome: 'success' });
+        stdoutEvents = [];
+
+        await configure('--translations-dir', 'public/new');
+
+        expect(fs.readFileSync(file('loadTranslations.js'), 'utf8')).toContain(
+          'import(`./public/new/${locale}.json`)'
+        );
+        expect(readConfig().files.gt.output).toBe(
+          path.join('public/new', '[locale].json')
+        );
+        expect(fs.existsSync(file('public/new/de.json'))).toBe(true);
+        expect(events().at(-1)).toMatchObject({ outcome: 'success' });
+        expect(hasLogin).not.toHaveBeenCalled();
+        expect(login).not.toHaveBeenCalled();
+        expect(api.createProject).not.toHaveBeenCalled();
+        expect(api.createProjectApiKey).not.toHaveBeenCalled();
+      }
+    );
+
     it('keeps a custom loader and asks for a manual update when the directory changes', async () => {
       await configure('--locales', 'fr', '--translations-dir', 'old-tx');
       const custom = 'export default async () => ({ custom: true });\n';
@@ -1103,6 +1136,37 @@ await import('./main');
           }
         }
       );
+
+      it('configure repairs locale files without changing the directory or app source', async () => {
+        const loader = viteLoader();
+        const bootstrap = fs.readFileSync(file('src/gt-entry.ts'), 'utf8');
+        const html = fs.readFileSync(file('index.html'), 'utf8');
+        fs.writeFileSync(file('old-tx/fr.json'), '{"hello":"bonjour"}');
+
+        await configure('--locales', 'fr', 'de');
+
+        expect(fs.readFileSync(file('old-tx/de.json'), 'utf8')).toBe('{}\n');
+        expect(fs.readFileSync(file('old-tx/fr.json'), 'utf8')).toBe(
+          '{"hello":"bonjour"}'
+        );
+        expect(events().at(-1)).toMatchObject({ outcome: 'success' });
+        fs.unlinkSync(file('old-tx/fr.json'));
+        stdoutEvents = [];
+
+        await configure();
+
+        expect(fs.readFileSync(file('old-tx/fr.json'), 'utf8')).toBe('{}\n');
+        expect(readConfig().locales).toEqual(['fr', 'de']);
+        expect(viteLoader()).toBe(loader);
+        expect(fs.readFileSync(file('src/gt-entry.ts'), 'utf8')).toBe(
+          bootstrap
+        );
+        expect(fs.readFileSync(file('index.html'), 'utf8')).toBe(html);
+        expect(events().at(-1)).toMatchObject({ outcome: 'success' });
+        expect(hasLogin).not.toHaveBeenCalled();
+        expect(login).not.toHaveBeenCalled();
+        expect(api.createProjectApiKey).not.toHaveBeenCalled();
+      });
 
       it('configure keeps the loader and config when the directory cannot be created', async () => {
         const loader = viteLoader();
