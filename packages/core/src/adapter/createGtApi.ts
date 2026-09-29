@@ -16,6 +16,7 @@ import {
   getTranslationStatus,
   listOrgs,
   listProjects,
+  paginateWith,
   pollJobs,
   processBatches,
   processFileMoves,
@@ -37,6 +38,7 @@ import {
   type GetFileInfoData,
   type GetTranslationJobInfoResponse,
   type GetTranslationStatusData,
+  type LoadPage,
   type ProcessFileMovesData,
   type PublishFilesData,
   type SubmitUserEditDiffsData,
@@ -66,19 +68,9 @@ import { unwrapApiResult } from '../translate/utils/unwrapApiResult';
 import { validateFileFormatTransforms } from '../translate/utils/validateFileFormatTransform';
 import { isModelProvider, supportedModelProviders } from './modelProvider';
 
-// Follows nextCursor until the service reports the last page.
-async function collectPages<T>(
-  loadPage: (
-    cursor: string | undefined
-  ) => Promise<{ items: T[]; nextCursor: string | null }>
-): Promise<T[]> {
+async function collectPages<T>(loadPage: LoadPage<T>): Promise<T[]> {
   const items: T[] = [];
-  let cursor: string | undefined;
-  do {
-    const page = await loadPage(cursor);
-    items.push(...page.items);
-    cursor = page.nextCursor ?? undefined;
-  } while (cursor);
+  for await (const item of paginateWith(loadPage)) items.push(item);
   return items;
 }
 

@@ -8,6 +8,8 @@ export type {
 export { DEFAULT_BATCH_SIZE, processBatches } from './wrappers/batch';
 export type { BatchOptions } from './wrappers/batch';
 export { API_VERSION, createApiClient } from './wrappers/client';
+export { paginate, paginateWith } from './wrappers/paginate';
+export type { LoadPage, Page } from './wrappers/paginate';
 export type {
   ApiClientConfig,
   ApiVersion,
