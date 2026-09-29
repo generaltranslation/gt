@@ -129,10 +129,14 @@ async function resolveNewProject(
 export function checkDevelopmentProjectInputs(
   session: OnboardingSession,
   settings: Settings,
-  options: DevelopmentProjectOptions
+  options: DevelopmentProjectOptions,
+  /** Where settings.projectId came from, so a person can remove it. */
+  projectIdSource: string
 ): void {
   if (settings.projectId && options.createProject) {
-    session.reject('--create-project cannot be combined with a project ID');
+    session.reject(
+      `--create-project cannot be combined with project ${settings.projectId} from ${projectIdSource}; remove it there, or pass --project-id to keep using it`
+    );
   }
   if (settings.projectId || session.interactive) return;
   if (!options.createProject) {

@@ -647,6 +647,32 @@ describe('init and configure onboarding', () => {
     const writeConfig = (config: Record<string, unknown>) =>
       fs.writeFileSync(file('gt.config.json'), JSON.stringify(config));
 
+    it.each([
+      ['gt.config.json', () => writeConfig({ projectId: 'p-old' })],
+      ['the environment', () => vi.stubEnv('GT_PROJECT_ID', 'p-old')],
+    ])(
+      'names %s as the source of a project ID that blocks --create-project',
+      async (source, setUp) => {
+        setUp();
+
+        await expect(
+          run(
+            'init',
+            ...local,
+            '--locales',
+            'fr',
+            '--dev-credentials',
+            '--create-project',
+            '--project-name',
+            'App'
+          )
+        ).rejects.toThrow(
+          `--create-project cannot be combined with project p-old from ${source}`
+        );
+        expect(api.createProject).not.toHaveBeenCalled();
+      }
+    );
+
     it('creates a new project with the resolved default locale', async () => {
       vi.mocked(api.listOrgs).mockResolvedValue([{ id: 'o1', name: 'Acme' }]);
       vi.mocked(api.createProject).mockResolvedValue({

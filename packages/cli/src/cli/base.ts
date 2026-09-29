@@ -1334,7 +1334,16 @@ See https://www.npmjs.com/package/gt-vue`);
       configUpdate.projectId = options.projectId;
     }
     if (provision) {
-      checkDevelopmentProjectInputs(session, settings, options);
+      checkDevelopmentProjectInputs(
+        session,
+        settings,
+        options,
+        options.projectId
+          ? '--project-id'
+          : typeof existingConfig.projectId === 'string'
+            ? configFilepath
+            : 'the environment'
+      );
       await withCredentialsError(() =>
         inspectCredentialsEnvFile(cwd, { framework: envFramework })
       );
