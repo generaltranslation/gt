@@ -771,10 +771,11 @@ describe('aggregateFiles - Empty File Handling', () => {
   });
 
   describe('.NET .resx files', () => {
-    // The byte order mark, CRLF line endings, entity escapes and comments are
-    // load-bearing: the API writes translated values into this exact content.
+    // CRLF line endings, entity escapes and comments are load-bearing: the API
+    // writes translated values into this exact content. The reader has already
+    // removed any byte order mark, so the content starts at the declaration.
     const resxContent =
-      '﻿<?xml version="1.0" encoding="utf-8"?>\r\n<root>\r\n  <data name="Save" xml:space="preserve">\r\n    <value>Save &amp; exit</value>\r\n    <comment>Toolbar button</comment>\r\n  </data>\r\n  <data name="Greeting" xml:space="preserve">\r\n    <value>Hello, {0}!</value>\r\n  </data>\r\n</root>\r\n';
+      '<?xml version="1.0" encoding="utf-8"?>\r\n<root>\r\n  <data name="Save" xml:space="preserve">\r\n    <value>Save &amp; exit</value>\r\n    <comment>Toolbar button</comment>\r\n  </data>\r\n  <data name="Greeting" xml:space="preserve">\r\n    <value>Hello, {0}!</value>\r\n  </data>\r\n</root>\r\n';
 
     beforeEach(() => {
       mockSanitizeFileContent.mockImplementation((content) =>
