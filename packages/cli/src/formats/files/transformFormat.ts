@@ -34,6 +34,7 @@ export const CONFIG_FILE_TYPE_TO_FILE_FORMAT = {
   androidStrings: 'ANDROID_STRINGS',
   xcstrings: 'XCSTRINGS',
   srt: 'SRT',
+  resx: 'RESX',
 } as const satisfies Record<SupportedFileExtension, FileFormat>;
 
 /**
@@ -56,6 +57,7 @@ export const FILE_FORMAT_TO_CONFIG_FILE_TYPE = {
   ANDROID_STRINGS: 'androidStrings',
   XCSTRINGS: 'xcstrings',
   SRT: 'srt',
+  RESX: 'resx',
 } as const satisfies Partial<Record<FileFormat, SupportedFileExtension>>;
 
 /**
@@ -81,6 +83,7 @@ const FILE_FORMAT_EXTENSIONS = {
   ANDROID_STRINGS: 'xml',
   XCSTRINGS: 'xcstrings',
   SRT: 'srt',
+  RESX: 'resx',
 } as const satisfies Record<FileFormat, string>;
 
 /**

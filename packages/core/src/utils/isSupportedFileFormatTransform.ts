@@ -20,6 +20,7 @@ const SUPPORTED_TRANSFORMATIONS = {
   DOT_STRINGSDICT: ['DOT_STRINGSDICT'],
   ANDROID_STRINGS: ['ANDROID_STRINGS'],
   SRT: ['SRT'],
+  RESX: ['RESX'],
   XCSTRINGS: ['XCSTRINGS'],
 } as const satisfies Record<FileFormat, FileFormat[]>;
 
