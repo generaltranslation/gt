@@ -121,6 +121,7 @@ import { hasLogin, logout, whoAmI } from '../auth/oauth.js';
 import { createUserAuthError, UserAuthError } from '../auth/errors.js';
 import { loginInteractively } from '../auth/interactiveLogin.js';
 import { resolveConfig } from '../config/resolveConfig.js';
+import { loadConfig } from '../fs/config/loadConfig.js';
 import {
   getBuildToolSetup,
   type ManualAction,
@@ -758,11 +759,19 @@ export class BaseCLI {
         '--no-browser',
         'Do not open a browser; show a sign-in URL to use on any device instead'
       )
-      .action(async (options: { browser: boolean }) => {
+      .option(
+        '-c, --config <path>',
+        'Filepath to config file, by default gt.config.json'
+      )
+      .action(async (options: { browser: boolean; config?: string }) => {
         displayHeader('Signing in to General Translation...');
         try {
           // Tokens are bound to one API resource, so log in to the configured one.
-          const baseUrl = resolveConfig(process.cwd())?.config.baseUrl;
+          const baseUrl = (
+            options.config
+              ? loadConfig(options.config)
+              : resolveConfig(process.cwd())?.config
+          )?.baseUrl;
           await loginInteractively(
             typeof baseUrl === 'string' ? baseUrl : undefined,
             options.browser

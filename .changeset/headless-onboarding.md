@@ -8,4 +8,4 @@ Reruns that change `--translations-dir` update a generated Vite loader, or repor
 
 Package-manager selection honors `--package-manager`, then `package.json#packageManager`, then an unambiguous lockfile, asking only when detection fails. Explicit overrides and separate projects no longer inherit an earlier process-wide selection. Next.js App Router setup writes and recognizes `NEXT_PUBLIC_GT_PROJECT_ID` and `NEXT_PUBLIC_GT_DEV_API_KEY` so development translation works in both server and client components without a tooling `GT_API_KEY`. Development keys must be omitted from production builds.
 
-The CLI no longer reads `src/gt.config.json`. Move it to the project root, or pass `--config src/gt.config.json`.
+The CLI no longer reads `src/gt.config.json`. Move it to the project root, or pass `--config src/gt.config.json`. The monorepo version check and `gt login` now read the config given with `--config`.

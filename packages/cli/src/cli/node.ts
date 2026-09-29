@@ -18,7 +18,10 @@ export class NodeCLI extends InlineCLI {
     this.program.hook('preAction', (_thisCommand, actionCommand) => {
       if (this.program.opts().skipVersionCheck) return;
       if (actionCommand.parent?.name() === 'git') return;
-      checkMonorepoVersionConsistency(NODE_LIBRARIES);
+      checkMonorepoVersionConsistency(
+        NODE_LIBRARIES,
+        actionCommand.opts().config
+      );
     });
   }
 }

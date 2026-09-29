@@ -5,6 +5,7 @@ import chalk from 'chalk';
 import { logger } from '../console/logger.js';
 import { Libraries, type GTLibrary } from '../types/libraries.js';
 import { resolveConfig } from '../config/resolveConfig.js';
+import { loadConfig } from '../fs/config/loadConfig.js';
 
 interface PackageJson {
   name?: string;
@@ -329,13 +330,16 @@ function formatMismatchError(mismatches: VersionMismatch[]): string {
  * Can be skipped via the --skip-version-check flag or "skipVersionCheck": true in gt.config.json.
  */
 export function checkMonorepoVersionConsistency(
-  libraries: readonly GTLibrary[]
+  libraries: readonly GTLibrary[],
+  configPath?: string
 ): void {
   const cwd = process.cwd();
 
-  // Check if skipped via config
-  const resolved = resolveConfig(cwd);
-  if (resolved?.config?.skipVersionCheck) return;
+  // Check if skipped via config; an explicit --config replaces discovery.
+  const config = configPath
+    ? loadConfig(configPath)
+    : resolveConfig(cwd)?.config;
+  if (config?.skipVersionCheck) return;
 
   const rootDir = findMonorepoRoot(cwd);
   if (!rootDir) return; // No lockfile found — nothing to check
