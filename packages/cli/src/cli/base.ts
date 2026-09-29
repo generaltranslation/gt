@@ -121,7 +121,7 @@ import { hasLogin, logout, whoAmI } from '../auth/oauth.js';
 import { createUserAuthError, UserAuthError } from '../auth/errors.js';
 import { loginInteractively } from '../auth/interactiveLogin.js';
 import { resolveConfig } from '../config/resolveConfig.js';
-import { loadConfig } from '../fs/config/loadConfig.js';
+import { loadConfig, withJsonExtension } from '../fs/config/loadConfig.js';
 import {
   getBuildToolSetup,
   type ManualAction,
@@ -769,7 +769,7 @@ export class BaseCLI {
           // Tokens are bound to one API resource, so log in to the configured one.
           const baseUrl = (
             options.config
-              ? loadConfig(options.config)
+              ? loadConfig(withJsonExtension(options.config))
               : resolveConfig(process.cwd())?.config
           )?.baseUrl;
           await loginInteractively(

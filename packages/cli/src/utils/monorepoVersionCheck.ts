@@ -5,7 +5,7 @@ import chalk from 'chalk';
 import { logger } from '../console/logger.js';
 import { Libraries, type GTLibrary } from '../types/libraries.js';
 import { resolveConfig } from '../config/resolveConfig.js';
-import { loadConfig } from '../fs/config/loadConfig.js';
+import { loadConfig, withJsonExtension } from '../fs/config/loadConfig.js';
 
 interface PackageJson {
   name?: string;
@@ -337,7 +337,7 @@ export function checkMonorepoVersionConsistency(
 
   // Check if skipped via config; an explicit --config replaces discovery.
   const config = configPath
-    ? loadConfig(configPath)
+    ? loadConfig(withJsonExtension(configPath))
     : resolveConfig(cwd)?.config;
   if (config?.skipVersionCheck) return;
 

@@ -5,7 +5,7 @@ import {
   warnApiKeyInConfig,
   warnDeprecatedField,
 } from '../console/logging.js';
-import { loadConfig } from '../fs/config/loadConfig.js';
+import { loadConfig, withJsonExtension } from '../fs/config/loadConfig.js';
 import { FilesOptions, Settings } from '../types/index.js';
 import {
   defaultBaseUrl,
@@ -101,8 +101,8 @@ export async function generateSettings(
   // Load config file
   let gtConfig: GenerateSettingsInput = {};
 
-  if (flags.config && !flags.config.endsWith('.json')) {
-    flags.config = `${flags.config}.json`;
+  if (flags.config) {
+    flags.config = withJsonExtension(flags.config);
   }
   if (options?.resolvedConfig) {
     gtConfig = options.resolvedConfig as GenerateSettingsInput;

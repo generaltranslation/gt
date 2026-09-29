@@ -75,6 +75,10 @@ describe('monorepo version check with an explicit config', () => {
       await expect(
         run(createCli, ['--config', 'src/gt.config.json'])
       ).resolves.toBe(true);
+      // Commands also accept the path without its extension.
+      await expect(run(createCli, ['--config', 'src/gt.config'])).resolves.toBe(
+        true
+      );
     }
   );
 });
