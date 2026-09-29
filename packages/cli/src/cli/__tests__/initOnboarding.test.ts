@@ -1186,6 +1186,47 @@ describe('init and configure onboarding', () => {
       });
     });
 
+    // gt-next resolves loadTranslations.ts before loadTranslations.js.
+    it('asks to update an existing TypeScript loader instead of adding an unused JS one', async () => {
+      fs.mkdirSync(file('src'));
+      const loader =
+        'export default (locale: string) => import(`../old-tx/${locale}.json`);\n';
+      fs.writeFileSync(file('src/loadTranslations.ts'), loader);
+      writeConfig({
+        defaultLocale: 'en',
+        locales: ['fr'],
+        files: { gt: { output: 'old-tx/[locale].json' } },
+      });
+
+      await configure('--translations-dir', 'new-tx');
+
+      expect(fs.readFileSync(file('src/loadTranslations.ts'), 'utf8')).toBe(
+        loader
+      );
+      expect(fs.existsSync(file('src/loadTranslations.js'))).toBe(false);
+      // The updated loader can build before translations are downloaded.
+      expect(fs.readFileSync(file('new-tx/fr.json'), 'utf8')).toBe('{}');
+      expect(events().at(-1)).toMatchObject({
+        outcome: 'needs_human_action',
+        completedSteps: ['updated gt.config.json'],
+        actions: [expect.stringMatching(/src\/loadTranslations\.ts.*new-tx/)],
+      });
+    });
+
+    it('reports the local loader left in place after switching to the CDN', async () => {
+      await configure('--locales', 'fr', '--translations-dir', 'old-tx');
+      stdoutEvents = [];
+
+      await configure('--storage', 'cdn');
+
+      expect(readConfig().files?.gt).toBeUndefined();
+      expect(fs.existsSync(file('loadTranslations.js'))).toBe(true);
+      expect(events().at(-1)).toMatchObject({
+        outcome: 'needs_human_action',
+        actions: [expect.stringMatching(/Delete loadTranslations\.js/)],
+      });
+    });
+
     it.each(['public/old/', './public/old/'])(
       'repairs locales and updates the generated loader after configuring %s',
       async (directory) => {

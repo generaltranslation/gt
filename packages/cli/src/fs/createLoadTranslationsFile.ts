@@ -39,6 +39,22 @@ export default async function loadTranslations(locale) {
 `;
 }
 
+/**
+ * The loadTranslations file the app uses, in gt-next's lookup order
+ * (resolveConfigFilepath): root before src, .ts before .js.
+ */
+export function findLoadTranslationsFile(
+  appDirectory: string
+): string | undefined {
+  return ['', 'src']
+    .flatMap((directory) =>
+      ['.ts', '.js'].map((extension) =>
+        path.join(appDirectory, directory, `loadTranslations${extension}`)
+      )
+    )
+    .find((candidate) => fs.existsSync(candidate));
+}
+
 export type LoadTranslationsFileResult =
   | 'created'
   | 'updated'
@@ -48,8 +64,9 @@ export type LoadTranslationsFileResult =
 /**
  * Creates or updates the generated loadTranslations.js for translationsDir
  * (relative to appDirectory) and empty stubs for non-default locales. A
- * loader that was not matching the previous config's generated template is
- * left untouched and reported as 'custom'.
+ * loader that was not matching the previous config's generated template, or
+ * another loadTranslations file the app uses instead, is left untouched and
+ * reported as 'custom'.
  * Directory and stub failures propagate.
  */
 export async function createLoadTranslationsFile({
@@ -100,23 +117,13 @@ export async function createLoadTranslationsFile({
             )
           );
 
-  const existing = fs.existsSync(filePath)
-    ? await fs.promises.readFile(filePath, 'utf8')
-    : undefined;
-  if (
-    existing !== undefined &&
-    existing !== content &&
-    !previousContents.includes(existing)
-  ) {
-    logger.info(
-      `Found a custom ${chalk.cyan('loadTranslations.js')} at ${chalk.cyan(
-        filePath
-      )}; leaving it unchanged.`
-    );
-    return 'custom';
-  }
-
-  // Stubs first, so a directory failure leaves no loader pointing at it.
+  const loaderPath = findLoadTranslationsFile(appDirectory);
+  const existing =
+    loaderPath === filePath
+      ? await fs.promises.readFile(filePath, 'utf8')
+      : undefined;
+  // Stubs first, so a directory failure leaves no loader pointing at it; a
+  // custom loader also gets them, like the Vite loader.
   await fs.promises.mkdir(translationsPath, { recursive: true });
   for (const locale of new Set(locales)) {
     // Default-locale content lives in source, so it never needs a stub.
@@ -124,6 +131,21 @@ export async function createLoadTranslationsFile({
     const stubPath = path.join(translationsPath, `${locale}.json`);
     if (!fs.existsSync(stubPath)) await fs.promises.writeFile(stubPath, '{}');
   }
+  // Another loader wins over the generated one, so writing it would not help.
+  if (
+    (loaderPath !== undefined && loaderPath !== filePath) ||
+    (existing !== undefined &&
+      existing !== content &&
+      !previousContents.includes(existing))
+  ) {
+    logger.info(
+      `Found a custom ${chalk.cyan(
+        path.basename(loaderPath ?? filePath)
+      )} at ${chalk.cyan(loaderPath ?? filePath)}; leaving it unchanged.`
+    );
+    return 'custom';
+  }
+
   if (existing === content) return 'unchanged';
   await fs.promises.writeFile(filePath, content);
   logger.info(
