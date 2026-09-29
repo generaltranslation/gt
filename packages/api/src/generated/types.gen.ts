@@ -43,6 +43,7 @@ export const FileFormat = {
   DOT_STRINGSDICT: 'DOT_STRINGSDICT',
   ANDROID_STRINGS: 'ANDROID_STRINGS',
   SRT: 'SRT',
+  RESX: 'RESX',
 } as const;
 
 export type FileFormat = (typeof FileFormat)[keyof typeof FileFormat];
@@ -2677,7 +2678,8 @@ export type UploadSourceFilesData = {
           | 'DOT_STRINGS'
           | 'DOT_STRINGSDICT'
           | 'ANDROID_STRINGS'
-          | 'SRT';
+          | 'SRT'
+          | 'RESX';
         dataFormat?: string;
         locale: string;
         fileId?: string;
@@ -2793,7 +2795,8 @@ export type EnqueueFileTranslationsData = {
         | 'DOT_STRINGS'
         | 'DOT_STRINGSDICT'
         | 'ANDROID_STRINGS'
-        | 'SRT';
+        | 'SRT'
+        | 'RESX';
     }>;
     targetLocales?: Array<string>;
     sourceLocale?: string;
@@ -3011,7 +3014,8 @@ export type UploadTranslationsData = {
           | 'DOT_STRINGS'
           | 'DOT_STRINGSDICT'
           | 'ANDROID_STRINGS'
-          | 'SRT';
+          | 'SRT'
+          | 'RESX';
         dataFormat?: string;
         locale: string;
         fileId?: string;
@@ -3045,7 +3049,8 @@ export type UploadTranslationsData = {
           | 'DOT_STRINGS'
           | 'DOT_STRINGSDICT'
           | 'ANDROID_STRINGS'
-          | 'SRT';
+          | 'SRT'
+          | 'RESX';
         dataFormat?: string;
         locale: string;
         transformFormat?:
@@ -3067,7 +3072,8 @@ export type UploadTranslationsData = {
           | 'DOT_STRINGS'
           | 'DOT_STRINGSDICT'
           | 'ANDROID_STRINGS'
-          | 'SRT';
+          | 'SRT'
+          | 'RESX';
       }>;
     }>;
     sourceLocale?: string;

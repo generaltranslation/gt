@@ -770,6 +770,83 @@ describe('aggregateFiles - Empty File Handling', () => {
     });
   });
 
+  describe('.NET .resx files', () => {
+    // The byte order mark, CRLF line endings, entity escapes and comments are
+    // load-bearing: the API writes translated values into this exact content.
+    const resxContent =
+      '﻿<?xml version="1.0" encoding="utf-8"?>\r\n<root>\r\n  <data name="Save" xml:space="preserve">\r\n    <value>Save &amp; exit</value>\r\n    <comment>Toolbar button</comment>\r\n  </data>\r\n  <data name="Greeting" xml:space="preserve">\r\n    <value>Hello, {0}!</value>\r\n  </data>\r\n</root>\r\n';
+
+    beforeEach(() => {
+      mockSanitizeFileContent.mockImplementation((content) =>
+        content.replace(/\r/g, '')
+      );
+    });
+
+    it('uploads .resx and .resw files verbatim with the RESX format', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            resx: [
+              '/full/path/Properties/Resources.resx',
+              '/full/path/Strings/en-US/Resources.resw',
+            ],
+          },
+          placeholderPaths: {},
+        },
+        options: {},
+        defaultLocale: 'en',
+      };
+
+      mockReadFileContent
+        .mockReturnValueOnce(resxContent)
+        .mockReturnValueOnce(resxContent);
+
+      const { files: result } = await aggregateTestFiles(settings);
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toMatchObject({
+        fileName: 'Properties/Resources.resx',
+        fileFormat: 'RESX',
+        locale: 'en',
+      });
+      expect(result[0].content).toBe(resxContent);
+      expect(result[0].fileId).toBe(
+        hashStringSync('Properties/Resources.resx')
+      );
+      expect(result[0].versionId).toBe(hashVersionId(resxContent, false));
+      expect(result[1]).toMatchObject({
+        fileName: 'Strings/en-US/Resources.resw',
+        fileFormat: 'RESX',
+      });
+      expect(result[1].content).toBe(resxContent);
+    });
+
+    it('skips an empty .resx file and logs a warning', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            resx: ['/full/path/Empty.resx', '/full/path/Resources.resx'],
+          },
+          placeholderPaths: {},
+        },
+        options: {},
+        defaultLocale: 'en',
+      };
+
+      mockReadFileContent
+        .mockReturnValueOnce('  \r\n')
+        .mockReturnValueOnce(resxContent);
+
+      const { files: result } = await aggregateTestFiles(settings);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].fileName).toBe('Resources.resx');
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        expect.stringContaining('Empty.resx')
+      );
+    });
+  });
+
   describe('Android strings.xml files', () => {
     // The escapes below are load-bearing: AAPT requires \' and \", and the
     // API relies on receiving them exactly as authored.
