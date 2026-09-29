@@ -1,0 +1,364 @@
+import fs from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { tanstackStartSetup } from '../buildTools/tanstackStart.js';
+
+// The create-start template, as generated.
+const templateRouter = `import { createRouter as createTanStackRouter } from '@tanstack/react-router'
+import { routeTree } from './routeTree.gen'
+
+export function getRouter() {
+  const router = createTanStackRouter({
+    routeTree,
+    scrollRestoration: true,
+    defaultPreload: 'intent',
+    defaultPreloadStaleTime: 0,
+  })
+
+  return router
+}
+
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: ReturnType<typeof getRouter>
+  }
+}
+`;
+
+const templateRoot = `import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
+
+import appCss from '../styles.css?url'
+
+export const Route = createRootRoute({
+  head: () => ({
+    meta: [
+      {
+        charSet: 'utf-8',
+      },
+    ],
+    links: [
+      {
+        rel: 'stylesheet',
+        href: appCss,
+      },
+    ],
+  }),
+  shellComponent: RootDocument,
+})
+
+function RootDocument({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <head>
+        <HeadContent />
+      </head>
+      <body>
+        {children}
+
+        <Scripts />
+      </body>
+    </html>
+  )
+}
+`;
+
+const configuredRouter = `import { createRouter as createTanStackRouter } from '@tanstack/react-router'
+import { routeTree } from './routeTree.gen'
+import { initializeGT } from 'gt-tanstack-start'
+import gtConfig from '../gt.config.json'
+import loadTranslations from './loadTranslations'
+
+initializeGT({ ...gtConfig, loadTranslations })
+
+export function getRouter() {
+  const router = createTanStackRouter({
+    routeTree,
+    scrollRestoration: true,
+    defaultPreload: 'intent',
+    defaultPreloadStaleTime: 0,
+  })
+
+  return router
+}
+
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: ReturnType<typeof getRouter>
+  }
+}
+`;
+
+const configuredRoot = `import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
+
+import appCss from '../styles.css?url'
+import { GTProvider, getLocale, getTranslationsSnapshot } from 'gt-tanstack-start'
+
+export const Route = createRootRoute({
+  head: () => ({
+    meta: [
+      {
+        charSet: 'utf-8',
+      },
+    ],
+    links: [
+      {
+        rel: 'stylesheet',
+        href: appCss,
+      },
+    ],
+  }),
+  loader: async () => {
+    const locale = getLocale()
+    return { locale, translations: await getTranslationsSnapshot(locale) }
+  },
+  shellComponent: RootDocument,
+})
+
+function RootDocument({ children }: { children: React.ReactNode }) {
+  const { locale, translations } = Route.useLoaderData()
+  return (
+    <html lang={locale}>
+      <head>
+        <HeadContent />
+      </head>
+      <body>
+        <GTProvider locale={locale} translations={translations}>
+          {children}
+        </GTProvider>
+
+        <Scripts />
+      </body>
+    </html>
+  )
+}
+`;
+
+const generatedStart = `import { createCsrfMiddleware, createStart } from '@tanstack/react-start';
+import { gtMiddleware } from 'gt-tanstack-start';
+
+const csrfMiddleware = createCsrfMiddleware({
+  filter: ({ handlerType }) => handlerType === 'serverFn',
+});
+
+export const startInstance = createStart(() => ({
+  requestMiddleware: [csrfMiddleware, gtMiddleware],
+}));
+`;
+
+describe('tanstackStartSetup', () => {
+  let appDirectory: string;
+  const file = (name: string) => path.join(appDirectory, name);
+  const read = (name: string) => fs.readFileSync(file(name), 'utf8');
+  const write = (name: string, content: string) => {
+    fs.mkdirSync(path.dirname(file(name)), { recursive: true });
+    fs.writeFileSync(file(name), content);
+  };
+  const ctx = () => ({
+    appDirectory,
+    configFilepath: 'gt.config.json',
+    defaultLocale: 'en',
+    locales: ['es', 'fr'],
+    translationsDir: 'src/_gt',
+  });
+  /** Every file under the app, to prove a run wrote nothing. */
+  const snapshot = () =>
+    Object.fromEntries(
+      (fs.readdirSync(appDirectory, { recursive: true }) as string[])
+        .filter((name) => fs.statSync(file(name)).isFile())
+        .sort()
+        .map((name) => [name, read(name)])
+    );
+
+  beforeEach(() => {
+    appDirectory = fs.mkdtempSync(path.join(tmpdir(), 'gt-tanstack-start-'));
+    write('gt.config.json', '{}');
+    write('src/router.tsx', templateRouter);
+    write('src/routes/__root.tsx', templateRoot);
+  });
+
+  afterEach(() => {
+    fs.rmSync(appDirectory, { recursive: true, force: true });
+  });
+
+  it('configures a create-start app in its own code style', async () => {
+    await tanstackStartSetup.preflight(appDirectory);
+    const result = await tanstackStartSetup.apply(ctx());
+
+    expect(read('src/router.tsx')).toBe(configuredRouter);
+    expect(read('src/routes/__root.tsx')).toBe(configuredRoot);
+    expect(read('src/start.ts')).toBe(generatedStart);
+    expect(read('src/loadTranslations.ts')).toContain(
+      'import(`./_gt/${locale}.json`)'
+    );
+    expect(read('src/_gt/es.json')).toBe('{}\n');
+    expect(read('src/_gt/fr.json')).toBe('{}\n');
+    expect(fs.existsSync(file('src/_gt/en.json'))).toBe(false);
+    expect(result).toEqual({
+      steps: [
+        'created src/start.ts',
+        'configured src/router.tsx',
+        'configured src/routes/__root.tsx',
+      ],
+      manualActions: [],
+    });
+  });
+
+  it('changes nothing on a rerun', async () => {
+    await tanstackStartSetup.apply(ctx());
+    const before = snapshot();
+
+    await tanstackStartSetup.preflight(appDirectory);
+    const result = await tanstackStartSetup.apply(ctx());
+
+    expect(snapshot()).toEqual(before);
+    expect(result).toEqual({ steps: [], manualActions: [] });
+  });
+
+  it('matches double quotes and semicolons in the router', async () => {
+    write(
+      'src/router.tsx',
+      'import { createRouter } from "@tanstack/react-router";\n\nexport function getRouter() {}\n'
+    );
+
+    await tanstackStartSetup.apply(ctx());
+
+    expect(read('src/router.tsx'))
+      .toBe(`import { createRouter } from "@tanstack/react-router";
+import { initializeGT } from "gt-tanstack-start";
+import gtConfig from "../gt.config.json";
+import loadTranslations from "./loadTranslations";
+
+initializeGT({ ...gtConfig, loadTranslations });
+
+export function getRouter() {}
+`);
+  });
+
+  it('initializes from the CDN without a translations directory', async () => {
+    await tanstackStartSetup.apply({ ...ctx(), translationsDir: undefined });
+
+    expect(read('src/router.tsx')).toContain('initializeGT(gtConfig)\n');
+    expect(read('src/router.tsx')).not.toContain('loadTranslations');
+    expect(fs.existsSync(file('src/loadTranslations.ts'))).toBe(false);
+  });
+
+  it('asks for gtMiddleware in an existing start entry', async () => {
+    const start = `import { createStart } from '@tanstack/react-start';
+
+export const startInstance = createStart(() => ({}));
+`;
+    write('src/start.ts', start);
+
+    const result = await tanstackStartSetup.apply(ctx());
+
+    expect(read('src/start.ts')).toBe(start);
+    expect(read('src/router.tsx')).toBe(configuredRouter);
+    expect(result.manualActions).toEqual([
+      {
+        whatHappened: 'src/start.ts does not use gtMiddleware',
+        fix: expect.stringContaining('requestMiddleware: [gtMiddleware]'),
+      },
+    ]);
+  });
+
+  it.each([
+    [
+      'an existing loader',
+      templateRoot.replace(
+        '  shellComponent: RootDocument,',
+        '  loader: () => ({}),\n  shellComponent: RootDocument,'
+      ),
+    ],
+    [
+      'an expression lang',
+      templateRoot.replace('lang="en"', 'lang={getLang()}'),
+    ],
+    [
+      'a component without an html shell',
+      templateRoot
+        .replace('shellComponent', 'component')
+        .replace(/<html[\s\S]*<\/html>/, '<Outlet />'),
+    ],
+    [
+      'an imported shell',
+      templateRoot.replace(/function RootDocument/, 'function Other'),
+    ],
+    ['a syntax error', `${templateRoot}\n<`],
+  ])('leaves a root route with %s for manual review', async (_case, root) => {
+    write('src/routes/__root.tsx', root);
+
+    const result = await tanstackStartSetup.apply(ctx());
+
+    expect(read('src/routes/__root.tsx')).toBe(root);
+    expect(result.manualActions).toEqual([
+      {
+        whatHappened:
+          'src/routes/__root.tsx does not match the create-start root route',
+        fix: expect.stringContaining('<GTProvider locale={locale}'),
+      },
+    ]);
+  });
+
+  it('wraps the Outlet of a component root route', async () => {
+    write(
+      'src/routes/__root.tsx',
+      templateRoot
+        .replace('shellComponent', 'component')
+        .replace('{children}', '<Outlet />')
+    );
+
+    await tanstackStartSetup.apply(ctx());
+
+    expect(read('src/routes/__root.tsx')).toContain(
+      `        <GTProvider locale={locale} translations={translations}>
+          <Outlet />
+        </GTProvider>`
+    );
+  });
+
+  it('leaves an already configured app unchanged', async () => {
+    write('src/start.ts', generatedStart);
+    write('src/router.tsx', configuredRouter);
+    write('src/routes/__root.tsx', configuredRoot);
+    await tanstackStartSetup.apply(ctx());
+    const before = snapshot();
+
+    const result = await tanstackStartSetup.apply(ctx());
+
+    expect(snapshot()).toEqual(before);
+    expect(result).toEqual({ steps: [], manualActions: [] });
+  });
+
+  it('preserves a custom loader and imports its named export', async () => {
+    const loader =
+      'export async function loadTranslations(locale: string) { return {}; }\n';
+    write('src/loadTranslations.ts', loader);
+
+    const result = await tanstackStartSetup.apply(ctx());
+
+    expect(read('src/loadTranslations.ts')).toBe(loader);
+    expect(read('src/router.tsx')).toContain(
+      "import { loadTranslations } from './loadTranslations'\n"
+    );
+    expect(result.manualActions).toEqual([
+      {
+        whatHappened: 'Your custom src/loadTranslations.ts was preserved',
+        fix: 'Verify src/loadTranslations.ts loads translations from src/_gt',
+      },
+    ]);
+  });
+
+  it.each(['src/router.tsx', 'src/routes/__root.tsx'])(
+    'rejects an app without %s before any change',
+    async (missing) => {
+      fs.rmSync(file(missing));
+      const before = snapshot();
+
+      await expect(tanstackStartSetup.preflight(appDirectory)).rejects.toThrow(
+        `${missing} was not found`
+      );
+      expect(snapshot()).toEqual(before);
+    }
+  );
+});

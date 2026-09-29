@@ -39,7 +39,7 @@ function getLoaderContent(translationsImport: string): string {
  * Top-level statements, or undefined for syntax this inspector cannot parse
  * but Vite may accept, such as decorators.
  */
-function parseModule(content: string, filename: string) {
+export function parseModule(content: string, filename: string) {
   try {
     return parse(content, {
       sourceType: 'module',
@@ -53,7 +53,10 @@ function parseModule(content: string, filename: string) {
   }
 }
 
-function toRelativeImport(fromDirectory: string, toPath: string): string {
+export function toRelativeImport(
+  fromDirectory: string,
+  toPath: string
+): string {
   const relativePath = path
     .relative(fromDirectory, toPath)
     .split(path.sep)
@@ -249,7 +252,7 @@ export async function writeViteLoader({
   return 'written';
 }
 
-function getLoaderExport(
+export function getLoaderExport(
   content: string
 ): 'default' | 'loadTranslations' | undefined {
   const statements = parseModule(content, 'loadTranslations.ts');

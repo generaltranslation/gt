@@ -1,4 +1,5 @@
 import type { SupportedReactFrameworks } from '../../types/index.js';
+import { tanstackStartSetup } from './tanstackStart.js';
 import { viteSetup } from './vite.js';
 
 /** A change setup left to a person, reported as a warning. */
@@ -39,7 +40,10 @@ export type BuildToolSetup = {
   apply(ctx: BuildToolContext): Promise<SetupResult>;
 };
 
-export const BUILD_TOOL_SETUPS: BuildToolSetup[] = [viteSetup];
+export const BUILD_TOOL_SETUPS: BuildToolSetup[] = [
+  viteSetup,
+  tanstackStartSetup,
+];
 
 export function getBuildToolSetup(
   framework?: string

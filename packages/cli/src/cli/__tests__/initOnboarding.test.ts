@@ -420,6 +420,108 @@ describe('init and configure onboarding', () => {
     expect(events().at(-1)).toMatchObject({ outcome: 'success' });
   });
 
+  describe('TanStack Start', () => {
+    beforeEach(() => {
+      useFreshApp({
+        name: 'example-app',
+        packageManager: 'pnpm@10.20.0',
+        dependencies: { '@tanstack/react-start': '*', react: '*' },
+        devDependencies: { vite: '*' },
+      });
+      vi.mocked(detectFramework).mockResolvedValue({
+        name: 'tanstack-start',
+        type: 'react',
+      });
+      fs.mkdirSync(file('src/routes'), { recursive: true });
+      fs.writeFileSync(
+        file('src/router.tsx'),
+        "import { createRouter } from '@tanstack/react-router'\n\nexport function getRouter() {}\n"
+      );
+      fs.writeFileSync(
+        file('src/routes/__root.tsx'),
+        `import { createRootRoute } from '@tanstack/react-router'
+
+export const Route = createRootRoute({
+  shellComponent: RootDocument,
+})
+
+function RootDocument({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        {children}
+      </body>
+    </html>
+  )
+}
+`
+      );
+    });
+
+    it('configures the app and installs gt-tanstack-start under --defaults', async () => {
+      await run(
+        'init',
+        '--json',
+        '--defaults',
+        '--locales',
+        'es',
+        'fr',
+        '--no-live-translations'
+      );
+
+      for (const prompt of prompts) expect(prompt).not.toHaveBeenCalled();
+      expect(vi.mocked(installPackage).mock.calls).toEqual([
+        ['gt-tanstack-start', expect.objectContaining({ id: 'pnpm' }), false],
+        ['gt', expect.objectContaining({ id: 'pnpm' }), true],
+      ]);
+      expect(readConfig()).toMatchObject({
+        framework: 'tanstack-start',
+        locales: ['es', 'fr'],
+        files: { gt: { output: path.join('src/_gt', '[locale].json') } },
+      });
+      expect(fs.existsSync(file('loadTranslations.js'))).toBe(false);
+      expect(fs.readFileSync(file('src/router.tsx'), 'utf8')).toContain(
+        'initializeGT({ ...gtConfig, loadTranslations })'
+      );
+      expect(fs.readFileSync(file('src/routes/__root.tsx'), 'utf8')).toContain(
+        '<GTProvider locale={locale} translations={translations}>'
+      );
+      expect(fs.readFileSync(file('src/start.ts'), 'utf8')).toContain(
+        'requestMiddleware: [csrfMiddleware, gtMiddleware]'
+      );
+      expect(fs.readFileSync(file('src/_gt/es.json'), 'utf8')).toBe('{}\n');
+      expect(events().at(-1)).toMatchObject({
+        outcome: 'success',
+        completedSteps: [
+          'installed gt-tanstack-start',
+          'updated gt.config.json',
+          'created src/start.ts',
+          'configured src/router.tsx',
+          'configured src/routes/__root.tsx',
+          'installed gt',
+        ],
+      });
+    });
+
+    it('writes Vite runtime credentials for live translations', async () => {
+      await run(
+        'init',
+        '--json',
+        '--defaults',
+        '--locales',
+        'fr',
+        '--live-translations',
+        '--project-id',
+        'p1'
+      );
+
+      expect(fs.readFileSync(file('.env.local'), 'utf8')).toBe(
+        `VITE_GT_PROJECT_ID=p1\nVITE_GT_DEV_API_KEY=${SECRET_KEY}\n`
+      );
+      expect(events().at(-1)).toMatchObject({ outcome: 'success' });
+    });
+  });
+
   it('writes and reuses App Router public development credentials without a tooling key', async () => {
     vi.mocked(detectFramework).mockResolvedValue({
       name: 'next-app',
