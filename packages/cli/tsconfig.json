@@ -6,7 +6,6 @@
     "moduleResolution": "node16",
     "outDir": "./dist",
     "rootDir": "./src",
-    "jsx": "react-jsx",
     "composite": true
   },
   "include": ["src"],
