@@ -1353,7 +1353,9 @@ See https://www.npmjs.com/package/gt-vue`);
         options,
         options.projectId
           ? '--project-id'
-          : typeof existingConfig.projectId === 'string'
+          : // An empty configured ID falls through to the environment.
+            typeof existingConfig.projectId === 'string' &&
+              existingConfig.projectId
             ? configFilepath
             : 'the environment'
       );

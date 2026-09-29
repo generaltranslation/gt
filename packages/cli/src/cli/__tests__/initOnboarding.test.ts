@@ -650,6 +650,13 @@ describe('init and configure onboarding', () => {
     it.each([
       ['gt.config.json', () => writeConfig({ projectId: 'p-old' })],
       ['the environment', () => vi.stubEnv('GT_PROJECT_ID', 'p-old')],
+      [
+        'the environment',
+        () => {
+          writeConfig({ projectId: '' });
+          vi.stubEnv('GT_PROJECT_ID', 'p-old');
+        },
+      ],
     ])(
       'names %s as the source of a project ID that blocks --create-project',
       async (source, setUp) => {
@@ -667,7 +674,7 @@ describe('init and configure onboarding', () => {
             'App'
           )
         ).rejects.toThrow(
-          `--create-project cannot be combined with project p-old from ${source}`
+          `--create-project cannot be combined with project p-old from ${source}; remove --create-project to keep using it, or remove the project ID from ${source} to create a new project`
         );
         expect(api.createProject).not.toHaveBeenCalled();
       }

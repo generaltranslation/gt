@@ -135,7 +135,7 @@ export function checkDevelopmentProjectInputs(
 ): void {
   if (settings.projectId && options.createProject) {
     session.reject(
-      `--create-project cannot be combined with project ${settings.projectId} from ${projectIdSource}; remove it there, or pass --project-id to keep using it`
+      `--create-project cannot be combined with project ${settings.projectId} from ${projectIdSource}; remove --create-project to keep using it, or remove the project ID from ${projectIdSource} to create a new project`
     );
   }
   if (settings.projectId || session.interactive) return;
