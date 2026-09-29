@@ -1159,11 +1159,24 @@ See https://www.npmjs.com/package/gt-vue`);
       (format) => format in existingFiles
     );
     // Formats setup does not offer stay as configured and count as files.
-    const hasOtherFormats = SUPPORTED_FILE_EXTENSIONS.some(
+    const otherFormats = SUPPORTED_FILE_EXTENSIONS.filter(
       (format) =>
         format in existingFiles &&
         !(SETUP_FILE_FORMATS as readonly string[]).includes(format)
     );
+    const hasOtherFormats = otherFormats.length > 0;
+    if (options.fileFormats && hasOtherFormats) {
+      const kept = otherFormats.map((format) => `files.${format}`).join(', ');
+      logger.warn(
+        createDiagnosticMessage({
+          source: 'gt',
+          severity: 'Warning',
+          whatHappened: `${kept} stays in ${configFilepath}`,
+          why: '--file-formats only changes the formats setup offers',
+          fix: `Remove ${kept} from ${configFilepath} to stop translating those files`,
+        })
+      );
+    }
     const fileFormats = await session.answer<SetupFileFormat[]>(
       '--file-formats',
       {

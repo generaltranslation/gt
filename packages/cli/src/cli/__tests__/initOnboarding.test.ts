@@ -1132,6 +1132,25 @@ describe('init and configure onboarding', () => {
       expect(readConfig().files.pot).toEqual({
         include: ['locales/[locale].pot'],
       });
+      expect(logger.warn).not.toHaveBeenCalled();
+    });
+
+    it('warns that --file-formats keeps a configured format setup does not offer', async () => {
+      useFreshApp({ name: 'docs', devDependencies: { gt: '*' } });
+      writeConfig({
+        defaultLocale: 'en',
+        locales: ['fr'],
+        files: { pot: { include: ['locales/[locale].pot'] } },
+      });
+
+      await configure('--file-formats', 'none');
+
+      expect(readConfig().files.pot).toEqual({
+        include: ['locales/[locale].pot'],
+      });
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('files.pot')
+      );
     });
 
     it('points the generated loader at a changed translations directory', async () => {
