@@ -1063,6 +1063,50 @@ describe('init and configure onboarding', () => {
 
     const configure = (...args: string[]) =>
       run('configure', '--json', '--defaults', '--no-dev-credentials', ...args);
+    const writeConfig = (config: Record<string, unknown>) =>
+      fs.writeFileSync(file('gt.config.json'), JSON.stringify(config));
+
+    it('reads and writes an extensionless --config with its .json extension', async () => {
+      writeConfig({ defaultLocale: 'en', locales: ['fr'] });
+      fs.renameSync(file('gt.config.json'), file('custom.json'));
+
+      await configure('--config', 'custom', '--locales', 'de');
+
+      expect(fs.existsSync(file('custom'))).toBe(false);
+      expect(
+        JSON.parse(fs.readFileSync(file('custom.json'), 'utf8'))
+      ).toMatchObject({
+        locales: ['de'],
+      });
+    });
+
+    it('keeps a root translations directory on a rerun', async () => {
+      writeConfig({
+        defaultLocale: 'en',
+        locales: ['fr'],
+        files: { gt: { output: '[locale].json' } },
+      });
+
+      await configure();
+
+      expect(readConfig().files.gt.output).toBe('[locale].json');
+    });
+
+    it('accepts a file-only project whose configured format is not offered by setup', async () => {
+      useFreshApp({ name: 'docs', devDependencies: { gt: '*' } });
+      writeConfig({
+        defaultLocale: 'en',
+        locales: ['fr'],
+        files: { pot: { include: ['locales/[locale].pot'] } },
+      });
+
+      await configure();
+
+      expect(events().at(-1)).toMatchObject({ outcome: 'success' });
+      expect(readConfig().files.pot).toEqual({
+        include: ['locales/[locale].pot'],
+      });
+    });
 
     it('points the generated loader at a changed translations directory', async () => {
       await configure('--locales', 'fr', '--translations-dir', './old-tx');
@@ -1341,6 +1385,21 @@ await import('./main');
           });
         }
       );
+
+      it('reports the local loader left in the bootstrap after switching to the CDN', async () => {
+        const bootstrap = fs.readFileSync(file('src/gt-entry.ts'), 'utf8');
+
+        await configure('--storage', 'cdn');
+
+        expect(readConfig().files?.gt).toBeUndefined();
+        expect(fs.readFileSync(file('src/gt-entry.ts'), 'utf8')).toBe(
+          bootstrap
+        );
+        expect(events().at(-1)).toMatchObject({
+          outcome: 'needs_human_action',
+          actions: [expect.stringMatching(/loadTranslations.*initializeGTSPA/)],
+        });
+      });
     });
 
     it('matches the framework project to its development key', async () => {

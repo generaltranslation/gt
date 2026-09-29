@@ -34,6 +34,7 @@ import chalk from 'chalk';
 import {
   FILE_EXT_TO_EXT_LABEL,
   SETUP_FILE_FORMATS,
+  SUPPORTED_FILE_EXTENSIONS,
   type SetupFileFormat,
 } from '../formats/files/supportedFiles.js';
 import {
@@ -71,6 +72,7 @@ import {
   OnboardingError,
   parseFilePatterns,
   readSetupConfig,
+  reportJsonExitsBeforeOnboarding,
   resolvePackageManager,
   runOnboarding,
   setupConfigPath,
@@ -238,12 +240,19 @@ export class BaseCLI {
     // stdout, so its diagnostics go to stderr, as do setup commands writing
     // JSON events; every other command gets the historical default back
     // (main() routes startup output to stderr).
-    this.program.hook('preAction', (_thisCommand, actionCommand) => {
+    this.program.hook('preAction', (thisCommand, actionCommand) => {
       logger.setConsoleOutput(
         actionCommand.parent?.name() === 'api-key' || actionCommand.opts().json
           ? 'stderr'
           : 'stdout'
       );
+      if (
+        actionCommand.opts().json &&
+        actionCommand.parent === thisCommand &&
+        ['init', 'configure'].includes(actionCommand.name())
+      ) {
+        reportJsonExitsBeforeOnboarding(actionCommand.name());
+      }
     });
     // Apply --quiet before any other hook or command action runs so the
     // singleton logger is muted for the rest of the invocation. The flag is a
@@ -1113,9 +1122,12 @@ See https://www.npmjs.com/package/gt-vue`);
 
     const defaultTranslationsDir =
       buildTool?.defaultTranslationsDir ?? DEFAULT_TRANSLATIONS_DIR;
-    const configuredTranslationsDir = configuredOutput?.match(
-      /^(.+)[\\/]\[locale\]\.json$/
-    )?.[1];
+    const outputMatch = configuredOutput?.match(
+      /^(?:(.+)[\\/])?\[locale\]\.json$/
+    );
+    const configuredTranslationsDir = outputMatch
+      ? (outputMatch[1] ?? '.')
+      : undefined;
     const translationsDir =
       storage === 'local'
         ? await session.answer('--translations-dir', {
@@ -1146,6 +1158,12 @@ See https://www.npmjs.com/package/gt-vue`);
     const configuredFormats = SETUP_FILE_FORMATS.filter(
       (format) => format in existingFiles
     );
+    // Formats setup does not offer stay as configured and count as files.
+    const hasOtherFormats = SUPPORTED_FILE_EXTENSIONS.some(
+      (format) =>
+        format in existingFiles &&
+        !(SETUP_FILE_FORMATS as readonly string[]).includes(format)
+    );
     const fileFormats = await session.answer<SetupFileFormat[]>(
       '--file-formats',
       {
@@ -1153,7 +1171,9 @@ See https://www.npmjs.com/package/gt-vue`);
           selectedFormats ??
           (filePatterns.size > 0 ? [...filePatterns.keys()] : undefined),
         configured:
-          configuredFormats.length > 0 ? configuredFormats : undefined,
+          configuredFormats.length > 0 || hasOtherFormats
+            ? configuredFormats
+            : undefined,
         // GT projects need no other files; others must choose a format.
         recommended: isUsingGT ? [] : undefined,
         ask: () =>
@@ -1171,7 +1191,12 @@ See https://www.npmjs.com/package/gt-vue`);
           }),
       }
     );
-    if (fileFormats && fileFormats.length === 0 && !isUsingGT) {
+    if (
+      fileFormats &&
+      fileFormats.length === 0 &&
+      !isUsingGT &&
+      !hasOtherFormats
+    ) {
       session.reject(
         'No GT runtime is installed, so select at least one file format to translate'
       );
@@ -1446,6 +1471,18 @@ See https://www.npmjs.com/package/gt-vue`);
         translationsDir,
       });
       if (guidance) logger.message(guidance);
+    } else if (
+      storage === 'cdn' &&
+      buildTool &&
+      !reactSetup &&
+      configuredTranslationsDir !== undefined
+    ) {
+      // Only the application setup rewrites the initializer; a loader passed
+      // to it takes precedence over CDN loading.
+      reportManualAction({
+        whatHappened: `Translations now load from the CDN, but ${buildTool.initializer} may still receive the local loader for ${configuredTranslationsDir}`,
+        fix: `Remove the loadTranslations option and its import from the ${buildTool.initializer}() call so translations load from the CDN`,
+      });
     }
 
     await createOrUpdateConfig(configFilepath, configUpdate);

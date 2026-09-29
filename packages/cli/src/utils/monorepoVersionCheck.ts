@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import fg from 'fast-glob';
 import chalk from 'chalk';
-import { logger } from '../console/logger.js';
+import { logErrorAndExit } from '../console/logging.js';
 import { Libraries, type GTLibrary } from '../types/libraries.js';
 import { resolveConfig } from '../config/resolveConfig.js';
 import { loadConfig, withJsonExtension } from '../fs/config/loadConfig.js';
@@ -355,6 +355,6 @@ export function checkMonorepoVersionConsistency(
   );
   if (mismatches.length === 0) return; // All consistent
 
-  logger.error(formatMismatchError(mismatches));
-  process.exit(1);
+  // Recorded as the exit error so a `--json` setup run can report it.
+  logErrorAndExit(formatMismatchError(mismatches));
 }

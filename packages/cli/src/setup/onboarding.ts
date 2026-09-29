@@ -5,6 +5,7 @@ import {
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/internal';
 import findFilepath from '../fs/findFilepath.js';
+import { withJsonExtension } from '../fs/config/loadConfig.js';
 import { logger } from '../console/logger.js';
 import {
   displayHeader,
@@ -141,6 +142,34 @@ export function attachConfigureFlags(
         'Package manager for installs when it cannot be detected'
       ).choices(packageManagers.map((packageManager) => packageManager.id))
     );
+}
+
+let commandBeforeOnboarding: string | undefined;
+
+function reportExitBeforeOnboarding(code: number): void {
+  if (code === 0 || commandBeforeOnboarding === undefined) return;
+  fs.writeSync(
+    process.stdout.fd,
+    `${JSON.stringify({
+      type: 'result',
+      command: commandBeforeOnboarding,
+      outcome: 'failed',
+      completedSteps: [],
+      error: stripAnsi(
+        getLastExitError() ?? 'Setup exited before it started; see stderr'
+      ),
+    } satisfies OnboardingEvent)}\n`
+  );
+}
+
+/**
+ * Pre-action hooks, such as the monorepo version check, can exit before
+ * runOnboarding installs its own result reporting; `--json` callers still
+ * get a result. runOnboarding takes over once it starts.
+ */
+export function reportJsonExitsBeforeOnboarding(command: string): void {
+  commandBeforeOnboarding = command;
+  process.once('exit', reportExitBeforeOnboarding);
 }
 
 /**
@@ -361,6 +390,8 @@ export async function runOnboarding(
   options: Pick<ConfigureOptions, 'json' | 'interactive'>,
   run: (session: OnboardingSession) => Promise<OnboardingOutcome>
 ): Promise<void> {
+  commandBeforeOnboarding = undefined;
+  process.removeListener('exit', reportExitBeforeOnboarding);
   const session = new OnboardingSession(command, options);
   if (session.json) logger.setConsoleOutput('stderr');
   // Per-run modes; console routing is reset per command by BaseCLI.
@@ -445,7 +476,7 @@ export const INIT_SOURCE_HELP =
 export function setupConfigPath(
   options: Pick<ConfigureOptions, 'config'>
 ): string {
-  return options.config || 'gt.config.json';
+  return options.config ? withJsonExtension(options.config) : 'gt.config.json';
 }
 
 export function getConfiguredFramework(
