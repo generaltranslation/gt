@@ -257,7 +257,7 @@ export const startInstance = createStart(() => ({}));
     expect(result.manualActions).toEqual([
       {
         whatHappened: 'src/start.ts does not use gtMiddleware',
-        fix: expect.stringContaining('requestMiddleware: [gtMiddleware]'),
+        fix: expect.stringContaining('keeping your existing middleware'),
       },
     ]);
   });
@@ -353,7 +353,9 @@ export const startInstance = createStart(() => ({}));
         {
           whatHappened:
             'src/start.ts was not created because src/router.tsx does not initialize GT',
-          fix: expect.stringContaining('requestMiddleware: [gtMiddleware]'),
+          fix: expect.stringContaining(
+            'requestMiddleware: [csrfMiddleware, gtMiddleware]'
+          ),
         },
         {
           whatHappened:

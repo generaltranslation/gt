@@ -498,7 +498,7 @@ export const tanstackStartSetup: BuildToolSetup = {
     if (start && !/\bgtMiddleware\b/.test(start.content)) {
       manualActions.push({
         whatHappened: `${start.path} does not use gtMiddleware`,
-        fix: `Import { gtMiddleware } from '${Libraries.GT_TANSTACK_START}' in ${start.path} and add it to createStart(() => ({ requestMiddleware: [gtMiddleware] })) (see ${DOCS_URL})`,
+        fix: `Import { gtMiddleware } from '${Libraries.GT_TANSTACK_START}' in ${start.path} and add it to the requestMiddleware of createStart, keeping your existing middleware such as the CSRF middleware (see ${DOCS_URL})`,
       });
     }
 
@@ -534,7 +534,7 @@ export const tanstackStartSetup: BuildToolSetup = {
       if (!start) {
         manualActions.push({
           whatHappened: `src/start.ts was not created ${reason}`,
-          fix: `Create src/start.ts with export const startInstance = createStart(() => ({ requestMiddleware: [gtMiddleware] })), importing createStart from '@tanstack/react-start' and gtMiddleware from '${Libraries.GT_TANSTACK_START}' (see ${DOCS_URL})`,
+          fix: `Create src/start.ts with const csrfMiddleware = createCsrfMiddleware({ filter: ({ handlerType }) => handlerType === 'serverFn' }); export const startInstance = createStart(() => ({ requestMiddleware: [csrfMiddleware, gtMiddleware] })), importing createCsrfMiddleware and createStart from '@tanstack/react-start' and gtMiddleware from '${Libraries.GT_TANSTACK_START}' (see ${DOCS_URL})`,
         });
       }
       if (configuredRoot) {
