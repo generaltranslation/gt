@@ -4,7 +4,10 @@ import YAML from 'yaml';
 import type { Settings, TransformOptions } from '../../../types/index.js';
 import type { JSONValue } from '../../../types/data/json.js';
 import { getRelative } from '../../../fs/findFilepath.js';
-import { PAGE_EXTENSIONS } from '../../../utils/localizeStaticUrls.js';
+import {
+  INDEX_PAGE,
+  PAGE_EXTENSIONS,
+} from '../../../utils/localizeStaticUrls.js';
 import { getConfiguredLocaleProperties } from '../../utils.js';
 import { getJSONPathMatches } from '../../json/jsonPath.js';
 import {
@@ -217,9 +220,17 @@ function restorePagePaths(
   return changed;
 }
 
-/** Whether a path value names an .md/.mdx page, with or without extension. */
+/**
+ * Whether a path value names an .md/.mdx page, with or without extension. An
+ * empty value or one ending in `/` names a folder's index page
+ */
 function pageExists(value: string, dir: string): boolean {
   const filePath = path.join(dir, value);
+  if (value === '' || value.endsWith('/')) {
+    return PAGE_EXTENSIONS.some((ext) =>
+      fs.existsSync(path.join(filePath, `${INDEX_PAGE}${ext}`))
+    );
+  }
   if (PAGE_EXTENSIONS.includes(path.extname(filePath))) {
     return fs.existsSync(filePath);
   }

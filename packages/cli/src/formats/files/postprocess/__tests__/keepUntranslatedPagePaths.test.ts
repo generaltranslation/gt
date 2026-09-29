@@ -88,6 +88,29 @@ describe('keepUntranslatedPagePaths', () => {
     expect(en.groups[0].pages).toEqual(['guide', 'terms', 'GET /models']);
   });
 
+  it('points a root at the default-locale index page when the localized one is missing', async () => {
+    write('index.mdx', '# Home\n');
+    const docs = (jaHasHome: boolean) => {
+      if (jaHasHome) write('ja/index.mdx', '# ホーム\n');
+      writeJson('docs.json', {
+        navigation: {
+          languages: [
+            { language: 'en', root: '', pages: [] },
+            { language: 'ja', root: 'ja/', pages: [] },
+          ],
+        },
+      });
+    };
+
+    docs(false);
+    await run(mintlifyConfig('mintlify-hide-default'));
+    expect(readJson('docs.json').navigation.languages[1].root).toBe('');
+
+    docs(true);
+    await run(mintlifyConfig('mintlify-hide-default'));
+    expect(readJson('docs.json').navigation.languages[1].root).toBe('ja/');
+  });
+
   it('handles Mintlify sites that show the default locale in URLs', async () => {
     for (const page of ['en/guide', 'ja/guide', 'en/terms']) {
       write(`${page}.mdx`, '# Page\n');
