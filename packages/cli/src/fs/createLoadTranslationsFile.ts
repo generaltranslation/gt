@@ -40,19 +40,18 @@ export default async function loadTranslations(locale) {
 }
 
 /**
- * The loadTranslations file the app uses, in gt-next's lookup order
- * (resolveConfigFilepath): root before src, .ts before .js.
+ * Every loadTranslations file the app has, in gt-next's lookup order
+ * (resolveConfigFilepath): root before src, .ts before .js. gt-next uses the
+ * first one, and falls back to the next when it is deleted.
  */
-export function findLoadTranslationsFile(
-  appDirectory: string
-): string | undefined {
+export function findLoadTranslationsFiles(appDirectory: string): string[] {
   return ['', 'src']
     .flatMap((directory) =>
       ['.ts', '.js'].map((extension) =>
         path.join(appDirectory, directory, `loadTranslations${extension}`)
       )
     )
-    .find((candidate) => fs.existsSync(candidate));
+    .filter((candidate) => fs.existsSync(candidate));
 }
 
 export type LoadTranslationsFileResult =
@@ -117,7 +116,7 @@ export async function createLoadTranslationsFile({
             )
           );
 
-  const loaderPath = findLoadTranslationsFile(appDirectory);
+  const [loaderPath] = findLoadTranslationsFiles(appDirectory);
   const existing =
     loaderPath === filePath
       ? await fs.promises.readFile(filePath, 'utf8')

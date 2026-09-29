@@ -1227,6 +1227,26 @@ describe('init and configure onboarding', () => {
       });
     });
 
+    // gt-next falls back to the next loader once the first is deleted.
+    it('names every loadTranslations file gt-next could fall back to after switching to the CDN', async () => {
+      await configure('--locales', 'fr', '--translations-dir', 'old-tx');
+      fs.mkdirSync(file('src'));
+      fs.writeFileSync(file('loadTranslations.ts'), 'export default {};\n');
+      fs.writeFileSync(file('src/loadTranslations.js'), 'export default {};\n');
+      stdoutEvents = [];
+
+      await configure('--storage', 'cdn');
+
+      const [action] = events().at(-1).actions;
+      for (const loader of [
+        'loadTranslations.ts,',
+        'loadTranslations.js,',
+        'src/loadTranslations.js',
+      ]) {
+        expect(action).toContain(loader);
+      }
+    });
+
     it.each(['public/old/', './public/old/'])(
       'repairs locales and updates the generated loader after configuring %s',
       async (directory) => {

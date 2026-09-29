@@ -99,7 +99,7 @@ import { displayTranslateSummary } from '../console/displayTranslateSummary.js';
 import updateConfig from '../fs/config/updateConfig.js';
 import {
   createLoadTranslationsFile,
-  findLoadTranslationsFile,
+  findLoadTranslationsFiles,
 } from '../fs/createLoadTranslationsFile.js';
 import { saveLocalEdits } from '../api/saveLocalEdits.js';
 import { resolveProjectId } from '../fs/utils.js';
@@ -1489,7 +1489,7 @@ See https://www.npmjs.com/package/gt-vue`);
       ) {
         const loaderFile = path.relative(
           cwd,
-          findLoadTranslationsFile(cwd) ?? 'loadTranslations.js'
+          findLoadTranslationsFiles(cwd)[0] ?? 'loadTranslations.js'
         );
         reportManualAction({
           whatHappened: `Your custom ${loaderFile} was left unchanged, but translations now go to ${translationsDir}`,
@@ -1520,13 +1520,18 @@ See https://www.npmjs.com/package/gt-vue`);
       configuredTranslationsDir !== undefined
     ) {
       // gt-next uses a loadTranslations file whenever one exists, and a
-      // loader passed to GTProvider takes precedence over the CDN.
-      const loader = findLoadTranslationsFile(cwd);
-      if (loader) {
-        const loaderFile = path.relative(cwd, loader);
+      // loader passed to GTProvider takes precedence over the CDN. Name every
+      // one: deleting only the first makes gt-next fall back to the next.
+      const loaders = findLoadTranslationsFiles(cwd).map((loader) =>
+        path.relative(cwd, loader)
+      );
+      if (loaders.length > 0) {
+        const loaderFiles = loaders.join(', ');
+        const [them, loads] =
+          loaders.length === 1 ? ['it', 'loads'] : ['them', 'load'];
         reportManualAction({
-          whatHappened: `Translations now load from the CDN, but ${loaderFile} still loads them from ${configuredTranslationsDir}`,
-          fix: `Delete ${loaderFile}, and remove it from your GT setup if you pass it there, so translations load from the CDN`,
+          whatHappened: `Translations now load from the CDN, but ${loaderFiles} still ${loads} them from ${configuredTranslationsDir}`,
+          fix: `Delete ${loaderFiles}, and remove ${them} from your GT setup if you pass ${them} there, so translations load from the CDN`,
         });
       }
     }
