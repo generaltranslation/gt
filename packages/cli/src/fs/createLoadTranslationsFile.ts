@@ -23,28 +23,8 @@ function toRelativeImportPath(relativePath: string) {
     : `./${normalizedPath}/`;
 }
 
-export async function createLoadTranslationsFile(
-  appDirectory: string,
-  translationsDir: string = DEFAULT_TRANSLATIONS_DIR,
-  locales: string[]
-) {
-  const usingSrcDirectory = fs.existsSync(path.join(appDirectory, 'src'));
-
-  const loadTranslationsDir = usingSrcDirectory
-    ? path.join(appDirectory, 'src')
-    : appDirectory;
-  const relativePath = path.relative(
-    loadTranslationsDir,
-    path.resolve(appDirectory, translationsDir)
-  );
-  const publicPath = toRelativeImportPath(relativePath);
-
-  const filePath = usingSrcDirectory
-    ? path.join(appDirectory, 'src', 'loadTranslations.js')
-    : path.join(appDirectory, 'loadTranslations.js');
-
-  if (!fs.existsSync(filePath)) {
-    const loadTranslationsContent = `
+function getLoaderContent(translationsDir: string, publicPath: string) {
+  return `
 export default async function loadTranslations(locale) {
   try {
     // Load translations from ${translationsDir} directory
@@ -57,32 +37,99 @@ export default async function loadTranslations(locale) {
   }
 }
 `;
-    await fs.promises.writeFile(filePath, loadTranslationsContent);
+}
+
+export type LoadTranslationsFileResult =
+  | 'created'
+  | 'updated'
+  | 'unchanged'
+  | 'custom';
+
+/**
+ * Creates or updates the generated loadTranslations.js for translationsDir
+ * (relative to appDirectory) and empty stubs for non-default locales. A
+ * loader that was not matching the previous config's generated template is
+ * left untouched and reported as 'custom'.
+ * Directory and stub failures propagate.
+ */
+export async function createLoadTranslationsFile({
+  appDirectory,
+  translationsDir = DEFAULT_TRANSLATIONS_DIR,
+  defaultLocale,
+  locales,
+  previousTranslationsDir,
+}: {
+  appDirectory: string;
+  translationsDir?: string;
+  defaultLocale: string;
+  locales: string[];
+  previousTranslationsDir?: string;
+}): Promise<LoadTranslationsFileResult> {
+  const usingSrcDirectory = fs.existsSync(path.join(appDirectory, 'src'));
+
+  const loadTranslationsDir = usingSrcDirectory
+    ? path.join(appDirectory, 'src')
+    : appDirectory;
+  const translationsPath = path.resolve(appDirectory, translationsDir);
+  const publicPath = toRelativeImportPath(
+    path.relative(loadTranslationsDir, translationsPath)
+  );
+  const filePath = path.join(loadTranslationsDir, 'loadTranslations.js');
+  const content = getLoaderContent(translationsDir, publicPath);
+  // Config paths lose leading ./ and trailing / through path.join, but
+  // legacy generated comments retain them. Keep the import and body exact.
+  const previousContents =
+    previousTranslationsDir === undefined
+      ? []
+      : [
+          previousTranslationsDir,
+          ...(!path.isAbsolute(previousTranslationsDir)
+            ? [`./${previousTranslationsDir}`]
+            : []),
+        ]
+          .flatMap((directory) => [directory, `${directory}/`])
+          .map((directory) =>
+            getLoaderContent(
+              directory,
+              toRelativeImportPath(
+                path.relative(
+                  loadTranslationsDir,
+                  path.resolve(appDirectory, previousTranslationsDir)
+                )
+              )
+            )
+          );
+
+  const existing = fs.existsSync(filePath)
+    ? await fs.promises.readFile(filePath, 'utf8')
+    : undefined;
+  if (
+    existing !== undefined &&
+    existing !== content &&
+    !previousContents.includes(existing)
+  ) {
     logger.info(
-      `Created ${chalk.cyan(
-        'loadTranslations.js'
-      )} file at ${chalk.cyan(filePath)}.`
-    );
-    try {
-      await fs.promises.mkdir(translationsDir, { recursive: true });
-      // Create empty JSON files
-      for (const locale of locales) {
-        if (fs.existsSync(path.join(translationsDir, `${locale}.json`))) {
-          continue;
-        }
-        await fs.promises.writeFile(
-          path.join(translationsDir, `${locale}.json`),
-          '{}'
-        );
-      }
-    } catch (error) {
-      logger.error(`Failed to create translations directory: ${error}`);
-    }
-  } else {
-    logger.info(
-      `Found ${chalk.cyan('loadTranslations.js')} file at ${chalk.cyan(
+      `Found a custom ${chalk.cyan('loadTranslations.js')} at ${chalk.cyan(
         filePath
-      )}. Skipping creation...`
+      )}; leaving it unchanged.`
     );
+    return 'custom';
   }
+
+  // Stubs first, so a directory failure leaves no loader pointing at it.
+  await fs.promises.mkdir(translationsPath, { recursive: true });
+  for (const locale of new Set(locales)) {
+    // Default-locale content lives in source, so it never needs a stub.
+    if (locale === defaultLocale) continue;
+    const stubPath = path.join(translationsPath, `${locale}.json`);
+    if (!fs.existsSync(stubPath)) await fs.promises.writeFile(stubPath, '{}');
+  }
+  if (existing === content) return 'unchanged';
+  await fs.promises.writeFile(filePath, content);
+  logger.info(
+    `${existing === undefined ? 'Created' : 'Updated'} ${chalk.cyan(
+      'loadTranslations.js'
+    )} at ${chalk.cyan(filePath)}.`
+  );
+  return existing === undefined ? 'created' : 'updated';
 }
