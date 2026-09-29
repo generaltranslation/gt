@@ -8,7 +8,7 @@ import {
 } from '../setupViteSPA.js';
 import type { BuildToolSetup, ManualAction } from './index.js';
 
-const VITE_LOADER_FILE = 'src/loadTranslations.ts';
+export const VITE_LOADER_FILE = 'src/loadTranslations.ts';
 
 /** A loader left unchanged may not read the newly chosen directory. */
 function loaderUpdateActions(

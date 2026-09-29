@@ -5,21 +5,21 @@ import path from 'node:path';
 import { Libraries } from '../../types/libraries.js';
 import { DEFAULT_VITE_TRANSLATIONS_DIR } from '../../utils/constants.js';
 import {
-  getLoaderExport,
+  getViteLoaderExport,
   parseModule,
   toRelativeImport,
   writeViteLoader,
+  type ViteLoaderExport,
 } from '../setupViteSPA.js';
 import type {
   BuildToolContext,
   BuildToolSetup,
   ManualAction,
 } from './index.js';
-import { viteSetup } from './vite.js';
+import { VITE_LOADER_FILE, viteSetup } from './vite.js';
 
 const DOCS_URL =
   'https://generaltranslation.com/docs/react/tanstack-start/setup';
-const LOADER_FILE = 'src/loadTranslations.ts';
 // Start resolves its entries by basename, so any of these may be the entry.
 const SOURCE_EXTENSIONS = ['.tsx', '.ts', '.jsx', '.js'];
 
@@ -181,7 +181,7 @@ function importsFromLibrary(file: SourceFile, name: string): boolean {
 function getRouterLines(
   router: SourceFile,
   { appDirectory, configFilepath }: BuildToolContext,
-  loaderExport: 'default' | 'loadTranslations' | undefined,
+  loaderExport: ViteLoaderExport,
   { quote, semi }: Pick<CodeStyle, 'quote' | 'semi'>
 ): string[] {
   const configImport = toRelativeImport(
@@ -432,32 +432,24 @@ export const tanstackStartSetup: BuildToolSetup = {
       await fs.promises.writeFile(path.join(appDirectory, file), content);
     };
 
-    let loaderExport: 'default' | 'loadTranslations' | undefined;
+    let loaderExport: ViteLoaderExport;
     if (translationsDir) {
       const loader = await writeViteLoader({
         ...ctx,
         translationsDir,
         create: true,
       });
-      loaderExport =
-        loader === 'custom'
-          ? getLoaderExport(
-              await fs.promises.readFile(
-                path.join(appDirectory, LOADER_FILE),
-                'utf8'
-              )
-            )
-          : 'default';
+      loaderExport = await getViteLoaderExport(appDirectory, loader);
       if (loader === 'custom') {
         manualActions.push(
           loaderExport
             ? {
-                whatHappened: `Your custom ${LOADER_FILE} was preserved`,
-                fix: `Verify ${LOADER_FILE} loads translations from ${translationsDir}`,
+                whatHappened: `Your custom ${VITE_LOADER_FILE} was preserved`,
+                fix: `Verify ${VITE_LOADER_FILE} loads translations from ${translationsDir}`,
               }
             : {
-                whatHappened: `Your custom ${LOADER_FILE} has no runtime loadTranslations export`,
-                fix: `Export a default or named loadTranslations function from ${LOADER_FILE} that loads translations from ${translationsDir}, then rerun gt init`,
+                whatHappened: `Your custom ${VITE_LOADER_FILE} has no runtime loadTranslations export`,
+                fix: `Export a default or named loadTranslations function from ${VITE_LOADER_FILE} that loads translations from ${translationsDir}, then rerun gt init`,
               }
         );
       }

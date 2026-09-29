@@ -253,9 +253,24 @@ export async function writeViteLoader({
   return 'written';
 }
 
-export function getLoaderExport(
-  content: string
-): 'default' | 'loadTranslations' | undefined {
+export type ViteLoaderExport = 'default' | 'loadTranslations' | undefined;
+
+/** The generated loader's export, or a custom loader's own if it has one. */
+export async function getViteLoaderExport(
+  appDirectory: string,
+  loader: ViteLoaderResult
+): Promise<ViteLoaderExport> {
+  return loader === 'custom'
+    ? getLoaderExport(
+        await fs.promises.readFile(
+          path.join(appDirectory, 'src', 'loadTranslations.ts'),
+          'utf8'
+        )
+      )
+    : 'default';
+}
+
+function getLoaderExport(content: string): ViteLoaderExport {
   const statements = parseModule(content, 'loadTranslations.ts');
   if (!statements) return undefined;
   const names = new Set<string>();
@@ -349,15 +364,7 @@ export async function setupViteSPA({
       previousTranslationsDir,
       create: true,
     });
-    const loaderExport =
-      loader === 'custom'
-        ? getLoaderExport(
-            await fs.promises.readFile(
-              path.join(sourceDirectory, 'loadTranslations.ts'),
-              'utf8'
-            )
-          )
-        : 'default';
+    const loaderExport = await getViteLoaderExport(appDirectory, loader);
     if (!loaderExport) {
       return {
         loader,
