@@ -333,6 +333,68 @@ export const startInstance = createStart(() => ({}));
     }
   );
 
+  it.each([
+    [
+      'a property named gtMiddleware',
+      "import { gtMiddleware } from 'gt-tanstack-start';\nconst flags = { gtMiddleware: true };\nexport const startInstance = createStart(() => ({ flags }));\n",
+    ],
+    [
+      'a local gtMiddleware',
+      'const gtMiddleware = () => {};\nexport const startInstance = createStart(() => ({ requestMiddleware: [gtMiddleware] }));\n',
+    ],
+  ])(
+    'asks for gtMiddleware when a start entry only has %s',
+    async (_case, body) => {
+      const start = `import { createStart } from '@tanstack/react-start';\n${body}`;
+      write('src/start.ts', start);
+
+      const result = await tanstackStartSetup.apply(ctx());
+
+      expect(read('src/start.ts')).toBe(start);
+      expect(result.manualActions).toEqual([
+        expect.objectContaining({
+          whatHappened: 'src/start.ts does not use gtMiddleware',
+        }),
+      ]);
+    }
+  );
+
+  it('asks for manual setup when only another component renders GTProvider', async () => {
+    const root = `${templateRoot}\nexport function Preview() {\n  return <GTProvider locale="en" translations={{}} />\n}\n`;
+    write('src/routes/__root.tsx', root);
+
+    const result = await tanstackStartSetup.apply(ctx());
+
+    expect(read('src/routes/__root.tsx')).toBe(root);
+    expect(result.manualActions).toEqual([
+      {
+        whatHappened:
+          "src/routes/__root.tsx renders GTProvider outside the root route's document",
+        fix: expect.stringContaining('<GTProvider locale={locale}'),
+      },
+    ]);
+  });
+
+  it.each([
+    'initializeGT({ ...gtConfig, ...options })',
+    'initializeGT(options)',
+    'initializeGT({ ...gtConfig, [key]: loader })',
+  ])('does not guess the storage of %s', async (call) => {
+    write('src/start.ts', generatedStart);
+    write(
+      'src/router.tsx',
+      configuredRouter.replace(
+        'initializeGT({ ...gtConfig, loadTranslations })',
+        call
+      )
+    );
+    write('src/routes/__root.tsx', configuredRoot);
+
+    const result = await tanstackStartSetup.apply(ctx());
+
+    expect(result).toEqual({ steps: [], manualActions: [] });
+  });
+
   it('configures a root route that only mentions GTProvider in a comment', async () => {
     write(
       'src/routes/__root.tsx',

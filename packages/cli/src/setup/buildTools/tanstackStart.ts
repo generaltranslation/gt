@@ -201,26 +201,92 @@ function findInitializeCall(file: SourceFile): t.CallExpression | undefined {
   return undefined;
 }
 
-/** Whether code outside the imports references `name`; comments do not count. */
-function referencesOutsideImports(file: SourceFile, name: string): boolean {
+/**
+ * Whether the imported gtMiddleware is listed in a middleware array.
+ * Comments, property names and unrelated locals do not count.
+ */
+function registersMiddleware(start: SourceFile): boolean {
+  const local = getLocalImport(start, 'gtMiddleware');
+  if (!local) return false;
   let found = false;
-  for (const statement of file.statements ?? []) {
+  for (const statement of start.statements ?? []) {
     if (statement.type === 'ImportDeclaration') continue;
     t.traverseFast(statement, (node) => {
-      if (node.type === 'Identifier' && node.name === name) found = true;
+      if (
+        node.type === 'ArrayExpression' &&
+        node.elements.some(
+          (element) => element?.type === 'Identifier' && element.name === local
+        )
+      ) {
+        found = true;
+      }
     });
   }
   return found;
 }
 
-function rendersElement(file: SourceFile, name: string): boolean {
+function rendersElement(nodes: t.Node[], name: string): boolean {
   let found = false;
-  for (const statement of file.statements ?? []) {
-    t.traverseFast(statement, (node) => {
-      if (isJsxElementNamed(node, name)) found = true;
+  for (const node of nodes) {
+    t.traverseFast(node, (child) => {
+      if (isJsxElementNamed(child, name)) found = true;
     });
   }
   return found;
+}
+
+/**
+ * Whether the initializeGT options pass a loader: false for the config alone,
+ * undefined when the options hide it (other spreads, variables, computed keys).
+ */
+function passesLoader(
+  router: SourceFile,
+  options: t.Node | undefined,
+  { appDirectory, configFilepath }: BuildToolContext
+): boolean | undefined {
+  const configPath = path.resolve(appDirectory, configFilepath);
+  const routerDirectory = path.dirname(path.join(appDirectory, router.path));
+  const configBinding = router.statements
+    ?.filter((statement) => statement.type === 'ImportDeclaration')
+    .find(
+      (statement) =>
+        path.resolve(routerDirectory, statement.source.value) === configPath
+    )
+    ?.specifiers.find(
+      (specifier) => specifier.type === 'ImportDefaultSpecifier'
+    )?.local.name;
+  const isConfig = (node: t.Node) =>
+    node.type === 'Identifier' && node.name === configBinding;
+  if (!options) return undefined;
+  if (isConfig(options)) return false;
+  if (options.type !== 'ObjectExpression') return undefined;
+  let loader = false;
+  for (const property of options.properties) {
+    if (property.type === 'SpreadElement') {
+      if (!isConfig(property.argument)) return undefined;
+      continue;
+    }
+    const name = getPropertyName(property);
+    if (name === undefined) return undefined;
+    if (name === 'loadTranslations') loader = true;
+  }
+  return loader;
+}
+
+/** The root route and the local function its shellComponent or component names. */
+function findRootComponent(statements: t.Statement[]) {
+  const rootRoute = findRootRoute(statements);
+  if (!rootRoute) return undefined;
+  const { properties } = rootRoute.options;
+  const componentProperty =
+    properties.find((p) => getPropertyName(p) === 'shellComponent') ??
+    properties.find((p) => getPropertyName(p) === 'component');
+  const component =
+    componentProperty?.type === 'ObjectProperty' &&
+    componentProperty.value.type === 'Identifier'
+      ? findLocalFunction(statements, componentProperty.value.name)
+      : undefined;
+  return { rootRoute, componentProperty, component };
 }
 
 function getRouterLines(
@@ -347,8 +413,9 @@ function configureRootRoute({
   if (/\b(?:getLocale|getTranslationsSnapshot)\b/.test(content)) {
     return undefined;
   }
-  const rootRoute = findRootRoute(statements);
-  if (!rootRoute) return undefined;
+  const found = findRootComponent(statements);
+  if (!found) return undefined;
+  const { rootRoute, componentProperty, component } = found;
   const { properties } = rootRoute.options;
   if (
     properties.some(
@@ -362,17 +429,8 @@ function configureRootRoute({
   ) {
     return undefined;
   }
-  const componentProperty =
-    properties.find((p) => getPropertyName(p) === 'shellComponent') ??
-    properties.find((p) => getPropertyName(p) === 'component');
-  if (
-    componentProperty?.type !== 'ObjectProperty' ||
-    componentProperty.value.type !== 'Identifier'
-  ) {
-    return undefined;
-  }
+  if (componentProperty?.type !== 'ObjectProperty') return undefined;
   const isShell = getPropertyName(componentProperty) === 'shellComponent';
-  const component = findLocalFunction(statements, componentProperty.value.name);
   if (
     component?.body.type !== 'BlockStatement' ||
     /\b(?:locale|translations)\b/.test(
@@ -514,15 +572,14 @@ export const tanstackStartSetup: BuildToolSetup = {
     let configuredRouter: string | undefined;
     // Storage chosen on a rerun must match how the router loads translations.
     const wantsLoader = Boolean(translationsDir);
-    const [initializeOptions] = initializeCall?.arguments ?? [];
-    const passesLoader =
-      initializeOptions?.type === 'ObjectExpression' &&
-      initializeOptions.properties.some(
-        (property) => getPropertyName(property) === 'loadTranslations'
-      );
+    const loaderPassed = passesLoader(
+      router,
+      initializeCall?.arguments[0],
+      ctx
+    );
     if (
-      initializeCall &&
-      passesLoader !== wantsLoader &&
+      loaderPassed !== undefined &&
+      loaderPassed !== wantsLoader &&
       (!translationsDir || loaderExport)
     ) {
       const [call] = getRouterLines(router, ctx, loaderExport, {
@@ -530,7 +587,7 @@ export const tanstackStartSetup: BuildToolSetup = {
         semi: '',
       }).slice(-1);
       manualActions.push({
-        whatHappened: `${router.path} initializes GT for ${passesLoader ? 'local translation files' : 'CDN translations'}, but translations are now ${translationsDir ? `stored in ${translationsDir}` : 'loaded from the CDN'}`,
+        whatHappened: `${router.path} initializes GT for ${loaderPassed ? 'local translation files' : 'CDN translations'}, but translations are now ${translationsDir ? `stored in ${translationsDir}` : 'loaded from the CDN'}`,
         fix: `Change the initializeGT call in ${router.path} to ${call}${wantsLoader ? ` and import loadTranslations from ${VITE_LOADER_FILE}` : ' and remove the loadTranslations import'} (see ${DOCS_URL})`,
       });
     }
@@ -566,7 +623,7 @@ export const tanstackStartSetup: BuildToolSetup = {
       }
     }
 
-    if (start && !referencesOutsideImports(start, 'gtMiddleware')) {
+    if (start && !registersMiddleware(start)) {
       manualActions.push({
         whatHappened: `${start.path} does not use gtMiddleware`,
         fix: `Import { gtMiddleware } from '${Libraries.GT_TANSTACK_START}' in ${start.path} and add it to the requestMiddleware of createStart, keeping your existing middleware such as the CSRF middleware (see ${DOCS_URL})`,
@@ -574,11 +631,25 @@ export const tanstackStartSetup: BuildToolSetup = {
     }
 
     const rootFix = `In ${root.path}, add loader: async () => { const locale = getLocale(); return { locale, translations: await getTranslationsSnapshot(locale) }; } to createRootRoute, read const { locale, translations } = Route.useLoaderData() in the document, set <html lang={locale}>, and wrap its children in <GTProvider locale={locale} translations={translations}>, importing GTProvider, getLocale and getTranslationsSnapshot from '${Libraries.GT_TANSTACK_START}' (see ${DOCS_URL})`;
-    const rootConfigured = rendersElement(root, 'GTProvider');
-    const configuredRoot = rootConfigured
-      ? undefined
-      : parses(root, configureRootRoute(root));
-    if (!rootConfigured && !configuredRoot) {
+    const rootComponent =
+      root.statements && findRootComponent(root.statements)?.component;
+    const rootConfigured =
+      rootComponent !== undefined &&
+      rendersElement([rootComponent], 'GTProvider');
+    // A provider elsewhere may wrap the document indirectly; adding a second
+    // one could nest them, so a person decides.
+    const providerElsewhere =
+      !rootConfigured && rendersElement(root.statements ?? [], 'GTProvider');
+    const configuredRoot =
+      rootConfigured || providerElsewhere
+        ? undefined
+        : parses(root, configureRootRoute(root));
+    if (providerElsewhere) {
+      manualActions.push({
+        whatHappened: `${root.path} renders GTProvider outside the root route's document`,
+        fix: rootFix,
+      });
+    } else if (!rootConfigured && !configuredRoot) {
       manualActions.push({
         whatHappened: `${root.path} does not match the create-start root route`,
         fix: rootFix,
