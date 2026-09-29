@@ -1,5 +1,8 @@
 import chalk from 'chalk';
 import { Command } from 'commander';
+import fs from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../auth/oauth.js', () => ({
@@ -26,6 +29,7 @@ vi.mock('../../console/logger.js', () => ({
 }));
 
 import { login } from '../../auth/oauth.js';
+import { resolveConfig } from '../../config/resolveConfig.js';
 import { logger } from '../../console/logger.js';
 import { BaseCLI } from '../base.js';
 
@@ -61,7 +65,7 @@ describe('login device prompt', () => {
       expect(logger.message).toHaveBeenCalledWith(
         expect.stringContaining(`\n${chalk.cyan(verificationUriComplete)}\n`)
       );
-      expect(logger.message).toHaveBeenCalledWith(
+      expect(logger.message).not.toHaveBeenCalledWith(
         expect.stringContaining('confirm the code')
       );
       expect(logger.message).not.toHaveBeenCalledWith(
@@ -90,5 +94,27 @@ describe('login device prompt', () => {
     expect(logger.message).toHaveBeenCalledWith(
       expect.stringContaining('ABCD-EFGH')
     );
+  });
+
+  it('signs in to the baseUrl of an explicit --config', async () => {
+    const dir = fs.mkdtempSync(path.join(tmpdir(), 'gt-login-config-'));
+    const configPath = path.join(dir, 'gt.config.json');
+    fs.writeFileSync(
+      configPath,
+      JSON.stringify({ baseUrl: 'https://api.example' })
+    );
+    try {
+      const program = new Command().exitOverride();
+      new BaseCLI(program, 'base');
+      await program.parseAsync(['login', '--config', configPath], {
+        from: 'user',
+      });
+      expect(login).toHaveBeenCalledWith(
+        expect.objectContaining({ baseUrl: 'https://api.example' })
+      );
+      expect(resolveConfig).not.toHaveBeenCalled();
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

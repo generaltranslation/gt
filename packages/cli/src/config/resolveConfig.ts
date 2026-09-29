@@ -13,12 +13,6 @@ export function resolveConfig(cwd: string): {
       config: loadConfig(path.join(cwd, configFilepath)),
     };
   }
-  if (fs.existsSync(path.join(cwd, 'src/gt.config.json'))) {
-    return {
-      path: path.join(cwd, 'src/gt.config.json'),
-      config: loadConfig(path.join(cwd, 'src/gt.config.json')),
-    };
-  }
   // Support config under .gt for parity with .locadex
   if (fs.existsSync(path.join(cwd, '.gt/gt.config.json'))) {
     return {

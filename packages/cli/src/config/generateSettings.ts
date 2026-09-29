@@ -5,7 +5,7 @@ import {
   warnApiKeyInConfig,
   warnDeprecatedField,
 } from '../console/logging.js';
-import { loadConfig } from '../fs/config/loadConfig.js';
+import { loadConfig, withJsonExtension } from '../fs/config/loadConfig.js';
 import { FilesOptions, Settings } from '../types/index.js';
 import {
   defaultBaseUrl,
@@ -22,13 +22,13 @@ import { createUserTokenProvider } from '../auth/oauth.js';
 import crypto from 'node:crypto';
 import { execSync } from 'node:child_process';
 import path from 'node:path';
+import fs from 'node:fs';
 import chalk from 'chalk';
 import { resolveConfig } from './resolveConfig.js';
 import { configureApiClient } from '../utils/api.js';
 import { generatePreset } from './optionPresets.js';
 import { GT_PARSING_FLAGS_DEFAULT } from './defaults.js';
 import { normalizeFilesOptions } from '../formats/files/transformFormat.js';
-import { determineLibrary } from '../fs/determineFramework/index.js';
 import { logger } from '../console/logger.js';
 
 export const DEFAULT_SRC_PATTERNS = [
@@ -87,20 +87,26 @@ function hasConfiguredTranslationFiles(files: unknown): boolean {
  * @param cwd - The current working directory
  * @param options - Additional options
  * @param options.requireConfig - If true, exit with an error when no config file is found
+ * @param options.resolvedConfig - Config content to validate instead of the file, e.g. what setup is about to write
  * @returns The generated settings
  */
 export async function generateSettings(
   flags: GenerateSettingsInput,
   cwd: string = process.cwd(),
-  options?: { requireConfig?: boolean }
+  options?: {
+    requireConfig?: boolean;
+    resolvedConfig?: Record<string, unknown>;
+  }
 ): Promise<Settings> {
   // Load config file
   let gtConfig: GenerateSettingsInput = {};
 
-  if (flags.config && !flags.config.endsWith('.json')) {
-    flags.config = `${flags.config}.json`;
-  }
   if (flags.config) {
+    flags.config = withJsonExtension(flags.config);
+  }
+  if (options?.resolvedConfig) {
+    gtConfig = options.resolvedConfig as GenerateSettingsInput;
+  } else if (flags.config) {
     gtConfig = loadConfig(flags.config);
   } else {
     const config = resolveConfig(cwd);
@@ -183,8 +189,10 @@ export async function generateSettings(
   const mergedOptions: Settings = { ...gtConfig, ...flags } as Settings;
 
   if (
-    determineLibrary().library === 'base' &&
-    !hasConfiguredTranslationFiles(mergedOptions.files)
+    !hasConfiguredTranslationFiles(mergedOptions.files) &&
+    !['package.json', 'pyproject.toml', 'requirements.txt', 'setup.py'].some(
+      (file) => fs.existsSync(path.join(cwd, file))
+    )
   ) {
     logger.warn(
       chalk.yellow(

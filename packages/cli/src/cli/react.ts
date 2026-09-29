@@ -30,7 +30,10 @@ export class ReactCLI extends InlineCLI {
     this.program.hook('preAction', (_thisCommand, actionCommand) => {
       if (this.program.opts().skipVersionCheck) return;
       if (actionCommand.parent?.name() === 'git') return;
-      checkMonorepoVersionConsistency([...REACT_LIBRARIES, Libraries.GT_I18N]);
+      checkMonorepoVersionConsistency(
+        [...REACT_LIBRARIES, Libraries.GT_I18N],
+        actionCommand.opts().config
+      );
     });
   }
   public init() {

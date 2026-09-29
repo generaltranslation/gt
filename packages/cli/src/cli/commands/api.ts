@@ -13,7 +13,7 @@ import { defaultBaseUrl } from 'generaltranslation/internal';
 import { createUserTokenProvider } from '../../auth/oauth.js';
 import { resolveConfig } from '../../config/resolveConfig.js';
 import { exitSync } from '../../console/logging.js';
-import { loadConfig } from '../../fs/config/loadConfig.js';
+import { loadConfig, withJsonExtension } from '../../fs/config/loadConfig.js';
 import { resolveProjectId } from '../../fs/utils.js';
 import type { SharedFlags } from '../../types/index.js';
 
@@ -221,13 +221,8 @@ export async function handleApiCommand(
   }
 
   const method = parseMethod(options.method, dependencies);
-  const configPath = options.config?.endsWith('.json')
-    ? options.config
-    : options.config
-      ? `${options.config}.json`
-      : undefined;
-  const config = configPath
-    ? loadConfig(configPath)
+  const config = options.config
+    ? loadConfig(withJsonExtension(options.config))
     : (resolveConfig(process.cwd())?.config ?? {});
   const baseUrl =
     typeof config.baseUrl === 'string' ? config.baseUrl : defaultBaseUrl;

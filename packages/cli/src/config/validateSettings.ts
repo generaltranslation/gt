@@ -63,16 +63,8 @@ export function validateSettings(
 }
 
 export function validateConfigExists() {
-  const possibleConfigPaths = ['gt.config.json', 'src/gt.config.json'];
-  for (const possibleConfigPath of possibleConfigPaths) {
-    if (
-      fs.existsSync(
-        path.resolve(path.relative(process.cwd(), possibleConfigPath))
-      )
-    ) {
-      return possibleConfigPath;
-    }
-  }
+  const configPath = 'gt.config.json';
+  if (fs.existsSync(path.resolve(configPath))) return configPath;
   return logErrorAndExit(
     'No gt.config.json file was found. Run this command from your project root, pass --config, or run npx gt init to create one.'
   );

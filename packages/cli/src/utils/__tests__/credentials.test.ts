@@ -42,7 +42,7 @@ describe('setCredentials', () => {
     ['gatsby', 'GATSBY_'],
     ['react', 'REACT_APP_'],
     ['redwood', 'REDWOOD_ENV_'],
-    ['next-app', ''],
+    ['next-app', 'NEXT_PUBLIC_'],
     [undefined, ''],
   ] as const)(
     'prefixes variables for %s with "%s"',
@@ -61,7 +61,7 @@ describe('setCredentials', () => {
 
   it('preserves unrelated lines, comments, and the production key byte for byte', async () => {
     const existing =
-      '# app settings\n\n\nDATABASE_URL=postgres://localhost/app\nexport GT_API_KEY=gtx-production-key\nGT_PROJECT_ID=old-project\nOTHER="quoted value" # trailing comment';
+      '# app settings\n\n\nDATABASE_URL=postgres://localhost/app\nexport GT_API_KEY=gtx-production-key\nNEXT_PUBLIC_GT_PROJECT_ID=old-project\nOTHER="quoted value" # trailing comment';
     fs.writeFileSync(envPath(), existing);
 
     await setCredentials(
@@ -71,7 +71,7 @@ describe('setCredentials', () => {
     );
 
     expect(readEnv()).toBe(
-      '# app settings\n\n\nDATABASE_URL=postgres://localhost/app\nexport GT_API_KEY=gtx-production-key\nGT_PROJECT_ID=new-project\nOTHER="quoted value" # trailing comment\nGT_DEV_API_KEY=gtx-dev-key\n'
+      '# app settings\n\n\nDATABASE_URL=postgres://localhost/app\nexport GT_API_KEY=gtx-production-key\nNEXT_PUBLIC_GT_PROJECT_ID=new-project\nOTHER="quoted value" # trailing comment\nNEXT_PUBLIC_GT_DEV_API_KEY=gtx-dev-key\n'
     );
     // Outside a repository the existing file is seeded into .gitignore too.
     expect(fs.readFileSync(path.join(appDirectory, '.gitignore'), 'utf8')).toBe(
@@ -527,19 +527,32 @@ describe('areCredentialsSet', () => {
     );
   });
 
-  it.each(['next-app', undefined] as const)(
-    'is complete with a project and an explicit server key for %s',
+  it.each(['next-app', 'next-pages'] as const)(
+    'recognizes the public development key without a tooling key for %s',
     (framework) => {
-      expect(
-        areCredentialsSet(
-          { projectId: 'project-id', apiKey: 'gtx-prod' },
-          framework
-        )
-      ).toBe(true);
+      vi.stubEnv('NEXT_PUBLIC_GT_DEV_API_KEY', 'gtx-dev');
+      vi.stubEnv('GT_API_KEY', undefined);
+      vi.stubEnv('GT_DEV_API_KEY', undefined);
+      expect(areCredentialsSet({ projectId: 'project-id' }, framework)).toBe(
+        true
+      );
     }
   );
 
-  it.each(['vite', 'next-pages', 'gatsby', 'react', 'redwood'] as const)(
+  it('is complete with a project and an explicit key for a server-only runtime', () => {
+    expect(
+      areCredentialsSet({ projectId: 'project-id', apiKey: 'gtx-prod' })
+    ).toBe(true);
+  });
+
+  it.each([
+    'vite',
+    'next-app',
+    'next-pages',
+    'gatsby',
+    'react',
+    'redwood',
+  ] as const)(
     'treats the tooling key as no browser runtime key for %s',
     (framework) => {
       expect(

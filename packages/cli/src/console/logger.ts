@@ -112,6 +112,7 @@ class Logger {
   private logFormat: LogFormat;
   private logLevel: LogLevel;
   private quiet = false;
+  private animatedProgress = true;
   private consoleOutput: ConsoleOutput = 'stdout';
   // One JSON console logger per stream so switching direction within a
   // process reuses the existing SonicBoom instead of recreating it.
@@ -217,6 +218,17 @@ class Logger {
           : QUIET_FLOOR_LEVEL
         : this.logLevel;
     }
+  }
+
+  /**
+   * Noninteractive setup reports progress as plain log lines instead of
+   * redrawing spinners and progress bars on the console. Returns the previous
+   * mode so a run can restore it.
+   */
+  setAnimatedProgress(animated: boolean): boolean {
+    const previous = this.animatedProgress;
+    this.animatedProgress = animated;
+    return previous;
   }
 
   isQuiet(): boolean {
@@ -339,7 +351,7 @@ class Logger {
   createSpinner(indicator: 'dots' | 'timer' = 'timer'): SpinnerResult {
     // Quiet mode suppresses spinner UI; the mock routes through the gated
     // info() so nothing reaches the console while file logging is preserved.
-    if (this.quiet) {
+    if (this.quiet || !this.animatedProgress) {
       return new MockSpinner(this);
     }
     if (this.logFormat === 'default') {
@@ -351,7 +363,7 @@ class Logger {
 
   // Progress bar functionality
   createProgressBar(total: number): ProgressResult {
-    if (this.quiet) {
+    if (this.quiet || !this.animatedProgress) {
       return new MockProgress(total, this);
     }
     if (this.logFormat === 'default') {

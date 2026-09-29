@@ -41,7 +41,15 @@ export function stripAnsi(str: string): string {
   return str.replace(/\x1B\[[0-9;]*m/g, '');
 }
 
+let lastExitError: string | undefined;
+
+/** The message of the last logErrorAndExit call, for exit-time reporting. */
+export function getLastExitError(): string | undefined {
+  return lastExitError;
+}
+
 export function logErrorAndExit(message: string): never {
+  lastExitError = message;
   logger.error(message);
   return exitSync(1);
 }

@@ -1,6 +1,7 @@
 // This file is MIT licensed and was adapted from https://github.com/getsentry/sentry-wizard/blob/master/src/utils/package-manager.ts and https://github.com/getsentry/sentry-wizard/blob/master/src/utils/clack/index.ts
 import * as fs from 'fs';
 import * as path from 'path';
+import { parse } from 'semver';
 import { getPackageJson, updatePackageJson } from './packageJson.js';
 import { promptSelect } from '../console/logging.js';
 
@@ -227,7 +228,9 @@ export const NPM: PackageManager = {
   devDependencyFlag: '--save-dev',
   detect: (cwd: string) => {
     try {
-      return fs.existsSync(path.join(cwd, 'package-lock.json'));
+      return ['package-lock.json', 'npm-shrinkwrap.json'].some((lockFile) =>
+        fs.existsSync(path.join(cwd, lockFile))
+      );
     } catch {
       return false;
     }
@@ -265,52 +268,49 @@ export function _detectPackageManger(cwd: string): PackageManager | null {
   return null;
 }
 
-// Get the package manager for the current project
-// Uses a global cache to avoid prompting the user multiple times
 export async function getPackageManager(
   cwd: string = process.cwd(),
   specifiedPackageManager?: string,
   errorIfNotFound: boolean = false
 ): Promise<PackageManager> {
-  const globalWizard: typeof global & {
-    _gt_wizard_cached_package_manager?: PackageManager;
-  } = global;
-
-  if (globalWizard._gt_wizard_cached_package_manager) {
-    return globalWizard._gt_wizard_cached_package_manager;
-  }
-
   if (specifiedPackageManager) {
     const packageManager = packageManagers.find(
       (packageManager) => packageManager.id === specifiedPackageManager
     );
-    if (packageManager) {
-      globalWizard._gt_wizard_cached_package_manager = packageManager;
-      return packageManager;
-    }
+    if (packageManager) return packageManager;
+  }
+
+  // A fresh scaffold can declare its manager before a lockfile exists.
+  // The npx launcher's manager says nothing about the target project.
+  const declaration = (await getPackageJson(cwd))?.packageManager;
+  const match =
+    typeof declaration === 'string' && /^([^@]+)@(.+)$/.exec(declaration);
+  const version = match && parse(match[2]);
+  if (match && version) {
+    const id =
+      match[1] === 'yarn'
+        ? version.major <= 1
+          ? YARN_V1.id
+          : YARN_V2.id
+        : match[1];
+    const declaredPackageManager = packageManagers.find(
+      (manager) => manager.id === id
+    );
+    if (declaredPackageManager) return declaredPackageManager;
   }
 
   const detectedPackageManager = _detectPackageManger(cwd);
-
-  if (detectedPackageManager) {
-    globalWizard._gt_wizard_cached_package_manager = detectedPackageManager;
-    return detectedPackageManager;
-  }
+  if (detectedPackageManager) return detectedPackageManager;
 
   if (errorIfNotFound) {
     throw new NoPackageManagerError('No package manager found');
   }
 
-  const selectedPackageManager: PackageManager =
-    await promptSelect<PackageManager>({
-      message: 'Select your package manager.',
-      options: packageManagers.map((packageManager) => ({
-        value: packageManager,
-        label: packageManager.label,
-      })),
-    });
-
-  globalWizard._gt_wizard_cached_package_manager = selectedPackageManager;
-
-  return selectedPackageManager;
+  return promptSelect<PackageManager>({
+    message: 'Select your package manager.',
+    options: packageManagers.map((packageManager) => ({
+      value: packageManager,
+      label: packageManager.label,
+    })),
+  });
 }

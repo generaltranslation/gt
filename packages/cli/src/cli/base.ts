@@ -1,10 +1,11 @@
 import { Command, InvalidArgumentError, Option } from 'commander';
 import { ProjectApiKeyPermission } from 'generaltranslation/api';
+import { DEFAULT_TRANSLATIONS_DIR } from '../utils/constants.js';
 import {
-  DEFAULT_TRANSLATIONS_DIR,
-  DEFAULT_VITE_TRANSLATIONS_DIR,
-} from '../utils/constants.js';
-import { createOrUpdateConfig } from '../fs/config/setupConfig.js';
+  createOrUpdateConfig,
+  mergeSetupConfig,
+  type SetupConfigUpdate,
+} from '../fs/config/setupConfig.js';
 import findFilepath from '../fs/findFilepath.js';
 import {
   displayHeader,
@@ -20,29 +21,66 @@ import { logger } from '../console/logger.js';
 import { lottieTranslateError } from '../console/index.js';
 import { parseGlobPatterns } from '../console/promptParsing.js';
 import path from 'node:path';
-import fs from 'node:fs';
 import {
   FilesOptions,
   Settings,
   SupportedFrameworks,
   SupportedLibraries,
-  SetupOptions,
   TranslateFlags,
   SharedFlags,
 } from '../types/index.js';
 import { generateSettings } from '../config/generateSettings.js';
 import chalk from 'chalk';
-import { FILE_EXT_TO_EXT_LABEL } from '../formats/files/supportedFiles.js';
-import { handleSetupReactCommand } from '../setup/wizard.js';
+import {
+  FILE_EXT_TO_EXT_LABEL,
+  SETUP_FILE_FORMATS,
+  SUPPORTED_FILE_EXTENSIONS,
+  type SetupFileFormat,
+} from '../formats/files/supportedFiles.js';
+import {
+  executeReactSetup,
+  resolveReactSetup,
+  type ReactSetupPlan,
+} from '../setup/wizard.js';
 import {
   isPackageInstalled,
   searchForPackageJson,
 } from '../utils/packageJson.js';
 import { getDesiredLocales } from '../setup/userInput.js';
-import { installPackage } from '../utils/installPackage.js';
-import { getPackageManager } from '../utils/packageManager.js';
-import { areCredentialsSet } from '../utils/credentials.js';
-import { provisionDevelopmentCredentials } from '../setup/developmentCredentials.js';
+import {
+  areCredentialsSet,
+  getDevelopmentEnvNames,
+  inspectCredentialsEnvFile,
+} from '../utils/credentials.js';
+import {
+  checkDevelopmentProjectInputs,
+  productionRuntimeKeyGuidance,
+  provisionDevelopmentCredentials,
+  resolveDevelopmentProject,
+  signInForSetup,
+} from '../setup/developmentCredentials.js';
+import { exitIfUnsupportedSetupTarget } from '../setup/setupTarget.js';
+import {
+  asRecord,
+  attachConfigureFlags,
+  attachInitFlags,
+  describeDefaults,
+  displaySetupHeader,
+  getConfiguredFramework,
+  INIT_SOURCE_HELP,
+  installWithProgress,
+  OnboardingError,
+  parseFilePatterns,
+  readSetupConfig,
+  reportJsonExitsBeforeOnboarding,
+  resolvePackageManager,
+  runOnboarding,
+  setupConfigPath,
+  validateSetupPattern,
+  type ConfigureOptions,
+  type InitOptions,
+  type OnboardingSession,
+} from '../setup/onboarding.js';
 import { upload } from './commands/upload.js';
 import { attachSharedFlags, attachTranslateFlags } from './flags.js';
 import { handleStage } from './commands/stage.js';
@@ -59,9 +97,12 @@ import {
 import { clearWarnings } from '../state/translateWarnings.js';
 import { displayTranslateSummary } from '../console/displayTranslateSummary.js';
 import updateConfig from '../fs/config/updateConfig.js';
-import { loadConfig } from '../fs/config/loadConfig.js';
-import { createLoadTranslationsFile } from '../fs/createLoadTranslationsFile.js';
+import {
+  createLoadTranslationsFile,
+  findLoadTranslationsFile,
+} from '../fs/createLoadTranslationsFile.js';
 import { saveLocalEdits } from '../api/saveLocalEdits.js';
+import { resolveProjectId } from '../fs/utils.js';
 import {
   hasValidCredentials,
   hasValidServiceLocales,
@@ -71,10 +112,6 @@ import processSharedStaticAssets, {
 } from '../utils/sharedStaticAssets.js';
 import { setupLocadex } from '../locadex/setupFlow.js';
 import { detectFramework } from '../setup/detectFramework.js';
-import {
-  getFrameworkDisplayName,
-  getReactFrameworkLibrary,
-} from '../setup/frameworkUtils.js';
 import { INLINE_LIBRARIES, Libraries } from '../types/libraries.js';
 import { handleEnqueue } from './commands/enqueue.js';
 import { splitMintlifyLanguageRefs } from '../utils/splitMintlifyLanguageRefs.js';
@@ -85,10 +122,16 @@ import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/diagnostics';
-import { hasLogin, login, logout, whoAmI } from '../auth/oauth.js';
-import { UserAuthError } from '../auth/errors.js';
+import { hasLogin, logout, whoAmI } from '../auth/oauth.js';
+import { createUserAuthError, UserAuthError } from '../auth/errors.js';
+import { loginInteractively } from '../auth/interactiveLogin.js';
 import { resolveConfig } from '../config/resolveConfig.js';
-import { setupViteSPA } from '../setup/setupViteSPA.js';
+import { loadConfig, withJsonExtension } from '../fs/config/loadConfig.js';
+import {
+  getBuildToolSetup,
+  type ManualAction,
+  type SetupResult,
+} from '../setup/buildTools/index.js';
 import { manifestDirectlyDeclaresGTVue } from '@generaltranslation/vue-extractor/integration';
 import { api } from '../utils/api.js';
 import { handleApiCommand, type ApiCommandOptions } from './commands/api.js';
@@ -102,13 +145,6 @@ const ID_COMPATIBILITY_WARNING_COMMANDS = new Set([
   'translate',
   'validate',
 ]);
-const workspaceRootSetupError = createDiagnosticMessage({
-  source: 'gt',
-  severity: 'Error',
-  whatHappened: 'The setup wizard cannot run from a monorepo workspace root',
-  why: 'GT must be configured in the specific app you want to localize',
-  fix: "Change to that app's directory and rerun `npx gt@latest`",
-});
 function createProjectCommandError(
   whatHappened: string,
   error: unknown
@@ -132,60 +168,20 @@ function parseApiKeyName(value: string): string {
   return name;
 }
 
-const electronSetupError = createDiagnosticMessage({
-  source: 'gt',
-  severity: 'Error',
-  whatHappened:
-    'The automatic setup wizard is not ready for Electron applications',
-  docsUrl: 'https://generaltranslation.com/docs/react',
-});
-
-/** .env.local never reaches production; the runtime key there is set on the host. */
-function productionRuntimeKeyGuidance(dashboardUrl: string): string {
-  return `${chalk.dim('For runtime translation in production, create an API key in the dashboard')} ${chalk.cyan(dashboardUrl)} ${chalk.dim('and set GT_API_KEY and GT_PROJECT_ID in your hosting environment.')}`;
-}
-
-async function loginInteractively(
-  baseUrl: string | undefined,
-  useBrowser = true
-): Promise<void> {
-  await login({
-    baseUrl,
-    noBrowser: !useBrowser,
-    onDeviceCode: ({ userCode, verificationUri, verificationUriComplete }) => {
-      logger.message(
-        `Visit:\n\n${chalk.cyan(verificationUriComplete ?? verificationUri)}\n\nThen ${verificationUriComplete ? 'confirm' : 'enter'} the code ${chalk.bold(userCode)}.\nWaiting for authentication...`
-      );
-    },
-    onAuthorizationUrl: (url) => {
-      logger.message(
-        `Opening your browser to sign in. If it does not open, visit:\n${chalk.cyan(url)}`
-      );
-    },
-  });
-}
-
-function createUserAuthError(whatHappened: string, error: unknown): string {
-  if (error instanceof UserAuthError) return error.message;
-  return createDiagnosticMessage({
-    source: 'gt',
-    severity: 'Error',
-    whatHappened,
-    details: formatDiagnosticErrorDetails(error),
-    fix: 'Run `gt login` and try again',
-  });
-}
-
-async function exitIfUnsupportedSetupTarget(): Promise<void> {
-  const packageJson = await searchForPackageJson();
-  if (packageJson && isPackageInstalled('electron', packageJson, false, true)) {
-    logErrorAndExit(electronSetupError);
-  }
-  if (
-    fs.existsSync(path.join(process.cwd(), 'pnpm-workspace.yaml')) ||
-    packageJson?.workspaces
-  ) {
-    logErrorAndExit(workspaceRootSetupError);
+/** Credential failures keep their own diagnostic or get the setup context. */
+async function withCredentialsError<T>(run: () => Promise<T>): Promise<T> {
+  try {
+    return await run();
+  } catch (error) {
+    if (error instanceof OnboardingError) throw error;
+    throw new Error(
+      error instanceof UserAuthError
+        ? error.message
+        : createProjectCommandError(
+            'Failed to set up the development credentials',
+            error
+          )
+    );
   }
 }
 
@@ -244,12 +240,22 @@ export class BaseCLI {
     // Select console routing for this command before anything else logs:
     // root hooks run before subclass hooks (version checks) and the action's
     // settings resolution. `gt api-key create` prints the new secret on
-    // stdout, so its diagnostics go to stderr; every other command gets the
-    // historical default back (main() routes startup output to stderr).
-    this.program.hook('preAction', (_thisCommand, actionCommand) => {
+    // stdout, so its diagnostics go to stderr, as do setup commands writing
+    // JSON events; every other command gets the historical default back
+    // (main() routes startup output to stderr).
+    this.program.hook('preAction', (thisCommand, actionCommand) => {
       logger.setConsoleOutput(
-        actionCommand.parent?.name() === 'api-key' ? 'stderr' : 'stdout'
+        actionCommand.parent?.name() === 'api-key' || actionCommand.opts().json
+          ? 'stderr'
+          : 'stdout'
       );
+      if (
+        actionCommand.opts().json &&
+        actionCommand.parent === thisCommand &&
+        ['init', 'configure'].includes(actionCommand.name())
+      ) {
+        reportJsonExitsBeforeOnboarding(actionCommand.name());
+      }
     });
     // Apply --quiet before any other hook or command action runs so the
     // singleton logger is muted for the rest of the invocation. The flag is a
@@ -765,11 +771,19 @@ export class BaseCLI {
         '--no-browser',
         'Do not open a browser; show a sign-in URL to use on any device instead'
       )
-      .action(async (options: { browser: boolean }) => {
+      .option(
+        '-c, --config <path>',
+        'Filepath to config file, by default gt.config.json'
+      )
+      .action(async (options: { browser: boolean; config?: string }) => {
         displayHeader('Signing in to General Translation...');
         try {
           // Tokens are bound to one API resource, so log in to the configured one.
-          const baseUrl = resolveConfig(process.cwd())?.config.baseUrl;
+          const baseUrl = (
+            options.config
+              ? loadConfig(withJsonExtension(options.config))
+              : resolveConfig(process.cwd())?.config
+          )?.baseUrl;
           await loginInteractively(
             typeof baseUrl === 'string' ? baseUrl : undefined,
             options.browser
@@ -808,156 +822,156 @@ export class BaseCLI {
   }
 
   protected setupInitCommand(): void {
-    this.program
-      .command('init')
-      .description(
-        'Run the setup wizard to configure your project for General Translation'
-      )
-      .option(
-        '--src <paths...>',
-        "Space-separated list of glob patterns containing the app's source code, by default 'src/**/*.{js,jsx,ts,tsx}' 'app/**/*.{js,jsx,ts,tsx}' 'pages/**/*.{js,jsx,ts,tsx}' 'components/**/*.{js,jsx,ts,tsx}'"
-      )
-      .option(
-        '-c, --config <path>',
-        'Filepath to config file, by default gt.config.json',
-        findFilepath(['gt.config.json'])
-      )
-      .action(async (options: SetupOptions) => {
-        await exitIfUnsupportedSetupTarget();
-        const settings = await generateSettings(options);
-        displayHeader('Running setup wizard...');
+    attachInitFlags(
+      this.program
+        .command('init')
+        .description(
+          'Run the setup wizard to configure your project for General Translation. Flags answer its questions; unanswered ones are asked, or listed as missing with --no-interactive'
+        ),
+      INIT_SOURCE_HELP
+    ).action((options: InitOptions) => this.handleInitWizard(options));
+  }
 
-        const framework = await detectFramework();
+  protected async handleInitWizard(options: InitOptions): Promise<void> {
+    await runOnboarding('init', options, async (session) => {
+      await exitIfUnsupportedSetupTarget();
+      displaySetupHeader(session, 'Running setup wizard...');
 
-        const useAgent = await (async () => {
-          let useAgentMessage;
-          if (framework.name === 'mintlify') {
-            useAgentMessage = `Mintlify project detected. Would you like to connect to GitHub so that the Locadex AI Agent can translate your project automatically?`;
-          }
-          if (framework.name === 'next-app') {
-            useAgentMessage = `Next.js App Router detected. Would you like to connect to GitHub so that the Locadex AI Agent can set up your project automatically?`;
-          }
-          if (useAgentMessage) {
-            return await promptConfirm({
-              message: useAgentMessage,
+      const detected = await detectFramework();
+      const reactDetected = detected.type === 'react' ? detected : undefined;
+      if (options.framework && !reactDetected) {
+        session.reject(
+          '--framework applies only to projects detected as React applications'
+        );
+      }
+      const configFilepath = setupConfigPath(options);
+      const configured = getConfiguredFramework(
+        readSetupConfig(configFilepath)
+      );
+      const configuredReact =
+        configured !== 'mintlify' ? configured : undefined;
+      // Explicit --defaults / --no-defaults also answer the Locadex gate.
+      if (options.defaults !== undefined) session.defaults = options.defaults;
+      const gateFramework = options.framework ?? configured ?? detected.name;
+      if (gateFramework === 'mintlify' || gateFramework === 'next-app') {
+        const useLocadex = await session.answer('--locadex', {
+          explicit: options.locadex,
+          recommended: false,
+          ask: () =>
+            promptConfirm({
+              message:
+                gateFramework === 'mintlify'
+                  ? `Mintlify project detected. Would you like to connect to GitHub so that the Locadex AI Agent can translate your project automatically?`
+                  : `Next.js App Router detected. Would you like to connect to GitHub so that the Locadex AI Agent can set up your project automatically?`,
               defaultValue: false,
-            });
-          }
-          return false;
-        })();
-
-        if (useAgent) {
-          await setupLocadex(settings);
+            }),
+        });
+        if (useLocadex) {
+          session.assertResolved();
+          const url = await setupLocadex(
+            await generateSettings({ config: options.config }),
+            { openBrowser: session.interactive }
+          );
+          session.emit({ type: 'handoff', url, reason: 'locadex' });
           logger.endCommand(
             'Once installed, Locadex will open a PR to your repository. See the docs for more information: https://generaltranslation.com/docs/locadex'
           );
-        } else {
-          // Get framework display info for the defaults message
-          const frameworkDisplayName =
-            framework.type === 'react'
-              ? getFrameworkDisplayName(framework)
-              : null;
-          const library =
-            framework.type === 'react'
-              ? getReactFrameworkLibrary(framework)
-              : null;
-
-          // Build defaults description based on detected framework
-          const defaultTranslationsDir =
-            framework.name === 'vite'
-              ? DEFAULT_VITE_TRANSLATIONS_DIR
-              : DEFAULT_TRANSLATIONS_DIR;
-
-          const defaultsDescription =
-            framework.name === 'vite'
-              ? `${library} & initializeGTSPA, ${frameworkDisplayName}, Files saved locally in ${defaultTranslationsDir}`
-              : framework.type === 'react'
-                ? `${library} & GTProvider, ${frameworkDisplayName}, Files saved locally in ${defaultTranslationsDir}`
-                : `Files saved locally in ${defaultTranslationsDir}`;
-
-          // Ask if user wants to use defaults
-          const useDefaults = await promptConfirm({
-            message: `Would you like to use the recommended General Translation defaults? ${chalk.dim(`(${defaultsDescription})`)}`,
-            defaultValue: true,
-          });
-
-          let ranReactSetup = false;
-
-          // so that people can run init in non-js projects
-          if (framework.type === 'react') {
-            const wrap = useDefaults
-              ? true
-              : await promptConfirm({
-                  message:
-                    framework.name === 'vite'
-                      ? `Would you like to install ${library} and configure initializeGTSPA? See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`
-                      : `Would you like to install ${library} and add the GTProvider? See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`,
-                  defaultValue: true,
-                });
-
-            if (wrap) {
-              logger.info(
-                `${chalk.yellow('[EXPERIMENTAL]')} Configuring project...`
-              );
-              await handleSetupReactCommand(options, framework, useDefaults);
-              logger.endCommand(
-                `Done! Since this wizard is experimental, please review the changes and make modifications as needed.
-\nNext step: start internationalizing! See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`
-              );
-              ranReactSetup = true;
-            }
-          }
-
-          if (ranReactSetup) {
-            logger.startCommand('Setting up project config...');
-          }
-          // Configure gt.config.json
-          await this.handleInitCommand(
-            ranReactSetup,
-            useDefaults,
-            framework.name === 'vite',
-            options,
-            framework.name
-          );
-
-          logger.endCommand(
-            'Done! Check out our docs for more information on how to use General Translation: https://generaltranslation.com/docs'
-          );
+          return { outcome: 'needs_human_action', url };
         }
+      } else if (options.locadex) {
+        session.reject(
+          '--locadex applies only to Mintlify and Next.js App Router projects'
+        );
+      }
+
+      const shownFramework = reactDetected && {
+        ...reactDetected,
+        name: options.framework ?? configuredReact ?? reactDetected.name,
+      };
+      // Without --defaults, a noninteractive run uses no defaults.
+      session.defaults =
+        (await session.answer('--defaults', {
+          explicit: options.defaults,
+          fallback: false,
+          ask: () =>
+            promptConfirm({
+              message: `Would you like to use the recommended General Translation defaults? ${chalk.dim(`(${describeDefaults(shownFramework)})`)}`,
+              defaultValue: true,
+            }),
+        })) === true;
+
+      const reactSetup = reactDetected
+        ? await resolveReactSetup(
+            session,
+            options,
+            reactDetected,
+            configuredReact
+          )
+        : undefined;
+      // flag > gt.config.json > detection, used for every later step.
+      const framework =
+        reactSetup?.framework ??
+        options.framework ??
+        configured ??
+        detected.name;
+      await this.handleInitCommand(session, options, {
+        configFilepath,
+        framework,
+        saveFramework: Boolean(reactSetup || options.framework),
+        reactSetup,
+        keepAppSource: !reactSetup,
       });
+
+      logger.endCommand(
+        'Done! Check out our docs for more information on how to use General Translation: https://generaltranslation.com/docs'
+      );
+      return { outcome: 'success' };
+    });
   }
 
   protected setupConfigureCommand(): void {
-    this.program
-      .command('configure')
-      .description(
-        'Configure your project for General Translation. This will create a gt.config.json file in your codebase.'
-      )
-      .action(() => this.handleConfigureCommand());
+    attachConfigureFlags(
+      this.program
+        .command('configure')
+        .description(
+          'Configure your project for General Translation. This will create a gt.config.json file in your codebase. Flags answer its questions; unanswered ones are asked, or listed as missing with --no-interactive'
+        ),
+      INIT_SOURCE_HELP
+    ).action((options: ConfigureOptions) =>
+      this.handleConfigureCommand(options)
+    );
   }
 
   protected async handleConfigureCommand(
-    options?: SetupOptions
+    options: ConfigureOptions,
+    command: string = 'configure'
   ): Promise<void> {
-    await exitIfUnsupportedSetupTarget();
-    displayHeader('Configuring project...');
+    await runOnboarding(command, options, async (session) => {
+      await exitIfUnsupportedSetupTarget();
+      displaySetupHeader(session, 'Configuring project...');
 
-    logger.info(
-      'Welcome! This tool will help you configure your gt.config.json file. See the docs: https://generaltranslation.com/docs/cli/reference/config for more information.'
-    );
+      logger.info(
+        'Welcome! This tool will help you configure your gt.config.json file. See the docs: https://generaltranslation.com/docs/cli/reference/config for more information.'
+      );
 
-    // Configure gt.config.json
-    const framework = await detectFramework();
-    await this.handleInitCommand(
-      false,
-      false,
-      framework.name === 'vite',
-      options
-    );
+      // Configure only offers the defaults when asked with --defaults.
+      session.defaults = options.defaults ?? false;
+      const detected = await detectFramework();
+      const configFilepath = setupConfigPath(options);
+      // Detection only picks env names here; it is not saved.
+      const framework =
+        getConfiguredFramework(readSetupConfig(configFilepath)) ??
+        detected.name;
+      await this.handleInitCommand(session, options, {
+        configFilepath,
+        framework,
+      });
 
-    logger.endCommand(
-      'Done! Make sure you have an API key and project ID to use General Translation. Get them on the dashboard: https://generaltranslation.com/dashboard'
-    );
+      logger.endCommand(
+        'Done! Make sure you have an API key and project ID to use General Translation. Get them on the dashboard: https://generaltranslation.com/dashboard'
+      );
+      return { outcome: 'success' };
+    });
   }
 
   protected async handleUploadCommand(
@@ -1002,10 +1016,10 @@ export class BaseCLI {
 
   /** Returns whether setup should generate a local runtime loader. */
   protected shouldGenerateLocalTranslationLoader(
-    isVite: boolean,
+    buildToolOwnsLoader: boolean,
     runtimeSetup: InlineRuntimeSetup
   ): boolean {
-    if (isVite) return false;
+    if (buildToolOwnsLoader) return false;
     if (!runtimeSetup.hasVueRuntime) return true;
     return runtimeSetup.hasOtherInlineRuntime || runtimeSetup.ranReactSetup;
   }
@@ -1030,166 +1044,495 @@ See https://www.npmjs.com/package/gt-vue`);
     return guidance.length > 0 ? guidance.join('\n') : undefined;
   }
 
-  // Wizard for configuring gt.config.json
+  /**
+   * Resolves every configuration answer and validates the resulting config,
+   * checks the project and signs in before the first change, then applies
+   * the React setup, gt.config.json, installs and development credentials.
+   */
   protected async handleInitCommand(
-    ranReactSetup: boolean,
-    useDefaults: boolean = false,
-    isVite: boolean = false,
-    options?: SetupOptions,
-    framework?: SupportedFrameworks
+    session: OnboardingSession,
+    options: ConfigureOptions,
+    setup: {
+      /** Chosen once by the entry point from the detected framework. */
+      configFilepath: string;
+      /** Resolved framework; drives storage, env names and build-tool setup. */
+      framework?: SupportedFrameworks;
+      /** Write the framework even when no build-tool setup saves it. */
+      saveFramework?: boolean;
+      reactSetup?: ReactSetupPlan;
+      /** Init without the React setup never changes application source. */
+      keepAppSource?: boolean;
+    }
   ): Promise<void> {
-    const configFilepath =
-      options?.config ||
-      (!isVite && fs.existsSync('src/gt.config.json')
-        ? 'src/gt.config.json'
-        : 'gt.config.json');
-    const existingConfig = loadConfig(configFilepath);
-    const previousOutput = (existingConfig.files as FilesOptions | undefined)
-      ?.gt?.output;
-    const previousTranslationsDir =
-      typeof previousOutput === 'string' &&
-      path.basename(previousOutput) === '[locale].json'
-        ? path.dirname(previousOutput)
-        : undefined;
-    const { defaultLocale, locales } = await getDesiredLocales(existingConfig);
+    const { configFilepath, reactSetup } = setup;
+    const buildTool = getBuildToolSetup(setup.framework);
+    const cwd = process.cwd();
+    const existingConfig = readSetupConfig(configFilepath);
+    const { defaultLocale, locales } = await getDesiredLocales(
+      session,
+      existingConfig,
+      options
+    );
 
-    const packageJson = await searchForPackageJson();
-
-    // Ask if using another i18n library
+    const packageJson =
+      reactSetup?.packageJson ?? (await searchForPackageJson());
     const runtimeSetup: InlineRuntimeSetup = packageJson
-      ? this.getInlineRuntimeSetup(packageJson, ranReactSetup)
+      ? this.getInlineRuntimeSetup(packageJson, Boolean(reactSetup))
       : {
           hasOtherInlineRuntime: false,
           hasVueRuntime: false,
-          ranReactSetup,
+          ranReactSetup: false,
         };
     const isUsingGT =
       runtimeSetup.ranReactSetup ||
       runtimeSetup.hasOtherInlineRuntime ||
       runtimeSetup.hasVueRuntime;
+    const supportsCDN = this.supportsCDNStorage(runtimeSetup);
+    const existingFiles = asRecord(existingConfig.files) ?? {};
+    const existingGtOutput = asRecord(existingFiles.gt)?.output;
+    const configuredOutput =
+      typeof existingGtOutput === 'string' ? existingGtOutput : undefined;
+    const configuredStorage = configuredOutput
+      ? 'local'
+      : existingConfig.publish === true
+        ? 'cdn'
+        : undefined;
 
-    // Ask where the translations are stored
-    const usingCDN = await (async () => {
-      if (!isUsingGT) return false;
-      if (useDefaults) return false; // Default to local
-      if (!this.supportsCDNStorage(runtimeSetup)) return false;
-      const selectedValue = await promptSelect({
-        message: `Would you like to save translation files locally or use the General Translation CDN to store them?`,
-        options: [
-          { value: 'local', label: 'Save locally' },
-          { value: 'cdn', label: 'Use CDN' },
-        ],
-        defaultValue: 'local',
-      });
-      return selectedValue === 'cdn';
-    })();
-
-    const defaultTranslationsDir = isVite
-      ? DEFAULT_VITE_TRANSLATIONS_DIR
-      : DEFAULT_TRANSLATIONS_DIR;
-
-    // Ask where the translations are stored
-    const translationsDir =
-      isUsingGT && !usingCDN
-        ? useDefaults
-          ? defaultTranslationsDir
-          : await promptText({
-              message:
-                'What is the path to the directory where you would like to store your translation files?',
-              defaultValue: defaultTranslationsDir,
-            })
-        : null;
-
-    // Determine final translations directory with fallback
-    const finalTranslationsDir =
-      translationsDir?.trim() || defaultTranslationsDir;
-
-    const message = !isUsingGT
-      ? 'What is the format of your language resource files? Select as many as applicable.\nAdditionally, you can translate any other files you have in your project.'
-      : `Do you have any additional files in this project to translate? For example, Markdown files for docs. ${chalk.dim(
-          '(To continue without selecting press Enter)'
-        )}`;
-    const fileExtensions =
-      useDefaults && isUsingGT
-        ? [] // Skip for GT projects when using defaults
-        : await promptMultiSelect({
-            message,
-            options: [
-              { value: 'json', label: FILE_EXT_TO_EXT_LABEL.json },
-              { value: 'md', label: FILE_EXT_TO_EXT_LABEL.md },
-              { value: 'mdx', label: FILE_EXT_TO_EXT_LABEL.mdx },
-              { value: 'ts', label: FILE_EXT_TO_EXT_LABEL.ts },
-              { value: 'js', label: FILE_EXT_TO_EXT_LABEL.js },
-              { value: 'yaml', label: FILE_EXT_TO_EXT_LABEL.yaml },
-              // TWILIO_CONTENT_JSON not supported in CLI init as its too niche
-            ],
-            required: !isUsingGT,
+    if (isUsingGT && !supportsCDN && options.storage === 'cdn') {
+      session.reject(
+        'gt-vue cannot load translations from the CDN; use --storage local'
+      );
+    }
+    // Where GT translations are stored
+    const storage = !isUsingGT
+      ? undefined
+      : !supportsCDN
+        ? 'local'
+        : await session.answer<'local' | 'cdn'>('--storage', {
+            explicit: options.storage,
+            configured: configuredStorage,
+            recommended: 'local',
+            ask: () =>
+              promptSelect<'local' | 'cdn'>({
+                message: `Would you like to save translation files locally or use the General Translation CDN to store them?`,
+                options: [
+                  { value: 'local', label: 'Save locally' },
+                  { value: 'cdn', label: 'Use CDN' },
+                ],
+                defaultValue: 'local',
+              }),
           });
 
+    const defaultTranslationsDir =
+      buildTool?.defaultTranslationsDir ?? DEFAULT_TRANSLATIONS_DIR;
+    const outputMatch = configuredOutput?.match(
+      /^(?:(.+)[\\/])?\[locale\]\.json$/
+    );
+    const configuredTranslationsDir = outputMatch
+      ? (outputMatch[1] ?? '.')
+      : undefined;
+    const translationsDir =
+      storage === 'local'
+        ? await session.answer('--translations-dir', {
+            explicit: options.translationsDir?.trim() || undefined,
+            configured: configuredTranslationsDir,
+            recommended: defaultTranslationsDir,
+            ask: async () =>
+              (
+                await promptText({
+                  message:
+                    'What is the path to the directory where you would like to store your translation files?',
+                  defaultValue: defaultTranslationsDir,
+                })
+              ).trim() || defaultTranslationsDir,
+          })
+        : undefined;
+
+    const filePatterns = parseFilePatterns(session, options.filePatterns);
+    const selectedFormats = options.fileFormats?.filter(
+      (format): format is SetupFileFormat => format !== 'none'
+    );
+    if (
+      options.fileFormats?.includes('none') &&
+      (selectedFormats?.length ?? 0) > 0
+    ) {
+      session.reject('--file-formats none cannot be combined with formats');
+    }
+    const configuredFormats = SETUP_FILE_FORMATS.filter(
+      (format) => format in existingFiles
+    );
+    // Formats setup does not offer stay as configured and count as files.
+    const otherFormats = SUPPORTED_FILE_EXTENSIONS.filter(
+      (format) =>
+        format in existingFiles &&
+        !(SETUP_FILE_FORMATS as readonly string[]).includes(format)
+    );
+    const hasOtherFormats = otherFormats.length > 0;
+    if (options.fileFormats && hasOtherFormats) {
+      const kept = otherFormats.map((format) => `files.${format}`).join(', ');
+      logger.warn(
+        createDiagnosticMessage({
+          source: 'gt',
+          severity: 'Warning',
+          whatHappened: `${kept} stays in ${configFilepath}`,
+          why: '--file-formats only changes the formats setup offers',
+          fix: `Remove ${kept} from ${configFilepath} to stop translating those files`,
+        })
+      );
+    }
+    const fileFormats = await session.answer<SetupFileFormat[]>(
+      '--file-formats',
+      {
+        explicit:
+          selectedFormats ??
+          (filePatterns.size > 0 ? [...filePatterns.keys()] : undefined),
+        configured:
+          configuredFormats.length > 0 || hasOtherFormats
+            ? configuredFormats
+            : undefined,
+        // GT projects need no other files; others must choose a format.
+        recommended: isUsingGT ? [] : undefined,
+        ask: () =>
+          promptMultiSelect({
+            message: !isUsingGT
+              ? 'What is the format of your language resource files? Select as many as applicable.\nAdditionally, you can translate any other files you have in your project.'
+              : `Do you have any additional files in this project to translate? For example, Markdown files for docs. ${chalk.dim(
+                  '(To continue without selecting press Enter)'
+                )}`,
+            options: SETUP_FILE_FORMATS.map((format) => ({
+              value: format,
+              label: FILE_EXT_TO_EXT_LABEL[format],
+            })),
+            required: !isUsingGT,
+          }),
+      }
+    );
+    if (
+      fileFormats &&
+      fileFormats.length === 0 &&
+      !isUsingGT &&
+      !hasOtherFormats
+    ) {
+      session.reject(
+        'No GT runtime is installed, so select at least one file format to translate'
+      );
+    }
+    for (const format of filePatterns.keys()) {
+      if (fileFormats && !fileFormats.includes(format)) {
+        session.reject(
+          `--file-patterns ${format}= needs ${format} in --file-formats`
+        );
+      }
+    }
+
     const files: FilesOptions = {};
-    for (const fileExtension of fileExtensions) {
-      const label = FILE_EXT_TO_EXT_LABEL[fileExtension];
-      const paths = await promptGlobPatterns({
-        label,
-        message: `${chalk.cyan(FILE_EXT_TO_EXT_LABEL[fileExtension])}: Enter a space-separated list of glob patterns matching the location of the ${FILE_EXT_TO_EXT_LABEL[fileExtension]} files you would like to translate.\nMake sure to include [locale] in the patterns.\nSee https://generaltranslation.com/docs/cli/reference/config#include for more information.`,
-        defaultValue: `./**/[locale]/*.${fileExtension}`,
-      });
-
-      files[fileExtension] = {
-        include: parseGlobPatterns(paths),
-      };
+    for (const fileExtension of fileFormats ?? []) {
+      const existingFormat = asRecord(existingFiles[fileExtension]);
+      const configuredInclude = Array.isArray(existingFormat?.include)
+        ? (existingFormat.include as string[])
+        : undefined;
+      const include = await session.answer(
+        `--file-patterns ${fileExtension}=<glob>`,
+        {
+          explicit: filePatterns.get(fileExtension),
+          configured: configuredInclude,
+          recommended: [`./**/[locale]/*.${fileExtension}`],
+          ask: async () =>
+            parseGlobPatterns(
+              await promptGlobPatterns({
+                label: FILE_EXT_TO_EXT_LABEL[fileExtension],
+                message: `${chalk.cyan(FILE_EXT_TO_EXT_LABEL[fileExtension])}: Enter a space-separated list of glob patterns matching the location of the ${FILE_EXT_TO_EXT_LABEL[fileExtension]} files you would like to translate.\nMake sure to include [locale] in the patterns.\nSee https://generaltranslation.com/docs/cli/reference/config#include for more information.`,
+                defaultValue: `./**/[locale]/*.${fileExtension}`,
+                validate: (value) =>
+                  parseGlobPatterns(value)
+                    .map(validateSetupPattern)
+                    .find((problem) => problem !== true) ?? true,
+              })
+            ),
+        }
+      );
+      // Configured patterns stay untouched; new ones keep other entry options.
+      if (include && include !== configuredInclude) {
+        files[fileExtension] = { ...existingFormat, include };
+      }
+    }
+    if (translationsDir && translationsDir !== configuredTranslationsDir) {
+      files.gt = { output: path.join(translationsDir, `[locale].json`) };
     }
 
-    // Add GT translations if using GT and storing locally
-    if (isUsingGT && !usingCDN) {
-      files.gt = {
-        output: path.join(finalTranslationsDir, `[locale].json`),
-      };
-    }
-
-    // Create gt.config.json
-    await createOrUpdateConfig(configFilepath, {
+    const envFramework =
+      setup.framework ?? getConfiguredFramework(existingConfig);
+    // The effective project: an explicit ID replaces a configured one. The
+    // framework's runtime project outranks a stale generic GT_PROJECT_ID.
+    const projectId =
+      options.projectId ||
+      (typeof existingConfig.projectId === 'string'
+        ? existingConfig.projectId
+        : undefined) ||
+      process.env[getDevelopmentEnvNames(envFramework).projectId];
+    const configUpdate: SetupConfigUpdate = {
       defaultLocale,
       locales,
-      src: options?.src,
+      src: options.src,
       files: Object.keys(files).length > 0 ? files : undefined,
-      framework: isVite ? 'vite' : undefined,
-      publish: isUsingGT && usingCDN,
-      clearPublish: runtimeSetup.hasVueRuntime && !usingCDN,
-    });
+      framework:
+        (setup.saveFramework && setup.framework) || buildTool?.framework,
+      publish: storage === 'cdn',
+      // Selecting local storage drops stale CDN intent; a config that
+      // already combines local files with publishing keeps it.
+      clearPublish:
+        storage === 'local' &&
+        (options.storage === 'local' ||
+          configuredStorage !== 'local' ||
+          !supportsCDN),
+      // An explicit switch to the CDN stops later runs inferring local files.
+      clearGtOutput: storage === 'cdn' && configuredOutput !== undefined,
+      // An explicit format list replaces the configured selection.
+      removeFiles: selectedFormats
+        ? configuredFormats.filter(
+            (format) => !selectedFormats.includes(format)
+          )
+        : undefined,
+    };
+    session.assertResolved();
 
-    // After every prompt and the config write, so cancelling setup cannot
-    // leave the loader pointing somewhere the config does not.
-    if (isUsingGT && !usingCDN) {
+    // Validate what will be written, and use it for every later step.
+    const { projectId: _writtenProjectId, ...effectiveConfig } =
+      mergeSetupConfig(existingConfig, configUpdate);
+    const settings = await generateSettings(
+      { config: configFilepath, ...(projectId && { projectId }) },
+      cwd,
+      { resolvedConfig: effectiveConfig }
+    );
+    // Runtime credentials only count for the project this setup uses; the
+    // framework's project variable is the one paired with its dev key.
+    const runtimeProjectId =
+      process.env[getDevelopmentEnvNames(envFramework).projectId] ??
+      resolveProjectId();
+    const runtimeProjectMatches =
+      runtimeProjectId === undefined || runtimeProjectId === settings.projectId;
+    const credentialsSet =
+      runtimeProjectMatches && areCredentialsSet(settings, envFramework);
+    const credentialsOption =
+      (storage === 'local' && buildTool?.devCredentialsOption) ||
+      '--dev-credentials';
+    const provision =
+      !credentialsSet &&
+      (credentialsOption === '--live-translations'
+        ? await session.answer('--live-translations', {
+            explicit: options.liveTranslations ?? options.devCredentials,
+            recommended: false,
+            ask: () =>
+              promptConfirm({
+                message:
+                  'Would you like to set up live development translations? This requires signing in or an API key.',
+                defaultValue: false,
+              }),
+          })
+        : await session.answer('--dev-credentials', {
+            explicit: options.devCredentials,
+            // Creating a key is never a default.
+            ask: () =>
+              promptConfirm({
+                message:
+                  'Would you like to set up a project ID and hot-reload key in .env.local?',
+                defaultValue: true,
+              }),
+          })) === true;
+    if (!runtimeProjectMatches && !provision) {
+      session.reject(
+        `The runtime credentials in the environment belong to project ${runtimeProjectId}, not ${settings.projectId}; pass --dev-credentials to replace them in .env.local`
+      );
+    }
+    // An explicit ID is saved to gt.config.json when it replaces a
+    // configured one or no new credentials will record it in .env.local.
+    if (options.projectId && (existingConfig.projectId || !provision)) {
+      configUpdate.projectId = options.projectId;
+    }
+    if (provision) {
+      checkDevelopmentProjectInputs(
+        session,
+        settings,
+        options,
+        options.projectId
+          ? '--project-id'
+          : // An empty configured ID falls through to the environment.
+            typeof existingConfig.projectId === 'string' &&
+              existingConfig.projectId
+            ? configFilepath
+            : 'the environment'
+      );
+      await withCredentialsError(() =>
+        inspectCredentialsEnvFile(cwd, { framework: envFramework })
+      );
+    }
+
+    if (reactSetup && buildTool) await buildTool.preflight(cwd);
+    const installGT =
+      packageJson !== null &&
+      !isPackageInstalled('gt', packageJson, true, true) &&
+      !buildTool?.skipsGTInstall(isUsingGT);
+    const packageManager =
+      reactSetup?.install || installGT
+        ? await resolvePackageManager(session, options.packageManager)
+        : undefined;
+
+    session.assertResolved();
+
+    // Only creating credentials talks to GT, as the signed-in user unless an
+    // API key is set. A development key in .env.local never stands in.
+    if (
+      provision &&
+      !settings.apiKey &&
+      !(await hasLogin({ baseUrl: settings.baseUrl }))
+    ) {
+      await signInForSetup(session, settings.baseUrl);
+    }
+    const project = provision
+      ? await withCredentialsError(() =>
+          resolveDevelopmentProject(session, settings, options, cwd)
+        )
+      : undefined;
+    session.assertResolved();
+
+    // ----- Changes start here ----- //
+    const resolvedLocales = locales as string[];
+
+    if (reactSetup) {
+      logger.info(`${chalk.yellow('[EXPERIMENTAL]')} Configuring project...`);
+      if (reactSetup.install && packageManager) {
+        await installWithProgress(
+          session,
+          reactSetup.install,
+          packageManager,
+          false
+        );
+      }
+      await executeReactSetup(session, reactSetup, options);
+      logger.endCommand(
+        `Done! Since this wizard is experimental, please review the changes and make modifications as needed.
+\nNext step: start internationalizing! See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`
+      );
+      logger.startCommand('Setting up project config...');
+    }
+
+    const reportManualAction = ({ whatHappened, fix }: ManualAction) => {
+      session.humanActions.push(fix);
+      logger.warn(
+        createDiagnosticMessage({
+          source: 'gt',
+          severity: 'Warning',
+          whatHappened,
+          fix,
+        })
+      );
+    };
+    const reportSetupResult = ({ steps, manualActions }: SetupResult) => {
+      for (const step of steps) session.step(step);
+      manualActions.forEach(reportManualAction);
+    };
+    const translationFilesError = (error: unknown) =>
+      new Error(
+        createDiagnosticMessage({
+          source: 'gt',
+          severity: 'Error',
+          whatHappened: `Could not create the translation files in ${translationsDir}`,
+          details: formatDiagnosticErrorDetails(error),
+          fix: 'Choose another --translations-dir or fix the path, then rerun the command',
+        })
+      );
+    const buildToolContext = {
+      appDirectory: cwd,
+      configFilepath,
+      defaultLocale: settings.defaultLocale,
+      locales: resolvedLocales,
+      translationsDir: storage === 'local' ? translationsDir : undefined,
+      previousTranslationsDir: configuredTranslationsDir,
+    };
+
+    if (storage === 'local' && translationsDir) {
+      if (buildTool && !reactSetup) {
+        reportSetupResult(
+          await buildTool
+            .syncLoader({
+              ...buildToolContext,
+              translationsDir,
+              keepAppSource: setup.keepAppSource,
+            })
+            .catch((error: unknown) => {
+              throw translationFilesError(error);
+            })
+        );
+      }
       const generatedLoader = this.shouldGenerateLocalTranslationLoader(
-        isVite,
+        buildTool?.ownsLoader ?? false,
         runtimeSetup
       );
       const loader = generatedLoader
         ? await createLoadTranslationsFile({
-            appDirectory: process.cwd(),
-            translationsDir: finalTranslationsDir,
-            defaultLocale,
-            locales,
-            previousTranslationsDir,
+            appDirectory: cwd,
+            translationsDir,
+            defaultLocale: settings.defaultLocale,
+            locales: resolvedLocales,
+            previousTranslationsDir: configuredTranslationsDir,
+          }).catch((error: unknown) => {
+            throw translationFilesError(error);
           })
         : undefined;
-      if (loader === 'custom') {
-        const diagnostic = createDiagnosticMessage({
-          source: 'gt',
-          severity: 'Warning',
-          whatHappened: 'The existing translation loader was preserved',
-          fix: `Verify loadTranslations.js loads translations from ${finalTranslationsDir}`,
+      if (loader === 'created' || loader === 'updated') {
+        session.step(`${loader} loadTranslations.js`);
+      }
+      // A loader left unchanged may not read the newly chosen directory.
+      if (
+        loader === 'custom' &&
+        translationsDir !== configuredTranslationsDir
+      ) {
+        const loaderFile = path.relative(
+          cwd,
+          findLoadTranslationsFile(cwd) ?? 'loadTranslations.js'
+        );
+        reportManualAction({
+          whatHappened: `Your custom ${loaderFile} was left unchanged, but translations now go to ${translationsDir}`,
+          fix: `Update your custom ${loaderFile} to load translations from ${translationsDir}`,
         });
-        logger.warn(diagnostic);
       }
       const guidance = this.getLocalTranslationGuidance({
         generatedLoader: generatedLoader && loader !== 'custom',
         runtimeSetup,
-        translationsDir: finalTranslationsDir,
+        translationsDir,
       });
       if (guidance) logger.message(guidance);
+    } else if (
+      storage === 'cdn' &&
+      buildTool &&
+      !reactSetup &&
+      configuredTranslationsDir !== undefined
+    ) {
+      // Only the application setup rewrites the initializer; a loader passed
+      // to it takes precedence over CDN loading.
+      reportManualAction({
+        whatHappened: `Translations now load from the CDN, but ${buildTool.initializer} may still receive the local loader for ${configuredTranslationsDir}`,
+        fix: `Remove the loadTranslations option and its import from the ${buildTool.initializer}() call so translations load from the CDN`,
+      });
+    } else if (
+      storage === 'cdn' &&
+      !buildTool &&
+      configuredTranslationsDir !== undefined
+    ) {
+      // gt-next uses a loadTranslations file whenever one exists, and a
+      // loader passed to GTProvider takes precedence over the CDN.
+      const loader = findLoadTranslationsFile(cwd);
+      if (loader) {
+        const loaderFile = path.relative(cwd, loader);
+        reportManualAction({
+          whatHappened: `Translations now load from the CDN, but ${loaderFile} still loads them from ${configuredTranslationsDir}`,
+          fix: `Delete ${loaderFile}, and remove it from your GT setup if you pass it there, so translations load from the CDN`,
+        });
+      }
     }
+
+    await createOrUpdateConfig(configFilepath, configUpdate);
+    session.step(`updated ${configFilepath}`);
 
     logger.success(
       `Edit ${chalk.cyan(
@@ -1197,92 +1540,25 @@ See https://www.npmjs.com/package/gt-vue`);
       )} to customize your translation setup. Docs: https://generaltranslation.com/docs/cli/reference/config`
     );
 
-    if (ranReactSetup && isVite) {
-      const result = await setupViteSPA({
-        appDirectory: process.cwd(),
-        configFilepath,
-        defaultLocale,
-        locales,
-        translationsDir: usingCDN ? undefined : finalTranslationsDir,
-        previousTranslationsDir,
-      });
-      if (result.manualAction) {
-        logger.warn(
-          createDiagnosticMessage({
-            source: 'gt',
-            severity: 'Warning',
-            whatHappened: 'The existing Vite setup needs a manual review',
-            fix: result.manualAction,
-          })
-        );
-      }
+    if (reactSetup && buildTool) {
+      reportSetupResult(await buildTool.apply(buildToolContext));
     }
 
-    // Install gt if not installed
-    const isCLIInstalled = packageJson
-      ? isPackageInstalled('gt', packageJson, true, true)
-      : true; // if no package.json, we can't install it
+    if (installGT && packageManager) {
+      await installWithProgress(session, 'gt', packageManager, true);
+    }
 
-    if (!isCLIInstalled && !(isUsingGT && isVite)) {
-      const packageManager = await getPackageManager();
-      const spinner = logger.createSpinner();
-      spinner.start(
-        `Installing gt as a dev dependency with ${packageManager.name}...`
+    if (project) {
+      await withCredentialsError(() =>
+        provisionDevelopmentCredentials(
+          session,
+          project,
+          settings,
+          envFramework,
+          cwd
+        )
       );
-      await installPackage('gt', packageManager, true);
-      spinner.stop(chalk.green('Installed gt.'));
-    }
-
-    const localVite = isVite && isUsingGT && !usingCDN;
-    const enableLiveTranslations =
-      localVite &&
-      (await promptConfirm({
-        message:
-          'Would you like to set up live development translations? This requires signing in or an API key.',
-        defaultValue: false,
-      }));
-    if (!localVite || enableLiveTranslations) {
-      const settings = await generateSettings({ config: configFilepath });
-      const envFramework = framework ?? (isVite ? 'vite' : settings.framework);
-      // The CLI translates as the signed-in user; an API key in the
-      // environment takes precedence and needs no login. A development key in
-      // .env.local is runtime-only and never stands in for either.
-      if (
-        !settings.apiKey &&
-        !(await hasLogin({ baseUrl: settings.baseUrl }))
-      ) {
-        try {
-          await loginInteractively(settings.baseUrl);
-          logger.message('You are now signed in.');
-        } catch (error) {
-          logErrorAndExit(createUserAuthError('Sign in failed', error));
-        }
-      }
-      if (!areCredentialsSet(settings, envFramework)) {
-        const provision =
-          useDefaults || enableLiveTranslations
-            ? true
-            : await promptConfirm({
-                message:
-                  'Would you like to set up a project ID and hot-reload key in .env.local?',
-                defaultValue: true,
-              });
-        if (provision) {
-          try {
-            await provisionDevelopmentCredentials(settings, envFramework);
-          } catch (error) {
-            logErrorAndExit(
-              error instanceof UserAuthError
-                ? error.message
-                : createProjectCommandError(
-                    'Failed to set up the development credentials',
-                    error
-                  )
-            );
-          }
-          logger.message(productionRuntimeKeyGuidance(settings.dashboardUrl));
-        }
-      }
+      logger.message(productionRuntimeKeyGuidance(settings.dashboardUrl));
     }
   }
 }
