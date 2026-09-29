@@ -101,6 +101,17 @@ function getModuleEntry(indexHtml: string): {
 export async function inspectViteSPA(appDirectory: string) {
   const indexHtmlPath = path.join(appDirectory, 'index.html');
   const sourceDirectory = path.join(appDirectory, 'src');
+  if (!fs.existsSync(indexHtmlPath)) {
+    throw new Error(
+      createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Error',
+        whatHappened: 'This is not a Vite single-page app',
+        why: 'index.html was not found',
+        fix: 'Rerun `npx gt@latest init` with `--framework` set to your framework, or set up GT manually',
+      })
+    );
+  }
   const indexHtml = await fs.promises.readFile(indexHtmlPath, 'utf8');
   const { script, source } = getModuleEntry(indexHtml);
   const declaredEntryPath = getEntryPath(appDirectory, source);
