@@ -160,22 +160,67 @@ function getImportEdit(
   };
 }
 
-function importsFromLibrary(file: SourceFile, name: string): boolean {
-  return (
-    file.statements?.some(
-      (statement) =>
-        statement.type === 'ImportDeclaration' &&
-        statement.source.value === Libraries.GT_TANSTACK_START &&
-        statement.importKind !== 'type' &&
-        statement.specifiers.some(
-          (specifier) =>
-            specifier.type === 'ImportSpecifier' &&
-            specifier.importKind !== 'type' &&
-            specifier.imported.type === 'Identifier' &&
-            specifier.imported.name === name
-        )
-    ) ?? false
-  );
+/** The local name `name` is imported as from gt-tanstack-start. */
+function getLocalImport(file: SourceFile, name: string): string | undefined {
+  for (const statement of file.statements ?? []) {
+    if (
+      statement.type !== 'ImportDeclaration' ||
+      statement.source.value !== Libraries.GT_TANSTACK_START ||
+      statement.importKind === 'type'
+    ) {
+      continue;
+    }
+    for (const specifier of statement.specifiers) {
+      if (
+        specifier.type === 'ImportSpecifier' &&
+        specifier.importKind !== 'type' &&
+        specifier.imported.type === 'Identifier' &&
+        specifier.imported.name === name
+      ) {
+        return specifier.local.name;
+      }
+    }
+  }
+  return undefined;
+}
+
+/** The module-scope `initializeGT(...)` call, which must run before requests. */
+function findInitializeCall(file: SourceFile): t.CallExpression | undefined {
+  const local = getLocalImport(file, 'initializeGT');
+  if (!local) return undefined;
+  for (const statement of file.statements ?? []) {
+    if (
+      statement.type === 'ExpressionStatement' &&
+      statement.expression.type === 'CallExpression' &&
+      statement.expression.callee.type === 'Identifier' &&
+      statement.expression.callee.name === local
+    ) {
+      return statement.expression;
+    }
+  }
+  return undefined;
+}
+
+/** Whether code outside the imports references `name`; comments do not count. */
+function referencesOutsideImports(file: SourceFile, name: string): boolean {
+  let found = false;
+  for (const statement of file.statements ?? []) {
+    if (statement.type === 'ImportDeclaration') continue;
+    t.traverseFast(statement, (node) => {
+      if (node.type === 'Identifier' && node.name === name) found = true;
+    });
+  }
+  return found;
+}
+
+function rendersElement(file: SourceFile, name: string): boolean {
+  let found = false;
+  for (const statement of file.statements ?? []) {
+    t.traverseFast(statement, (node) => {
+      if (isJsxElementNamed(node, name)) found = true;
+    });
+  }
+  return found;
 }
 
 function getRouterLines(
@@ -309,7 +354,10 @@ function configureRootRoute({
     properties.some(
       (property) =>
         property.type === 'SpreadElement' ||
-        getPropertyName(property) === 'loader'
+        getPropertyName(property) === 'loader' ||
+        // A throwing beforeLoad skips the loader, so the shell would render
+        // without the locale and translations the generated code reads.
+        getPropertyName(property) === 'beforeLoad'
     )
   ) {
     return undefined;
@@ -461,8 +509,31 @@ export const tanstackStartSetup: BuildToolSetup = {
         ? content
         : undefined;
 
-    let routerReady = importsFromLibrary(router, 'initializeGT');
+    const initializeCall = findInitializeCall(router);
+    let routerReady = initializeCall !== undefined;
     let configuredRouter: string | undefined;
+    // Storage chosen on a rerun must match how the router loads translations.
+    const wantsLoader = Boolean(translationsDir);
+    const [initializeOptions] = initializeCall?.arguments ?? [];
+    const passesLoader =
+      initializeOptions?.type === 'ObjectExpression' &&
+      initializeOptions.properties.some(
+        (property) => getPropertyName(property) === 'loadTranslations'
+      );
+    if (
+      initializeCall &&
+      passesLoader !== wantsLoader &&
+      (!translationsDir || loaderExport)
+    ) {
+      const [call] = getRouterLines(router, ctx, loaderExport, {
+        quote: "'",
+        semi: '',
+      }).slice(-1);
+      manualActions.push({
+        whatHappened: `${router.path} initializes GT for ${passesLoader ? 'local translation files' : 'CDN translations'}, but translations are now ${translationsDir ? `stored in ${translationsDir}` : 'loaded from the CDN'}`,
+        fix: `Change the initializeGT call in ${router.path} to ${call}${wantsLoader ? ` and import loadTranslations from ${VITE_LOADER_FILE}` : ' and remove the loadTranslations import'} (see ${DOCS_URL})`,
+      });
+    }
     // A custom loader without an export already has its own action.
     if (!routerReady && (!translationsDir || loaderExport)) {
       const style = router.statements
@@ -495,7 +566,7 @@ export const tanstackStartSetup: BuildToolSetup = {
       }
     }
 
-    if (start && !/\bgtMiddleware\b/.test(start.content)) {
+    if (start && !referencesOutsideImports(start, 'gtMiddleware')) {
       manualActions.push({
         whatHappened: `${start.path} does not use gtMiddleware`,
         fix: `Import { gtMiddleware } from '${Libraries.GT_TANSTACK_START}' in ${start.path} and add it to the requestMiddleware of createStart, keeping your existing middleware such as the CSRF middleware (see ${DOCS_URL})`,
@@ -503,7 +574,7 @@ export const tanstackStartSetup: BuildToolSetup = {
     }
 
     const rootFix = `In ${root.path}, add loader: async () => { const locale = getLocale(); return { locale, translations: await getTranslationsSnapshot(locale) }; } to createRootRoute, read const { locale, translations } = Route.useLoaderData() in the document, set <html lang={locale}>, and wrap its children in <GTProvider locale={locale} translations={translations}>, importing GTProvider, getLocale and getTranslationsSnapshot from '${Libraries.GT_TANSTACK_START}' (see ${DOCS_URL})`;
-    const rootConfigured = /\bGTProvider\b/.test(root.content);
+    const rootConfigured = rendersElement(root, 'GTProvider');
     const configuredRoot = rootConfigured
       ? undefined
       : parses(root, configureRootRoute(root));

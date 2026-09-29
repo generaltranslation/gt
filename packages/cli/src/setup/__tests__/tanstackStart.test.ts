@@ -285,6 +285,13 @@ export const startInstance = createStart(() => ({}));
       templateRoot.replace(/function RootDocument/, 'function Other'),
     ],
     ['a syntax error', `${templateRoot}\n<`],
+    [
+      'a beforeLoad',
+      templateRoot.replace(
+        '  shellComponent: RootDocument,',
+        '  beforeLoad: () => {},\n  shellComponent: RootDocument,'
+      ),
+    ],
   ])('leaves a root route with %s for manual review', async (_case, root) => {
     write('src/routes/__root.tsx', root);
 
@@ -299,6 +306,111 @@ export const startInstance = createStart(() => ({}));
       },
     ]);
   });
+
+  it.each([
+    [
+      'a comment',
+      '// TODO: wire gtMiddleware\nexport const startInstance = createStart(() => ({}));\n',
+    ],
+    [
+      'an unused import',
+      "import { gtMiddleware } from 'gt-tanstack-start';\nexport const startInstance = createStart(() => ({}));\n",
+    ],
+  ])(
+    'asks for gtMiddleware when a start entry only has %s',
+    async (_case, body) => {
+      const start = `import { createStart } from '@tanstack/react-start';\n${body}`;
+      write('src/start.ts', start);
+
+      const result = await tanstackStartSetup.apply(ctx());
+
+      expect(read('src/start.ts')).toBe(start);
+      expect(result.manualActions).toEqual([
+        expect.objectContaining({
+          whatHappened: 'src/start.ts does not use gtMiddleware',
+        }),
+      ]);
+    }
+  );
+
+  it('configures a root route that only mentions GTProvider in a comment', async () => {
+    write(
+      'src/routes/__root.tsx',
+      templateRoot.replace(
+        'export const Route',
+        '// TODO: add GTProvider\nexport const Route'
+      )
+    );
+
+    const result = await tanstackStartSetup.apply(ctx());
+
+    expect(read('src/routes/__root.tsx')).toContain(
+      '<GTProvider locale={locale} translations={translations}>'
+    );
+    expect(result.steps).toContain('configured src/routes/__root.tsx');
+  });
+
+  it('holds start and root edits when the router imports initializeGT without calling it', async () => {
+    const router = templateRouter.replace(
+      "import { routeTree } from './routeTree.gen'\n",
+      "import { routeTree } from './routeTree.gen'\nimport { initializeGT } from 'gt-tanstack-start'\n"
+    );
+    write('src/router.tsx', router);
+
+    const result = await tanstackStartSetup.apply(ctx());
+
+    expect(read('src/router.tsx')).toBe(router);
+    expect(read('src/routes/__root.tsx')).toBe(templateRoot);
+    expect(fs.existsSync(file('src/start.ts'))).toBe(false);
+    expect(result.steps).toEqual([]);
+    expect(result.manualActions[0]).toEqual(
+      expect.objectContaining({
+        whatHappened: 'src/router.tsx was not configured automatically',
+      })
+    );
+  });
+
+  it.each([
+    [
+      'local files to the CDN',
+      configuredRouter,
+      undefined,
+      'initializeGT(gtConfig)',
+    ],
+    [
+      'the CDN to local files',
+      configuredRouter
+        .replace("import loadTranslations from './loadTranslations'\n", '')
+        .replace(
+          'initializeGT({ ...gtConfig, loadTranslations })',
+          'initializeGT(gtConfig)'
+        ),
+      'src/_gt',
+      'initializeGT({ ...gtConfig, loadTranslations })',
+    ],
+  ])(
+    'asks to update initializeGT when storage switches from %s',
+    async (_case, router, translationsDir, call) => {
+      write('src/start.ts', generatedStart);
+      write('src/router.tsx', router);
+      write('src/routes/__root.tsx', configuredRoot);
+
+      const result = await tanstackStartSetup.apply({
+        ...ctx(),
+        translationsDir,
+      });
+
+      expect(read('src/router.tsx')).toBe(router);
+      expect(result.manualActions).toEqual([
+        {
+          whatHappened: expect.stringContaining(
+            'src/router.tsx initializes GT for'
+          ),
+          fix: expect.stringContaining(call),
+        },
+      ]);
+    }
+  );
 
   it('wraps the Outlet of a component root route', async () => {
     write(
