@@ -737,7 +737,7 @@ describe('CLI API client', () => {
       cursors.push(url.searchParams.get('cursor'));
       const page = cursors.length;
       return Response.json({
-        projects: [
+        items: [
           {
             id: `p${page}`,
             name: `Project ${page}`,
@@ -762,7 +762,7 @@ describe('CLI API client', () => {
       expect(url.pathname).toBe('/v2/orgs');
       cursors.push(url.searchParams.get('cursor'));
       return Response.json({
-        orgs: [{ id: `o${cursors.length}`, name: 'Org' }],
+        items: [{ id: `o${cursors.length}`, name: 'Org' }],
         nextCursor: cursors.length === 1 ? 'next' : null,
       });
     });
