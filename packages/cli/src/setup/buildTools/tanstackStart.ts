@@ -110,7 +110,8 @@ function getCodeStyle(content: string, statements: t.Statement[]): CodeStyle {
         ? ''
         : ';',
     eol: content.includes('\r\n') ? '\r\n' : '\n',
-    indent: /^([ \t]+)\S/m.exec(content)?.[1] ?? '  ',
+    // Skips JSDoc continuation lines, whose ` * ` is not an indent unit.
+    indent: /^([ \t]+)[^\s*]/m.exec(content)?.[1] ?? '  ',
   };
 }
 
@@ -148,9 +149,15 @@ function getImportEdit(
   eol: string
 ): Edit {
   const lastImport = getImports(statements).at(-1);
-  return lastImport
-    ? { start: lastImport.end!, text: lines.map((line) => eol + line).join('') }
-    : { start: 0, text: lines.join(eol) + eol + eol };
+  if (!lastImport) return { start: 0, text: lines.join(eol) + eol + eol };
+  // A same-line comment such as `// eslint-disable-line` stays on its import.
+  const lineComment = lastImport.trailingComments
+    ?.filter((comment) => comment.loc!.start.line === lastImport.loc!.end.line)
+    .at(-1);
+  return {
+    start: lineComment?.end ?? lastImport.end!,
+    text: lines.map((line) => eol + line).join(''),
+  };
 }
 
 function importsFromLibrary(file: SourceFile, name: string): boolean {
@@ -456,36 +463,39 @@ export const tanstackStartSetup: BuildToolSetup = {
       }
     }
 
-    if (!start) {
-      await writeSource('src/start.ts', START_CONTENT);
-      steps.push('created src/start.ts');
-    } else if (!/\bgtMiddleware\b/.test(start.content)) {
-      manualActions.push({
-        whatHappened: `${start.path} does not use gtMiddleware`,
-        fix: `Import { gtMiddleware } from '${Libraries.GT_TANSTACK_START}' in ${start.path} and add it to createStart(() => ({ requestMiddleware: [gtMiddleware] })) (see ${DOCS_URL})`,
-      });
-    }
+    // An insertion that breaks the file's syntax falls back to manual setup.
+    const parses = (file: SourceFile, content: string | undefined) =>
+      content !== undefined && parseModule(content, file.path) !== undefined
+        ? content
+        : undefined;
 
+    let routerReady = importsFromLibrary(router, 'initializeGT');
+    let configuredRouter: string | undefined;
     // A custom loader without an export already has its own action.
-    if (
-      !importsFromLibrary(router, 'initializeGT') &&
-      (!translationsDir || loaderExport)
-    ) {
+    if (!routerReady && (!translationsDir || loaderExport)) {
       const style = router.statements
         ? getCodeStyle(router.content, router.statements)
         : { quote: "'", semi: ';', eol: '\n' };
-      const lines = getRouterLines(router, ctx, loaderExport, style);
       // Any other mention may be an app-owned initializer; a second
       // initializeGT call would override it.
       if (router.statements && !/\binitializeGT\b/.test(router.content)) {
-        await writeSource(
-          router.path,
+        configuredRouter = parses(
+          router,
           applyEdits(router.content, [
-            getImportEdit(router.statements, lines, style.eol),
+            getImportEdit(
+              router.statements,
+              getRouterLines(router, ctx, loaderExport, style),
+              style.eol
+            ),
           ])
         );
-        steps.push(`configured ${router.path}`);
-      } else {
+      }
+      routerReady = configuredRouter !== undefined;
+      if (!routerReady) {
+        const lines = getRouterLines(router, ctx, loaderExport, {
+          quote: style.quote,
+          semi: ';',
+        });
         manualActions.push({
           whatHappened: `${router.path} was not configured automatically`,
           fix: `Initialize GT after the imports in ${router.path}: ${lines.filter(Boolean).join(' ')} (see ${DOCS_URL})`,
@@ -493,15 +503,52 @@ export const tanstackStartSetup: BuildToolSetup = {
       }
     }
 
-    if (!/\bGTProvider\b/.test(root.content)) {
-      const configured = configureRootRoute(root);
-      if (configured) {
-        await writeSource(root.path, configured);
+    if (start && !/\bgtMiddleware\b/.test(start.content)) {
+      manualActions.push({
+        whatHappened: `${start.path} does not use gtMiddleware`,
+        fix: `Import { gtMiddleware } from '${Libraries.GT_TANSTACK_START}' in ${start.path} and add it to createStart(() => ({ requestMiddleware: [gtMiddleware] })) (see ${DOCS_URL})`,
+      });
+    }
+
+    const rootFix = `In ${root.path}, add loader: async () => { const locale = getLocale(); return { locale, translations: await getTranslationsSnapshot(locale) }; } to createRootRoute, read const { locale, translations } = Route.useLoaderData() in the document, set <html lang={locale}>, and wrap its children in <GTProvider locale={locale} translations={translations}>, importing GTProvider, getLocale and getTranslationsSnapshot from '${Libraries.GT_TANSTACK_START}' (see ${DOCS_URL})`;
+    const rootConfigured = /\bGTProvider\b/.test(root.content);
+    const configuredRoot = rootConfigured
+      ? undefined
+      : parses(root, configureRootRoute(root));
+    if (!rootConfigured && !configuredRoot) {
+      manualActions.push({
+        whatHappened: `${root.path} does not match the create-start root route`,
+        fix: rootFix,
+      });
+    }
+
+    // gtMiddleware and the root loader need initializeGT to have run, so
+    // they are only added alongside a router that calls it.
+    if (routerReady) {
+      if (!start) {
+        await writeSource('src/start.ts', START_CONTENT);
+        steps.push('created src/start.ts');
+      }
+      if (configuredRouter) {
+        await writeSource(router.path, configuredRouter);
+        steps.push(`configured ${router.path}`);
+      }
+      if (configuredRoot) {
+        await writeSource(root.path, configuredRoot);
         steps.push(`configured ${root.path}`);
-      } else {
+      }
+    } else {
+      const reason = `because ${router.path} does not initialize GT`;
+      if (!start) {
         manualActions.push({
-          whatHappened: `${root.path} does not match the create-start root route`,
-          fix: `In ${root.path}, add loader: async () => { const locale = getLocale(); return { locale, translations: await getTranslationsSnapshot(locale) }; } to createRootRoute, read const { locale, translations } = Route.useLoaderData() in the document, set <html lang={locale}>, and wrap its children in <GTProvider locale={locale} translations={translations}>, importing GTProvider, getLocale and getTranslationsSnapshot from '${Libraries.GT_TANSTACK_START}' (see ${DOCS_URL})`,
+          whatHappened: `src/start.ts was not created ${reason}`,
+          fix: `Create src/start.ts with export const startInstance = createStart(() => ({ requestMiddleware: [gtMiddleware] })), importing createStart from '@tanstack/react-start' and gtMiddleware from '${Libraries.GT_TANSTACK_START}' (see ${DOCS_URL})`,
+        });
+      }
+      if (configuredRoot) {
+        manualActions.push({
+          whatHappened: `${root.path} was left unchanged ${reason}`,
+          fix: rootFix,
         });
       }
     }

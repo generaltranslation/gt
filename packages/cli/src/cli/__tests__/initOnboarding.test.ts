@@ -520,6 +520,29 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       );
       expect(events().at(-1)).toMatchObject({ outcome: 'success' });
     });
+
+    it('stops before any change when the root route is missing', async () => {
+      fs.rmSync(file('src/routes/__root.tsx'));
+
+      await expect(
+        run(
+          'init',
+          '--json',
+          '--defaults',
+          '--locales',
+          'fr',
+          '--no-live-translations'
+        )
+      ).rejects.toThrow('src/routes/__root.tsx was not found');
+
+      expect(events().at(-1)).toMatchObject({
+        outcome: 'failed',
+        completedSteps: [],
+      });
+      expect(installPackage).not.toHaveBeenCalled();
+      expect(fs.existsSync(file('gt.config.json'))).toBe(false);
+      expect(fs.existsSync(file('src/start.ts'))).toBe(false);
+    });
   });
 
   it('writes and reuses App Router public development credentials without a tooling key', async () => {

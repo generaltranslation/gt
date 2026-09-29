@@ -321,13 +321,100 @@ export const startInstance = createStart(() => ({}));
     write('src/start.ts', generatedStart);
     write('src/router.tsx', configuredRouter);
     write('src/routes/__root.tsx', configuredRoot);
-    await tanstackStartSetup.apply(ctx());
-    const before = snapshot();
 
     const result = await tanstackStartSetup.apply(ctx());
 
-    expect(snapshot()).toEqual(before);
+    expect(read('src/start.ts')).toBe(generatedStart);
+    expect(read('src/router.tsx')).toBe(configuredRouter);
+    expect(read('src/routes/__root.tsx')).toBe(configuredRoot);
     expect(result).toEqual({ steps: [], manualActions: [] });
+  });
+
+  it('holds start and root edits when the router cannot be configured', async () => {
+    // A second gtConfig import would not compile.
+    const router =
+      "import gtConfig from '../gt.config.json'\n\nexport function getRouter() {}\n";
+    write('src/router.tsx', router);
+
+    const result = await tanstackStartSetup.apply(ctx());
+
+    expect(read('src/router.tsx')).toBe(router);
+    expect(read('src/routes/__root.tsx')).toBe(templateRoot);
+    expect(fs.existsSync(file('src/start.ts'))).toBe(false);
+    expect(result).toEqual({
+      steps: [],
+      manualActions: [
+        {
+          whatHappened: 'src/router.tsx was not configured automatically',
+          fix: expect.stringContaining(
+            "import { initializeGT } from 'gt-tanstack-start'; import gtConfig from '../gt.config.json';"
+          ),
+        },
+        {
+          whatHappened:
+            'src/start.ts was not created because src/router.tsx does not initialize GT',
+          fix: expect.stringContaining('requestMiddleware: [gtMiddleware]'),
+        },
+        {
+          whatHappened:
+            'src/routes/__root.tsx was left unchanged because src/router.tsx does not initialize GT',
+          fix: expect.stringContaining('<GTProvider locale={locale}'),
+        },
+      ],
+    });
+  });
+
+  it('leaves a root route for manual review when the edit would not parse', async () => {
+    const root = `import { createRootRoute } from '@tanstack/react-router'
+
+export const Route = createRootRoute({
+  shellComponent: RootDocument,
+})
+
+function RootDocument({ children }) { return <html><body>{children}</body></html> }
+`;
+    write('src/routes/__root.tsx', root);
+
+    const result = await tanstackStartSetup.apply(ctx());
+
+    expect(read('src/routes/__root.tsx')).toBe(root);
+    expect(read('src/router.tsx')).toBe(configuredRouter);
+    expect(result.manualActions).toEqual([
+      {
+        whatHappened:
+          'src/routes/__root.tsx does not match the create-start root route',
+        fix: expect.stringContaining('<GTProvider locale={locale}'),
+      },
+    ]);
+  });
+
+  it('keeps the indent unit after a leading JSDoc', async () => {
+    write('src/routes/__root.tsx', `/**\n * Root route.\n */\n${templateRoot}`);
+
+    await tanstackStartSetup.apply(ctx());
+
+    expect(read('src/routes/__root.tsx')).toBe(
+      `/**\n * Root route.\n */\n${configuredRoot}`
+    );
+  });
+
+  it('keeps a same-line comment on the last import', async () => {
+    write(
+      'src/router.tsx',
+      templateRouter.replace(
+        "from './routeTree.gen'",
+        "from './routeTree.gen' // eslint-disable-line"
+      )
+    );
+
+    await tanstackStartSetup.apply(ctx());
+
+    expect(read('src/router.tsx')).toBe(
+      configuredRouter.replace(
+        "from './routeTree.gen'",
+        "from './routeTree.gen' // eslint-disable-line"
+      )
+    );
   });
 
   it('preserves a custom loader and imports its named export', async () => {

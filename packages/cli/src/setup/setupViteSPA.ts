@@ -111,6 +111,7 @@ export async function inspectViteSPA(appDirectory: string) {
         severity: 'Error',
         whatHappened: 'This is not a Vite single-page app',
         why: 'index.html was not found',
+        reassurance: 'Nothing was changed',
         fix: 'Rerun `npx gt@latest init` with `--framework` set to your framework, or set up GT manually',
       })
     );
