@@ -22,6 +22,9 @@ export function getFrameworkDisplayName(
   if (frameworkObject.name === 'redwood') {
     return 'RedwoodJS';
   }
+  if (frameworkObject.name === 'tanstack-start') {
+    return 'TanStack Start';
+  }
   if (frameworkObject.type === 'react') {
     return 'React';
   }
@@ -31,7 +34,9 @@ export function getFrameworkDisplayName(
 export function getReactFrameworkLibrary(
   frameworkObject: ReactFrameworkObject
 ): string {
-  return frameworkObject.name === 'next-app'
-    ? Libraries.GT_NEXT
-    : Libraries.GT_REACT;
+  if (frameworkObject.name === 'next-app') return Libraries.GT_NEXT;
+  if (frameworkObject.name === 'tanstack-start') {
+    return Libraries.GT_TANSTACK_START;
+  }
+  return Libraries.GT_REACT;
 }
