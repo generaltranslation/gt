@@ -196,10 +196,27 @@ describe('tanstackStartSetup', () => {
     expect(fs.existsSync(file('src/_gt/en.json'))).toBe(false);
     expect(result).toEqual({
       steps: [
+        'created src/loadTranslations.ts',
         'created src/start.ts',
         'configured src/router.tsx',
         'configured src/routes/__root.tsx',
       ],
+      manualActions: [],
+    });
+  });
+
+  it('reports a loader it rewrites for a new translations directory', async () => {
+    await tanstackStartSetup.apply(ctx());
+
+    const result = await tanstackStartSetup.apply({
+      ...ctx(),
+      translationsDir: 'public/_gt',
+      previousTranslationsDir: 'src/_gt',
+    });
+
+    expect(read('src/loadTranslations.ts')).toContain('../public/_gt/');
+    expect(result).toEqual({
+      steps: ['updated src/loadTranslations.ts'],
       manualActions: [],
     });
   });
@@ -254,10 +271,18 @@ export const startInstance = createStart(() => ({}));
 
     expect(read('src/start.ts')).toBe(start);
     expect(read('src/router.tsx')).toBe(configuredRouter);
+    // The root loader needs the request scope gtMiddleware sets up; without
+    // it every page fails to render.
+    expect(read('src/routes/__root.tsx')).toBe(templateRoot);
     expect(result.manualActions).toEqual([
       {
         whatHappened: 'src/start.ts does not use gtMiddleware',
         fix: expect.stringContaining('keeping your existing middleware'),
+      },
+      {
+        whatHappened:
+          'src/routes/__root.tsx was left unchanged because src/start.ts does not use gtMiddleware',
+        fix: expect.stringContaining('<GTProvider locale={locale}'),
       },
     ]);
   });
@@ -324,6 +349,10 @@ export const startInstance = createStart(() => ({}));
       'a local gtMiddleware',
       'const gtMiddleware = () => {};\nexport const startInstance = createStart(() => ({ requestMiddleware: [gtMiddleware] }));\n',
     ],
+    [
+      'gtMiddleware in functionMiddleware',
+      "import { gtMiddleware } from 'gt-tanstack-start';\nexport const startInstance = createStart(() => ({ functionMiddleware: [gtMiddleware] }));\n",
+    ],
   ])(
     'asks for gtMiddleware when a start entry only has %s',
     async (_case, body) => {
@@ -333,11 +362,11 @@ export const startInstance = createStart(() => ({}));
       const result = await tanstackStartSetup.apply(ctx());
 
       expect(read('src/start.ts')).toBe(start);
-      expect(result.manualActions).toEqual([
+      expect(result.manualActions[0]).toEqual(
         expect.objectContaining({
           whatHappened: 'src/start.ts does not use gtMiddleware',
-        }),
-      ]);
+        })
+      );
     }
   );
 
@@ -362,7 +391,7 @@ export const startInstance = createStart(() => ({}));
     'initializeGT(options)',
     'initializeGT({ ...gtConfig, [key]: loader })',
   ])('does not guess the storage of %s', async (call) => {
-    write('src/start.ts', generatedStart);
+    await tanstackStartSetup.apply(ctx());
     write(
       'src/router.tsx',
       configuredRouter.replace(
@@ -406,7 +435,7 @@ export const startInstance = createStart(() => ({}));
     expect(read('src/router.tsx')).toBe(router);
     expect(read('src/routes/__root.tsx')).toBe(templateRoot);
     expect(fs.existsSync(file('src/start.ts'))).toBe(false);
-    expect(result.steps).toEqual([]);
+    expect(result.steps).toEqual(['created src/loadTranslations.ts']);
     expect(result.manualActions[0]).toEqual(
       expect.objectContaining({
         whatHappened: 'src/router.tsx was not configured automatically',
@@ -430,7 +459,7 @@ export const startInstance = createStart(() => ({}));
           'initializeGT(gtConfig)'
         ),
       'src/_gt',
-      'initializeGT({ ...gtConfig, loadTranslations })',
+      "initializeGT({ ...gtConfig, loadTranslations }) and add import loadTranslations from './loadTranslations'",
     ],
   ])(
     'asks to update initializeGT when storage switches from %s',
@@ -473,7 +502,80 @@ export const startInstance = createStart(() => ({}));
     );
   });
 
+  it('wraps everything the body renders before Scripts', async () => {
+    write(
+      'src/routes/__root.tsx',
+      templateRoot.replace(
+        `        {children}
+
+        <Scripts />`,
+        `        <Header />
+        {children}
+        <Footer />
+        <TanStackDevtools
+          plugins={[]}
+        />
+        <Scripts />`
+      )
+    );
+
+    const result = await tanstackStartSetup.apply(ctx());
+
+    expect(read('src/routes/__root.tsx')).toContain(`      <body>
+        <GTProvider locale={locale} translations={translations}>
+          <Header />
+          {children}
+          <Footer />
+          <TanStackDevtools
+            plugins={[]}
+          />
+        </GTProvider>
+        <Scripts />
+      </body>`);
+    expect(result.manualActions).toEqual([]);
+  });
+
+  it('wraps a provider that renders the children', async () => {
+    write(
+      'src/routes/__root.tsx',
+      templateRoot.replace(
+        '        {children}\n',
+        '        <ClerkProvider>\n          {children}\n        </ClerkProvider>\n'
+      )
+    );
+
+    await tanstackStartSetup.apply(ctx());
+
+    expect(read('src/routes/__root.tsx')).toContain(`      <body>
+        <GTProvider locale={locale} translations={translations}>
+          <ClerkProvider>
+            {children}
+          </ClerkProvider>
+        </GTProvider>
+
+        <Scripts />`);
+  });
+
+  it('configures a root route created with context', async () => {
+    const withContext = (root: string) =>
+      root
+        .replace('createRootRoute } from', 'createRootRouteWithContext } from')
+        .replace(
+          'export const Route = createRootRoute({',
+          'interface MyRouterContext {\n  queryClient: unknown\n}\n\nexport const Route = createRootRouteWithContext<MyRouterContext>()({'
+        );
+    write('src/routes/__root.tsx', withContext(templateRoot));
+
+    const result = await tanstackStartSetup.apply(ctx());
+    const rerun = await tanstackStartSetup.apply(ctx());
+
+    expect(read('src/routes/__root.tsx')).toBe(withContext(configuredRoot));
+    expect(result.manualActions).toEqual([]);
+    expect(rerun).toEqual({ steps: [], manualActions: [] });
+  });
+
   it('leaves an already configured app unchanged', async () => {
+    await tanstackStartSetup.apply(ctx());
     write('src/start.ts', generatedStart);
     write('src/router.tsx', configuredRouter);
     write('src/routes/__root.tsx', configuredRoot);
@@ -498,7 +600,7 @@ export const startInstance = createStart(() => ({}));
     expect(read('src/routes/__root.tsx')).toBe(templateRoot);
     expect(fs.existsSync(file('src/start.ts'))).toBe(false);
     expect(result).toEqual({
-      steps: [],
+      steps: ['created src/loadTranslations.ts'],
       manualActions: [
         {
           whatHappened: 'src/router.tsx was not configured automatically',
@@ -592,6 +694,36 @@ function RootDocument({ children }) { return <html><body>{children}</body></html
         fix: 'Verify src/loadTranslations.ts loads translations from src/_gt',
       },
     ]);
+  });
+
+  it('asks configure to pass the loader when a CDN router switches to local files', async () => {
+    const router = configuredRouter
+      .replace("import loadTranslations from './loadTranslations'\n", '')
+      .replace(
+        'initializeGT({ ...gtConfig, loadTranslations })',
+        'initializeGT(gtConfig)'
+      );
+    write('src/router.tsx', router);
+
+    const result = await tanstackStartSetup.syncLoader({
+      ...ctx(),
+      translationsDir: 'src/_gt',
+    });
+
+    expect(read('src/router.tsx')).toBe(router);
+    expect(read('src/loadTranslations.ts')).toContain('./_gt/');
+    expect(result).toEqual({
+      steps: ['created src/loadTranslations.ts'],
+      manualActions: [
+        {
+          whatHappened:
+            'src/router.tsx initializes GT for CDN translations, but translations are now stored in src/_gt',
+          fix: expect.stringContaining(
+            "initializeGT({ ...gtConfig, loadTranslations }) and add import loadTranslations from './loadTranslations'"
+          ),
+        },
+      ],
+    });
   });
 
   it.each(['src/router.tsx', 'src/routes/__root.tsx'])(

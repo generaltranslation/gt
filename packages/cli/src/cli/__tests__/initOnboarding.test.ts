@@ -495,12 +495,18 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         completedSteps: [
           'installed gt-tanstack-start',
           'updated gt.config.json',
+          'created src/loadTranslations.ts',
           'created src/start.ts',
           'configured src/router.tsx',
           'configured src/routes/__root.tsx',
           'installed gt',
         ],
       });
+      expect(logger.endCommand).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'https://generaltranslation.com/docs/react/tanstack-start/setup'
+        )
+      );
     });
 
     it('writes Vite runtime credentials for live translations', async () => {

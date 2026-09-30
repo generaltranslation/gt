@@ -10,6 +10,7 @@ import {
   toRelativeImport,
   writeViteLoader,
   type ViteLoaderExport,
+  type ViteLoaderResult,
 } from '../setupViteSPA.js';
 import type {
   BuildToolContext,
@@ -202,8 +203,8 @@ function findInitializeCall(file: SourceFile): t.CallExpression | undefined {
 }
 
 /**
- * Whether the imported gtMiddleware is listed in a middleware array.
- * Comments, property names and unrelated locals do not count.
+ * Whether the imported gtMiddleware is listed in a requestMiddleware array.
+ * Comments, other middleware arrays and unrelated locals do not count.
  */
 function registersMiddleware(start: SourceFile): boolean {
   const local = getLocalImport(start, 'gtMiddleware');
@@ -213,8 +214,10 @@ function registersMiddleware(start: SourceFile): boolean {
     if (statement.type === 'ImportDeclaration') continue;
     t.traverseFast(statement, (node) => {
       if (
-        node.type === 'ArrayExpression' &&
-        node.elements.some(
+        node.type === 'ObjectProperty' &&
+        getPropertyName(node) === 'requestMiddleware' &&
+        node.value.type === 'ArrayExpression' &&
+        node.value.elements.some(
           (element) => element?.type === 'Identifier' && element.name === local
         )
       ) {
@@ -381,11 +384,20 @@ function findRootRoute(statements: t.Statement[]) {
     if (declaration?.type !== 'VariableDeclaration') continue;
     for (const { id, init } of declaration.declarations) {
       if (
-        id.type === 'Identifier' &&
-        init?.type === 'CallExpression' &&
-        init.callee.type === 'Identifier' &&
-        init.callee.name === 'createRootRoute' &&
-        init.arguments[0]?.type === 'ObjectExpression'
+        id.type !== 'Identifier' ||
+        init?.type !== 'CallExpression' ||
+        init.arguments[0]?.type !== 'ObjectExpression'
+      ) {
+        continue;
+      }
+      const { callee } = init;
+      // Router context adds a call: createRootRouteWithContext<Ctx>()({...}).
+      if (
+        (callee.type === 'Identifier' && callee.name === 'createRootRoute') ||
+        (callee.type === 'CallExpression' &&
+          callee.arguments.length === 0 &&
+          callee.callee.type === 'Identifier' &&
+          callee.callee.name === 'createRootRouteWithContext')
       ) {
         return { routeName: id.name, options: init.arguments[0] };
       }
@@ -395,10 +407,10 @@ function findRootRoute(statements: t.Statement[]) {
 }
 
 /**
- * Configures the create-start root route: `createRootRoute({...})` without a
- * loader, whose shellComponent renders `{children}` (or whose component
- * renders `<Outlet />`) in the `<body>` of a local `<html>` document.
- * Returns undefined for any other shape.
+ * Configures the create-start root route: `createRootRoute({...})` (or its
+ * router-context form) without a loader, whose shellComponent renders
+ * `{children}` (or whose component renders `<Outlet />`) once in the `<body>`
+ * of a local `<html>` document. Returns undefined for any other shape.
  */
 function configureRootRoute({
   content,
@@ -445,10 +457,32 @@ function configureRootRoute({
     isJsxElementNamed(child, 'body')
   );
   if (bodies.length !== 1) return undefined;
-  const slots = bodies[0].children.filter((child) =>
-    isShell ? isChildrenSlot(child) : isJsxElementNamed(child, 'Outlet')
+  // Headers, footers and app providers around the slot render GT too, so the
+  // provider wraps everything the body renders before <Scripts />.
+  const bodyContent = bodies[0].children.filter(
+    (child) => child.type !== 'JSXText' || child.value.trim() !== ''
   );
-  if (slots.length !== 1) return undefined;
+  const scriptsIndex = bodyContent.findIndex((child) =>
+    isJsxElementNamed(child, 'Scripts')
+  );
+  const wrapped =
+    scriptsIndex === -1 ? bodyContent : bodyContent.slice(0, scriptsIndex);
+  let slots = 0;
+  let multilineTemplate = false;
+  for (const child of wrapped) {
+    t.traverseFast(child, (node) => {
+      if (isShell ? isChildrenSlot(node) : isJsxElementNamed(node, 'Outlet')) {
+        slots++;
+      }
+      if (
+        node.type === 'TemplateLiteral' &&
+        node.loc!.start.line !== node.loc!.end.line
+      ) {
+        multilineTemplate = true;
+      }
+    });
+  }
+  if (slots !== 1) return undefined;
   const { attributes } = html.openingElement;
   if (attributes.some((attribute) => attribute.type === 'JSXSpreadAttribute')) {
     return undefined;
@@ -465,9 +499,14 @@ function configureRootRoute({
   if (propertyIndent === undefined) return undefined;
 
   const { quote, semi, eol, indent } = getCodeStyle(content, statements);
-  const [slot] = slots;
-  const slotText = content.slice(slot.start!, slot.end!);
-  const slotIndent = getOwnLineIndent(content, slot.start!);
+  const first = wrapped[0];
+  const last = wrapped.at(-1)!;
+  const wrappedText = content.slice(first.start!, last.end!);
+  const wrappedIndent = getOwnLineIndent(content, first.start!);
+  // Reindenting would change the value of a multi-line template literal.
+  const nestedText = multilineTemplate
+    ? wrappedText
+    : wrappedText.replace(/\n(?=[ \t]*\S)/g, `\n${indent}`);
   const provider = '<GTProvider locale={locale} translations={translations}>';
   const firstStatement = component.body.body[0];
   const statementIndent =
@@ -499,18 +538,57 @@ function configureRootRoute({
       ? { start: lang.start!, end: lang.end!, text: 'lang={locale}' }
       : { start: html.openingElement.name.end!, text: ' lang={locale}' },
     {
-      start: slot.start!,
-      end: slot.end!,
+      start: first.start!,
+      end: last.end!,
       text:
-        slotIndent === undefined
-          ? `${provider}${slotText}</GTProvider>`
+        wrappedIndent === undefined
+          ? `${provider}${wrappedText}</GTProvider>`
           : [
               provider,
-              `${slotIndent}${indent}${slotText}`,
-              `${slotIndent}</GTProvider>`,
+              `${wrappedIndent}${indent}${nestedText}`,
+              `${wrappedIndent}</GTProvider>`,
             ].join(eol),
     },
   ]);
+}
+
+/** Writes the loader and names the step, if its content changed. */
+async function writeLoader(
+  ctx: BuildToolContext & { translationsDir: string }
+): Promise<{ loader: ViteLoaderResult; steps: string[] }> {
+  const loaderPath = path.join(ctx.appDirectory, VITE_LOADER_FILE);
+  const read = () =>
+    fs.existsSync(loaderPath) ? fs.readFileSync(loaderPath, 'utf8') : undefined;
+  const before = read();
+  const loader = await writeViteLoader({ ...ctx, create: true });
+  const changed = loader === 'written' && read() !== before;
+  return {
+    loader,
+    steps: changed
+      ? [`${before === undefined ? 'created' : 'updated'} ${VITE_LOADER_FILE}`]
+      : [],
+  };
+}
+
+/** The initializeGT change for a router whose storage no longer matches. */
+function getStorageAction(
+  router: SourceFile,
+  ctx: BuildToolContext,
+  loaderExport: ViteLoaderExport,
+  loaderPassed: boolean
+): ManualAction {
+  const lines = getRouterLines(router, ctx, loaderExport, {
+    quote: "'",
+    semi: '',
+  });
+  const call = lines.at(-1)!;
+  const loaderImport = loaderExport
+    ? lines.find((line) => line.endsWith("'./loadTranslations'"))
+    : undefined;
+  return {
+    whatHappened: `${router.path} initializes GT for ${loaderPassed ? 'local translation files' : 'CDN translations'}, but translations are now ${ctx.translationsDir ? `stored in ${ctx.translationsDir}` : 'loaded from the CDN'}`,
+    fix: `Change the initializeGT call in ${router.path} to ${call}${loaderImport ? ` and add ${loaderImport}` : ' and remove the loadTranslations import'} (see ${DOCS_URL})`,
+  };
 }
 
 export const tanstackStartSetup: BuildToolSetup = {
@@ -520,11 +598,35 @@ export const tanstackStartSetup: BuildToolSetup = {
   ownsLoader: true,
   skipsGTInstall: () => false,
   devCredentialsOption: '--live-translations',
+  docsUrl: DOCS_URL,
   async preflight(appDirectory) {
     await inspectTanStackStart(appDirectory);
   },
-  // The loader is the same file Vite generates.
-  syncLoader: viteSetup.syncLoader,
+  // The loader is the same file Vite generates, but a router that loads from
+  // the CDN also needs the loader passed to initializeGT.
+  async syncLoader(ctx) {
+    const result = await viteSetup.syncLoader(ctx);
+    if (ctx.keepAppSource) return result;
+    const router = await readSourceFile(ctx.appDirectory, 'src/router');
+    const initializeCall = router && findInitializeCall(router);
+    if (
+      !initializeCall ||
+      passesLoader(router, initializeCall.arguments[0], ctx) !== false
+    ) {
+      return result;
+    }
+    const { loader, steps } = await writeLoader(ctx);
+    const loaderExport = await getViteLoaderExport(ctx.appDirectory, loader);
+    return {
+      steps: [...result.steps, ...steps],
+      manualActions: loaderExport
+        ? [
+            ...result.manualActions,
+            getStorageAction(router, ctx, loaderExport, false),
+          ]
+        : result.manualActions,
+    };
+  },
   async apply(ctx) {
     const { appDirectory, translationsDir } = ctx;
     const { router, root, start } = await inspectTanStackStart(appDirectory);
@@ -536,11 +638,11 @@ export const tanstackStartSetup: BuildToolSetup = {
 
     let loaderExport: ViteLoaderExport;
     if (translationsDir) {
-      const loader = await writeViteLoader({
+      const { loader, steps: loaderSteps } = await writeLoader({
         ...ctx,
         translationsDir,
-        create: true,
       });
+      steps.push(...loaderSteps);
       loaderExport = await getViteLoaderExport(appDirectory, loader);
       if (loader === 'custom') {
         manualActions.push(
@@ -578,14 +680,9 @@ export const tanstackStartSetup: BuildToolSetup = {
       loaderPassed !== wantsLoader &&
       (!translationsDir || loaderExport)
     ) {
-      const [call] = getRouterLines(router, ctx, loaderExport, {
-        quote: "'",
-        semi: '',
-      }).slice(-1);
-      manualActions.push({
-        whatHappened: `${router.path} initializes GT for ${loaderPassed ? 'local translation files' : 'CDN translations'}, but translations are now ${translationsDir ? `stored in ${translationsDir}` : 'loaded from the CDN'}`,
-        fix: `Change the initializeGT call in ${router.path} to ${call}${wantsLoader ? ` and import loadTranslations from ${VITE_LOADER_FILE}` : ' and remove the loadTranslations import'} (see ${DOCS_URL})`,
-      });
+      manualActions.push(
+        getStorageAction(router, ctx, loaderExport, loaderPassed)
+      );
     }
     // A custom loader without an export already has its own action.
     if (!routerReady && (!translationsDir || loaderExport)) {
@@ -619,14 +716,15 @@ export const tanstackStartSetup: BuildToolSetup = {
       }
     }
 
-    if (start && !registersMiddleware(start)) {
+    const startReady = !start || registersMiddleware(start);
+    if (!startReady) {
       manualActions.push({
-        whatHappened: `${start.path} does not use gtMiddleware`,
-        fix: `Import { gtMiddleware } from '${Libraries.GT_TANSTACK_START}' in ${start.path} and add it to the requestMiddleware of createStart, keeping your existing middleware such as the CSRF middleware (see ${DOCS_URL})`,
+        whatHappened: `${start!.path} does not use gtMiddleware`,
+        fix: `Import { gtMiddleware } from '${Libraries.GT_TANSTACK_START}' in ${start!.path} and add it to the requestMiddleware of createStart, keeping your existing middleware such as the CSRF middleware (see ${DOCS_URL})`,
       });
     }
 
-    const rootFix = `In ${root.path}, add loader: async () => { const locale = getLocale(); return { locale, translations: await getTranslationsSnapshot(locale) }; } to createRootRoute, read const { locale, translations } = Route.useLoaderData() in the document, set <html lang={locale}>, and wrap its children in <GTProvider locale={locale} translations={translations}>, importing GTProvider, getLocale and getTranslationsSnapshot from '${Libraries.GT_TANSTACK_START}' (see ${DOCS_URL})`;
+    const rootFix = `In ${root.path}, add loader: async () => { const locale = getLocale(); return { locale, translations: await getTranslationsSnapshot(locale) }; } to the root route options, read const { locale, translations } = Route.useLoaderData() in the document, set <html lang={locale}>, and wrap everything its <body> renders before <Scripts /> in <GTProvider locale={locale} translations={translations}>, importing GTProvider, getLocale and getTranslationsSnapshot from '${Libraries.GT_TANSTACK_START}' (see ${DOCS_URL})`;
     const rootComponent =
       root.statements && findRootComponent(root.statements)?.component;
     const rootConfigured =
@@ -663,9 +761,16 @@ export const tanstackStartSetup: BuildToolSetup = {
         await writeSource(router.path, configuredRouter);
         steps.push(`configured ${router.path}`);
       }
-      if (configuredRoot) {
+      // The root loader reads the request scope gtMiddleware sets up, so
+      // without it every page would fail to render.
+      if (configuredRoot && startReady) {
         await writeSource(root.path, configuredRoot);
         steps.push(`configured ${root.path}`);
+      } else if (configuredRoot) {
+        manualActions.push({
+          whatHappened: `${root.path} was left unchanged because ${start!.path} does not use gtMiddleware`,
+          fix: rootFix,
+        });
       }
     } else {
       const reason = `because ${router.path} does not initialize GT`;

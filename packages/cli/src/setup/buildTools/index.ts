@@ -28,6 +28,8 @@ export type BuildToolSetup = {
   /** Loads local translations itself instead of loadTranslations.js. */
   ownsLoader: boolean;
   skipsGTInstall(isUsingGT: boolean): boolean;
+  /** Setup guide linked after setup; the React quickstart otherwise. */
+  docsUrl?: string;
   /** The development credentials question asked with local storage. */
   devCredentialsOption: '--live-translations' | '--dev-credentials';
   /** Rejects an app layout it cannot configure, before any change. */

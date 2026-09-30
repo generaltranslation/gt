@@ -19,6 +19,7 @@ import {
 } from './frameworkUtils.js';
 import { Libraries } from '../types/libraries.js';
 import { getBuildToolSetup } from './buildTools/index.js';
+import { REACT_QUICKSTART_URL } from '../utils/constants.js';
 import type { InitOptions, OnboardingSession } from './onboarding.js';
 
 /** Everything the React application setup will do, resolved before changes. */
@@ -45,13 +46,14 @@ export async function resolveReactSetup(
   configuredFramework?: SupportedReactFrameworks
 ): Promise<ReactSetupPlan | undefined> {
   const library = getReactFrameworkLibrary(detected);
-  const initializer = getBuildToolSetup(detected.name)?.initializer;
+  const buildTool = getBuildToolSetup(detected.name);
+  const initializer = buildTool?.initializer;
   const setupApp = await session.answer('--react-setup', {
     explicit: options.reactSetup,
     recommended: true,
     ask: async () => {
       const answer = await promptConfirm({
-        message: `Would you like to install ${library} and ${initializer ? `configure ${initializer}` : 'add the GTProvider'}? See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`,
+        message: `Would you like to install ${library} and ${initializer ? `configure ${initializer}` : 'add the GTProvider'}? See the docs for more information: ${buildTool?.docsUrl ?? REACT_QUICKSTART_URL}`,
         defaultValue: true,
       });
       // A prompted opt-in gets a last warning; flags and defaults already chose.
