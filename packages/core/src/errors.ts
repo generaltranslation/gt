@@ -1,1 +1,1 @@
-export * from './errors/ApiError';
+export { ApiError } from '@generaltranslation/api';

@@ -1,5 +1,5 @@
 import { apiError } from '../../logging/errors';
-import { ApiError } from '../../errors/ApiError';
+import { ApiError } from '@generaltranslation/api';
 
 export async function validateResponse(response: Response) {
   if (!response.ok) {

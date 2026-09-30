@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { awaitJobs, pollJobs } from '../wrappers/awaitJobs';
 import { createBatches, processBatches } from '../wrappers/batch';
 import { API_VERSION, createApiClient } from '../wrappers/client';
+import { ApiError } from '../wrappers/errors';
 import { createRetryingFetch, createTimeoutFetch } from '../wrappers/transport';
 
 afterEach(() => {
@@ -478,6 +479,43 @@ describe('createApiClient', () => {
     await vi.advanceTimersByTimeAsync(10);
 
     await expectation;
+  });
+});
+
+describe('createApiClient errors', () => {
+  const client = createApiClient({
+    baseUrl: 'https://example.com',
+    fetch: async () =>
+      Response.json({ error: 'Forbidden project' }, { status: 403 }),
+    retryPolicy: 'none',
+  });
+
+  it('throws an ApiError with the status for throwOnError calls', async () => {
+    const error = await client
+      .get({ url: '/test', throwOnError: true })
+      .catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({ code: 403, message: 'Forbidden project' });
+  });
+
+  it('falls back to the status text for an empty error body', async () => {
+    const emptyClient = createApiClient({
+      baseUrl: 'https://example.com',
+      fetch: async () =>
+        new Response(null, { status: 503, statusText: 'Service Unavailable' }),
+      retryPolicy: 'none',
+    });
+
+    await expect(
+      emptyClient.get({ url: '/test', throwOnError: true })
+    ).rejects.toMatchObject({ code: 503, message: 'Service Unavailable' });
+  });
+
+  it('keeps the decoded body in non-throwing results', async () => {
+    const result = await client.get({ url: '/test' });
+
+    expect(result.error).toEqual({ error: 'Forbidden project' });
   });
 });
 

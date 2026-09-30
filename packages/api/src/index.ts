@@ -8,6 +8,7 @@ export type {
 export { DEFAULT_BATCH_SIZE, processBatches } from './wrappers/batch';
 export type { BatchOptions } from './wrappers/batch';
 export { API_VERSION, createApiClient } from './wrappers/client';
+export { ApiError } from './wrappers/errors';
 export type {
   ApiClientConfig,
   ApiVersion,
