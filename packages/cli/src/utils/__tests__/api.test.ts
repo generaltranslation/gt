@@ -737,7 +737,7 @@ describe('CLI API client', () => {
       cursors.push(url.searchParams.get('cursor'));
       const page = cursors.length;
       return Response.json({
-        projects: [
+        items: [
           {
             id: `p${page}`,
             name: `Project ${page}`,
@@ -762,7 +762,7 @@ describe('CLI API client', () => {
       expect(url.pathname).toBe('/v2/orgs');
       cursors.push(url.searchParams.get('cursor'));
       return Response.json({
-        orgs: [{ id: `o${cursors.length}`, name: 'Org' }],
+        items: [{ id: `o${cursors.length}`, name: 'Org' }],
         nextCursor: cursors.length === 1 ? 'next' : null,
       });
     });
@@ -771,6 +771,23 @@ describe('CLI API client', () => {
 
     expect(cursors).toEqual([null, 'next']);
     expect(orgs.map((org) => org.id)).toEqual(['o1', 'o2']);
+  });
+
+  it('surfaces a forbidden listing as an ApiError', async () => {
+    fetchMock.mockResolvedValue(
+      Response.json(
+        { error: 'Missing required permission: project:files:read' },
+        { status: 403 }
+      )
+    );
+
+    const error = await api.listProjects().catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({
+      code: 403,
+      message: 'Missing required permission: project:files:read',
+    });
   });
 
   it('creates a project key with exactly the requested permissions', async () => {
