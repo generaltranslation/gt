@@ -290,7 +290,11 @@ describe.sequential('createGtApiAdapter', () => {
     expect(projects.map((entry) => entry.id)).toEqual(['p1', 'p2', 'p3']);
     expect(
       vi.mocked(listProjects).mock.calls.map(([options]) => options.query)
-    ).toEqual([undefined, { cursor: 'cursor-1' }, { cursor: 'cursor-2' }]);
+    ).toEqual([
+      { cursor: undefined },
+      { cursor: 'cursor-1' },
+      { cursor: 'cursor-2' },
+    ]);
   });
 
   it('lists organizations across every cursor page', async () => {
@@ -310,7 +314,7 @@ describe.sequential('createGtApiAdapter', () => {
     expect(orgs.map((org) => org.id)).toEqual(['o1', 'o2']);
     expect(
       vi.mocked(listOrgs).mock.calls.map(([options]) => options.query)
-    ).toEqual([undefined, { cursor: 'next' }]);
+    ).toEqual([{ cursor: undefined }, { cursor: 'next' }]);
   });
 
   it('creates a project API key with exactly the requested permissions', async () => {
