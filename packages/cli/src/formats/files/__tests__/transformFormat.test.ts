@@ -57,3 +57,17 @@ describe('transformFormat - Android strings.xml', () => {
     expect(getFileExtensionForFormat('SRT')).toBe('srt');
   });
 });
+
+describe('transformFormat - .NET .resx', () => {
+  it('maps the config file key to the API file format enum value', () => {
+    expect(CONFIG_FILE_TYPE_TO_FILE_FORMAT.resx).toBe('RESX');
+  });
+
+  it('maps the API file format enum value back to the config file key', () => {
+    expect(FILE_FORMAT_TO_CONFIG_FILE_TYPE.RESX).toBe('resx');
+  });
+
+  it('writes translated files with the matching extension', () => {
+    expect(getFileExtensionForFormat('RESX')).toBe('resx');
+  });
+});

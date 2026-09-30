@@ -15,6 +15,7 @@ export const SUPPORTED_FILE_EXTENSIONS = [
   'androidStrings',
   'xcstrings',
   'srt',
+  'resx',
 ] as const;
 
 /** The formats setup offers: an intentional subset of the supported ones. */
@@ -45,4 +46,5 @@ export const FILE_EXT_TO_EXT_LABEL = {
   androidStrings: 'Android strings.xml',
   xcstrings: '.xcstrings',
   srt: 'SubRip subtitles (.srt)',
+  resx: '.NET resources (.resx)',
 };

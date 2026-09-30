@@ -411,13 +411,15 @@ export async function aggregateFiles(
   }
 
   // These formats are uploaded verbatim. Their backslash escapes, format
-  // specifiers, timing lines and line breaks must survive byte-for-byte, so
-  // they skip the generic markdown-oriented preprocessing below.
+  // specifiers, timing lines, entity escapes and line breaks must survive
+  // byte-for-byte, so they skip the generic markdown-oriented preprocessing
+  // below.
   for (const [fileType, fileFormat] of [
     ['dotStrings', 'DOT_STRINGS'],
     ['dotStringsdict', 'DOT_STRINGSDICT'],
     ['androidStrings', 'ANDROID_STRINGS'],
     ['srt', 'SRT'],
+    ['resx', 'RESX'],
   ] as const) {
     if (!filePaths[fileType]) continue;
     const verbatimFiles = filePaths[fileType]
@@ -536,7 +538,8 @@ export async function aggregateFiles(
       fileType === 'dotStringsdict' ||
       fileType === 'androidStrings' ||
       fileType === 'xcstrings' ||
-      fileType === 'srt'
+      fileType === 'srt' ||
+      fileType === 'resx'
     )
       continue;
     if (filePaths[fileType]) {
