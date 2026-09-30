@@ -1,8 +1,15 @@
 import fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { parse } from '@babel/parser';
+import { traverseFast } from '@babel/types';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { tanstackStartSetup } from '../buildTools/tanstackStart.js';
+
+const parserOptions = {
+  sourceType: 'module',
+  plugins: ['jsx', 'typescript'],
+} as const;
 
 // The create-start template, as generated.
 const templateRouter = `import { createRouter as createTanStackRouter } from '@tanstack/react-router'
@@ -533,6 +540,36 @@ export const startInstance = createStart(() => ({}));
         <Scripts />
       </body>`);
     expect(result.manualActions).toEqual([]);
+  });
+
+  it.each([
+    [
+      'a line-continued string',
+      "<Header label={'Hello\\\n          world'} />",
+    ],
+    [
+      'a multi-line attribute string',
+      '<Header title="Hello\n          world" />',
+    ],
+  ])('keeps the value of %s when wrapping the body', async (_case, header) => {
+    const literalValues = (source: string) => {
+      const values: string[] = [];
+      traverseFast(parse(source, parserOptions), (node) => {
+        if (node.type === 'StringLiteral') values.push(node.value);
+      });
+      return values.filter((value) => value.startsWith('Hello'));
+    };
+    const root = templateRoot.replace(
+      '        {children}\n',
+      `        ${header}\n        {children}\n`
+    );
+    write('src/routes/__root.tsx', root);
+
+    const result = await tanstackStartSetup.apply(ctx());
+
+    const configured = read('src/routes/__root.tsx');
+    expect(result.steps).toContain('configured src/routes/__root.tsx');
+    expect(literalValues(configured)).toEqual(literalValues(root));
   });
 
   it('wraps a provider that renders the children', async () => {

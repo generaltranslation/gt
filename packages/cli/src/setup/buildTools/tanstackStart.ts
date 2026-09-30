@@ -468,17 +468,17 @@ function configureRootRoute({
   const wrapped =
     scriptsIndex === -1 ? bodyContent : bodyContent.slice(0, scriptsIndex);
   let slots = 0;
-  let multilineTemplate = false;
+  let multilineLiteral = false;
   for (const child of wrapped) {
     t.traverseFast(child, (node) => {
       if (isShell ? isChildrenSlot(node) : isJsxElementNamed(node, 'Outlet')) {
         slots++;
       }
       if (
-        node.type === 'TemplateLiteral' &&
+        (node.type === 'TemplateLiteral' || node.type === 'StringLiteral') &&
         node.loc!.start.line !== node.loc!.end.line
       ) {
-        multilineTemplate = true;
+        multilineLiteral = true;
       }
     });
   }
@@ -503,8 +503,9 @@ function configureRootRoute({
   const last = wrapped.at(-1)!;
   const wrappedText = content.slice(first.start!, last.end!);
   const wrappedIndent = getOwnLineIndent(content, first.start!);
-  // Reindenting would change the value of a multi-line template literal.
-  const nestedText = multilineTemplate
+  // Reindenting would change the value of a literal that spans lines, such
+  // as a template, a backslash-continued string or a JSX attribute string.
+  const nestedText = multilineLiteral
     ? wrappedText
     : wrappedText.replace(/\n(?=[ \t]*\S)/g, `\n${indent}`);
   const provider = '<GTProvider locale={locale} translations={translations}>';
