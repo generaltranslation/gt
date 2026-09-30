@@ -1,5 +1,14 @@
 # generaltranslation
 
+## 9.5.3
+
+### Patch Changes
+
+- [#2349](https://github.com/generaltranslation/gt/pull/2349) [`24db902`](https://github.com/generaltranslation/gt/commit/24db9022171bb47160545d94691ba528d93a08f3) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add .NET resource files (`.resx`, and `.resw` with the same schema) as a supported file type, uploaded verbatim under the `RESX` format
+
+- Updated dependencies [[`24db902`](https://github.com/generaltranslation/gt/commit/24db9022171bb47160545d94691ba528d93a08f3)]:
+  - @generaltranslation/api@0.5.1
+
 ## 9.5.2
 
 ### Patch Changes
