@@ -469,28 +469,26 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
 
     /** Every project the configured credentials can read. */
     async listProjects() {
-      return collectPages(async (cursor) => {
-        const { projects, nextCursor } = unwrapApiResult(
+      return collectPages(async (cursor) =>
+        unwrapApiResult(
           await listProjects({
             query: cursor ? { cursor } : undefined,
             client: getClient(),
           })
-        );
-        return { items: projects, nextCursor };
-      });
+        )
+      );
     },
 
     /** Organizations where the signed-in user can create projects; user tokens only. */
     async listOrgs() {
-      return collectPages(async (cursor) => {
-        const { orgs, nextCursor } = unwrapApiResult(
+      return collectPages(async (cursor) =>
+        unwrapApiResult(
           await listOrgs({
             query: cursor ? { cursor } : undefined,
             client: getClient(),
           })
-        );
-        return { items: orgs, nextCursor };
-      });
+        )
+      );
     },
 
     async createProjectApiKey(

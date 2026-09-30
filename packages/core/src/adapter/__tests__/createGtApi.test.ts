@@ -273,13 +273,13 @@ describe.sequential('createGtApiAdapter', () => {
     });
     vi.mocked(listProjects)
       .mockResolvedValueOnce(
-        result({ projects: [project('p1')], nextCursor: 'cursor-1' })
+        result({ items: [project('p1')], nextCursor: 'cursor-1' })
       )
       .mockResolvedValueOnce(
-        result({ projects: [project('p2')], nextCursor: 'cursor-2' })
+        result({ items: [project('p2')], nextCursor: 'cursor-2' })
       )
       .mockResolvedValueOnce(
-        result({ projects: [project('p3')], nextCursor: null })
+        result({ items: [project('p3')], nextCursor: null })
       );
     const adapter = createGtApiAdapter({
       baseUrl: 'https://api.example.com',
@@ -296,10 +296,10 @@ describe.sequential('createGtApiAdapter', () => {
   it('lists organizations across every cursor page', async () => {
     vi.mocked(listOrgs)
       .mockResolvedValueOnce(
-        result({ orgs: [{ id: 'o1', name: 'Org 1' }], nextCursor: 'next' })
+        result({ items: [{ id: 'o1', name: 'Org 1' }], nextCursor: 'next' })
       )
       .mockResolvedValueOnce(
-        result({ orgs: [{ id: 'o2', name: 'Org 2' }], nextCursor: null })
+        result({ items: [{ id: 'o2', name: 'Org 2' }], nextCursor: null })
       );
     const adapter = createGtApiAdapter({
       baseUrl: 'https://api.example.com',
