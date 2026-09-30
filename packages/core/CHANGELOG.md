@@ -1,5 +1,14 @@
 # generaltranslation
 
+## 9.5.2
+
+### Patch Changes
+
+- [#2353](https://github.com/generaltranslation/gt/pull/2353) [`458398d`](https://github.com/generaltranslation/gt/commit/458398de6b89cb7124a838581cc5660aac25574b) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Read listed projects and organizations from the `items` field that the API now returns, so `gt init` can list them again.
+
+- Updated dependencies [[`ddb3e6d`](https://github.com/generaltranslation/gt/commit/ddb3e6dcef680f310ec7996d174c042dcd482706), [`3013bc2`](https://github.com/generaltranslation/gt/commit/3013bc22fef5b1297ed56395b80195c9198509fe), [`ab78709`](https://github.com/generaltranslation/gt/commit/ab78709c5b2f0334379588005ba792bbb95986ba)]:
+  - @generaltranslation/api@0.5.0
+
 ## 9.5.1
 
 ### Patch Changes
