@@ -499,6 +499,19 @@ describe('createApiClient errors', () => {
     expect(error).toMatchObject({ code: 403, message: 'Forbidden project' });
   });
 
+  it('falls back to the status text for an empty error body', async () => {
+    const emptyClient = createApiClient({
+      baseUrl: 'https://example.com',
+      fetch: async () =>
+        new Response(null, { status: 503, statusText: 'Service Unavailable' }),
+      retryPolicy: 'none',
+    });
+
+    await expect(
+      emptyClient.get({ url: '/test', throwOnError: true })
+    ).rejects.toMatchObject({ code: 503, message: 'Service Unavailable' });
+  });
+
   it('keeps the decoded body in non-throwing results', async () => {
     const result = await client.get({ url: '/test' });
 

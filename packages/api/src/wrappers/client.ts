@@ -78,6 +78,7 @@ export function createApiClient(config: ApiClientConfig): Client {
     headers,
   });
   // Only thrown errors change; `{ data, error }` results keep the decoded body.
+  // `response` is undefined when fetch itself throws (timeout, abort, network).
   client.interceptors.error.use((error, response, _request, options) =>
     options.throwOnError && response
       ? ApiError.fromResponse(error, response)
