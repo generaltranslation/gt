@@ -9,9 +9,9 @@ type ListOptions = {
 
 /**
  * Yields every item of a generated list operation such as `listProjects`,
- * requesting the next page only after the current one is consumed. A failed
- * page request throws an `ApiError` when the client came from
- * `createApiClient`.
+ * starting at `query.cursor` when given and requesting the next page only
+ * after the current one is consumed. A failed page request throws an
+ * `ApiError` when the client came from `createApiClient`.
  */
 export async function* paginate<Options extends ListOptions, Item>(
   list: (
@@ -19,7 +19,7 @@ export async function* paginate<Options extends ListOptions, Item>(
   ) => Promise<{ data: Page<Item> }>,
   options: Options
 ): AsyncGenerator<Item> {
-  let cursor: string | undefined;
+  let cursor = options.query?.cursor;
   do {
     const { data } = await list({
       ...options,

@@ -727,6 +727,23 @@ describe('paginate', () => {
     ]);
   });
 
+  it('resumes from a supplied cursor', async () => {
+    const { client, urls } = createListClient({
+      c1: { items: [project('p3')], nextCursor: null },
+    });
+    const ids: string[] = [];
+
+    for await (const item of paginate(listProjects, {
+      client,
+      query: { cursor: 'c1' },
+    })) {
+      ids.push(item.id);
+    }
+
+    expect(ids).toEqual(['p3']);
+    expect(urls.map((url) => url.searchParams.get('cursor'))).toEqual(['c1']);
+  });
+
   it('requests the next page only when iteration continues', async () => {
     const { client, urls } = createListClient({
       '': { items: [project('p1')], nextCursor: 'c1' },

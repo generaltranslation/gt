@@ -32,7 +32,7 @@
     "codegen": "openapi-ts && oxfmt src/generated spec/openapi.json",
     "format": "oxfmt --check src openapi-ts.config.ts tsdown.config.mts package.json tsconfig.json spec/openapi.json",
     "lint": "oxlint src",
-    "test": "vitest run",
+    "test": "vitest run --typecheck",
     "typecheck": "tsc --noEmit"
   },
   "repository": {
