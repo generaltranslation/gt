@@ -16,6 +16,7 @@ import {
   getTranslationStatus,
   listOrgs,
   listProjects,
+  paginate,
   pollJobs,
   processBatches,
   processFileMoves,
@@ -66,19 +67,9 @@ import { unwrapApiResult } from '../translate/utils/unwrapApiResult';
 import { validateFileFormatTransforms } from '../translate/utils/validateFileFormatTransform';
 import { isModelProvider, supportedModelProviders } from './modelProvider';
 
-// Follows nextCursor until the service reports the last page.
-async function collectPages<T>(
-  loadPage: (
-    cursor: string | undefined
-  ) => Promise<{ items: T[]; nextCursor: string | null }>
-): Promise<T[]> {
+async function collect<T>(iterable: AsyncIterable<T>): Promise<T[]> {
   const items: T[] = [];
-  let cursor: string | undefined;
-  do {
-    const page = await loadPage(cursor);
-    items.push(...page.items);
-    cursor = page.nextCursor ?? undefined;
-  } while (cursor);
+  for await (const item of iterable) items.push(item);
   return items;
 }
 
@@ -469,26 +460,12 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
 
     /** Every project the configured credentials can read. */
     async listProjects() {
-      return collectPages(async (cursor) =>
-        unwrapApiResult(
-          await listProjects({
-            query: cursor ? { cursor } : undefined,
-            client: getClient(),
-          })
-        )
-      );
+      return collect(paginate(listProjects, { client: getClient() }));
     },
 
     /** Organizations where the signed-in user can create projects; user tokens only. */
     async listOrgs() {
-      return collectPages(async (cursor) =>
-        unwrapApiResult(
-          await listOrgs({
-            query: cursor ? { cursor } : undefined,
-            client: getClient(),
-          })
-        )
-      );
+      return collect(paginate(listOrgs, { client: getClient() }));
     },
 
     async createProjectApiKey(

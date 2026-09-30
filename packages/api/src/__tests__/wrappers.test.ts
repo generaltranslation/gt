@@ -4,6 +4,8 @@ import { awaitJobs, pollJobs } from '../wrappers/awaitJobs';
 import { createBatches, processBatches } from '../wrappers/batch';
 import { API_VERSION, createApiClient } from '../wrappers/client';
 import { ApiError } from '../wrappers/errors';
+import { paginate } from '../wrappers/paginate';
+import { listProjects } from '../generated/sdk.gen';
 import { createRetryingFetch, createTimeoutFetch } from '../wrappers/transport';
 
 afterEach(() => {
@@ -681,5 +683,89 @@ describe('pollJobs', () => {
       jobs: [],
     });
     expect(getJobStatuses).not.toHaveBeenCalled();
+  });
+});
+
+describe('paginate', () => {
+  const project = (id: string) => ({ id, name: id, orgId: 'o', orgName: 'O' });
+
+  function createListClient(pages: Record<string, unknown>) {
+    const urls: URL[] = [];
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockImplementation(async (input) => {
+        const url = new URL(new Request(input).url);
+        urls.push(url);
+        return Response.json(pages[url.searchParams.get('cursor') ?? '']);
+      });
+    const client = createApiClient({
+      baseUrl: 'https://example.com',
+      fetch: fetchMock,
+      retryPolicy: 'none',
+    });
+    return { client, urls };
+  }
+
+  it('follows nextCursor and forwards the other query options', async () => {
+    const { client, urls } = createListClient({
+      '': { items: [project('p1'), project('p2')], nextCursor: 'c1' },
+      c1: { items: [project('p3')], nextCursor: null },
+    });
+    const ids: string[] = [];
+
+    for await (const item of paginate(listProjects, {
+      client,
+      query: { limit: 2 },
+    })) {
+      ids.push(item.id);
+    }
+
+    expect(ids).toEqual(['p1', 'p2', 'p3']);
+    expect(urls.map((url) => url.search)).toEqual([
+      '?limit=2',
+      '?limit=2&cursor=c1',
+    ]);
+  });
+
+  it('resumes from a supplied cursor', async () => {
+    const { client, urls } = createListClient({
+      c1: { items: [project('p3')], nextCursor: null },
+    });
+    const ids: string[] = [];
+
+    for await (const item of paginate(listProjects, {
+      client,
+      query: { cursor: 'c1' },
+    })) {
+      ids.push(item.id);
+    }
+
+    expect(ids).toEqual(['p3']);
+    expect(urls.map((url) => url.searchParams.get('cursor'))).toEqual(['c1']);
+  });
+
+  it('requests the next page only when iteration continues', async () => {
+    const { client, urls } = createListClient({
+      '': { items: [project('p1')], nextCursor: 'c1' },
+    });
+
+    for await (const item of paginate(listProjects, { client })) {
+      expect(item.id).toBe('p1');
+      break;
+    }
+
+    expect(urls).toHaveLength(1);
+  });
+
+  it('throws an ApiError when a page request fails', async () => {
+    const client = createApiClient({
+      baseUrl: 'https://example.com',
+      fetch: async () => Response.json({ error: 'nope' }, { status: 403 }),
+      retryPolicy: 'none',
+    });
+
+    await expect(paginate(listProjects, { client }).next()).rejects.toEqual(
+      new ApiError('nope', 403, 'nope')
+    );
   });
 });
