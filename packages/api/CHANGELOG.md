@@ -1,5 +1,17 @@
 # @generaltranslation/api
 
+## 0.5.0
+
+### Minor Changes
+
+- [#2356](https://github.com/generaltranslation/gt/pull/2356) [`ddb3e6d`](https://github.com/generaltranslation/gt/commit/ddb3e6dcef680f310ec7996d174c042dcd482706) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Clients from `createApiClient` now throw an `ApiError` carrying the HTTP status in `code` for failed `throwOnError` calls, including those made by `awaitJobs`, instead of the decoded response body. Non-throwing calls still return the decoded body in `error`. `ApiError` moves to this package; `generaltranslation/errors` re-exports it.
+
+- [#2357](https://github.com/generaltranslation/gt/pull/2357) [`3013bc2`](https://github.com/generaltranslation/gt/commit/3013bc22fef5b1297ed56395b80195c9198509fe) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Add `paginate` to iterate every item of a list operation without handling cursors: `for await (const project of paginate(listProjects, { client })) {}`. The item type is inferred from the operation, `query.cursor` resumes from a saved position, the next page is requested only when iteration reaches it, and a failed page throws an `ApiError`.
+
+### Patch Changes
+
+- [#2328](https://github.com/generaltranslation/gt/pull/2328) [`ab78709`](https://github.com/generaltranslation/gt/commit/ab78709c5b2f0334379588005ba792bbb95986ba) Thanks [@internal-gt-public-api-sync](https://github.com/apps/internal-gt-public-api-sync)! - Sync the GT API OpenAPI contract and regenerate the SDK.
+
 ## 0.4.1
 
 ### Patch Changes

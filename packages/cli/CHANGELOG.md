@@ -1,5 +1,33 @@
 # gtx-cli
 
+## 2.23.0
+
+### Minor Changes
+
+- [#2338](https://github.com/generaltranslation/gt/pull/2338) [`680c595`](https://github.com/generaltranslation/gt/commit/680c5951efb93177f7c87e8df6809d7a624a3268) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - `gt init` and `gt configure` accept a flag for every setup question, so scripts and agents can run the same onboarding as the interactive wizard. Flags prefill answers; interactive runs only ask what is left, and `--no-interactive` (automatic without a terminal) lists missing options before changing anything. `--defaults` accepts the recommended local choices without creating projects or keys, `--json` writes sign-in, handoff and result events to stdout, and noninteractive sign-in uses a device code. Setup validates the configuration it is about to write, signs in only when it creates a project or key (before changing files), replaces the configured locale list and file formats with explicit selections, keeps an explicit CDN choice on reruns, stops on an invalid `gt.config.json`, and reports completed steps when a later step fails. Argument errors under `--json` also produce a JSON result.
+
+  Reruns that change `--translations-dir` update a generated Vite loader, or report a manual update for a custom loader (or when `gt init` skips the React setup), and match the framework-specific project ID to its development key. Setup now runs in a standalone app whose `pnpm-workspace.yaml` lists only the app itself, while still stopping at monorepo roots. Organization discovery is treated as access, not guaranteed project-creation permission, and denied creation reports how to obtain the required permission. Device sign-in no longer repeats the code when it is included in the URL.
+
+  Package-manager selection honors `--package-manager`, then `package.json#packageManager`, then an unambiguous lockfile, asking only when detection fails. Explicit overrides and separate projects no longer inherit an earlier process-wide selection. Next.js App Router setup writes and recognizes `NEXT_PUBLIC_GT_PROJECT_ID` and `NEXT_PUBLIC_GT_DEV_API_KEY` so development translation works in both server and client components without a tooling `GT_API_KEY`. Development keys must be omitted from production builds.
+
+  The CLI no longer reads `src/gt.config.json`. Move it to the project root, or pass `--config src/gt.config.json`. The monorepo version check and `gt login` now read the config given with `--config`.
+
+### Patch Changes
+
+- [#2352](https://github.com/generaltranslation/gt/pull/2352) [`d76457e`](https://github.com/generaltranslation/gt/commit/d76457e4d9fc055cab9b46a35c50968b6093e956) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - When `gt configure --storage cdn` leaves more than one `loadTranslations` file in a Next.js app, the manual action now names all of them. gt-next falls back to the next file when one is deleted, so deleting only the first one kept translations loading locally.
+
+- [#2344](https://github.com/generaltranslation/gt/pull/2344) [`1c6abfb`](https://github.com/generaltranslation/gt/commit/1c6abfb87494e66fc1ea87989040bd2b1ef8edf6) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Replace the custom Ink prompt UI with Clack, preserving searchable locale selection, custom aliases, defaults and cancellation. Keep an unmatched single-locale search open until a valid option is selected, focus the best match as the search changes, accept suggested text defaults on Enter, and remove the CLI's Ink/React rendering dependencies.
+
+- [#2353](https://github.com/generaltranslation/gt/pull/2353) [`458398d`](https://github.com/generaltranslation/gt/commit/458398de6b89cb7124a838581cc5660aac25574b) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Read listed projects and organizations from the `items` field that the API now returns, so `gt init` can list them again.
+
+- [#2345](https://github.com/generaltranslation/gt/pull/2345) [`80cb896`](https://github.com/generaltranslation/gt/commit/80cb896a3cc032456dcbf491a7dea5fe290b12c2) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Make setup config updates replace selected locales, preserve unrelated fields, and fail instead of overwriting invalid config. Check credential-file content before changing ignore rules. Refresh translation loaders matching the previous config only after setup's prompts finish. Preserve custom code (including static import-path edits) and loaders of unknown ownership with manual-review guidance, recreate missing locale files on unchanged-loader reruns, and propagate file-write failures. Vite setup preserves app-owned bootstraps, including namespace imports and entries its parser cannot read, for manual review and supports default or named custom loader exports instead of generating broken imports. Setup no longer creates an empty translation file for the default locale.
+
+- Updated dependencies [[`458398d`](https://github.com/generaltranslation/gt/commit/458398de6b89cb7124a838581cc5660aac25574b)]:
+  - generaltranslation@9.5.2
+  - @generaltranslation/python-extractor@0.2.56
+  - @generaltranslation/supported-locales@2.1.37
+  - @generaltranslation/vue-extractor@0.1.16
+
 ## 2.22.4
 
 ### Patch Changes
