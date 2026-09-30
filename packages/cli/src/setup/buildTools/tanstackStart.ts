@@ -299,10 +299,6 @@ function getRouterLines(
     path.dirname(path.join(appDirectory, router.path)),
     path.resolve(appDirectory, configFilepath)
   );
-  const loaderImport = toRelativeImport(
-    path.dirname(path.join(appDirectory, router.path)),
-    path.join(appDirectory, 'src/loadTranslations')
-  );
   const importFrom = (bindings: string, source: string) =>
     `import ${bindings} from ${quote}${source}${quote}${semi}`;
   return [
@@ -314,7 +310,7 @@ function getRouterLines(
             loaderExport === 'default'
               ? 'loadTranslations'
               : '{ loadTranslations }',
-            loaderImport
+            './loadTranslations'
           ),
         ]
       : []),

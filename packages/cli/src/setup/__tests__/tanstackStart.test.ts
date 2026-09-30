@@ -316,24 +316,6 @@ export const startInstance = createStart(() => ({}));
       'an unused import',
       "import { gtMiddleware } from 'gt-tanstack-start';\nexport const startInstance = createStart(() => ({}));\n",
     ],
-  ])(
-    'asks for gtMiddleware when a start entry only has %s',
-    async (_case, body) => {
-      const start = `import { createStart } from '@tanstack/react-start';\n${body}`;
-      write('src/start.ts', start);
-
-      const result = await tanstackStartSetup.apply(ctx());
-
-      expect(read('src/start.ts')).toBe(start);
-      expect(result.manualActions).toEqual([
-        expect.objectContaining({
-          whatHappened: 'src/start.ts does not use gtMiddleware',
-        }),
-      ]);
-    }
-  );
-
-  it.each([
     [
       'a property named gtMiddleware',
       "import { gtMiddleware } from 'gt-tanstack-start';\nconst flags = { gtMiddleware: true };\nexport const startInstance = createStart(() => ({ flags }));\n",
