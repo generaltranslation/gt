@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1790368879231,
+  "lastUpdate": 1790730897280,
   "repoUrl": "https://github.com/generaltranslation/gt",
   "entries": {
     "Middleware Benchmarks": [
@@ -11252,6 +11252,122 @@ window.BENCHMARK_DATA = {
             "value": 102.20000000001164,
             "unit": "ms",
             "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.5\"\n}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "fa8b121fd64a91aa217ba93ce859f5b230881363",
+          "message": "[ci] release (#2351)\n\nThis PR was opened by the [Changesets\nrelease](https://github.com/changesets/action) GitHub action. When\nyou're ready to do a release, you can merge this and the packages will\nbe published to npm automatically. If you're not ready to do a release\nyet, that's fine, whenever you add more changesets to main, this PR will\nbe updated.\n\n\n# Releases\n## @generaltranslation/api@0.5.0\n\n### Minor Changes\n\n- [#2356](https://github.com/generaltranslation/gt/pull/2356)\n[`ddb3e6d`](https://github.com/generaltranslation/gt/commit/ddb3e6dcef680f310ec7996d174c042dcd482706)\nThanks [@chenxin-yan](https://github.com/chenxin-yan)! - Clients from\n`createApiClient` now throw an `ApiError` carrying the HTTP status in\n`code` for failed `throwOnError` calls, including those made by\n`awaitJobs`, instead of the decoded response body. Non-throwing calls\nstill return the decoded body in `error`. `ApiError` moves to this\npackage; `generaltranslation/errors` re-exports it.\n\n- [#2357](https://github.com/generaltranslation/gt/pull/2357)\n[`3013bc2`](https://github.com/generaltranslation/gt/commit/3013bc22fef5b1297ed56395b80195c9198509fe)\nThanks [@chenxin-yan](https://github.com/chenxin-yan)! - Add `paginate`\nto iterate every item of a list operation without handling cursors: `for\nawait (const project of paginate(listProjects, { client })) {}`. The\nitem type is inferred from the operation, `query.cursor` resumes from a\nsaved position, the next page is requested only when iteration reaches\nit, and a failed page throws an `ApiError`.\n\n### Patch Changes\n\n- [#2328](https://github.com/generaltranslation/gt/pull/2328)\n[`ab78709`](https://github.com/generaltranslation/gt/commit/ab78709c5b2f0334379588005ba792bbb95986ba)\nThanks\n[@internal-gt-public-api-sync](https://github.com/apps/internal-gt-public-api-sync)!\n- Sync the GT API OpenAPI contract and regenerate the SDK.\n## gt@2.23.0\n\n### Minor Changes\n\n- [#2338](https://github.com/generaltranslation/gt/pull/2338)\n[`680c595`](https://github.com/generaltranslation/gt/commit/680c5951efb93177f7c87e8df6809d7a624a3268)\nThanks [@chenxin-yan](https://github.com/chenxin-yan)! - `gt init` and\n`gt configure` accept a flag for every setup question, so scripts and\nagents can run the same onboarding as the interactive wizard. Flags\nprefill answers; interactive runs only ask what is left, and\n`--no-interactive` (automatic without a terminal) lists missing options\nbefore changing anything. `--defaults` accepts the recommended local\nchoices without creating projects or keys, `--json` writes sign-in,\nhandoff and result events to stdout, and noninteractive sign-in uses a\ndevice code. Setup validates the configuration it is about to write,\nsigns in only when it creates a project or key (before changing files),\nreplaces the configured locale list and file formats with explicit\nselections, keeps an explicit CDN choice on reruns, stops on an invalid\n`gt.config.json`, and reports completed steps when a later step fails.\nArgument errors under `--json` also produce a JSON result.\n\nReruns that change `--translations-dir` update a generated Vite loader,\nor report a manual update for a custom loader (or when `gt init` skips\nthe React setup), and match the framework-specific project ID to its\ndevelopment key. Setup now runs in a standalone app whose\n`pnpm-workspace.yaml` lists only the app itself, while still stopping at\nmonorepo roots. Organization discovery is treated as access, not\nguaranteed project-creation permission, and denied creation reports how\nto obtain the required permission. Device sign-in no longer repeats the\ncode when it is included in the URL.\n\nPackage-manager selection honors `--package-manager`, then\n`package.json#packageManager`, then an unambiguous lockfile, asking only\nwhen detection fails. Explicit overrides and separate projects no longer\ninherit an earlier process-wide selection. Next.js App Router setup\nwrites and recognizes `NEXT_PUBLIC_GT_PROJECT_ID` and\n`NEXT_PUBLIC_GT_DEV_API_KEY` so development translation works in both\nserver and client components without a tooling `GT_API_KEY`. Development\nkeys must be omitted from production builds.\n\nThe CLI no longer reads `src/gt.config.json`. Move it to the project\nroot, or pass `--config src/gt.config.json`. The monorepo version check\nand `gt login` now read the config given with `--config`.\n\n### Patch Changes\n\n- [#2352](https://github.com/generaltranslation/gt/pull/2352)\n[`d76457e`](https://github.com/generaltranslation/gt/commit/d76457e4d9fc055cab9b46a35c50968b6093e956)\nThanks [@chenxin-yan](https://github.com/chenxin-yan)! - When `gt\nconfigure --storage cdn` leaves more than one `loadTranslations` file in\na Next.js app, the manual action now names all of them. gt-next falls\nback to the next file when one is deleted, so deleting only the first\none kept translations loading locally.\n\n- [#2344](https://github.com/generaltranslation/gt/pull/2344)\n[`1c6abfb`](https://github.com/generaltranslation/gt/commit/1c6abfb87494e66fc1ea87989040bd2b1ef8edf6)\nThanks [@chenxin-yan](https://github.com/chenxin-yan)! - Replace the\ncustom Ink prompt UI with Clack, preserving searchable locale selection,\ncustom aliases, defaults and cancellation. Keep an unmatched\nsingle-locale search open until a valid option is selected, focus the\nbest match as the search changes, accept suggested text defaults on\nEnter, and remove the CLI's Ink/React rendering dependencies.\n\n- [#2353](https://github.com/generaltranslation/gt/pull/2353)\n[`458398d`](https://github.com/generaltranslation/gt/commit/458398de6b89cb7124a838581cc5660aac25574b)\nThanks [@chenxin-yan](https://github.com/chenxin-yan)! - Read listed\nprojects and organizations from the `items` field that the API now\nreturns, so `gt init` can list them again.\n\n- [#2345](https://github.com/generaltranslation/gt/pull/2345)\n[`80cb896`](https://github.com/generaltranslation/gt/commit/80cb896a3cc032456dcbf491a7dea5fe290b12c2)\nThanks [@chenxin-yan](https://github.com/chenxin-yan)! - Make setup\nconfig updates replace selected locales, preserve unrelated fields, and\nfail instead of overwriting invalid config. Check credential-file\ncontent before changing ignore rules. Refresh translation loaders\nmatching the previous config only after setup's prompts finish. Preserve\ncustom code (including static import-path edits) and loaders of unknown\nownership with manual-review guidance, recreate missing locale files on\nunchanged-loader reruns, and propagate file-write failures. Vite setup\npreserves app-owned bootstraps, including namespace imports and entries\nits parser cannot read, for manual review and supports default or named\ncustom loader exports instead of generating broken imports. Setup no\nlonger creates an empty translation file for the default locale.\n\n- Updated dependencies\n[[`458398d`](https://github.com/generaltranslation/gt/commit/458398de6b89cb7124a838581cc5660aac25574b)]:\n  - generaltranslation@9.5.2\n  - @generaltranslation/python-extractor@0.2.56\n  - @generaltranslation/supported-locales@2.1.37\n  - @generaltranslation/vue-extractor@0.1.16\n## @generaltranslation/compiler@1.3.58\n\n### Patch Changes\n\n- Updated dependencies\n[[`458398d`](https://github.com/generaltranslation/gt/commit/458398de6b89cb7124a838581cc5660aac25574b)]:\n  - generaltranslation@9.5.2\n## generaltranslation@9.5.2\n\n### Patch Changes\n\n- [#2353](https://github.com/generaltranslation/gt/pull/2353)\n[`458398d`](https://github.com/generaltranslation/gt/commit/458398de6b89cb7124a838581cc5660aac25574b)\nThanks [@chenxin-yan](https://github.com/chenxin-yan)! - Read listed\nprojects and organizations from the `items` field that the API now\nreturns, so `gt init` can list them again.\n\n- Updated dependencies\n[[`ddb3e6d`](https://github.com/generaltranslation/gt/commit/ddb3e6dcef680f310ec7996d174c042dcd482706),\n[`3013bc2`](https://github.com/generaltranslation/gt/commit/3013bc22fef5b1297ed56395b80195c9198509fe),\n[`ab78709`](https://github.com/generaltranslation/gt/commit/ab78709c5b2f0334379588005ba792bbb95986ba)]:\n  - @generaltranslation/api@0.5.0\n## gtx-cli@2.23.0\n\n### Patch Changes\n\n- Updated dependencies\n[[`d76457e`](https://github.com/generaltranslation/gt/commit/d76457e4d9fc055cab9b46a35c50968b6093e956),\n[`1c6abfb`](https://github.com/generaltranslation/gt/commit/1c6abfb87494e66fc1ea87989040bd2b1ef8edf6),\n[`458398d`](https://github.com/generaltranslation/gt/commit/458398de6b89cb7124a838581cc5660aac25574b),\n[`680c595`](https://github.com/generaltranslation/gt/commit/680c5951efb93177f7c87e8df6809d7a624a3268),\n[`80cb896`](https://github.com/generaltranslation/gt/commit/80cb896a3cc032456dcbf491a7dea5fe290b12c2)]:\n  - gt@2.23.0\n## gt-i18n@1.0.33\n\n### Patch Changes\n\n- Updated dependencies\n[[`458398d`](https://github.com/generaltranslation/gt/commit/458398de6b89cb7124a838581cc5660aac25574b)]:\n  - generaltranslation@9.5.2\n## locadex@1.0.235\n\n### Patch Changes\n\n- Updated dependencies\n[[`d76457e`](https://github.com/generaltranslation/gt/commit/d76457e4d9fc055cab9b46a35c50968b6093e956),\n[`1c6abfb`](https://github.com/generaltranslation/gt/commit/1c6abfb87494e66fc1ea87989040bd2b1ef8edf6),\n[`458398d`](https://github.com/generaltranslation/gt/commit/458398de6b89cb7124a838581cc5660aac25574b),\n[`680c595`](https://github.com/generaltranslation/gt/commit/680c5951efb93177f7c87e8df6809d7a624a3268),\n[`80cb896`](https://github.com/generaltranslation/gt/commit/80cb896a3cc032456dcbf491a7dea5fe290b12c2)]:\n  - gt@2.23.0\n## gt-next@11.4.6\n\n### Patch Changes\n\n- Updated dependencies\n[[`458398d`](https://github.com/generaltranslation/gt/commit/458398de6b89cb7124a838581cc5660aac25574b)]:\n  - generaltranslation@9.5.2\n  - @generaltranslation/compiler@1.3.58\n  - gt-i18n@1.0.33\n  - gt-react@11.4.6\n  - @generaltranslation/react-core@11.4.6\n## gt-node@1.0.34\n\n### Patch Changes\n\n- Updated dependencies\n[[`458398d`](https://github.com/generaltranslation/gt/commit/458398de6b89cb7124a838581cc5660aac25574b)]:\n  - generaltranslation@9.5.2\n  - gt-i18n@1.0.33\n## @generaltranslation/python-extractor@0.2.56\n\n### Patch Changes\n\n- Updated dependencies\n[[`458398d`](https://github.com/generaltranslation/gt/commit/458398de6b89cb7124a838581cc5660aac25574b)]:\n  - generaltranslation@9.5.2\n## gt-react@11.4.6\n\n### Patch Changes\n\n- Updated dependencies\n[[`458398d`](https://github.com/generaltranslation/gt/commit/458398de6b89cb7124a838581cc5660aac25574b)]:\n  - generaltranslation@9.5.2\n  - gt-i18n@1.0.33\n  - @generaltranslation/react-core@11.4.6\n## @generaltranslation/react-core@11.4.6\n\n### Patch Changes\n\n- Updated dependencies\n[[`458398d`](https://github.com/generaltranslation/gt/commit/458398de6b89cb7124a838581cc5660aac25574b)]:\n  - generaltranslation@9.5.2\n  - gt-i18n@1.0.33\n## gt-react-native@11.4.6\n\n### Patch Changes\n\n- Updated dependencies\n[[`458398d`](https://github.com/generaltranslation/gt/commit/458398de6b89cb7124a838581cc5660aac25574b)]:\n  - generaltranslation@9.5.2\n  - gt-i18n@1.0.33\n  - @generaltranslation/react-core@11.4.6\n  - @generaltranslation/supported-locales@2.1.37\n## gt-sanity@4.0.21\n\n### Patch Changes\n\n- Updated dependencies\n[[`458398d`](https://github.com/generaltranslation/gt/commit/458398de6b89cb7124a838581cc5660aac25574b)]:\n  - generaltranslation@9.5.2\n## @generaltranslation/supported-locales@2.1.37\n\n### Patch Changes\n\n- Updated dependencies\n[[`458398d`](https://github.com/generaltranslation/gt/commit/458398de6b89cb7124a838581cc5660aac25574b)]:\n  - generaltranslation@9.5.2\n## gt-tanstack-start@11.4.6\n\n### Patch Changes\n\n- Updated dependencies\n[[`458398d`](https://github.com/generaltranslation/gt/commit/458398de6b89cb7124a838581cc5660aac25574b)]:\n  - generaltranslation@9.5.2\n  - gt-i18n@1.0.33\n  - gt-react@11.4.6\n  - @generaltranslation/react-core@11.4.6\n## gt-vue@0.1.17\n\n### Patch Changes\n\n- Updated dependencies\n[[`458398d`](https://github.com/generaltranslation/gt/commit/458398de6b89cb7124a838581cc5660aac25574b)]:\n  - generaltranslation@9.5.2\n  - gt-i18n@1.0.33\n## @generaltranslation/vue-extractor@0.1.16\n\n### Patch Changes\n\n- Updated dependencies\n[[`458398d`](https://github.com/generaltranslation/gt/commit/458398de6b89cb7124a838581cc5660aac25574b)]:\n  - generaltranslation@9.5.2\n\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+          "timestamp": "2026-09-30T01:07:17Z",
+          "url": "https://github.com/generaltranslation/gt/commit/fa8b121fd64a91aa217ba93ce859f5b230881363"
+        },
+        "date": 1790730895669,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "gt-next > unit > middleware: factory creation latency > createNextMiddleware() (mean)",
+            "value": 0.018807079700605852,
+            "range": "±0.0083",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.6\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > default locale request (/) (mean)",
+            "value": 0.05283276901944203,
+            "range": "±0.0425",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.6\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > non-default locale request (/fr) (mean)",
+            "value": 0.06836078769651295,
+            "range": "±0.0537",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.6\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > nested route (/fr/about) (mean)",
+            "value": 0.06331871115613356,
+            "range": "±0.0377",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.6\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > ttfb",
+            "value": 86.59999999997672,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.6\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > domContentLoaded",
+            "value": 100.40000000002328,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.6\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > load",
+            "value": 163.5,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.6\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > elapsed",
+            "value": 105,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.6\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > ttfb",
+            "value": 17.29999999993015,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.6\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > domContentLoaded",
+            "value": 36.5,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.6\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > load",
+            "value": 99.59999999997672,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.6\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: locale-switch-en-to-fr > elapsed",
+            "value": 578,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.6\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > ttfb",
+            "value": 6.100000000093132,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.6\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > domContentLoaded",
+            "value": 18.100000000093132,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.6\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > load",
+            "value": 71.5,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.6\"\n}"
           }
         ]
       }
