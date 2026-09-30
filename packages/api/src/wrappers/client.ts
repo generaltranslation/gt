@@ -1,6 +1,7 @@
 import { createClient as createGeneratedClient } from '../generated/client';
 import type { Client } from '../generated/client';
 import type { GetProjectInfoData } from '../generated/types.gen';
+import { ApiError } from './errors';
 import { createRetryingFetch, createTimeoutFetch } from './transport';
 import type { RetryPolicy } from './transport';
 
@@ -68,7 +69,7 @@ export function createApiClient(config: ApiClientConfig): Client {
     retryPolicy: config.retryPolicy,
   });
 
-  return createGeneratedClient({
+  const client = createGeneratedClient({
     baseUrl: config.baseUrl,
     fetch:
       config.apiKey || !config.userTokenProvider
@@ -76,4 +77,11 @@ export function createApiClient(config: ApiClientConfig): Client {
         : createUserTokenFetch(transportFetch, config.userTokenProvider),
     headers,
   });
+  // Only thrown errors change; `{ data, error }` results keep the decoded body.
+  client.interceptors.error.use((error, response, _request, options) =>
+    options.throwOnError && response
+      ? ApiError.fromResponse(error, response)
+      : error
+  );
+  return client;
 }

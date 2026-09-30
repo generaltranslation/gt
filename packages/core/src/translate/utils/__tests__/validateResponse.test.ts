@@ -9,7 +9,7 @@ vi.mock('../../../logging/errors', () => ({
 
 import { validateResponse } from '../validateResponse';
 import { apiError } from '../../../logging/errors';
-import { ApiError } from '../../../errors/ApiError';
+import { ApiError } from '@generaltranslation/api';
 
 describe.sequential('validateResponse', () => {
   beforeEach(() => {

@@ -1,4 +1,4 @@
-import { ApiError } from '../../errors/ApiError';
+import { ApiError } from '@generaltranslation/api';
 
 export function isErrorResult(error: unknown): error is { error: string } {
   return (
@@ -28,12 +28,7 @@ export function unwrapApiResult<T>(result: {
     return result.data as Exclude<T, undefined>;
   }
   if (result.response) {
-    const details = isErrorResult(result.error)
-      ? result.error.error
-      : typeof result.error === 'string'
-        ? result.error
-        : result.response.statusText;
-    throw new ApiError(details, result.response.status, details);
+    throw ApiError.fromResponse(result.error, result.response);
   }
   throw result.error;
 }
