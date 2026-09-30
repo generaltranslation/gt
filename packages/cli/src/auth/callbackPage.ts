@@ -1,16 +1,13 @@
 // The page the loopback server shows once `gt login` has finished. It is
-// served from 127.0.0.1 under `default-src 'none'; style-src 'unsafe-inline';
-// img-src data:`, so everything is inline: the brand deck's tokens (paper and
-// ink with a prefers-color-scheme swap, ink-2 for the sentence, titanium for
-// the note, the status hues), the hero's field as a data URI behind a paper
-// plate, the GT mark and a Heroicons 24/solid status glyph. The composition
-// is the dashboard's auth plate: the field faint on the plate's side and
-// filling in to the right, the plate at the left on wide screens, the mark,
-// a 24px heading with the glyph, a lede, and a 13px note. No script runs,
-// nothing loads from the network and no webfont is requested; Inter is used
-// when it is installed.
-import { FIELD_IMAGE } from './callbackField.js';
-
+// served from 127.0.0.1 under `default-src 'none'; style-src 'unsafe-inline'`,
+// so everything is inline: the brand deck's tokens (paper and ink with a
+// prefers-color-scheme swap, ink-2 for the sentence, titanium for the note,
+// the status hues), the GT mark and a Heroicons 24/solid status glyph. The
+// composition is the dashboard's auth plate in its centered form: the plate
+// alone on the plain ground, centered both ways, with the mark, a 24px
+// heading with the glyph, a lede, and a 13px note naming the account. No
+// field, no footer, no script, nothing from the network and no webfont;
+// Inter is used when it is installed.
 /** What the page says: a signed-in account, or why the login did not finish. */
 export type CallbackPageView =
   | { ok: true; account?: string }
@@ -18,9 +15,6 @@ export type CallbackPageView =
 
 /** The part of a success view the login flow can add after the exchange. */
 export type CallbackPageDetails = { account?: string };
-
-const FIELD_MASK =
-  'linear-gradient(90deg, rgba(0,0,0,0.14) 0%, rgba(0,0,0,0.22) 36%, rgba(0,0,0,0.55) 60%, #000 82%, #000 100%)';
 
 const STYLES = `
   :root {
@@ -32,7 +26,6 @@ const STYLES = `
     --hair: rgba(7, 7, 7, 0.18);
     --success: #12a37a;
     --danger: #e5484d;
-    --field-filter: invert(1) hue-rotate(180deg) brightness(1.07) saturate(1.15);
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -40,47 +33,25 @@ const STYLES = `
       --ink-2: #b9bcc3;
       --paper: #070707;
       --hair: rgba(242, 242, 240, 0.22);
-      --field-filter: none;
     }
   }
   * { box-sizing: border-box; margin: 0; }
   html, body { min-height: 100%; }
   body {
-    position: relative;
     display: flex;
     flex-direction: column;
     min-height: 100svh;
-    overflow: hidden;
     background: var(--paper);
     color: var(--ink);
     font: 15px/1.55 Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
-  .field {
-    position: absolute;
-    inset: 0;
-    background: url("${FIELD_IMAGE}") center / cover no-repeat;
-    image-rendering: pixelated;
-    opacity: 0.55;
-    filter: var(--field-filter);
-    -webkit-mask-image: ${FIELD_MASK};
-    mask-image: ${FIELD_MASK};
-    pointer-events: none;
-  }
   main {
-    position: relative;
     display: flex;
     flex: 1;
-    flex-direction: column;
     align-items: center;
-    padding: calc(56px + clamp(8px, 6svh, 56px)) 16px 64px;
-  }
-  @media (min-width: 768px) {
-    main {
-      align-items: flex-start;
-      padding-left: max(24px, calc(50vw - 720px + 72px));
-      padding-right: 0;
-    }
+    justify-content: center;
+    padding: 24px 16px;
   }
   .plate {
     width: 100%;
@@ -117,17 +88,6 @@ const STYLES = `
   .note code, .note .ink { color: var(--ink); }
   code {
     font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  }
-  footer {
-    position: relative;
-    padding: 12px 16px;
-    border-top: 1px solid var(--hair);
-    background: var(--paper);
-    font-size: 12px;
-    color: var(--ink-2);
-  }
-  @media (min-width: 640px) {
-    footer { padding: 12px 24px; }
   }
 `;
 
@@ -194,7 +154,6 @@ export function renderCallbackPage(view: CallbackPageView): string {
 <style>${STYLES}</style>
 </head>
 <body>
-<div class="field" aria-hidden="true"></div>
 <main>
 <div class="plate">
 ${GT_MARK}
@@ -202,7 +161,6 @@ ${GT_MARK}
 <p class="lede">${lede}</p>${note ? `\n<p class="note">${note}</p>` : ''}
 </div>
 </main>
-<footer>© ${new Date().getFullYear()} General Translation, Inc. All rights reserved.</footer>
 </body>
 </html>`;
 }

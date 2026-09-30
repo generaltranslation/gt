@@ -83,7 +83,7 @@ export async function startLoopbackServer(): Promise<LoopbackServer> {
           response.writeHead(200, {
             'cache-control': 'no-store',
             'content-security-policy':
-              "default-src 'none'; style-src 'unsafe-inline'; img-src data:",
+              "default-src 'none'; style-src 'unsafe-inline'",
             'content-type': 'text/html; charset=utf-8',
             'x-content-type-options': 'nosniff',
           });

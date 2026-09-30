@@ -15,7 +15,7 @@ describe('loopback authorization server', () => {
     expect(response.status).toBe(200);
     expect(response.headers.get('cache-control')).toBe('no-store');
     expect(response.headers.get('content-security-policy')).toBe(
-      "default-src 'none'; style-src 'unsafe-inline'; img-src data:"
+      "default-src 'none'; style-src 'unsafe-inline'"
     );
     const page = await response.text();
     expect(page).toContain('Signed in to the gt CLI');

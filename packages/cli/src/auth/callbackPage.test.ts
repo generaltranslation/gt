@@ -41,11 +41,14 @@ describe('callback page', () => {
     expect(failed).not.toContain('Signed in to the gt CLI');
   });
 
-  it('serves no external assets: the field is a data URI and the theme swap is inline', () => {
+  it('is the plate alone on the plain ground: no field, no footer, no external assets, the theme swap inline', () => {
     const page = renderCallbackPage({ ok: true });
     expect(page).not.toMatch(/(src|href)=["']https?:/);
-    expect(page).not.toMatch(/url\(["']?https?:/);
-    expect(page).toContain('url("data:image/png;base64,');
+    expect(page).not.toMatch(/url\(/);
+    expect(page).not.toContain('data:image');
+    expect(page).not.toContain('<footer');
+    expect(page).not.toContain('class="field"');
+    expect(page).toContain('justify-content: center');
     expect(page).toContain('prefers-color-scheme: dark');
     expect(page).toContain('<svg');
     expect(page).not.toContain('<script');
