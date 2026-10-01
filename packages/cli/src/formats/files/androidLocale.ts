@@ -21,7 +21,7 @@ export function androidLocaleQualifier(locale: string): string {
   // wrong directory here: `standardizeLocale` reads `tl` as `fil` and `cnr` as
   // `sr-ME`, which Android matches to different devices, `getLocaleProperties`
   // maximizes and reports script `Latn` for a bare `es`, and `isValidLocale`
-  // rejects supported locales including `el-EL`.
+  // rejects configured tags such as `el-EL`.
   const [language, ...rest] = locale.split('-');
   const script = rest.find((part) => /^[A-Za-z]{4}$/.test(part));
   const region = rest.find(
