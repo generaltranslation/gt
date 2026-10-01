@@ -470,6 +470,22 @@ export const startInstance = createStart(() => {
       'gtMiddleware in an object outside createStart',
       "import { gtMiddleware } from 'gt-tanstack-start';\nconst unused = { requestMiddleware: [gtMiddleware] };\nexport const startInstance = createStart(() => ({}));\n",
     ],
+    [
+      'gtMiddleware in a createStart call that is not exported',
+      "import { gtMiddleware } from 'gt-tanstack-start';\nfunction unused() {\n  return createStart(() => ({ requestMiddleware: [gtMiddleware] }));\n}\nexport const startInstance = createStart(() => ({}));\n",
+    ],
+    [
+      'gtMiddleware after a conditional return',
+      "import { gtMiddleware } from 'gt-tanstack-start';\nexport const startInstance = createStart(() => {\n  if (import.meta.env.DEV) return {};\n  return { requestMiddleware: [gtMiddleware] };\n});\n",
+    ],
+    [
+      'gtMiddleware overridden by a spread',
+      "import { gtMiddleware } from 'gt-tanstack-start';\nconst overrides = { requestMiddleware: [] };\nexport const startInstance = createStart(() => ({\n  requestMiddleware: [gtMiddleware],\n  ...overrides,\n}));\n",
+    ],
+    [
+      'a second requestMiddleware',
+      "import { gtMiddleware } from 'gt-tanstack-start';\nexport const startInstance = createStart(() => ({\n  requestMiddleware: [gtMiddleware],\n  requestMiddleware: [],\n}));\n",
+    ],
   ])(
     'asks for gtMiddleware when a start entry only has %s',
     async (_case, body) => {

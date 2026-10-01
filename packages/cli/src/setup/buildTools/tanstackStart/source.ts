@@ -65,15 +65,16 @@ export async function inspectTanStackStart(appDirectory: string) {
   };
 }
 
-/** The local name `name` is imported as from gt-tanstack-start. */
+/** The local name `name` is imported as from `source` (gt-tanstack-start). */
 export function getLocalImport(
   file: SourceFile,
-  name: string
+  name: string,
+  source: string = Libraries.GT_TANSTACK_START
 ): string | undefined {
   for (const statement of file.statements ?? []) {
     if (
       statement.type !== 'ImportDeclaration' ||
-      statement.source.value !== Libraries.GT_TANSTACK_START ||
+      statement.source.value !== source ||
       statement.importKind === 'type'
     ) {
       continue;
