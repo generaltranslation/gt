@@ -177,11 +177,11 @@ export const tanstackStartSetup: BuildToolSetup = {
       manualActions.push(getMiddlewareAction(start!.path));
     }
 
-    const rootComponent =
-      root.statements && findRootComponent(root.statements)?.component;
-    const rootConfigured =
-      rootComponent !== undefined &&
-      rendersElement([rootComponent], 'GTProvider');
+    const rootComponent = root.statements && findRootComponent(root.statements);
+    const rootConfigured = rendersElement(
+      [rootComponent?.component, rootComponent?.document],
+      'GTProvider'
+    );
     // A provider elsewhere may wrap the document indirectly; adding a second
     // one could nest them, so a person decides.
     const providerElsewhere =
