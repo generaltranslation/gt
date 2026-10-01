@@ -1320,10 +1320,18 @@ See https://www.npmjs.com/package/gt-vue`);
       (storage === 'local' && buildTool?.devCredentialsOption) ||
       '--dev-credentials';
     // Creating credentials talks to GT as the signed-in user unless an API
-    // key is set. A development key in .env.local never stands in.
+    // key is set. A development key in .env.local never stands in. An
+    // obsolete stored login counts as signed out, so signing in replaces it.
     const canAuthenticate = async () =>
       Boolean(settings.apiKey) ||
-      (await hasLogin({ baseUrl: settings.baseUrl }));
+      (await hasLogin({ baseUrl: settings.baseUrl }).catch((error) => {
+        if (
+          error instanceof UserAuthError &&
+          error.code === 'obsolete_credentials'
+        )
+          return false;
+        throw error;
+      }));
     const provision =
       !credentialsSet &&
       (credentialsOption === '--live-translations'
@@ -1340,20 +1348,13 @@ See https://www.npmjs.com/package/gt-vue`);
         : await session.answer('--dev-credentials or --no-dev-credentials', {
             explicit: options.devCredentials,
             // Creating a key is never a default, so --defaults leaves this open.
+            // The prompt names the sign-in so its Yes default is informed.
             ask: async () =>
               promptConfirm({
-                message:
-                  'Would you like to set up a project ID and hot-reload key in .env.local?',
-                // Signing in is never a default. An obsolete login defaults
-                // to No here; answering Yes still reports it.
-                defaultValue: await canAuthenticate().catch((error) => {
-                  if (
-                    error instanceof UserAuthError &&
-                    error.code === 'obsolete_credentials'
-                  )
-                    return false;
-                  throw error;
-                }),
+                message: (await canAuthenticate())
+                  ? 'Would you like to set up a project ID and hot-reload key in .env.local?'
+                  : 'Would you like to sign in to General Translation and set up a project ID and hot-reload key in .env.local?',
+                defaultValue: true,
               }),
           })) === true;
     if (!runtimeProjectMatches && !provision) {

@@ -193,54 +193,55 @@ describe('init development credentials', () => {
     );
   }
 
-  it('defaults the credentials prompt to No when signed out, without signing in', async () => {
+  const obsoleteLogin = () =>
+    new UserAuthError(
+      'obsolete_credentials',
+      'This stored login is obsolete or invalid and cannot be used safely'
+    );
+
+  it('defaults the credentials prompt to Yes and says it signs in when signed out', async () => {
     vi.mocked(hasLogin).mockResolvedValue(false);
     pressEnterForCredentials();
+    vi.mocked(promptSelect).mockResolvedValueOnce(projects[1]);
 
     await runInit();
 
     expect(promptConfirm).toHaveBeenCalledWith({
-      message: expect.stringContaining('hot-reload key'),
-      defaultValue: false,
+      message:
+        'Would you like to sign in to General Translation and set up a project ID and hot-reload key in .env.local?',
+      defaultValue: true,
     });
-    expect(login).not.toHaveBeenCalled();
-    expect(api.listProjects).not.toHaveBeenCalled();
-    expect(api.createProjectApiKey).not.toHaveBeenCalled();
-    expect(fs.existsSync(envPath())).toBe(false);
+    expect(login).toHaveBeenCalledTimes(1);
+    expect(api.createProjectApiKey).toHaveBeenCalledTimes(1);
   });
 
-  it('lets an obsolete stored login decline credentials, defaulting to No', async () => {
-    vi.mocked(hasLogin).mockRejectedValue(
-      new UserAuthError(
-        'obsolete_credentials',
-        'This stored login is obsolete or invalid and cannot be used safely'
-      )
-    );
+  it('signs in again over an obsolete stored login', async () => {
+    vi.mocked(hasLogin).mockRejectedValue(obsoleteLogin());
     pressEnterForCredentials();
+    vi.mocked(promptSelect).mockResolvedValueOnce(projects[1]);
 
     await runInit();
 
     expect(promptConfirm).toHaveBeenCalledWith({
-      message: expect.stringContaining('hot-reload key'),
-      defaultValue: false,
+      message: expect.stringContaining('sign in to General Translation'),
+      defaultValue: true,
     });
+    expect(login).toHaveBeenCalledTimes(1);
+    expect(api.createProjectApiKey).toHaveBeenCalledTimes(1);
+  });
+
+  it('lets a signed-out user decline credentials without signing in', async () => {
+    vi.mocked(hasLogin).mockRejectedValue(obsoleteLogin());
+    vi.mocked(promptConfirm).mockImplementation(
+      async ({ message }) => !message.includes('hot-reload key')
+    );
+
+    await runInit();
+
     expect(login).not.toHaveBeenCalled();
     expect(api.createProjectApiKey).not.toHaveBeenCalled();
     expect(fs.existsSync(path.join(appDirectory, 'gt.config.json'))).toBe(true);
     expect(fs.existsSync(envPath())).toBe(false);
-  });
-
-  it('still reports an obsolete stored login when credentials are requested', async () => {
-    vi.mocked(hasLogin).mockRejectedValue(
-      new UserAuthError(
-        'obsolete_credentials',
-        'This stored login is obsolete or invalid and cannot be used safely'
-      )
-    );
-
-    await expect(runInit()).rejects.toThrow('obsolete or invalid');
-    expect(login).not.toHaveBeenCalled();
-    expect(api.createProjectApiKey).not.toHaveBeenCalled();
   });
 
   it('defaults the credentials prompt to Yes when signed in', async () => {
@@ -250,7 +251,8 @@ describe('init development credentials', () => {
     await runInit();
 
     expect(promptConfirm).toHaveBeenCalledWith({
-      message: expect.stringContaining('hot-reload key'),
+      message:
+        'Would you like to set up a project ID and hot-reload key in .env.local?',
       defaultValue: true,
     });
     expect(login).not.toHaveBeenCalled();
