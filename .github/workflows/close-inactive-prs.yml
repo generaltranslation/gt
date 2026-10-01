@@ -1,4 +1,4 @@
-name: Close Stale Pull Requests
+name: Close Inactive Pull Requests
 
 on:
   schedule:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       dry-run:
-        description: List stale pull requests without closing them
+        description: List inactive pull requests without closing them
         type: boolean
         default: false
 
@@ -15,21 +15,21 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: close-stale-prs
+  group: close-inactive-prs
   cancel-in-progress: false
 
 env:
-  MAX_AGE_DAYS: 14
+  INACTIVE_DAYS: 14
   KEEP_OPEN_LABEL: keep-open
 
 jobs:
-  close-stale-prs:
-    name: Close pull requests older than two weeks
+  close-inactive-prs:
+    name: Close pull requests inactive for two weeks
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
     steps:
-      - name: Close stale pull requests
+      - name: Close inactive pull requests
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -37,22 +37,22 @@ jobs:
         run: |
           set -euo pipefail
 
-          cutoff="$(date -u -d "${MAX_AGE_DAYS} days ago" +%Y-%m-%d)"
-          echo "Closing open pull requests created before ${cutoff} without the '${KEEP_OPEN_LABEL}' label."
+          cutoff="$(date -u -d "${INACTIVE_DAYS} days ago" +%Y-%m-%d)"
+          echo "Closing open pull requests with no activity since ${cutoff} that lack the '${KEEP_OPEN_LABEL}' label."
 
           numbers="$(gh pr list \
             --state open \
             --limit 1000 \
-            --search "created:<${cutoff} -label:${KEEP_OPEN_LABEL}" \
+            --search "updated:<${cutoff} -label:${KEEP_OPEN_LABEL}" \
             --json number \
             --jq '.[].number')"
 
           if [ -z "${numbers}" ]; then
-            echo "No stale pull requests found."
+            echo "No inactive pull requests found."
             exit 0
           fi
 
-          comment="Closing this pull request automatically because it has been open for more than ${MAX_AGE_DAYS} days. Reopen it if the work is still active, and add the \`${KEEP_OPEN_LABEL}\` label to exempt it from this weekly cleanup."
+          comment="Closed due to inactivity. This pull request had no activity for ${INACTIVE_DAYS} days. Reopen it if the work is still active, and add the \`${KEEP_OPEN_LABEL}\` label to exempt it from this weekly cleanup."
 
           failures=0
           for number in ${numbers}; do
