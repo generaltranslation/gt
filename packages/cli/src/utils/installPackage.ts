@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import { spawn } from 'child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { stripVTControlCharacters } from 'node:util';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { logger } from '../console/logger.js';
 import { PackageManager, PNPM } from './packageManager.js';
@@ -10,6 +11,9 @@ import { getPackageJson, isPackageInstalled } from './packageJson.js';
 /** pnpm 11 exits 1 after installing when it skipped unapproved build scripts. */
 const PNPM_IGNORED_BUILDS_PATTERN =
   /^\[ERR_PNPM_IGNORED_BUILDS\] Ignored build scripts: (.+)$/m;
+
+/** Only the end of pnpm's stdout is kept for classifying a failed install. */
+const MAX_CAPTURED_OUTPUT_LENGTH = 64 * 1024;
 
 /** Any other pnpm error or a failed lifecycle script is a real install failure. */
 const PNPM_OTHER_FAILURE_PATTERN =
@@ -21,9 +25,11 @@ const PNPM_OTHER_FAILURE_PATTERN =
  */
 function getPnpmIgnoredBuilds(
   packageManager: PackageManager,
-  output: string
+  rawOutput: string
 ): string[] {
   if (packageManager.id !== PNPM.id) return [];
+  // FORCE_COLOR=1 makes pnpm color the error code and message separately.
+  const output = stripVTControlCharacters(rawOutput);
   if (PNPM_OTHER_FAILURE_PATTERN.test(output)) return [];
   const match = output.match(PNPM_IGNORED_BUILDS_PATTERN);
   if (!match) return [];
@@ -79,10 +85,10 @@ export async function installPackage(
       cwd,
     });
 
-    // pnpm prints ERR_PNPM_* errors to stdout.
+    // pnpm prints ERR_PNPM_* errors to stdout, after the rest of its output.
     let output = '';
     childProcess.stdout?.on('data', (data) => {
-      output += data.toString();
+      output = (output + data.toString()).slice(-MAX_CAPTURED_OUTPUT_LENGTH);
     });
     let errorOutput = '';
     if (childProcess.stderr) {
