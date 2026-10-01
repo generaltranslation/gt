@@ -1,13 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import chalk from 'chalk';
-import { logger } from '../../../console/logger.js';
 import { getRelative } from '../../../fs/findFilepath.js';
 import type { Settings } from '../../../types/index.js';
-import {
-  INDEX_PAGE,
-  PAGE_EXTENSIONS,
-} from '../../../utils/localizeStaticUrls.js';
+import { INDEX_PAGE } from '../../../utils/localizeStaticUrls.js';
 import { createFileMapping } from '../fileMapping.js';
 
 /**
@@ -20,216 +15,84 @@ export type MintlifyRedirectSignals = {
   orphanedFileNames: string[];
 };
 
-export type MintlifyRedirectSkipReason =
-  | 'wildcard'
-  | 'external-destination'
-  | 'destination-not-a-page'
-  | 'source-is-a-page'
-  | 'localized-destination-missing'
-  | 'localized-source-taken'
-  | 'unsupported-locale-layout';
-
-export type MintlifyRedirectReport = {
-  added: { locale: string; source: string; destination: string }[];
-  skipped: {
-    source: string;
-    destination: string;
-    locale?: string;
-    reason: MintlifyRedirectSkipReason;
-  }[];
-};
-
 type Redirect = { source: string; destination: string; permanent?: unknown };
-
-type RedirectsLocation = {
-  filePath: string;
-  redirects: unknown[];
-  write: (redirects: unknown[]) => void;
-};
-
-const EXTERNAL_URL_REGEX = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
-const WILDCARD_REGEX = /[:*]/;
-const MAX_REF_DEPTH = 10;
 
 /**
  * Adds localized copies of English redirects for pages that were renamed or
- * removed in this run. Only redirects matched by a signal from the upload step
- * are considered, so redirects that predate the run are never localized.
+ * removed in this run, and returns the redirects it added. Only redirects
+ * matched by a signal from the upload step are considered, so redirects that
+ * predate the run are never localized. A redirect is localized for a locale
+ * only when its destination has a translated page.
  */
 export function localizeMintlifyRedirects(
   settings: Settings,
   signals: MintlifyRedirectSignals
-): MintlifyRedirectReport {
-  const report: MintlifyRedirectReport = { added: [], skipped: [] };
+): Redirect[] {
   if (
     settings.options?.mintlify?.localizeRedirects !== true ||
     !settings.files
   ) {
-    return report;
+    return [];
   }
-
   const docsJsonPath = findDocsJson(settings);
-  if (!docsJsonPath) return report;
+  if (!docsJsonPath) return [];
   const docsDir = path.dirname(docsJsonPath);
 
   // URLs of old pages (renamed or removed) and of pages new in this run
-  const toUrl = (fileName: string) => pageUrl(fileName, docsDir);
-  const oldPageUrls = new Set(
-    [
-      ...signals.movedFiles.map((move) => move.oldFileName),
-      ...signals.orphanedFileNames,
-    ]
-      .map(toUrl)
-      .filter((url): url is string => url !== null)
-  );
-  const newPageUrls = new Set(
-    signals.newFileNames.map(toUrl).filter((url): url is string => url !== null)
-  );
-  if (oldPageUrls.size === 0 && newPageUrls.size === 0) return report;
+  const toUrls = (fileNames: string[]) =>
+    new Set(fileNames.map((fileName) => pageUrl(fileName, docsDir)));
+  const oldPageUrls = toUrls([
+    ...signals.movedFiles.map((move) => move.oldFileName),
+    ...signals.orphanedFileNames,
+  ]);
+  const newPageUrls = toUrls(signals.newFileNames);
 
   const location = readRedirects(docsJsonPath);
-  if (!location) return report;
+  if (!location) return [];
 
   const targetLocales = settings.locales.filter(
     (locale) => locale !== settings.defaultLocale
   );
   const localizedPages = getLocalizedPageUrls(settings, targetLocales, docsDir);
-
-  // Destination of every redirect, keyed by its source
-  const takenSources = new Map(
-    location.redirects
-      .filter(isRedirect)
-      .map((redirect) => [
-        normalizeUrl(redirect.source),
-        normalizeUrl(redirect.destination),
-      ])
+  const takenSources = new Set(
+    location.redirects.filter(isRedirect).map((r) => normalizeUrl(r.source))
   );
-  const handledSources = new Set<string>();
-  const insertions = new Map<number, Redirect[]>();
 
-  location.redirects.forEach((entry, index) => {
-    if (!isRedirect(entry)) return;
-    const { source, destination } = entry;
-    const [destinationPath, ...anchorParts] = destination.split('#');
-    const anchor = anchorParts.length ? `#${anchorParts.join('#')}` : '';
-    const sourceUrl = normalizeUrl(source);
+  const added: Redirect[] = [];
+  const updated = location.redirects.flatMap((entry) => {
+    if (!isRedirect(entry)) return [entry];
+    const [destinationPath, anchor] = splitAnchor(entry.destination);
+    const sourceUrl = normalizeUrl(entry.source);
     const destinationUrl = normalizeUrl(destinationPath);
-
     if (!oldPageUrls.has(sourceUrl) && !newPageUrls.has(destinationUrl)) {
-      return;
-    }
-    if (handledSources.has(sourceUrl)) return;
-    handledSources.add(sourceUrl);
-
-    const skip = (reason: MintlifyRedirectSkipReason, locale?: string) =>
-      report.skipped.push({
-        source,
-        destination,
-        ...(locale && { locale }),
-        reason,
-      });
-
-    if (EXTERNAL_URL_REGEX.test(destinationPath)) {
-      return skip('external-destination');
-    }
-    if (WILDCARD_REGEX.test(source) || WILDCARD_REGEX.test(destinationPath)) {
-      return skip('wildcard');
-    }
-    if (pageExistsAtUrl(sourceUrl, docsDir)) return skip('source-is-a-page');
-    if (!pageExistsAtUrl(destinationUrl, docsDir)) {
-      return skip('destination-not-a-page');
+      return [entry];
     }
 
     const localized: Redirect[] = [];
     for (const locale of targetLocales) {
-      const localizedDestinationUrl = localizedPages
+      const localizedDestination = localizedPages
         .get(locale)
         ?.get(destinationUrl);
-      if (!localizedDestinationUrl) {
-        skip('localized-destination-missing', locale);
-        continue;
-      }
-
-      // The translated destination shows where the locale segment goes
-      const insertion = findInsertedSegment(
+      if (!localizedDestination) continue;
+      const localizedSource = localizeSource(
+        sourceUrl,
         destinationUrl,
-        localizedDestinationUrl
+        localizedDestination
       );
-      const sourceSegments = toSegments(sourceUrl);
-      if (!insertion || insertion.index > sourceSegments.length) {
-        skip('unsupported-locale-layout', locale);
-        continue;
-      }
-
-      const localizedSource = insertSegment(source, insertion);
-      const localizedDestination = `${insertSegment(destinationPath, insertion)}${anchor}`;
-      const takenDestination = takenSources.get(normalizeUrl(localizedSource));
-      if (takenDestination !== undefined) {
-        // A matching redirect is the expected state on later runs, since
-        // removed pages stay orphaned; only a conflicting one is reported
-        if (takenDestination !== normalizeUrl(localizedDestination)) {
-          skip('localized-source-taken', locale);
-        }
-        continue;
-      }
-      takenSources.set(
-        normalizeUrl(localizedSource),
-        normalizeUrl(localizedDestination)
-      );
-
+      if (!localizedSource || takenSources.has(localizedSource)) continue;
+      takenSources.add(localizedSource);
       localized.push({
         source: localizedSource,
-        destination: localizedDestination,
+        destination: `${localizedDestination}${anchor}`,
         ...('permanent' in entry && { permanent: entry.permanent }),
       });
-      report.added.push({
-        locale,
-        source: localizedSource,
-        destination: localizedDestination,
-      });
     }
-    if (localized.length) insertions.set(index, localized);
+    added.push(...localized);
+    return [entry, ...localized];
   });
 
-  if (insertions.size > 0) {
-    location.write(
-      location.redirects.flatMap((entry, index) => [
-        entry,
-        ...(insertions.get(index) ?? []),
-      ])
-    );
-  }
-  return report;
-}
-
-const SKIP_REASON_MESSAGES: Record<MintlifyRedirectSkipReason, string> = {
-  wildcard: 'wildcard redirects are not localized',
-  'external-destination': 'the destination is an external URL',
-  'destination-not-a-page': 'the destination is not a page',
-  'source-is-a-page': 'the source page still exists',
-  'localized-destination-missing': 'the translated destination page is missing',
-  'localized-source-taken':
-    'a redirect for the translated source already points elsewhere',
-  'unsupported-locale-layout':
-    'translated pages do not use a locale path segment',
-};
-
-export function logMintlifyRedirectReport(
-  report: MintlifyRedirectReport
-): void {
-  if (report.added.length > 0) {
-    const locales = [...new Set(report.added.map(({ locale }) => locale))];
-    logger.success(
-      `Added ${report.added.length} localized redirect${report.added.length === 1 ? '' : 's'} (${locales.join(', ')})`
-    );
-  }
-  for (const { source, destination, locale, reason } of report.skipped) {
-    logger.info(
-      chalk.dim(
-        `Skipped localizing redirect ${source} → ${destination}${locale ? ` (${locale})` : ''}: ${SKIP_REASON_MESSAGES[reason]}`
-      )
-    );
-  }
+  if (added.length > 0) location.write(updated);
+  return added;
 }
 
 /**
@@ -246,26 +109,30 @@ function findDocsJson(settings: Settings): string | null {
 
 function isRedirect(entry: unknown): entry is Redirect {
   return (
-    typeof entry === 'object' &&
-    entry !== null &&
-    typeof (entry as Redirect).source === 'string' &&
-    typeof (entry as Redirect).destination === 'string'
+    typeof (entry as Redirect)?.source === 'string' &&
+    typeof (entry as Redirect)?.destination === 'string'
   );
+}
+
+/** Splits `/docs/page#section` into `/docs/page` and `#section`. */
+function splitAnchor(url: string): [string, string] {
+  const anchorStart = url.indexOf('#');
+  return anchorStart === -1
+    ? [url, '']
+    : [url.slice(0, anchorStart), url.slice(anchorStart)];
 }
 
 /**
  * The Mintlify URL of a page file: its path from the docs.json directory
- * without the extension, with index pages named by their folder. Null for
- * files that are not pages or live outside the docs directory.
+ * without the extension, with index pages named by their folder.
  */
-function pageUrl(fileName: string, docsDir: string): string | null {
-  const extension = path.extname(fileName);
-  if (!PAGE_EXTENSIONS.includes(extension)) return null;
+function pageUrl(fileName: string, docsDir: string): string {
   const relative = path.relative(docsDir, path.resolve(fileName));
-  if (relative.startsWith('..') || path.isAbsolute(relative)) return null;
-  const segments = relative.slice(0, -extension.length).split(path.sep);
+  const segments = relative
+    .slice(0, relative.length - path.extname(relative).length)
+    .split(path.sep);
   if (segments[segments.length - 1] === INDEX_PAGE) segments.pop();
-  return `/${segments.join('/')}`;
+  return normalizeUrl(segments.join('/'));
 }
 
 /** Leading slash, no trailing slash, so equivalent spellings compare equal. */
@@ -275,15 +142,6 @@ function normalizeUrl(url: string): string {
 
 function toSegments(url: string): string[] {
   return url.split('/').filter(Boolean);
-}
-
-function pageExistsAtUrl(url: string, docsDir: string): boolean {
-  const base = path.join(docsDir, ...toSegments(url));
-  return PAGE_EXTENSIONS.some(
-    (extension) =>
-      fs.existsSync(`${base}${extension}`) ||
-      fs.existsSync(path.join(base, `${INDEX_PAGE}${extension}`))
-  );
 }
 
 /**
@@ -309,91 +167,76 @@ function getLocalizedPageUrls(
     ...(files.resolvedPaths.mdx ?? []),
   ].map(getRelative);
 
-  const localizedPages = new Map<string, Map<string, string>>();
-  for (const locale of targetLocales) {
-    const urls = new Map<string, string>();
-    for (const sourcePage of sourcePages) {
-      const translatedPage = fileMapping[locale]?.[sourcePage];
-      if (!translatedPage || !fs.existsSync(translatedPage)) continue;
-      const sourceUrl = pageUrl(sourcePage, docsDir);
-      const translatedUrl = pageUrl(translatedPage, docsDir);
-      if (sourceUrl && translatedUrl) urls.set(sourceUrl, translatedUrl);
-    }
-    localizedPages.set(locale, urls);
-  }
-  return localizedPages;
+  return new Map(
+    targetLocales.map((locale) => {
+      const urls = new Map<string, string>();
+      for (const sourcePage of sourcePages) {
+        const translatedPage = fileMapping[locale]?.[sourcePage];
+        if (translatedPage && fs.existsSync(translatedPage)) {
+          urls.set(
+            pageUrl(sourcePage, docsDir),
+            pageUrl(translatedPage, docsDir)
+          );
+        }
+      }
+      return [locale, urls];
+    })
+  );
 }
 
 /**
- * The single path segment a translated URL adds to its English URL, such as
- * `fr-ca` in `/docs/fr-ca/page` for `/docs/page`.
+ * Puts the source under the same locale segment the translated destination
+ * adds, such as `/docs/fr-ca/old` for `/docs/old` when `/docs/new` translates
+ * to `/docs/fr-ca/new`. Null for layouts that do not add one segment.
  */
-function findInsertedSegment(
-  englishUrl: string,
-  localizedUrl: string
-): { index: number; segment: string } | null {
-  const english = toSegments(englishUrl);
-  const localized = toSegments(localizedUrl);
-  if (localized.length !== english.length + 1) return null;
-  for (let index = 0; index < localized.length; index++) {
-    const withoutSegment = [
-      ...localized.slice(0, index),
-      ...localized.slice(index + 1),
-    ];
-    if (withoutSegment.every((segment, i) => segment === english[i])) {
-      return { index, segment: localized[index] };
-    }
+function localizeSource(
+  sourceUrl: string,
+  destinationUrl: string,
+  localizedDestinationUrl: string
+): string | null {
+  const english = toSegments(destinationUrl);
+  const localized = toSegments(localizedDestinationUrl);
+  let index = 0;
+  while (index < english.length && english[index] === localized[index]) {
+    index++;
   }
-  return null;
-}
+  const addsOneSegment =
+    localized.length === english.length + 1 &&
+    localized.slice(index + 1).join('/') === english.slice(index).join('/');
+  if (!addsOneSegment) return null;
 
-/** Inserts the locale segment, keeping the URL's leading and trailing slashes. */
-function insertSegment(
-  url: string,
-  { index, segment }: { index: number; segment: string }
-): string {
-  const leading = url.match(/^\/*/)?.[0] ?? '';
-  const trailing = url.length > leading.length ? url.match(/\/*$/)?.[0] : '';
-  const segments = toSegments(url);
-  segments.splice(index, 0, segment);
-  return `${leading}${segments.join('/')}${trailing ?? ''}`;
+  const segments = toSegments(sourceUrl);
+  segments.splice(index, 0, localized[index]);
+  return `/${segments.join('/')}`;
 }
 
 /**
- * Finds the redirects array in docs.json, following `$ref` files the way
- * Mintlify resolves them, and returns a writer for the file that holds it.
+ * Finds the redirects array in docs.json, either inline or in the file its
+ * `$ref` points to, and returns a writer for the file that holds it.
  */
-function readRedirects(docsJsonPath: string): RedirectsLocation | null {
-  const docsJson = readJson(docsJsonPath);
-  if (!isObject(docsJson) || !('redirects' in docsJson)) return null;
-
-  let filePath = docsJsonPath;
-  let value: unknown = docsJson.redirects;
-  for (let depth = 0; depth < MAX_REF_DEPTH; depth++) {
-    if (Array.isArray(value)) {
-      const redirects = value;
-      const holder = filePath;
+function readRedirects(
+  docsJsonPath: string
+): { redirects: unknown[]; write: (redirects: unknown[]) => void } | null {
+  const docsJson = readJson(docsJsonPath) as Record<string, unknown> | null;
+  const redirects = docsJson?.redirects as { $ref?: unknown } | undefined;
+  if (Array.isArray(redirects)) {
+    return {
+      redirects,
+      write: (updated) =>
+        writeJson(docsJsonPath, { ...docsJson, redirects: updated }),
+    };
+  }
+  if (typeof redirects?.$ref === 'string') {
+    const refPath = path.resolve(path.dirname(docsJsonPath), redirects.$ref);
+    const referenced = readJson(refPath);
+    if (Array.isArray(referenced)) {
       return {
-        filePath: holder,
-        redirects,
-        write: (updated) => {
-          if (holder === docsJsonPath) {
-            writeJson(holder, { ...docsJson, redirects: updated });
-          } else {
-            writeJson(holder, updated);
-          }
-        },
+        redirects: referenced,
+        write: (updated) => writeJson(refPath, updated),
       };
     }
-    if (!isObject(value) || typeof value.$ref !== 'string') return null;
-    filePath = path.resolve(path.dirname(filePath), value.$ref);
-    value = readJson(filePath);
   }
   return null;
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function readJson(filePath: string): unknown {
@@ -405,11 +248,5 @@ function readJson(filePath: string): unknown {
 }
 
 function writeJson(filePath: string, value: unknown): void {
-  const trailingNewline = fs.readFileSync(filePath, 'utf8').endsWith('\n')
-    ? '\n'
-    : '';
-  fs.writeFileSync(
-    filePath,
-    `${JSON.stringify(value, null, 2)}${trailingNewline}`
-  );
+  fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`);
 }

@@ -115,10 +115,7 @@ import { detectFramework } from '../setup/detectFramework.js';
 import { INLINE_LIBRARIES, Libraries } from '../types/libraries.js';
 import { handleEnqueue } from './commands/enqueue.js';
 import { splitMintlifyLanguageRefs } from '../utils/splitMintlifyLanguageRefs.js';
-import {
-  localizeMintlifyRedirects,
-  logMintlifyRedirectReport,
-} from '../formats/files/postprocess/localizeMintlifyRedirects.js';
+import { localizeMintlifyRedirects } from '../formats/files/postprocess/localizeMintlifyRedirects.js';
 import {
   clearRedirectSignals,
   getRedirectSignals,
@@ -748,9 +745,12 @@ export class BaseCLI {
     // split, which can rewrite $ref files such as redirects.json
     const redirectSignals = getRedirectSignals();
     if (redirectSignals) {
-      logMintlifyRedirectReport(
-        localizeMintlifyRedirects(settings, redirectSignals)
-      );
+      const added = localizeMintlifyRedirects(settings, redirectSignals);
+      if (added.length > 0) {
+        logger.success(
+          `Added ${added.length} localized redirect${added.length === 1 ? '' : 's'}`
+        );
+      }
     }
     clearRedirectSignals();
     // Mirror assets after translations are downloaded and locale dirs are populated
