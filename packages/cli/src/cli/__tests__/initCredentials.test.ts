@@ -184,6 +184,55 @@ describe('init development credentials', () => {
     );
   });
 
+  // Pressing Enter at the credentials prompt accepts its default.
+  function pressEnterForCredentials(): void {
+    vi.mocked(promptConfirm).mockImplementation(
+      async ({ message, defaultValue }) =>
+        message.includes('hot-reload key') ? (defaultValue ?? false) : true
+    );
+  }
+
+  it('defaults the credentials prompt to No when signed out, without signing in', async () => {
+    vi.mocked(hasLogin).mockResolvedValue(false);
+    pressEnterForCredentials();
+
+    await runInit();
+
+    expect(promptConfirm).toHaveBeenCalledWith({
+      message: expect.stringContaining('hot-reload key'),
+      defaultValue: false,
+    });
+    expect(login).not.toHaveBeenCalled();
+    expect(api.listProjects).not.toHaveBeenCalled();
+    expect(api.createProjectApiKey).not.toHaveBeenCalled();
+    expect(fs.existsSync(envPath())).toBe(false);
+  });
+
+  it('defaults the credentials prompt to Yes when signed in', async () => {
+    pressEnterForCredentials();
+    vi.mocked(promptSelect).mockResolvedValueOnce(projects[1]);
+
+    await runInit();
+
+    expect(promptConfirm).toHaveBeenCalledWith({
+      message: expect.stringContaining('hot-reload key'),
+      defaultValue: true,
+    });
+    expect(login).not.toHaveBeenCalled();
+    expect(api.createProjectApiKey).toHaveBeenCalledTimes(1);
+  });
+
+  it('names the project and key it created without printing the key', async () => {
+    vi.mocked(promptSelect).mockResolvedValueOnce(projects[1]);
+
+    await runInit();
+
+    const success = vi.mocked(logger.success).mock.calls.flat().join('\n');
+    expect(success).toContain('App (p2)');
+    expect(success).toContain('Development key (gt init)');
+    expect(success).not.toContain('gtx-secret-development-key');
+  });
+
   it('forwards --config/--src and the detected framework to config and env output', async () => {
     vi.mocked(detectFramework).mockResolvedValue({
       name: 'next-pages',

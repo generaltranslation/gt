@@ -1319,6 +1319,11 @@ See https://www.npmjs.com/package/gt-vue`);
     const credentialsOption =
       (storage === 'local' && buildTool?.devCredentialsOption) ||
       '--dev-credentials';
+    // Creating credentials talks to GT as the signed-in user unless an API
+    // key is set. A development key in .env.local never stands in.
+    const canAuthenticate = async () =>
+      Boolean(settings.apiKey) ||
+      (await hasLogin({ baseUrl: settings.baseUrl }));
     const provision =
       !credentialsSet &&
       (credentialsOption === '--live-translations'
@@ -1335,11 +1340,12 @@ See https://www.npmjs.com/package/gt-vue`);
         : await session.answer('--dev-credentials or --no-dev-credentials', {
             explicit: options.devCredentials,
             // Creating a key is never a default, so --defaults leaves this open.
-            ask: () =>
+            ask: async () =>
               promptConfirm({
                 message:
                   'Would you like to set up a project ID and hot-reload key in .env.local?',
-                defaultValue: true,
+                // Signing in is never a default.
+                defaultValue: await canAuthenticate(),
               }),
           })) === true;
     if (!runtimeProjectMatches && !provision) {
@@ -1382,13 +1388,7 @@ See https://www.npmjs.com/package/gt-vue`);
 
     session.assertResolved();
 
-    // Only creating credentials talks to GT, as the signed-in user unless an
-    // API key is set. A development key in .env.local never stands in.
-    if (
-      provision &&
-      !settings.apiKey &&
-      !(await hasLogin({ baseUrl: settings.baseUrl }))
-    ) {
+    if (provision && !(await canAuthenticate())) {
       await signInForSetup(session, settings.baseUrl);
     }
     const project = provision

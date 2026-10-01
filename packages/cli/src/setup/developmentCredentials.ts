@@ -45,7 +45,7 @@ type ProjectChoice = Awaited<ReturnType<typeof api.listProjects>>[number];
 
 /** An existing project, or the inputs for creating one. */
 export type DevelopmentProject =
-  | { id: string }
+  | { id: string; name?: string }
   | { create: { orgId: string; name: string } };
 
 export type DevelopmentProjectOptions = {
@@ -195,7 +195,7 @@ export async function resolveDevelopmentProject(
   );
   if (choice === undefined) return undefined;
   return choice
-    ? { id: choice.id }
+    ? { id: choice.id, name: choice.name }
     : resolveNewProject(session, settings, options, cwd);
 }
 
@@ -212,8 +212,10 @@ export async function provisionDevelopmentCredentials(
   cwd: string = process.cwd()
 ): Promise<void> {
   let projectId: string;
+  let projectName: string | undefined;
   if ('id' in project) {
     projectId = project.id;
+    projectName = project.name;
   } else {
     const { orgId, name } = project.create;
     const { project: created } = await api
@@ -225,6 +227,7 @@ export async function provisionDevelopmentCredentials(
     logger.info(`Created ${created.name} (${created.id})`);
     session.step(`created project ${created.id}`);
     projectId = created.id;
+    projectName = created.name;
   }
   const { apiKey } = await api.createProjectApiKey(projectId, {
     name: DEVELOPMENT_KEY_NAME,
@@ -233,7 +236,10 @@ export async function provisionDevelopmentCredentials(
   session.step('created a development key');
   await setCredentials({ projectId, apiKey: apiKey.key }, framework, cwd);
   session.step('saved development credentials to .env.local');
+  const projectLabel = projectName
+    ? `${projectName} (${projectId})`
+    : projectId;
   logger.success(
-    `Saved the project ID and a development key to ${chalk.cyan('.env.local')}.`
+    `Created development key "${apiKey.name}" for project ${projectLabel} and saved both to ${chalk.cyan('.env.local')}.`
   );
 }
