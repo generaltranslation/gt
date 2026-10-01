@@ -1258,6 +1258,33 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       expect(output).not.toMatch(/(Created|Updated) config file/);
     });
 
+    it.each([
+      ['--no-dev-credentials', '--live-translations'],
+      ['--dev-credentials', '--no-live-translations'],
+    ])(
+      'rejects %s with %s before any change',
+      async (credentialsFlag, liveFlag) => {
+        await expect(
+          run(
+            'configure',
+            '--json',
+            '--defaults',
+            '--locales',
+            'fr',
+            credentialsFlag,
+            liveFlag
+          )
+        ).rejects.toThrow(`${credentialsFlag} and ${liveFlag} contradict`);
+
+        expect(events().at(-1)).toMatchObject({
+          outcome: 'failed',
+          completedSteps: [],
+        });
+        expect(hasLogin).not.toHaveBeenCalled();
+        expect(fs.readdirSync(appDirectory)).toEqual(['package.json']);
+      }
+    );
+
     it('names both credential answers when --defaults leaves them open', async () => {
       const error = await run(
         'init',
