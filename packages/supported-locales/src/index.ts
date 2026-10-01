@@ -5,11 +5,6 @@ import {
   standardizeLocale,
 } from 'generaltranslation';
 
-// Tags listed by earlier releases under an invalid spelling.
-const renamedLocales: ReadonlyMap<string, string> = new Map([
-  ['el-EL', 'el-GR'],
-]);
-
 /**
  * @function getSupportedLocale
  * @description
@@ -24,8 +19,6 @@ const renamedLocales: ReadonlyMap<string, string> = new Map([
  * @returns {string | null} A valid supported locale code if matched, otherwise null.
  */
 export function getSupportedLocale(locale: string): string | null {
-  locale = renamedLocales.get(locale) ?? locale;
-
   // Validate and standardize
   if (!isValidLocale(locale)) return null;
   locale = standardizeLocale(locale);

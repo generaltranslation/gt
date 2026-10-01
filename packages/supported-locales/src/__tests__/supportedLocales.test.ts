@@ -26,9 +26,9 @@ describe('@generaltranslation/supported-locales', () => {
     }
   );
 
-  it('maps the former el-EL listing to el-GR', () => {
-    expect(listSupportedLocales()).not.toContain('el-EL');
-    expect(getSupportedLocale('el-EL')).toBe('el-GR');
+  it('supports Greek (Greece)', () => {
+    expect(listSupportedLocales()).toContain('el-GR');
+    expect(getSupportedLocale('el-GR')).toBe('el-GR');
   });
 
   it('supports Mexican English', () => {
