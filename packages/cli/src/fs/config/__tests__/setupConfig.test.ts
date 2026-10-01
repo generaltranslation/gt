@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { GT_CONFIG_SCHEMA_URL } from '../../../utils/constants.js';
-import { createOrUpdateConfig } from '../setupConfig.js';
+import { applySetupConfig, createOrUpdateConfig } from '../setupConfig.js';
 
 describe('createOrUpdateConfig', () => {
   let testDirectory: string;
@@ -78,7 +78,7 @@ describe('createOrUpdateConfig', () => {
     testDirectory = fs.mkdtempSync(path.join(tmpdir(), 'gt-config-'));
     const configPath = path.join(testDirectory, 'gt.config.json');
 
-    expect(await createOrUpdateConfig(configPath, { locales: ['ja'] })).toBe(
+    expect(await applySetupConfig(configPath, { locales: ['ja'] })).toBe(
       'created'
     );
     expect(fs.readFileSync(configPath, 'utf8')).toMatch(/^\{\n  ".*\}\n$/s);
@@ -90,7 +90,7 @@ describe('createOrUpdateConfig', () => {
     const content = `{\n    "locales": ["ja"],\n    "$schema": "${GT_CONFIG_SCHEMA_URL}"\n}`;
     fs.writeFileSync(configPath, content);
 
-    expect(await createOrUpdateConfig(configPath, { locales: ['ja'] })).toBe(
+    expect(await applySetupConfig(configPath, { locales: ['ja'] })).toBe(
       'unchanged'
     );
     expect(fs.readFileSync(configPath, 'utf8')).toBe(content);
@@ -104,11 +104,26 @@ describe('createOrUpdateConfig', () => {
       `${JSON.stringify({ $schema: GT_CONFIG_SCHEMA_URL, locales: ['fr'] }, null, 4)}\n`
     );
 
-    expect(await createOrUpdateConfig(configPath, { locales: ['ja'] })).toBe(
+    expect(await applySetupConfig(configPath, { locales: ['ja'] })).toBe(
       'updated'
     );
     expect(fs.readFileSync(configPath, 'utf8')).toBe(
       `${JSON.stringify({ $schema: GT_CONFIG_SCHEMA_URL, locales: ['ja'] }, null, 4)}\n`
+    );
+  });
+
+  it('returns the config filepath whether it creates, updates, or keeps the config', async () => {
+    testDirectory = fs.mkdtempSync(path.join(tmpdir(), 'gt-config-'));
+    const configPath = path.join(testDirectory, 'gt.config.json');
+
+    expect(await createOrUpdateConfig(configPath, { locales: ['fr'] })).toBe(
+      configPath
+    );
+    expect(await createOrUpdateConfig(configPath, { locales: ['ja'] })).toBe(
+      configPath
+    );
+    expect(await createOrUpdateConfig(configPath, { locales: ['ja'] })).toBe(
+      configPath
     );
   });
 

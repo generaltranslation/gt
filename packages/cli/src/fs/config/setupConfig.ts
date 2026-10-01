@@ -90,9 +90,10 @@ export type SetupConfigChange = 'created' | 'updated' | 'unchanged';
  * already has the update is not rewritten.
  * @param {string} configFilepath - The path to the config file.
  * @param {SetupConfigUpdate} options - The values setup resolved.
+ * @returns Whether the config was created, updated, or left unchanged.
  * @throws When the existing file is not valid JSON or cannot be written.
  */
-export async function createOrUpdateConfig(
+export async function applySetupConfig(
   configFilepath: string,
   options: SetupConfigUpdate
 ): Promise<SetupConfigChange> {
@@ -141,4 +142,20 @@ export async function createOrUpdateConfig(
       })
     );
   }
+}
+
+/**
+ * Same as {@link applySetupConfig}, keeping the published contract of
+ * returning the config filepath.
+ * @param {string} configFilepath - The path to the config file.
+ * @param {SetupConfigUpdate} options - The values setup resolved.
+ * @returns The config filepath.
+ * @throws When the existing file is not valid JSON or cannot be written.
+ */
+export async function createOrUpdateConfig(
+  configFilepath: string,
+  options: SetupConfigUpdate
+): Promise<string> {
+  await applySetupConfig(configFilepath, options);
+  return configFilepath;
 }

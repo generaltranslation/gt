@@ -5,7 +5,7 @@ import {
   REACT_QUICKSTART_URL,
 } from '../utils/constants.js';
 import {
-  createOrUpdateConfig,
+  applySetupConfig,
   mergeSetupConfig,
   type SetupConfigUpdate,
 } from '../fs/config/setupConfig.js';
@@ -1539,10 +1539,7 @@ See https://www.npmjs.com/package/gt-vue`);
       }
     }
 
-    const configChange = await createOrUpdateConfig(
-      configFilepath,
-      configUpdate
-    );
+    const configChange = await applySetupConfig(configFilepath, configUpdate);
     if (configChange !== 'unchanged') {
       session.step(`${configChange} ${configFilepath}`);
     }
