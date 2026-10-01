@@ -14,6 +14,10 @@ vi.mock('../../console/logger.js', () => ({
 const IGNORED_BUILDS_OUTPUT =
   '[ERR_PNPM_IGNORED_BUILDS] Ignored build scripts: esbuild@0.27.7, @scope/native@1.0.0\n\nRun "pnpm approve-builds" to pick which dependencies should be allowed to run scripts.';
 
+/** pnpm 11.28.3 stdout with `FORCE_COLOR=1`: brackets, code and message are colored separately. */
+const COLORED_IGNORED_BUILDS_OUTPUT =
+  '\u001b[41m\u001b[31m[\u001b[39m\u001b[49m\u001b[41m\u001b[30mERR_PNPM_IGNORED_BUILDS\u001b[39m\u001b[49m\u001b[41m\u001b[31m]\u001b[39m\u001b[49m \u001b[31mIgnored build scripts: esbuild@0.27.7\u001b[39m\n\nRun "pnpm approve-builds" to pick which dependencies should be allowed to run scripts.';
+
 /** pnpm 11.28.3 stdout when an allowed postinstall echoes the marker and fails. */
 const LIFECYCLE_FAILURE_OUTPUT = `.../node_modules/failing-native postinstall$ echo '[ERR_PNPM_IGNORED_BUILDS] Ignored build scripts: nested@1.0.0'; exit 1
 .../node_modules/failing-native postinstall: [ERR_PNPM_IGNORED_BUILDS] Ignored build scripts: nested@1.0.0
@@ -77,6 +81,42 @@ describe('installPackage', () => {
       allowBuilds: { esbuild: false, '@scope/native': false },
     });
     expect(warning).toContain('`pnpm approve-builds`');
+  });
+
+  it('warns instead of failing when pnpm colors its ignored-builds error', async () => {
+    writeInstalledPackage('gt');
+
+    await expect(
+      installPackage(
+        'gt',
+        createFailingPnpm(COLORED_IGNORED_BUILDS_OUTPUT),
+        true,
+        cwd
+      )
+    ).resolves.toBeUndefined();
+
+    expect(logger.error).not.toHaveBeenCalled();
+    expect(logger.warn).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(logger.warn).mock.calls[0][0]).toContain(
+      '`"esbuild": false`'
+    );
+  });
+
+  it('classifies the end of an install log longer than the capture limit', async () => {
+    writeInstalledPackage('gt');
+    const verboseLog = 'Progress: resolved 1, reused 1, downloaded 0\n'.repeat(
+      30_000
+    );
+
+    await expect(
+      installPackage(
+        'gt',
+        createFailingPnpm(`${verboseLog}${IGNORED_BUILDS_OUTPUT}`),
+        true,
+        cwd
+      )
+    ).resolves.toBeUndefined();
+    expect(logger.warn).toHaveBeenCalledTimes(1);
   });
 
   it('fails when pnpm ignored build scripts but the package is missing', async () => {

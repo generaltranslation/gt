@@ -22,28 +22,71 @@ export const startInstance = createStart(() => ({
 `;
 
 /**
- * Whether the imported gtMiddleware is listed in a requestMiddleware array.
- * Comments, other middleware arrays and unrelated locals do not count.
+ * The options object returned by `export const startInstance = createStart(...)`,
+ * the entry Start reads. Only a callback that returns an object literal
+ * directly counts; any other shape is left for manual setup.
+ */
+function getStartOptions(start: SourceFile): t.ObjectExpression | undefined {
+  const createStart = getLocalImport(
+    start,
+    'createStart',
+    '@tanstack/react-start'
+  );
+  if (!createStart) return undefined;
+  for (const statement of start.statements ?? []) {
+    if (statement.type !== 'ExportNamedDeclaration') continue;
+    if (statement.declaration?.type !== 'VariableDeclaration') continue;
+    for (const { id, init } of statement.declaration.declarations) {
+      if (
+        !t.isIdentifier(id, { name: 'startInstance' }) ||
+        init?.type !== 'CallExpression' ||
+        !t.isIdentifier(init.callee, { name: createStart })
+      ) {
+        continue;
+      }
+      const getOptions = init.arguments[0];
+      if (
+        getOptions?.type !== 'ArrowFunctionExpression' &&
+        getOptions?.type !== 'FunctionExpression'
+      ) {
+        return undefined;
+      }
+      const { body } = getOptions;
+      const options =
+        body.type !== 'BlockStatement'
+          ? body
+          : body.body.length === 1 && body.body[0].type === 'ReturnStatement'
+            ? body.body[0].argument
+            : undefined;
+      return options?.type === 'ObjectExpression' ? options : undefined;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Whether the imported gtMiddleware is in the one requestMiddleware array of
+ * the startInstance options. A spread or computed key could override it.
  */
 export function registersMiddleware(start: SourceFile): boolean {
   const local = getLocalImport(start, 'gtMiddleware');
-  if (!local) return false;
-  let found = false;
-  for (const statement of start.statements ?? []) {
-    t.traverseFast(statement, (node) => {
-      if (
-        node.type === 'ObjectProperty' &&
-        getPropertyName(node) === 'requestMiddleware' &&
-        node.value.type === 'ArrayExpression' &&
-        node.value.elements.some(
-          (element) => element?.type === 'Identifier' && element.name === local
-        )
-      ) {
-        found = true;
-      }
-    });
+  const options = local ? getStartOptions(start) : undefined;
+  if (!options) return false;
+  const names = options.properties.map(getPropertyName);
+  if (
+    names.includes(undefined) ||
+    names.filter((name) => name === 'requestMiddleware').length !== 1
+  ) {
+    return false;
   }
-  return found;
+  const middleware = options.properties[names.indexOf('requestMiddleware')];
+  return (
+    middleware.type === 'ObjectProperty' &&
+    middleware.value.type === 'ArrayExpression' &&
+    middleware.value.elements.some((element) =>
+      t.isIdentifier(element, { name: local })
+    )
+  );
 }
 
 export function getMiddlewareAction(startPath: string): ManualAction {
