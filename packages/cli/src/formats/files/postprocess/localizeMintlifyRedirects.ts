@@ -1,9 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
+import { logger } from '../../../console/logger.js';
 import { getRelative } from '../../../fs/findFilepath.js';
 import type { Settings } from '../../../types/index.js';
 import {
   INDEX_PAGE,
+  PAGE_EXTENSIONS,
   transformUrlPath,
 } from '../../../utils/localizeStaticUrls.js';
 import { createFileMapping } from '../fileMapping.js';
@@ -20,6 +23,14 @@ export type MintlifyRedirectSignals = {
 
 type Redirect = { source: string; destination: string; permanent?: unknown };
 
+const missingDocsUrlPatternWarning = createDiagnosticMessage({
+  source: 'gt',
+  severity: 'Warning',
+  whatHappened: 'Localized redirects were not added',
+  why: 'options.mintlify.localizeRedirects uses options.docsUrlPattern to place the locale in redirect URLs',
+  fix: 'Set options.docsUrlPattern in gt.config.json, such as "/docs/[locale]"',
+});
+
 /**
  * Adds localized copies of English redirects for pages that were renamed or
  * removed in this run, and returns the redirects it added. Only redirects
@@ -32,12 +43,15 @@ export function localizeMintlifyRedirects(
   settings: Settings,
   signals: MintlifyRedirectSignals
 ): Redirect[] {
-  const urlPattern = settings.options?.docsUrlPattern;
   if (
     settings.options?.mintlify?.localizeRedirects !== true ||
-    !urlPattern ||
     !settings.files
   ) {
+    return [];
+  }
+  const urlPattern = settings.options.docsUrlPattern;
+  if (!urlPattern) {
+    logger.warn(missingDocsUrlPatternWarning);
     return [];
   }
   const docsJsonPath = findDocsJson(settings);
@@ -46,7 +60,11 @@ export function localizeMintlifyRedirects(
 
   // URLs of old pages (renamed or removed) and of pages new in this run
   const toUrls = (fileNames: string[]) =>
-    new Set(fileNames.map((fileName) => pageUrl(fileName, docsDir)));
+    new Set(
+      fileNames
+        .filter((fileName) => PAGE_EXTENSIONS.includes(path.extname(fileName)))
+        .map((fileName) => pageUrl(fileName, docsDir))
+    );
   const oldPageUrls = toUrls([
     ...signals.movedFiles.map((move) => move.oldFileName),
     ...signals.orphanedFileNames,
@@ -97,6 +115,7 @@ export function localizeMintlifyRedirects(
       if (
         !localizedSource ||
         !localizedDestination ||
+        localizedSource === localizedDestination ||
         !translatedPageUrls.has(localizedDestination) ||
         takenSources.has(localizedSource)
       ) {
@@ -206,32 +225,35 @@ function getTranslatedPageUrls(
 }
 
 /**
- * Finds the redirects array in docs.json, either inline or in the file its
- * `$ref` points to, and returns a writer for the file that holds it.
+ * Finds the redirects array in docs.json, either inline or at the end of its
+ * `$ref` chain, and returns a writer for the file that holds it.
  */
 function readRedirects(
   docsJsonPath: string
 ): { redirects: unknown[]; write: (redirects: unknown[]) => void } | null {
   const docsJson = readJson(docsJsonPath) as Record<string, unknown> | null;
-  const redirects = docsJson?.redirects as { $ref?: unknown } | undefined;
-  if (Array.isArray(redirects)) {
-    return {
-      redirects,
-      write: (updated) =>
-        writeJson(docsJsonPath, { ...docsJson, redirects: updated }),
-    };
+  let holder = docsJsonPath;
+  let value = docsJson?.redirects;
+  const visited = new Set([holder]);
+  while (typeof (value as { $ref?: unknown })?.$ref === 'string') {
+    holder = path.resolve(
+      path.dirname(holder),
+      (value as { $ref: string }).$ref
+    );
+    if (visited.has(holder)) return null;
+    visited.add(holder);
+    value = readJson(holder);
   }
-  if (typeof redirects?.$ref === 'string') {
-    const refPath = path.resolve(path.dirname(docsJsonPath), redirects.$ref);
-    const referenced = readJson(refPath);
-    if (Array.isArray(referenced)) {
-      return {
-        redirects: referenced,
-        write: (updated) => writeJson(refPath, updated),
-      };
-    }
-  }
-  return null;
+  if (!Array.isArray(value)) return null;
+
+  const redirectsFile = holder;
+  return {
+    redirects: value,
+    write: (updated) =>
+      redirectsFile === docsJsonPath
+        ? writeJson(docsJsonPath, { ...docsJson, redirects: updated })
+        : writeJson(redirectsFile, updated),
+  };
 }
 
 function readJson(filePath: string): unknown {

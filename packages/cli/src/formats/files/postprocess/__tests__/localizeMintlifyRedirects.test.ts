@@ -231,6 +231,27 @@ describe('localizeMintlifyRedirects', () => {
     expect(added).toEqual([]);
   });
 
+  it('never writes a localized redirect to itself', async () => {
+    // guide/index.mdx moved to guide.mdx, which keeps the same URL
+    setup([{ source: '/docs/guide/index', destination: '/docs/guide' }]);
+    page('guide');
+    const before = read('docs.json');
+
+    await run(moved('guide/index', 'guide'));
+
+    expect(read('docs.json')).toBe(before);
+  });
+
+  it('ignores signals for files that are not pages', async () => {
+    setup([{ source: '/docs/spec', destination: '/docs/new' }]);
+    page('new');
+    const before = read('docs.json');
+
+    await run(signals({ orphanedFileNames: ['docs/spec.json'] }));
+
+    expect(read('docs.json')).toBe(before);
+  });
+
   it('leaves redirects alone that no signal matched', async () => {
     setup([
       { source: '/docs/legacy', destination: '/docs/edited' },
@@ -298,6 +319,28 @@ describe('localizeMintlifyRedirects', () => {
 
     expect(read('docs.json')).toBe(docsJsonBefore);
     expect(readRedirects('config/redirects.json')).toHaveLength(3);
+  });
+
+  it('follows a chain of $ref files to the redirects array', async () => {
+    setup({ $ref: './config/redirects.json' });
+    writeJson('config/redirects.json', { $ref: './generated/redirects.json' });
+    writeJson('config/generated/redirects.json', [
+      { source: '/docs/old', destination: '/docs/new' },
+    ]);
+    page('new');
+
+    await run(moved('old', 'new'));
+
+    expect(readRedirects('config/generated/redirects.json')).toHaveLength(3);
+  });
+
+  it('stops at a $ref cycle', async () => {
+    setup({ $ref: './a.json' });
+    writeJson('a.json', { $ref: './b.json' });
+    writeJson('b.json', { $ref: './a.json' });
+    page('new');
+
+    expect(await run(moved('old', 'new'))).toEqual([]);
   });
 
   it('uses an included docs.json, building URLs from its directory', async () => {
