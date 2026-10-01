@@ -17,7 +17,7 @@ const config = {
   localeRouting: true,
 };
 
-describe('request locale aliases', () => {
+describe.sequential('request locale aliases', () => {
   beforeEach(() => {
     Reflect.deleteProperty(globalThis, '__generaltranslation');
     initializeI18nConfig(config);
@@ -29,7 +29,6 @@ describe('request locale aliases', () => {
 
   it.each([
     { path: '/', headers: { cookie: 'generaltranslation.locale=en-GB' } },
-    { path: '/', headers: { cookie: 'generaltranslation.locale=en-gb' } },
     { path: '/', headers: { 'accept-language': 'en-GB' } },
     {
       path: '/en-gb/docs',
@@ -44,13 +43,23 @@ describe('request locale aliases', () => {
       });
 
       expect(store.run(request, () => store.getLocale())).toBe('en-gb');
-      expect(setCookie).toHaveBeenCalledWith(
+      expect(setCookie).toHaveBeenCalledExactlyOnceWith(
         'generaltranslation.locale',
         'en-gb',
         expect.any(Object)
       );
     }
   );
+
+  it('exposes but does not rewrite a cookie that already holds the alias', () => {
+    const store = new AsyncLocalConditionStore(config);
+    const request = new Request('https://example.com/', {
+      headers: { cookie: 'generaltranslation.locale=en-gb' },
+    });
+
+    expect(store.run(request, () => store.getLocale())).toBe('en-gb');
+    expect(setCookie).not.toHaveBeenCalled();
+  });
 
   it('aliases the default locale when no candidate is supported', () => {
     const store = new AsyncLocalConditionStore(config);
