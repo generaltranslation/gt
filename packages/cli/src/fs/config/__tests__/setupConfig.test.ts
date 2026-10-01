@@ -96,6 +96,29 @@ describe('createOrUpdateConfig', () => {
     expect(fs.readFileSync(configPath, 'utf8')).toBe(content);
   });
 
+  it('keeps the top-level indentation when a nested key comes first', async () => {
+    testDirectory = fs.mkdtempSync(path.join(tmpdir(), 'gt-config-'));
+    const configPath = path.join(testDirectory, 'gt.config.json');
+    fs.writeFileSync(
+      configPath,
+      `{"$schema": "${GT_CONFIG_SCHEMA_URL}", "files": {\n    "gt": {"output": "a"}\n  },\n  "locales": ["fr"]\n}\n`
+    );
+
+    await applySetupConfig(configPath, { locales: ['ja'] });
+
+    expect(fs.readFileSync(configPath, 'utf8')).toBe(
+      `${JSON.stringify(
+        {
+          $schema: GT_CONFIG_SCHEMA_URL,
+          files: { gt: { output: 'a' } },
+          locales: ['ja'],
+        },
+        null,
+        2
+      )}\n`
+    );
+  });
+
   it('keeps the indentation and trailing newline of an updated config', async () => {
     testDirectory = fs.mkdtempSync(path.join(tmpdir(), 'gt-config-'));
     const configPath = path.join(testDirectory, 'gt.config.json');

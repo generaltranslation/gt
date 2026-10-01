@@ -117,7 +117,12 @@ export async function applySetupConfig(
     if (oldText !== undefined && isDeepStrictEqual(mergedContent, oldContent))
       return 'unchanged';
 
-    const indent = oldText?.match(/^[ \t]+(?=")/m)?.[0] ?? 2;
+    // Nested keys are indented further, so the shallowest key line is the
+    // file's own indent unit.
+    const indent =
+      [...(oldText ?? '').matchAll(/^[ \t]+(?=")/gm)]
+        .map(([match]) => match)
+        .sort((a, b) => a.length - b.length)[0] ?? 2;
     const newline = oldText === undefined || oldText.endsWith('\n') ? '\n' : '';
     await fs.promises.writeFile(
       configFilepath,
