@@ -291,12 +291,14 @@ export async function getPackageManager(
     if (packageManager) return packageManager;
   }
 
-  // The nearest lockfile, packageManager or devEngines field wins, so a
-  // workspace member inherits its root's manager. The walk stops at the git
-  // root so an unrelated parent project cannot claim a standalone app. The
-  // npx launcher's manager says nothing about the target project.
+  // The nearest packageManager field, devEngines field or lockfile wins, so
+  // a workspace member inherits its root's manager. A declaration comes first
+  // so a rush.json cannot mask it. The walk stops at the git root so an
+  // unrelated parent project cannot claim a standalone app. The npx
+  // launcher's manager says nothing about the target project.
   const detected = await detect({
     cwd,
+    strategies: ['packageManager-field', 'devEngines-field', 'lockfile'],
     stopDir: (dir) => fs.existsSync(path.join(dir, '.git')),
   });
   const packageManager = detected && DETECTED_PACKAGE_MANAGERS[detected.agent];
