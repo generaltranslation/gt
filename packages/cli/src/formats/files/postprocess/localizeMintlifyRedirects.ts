@@ -3,6 +3,7 @@ import path from 'node:path';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { logger } from '../../../console/logger.js';
 import { getRelative } from '../../../fs/findFilepath.js';
+import loadJSON from '../../../fs/loadJSON.js';
 import type { Settings } from '../../../types/index.js';
 import {
   INDEX_PAGE,
@@ -206,9 +207,9 @@ function toSegments(url: string): string[] {
 function readRedirects(
   docsJsonPath: string
 ): { redirects: unknown[]; write: (redirects: unknown[]) => void } | null {
-  const docsJson = readJson(docsJsonPath) as Record<string, unknown> | null;
+  const docsJson = loadJSON(docsJsonPath);
   let holder = docsJsonPath;
-  let value = docsJson?.redirects;
+  let value: unknown = docsJson?.redirects;
   const visited = new Set([holder]);
   while (typeof (value as { $ref?: unknown })?.$ref === 'string') {
     holder = path.resolve(
@@ -217,7 +218,7 @@ function readRedirects(
     );
     if (visited.has(holder)) return null;
     visited.add(holder);
-    value = readJson(holder);
+    value = loadJSON(holder);
   }
   if (!Array.isArray(value)) return null;
 
@@ -225,20 +226,15 @@ function readRedirects(
   return {
     redirects: value,
     write: (updated) =>
-      redirectsFile === docsJsonPath
-        ? writeJson(docsJsonPath, { ...docsJson, redirects: updated })
-        : writeJson(redirectsFile, updated),
+      fs.writeFileSync(
+        redirectsFile,
+        JSON.stringify(
+          redirectsFile === docsJsonPath
+            ? { ...docsJson, redirects: updated }
+            : updated,
+          null,
+          2
+        )
+      ),
   };
-}
-
-function readJson(filePath: string): unknown {
-  try {
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  } catch {
-    return null;
-  }
-}
-
-function writeJson(filePath: string, value: unknown): void {
-  fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`);
 }
