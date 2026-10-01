@@ -1,5 +1,7 @@
 # @generaltranslation/react-core
 
+## 11.4.8
+
 ## 11.4.7
 
 ### Patch Changes
