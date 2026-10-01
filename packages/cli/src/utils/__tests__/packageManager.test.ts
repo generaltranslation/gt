@@ -102,6 +102,63 @@ describe('getPackageManager', () => {
     }
   );
 
+  describe('from a subfolder', () => {
+    const app = () => path.join(cwd, 'apps', 'web');
+    const writeAt = (dir: string, name: string, content: unknown = '') => {
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(
+        path.join(dir, name),
+        typeof content === 'string' ? content : JSON.stringify(content)
+      );
+    };
+    beforeEach(() => writeAt(app(), 'package.json', { name: 'web' }));
+
+    it('uses the pnpm workspace root of a member', async () => {
+      writeAt(cwd, 'package.json', { packageManager: 'pnpm@10.20.0' });
+      writeAt(cwd, 'pnpm-workspace.yaml', 'packages:\n  - apps/*\n');
+      writeAt(cwd, 'pnpm-lock.yaml');
+      expect((await getPackageManager(app(), undefined, true)).id).toBe('pnpm');
+      expect((await getPackageManager(app(), 'bun', true)).id).toBe('bun');
+    });
+
+    it('uses the lockfile of an npm workspaces root', async () => {
+      writeAt(cwd, 'package.json', { workspaces: ['apps/*'] });
+      writeAt(cwd, 'package-lock.json');
+      expect((await getPackageManager(app(), undefined, true)).id).toBe('npm');
+    });
+
+    it('prefers the member’s declared manager over the root', async () => {
+      writeAt(cwd, 'package.json', { workspaces: ['apps/*'] });
+      writeAt(cwd, 'package-lock.json');
+      writeAt(app(), 'package.json', { packageManager: 'bun@1.2.0' });
+      expect((await getPackageManager(app(), undefined, true)).id).toBe('bun');
+    });
+
+    it('prefers a nested app’s own lockfile over the parent’s', async () => {
+      writeAt(cwd, 'package.json', { workspaces: ['apps/*'] });
+      writeAt(cwd, 'package-lock.json');
+      writeAt(app(), 'pnpm-lock.yaml');
+      expect((await getPackageManager(app(), undefined, true)).id).toBe('pnpm');
+    });
+
+    it('ignores a parent project that is not a workspace root', async () => {
+      writeAt(cwd, 'package.json', { name: 'unrelated' });
+      writeAt(cwd, 'package-lock.json');
+      await expect(
+        getPackageManager(app(), undefined, true)
+      ).rejects.toBeInstanceOf(NoPackageManagerError);
+    });
+
+    it('stops at the nearest parent with package manager evidence', async () => {
+      writeAt(cwd, 'pnpm-workspace.yaml', 'packages:\n  - apps/*\n');
+      writeAt(cwd, 'pnpm-lock.yaml');
+      writeAt(path.join(cwd, 'apps'), 'package-lock.json');
+      await expect(
+        getPackageManager(app(), undefined, true)
+      ).rejects.toBeInstanceOf(NoPackageManagerError);
+    });
+  });
+
   it('does not reuse another project’s selection in the same process', async () => {
     write('pnpm-lock.yaml');
     expect((await getPackageManager(cwd, undefined, true)).id).toBe('pnpm');
