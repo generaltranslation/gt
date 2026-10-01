@@ -157,7 +157,7 @@ function getImportEdit(
     .at(-1);
   return {
     start: lineComment?.end ?? lastImport.end!,
-    text: lines.map((line) => eol + line).join(''),
+    text: eol + lines.join(eol),
   };
 }
 
@@ -175,8 +175,7 @@ function getLocalImport(file: SourceFile, name: string): string | undefined {
       if (
         specifier.type === 'ImportSpecifier' &&
         specifier.importKind !== 'type' &&
-        specifier.imported.type === 'Identifier' &&
-        specifier.imported.name === name
+        t.isIdentifier(specifier.imported, { name })
       ) {
         return specifier.local.name;
       }
@@ -193,8 +192,7 @@ function findInitializeCall(file: SourceFile): t.CallExpression | undefined {
     if (
       statement.type === 'ExpressionStatement' &&
       statement.expression.type === 'CallExpression' &&
-      statement.expression.callee.type === 'Identifier' &&
-      statement.expression.callee.name === local
+      t.isIdentifier(statement.expression.callee, { name: local })
     ) {
       return statement.expression;
     }
@@ -211,7 +209,6 @@ function registersMiddleware(start: SourceFile): boolean {
   if (!local) return false;
   let found = false;
   for (const statement of start.statements ?? []) {
-    if (statement.type === 'ImportDeclaration') continue;
     t.traverseFast(statement, (node) => {
       if (
         node.type === 'ObjectProperty' &&
@@ -325,8 +322,7 @@ function getRouterLines(
 function isJsxElementNamed(node: t.Node, name: string): node is t.JSXElement {
   return (
     node.type === 'JSXElement' &&
-    node.openingElement.name.type === 'JSXIdentifier' &&
-    node.openingElement.name.name === name
+    t.isJSXIdentifier(node.openingElement.name, { name })
   );
 }
 
@@ -363,8 +359,7 @@ function findLocalFunction(statements: t.Statement[], name: string) {
     if (declaration.kind !== 'const') continue;
     for (const declarator of declaration.declarations) {
       if (
-        declarator.id.type === 'Identifier' &&
-        declarator.id.name === name &&
+        t.isIdentifier(declarator.id, { name }) &&
         (declarator.init?.type === 'ArrowFunctionExpression' ||
           declarator.init?.type === 'FunctionExpression')
       ) {
@@ -490,8 +485,7 @@ function configureRootRoute({
   const lang = attributes.find(
     (attribute): attribute is t.JSXAttribute =>
       attribute.type === 'JSXAttribute' &&
-      attribute.name.type === 'JSXIdentifier' &&
-      attribute.name.name === 'lang'
+      t.isJSXIdentifier(attribute.name, { name: 'lang' })
   );
   // A computed lang is the app's own locale logic.
   if (lang && lang.value?.type !== 'StringLiteral') return undefined;
@@ -553,22 +547,12 @@ function configureRootRoute({
   ]);
 }
 
-/** Writes the loader and names the step, if its content changed. */
 async function writeLoader(
   ctx: BuildToolContext & { translationsDir: string }
 ): Promise<{ loader: ViteLoaderResult; steps: string[] }> {
-  const loaderPath = path.join(ctx.appDirectory, VITE_LOADER_FILE);
-  const read = () =>
-    fs.existsSync(loaderPath) ? fs.readFileSync(loaderPath, 'utf8') : undefined;
-  const before = read();
   const loader = await writeViteLoader({ ...ctx, create: true });
-  const changed = loader === 'written' && read() !== before;
-  return {
-    loader,
-    steps: changed
-      ? [`${before === undefined ? 'created' : 'updated'} ${VITE_LOADER_FILE}`]
-      : [],
-  };
+  const changed = loader === 'created' || loader === 'updated';
+  return { loader, steps: changed ? [`${loader} ${VITE_LOADER_FILE}`] : [] };
 }
 
 /** The initializeGT change for a router whose storage no longer matches. */
@@ -687,12 +671,10 @@ export const tanstackStartSetup: BuildToolSetup = {
     }
     // A custom loader without an export already has its own action.
     if (!routerReady && (!translationsDir || loaderExport)) {
-      const style = router.statements
-        ? getCodeStyle(router.content, router.statements)
-        : { quote: "'", semi: ';', eol: '\n' };
       // Any other mention may be an app-owned initializer; a second
       // initializeGT call would override it.
       if (router.statements && !/\binitializeGT\b/.test(router.content)) {
+        const style = getCodeStyle(router.content, router.statements);
         configuredRouter = parses(
           router,
           applyEdits(router.content, [
@@ -707,12 +689,12 @@ export const tanstackStartSetup: BuildToolSetup = {
       routerReady = configuredRouter !== undefined;
       if (!routerReady) {
         const lines = getRouterLines(router, ctx, loaderExport, {
-          quote: style.quote,
+          quote: "'",
           semi: ';',
         });
         manualActions.push({
           whatHappened: `${router.path} was not configured automatically`,
-          fix: `Initialize GT after the imports in ${router.path}: ${lines.filter(Boolean).join(' ')} (see ${DOCS_URL})`,
+          fix: `Initialize GT after the imports in ${router.path}: ${lines.filter(Boolean).join(' ')}, then rerun gt init (see ${DOCS_URL})`,
         });
       }
     }
@@ -721,7 +703,7 @@ export const tanstackStartSetup: BuildToolSetup = {
     if (!startReady) {
       manualActions.push({
         whatHappened: `${start!.path} does not use gtMiddleware`,
-        fix: `Import { gtMiddleware } from '${Libraries.GT_TANSTACK_START}' in ${start!.path} and add it to the requestMiddleware of createStart, keeping your existing middleware such as the CSRF middleware (see ${DOCS_URL})`,
+        fix: `Import { gtMiddleware } from '${Libraries.GT_TANSTACK_START}' in ${start!.path} and add it to the requestMiddleware of createStart, keeping your existing middleware such as the CSRF middleware, then rerun gt init (see ${DOCS_URL})`,
       });
     }
 
@@ -739,20 +721,18 @@ export const tanstackStartSetup: BuildToolSetup = {
       rootConfigured || providerElsewhere
         ? undefined
         : parses(root, configureRootRoute(root));
-    if (providerElsewhere) {
+    if (!rootConfigured && !configuredRoot) {
       manualActions.push({
-        whatHappened: `${root.path} renders GTProvider outside the root route's document`,
-        fix: rootFix,
-      });
-    } else if (!rootConfigured && !configuredRoot) {
-      manualActions.push({
-        whatHappened: `${root.path} does not match the create-start root route`,
+        whatHappened: providerElsewhere
+          ? `${root.path} renders GTProvider outside the root route's document`
+          : `${root.path} does not match the create-start root route`,
         fix: rootFix,
       });
     }
 
     // gtMiddleware and the root loader need initializeGT to have run, so
-    // they are only added alongside a router that calls it.
+    // they are only added alongside a router that calls it; the actions
+    // above ask for a rerun to finish.
     if (routerReady) {
       if (!start) {
         await writeSource('src/start.ts', START_CONTENT);
@@ -767,25 +747,6 @@ export const tanstackStartSetup: BuildToolSetup = {
       if (configuredRoot && startReady) {
         await writeSource(root.path, configuredRoot);
         steps.push(`configured ${root.path}`);
-      } else if (configuredRoot) {
-        manualActions.push({
-          whatHappened: `${root.path} was left unchanged because ${start!.path} does not use gtMiddleware`,
-          fix: rootFix,
-        });
-      }
-    } else {
-      const reason = `because ${router.path} does not initialize GT`;
-      if (!start) {
-        manualActions.push({
-          whatHappened: `src/start.ts was not created ${reason}`,
-          fix: `Create src/start.ts with const csrfMiddleware = createCsrfMiddleware({ filter: ({ handlerType }) => handlerType === 'serverFn' }); export const startInstance = createStart(() => ({ requestMiddleware: [csrfMiddleware, gtMiddleware] })), importing createCsrfMiddleware and createStart from '@tanstack/react-start' and gtMiddleware from '${Libraries.GT_TANSTACK_START}' (see ${DOCS_URL})`,
-        });
-      }
-      if (configuredRoot) {
-        manualActions.push({
-          whatHappened: `${root.path} was left unchanged ${reason}`,
-          fix: rootFix,
-        });
       }
     }
 

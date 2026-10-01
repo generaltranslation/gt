@@ -284,14 +284,20 @@ export const startInstance = createStart(() => ({}));
     expect(result.manualActions).toEqual([
       {
         whatHappened: 'src/start.ts does not use gtMiddleware',
-        fix: expect.stringContaining('keeping your existing middleware'),
-      },
-      {
-        whatHappened:
-          'src/routes/__root.tsx was left unchanged because src/start.ts does not use gtMiddleware',
-        fix: expect.stringContaining('<GTProvider locale={locale}'),
+        fix: expect.stringMatching(
+          /keeping your existing middleware.*, then rerun gt init/
+        ),
       },
     ]);
+
+    write('src/start.ts', generatedStart);
+    const rerun = await tanstackStartSetup.apply(ctx());
+
+    expect(read('src/routes/__root.tsx')).toBe(configuredRoot);
+    expect(rerun).toEqual({
+      steps: ['configured src/routes/__root.tsx'],
+      manualActions: [],
+    });
   });
 
   it.each([
@@ -611,20 +617,6 @@ export const startInstance = createStart(() => ({}));
     expect(rerun).toEqual({ steps: [], manualActions: [] });
   });
 
-  it('leaves an already configured app unchanged', async () => {
-    await tanstackStartSetup.apply(ctx());
-    write('src/start.ts', generatedStart);
-    write('src/router.tsx', configuredRouter);
-    write('src/routes/__root.tsx', configuredRoot);
-
-    const result = await tanstackStartSetup.apply(ctx());
-
-    expect(read('src/start.ts')).toBe(generatedStart);
-    expect(read('src/router.tsx')).toBe(configuredRouter);
-    expect(read('src/routes/__root.tsx')).toBe(configuredRoot);
-    expect(result).toEqual({ steps: [], manualActions: [] });
-  });
-
   it('holds start and root edits when the router cannot be configured', async () => {
     // A second gtConfig import would not compile.
     const router =
@@ -641,23 +633,21 @@ export const startInstance = createStart(() => ({}));
       manualActions: [
         {
           whatHappened: 'src/router.tsx was not configured automatically',
-          fix: expect.stringContaining(
-            "import { initializeGT } from 'gt-tanstack-start'; import gtConfig from '../gt.config.json';"
+          fix: expect.stringMatching(
+            /import { initializeGT } from 'gt-tanstack-start'; import gtConfig from '\.\.\/gt\.config\.json';.*, then rerun gt init/
           ),
-        },
-        {
-          whatHappened:
-            'src/start.ts was not created because src/router.tsx does not initialize GT',
-          fix: expect.stringContaining(
-            'requestMiddleware: [csrfMiddleware, gtMiddleware]'
-          ),
-        },
-        {
-          whatHappened:
-            'src/routes/__root.tsx was left unchanged because src/router.tsx does not initialize GT',
-          fix: expect.stringContaining('<GTProvider locale={locale}'),
         },
       ],
+    });
+
+    write('src/router.tsx', configuredRouter);
+    const rerun = await tanstackStartSetup.apply(ctx());
+
+    expect(read('src/start.ts')).toBe(generatedStart);
+    expect(read('src/routes/__root.tsx')).toBe(configuredRoot);
+    expect(rerun).toEqual({
+      steps: ['created src/start.ts', 'configured src/routes/__root.tsx'],
+      manualActions: [],
     });
   });
 

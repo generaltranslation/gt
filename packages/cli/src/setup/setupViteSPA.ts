@@ -195,7 +195,12 @@ export async function inspectViteSPA(appDirectory: string) {
   };
 }
 
-export type ViteLoaderResult = 'written' | 'custom' | 'missing';
+export type ViteLoaderResult =
+  | 'created'
+  | 'updated'
+  | 'unchanged'
+  | 'custom'
+  | 'missing';
 
 /**
  * Points the generated src/loadTranslations.ts at translationsDir and adds
@@ -249,8 +254,9 @@ export async function writeViteLoader({
     }
   }
   if (custom) return 'custom';
+  if (existingLoader === content) return 'unchanged';
   await fs.promises.writeFile(loaderPath, content);
-  return 'written';
+  return existingLoader === undefined ? 'created' : 'updated';
 }
 
 export type ViteLoaderExport = 'default' | 'loadTranslations' | undefined;

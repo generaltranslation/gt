@@ -65,7 +65,7 @@ export const viteSetup: BuildToolSetup = {
       create: false,
     });
     return {
-      steps: loader === 'written' ? [`updated ${VITE_LOADER_FILE}`] : [],
+      steps: loader === 'updated' ? [`updated ${VITE_LOADER_FILE}`] : [],
       manualActions:
         loader === 'custom'
           ? loaderUpdateActions(translationsDir, previousTranslationsDir, true)

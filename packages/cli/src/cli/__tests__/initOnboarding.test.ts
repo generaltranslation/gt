@@ -1546,6 +1546,9 @@ await import('./main');
         );
         expect(fs.readFileSync(file('index.html'), 'utf8')).toBe(html);
         expect(events().at(-1)).toMatchObject({ outcome: 'success' });
+        expect(events().at(-1)?.completedSteps).not.toContain(
+          'updated src/loadTranslations.ts'
+        );
         expect(hasLogin).not.toHaveBeenCalled();
         expect(login).not.toHaveBeenCalled();
         expect(api.createProjectApiKey).not.toHaveBeenCalled();
