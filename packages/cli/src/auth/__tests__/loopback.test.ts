@@ -1,6 +1,43 @@
-import { request } from 'node:http';
+import { Agent, request, type IncomingHttpHeaders } from 'node:http';
 import { describe, expect, it } from 'vitest';
-import { LOOPBACK_CALLBACK_PATH, startLoopbackServer } from './loopback.js';
+import { LOOPBACK_CALLBACK_PATH, startLoopbackServer } from '../loopback.js';
+
+/**
+ * A GET over a keep-alive connection, resolved once the response has been
+ * read. `closed` settles when the server ends the socket, within two
+ * seconds; a server that leaves it to the keep-alive timeout rejects it.
+ */
+function keepAliveGet(url: string): Promise<{
+  status: number | undefined;
+  headers: IncomingHttpHeaders;
+  body: string;
+  closed: Promise<void>;
+}> {
+  const agent = new Agent({ keepAlive: true });
+  return new Promise((resolve, reject) => {
+    const req = request(url, { agent }, (res) => {
+      const socket = res.socket!;
+      const closed = new Promise<void>((settle, fail) => {
+        const timer = setTimeout(
+          () => fail(new Error('The server left the connection open')),
+          2000
+        );
+        socket.once('close', () => {
+          clearTimeout(timer);
+          settle();
+        });
+      });
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk: string) => (body += chunk));
+      res.on('end', () =>
+        resolve({ status: res.statusCode, headers: res.headers, body, closed })
+      );
+    });
+    req.on('error', reject);
+    req.end();
+  });
+}
 
 describe('loopback authorization server', () => {
   it('binds 127.0.0.1 and preserves the entire callback, including duplicate security parameters', async () => {
@@ -73,7 +110,7 @@ describe('loopback authorization server', () => {
     expect(page).not.toContain(error.message);
     await rejected;
   });
-  it('serves the same page to a repeated request for the same callback', async () => {
+  it('serves the same page to a repeated request for the same callback and closes every connection', async () => {
     const server = await startLoopbackServer();
     let release!: () => void;
     const exchange = new Promise<void>((resolve) => (release = resolve));
@@ -85,15 +122,22 @@ describe('loopback authorization server', () => {
     // A browser that aborts and repeats the navigation while the exchange
     // runs, then a repeat with another code, which is not this login.
     const first = fetch(callback);
-    const second = fetch(callback);
-    const other = fetch(`${server.redirectUri}?code=other&state=xyz`);
-    expect((await other).status).toBe(404);
+    // The repeat is answered after the server has closed, so it is sent
+    // over a keep-alive connection: the server must close that socket
+    // itself, or the process waits out the keep-alive timeout.
+    const second = keepAliveGet(callback);
+    const other = await fetch(`${server.redirectUri}?code=other&state=xyz`);
+    expect(other.status).toBe(404);
+    expect(other.headers.get('connection')).toBe('close');
     release();
-    const pages = await Promise.all([first, second]);
-    expect(pages.map((r) => r.status)).toEqual([200, 200]);
-    for (const response of pages) {
-      expect(await response.text()).toContain('Signed in to the gt CLI');
-    }
+    const [firstResponse, repeat] = await Promise.all([first, second]);
+    expect(firstResponse.status).toBe(200);
+    expect(firstResponse.headers.get('connection')).toBe('close');
+    expect(await firstResponse.text()).toContain('Signed in to the gt CLI');
+    expect(repeat.status).toBe(200);
+    expect(repeat.headers.connection).toBe('close');
+    expect(repeat.body).toContain('Signed in to the gt CLI');
+    await expect(repeat.closed).resolves.toBeUndefined();
     expect((await pending).href).toBe(callback);
   });
   it('ignores unrelated paths, methods and absolute targets with another origin', async () => {

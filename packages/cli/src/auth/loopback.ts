@@ -79,9 +79,14 @@ export async function startLoopbackServer(): Promise<LoopbackServer> {
           );
         }, timeoutMs);
 
+        // Every response closes its connection. A repeat of the callback is
+        // answered after `server.close()`, and Node leaves a keep-alive
+        // socket open after such a response until the keep-alive timeout,
+        // which would hold the process open after the login has finished.
         const respond = (response: ServerResponse, page: string) => {
           response.writeHead(200, {
             'cache-control': 'no-store',
+            connection: 'close',
             'content-security-policy':
               "default-src 'none'; style-src 'unsafe-inline'",
             'content-type': 'text/html; charset=utf-8',
@@ -105,6 +110,7 @@ export async function startLoopbackServer(): Promise<LoopbackServer> {
           ) {
             response.writeHead(404, {
               'cache-control': 'no-store',
+              connection: 'close',
               'content-type': 'text/plain; charset=utf-8',
             });
             response.end('Not found');

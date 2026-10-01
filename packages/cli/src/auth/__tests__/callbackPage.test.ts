@@ -1,7 +1,46 @@
 import { describe, expect, it } from 'vitest';
-import { renderCallbackPage } from './callbackPage.js';
+import { renderCallbackPage } from '../callbackPage.js';
+
+/** WCAG 2 relative luminance of a six-digit hex color. */
+function luminance(hex: string): number {
+  const channel = (offset: number) => {
+    const value = parseInt(hex.slice(offset, offset + 2), 16) / 255;
+    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * channel(1) + 0.7152 * channel(3) + 0.0722 * channel(5);
+}
+
+function contrast(foreground: string, background: string): number {
+  const [light, dark] = [luminance(foreground), luminance(background)].sort(
+    (a, b) => b - a
+  );
+  return (light! + 0.05) / (dark! + 0.05);
+}
+
+/** The custom property's value in the page's light block, or its dark block. */
+function token(page: string, name: string, scheme: 'light' | 'dark'): string {
+  const dark = page.indexOf('prefers-color-scheme: dark');
+  const block = scheme === 'light' ? page.slice(0, dark) : page.slice(dark);
+  const match = block.match(new RegExp(`--${name}: (#[0-9a-f]{6});`));
+  if (!match) throw new Error(`No --${name} in the ${scheme} block`);
+  return match[1]!;
+}
 
 describe('callback page', () => {
+  it('keeps the note readable in both schemes and declares no token the styles never read', () => {
+    const page = renderCallbackPage({ ok: true, account: 'dev@example.com' });
+    // The note is 13px text, so WCAG AA asks 4.5:1 against the paper.
+    for (const scheme of ['light', 'dark'] as const) {
+      expect(
+        contrast(token(page, 'titanium', scheme), token(page, 'paper', scheme))
+      ).toBeGreaterThanOrEqual(4.5);
+    }
+    const declared = [...page.matchAll(/--([a-z0-9-]+):/g)].map((m) => m[1]);
+    for (const name of new Set(declared)) {
+      expect(page).toContain(`var(--${name})`);
+    }
+  });
+
   it('names the account on success and never asks to log in again', () => {
     const page = renderCallbackPage({ ok: true, account: 'dev@example.com' });
     expect(page).toContain('Signed in to the gt CLI');

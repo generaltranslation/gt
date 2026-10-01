@@ -639,6 +639,30 @@ describe('discovery and browser authorization', () => {
       },
     });
   });
+  it('stops the exchange and stores nothing when the caller aborts during it', async () => {
+    const controller = new AbortController();
+    const fetcher = provider({
+      token: async (init) => {
+        controller.abort();
+        expect(init?.signal?.aborted).toBe(true);
+        init?.signal?.throwIfAborted();
+        return json({});
+      },
+    });
+    let page!: Promise<string>;
+    await expect(
+      browserLogin({
+        fetch: fetcher,
+        signal: controller.signal,
+        openBrowser: (url) => {
+          page = callback(url);
+          return page;
+        },
+      })
+    ).rejects.toThrow('cancelled');
+    expect(await readOAuthTokens(authBaseUrl)).toBeUndefined();
+    expect(await page).toContain('Sign-in failed');
+  });
   it('times out even if browser opening fails', async () => {
     await expect(
       browserLogin({

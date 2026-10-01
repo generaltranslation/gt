@@ -53,7 +53,27 @@ function oauthFailure(
   return new UserAuthError('oauth', whatHappened, fix, details);
 }
 
+/**
+ * An abort or a timeout, raw from a signal check or wrapped by the client
+ * library, which rethrows a DOMException from its own operations as a
+ * ClientError coded OAUTH_ABORT or OAUTH_TIMEOUT.
+ */
+function isCancellation(error: unknown): boolean {
+  if (error instanceof oidc.ClientError)
+    return error.code === 'OAUTH_ABORT' || error.code === 'OAUTH_TIMEOUT';
+  return (
+    error instanceof Error &&
+    ['AbortError', 'TimeoutError'].includes(error.name)
+  );
+}
+
 function oauthError(error: unknown, fallback: string): UserAuthError {
+  if (isCancellation(error)) {
+    return oauthFailure(
+      'Sign in was cancelled or timed out',
+      'Run `gt login` again'
+    );
+  }
   if (
     error instanceof oidc.AuthorizationResponseError ||
     error instanceof oidc.ResponseBodyError
@@ -83,15 +103,6 @@ function oauthError(error: unknown, fallback: string): UserAuthError {
       `${fallback}${status}`,
       'Check the authorization server and try again',
       error.code
-    );
-  }
-  if (
-    error instanceof Error &&
-    ['AbortError', 'TimeoutError'].includes(error.name)
-  ) {
-    return oauthFailure(
-      'Sign in was cancelled or timed out',
-      'Run `gt login` again'
     );
   }
   // Do not expose transport causes, callback URLs or token responses.
@@ -336,12 +347,16 @@ export async function login(options: LoginOptions = {}): Promise<OAuthTokens> {
   // Fired only by the account lookup's budget, after the exchange has
   // stored the login; nothing else is in flight on this configuration then.
   const cancelLookup = new AbortController();
-  const config = await configuration(
-    { ...options, authBaseUrl },
-    cancelLookup.signal
-  ).catch((error: unknown) => {
-    throw oauthError(error, 'Could not discover the authorization server');
-  });
+  // The caller's signal stops the configuration's requests too, so an
+  // aborted login ends the exchange instead of finishing and storing it.
+  const signal = options.signal
+    ? AbortSignal.any([options.signal, cancelLookup.signal])
+    : cancelLookup.signal;
+  const config = await configuration({ ...options, authBaseUrl }, signal).catch(
+    (error: unknown) => {
+      throw oauthError(error, 'Could not discover the authorization server');
+    }
+  );
   const loopback = await startLoopbackServer().catch(() => undefined);
   if (!loopback) return loginWithDeviceCode(options);
   try {
