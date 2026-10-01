@@ -200,9 +200,10 @@ export function configureRootRoute({
       (property) =>
         property.type === 'SpreadElement' ||
         getPropertyName(property) === 'loader' ||
-        // A throwing beforeLoad skips the loader, so the shell would render
-        // without the locale and translations the generated code reads.
-        getPropertyName(property) === 'beforeLoad'
+        // A throwing beforeLoad or validateSearch skips the loader, so the
+        // shell would render without the locale and translations it reads.
+        getPropertyName(property) === 'beforeLoad' ||
+        getPropertyName(property) === 'validateSearch'
     )
   ) {
     return undefined;

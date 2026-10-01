@@ -405,6 +405,13 @@ export const startInstance = createStart(() => ({}));
         '  beforeLoad: () => {},\n  shellComponent: RootDocument,'
       ),
     ],
+    [
+      'a validateSearch',
+      templateRoot.replace(
+        '  shellComponent: RootDocument,',
+        '  validateSearch: () => ({}),\n  shellComponent: RootDocument,'
+      ),
+    ],
   ])('leaves a root route with %s for manual review', async (_case, root) => {
     write('src/routes/__root.tsx', root);
 
@@ -753,6 +760,19 @@ export const startInstance = createStart(() => ({}));
         '\tcomponent: RootComponent,',
         '\tvalidateSearch: () => {\n\t\tthrow new Error("Invalid search")\n\t},\n\terrorComponent: () => <RootDocument>Invalid search</RootDocument>,\n\tcomponent: RootComponent,'
       ),
+    ],
+    [
+      'a shell document and a validateSearch',
+      documentRoot
+        .replace(
+          '\tcomponent: RootComponent,',
+          '\tvalidateSearch: () => ({}),\n\tshellComponent: RootComponent,'
+        )
+        .replace('<Outlet />', '{children}')
+        .replace(
+          'function RootComponent()',
+          'function RootComponent({ children }: { children: React.ReactNode })'
+        ),
     ],
     [
       'a document used as another component',
