@@ -149,6 +149,36 @@ describe('getPackageManager', () => {
       ).rejects.toBeInstanceOf(NoPackageManagerError);
     });
 
+    it('matches object-form workspaces with a nested glob', async () => {
+      writeAt(cwd, 'package.json', { workspaces: { packages: ['apps/**'] } });
+      writeAt(cwd, 'bun.lock');
+      expect((await getPackageManager(app(), undefined, true)).id).toBe('bun');
+    });
+
+    it('ignores a workspace root that does not list the project', async () => {
+      const standalone = path.join(cwd, 'examples', 'standalone');
+      writeAt(standalone, 'package.json', { name: 'standalone' });
+      fs.mkdirSync(path.join(standalone, '.git'));
+      writeAt(cwd, 'package.json', { workspaces: ['packages/*'] });
+      writeAt(cwd, 'package-lock.json');
+      await expect(
+        getPackageManager(standalone, undefined, true)
+      ).rejects.toBeInstanceOf(NoPackageManagerError);
+    });
+
+    it('ignores a workspace root that excludes the project', async () => {
+      writeAt(cwd, 'package.json', { packageManager: 'pnpm@10.20.0' });
+      writeAt(
+        cwd,
+        'pnpm-workspace.yaml',
+        'packages:\n  - apps/*\n  - "!apps/web"\n'
+      );
+      writeAt(cwd, 'pnpm-lock.yaml');
+      await expect(
+        getPackageManager(app(), undefined, true)
+      ).rejects.toBeInstanceOf(NoPackageManagerError);
+    });
+
     it('stops at the nearest parent with package manager evidence', async () => {
       writeAt(cwd, 'pnpm-workspace.yaml', 'packages:\n  - apps/*\n');
       writeAt(cwd, 'pnpm-lock.yaml');

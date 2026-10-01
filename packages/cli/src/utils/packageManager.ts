@@ -1,7 +1,9 @@
 // This file is MIT licensed and was adapted from https://github.com/getsentry/sentry-wizard/blob/master/src/utils/package-manager.ts and https://github.com/getsentry/sentry-wizard/blob/master/src/utils/clack/index.ts
 import * as fs from 'fs';
 import * as path from 'path';
+import micromatch from 'micromatch';
 import { parse } from 'semver';
+import YAML from 'yaml';
 import { getPackageJson, updatePackageJson } from './packageJson.js';
 import { promptSelect } from '../console/logging.js';
 
@@ -286,6 +288,31 @@ function getDeclaredPackageManager(
   return packageManagers.find((manager) => manager.id === id);
 }
 
+// pnpm reads members from pnpm-workspace.yaml; the others from package.json.
+function isWorkspaceMember(
+  root: string,
+  member: string,
+  packageManager: PackageManager,
+  packageJson: Record<string, unknown> | null
+): boolean {
+  let workspaces: unknown = packageJson?.workspaces;
+  if (packageManager.id === PNPM.id) {
+    try {
+      workspaces = YAML.parse(
+        fs.readFileSync(path.join(root, 'pnpm-workspace.yaml'), 'utf8')
+      )?.packages;
+    } catch {
+      return false;
+    }
+  }
+  const patterns = Array.isArray(workspaces)
+    ? workspaces
+    : (workspaces as { packages?: unknown } | undefined)?.packages;
+  if (!Array.isArray(patterns)) return false;
+  const relative = path.relative(root, member).split(path.sep).join('/');
+  return micromatch([relative], patterns.map(String)).length > 0;
+}
+
 export async function getPackageManager(
   cwd: string = process.cwd(),
   specifiedPackageManager?: string,
@@ -300,7 +327,7 @@ export async function getPackageManager(
 
   // Workspace members usually have neither a declaration nor a lockfile, so
   // walk up to the nearest directory that has either. A parent only counts
-  // when it is a workspace root, so an unrelated parent project's lockfile
+  // when its workspace patterns include cwd, so an unrelated parent project
   // cannot claim a standalone app.
   const start = path.resolve(cwd);
   for (let dir = start; ; dir = path.dirname(dir)) {
@@ -309,14 +336,16 @@ export async function getPackageManager(
       packageManager.detect(dir)
     );
     if (packageJson?.packageManager !== undefined || lockfileManagers.length) {
-      const isWorkspaceRoot =
-        packageJson?.workspaces !== undefined ||
-        fs.existsSync(path.join(dir, 'pnpm-workspace.yaml'));
-      if (dir !== start && !isWorkspaceRoot) break;
       const packageManager =
         getDeclaredPackageManager(packageJson?.packageManager) ??
         (lockfileManagers.length === 1 ? lockfileManagers[0] : null);
-      if (packageManager) return packageManager;
+      if (
+        packageManager &&
+        (dir === start ||
+          isWorkspaceMember(dir, start, packageManager, packageJson))
+      ) {
+        return packageManager;
+      }
       break;
     }
     if (path.dirname(dir) === dir) break;
