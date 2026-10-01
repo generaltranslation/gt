@@ -196,15 +196,18 @@ export function configureRootRoute({
   const { rootRoute, componentProperty, component, isShell, document } = found;
   const { properties } = rootRoute.options;
   if (
-    properties.some(
-      (property) =>
-        property.type === 'SpreadElement' ||
-        getPropertyName(property) === 'loader' ||
-        // A throwing beforeLoad or validateSearch skips the loader, so the
-        // shell would render without the locale and translations it reads.
-        getPropertyName(property) === 'beforeLoad' ||
-        getPropertyName(property) === 'validateSearch'
-    )
+    properties.some((property) => {
+      const name = getPropertyName(property);
+      // A spread or computed key could be any of the options below.
+      // A throwing beforeLoad or validateSearch skips the loader, so the
+      // shell would render without the locale and translations it reads.
+      return (
+        name === undefined ||
+        name === 'loader' ||
+        name === 'beforeLoad' ||
+        name === 'validateSearch'
+      );
+    })
   ) {
     return undefined;
   }

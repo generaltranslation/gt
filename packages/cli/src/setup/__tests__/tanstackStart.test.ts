@@ -375,6 +375,24 @@ export const startInstance = createStart(() => ({}));
     });
   });
 
+  it('configures the root when createStart returns gtMiddleware from a block', async () => {
+    write(
+      'src/start.ts',
+      `import { createStart } from '@tanstack/react-start';
+import { gtMiddleware } from 'gt-tanstack-start';
+
+export const startInstance = createStart(() => {
+  return { requestMiddleware: [gtMiddleware] };
+});
+`
+    );
+
+    const result = await tanstackStartSetup.apply(ctx());
+
+    expect(read('src/routes/__root.tsx')).toBe(configuredRoot);
+    expect(result.manualActions).toEqual([]);
+  });
+
   it.each([
     [
       'an existing loader',
@@ -447,6 +465,26 @@ export const startInstance = createStart(() => ({}));
     [
       'gtMiddleware in functionMiddleware',
       "import { gtMiddleware } from 'gt-tanstack-start';\nexport const startInstance = createStart(() => ({ functionMiddleware: [gtMiddleware] }));\n",
+    ],
+    [
+      'gtMiddleware in an object outside createStart',
+      "import { gtMiddleware } from 'gt-tanstack-start';\nconst unused = { requestMiddleware: [gtMiddleware] };\nexport const startInstance = createStart(() => ({}));\n",
+    ],
+    [
+      'gtMiddleware in a createStart call that is not exported',
+      "import { gtMiddleware } from 'gt-tanstack-start';\nfunction unused() {\n  return createStart(() => ({ requestMiddleware: [gtMiddleware] }));\n}\nexport const startInstance = createStart(() => ({}));\n",
+    ],
+    [
+      'gtMiddleware after a conditional return',
+      "import { gtMiddleware } from 'gt-tanstack-start';\nexport const startInstance = createStart(() => {\n  if (import.meta.env.DEV) return {};\n  return { requestMiddleware: [gtMiddleware] };\n});\n",
+    ],
+    [
+      'gtMiddleware overridden by a spread',
+      "import { gtMiddleware } from 'gt-tanstack-start';\nconst overrides = { requestMiddleware: [] };\nexport const startInstance = createStart(() => ({\n  requestMiddleware: [gtMiddleware],\n  ...overrides,\n}));\n",
+    ],
+    [
+      'a second requestMiddleware',
+      "import { gtMiddleware } from 'gt-tanstack-start';\nexport const startInstance = createStart(() => ({\n  requestMiddleware: [gtMiddleware],\n  requestMiddleware: [],\n}));\n",
     ],
   ])(
     'asks for gtMiddleware when a start entry only has %s',
@@ -767,6 +805,19 @@ export const startInstance = createStart(() => ({}));
         .replace(
           '\tcomponent: RootComponent,',
           '\tvalidateSearch: () => ({}),\n\tshellComponent: RootComponent,'
+        )
+        .replace('<Outlet />', '{children}')
+        .replace(
+          'function RootComponent()',
+          'function RootComponent({ children }: { children: React.ReactNode })'
+        ),
+    ],
+    [
+      'a shell document and a computed validateSearch key',
+      documentRoot
+        .replace(
+          '\tcomponent: RootComponent,',
+          "\t['validateSearch']: () => {\n\t\tthrow new Error('Invalid search')\n\t},\n\tshellComponent: RootComponent,"
         )
         .replace('<Outlet />', '{children}')
         .replace(
