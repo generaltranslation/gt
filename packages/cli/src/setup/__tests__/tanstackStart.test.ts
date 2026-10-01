@@ -141,6 +141,81 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 }
 `;
 
+// A Fumadocs root route, whose component renders a local document.
+const documentRoot = `import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router"
+import { RootProvider } from "fumadocs-ui/provider/tanstack"
+
+export const Route = createRootRoute({
+	head: () => ({
+		meta: [{ charSet: "utf-8" }],
+	}),
+	component: RootComponent,
+})
+
+function RootComponent() {
+	return (
+		<RootDocument>
+			<Outlet />
+		</RootDocument>
+	)
+}
+
+function RootDocument({ children }: { children: React.ReactNode }) {
+	return (
+		<html lang="en" suppressHydrationWarning>
+			<head>
+				<HeadContent />
+			</head>
+			<body className="flex flex-col min-h-screen">
+				<RootProvider>{children}</RootProvider>
+				<Scripts />
+			</body>
+		</html>
+	)
+}
+`;
+
+const configuredDocumentRoot = `import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router"
+import { RootProvider } from "fumadocs-ui/provider/tanstack"
+import { GTProvider, getLocale, getTranslationsSnapshot } from "gt-tanstack-start"
+
+export const Route = createRootRoute({
+	head: () => ({
+		meta: [{ charSet: "utf-8" }],
+	}),
+	loader: async () => {
+		const locale = getLocale()
+		return { locale, translations: await getTranslationsSnapshot(locale) }
+	},
+	component: RootComponent,
+})
+
+function RootComponent() {
+	return (
+		<RootDocument>
+			<Outlet />
+		</RootDocument>
+	)
+}
+
+function RootDocument({ children }: { children: React.ReactNode }) {
+	const { locale, translations } = Route.useLoaderData()
+	return (
+		<html lang={locale} suppressHydrationWarning>
+			<head>
+				<HeadContent />
+			</head>
+			<body className="flex flex-col min-h-screen">
+				<GTProvider locale={locale} translations={translations}>
+					<RootProvider>{children}</RootProvider>
+				</GTProvider>
+				<Scripts />
+			</body>
+		</html>
+	)
+}
+`;
+
 const generatedStart = `import { createCsrfMiddleware, createStart } from '@tanstack/react-start';
 import { gtMiddleware } from 'gt-tanstack-start';
 
@@ -615,6 +690,76 @@ export const startInstance = createStart(() => ({}));
     expect(read('src/routes/__root.tsx')).toBe(withContext(configuredRoot));
     expect(result.manualActions).toEqual([]);
     expect(rerun).toEqual({ steps: [], manualActions: [] });
+  });
+
+  it('configures the document a root route component renders', async () => {
+    write('src/routes/__root.tsx', documentRoot);
+
+    const result = await tanstackStartSetup.apply(ctx());
+    const rerun = await tanstackStartSetup.apply(ctx());
+
+    expect(read('src/routes/__root.tsx')).toBe(configuredDocumentRoot);
+    expect(result.manualActions).toEqual([]);
+    expect(rerun).toEqual({ steps: [], manualActions: [] });
+  });
+
+  it('configures the document a shell component renders', async () => {
+    const shell = (root: string) =>
+      root
+        .replace('component: RootComponent', 'shellComponent: RootComponent')
+        .replace(
+          'function RootComponent() {',
+          'function RootComponent({ children }: { children: React.ReactNode }) {'
+        )
+        .replace('<Outlet />', '{children}');
+    write('src/routes/__root.tsx', shell(documentRoot));
+
+    const result = await tanstackStartSetup.apply(ctx());
+
+    expect(read('src/routes/__root.tsx')).toBe(shell(configuredDocumentRoot));
+    expect(result.manualActions).toEqual([]);
+  });
+
+  it.each([
+    [
+      'a document given other children',
+      documentRoot.replace('\t\t\t<Outlet />', '\t\t\t<Main />'),
+    ],
+    [
+      'a component that names locale',
+      documentRoot.replace('<RootDocument>', '<RootDocument locale="en">'),
+    ],
+    [
+      'a document that names translations',
+      documentRoot.replace(
+        '<RootProvider>',
+        '<RootProvider translations={{}}>'
+      ),
+    ],
+    [
+      'a component that renders more than the document',
+      documentRoot.replace(
+        '\treturn (\n\t\t<RootDocument>',
+        '\tuseTheme()\n\treturn (\n\t\t<RootDocument>'
+      ),
+    ],
+    [
+      'an imported document',
+      documentRoot.replace('function RootDocument', 'function Other'),
+    ],
+  ])('leaves a root route with %s for manual review', async (_case, root) => {
+    write('src/routes/__root.tsx', root);
+
+    const result = await tanstackStartSetup.apply(ctx());
+
+    expect(read('src/routes/__root.tsx')).toBe(root);
+    expect(result.manualActions).toEqual([
+      {
+        whatHappened:
+          'src/routes/__root.tsx does not match the create-start root route',
+        fix: expect.stringContaining('<GTProvider locale={locale}'),
+      },
+    ]);
   });
 
   it('holds start and root edits when the router cannot be configured', async () => {
