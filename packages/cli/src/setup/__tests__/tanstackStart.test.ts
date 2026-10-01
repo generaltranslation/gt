@@ -375,6 +375,24 @@ export const startInstance = createStart(() => ({}));
     });
   });
 
+  it('configures the root when createStart returns gtMiddleware from a block', async () => {
+    write(
+      'src/start.ts',
+      `import { createStart } from '@tanstack/react-start';
+import { gtMiddleware } from 'gt-tanstack-start';
+
+export const startInstance = createStart(() => {
+  return { requestMiddleware: [gtMiddleware] };
+});
+`
+    );
+
+    const result = await tanstackStartSetup.apply(ctx());
+
+    expect(read('src/routes/__root.tsx')).toBe(configuredRoot);
+    expect(result.manualActions).toEqual([]);
+  });
+
   it.each([
     [
       'an existing loader',
@@ -447,6 +465,10 @@ export const startInstance = createStart(() => ({}));
     [
       'gtMiddleware in functionMiddleware',
       "import { gtMiddleware } from 'gt-tanstack-start';\nexport const startInstance = createStart(() => ({ functionMiddleware: [gtMiddleware] }));\n",
+    ],
+    [
+      'gtMiddleware in an object outside createStart',
+      "import { gtMiddleware } from 'gt-tanstack-start';\nconst unused = { requestMiddleware: [gtMiddleware] };\nexport const startInstance = createStart(() => ({}));\n",
     ],
   ])(
     'asks for gtMiddleware when a start entry only has %s',

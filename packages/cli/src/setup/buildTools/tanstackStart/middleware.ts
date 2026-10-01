@@ -21,9 +21,30 @@ export const startInstance = createStart(() => ({
 }));
 `;
 
+/** The objects `createStart(() => options)` returns directly. */
+function getStartOptions(call: t.CallExpression): t.ObjectExpression[] {
+  const getOptions = call.arguments[0];
+  if (
+    getOptions?.type !== 'ArrowFunctionExpression' &&
+    getOptions?.type !== 'FunctionExpression'
+  ) {
+    return [];
+  }
+  if (getOptions.body.type !== 'BlockStatement') {
+    return getOptions.body.type === 'ObjectExpression' ? [getOptions.body] : [];
+  }
+  return getOptions.body.body.flatMap((statement) =>
+    statement.type === 'ReturnStatement' &&
+    statement.argument?.type === 'ObjectExpression'
+      ? [statement.argument]
+      : []
+  );
+}
+
 /**
- * Whether the imported gtMiddleware is listed in a requestMiddleware array.
- * Comments, other middleware arrays and unrelated locals do not count.
+ * Whether the imported gtMiddleware is listed in the requestMiddleware of the
+ * createStart options. Comments, other middleware arrays, unrelated locals and
+ * objects outside createStart do not count.
  */
 export function registersMiddleware(start: SourceFile): boolean {
   const local = getLocalImport(start, 'gtMiddleware');
@@ -32,14 +53,25 @@ export function registersMiddleware(start: SourceFile): boolean {
   for (const statement of start.statements ?? []) {
     t.traverseFast(statement, (node) => {
       if (
-        node.type === 'ObjectProperty' &&
-        getPropertyName(node) === 'requestMiddleware' &&
-        node.value.type === 'ArrayExpression' &&
-        node.value.elements.some(
-          (element) => element?.type === 'Identifier' && element.name === local
-        )
+        node.type !== 'CallExpression' ||
+        !t.isIdentifier(node.callee, { name: 'createStart' })
       ) {
-        found = true;
+        return;
+      }
+      for (const options of getStartOptions(node)) {
+        for (const property of options.properties) {
+          if (
+            property.type === 'ObjectProperty' &&
+            getPropertyName(property) === 'requestMiddleware' &&
+            property.value.type === 'ArrayExpression' &&
+            property.value.elements.some(
+              (element) =>
+                element?.type === 'Identifier' && element.name === local
+            )
+          ) {
+            found = true;
+          }
+        }
       }
     });
   }
