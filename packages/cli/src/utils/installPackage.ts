@@ -12,6 +12,9 @@ import { getPackageJson, isPackageInstalled } from './packageJson.js';
 const PNPM_IGNORED_BUILDS_PATTERN =
   /^\[ERR_PNPM_IGNORED_BUILDS\] Ignored build scripts: (.+)$/m;
 
+/** Only the end of pnpm's stdout is kept for classifying a failed install. */
+const MAX_CAPTURED_OUTPUT_LENGTH = 64 * 1024;
+
 /** Any other pnpm error or a failed lifecycle script is a real install failure. */
 const PNPM_OTHER_FAILURE_PATTERN =
   /ERR_PNPM_(?!IGNORED_BUILDS\b)|ELIFECYCLE|: Failed$/m;
@@ -82,10 +85,10 @@ export async function installPackage(
       cwd,
     });
 
-    // pnpm prints ERR_PNPM_* errors to stdout.
+    // pnpm prints ERR_PNPM_* errors to stdout, after the rest of its output.
     let output = '';
     childProcess.stdout?.on('data', (data) => {
-      output += data.toString();
+      output = (output + data.toString()).slice(-MAX_CAPTURED_OUTPUT_LENGTH);
     });
     let errorOutput = '';
     if (childProcess.stderr) {

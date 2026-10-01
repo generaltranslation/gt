@@ -102,6 +102,23 @@ describe('installPackage', () => {
     );
   });
 
+  it('classifies the end of an install log longer than the capture limit', async () => {
+    writeInstalledPackage('gt');
+    const verboseLog = 'Progress: resolved 1, reused 1, downloaded 0\n'.repeat(
+      30_000
+    );
+
+    await expect(
+      installPackage(
+        'gt',
+        createFailingPnpm(`${verboseLog}${IGNORED_BUILDS_OUTPUT}`),
+        true,
+        cwd
+      )
+    ).resolves.toBeUndefined();
+    expect(logger.warn).toHaveBeenCalledTimes(1);
+  });
+
   it('fails when pnpm ignored build scripts but the package is missing', async () => {
     await expect(
       installPackage('gt', createFailingPnpm(IGNORED_BUILDS_OUTPUT), true, cwd)
