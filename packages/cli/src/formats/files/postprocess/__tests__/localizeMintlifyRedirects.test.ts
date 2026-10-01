@@ -33,7 +33,8 @@ const moved = (oldName: string, newName: string) =>
 
 /**
  * Mirrors the auth0 setup: locale directories inside docs/, locale codes from
- * customMapping, no `framework` field, and docs.json not translated.
+ * customMapping, a hidden default locale, no `framework` field, and docs.json
+ * not translated.
  */
 const gtConfig = (options: Record<string, unknown> = {}) => ({
   defaultLocale: 'en',
@@ -49,7 +50,12 @@ const gtConfig = (options: Record<string, unknown> = {}) => ({
       transform: [{ match: '^(docs/)(.*)$', replace: 'docs/{locale}/$2' }],
     },
   },
-  options: { mintlify: { localizeRedirects: true }, ...options },
+  options: {
+    mintlify: { localizeRedirects: true },
+    docsUrlPattern: '/docs/[locale]',
+    experimentalHideDefaultLocale: true,
+    ...options,
+  },
 });
 
 describe('localizeMintlifyRedirects', () => {
@@ -169,6 +175,62 @@ describe('localizeMintlifyRedirects', () => {
     });
   });
 
+  it('matches explicit /index spellings of index pages', async () => {
+    setup([
+      { source: '/docs/guides/index', destination: '/docs/tutorials/index' },
+    ]);
+    page('tutorials/index');
+
+    await run(moved('guides/index', 'tutorials/index'));
+
+    expect(readRedirects()[1]).toEqual({
+      source: '/docs/fr-ca/guides',
+      destination: '/docs/fr-ca/tutorials',
+    });
+  });
+
+  it('replaces the default locale segment when the default locale is not hidden', async () => {
+    setup([{ source: '/en/old', destination: '/en/new' }], {
+      defaultLocale: 'en',
+      locales: ['fr'],
+      files: { mdx: { include: ['./[locale]/**/*.mdx'] } },
+      options: {
+        mintlify: { localizeRedirects: true },
+        docsUrlPattern: '/[locale]',
+      },
+    });
+    write('en/new.mdx', '# new\n');
+    write('fr/new.mdx', '# nouveau\n');
+
+    await run(
+      signals({
+        movedFiles: [{ oldFileName: 'en/old.mdx', newFileName: 'en/new.mdx' }],
+      })
+    );
+
+    expect(readRedirects()[1]).toEqual({
+      source: '/fr/old',
+      destination: '/fr/new',
+    });
+  });
+
+  it('skips a source outside docsUrlPattern', async () => {
+    const config = gtConfig();
+    setup([{ source: '/guides/old', destination: '/docs/new' }], config);
+    page('new');
+
+    // docsUrlPattern only places the locale under /docs/
+    const added = await run(
+      signals({
+        movedFiles: [
+          { oldFileName: 'guides/old.mdx', newFileName: 'docs/new.mdx' },
+        ],
+      })
+    );
+
+    expect(added).toEqual([]);
+  });
+
   it('leaves redirects alone that no signal matched', async () => {
     setup([
       { source: '/docs/legacy', destination: '/docs/edited' },
@@ -283,6 +345,16 @@ describe('localizeMintlifyRedirects', () => {
 
     expect(await run(moved('old', 'new'))).toEqual([]);
     expect(read('docs.json')).toBe(before);
+  });
+
+  it('does nothing without docsUrlPattern', async () => {
+    setup(
+      [{ source: '/docs/old', destination: '/docs/new' }],
+      gtConfig({ docsUrlPattern: undefined })
+    );
+    page('new');
+
+    expect(await run(moved('old', 'new'))).toEqual([]);
   });
 
   it('does nothing without docs.json redirects', async () => {
