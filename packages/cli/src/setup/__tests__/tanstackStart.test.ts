@@ -775,6 +775,19 @@ export const startInstance = createStart(() => ({}));
         ),
     ],
     [
+      'a shell document and a computed validateSearch key',
+      documentRoot
+        .replace(
+          '\tcomponent: RootComponent,',
+          "\t['validateSearch']: () => {\n\t\tthrow new Error('Invalid search')\n\t},\n\tshellComponent: RootComponent,"
+        )
+        .replace('<Outlet />', '{children}')
+        .replace(
+          'function RootComponent()',
+          'function RootComponent({ children }: { children: React.ReactNode })'
+        ),
+    ],
+    [
       'a document used as another component',
       documentRoot.replace(
         '\tcomponent: RootComponent,',
