@@ -1276,9 +1276,6 @@ importers:
       generaltranslation:
         specifier: workspace:*
         version: link:../core
-      tree-sitter-python:
-        specifier: ^0.25.0
-        version: 0.25.0
       web-tree-sitter:
         specifier: ^0.26.6
         version: 0.26.6
@@ -1286,6 +1283,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 22.13.10
+      tree-sitter-python:
+        specifier: ^0.25.0
+        version: 0.25.0
       tsdown:
         specifier: 'catalog:'
         version: 0.21.10(synckit@0.11.11)(typescript@5.9.3)
