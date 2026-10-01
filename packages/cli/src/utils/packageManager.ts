@@ -268,6 +268,24 @@ export function _detectPackageManger(cwd: string): PackageManager | null {
   return null;
 }
 
+// A fresh scaffold can declare its manager before a lockfile exists.
+// The npx launcher's manager says nothing about the target project.
+function getDeclaredPackageManager(
+  declaration: unknown
+): PackageManager | undefined {
+  const match =
+    typeof declaration === 'string' && /^([^@]+)@(.+)$/.exec(declaration);
+  const version = match && parse(match[2]);
+  if (!match || !version) return undefined;
+  const id =
+    match[1] === 'yarn'
+      ? version.major <= 1
+        ? YARN_V1.id
+        : YARN_V2.id
+      : match[1];
+  return packageManagers.find((manager) => manager.id === id);
+}
+
 export async function getPackageManager(
   cwd: string = process.cwd(),
   specifiedPackageManager?: string,
@@ -280,27 +298,29 @@ export async function getPackageManager(
     if (packageManager) return packageManager;
   }
 
-  // A fresh scaffold can declare its manager before a lockfile exists.
-  // The npx launcher's manager says nothing about the target project.
-  const declaration = (await getPackageJson(cwd))?.packageManager;
-  const match =
-    typeof declaration === 'string' && /^([^@]+)@(.+)$/.exec(declaration);
-  const version = match && parse(match[2]);
-  if (match && version) {
-    const id =
-      match[1] === 'yarn'
-        ? version.major <= 1
-          ? YARN_V1.id
-          : YARN_V2.id
-        : match[1];
-    const declaredPackageManager = packageManagers.find(
-      (manager) => manager.id === id
+  // Workspace members usually have neither a declaration nor a lockfile, so
+  // walk up to the nearest directory that has either. A parent only counts
+  // when it is a workspace root, so an unrelated parent project's lockfile
+  // cannot claim a standalone app.
+  const start = path.resolve(cwd);
+  for (let dir = start; ; dir = path.dirname(dir)) {
+    const packageJson = await getPackageJson(dir);
+    const lockfileManagers = packageManagers.filter((packageManager) =>
+      packageManager.detect(dir)
     );
-    if (declaredPackageManager) return declaredPackageManager;
+    if (packageJson?.packageManager !== undefined || lockfileManagers.length) {
+      const isWorkspaceRoot =
+        packageJson?.workspaces !== undefined ||
+        fs.existsSync(path.join(dir, 'pnpm-workspace.yaml'));
+      if (dir !== start && !isWorkspaceRoot) break;
+      const packageManager =
+        getDeclaredPackageManager(packageJson?.packageManager) ??
+        (lockfileManagers.length === 1 ? lockfileManagers[0] : null);
+      if (packageManager) return packageManager;
+      break;
+    }
+    if (path.dirname(dir) === dir) break;
   }
-
-  const detectedPackageManager = _detectPackageManger(cwd);
-  if (detectedPackageManager) return detectedPackageManager;
 
   if (errorIfNotFound) {
     throw new NoPackageManagerError('No package manager found');
