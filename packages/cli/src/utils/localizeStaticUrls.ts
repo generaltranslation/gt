@@ -47,7 +47,7 @@ function findPage(url: string): string | undefined {
  * its mapped output path or at the localized URL. URLs with no source page,
  * such as pages generated from an OpenAPI spec, are not missing a translation.
  */
-function translationMissing(
+export function translationMissing(
   url: string,
   localizedUrl: string,
   localizedFiles: Record<string, string>

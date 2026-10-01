@@ -8,6 +8,7 @@ import {
   INDEX_PAGE,
   PAGE_EXTENSIONS,
   transformUrlPath,
+  translationMissing,
 } from '../../../utils/localizeStaticUrls.js';
 import { createFileMapping } from '../fileMapping.js';
 
@@ -35,9 +36,9 @@ const missingDocsUrlPatternWarning = createDiagnosticMessage({
  * Adds localized copies of English redirects for pages that were renamed or
  * removed in this run, and returns the redirects it added. Only redirects
  * matched by a signal from the upload step are considered, so redirects that
- * predate the run are never localized. URLs are localized with docsUrlPattern,
- * like links inside pages, and a redirect is localized for a locale only when
- * its destination has a translated page.
+ * predate the run are never localized. URLs are localized like links inside
+ * pages: with docsUrlPattern, and not for locales missing the destination's
+ * translation.
  */
 export function localizeMintlifyRedirects(
   settings: Settings,
@@ -56,14 +57,13 @@ export function localizeMintlifyRedirects(
   }
   const docsJsonPath = findDocsJson(settings);
   if (!docsJsonPath) return [];
-  const docsDir = path.dirname(docsJsonPath);
 
   // URLs of old pages (renamed or removed) and of pages new in this run
   const toUrls = (fileNames: string[]) =>
     new Set(
       fileNames
         .filter((fileName) => PAGE_EXTENSIONS.includes(path.extname(fileName)))
-        .map((fileName) => pageUrl(fileName, docsDir))
+        .map(pageUrl)
     );
   const oldPageUrls = toUrls([
     ...signals.movedFiles.map((move) => move.oldFileName),
@@ -77,10 +77,14 @@ export function localizeMintlifyRedirects(
   const targetLocales = settings.locales.filter(
     (locale) => locale !== settings.defaultLocale
   );
-  const translatedPageUrls = getTranslatedPageUrls(
-    settings,
+  const { files } = settings;
+  const fileMapping = createFileMapping(
+    files.resolvedPaths,
+    files.placeholderPaths,
+    files.transformPaths,
+    files.transformFormats,
     targetLocales,
-    docsDir
+    settings.defaultLocale
   );
   // Localize URLs the way links inside pages are localized
   const urlPatternHead = urlPattern.split('[locale]')[0];
@@ -116,8 +120,12 @@ export function localizeMintlifyRedirects(
         !localizedSource ||
         !localizedDestination ||
         localizedSource === localizedDestination ||
-        !translatedPageUrls.has(localizedDestination) ||
-        takenSources.has(localizedSource)
+        takenSources.has(localizedSource) ||
+        translationMissing(
+          destinationUrl,
+          localizedDestination,
+          fileMapping[locale] ?? {}
+        )
       ) {
         continue;
       }
@@ -164,11 +172,11 @@ function splitAnchor(url: string): [string, string] {
 }
 
 /**
- * The Mintlify URL of a page file: its path from the docs.json directory
- * without the extension.
+ * The URL of a page file: its path without the extension. Like static URL
+ * localization, URLs are relative to the working directory.
  */
-function pageUrl(fileName: string, docsDir: string): string {
-  const relative = path.relative(docsDir, path.resolve(fileName));
+function pageUrl(fileName: string): string {
+  const relative = getRelative(fileName);
   return normalizeUrl(
     relative
       .slice(0, relative.length - path.extname(relative).length)
@@ -189,39 +197,6 @@ function normalizeUrl(url: string): string {
 
 function toSegments(url: string): string[] {
   return url.split('/').filter(Boolean);
-}
-
-/** URLs of the translated pages on disk, across all target locales. */
-function getTranslatedPageUrls(
-  settings: Settings,
-  targetLocales: string[],
-  docsDir: string
-): Set<string> {
-  const { files } = settings;
-  const fileMapping = createFileMapping(
-    files.resolvedPaths,
-    files.placeholderPaths,
-    files.transformPaths,
-    files.transformFormats,
-    targetLocales,
-    settings.defaultLocale
-  );
-  const sourcePages = [
-    ...(files.resolvedPaths.md ?? []),
-    ...(files.resolvedPaths.mdx ?? []),
-  ].map(getRelative);
-
-  return new Set(
-    targetLocales.flatMap((locale) =>
-      sourcePages
-        .map((sourcePage) => fileMapping[locale]?.[sourcePage])
-        .filter(
-          (translatedPage): translatedPage is string =>
-            translatedPage !== undefined && fs.existsSync(translatedPage)
-        )
-        .map((translatedPage) => pageUrl(translatedPage, docsDir))
-    )
-  );
 }
 
 /**

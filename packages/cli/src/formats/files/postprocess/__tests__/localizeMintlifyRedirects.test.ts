@@ -269,12 +269,10 @@ describe('localizeMintlifyRedirects', () => {
     expect(read('docs.json')).toBe(before);
   });
 
-  it('only localizes for locales where the destination has a translated page', async () => {
+  it('skips locales missing the destination’s translation', async () => {
     setup([
       { source: '/docs/old', destination: '/docs/new' },
       { source: '/docs/old', destination: 'https://example.com/new' },
-      { source: '/docs/old', destination: '/docs/new/:slug*' },
-      { source: '/docs/old', destination: '/docs/missing' },
     ]);
     page('new', ['ja-jp']);
 
@@ -343,39 +341,16 @@ describe('localizeMintlifyRedirects', () => {
     expect(await run(moved('old', 'new'))).toEqual([]);
   });
 
-  it('uses an included docs.json, building URLs from its directory', async () => {
-    const config = gtConfig();
-    setup(undefined, {
-      ...config,
-      files: {
-        json: { include: ['./main/docs.json'] },
-        mdx: {
-          include: ['./main/docs/**/*.mdx'],
-          exclude: ['./main/docs/[locales]/**'],
-          transform: [
-            { match: '^(main/docs/)(.*)$', replace: 'main/docs/{locale}/$2' },
-          ],
-        },
-      },
+  it('uses docs.json when it is an included file', async () => {
+    setup([{ source: '/docs/old', destination: '/docs/new' }], {
+      ...gtConfig(),
+      files: { ...gtConfig().files, json: { include: ['./docs.json'] } },
     });
-    writeJson('main/docs.json', {
-      redirects: [{ source: '/docs/old', destination: '/docs/new' }],
-    });
-    write('main/docs/new.mdx', '# new\n');
-    for (const locale of LOCALES) write(`main/docs/${locale}/new.mdx`, '');
+    page('new');
 
-    await run(
-      signals({
-        movedFiles: [
-          {
-            oldFileName: 'main/docs/old.mdx',
-            newFileName: 'main/docs/new.mdx',
-          },
-        ],
-      })
-    );
+    await run(moved('old', 'new'));
 
-    expect(readRedirects('main/docs.json')).toHaveLength(3);
+    expect(readRedirects()).toHaveLength(3);
   });
 
   it('does nothing unless localizeRedirects is enabled', async () => {
