@@ -3,33 +3,15 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { generateSettings } from '../../../../config/generateSettings.js';
-import {
-  localizeMintlifyRedirects,
-  type MintlifyRedirectSignals,
-} from '../localizeMintlifyRedirects.js';
+import { localizeMintlifyRedirects } from '../localizeMintlifyRedirects.js';
 
 const ORIGINAL_CWD = process.cwd();
 const LOCALES = ['fr-ca', 'ja-jp'];
 
 type Redirect = { source: string; destination: string; permanent?: boolean };
 
-const signals = (
-  partial: Partial<MintlifyRedirectSignals> = {}
-): MintlifyRedirectSignals => ({
-  movedFiles: [],
-  newFileNames: [],
-  orphanedFileNames: [],
-  ...partial,
-});
-const moved = (oldName: string, newName: string) =>
-  signals({
-    movedFiles: [
-      {
-        oldFileName: `docs/${oldName}.mdx`,
-        newFileName: `docs/${newName}.mdx`,
-      },
-    ],
-  });
+/** Orphaned file names for pages under docs/, as the upload step reports them. */
+const removed = (...names: string[]) => names.map((name) => `docs/${name}.mdx`);
 
 /**
  * Mirrors the auth0 setup: locale directories inside docs/, locale codes from
@@ -90,9 +72,9 @@ describe('localizeMintlifyRedirects', () => {
     });
   };
 
-  const run = async (runSignals: MintlifyRedirectSignals) => {
+  const run = async (orphanedFileNames: string[]) => {
     const settings = await generateSettings({}, dir, { requireConfig: true });
-    return localizeMintlifyRedirects(settings, runSignals);
+    return localizeMintlifyRedirects(settings, orphanedFileNames);
   };
 
   beforeEach(() => {
@@ -115,7 +97,7 @@ describe('localizeMintlifyRedirects', () => {
     ]);
     page('new');
 
-    const added = await run(moved('old', 'new'));
+    const added = await run(removed('old'));
 
     expect(readRedirects()).toEqual([
       { source: '/docs/unrelated', destination: '/docs/new' },
@@ -127,20 +109,11 @@ describe('localizeMintlifyRedirects', () => {
     expect(added).toHaveLength(2);
   });
 
-  it('localizes a redirect to a page that is new in this run (renamed with edits)', async () => {
-    setup([{ source: '/docs/old', destination: '/docs/new' }]);
-    page('new');
-
-    await run(signals({ newFileNames: ['docs/new.mdx'] }));
-
-    expect(readRedirects()).toHaveLength(3);
-  });
-
   it('localizes a redirect from a removed page', async () => {
     setup([{ source: '/docs/removed', destination: '/docs/overview' }]);
     page('overview');
 
-    await run(signals({ orphanedFileNames: ['docs/removed.mdx'] }));
+    await run(removed('removed'));
 
     expect(readRedirects().slice(1)).toEqual([
       { source: '/docs/fr-ca/removed', destination: '/docs/fr-ca/overview' },
@@ -154,7 +127,7 @@ describe('localizeMintlifyRedirects', () => {
     ]);
     page('new');
 
-    await run(moved('old', 'new'));
+    await run(removed('old'));
 
     expect(readRedirects()[1]).toEqual({
       source: '/docs/fr-ca/old',
@@ -167,7 +140,7 @@ describe('localizeMintlifyRedirects', () => {
     setup([{ source: 'docs/guides/', destination: '/docs/tutorials/' }]);
     page('tutorials/index');
 
-    await run(moved('guides/index', 'tutorials/index'));
+    await run(removed('guides/index'));
 
     expect(readRedirects()[1]).toEqual({
       source: '/docs/fr-ca/guides',
@@ -181,7 +154,7 @@ describe('localizeMintlifyRedirects', () => {
     ]);
     page('tutorials/index');
 
-    await run(moved('guides/index', 'tutorials/index'));
+    await run(removed('guides/index'));
 
     expect(readRedirects()[1]).toEqual({
       source: '/docs/fr-ca/guides',
@@ -202,11 +175,7 @@ describe('localizeMintlifyRedirects', () => {
     write('en/new.mdx', '# new\n');
     write('fr/new.mdx', '# nouveau\n');
 
-    await run(
-      signals({
-        movedFiles: [{ oldFileName: 'en/old.mdx', newFileName: 'en/new.mdx' }],
-      })
-    );
+    await run(['en/old.mdx']);
 
     expect(readRedirects()[1]).toEqual({
       source: '/fr/old',
@@ -220,13 +189,7 @@ describe('localizeMintlifyRedirects', () => {
     page('new');
 
     // docsUrlPattern only places the locale under /docs/
-    const added = await run(
-      signals({
-        movedFiles: [
-          { oldFileName: 'guides/old.mdx', newFileName: 'docs/new.mdx' },
-        ],
-      })
-    );
+    const added = await run(['guides/old.mdx']);
 
     expect(added).toEqual([]);
   });
@@ -237,22 +200,22 @@ describe('localizeMintlifyRedirects', () => {
     page('guide');
     const before = read('docs.json');
 
-    await run(moved('guide/index', 'guide'));
+    await run(removed('guide/index'));
 
     expect(read('docs.json')).toBe(before);
   });
 
-  it('ignores signals for files that are not pages', async () => {
+  it('ignores orphaned files that are not pages', async () => {
     setup([{ source: '/docs/spec', destination: '/docs/new' }]);
     page('new');
     const before = read('docs.json');
 
-    await run(signals({ orphanedFileNames: ['docs/spec.json'] }));
+    await run(['docs/spec.json']);
 
     expect(read('docs.json')).toBe(before);
   });
 
-  it('leaves redirects alone that no signal matched', async () => {
+  it('leaves redirects alone whose source was not orphaned', async () => {
     setup([
       { source: '/docs/legacy', destination: '/docs/edited' },
       { source: '/docs/other', destination: '/docs/overview' },
@@ -261,10 +224,9 @@ describe('localizeMintlifyRedirects', () => {
     page('overview');
     const before = read('docs.json');
 
-    // "edited" got a new version, which is not a signal; "unmatched" has no
-    // redirect
-    await run(moved('unmatched', 'overview-2'));
-    await run(signals());
+    // "edited" only changed, so it is not orphaned; "unmatched" has no redirect
+    await run(removed('unmatched'));
+    await run([]);
 
     expect(read('docs.json')).toBe(before);
   });
@@ -276,7 +238,7 @@ describe('localizeMintlifyRedirects', () => {
     ]);
     page('new', ['ja-jp']);
 
-    const added = await run(moved('old', 'new'));
+    const added = await run(removed('old'));
 
     expect(added).toEqual([
       { source: '/docs/ja-jp/old', destination: '/docs/ja-jp/new' },
@@ -291,9 +253,9 @@ describe('localizeMintlifyRedirects', () => {
     ]);
     page('new');
 
-    await run(moved('old', 'new'));
+    await run(removed('old'));
     const afterFirst = read('docs.json');
-    const second = await run(moved('old', 'new'));
+    const second = await run(removed('old'));
 
     expect(readRedirects()).toEqual([
       { source: '/docs/old', destination: '/docs/new' },
@@ -313,7 +275,7 @@ describe('localizeMintlifyRedirects', () => {
     page('new');
     const docsJsonBefore = read('docs.json');
 
-    await run(moved('old', 'new'));
+    await run(removed('old'));
 
     expect(read('docs.json')).toBe(docsJsonBefore);
     expect(readRedirects('config/redirects.json')).toHaveLength(3);
@@ -327,7 +289,7 @@ describe('localizeMintlifyRedirects', () => {
     ]);
     page('new');
 
-    await run(moved('old', 'new'));
+    await run(removed('old'));
 
     expect(readRedirects('config/generated/redirects.json')).toHaveLength(3);
   });
@@ -338,19 +300,7 @@ describe('localizeMintlifyRedirects', () => {
     writeJson('b.json', { $ref: './a.json' });
     page('new');
 
-    expect(await run(moved('old', 'new'))).toEqual([]);
-  });
-
-  it('uses docs.json when it is an included file', async () => {
-    setup([{ source: '/docs/old', destination: '/docs/new' }], {
-      ...gtConfig(),
-      files: { ...gtConfig().files, json: { include: ['./docs.json'] } },
-    });
-    page('new');
-
-    await run(moved('old', 'new'));
-
-    expect(readRedirects()).toHaveLength(3);
+    expect(await run(removed('old'))).toEqual([]);
   });
 
   it('does nothing unless localizeRedirects is enabled', async () => {
@@ -361,7 +311,7 @@ describe('localizeMintlifyRedirects', () => {
     page('new');
     const before = read('docs.json');
 
-    expect(await run(moved('old', 'new'))).toEqual([]);
+    expect(await run(removed('old'))).toEqual([]);
     expect(read('docs.json')).toBe(before);
   });
 
@@ -372,7 +322,7 @@ describe('localizeMintlifyRedirects', () => {
     );
     page('new');
 
-    expect(await run(moved('old', 'new'))).toEqual([]);
+    expect(await run(removed('old'))).toEqual([]);
   });
 
   it('does nothing without docs.json redirects', async () => {
@@ -380,7 +330,7 @@ describe('localizeMintlifyRedirects', () => {
     page('new');
     const before = read('docs.json');
 
-    expect(await run(moved('old', 'new'))).toEqual([]);
+    expect(await run(removed('old'))).toEqual([]);
     expect(read('docs.json')).toBe(before);
   });
 });

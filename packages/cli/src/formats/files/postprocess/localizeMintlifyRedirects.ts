@@ -13,16 +13,6 @@ import {
 } from '../../../utils/localizeStaticUrls.js';
 import { createFileMapping } from '../fileMapping.js';
 
-/**
- * What the upload step saw change in this run. File names are relative to the
- * working directory, the same form the CLI uploads them in.
- */
-export type MintlifyRedirectSignals = {
-  movedFiles: { oldFileName: string; newFileName: string }[];
-  newFileNames: string[];
-  orphanedFileNames: string[];
-};
-
 type Redirect = { source: string; destination: string; permanent?: unknown };
 
 const missingDocsUrlPatternWarning = createDiagnosticMessage({
@@ -34,16 +24,16 @@ const missingDocsUrlPatternWarning = createDiagnosticMessage({
 });
 
 /**
- * Adds localized copies of English redirects for pages that were renamed or
- * removed in this run, and returns the redirects it added. Only redirects
- * matched by a signal from the upload step are considered, so redirects that
- * predate the run are never localized. URLs are localized like links inside
+ * Adds localized copies of the English redirects whose source is a renamed or
+ * removed page, and returns the redirects it added. Orphaned file names come
+ * from the upload step, so redirects for pages GT never translated are never
+ * localized. URLs are localized like links inside
  * pages: with docsUrlPattern, and not for locales missing the destination's
  * translation.
  */
 export function localizeMintlifyRedirects(
   settings: Settings,
-  signals: MintlifyRedirectSignals
+  orphanedFileNames: string[]
 ): Redirect[] {
   if (
     settings.options?.mintlify?.localizeRedirects !== true ||
@@ -56,24 +46,14 @@ export function localizeMintlifyRedirects(
     logger.warn(missingDocsUrlPatternWarning);
     return [];
   }
-  const docsJsonPath = findDocsJson(settings);
-  if (!docsJsonPath) return [];
-
-  // URLs of old pages (renamed or removed) and of pages new in this run
-  const toUrls = (fileNames: string[]) =>
-    new Set(
-      fileNames
-        .filter((fileName) => PAGE_EXTENSIONS.includes(path.extname(fileName)))
-        .map(pageUrl)
-    );
-  const oldPageUrls = toUrls([
-    ...signals.movedFiles.map((move) => move.oldFileName),
-    ...signals.orphanedFileNames,
-  ]);
-  const newPageUrls = toUrls(signals.newFileNames);
-
-  const location = readRedirects(docsJsonPath);
+  const location = readRedirects(path.resolve('docs.json'));
   if (!location) return [];
+
+  const oldPageUrls = new Set(
+    orphanedFileNames
+      .filter((fileName) => PAGE_EXTENSIONS.includes(path.extname(fileName)))
+      .map(pageUrl)
+  );
 
   const targetLocales = settings.locales.filter(
     (locale) => locale !== settings.defaultLocale
@@ -109,9 +89,7 @@ export function localizeMintlifyRedirects(
     const [destinationPath, anchor] = splitAnchor(entry.destination);
     const sourceUrl = normalizeUrl(entry.source);
     const destinationUrl = normalizeUrl(destinationPath);
-    if (!oldPageUrls.has(sourceUrl) && !newPageUrls.has(destinationUrl)) {
-      return [entry];
-    }
+    if (!oldPageUrls.has(sourceUrl)) return [entry];
 
     const localized: Redirect[] = [];
     for (const locale of targetLocales) {
@@ -143,18 +121,6 @@ export function localizeMintlifyRedirects(
 
   if (added.length > 0) location.write(updated);
   return added;
-}
-
-/**
- * The project's docs.json: an included JSON file when the project translates
- * it, otherwise the one in the working directory, where Mintlify expects it.
- */
-function findDocsJson(settings: Settings): string | null {
-  const docsJsonPath =
-    settings.files.resolvedPaths.json?.find(
-      (filePath) => path.basename(filePath) === 'docs.json'
-    ) ?? path.resolve('docs.json');
-  return fs.existsSync(docsJsonPath) ? docsJsonPath : null;
 }
 
 function isRedirect(entry: unknown): entry is Redirect {
@@ -191,13 +157,9 @@ function pageUrl(fileName: string): string {
  * equivalent spellings compare equal.
  */
 function normalizeUrl(url: string): string {
-  const segments = toSegments(url);
+  const segments = url.split('/').filter(Boolean);
   if (segments.at(-1) === INDEX_PAGE) segments.pop();
   return `/${segments.join('/')}`;
-}
-
-function toSegments(url: string): string[] {
-  return url.split('/').filter(Boolean);
 }
 
 /**
