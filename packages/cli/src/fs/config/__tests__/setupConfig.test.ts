@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
+import { GT_CONFIG_SCHEMA_URL } from '../../../utils/constants.js';
 import { createOrUpdateConfig } from '../setupConfig.js';
 
 describe('createOrUpdateConfig', () => {
@@ -71,6 +72,44 @@ describe('createOrUpdateConfig', () => {
     expect(JSON.parse(fs.readFileSync(configPath, 'utf8')).locales).toEqual([
       'ja',
     ]);
+  });
+
+  it('reports a new config as created and ends it with a newline', async () => {
+    testDirectory = fs.mkdtempSync(path.join(tmpdir(), 'gt-config-'));
+    const configPath = path.join(testDirectory, 'gt.config.json');
+
+    expect(await createOrUpdateConfig(configPath, { locales: ['ja'] })).toBe(
+      'created'
+    );
+    expect(fs.readFileSync(configPath, 'utf8')).toMatch(/^\{\n  ".*\}\n$/s);
+  });
+
+  it('leaves a config that already has the update untouched', async () => {
+    testDirectory = fs.mkdtempSync(path.join(tmpdir(), 'gt-config-'));
+    const configPath = path.join(testDirectory, 'gt.config.json');
+    const content = `{\n    "locales": ["ja"],\n    "$schema": "${GT_CONFIG_SCHEMA_URL}"\n}`;
+    fs.writeFileSync(configPath, content);
+
+    expect(await createOrUpdateConfig(configPath, { locales: ['ja'] })).toBe(
+      'unchanged'
+    );
+    expect(fs.readFileSync(configPath, 'utf8')).toBe(content);
+  });
+
+  it('keeps the indentation and trailing newline of an updated config', async () => {
+    testDirectory = fs.mkdtempSync(path.join(tmpdir(), 'gt-config-'));
+    const configPath = path.join(testDirectory, 'gt.config.json');
+    fs.writeFileSync(
+      configPath,
+      `${JSON.stringify({ $schema: GT_CONFIG_SCHEMA_URL, locales: ['fr'] }, null, 4)}\n`
+    );
+
+    expect(await createOrUpdateConfig(configPath, { locales: ['ja'] })).toBe(
+      'updated'
+    );
+    expect(fs.readFileSync(configPath, 'utf8')).toBe(
+      `${JSON.stringify({ $schema: GT_CONFIG_SCHEMA_URL, locales: ['ja'] }, null, 4)}\n`
+    );
   });
 
   it('fails instead of overwriting an unreadable config', async () => {

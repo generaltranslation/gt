@@ -1539,8 +1539,13 @@ See https://www.npmjs.com/package/gt-vue`);
       }
     }
 
-    await createOrUpdateConfig(configFilepath, configUpdate);
-    session.step(`updated ${configFilepath}`);
+    const configChange = await createOrUpdateConfig(
+      configFilepath,
+      configUpdate
+    );
+    if (configChange !== 'unchanged') {
+      session.step(`${configChange} ${configFilepath}`);
+    }
 
     logger.success(
       `Edit ${chalk.cyan(

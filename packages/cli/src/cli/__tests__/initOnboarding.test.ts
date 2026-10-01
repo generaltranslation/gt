@@ -494,7 +494,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         outcome: 'success',
         completedSteps: [
           'installed gt-tanstack-start',
-          'updated gt.config.json',
+          'created gt.config.json',
           'created src/loadTranslations.ts',
           'created src/start.ts',
           'configured src/router.tsx',
@@ -684,7 +684,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         outcome: 'success',
         completedSteps: [
           'created loadTranslations.js',
-          'updated gt.config.json',
+          'created gt.config.json',
           'created a development key',
           'saved development credentials to .env.local',
         ],
@@ -737,7 +737,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     expect(events().at(-1)).toMatchObject({
       type: 'result',
       outcome: 'failed',
-      completedSteps: ['created loadTranslations.js', 'updated gt.config.json'],
+      completedSteps: ['created loadTranslations.js', 'created gt.config.json'],
       error: expect.stringContaining('Failed to install gt'),
     });
     expect(logger.warn).toHaveBeenCalledWith(
