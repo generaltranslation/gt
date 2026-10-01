@@ -84,6 +84,12 @@ describe('getPackageManager', () => {
     expect(promptSelect).not.toHaveBeenCalled();
   });
 
+  it('prefers a declared manager over Rush detection', async () => {
+    declare('pnpm@10.20.0');
+    write('rush.json', '{}');
+    expect((await getPackageManager(cwd, undefined, true)).id).toBe('pnpm');
+  });
+
   it('detects a devEngines package manager', async () => {
     write(
       'package.json',
