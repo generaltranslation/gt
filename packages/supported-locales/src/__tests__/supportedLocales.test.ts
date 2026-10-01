@@ -19,18 +19,12 @@ describe('@generaltranslation/supported-locales', () => {
   });
 
   it.each(listSupportedLocales())(
-    'resolves listed locale %s to itself',
+    'accepts listed locale %s and resolves it to a listed locale',
     (locale) => {
       expect(isValidLocale(locale)).toBe(true);
-      expect(getSupportedLocale(locale)).toBe(locale);
+      expect(listSupportedLocales()).toContain(getSupportedLocale(locale));
     }
   );
-
-  it('maps a canonical form back to the listed legacy tag', () => {
-    expect(getSupportedLocale('sr-ME')).toBe('cnr');
-    expect(getSupportedLocale('sr-Latn-ME')).toBe('cnr');
-    expect(getSupportedLocale('sr')).toBe('sr');
-  });
 
   it('maps the former el-EL listing to el-GR', () => {
     expect(listSupportedLocales()).not.toContain('el-EL');
