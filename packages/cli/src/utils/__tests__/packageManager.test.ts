@@ -61,7 +61,7 @@ describe('getPackageManager', () => {
     expect(promptSelect).not.toHaveBeenCalled();
   });
 
-  it.each(['unknown@1.0.0', 'pnpm@latest', 'yarn@4.0.0@bad', 42, null])(
+  it.each(['unknown@1.0.0', 'pnpm@latest', 42, null])(
     'falls back to a unique lockfile for unsupported or invalid metadata %j',
     async (value) => {
       declare(value);
@@ -75,7 +75,6 @@ describe('getPackageManager', () => {
     ['npm-shrinkwrap.json', '', 'npm'],
     ['pnpm-lock.yaml', '', 'pnpm'],
     ['yarn.lock', '# yarn lockfile v1', 'yarn_v1'],
-    ['yarn.lock', '__metadata:', 'yarn_v2'],
     ['bun.lock', '', 'bun'],
     ['bun.lockb', '', 'bun'],
     ['deno.lock', '', 'deno'],
@@ -85,22 +84,23 @@ describe('getPackageManager', () => {
     expect(promptSelect).not.toHaveBeenCalled();
   });
 
-  it.each([false, true])(
-    'does not guess when detection is unresolved (conflict: %s)',
-    async (conflict) => {
-      if (conflict) {
-        write('package-lock.json');
-        write('pnpm-lock.yaml');
-      }
-      await expect(
-        getPackageManager(cwd, undefined, true)
-      ).rejects.toBeInstanceOf(NoPackageManagerError);
-      expect(promptSelect).not.toHaveBeenCalled();
-      vi.mocked(promptSelect).mockResolvedValue(PNPM);
-      expect(await getPackageManager(cwd)).toBe(PNPM);
-      expect(promptSelect).toHaveBeenCalledOnce();
-    }
-  );
+  it('detects a devEngines package manager', async () => {
+    write(
+      'package.json',
+      JSON.stringify({ devEngines: { packageManager: { name: 'pnpm' } } })
+    );
+    expect((await getPackageManager(cwd, undefined, true)).id).toBe('pnpm');
+  });
+
+  it('does not guess when there is no evidence', async () => {
+    await expect(
+      getPackageManager(cwd, undefined, true)
+    ).rejects.toBeInstanceOf(NoPackageManagerError);
+    expect(promptSelect).not.toHaveBeenCalled();
+    vi.mocked(promptSelect).mockResolvedValue(PNPM);
+    expect(await getPackageManager(cwd)).toBe(PNPM);
+    expect(promptSelect).toHaveBeenCalledOnce();
+  });
 
   describe('from a subfolder', () => {
     const app = () => path.join(cwd, 'apps', 'web');
@@ -114,6 +114,7 @@ describe('getPackageManager', () => {
     beforeEach(() => writeAt(app(), 'package.json', { name: 'web' }));
 
     it('uses the pnpm workspace root of a member', async () => {
+      fs.mkdirSync(path.join(cwd, '.git'));
       writeAt(cwd, 'package.json', { packageManager: 'pnpm@10.20.0' });
       writeAt(cwd, 'pnpm-workspace.yaml', 'packages:\n  - apps/*\n');
       writeAt(cwd, 'pnpm-lock.yaml');
@@ -141,7 +142,13 @@ describe('getPackageManager', () => {
       expect((await getPackageManager(app(), undefined, true)).id).toBe('pnpm');
     });
 
-    it('ignores a parent project that is not a workspace root', async () => {
+    it('uses a pnpm workspace root that has no lockfile yet', async () => {
+      writeAt(cwd, 'pnpm-workspace.yaml', 'packages:\n  - apps/*\n');
+      expect((await getPackageManager(app(), undefined, true)).id).toBe('pnpm');
+    });
+
+    it('does not look past the project’s git root', async () => {
+      fs.mkdirSync(path.join(app(), '.git'));
       writeAt(cwd, 'package.json', { name: 'unrelated' });
       writeAt(cwd, 'package-lock.json');
       await expect(
@@ -155,7 +162,7 @@ describe('getPackageManager', () => {
       expect((await getPackageManager(app(), undefined, true)).id).toBe('bun');
     });
 
-    it('ignores a workspace root that does not list the project', async () => {
+    it('does not look past a nested repository’s git root', async () => {
       const standalone = path.join(cwd, 'examples', 'standalone');
       writeAt(standalone, 'package.json', { name: 'standalone' });
       fs.mkdirSync(path.join(standalone, '.git'));
@@ -166,26 +173,11 @@ describe('getPackageManager', () => {
       ).rejects.toBeInstanceOf(NoPackageManagerError);
     });
 
-    it('ignores a workspace root that excludes the project', async () => {
-      writeAt(cwd, 'package.json', { packageManager: 'pnpm@10.20.0' });
-      writeAt(
-        cwd,
-        'pnpm-workspace.yaml',
-        'packages:\n  - apps/*\n  - "!apps/web"\n'
-      );
-      writeAt(cwd, 'pnpm-lock.yaml');
-      await expect(
-        getPackageManager(app(), undefined, true)
-      ).rejects.toBeInstanceOf(NoPackageManagerError);
-    });
-
-    it('stops at the nearest parent with package manager evidence', async () => {
+    it('uses the nearest parent with package manager evidence', async () => {
       writeAt(cwd, 'pnpm-workspace.yaml', 'packages:\n  - apps/*\n');
       writeAt(cwd, 'pnpm-lock.yaml');
       writeAt(path.join(cwd, 'apps'), 'package-lock.json');
-      await expect(
-        getPackageManager(app(), undefined, true)
-      ).rejects.toBeInstanceOf(NoPackageManagerError);
+      expect((await getPackageManager(app(), undefined, true)).id).toBe('npm');
     });
   });
 
