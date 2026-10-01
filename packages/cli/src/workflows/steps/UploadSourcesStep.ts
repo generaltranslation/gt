@@ -2,6 +2,10 @@ import type { GetFileInfoResponse } from 'generaltranslation/api';
 import type { FileToUpload } from 'generaltranslation/types';
 import { logger } from '../../console/logger.js';
 import { recordWarning } from '../../state/translateWarnings.js';
+import {
+  clearRedirectSignals,
+  recordRedirectSignals,
+} from '../../state/mintlifyRedirectSignals.js';
 import type { ApiClient } from '../../utils/api.js';
 import type { Settings } from '../../types/index.js';
 import chalk from 'chalk';
@@ -10,6 +14,7 @@ import type { FileReference, OrphanedFile } from 'generaltranslation/types';
 
 type MoveMapping = {
   oldFileId: string;
+  oldFileName: string;
   newFileId: string;
   newFileName: string;
 };
@@ -21,7 +26,8 @@ type UploadSourcesClient = Pick<
   | 'processFileMoves'
   | 'uploadSourceFiles'
 >;
-type UploadSourcesSettings = Pick<Settings, 'defaultLocale'>;
+type UploadSourcesSettings = Pick<Settings, 'defaultLocale'> &
+  Partial<Pick<Settings, 'options'>>;
 
 export class UploadSourcesStep {
   private spinner = logger.createSpinner('dots');
@@ -55,6 +61,7 @@ export class UploadSourcesStep {
         // Same content, different path = move detected
         moves.push({
           oldFileId: orphan.fileId,
+          oldFileName: orphan.fileName,
           newFileId: local.fileId,
           newFileName: local.fileName,
         });
@@ -66,6 +73,66 @@ export class UploadSourcesStep {
     return moves;
   }
 
+  private shouldRecordRedirectSignals(): boolean {
+    return this.settings.options?.mintlify?.localizeRedirects === true;
+  }
+
+  /**
+   * Records which files this run renamed, added, or left behind, for
+   * localizing Mintlify redirects after translations are downloaded. A file
+   * is new when the branch has no head for it yet; files with a head that
+   * were uploaded again were only edited.
+   */
+  private async recordRedirectSignals({
+    files,
+    filesToUpload,
+    moves,
+    successfullyMovedFileIds,
+    orphanedFiles,
+    branchId,
+  }: {
+    files: FileToUpload[];
+    filesToUpload: FileToUpload[];
+    moves: MoveMapping[];
+    successfullyMovedFileIds: Set<string>;
+    orphanedFiles: OrphanedFile[];
+    branchId: string;
+  }): Promise<void> {
+    const successfulMoves = moves.filter((move) =>
+      successfullyMovedFileIds.has(move.newFileId)
+    );
+    const movedOldFileIds = new Set(
+      successfulMoves.map((move) => move.oldFileId)
+    );
+
+    let newFileNames: string[] = [];
+    if (filesToUpload.length > 0) {
+      // Orphans are the branch heads missing from the given ids, so leaving
+      // the candidates out returns the ones that already have a head
+      const candidateIds = new Set(filesToUpload.map((f) => f.fileId));
+      const { orphanedFiles: headsOutsideList } =
+        await this.gt.getOrphanedFiles(
+          branchId,
+          files.map((f) => f.fileId).filter((id) => !candidateIds.has(id))
+        );
+      const existingIds = new Set(headsOutsideList.map((head) => head.fileId));
+      newFileNames = filesToUpload
+        .filter((f) => !existingIds.has(f.fileId))
+        .map((f) => f.fileName);
+    }
+
+    recordRedirectSignals({
+      movedFiles: successfulMoves.map(({ oldFileName, newFileName }) => ({
+        oldFileName,
+        newFileName,
+      })),
+      newFileNames,
+      orphanedFileNames: orphanedFiles
+        .filter((orphan) => !movedOldFileIds.has(orphan.fileId))
+        .map((orphan) => orphan.fileName),
+    });
+  }
+
   async run({
     files,
     branchData,
@@ -73,6 +140,7 @@ export class UploadSourcesStep {
     files: FileToUpload[];
     branchData: BranchData;
   }): Promise<FileReference[]> {
+    clearRedirectSignals();
     if (files.length === 0) {
       logger.info('No files to upload found... skipping upload step');
       return [];
@@ -111,9 +179,16 @@ export class UploadSourcesStep {
         `Detected ${moves.length} moved file${moves.length !== 1 ? 's' : ''}, preserving translations...`
       );
 
-      const moveResult = await this.gt.processFileMoves(moves, {
-        branchId: currentBranchId,
-      });
+      const moveResult = await this.gt.processFileMoves(
+        moves.map(({ oldFileId, newFileId, newFileName }) => ({
+          oldFileId,
+          newFileId,
+          newFileName,
+        })),
+        {
+          branchId: currentBranchId,
+        }
+      );
 
       // Only track files where the move actually succeeded
       successfullyMovedFileIds = new Set(
@@ -159,6 +234,17 @@ export class UploadSourcesStep {
         filesToUpload.push(f);
       }
     });
+
+    if (this.shouldRecordRedirectSignals()) {
+      await this.recordRedirectSignals({
+        files,
+        filesToUpload,
+        moves,
+        successfullyMovedFileIds,
+        orphanedFiles: orphanedFilesResult.orphanedFiles,
+        branchId: currentBranchId,
+      });
+    }
 
     const response = await this.gt.uploadSourceFiles(
       filesToUpload.map((f) => ({

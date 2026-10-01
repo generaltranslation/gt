@@ -51,6 +51,7 @@ export type OpenApiConfig = {
 export type MintlifyOptions = {
   openapi?: OpenApiConfig;
   inferTitleFromFilename?: boolean;
+  localizeRedirects?: boolean; // add localized redirects for pages renamed or removed in a translate run
 };
 
 export type SharedFlags = {

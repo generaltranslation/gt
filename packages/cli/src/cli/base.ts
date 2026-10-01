@@ -115,6 +115,14 @@ import { detectFramework } from '../setup/detectFramework.js';
 import { INLINE_LIBRARIES, Libraries } from '../types/libraries.js';
 import { handleEnqueue } from './commands/enqueue.js';
 import { splitMintlifyLanguageRefs } from '../utils/splitMintlifyLanguageRefs.js';
+import {
+  localizeMintlifyRedirects,
+  logMintlifyRedirectReport,
+} from '../formats/files/postprocess/localizeMintlifyRedirects.js';
+import {
+  clearRedirectSignals,
+  getRedirectSignals,
+} from '../state/mintlifyRedirectSignals.js';
 import { runMergeDriver } from '../git/mergeDrivers.js';
 import { setupGitMergeDrivers } from '../git/setupMergeDrivers.js';
 import { warnReactPackageCompatibility } from '../utils/reactPackageCompatibility.js';
@@ -736,6 +744,15 @@ export class BaseCLI {
     }
     // Split Mintlify language entries into $ref files to keep docs.json small
     await splitMintlifyLanguageRefs(settings);
+    // Localize redirects for pages this run renamed or removed. Runs after the
+    // split, which can rewrite $ref files such as redirects.json
+    const redirectSignals = getRedirectSignals();
+    if (redirectSignals) {
+      logMintlifyRedirectReport(
+        localizeMintlifyRedirects(settings, redirectSignals)
+      );
+    }
+    clearRedirectSignals();
     // Mirror assets after translations are downloaded and locale dirs are populated
     await mirrorAssetsToLocales(settings);
     clearDownloaded();
