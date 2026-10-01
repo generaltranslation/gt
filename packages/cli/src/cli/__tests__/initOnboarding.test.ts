@@ -1230,6 +1230,34 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     const writeConfig = (config: Record<string, unknown>) =>
       fs.writeFileSync(file('gt.config.json'), JSON.stringify(config));
 
+    it('reports and writes nothing for gt.config.json on a no-op rerun', async () => {
+      await configure('--locales', 'fr');
+      expect(events().at(-1)).toMatchObject({
+        completedSteps: [
+          'created loadTranslations.js',
+          'created gt.config.json',
+        ],
+      });
+      const config = fs.readFileSync(file('gt.config.json'), 'utf8');
+      expect(config.endsWith('}\n')).toBe(true);
+      vi.mocked(logger.step).mockClear();
+      vi.mocked(logger.success).mockClear();
+      stdoutEvents = [];
+
+      await configure('--locales', 'fr');
+
+      expect(events().at(-1)).toMatchObject({
+        outcome: 'success',
+        completedSteps: [],
+      });
+      expect(fs.readFileSync(file('gt.config.json'), 'utf8')).toBe(config);
+      const output = [
+        ...vi.mocked(logger.step).mock.calls,
+        ...vi.mocked(logger.success).mock.calls,
+      ].join('\n');
+      expect(output).not.toMatch(/(Created|Updated) config file/);
+    });
+
     it('reads and writes an extensionless --config with its .json extension', async () => {
       writeConfig({ defaultLocale: 'en', locales: ['fr'] });
       fs.renameSync(file('gt.config.json'), file('custom.json'));

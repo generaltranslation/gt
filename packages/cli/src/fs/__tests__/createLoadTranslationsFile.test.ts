@@ -180,14 +180,38 @@ describe('createLoadTranslationsFile', () => {
     expect(fs.readFileSync(loaderPath, 'utf8')).toBe(loader);
   });
 
+  it('keeps the loader when a rerun spells the same directory as the config does', async () => {
+    await createLoadTranslationsFile({
+      appDirectory: tmpDir,
+      translationsDir: DEFAULT_TRANSLATIONS_DIR,
+      defaultLocale: 'en',
+      locales: ['fr'],
+    });
+    const loaderPath = path.join(tmpDir, 'loadTranslations.js');
+    const loader = fs.readFileSync(loaderPath, 'utf8');
+    // gt.config.json stores the directory through path.join, without ./
+    const configuredDir = path.normalize(DEFAULT_TRANSLATIONS_DIR);
+
+    await expect(
+      createLoadTranslationsFile({
+        appDirectory: tmpDir,
+        translationsDir: configuredDir,
+        defaultLocale: 'en',
+        locales: ['fr'],
+        previousTranslationsDir: configuredDir,
+      })
+    ).resolves.toBe('unchanged');
+    expect(fs.readFileSync(loaderPath, 'utf8')).toBe(loader);
+  });
+
   it.each([
-    ['public/old/', 'public/old'],
-    ['./public/old/', 'public/old'],
-    ['public/old/', 'public/new'],
-    ['./public/old/', 'public/new'],
+    ['public/old/', 'public/old', 'unchanged'],
+    ['./public/old/', 'public/old', 'unchanged'],
+    ['public/old/', 'public/new', 'updated'],
+    ['./public/old/', 'public/new', 'updated'],
   ])(
     'recognizes legacy directory spelling %s when rerunning with %s',
-    async (original, directory) => {
+    async (original, directory, result) => {
       await createLoadTranslationsFile({
         appDirectory: tmpDir,
         translationsDir: original,
@@ -205,7 +229,7 @@ describe('createLoadTranslationsFile', () => {
           locales: ['fr', 'de'],
           previousTranslationsDir: 'public/old',
         })
-      ).resolves.toBe('updated');
+      ).resolves.toBe(result);
 
       expect(
         fs.readFileSync(path.join(tmpDir, directory, 'de.json'), 'utf8')
