@@ -94,15 +94,7 @@ describe.sequential('gtMiddleware', () => {
     });
 
     expect(result).toEqual({ locale: 'fr', enableI18n: false });
-    expect(mockSetCookie).toHaveBeenCalledWith(
-      'generaltranslation.locale',
-      'fr',
-      {
-        path: '/',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 365,
-      }
-    );
+    expect(mockSetCookie).not.toHaveBeenCalled();
 
     expect(() => getLocale()).toThrow(
       'Cannot read GT request state outside a request scope'

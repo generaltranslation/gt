@@ -54,7 +54,10 @@ export function resolveRequestConditions(
     }
   );
 
-  setCookie(i18nConfig.getLocaleCookieName(), locale, localeCookieOptions);
+  // Skip unchanged cookies so cacheable responses carry no Set-Cookie.
+  if (cookieLocale !== locale) {
+    setCookie(i18nConfig.getLocaleCookieName(), locale, localeCookieOptions);
+  }
 
   const enableI18nCookie = getCookieValue(
     cookieHeader,

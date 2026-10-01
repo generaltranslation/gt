@@ -118,15 +118,7 @@ describe.sequential('parseLocale', () => {
         }
       ).server(localeConfig)
     ).toBe('brand-french');
-    expect(mockSetCookie).toHaveBeenCalledWith(
-      'generaltranslation.locale',
-      'brand-french',
-      {
-        path: '/',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 365,
-      }
-    );
+    expect(mockSetCookie).not.toHaveBeenCalled();
   });
 
   it('falls back to the server Accept-Language header', () => {
