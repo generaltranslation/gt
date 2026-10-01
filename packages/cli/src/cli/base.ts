@@ -1344,8 +1344,16 @@ See https://www.npmjs.com/package/gt-vue`);
               promptConfirm({
                 message:
                   'Would you like to set up a project ID and hot-reload key in .env.local?',
-                // Signing in is never a default.
-                defaultValue: await canAuthenticate(),
+                // Signing in is never a default. An obsolete login defaults
+                // to No here; answering Yes still reports it.
+                defaultValue: await canAuthenticate().catch((error) => {
+                  if (
+                    error instanceof UserAuthError &&
+                    error.code === 'obsolete_credentials'
+                  )
+                    return false;
+                  throw error;
+                }),
               }),
           })) === true;
     if (!runtimeProjectMatches && !provision) {

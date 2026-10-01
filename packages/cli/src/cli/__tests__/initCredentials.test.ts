@@ -64,6 +64,7 @@ vi.mock('../../console/logger.js', () => ({
   },
 }));
 
+import { UserAuthError } from '../../auth/errors.js';
 import { hasLogin, login } from '../../auth/oauth.js';
 import { logger } from '../../console/logger.js';
 import {
@@ -206,6 +207,40 @@ describe('init development credentials', () => {
     expect(api.listProjects).not.toHaveBeenCalled();
     expect(api.createProjectApiKey).not.toHaveBeenCalled();
     expect(fs.existsSync(envPath())).toBe(false);
+  });
+
+  it('lets an obsolete stored login decline credentials, defaulting to No', async () => {
+    vi.mocked(hasLogin).mockRejectedValue(
+      new UserAuthError(
+        'obsolete_credentials',
+        'This stored login is obsolete or invalid and cannot be used safely'
+      )
+    );
+    pressEnterForCredentials();
+
+    await runInit();
+
+    expect(promptConfirm).toHaveBeenCalledWith({
+      message: expect.stringContaining('hot-reload key'),
+      defaultValue: false,
+    });
+    expect(login).not.toHaveBeenCalled();
+    expect(api.createProjectApiKey).not.toHaveBeenCalled();
+    expect(fs.existsSync(path.join(appDirectory, 'gt.config.json'))).toBe(true);
+    expect(fs.existsSync(envPath())).toBe(false);
+  });
+
+  it('still reports an obsolete stored login when credentials are requested', async () => {
+    vi.mocked(hasLogin).mockRejectedValue(
+      new UserAuthError(
+        'obsolete_credentials',
+        'This stored login is obsolete or invalid and cannot be used safely'
+      )
+    );
+
+    await expect(runInit()).rejects.toThrow('obsolete or invalid');
+    expect(login).not.toHaveBeenCalled();
+    expect(api.createProjectApiKey).not.toHaveBeenCalled();
   });
 
   it('defaults the credentials prompt to Yes when signed in', async () => {
