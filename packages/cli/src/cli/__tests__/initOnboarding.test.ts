@@ -1258,6 +1258,28 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       expect(output).not.toMatch(/(Created|Updated) config file/);
     });
 
+    it('names both credential answers when --defaults leaves them open', async () => {
+      const error = await run(
+        'init',
+        '--json',
+        '--defaults',
+        '--locales',
+        'fr',
+        '--storage',
+        'cdn'
+      ).catch((caught: Error) => caught);
+
+      expect(error).toBeInstanceOf(Error);
+      expect(error?.message).toContain(
+        'Setup needs these options: --dev-credentials or --no-dev-credentials'
+      );
+      expect(error?.message).not.toContain('add --defaults');
+      expect(events().at(-1)).toMatchObject({
+        outcome: 'failed',
+        missingOptions: ['--dev-credentials or --no-dev-credentials'],
+      });
+    });
+
     it('reads and writes an extensionless --config with its .json extension', async () => {
       writeConfig({ defaultLocale: 'en', locales: ['fr'] });
       fs.renameSync(file('gt.config.json'), file('custom.json'));

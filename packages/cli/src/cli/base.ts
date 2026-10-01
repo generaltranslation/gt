@@ -1332,9 +1332,9 @@ See https://www.npmjs.com/package/gt-vue`);
                 defaultValue: false,
               }),
           })
-        : await session.answer('--dev-credentials', {
+        : await session.answer('--dev-credentials or --no-dev-credentials', {
             explicit: options.devCredentials,
-            // Creating a key is never a default.
+            // Creating a key is never a default, so --defaults leaves this open.
             ask: () =>
               promptConfirm({
                 message:

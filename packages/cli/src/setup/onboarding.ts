@@ -335,7 +335,9 @@ export class OnboardingSession {
             : 'Setup received invalid options',
         reassurance: 'No project files were changed',
         details: this.invalid,
-        fix: 'Pass the options (see --help), add --defaults to accept the recommended local choices, or rerun in an interactive terminal',
+        fix: this.defaults
+          ? 'Pass the options (see --help), or rerun in an interactive terminal'
+          : 'Pass the options (see --help), add --defaults to accept the recommended local choices, or rerun in an interactive terminal',
       }),
       missingOptions
     );
