@@ -1,5 +1,5 @@
 import type { SupportedReactFrameworks } from '../../types/index.js';
-import { tanstackStartSetup } from './tanstackStart.js';
+import { tanstackStartSetup } from './tanstackStart/index.js';
 import { viteSetup } from './vite.js';
 
 /** A change setup left to a person, reported as a warning. */

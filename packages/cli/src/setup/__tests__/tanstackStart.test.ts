@@ -4,7 +4,7 @@ import path from 'node:path';
 import { parse } from '@babel/parser';
 import { traverseFast } from '@babel/types';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { tanstackStartSetup } from '../buildTools/tanstackStart.js';
+import { tanstackStartSetup } from '../buildTools/tanstackStart/index.js';
 
 const parserOptions = {
   sourceType: 'module',
