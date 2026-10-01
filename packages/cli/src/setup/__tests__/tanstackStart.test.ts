@@ -747,6 +747,20 @@ export const startInstance = createStart(() => ({}));
       'an imported document',
       documentRoot.replace('function RootDocument', 'function Other'),
     ],
+    [
+      'a document the error component also renders',
+      documentRoot.replace(
+        '\tcomponent: RootComponent,',
+        '\tvalidateSearch: () => {\n\t\tthrow new Error("Invalid search")\n\t},\n\terrorComponent: () => <RootDocument>Invalid search</RootDocument>,\n\tcomponent: RootComponent,'
+      ),
+    ],
+    [
+      'a document used as another component',
+      documentRoot.replace(
+        '\tcomponent: RootComponent,',
+        '\tnotFoundComponent: RootDocument,\n\tcomponent: RootComponent,'
+      ),
+    ],
   ])('leaves a root route with %s for manual review', async (_case, root) => {
     write('src/routes/__root.tsx', root);
 

@@ -101,7 +101,8 @@ type LocalFunction = NonNullable<ReturnType<typeof findLocalFunction>>;
 /**
  * The local function that renders the document: the route component itself
  * when it renders `<html>`, or the one local component it returns with only
- * the route's slot as its child.
+ * the route's slot as its child. A followed document must render nowhere
+ * else: another render, such as an errorComponent, has no loader data.
  */
 function findDocument(
   statements: t.Statement[],
@@ -133,10 +134,18 @@ function findDocument(
   ) {
     return undefined;
   }
-  const document = findLocalFunction(
-    statements,
-    returned.openingElement.name.name
-  );
+  const { name } = returned.openingElement.name;
+  // Its declaration and the route component's element are the only uses.
+  let uses = 0;
+  for (const statement of statements) {
+    t.traverseFast(statement, (node) => {
+      if (isJsxElementNamed(node, name) || t.isIdentifier(node, { name })) {
+        uses++;
+      }
+    });
+  }
+  if (uses !== 2) return undefined;
+  const document = findLocalFunction(statements, name);
   return document && rendersElement([document.body], 'html')
     ? document
     : undefined;
