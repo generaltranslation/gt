@@ -5,89 +5,29 @@ on:
     # Run weekly on Mondays at 08:00 UTC.
     - cron: '0 8 * * 1'
   workflow_dispatch:
-    inputs:
-      dry-run:
-        description: List inactive pull requests and issues without closing them
-        type: boolean
-        default: false
 
 permissions:
   issues: write
   pull-requests: write
 
-concurrency:
-  group: close-inactive
-  cancel-in-progress: false
-
-env:
-  INACTIVE_DAYS: 14
-  KEEP_OPEN_LABEL: keep-open
-
 jobs:
   close-inactive:
-    name: Close ${{ matrix.noun }}s inactive for two weeks
+    name: Close items inactive for two weeks
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - command: pr
-            noun: pull request
-            close-reason: ''
-          - command: issue
-            noun: issue
-            close-reason: not planned
-
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
     steps:
-      - name: Close inactive ${{ matrix.noun }}s
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          DRY_RUN: ${{ inputs.dry-run || 'false' }}
-          COMMAND: ${{ matrix.command }}
-          NOUN: ${{ matrix.noun }}
-          CLOSE_REASON: ${{ matrix.close-reason }}
+      - name: Close inactive pull requests and issues
         run: |
-          set -euo pipefail
+          query="updated:<$(date -u -d '14 days ago' +%F) -label:keep-open"
+          comment='Closed due to inactivity. Reopen it if it is still relevant, and add the `keep-open` label to exempt it.'
 
-          cutoff="$(date -u -d "${INACTIVE_DAYS} days ago" +%Y-%m-%d)"
-          echo "Closing open ${NOUN}s with no activity since ${cutoff} that lack the '${KEEP_OPEN_LABEL}' label."
-
-          numbers="$(gh "${COMMAND}" list \
-            --state open \
-            --limit 1000 \
-            --search "updated:<${cutoff} -label:${KEEP_OPEN_LABEL}" \
-            --json number \
-            --jq '.[].number')"
-
-          if [ -z "${numbers}" ]; then
-            echo "No inactive ${NOUN}s found."
-            exit 0
-          fi
-
-          comment="Closed due to inactivity. This ${NOUN} had no activity for ${INACTIVE_DAYS} days. Reopen it if it is still relevant, and add the \`${KEEP_OPEN_LABEL}\` label to exempt it from this weekly cleanup."
-
-          close_args=()
-          if [ -n "${CLOSE_REASON}" ]; then
-            close_args=(--reason "${CLOSE_REASON}")
-          fi
-
-          failures=0
-          for number in ${numbers}; do
-            if [ "${DRY_RUN}" = "true" ]; then
-              echo "Would close #${number}"
-              continue
-            fi
-            if gh "${COMMAND}" close "${number}" --comment "${comment}" "${close_args[@]}"; then
-              echo "Closed #${number}"
-            else
-              echo "::warning::Failed to close #${number}"
-              failures=$((failures + 1))
-            fi
+          for n in $(gh pr list --search "$query" --limit 1000 --json number --jq '.[].number'); do
+            gh pr close "$n" --comment "$comment"
           done
 
-          if [ "${failures}" -gt 0 ]; then
-            echo "::error::Failed to close ${failures} ${NOUN}(s)."
-            exit 1
-          fi
+          for n in $(gh issue list --search "$query" --limit 1000 --json number --jq '.[].number'); do
+            gh issue close "$n" --comment "$comment" --reason 'not planned'
+          done
