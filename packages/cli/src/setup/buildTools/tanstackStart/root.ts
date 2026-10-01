@@ -25,7 +25,10 @@ function isChildrenSlot(node: t.Node): boolean {
   );
 }
 
-export function rendersElement(nodes: t.Node[], name: string): boolean {
+export function rendersElement(
+  nodes: (t.Node | undefined)[],
+  name: string
+): boolean {
   let found = false;
   for (const node of nodes) {
     t.traverseFast(node, (child) => {
@@ -93,7 +96,65 @@ function findRootRoute(statements: t.Statement[]) {
   return undefined;
 }
 
-/** The root route and the local function its shellComponent or component names. */
+type LocalFunction = NonNullable<ReturnType<typeof findLocalFunction>>;
+
+/**
+ * The local function that renders the document: the route component itself
+ * when it renders `<html>`, or the one local component it returns with only
+ * the route's slot as its child. A followed document must render nowhere
+ * else: another render, such as an errorComponent, has no loader data.
+ */
+function findDocument(
+  statements: t.Statement[],
+  component: LocalFunction,
+  isShell: boolean
+): LocalFunction | undefined {
+  if (rendersElement([component.body], 'html')) return component;
+  const { body } = component;
+  const returned =
+    body.type !== 'BlockStatement'
+      ? body
+      : body.body.length === 1 && body.body[0].type === 'ReturnStatement'
+        ? body.body[0].argument
+        : undefined;
+  if (
+    returned?.type !== 'JSXElement' ||
+    returned.openingElement.name.type !== 'JSXIdentifier'
+  ) {
+    return undefined;
+  }
+  const children = returned.children.filter(
+    (child) => child.type !== 'JSXText' || child.value.trim() !== ''
+  );
+  if (
+    children.length !== 1 ||
+    !(isShell
+      ? isChildrenSlot(children[0])
+      : isJsxElementNamed(children[0], 'Outlet'))
+  ) {
+    return undefined;
+  }
+  const { name } = returned.openingElement.name;
+  // Its declaration and the route component's element are the only uses.
+  let uses = 0;
+  for (const statement of statements) {
+    t.traverseFast(statement, (node) => {
+      if (isJsxElementNamed(node, name) || t.isIdentifier(node, { name })) {
+        uses++;
+      }
+    });
+  }
+  if (uses !== 2) return undefined;
+  const document = findLocalFunction(statements, name);
+  return document && rendersElement([document.body], 'html')
+    ? document
+    : undefined;
+}
+
+/**
+ * The root route, the local function its shellComponent or component names,
+ * and the local function that renders its document.
+ */
 export function findRootComponent(statements: t.Statement[]) {
   const rootRoute = findRootRoute(statements);
   if (!rootRoute) return undefined;
@@ -106,14 +167,20 @@ export function findRootComponent(statements: t.Statement[]) {
     componentProperty.value.type === 'Identifier'
       ? findLocalFunction(statements, componentProperty.value.name)
       : undefined;
-  return { rootRoute, componentProperty, component };
+  const isShell =
+    componentProperty !== undefined &&
+    getPropertyName(componentProperty) === 'shellComponent';
+  const document = component && findDocument(statements, component, isShell);
+  return { rootRoute, componentProperty, component, isShell, document };
 }
 
 /**
  * Configures the create-start root route: `createRootRoute({...})` (or its
  * router-context form) without a loader, whose shellComponent renders
  * `{children}` (or whose component renders `<Outlet />`) once in the `<body>`
- * of a local `<html>` document. Returns undefined for any other shape.
+ * of a local `<html>` document, either directly or through one local document
+ * component that renders its `{children}` there. Returns undefined for any
+ * other shape.
  */
 export function configureRootRoute({
   content,
@@ -126,32 +193,35 @@ export function configureRootRoute({
   }
   const found = findRootComponent(statements);
   if (!found) return undefined;
-  const { rootRoute, componentProperty, component } = found;
+  const { rootRoute, componentProperty, component, isShell, document } = found;
   const { properties } = rootRoute.options;
   if (
     properties.some(
       (property) =>
         property.type === 'SpreadElement' ||
         getPropertyName(property) === 'loader' ||
-        // A throwing beforeLoad skips the loader, so the shell would render
-        // without the locale and translations the generated code reads.
-        getPropertyName(property) === 'beforeLoad'
+        // A throwing beforeLoad or validateSearch skips the loader, so the
+        // shell would render without the locale and translations it reads.
+        getPropertyName(property) === 'beforeLoad' ||
+        getPropertyName(property) === 'validateSearch'
     )
   ) {
     return undefined;
   }
-  if (componentProperty?.type !== 'ObjectProperty') return undefined;
-  const isShell = getPropertyName(componentProperty) === 'shellComponent';
   if (
-    component?.body.type !== 'BlockStatement' ||
-    /\b(?:locale|translations)\b/.test(
-      content.slice(component.start!, component.end!)
+    componentProperty?.type !== 'ObjectProperty' ||
+    !component ||
+    document?.body.type !== 'BlockStatement' ||
+    [component, document].some((fn) =>
+      /\b(?:locale|translations)\b/.test(content.slice(fn.start!, fn.end!))
     )
   ) {
     return undefined;
   }
+  // A followed document receives the route's slot as its children.
+  const slotIsChildren = isShell || document !== component;
   const htmlElements: t.JSXElement[] = [];
-  t.traverseFast(component.body, (node) => {
+  t.traverseFast(document.body, (node) => {
     if (isJsxElementNamed(node, 'html')) htmlElements.push(node);
   });
   if (htmlElements.length !== 1) return undefined;
@@ -174,7 +244,11 @@ export function configureRootRoute({
   let multilineLiteral = false;
   for (const child of wrapped) {
     t.traverseFast(child, (node) => {
-      if (isShell ? isChildrenSlot(node) : isJsxElementNamed(node, 'Outlet')) {
+      if (
+        slotIsChildren
+          ? isChildrenSlot(node)
+          : isJsxElementNamed(node, 'Outlet')
+      ) {
         slots++;
       }
       if (
@@ -211,10 +285,10 @@ export function configureRootRoute({
     ? wrappedText
     : wrappedText.replace(/\n(?=[ \t]*\S)/g, `\n${indent}`);
   const provider = '<GTProvider locale={locale} translations={translations}>';
-  const firstStatement = component.body.body[0];
+  const firstStatement = document.body.body[0];
   const statementIndent =
     (firstStatement && getOwnLineIndent(content, firstStatement.start!)) ??
-    getLineIndent(content, component.start!) + indent;
+    getLineIndent(content, document.start!) + indent;
   return applyEdits(content, [
     getImportEdit(
       statements,
@@ -234,7 +308,7 @@ export function configureRootRoute({
       ].join(eol),
     },
     {
-      start: component.body.start! + 1,
+      start: document.body.start! + 1,
       text: `${eol}${statementIndent}const { locale, translations } = ${rootRoute.routeName}.useLoaderData()${semi}`,
     },
     lang
