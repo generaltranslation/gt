@@ -4,15 +4,27 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { logger } from '../console/logger.js';
-import { PackageManager } from './packageManager.js';
+import { PackageManager, PNPM } from './packageManager.js';
 import { getPackageJson, isPackageInstalled } from './packageJson.js';
 
 /** pnpm 11 exits 1 after installing when it skipped unapproved build scripts. */
 const PNPM_IGNORED_BUILDS_PATTERN =
-  /ERR_PNPM_IGNORED_BUILDS\]\s*Ignored build scripts:\s*(.+)/;
+  /^\[ERR_PNPM_IGNORED_BUILDS\] Ignored build scripts: (.+)$/m;
 
-/** Names from `esbuild@0.27.7, @scope/pkg@1.0.0`, without versions. */
-function getPnpmIgnoredBuilds(output: string): string[] {
+/** Any other pnpm error or a failed lifecycle script is a real install failure. */
+const PNPM_OTHER_FAILURE_PATTERN =
+  /ERR_PNPM_(?!IGNORED_BUILDS\b)|ELIFECYCLE|: Failed$/m;
+
+/**
+ * Names from `esbuild@0.27.7, @scope/pkg@1.0.0`, without versions. Empty unless
+ * pnpm's only failure is its top-level ignored-builds error.
+ */
+function getPnpmIgnoredBuilds(
+  packageManager: PackageManager,
+  output: string
+): string[] {
+  if (packageManager.id !== PNPM.id) return [];
+  if (PNPM_OTHER_FAILURE_PATTERN.test(output)) return [];
   const match = output.match(PNPM_IGNORED_BUILDS_PATTERN);
   if (!match) return [];
   return match[1]
@@ -42,9 +54,9 @@ function pnpmIgnoredBuildsWarning(
     source: 'gt',
     severity: 'Warning',
     whatHappened: `pnpm skipped the build scripts of ${ignoredBuilds.join(', ')}`,
-    why: 'they are not approved, and later `pnpm install` runs fail until you allow or deny them',
+    why: 'they are not approved, and later or fresh `pnpm install` runs may fail until you allow or deny them',
     reassurance: `${packageName} was installed, so setup will continue`,
-    fix: `Add ${ignoredBuilds.map((name) => `\`${name}: false\``).join(', ')} under \`allowBuilds\` in pnpm-workspace.yaml, or run \`pnpm approve-builds\``,
+    fix: `Add ${ignoredBuilds.map((name) => `\`${JSON.stringify(name)}: false\``).join(', ')} under \`allowBuilds\` in pnpm-workspace.yaml, or run \`pnpm approve-builds\``,
   });
 }
 
@@ -91,7 +103,10 @@ export async function installPackage(
       if (code === 0) {
         resolve();
       } else {
-        const ignoredBuilds = getPnpmIgnoredBuilds(output + errorOutput);
+        const ignoredBuilds = getPnpmIgnoredBuilds(
+          packageManager,
+          output + errorOutput
+        );
         if (
           ignoredBuilds.length > 0 &&
           (await wasPackageInstalled(packageName, !!asDevDependency, cwd))
