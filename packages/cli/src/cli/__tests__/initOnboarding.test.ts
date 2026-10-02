@@ -494,7 +494,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         outcome: 'success',
         completedSteps: [
           'installed gt-tanstack-start',
-          'updated gt.config.json',
+          'created gt.config.json',
           'created src/loadTranslations.ts',
           'created src/start.ts',
           'configured src/router.tsx',
@@ -684,7 +684,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         outcome: 'success',
         completedSteps: [
           'created loadTranslations.js',
-          'updated gt.config.json',
+          'created gt.config.json',
           'created a development key',
           'saved development credentials to .env.local',
         ],
@@ -737,7 +737,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     expect(events().at(-1)).toMatchObject({
       type: 'result',
       outcome: 'failed',
-      completedSteps: ['created loadTranslations.js', 'updated gt.config.json'],
+      completedSteps: ['created loadTranslations.js', 'created gt.config.json'],
       error: expect.stringContaining('Failed to install gt'),
     });
     expect(logger.warn).toHaveBeenCalledWith(
@@ -1229,6 +1229,83 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       run('configure', '--json', '--defaults', '--no-dev-credentials', ...args);
     const writeConfig = (config: Record<string, unknown>) =>
       fs.writeFileSync(file('gt.config.json'), JSON.stringify(config));
+
+    it('reports and writes nothing for gt.config.json on a no-op rerun', async () => {
+      await configure('--locales', 'fr');
+      expect(events().at(-1)).toMatchObject({
+        completedSteps: [
+          'created loadTranslations.js',
+          'created gt.config.json',
+        ],
+      });
+      const config = fs.readFileSync(file('gt.config.json'), 'utf8');
+      expect(config.endsWith('}\n')).toBe(true);
+      vi.mocked(logger.step).mockClear();
+      vi.mocked(logger.success).mockClear();
+      stdoutEvents = [];
+
+      await configure('--locales', 'fr');
+
+      expect(events().at(-1)).toMatchObject({
+        outcome: 'success',
+        completedSteps: [],
+      });
+      expect(fs.readFileSync(file('gt.config.json'), 'utf8')).toBe(config);
+      const output = [
+        ...vi.mocked(logger.step).mock.calls,
+        ...vi.mocked(logger.success).mock.calls,
+      ].join('\n');
+      expect(output).not.toMatch(/(Created|Updated) config file/);
+    });
+
+    it.each([
+      ['--no-dev-credentials', '--live-translations'],
+      ['--dev-credentials', '--no-live-translations'],
+    ])(
+      'rejects %s with %s before any change',
+      async (credentialsFlag, liveFlag) => {
+        await expect(
+          run(
+            'configure',
+            '--json',
+            '--defaults',
+            '--locales',
+            'fr',
+            credentialsFlag,
+            liveFlag
+          )
+        ).rejects.toThrow(`${credentialsFlag} and ${liveFlag} contradict`);
+
+        expect(events().at(-1)).toMatchObject({
+          outcome: 'failed',
+          completedSteps: [],
+        });
+        expect(hasLogin).not.toHaveBeenCalled();
+        expect(fs.readdirSync(appDirectory)).toEqual(['package.json']);
+      }
+    );
+
+    it('names both credential answers when --defaults leaves them open', async () => {
+      const error = await run(
+        'init',
+        '--json',
+        '--defaults',
+        '--locales',
+        'fr',
+        '--storage',
+        'cdn'
+      ).catch((caught: Error) => caught);
+
+      expect(error).toBeInstanceOf(Error);
+      expect(error?.message).toContain(
+        'Setup needs these options: --dev-credentials or --no-dev-credentials'
+      );
+      expect(error?.message).not.toContain('add --defaults');
+      expect(events().at(-1)).toMatchObject({
+        outcome: 'failed',
+        missingOptions: ['--dev-credentials or --no-dev-credentials'],
+      });
+    });
 
     it('reads and writes an extensionless --config with its .json extension', async () => {
       writeConfig({ defaultLocale: 'en', locales: ['fr'] });

@@ -5,7 +5,7 @@ import {
   REACT_QUICKSTART_URL,
 } from '../utils/constants.js';
 import {
-  createOrUpdateConfig,
+  applySetupConfig,
   mergeSetupConfig,
   type SetupConfigUpdate,
 } from '../fs/config/setupConfig.js';
@@ -1332,9 +1332,9 @@ See https://www.npmjs.com/package/gt-vue`);
                 defaultValue: false,
               }),
           })
-        : await session.answer('--dev-credentials', {
+        : await session.answer('--dev-credentials or --no-dev-credentials', {
             explicit: options.devCredentials,
-            // Creating a key is never a default.
+            // Creating a key is never a default, so --defaults leaves this open.
             ask: () =>
               promptConfirm({
                 message:
@@ -1539,8 +1539,10 @@ See https://www.npmjs.com/package/gt-vue`);
       }
     }
 
-    await createOrUpdateConfig(configFilepath, configUpdate);
-    session.step(`updated ${configFilepath}`);
+    const configChange = await applySetupConfig(configFilepath, configUpdate);
+    if (configChange !== 'unchanged') {
+      session.step(`${configChange} ${configFilepath}`);
+    }
 
     logger.success(
       `Edit ${chalk.cyan(
