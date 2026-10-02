@@ -53,7 +53,6 @@ Turbo tasks: `build`, `test`, `lint`, `lint:fix`, `format`, `format:fix`, `trans
 | `gt`                                    | `packages/cli`               | Main CLI tool (`npx gt`)                                          |
 | `gtx-cli`                               | `packages/gtx-cli`           | Wrapper CLI for gt (backward compatibility)                       |
 | `locadex`                               | `packages/locadex`           | AI agent for i18n with MCP support                                |
-| `@generaltranslation/mcp`               | `packages/mcp`               | MCP server for AI tool integration                                |
 | `@generaltranslation/react-core-linter` | `packages/react-core-linter` | ESLint plugin for react-core                                      |
 | `gt-remark`                             | `packages/remark`            | Remark plugin for MDX escaping                                    |
 | `@generaltranslation/python-extractor`  | `packages/python-extractor`  | Python source extraction (tree-sitter)                            |
@@ -115,7 +114,7 @@ Load only the relevant file for the area being changed:
 
 ## MCP Server
 
-The repo includes its own MCP server (`@generaltranslation/mcp`) that provides documentation and tools for AI assistants. It's configured in `.mcp.json` at the repo root.
+The hosted General Translation MCP server at `https://api.gtx.dev/mcp` provides project tools for AI assistants. It's configured in `.mcp.json` at the repo root.
 
 ## CI/CD
 
