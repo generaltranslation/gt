@@ -21,6 +21,7 @@ export type ApiCommandOptions = SharedFlags & {
   header?: string[];
   include?: boolean;
   input?: string;
+  list?: boolean;
   method: string;
   spec?: boolean;
 };
@@ -126,6 +127,132 @@ function readInput(
   }
 }
 
+type SpecOperation = {
+  operationId?: string;
+  security?: Record<string, unknown>[];
+  summary?: string;
+};
+const specPaths: Record<
+  string,
+  Record<string, SpecOperation>
+> = openApiSpec.paths;
+
+function listOperations(): string {
+  return Object.entries(specPaths)
+    .flatMap(([specPath, operations]) =>
+      Object.entries(operations).map(
+        ([method, operation]) =>
+          `${method.toUpperCase()}\t${specPath}\t${operation.operationId ?? ''}\t${operation.summary ?? ''}\n`
+      )
+    )
+    .join('');
+}
+
+function lookupRef(ref: string): unknown {
+  return ref
+    .slice(2)
+    .split('/')
+    .reduce<unknown>(
+      (node, key) => (node as Record<string, unknown> | undefined)?.[key],
+      openApiSpec
+    );
+}
+
+function collectRefs(value: unknown, refs: Set<string>): void {
+  if (!value || typeof value !== 'object') return;
+  for (const [key, child] of Object.entries(value)) {
+    if (key === '$ref' && typeof child === 'string') refs.add(child);
+    else collectRefs(child, refs);
+  }
+}
+
+// Inlines local `#/...` references so one operation reads standalone. A ref
+// already being expanded is left as-is because schemas like JsonValue recurse.
+function resolveRefs(value: unknown, expanding: string[] = []): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => resolveRefs(item, expanding));
+  }
+  if (!value || typeof value !== 'object') return value;
+  const { $ref, ...siblings } = value as Record<string, unknown>;
+  if (typeof $ref === 'string' && $ref.startsWith('#/')) {
+    const target = lookupRef($ref);
+    if (!expanding.includes($ref) && target && typeof target === 'object') {
+      return resolveRefs({ ...target, ...siblings }, [...expanding, $ref]);
+    }
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value).map(([key, child]) => [
+      key,
+      resolveRefs(child, expanding),
+    ])
+  );
+}
+
+// Shapes the output like the spec so the recursive refs resolveRefs leaves
+// behind and the security requirement names still resolve within it.
+function specFragment(
+  operations: Record<string, Record<string, SpecOperation>>
+): Record<string, unknown> {
+  const paths = resolveRefs(operations);
+  const components: Record<string, Record<string, unknown>> = {};
+  const addComponent = (type: string, name: string, definition: unknown) => {
+    components[type] = { ...components[type], [name]: definition };
+  };
+
+  const pending = new Set<string>();
+  collectRefs(paths, pending);
+  const added = new Set<string>();
+  for (const ref of pending) {
+    const [root, type, name] = ref.slice(2).split('/');
+    if (added.has(ref) || root !== 'components' || !type || !name) continue;
+    added.add(ref);
+    const definition = lookupRef(ref);
+    addComponent(type, name, definition);
+    // Set iteration visits refs added during the loop.
+    collectRefs(definition, pending);
+  }
+
+  const securitySchemes: Record<string, unknown> =
+    openApiSpec.components.securitySchemes;
+  for (const operation of Object.values(operations).flatMap(Object.values)) {
+    for (const name of (operation.security ?? []).flatMap(Object.keys)) {
+      addComponent('securitySchemes', name, securitySchemes[name]);
+    }
+  }
+
+  return Object.keys(components).length ? { paths, components } : { paths };
+}
+
+// Accepts an operationId, a spec path, or a concrete path such as
+// /v2/project/info/abc so agents can look up the request they are about to make.
+function findOperations(
+  endpoint: string
+): Record<string, Record<string, SpecOperation>> {
+  const byOperationId = Object.entries(specPaths).flatMap(
+    ([specPath, operations]) =>
+      Object.entries(operations)
+        .filter(([, operation]) => operation.operationId === endpoint)
+        .map(([method, operation]) => [specPath, { [method]: operation }])
+  );
+  if (byOperationId.length) return Object.fromEntries(byOperationId);
+
+  const requestPath = `/${endpoint.replace(/^\//, '').split('?')[0]}`;
+  if (specPaths[requestPath]) {
+    return { [requestPath]: specPaths[requestPath] };
+  }
+  return Object.fromEntries(
+    Object.entries(specPaths).filter(([specPath]) =>
+      new RegExp(
+        `^${specPath
+          .split(/\{[^}]+\}/)
+          .map((literal) => literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+          .join('[^/]+')}$`
+      ).test(requestPath)
+    )
+  );
+}
+
 function writeResponseMetadata(
   response: Response,
   writeStdout: (output: string | Uint8Array) => void
@@ -203,8 +330,30 @@ export async function handleApiCommand(
   const writeStderr =
     dependencies.writeStderr ?? ((output) => process.stderr.write(output));
 
+  if (options.list) {
+    writeStdout(listOperations());
+    return;
+  }
+
   if (options.spec) {
-    writeStdout(`${JSON.stringify(openApiSpec, null, 2)}\n`);
+    if (!endpoint) {
+      writeStdout(`${JSON.stringify(openApiSpec, null, 2)}\n`);
+      return;
+    }
+    const operations = findOperations(endpoint);
+    if (!Object.keys(operations).length) {
+      fail(
+        createDiagnosticMessage({
+          source: 'gt',
+          severity: 'Error',
+          whatHappened: 'No API operation matches the endpoint',
+          details: endpoint,
+          fix: 'Run `gt api --list` to see the available endpoints and operation IDs',
+        }),
+        dependencies
+      );
+    }
+    writeStdout(`${JSON.stringify(specFragment(operations), null, 2)}\n`);
     return;
   }
 
@@ -214,7 +363,7 @@ export async function handleApiCommand(
         source: 'gt',
         severity: 'Error',
         whatHappened: 'No API endpoint was provided',
-        fix: 'Pass an endpoint or use `gt api --spec` to inspect the OpenAPI specification',
+        fix: 'Pass an endpoint, run `gt api --list` to see the available endpoints, or run `gt api --spec <endpoint>` to inspect one',
       }),
       dependencies
     );
