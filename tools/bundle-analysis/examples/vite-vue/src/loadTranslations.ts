@@ -1,4 +1,11 @@
-export async function loadTranslations(locale: string) {
-  const translations = await import(`./_gt/${locale}.json`);
-  return translations.default;
-}
+import type { LoadTranslations } from 'gt-vue';
+
+const loadTranslations: LoadTranslations = async (locale) => {
+  try {
+    return (await import(`./_gt/${locale}.json`)).default;
+  } catch {
+    return {};
+  }
+};
+
+export default loadTranslations;

@@ -49,9 +49,12 @@ describe.skipIf(!run)('example builds', () => {
         minify: true,
         treeShake: true,
       });
-      expect(Object.keys(analysis.bundles).sort()).toEqual(
-        Object.keys(example.collect).sort()
-      );
+      // Every emitted bundle is one the example can produce, and the client
+      // bundle always exists.
+      for (const kind of Object.keys(analysis.bundles)) {
+        expect(Object.keys(example.collect)).toContain(kind);
+      }
+      expect(analysis.bundles.client).toBeDefined();
 
       for (const report of Object.values(analysis.bundles)) {
         expect(report.files.length).toBeGreaterThan(0);

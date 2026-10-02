@@ -1,17 +1,13 @@
-import { Currency, DateTime, getLocales, Num, T, Var } from 'gt-next';
+import { Currency, DateTime, Num, T, Var } from 'gt-next';
 import { getGT } from 'gt-next/server';
-import { LampDrawing } from '../../components/lamp-drawing';
-import { OrderPanel } from '../../components/order-panel';
+import { LampDrawing } from '../components/lamp-drawing';
+import { OrderPanel } from '../components/order-panel';
 
 const NEXT_BATCH = new Date('2026-11-16T09:00:00Z');
 const DATE_FORMAT: Intl.DateTimeFormatOptions = {
   dateStyle: 'medium',
   timeZone: 'UTC',
 };
-
-export function generateStaticParams() {
-  return getLocales().map((locale: string) => ({ locale }));
-}
 
 function Crosses() {
   return (

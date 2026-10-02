@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Num, T, useGT } from 'gt-tanstack-start';
+import { Num, T, useGT } from 'gt-react';
 import { Crosses } from '../components/Crosses';
 import { Footer } from '../components/Footer';
 

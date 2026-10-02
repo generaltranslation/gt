@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/react-start';
-import { Currency, DateTime, Num, T, Var } from 'gt-tanstack-start';
+import { Currency, DateTime, Num, T, Var } from 'gt-react';
 import { getGT } from 'gt-tanstack-start/server';
 import { KettleDrawing } from '../components/KettleDrawing';
 import { OrderPanel } from '../components/OrderPanel';

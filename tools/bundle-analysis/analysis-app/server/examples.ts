@@ -65,7 +65,7 @@ export const examples: ExampleDefinition[] = [
     pkg: 'gt-next',
     framework: 'Next.js 16, Turbopack',
     description:
-      'Locale-routed App Router app with server components, a client component, and edge middleware.',
+      'App Router app set up per the Next.js quickstart, with server and client components.',
     dir: join(examplesDir, 'next-app'),
     projectRoot: turbopackRoot,
     collect: {
@@ -89,7 +89,7 @@ export const examples: ExampleDefinition[] = [
     pkg: 'gt-tanstack-start',
     framework: 'TanStack Start, Vite 8',
     description:
-      'Server-rendered TanStack Start app with file routes and a locale selector.',
+      'Server-rendered TanStack Start app set up per the TanStack Start quickstart.',
     dir: join(examplesDir, 'tanstack-start'),
     collect: {
       client: (dir) => walk(join(dir, 'dist/client')).filter(isJs),
@@ -101,7 +101,7 @@ export const examples: ExampleDefinition[] = [
     title: 'Vite React',
     pkg: 'gt-react',
     framework: 'React 19, Vite 8',
-    description: 'Client-rendered React app built with the GT compiler plugin.',
+    description: 'Single-page React app set up per the React SPA quickstart.',
     dir: join(examplesDir, 'vite-react'),
     collect: {
       client: (dir) => walk(join(dir, 'dist')).filter(isJs),
@@ -112,7 +112,8 @@ export const examples: ExampleDefinition[] = [
     title: 'Vite Vue',
     pkg: 'gt-vue',
     framework: 'Vue 3, Vite 8',
-    description: 'Client-rendered Vue app using the gt-vue plugin.',
+    description:
+      'Vue app set up per the Vue quickstart with the createGT plugin.',
     dir: join(examplesDir, 'vite-vue'),
     collect: {
       client: (dir) => walk(join(dir, 'dist')).filter(isJs),

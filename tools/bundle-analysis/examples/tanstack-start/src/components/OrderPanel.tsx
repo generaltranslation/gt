@@ -1,13 +1,5 @@
 import { useState } from 'react';
-import {
-  Branch,
-  Currency,
-  Num,
-  Plural,
-  T,
-  useGT,
-  Var,
-} from 'gt-tanstack-start';
+import { Branch, Currency, Num, Plural, T, useGT, Var } from 'gt-react';
 
 const UNIT_PRICE = 129;
 const FILTER_PACK_PRICE = 14;

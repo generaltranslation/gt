@@ -1,16 +1,14 @@
-import type { ReactNode } from 'react';
 import {
   HeadContent,
   Link,
-  Outlet,
   Scripts,
   createRootRoute,
 } from '@tanstack/react-router';
 import {
-  getTranslationsSnapshot,
   GTProvider,
+  getLocale,
+  getTranslationsSnapshot,
   LocaleSelector,
-  parseLocale,
   useGT,
 } from 'gt-tanstack-start';
 import { GtMark } from '../components/GtMark';
@@ -23,27 +21,33 @@ export const Route = createRootRoute({
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
     ],
   }),
-  component: RootComponent,
   loader: async () => {
-    const locale = parseLocale();
+    const locale = getLocale();
     return {
       locale,
       translations: await getTranslationsSnapshot(locale),
     };
   },
+  shellComponent: RootDocument,
 });
 
-function RootComponent() {
+function RootDocument({ children }: { children: React.ReactNode }) {
   const { locale, translations } = Route.useLoaderData();
   return (
-    <RootDocument locale={locale}>
-      <GTProvider locale={locale} translations={translations}>
-        <div className='gt-frame'>
-          <Nav />
-          <Outlet />
-        </div>
-      </GTProvider>
-    </RootDocument>
+    <html lang={locale}>
+      <head>
+        <HeadContent />
+      </head>
+      <body>
+        <GTProvider locale={locale} translations={translations}>
+          <div className='gt-frame'>
+            <Nav />
+            {children}
+          </div>
+        </GTProvider>
+        <Scripts />
+      </body>
+    </html>
   );
 }
 
@@ -67,22 +71,5 @@ function Nav() {
       <span className='gt-cross bl' />
       <span className='gt-cross br' />
     </header>
-  );
-}
-
-function RootDocument({
-  locale,
-  children,
-}: Readonly<{ locale: string; children: ReactNode }>) {
-  return (
-    <html lang={locale}>
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        {children}
-        <Scripts />
-      </body>
-    </html>
   );
 }

@@ -58,7 +58,9 @@ export function createBuildManager(options: {
       state: {
         example: example.id,
         title: example.title,
-        bundles: BUNDLE_KINDS.filter((kind) => kind in example.collect),
+        bundles: cached?.current
+          ? BUNDLE_KINDS.filter((kind) => kind in cached.current!.bundles)
+          : BUNDLE_KINDS.filter((kind) => kind in example.collect),
         settings: cached?.settings ?? { ...DEFAULT_SETTINGS },
         status: { state: 'idle' },
         current: cached?.current ?? null,
@@ -151,6 +153,7 @@ export function createBuildManager(options: {
         entry.state = {
           ...entry.state,
           status: { state: 'idle' },
+          bundles: BUNDLE_KINDS.filter((kind) => kind in analysis.bundles),
           previous: entry.state.current,
           current: analysis,
         };
@@ -257,9 +260,12 @@ export function analyzeExample(
     BundleKind,
     (dir: string) => string[],
   ][]) {
+    const files = collect(example.dir);
+    // A framework only emits some bundles (no edge output without middleware).
+    if (files.length === 0) continue;
     bundles[kind] = analyzeBundle(
       kind,
-      collect(example.dir),
+      files,
       example.dir,
       packages,
       projectRoot

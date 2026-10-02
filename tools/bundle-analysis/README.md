@@ -32,16 +32,22 @@ curl -s -X POST 'http://localhost:4600/api/examples/vite-react/build?wait=1'
 
 ## Layout
 
-| Path                      | Contents                                                          |
-| ------------------------- | ----------------------------------------------------------------- |
-| `analysis-app/server`     | Node server: builds, source-map attribution, watchers, SSE        |
-| `analysis-app/src`        | React UI (home page and analysis page)                            |
-| `analysis-app/shared`     | Types shared by the server and the UI                             |
-| `examples/next-app`       | `gt-next`, App Router with edge middleware (client, server, edge) |
-| `examples/tanstack-start` | `gt-tanstack-start` (client, server)                              |
-| `examples/vite-react`     | `gt-react` with the GT compiler plugin (client)                   |
-| `examples/vite-vue`       | `gt-vue` (client)                                                 |
-| `brand`                   | GT brand tokens and mark shared by the UI and the examples        |
+| Path                      | Contents                                                        |
+| ------------------------- | --------------------------------------------------------------- |
+| `analysis-app/server`     | Node server: builds, source-map attribution, watchers, SSE      |
+| `analysis-app/src`        | React UI (home page and analysis page)                          |
+| `analysis-app/shared`     | Types shared by the server and the UI                           |
+| `examples/next-app`       | `gt-next`, Next.js App Router quickstart (client, server)       |
+| `examples/tanstack-start` | `gt-tanstack-start`, TanStack Start quickstart (client, server) |
+| `examples/vite-react`     | `gt-react`, React SPA quickstart (client)                       |
+| `examples/vite-vue`       | `gt-vue`, Vue quickstart (client)                               |
+| `brand`                   | GT brand tokens and mark shared by the UI and the examples      |
+
+Each example follows its framework's quickstart at
+generaltranslation.com/docs, except that the translation files are committed
+(there is no API key to run `gt translate`) and the bundler config honors the
+variables below. A framework only shows the bundles its build emits; the Next.js
+quickstart has no middleware, so there is no edge bundle.
 
 The examples are workspace packages, so they use the `dist` output of
 `packages/*` directly through `workspace:*` links. Nothing is copied or packed.

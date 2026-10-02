@@ -1,9 +1,14 @@
 import { createApp } from 'vue';
-import type { GTPlugin } from 'gt-vue';
+import { createGT } from 'gt-vue';
 import App from './App.vue';
+import gtConfig from '../gt.config.json';
+import loadTranslations from './loadTranslations';
 import '../../../brand/gt-brand.css';
 import './app.css';
 
-export function mount(gt: GTPlugin, locales: readonly string[]): void {
-  createApp(App, { locales }).use(gt).mount('#app');
-}
+const gt = createGT({
+  defaultLocale: gtConfig.defaultLocale,
+  loadTranslations,
+});
+
+createApp(App).use(gt).mount('#app');

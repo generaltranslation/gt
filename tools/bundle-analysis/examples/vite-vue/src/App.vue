@@ -13,13 +13,12 @@ import {
   useMessages,
   useSetLocale,
 } from 'gt-vue';
+import gtConfig from '../gt.config.json';
 import { files, footerNote, specs } from './content';
 import Crosses from './Crosses.vue';
 import GtMark from './GtMark.vue';
 
 type Billing = 'monthly' | 'yearly';
-
-defineProps<{ locales: readonly string[] }>();
 
 const MONTHLY_PRICE = 8;
 const YEARLY_PRICE = 80;
@@ -30,6 +29,7 @@ const gt = useGT();
 const m = useMessages();
 const locale = useLocale();
 const setLocale = useSetLocale();
+const locales = [gtConfig.defaultLocale, ...gtConfig.locales];
 
 const billing = ref<Billing>('yearly');
 const seats = ref(3);
@@ -52,10 +52,9 @@ const trialEnds = computed(() => {
 });
 const teamName = computed(() => team.value.trim() || 'Northwind');
 
-document.documentElement.lang = locale.value;
-
-function selectLocale(event: Event) {
-  void setLocale((event.target as HTMLSelectElement).value);
+async function changeLocale(event: Event) {
+  const target = event.target as HTMLSelectElement;
+  await setLocale(target.value);
 }
 </script>
 
@@ -71,7 +70,7 @@ function selectLocale(event: Event) {
         name="generaltranslation-locale"
         :aria-label="gt('Language')"
         :value="locale"
-        @change="selectLocale"
+        @change="changeLocale"
       >
         <option v-for="code in locales" :key="code" :value="code">
           {{ localeName(code) }}
@@ -304,7 +303,7 @@ function selectLocale(event: Event) {
     </main>
 
     <footer class="gt-row footer">
-      <p class="gt-label">{{ footerNote }}</p>
+      <p class="gt-label">{{ m(footerNote) }}</p>
       <span class="gt-mono locale-code">{{ locale }}</span>
       <Crosses />
     </footer>

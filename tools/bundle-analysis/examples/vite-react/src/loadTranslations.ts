@@ -1,8 +1,9 @@
-export async function loadTranslations(locale: string) {
+export default async function loadTranslations(locale: string) {
   try {
     const translations = await import(`./_gt/${locale}.json`);
     return translations.default;
-  } catch {
+  } catch (error) {
+    console.warn(`No translations found for ${locale}`);
     return {};
   }
 }

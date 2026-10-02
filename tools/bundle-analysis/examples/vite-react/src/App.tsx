@@ -71,7 +71,7 @@ function DockDrawing() {
   );
 }
 
-export function App() {
+export default function App() {
   const gt = useGT();
   const m = useMessages();
   const locale = useLocale();

@@ -1,8 +1,6 @@
-import { msg, t } from 'gt-vue';
+import { msg } from 'gt-vue';
 
-// Module-level strings. t() resolves immediately because index.ts awaits
-// initializeGTSPA() before importing the application graph.
-export const footerNote = t(
+export const footerNote = msg(
   'Quire is a fictional product. This page is a gt-vue example.'
 );
 

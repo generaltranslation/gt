@@ -1,7 +1,6 @@
 {
   "defaultLocale": "en",
   "locales": ["fr", "zh"],
-  "src": ["src/**/*.{ts,vue}"],
   "files": {
     "gt": {
       "output": "src/_gt/[locale].json"

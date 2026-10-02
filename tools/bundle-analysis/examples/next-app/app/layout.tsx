@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
-import { GTProvider, LocaleSelector } from 'gt-next';
-import { getGT, getLocale } from 'gt-next/server';
-import { GtMark } from '../../components/gt-mark';
-import '../globals.css';
+import { GTProvider, LocaleSelector, useGT, useLocale } from 'gt-next';
+import { getGT } from 'gt-next/server';
+import { GtMark } from '../components/gt-mark';
+import './globals.css';
 
 const INTER_STYLESHEET =
   'https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..600&display=swap';
@@ -17,15 +17,16 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function LocaleLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const gt = await getGT();
+  const locale = useLocale();
+  const gt = useGT();
 
   return (
-    <html lang={await getLocale()}>
+    <html lang={locale}>
       <head>
         {/* Next drops the remote @import in gt-brand.css, so load Inter here. */}
         <link rel='preconnect' href='https://fonts.googleapis.com' />
