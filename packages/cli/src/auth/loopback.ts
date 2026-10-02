@@ -10,9 +10,15 @@ const DEFAULT_CALLBACK_TIMEOUT_MS = 5 * 60 * 1000;
 /**
  * How long a settled callback's page stays available to a browser that
  * repeats the navigation after the exchange (a first request it aborted, a
- * refresh), so the repeat gets the page instead of a refused connection.
+ * refresh), while the process is still running.
  */
 export const CALLBACK_REPEAT_WINDOW_MS = 10_000;
+/**
+ * How long the process stays open for the browser's repeat when the first
+ * request was abandoned before its page was sent, so the page the browser
+ * never received can still reach it.
+ */
+export const CALLBACK_RETRY_HOLD_MS = 5_000;
 
 export type CallbackWaitOptions<T> = {
   /** What the page says about a success, such as the signed-in account. */
@@ -40,8 +46,10 @@ export type LoopbackServer = {
   ) => Promise<T>;
   /**
    * Stops the server. Once a callback has settled, repeats of that callback
-   * are still answered for CALLBACK_REPEAT_WINDOW_MS, on a listener that
-   * never holds the process open.
+   * are still answered for CALLBACK_REPEAT_WINDOW_MS while the process runs;
+   * the listener holds the process open only for CALLBACK_RETRY_HOLD_MS, and
+   * only when the first page was never sent. A command that exits on its own
+   * (a failed `gt login` exits at once) ends the window early.
    */
   close: () => void;
 };
@@ -76,14 +84,23 @@ export async function startLoopbackServer(): Promise<LoopbackServer> {
   const origin = `http://127.0.0.1:${port}`;
   let timeout: NodeJS.Timeout | undefined;
   let repeatWindow: NodeJS.Timeout | undefined;
-  // After a callback settles, the listener answers its repeats for a short
-  // while and then closes. It is unref'd, so a CLI that has finished exits
-  // without waiting for the window to end.
-  const closeAfterRepeats = () => {
-    if (repeatWindow) return;
+  let hold: NodeJS.Timeout | undefined;
+  // Lets the process exit without waiting for the repeat window.
+  const release = () => {
+    clearTimeout(hold);
     server.unref();
+  };
+  // After a callback settles, the listener answers its repeats for a short
+  // while and then closes. A first page the browser received needs no
+  // repeat, so the listener is unref'd at once and a finished CLI exits
+  // without waiting. A first page the browser abandoned before it was sent
+  // keeps the process open until the repeat is answered or the hold ends.
+  const closeAfterRepeats = (firstPageSent: boolean) => {
+    if (repeatWindow) return;
     repeatWindow = setTimeout(() => server.close(), CALLBACK_REPEAT_WINDOW_MS);
     repeatWindow.unref();
+    if (firstPageSent) release();
+    else hold = setTimeout(release, CALLBACK_RETRY_HOLD_MS);
   };
 
   return {
@@ -154,6 +171,7 @@ export async function startLoopbackServer(): Promise<LoopbackServer> {
           // of the same callback gets the same page instead of a 404.
           if (outcome) {
             respond(response, await outcome.page);
+            release();
             return;
           }
 
@@ -162,12 +180,16 @@ export async function startLoopbackServer(): Promise<LoopbackServer> {
             href: url.href,
             page: (async () => {
               let page: string;
+              // Read when the exchange settles: a browser that aborted this
+              // navigation has closed the connection by then.
+              let firstPageSent = false;
               try {
                 const result = await onCallback(url);
                 page = renderCallbackPage({
                   ok: true,
                   ...options?.describe?.(result),
                 });
+                firstPageSent = !response.destroyed;
                 respond(response, page);
                 resolve(result);
               } catch (error) {
@@ -177,10 +199,11 @@ export async function startLoopbackServer(): Promise<LoopbackServer> {
                 // parameter, which a callback with a bad state also carries.
                 const reason = options?.failure?.(error) ?? 'failed';
                 page = renderCallbackPage({ ok: false, reason });
+                firstPageSent = !response.destroyed;
                 respond(response, page);
                 reject(error);
               } finally {
-                closeAfterRepeats();
+                closeAfterRepeats(firstPageSent);
               }
               return page;
             })(),
