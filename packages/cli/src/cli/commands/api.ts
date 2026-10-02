@@ -21,6 +21,7 @@ export type ApiCommandOptions = SharedFlags & {
   header?: string[];
   include?: boolean;
   input?: string;
+  list?: boolean;
   method: string;
   spec?: boolean;
 };
@@ -126,6 +127,78 @@ function readInput(
   }
 }
 
+type SpecOperation = { operationId?: string; summary?: string };
+const specPaths: Record<
+  string,
+  Record<string, SpecOperation>
+> = openApiSpec.paths;
+
+function listOperations(): string {
+  return Object.entries(specPaths)
+    .flatMap(([specPath, operations]) =>
+      Object.entries(operations).map(
+        ([method, operation]) =>
+          `${method.toUpperCase()}\t${specPath}\t${operation.operationId ?? ''}\t${operation.summary ?? ''}\n`
+      )
+    )
+    .join('');
+}
+
+// Inlines local `#/...` references so one operation reads standalone. A ref
+// already being expanded is left as-is because schemas like JsonValue recurse.
+function resolveRefs(value: unknown, expanding: string[] = []): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => resolveRefs(item, expanding));
+  }
+  if (!value || typeof value !== 'object') return value;
+  const { $ref, ...siblings } = value as Record<string, unknown>;
+  if (typeof $ref === 'string' && $ref.startsWith('#/')) {
+    const target = $ref
+      .slice(2)
+      .split('/')
+      .reduce<unknown>(
+        (node, key) => (node as Record<string, unknown> | undefined)?.[key],
+        openApiSpec
+      );
+    if (!expanding.includes($ref) && target && typeof target === 'object') {
+      return resolveRefs({ ...target, ...siblings }, [...expanding, $ref]);
+    }
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value).map(([key, child]) => [
+      key,
+      resolveRefs(child, expanding),
+    ])
+  );
+}
+
+// Accepts an operationId, a spec path, or a concrete path such as
+// /v2/project/info/abc so agents can look up the request they are about to make.
+function findOperations(
+  endpoint: string
+): Record<string, Record<string, SpecOperation>> {
+  const byOperationId = Object.entries(specPaths).flatMap(
+    ([specPath, operations]) =>
+      Object.entries(operations)
+        .filter(([, operation]) => operation.operationId === endpoint)
+        .map(([method, operation]) => [specPath, { [method]: operation }])
+  );
+  if (byOperationId.length) return Object.fromEntries(byOperationId);
+
+  const requestPath = `/${endpoint.replace(/^\//, '').split('?')[0]}`;
+  if (specPaths[requestPath]) {
+    return { [requestPath]: specPaths[requestPath] };
+  }
+  return Object.fromEntries(
+    Object.entries(specPaths).filter(([specPath]) =>
+      new RegExp(`^${specPath.replace(/\{[^}]+\}/g, '[^/]+')}$`).test(
+        requestPath
+      )
+    )
+  );
+}
+
 function writeResponseMetadata(
   response: Response,
   writeStdout: (output: string | Uint8Array) => void
@@ -203,8 +276,30 @@ export async function handleApiCommand(
   const writeStderr =
     dependencies.writeStderr ?? ((output) => process.stderr.write(output));
 
+  if (options.list) {
+    writeStdout(listOperations());
+    return;
+  }
+
   if (options.spec) {
-    writeStdout(`${JSON.stringify(openApiSpec, null, 2)}\n`);
+    if (!endpoint) {
+      writeStdout(`${JSON.stringify(openApiSpec, null, 2)}\n`);
+      return;
+    }
+    const operations = findOperations(endpoint);
+    if (!Object.keys(operations).length) {
+      fail(
+        createDiagnosticMessage({
+          source: 'gt',
+          severity: 'Error',
+          whatHappened: 'No API operation matches the endpoint',
+          details: endpoint,
+          fix: 'Run `gt api --list` to see the available endpoints and operation IDs',
+        }),
+        dependencies
+      );
+    }
+    writeStdout(`${JSON.stringify(resolveRefs(operations), null, 2)}\n`);
     return;
   }
 
@@ -214,7 +309,7 @@ export async function handleApiCommand(
         source: 'gt',
         severity: 'Error',
         whatHappened: 'No API endpoint was provided',
-        fix: 'Pass an endpoint or use `gt api --spec` to inspect the OpenAPI specification',
+        fix: 'Pass an endpoint, run `gt api --list` to see the available endpoints, or run `gt api --spec <endpoint>` to inspect one',
       }),
       dependencies
     );

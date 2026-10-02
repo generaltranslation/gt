@@ -416,7 +416,14 @@ export class BaseCLI {
           ]
         )
         .option('-i, --include', 'Include response status and headers')
-        .option('--spec', 'Print the bundled OpenAPI specification')
+        .option(
+          '--spec',
+          'Print the bundled OpenAPI specification, or only the operations matching [endpoint] (path or operation ID) with references resolved'
+        )
+        .option(
+          '--list',
+          'List the method, path, operation ID, and summary of every API operation'
+        )
     ).action((endpoint, options: ApiCommandOptions) =>
       handleApiCommand(endpoint, options)
     );

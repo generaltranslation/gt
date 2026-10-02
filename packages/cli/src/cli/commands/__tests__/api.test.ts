@@ -253,6 +253,73 @@ describe('gt api', () => {
     expect(JSON.parse(outputText(stdout))).toMatchObject({ openapi: '3.1.0' });
   });
 
+  it('lists every operation as a tab-separated line', async () => {
+    const stdout: OutputChunk[] = [];
+
+    await handleApiCommand(
+      undefined,
+      { list: true, method: 'GET' },
+      { writeStdout: (output) => stdout.push(output) }
+    );
+
+    expect(outputText(stdout).split('\n')).toContain(
+      'POST\t/v2/project/files/info\tgetFileInfo\tGet file metadata'
+    );
+  });
+
+  it.each([
+    ['a concrete path', '/v2/project/info/abc?x=1'],
+    ['an operation ID', 'getProjectInfo'],
+  ])(
+    'prints one operation with references resolved for %s',
+    async (_, endpoint) => {
+      const stdout: OutputChunk[] = [];
+
+      await handleApiCommand(
+        endpoint,
+        { method: 'GET', spec: true },
+        { writeStdout: (output) => stdout.push(output) }
+      );
+
+      const output = outputText(stdout);
+      expect(Object.keys(JSON.parse(output))).toEqual([
+        '/v2/project/info/{projectId}',
+      ]);
+      expect(output).not.toContain('#/components/schemas/ApiVersion');
+    }
+  );
+
+  it('prefers an exact path over a matching path template', async () => {
+    const stdout: OutputChunk[] = [];
+
+    await handleApiCommand(
+      '/cli/wizard/session',
+      { method: 'GET', spec: true },
+      { writeStdout: (output) => stdout.push(output) }
+    );
+
+    expect(Object.keys(JSON.parse(outputText(stdout)))).toEqual([
+      '/cli/wizard/session',
+    ]);
+  });
+
+  it('points to --list when no operation matches', async () => {
+    const stderr: string[] = [];
+    const exit = vi.fn((code: number): never => {
+      throw new Error(`exit ${code}`);
+    });
+
+    await expect(
+      handleApiCommand(
+        '/v2/nope',
+        { method: 'GET', spec: true },
+        { exit, writeStderr: (output) => stderr.push(output) }
+      )
+    ).rejects.toThrow('exit 1');
+
+    expect(stderr.join('')).toContain('gt api --list');
+  });
+
   it('preserves binary response bodies', async () => {
     const responseBody = Uint8Array.from([0, 255, 1, 128]);
     const stdout: OutputChunk[] = [];
