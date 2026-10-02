@@ -1,4 +1,5 @@
 import type { SupportedReactFrameworks } from '../../types/index.js';
+import { tanstackStartSetup } from './tanstackStart/index.js';
 import { viteSetup } from './vite.js';
 
 /** A change setup left to a person, reported as a warning. */
@@ -27,6 +28,8 @@ export type BuildToolSetup = {
   /** Loads local translations itself instead of loadTranslations.js. */
   ownsLoader: boolean;
   skipsGTInstall(isUsingGT: boolean): boolean;
+  /** Setup guide linked after setup; the React quickstart otherwise. */
+  docsUrl?: string;
   /** The development credentials question asked with local storage. */
   devCredentialsOption: '--live-translations' | '--dev-credentials';
   /** Rejects an app layout it cannot configure, before any change. */
@@ -39,7 +42,10 @@ export type BuildToolSetup = {
   apply(ctx: BuildToolContext): Promise<SetupResult>;
 };
 
-export const BUILD_TOOL_SETUPS: BuildToolSetup[] = [viteSetup];
+export const BUILD_TOOL_SETUPS: BuildToolSetup[] = [
+  viteSetup,
+  tanstackStartSetup,
+];
 
 export function getBuildToolSetup(
   framework?: string

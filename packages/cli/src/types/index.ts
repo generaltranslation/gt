@@ -130,6 +130,7 @@ export const SUPPORTED_REACT_FRAMEWORKS = [
   'gatsby',
   'react',
   'redwood',
+  'tanstack-start',
 ] as const;
 
 export type FrameworkObject =

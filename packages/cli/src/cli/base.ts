@@ -1,6 +1,9 @@
 import { Command, InvalidArgumentError, Option } from 'commander';
 import { ProjectApiKeyPermission } from 'generaltranslation/api';
-import { DEFAULT_TRANSLATIONS_DIR } from '../utils/constants.js';
+import {
+  DEFAULT_TRANSLATIONS_DIR,
+  REACT_QUICKSTART_URL,
+} from '../utils/constants.js';
 import {
   createOrUpdateConfig,
   mergeSetupConfig,
@@ -1411,7 +1414,7 @@ See https://www.npmjs.com/package/gt-vue`);
       await executeReactSetup(session, reactSetup, options);
       logger.endCommand(
         `Done! Since this wizard is experimental, please review the changes and make modifications as needed.
-\nNext step: start internationalizing! See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`
+\nNext step: start internationalizing! See the docs for more information: ${buildTool?.docsUrl ?? REACT_QUICKSTART_URL}`
       );
       logger.startCommand('Setting up project config...');
     }
