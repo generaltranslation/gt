@@ -64,6 +64,7 @@ vi.mock('../../console/logger.js', () => ({
   },
 }));
 
+import { UserAuthError } from '../../auth/errors.js';
 import { hasLogin, login } from '../../auth/oauth.js';
 import { logger } from '../../console/logger.js';
 import {
@@ -182,6 +183,91 @@ describe('init development credentials', () => {
     expect(logger.endCommand).toHaveBeenCalledWith(
       expect.stringContaining('Done!')
     );
+  });
+
+  // Pressing Enter at the credentials prompt accepts its default.
+  function pressEnterForCredentials(): void {
+    vi.mocked(promptConfirm).mockImplementation(
+      async ({ message, defaultValue }) =>
+        message.includes('hot-reload key') ? (defaultValue ?? false) : true
+    );
+  }
+
+  const obsoleteLogin = () =>
+    new UserAuthError(
+      'obsolete_credentials',
+      'This stored login is obsolete or invalid and cannot be used safely'
+    );
+
+  it('defaults the credentials prompt to Yes and says it signs in when signed out', async () => {
+    vi.mocked(hasLogin).mockResolvedValue(false);
+    pressEnterForCredentials();
+    vi.mocked(promptSelect).mockResolvedValueOnce(projects[1]);
+
+    await runInit();
+
+    expect(promptConfirm).toHaveBeenCalledWith({
+      message:
+        'Would you like to sign in to General Translation and set up a project ID and hot-reload key in .env.local?',
+      defaultValue: true,
+    });
+    expect(login).toHaveBeenCalledTimes(1);
+    expect(api.createProjectApiKey).toHaveBeenCalledTimes(1);
+  });
+
+  it('signs in again over an obsolete stored login', async () => {
+    vi.mocked(hasLogin).mockRejectedValue(obsoleteLogin());
+    pressEnterForCredentials();
+    vi.mocked(promptSelect).mockResolvedValueOnce(projects[1]);
+
+    await runInit();
+
+    expect(promptConfirm).toHaveBeenCalledWith({
+      message: expect.stringContaining('sign in to General Translation'),
+      defaultValue: true,
+    });
+    expect(login).toHaveBeenCalledTimes(1);
+    expect(api.createProjectApiKey).toHaveBeenCalledTimes(1);
+  });
+
+  it('lets a signed-out user decline credentials without signing in', async () => {
+    vi.mocked(hasLogin).mockRejectedValue(obsoleteLogin());
+    vi.mocked(promptConfirm).mockImplementation(
+      async ({ message }) => !message.includes('hot-reload key')
+    );
+
+    await runInit();
+
+    expect(login).not.toHaveBeenCalled();
+    expect(api.createProjectApiKey).not.toHaveBeenCalled();
+    expect(fs.existsSync(path.join(appDirectory, 'gt.config.json'))).toBe(true);
+    expect(fs.existsSync(envPath())).toBe(false);
+  });
+
+  it('defaults the credentials prompt to Yes when signed in', async () => {
+    pressEnterForCredentials();
+    vi.mocked(promptSelect).mockResolvedValueOnce(projects[1]);
+
+    await runInit();
+
+    expect(promptConfirm).toHaveBeenCalledWith({
+      message:
+        'Would you like to set up a project ID and hot-reload key in .env.local?',
+      defaultValue: true,
+    });
+    expect(login).not.toHaveBeenCalled();
+    expect(api.createProjectApiKey).toHaveBeenCalledTimes(1);
+  });
+
+  it('names the project and key it created without printing the key', async () => {
+    vi.mocked(promptSelect).mockResolvedValueOnce(projects[1]);
+
+    await runInit();
+
+    const success = vi.mocked(logger.success).mock.calls.flat().join('\n');
+    expect(success).toContain('App (p2)');
+    expect(success).toContain('Development key (gt init)');
+    expect(success).not.toContain('gtx-secret-development-key');
   });
 
   it('forwards --config/--src and the detected framework to config and env output', async () => {

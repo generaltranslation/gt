@@ -1319,6 +1319,19 @@ See https://www.npmjs.com/package/gt-vue`);
     const credentialsOption =
       (storage === 'local' && buildTool?.devCredentialsOption) ||
       '--dev-credentials';
+    // Creating credentials talks to GT as the signed-in user unless an API
+    // key is set. A development key in .env.local never stands in. An
+    // obsolete stored login counts as signed out, so signing in replaces it.
+    const canAuthenticate = async () =>
+      Boolean(settings.apiKey) ||
+      (await hasLogin({ baseUrl: settings.baseUrl }).catch((error) => {
+        if (
+          error instanceof UserAuthError &&
+          error.code === 'obsolete_credentials'
+        )
+          return false;
+        throw error;
+      }));
     const provision =
       !credentialsSet &&
       (credentialsOption === '--live-translations'
@@ -1335,10 +1348,12 @@ See https://www.npmjs.com/package/gt-vue`);
         : await session.answer('--dev-credentials or --no-dev-credentials', {
             explicit: options.devCredentials,
             // Creating a key is never a default, so --defaults leaves this open.
-            ask: () =>
+            // The prompt names the sign-in so its Yes default is informed.
+            ask: async () =>
               promptConfirm({
-                message:
-                  'Would you like to set up a project ID and hot-reload key in .env.local?',
+                message: (await canAuthenticate())
+                  ? 'Would you like to set up a project ID and hot-reload key in .env.local?'
+                  : 'Would you like to sign in to General Translation and set up a project ID and hot-reload key in .env.local?',
                 defaultValue: true,
               }),
           })) === true;
@@ -1382,13 +1397,7 @@ See https://www.npmjs.com/package/gt-vue`);
 
     session.assertResolved();
 
-    // Only creating credentials talks to GT, as the signed-in user unless an
-    // API key is set. A development key in .env.local never stands in.
-    if (
-      provision &&
-      !settings.apiKey &&
-      !(await hasLogin({ baseUrl: settings.baseUrl }))
-    ) {
+    if (provision && !(await canAuthenticate())) {
       await signInForSetup(session, settings.baseUrl);
     }
     const project = provision
