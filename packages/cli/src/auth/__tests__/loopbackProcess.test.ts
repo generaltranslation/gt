@@ -80,6 +80,19 @@ describe('loopback login in its own process', () => {
     );
   });
 
+  it('keeps the hold through a repeat that was abandoned too', async () => {
+    const login = startLogin(700);
+    const callback = `${await login.line()}?code=abc&state=xyz`;
+    await abandonedGet(callback, 75);
+    await abandonedGet(callback, 75);
+    expect(await login.line()).toBe('settled');
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const repeat = await fetch(callback);
+    expect(repeat.status).toBe(200);
+    expect(await repeat.text()).toContain('Signed in to the gt CLI');
+    await login.exited;
+  });
   it('exits as soon as the login returns when the browser received the page', async () => {
     const login = startLogin(50);
     const callback = `${await login.line()}?code=abc&state=xyz`;

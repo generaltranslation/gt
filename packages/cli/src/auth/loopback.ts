@@ -170,7 +170,11 @@ export async function startLoopbackServer(): Promise<LoopbackServer> {
           // a refresh while the exchange runs or just after it), so a repeat
           // of the same callback gets the same page instead of a 404.
           if (outcome) {
-            respond(response, await outcome.page);
+            const page = await outcome.page;
+            // A repeat the browser abandoned too gets nothing, and the hold
+            // stays for the next one.
+            if (response.destroyed) return;
+            respond(response, page);
             release();
             return;
           }
