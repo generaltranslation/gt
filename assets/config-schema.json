@@ -725,6 +725,11 @@
               },
               "required": ["files"],
               "additionalProperties": false
+            },
+            "localizeRedirects": {
+              "type": "boolean",
+              "description": "Add localized copies of English redirects for pages renamed or removed in a translate run. Uses docsUrlPattern and experimentalHideDefaultLocale to place the locale.",
+              "default": false
             }
           },
           "additionalProperties": false
