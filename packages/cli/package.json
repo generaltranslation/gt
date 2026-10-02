@@ -137,6 +137,7 @@
     "micromatch": "^4.0.8",
     "open": "^10.1.1",
     "openid-client": "6.8.8",
+    "package-manager-detector": "^1.8.0",
     "pino": "^10.1.0",
     "remark-frontmatter": "^5.0.0",
     "remark-mdx": "^3.1.0",

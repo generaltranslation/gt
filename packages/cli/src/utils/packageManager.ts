@@ -1,7 +1,8 @@
 // This file is MIT licensed and was adapted from https://github.com/getsentry/sentry-wizard/blob/master/src/utils/package-manager.ts and https://github.com/getsentry/sentry-wizard/blob/master/src/utils/clack/index.ts
 import * as fs from 'fs';
 import * as path from 'path';
-import { parse } from 'semver';
+import { detect } from 'package-manager-detector/detect';
+import type { Agent } from 'package-manager-detector';
 import { getPackageJson, updatePackageJson } from './packageJson.js';
 import { promptSelect } from '../console/logging.js';
 
@@ -268,6 +269,16 @@ export function _detectPackageManger(cwd: string): PackageManager | null {
   return null;
 }
 
+const DETECTED_PACKAGE_MANAGERS: Partial<Record<Agent, PackageManager>> = {
+  npm: NPM,
+  yarn: YARN_V1,
+  'yarn@berry': YARN_V2,
+  pnpm: PNPM,
+  'pnpm@6': PNPM,
+  bun: BUN,
+  deno: DENO,
+};
+
 export async function getPackageManager(
   cwd: string = process.cwd(),
   specifiedPackageManager?: string,
@@ -280,27 +291,18 @@ export async function getPackageManager(
     if (packageManager) return packageManager;
   }
 
-  // A fresh scaffold can declare its manager before a lockfile exists.
-  // The npx launcher's manager says nothing about the target project.
-  const declaration = (await getPackageJson(cwd))?.packageManager;
-  const match =
-    typeof declaration === 'string' && /^([^@]+)@(.+)$/.exec(declaration);
-  const version = match && parse(match[2]);
-  if (match && version) {
-    const id =
-      match[1] === 'yarn'
-        ? version.major <= 1
-          ? YARN_V1.id
-          : YARN_V2.id
-        : match[1];
-    const declaredPackageManager = packageManagers.find(
-      (manager) => manager.id === id
-    );
-    if (declaredPackageManager) return declaredPackageManager;
-  }
-
-  const detectedPackageManager = _detectPackageManger(cwd);
-  if (detectedPackageManager) return detectedPackageManager;
+  // The nearest packageManager field, devEngines field or lockfile wins, so
+  // a workspace member inherits its root's manager. A declaration comes first
+  // so a rush.json cannot mask it. The walk stops at the git root so an
+  // unrelated parent project cannot claim a standalone app. The npx
+  // launcher's manager says nothing about the target project.
+  const detected = await detect({
+    cwd,
+    strategies: ['packageManager-field', 'devEngines-field', 'lockfile'],
+    stopDir: (dir) => fs.existsSync(path.join(dir, '.git')),
+  });
+  const packageManager = detected && DETECTED_PACKAGE_MANAGERS[detected.agent];
+  if (packageManager) return packageManager;
 
   if (errorIfNotFound) {
     throw new NoPackageManagerError('No package manager found');

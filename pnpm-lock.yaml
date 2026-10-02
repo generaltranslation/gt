@@ -882,6 +882,9 @@ importers:
       openid-client:
         specifier: 6.8.8
         version: 6.8.8
+      package-manager-detector:
+        specifier: ^1.8.0
+        version: 1.8.0
       pino:
         specifier: ^10.1.0
         version: 10.1.0
@@ -16927,6 +16930,9 @@ packages:
 
   package-manager-detector@0.2.11:
     resolution: {integrity: sha512-BEnLolu+yuz22S56CU1SUKq3XC3PkwD5wv4ikR4MfGvnRVcmzXR9DwSlW2fEamyTPyXHomBJRzgapeuBvRNzJQ==}
+
+  package-manager-detector@1.8.0:
+    resolution: {integrity: sha512-yQA4H19AmPEoMUeavPMDIe1higySl/gH/yaQrkT/s07Qp+7pp2hYz30N3z2l5BkjVkF9Ow6o0wjJamm2y7Sn0A==}
 
   package-up@5.0.0:
     resolution: {integrity: sha512-MQEgDUvXCa3sGvqHg3pzHO8e9gqTCMPVrWUko3vPQGntwegmFo52mZb2abIVTjFnUcW0BcPz0D93jV5Cas1DWA==}
@@ -39288,6 +39294,8 @@ snapshots:
   package-manager-detector@0.2.11:
     dependencies:
       quansync: 0.2.11
+
+  package-manager-detector@1.8.0: {}
 
   package-up@5.0.0:
     dependencies:
