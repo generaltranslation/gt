@@ -2,12 +2,18 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import type {
+  AssignContextGroupData,
+  AssignContextGroupErrors,
+  AssignContextGroupResponses,
   CreateBranchData,
   CreateBranchErrors,
   CreateBranchResponses,
   CreateCliWizardSessionData,
   CreateCliWizardSessionErrors,
   CreateCliWizardSessionResponses,
+  CreateContextGroupData,
+  CreateContextGroupErrors,
+  CreateContextGroupResponses,
   CreateProjectApiKeyData,
   CreateProjectApiKeyErrors,
   CreateProjectApiKeyResponses,
@@ -20,6 +26,18 @@ import type {
   DeleteCliWizardSessionData,
   DeleteCliWizardSessionErrors,
   DeleteCliWizardSessionResponses,
+  DeleteContextCustomPromptData,
+  DeleteContextCustomPromptErrors,
+  DeleteContextCustomPromptResponses,
+  DeleteContextGlossaryEntryData,
+  DeleteContextGlossaryEntryErrors,
+  DeleteContextGlossaryEntryResponses,
+  DeleteContextGlossaryTranslationData,
+  DeleteContextGlossaryTranslationErrors,
+  DeleteContextGlossaryTranslationResponses,
+  DeleteContextGroupData,
+  DeleteContextGroupErrors,
+  DeleteContextGroupResponses,
   DownloadFileData,
   DownloadFileErrors,
   DownloadFileResponses,
@@ -29,6 +47,9 @@ import type {
   EnqueueFileTranslationsData,
   EnqueueFileTranslationsErrors,
   EnqueueFileTranslationsResponses,
+  ExportContextContentData,
+  ExportContextContentErrors,
+  ExportContextContentResponses,
   GenerateProjectContextData,
   GenerateProjectContextErrors,
   GenerateProjectContextResponses,
@@ -38,12 +59,21 @@ import type {
   GetCliWizardSessionData,
   GetCliWizardSessionErrors,
   GetCliWizardSessionResponses,
+  GetContextGlossaryEntryData,
+  GetContextGlossaryEntryErrors,
+  GetContextGlossaryEntryResponses,
+  GetContextGroupData,
+  GetContextGroupErrors,
+  GetContextGroupResponses,
   GetFileInfoData,
   GetFileInfoErrors,
   GetFileInfoResponses,
   GetOrphanedFilesData,
   GetOrphanedFilesErrors,
   GetOrphanedFilesResponses,
+  GetProjectContextGroupData,
+  GetProjectContextGroupErrors,
+  GetProjectContextGroupResponses,
   GetProjectInfoData,
   GetProjectInfoErrors,
   GetProjectInfoResponses,
@@ -53,9 +83,27 @@ import type {
   GetTranslationStatusData,
   GetTranslationStatusErrors,
   GetTranslationStatusResponses,
+  ImportContextContentData,
+  ImportContextContentErrors,
+  ImportContextContentResponses,
+  ListContextCustomPromptsData,
+  ListContextCustomPromptsErrors,
+  ListContextCustomPromptsResponses,
+  ListContextGlossaryData,
+  ListContextGlossaryErrors,
+  ListContextGlossaryResponses,
+  ListContextGlossaryTranslationsData,
+  ListContextGlossaryTranslationsErrors,
+  ListContextGlossaryTranslationsResponses,
+  ListContextGroupsData,
+  ListContextGroupsErrors,
+  ListContextGroupsResponses,
   ListOrgsData,
   ListOrgsErrors,
   ListOrgsResponses,
+  ListProjectContextGroupsData,
+  ListProjectContextGroupsErrors,
+  ListProjectContextGroupsResponses,
   ListProjectsData,
   ListProjectsErrors,
   ListProjectsResponses,
@@ -86,12 +134,30 @@ import type {
   PublishFilesData,
   PublishFilesErrors,
   PublishFilesResponses,
+  ReorderContextGroupData,
+  ReorderContextGroupErrors,
+  ReorderContextGroupResponses,
+  SetContextGlossaryTranslationData,
+  SetContextGlossaryTranslationErrors,
+  SetContextGlossaryTranslationResponses,
   SubmitUserEditDiffsData,
   SubmitUserEditDiffsErrors,
   SubmitUserEditDiffsResponses,
   TranslateData,
   TranslateErrors,
   TranslateResponses,
+  UnassignContextGroupData,
+  UnassignContextGroupErrors,
+  UnassignContextGroupResponses,
+  UpdateContextCustomPromptData,
+  UpdateContextCustomPromptErrors,
+  UpdateContextCustomPromptResponses,
+  UpdateContextGlossaryEntryData,
+  UpdateContextGlossaryEntryErrors,
+  UpdateContextGlossaryEntryResponses,
+  UpdateContextGroupData,
+  UpdateContextGroupErrors,
+  UpdateContextGroupResponses,
   UpdateProjectInfoData,
   UpdateProjectInfoErrors,
   UpdateProjectInfoResponses,
@@ -104,6 +170,12 @@ import type {
   UploadTranslationsData,
   UploadTranslationsErrors,
   UploadTranslationsResponses,
+  UpsertContextCustomPromptsData,
+  UpsertContextCustomPromptsErrors,
+  UpsertContextCustomPromptsResponses,
+  UpsertContextGlossaryData,
+  UpsertContextGlossaryErrors,
+  UpsertContextGlossaryResponses,
   WorkspacePluginInfoData,
   WorkspacePluginInfoErrors,
   WorkspacePluginInfoResponses,
@@ -678,31 +750,6 @@ export const getTranslationJobInfo = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Generate translation context
- *
- * Generate glossaries and translation instructions for the project.
- */
-export const generateProjectContext = <ThrowOnError extends boolean = false>(
-  options: Options<GenerateProjectContextData, ThrowOnError>
-) =>
-  options.client.post<
-    GenerateProjectContextResponses,
-    GenerateProjectContextErrors,
-    ThrowOnError
-  >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/project/setup/generate',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-/**
  * Publish or unpublish files
  *
  * Publish or unpublish translated files to the CDN. Requires CDN to be enabled.
@@ -862,6 +909,140 @@ export const listProjects = <ThrowOnError extends boolean = false>(
   });
 
 /**
+ * Generate translation context
+ *
+ * Generate glossaries and translation instructions for the project.
+ */
+export const generateProjectContext = <ThrowOnError extends boolean = false>(
+  options: Options<GenerateProjectContextData, ThrowOnError>
+) =>
+  options.client.post<
+    GenerateProjectContextResponses,
+    GenerateProjectContextErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/project/setup/generate',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * List project context groups
+ *
+ * Lists the groups assigned to the project, in priority order. Requires `org:context:read`. Omit `cursor` for the first page. When the response's `nextCursor` is a string, pass it as `cursor` to fetch the next page; when it is `null`, there are no more results.
+ */
+export const listProjectContextGroups = <ThrowOnError extends boolean = false>(
+  options: Options<ListProjectContextGroupsData, ThrowOnError>
+) =>
+  options.client.get<
+    ListProjectContextGroupsResponses,
+    ListProjectContextGroupsErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects/{projectId}/context-groups',
+    ...options,
+  });
+
+/**
+ * Unassign a context group
+ *
+ * Removes the assignment and keeps the group and its content. Does nothing if the group isn't assigned. Requires `org:context:write`.
+ */
+export const unassignContextGroup = <ThrowOnError extends boolean = false>(
+  options: Options<UnassignContextGroupData, ThrowOnError>
+) =>
+  options.client.delete<
+    UnassignContextGroupResponses,
+    UnassignContextGroupErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects/{projectId}/context-groups/{groupId}',
+    ...options,
+  });
+
+/**
+ * Get a project context group
+ *
+ * Gets one assignment: the group's ID, name and priority. Requires `org:context:read`.
+ */
+export const getProjectContextGroup = <ThrowOnError extends boolean = false>(
+  options: Options<GetProjectContextGroupData, ThrowOnError>
+) =>
+  options.client.get<
+    GetProjectContextGroupResponses,
+    GetProjectContextGroupErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects/{projectId}/context-groups/{groupId}',
+    ...options,
+  });
+
+/**
+ * Reorder a context group
+ *
+ * Moves the assigned group to a new zero-based position. Requires `org:context:write`.
+ */
+export const reorderContextGroup = <ThrowOnError extends boolean = false>(
+  options: Options<ReorderContextGroupData, ThrowOnError>
+) =>
+  options.client.patch<
+    ReorderContextGroupResponses,
+    ReorderContextGroupErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects/{projectId}/context-groups/{groupId}',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Assign a context group
+ *
+ * Assigns the group to the project at the lowest priority (201). If it's already assigned, nothing changes (200), and repeating it never moves a group that was reordered. Requires `org:context:write`.
+ */
+export const assignContextGroup = <ThrowOnError extends boolean = false>(
+  options: Options<AssignContextGroupData, ThrowOnError>
+) =>
+  options.client.put<
+    AssignContextGroupResponses,
+    AssignContextGroupErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects/{projectId}/context-groups/{groupId}',
+    ...options,
+  });
+
+/**
  * Create a Project
  *
  * Create a project in the specified Organization. Requires `org:projects:create`. Returns `409` if your plan's project limit has been reached. Each successful request creates a new project.
@@ -900,6 +1081,449 @@ export const listOrgs = <ThrowOnError extends boolean = false>(
       { scheme: 'bearer', type: 'http' },
     ],
     url: '/v2/orgs',
+    ...options,
+  });
+
+/**
+ * List context groups
+ *
+ * Lists the org's groups, ordered by ID. Requires `org:context:read`. Omit `cursor` for the first page. When the response's `nextCursor` is a string, pass it as `cursor` to fetch the next page; when it is `null`, there are no more results.
+ */
+export const listContextGroups = <ThrowOnError extends boolean = false>(
+  options: Options<ListContextGroupsData, ThrowOnError>
+) =>
+  options.client.get<
+    ListContextGroupsResponses,
+    ListContextGroupsErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/orgs/{orgId}/context-groups',
+    ...options,
+  });
+
+/**
+ * Create a context group
+ *
+ * Creates an empty, unassigned group. Each call creates a new one. Requires `org:context:write`.
+ */
+export const createContextGroup = <ThrowOnError extends boolean = false>(
+  options: Options<CreateContextGroupData, ThrowOnError>
+) =>
+  options.client.post<
+    CreateContextGroupResponses,
+    CreateContextGroupErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/orgs/{orgId}/context-groups',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Delete a context group
+ *
+ * Deletes the group along with all its terms, custom prompts and project assignments. Requires `org:context:write`.
+ */
+export const deleteContextGroup = <ThrowOnError extends boolean = false>(
+  options: Options<DeleteContextGroupData, ThrowOnError>
+) =>
+  options.client.delete<
+    DeleteContextGroupResponses,
+    DeleteContextGroupErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/context-groups/{groupId}',
+    ...options,
+  });
+
+/**
+ * Get a context group
+ *
+ * Gets the group's ID and name. Requires `org:context:read`.
+ */
+export const getContextGroup = <ThrowOnError extends boolean = false>(
+  options: Options<GetContextGroupData, ThrowOnError>
+) =>
+  options.client.get<
+    GetContextGroupResponses,
+    GetContextGroupErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/context-groups/{groupId}',
+    ...options,
+  });
+
+/**
+ * Update a context group
+ *
+ * Renames the group. The name is the only editable field. Requires `org:context:write`.
+ */
+export const updateContextGroup = <ThrowOnError extends boolean = false>(
+  options: Options<UpdateContextGroupData, ThrowOnError>
+) =>
+  options.client.patch<
+    UpdateContextGroupResponses,
+    UpdateContextGroupErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/context-groups/{groupId}',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * List glossary terms
+ *
+ * Lists terms by ID, without translations. `keyword` is optional and matches the stored keyword exactly (case-sensitive), so it returns at most one term. Requires `org:context:read`. Omit `cursor` for the first page. When the response's `nextCursor` is a string, pass it as `cursor` to fetch the next page; when it is `null`, there are no more results.
+ */
+export const listContextGlossary = <ThrowOnError extends boolean = false>(
+  options: Options<ListContextGlossaryData, ThrowOnError>
+) =>
+  options.client.get<
+    ListContextGlossaryResponses,
+    ListContextGlossaryErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/context-groups/{groupId}/glossary',
+    ...options,
+  });
+
+/**
+ * Upsert glossary terms
+ *
+ * Creates or updates 1–100 terms (`{ entries: [...] }`; send one term as a one-item array), matched by keyword, in one atomic batch. An absent field keeps its stored value. `null` clears a nullable field or removes a map entry; other fields reject `null`. In batches and imports, items match stored items by natural key, stored items absent from the batch are untouched, and nothing else is deleted. A blank CSV cell counts as absent. Repeating a keyword within one batch rejects the whole batch (400). Requires `org:context:write`.
+ */
+export const upsertContextGlossary = <ThrowOnError extends boolean = false>(
+  options: Options<UpsertContextGlossaryData, ThrowOnError>
+) =>
+  options.client.post<
+    UpsertContextGlossaryResponses,
+    UpsertContextGlossaryErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/context-groups/{groupId}/glossary',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Delete a glossary term
+ *
+ * Deletes a term and all of its translations. Requires `org:context:write`.
+ */
+export const deleteContextGlossaryEntry = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<DeleteContextGlossaryEntryData, ThrowOnError>
+) =>
+  options.client.delete<
+    DeleteContextGlossaryEntryResponses,
+    DeleteContextGlossaryEntryErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/context-groups/{groupId}/glossary/{entryId}',
+    ...options,
+  });
+
+/**
+ * Get a glossary term
+ *
+ * Gets a term by ID: its keyword and definition. Translations are listed separately. Requires `org:context:read`.
+ */
+export const getContextGlossaryEntry = <ThrowOnError extends boolean = false>(
+  options: Options<GetContextGlossaryEntryData, ThrowOnError>
+) =>
+  options.client.get<
+    GetContextGlossaryEntryResponses,
+    GetContextGlossaryEntryErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/context-groups/{groupId}/glossary/{entryId}',
+    ...options,
+  });
+
+/**
+ * Update a glossary term
+ *
+ * Updates the term's keyword or definition. An absent field keeps its stored value. `null` clears a nullable field or removes a map entry; other fields reject `null`. In batches and imports, items match stored items by natural key, stored items absent from the batch are untouched, and nothing else is deleted. A blank CSV cell counts as absent. The term ID and translations are kept when the keyword is renamed. Renaming to a keyword another term already has returns 409. Requires `org:context:write`.
+ */
+export const updateContextGlossaryEntry = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<UpdateContextGlossaryEntryData, ThrowOnError>
+) =>
+  options.client.patch<
+    UpdateContextGlossaryEntryResponses,
+    UpdateContextGlossaryEntryErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/context-groups/{groupId}/glossary/{entryId}',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * List term translations
+ *
+ * Lists a term's translations by ID. Requires `org:context:read`. Omit `cursor` for the first page. When the response's `nextCursor` is a string, pass it as `cursor` to fetch the next page; when it is `null`, there are no more results.
+ */
+export const listContextGlossaryTranslations = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<ListContextGlossaryTranslationsData, ThrowOnError>
+) =>
+  options.client.get<
+    ListContextGlossaryTranslationsResponses,
+    ListContextGlossaryTranslationsErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/context-groups/{groupId}/glossary/{entryId}/translations',
+    ...options,
+  });
+
+/**
+ * Delete a term translation
+ *
+ * Deletes one locale's translation and keeps the term and its other translations. Requires `org:context:write`.
+ */
+export const deleteContextGlossaryTranslation = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<DeleteContextGlossaryTranslationData, ThrowOnError>
+) =>
+  options.client.delete<
+    DeleteContextGlossaryTranslationResponses,
+    DeleteContextGlossaryTranslationErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/context-groups/{groupId}/glossary/{entryId}/translations/{locale}',
+    ...options,
+  });
+
+/**
+ * Set a term translation
+ *
+ * Creates or replaces one locale's translation (201 when created, 200 when replaced). Keeps the term and its other translations. Requires `org:context:write`.
+ */
+export const setContextGlossaryTranslation = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SetContextGlossaryTranslationData, ThrowOnError>
+) =>
+  options.client.put<
+    SetContextGlossaryTranslationResponses,
+    SetContextGlossaryTranslationErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/context-groups/{groupId}/glossary/{entryId}/translations/{locale}',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * List custom prompts
+ *
+ * Lists prompts by ID. A null locale means the prompt applies to every locale. Requires `org:context:read`. Omit `cursor` for the first page. When the response's `nextCursor` is a string, pass it as `cursor` to fetch the next page; when it is `null`, there are no more results.
+ */
+export const listContextCustomPrompts = <ThrowOnError extends boolean = false>(
+  options: Options<ListContextCustomPromptsData, ThrowOnError>
+) =>
+  options.client.get<
+    ListContextCustomPromptsResponses,
+    ListContextCustomPromptsErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/context-groups/{groupId}/custom-prompts',
+    ...options,
+  });
+
+/**
+ * Upsert custom prompts
+ *
+ * Creates or updates 1–100 prompts (`{ customPrompts: [...] }`), each matched by name and locale, in one atomic batch. An absent field keeps its stored value. `null` clears a nullable field or removes a map entry; other fields reject `null`. In batches and imports, items match stored items by natural key, stored items absent from the batch are untouched, and nothing else is deleted. A blank CSV cell counts as absent. Repeating a name and locale within one batch rejects the whole batch (400). Requires `org:context:write`.
+ */
+export const upsertContextCustomPrompts = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<UpsertContextCustomPromptsData, ThrowOnError>
+) =>
+  options.client.post<
+    UpsertContextCustomPromptsResponses,
+    UpsertContextCustomPromptsErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/context-groups/{groupId}/custom-prompts',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Delete a custom prompt
+ *
+ * Deletes a prompt. Requires `org:context:write`.
+ */
+export const deleteContextCustomPrompt = <ThrowOnError extends boolean = false>(
+  options: Options<DeleteContextCustomPromptData, ThrowOnError>
+) =>
+  options.client.delete<
+    DeleteContextCustomPromptResponses,
+    DeleteContextCustomPromptErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/context-groups/{groupId}/custom-prompts/{customPromptId}',
+    ...options,
+  });
+
+/**
+ * Update a custom prompt
+ *
+ * Updates a prompt by ID. An absent field keeps its stored value. `null` clears a nullable field or removes a map entry; other fields reject `null`. In batches and imports, items match stored items by natural key, stored items absent from the batch are untouched, and nothing else is deleted. A blank CSV cell counts as absent. Returns 409 if another prompt already has the resulting name and locale. Requires `org:context:write`.
+ */
+export const updateContextCustomPrompt = <ThrowOnError extends boolean = false>(
+  options: Options<UpdateContextCustomPromptData, ThrowOnError>
+) =>
+  options.client.patch<
+    UpdateContextCustomPromptResponses,
+    UpdateContextCustomPromptErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/context-groups/{groupId}/custom-prompts/{customPromptId}',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Import context content
+ *
+ * Merges one JSON or CSV transfer document of terms and custom prompts into the group as one atomic batch. The whole document is validated before anything is written. An absent field keeps its stored value. `null` clears a nullable field or removes a map entry; other fields reject `null`. In batches and imports, items match stored items by natural key, stored items absent from the batch are untouched, and nothing else is deleted. A blank CSV cell counts as absent. In CSV, a blank prompt locale means every locale, and the term, prompt name and prompt text can't be blank (400). Requires `org:context:write`.
+ */
+export const importContextContent = <ThrowOnError extends boolean = false>(
+  options: Options<ImportContextContentData, ThrowOnError>
+) =>
+  options.client.post<
+    ImportContextContentResponses,
+    ImportContextContentErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/context-groups/{groupId}/import',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Export context content
+ *
+ * Exports the group's terms and custom prompts as paged transfer documents. Each page can be re-imported as one batch. Pass `nextCursor` as `cursor` until it is `null`. Pages aren't a snapshot, so changes made mid-export may be missed or included. Requires `org:context:read`.
+ */
+export const exportContextContent = <ThrowOnError extends boolean = false>(
+  options: Options<ExportContextContentData, ThrowOnError>
+) =>
+  options.client.get<
+    ExportContextContentResponses,
+    ExportContextContentErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/context-groups/{groupId}/export',
     ...options,
   });
 
