@@ -81,6 +81,7 @@ export const ModelProvider = {
   OPENAI: 'OPENAI',
   XAI: 'XAI',
   GOOGLE: 'GOOGLE',
+  HYPERCLOVA: 'HYPERCLOVA',
 } as const;
 
 export type ModelProvider = (typeof ModelProvider)[keyof typeof ModelProvider];
@@ -146,6 +147,11 @@ export const ProjectApiKeyPermission = {
 
 export type ProjectApiKeyPermission =
   (typeof ProjectApiKeyPermission)[keyof typeof ProjectApiKeyPermission];
+
+export type ContextGroup = {
+  id: string;
+  name: string;
+};
 
 export type CreateCliWizardSessionResponse = {
   sessionId: string;
@@ -2696,82 +2702,6 @@ export type GetTranslationJobInfoResponses = {
 export type GetTranslationJobInfoResponse =
   GetTranslationJobInfoResponses[keyof GetTranslationJobInfoResponses];
 
-export type GenerateProjectContextData = {
-  body: {
-    files: Array<{
-      branchId?: string;
-      fileId: string;
-      versionId: string;
-    }>;
-    locales?: Array<string>;
-    force?: boolean;
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?: ApiVersion;
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/setup/generate';
-};
-
-export type GenerateProjectContextErrors = {
-  /**
-   * Request error
-   */
-  400: ErrorResponse;
-  /**
-   * Request error
-   */
-  401: ErrorResponse;
-  /**
-   * Request error
-   */
-  403: ErrorResponse;
-  /**
-   * Request error
-   */
-  404: ErrorResponse;
-  /**
-   * Request error
-   */
-  413: ErrorResponse;
-  /**
-   * Request error
-   */
-  429: ErrorResponse;
-  /**
-   * Request error
-   */
-  500: ErrorResponse;
-};
-
-export type GenerateProjectContextError =
-  GenerateProjectContextErrors[keyof GenerateProjectContextErrors];
-
-export type GenerateProjectContextResponses = {
-  /**
-   * Context generation status
-   */
-  200:
-    | {
-        status: 'completed';
-      }
-    | {
-        setupJobId: string;
-        status: 'queued';
-      };
-};
-
-export type GenerateProjectContextResponse =
-  GenerateProjectContextResponses[keyof GenerateProjectContextResponses];
-
 export type PublishFilesData = {
   body: {
     files: Array<{
@@ -3503,6 +3433,446 @@ export type ListProjectsResponses = {
 export type ListProjectsResponse =
   ListProjectsResponses[keyof ListProjectsResponses];
 
+export type GenerateProjectContextData = {
+  body: {
+    files: Array<{
+      branchId?: string;
+      fileId: string;
+      versionId: string;
+    }>;
+    locales?: Array<string>;
+    force?: boolean;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+    /**
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     */
+    'gt-project-id'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v2/project/setup/generate';
+};
+
+export type GenerateProjectContextErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type GenerateProjectContextError =
+  GenerateProjectContextErrors[keyof GenerateProjectContextErrors];
+
+export type GenerateProjectContextResponses = {
+  /**
+   * Context generation status
+   */
+  200:
+    | {
+        status: 'completed';
+      }
+    | {
+        setupJobId: string;
+        status: 'queued';
+      };
+};
+
+export type GenerateProjectContextResponse =
+  GenerateProjectContextResponses[keyof GenerateProjectContextResponses];
+
+export type ListProjectContextGroupsData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Project ID.
+     */
+    projectId: string;
+  };
+  query?: {
+    /**
+     * The nextCursor from the previous page. Omit for the first page.
+     */
+    cursor?: string;
+    /**
+     * Maximum number of items to return, 1–100. Defaults to 50.
+     */
+    limit?: number;
+  };
+  url: '/v2/projects/{projectId}/context-groups';
+};
+
+export type ListProjectContextGroupsErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type ListProjectContextGroupsError =
+  ListProjectContextGroupsErrors[keyof ListProjectContextGroupsErrors];
+
+export type ListProjectContextGroupsResponses = {
+  /**
+   * Page of project context groups
+   */
+  200: {
+    items: Array<{
+      groupId: string;
+      groupName: string;
+      /**
+       * Lower values take precedence for duplicate terms.
+       */
+      priority: number;
+    }>;
+    /**
+     * Opaque cursor for the next page; `null` when there are no more items. Pages are read independently, so items changed between requests may be missed or repeated.
+     */
+    nextCursor: string | null;
+  };
+};
+
+export type ListProjectContextGroupsResponse =
+  ListProjectContextGroupsResponses[keyof ListProjectContextGroupsResponses];
+
+export type UnassignContextGroupData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Project ID.
+     */
+    projectId: string;
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/context-groups/{groupId}';
+};
+
+export type UnassignContextGroupErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type UnassignContextGroupError =
+  UnassignContextGroupErrors[keyof UnassignContextGroupErrors];
+
+export type UnassignContextGroupResponses = {
+  /**
+   * Assignment removed
+   */
+  200: {
+    committed: true;
+  };
+};
+
+export type UnassignContextGroupResponse =
+  UnassignContextGroupResponses[keyof UnassignContextGroupResponses];
+
+export type GetProjectContextGroupData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Project ID.
+     */
+    projectId: string;
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/context-groups/{groupId}';
+};
+
+export type GetProjectContextGroupErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type GetProjectContextGroupError =
+  GetProjectContextGroupErrors[keyof GetProjectContextGroupErrors];
+
+export type GetProjectContextGroupResponses = {
+  /**
+   * Project assignment
+   */
+  200: {
+    groupId: string;
+    groupName: string;
+    /**
+     * Lower values take precedence for duplicate terms.
+     */
+    priority: number;
+  };
+};
+
+export type GetProjectContextGroupResponse =
+  GetProjectContextGroupResponses[keyof GetProjectContextGroupResponses];
+
+export type ReorderContextGroupData = {
+  body: {
+    /**
+     * Zero-based position; out-of-range values move the group to the first or last position.
+     */
+    targetIndex: number;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Project ID.
+     */
+    projectId: string;
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/context-groups/{groupId}';
+};
+
+export type ReorderContextGroupErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type ReorderContextGroupError =
+  ReorderContextGroupErrors[keyof ReorderContextGroupErrors];
+
+export type ReorderContextGroupResponses = {
+  /**
+   * Assignments reordered
+   */
+  200: {
+    committed: true;
+  };
+};
+
+export type ReorderContextGroupResponse =
+  ReorderContextGroupResponses[keyof ReorderContextGroupResponses];
+
+export type AssignContextGroupData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Project ID.
+     */
+    projectId: string;
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/context-groups/{groupId}';
+};
+
+export type AssignContextGroupErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type AssignContextGroupError =
+  AssignContextGroupErrors[keyof AssignContextGroupErrors];
+
+export type AssignContextGroupResponses = {
+  /**
+   * Already assigned
+   */
+  200: {
+    committed: true;
+    /**
+     * False when the group was already assigned; nothing changed.
+     */
+    created: boolean;
+  };
+  /**
+   * Context group assigned
+   */
+  201: {
+    committed: true;
+    /**
+     * False when the group was already assigned; nothing changed.
+     */
+    created: boolean;
+  };
+};
+
+export type AssignContextGroupResponse =
+  AssignContextGroupResponses[keyof AssignContextGroupResponses];
+
 export type CreateProjectData = {
   body: {
     /**
@@ -3645,6 +4015,1432 @@ export type ListOrgsResponses = {
 };
 
 export type ListOrgsResponse = ListOrgsResponses[keyof ListOrgsResponses];
+
+export type ListContextGroupsData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Organization ID.
+     */
+    orgId: string;
+  };
+  query?: {
+    /**
+     * The nextCursor from the previous page. Omit for the first page.
+     */
+    cursor?: string;
+    /**
+     * Maximum number of items to return, 1–100. Defaults to 50.
+     */
+    limit?: number;
+  };
+  url: '/v2/orgs/{orgId}/context-groups';
+};
+
+export type ListContextGroupsErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type ListContextGroupsError =
+  ListContextGroupsErrors[keyof ListContextGroupsErrors];
+
+export type ListContextGroupsResponses = {
+  /**
+   * Page of context groups
+   */
+  200: {
+    items: Array<ContextGroup>;
+    /**
+     * Opaque cursor for the next page; `null` when there are no more items. Pages are read independently, so items changed between requests may be missed or repeated.
+     */
+    nextCursor: string | null;
+  };
+};
+
+export type ListContextGroupsResponse =
+  ListContextGroupsResponses[keyof ListContextGroupsResponses];
+
+export type CreateContextGroupData = {
+  body: {
+    /**
+     * Group name, 1–255 characters.
+     */
+    name: string;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Organization ID.
+     */
+    orgId: string;
+  };
+  query?: never;
+  url: '/v2/orgs/{orgId}/context-groups';
+};
+
+export type CreateContextGroupErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type CreateContextGroupError =
+  CreateContextGroupErrors[keyof CreateContextGroupErrors];
+
+export type CreateContextGroupResponses = {
+  /**
+   * Context group created
+   */
+  201: {
+    committed: true;
+    groupId: string;
+  };
+};
+
+export type CreateContextGroupResponse =
+  CreateContextGroupResponses[keyof CreateContextGroupResponses];
+
+export type DeleteContextGroupData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+  };
+  query?: never;
+  url: '/v2/context-groups/{groupId}';
+};
+
+export type DeleteContextGroupErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type DeleteContextGroupError =
+  DeleteContextGroupErrors[keyof DeleteContextGroupErrors];
+
+export type DeleteContextGroupResponses = {
+  /**
+   * Context group deleted
+   */
+  200: {
+    committed: true;
+  };
+};
+
+export type DeleteContextGroupResponse =
+  DeleteContextGroupResponses[keyof DeleteContextGroupResponses];
+
+export type GetContextGroupData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+  };
+  query?: never;
+  url: '/v2/context-groups/{groupId}';
+};
+
+export type GetContextGroupErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type GetContextGroupError =
+  GetContextGroupErrors[keyof GetContextGroupErrors];
+
+export type GetContextGroupResponses = {
+  /**
+   * Context group
+   */
+  200: ContextGroup;
+};
+
+export type GetContextGroupResponse =
+  GetContextGroupResponses[keyof GetContextGroupResponses];
+
+export type UpdateContextGroupData = {
+  body: {
+    /**
+     * New group name, 1–255 characters.
+     */
+    name: string;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+  };
+  query?: never;
+  url: '/v2/context-groups/{groupId}';
+};
+
+export type UpdateContextGroupErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type UpdateContextGroupError =
+  UpdateContextGroupErrors[keyof UpdateContextGroupErrors];
+
+export type UpdateContextGroupResponses = {
+  /**
+   * Context group updated
+   */
+  200: {
+    committed: true;
+  };
+};
+
+export type UpdateContextGroupResponse =
+  UpdateContextGroupResponses[keyof UpdateContextGroupResponses];
+
+export type ListContextGlossaryData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+  };
+  query?: {
+    /**
+     * The nextCursor from the previous page. Omit for the first page.
+     */
+    cursor?: string;
+    /**
+     * Maximum number of items to return, 1–100. Defaults to 50.
+     */
+    limit?: number;
+    /**
+     * Only the term whose stored keyword is exactly this value (case-sensitive).
+     */
+    keyword?: string;
+  };
+  url: '/v2/context-groups/{groupId}/glossary';
+};
+
+export type ListContextGlossaryErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type ListContextGlossaryError =
+  ListContextGlossaryErrors[keyof ListContextGlossaryErrors];
+
+export type ListContextGlossaryResponses = {
+  /**
+   * Page of glossary terms
+   */
+  200: {
+    items: Array<{
+      id: string;
+      keyword: string;
+      definition: string | null;
+      userDefined: boolean;
+    }>;
+    /**
+     * Opaque cursor for the next page; `null` when there are no more items. Pages are read independently, so items changed between requests may be missed or repeated.
+     */
+    nextCursor: string | null;
+  };
+};
+
+export type ListContextGlossaryResponse =
+  ListContextGlossaryResponses[keyof ListContextGlossaryResponses];
+
+export type UpsertContextGlossaryData = {
+  body: {
+    /**
+     * 1–100 terms, matched by keyword; a keyword may appear once.
+     */
+    entries: Array<{
+      keyword: string;
+      userDefined?: boolean;
+      /**
+       * null clears the definition.
+       */
+      definition?: string | null;
+      /**
+       * Translations by locale; null for a locale deletes its translation.
+       */
+      translations?: {
+        [key: string]: {
+          translation: string;
+          userDefined?: boolean;
+        } | null;
+      };
+    }>;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+  };
+  query?: never;
+  url: '/v2/context-groups/{groupId}/glossary';
+};
+
+export type UpsertContextGlossaryErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type UpsertContextGlossaryError =
+  UpsertContextGlossaryErrors[keyof UpsertContextGlossaryErrors];
+
+export type UpsertContextGlossaryResponses = {
+  /**
+   * Glossary terms written
+   */
+  200: {
+    committed: true;
+    counts: {
+      created: number;
+      updated: number;
+      unchanged: number;
+    };
+  };
+};
+
+export type UpsertContextGlossaryResponse =
+  UpsertContextGlossaryResponses[keyof UpsertContextGlossaryResponses];
+
+export type DeleteContextGlossaryEntryData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+    /**
+     * Glossary term ID.
+     */
+    entryId: string;
+  };
+  query?: never;
+  url: '/v2/context-groups/{groupId}/glossary/{entryId}';
+};
+
+export type DeleteContextGlossaryEntryErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type DeleteContextGlossaryEntryError =
+  DeleteContextGlossaryEntryErrors[keyof DeleteContextGlossaryEntryErrors];
+
+export type DeleteContextGlossaryEntryResponses = {
+  /**
+   * Glossary term deleted
+   */
+  200: {
+    committed: true;
+  };
+};
+
+export type DeleteContextGlossaryEntryResponse =
+  DeleteContextGlossaryEntryResponses[keyof DeleteContextGlossaryEntryResponses];
+
+export type GetContextGlossaryEntryData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+    /**
+     * Glossary term ID.
+     */
+    entryId: string;
+  };
+  query?: never;
+  url: '/v2/context-groups/{groupId}/glossary/{entryId}';
+};
+
+export type GetContextGlossaryEntryErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type GetContextGlossaryEntryError =
+  GetContextGlossaryEntryErrors[keyof GetContextGlossaryEntryErrors];
+
+export type GetContextGlossaryEntryResponses = {
+  /**
+   * Glossary term
+   */
+  200: {
+    id: string;
+    keyword: string;
+    definition: string | null;
+  };
+};
+
+export type GetContextGlossaryEntryResponse =
+  GetContextGlossaryEntryResponses[keyof GetContextGlossaryEntryResponses];
+
+export type UpdateContextGlossaryEntryData = {
+  body: {
+    keyword?: string;
+    /**
+     * null clears the definition.
+     */
+    definition?: string | null;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+    /**
+     * Glossary term ID.
+     */
+    entryId: string;
+  };
+  query?: never;
+  url: '/v2/context-groups/{groupId}/glossary/{entryId}';
+};
+
+export type UpdateContextGlossaryEntryErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  409: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type UpdateContextGlossaryEntryError =
+  UpdateContextGlossaryEntryErrors[keyof UpdateContextGlossaryEntryErrors];
+
+export type UpdateContextGlossaryEntryResponses = {
+  /**
+   * Glossary term updated
+   */
+  200: {
+    committed: true;
+  };
+};
+
+export type UpdateContextGlossaryEntryResponse =
+  UpdateContextGlossaryEntryResponses[keyof UpdateContextGlossaryEntryResponses];
+
+export type ListContextGlossaryTranslationsData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+    /**
+     * Glossary term ID.
+     */
+    entryId: string;
+  };
+  query?: {
+    /**
+     * The nextCursor from the previous page. Omit for the first page.
+     */
+    cursor?: string;
+    /**
+     * Maximum number of items to return, 1–100. Defaults to 50.
+     */
+    limit?: number;
+  };
+  url: '/v2/context-groups/{groupId}/glossary/{entryId}/translations';
+};
+
+export type ListContextGlossaryTranslationsErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type ListContextGlossaryTranslationsError =
+  ListContextGlossaryTranslationsErrors[keyof ListContextGlossaryTranslationsErrors];
+
+export type ListContextGlossaryTranslationsResponses = {
+  /**
+   * Page of term translations
+   */
+  200: {
+    items: Array<{
+      id: string;
+      locale: string;
+      translation: string;
+      userDefined: boolean;
+    }>;
+    /**
+     * Opaque cursor for the next page; `null` when there are no more items. Pages are read independently, so items changed between requests may be missed or repeated.
+     */
+    nextCursor: string | null;
+  };
+};
+
+export type ListContextGlossaryTranslationsResponse =
+  ListContextGlossaryTranslationsResponses[keyof ListContextGlossaryTranslationsResponses];
+
+export type DeleteContextGlossaryTranslationData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+    /**
+     * Glossary term ID.
+     */
+    entryId: string;
+    /**
+     * Translation locale.
+     */
+    locale: string;
+  };
+  query?: never;
+  url: '/v2/context-groups/{groupId}/glossary/{entryId}/translations/{locale}';
+};
+
+export type DeleteContextGlossaryTranslationErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type DeleteContextGlossaryTranslationError =
+  DeleteContextGlossaryTranslationErrors[keyof DeleteContextGlossaryTranslationErrors];
+
+export type DeleteContextGlossaryTranslationResponses = {
+  /**
+   * Translation deleted
+   */
+  200: {
+    committed: true;
+  };
+};
+
+export type DeleteContextGlossaryTranslationResponse =
+  DeleteContextGlossaryTranslationResponses[keyof DeleteContextGlossaryTranslationResponses];
+
+export type SetContextGlossaryTranslationData = {
+  body: {
+    /**
+     * The locale's translation of the term.
+     */
+    translation: string;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+    /**
+     * Glossary term ID.
+     */
+    entryId: string;
+    /**
+     * Translation locale.
+     */
+    locale: string;
+  };
+  query?: never;
+  url: '/v2/context-groups/{groupId}/glossary/{entryId}/translations/{locale}';
+};
+
+export type SetContextGlossaryTranslationErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type SetContextGlossaryTranslationError =
+  SetContextGlossaryTranslationErrors[keyof SetContextGlossaryTranslationErrors];
+
+export type SetContextGlossaryTranslationResponses = {
+  /**
+   * Translation replaced
+   */
+  200: {
+    committed: true;
+    outcome: 'created' | 'updated' | 'unchanged';
+  };
+  /**
+   * Translation created
+   */
+  201: {
+    committed: true;
+    outcome: 'created' | 'updated' | 'unchanged';
+  };
+};
+
+export type SetContextGlossaryTranslationResponse =
+  SetContextGlossaryTranslationResponses[keyof SetContextGlossaryTranslationResponses];
+
+export type ListContextCustomPromptsData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+  };
+  query?: {
+    /**
+     * The nextCursor from the previous page. Omit for the first page.
+     */
+    cursor?: string;
+    /**
+     * Maximum number of items to return, 1–100. Defaults to 50.
+     */
+    limit?: number;
+  };
+  url: '/v2/context-groups/{groupId}/custom-prompts';
+};
+
+export type ListContextCustomPromptsErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type ListContextCustomPromptsError =
+  ListContextCustomPromptsErrors[keyof ListContextCustomPromptsErrors];
+
+export type ListContextCustomPromptsResponses = {
+  /**
+   * Page of custom prompts
+   */
+  200: {
+    items: Array<{
+      id: string;
+      name: string;
+      description: string | null;
+      /**
+       * Locale the prompt applies to; null applies to all locales.
+       */
+      locale: string | null;
+      value: string;
+    }>;
+    /**
+     * Opaque cursor for the next page; `null` when there are no more items. Pages are read independently, so items changed between requests may be missed or repeated.
+     */
+    nextCursor: string | null;
+  };
+};
+
+export type ListContextCustomPromptsResponse =
+  ListContextCustomPromptsResponses[keyof ListContextCustomPromptsResponses];
+
+export type UpsertContextCustomPromptsData = {
+  body: {
+    /**
+     * 1–100 prompts, matched by name and locale; a name and locale may appear once.
+     */
+    customPrompts: Array<{
+      name: string;
+      /**
+       * Locale the prompt applies to; null applies it to every locale.
+       */
+      locale: string | null;
+      value: string;
+      /**
+       * null clears the description.
+       */
+      description?: string | null;
+    }>;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+  };
+  query?: never;
+  url: '/v2/context-groups/{groupId}/custom-prompts';
+};
+
+export type UpsertContextCustomPromptsErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type UpsertContextCustomPromptsError =
+  UpsertContextCustomPromptsErrors[keyof UpsertContextCustomPromptsErrors];
+
+export type UpsertContextCustomPromptsResponses = {
+  /**
+   * Custom prompts written
+   */
+  200: {
+    committed: true;
+    counts: {
+      created: number;
+      updated: number;
+      unchanged: number;
+    };
+  };
+};
+
+export type UpsertContextCustomPromptsResponse =
+  UpsertContextCustomPromptsResponses[keyof UpsertContextCustomPromptsResponses];
+
+export type DeleteContextCustomPromptData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+    /**
+     * Custom prompt ID.
+     */
+    customPromptId: string;
+  };
+  query?: never;
+  url: '/v2/context-groups/{groupId}/custom-prompts/{customPromptId}';
+};
+
+export type DeleteContextCustomPromptErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type DeleteContextCustomPromptError =
+  DeleteContextCustomPromptErrors[keyof DeleteContextCustomPromptErrors];
+
+export type DeleteContextCustomPromptResponses = {
+  /**
+   * Custom prompt deleted
+   */
+  200: {
+    committed: true;
+  };
+};
+
+export type DeleteContextCustomPromptResponse =
+  DeleteContextCustomPromptResponses[keyof DeleteContextCustomPromptResponses];
+
+export type UpdateContextCustomPromptData = {
+  body: {
+    name?: string;
+    /**
+     * Locale the prompt applies to; null applies it to every locale.
+     */
+    locale?: string | null;
+    value?: string;
+    /**
+     * null clears the description.
+     */
+    description?: string | null;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+    /**
+     * Custom prompt ID.
+     */
+    customPromptId: string;
+  };
+  query?: never;
+  url: '/v2/context-groups/{groupId}/custom-prompts/{customPromptId}';
+};
+
+export type UpdateContextCustomPromptErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  409: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type UpdateContextCustomPromptError =
+  UpdateContextCustomPromptErrors[keyof UpdateContextCustomPromptErrors];
+
+export type UpdateContextCustomPromptResponses = {
+  /**
+   * Custom prompt updated
+   */
+  200: {
+    committed: true;
+  };
+};
+
+export type UpdateContextCustomPromptResponse =
+  UpdateContextCustomPromptResponses[keyof UpdateContextCustomPromptResponses];
+
+export type ImportContextContentData = {
+  body: {
+    /**
+     * Transfer document format.
+     */
+    format: 'json' | 'csv';
+    /**
+     * One JSON or CSV transfer document, up to 1 MiB. It is validated in full before anything is written. A JSON document has the shape `{ glossary: [{ keyword, definition?, translations?: { <locale>: { translation } | null } }], customPrompts: [{ name, locale, value, description? }] }`; definition, locale and description may be null. An absent field keeps its stored value. `null` clears a nullable field or removes a map entry; other fields reject `null`. In batches and imports, items match stored items by natural key, stored items absent from the batch are untouched, and nothing else is deleted. A blank CSV cell counts as absent.
+     */
+    content: string;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+  };
+  query?: never;
+  url: '/v2/context-groups/{groupId}/import';
+};
+
+export type ImportContextContentErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type ImportContextContentError =
+  ImportContextContentErrors[keyof ImportContextContentErrors];
+
+export type ImportContextContentResponses = {
+  /**
+   * Content imported
+   */
+  200: {
+    committed: true;
+    glossary: {
+      created: number;
+      updated: number;
+      unchanged: number;
+    };
+    customPrompts: {
+      created: number;
+      updated: number;
+      unchanged: number;
+    };
+  };
+};
+
+export type ImportContextContentResponse =
+  ImportContextContentResponses[keyof ImportContextContentResponses];
+
+export type ExportContextContentData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+  };
+  query: {
+    /**
+     * The nextCursor from the previous page. Omit for the first page.
+     */
+    cursor?: string;
+    /**
+     * Maximum number of items to return, 1–100. Defaults to 50.
+     */
+    limit?: number;
+    /**
+     * Transfer document format.
+     */
+    format: 'json' | 'csv';
+  };
+  url: '/v2/context-groups/{groupId}/export';
+};
+
+export type ExportContextContentErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type ExportContextContentError =
+  ExportContextContentErrors[keyof ExportContextContentErrors];
+
+export type ExportContextContentResponses = {
+  /**
+   * Page of exported content
+   */
+  200: {
+    /**
+     * Transfer document format.
+     */
+    format: 'json' | 'csv';
+    /**
+     * One self-contained transfer document that can be imported as a single batch.
+     */
+    content: string;
+    /**
+     * Pass as cursor for the next page; null ends the export.
+     */
+    nextCursor: string | null;
+  };
+};
+
+export type ExportContextContentResponse =
+  ExportContextContentResponses[keyof ExportContextContentResponses];
 
 export type CreateCliWizardSessionData = {
   body: CreateCliWizardSessionRequest;
