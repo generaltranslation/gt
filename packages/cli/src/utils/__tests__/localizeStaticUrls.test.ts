@@ -2997,3 +2997,70 @@ describe('localizeStaticUrls links to pages outside translation scope', () => {
     expect(written).toContain('[Create key](/ja/api-reference/create-key)');
   });
 });
+
+describe('localizeStaticUrls configured attributes', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+  });
+
+  const fileContent = [
+    '<Banner href="/guide" href2="/guide" src="/images/a.png" />',
+    '',
+    '<Banner href2={"/guide"} />',
+    '',
+    '<Banner buttons={<a href2="/guide">Guide</a>} />',
+  ].join('\n');
+
+  const run = async (
+    localizeOptions: NonNullable<
+      StaticUrlSettings['options']
+    >['experimentalLocalizeStaticUrls']
+  ): Promise<string | undefined> => {
+    vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+    let written: string | undefined;
+    vi.mocked(fs.promises.writeFile).mockImplementation((_p, content) => {
+      written = String(content);
+      return Promise.resolve();
+    });
+    vi.mocked(createFileMapping).mockReturnValue({
+      ja: { 'test.mdx': 'ja/test.mdx' },
+    });
+
+    await localizeStaticUrls(
+      createSettings({
+        files: {
+          placeholderPaths: { mdx: ['[locale]/test.mdx'] },
+          resolvedPaths: {},
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['ja'],
+        options: {
+          docsUrlPattern: '/[locale]',
+          experimentalHideDefaultLocale: true,
+          experimentalLocalizeStaticUrls: localizeOptions,
+        },
+      }),
+      ['ja']
+    );
+    return written;
+  };
+
+  it('localizes only href by default', async () => {
+    const written = await run(true);
+
+    expect(written).toContain('href="/ja/guide"');
+    expect(written).not.toContain('href2="/ja/guide"');
+    expect(written).not.toContain('href2={"/ja/guide"}');
+  });
+
+  it('localizes attributes matching configured names or globs', async () => {
+    const written = await run({ attributes: ['href*'] });
+
+    expect(written).toContain('href="/ja/guide" href2="/ja/guide"');
+    expect(written).toContain('href2={"/ja/guide"}');
+    expect(written).toContain('<a href2="/ja/guide">');
+    expect(written).toContain('src="/images/a.png"');
+  });
+});

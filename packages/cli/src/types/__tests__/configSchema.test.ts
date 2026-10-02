@@ -116,6 +116,7 @@ describe('GT config schema static url options', () => {
 
     expect(validate(true)).toBe(true);
     expect(validate({ skipUntranslatedPages: true })).toBe(true);
+    expect(validate({ attributes: ['href*'] })).toBe(true);
     expect(validate({ unknownOption: true })).toBe(false);
   });
 });
