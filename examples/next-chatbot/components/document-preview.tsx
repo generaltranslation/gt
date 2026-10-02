@@ -28,13 +28,13 @@ interface DocumentPreviewProps {
   args?: DocumentPreviewArgs;
 }
 
-type DocumentPreviewResult = {
+export type DocumentPreviewResult = {
   id: string;
   title: string;
   kind: ArtifactKind;
 };
 
-type DocumentPreviewArgs = {
+export type DocumentPreviewArgs = {
   title: string;
   kind: ArtifactKind;
 };

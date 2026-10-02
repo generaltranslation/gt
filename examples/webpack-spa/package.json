@@ -15,22 +15,22 @@
   "dependencies": {
     "gt": "workspace:*",
     "gt-react": "workspace:*",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
   },
   "devDependencies": {
     "@generaltranslation/compiler": "workspace:*",
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
-    "css-loader": "^7.1.4",
-    "dotenv": "^16.4.7",
-    "html-webpack-plugin": "^5.6.7",
-    "oxlint": "^1.71.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "css-loader": "^7.1.5",
+    "dotenv": "^18.0.5",
+    "html-webpack-plugin": "^5.6.8",
+    "oxlint": "^1.86.0",
     "style-loader": "^4.0.0",
     "ts-loader": "^9.6.2",
-    "typescript": "~6.0.2",
-    "webpack": "^5.107.2",
-    "webpack-cli": "^7.0.3",
-    "webpack-dev-server": "^5.2.5"
+    "typescript": "~6.0.3",
+    "webpack": "^5.111.1",
+    "webpack-cli": "^7.2.3",
+    "webpack-dev-server": "^6.0.0"
   }
 }

@@ -1,21 +1,19 @@
 'use client';
 
-import { ChatRequestOptions, Message } from 'ai';
+import type { UIMessage } from 'ai';
+import type { UseChatHelpers } from '@ai-sdk/react';
 import { Button } from './ui/button';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import { Textarea } from './ui/textarea';
 import { deleteTrailingMessages } from '@/app/(chat)/actions';
+import { getTextFromMessage } from '@/lib/utils';
 import { T, Var } from 'gt-next';
 
 export type MessageEditorProps = {
-  message: Message;
+  message: UIMessage;
   setMode: Dispatch<SetStateAction<'view' | 'edit'>>;
-  setMessages: (
-    messages: Message[] | ((messages: Message[]) => Message[])
-  ) => void;
-  reload: (
-    chatRequestOptions?: ChatRequestOptions
-  ) => Promise<string | null | undefined>;
+  setMessages: UseChatHelpers<UIMessage>['setMessages'];
+  reload: UseChatHelpers<UIMessage>['regenerate'];
 };
 
 export function MessageEditor({
@@ -26,7 +24,9 @@ export function MessageEditor({
 }: MessageEditorProps) {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  const [draftContent, setDraftContent] = useState<string>(message.content);
+  const [draftContent, setDraftContent] = useState<string>(
+    getTextFromMessage(message)
+  );
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -52,7 +52,7 @@ export function MessageEditor({
       <div className='flex flex-col gap-2 w-full'>
         <Textarea
           ref={textareaRef}
-          className='bg-transparent outline-none overflow-hidden resize-none !text-base rounded-xl w-full'
+          className='bg-transparent outline-hidden overflow-hidden resize-none !text-base rounded-xl w-full'
           value={draftContent}
           onChange={handleInput}
         />
@@ -84,7 +84,7 @@ export function MessageEditor({
                 if (index !== -1) {
                   const updatedMessage = {
                     ...message,
-                    content: draftContent,
+                    parts: [{ type: 'text' as const, text: draftContent }],
                   };
 
                   return [...messages.slice(0, index), updatedMessage];

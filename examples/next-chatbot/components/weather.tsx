@@ -4,7 +4,7 @@ import cx from 'classnames';
 import { format, isWithinInterval } from 'date-fns';
 import { useEffect, useState } from 'react';
 
-interface WeatherAtLocation {
+export interface WeatherAtLocation {
   latitude: number;
   longitude: number;
   generationtime_ms: number;
