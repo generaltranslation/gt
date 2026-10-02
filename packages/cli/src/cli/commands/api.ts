@@ -127,7 +127,11 @@ function readInput(
   }
 }
 
-type SpecOperation = { operationId?: string; summary?: string };
+type SpecOperation = {
+  operationId?: string;
+  security?: Record<string, unknown>[];
+  summary?: string;
+};
 const specPaths: Record<
   string,
   Record<string, SpecOperation>
@@ -144,6 +148,24 @@ function listOperations(): string {
     .join('');
 }
 
+function lookupRef(ref: string): unknown {
+  return ref
+    .slice(2)
+    .split('/')
+    .reduce<unknown>(
+      (node, key) => (node as Record<string, unknown> | undefined)?.[key],
+      openApiSpec
+    );
+}
+
+function collectRefs(value: unknown, refs: Set<string>): void {
+  if (!value || typeof value !== 'object') return;
+  for (const [key, child] of Object.entries(value)) {
+    if (key === '$ref' && typeof child === 'string') refs.add(child);
+    else collectRefs(child, refs);
+  }
+}
+
 // Inlines local `#/...` references so one operation reads standalone. A ref
 // already being expanded is left as-is because schemas like JsonValue recurse.
 function resolveRefs(value: unknown, expanding: string[] = []): unknown {
@@ -153,13 +175,7 @@ function resolveRefs(value: unknown, expanding: string[] = []): unknown {
   if (!value || typeof value !== 'object') return value;
   const { $ref, ...siblings } = value as Record<string, unknown>;
   if (typeof $ref === 'string' && $ref.startsWith('#/')) {
-    const target = $ref
-      .slice(2)
-      .split('/')
-      .reduce<unknown>(
-        (node, key) => (node as Record<string, unknown> | undefined)?.[key],
-        openApiSpec
-      );
+    const target = lookupRef($ref);
     if (!expanding.includes($ref) && target && typeof target === 'object') {
       return resolveRefs({ ...target, ...siblings }, [...expanding, $ref]);
     }
@@ -171,6 +187,41 @@ function resolveRefs(value: unknown, expanding: string[] = []): unknown {
       resolveRefs(child, expanding),
     ])
   );
+}
+
+// Shapes the output like the spec so the recursive refs resolveRefs leaves
+// behind and the security requirement names still resolve within it.
+function specFragment(
+  operations: Record<string, Record<string, SpecOperation>>
+): Record<string, unknown> {
+  const paths = resolveRefs(operations);
+  const components: Record<string, Record<string, unknown>> = {};
+  const addComponent = (type: string, name: string, definition: unknown) => {
+    components[type] = { ...components[type], [name]: definition };
+  };
+
+  const pending = new Set<string>();
+  collectRefs(paths, pending);
+  const added = new Set<string>();
+  for (const ref of pending) {
+    const [root, type, name] = ref.slice(2).split('/');
+    if (added.has(ref) || root !== 'components' || !type || !name) continue;
+    added.add(ref);
+    const definition = lookupRef(ref);
+    addComponent(type, name, definition);
+    // Set iteration visits refs added during the loop.
+    collectRefs(definition, pending);
+  }
+
+  const securitySchemes: Record<string, unknown> =
+    openApiSpec.components.securitySchemes;
+  for (const operation of Object.values(operations).flatMap(Object.values)) {
+    for (const name of (operation.security ?? []).flatMap(Object.keys)) {
+      addComponent('securitySchemes', name, securitySchemes[name]);
+    }
+  }
+
+  return Object.keys(components).length ? { paths, components } : { paths };
 }
 
 // Accepts an operationId, a spec path, or a concrete path such as
@@ -192,9 +243,12 @@ function findOperations(
   }
   return Object.fromEntries(
     Object.entries(specPaths).filter(([specPath]) =>
-      new RegExp(`^${specPath.replace(/\{[^}]+\}/g, '[^/]+')}$`).test(
-        requestPath
-      )
+      new RegExp(
+        `^${specPath
+          .split(/\{[^}]+\}/)
+          .map((literal) => literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+          .join('[^/]+')}$`
+      ).test(requestPath)
     )
   );
 }
@@ -299,7 +353,7 @@ export async function handleApiCommand(
         dependencies
       );
     }
-    writeStdout(`${JSON.stringify(resolveRefs(operations), null, 2)}\n`);
+    writeStdout(`${JSON.stringify(specFragment(operations), null, 2)}\n`);
     return;
   }
 

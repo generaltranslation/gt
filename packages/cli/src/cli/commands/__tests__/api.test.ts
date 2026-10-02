@@ -282,12 +282,42 @@ describe('gt api', () => {
       );
 
       const output = outputText(stdout);
-      expect(Object.keys(JSON.parse(output))).toEqual([
+      expect(Object.keys(JSON.parse(output).paths)).toEqual([
         '/v2/project/info/{projectId}',
       ]);
       expect(output).not.toContain('#/components/schemas/ApiVersion');
     }
   );
+
+  it('keeps the definitions an isolated operation still refers to', async () => {
+    const lookup = async (endpoint: string) => {
+      const stdout: OutputChunk[] = [];
+      await handleApiCommand(
+        endpoint,
+        { method: 'GET', spec: true },
+        { writeStdout: (output) => stdout.push(output) }
+      );
+      return JSON.parse(outputText(stdout));
+    };
+
+    const translate = await lookup('translate');
+    expect(JSON.stringify(translate.paths)).toContain(
+      '#/components/schemas/JsonValue'
+    );
+    expect(translate.components.schemas.JsonValue).toBeDefined();
+
+    const workspacePlugin = await lookup('workspacePluginInfo');
+    expect(
+      workspacePlugin.paths['/v1/integrations/workspace-plugin/info'].post
+        .security
+    ).toEqual([{ GoogleIdentityToken: [] }]);
+    expect(workspacePlugin.components.securitySchemes).toEqual({
+      GoogleIdentityToken: expect.objectContaining({
+        bearerFormat: 'JWT',
+        scheme: 'bearer',
+      }),
+    });
+  });
 
   it('prefers an exact path over a matching path template', async () => {
     const stdout: OutputChunk[] = [];
@@ -298,7 +328,7 @@ describe('gt api', () => {
       { writeStdout: (output) => stdout.push(output) }
     );
 
-    expect(Object.keys(JSON.parse(outputText(stdout)))).toEqual([
+    expect(Object.keys(JSON.parse(outputText(stdout)).paths)).toEqual([
       '/cli/wizard/session',
     ]);
   });
