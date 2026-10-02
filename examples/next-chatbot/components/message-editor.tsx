@@ -84,7 +84,10 @@ export function MessageEditor({
                 if (index !== -1) {
                   const updatedMessage = {
                     ...message,
-                    parts: [{ type: 'text' as const, text: draftContent }],
+                    parts: [
+                      ...message.parts.filter((part) => part.type !== 'text'),
+                      { type: 'text' as const, text: draftContent },
+                    ],
                   };
 
                   return [...messages.slice(0, index), updatedMessage];

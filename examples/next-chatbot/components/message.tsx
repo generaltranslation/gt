@@ -25,7 +25,7 @@ import {
   type DocumentPreviewResult,
 } from './document-preview';
 import { MessageReasoning } from './message-reasoning';
-import { T } from 'gt-next';
+import { T, Var } from 'gt-next';
 
 const PurePreviewMessage = ({
   chatId,
@@ -188,6 +188,16 @@ const PurePreviewMessage = ({
                         <pre>{JSON.stringify(result, null, 2)}</pre>
                       )}
                     </div>
+                  );
+                }
+
+                if (state === 'output-error') {
+                  return (
+                    <T key={toolCallId} id='components.message.2'>
+                      <div className='text-sm text-red-500'>
+                        Tool call failed: <Var>{part.errorText}</Var>
+                      </div>
+                    </T>
                   );
                 }
 

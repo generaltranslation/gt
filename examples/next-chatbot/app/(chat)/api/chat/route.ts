@@ -3,6 +3,7 @@ import {
   convertToModelMessages,
   createUIMessageStream,
   createUIMessageStreamResponse,
+  isToolUIPart,
   smoothStream,
   stepCountIs,
   streamText,
@@ -107,7 +108,13 @@ export async function POST(request: Request) {
     originalMessages: messages,
     generateId: generateUUID,
     onEnd: async ({ responseMessage }) => {
-      if (session.user?.id) {
+      // A cancelled stream can end mid tool call. Drop tool calls without a
+      // result so the saved history stays valid for the next request.
+      const parts = responseMessage.parts.filter(
+        (part) => !isToolUIPart(part) || part.state.startsWith('output-')
+      );
+
+      if (session.user?.id && parts.length > 0) {
         try {
           await saveMessages({
             messages: [
@@ -115,7 +122,7 @@ export async function POST(request: Request) {
                 id: responseMessage.id,
                 chatId: id,
                 role: responseMessage.role,
-                content: responseMessage.parts,
+                content: parts,
                 createdAt: new Date(),
               },
             ],
