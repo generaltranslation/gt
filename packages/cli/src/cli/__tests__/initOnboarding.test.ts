@@ -1261,9 +1261,16 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     it.each([
       ['--no-dev-credentials', '--live-translations'],
       ['--dev-credentials', '--no-live-translations'],
+      ['--dev-credentials', '--live-translations'],
+      ['--no-dev-credentials', '--no-live-translations'],
     ])(
       'rejects %s with %s before any change',
       async (credentialsFlag, liveFlag) => {
+        vi.spyOn(process, 'exit').mockImplementation(((code?: number) => {
+          throw new Error(`exit ${code}`);
+        }) as typeof process.exit);
+        vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+
         await expect(
           run(
             'configure',
@@ -1274,12 +1281,19 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             credentialsFlag,
             liveFlag
           )
-        ).rejects.toThrow(`${credentialsFlag} and ${liveFlag} contradict`);
+        ).rejects.toThrow('exit 1');
 
-        expect(events().at(-1)).toMatchObject({
-          outcome: 'failed',
-          completedSteps: [],
-        });
+        expect(events()).toEqual([
+          expect.objectContaining({
+            type: 'result',
+            command: 'configure',
+            outcome: 'failed',
+            completedSteps: [],
+            error: expect.stringContaining(
+              `option '${credentialsFlag}' cannot be used with option '${liveFlag}'`
+            ),
+          }),
+        ]);
         expect(hasLogin).not.toHaveBeenCalled();
         expect(fs.readdirSync(appDirectory)).toEqual(['package.json']);
       }

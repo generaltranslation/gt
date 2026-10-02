@@ -24,4 +24,16 @@ describe('attachTranslateFlags', () => {
   it('allows saving local edits to be disabled', () => {
     expect(parseTranslateFlags(['--no-save-local']).saveLocal).toBe(false);
   });
+
+  it('rejects a non-numeric timeout as an invalid argument', () => {
+    vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+
+    expect(() => parseTranslateFlags(['--timeout', 'nope'])).toThrow(
+      expect.objectContaining({
+        code: 'commander.invalidArgument',
+        exitCode: 1,
+        message: expect.stringContaining('Invalid timeout: not a number.'),
+      })
+    );
+  });
 });
