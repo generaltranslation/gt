@@ -118,6 +118,11 @@ import { detectFramework } from '../setup/detectFramework.js';
 import { INLINE_LIBRARIES, Libraries } from '../types/libraries.js';
 import { handleEnqueue } from './commands/enqueue.js';
 import { splitMintlifyLanguageRefs } from '../utils/splitMintlifyLanguageRefs.js';
+import { localizeMintlifyRedirects } from '../formats/files/postprocess/localizeMintlifyRedirects.js';
+import {
+  clearOrphanedFileNames,
+  getOrphanedFileNames,
+} from '../state/orphanedFileNames.js';
 import { runMergeDriver, type MergeDriverName } from '../git/mergeDrivers.js';
 import { setupGitMergeDrivers } from '../git/setupMergeDrivers.js';
 import { warnReactPackageCompatibility } from '../utils/reactPackageCompatibility.js';
@@ -747,6 +752,18 @@ export class BaseCLI {
     }
     // Split Mintlify language entries into $ref files to keep docs.json small
     await splitMintlifyLanguageRefs(settings);
+    // Localize redirects for pages this run renamed or removed. Runs after the
+    // split, which can rewrite $ref files such as redirects.json
+    const orphanedFileNames = getOrphanedFileNames();
+    if (orphanedFileNames) {
+      const added = localizeMintlifyRedirects(settings, orphanedFileNames);
+      if (added.length > 0) {
+        logger.success(
+          `Added ${added.length} localized redirect${added.length === 1 ? '' : 's'}`
+        );
+      }
+    }
+    clearOrphanedFileNames();
     // Mirror assets after translations are downloaded and locale dirs are populated
     await mirrorAssetsToLocales(settings);
     clearDownloaded();

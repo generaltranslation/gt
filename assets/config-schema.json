@@ -725,6 +725,16 @@
               },
               "required": ["files"],
               "additionalProperties": false
+            },
+            "inferTitleFromFilename": {
+              "type": "boolean",
+              "description": "Add a frontmatter title derived from the file name to MDX pages that have none.",
+              "default": false
+            },
+            "localizeRedirects": {
+              "type": "boolean",
+              "description": "Add localized copies of English redirects for pages renamed or removed in a translate run. Uses docsUrlPattern and experimentalHideDefaultLocale to place the locale.",
+              "default": false
             }
           },
           "additionalProperties": false
