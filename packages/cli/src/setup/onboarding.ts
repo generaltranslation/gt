@@ -121,9 +121,11 @@ export function attachConfigureFlags(
       'Local Vite storage: set up live development translations (creates a development key)'
     )
     .option('--no-live-translations', 'Skip live development translations')
-    .option(
-      '--dev-credentials',
-      'Save a project ID and a new development key to .env.local'
+    .addOption(
+      new Option(
+        '--dev-credentials',
+        'Save a project ID and a new development key to .env.local'
+      ).conflicts('liveTranslations')
     )
     .option('--no-dev-credentials', 'Do not create development credentials')
     .option(
@@ -369,34 +371,6 @@ export class OnboardingSession {
   }
 }
 
-/** Live translations are how local Vite storage creates development credentials. */
-function assertCredentialFlagsAgree({
-  devCredentials,
-  liveTranslations,
-}: Pick<ConfigureOptions, 'devCredentials' | 'liveTranslations'>): void {
-  if (
-    devCredentials === undefined ||
-    liveTranslations === undefined ||
-    devCredentials === liveTranslations
-  )
-    return;
-  const credentialsFlag = devCredentials
-    ? '--dev-credentials'
-    : '--no-dev-credentials';
-  const liveFlag = liveTranslations
-    ? '--live-translations'
-    : '--no-live-translations';
-  throw new OnboardingError(
-    createDiagnosticMessage({
-      source: 'gt',
-      severity: 'Error',
-      whatHappened: `${credentialsFlag} and ${liveFlag} contradict each other`,
-      reassurance: 'No project files were changed',
-      fix: `Pass only one of ${credentialsFlag} and ${liveFlag}, then rerun the command`,
-    })
-  );
-}
-
 export type OnboardingOutcome =
   | { outcome: 'success' }
   | { outcome: 'needs_human_action'; url: string };
@@ -417,10 +391,7 @@ function partialSetupWarning(session: OnboardingSession): string {
  */
 export async function runOnboarding(
   command: string,
-  options: Pick<
-    ConfigureOptions,
-    'json' | 'interactive' | 'devCredentials' | 'liveTranslations'
-  >,
+  options: Pick<ConfigureOptions, 'json' | 'interactive'>,
   run: (session: OnboardingSession) => Promise<OnboardingOutcome>
 ): Promise<void> {
   commandBeforeOnboarding = undefined;
@@ -432,7 +403,6 @@ export async function runOnboarding(
   const reportExit = (code: number) => session.reportUnexpectedExit(code);
   process.once('exit', reportExit);
   try {
-    assertCredentialFlagsAgree(options);
     const result = await run(session);
     const needsHuman =
       result.outcome === 'needs_human_action' ||

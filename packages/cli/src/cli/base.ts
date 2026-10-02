@@ -1,4 +1,4 @@
-import { Command, InvalidArgumentError, Option } from 'commander';
+import { Argument, Command, InvalidArgumentError, Option } from 'commander';
 import { ProjectApiKeyPermission } from 'generaltranslation/api';
 import {
   DEFAULT_TRANSLATIONS_DIR,
@@ -118,7 +118,7 @@ import { detectFramework } from '../setup/detectFramework.js';
 import { INLINE_LIBRARIES, Libraries } from '../types/libraries.js';
 import { handleEnqueue } from './commands/enqueue.js';
 import { splitMintlifyLanguageRefs } from '../utils/splitMintlifyLanguageRefs.js';
-import { runMergeDriver } from '../git/mergeDrivers.js';
+import { runMergeDriver, type MergeDriverName } from '../git/mergeDrivers.js';
 import { setupGitMergeDrivers } from '../git/setupMergeDrivers.js';
 import { warnReactPackageCompatibility } from '../utils/reactPackageCompatibility.js';
 import {
@@ -606,22 +606,30 @@ export class BaseCLI {
 
     gitCommand
       .command('merge-driver', { hidden: true })
-      .argument('<driver>', 'Merge driver name')
+      .addArgument(
+        new Argument('<driver>', 'Merge driver name').choices([
+          'gt-lock',
+          'gtjson',
+        ])
+      )
       .argument('<base>', 'Common ancestor file')
       .argument('<ours>', 'Current branch file')
       .argument('<theirs>', 'Incoming branch file')
       .argument('[path]', 'Merged path')
-      .action((driver: string, base: string, ours: string, theirs: string) => {
-        if (driver !== 'gt-lock' && driver !== 'gtjson') {
-          logger.error(`Unknown GT merge driver: ${driver}`);
-          exitSync(1);
+      .action(
+        (
+          driver: MergeDriverName,
+          base: string,
+          ours: string,
+          theirs: string
+        ) => {
+          const result = runMergeDriver(driver, base, ours, theirs);
+          if (!result.ok) {
+            logger.error(result.reason);
+            exitSync(1);
+          }
         }
-        const result = runMergeDriver(driver, base, ours, theirs);
-        if (!result.ok) {
-          logger.error(result.reason);
-          exitSync(1);
-        }
-      });
+      );
   }
 
   protected async resolveGitSetupOmitConfigIds(
