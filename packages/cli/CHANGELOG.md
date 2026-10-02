@@ -1,5 +1,15 @@
 # gtx-cli
 
+## 2.25.1
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.5.4
+  - @generaltranslation/python-extractor@0.2.59
+  - @generaltranslation/supported-locales@2.1.40
+  - @generaltranslation/vue-extractor@0.1.18
+
 ## 2.25.0
 
 ### Minor Changes
