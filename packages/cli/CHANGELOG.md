@@ -1,5 +1,12 @@
 # gtx-cli
 
+## 2.23.2
+
+### Patch Changes
+
+- Updated dependencies [[`f9fc280`](https://github.com/generaltranslation/gt/commit/f9fc28057c4352c367406ff4418dd7b75b5111fd)]:
+  - @generaltranslation/supported-locales@2.1.39
+
 ## 2.23.1
 
 ### Patch Changes

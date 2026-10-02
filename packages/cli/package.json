@@ -1,6 +1,6 @@
 {
   "name": "gt",
-  "version": "2.23.1",
+  "version": "2.23.2",
   "main": "dist/index.js",
   "bin": "bin/main.js",
   "files": [
@@ -123,7 +123,7 @@
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
     "enhanced-resolve": "^5.18.3",
-    "esbuild": "^0.27.2",
+    "esbuild-wasm": "^0.27.7",
     "fast-glob": "^3.3.3",
     "fast-json-stable-stringify": "^2.1.0",
     "fflate": "^0.8.2",
@@ -137,6 +137,7 @@
     "micromatch": "^4.0.8",
     "open": "^10.1.1",
     "openid-client": "6.8.8",
+    "package-manager-detector": "^1.8.0",
     "pino": "^10.1.0",
     "remark-frontmatter": "^5.0.0",
     "remark-mdx": "^3.1.0",

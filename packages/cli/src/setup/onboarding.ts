@@ -121,9 +121,11 @@ export function attachConfigureFlags(
       'Local Vite storage: set up live development translations (creates a development key)'
     )
     .option('--no-live-translations', 'Skip live development translations')
-    .option(
-      '--dev-credentials',
-      'Save a project ID and a new development key to .env.local'
+    .addOption(
+      new Option(
+        '--dev-credentials',
+        'Save a project ID and a new development key to .env.local'
+      ).conflicts('liveTranslations')
     )
     .option('--no-dev-credentials', 'Do not create development credentials')
     .option(
@@ -335,7 +337,9 @@ export class OnboardingSession {
             : 'Setup received invalid options',
         reassurance: 'No project files were changed',
         details: this.invalid,
-        fix: 'Pass the options (see --help), add --defaults to accept the recommended local choices, or rerun in an interactive terminal',
+        fix: this.defaults
+          ? 'Pass the options (see --help), or rerun in an interactive terminal'
+          : 'Pass the options (see --help), add --defaults to accept the recommended local choices, or rerun in an interactive terminal',
       }),
       missingOptions
     );

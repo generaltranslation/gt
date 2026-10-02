@@ -428,6 +428,27 @@ await initializeGTSPA(gtConfig);
     expect(result.manualAction).toContain('src/new');
   });
 
+  it('reports a missing index.html without writing', async () => {
+    fs.rmSync(path.join(appDirectory, 'index.html'));
+
+    await expect(
+      setupViteSPA({
+        appDirectory,
+        configFilepath: 'gt.config.json',
+        defaultLocale: 'en',
+        locales: ['fr'],
+        translationsDir: 'src/_gt',
+      })
+    ).rejects.toThrow('index.html was not found');
+    expect(fs.readdirSync(appDirectory).sort()).toEqual([
+      'gt.config.json',
+      'src',
+    ]);
+    expect(fs.readdirSync(path.join(appDirectory, 'src'))).toEqual([
+      'main.tsx',
+    ]);
+  });
+
   it('does not overwrite an existing non-GT bootstrap', async () => {
     fs.writeFileSync(
       path.join(appDirectory, 'src', 'gt-entry.ts'),

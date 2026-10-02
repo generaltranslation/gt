@@ -34,7 +34,7 @@ const supportedLocales = {
   el: [
     // Greek
     'el',
-    'el-EL', // Greek
+    'el-GR', // Greece
     'el-CY', // Cyprus
   ],
   en: [

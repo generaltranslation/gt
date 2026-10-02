@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import Ajv from 'ajv';
 import { describe, expect, it } from 'vitest';
+import { SUPPORTED_REACT_FRAMEWORKS } from '../index.js';
 
 type JsonSchema = {
   additionalItems?: boolean;
@@ -35,6 +36,14 @@ function getParsingFlagsSchema(): JsonSchema {
   expect(parsingFlagsSchema).toBeDefined();
   return parsingFlagsSchema ?? {};
 }
+
+describe('GT config schema framework', () => {
+  it('lists every supported React framework', () => {
+    expect(schema.properties?.framework?.enum).toEqual([
+      ...SUPPORTED_REACT_FRAMEWORKS,
+    ]);
+  });
+});
 
 describe('GT config schema parsing flags', () => {
   it('adds only the Vue parsing flag surface', () => {

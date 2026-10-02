@@ -145,7 +145,14 @@ export async function createLoadTranslationsFile({
     return 'custom';
   }
 
-  if (existing === content) return 'unchanged';
+  // A loader for the same directory, spelled differently, already works.
+  if (
+    existing === content ||
+    (existing !== undefined &&
+      previousTranslationsDir !== undefined &&
+      path.resolve(appDirectory, previousTranslationsDir) === translationsPath)
+  )
+    return 'unchanged';
   await fs.promises.writeFile(filePath, content);
   logger.info(
     `${existing === undefined ? 'Created' : 'Updated'} ${chalk.cyan(

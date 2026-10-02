@@ -10,7 +10,7 @@ import path from 'node:path';
  * Detects the frontend framework used in the current project.
  *
  * Analyzes the project structure and dependencies to identify the framework.
- * Detection order: Mintlify → Next.js (App/Pages Router) → Gatsby → RedwoodJS → Vite → React.
+ * Detection order: Mintlify → Next.js (App/Pages Router) → Gatsby → RedwoodJS → TanStack Start → Vite → React.
  *
  * For Next.js projects, further determines whether it uses App Router or Pages Router
  * by checking for the presence of `app/` or `pages/` directories.
@@ -63,6 +63,11 @@ export async function detectFramework(): Promise<
   // Check for RedwoodJS
   if (isPackageInstalled('@redwoodjs/core', packageJson, false, true)) {
     return { name: 'redwood', type: 'react' };
+  }
+
+  // TanStack Start depends on Vite, so check it first
+  if (isPackageInstalled('@tanstack/react-start', packageJson, false, true)) {
+    return { name: 'tanstack-start', type: 'react' };
   }
 
   // Check for Vite

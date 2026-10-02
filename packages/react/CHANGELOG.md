@@ -1,5 +1,12 @@
 # gt-react
 
+## 11.4.8
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.4.8
+
 ## 11.4.7
 
 ### Patch Changes

@@ -1,8 +1,11 @@
-import { Command, InvalidArgumentError, Option } from 'commander';
+import { Argument, Command, InvalidArgumentError, Option } from 'commander';
 import { ProjectApiKeyPermission } from 'generaltranslation/api';
-import { DEFAULT_TRANSLATIONS_DIR } from '../utils/constants.js';
 import {
-  createOrUpdateConfig,
+  DEFAULT_TRANSLATIONS_DIR,
+  REACT_QUICKSTART_URL,
+} from '../utils/constants.js';
+import {
+  applySetupConfig,
   mergeSetupConfig,
   type SetupConfigUpdate,
 } from '../fs/config/setupConfig.js';
@@ -120,7 +123,7 @@ import {
   clearOrphanedFileNames,
   getOrphanedFileNames,
 } from '../state/orphanedFileNames.js';
-import { runMergeDriver } from '../git/mergeDrivers.js';
+import { runMergeDriver, type MergeDriverName } from '../git/mergeDrivers.js';
 import { setupGitMergeDrivers } from '../git/setupMergeDrivers.js';
 import { warnReactPackageCompatibility } from '../utils/reactPackageCompatibility.js';
 import {
@@ -608,22 +611,30 @@ export class BaseCLI {
 
     gitCommand
       .command('merge-driver', { hidden: true })
-      .argument('<driver>', 'Merge driver name')
+      .addArgument(
+        new Argument('<driver>', 'Merge driver name').choices([
+          'gt-lock',
+          'gtjson',
+        ])
+      )
       .argument('<base>', 'Common ancestor file')
       .argument('<ours>', 'Current branch file')
       .argument('<theirs>', 'Incoming branch file')
       .argument('[path]', 'Merged path')
-      .action((driver: string, base: string, ours: string, theirs: string) => {
-        if (driver !== 'gt-lock' && driver !== 'gtjson') {
-          logger.error(`Unknown GT merge driver: ${driver}`);
-          exitSync(1);
+      .action(
+        (
+          driver: MergeDriverName,
+          base: string,
+          ours: string,
+          theirs: string
+        ) => {
+          const result = runMergeDriver(driver, base, ours, theirs);
+          if (!result.ok) {
+            logger.error(result.reason);
+            exitSync(1);
+          }
         }
-        const result = runMergeDriver(driver, base, ours, theirs);
-        if (!result.ok) {
-          logger.error(result.reason);
-          exitSync(1);
-        }
-      });
+      );
   }
 
   protected async resolveGitSetupOmitConfigIds(
@@ -1333,6 +1344,19 @@ See https://www.npmjs.com/package/gt-vue`);
     const credentialsOption =
       (storage === 'local' && buildTool?.devCredentialsOption) ||
       '--dev-credentials';
+    // Creating credentials talks to GT as the signed-in user unless an API
+    // key is set. A development key in .env.local never stands in. An
+    // obsolete stored login counts as signed out, so signing in replaces it.
+    const canAuthenticate = async () =>
+      Boolean(settings.apiKey) ||
+      (await hasLogin({ baseUrl: settings.baseUrl }).catch((error) => {
+        if (
+          error instanceof UserAuthError &&
+          error.code === 'obsolete_credentials'
+        )
+          return false;
+        throw error;
+      }));
     const provision =
       !credentialsSet &&
       (credentialsOption === '--live-translations'
@@ -1346,13 +1370,15 @@ See https://www.npmjs.com/package/gt-vue`);
                 defaultValue: false,
               }),
           })
-        : await session.answer('--dev-credentials', {
+        : await session.answer('--dev-credentials or --no-dev-credentials', {
             explicit: options.devCredentials,
-            // Creating a key is never a default.
-            ask: () =>
+            // Creating a key is never a default, so --defaults leaves this open.
+            // The prompt names the sign-in so its Yes default is informed.
+            ask: async () =>
               promptConfirm({
-                message:
-                  'Would you like to set up a project ID and hot-reload key in .env.local?',
+                message: (await canAuthenticate())
+                  ? 'Would you like to set up a project ID and hot-reload key in .env.local?'
+                  : 'Would you like to sign in to General Translation and set up a project ID and hot-reload key in .env.local?',
                 defaultValue: true,
               }),
           })) === true;
@@ -1396,13 +1422,7 @@ See https://www.npmjs.com/package/gt-vue`);
 
     session.assertResolved();
 
-    // Only creating credentials talks to GT, as the signed-in user unless an
-    // API key is set. A development key in .env.local never stands in.
-    if (
-      provision &&
-      !settings.apiKey &&
-      !(await hasLogin({ baseUrl: settings.baseUrl }))
-    ) {
+    if (provision && !(await canAuthenticate())) {
       await signInForSetup(session, settings.baseUrl);
     }
     const project = provision
@@ -1428,7 +1448,7 @@ See https://www.npmjs.com/package/gt-vue`);
       await executeReactSetup(session, reactSetup, options);
       logger.endCommand(
         `Done! Since this wizard is experimental, please review the changes and make modifications as needed.
-\nNext step: start internationalizing! See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`
+\nNext step: start internationalizing! See the docs for more information: ${buildTool?.docsUrl ?? REACT_QUICKSTART_URL}`
       );
       logger.startCommand('Setting up project config...');
     }
@@ -1553,8 +1573,10 @@ See https://www.npmjs.com/package/gt-vue`);
       }
     }
 
-    await createOrUpdateConfig(configFilepath, configUpdate);
-    session.step(`updated ${configFilepath}`);
+    const configChange = await applySetupConfig(configFilepath, configUpdate);
+    if (configChange !== 'unchanged') {
+      session.step(`${configChange} ${configFilepath}`);
+    }
 
     logger.success(
       `Edit ${chalk.cyan(

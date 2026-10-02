@@ -39,7 +39,7 @@ function getLoaderContent(translationsImport: string): string {
  * Top-level statements, or undefined for syntax this inspector cannot parse
  * but Vite may accept, such as decorators.
  */
-function parseModule(content: string, filename: string) {
+export function parseModule(content: string, filename: string) {
   try {
     return parse(content, {
       sourceType: 'module',
@@ -53,7 +53,10 @@ function parseModule(content: string, filename: string) {
   }
 }
 
-function toRelativeImport(fromDirectory: string, toPath: string): string {
+export function toRelativeImport(
+  fromDirectory: string,
+  toPath: string
+): string {
   const relativePath = path
     .relative(fromDirectory, toPath)
     .split(path.sep)
@@ -101,6 +104,18 @@ function getModuleEntry(indexHtml: string): {
 export async function inspectViteSPA(appDirectory: string) {
   const indexHtmlPath = path.join(appDirectory, 'index.html');
   const sourceDirectory = path.join(appDirectory, 'src');
+  if (!fs.existsSync(indexHtmlPath)) {
+    throw new Error(
+      createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Error',
+        whatHappened: 'This is not a Vite single-page app',
+        why: 'index.html was not found',
+        reassurance: 'Nothing was changed',
+        fix: 'Rerun `npx gt@latest init` with `--framework` set to your framework, or set up GT manually',
+      })
+    );
+  }
   const indexHtml = await fs.promises.readFile(indexHtmlPath, 'utf8');
   const { script, source } = getModuleEntry(indexHtml);
   const declaredEntryPath = getEntryPath(appDirectory, source);
@@ -180,7 +195,12 @@ export async function inspectViteSPA(appDirectory: string) {
   };
 }
 
-export type ViteLoaderResult = 'written' | 'custom' | 'missing';
+export type ViteLoaderResult =
+  | 'created'
+  | 'updated'
+  | 'unchanged'
+  | 'custom'
+  | 'missing';
 
 /**
  * Points the generated src/loadTranslations.ts at translationsDir and adds
@@ -234,13 +254,29 @@ export async function writeViteLoader({
     }
   }
   if (custom) return 'custom';
+  if (existingLoader === content) return 'unchanged';
   await fs.promises.writeFile(loaderPath, content);
-  return 'written';
+  return existingLoader === undefined ? 'created' : 'updated';
 }
 
-function getLoaderExport(
-  content: string
-): 'default' | 'loadTranslations' | undefined {
+export type ViteLoaderExport = 'default' | 'loadTranslations' | undefined;
+
+/** The generated loader's export, or a custom loader's own if it has one. */
+export async function getViteLoaderExport(
+  appDirectory: string,
+  loader: ViteLoaderResult
+): Promise<ViteLoaderExport> {
+  return loader === 'custom'
+    ? getLoaderExport(
+        await fs.promises.readFile(
+          path.join(appDirectory, 'src', 'loadTranslations.ts'),
+          'utf8'
+        )
+      )
+    : 'default';
+}
+
+function getLoaderExport(content: string): ViteLoaderExport {
   const statements = parseModule(content, 'loadTranslations.ts');
   if (!statements) return undefined;
   const names = new Set<string>();
@@ -334,15 +370,7 @@ export async function setupViteSPA({
       previousTranslationsDir,
       create: true,
     });
-    const loaderExport =
-      loader === 'custom'
-        ? getLoaderExport(
-            await fs.promises.readFile(
-              path.join(sourceDirectory, 'loadTranslations.ts'),
-              'utf8'
-            )
-          )
-        : 'default';
+    const loaderExport = await getViteLoaderExport(appDirectory, loader);
     if (!loaderExport) {
       return {
         loader,
