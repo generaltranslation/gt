@@ -79,10 +79,14 @@ describe('loopback authorization server', () => {
   it('shows a denied request as denied, without exposing callback errors', async () => {
     const server = await startLoopbackServer();
     const error = new Error('Sensitive callback details');
-    const pending = server.waitForCallback(async (url) => {
-      expect(url.searchParams.get('error')).toBe('access_denied');
-      throw error;
-    }, 5000);
+    const pending = server.waitForCallback(
+      async (url) => {
+        expect(url.searchParams.get('error')).toBe('access_denied');
+        throw error;
+      },
+      5000,
+      { failure: (thrown) => (thrown === error ? 'denied' : 'failed') }
+    );
     const rejected = expect(pending).rejects.toBe(error);
     const response = await fetch(
       `${server.redirectUri}?error=access_denied&state=xyz`
@@ -93,6 +97,24 @@ describe('loopback authorization server', () => {
     expect(page).toContain('class="glyph error"');
     expect(page).not.toContain('Signed in to the gt CLI');
     expect(page).not.toContain(error.message);
+    await rejected;
+  });
+  it('shows a callback that says access_denied as failed when the exchange failed for another reason', async () => {
+    const server = await startLoopbackServer();
+    const error = new Error('state mismatch');
+    const pending = server.waitForCallback(
+      async () => {
+        throw error;
+      },
+      5000,
+      { failure: () => 'failed' }
+    );
+    const rejected = expect(pending).rejects.toBe(error);
+    const page = await (
+      await fetch(`${server.redirectUri}?error=access_denied&state=forged`)
+    ).text();
+    expect(page).toContain('Sign-in failed');
+    expect(page).not.toContain('Request denied');
     await rejected;
   });
   it('shows any other callback failure as a failed sign-in', async () => {
@@ -139,6 +161,25 @@ describe('loopback authorization server', () => {
     expect(repeat.body).toContain('Signed in to the gt CLI');
     await expect(repeat.closed).resolves.toBeUndefined();
     expect((await pending).href).toBe(callback);
+  });
+  it('answers a repeat that arrives after the login finished and the server was closed', async () => {
+    const server = await startLoopbackServer();
+    const pending = server.waitForCallback(async (url) => url, 5000);
+    const callback = `${server.redirectUri}?code=abc&state=xyz`;
+    expect(await (await fetch(callback)).text()).toContain(
+      'Signed in to the gt CLI'
+    );
+    await pending;
+    server.close();
+    // A browser that aborted the first navigation retries it now.
+    const repeat = await keepAliveGet(callback);
+    expect(repeat.status).toBe(200);
+    expect(repeat.headers.connection).toBe('close');
+    expect(repeat.body).toContain('Signed in to the gt CLI');
+    await expect(repeat.closed).resolves.toBeUndefined();
+    expect(
+      (await fetch(`${server.redirectUri}?code=other&state=xyz`)).status
+    ).toBe(404);
   });
   it('ignores unrelated paths, methods and absolute targets with another origin', async () => {
     const server = await startLoopbackServer();

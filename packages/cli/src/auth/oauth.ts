@@ -371,6 +371,9 @@ export async function login(options: LoginOptions = {}): Promise<OAuthTokens> {
       code_challenge_method: 'S256',
     });
     assertEndpoint(authorizationUrl, new URL(authBaseUrl));
+    // The errors the page shows as a denial: the exchange read a validated
+    // access_denied response, so the page and the terminal agree.
+    const denials = new WeakSet<object>();
     const callback = loopback.waitForCallback(
       async (callbackUrl) => {
         const result = await oidc
@@ -385,7 +388,16 @@ export async function login(options: LoginOptions = {}): Promise<OAuthTokens> {
             { resource }
           )
           .catch((error: unknown) => {
-            throw oauthError(error, 'Failed to authenticate via web browser');
+            const failure = oauthError(
+              error,
+              'Failed to authenticate via web browser'
+            );
+            if (
+              error instanceof oidc.AuthorizationResponseError &&
+              error.error === 'access_denied'
+            )
+              denials.add(failure);
+            throw failure;
           });
         const tokens = { ...parseTokens(result), resource };
         await writeOAuthTokens(tokens, authBaseUrl);
@@ -402,7 +414,11 @@ export async function login(options: LoginOptions = {}): Promise<OAuthTokens> {
         return { tokens, account };
       },
       options.timeoutMs,
-      { describe: (outcome) => ({ account: outcome.account }) }
+      {
+        describe: (outcome) => ({ account: outcome.account }),
+        failure: (error) =>
+          error instanceof Error && denials.has(error) ? 'denied' : 'failed',
+      }
     );
     // Printing/launching may fail before we await the listener.
     callback.catch(() => undefined);

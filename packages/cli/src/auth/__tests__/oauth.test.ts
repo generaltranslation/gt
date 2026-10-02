@@ -575,6 +575,24 @@ describe('discovery and browser authorization', () => {
     ).rejects.toThrow();
     expect(await readOAuthTokens(authBaseUrl)).toBeUndefined();
   });
+  it('shows a denial with a forged state as a failed sign-in, as the terminal reports it', async () => {
+    let page!: Promise<string>;
+    await expect(
+      browserLogin({
+        openBrowser: (url) => {
+          page = callback(url, (params) => {
+            params.delete('code');
+            params.set('error', 'access_denied');
+            params.set('state', 'forged');
+          });
+          return page;
+        },
+      })
+    ).rejects.toThrow();
+    const html = await page;
+    expect(html).toContain('Sign-in failed');
+    expect(html).not.toContain('Request denied');
+  });
   it('reports validated consent denial', async () => {
     await expect(
       browserLogin({

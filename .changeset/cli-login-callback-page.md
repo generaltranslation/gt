@@ -2,6 +2,6 @@
 'gt': patch
 ---
 
-Restyle the page `gt login` shows in the browser after the loopback callback to match the dashboard's auth plate, centered on the plain ground: the GT mark, a heading with a status glyph, a lede, and a note naming the signed-in account. Nothing loads from the network. A denied request and a failed exchange get their own pages, and both say to run `npx gt login` again.
+Restyle the page `gt login` shows in the browser after the loopback callback to match the dashboard's auth plate, centered on the plain ground: the GT mark, a heading with a status glyph, a lede, and a note naming the signed-in account. Nothing loads from the network. A denied request and a failed exchange get their own pages, and both say to run `npx gt login` again; the page calls a request denied only when the exchange read a validated denial, so it agrees with the terminal.
 
-`gt login` returns to the shell as soon as the browser's callback is answered: a repeated callback request no longer holds a keep-alive socket open for the five second timeout. A caller's AbortSignal now cancels the browser flow's token exchange and account lookup, reported as a cancellation.
+`gt login` returns to the shell as soon as the browser's callback is answered: a repeated callback request no longer holds a keep-alive socket open for the five second timeout. A repeat that arrives after the exchange, within ten seconds, still gets the result page, and the listener that answers it never holds the process open. A caller's AbortSignal now cancels the browser flow's token exchange and account lookup, reported as a cancellation.
