@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { renderCallbackPage } from '../callbackPage.js';
+import { createHash } from 'node:crypto';
+import { CALLBACK_PAGE_CSP, renderCallbackPage } from '../callbackPage.js';
 
 /** WCAG 2 relative luminance of a six-digit hex color. */
 function luminance(hex: string): number {
@@ -78,6 +79,27 @@ describe('callback page', () => {
     expect(failed).toContain('class="glyph error"');
     expect(failed).toContain('npx gt login');
     expect(failed).not.toContain('Signed in to the gt CLI');
+  });
+
+  it('sets the retry command between monospace spaces and copies it with the one script the policy allows', () => {
+    for (const reason of ['denied', 'failed'] as const) {
+      const page = renderCallbackPage({ ok: false, reason });
+      expect(page).toContain(
+        'Run<span class="gap"> </span><button type="button" class="cmd" aria-label="Copy npx gt login">npx gt login</button><span class="gap"> </span>to try again.<span class="copied" role="status"></span>'
+      );
+      const scripts = [...page.matchAll(/<script>([\s\S]*?)<\/script>/g)];
+      expect(scripts).toHaveLength(1);
+      const hash = createHash('sha256')
+        .update(scripts[0]![1]!)
+        .digest('base64');
+      expect(CALLBACK_PAGE_CSP).toBe(
+        `default-src 'none'; style-src 'unsafe-inline'; script-src 'sha256-${hash}'`
+      );
+      expect(scripts[0]![1]).toContain('navigator.clipboard.writeText');
+    }
+    expect(
+      renderCallbackPage({ ok: true, account: 'dev@example.com' })
+    ).not.toContain('<script');
   });
 
   it('is the plate alone on the plain ground: no field, no footer, no external assets, the theme swap inline', () => {

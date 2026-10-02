@@ -1,6 +1,7 @@
 import { Agent, request, type IncomingHttpHeaders } from 'node:http';
 import { describe, expect, it } from 'vitest';
 import { LOOPBACK_CALLBACK_PATH, startLoopbackServer } from '../loopback.js';
+import { CALLBACK_PAGE_CSP } from '../callbackPage.js';
 
 /**
  * A GET over a keep-alive connection, resolved once the response has been
@@ -52,7 +53,7 @@ describe('loopback authorization server', () => {
     expect(response.status).toBe(200);
     expect(response.headers.get('cache-control')).toBe('no-store');
     expect(response.headers.get('content-security-policy')).toBe(
-      "default-src 'none'; style-src 'unsafe-inline'"
+      CALLBACK_PAGE_CSP
     );
     const page = await response.text();
     expect(page).toContain('Signed in to the gt CLI');

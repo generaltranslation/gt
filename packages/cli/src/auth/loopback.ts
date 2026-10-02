@@ -1,6 +1,7 @@
 import { createServer, type Server, type ServerResponse } from 'node:http';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import {
+  CALLBACK_PAGE_CSP,
   renderCallbackPage,
   type CallbackPageDetails,
 } from './callbackPage.js';
@@ -136,8 +137,7 @@ export async function startLoopbackServer(): Promise<LoopbackServer> {
           response.writeHead(200, {
             'cache-control': 'no-store',
             connection: 'close',
-            'content-security-policy':
-              "default-src 'none'; style-src 'unsafe-inline'",
+            'content-security-policy': CALLBACK_PAGE_CSP,
             'content-type': 'text/html; charset=utf-8',
             'x-content-type-options': 'nosniff',
           });

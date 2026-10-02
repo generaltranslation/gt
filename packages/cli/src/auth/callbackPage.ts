@@ -1,13 +1,15 @@
+import { createHash } from 'node:crypto';
+
 // The page the loopback server shows once `gt login` has finished. It is
-// served from 127.0.0.1 under `default-src 'none'; style-src 'unsafe-inline'`,
-// so everything is inline: the brand deck's tokens (paper and ink with a
+// served from 127.0.0.1 under CALLBACK_PAGE_CSP, so everything is inline: the brand deck's tokens (paper and ink with a
 // prefers-color-scheme swap, ink-2 for the sentence, titanium for the note,
 // the status hues), the GT mark and a Heroicons 24/solid status glyph. The
 // composition is the dashboard's auth plate in its centered form: the plate
 // alone on the plain ground, centered both ways, with the mark, a 24px
 // heading with the glyph, a lede, and a 13px note naming the account. No
-// field, no footer, no script, nothing from the network and no webfont;
-// Inter is used when it is installed.
+// field, no footer, nothing from the network and no webfont; Inter is used
+// when it is installed. The one script copies the retry command on click; the
+// policy allows it by its hash and allows no other script.
 /** What the page says: a signed-in account, or why the login did not finish. */
 export type CallbackPageView =
   | { ok: true; account?: string }
@@ -84,11 +86,39 @@ const STYLES = `
     color: var(--titanium);
     overflow-wrap: anywhere;
   }
-  .note code, .note .ink { color: var(--ink); }
-  code {
+  .note .ink { color: var(--ink); }
+  .gap {
     font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   }
+  /* A button reset to inline text. Selecting the whole command on one click
+     is the fallback when the copy fails. */
+  .cmd {
+    all: unset;
+    font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color: var(--ink);
+    cursor: pointer;
+    user-select: all;
+    -webkit-user-select: all;
+  }
+  .cmd:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 `;
+
+// Copies the retry command and says so for 1.6s. A failed copy leaves the
+// command selected, so Cmd+C still works.
+const COPY_SCRIPT = `const cmd = document.querySelector('.cmd');
+const status = document.querySelector('.copied');
+let timer;
+cmd.addEventListener('click', () => {
+  navigator.clipboard.writeText(cmd.textContent).then(() => {
+    getSelection().removeAllRanges();
+    status.textContent = ' Copied.';
+    clearTimeout(timer);
+    timer = setTimeout(() => { status.textContent = ''; }, 1600);
+  }, () => {});
+});`;
+
+/** The policy the loopback server sends with the page. */
+export const CALLBACK_PAGE_CSP = `default-src 'none'; style-src 'unsafe-inline'; script-src 'sha256-${createHash('sha256').update(COPY_SCRIPT).digest('base64')}'`;
 
 // The General Translation mark, from the brand asset set.
 const GT_MARK =
@@ -108,7 +138,10 @@ function escapeHtml(value: string): string {
     .replace(/"/g, '&quot;');
 }
 
-const RETRY = 'Run <code>npx gt login</code> to try again.';
+// The spaces around the command are monospace, so the gap before and after
+// it matches the gap between its words.
+const RETRY =
+  'Run<span class="gap"> </span><button type="button" class="cmd" aria-label="Copy npx gt login">npx gt login</button><span class="gap"> </span>to try again.<span class="copied" role="status"></span>';
 
 function copy(view: CallbackPageView): {
   title: string;
@@ -159,7 +192,7 @@ ${GT_MARK}
 <h1>${glyph}<span>${title}</span></h1>
 <p class="lede">${lede}</p>${note ? `\n<p class="note">${note}</p>` : ''}
 </div>
-</main>
+</main>${note === RETRY ? `\n<script>${COPY_SCRIPT}</script>` : ''}
 </body>
 </html>`;
 }
