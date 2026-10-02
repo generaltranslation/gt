@@ -1,5 +1,9 @@
-import { Settings } from '../types/index.js';
-import { aggregateFiles } from '../formats/files/aggregateFiles.js';
+import {
+  Settings,
+  SupportedLibraries,
+  TranslateFlags,
+} from '../types/index.js';
+import { collectFiles } from '../formats/files/collectFiles.js';
 import { collectAndSendUserEditDiffs } from './collectUserEditDiffs.js';
 import { api } from '../utils/api.js';
 import { BranchStep } from '../workflows/steps/BranchStep.js';
@@ -14,11 +18,15 @@ import { runPublishWorkflow } from '../workflows/publish.js';
  * Uploads current source files to obtain file references, then collects and sends
  * diffs for all locales based on last downloaded versions. Does not enqueue translations.
  */
-export async function saveLocalEdits(settings: Settings): Promise<void> {
+export async function saveLocalEdits(
+  options: TranslateFlags,
+  settings: Settings,
+  library: SupportedLibraries
+): Promise<void> {
   if (!settings.files) return;
 
   // Collect current files from config
-  const { files, publishMap } = await aggregateFiles(settings);
+  const { files, publishMap } = await collectFiles(options, settings, library);
   if (!files.length) return;
 
   // run branch query to get branch id

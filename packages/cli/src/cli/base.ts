@@ -400,7 +400,11 @@ export class BaseCLI {
         });
         if (!hasValidCredentials(settings) || !hasValidServiceLocales(settings))
           return exitSync(1);
-        await saveLocalEdits(settings);
+        await saveLocalEdits(
+          initOptions as TranslateFlags,
+          settings,
+          this.library
+        );
         logger.endCommand('Saved local edits');
       });
   }
