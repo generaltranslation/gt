@@ -1,0 +1,125 @@
+import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { dirname, join, sep } from 'node:path';
+import { examplesDir } from './workspace.ts';
+import type { BundleKind } from '../shared/types.ts';
+
+export interface ExampleDefinition {
+  id: string;
+  title: string;
+  pkg: string;
+  framework: string;
+  description: string;
+  dir: string;
+  /** Root that `[project]/` sources are relative to (Turbopack only). */
+  projectRoot?: (dir: string) => string;
+  /** Emitted JS files per bundle kind, read after a build. */
+  collect: Partial<Record<BundleKind, (dir: string) => string[]>>;
+}
+
+function walk(dir: string): string[] {
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(dir, entry.name);
+    return entry.isDirectory() ? walk(path) : [path];
+  });
+}
+
+/** Mirrors the example's next.config.ts turbopack.root. */
+function turbopackRoot(dir: string): string {
+  const require = createRequire(join(dir, 'package.json'));
+  const nextDir = realpathSync(dirname(require.resolve('next/package.json')));
+  const a = realpathSync(dir).split(sep);
+  const b = nextDir.split(sep);
+  let i = 0;
+  while (i < a.length && i < b.length && a[i] === b[i]) i++;
+  return a.slice(0, i).join(sep) || sep;
+}
+
+const isJs = (file: string) => /\.(m?js|cjs)$/.test(file);
+
+/** Next.js edge files come from the middleware manifest, not a fixed dir. */
+function nextEdgeFiles(dir: string): string[] {
+  const manifestPath = join(dir, '.next/server/middleware-manifest.json');
+  if (!existsSync(manifestPath)) return [];
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as {
+    middleware: Record<string, { files: string[] }>;
+    functions: Record<string, { files: string[] }>;
+  };
+  const files = new Set<string>();
+  for (const entry of [
+    ...Object.values(manifest.middleware ?? {}),
+    ...Object.values(manifest.functions ?? {}),
+  ]) {
+    for (const file of entry.files) {
+      if (isJs(file)) files.add(join(dir, '.next', file));
+    }
+  }
+  return [...files].filter((file) => existsSync(file));
+}
+
+export const examples: ExampleDefinition[] = [
+  {
+    id: 'next-app',
+    title: 'Next.js App Router',
+    pkg: 'gt-next',
+    framework: 'Next.js 16, Turbopack',
+    description:
+      'Locale-routed App Router app with server components, a client component, and edge middleware.',
+    dir: join(examplesDir, 'next-app'),
+    projectRoot: turbopackRoot,
+    collect: {
+      client: (dir) => walk(join(dir, '.next/static')).filter(isJs),
+      server: (dir) => {
+        const edge = new Set(nextEdgeFiles(dir));
+        return walk(join(dir, '.next/server')).filter(
+          (file) =>
+            isJs(file) &&
+            !edge.has(file) &&
+            !file.includes('/.next/server/edge/') &&
+            !/(manifest|_client-reference-manifest)\.js$/.test(file)
+        );
+      },
+      edge: nextEdgeFiles,
+    },
+  },
+  {
+    id: 'tanstack-start',
+    title: 'TanStack Start',
+    pkg: 'gt-tanstack-start',
+    framework: 'TanStack Start, Vite 8',
+    description:
+      'Server-rendered TanStack Start app with file routes and a locale selector.',
+    dir: join(examplesDir, 'tanstack-start'),
+    collect: {
+      client: (dir) => walk(join(dir, 'dist/client')).filter(isJs),
+      server: (dir) => walk(join(dir, 'dist/server')).filter(isJs),
+    },
+  },
+  {
+    id: 'vite-react',
+    title: 'Vite React',
+    pkg: 'gt-react',
+    framework: 'React 19, Vite 8',
+    description: 'Client-rendered React app built with the GT compiler plugin.',
+    dir: join(examplesDir, 'vite-react'),
+    collect: {
+      client: (dir) => walk(join(dir, 'dist')).filter(isJs),
+    },
+  },
+  {
+    id: 'vite-vue',
+    title: 'Vite Vue',
+    pkg: 'gt-vue',
+    framework: 'Vue 3, Vite 8',
+    description: 'Client-rendered Vue app using the gt-vue plugin.',
+    dir: join(examplesDir, 'vite-vue'),
+    collect: {
+      client: (dir) => walk(join(dir, 'dist')).filter(isJs),
+    },
+  },
+];
+
+export function findExample(id: string): ExampleDefinition | undefined {
+  return examples.find((example) => example.id === id);
+}

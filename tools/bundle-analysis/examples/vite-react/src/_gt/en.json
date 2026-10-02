@@ -1,0 +1,207 @@
+{
+  "31b339eccc36d936": "Power passthrough to your laptop",
+  "478e4760193a9042": "USB-C ports, all full speed",
+  "7138a9fec73f867f": "Shared data bandwidth",
+  "3743a90483f06f0a": "Weight without the cable",
+  "f9a7da8c221623c5": "Graphite",
+  "fb08597714c8afd3": "Silver",
+  "9d6a84dcb34cb1d2": "Cart ({count})",
+  "a5c657d3ca1226e3": "Configure Yours",
+  "24eb8f5407280920": "Read The Specs",
+  "1ca2facc399b6d4c": "Finish",
+  "7637a571ff5e01b1": "Quantity",
+  "4b71561e661a9664": "Decrease quantity",
+  "6f9647f746db650d": "Increase quantity",
+  "b227a54bbdb9b6cf": "Items",
+  "f17b1e80db62c71d": "Subtotal",
+  "03d5f624d2a51612": "Ships",
+  "dba25d3fe774a633": "Add To Cart",
+  "6ed27ff3a6de97a2": [
+    {
+      "t": "p",
+      "i": 1,
+      "c": "Desk hardware, model H4"
+    },
+    {
+      "t": "h1",
+      "i": 2,
+      "c": "One cable for the whole desk."
+    },
+    {
+      "t": "p",
+      "i": 3,
+      "c": "Halyard is a four-port USB-C dock. It passes 100 W to your laptop and fits in a jacket pocket."
+    }
+  ],
+  "c0d5c237727811ad": {
+    "t": "p",
+    "i": 1,
+    "c": [
+      "From ",
+      {
+        "i": 2,
+        "k": "_gt_cost_2",
+        "v": "c"
+      },
+      ". Next batch ships",
+      " ",
+      {
+        "i": 3,
+        "k": "_gt_date_3",
+        "v": "d"
+      },
+      "."
+    ]
+  },
+  "46ae1289afb8f474": [
+    {
+      "t": "p",
+      "i": 1,
+      "c": "Configure"
+    },
+    {
+      "t": "h2",
+      "i": 2,
+      "c": "Pick a finish and a quantity."
+    }
+  ],
+  "329b0ffb2be64f39": {
+    "t": "p",
+    "i": 1,
+    "c": {
+      "t": "Branch",
+      "i": 2,
+      "d": {
+        "b": {
+          "graphite": {
+            "t": "C3",
+            "i": 3,
+            "c": "Anodized graphite aluminum with a bead-blasted top."
+          },
+          "silver": {
+            "t": "C3",
+            "i": 3,
+            "c": "Brushed silver aluminum, milled from one block."
+          }
+        },
+        "t": "b"
+      },
+      "c": "Anodized aluminum."
+    }
+  },
+  "eda6de344fac9922": {
+    "t": "p",
+    "i": 1,
+    "c": "Your order"
+  },
+  "f10ce9489f97836f": {
+    "t": "Plural",
+    "i": 1,
+    "d": {
+      "b": {
+        "one": {
+          "t": "C2",
+          "i": 2,
+          "c": "One dock"
+        },
+        "other": {
+          "t": "C2",
+          "i": 2,
+          "c": [
+            {
+              "i": 3,
+              "k": "_gt_n_3",
+              "v": "n"
+            },
+            " docks"
+          ]
+        }
+      },
+      "t": "p"
+    }
+  },
+  "c380115429f46f8d": {
+    "t": "p",
+    "i": 1,
+    "c": {
+      "t": "Plural",
+      "i": 2,
+      "d": {
+        "b": {
+          "one": {
+            "t": "C3",
+            "i": 3,
+            "c": "One unit left in this finish."
+          },
+          "other": {
+            "t": "C3",
+            "i": 3,
+            "c": [
+              {
+                "i": 4,
+                "k": "_gt_n_4",
+                "v": "n"
+              },
+              " units left in this finish."
+            ]
+          }
+        },
+        "t": "p"
+      }
+    }
+  },
+  "43b9dc23dbbdd692": {
+    "t": "p",
+    "i": 1,
+    "c": [
+      "Added the ",
+      {
+        "i": 2,
+        "k": "_gt_value_2",
+        "v": "v"
+      },
+      " finish to your cart. Checkout is disabled in this example."
+    ]
+  },
+  "5126a81a448fa55d": [
+    {
+      "t": "h3",
+      "i": 1,
+      "c": "In the box"
+    },
+    {
+      "t": "p",
+      "i": 2,
+      "c": "The dock, a 1 m braided USB-C cable, and a felt pad for the underside."
+    }
+  ],
+  "a7da62bdf614bdbe": [
+    {
+      "t": "h3",
+      "i": 1,
+      "c": "Compatibility"
+    },
+    {
+      "t": "p",
+      "i": 2,
+      "c": "Works with any USB-C or Thunderbolt laptop. No driver install."
+    }
+  ],
+  "0cc257c0d0732a69": [
+    {
+      "t": "h3",
+      "i": 1,
+      "c": "Warranty"
+    },
+    {
+      "t": "p",
+      "i": 2,
+      "c": "Two years on parts and labor. Repairs ship back within five business days."
+    }
+  ],
+  "4dcdc30b389b12b8": {
+    "t": "p",
+    "i": 1,
+    "c": "Halyard is a fictional product. This page is a gt-react example."
+  }
+}

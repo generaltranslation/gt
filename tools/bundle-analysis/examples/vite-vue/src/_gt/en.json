@@ -1,0 +1,169 @@
+{
+  "d0e4315ff74c2dbd": "Language",
+  "8d6b4a431317f5b0": [
+    {
+      "t": "p",
+      "i": 1,
+      "c": "Notes app for small teams"
+    },
+    {
+      "t": "h1",
+      "i": 2,
+      "c": "Plain text notes that sync in 200 ms."
+    },
+    {
+      "t": "p",
+      "i": 3,
+      "c": " Quire saves every note as a Markdown file on your disk. Sync is end-to-end encrypted, and you can open the folder in any editor. "
+    }
+  ],
+  "b2649736eefbe556": "Start Free Trial",
+  "17c0a1fe2a4bde85": "Read The FAQ",
+  "a5aab8024f2e0f60": {
+    "t": "p",
+    "i": 1,
+    "c": [
+      " Version 4.2 shipped on ",
+      {
+        "i": 2,
+        "k": "_gt_date_2",
+        "v": "d"
+      },
+      " to ",
+      {
+        "i": 3,
+        "k": "_gt_n_3",
+        "v": "n"
+      },
+      " writers. "
+    ]
+  },
+  "dd0d8977eb2ce78d": [
+    {
+      "t": "p",
+      "i": 1,
+      "c": "Pricing"
+    },
+    {
+      "t": "h2",
+      "i": 2,
+      "c": "One plan. Pay per seat."
+    }
+  ],
+  "5eb6d2a3dcdaad22": "Billing",
+  "6032f166f1b33374": "Monthly",
+  "f29fe14e025576f8": "Yearly",
+  "76b3367e58ceaf9a": {
+    "t": "p",
+    "i": 1,
+    "c": {
+      "t": "Branch",
+      "i": 2,
+      "d": {
+        "b": {
+          "monthly": " Billed every month. Cancel any time. ",
+          "yearly": " Billed once a year. Two months are free. "
+        },
+        "t": "b"
+      },
+      "c": " Billed per seat. "
+    }
+  },
+  "29b8fb9be365cd8c": "Seats",
+  "e28b96105f447584": "Remove a seat",
+  "039627eef3f7e32e": "Add a seat",
+  "d6a895ada86e4dfa": "Team name",
+  "a62086e5a150cca8": {
+    "t": "p",
+    "i": 1,
+    "c": "Summary"
+  },
+  "99bc9a2184aa5e52": {
+    "t": "Plural",
+    "i": 1,
+    "d": {
+      "b": {
+        "one": "One seat",
+        "other": [
+          {
+            "i": 2,
+            "k": "_gt_n_2",
+            "v": "n"
+          },
+          " seats "
+        ]
+      },
+      "t": "p"
+    }
+  },
+  "fd0682261976e63a": "Price per seat",
+  "56b37609b45cf1f6": "Total",
+  "0eb2111fa22f5d06": "Trial ends",
+  "6bcfa88bc3323735": {
+    "t": "p",
+    "i": 1,
+    "c": [
+      " Invoices go to the ",
+      {
+        "i": 2,
+        "k": "_gt_value_2",
+        "v": "v"
+      },
+      " workspace. You pay nothing until the trial ends. "
+    ]
+  },
+  "2f9ae8acf75f755b": {
+    "t": "p",
+    "i": 1,
+    "c": [
+      " The ",
+      {
+        "i": 2,
+        "k": "_gt_value_2",
+        "v": "v"
+      },
+      " trial has started. Sign-up is disabled in this example. "
+    ]
+  },
+  "faafb957e02b857f": [
+    {
+      "t": "h3",
+      "i": 1,
+      "c": "Where are my notes stored?"
+    },
+    {
+      "t": "p",
+      "i": 2,
+      "c": " In a folder you choose. Our servers hold only encrypted copies for sync. "
+    }
+  ],
+  "fc28b68971e999a4": [
+    {
+      "t": "h3",
+      "i": 1,
+      "c": "Can I leave?"
+    },
+    {
+      "t": "p",
+      "i": 2,
+      "c": " Yes. Your notes are plain Markdown files, so there is nothing to export. "
+    }
+  ],
+  "5058c778cc03098e": [
+    {
+      "t": "h3",
+      "i": 1,
+      "c": "Does it work offline?"
+    },
+    {
+      "t": "p",
+      "i": 2,
+      "c": " Every edit is saved locally first. Sync resumes when you are back online. "
+    }
+  ],
+  "c8c5c4e38c67fe93": "Quire is a fictional product. This page is a gt-vue example.",
+  "fc4b615b203add59": "Median sync time between devices",
+  "78d9ba62cfe6899a": "Devices included with every seat",
+  "5e78b83b4a0e6db2": "AES keys that never leave your devices",
+  "04845e6dfa4c8569": "Days of free trial, no card required"
+}
