@@ -101,19 +101,48 @@ const STYLES = `
     -webkit-user-select: all;
   }
   .cmd:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  /* The icon after the command, one monospace space from it. Both glyphs keep
+     the same box, so the line does not move when the check replaces the copy
+     icon. */
+  .cmd svg {
+    display: inline-block;
+    width: 13px;
+    height: 13px;
+    margin-left: 1ch;
+    vertical-align: -2px;
+    color: var(--titanium);
+  }
+  .cmd .done {
+    display: none;
+    color: var(--success);
+  }
+  .cmd.is-copied .copy { display: none; }
+  .cmd.is-copied .done { display: inline-block; }
+  .status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 `;
 
-// Copies the retry command and says so for 1.6s. A failed copy leaves the
-// command selected, so Cmd+C still works.
+// Copies the retry command and shows a check for 1.6s, announced to screen
+// readers. A failed copy leaves the command selected, so Cmd+C still works.
 const COPY_SCRIPT = `const cmd = document.querySelector('.cmd');
-const status = document.querySelector('.copied');
+const status = document.querySelector('.status');
 let timer;
 cmd.addEventListener('click', () => {
-  navigator.clipboard.writeText(cmd.textContent).then(() => {
+  navigator.clipboard.writeText('npx gt login').then(() => {
     getSelection().removeAllRanges();
-    status.textContent = ' Copied.';
+    cmd.classList.add('is-copied');
+    status.textContent = 'Copied';
     clearTimeout(timer);
-    timer = setTimeout(() => { status.textContent = ''; }, 1600);
+    timer = setTimeout(() => {
+      cmd.classList.remove('is-copied');
+      status.textContent = '';
+    }, 1600);
   }, () => {});
 });`;
 
@@ -123,6 +152,12 @@ export const CALLBACK_PAGE_CSP = `default-src 'none'; style-src 'unsafe-inline';
 // The General Translation mark, from the brand asset set.
 const GT_MARK =
   '<svg class="mark" viewBox="-8 214 1213 771" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M363 222.5L1197 222.5L1196.5 283L834 283.5L832.5 976L773 975.5L772.5 398L359.5 398L341.5 401L301.5 414L271.5 430L249.5 446L231 463.5L214 484.5L190 529.5L180 567.5L178 613.5L185 653.5L196 682.5L217 717.5L242.5 746L270.5 768L314.5 790L342.5 798L372.5 802L399.5 802L430.5 798L475.5 783L502.5 768L524 751.5L523.5 747L415.5 748L414.5 684L583 684.5L583 923.5L580.5 926L516.5 955L476.5 967L439.5 974L403.5 977L355.5 976L326.5 973L287.5 965L252.5 954L221.5 941L187.5 923L155.5 902L121.5 874L97 849.5L77 825.5L55 793.5L33 752.5L15 705.5L4 656.5L0 613.5L2 556.5L10 511.5L23 469.5L44 423.5L66 387.5L99 346.5L129.5 317L170.5 286L225.5 256L275.5 237L325.5 226L363 222.5Z M386.5 282L322.5 288L275.5 301L220.5 327L167.5 365L123 413.5L103 443.5L87 474.5L71 518.5L61 578.5L63 641.5L68 669.5L78 703.5L107 762.5L143 810.5L171.5 838L194.5 856L248.5 887L305.5 907L366.5 916L403.5 916L442.5 912L490.5 900L523.5 887L524 826.5L479.5 847L440.5 858L399.5 863L344.5 860L291.5 846L254.5 829L214.5 802L186 775.5L165 749.5L141 708.5L125 664.5L118 624.5L118 573.5L126 530.5L139 494.5L165 449.5L201.5 408L238.5 379L292.5 352L341.5 339L373.5 336L773 336.5L772.5 283L386.5 282Z M888 337.5L1197 337.5L1196.5 398L949 398.5L948.5 976L888 975.5L888 337.5Z M415 571.5L692 572.5L692 830.5L668 858.5L633.5 890L631 890.5L631 635.5L414.5 635L415 571.5Z"/></svg>';
+
+// Lucide copy and check (ISC), the control icons the landing uses.
+const COPY_ICON =
+  '<svg class="copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>';
+const DONE_ICON =
+  '<svg class="done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
 
 // Heroicons 24/solid check-circle and x-circle (MIT, Tailwind Labs).
 const CHECK_CIRCLE =
@@ -140,8 +175,7 @@ function escapeHtml(value: string): string {
 
 // The spaces around the command are monospace, so the gap before and after
 // it matches the gap between its words.
-const RETRY =
-  'Run<span class="gap"> </span><button type="button" class="cmd" aria-label="Copy npx gt login">npx gt login</button><span class="gap"> </span>to try again.<span class="copied" role="status"></span>';
+const RETRY = `Run<span class="gap"> </span><button type="button" class="cmd" aria-label="Copy npx gt login">npx gt login${COPY_ICON}${DONE_ICON}</button><span class="gap"> </span>to try again.<span class="status" role="status"></span>`;
 
 function copy(view: CallbackPageView): {
   title: string;
