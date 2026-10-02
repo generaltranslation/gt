@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1790896715593,
+  "lastUpdate": 1790984316148,
   "repoUrl": "https://github.com/generaltranslation/gt",
   "entries": {
     "Middleware Benchmarks": [
@@ -11600,6 +11600,122 @@ window.BENCHMARK_DATA = {
             "value": 86.39999999999418,
             "unit": "ms",
             "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.8\"\n}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "147eeb58bcc856d61fed9f2de3858e801ddd27bf",
+          "message": "[ci] release (#2383)\n\nThis PR was opened by the [Changesets\nrelease](https://github.com/changesets/action) GitHub action. When\nyou're ready to do a release, you can merge this and the packages will\nbe published to npm automatically. If you're not ready to do a release\nyet, that's fine, whenever you add more changesets to main, this PR will\nbe updated.\n\n\n# Releases\n## @generaltranslation/api@0.5.2\n\n### Patch Changes\n\n- [#2359](https://github.com/generaltranslation/gt/pull/2359)\n[`7fa27b2`](https://github.com/generaltranslation/gt/commit/7fa27b2f2e8d33d244b30622b25dcd5d3e5d1cfa)\nThanks\n[@internal-gt-public-api-sync](https://github.com/apps/internal-gt-public-api-sync)!\n- Sync the GT API OpenAPI contract and regenerate the SDK.\n## gt@2.25.1\n\n### Patch Changes\n\n- Updated dependencies []:\n  - generaltranslation@9.5.4\n  - @generaltranslation/python-extractor@0.2.59\n  - @generaltranslation/supported-locales@2.1.40\n  - @generaltranslation/vue-extractor@0.1.18\n## @generaltranslation/compiler@1.3.60\n\n### Patch Changes\n\n- Updated dependencies []:\n  - generaltranslation@9.5.4\n## generaltranslation@9.5.4\n\n### Patch Changes\n\n- Updated dependencies\n[[`7fa27b2`](https://github.com/generaltranslation/gt/commit/7fa27b2f2e8d33d244b30622b25dcd5d3e5d1cfa)]:\n  - @generaltranslation/api@0.5.2\n## gtx-cli@2.25.1\n\n### Patch Changes\n\n- Updated dependencies []:\n  - gt@2.25.1\n## gt-i18n@1.0.35\n\n### Patch Changes\n\n- Updated dependencies []:\n  - generaltranslation@9.5.4\n## locadex@1.0.240\n\n### Patch Changes\n\n- Updated dependencies []:\n  - gt@2.25.1\n## gt-next@11.4.9\n\n### Patch Changes\n\n- Updated dependencies []:\n  - generaltranslation@9.5.4\n  - @generaltranslation/compiler@1.3.60\n  - gt-i18n@1.0.35\n  - gt-react@11.4.9\n  - @generaltranslation/react-core@11.4.9\n## gt-node@1.0.36\n\n### Patch Changes\n\n- Updated dependencies []:\n  - generaltranslation@9.5.4\n  - gt-i18n@1.0.35\n## @generaltranslation/python-extractor@0.2.59\n\n### Patch Changes\n\n- Updated dependencies []:\n  - generaltranslation@9.5.4\n## gt-react@11.4.9\n\n### Patch Changes\n\n- Updated dependencies []:\n  - generaltranslation@9.5.4\n  - gt-i18n@1.0.35\n  - @generaltranslation/react-core@11.4.9\n## @generaltranslation/react-core@11.4.9\n\n### Patch Changes\n\n- Updated dependencies []:\n  - generaltranslation@9.5.4\n  - gt-i18n@1.0.35\n## gt-react-native@11.4.9\n\n### Patch Changes\n\n- Updated dependencies []:\n  - generaltranslation@9.5.4\n  - gt-i18n@1.0.35\n  - @generaltranslation/react-core@11.4.9\n  - @generaltranslation/supported-locales@2.1.40\n## gt-sanity@4.0.23\n\n### Patch Changes\n\n- Updated dependencies []:\n  - generaltranslation@9.5.4\n## @generaltranslation/supported-locales@2.1.40\n\n### Patch Changes\n\n- Updated dependencies []:\n  - generaltranslation@9.5.4\n## gt-tanstack-start@11.4.9\n\n### Patch Changes\n\n- Updated dependencies []:\n  - generaltranslation@9.5.4\n  - gt-i18n@1.0.35\n  - gt-react@11.4.9\n  - @generaltranslation/react-core@11.4.9\n## gt-vue@0.1.19\n\n### Patch Changes\n\n- Updated dependencies []:\n  - generaltranslation@9.5.4\n  - gt-i18n@1.0.35\n## @generaltranslation/vue-extractor@0.1.18\n\n### Patch Changes\n\n- Updated dependencies []:\n  - generaltranslation@9.5.4\n\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+          "timestamp": "2026-10-02T23:30:21Z",
+          "url": "https://github.com/generaltranslation/gt/commit/147eeb58bcc856d61fed9f2de3858e801ddd27bf"
+        },
+        "date": 1790984314814,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "gt-next > unit > middleware: factory creation latency > createNextMiddleware() (mean)",
+            "value": 0.0487868119816579,
+            "range": "±0.0292",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.9\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > default locale request (/) (mean)",
+            "value": 0.15362564239631488,
+            "range": "±0.056",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.9\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > non-default locale request (/fr) (mean)",
+            "value": 0.18503483684794636,
+            "range": "±0.0735",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.9\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > nested route (/fr/about) (mean)",
+            "value": 0.18507306920799718,
+            "range": "±0.1269",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > ttfb",
+            "value": 136.59999999997672,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > domContentLoaded",
+            "value": 148,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > load",
+            "value": 244.39999999999418,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > elapsed",
+            "value": 108,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > ttfb",
+            "value": 18.89999999999418,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > domContentLoaded",
+            "value": 29.60000000000582,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > load",
+            "value": 99.60000000000582,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: locale-switch-en-to-fr > elapsed",
+            "value": 616,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > ttfb",
+            "value": 9.900000000023283,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > domContentLoaded",
+            "value": 19.900000000023283,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > load",
+            "value": 83.90000000002328,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.9\"\n}"
           }
         ]
       }
