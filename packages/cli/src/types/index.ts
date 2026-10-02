@@ -347,6 +347,9 @@ export type AdditionalOptions = {
     | {
         // Keep links to source pages that have no translation
         skipUntranslatedPages?: boolean;
+        // Extra JSX attribute names or globs to localize, such as `href*`.
+        // `href` is always localized.
+        attributes?: string[];
       };
   experimentalLocalizeRelativeAssets?: boolean; // Rewrites relative asset URLs in translated md/mdx files to valid paths
   experimentalAddHeaderAnchorIds?: 'mintlify' | 'default'; // Format for anchor IDs: 'mintlify' for Mintlify's native {#id} on every heading, 'default' or undefined for escaped inline \{#id\}. Can run independently of static url localization
