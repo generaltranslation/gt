@@ -759,24 +759,9 @@
           "413": {
             "description": "Request error",
             "content": {
-              "application/json": {
+              "text/html": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "errors": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    },
-                    "linked": {
-                      "type": "boolean"
-                    }
-                  },
-                  "required": ["error"]
+                  "type": "string"
                 }
               }
             }
@@ -784,24 +769,9 @@
           "429": {
             "description": "Request error",
             "content": {
-              "application/json": {
+              "text/html": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "errors": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    },
-                    "linked": {
-                      "type": "boolean"
-                    }
-                  },
-                  "required": ["error"]
+                  "type": "string"
                 }
               }
             }
@@ -881,6 +851,7 @@
                   "projectId": {
                     "type": "string",
                     "minLength": 1,
+                    "maxLength": 128,
                     "description": "GT project ID returned by get_google_drive_context. The project must have a Google Drive integration connected in the GT dashboard."
                   },
                   "fileId": {
@@ -1066,24 +1037,9 @@
           "413": {
             "description": "Request error",
             "content": {
-              "application/json": {
+              "text/html": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "errors": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    },
-                    "linked": {
-                      "type": "boolean"
-                    }
-                  },
-                  "required": ["error"]
+                  "type": "string"
                 }
               }
             }
@@ -1091,24 +1047,9 @@
           "429": {
             "description": "Request error",
             "content": {
-              "application/json": {
+              "text/html": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "errors": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    },
-                    "linked": {
-                      "type": "boolean"
-                    }
-                  },
-                  "required": ["error"]
+                  "type": "string"
                 }
               }
             }
@@ -1188,6 +1129,7 @@
                   "projectId": {
                     "type": "string",
                     "minLength": 1,
+                    "maxLength": 128,
                     "description": "GT project ID returned by get_google_drive_context. The project must have a Google Drive integration connected in the GT dashboard."
                   },
                   "fileId": {
@@ -1377,24 +1319,9 @@
           "413": {
             "description": "Request error",
             "content": {
-              "application/json": {
+              "text/html": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "errors": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    },
-                    "linked": {
-                      "type": "boolean"
-                    }
-                  },
-                  "required": ["error"]
+                  "type": "string"
                 }
               }
             }
@@ -1402,24 +1329,9 @@
           "429": {
             "description": "Request error",
             "content": {
-              "application/json": {
+              "text/html": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "errors": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    },
-                    "linked": {
-                      "type": "boolean"
-                    }
-                  },
-                  "required": ["error"]
+                  "type": "string"
                 }
               }
             }
@@ -5199,7 +5111,7 @@
       "get": {
         "operationId": "getProjectInfo",
         "summary": "Get Project information",
-        "description": "Get a project's ID, name, Organization, locales, and auto-approval setting. Requires `project:files:read`.",
+        "description": "Get a project's ID, name, Organization, locales, and auto-approval setting. No permission is needed beyond access to the project.",
         "security": [
           {
             "BearerAuth": []
@@ -5212,7 +5124,8 @@
           {
             "schema": {
               "type": "string",
-              "minLength": 1
+              "minLength": 1,
+              "maxLength": 128
             },
             "required": true,
             "name": "projectId",
@@ -5389,7 +5302,8 @@
           {
             "schema": {
               "type": "string",
-              "minLength": 1
+              "minLength": 1,
+              "maxLength": 128
             },
             "required": true,
             "name": "projectId",
@@ -9878,7 +9792,8 @@
           {
             "schema": {
               "type": "string",
-              "minLength": 1
+              "minLength": 1,
+              "maxLength": 128
             },
             "required": true,
             "name": "projectId",
@@ -10079,7 +9994,7 @@
       "get": {
         "operationId": "listProjects",
         "summary": "List Projects",
-        "description": "List projects you can access, ordered by ID. Requires `project:files:read`. No `gt-project-id` header is needed. Omit `cursor` for the first page. When the response's `nextCursor` is a string, pass it as `cursor` to fetch the next page; when it is `null`, there are no more results.",
+        "description": "List projects you are a member of, or the projects your API key is bound to, ordered by ID. No permission or `gt-project-id` header is needed. Omit `cursor` for the first page. When the response's `nextCursor` is a string, pass it as `cursor` to fetch the next page; when it is `null`, there are no more results.",
         "security": [
           {
             "BearerAuth": []
@@ -11370,7 +11285,8 @@
           {
             "schema": {
               "type": "string",
-              "minLength": 1
+              "minLength": 1,
+              "maxLength": 128
             },
             "required": true,
             "name": "orgId",
@@ -11557,7 +11473,7 @@
       "get": {
         "operationId": "listOrgs",
         "summary": "List Organizations",
-        "description": "List Organizations accessible to your API key, ordered by ID. Organization and Project keys each return only their own Organization. No project ID or project-creation permission is required. Omit `cursor` for the first page. When the response's `nextCursor` is a string, pass it as `cursor` to fetch the next page; when it is `null`, there are no more results.",
+        "description": "List Organizations you can access, ordered by ID. Organization and Project keys each return only their own Organization; user tokens return every Organization the user belongs to. No project ID, permission, or token scope is required. Omit `cursor` for the first page. When the response's `nextCursor` is a string, pass it as `cursor` to fetch the next page; when it is `null`, there are no more results.",
         "security": [
           {
             "BearerAuth": []
@@ -14969,7 +14885,7 @@
                   },
                   "content": {
                     "type": "string",
-                    "description": "One JSON or CSV transfer document, up to 1 MiB. It is validated in full before anything is written. A JSON document has the shape `{ glossary: [{ keyword, definition?, translations?: { <locale>: { translation } | null } }], customPrompts: [{ name, locale, value, description? }] }`; definition, locale and description may be null. An absent field keeps its stored value. `null` clears a nullable field or removes a map entry; other fields reject `null`. In batches and imports, items match stored items by natural key, stored items absent from the batch are untouched, and nothing else is deleted. A blank CSV cell counts as absent."
+                    "description": "One JSON or CSV transfer document, up to 1 MiB as a JSON string, so escaped quotes and line breaks count toward the limit. An exported page always fits. It is validated in full before anything is written. A JSON document has the shape `{ glossary: [{ keyword, definition?, translations?: { <locale>: { translation } | null } }], customPrompts: [{ name, locale, value, description? }] }`; definition, locale and description may be null. An absent field keeps its stored value. `null` clears a nullable field or removes a map entry; other fields reject `null`. In batches and imports, items match stored items by natural key, stored items absent from the batch are untouched, and nothing else is deleted. A blank CSV cell counts as absent."
                   }
                 },
                 "required": ["format", "content"],

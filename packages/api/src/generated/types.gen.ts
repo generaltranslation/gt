@@ -259,19 +259,11 @@ export type WorkspacePluginInfoErrors = {
   /**
    * Request error
    */
-  413: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
+  413: string;
   /**
    * Request error
    */
-  429: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
+  429: string;
   /**
    * Request error
    */
@@ -424,19 +416,11 @@ export type WorkspacePluginTranslateErrors = {
   /**
    * Request error
    */
-  413: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
+  413: string;
   /**
    * Request error
    */
-  429: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
+  429: string;
   /**
    * Request error
    */
@@ -531,19 +515,11 @@ export type WorkspacePluginStatusErrors = {
   /**
    * Request error
    */
-  413: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
+  413: string;
   /**
    * Request error
    */
-  429: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
+  429: string;
   /**
    * Request error
    */
@@ -5282,7 +5258,7 @@ export type ImportContextContentData = {
      */
     format: 'json' | 'csv';
     /**
-     * One JSON or CSV transfer document, up to 1 MiB. It is validated in full before anything is written. A JSON document has the shape `{ glossary: [{ keyword, definition?, translations?: { <locale>: { translation } | null } }], customPrompts: [{ name, locale, value, description? }] }`; definition, locale and description may be null. An absent field keeps its stored value. `null` clears a nullable field or removes a map entry; other fields reject `null`. In batches and imports, items match stored items by natural key, stored items absent from the batch are untouched, and nothing else is deleted. A blank CSV cell counts as absent.
+     * One JSON or CSV transfer document, up to 1 MiB as a JSON string, so escaped quotes and line breaks count toward the limit. An exported page always fits. It is validated in full before anything is written. A JSON document has the shape `{ glossary: [{ keyword, definition?, translations?: { <locale>: { translation } | null } }], customPrompts: [{ name, locale, value, description? }] }`; definition, locale and description may be null. An absent field keeps its stored value. `null` clears a nullable field or removes a map entry; other fields reject `null`. In batches and imports, items match stored items by natural key, stored items absent from the batch are untouched, and nothing else is deleted. A blank CSV cell counts as absent.
      */
     content: string;
   };

@@ -432,7 +432,7 @@ export const pluginDownload = <ThrowOnError extends boolean = false>(
 /**
  * Get Project information
  *
- * Get a project's ID, name, Organization, locales, and auto-approval setting. Requires `project:files:read`.
+ * Get a project's ID, name, Organization, locales, and auto-approval setting. No permission is needed beyond access to the project.
  */
 export const getProjectInfo = <ThrowOnError extends boolean = false>(
   options: Options<GetProjectInfoData, ThrowOnError>
@@ -894,7 +894,7 @@ export const createProjectApiKey = <ThrowOnError extends boolean = false>(
 /**
  * List Projects
  *
- * List projects you can access, ordered by ID. Requires `project:files:read`. No `gt-project-id` header is needed. Omit `cursor` for the first page. When the response's `nextCursor` is a string, pass it as `cursor` to fetch the next page; when it is `null`, there are no more results.
+ * List projects you are a member of, or the projects your API key is bound to, ordered by ID. No permission or `gt-project-id` header is needed. Omit `cursor` for the first page. When the response's `nextCursor` is a string, pass it as `cursor` to fetch the next page; when it is `null`, there are no more results.
  */
 export const listProjects = <ThrowOnError extends boolean = false>(
   options: Options<ListProjectsData, ThrowOnError>
@@ -1070,7 +1070,7 @@ export const createProject = <ThrowOnError extends boolean = false>(
 /**
  * List Organizations
  *
- * List Organizations accessible to your API key, ordered by ID. Organization and Project keys each return only their own Organization. No project ID or project-creation permission is required. Omit `cursor` for the first page. When the response's `nextCursor` is a string, pass it as `cursor` to fetch the next page; when it is `null`, there are no more results.
+ * List Organizations you can access, ordered by ID. Organization and Project keys each return only their own Organization; user tokens return every Organization the user belongs to. No project ID, permission, or token scope is required. Omit `cursor` for the first page. When the response's `nextCursor` is a string, pass it as `cursor` to fetch the next page; when it is `null`, there are no more results.
  */
 export const listOrgs = <ThrowOnError extends boolean = false>(
   options: Options<ListOrgsData, ThrowOnError>
