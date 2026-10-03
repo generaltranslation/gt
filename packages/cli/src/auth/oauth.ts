@@ -67,13 +67,15 @@ function isCancellation(error: unknown): boolean {
   );
 }
 
+function cancelledFailure(): UserAuthError {
+  return oauthFailure(
+    'Sign in was cancelled or timed out',
+    'Run `gt login` again'
+  );
+}
+
 function oauthError(error: unknown, fallback: string): UserAuthError {
-  if (isCancellation(error)) {
-    return oauthFailure(
-      'Sign in was cancelled or timed out',
-      'Run `gt login` again'
-    );
-  }
+  if (isCancellation(error)) return cancelledFailure();
   if (
     error instanceof oidc.AuthorizationResponseError ||
     error instanceof oidc.ResponseBodyError
@@ -344,8 +346,8 @@ export async function login(options: LoginOptions = {}): Promise<OAuthTokens> {
   }
   const authBaseUrl = options.authBaseUrl ?? getAuthBaseUrl();
   const resource = loginResource(options);
-  // Fired only by the account lookup's budget, after the exchange has
-  // stored the login; nothing else is in flight on this configuration then.
+  // Fired only by the account lookup's budget, after the exchange; nothing
+  // else is in flight on this configuration then.
   const cancelLookup = new AbortController();
   // The caller's signal stops the configuration's requests too, so an
   // aborted login ends the exchange instead of finishing and storing it.
@@ -400,17 +402,21 @@ export async function login(options: LoginOptions = {}): Promise<OAuthTokens> {
             throw failure;
           });
         const tokens = { ...parseTokens(result), resource };
-        await writeOAuthTokens(tokens, authBaseUrl);
         // The browser page names the account: the email when the userinfo
-        // carries one, else the profile name. The login is already stored,
-        // so the lookup is best effort: a failure, a malformed claim or a
-        // slow endpoint only leaves the name off the page.
+        // carries one, else the profile name. The lookup is best effort: a
+        // failure, a malformed claim or a slow endpoint only leaves the name
+        // off the page.
         const account = await lookupAccountName(
           config,
           tokens.accessToken,
           tokens.subject,
           cancelLookup
         );
+        // The lookup swallows the caller's abort with its other errors. A
+        // login cancelled by now stores nothing, so the login it would have
+        // replaced stays as it was.
+        if (options.signal?.aborted) throw cancelledFailure();
+        await writeOAuthTokens(tokens, authBaseUrl);
         return { tokens, account };
       },
       options.timeoutMs,

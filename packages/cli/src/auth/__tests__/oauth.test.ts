@@ -444,7 +444,7 @@ describe('discovery and browser authorization', () => {
       ).toString('base64url')
     ).toBe(authorize.searchParams.get('code_challenge'));
     // The userinfo call only names the account on the browser page; the
-    // login is stored before it and does not depend on it.
+    // login does not depend on it.
     expect(fetcher.mock.calls.map(([url]) => String(url))).toEqual([
       `${authBaseUrl}/.well-known/openid-configuration`,
       `${authBaseUrl}/oauth2/token`,
@@ -506,7 +506,7 @@ describe('discovery and browser authorization', () => {
     ['a malformed email', async () => json({ sub: 'user-1', email: {} })],
     ['a failing userinfo endpoint', async () => json({ error: 'nope' }, 500)],
   ])(
-    'keeps the stored login and shows success without the note for %s',
+    'stores the login and shows success without the note for %s',
     async (_case, userinfo) => {
       let page!: Promise<string>;
       const started = Date.now();
@@ -657,30 +657,36 @@ describe('discovery and browser authorization', () => {
       },
     });
   });
-  it('stops the exchange and stores nothing when the caller aborts during it', async () => {
-    const controller = new AbortController();
-    const fetcher = provider({
-      token: async (init) => {
+  it.each(['token', 'userinfo'])(
+    'reports a cancellation and keeps the previous login when the caller aborts during the %s request',
+    async (stage) => {
+      await writeOAuthTokens(tokens, authBaseUrl);
+      const controller = new AbortController();
+      const abortingResponse = async (init?: RequestInit) => {
         controller.abort();
         expect(init?.signal?.aborted).toBe(true);
         init?.signal?.throwIfAborted();
         return json({});
-      },
-    });
-    let page!: Promise<string>;
-    await expect(
-      browserLogin({
-        fetch: fetcher,
-        signal: controller.signal,
-        openBrowser: (url) => {
-          page = callback(url);
-          return page;
-        },
-      })
-    ).rejects.toThrow('cancelled');
-    expect(await readOAuthTokens(authBaseUrl)).toBeUndefined();
-    expect(await page).toContain('Sign-in failed');
-  });
+      };
+      let page!: Promise<string>;
+      await expect(
+        browserLogin({
+          fetch: provider(
+            stage === 'token'
+              ? { token: abortingResponse }
+              : { userinfo: abortingResponse }
+          ),
+          signal: controller.signal,
+          openBrowser: (url) => {
+            page = callback(url);
+            return page;
+          },
+        })
+      ).rejects.toThrow('cancelled');
+      expect(await readOAuthTokens(authBaseUrl)).toEqual(tokens);
+      expect(await page).toContain('Sign-in failed');
+    }
+  );
   it('times out even if browser opening fails', async () => {
     await expect(
       browserLogin({
