@@ -1,0 +1,271 @@
+/*
+ * General Translation brand tokens and base layout, shared by the bundle
+ * analysis app and its example apps. Values follow the GT brand deck
+ * (prototemplate.com/deck): four base colors and one accent, Inter, 1px
+ * hairlines, square corners, no shadows.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..600&display=swap');
+
+:root {
+  color-scheme: light;
+  --paper: #ffffff;
+  --ink: #070707;
+  --raised: #f7f7f6;
+  --titanium: #8a8f98;
+  --accent: #2f5ce0;
+  --body: rgba(7, 7, 7, 0.63);
+  --label: rgba(7, 7, 7, 0.45);
+  --quiet: rgba(7, 7, 7, 0.27);
+  --hair: rgba(7, 7, 7, 0.11);
+  --hair-soft: rgba(7, 7, 7, 0.06);
+  --cross: rgba(7, 7, 7, 0.38);
+  --font: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --column: 1104px;
+  --nav: 58px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --paper: #070707;
+    --ink: #f2f2f0;
+    --raised: #101010;
+    --accent: #86a8ff;
+    --body: rgba(242, 242, 240, 0.63);
+    --label: rgba(242, 242, 240, 0.45);
+    --quiet: rgba(242, 242, 240, 0.27);
+    --hair: rgba(242, 242, 240, 0.16);
+    --hair-soft: rgba(242, 242, 240, 0.08);
+    --cross: rgba(255, 255, 255, 0.34);
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --paper: #070707;
+  --ink: #f2f2f0;
+  --raised: #101010;
+  --accent: #86a8ff;
+  --body: rgba(242, 242, 240, 0.63);
+  --label: rgba(242, 242, 240, 0.45);
+  --quiet: rgba(242, 242, 240, 0.27);
+  --hair: rgba(242, 242, 240, 0.16);
+  --hair-soft: rgba(242, 242, 240, 0.08);
+  --cross: rgba(255, 255, 255, 0.34);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  border-radius: 0;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  /* Registration crosses overhang the rails by half their width. */
+  overflow-x: clip;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+h1 {
+  font-size: 2.25rem;
+  line-height: 1.18;
+}
+
+h2 {
+  font-size: 1.375rem;
+  line-height: 1.3;
+}
+
+h3 {
+  font-size: 1.125rem;
+  line-height: 1.35;
+}
+
+p {
+  margin: 0;
+  color: var(--body);
+}
+
+a {
+  color: inherit;
+}
+
+code,
+kbd {
+  font-family: var(--mono);
+  font-size: 0.875em;
+}
+
+button,
+select,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+/* Page frame: one ruled column, a 58px nav bar closed by one hairline. */
+.gt-frame {
+  max-width: var(--column);
+  min-height: 100vh;
+  margin: 0 auto;
+  border-left: 1px solid var(--hair);
+  border-right: 1px solid var(--hair);
+}
+
+.gt-nav {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: var(--nav);
+  padding: 0 24px;
+  border-bottom: 1px solid var(--hair);
+}
+
+.gt-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.gt-mark svg {
+  width: 30px;
+  height: 19px;
+}
+
+/* A row draws its own bottom seam once. Cells never draw parallel borders. */
+.gt-row {
+  position: relative;
+  padding: 40px 24px;
+  border-bottom: 1px solid var(--hair);
+}
+
+.gt-cells {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+}
+
+.gt-cells > * + * {
+  border-left: 1px solid var(--hair);
+}
+
+/* 9px registration cross with 1px arms, centered on a seam junction. */
+.gt-cross {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--cross), var(--cross)) 4px 0 / 1px 9px no-repeat,
+    linear-gradient(var(--cross), var(--cross)) 0 4px / 9px 1px no-repeat;
+}
+
+.gt-cross.bl {
+  left: -5px;
+  bottom: -5px;
+}
+
+.gt-cross.br {
+  right: -5px;
+  bottom: -5px;
+}
+
+/* Hatch strip: 45 degree hairlines every 8px, used where the topic changes. */
+.gt-hatch {
+  height: 16px;
+  border-bottom: 1px solid var(--hair);
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--hair) 0 1px,
+    transparent 1px 8px
+  );
+}
+
+.gt-label {
+  font-size: 13px;
+  color: var(--label);
+}
+
+.gt-lead {
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+.gt-mono {
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.gt-button {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.gt-button.outline {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--hair);
+}
+
+.gt-button:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}
+
+select {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--hair);
+  background: var(--paper);
+}
+
+@media (max-width: 1023px) {
+  .gt-cells {
+    grid-template-columns: 1fr;
+  }
+
+  .gt-cells > * + * {
+    border-left: 0;
+    border-top: 1px solid var(--hair);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

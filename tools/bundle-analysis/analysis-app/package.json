@@ -1,0 +1,31 @@
+{
+  "name": "gt-bundle-analysis",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "vite build --logLevel warn && node server/main.ts",
+    "dev:ui": "vite",
+    "build": "vite build",
+    "test": "vitest run",
+    "test:e2e": "node e2e/run.ts",
+    "typecheck": "tsc --noEmit",
+    "test:integration": "BUNDLE_ANALYSIS_INTEGRATION=1 vitest run test/examples.integration.test.ts"
+  },
+  "dependencies": {
+    "d3-hierarchy": "^3.1.2",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@types/d3-hierarchy": "^3.1.7",
+    "@types/node": "catalog:",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.0.2",
+    "playwright-core": "^1.55.0",
+    "typescript": "catalog:",
+    "vite": "^8.0.16",
+    "vitest": "catalog:"
+  }
+}
