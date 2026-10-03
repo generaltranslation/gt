@@ -90,15 +90,12 @@ const STYLES = `
   .gap {
     font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   }
-  /* A button reset to inline text. Selecting the whole command on one click
-     is the fallback when the copy fails. */
+  /* A button reset to inline text. */
   .cmd {
     all: unset;
     font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     color: var(--ink);
     cursor: pointer;
-    user-select: all;
-    -webkit-user-select: all;
   }
   .cmd:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
   /* The icon after the command, one monospace space from it. Both glyphs keep
@@ -129,13 +126,12 @@ const STYLES = `
 `;
 
 // Copies the retry command and shows a check for 1.6s, announced to screen
-// readers. A failed copy leaves the command selected, so Cmd+C still works.
+// readers.
 const COPY_SCRIPT = `const cmd = document.querySelector('.cmd');
 const status = document.querySelector('.status');
 let timer;
 cmd.addEventListener('click', () => {
   navigator.clipboard.writeText('npx gt login').then(() => {
-    getSelection().removeAllRanges();
     cmd.classList.add('is-copied');
     status.textContent = 'Copied';
     clearTimeout(timer);
