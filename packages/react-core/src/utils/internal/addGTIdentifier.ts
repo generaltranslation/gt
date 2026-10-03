@@ -7,15 +7,7 @@ import {
   TaggedElement,
   TaggedElementProps,
 } from '../types';
-import {
-  Transformation,
-  TransformationPrefix,
-  VariableTransformationSuffix,
-} from 'generaltranslation/types';
-
-type GTComponentType = {
-  _gtt?: Transformation;
-};
+import { getGTMetadata } from './getGTMetadata';
 
 export function addGTIdentifier(
   children: ReactNode,
@@ -33,34 +25,26 @@ export function addGTIdentifier(
     const { type, props } = child;
     index += 1;
     const result: GTTag = { id: index, injectionType: 'manual' };
-    let transformation: Transformation | undefined;
-    try {
-      transformation =
-        typeof type === 'function' ? (type as GTComponentType)._gtt : undefined;
-    } catch {
-      /* empty */
-    }
-    if (transformation) {
-      const transformationParts = transformation.split('-');
-      // If the component was inserted automatically by the compiler
-      if (
-        transformationParts[1] === 'automatic' ||
-        transformationParts[2] === 'automatic'
-      ) {
-        result.injectionType = 'automatic';
-      }
 
-      if (transformationParts[0] === 'translate') {
+    const metadata = getGTMetadata(type);
+    if (!metadata) return result;
+
+    result.injectionType = metadata.injection ?? 'manual';
+
+    switch (metadata.kind) {
+      case 'translate':
         // Convert nested <T> to fragments
         // This will nullify translation specific attributes of child, i.e. id, context, etc.
-        transformationParts[0] = 'fragment';
-      }
-      if (transformationParts[0] === 'variable') {
-        result.variableType =
-          (transformationParts?.[1] as VariableTransformationSuffix) ||
-          'variable';
-      }
-      if (transformationParts[0] === 'plural') {
+        result.transformation = 'fragment';
+        break;
+
+      case 'variable':
+        result.transformation = 'variable';
+        result.variableType = metadata.variableType;
+        break;
+
+      case 'plural': {
+        result.transformation = 'plural';
         const pluralBranches = Object.entries(props).reduce(
           (acc, [branchName, branch]) => {
             if (isAcceptedPluralForm(branchName)) {
@@ -73,8 +57,11 @@ export function addGTIdentifier(
         );
         if (Object.keys(pluralBranches).length)
           result.branches = pluralBranches;
+        break;
       }
-      if (transformationParts[0] === 'branch') {
+
+      case 'branch': {
+        result.transformation = 'branch';
         const { children: _children, branch: _branch, ...branches } = props;
         // Filter out data-* attributes injected by build tools
         const filteredBranches = Object.fromEntries(
@@ -90,9 +77,19 @@ export function addGTIdentifier(
         );
         if (Object.keys(resultBranches).length)
           result.branches = resultBranches;
+        break;
       }
-      result.transformation = transformationParts[0] as TransformationPrefix;
+
+      case 'derive':
+        result.transformation = 'derive';
+        break;
+
+      default: {
+        // Adding a new kind to GTComponentMetadata without handling it here is a type error.
+        const _unhandled: never = metadata;
+      }
     }
+
     return result;
   };
 

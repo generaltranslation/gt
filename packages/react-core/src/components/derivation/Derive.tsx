@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { GTComponentMetadata } from '../../utils/types';
 
 type DeriveProps<T extends ReactNode> = {
   children: T;
@@ -16,9 +17,12 @@ function Derive<T extends ReactNode>(props: DeriveProps<T>): React.JSX.Element {
   return <GtInternalDerive {...props} />;
 }
 
-/** @internal _gtt - The GT transformation for the component. */
-Derive._gtt = 'derive';
-GtInternalDerive._gtt = 'derive-automatic';
+/** @internal _gtt - The GT metadata for the component. */
+Derive._gtt = { kind: 'derive' } satisfies GTComponentMetadata;
+GtInternalDerive._gtt = {
+  kind: 'derive',
+  injection: 'automatic',
+} satisfies GTComponentMetadata;
 
 // ===== Exports ===== //
 

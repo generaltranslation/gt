@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { GTComponentMetadata } from '../../utils/types';
 
 type VarProps<T extends ReactNode> = {
   children: T;
@@ -27,9 +28,16 @@ function GtInternalVar<T extends ReactNode>({ children }: VarProps<T>): T {
   return computeVar({ children });
 }
 
-/** @internal _gtt - The GT transformation for the component. */
-Var._gtt = 'variable-variable';
-GtInternalVar._gtt = 'variable-variable-automatic';
+/** @internal _gtt - The GT metadata for the component. */
+Var._gtt = {
+  kind: 'variable',
+  variableType: 'variable',
+} satisfies GTComponentMetadata;
+GtInternalVar._gtt = {
+  kind: 'variable',
+  variableType: 'variable',
+  injection: 'automatic',
+} satisfies GTComponentMetadata;
 
 // ===== Exports ===== //
 

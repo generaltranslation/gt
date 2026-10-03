@@ -2,6 +2,7 @@ import { getRequestConditions } from '../../request/getRequestConditions';
 import { T as RscT } from 'gt-react';
 import { renderPreparedT } from './renderPipeline';
 import type { ReactNode } from 'react';
+import type { GTComponentMetadata } from '@generaltranslation/react-core/pure';
 
 type TProps = {
   children: ReactNode;
@@ -38,6 +39,9 @@ async function renderT(props: TProps): Promise<ReactNode> {
   });
 }
 
-/** @internal _gtt - The GT transformation for the component. */
-T._gtt = 'translate-server';
-GtInternalTranslateJsx._gtt = 'translate-server-automatic';
+/** @internal _gtt - The GT metadata for the component. */
+T._gtt = { kind: 'translate' } satisfies GTComponentMetadata;
+GtInternalTranslateJsx._gtt = {
+  kind: 'translate',
+  injection: 'automatic',
+} satisfies GTComponentMetadata;

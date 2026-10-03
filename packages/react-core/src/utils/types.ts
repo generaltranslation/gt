@@ -19,6 +19,29 @@ export type {
 export type { GTProp };
 
 /**
+ * Metadata a GT component attaches to itself as `_gtt`, so the runtime can
+ * recognize it inside `<T>` without parsing anything.
+ *
+ * `variableType` exists only on variables, and is required there.
+ * `injection` defaults to `'manual'`; compiler-inserted components set
+ * `'automatic'`.
+ *
+ * Assign with `satisfies` so each value is checked:
+ * `Num._gtt = { kind: 'variable', variableType: 'number' } satisfies GTComponentMetadata;`
+ */
+export type GTComponentMetadata = Readonly<
+  | {
+      kind: 'translate' | 'plural' | 'branch' | 'derive';
+      injection?: InjectionType;
+    }
+  | {
+      kind: 'variable';
+      variableType: VariableTransformationSuffix;
+      injection?: InjectionType;
+    }
+>;
+
+/**
  * TaggedElement is a React element with a GTProp property.
  */
 export type GTTag = {

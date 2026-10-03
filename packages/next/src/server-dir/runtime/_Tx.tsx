@@ -2,6 +2,7 @@ import React from 'react';
 import { TxProps } from '../../utils/types';
 import { Tx as Core_Tx } from 'gt-react';
 import { getRequestConditions } from '../../request/getRequestConditions';
+import type { GTComponentMetadata } from '@generaltranslation/react-core/pure';
 
 /**
  * Runtime translation component that renders its children in the user's given locale.
@@ -35,5 +36,5 @@ export async function Tx({
     <Core_Tx {...props} _locale={locale || _locale} _enableI18n={_enableI18n} />
   );
 }
-/** @internal _gtt - The GT transformation for the component. */
-Tx._gtt = 'translate-runtime';
+/** @internal _gtt - The GT metadata for the component. */
+Tx._gtt = { kind: 'translate' } satisfies GTComponentMetadata;
