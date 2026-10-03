@@ -65,7 +65,10 @@ describe('buildTree', () => {
       ]
     );
     const pkg = tree.children[0]!;
-    expect(pkg.previousBytes).toBe(100);
+    // The removed 20-byte file still counts toward the previous total.
+    expect(pkg.previousBytes).toBe(120);
+    expect(pkg.bytes - pkg.previousBytes!).toBe(-35);
+    expect(tree.previousBytes).toBe(120);
     expect(findNode(tree, 'gt-i18n/dist/a.mjs')!.previousBytes).toBe(100);
     expect(findNode(tree, 'gt-i18n/dist/new.mjs')!.previousBytes).toBe(0);
   });

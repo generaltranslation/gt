@@ -29,15 +29,12 @@ export function buildTree(
     children: [],
   };
   const index = new Map<string, TreeNode>([['', root]]);
-  const before = previous
-    ? new Map(previous.map((module) => [module.id, module.bytes]))
-    : null;
 
   for (const module of modules) {
-    const segments = [module.pkg, ...module.path.split('/').filter(Boolean)];
+    const segments = segmentsOf(module);
     let parent = root;
     let key = '';
-    segments.forEach((segment, depth) => {
+    segments.forEach((segment) => {
       key = key ? `${key}/${segment}` : segment;
       let node = index.get(key);
       if (!node) {
@@ -54,26 +51,32 @@ export function buildTree(
         parent.children.push(node);
       }
       node.bytes += module.bytes;
-      if (depth === segments.length - 1) {
-        node.previousBytes = before ? (before.get(module.id) ?? 0) : null;
-      }
       parent = node;
     });
     root.bytes += module.bytes;
   }
 
-  // Folder sizes in the previous build come from their files.
-  const fillPrevious = (node: TreeNode): number | null => {
-    if (node.children.length === 0) return node.previousBytes;
-    if (!before) return null;
-    node.previousBytes = node.children.reduce(
-      (sum, child) => sum + (fillPrevious(child) ?? 0),
-      0
-    );
-    return node.previousBytes;
-  };
-  fillPrevious(root);
+  // Previous sizes are summed over every previous module, including files
+  // that no longer exist, so a package's delta counts what was removed.
+  if (previous) {
+    const totals = new Map<string, number>();
+    for (const module of previous) {
+      let key = '';
+      totals.set('', (totals.get('') ?? 0) + module.bytes);
+      for (const segment of segmentsOf(module)) {
+        key = key ? `${key}/${segment}` : segment;
+        totals.set(key, (totals.get(key) ?? 0) + module.bytes);
+      }
+    }
+    for (const node of index.values()) {
+      node.previousBytes = totals.get(node.key) ?? 0;
+    }
+  }
   return collapse(root);
+}
+
+function segmentsOf(module: ModuleSize): string[] {
+  return [module.pkg, ...module.path.split('/').filter(Boolean)];
 }
 
 /**

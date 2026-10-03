@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   formatBytes,
   formatDelta,
@@ -210,19 +210,23 @@ function Stage({
   onZoom: (key: string) => void;
 }) {
   const [size, setSize] = useState({ width: 0, height: 0 });
-  const [observer] = useState(
-    () =>
-      new ResizeObserver(([entry]) => {
-        if (!entry) return;
-        const { width, height } = entry.contentRect;
-        setSize({ width: Math.floor(width), height: Math.floor(height) });
-      })
-  );
-  const measure = (element: HTMLDivElement | null) => {
+  // A stable ref callback: a new function each render would make React
+  // unobserve and observe again, and every observe reports the size anew.
+  const measure = useCallback((element: HTMLDivElement | null) => {
     if (!element) return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (!entry) return;
+      const width = Math.floor(entry.contentRect.width);
+      const height = Math.floor(entry.contentRect.height);
+      setSize((previous) =>
+        previous.width === width && previous.height === height
+          ? previous
+          : { width, height }
+      );
+    });
     observer.observe(element);
-    return () => observer.unobserve(element);
-  };
+    return () => observer.disconnect();
+  }, []);
 
   const status = state?.status;
   const failed = status?.state === 'error';

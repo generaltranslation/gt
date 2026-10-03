@@ -17,8 +17,13 @@ const LOG_LIMIT = 16_000;
 
 interface Entry {
   state: ExampleState;
-  /** Set when a source changed after `current` was built. */
-  stale: boolean;
+  /**
+   * True while `current` may not reflect the latest sources. Only a
+   * successful build clears it, so a failed refresh can be retried.
+   */
+  outdated: boolean;
+  /** A source changed while a build was running; run another pass after it. */
+  queued: boolean;
   child: ChildProcess | null;
   /** Callers waiting for the current build to finish. */
   waiters: ((state: ExampleState) => void)[];
@@ -42,12 +47,33 @@ export interface BuildManager {
   stopAll(): void;
 }
 
+/** Starts a production build of an example with the given environment. */
+export type RunBuild = (
+  example: ExampleDefinition,
+  env: Record<string, string>
+) => ChildProcess;
+
+const runPnpmBuild: RunBuild = (example, env) =>
+  spawn('pnpm', ['run', 'build'], {
+    cwd: example.dir,
+    env: { ...process.env, ...env },
+    stdio: ['ignore', 'pipe', 'pipe'],
+    // Own process group, so a superseded build can be stopped with its
+    // bundler grandchildren.
+    detached: true,
+  });
+
 export function createBuildManager(options: {
   examples: ExampleDefinition[];
   packages: () => WorkspacePackage[];
   cacheDir: string;
   onState: (state: ExampleState) => void;
+  /** Overridable for tests. */
+  runBuild?: RunBuild;
+  analyze?: typeof analyzeExample;
 }): BuildManager {
+  const runBuild = options.runBuild ?? runPnpmBuild;
+  const analyze = options.analyze ?? analyzeExample;
   const { examples, cacheDir, onState } = options;
   const entries = new Map<string, Entry>();
   mkdirSync(cacheDir, { recursive: true });
@@ -67,7 +93,8 @@ export function createBuildManager(options: {
         previous: cached?.previous ?? null,
       },
       // Packages may have been rebuilt while the tool was not running.
-      stale: true,
+      outdated: true,
+      queued: false,
       child: null,
       waiters: [],
     });
@@ -79,12 +106,22 @@ export function createBuildManager(options: {
     return entry;
   };
 
+  /**
+   * Sends the state to the UI. Waiters resolve only once the example is
+   * settled: not building and with no follow-up pass about to start.
+   */
   const publish = (entry: Entry) => {
     onState(entry.state);
-    if (entry.state.status.state !== 'building') {
+    if (entry.state.status.state !== 'building' && !entry.queued) {
       const waiters = entry.waiters.splice(0);
       for (const resolve of waiters) resolve(entry.state);
     }
+  };
+
+  /** Publishes a finished build, then runs the queued pass if one exists. */
+  const settle = (example: ExampleDefinition, entry: Entry) => {
+    publish(entry);
+    if (entry.queued) build(example, 'Source changed during the build');
   };
 
   const build = (example: ExampleDefinition, reason: string, attempt = 0) => {
@@ -98,7 +135,7 @@ export function createBuildManager(options: {
 
     const settings = entry.state.settings;
     const startedAt = new Date();
-    entry.stale = false;
+    entry.queued = false;
     entry.state = {
       ...entry.state,
       status: { state: 'building', reason, startedAt: startedAt.toISOString() },
@@ -106,20 +143,12 @@ export function createBuildManager(options: {
     publish(entry);
 
     let log = '';
-    const child = spawn('pnpm', ['run', 'build'], {
-      cwd: example.dir,
-      env: {
-        ...process.env,
-        GT_ANALYZE: '1',
-        GT_ANALYZE_MINIFY: settings.minify ? '1' : '0',
-        GT_ANALYZE_TREESHAKE: settings.treeShake ? '1' : '0',
-        NEXT_TELEMETRY_DISABLED: '1',
-        FORCE_COLOR: '0',
-      },
-      stdio: ['ignore', 'pipe', 'pipe'],
-      // Own process group, so a superseded build can be stopped with its
-      // bundler grandchildren.
-      detached: true,
+    const child = runBuild(example, {
+      GT_ANALYZE: '1',
+      GT_ANALYZE_MINIFY: settings.minify ? '1' : '0',
+      GT_ANALYZE_TREESHAKE: settings.treeShake ? '1' : '0',
+      NEXT_TELEMETRY_DISABLED: '1',
+      FORCE_COLOR: '0',
     });
     entry.child = child;
     const append = (chunk: Buffer) => {
@@ -139,11 +168,13 @@ export function createBuildManager(options: {
             log,
           },
         };
-        publish(entry);
+        // `outdated` stays set, so reopening the example retries; a change
+        // queued during the build (perhaps the fix) runs now.
+        settle(example, entry);
         return;
       }
       try {
-        const analysis = analyzeExample(
+        const analysis = analyze(
           example,
           settings,
           options.packages(),
@@ -157,6 +188,7 @@ export function createBuildManager(options: {
           previous: entry.state.current,
           current: analysis,
         };
+        if (!entry.queued) entry.outdated = false;
         writeCache(cacheDir, entry.state);
       } catch (error) {
         // Another process (a second analysis server, a manual build) can
@@ -180,9 +212,7 @@ export function createBuildManager(options: {
           },
         };
       }
-      publish(entry);
-      // A change that landed during the build needs another pass.
-      if (entry.stale) build(example, 'Source changed during the build');
+      settle(example, entry);
     });
   };
 
@@ -197,7 +227,7 @@ export function createBuildManager(options: {
     ensureFresh(id) {
       const entry = entryFor(id);
       if (entry.child) return;
-      if (entry.stale || !entry.state.current) {
+      if (entry.outdated || !entry.state.current) {
         build(
           exampleFor(id),
           entry.state.current ? 'Refreshing the last build' : 'First build'
@@ -213,11 +243,13 @@ export function createBuildManager(options: {
       build(exampleFor(id), 'Build settings changed');
     },
     invalidate(reason, active) {
-      for (const entry of entries.values()) entry.stale = true;
+      for (const entry of entries.values()) {
+        entry.outdated = true;
+        // A running build may have read the old files; run another pass.
+        if (entry.child) entry.queued = true;
+      }
       for (const id of new Set(active)) {
-        const entry = entryFor(id);
-        if (entry.child) continue; // Rebuilt again when the running build ends.
-        build(exampleFor(id), reason);
+        if (!entryFor(id).child) build(exampleFor(id), reason);
       }
     },
     rebuild(id, reason) {
@@ -225,19 +257,18 @@ export function createBuildManager(options: {
     },
     isStale(id) {
       const entry = entryFor(id);
-      return entry.stale || !entry.state.current;
+      return entry.outdated || !entry.state.current;
     },
     whenIdle(id) {
       const entry = entryFor(id);
-      if (entry.state.status.state !== 'building') {
-        return Promise.resolve(entry.state);
-      }
+      if (!entry.child) return Promise.resolve(entry.state);
       return new Promise((resolve) => entry.waiters.push(resolve));
     },
     invalidateExample(id, reason) {
       const entry = entryFor(id);
-      entry.stale = true;
-      if (!entry.child) build(exampleFor(id), reason);
+      entry.outdated = true;
+      if (entry.child) entry.queued = true;
+      else build(exampleFor(id), reason);
     },
     stopAll() {
       for (const entry of entries.values()) {
