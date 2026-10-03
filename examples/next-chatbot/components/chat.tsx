@@ -1,18 +1,19 @@
 'use client';
 
-import type { Attachment, Message } from 'ai';
-import { useChat } from 'ai/react';
+import { DefaultChatTransport, type UIMessage } from 'ai';
+import { useChat } from '@ai-sdk/react';
 import { useState } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 
 import { ChatHeader } from '@/components/chat-header';
 import type { Vote } from '@/lib/db/schema';
-import { fetcher, generateUUID } from '@/lib/utils';
+import { type Attachment, fetcher, generateUUID } from '@/lib/utils';
 
 import { Artifact } from './artifact';
 import { MultimodalInput } from './multimodal-input';
 import { Messages } from './messages';
 import { VisibilityType } from './visibility-selector';
+import { DataStreamHandler, type DataStreamDelta } from './data-stream-handler';
 import { useArtifactSelector } from '@/hooks/use-artifact';
 import { toast } from 'sonner';
 import { useGT } from 'gt-next';
@@ -25,7 +26,7 @@ export function Chat({
   isReadonly,
 }: {
   id: string;
-  initialMessages: Array<Message>;
+  initialMessages: Array<UIMessage>;
   selectedChatModel: string;
   selectedVisibilityType: VisibilityType;
   isReadonly: boolean;
@@ -33,23 +34,34 @@ export function Chat({
   const { mutate } = useSWRConfig();
   const t = useGT();
 
+  const [input, setInput] = useState('');
+  const [dataStream, setDataStream] = useState<Array<DataStreamDelta>>([]);
+
   const {
     messages,
     setMessages,
-    handleSubmit,
-    input,
-    setInput,
-    append,
-    isLoading,
+    sendMessage: append,
+    status,
     stop,
-    reload,
+    regenerate: reload,
   } = useChat({
     id,
-    body: { id, selectedChatModel: selectedChatModel },
-    initialMessages,
+    messages: initialMessages,
     experimental_throttle: 100,
-    sendExtraMessageFields: true,
     generateId: generateUUID,
+    transport: new DefaultChatTransport({
+      api: '/api/chat',
+      body: { selectedChatModel },
+    }),
+    onData: (dataPart) => {
+      setDataStream((currentDataStream) => [
+        ...currentDataStream,
+        {
+          type: dataPart.type.slice('data-'.length),
+          content: dataPart.data,
+        } as DataStreamDelta,
+      ]);
+    },
     onFinish: () => {
       mutate('/api/history');
     },
@@ -57,6 +69,8 @@ export function Chat({
       toast.error(t('An error occured, please try again!'));
     },
   });
+
+  const isLoading = status === 'submitted' || status === 'streaming';
 
   const { data: votes } = useSWR<Array<Vote>>(
     `/api/vote?chatId=${id}`,
@@ -93,7 +107,6 @@ export function Chat({
               chatId={id}
               input={input}
               setInput={setInput}
-              handleSubmit={handleSubmit}
               isLoading={isLoading}
               stop={stop}
               attachments={attachments}
@@ -110,7 +123,6 @@ export function Chat({
         chatId={id}
         input={input}
         setInput={setInput}
-        handleSubmit={handleSubmit}
         isLoading={isLoading}
         stop={stop}
         attachments={attachments}
@@ -122,6 +134,8 @@ export function Chat({
         votes={votes}
         isReadonly={isReadonly}
       />
+
+      <DataStreamHandler dataStream={dataStream} />
     </>
   );
 }

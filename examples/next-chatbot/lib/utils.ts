@@ -1,15 +1,14 @@
-import type {
-  CoreAssistantMessage,
-  CoreToolMessage,
-  Message,
-  TextStreamPart,
-  ToolInvocation,
-  ToolSet,
-} from 'ai';
+import { isToolUIPart, type UIMessage } from 'ai';
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 import type { Message as DBMessage, Document } from '@/lib/db/schema';
+
+export type Attachment = {
+  name: string;
+  url: string;
+  contentType: string;
+};
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -52,170 +51,70 @@ export function generateUUID(): string {
   });
 }
 
-function addToolMessageToChat({
-  toolMessage,
-  messages,
-}: {
-  toolMessage: CoreToolMessage;
-  messages: Array<Message>;
-}): Array<Message> {
-  return messages.map((message) => {
-    if (message.toolInvocations) {
-      return {
-        ...message,
-        toolInvocations: message.toolInvocations.map((toolInvocation) => {
-          const toolResult = toolMessage.content.find(
-            (tool) => tool.toolCallId === toolInvocation.toolCallId
-          );
+// Messages saved by earlier versions of this app (ai v4) stored model message
+// content. Keep only the parts that are valid UI message parts.
+function isUIMessagePart(part: unknown): part is UIMessage['parts'][number] {
+  if (!part || typeof part !== 'object' || !('type' in part)) return false;
 
-          if (toolResult) {
-            return {
-              ...toolInvocation,
-              state: 'result',
-              result: toolResult.result,
-            };
-          }
+  const { type } = part as { type: unknown };
 
-          return toolInvocation;
-        }),
-      };
-    }
+  if (typeof type !== 'string') return false;
+  if (type === 'text' || type === 'reasoning') return 'text' in part;
+  if (type === 'file') return 'url' in part;
+  if (type === 'step-start') return true;
+  if (type.startsWith('tool-') || type.startsWith('data-')) {
+    return 'state' in part || 'data' in part;
+  }
 
-    return message;
-  });
+  return false;
 }
 
 export function convertToUIMessages(
   messages: Array<DBMessage>
-): Array<Message> {
-  return messages.reduce((chatMessages: Array<Message>, message) => {
-    if (message.role === 'tool') {
-      return addToolMessageToChat({
-        toolMessage: message as CoreToolMessage,
-        messages: chatMessages,
-      });
-    }
-
-    let textContent = '';
-    let reasoning: string | undefined = undefined;
-    const toolInvocations: Array<ToolInvocation> = [];
-
-    if (typeof message.content === 'string') {
-      textContent = message.content;
-    } else if (Array.isArray(message.content)) {
-      for (const content of message.content) {
-        if (content.type === 'text') {
-          textContent += content.text;
-        } else if (content.type === 'tool-call') {
-          toolInvocations.push({
-            state: 'call',
-            toolCallId: content.toolCallId,
-            toolName: content.toolName,
-            args: content.args,
-          });
-        } else if (content.type === 'reasoning') {
-          reasoning = content.reasoning;
-        }
-      }
-    }
-
-    chatMessages.push({
+): Array<UIMessage> {
+  return messages
+    .filter((message) => message.role !== 'tool')
+    .map((message) => ({
       id: message.id,
-      role: message.role as Message['role'],
-      content: textContent,
-      reasoning,
-      toolInvocations,
-    });
-
-    return chatMessages;
-  }, []);
+      role: message.role as UIMessage['role'],
+      parts:
+        typeof message.content === 'string'
+          ? [{ type: 'text', text: message.content }]
+          : Array.isArray(message.content)
+            ? message.content.filter(isUIMessagePart)
+            : [],
+    }));
 }
 
-type ResponseMessageWithoutId = CoreToolMessage | CoreAssistantMessage;
-type ResponseMessage = ResponseMessageWithoutId & { id: string };
-
-export function sanitizeResponseMessages({
-  messages,
-  reasoning,
-}: {
-  messages: Array<ResponseMessage>;
-  reasoning: string | undefined;
-}) {
-  const toolResultIds: Array<string> = [];
-
-  for (const message of messages) {
-    if (message.role === 'tool') {
-      for (const content of message.content) {
-        if (content.type === 'tool-result') {
-          toolResultIds.push(content.toolCallId);
-        }
-      }
-    }
-  }
-
-  const messagesBySanitizedContent = messages.map((message) => {
+export function sanitizeUIMessages(
+  messages: Array<UIMessage>
+): Array<UIMessage> {
+  const messagesBySanitizedToolParts = messages.map((message) => {
     if (message.role !== 'assistant') return message;
 
-    if (typeof message.content === 'string') return message;
-
-    const sanitizedContent = message.content.filter((content) =>
-      content.type === 'tool-call'
-        ? toolResultIds.includes(content.toolCallId)
-        : content.type === 'text'
-          ? content.text.length > 0
-          : true
-    );
-
-    if (reasoning) {
-      // @ts-expect-error: reasoning message parts in sdk is wip
-      sanitizedContent.push({ type: 'reasoning', reasoning });
-    }
-
-    return {
-      ...message,
-      content: sanitizedContent,
-    };
-  });
-
-  return messagesBySanitizedContent.filter(
-    (message) => message.content.length > 0
-  );
-}
-
-export function sanitizeUIMessages(messages: Array<Message>): Array<Message> {
-  const messagesBySanitizedToolInvocations = messages.map((message) => {
-    if (message.role !== 'assistant') return message;
-
-    if (!message.toolInvocations) return message;
-
-    const toolResultIds: Array<string> = [];
-
-    for (const toolInvocation of message.toolInvocations) {
-      if (toolInvocation.state === 'result') {
-        toolResultIds.push(toolInvocation.toolCallId);
-      }
-    }
-
-    const sanitizedToolInvocations = message.toolInvocations.filter(
-      (toolInvocation) =>
-        toolInvocation.state === 'result' ||
-        toolResultIds.includes(toolInvocation.toolCallId)
+    const sanitizedParts = message.parts.filter(
+      (part) => !isToolUIPart(part) || part.state === 'output-available'
     );
 
     return {
       ...message,
-      toolInvocations: sanitizedToolInvocations,
+      parts: sanitizedParts,
     };
   });
 
-  return messagesBySanitizedToolInvocations.filter(
-    (message) =>
-      message.content.length > 0 ||
-      (message.toolInvocations && message.toolInvocations.length > 0)
+  return messagesBySanitizedToolParts.filter(
+    (message) => message.parts.length > 0
   );
 }
 
-export function getMostRecentUserMessage(messages: Array<Message>) {
+export function getTextFromMessage(message: UIMessage): string {
+  return message.parts
+    .filter((part) => part.type === 'text')
+    .map((part) => part.text)
+    .join('');
+}
+
+export function getMostRecentUserMessage(messages: Array<UIMessage>) {
   const userMessages = messages.filter((message) => message.role === 'user');
   return userMessages.at(-1);
 }

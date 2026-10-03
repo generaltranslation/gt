@@ -1,6 +1,5 @@
 'use client';
 
-import { useChat } from 'ai/react';
 import { useEffect, useRef } from 'react';
 import { ArtifactKind, getArtifactDefinition } from './artifact';
 import { Suggestion } from '@/lib/db/schema';
@@ -21,8 +20,11 @@ export type DataStreamDelta = {
   content: string | Suggestion;
 };
 
-export function DataStreamHandler({ id }: { id: string }) {
-  const { data: dataStream } = useChat({ id });
+export function DataStreamHandler({
+  dataStream,
+}: {
+  dataStream: Array<DataStreamDelta>;
+}) {
   const { artifact, setArtifact, setMetadata } = useArtifact();
   const lastProcessedIndex = useRef(-1);
 
@@ -32,7 +34,7 @@ export function DataStreamHandler({ id }: { id: string }) {
     const newDeltas = dataStream.slice(lastProcessedIndex.current + 1);
     lastProcessedIndex.current = dataStream.length - 1;
 
-    (newDeltas as DataStreamDelta[]).forEach((delta: DataStreamDelta) => {
+    newDeltas.forEach((delta: DataStreamDelta) => {
       const artifactDefinition = getArtifactDefinition(artifact.kind);
 
       if (artifactDefinition?.onStreamPart) {

@@ -13,6 +13,6 @@ const nextConfig: NextConfig = {
 };
 
 export default withGTConfig(nextConfig, {
-  locales: ['fr', 'es', 'zh'],
+  locales: ['es', 'zh', 'fr'],
   defaultLocale: 'en',
 });
