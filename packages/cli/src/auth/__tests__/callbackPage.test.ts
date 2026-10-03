@@ -87,15 +87,16 @@ describe('callback page', () => {
       expect(page).toMatch(
         /Run<span class="gap"> <\/span><button type="button" class="cmd" aria-label="Copy npx gt login">npx gt login<svg class="copy"[^]*?<svg class="done"[^]*?<\/button><span class="gap"> <\/span>to try again\.<span class="status" role="status"><\/span>/
       );
-      const scripts = [...page.matchAll(/<script>([\s\S]*?)<\/script>/g)];
-      expect(scripts).toHaveLength(1);
-      const hash = createHash('sha256')
-        .update(scripts[0]![1]!)
-        .digest('base64');
+      expect(page.split('<script').length).toBe(2);
+      const script = page.slice(
+        page.indexOf('<script>') + '<script>'.length,
+        page.indexOf('</script>')
+      );
+      const hash = createHash('sha256').update(script).digest('base64');
       expect(CALLBACK_PAGE_CSP).toBe(
         `default-src 'none'; style-src 'unsafe-inline'; script-src 'sha256-${hash}'`
       );
-      expect(scripts[0]![1]).toContain('navigator.clipboard.writeText');
+      expect(script).toContain('navigator.clipboard.writeText');
     }
     expect(
       renderCallbackPage({ ok: true, account: 'dev@example.com' })
