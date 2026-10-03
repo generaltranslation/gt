@@ -2,16 +2,14 @@
 
 import { motion } from 'framer-motion';
 import { Button } from './ui/button';
-import { ChatRequestOptions, CreateMessage, Message } from 'ai';
+import type { UIMessage } from 'ai';
+import type { UseChatHelpers } from '@ai-sdk/react';
 import { memo } from 'react';
 import { useGT } from 'gt-next';
 
 interface SuggestedActionsProps {
   chatId: string;
-  append: (
-    message: Message | CreateMessage,
-    chatRequestOptions?: ChatRequestOptions
-  ) => Promise<string | null | undefined>;
+  append: UseChatHelpers<UIMessage>['sendMessage'];
 }
 
 function PureSuggestedActions({ chatId, append }: SuggestedActionsProps) {
@@ -56,8 +54,7 @@ function PureSuggestedActions({ chatId, append }: SuggestedActionsProps) {
               window.history.replaceState({}, '', `/chat/${chatId}`);
 
               append({
-                role: 'user',
-                content: suggestedAction.action,
+                text: suggestedAction.action,
               });
             }}
             className='text-left border rounded-xl px-4 py-3.5 text-sm flex-1 gap-1 sm:flex-col w-full h-auto justify-start items-start'

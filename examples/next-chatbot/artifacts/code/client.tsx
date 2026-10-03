@@ -262,8 +262,7 @@ export const codeArtifact = new Artifact<'code', CodeArtifactMetadata | null>({
       description: 'Add comments',
       onClick: ({ appendMessage }) => {
         appendMessage({
-          role: 'user',
-          content: 'Add comments to the code snippet for understanding',
+          text: 'Add comments to the code snippet for understanding',
         });
       },
     },
@@ -272,8 +271,7 @@ export const codeArtifact = new Artifact<'code', CodeArtifactMetadata | null>({
       description: 'Add logs',
       onClick: ({ appendMessage }) => {
         appendMessage({
-          role: 'user',
-          content: 'Add logs to the code snippet for debugging',
+          text: 'Add logs to the code snippet for debugging',
         });
       },
     },
