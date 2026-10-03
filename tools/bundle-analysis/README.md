@@ -5,6 +5,8 @@ runs the production build of an example app, attributes every emitted byte to
 the package that contributed it (from source maps), and redraws the treemap
 whenever a package's `dist` output changes.
 
+![The Next.js example's client bundle as a treemap, with GT packages tinted blue and per-bundle sizes and GT share in the sidebar](./screenshot.png)
+
 ```sh
 pnpm watch            # terminal 1: rebuild packages on save
 pnpm analyze:bundle   # terminal 2: opens http://localhost:4600
