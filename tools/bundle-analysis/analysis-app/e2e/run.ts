@@ -19,7 +19,7 @@ import {
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { chromium, type Page } from 'playwright-core';
+import { chromium, type Browser, type Page } from 'playwright-core';
 import { repoRoot } from '../server/workspace.ts';
 import type { ExampleState } from '../shared/types.ts';
 
@@ -123,333 +123,381 @@ async function main() {
   server.stderr.on('data', (chunk) =>
     process.stdout.write(`  [server] ${chunk}`)
   );
-  await new Promise<void>((resolve) => {
-    server.stdout.on('data', (chunk) => {
-      if (String(chunk).includes('running at')) resolve();
-    });
-  });
-
-  // Start every example from the default build settings, which an earlier
-  // session may have changed (settings persist in .cache).
-  for (const id of ['next-app', 'tanstack-start', 'vite-react', 'vite-vue']) {
-    await fetch(`${base}/api/examples/${id}/settings`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ minify: true, treeShake: true }),
-    });
-  }
-
-  const browser = await chromium.launch({ executablePath: findChromium() });
-  const page = await browser.newPage({
-    viewport: { width: 1440, height: 900 },
-  });
-  const errors: string[] = [];
-  page.on('pageerror', (error) => errors.push(String(error)));
-  page.on('console', (message) => {
-    if (message.type() === 'error') errors.push(message.text());
-  });
-
-  let probeFile: string | null = null;
-  let probeOriginal = '';
+  // Everything after spawning runs inside one cleanup scope, so a failed
+  // browser launch or setup step never leaves the server running.
+  let browser: Browser | undefined;
   try {
-    console.log('Home');
-    await page.goto(base);
-    await page.waitForSelector('.example-card');
-    const cards = await page.$$eval('.example-card h2', (nodes) =>
-      nodes.map((node) => node.textContent)
-    );
-    check(cards.length === 4, `four example cards (${cards.join(', ')})`);
-    await shot(page, '01-home');
-
-    const ids = ['vite-react', 'vite-vue', 'tanstack-start', 'next-app'].filter(
-      (id) => !only || id === only
-    );
-    for (const id of ids) {
-      console.log(`Example ${id}`);
-      await page.goto(base);
-      await page.click(`[data-testid=example-${id}]`);
-      check(
-        page.url() === `${base}/${id}`,
-        'card navigates to the analysis page'
+    await new Promise<void>((resolve, reject) => {
+      server.stdout.on('data', (chunk) => {
+        if (String(chunk).includes('running at')) resolve();
+      });
+      server.once('exit', (code) =>
+        reject(new Error(`The server exited with code ${code}.`))
       );
-      // Opening an example always rebuilds it once (packages may have changed).
-      await waitForBuild(page, null);
-      await page.waitForSelector('.tile.leaf');
-      const state = await serverState(id);
-      for (const kind of ['client', 'server', 'edge'] as const) {
-        const report = state.current?.bundles[kind];
-        const button = page.locator(`[data-testid=bundle-${kind}]`);
-        check(
-          (await button.count()) === (report ? 1 : 0),
-          `${kind} bundle ${report ? 'listed' : 'not listed'}`
-        );
-        if (!report) continue;
-        await button.click();
-        await page.waitForSelector('.tile.leaf');
-        const leaves = await page.locator('.tile.leaf').count();
-        const gtLeaves = await page.locator('.tile.leaf.gt').count();
-        check(
-          leaves > 3 && gtLeaves > 0,
-          `${kind} treemap draws ${leaves} files, ${gtLeaves} from GT packages`
-        );
-        await shot(page, `${id}-${kind}`);
-      }
-      await page.click('[data-testid=bundle-client]');
-      check(errors.length === 0, `no page errors (${errors.join(' | ')})`);
+    });
+
+    // Start every example from the default build settings, which an earlier
+    // session may have changed (settings persist in .cache).
+    for (const id of ['next-app', 'tanstack-start', 'vite-react', 'vite-vue']) {
+      await fetch(`${base}/api/examples/${id}/settings`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ minify: true, treeShake: true }),
+      });
     }
 
-    if (!only || only === 'vite-react') {
-      console.log('Search and zoom');
-      await page.goto(`${base}/vite-react`);
-      await page.waitForSelector('.tile.leaf');
-      await page.click('button[aria-label="Search files in bundle"]');
-      await page.keyboard.type('gt-react');
-      const count = await page.textContent('.search-count');
-      check(
-        /^[1-9]\d* files?$/.test(count ?? ''),
-        `search counts matches (${count})`
-      );
-      check(
-        (await page.locator('.tile.leaf.match').count()) > 0,
-        'matching files are highlighted'
-      );
-      check(
-        (await page.locator('.tile.leaf.dimmed').count()) > 0,
-        'other files are dimmed'
-      );
-      await shot(page, 'search');
-      await page.keyboard.press('Escape');
-      check(
-        (await page.locator('.tile.leaf.dimmed').count()) === 0,
-        'Escape clears the search'
-      );
+    browser = await chromium.launch({ executablePath: findChromium() });
+    const page = await browser.newPage({
+      viewport: { width: 1440, height: 900 },
+    });
+    const errors: string[] = [];
+    page.on('pageerror', (error) => errors.push(String(error)));
+    page.on('console', (message) => {
+      if (message.type() === 'error') errors.push(message.text());
+    });
 
-      const group = page.locator('.tile.group.gt').first();
-      const key = await group.getAttribute('data-key');
-      await group.click({ position: { x: 8, y: 6 } });
-      const crumbs = await page.textContent('.crumbs');
-      check(
-        crumbs?.includes(key!.split('/')[0]!),
-        `zooms into ${key} (${crumbs})`
+    let probeFile: string | null = null;
+    let probeOriginal = '';
+    try {
+      console.log('Home');
+      await page.goto(base);
+      await page.waitForSelector('.example-card');
+      const cards = await page.$$eval('.example-card h2', (nodes) =>
+        nodes.map((node) => node.textContent)
       );
-      await shot(page, 'zoom');
-      await page.click('.crumbs button:first-child');
-      check(
-        !(await page.textContent('.crumbs'))?.includes('/'),
-        'first crumb zooms back out'
-      );
+      check(cards.length === 4, `four example cards (${cards.join(', ')})`);
+      await shot(page, '01-home');
 
-      console.log('Live loop: package dist change');
-      const state = await serverState('vite-react');
-      const target = state
-        .current!.bundles.client!.modules.filter(
-          (module) =>
-            module.pkg === 'gt-react' && module.path.startsWith('dist/')
-        )
-        .sort((a, b) => b.bytes - a.bytes)[0]!;
-      probeFile = join(repoRoot, 'packages/react', target.path);
-      probeOriginal = readFileSync(probeFile, 'utf8');
-      const before = await bundleSize(page, 'client');
-      const builtBefore = await page.getAttribute(
-        '.status-text',
-        'data-built-at'
-      );
-      writeFileSync(
-        probeFile,
-        `${probeOriginal}\nglobalThis.__gtBundleProbe = ${JSON.stringify('x'.repeat(PROBE_BYTES))};\n`
-      );
-      await page.waitForFunction(
-        () =>
-          document
-            .querySelector('.status-text')
-            ?.textContent?.startsWith('Building'),
-        null,
-        { timeout: 15_000 }
-      );
-      check(true, 'a dist write starts a rebuild');
-      const builtAfter = await waitForBuild(page, builtBefore);
-      const grown = await bundleSize(page, 'client');
-      const delta = await page.textContent('[data-testid=delta-client]');
-      check(
-        delta?.startsWith('+20.'),
-        `client delta shows the probe (${before} -> ${grown}, ${delta})`
-      );
-      check(
-        (await page.locator(`.tile.leaf.changed`).count()) >= 1,
-        'the changed file is marked'
-      );
-      await shot(page, 'live-grown');
+      const ids = [
+        'vite-react',
+        'vite-vue',
+        'tanstack-start',
+        'next-app',
+      ].filter((id) => !only || id === only);
+      for (const id of ids) {
+        console.log(`Example ${id}`);
+        await page.goto(base);
+        await page.click(`[data-testid=example-${id}]`);
+        check(
+          page.url() === `${base}/${id}`,
+          'card navigates to the analysis page'
+        );
+        // Opening an example always rebuilds it once (packages may have changed).
+        await waitForBuild(page, null);
+        await page.waitForSelector('.tile.leaf');
+        const state = await serverState(id);
+        for (const kind of ['client', 'server', 'edge'] as const) {
+          const report = state.current?.bundles[kind];
+          const button = page.locator(`[data-testid=bundle-${kind}]`);
+          check(
+            (await button.count()) === (report ? 1 : 0),
+            `${kind} bundle ${report ? 'listed' : 'not listed'}`
+          );
+          if (!report) continue;
+          await button.click();
+          await page.waitForSelector('.tile.leaf');
+          const leaves = await page.locator('.tile.leaf').count();
+          const gtLeaves = await page.locator('.tile.leaf.gt').count();
+          check(
+            leaves > 3 && gtLeaves > 0,
+            `${kind} treemap draws ${leaves} files, ${gtLeaves} from GT packages`
+          );
+          await shot(page, `${id}-${kind}`);
+        }
+        await page.click('[data-testid=bundle-client]');
+        check(errors.length === 0, `no page errors (${errors.join(' | ')})`);
+      }
 
-      writeFileSync(probeFile, probeOriginal);
-      probeFile = null;
-      await waitForBuild(page, builtAfter);
-      const restored = await bundleSize(page, 'client');
-      const restoredDelta = await page.textContent(
-        '[data-testid=delta-client]'
-      );
-      check(restored === before, `size returns after revert (${restored})`);
-      check(
-        restoredDelta?.startsWith('−20.'),
-        `negative delta after revert (${restoredDelta})`
-      );
-      await shot(page, 'live-restored');
+      if (!only || only === 'vite-react') {
+        console.log('Search and zoom');
+        await page.goto(`${base}/vite-react`);
+        await page.waitForSelector('.tile.leaf');
+        await page.click('button[aria-label="Search files in bundle"]');
+        await page.keyboard.type('gt-react');
+        const count = await page.textContent('.search-count');
+        check(
+          /^[1-9]\d* files?$/.test(count ?? ''),
+          `search counts matches (${count})`
+        );
+        check(
+          (await page.locator('.tile.leaf.match').count()) > 0,
+          'matching files are highlighted'
+        );
+        check(
+          (await page.locator('.tile.leaf.dimmed').count()) > 0,
+          'other files are dimmed'
+        );
+        await shot(page, 'search');
+        await page.keyboard.press('Escape');
+        check(
+          (await page.locator('.tile.leaf.dimmed').count()) === 0,
+          'Escape clears the search'
+        );
 
-      console.log('Live loop: example source change');
-      const appFile = join(
-        repoRoot,
-        'tools/bundle-analysis/examples/vite-react/src/main.tsx'
-      );
-      const appOriginal = readFileSync(appFile, 'utf8');
-      const builtBeforeEdit = await page.getAttribute(
-        '.status-text',
-        'data-built-at'
-      );
-      try {
+        const group = page.locator('.tile.group.gt').first();
+        const key = await group.getAttribute('data-key');
+        await group.click({ position: { x: 8, y: 6 } });
+        const crumbs = await page.textContent('.crumbs');
+        check(
+          crumbs?.includes(key!.split('/')[0]!),
+          `zooms into ${key} (${crumbs})`
+        );
+        await shot(page, 'zoom');
+        await page.click('.crumbs button:first-child');
+        check(
+          !(await page.textContent('.crumbs'))?.includes('/'),
+          'first crumb zooms back out'
+        );
+
+        const focusable = page.locator('.tile.group.gt').first();
+        const focusKey = await focusable.getAttribute('data-key');
+        await focusable.focus();
+        check(
+          (await page.locator('.tooltip').textContent())?.includes(focusKey!),
+          'focusing a tile shows its details'
+        );
+        await page.keyboard.press('Enter');
+        check(
+          (await page.textContent('.crumbs'))?.includes(
+            focusKey!.split('/')[0]!
+          ),
+          'Enter on a focused group zooms in'
+        );
+        await page.click('.crumbs button:first-child');
+
+        console.log('Live loop: package dist change');
+        const state = await serverState('vite-react');
+        const target = state
+          .current!.bundles.client!.modules.filter(
+            (module) =>
+              module.pkg === 'gt-react' && module.path.startsWith('dist/')
+          )
+          .sort((a, b) => b.bytes - a.bytes)[0]!;
+        probeFile = join(repoRoot, 'packages/react', target.path);
+        probeOriginal = readFileSync(probeFile, 'utf8');
+        const before = await bundleSize(page, 'client');
+        const builtBefore = await page.getAttribute(
+          '.status-text',
+          'data-built-at'
+        );
         writeFileSync(
-          appFile,
-          `${appOriginal}\n// bundle analysis e2e probe\n`
+          probeFile,
+          `${probeOriginal}\nglobalThis.__gtBundleProbe = ${JSON.stringify('x'.repeat(PROBE_BYTES))};\n`
         );
         await page.waitForFunction(
           () =>
             document
               .querySelector('.status-text')
-              ?.textContent?.includes('Edited'),
+              ?.textContent?.startsWith('Building'),
           null,
           { timeout: 15_000 }
         );
-        check(true, 'editing example source starts a rebuild');
-      } finally {
-        writeFileSync(appFile, appOriginal);
+        check(true, 'a dist write starts a rebuild');
+        const builtAfter = await waitForBuild(page, builtBefore);
+        const grown = await bundleSize(page, 'client');
+        const delta = await page.textContent('[data-testid=delta-client]');
+        check(
+          delta?.startsWith('+20.'),
+          `client delta shows the probe (${before} -> ${grown}, ${delta})`
+        );
+        check(
+          (await page.locator(`.tile.leaf.changed`).count()) >= 1,
+          'the changed file is marked'
+        );
+        await shot(page, 'live-grown');
+
+        writeFileSync(probeFile, probeOriginal);
+        probeFile = null;
+        await waitForBuild(page, builtAfter);
+        const restored = await bundleSize(page, 'client');
+        const restoredDelta = await page.textContent(
+          '[data-testid=delta-client]'
+        );
+        check(restored === before, `size returns after revert (${restored})`);
+        check(
+          restoredDelta?.startsWith('−20.'),
+          `negative delta after revert (${restoredDelta})`
+        );
+        await shot(page, 'live-restored');
+
+        console.log('Live loop: example source change');
+        const appFile = join(
+          repoRoot,
+          'tools/bundle-analysis/examples/vite-react/src/main.tsx'
+        );
+        const appOriginal = readFileSync(appFile, 'utf8');
+        const builtBeforeEdit = await page.getAttribute(
+          '.status-text',
+          'data-built-at'
+        );
+        try {
+          writeFileSync(
+            appFile,
+            `${appOriginal}\n// bundle analysis e2e probe\n`
+          );
+          await page.waitForFunction(
+            () =>
+              document
+                .querySelector('.status-text')
+                ?.textContent?.includes('Edited'),
+            null,
+            { timeout: 15_000 }
+          );
+          check(true, 'editing example source starts a rebuild');
+        } finally {
+          writeFileSync(appFile, appOriginal);
+        }
+        await waitForBuild(page, builtBeforeEdit);
+
+        console.log('Build settings');
+        const minified = await bundleSize(page, 'client');
+        let built = await page.getAttribute('.status-text', 'data-built-at');
+        await page.getByLabel('Minification').uncheck();
+        built = await waitForBuild(page, built);
+        const unminified = await bundleSize(page, 'client');
+        check(
+          parseFloat(unminified!) > parseFloat(minified!),
+          `unminified is larger (${minified} -> ${unminified})`
+        );
+        await shot(page, 'unminified');
+        await page.getByLabel('Minification').check();
+        built = await waitForBuild(page, built);
+        await page.getByLabel('Tree shaking').uncheck();
+        built = await waitForBuild(page, built);
+        const unshaken = await bundleSize(page, 'client');
+        check(
+          parseFloat(unshaken!) > parseFloat(minified!),
+          `no tree shaking is larger (${minified} -> ${unshaken})`
+        );
+        await page.getByLabel('Tree shaking').check();
+        await waitForBuild(page, built);
+        check(
+          (await bundleSize(page, 'client')) === minified,
+          'defaults restore the original size'
+        );
       }
-      await waitForBuild(page, builtBeforeEdit);
 
-      console.log('Build settings');
-      const minified = await bundleSize(page, 'client');
-      let built = await page.getAttribute('.status-text', 'data-built-at');
-      await page.getByLabel('Minification').uncheck();
-      built = await waitForBuild(page, built);
-      const unminified = await bundleSize(page, 'client');
-      check(
-        parseFloat(unminified!) > parseFloat(minified!),
-        `unminified is larger (${minified} -> ${unminified})`
-      );
-      await shot(page, 'unminified');
-      await page.getByLabel('Minification').check();
-      built = await waitForBuild(page, built);
-      await page.getByLabel('Tree shaking').uncheck();
-      built = await waitForBuild(page, built);
-      const unshaken = await bundleSize(page, 'client');
-      check(
-        parseFloat(unshaken!) > parseFloat(minified!),
-        `no tree shaking is larger (${minified} -> ${unshaken})`
-      );
-      await page.getByLabel('Tree shaking').check();
-      await waitForBuild(page, built);
-      check(
-        (await bundleSize(page, 'client')) === minified,
-        'defaults restore the original size'
-      );
-    }
-
-    if (!only || only === 'vite-react') {
-      console.log('Agent API');
-      const guide = await (await fetch(`${base}/llms.txt`)).text();
-      check(
-        guide.includes('/api/examples/{id}') && guide.includes('`next-app`'),
-        'llms.txt documents endpoints and examples'
-      );
-      const index = (await (await fetch(`${base}/api`)).json()) as {
-        endpoints: unknown[];
-      };
-      check(
-        index.endpoints.length >= 5,
-        `GET /api lists ${index.endpoints.length} endpoints`
-      );
-      const summary = (await (
-        await fetch(`${base}/api/examples/vite-react?fresh=1`)
-      ).json()) as {
-        status: string;
-        stale: boolean;
-        bundles: {
-          client?: {
-            totalBytes: number;
-            gtBytes: number;
-            gtPercent: number;
-            gtPackages: { name: string }[];
+      if (!only || only === 'vite-react') {
+        console.log('Agent API');
+        const guide = await (await fetch(`${base}/llms.txt`)).text();
+        check(
+          guide.includes('/api/examples/{id}') && guide.includes('`next-app`'),
+          'llms.txt documents endpoints and examples'
+        );
+        const index = (await (await fetch(`${base}/api`)).json()) as {
+          endpoints: unknown[];
+        };
+        check(
+          index.endpoints.length >= 5,
+          `GET /api lists ${index.endpoints.length} endpoints`
+        );
+        const summary = (await (
+          await fetch(`${base}/api/examples/vite-react?fresh=1`)
+        ).json()) as {
+          status: string;
+          stale: boolean;
+          bundles: {
+            client?: {
+              totalBytes: number;
+              gtBytes: number;
+              gtPercent: number;
+              gtPackages: { name: string }[];
+            };
           };
         };
-      };
-      const client = summary.bundles.client;
-      check(
-        summary.status === 'idle' &&
-          !summary.stale &&
-          client !== undefined &&
-          client.gtBytes > 0 &&
-          client.gtBytes < client.totalBytes,
-        `summary reports GT ${client?.gtBytes} of ${client?.totalBytes} bytes (${client?.gtPercent}%)`
-      );
-      check(
-        client?.gtPackages.some((pkg) => pkg.name === 'gt-react'),
-        'summary lists gt-react among GT packages'
-      );
-      const detail = (await (
-        await fetch(
-          `${base}/api/examples/vite-react/bundles/client?package=gt-react`
-        )
-      ).json()) as {
-        matchedFiles: number;
-        files: { package: string }[];
-      };
-      check(
-        detail.matchedFiles > 0 &&
-          detail.files.every((file) => file.package === 'gt-react'),
-        `package filter returns ${detail.matchedFiles} gt-react files`
-      );
-      const diff = await fetch(`${base}/api/examples/vite-react/diff/client`);
-      check(diff.ok, 'diff endpoint responds');
-      const built = (await (
-        await fetch(`${base}/api/examples/vite-react/build?wait=1`, {
+        const client = summary.bundles.client;
+        check(
+          summary.status === 'idle' &&
+            !summary.stale &&
+            client !== undefined &&
+            client.gtBytes > 0 &&
+            client.gtBytes < client.totalBytes,
+          `summary reports GT ${client?.gtBytes} of ${client?.totalBytes} bytes (${client?.gtPercent}%)`
+        );
+        check(
+          client?.gtPackages.some((pkg) => pkg.name === 'gt-react'),
+          'summary lists gt-react among GT packages'
+        );
+        const detail = (await (
+          await fetch(
+            `${base}/api/examples/vite-react/bundles/client?package=gt-react`
+          )
+        ).json()) as {
+          matchedFiles: number;
+          files: { package: string }[];
+        };
+        check(
+          detail.matchedFiles > 0 &&
+            detail.files.every((file) => file.package === 'gt-react'),
+          `package filter returns ${detail.matchedFiles} gt-react files`
+        );
+        const diff = await fetch(`${base}/api/examples/vite-react/diff/client`);
+        check(diff.ok, 'diff endpoint responds');
+        const built = (await (
+          await fetch(`${base}/api/examples/vite-react/build?wait=1`, {
+            method: 'POST',
+          })
+        ).json()) as { status: string; builtAt: string };
+        check(
+          built.status === 'idle' && built.builtAt !== null,
+          `POST build?wait=1 returns the new build (${built.builtAt})`
+        );
+        const missing = await fetch(
+          `${base}/api/examples/vite-react/bundles/edge`
+        );
+        check(
+          missing.status === 404,
+          'a bundle the example does not emit returns 404'
+        );
+        const crossSite = await fetch(`${base}/api/examples/vite-react/build`, {
           method: 'POST',
-        })
-      ).json()) as { status: string; builtAt: string };
+          headers: { origin: 'https://example.com' },
+        });
+        check(
+          crossSite.status === 403,
+          'a cross-origin POST cannot start a build'
+        );
+        const plainText = await fetch(
+          `${base}/api/examples/vite-react/settings`,
+          {
+            method: 'POST',
+            headers: { 'content-type': 'text/plain' },
+            body: JSON.stringify({ minify: false, treeShake: true }),
+          }
+        );
+        check(
+          plainText.status === 415,
+          'settings sent as text/plain are refused'
+        );
+        const unknown = await fetch(`${base}/api/examples/nope`);
+        check(unknown.status === 404, 'an unknown example returns 404');
+      }
+
+      console.log('Phone width');
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto(base);
+      await page.waitForSelector('.example-card');
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth > window.innerWidth
+      );
+      check(!overflow, 'no horizontal scroll at 390px');
+      await shot(page, 'phone-home');
+
       check(
-        built.status === 'idle' && built.builtAt !== null,
-        `POST build?wait=1 returns the new build (${built.builtAt})`
+        errors.length === 0,
+        `no page errors overall (${errors.join(' | ')})`
       );
-      const missing = await fetch(
-        `${base}/api/examples/vite-react/bundles/edge`
+    } catch (error) {
+      console.log(
+        `  status at failure: ${await page.textContent('.status-text').catch(() => '?')}`
       );
-      check(
-        missing.status === 404,
-        'a bundle the example does not emit returns 404'
-      );
-      const unknown = await fetch(`${base}/api/examples/nope`);
-      check(unknown.status === 404, 'an unknown example returns 404');
+      await shot(page, 'failure');
+      throw error;
+    } finally {
+      if (probeFile) writeFileSync(probeFile, probeOriginal);
     }
-
-    console.log('Phone width');
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto(base);
-    await page.waitForSelector('.example-card');
-    const overflow = await page.evaluate(
-      () => document.documentElement.scrollWidth > window.innerWidth
-    );
-    check(!overflow, 'no horizontal scroll at 390px');
-    await shot(page, 'phone-home');
-
-    check(
-      errors.length === 0,
-      `no page errors overall (${errors.join(' | ')})`
-    );
-  } catch (error) {
-    console.log(
-      `  status at failure: ${await page.textContent('.status-text').catch(() => '?')}`
-    );
-    await shot(page, 'failure');
-    throw error;
   } finally {
-    if (probeFile) writeFileSync(probeFile, probeOriginal);
-    await browser.close();
+    await browser?.close();
     server.kill('SIGTERM');
   }
 

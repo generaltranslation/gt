@@ -1,6 +1,6 @@
 import type { NextConfig } from 'next';
 import { withGTConfig } from 'gt-next/config';
-import { getTurbopackRoot } from './turbopackRoot';
+import { getTurbopackRoot } from '../../../../tests/apps/next/turbopackRoot';
 
 // The bundle analysis app builds this example with GT_ANALYZE=1 and toggles
 // minification and tree shaking through GT_ANALYZE_MINIFY / GT_ANALYZE_TREESHAKE.

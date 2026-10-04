@@ -94,7 +94,27 @@ export function Treemap({
               height: h,
             }}
             data-key={node.key}
+            // Keyboard access: Tab moves through tiles, focus shows the same
+            // details as hover, and Enter or Space zooms into a group.
+            tabIndex={0}
+            role={isGroup ? 'button' : 'img'}
+            aria-label={`${node.key}, ${formatBytes(node.bytes)}${isGroup ? ', zoom in' : ''}`}
             onMouseMove={track(node)}
+            onFocus={(event) => {
+              if (event.target !== event.currentTarget) return;
+              const rect = event.currentTarget.getBoundingClientRect();
+              setHover({ node, x: rect.left + 8, y: rect.top + 8 });
+            }}
+            onBlur={(event) => {
+              if (event.target === event.currentTarget) setHover(null);
+            }}
+            onKeyDown={(event) => {
+              if (event.target !== event.currentTarget || !isGroup) return;
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onZoom(node.key);
+              }
+            }}
             onClick={(event) => {
               event.stopPropagation();
               if (isGroup) onZoom(node.key);

@@ -6,8 +6,8 @@ export default defineConfig({
   server: {
     port: 4599,
     proxy: {
-      '/api': 'http://localhost:4600',
-      '/previews': 'http://localhost:4600',
+      '/api': { target: 'http://localhost:4600', changeOrigin: true },
+      '/previews': { target: 'http://localhost:4600', changeOrigin: true },
     },
   },
 });

@@ -67,7 +67,8 @@ every example's bundler config reads:
 
 Each emitted JS file's bytes are charged to the original source of the nearest
 preceding source-map segment, then grouped by package. Sizes are uncompressed
-bytes on disk; the sidebar also shows the gzip total. CSS is not counted.
+bytes on disk; the API also reports the gzip total (`gzipBytes`). CSS is not
+counted.
 
 Next.js output follows the gt packages' own source maps back to `src/`, while
 Vite output stops at the `dist/` files.

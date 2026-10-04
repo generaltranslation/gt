@@ -1,6 +1,5 @@
-import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import { dirname, join, sep } from 'node:path';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { examplesDir } from './workspace.ts';
 import type { BundleKind } from '../shared/types.ts';
 
@@ -25,15 +24,15 @@ function walk(dir: string): string[] {
   });
 }
 
-/** Mirrors the example's next.config.ts turbopack.root. */
+/**
+ * The turbopack.root the build actually used, as Next.js records it in the
+ * build output, so this never has to repeat the config's calculation.
+ */
 function turbopackRoot(dir: string): string {
-  const require = createRequire(join(dir, 'package.json'));
-  const nextDir = realpathSync(dirname(require.resolve('next/package.json')));
-  const a = realpathSync(dir).split(sep);
-  const b = nextDir.split(sep);
-  let i = 0;
-  while (i < a.length && i < b.length && a[i] === b[i]) i++;
-  return a.slice(0, i).join(sep) || sep;
+  const files = JSON.parse(
+    readFileSync(join(dir, '.next/required-server-files.json'), 'utf8')
+  ) as { config: { turbopack?: { root?: string } } };
+  return files.config.turbopack?.root ?? dir;
 }
 
 const isJs = (file: string) => /\.(m?js|cjs)$/.test(file);

@@ -38,6 +38,11 @@ export interface BuildManager {
   invalidate(reason: string, active: Iterable<string>): void;
   /** Marks one example stale (its own source changed) and rebuilds it. */
   invalidateExample(id: string, reason: string): void;
+  /**
+   * Marks examples (all, or one) as no longer matching their sources without
+   * starting a build. A running build gets a follow-up pass.
+   */
+  markOutdated(id?: string): void;
   /** Starts a build now, replacing any running one. */
   rebuild(id: string, reason: string): void;
   /** True when a source changed after the current analysis was built. */
@@ -242,10 +247,16 @@ export function createBuildManager(options: {
       entry.state = { ...entry.state, settings };
       build(exampleFor(id), 'Build settings changed');
     },
+    markOutdated(id) {
+      for (const entry of id ? [entryFor(id)] : entries.values()) {
+        entry.outdated = true;
+        // A running build may have read the old files; run another pass.
+        if (entry.child) entry.queued = true;
+      }
+    },
     invalidate(reason, active) {
       for (const entry of entries.values()) {
         entry.outdated = true;
-        // A running build may have read the old files; run another pass.
         if (entry.child) entry.queued = true;
       }
       for (const id of new Set(active)) {

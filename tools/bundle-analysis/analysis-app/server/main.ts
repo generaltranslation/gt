@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { createBuildManager } from './builder.ts';
 import { examples, findExample } from './examples.ts';
 import { agentGuide, apiIndex } from './guide.ts';
+import { isJson, refuseRequest } from './guard.ts';
 import { bundleDetail, diffBundles, summarizeExample } from './report.ts';
 import { packagesDir, readWorkspacePackages } from './workspace.ts';
 import { gtBytes } from '../shared/summary.ts';
@@ -25,6 +26,7 @@ const appDir = join(dirname(fileURLToPath(import.meta.url)), '..');
 const uiDir = join(appDir, 'dist');
 const args = new Set(process.argv.slice(2));
 const preferredPort = Number(process.env.PORT ?? 4600);
+let listenPort = preferredPort;
 let baseUrl = `http://localhost:${preferredPort}`;
 
 let packages = readWorkspacePackages();
@@ -58,6 +60,10 @@ watch(packagesDir, { recursive: true }, (_event, filename) => {
   const parts = filename.split(sep);
   if (parts[1] !== 'dist' || parts.includes('node_modules')) return;
   pendingPackages.add(parts[0]!);
+  // Mark measurements stale at once, so a `fresh=1` read during the quiet
+  // period rebuilds instead of returning the old size. Only the automatic
+  // build waits for turbo to finish.
+  manager.markOutdated();
   clearTimeout(packageTimer);
   packageTimer = setTimeout(() => {
     const changed = [...pendingPackages].sort();
@@ -81,6 +87,7 @@ for (const example of examples) {
   let timer: NodeJS.Timeout | undefined;
   watch(example.dir, { recursive: true }, (_event, filename) => {
     if (!filename || IGNORED.test(filename.split(sep).join('/'))) return;
+    manager.markOutdated(example.id);
     clearTimeout(timer);
     timer = setTimeout(() => {
       log(`${example.id} changed: ${filename}`);
@@ -164,6 +171,17 @@ async function readBody(request: IncomingMessage): Promise<unknown> {
 async function handle(request: IncomingMessage, response: ServerResponse) {
   const url = new URL(request.url ?? '/', 'http://localhost');
   const path = url.pathname;
+
+  const refusal = refuseRequest(
+    {
+      method: request.method ?? 'GET',
+      host: request.headers.host,
+      origin: request.headers.origin,
+      contentType: request.headers['content-type'],
+    },
+    listenPort
+  );
+  if (refusal) return sendJson(response, 403, { error: refusal });
 
   if (path === '/llms.txt') {
     return sendText(
@@ -286,6 +304,11 @@ async function handle(request: IncomingMessage, response: ServerResponse) {
       );
     }
 
+    if (!isJson(request.headers['content-type'])) {
+      return sendJson(response, 415, {
+        error: 'Send the settings as JSON with content-type application/json.',
+      });
+    }
     const body = (await readBody(request)) as Partial<BuildSettings> | null;
     const current = manager.getState(id).settings;
     const settings = {
@@ -356,7 +379,12 @@ function openBrowser(url: string) {
       : process.platform === 'win32'
         ? 'explorer'
         : 'xdg-open';
-  spawn(command, [url], { stdio: 'ignore', detached: true }).unref();
+  const child = spawn(command, [url], { stdio: 'ignore', detached: true });
+  // Opening a browser is optional; a missing opener must not stop the server.
+  child.on('error', () => {
+    log(`Could not open a browser. Open ${url} manually.`);
+  });
+  child.unref();
 }
 
 function listen(port: number) {
@@ -376,6 +404,7 @@ function listen(port: number) {
   });
   server.listen(port, '127.0.0.1', () => {
     const url = `http://localhost:${port}`;
+    listenPort = port;
     baseUrl = url;
     log(`Bundle analysis running at ${url}`);
     log(`Agents: ${url}/llms.txt`);

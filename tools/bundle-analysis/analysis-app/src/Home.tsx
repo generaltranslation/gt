@@ -13,8 +13,12 @@ let request: Promise<void> | null = null;
 
 function load() {
   request ??= fetch('/api/examples')
-    .then((response) => response.json() as Promise<ExampleSummary[]>)
+    .then((response) => {
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.json() as Promise<ExampleSummary[]>;
+    })
     .then((list) => {
+      failed = false;
       examples = list;
     })
     .catch(() => {

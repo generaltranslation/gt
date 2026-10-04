@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   attributeBytes,
   decodeMappings,
+  findSourceMappingUrl,
+  loadSourceMap,
   resolveSource,
 } from '../server/sourcemap.ts';
 import { encodeMappings } from './vlq.ts';
@@ -193,5 +198,83 @@ describe('resolveSource', () => {
     expect(resolveSource('file:///abs/a.ts', undefined, '/x')).toBe(
       '/abs/a.ts'
     );
+  });
+});
+
+describe('section boundaries', () => {
+  it('does not charge a section start to the previous section', () => {
+    // Section B starts at column 4 but its first mapping is at local column 2.
+    const code = 'AAAAxxBBBB';
+    const totals = attributeBytes(
+      code,
+      {
+        version: 3,
+        sections: [
+          {
+            offset: { line: 0, column: 0 },
+            map: {
+              version: 3,
+              sources: ['a.ts'],
+              mappings: encodeMappings([[[0, 0]]]),
+            },
+          },
+          {
+            offset: { line: 0, column: 4 },
+            map: {
+              version: 3,
+              sources: ['b.ts', 'c.ts'],
+              mappings: encodeMappings([[[2, 0]]]),
+            },
+          },
+        ],
+      },
+      '/src'
+    );
+    expect(totals.get('/src/a.ts')).toBe(4);
+    expect(totals.get(null)).toBe(2);
+    expect(totals.get('/src/b.ts')).toBe(4);
+  });
+});
+
+describe('file URLs', () => {
+  it('decodes escaped characters into filesystem paths', () => {
+    expect(
+      resolveSource(
+        'file:///repo%20copy/packages/react/dist/a.mjs',
+        undefined,
+        '/x'
+      )
+    ).toBe('/repo copy/packages/react/dist/a.mjs');
+  });
+});
+
+describe('findSourceMappingUrl', () => {
+  it('reads external and inline map comments', () => {
+    expect(findSourceMappingUrl('x();\n//# sourceMappingURL=a.js.map\n')).toBe(
+      'a.js.map'
+    );
+    expect(findSourceMappingUrl('x();\n//@ sourceMappingURL=b.map')).toBe(
+      'b.map'
+    );
+    expect(findSourceMappingUrl('x();')).toBeUndefined();
+    expect(
+      findSourceMappingUrl('const s = "sourceMappingURL=nope"; x();')
+    ).toBeUndefined();
+  });
+
+  it('finds inline maps longer than the old 2 KB tail window', () => {
+    const map = {
+      version: 3,
+      sources: ['big.ts'],
+      mappings: 'AAAA' + ',AAAA'.repeat(2000),
+    };
+    const url = `data:application/json;base64,${Buffer.from(JSON.stringify(map)).toString('base64')}`;
+    expect(url.length).toBeGreaterThan(2048);
+    const dir = mkdtempSync(join(tmpdir(), 'sourcemap-test-'));
+    const file = join(dir, 'chunk.js');
+    const code = `x();\n//# sourceMappingURL=${url}\n`;
+    writeFileSync(file, code);
+    const loaded = loadSourceMap(file, code);
+    expect(loaded?.map.sources).toEqual(['big.ts']);
   });
 });

@@ -19,7 +19,7 @@ const example: ExampleDefinition = {
 };
 
 /** A build manager whose builds are fake processes the test finishes. */
-function setup() {
+function setup(analyzeImpl?: () => void) {
   const children: (EventEmitter & { finish: (code: number) => void })[] = [];
   let analyses = 0;
   const manager = createBuildManager({
@@ -40,6 +40,7 @@ function setup() {
     },
     analyze: (_example, settings, _packages, startedAt): Analysis => {
       analyses++;
+      analyzeImpl?.();
       return {
         example: 'demo',
         settings,
@@ -119,5 +120,54 @@ describe('createBuildManager', () => {
     children[0]!.finish(2);
     const state = await idle;
     expect(state.status.state).toBe('error');
+  });
+
+  it('replaces a running build and ignores the superseded one', () => {
+    const { manager, children } = setup();
+    manager.ensureFresh('demo');
+    manager.rebuild('demo', 'Requested through the API');
+    expect(children).toHaveLength(2);
+    // The superseded build finishing late must not change the state.
+    children[0]!.finish(1);
+    expect(manager.getState('demo').status.state).toBe('building');
+    children[1]!.finish(0);
+    expect(manager.getState('demo').status.state).toBe('idle');
+  });
+
+  it('builds once more when the output disappears during analysis', () => {
+    let calls = 0;
+    const { manager, children } = setup(() => {
+      calls++;
+      if (calls === 1) {
+        throw Object.assign(new Error('ENOENT: chunk.js'), { code: 'ENOENT' });
+      }
+    });
+    manager.ensureFresh('demo');
+    children[0]!.finish(0);
+    expect(children).toHaveLength(2);
+    children[1]!.finish(0);
+    expect(manager.getState('demo').status.state).toBe('idle');
+  });
+
+  it('reports an analysis error when the output is missing twice', () => {
+    const { manager, children } = setup(() => {
+      throw Object.assign(new Error('ENOENT: chunk.js'), { code: 'ENOENT' });
+    });
+    manager.ensureFresh('demo');
+    children[0]!.finish(0);
+    children[1]!.finish(0);
+    expect(children).toHaveLength(2);
+    expect(manager.getState('demo').status.state).toBe('error');
+  });
+
+  it('marks measurements outdated without building', () => {
+    const { manager, children } = setup();
+    manager.ensureFresh('demo');
+    children[0]!.finish(0);
+    manager.markOutdated();
+    expect(children).toHaveLength(1);
+    expect(manager.isStale('demo')).toBe(true);
+    manager.ensureFresh('demo');
+    expect(children).toHaveLength(2);
   });
 });

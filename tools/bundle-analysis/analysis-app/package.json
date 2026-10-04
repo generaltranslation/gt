@@ -8,7 +8,7 @@
     "dev:ui": "vite",
     "build": "vite build",
     "test": "vitest run",
-    "test:e2e": "node e2e/run.ts",
+    "test:e2e": "vite build --logLevel warn && node e2e/run.ts",
     "typecheck": "tsc --noEmit",
     "test:integration": "BUNDLE_ANALYSIS_INTEGRATION=1 vitest run test/examples.integration.test.ts"
   },

@@ -418,6 +418,11 @@ body {
   background: var(--gt-tile-hover);
 }
 
+.tile:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
 .tile.leaf.dimmed {
   opacity: 0.25;
 }
