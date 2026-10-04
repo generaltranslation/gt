@@ -10,7 +10,10 @@ import {
   GtInternalRelativeTime,
   RelativeTime,
 } from '../../../components/variables/RelativeTime';
-import { renderDefaultChildren } from '../../rendering/renderPipeline';
+import {
+  renderDefaultChildren,
+  renderTranslatedChildren,
+} from '../../rendering/renderPipeline';
 import type { GTTag, TaggedElement } from '../../types';
 import { getVariableProps } from '../../variables/_getVariableProps';
 import { addGTIdentifier } from '../addGTIdentifier';
@@ -121,6 +124,37 @@ describe('addGTIdentifier RelativeTime matches the CLI', () => {
       result.props as Parameters<typeof GtInternalRelativeTime>[0]
     );
     expect(rendered).toMatch(/ago/);
+  });
+
+  it('renders a published translation of RelativeTime with its date', () => {
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
+    onTestFinished(() => {
+      Reflect.deleteProperty(globalThis, '__generaltranslation');
+    });
+
+    const date = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    const result = renderTranslatedChildren({
+      source: addGTIdentifier(['Updated ', <RelativeTime date={date} />]),
+      target: ['Mis à jour ', CLI_RELATIVE_TIME],
+      locales: ['fr', 'en'],
+      enableI18n: true,
+    });
+
+    expect(Array.isArray(result)).toBe(true);
+    if (!Array.isArray(result)) return;
+    const fragment = result[1];
+    expect(isValidElement(fragment)).toBe(true);
+    if (!isValidElement<{ children: ReactNode }>(fragment)) return;
+    const variable = fragment.props.children;
+    expect(isValidElement(variable)).toBe(true);
+    if (!isValidElement(variable)) return;
+    expect(variable.type).toBe(GtInternalRelativeTime);
+
+    const props = variable.props as Parameters<
+      typeof GtInternalRelativeTime
+    >[0];
+    expect(props.date).toBe(date);
+    expect(GtInternalRelativeTime(props)).toBe('il y a 3 jours');
   });
 });
 
