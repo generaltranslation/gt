@@ -4,6 +4,7 @@ import {
 } from 'gt-react';
 import { getRequestConditions } from '../request/getRequestConditions';
 import type { ReactNode } from 'react';
+import type { GTComponentMetadata } from '@generaltranslation/react-core/pure';
 
 export async function RelativeTime(
   props: RelativeTimeProps
@@ -12,5 +13,8 @@ export async function RelativeTime(
   return <RscRelativeTime {...props} {...conditions} />;
 }
 
-/** @internal _gtt - The GT transformation for the component. */
-RelativeTime._gtt = 'variable-relative-time';
+/** @internal _gtt - The GT metadata for the component. */
+RelativeTime._gtt = {
+  kind: 'variable',
+  variableType: 'relative-time',
+} satisfies GTComponentMetadata;
