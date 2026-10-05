@@ -31,6 +31,7 @@ export function getParams(): {
     cacheUrl: clientConfig.cacheUrl,
     _disableDevHotReload: clientConfig._disableDevHotReload,
     _tagIds: clientConfig._tagIds,
+    _versionId: clientConfig._versionId,
     localeCookieName: clientConfig.headersAndCookies?.localeCookieName,
     enableI18nCookieName: clientConfig.headersAndCookies?.enableI18nCookieName,
   };
