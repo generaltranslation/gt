@@ -109,8 +109,8 @@ Find where a symbol's package lands:
 
 - Bundle totals count every emitted JS file, including lazy chunks that a
   visitor may never download. CSS is not counted.
-- Next.js maps GT bytes to the packages' src files; Vite examples map to dist
-  files.
+- GT bytes are attributed to the packages' published dist files in every
+  example, so file paths look like \`gt-react/dist/index.mjs\`.
 - A build takes about 1 second for Vite examples and 10 to 30 seconds for
   Next.js.
 `;

@@ -120,13 +120,19 @@ function summaries(): ExampleSummary[] {
  * `wait=1` only waits for a running build.
  */
 async function readState(id: string, url: URL): Promise<ExampleState> {
-  if (url.searchParams.get('fresh') === '1') manager.ensureFresh(id);
-  if (
-    url.searchParams.get('fresh') === '1' ||
-    url.searchParams.get('wait') === '1'
-  ) {
-    return manager.whenIdle(id);
+  if (url.searchParams.get('fresh') === '1') {
+    // A source can change while the build that started first is running;
+    // build again until the measurement matches the sources (a few passes
+    // at most, so a constantly changing tree cannot hold the request).
+    let state = manager.getState(id);
+    for (let pass = 0; pass < 3; pass++) {
+      manager.ensureFresh(id);
+      state = await manager.whenIdle(id);
+      if (!manager.isStale(id) || state.status.state === 'error') break;
+    }
+    return state;
   }
+  if (url.searchParams.get('wait') === '1') return manager.whenIdle(id);
   return manager.getState(id);
 }
 
@@ -175,6 +181,8 @@ async function handle(request: IncomingMessage, response: ServerResponse) {
   const refusal = refuseRequest(
     {
       method: request.method ?? 'GET',
+      path,
+      fetchSite: request.headers['sec-fetch-site'] as string | undefined,
       host: request.headers.host,
       origin: request.headers.origin,
       contentType: request.headers['content-type'],

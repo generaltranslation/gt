@@ -22,8 +22,13 @@ interface Entry {
    * successful build clears it, so a failed refresh can be retried.
    */
   outdated: boolean;
-  /** A source changed while a build was running; run another pass after it. */
+  /**
+   * A debounced change arrived while a build was running; run another pass
+   * after it.
+   */
   queued: boolean;
+  /** Incremented on every source change, to tell whether a build saw it. */
+  version: number;
   child: ChildProcess | null;
   /** Callers waiting for the current build to finish. */
   waiters: ((state: ExampleState) => void)[];
@@ -100,6 +105,7 @@ export function createBuildManager(options: {
       // Packages may have been rebuilt while the tool was not running.
       outdated: true,
       queued: false,
+      version: 0,
       child: null,
       waiters: [],
     });
@@ -140,6 +146,7 @@ export function createBuildManager(options: {
 
     const settings = entry.state.settings;
     const startedAt = new Date();
+    const startVersion = entry.version;
     entry.queued = false;
     entry.state = {
       ...entry.state,
@@ -162,7 +169,27 @@ export function createBuildManager(options: {
     child.stdout?.on('data', append);
     child.stderr?.on('data', append);
 
+    // A build that cannot start (pnpm missing, example dir removed) emits
+    // `error`, possibly followed by `close`. Settle it once either way.
+    let finished = false;
+    child.on('error', (error) => {
+      if (finished || entry.child !== child) return;
+      finished = true;
+      entry.child = null;
+      entry.state = {
+        ...entry.state,
+        status: {
+          state: 'error',
+          message: 'The build could not start.',
+          log: `${log}${error.message}`,
+        },
+      };
+      settle(example, entry);
+    });
+
     child.on('close', (code) => {
+      if (finished) return;
+      finished = true;
       entry.child = null;
       if (code !== 0) {
         entry.state = {
@@ -186,14 +213,21 @@ export function createBuildManager(options: {
           startedAt,
           Date.now() - startedAt.getTime()
         );
+        const current = entry.state.current;
         entry.state = {
           ...entry.state,
           status: { state: 'idle' },
           bundles: BUNDLE_KINDS.filter((kind) => kind in analysis.bundles),
-          previous: entry.state.current,
+          // A rebuild with identical results keeps the comparison point, so a
+          // redundant build does not erase the size change being shown.
+          previous:
+            current && sameMeasurement(current, analysis)
+              ? entry.state.previous
+              : current,
           current: analysis,
         };
-        if (!entry.queued) entry.outdated = false;
+        // Fresh only if no source changed while this build ran.
+        entry.outdated = entry.version !== startVersion;
         writeCache(cacheDir, entry.state);
       } catch (error) {
         // Another process (a second analysis server, a manual build) can
@@ -245,18 +279,23 @@ export function createBuildManager(options: {
       if (settings.minify === minify && settings.treeShake === treeShake)
         return;
       entry.state = { ...entry.state, settings };
+      // The measurement no longer matches the settings until a build succeeds.
+      entry.outdated = true;
       build(exampleFor(id), 'Build settings changed');
     },
     markOutdated(id) {
+      // No follow-up pass is queued here: the debounced invalidation does
+      // that once the writes settle, so one edit produces one rebuild.
       for (const entry of id ? [entryFor(id)] : entries.values()) {
         entry.outdated = true;
-        // A running build may have read the old files; run another pass.
-        if (entry.child) entry.queued = true;
+        entry.version++;
       }
     },
     invalidate(reason, active) {
       for (const entry of entries.values()) {
         entry.outdated = true;
+        entry.version++;
+        // A running build may have read the old files; run another pass.
         if (entry.child) entry.queued = true;
       }
       for (const id of new Set(active)) {
@@ -264,6 +303,7 @@ export function createBuildManager(options: {
       }
     },
     rebuild(id, reason) {
+      entryFor(id).outdated = true;
       build(exampleFor(id), reason);
     },
     isStale(id) {
@@ -278,6 +318,7 @@ export function createBuildManager(options: {
     invalidateExample(id, reason) {
       const entry = entryFor(id);
       entry.outdated = true;
+      entry.version++;
       if (entry.child) entry.queued = true;
       else build(exampleFor(id), reason);
     },
@@ -320,6 +361,20 @@ export function analyzeExample(
     buildMs,
     bundles,
   };
+}
+
+/** True when two analyses measured the same bytes for every module. */
+export function sameMeasurement(a: Analysis, b: Analysis): boolean {
+  const kinds = Object.keys(a.bundles) as BundleKind[];
+  if (kinds.length !== Object.keys(b.bundles).length) return false;
+  return kinds.every((kind) => {
+    const x = a.bundles[kind];
+    const y = b.bundles[kind];
+    if (!x || !y || x.totalBytes !== y.totalBytes) return false;
+    if (x.modules.length !== y.modules.length) return false;
+    const sizes = new Map(y.modules.map((module) => [module.id, module.bytes]));
+    return x.modules.every((module) => sizes.get(module.id) === module.bytes);
+  });
 }
 
 function killTree(child: ChildProcess) {

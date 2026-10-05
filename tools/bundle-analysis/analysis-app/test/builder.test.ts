@@ -19,7 +19,23 @@ const example: ExampleDefinition = {
 };
 
 /** A build manager whose builds are fake processes the test finishes. */
-function setup(analyzeImpl?: () => void) {
+/** One-module client bundle of the given size, for comparing builds. */
+const bundlesOf = (bytes: number): Analysis['bundles'] => ({
+  client: {
+    kind: 'client',
+    files: [{ path: 'a.js', bytes, gzip: bytes }],
+    totalBytes: bytes,
+    gzipBytes: bytes,
+    modules: [
+      { id: 'gt-react/a.mjs', pkg: 'gt-react', path: 'a.mjs', gt: true, bytes },
+    ],
+  },
+});
+
+function setup(
+  analyzeImpl?: () => void,
+  sizes: (build: number) => number = () => 0
+) {
   const children: (EventEmitter & { finish: (code: number) => void })[] = [];
   let analyses = 0;
   const manager = createBuildManager({
@@ -46,7 +62,7 @@ function setup(analyzeImpl?: () => void) {
         settings,
         builtAt: startedAt.toISOString(),
         buildMs: analyses,
-        bundles: {},
+        bundles: bundlesOf(sizes(analyses)),
       };
     },
   });
@@ -169,5 +185,74 @@ describe('createBuildManager', () => {
     expect(manager.isStale('demo')).toBe(true);
     manager.ensureFresh('demo');
     expect(children).toHaveLength(2);
+  });
+
+  it('retries a failed settings change or manual rebuild after a success', () => {
+    const { manager, children } = setup();
+    manager.ensureFresh('demo');
+    children[0]!.finish(0);
+    expect(manager.isStale('demo')).toBe(false);
+
+    manager.setSettings('demo', { minify: false, treeShake: true });
+    children[1]!.finish(1);
+    expect(manager.isStale('demo')).toBe(true);
+    manager.ensureFresh('demo');
+    expect(children).toHaveLength(3);
+    children[2]!.finish(0);
+
+    manager.rebuild('demo', 'Requested through the API');
+    children[3]!.finish(1);
+    expect(manager.isStale('demo')).toBe(true);
+    manager.ensureFresh('demo');
+    expect(children).toHaveLength(5);
+  });
+
+  it('keeps a build that missed a change outdated without queuing an early pass', () => {
+    const { manager, children } = setup();
+    manager.ensureFresh('demo');
+    // A dist write lands mid-build; the debounced invalidation has not fired.
+    manager.markOutdated();
+    children[0]!.finish(0);
+    expect(children).toHaveLength(1);
+    expect(manager.isStale('demo')).toBe(true);
+    // The debounced invalidation then builds exactly once.
+    manager.invalidate('Rebuilt gt-react', ['demo']);
+    expect(children).toHaveLength(2);
+    children[1]!.finish(0);
+    expect(manager.isStale('demo')).toBe(false);
+  });
+
+  it('keeps the comparison point when a rebuild measures the same bytes', () => {
+    const { manager, children } = setup(undefined, (build) =>
+      build === 1 ? 100 : 80
+    );
+    manager.ensureFresh('demo');
+    children[0]!.finish(0);
+    manager.rebuild('demo', 'Edited');
+    children[1]!.finish(0);
+    const changed = manager.getState('demo');
+    expect(changed.previous?.bundles.client?.totalBytes).toBe(100);
+    expect(changed.current?.bundles.client?.totalBytes).toBe(80);
+
+    // A redundant rebuild with identical output keeps the −20 B change visible.
+    manager.rebuild('demo', 'Redundant');
+    children[2]!.finish(0);
+    const after = manager.getState('demo');
+    expect(after.previous?.bundles.client?.totalBytes).toBe(100);
+    expect(after.current?.bundles.client?.totalBytes).toBe(80);
+  });
+
+  it('reports a build that cannot start and settles it once', async () => {
+    const { manager, children } = setup();
+    manager.ensureFresh('demo');
+    const idle = manager.whenIdle('demo');
+    children[0]!.emit('error', new Error('spawn pnpm ENOENT'));
+    children[0]!.finish(-2);
+    const state = await idle;
+    expect(state.status).toMatchObject({
+      state: 'error',
+      message: 'The build could not start.',
+    });
+    expect(children).toHaveLength(1);
   });
 });

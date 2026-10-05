@@ -12,6 +12,9 @@ export const UI_DEV_PORT = 4599;
 
 export interface RequestInfo {
   method: string;
+  path: string;
+  /** The browser's Sec-Fetch-Site header; absent for curl and agents. */
+  fetchSite?: string | undefined;
   host: string | undefined;
   origin: string | undefined;
   contentType: string | undefined;
@@ -25,6 +28,17 @@ export function refuseRequest(
   const allowedHosts = LOCAL_HOSTS.map((host) => `${host}:${port}`);
   if (!request.host || !allowedHosts.includes(request.host)) {
     return 'Requests must use a localhost address.';
+  }
+
+  // GET requests can start builds too (`/events`, `?fresh=1`). Other sites
+  // cannot read the responses, but a no-cors GET would still run builds, so
+  // the API refuses requests a browser marks as coming from another site.
+  // Another localhost port counts as same-site.
+  if (
+    request.path.startsWith('/api/') &&
+    (request.fetchSite === 'cross-site' || request.fetchSite === 'same-site')
+  ) {
+    return 'Other sites cannot use the analysis API.';
   }
 
   if (request.method === 'GET' || request.method === 'HEAD') return null;

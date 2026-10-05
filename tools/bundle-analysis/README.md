@@ -70,8 +70,9 @@ preceding source-map segment, then grouped by package. Sizes are uncompressed
 bytes on disk; the API also reports the gzip total (`gzipBytes`). CSS is not
 counted.
 
-Next.js output follows the gt packages' own source maps back to `src/`, while
-Vite output stops at the `dist/` files.
+GT bytes are attributed to the packages' published `dist/` files in every
+example. The Next.js example sets `turbopackInputSourceMaps: false` in analyze
+mode so Turbopack does not follow the packages' own source maps back to `src/`.
 
 ## Adding an example
 
