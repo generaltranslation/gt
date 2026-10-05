@@ -52,6 +52,7 @@ describe('t', () => {
 
     expect(lookupTranslation).toHaveBeenCalledWith('en', 'hello, brian', {
       $format: 'STRING',
+      $locale: 'en',
     });
   });
 });
