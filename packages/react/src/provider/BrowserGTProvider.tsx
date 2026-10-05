@@ -77,7 +77,9 @@ export function BrowserGTProvider(props: SharedGTProviderProps) {
     });
   }, [i18nConfig, locale, region, enableI18n, props.translations]);
 
-  const i18nStore = useI18nStore();
+  // Only create I18nStore in development on client
+  const i18nStore =
+    process.env.NODE_ENV === 'production' ? undefined : useI18nStore();
 
   return (
     <InternalGTProvider

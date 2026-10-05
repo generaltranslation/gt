@@ -21,8 +21,8 @@ export function NativeGTProvider(props: NativeGTProviderProps) {
     return new NativeConditionStore(props);
   }, [props.locale, props.region, props.enableI18n, props._reload]);
 
-  const i18nStoreRef = useRef<I18nStore | null>(null);
-  if (i18nStoreRef.current == null) {
+  const i18nStoreRef = useRef<I18nStore | undefined>(undefined);
+  if (process.env.NODE_ENV !== 'production' && !i18nStoreRef.current) {
     i18nStoreRef.current = new I18nStore();
   }
 
