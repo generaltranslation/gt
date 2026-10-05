@@ -16,7 +16,8 @@ import type {
   ManualAction,
 } from '../index.js';
 import { VITE_LOADER_FILE, viteSetup } from '../vite.js';
-import { applyEdits, getCodeStyle, getImportEdit } from './edits.js';
+import { applyEdits, getCodeStyle, getImportEdit } from '../shared/edits.js';
+import { readSourceFile, type SourceFile } from '../shared/source.js';
 import {
   getMiddlewareAction,
   registersMiddleware,
@@ -34,12 +35,7 @@ import {
   getStorageAction,
   passesLoader,
 } from './router.js';
-import {
-  DOCS_URL,
-  inspectTanStackStart,
-  readSourceFile,
-  type SourceFile,
-} from './source.js';
+import { DOCS_URL, inspectTanStackStart } from './source.js';
 
 async function writeLoader(
   ctx: BuildToolContext & { translationsDir: string }

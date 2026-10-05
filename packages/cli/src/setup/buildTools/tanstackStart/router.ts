@@ -4,19 +4,23 @@ import path from 'node:path';
 import { Libraries } from '../../../types/libraries.js';
 import { toRelativeImport, type ViteLoaderExport } from '../../setupViteSPA.js';
 import type { BuildToolContext, ManualAction } from '../index.js';
-import type { CodeStyle } from './edits.js';
+import type { CodeStyle } from '../shared/edits.js';
 import {
-  DOCS_URL,
   getLocalImport,
   getPropertyName,
   type SourceFile,
-} from './source.js';
+} from '../shared/source.js';
+import { DOCS_URL } from './source.js';
 
 /** The module-scope `initializeGT(...)` call, which must run before requests. */
 export function findInitializeCall(
   file: SourceFile
 ): t.CallExpression | undefined {
-  const local = getLocalImport(file, 'initializeGT');
+  const local = getLocalImport(
+    file,
+    'initializeGT',
+    Libraries.GT_TANSTACK_START
+  );
   if (!local) return undefined;
   for (const statement of file.statements ?? []) {
     if (

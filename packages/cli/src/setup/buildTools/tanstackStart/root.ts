@@ -7,8 +7,9 @@ import {
   getImportEdit,
   getLineIndent,
   getOwnLineIndent,
-} from './edits.js';
-import { DOCS_URL, getPropertyName, type SourceFile } from './source.js';
+} from '../shared/edits.js';
+import { getPropertyName, type SourceFile } from '../shared/source.js';
+import { DOCS_URL } from './source.js';
 
 function isJsxElementNamed(node: t.Node, name: string): node is t.JSXElement {
   return (
