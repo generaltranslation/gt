@@ -5,6 +5,7 @@ import {
   setReactI18nCache,
   getReadonlyConditionStore,
   initializeI18nConfig,
+  setGlobalTranslationsSnapshot,
 } from '@generaltranslation/react-core/pure';
 import type { I18nConfigParams } from '@generaltranslation/react-core/pure';
 import { BrowserI18nCache } from '../i18n-cache/BrowserI18nCache';
@@ -24,6 +25,7 @@ export type InitializeGTSPAParams = I18nConfigParams &
  * - i18nCache
  * - conditionStore
  * - i18nStore
+ * - translationsSnapshot
  *
  * This is SPA for browser runtime
  */
@@ -40,5 +42,8 @@ export async function initializeGTSPA(config: InitializeGTSPAParams) {
   setI18nStore(i18nStore);
 
   // Block until translations are loaded
-  await getTranslationsSnapshot(getReadonlyConditionStore().getLocale());
+  const translationsSnapshot = await getTranslationsSnapshot(
+    getReadonlyConditionStore().getLocale()
+  );
+  setGlobalTranslationsSnapshot(translationsSnapshot);
 }
