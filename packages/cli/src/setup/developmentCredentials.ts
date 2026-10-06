@@ -74,6 +74,25 @@ function projectCreationDeniedError(orgId: string, error: unknown): string {
   });
 }
 
+function keyCreationDeniedError(projectId: string, error: unknown): string {
+  return createDiagnosticMessage({
+    source: 'gt',
+    severity: 'Error',
+    whatHappened: `Development key creation was denied for project ${projectId}`,
+    why: 'Creating a key requires project:api_keys:write, and project API keys cannot create other keys',
+    fix: 'Sign in with `gt login` instead of a project API key, or use credentials that have project:api_keys:write for this project',
+    details: formatDiagnosticErrorDetails(error),
+  });
+}
+
+/** Replaces a 403 with setup guidance; other failures keep their own error. */
+function explainForbidden(diagnostic: (error: unknown) => string) {
+  return (error: unknown): never => {
+    if (!(error instanceof ApiError) || error.code !== 403) throw error;
+    throw new OnboardingError(diagnostic(error));
+  };
+}
+
 const noProjectChosenError = createDiagnosticMessage({
   source: 'gt',
   severity: 'Error',
@@ -220,19 +239,22 @@ export async function provisionDevelopmentCredentials(
     const { orgId, name } = project.create;
     const { project: created } = await api
       .createProject(orgId, { name, defaultLocale: settings.defaultLocale })
-      .catch((error: unknown) => {
-        if (!(error instanceof ApiError) || error.code !== 403) throw error;
-        throw new OnboardingError(projectCreationDeniedError(orgId, error));
-      });
+      .catch(
+        explainForbidden((error) => projectCreationDeniedError(orgId, error))
+      );
     logger.info(`Created ${created.name} (${created.id})`);
     session.step(`created project ${created.id}`);
     projectId = created.id;
     projectName = created.name;
   }
-  const { apiKey } = await api.createProjectApiKey(projectId, {
-    name: DEVELOPMENT_KEY_NAME,
-    permissions: [ProjectApiKeyPermission['PROJECT:TRANSLATIONS:GENERATE']],
-  });
+  const { apiKey } = await api
+    .createProjectApiKey(projectId, {
+      name: DEVELOPMENT_KEY_NAME,
+      permissions: [ProjectApiKeyPermission['PROJECT:TRANSLATIONS:GENERATE']],
+    })
+    .catch(
+      explainForbidden((error) => keyCreationDeniedError(projectId, error))
+    );
   session.step('created a development key');
   await setCredentials({ projectId, apiKey: apiKey.key }, framework, cwd);
   session.step('saved development credentials to .env.local');
