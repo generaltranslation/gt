@@ -204,10 +204,10 @@ export type ViteLoaderResult =
   | 'missing';
 
 /**
- * Points the generated src/loadTranslations.ts at translationsDir and adds
- * empty locale stubs. Only a template matching the previous config is
- * refreshed; other existing loaders are left unchanged. An absent loader
- * is only created with `create`.
+ * Points the generated loadTranslations.ts in sourceDirectory (src by
+ * default) at translationsDir and adds empty locale stubs. Only a template
+ * matching the previous config is refreshed; other existing loaders are left
+ * unchanged. An absent loader is only created with `create`.
  */
 export async function writeViteLoader({
   appDirectory,
