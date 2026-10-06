@@ -53,7 +53,29 @@ function oauthFailure(
   return new UserAuthError('oauth', whatHappened, fix, details);
 }
 
+/**
+ * An abort or a timeout, raw from a signal check or wrapped by the client
+ * library, which rethrows a DOMException from its own operations as a
+ * ClientError coded OAUTH_ABORT or OAUTH_TIMEOUT.
+ */
+function isCancellation(error: unknown): boolean {
+  if (error instanceof oidc.ClientError)
+    return error.code === 'OAUTH_ABORT' || error.code === 'OAUTH_TIMEOUT';
+  return (
+    error instanceof Error &&
+    ['AbortError', 'TimeoutError'].includes(error.name)
+  );
+}
+
+function cancelledFailure(): UserAuthError {
+  return oauthFailure(
+    'Sign in was cancelled or timed out',
+    'Run `gt login` again'
+  );
+}
+
 function oauthError(error: unknown, fallback: string): UserAuthError {
+  if (isCancellation(error)) return cancelledFailure();
   if (
     error instanceof oidc.AuthorizationResponseError ||
     error instanceof oidc.ResponseBodyError
@@ -83,15 +105,6 @@ function oauthError(error: unknown, fallback: string): UserAuthError {
       `${fallback}${status}`,
       'Check the authorization server and try again',
       error.code
-    );
-  }
-  if (
-    error instanceof Error &&
-    ['AbortError', 'TimeoutError'].includes(error.name)
-  ) {
-    return oauthFailure(
-      'Sign in was cancelled or timed out',
-      'Run `gt login` again'
     );
   }
   // Do not expose transport causes, callback URLs or token responses.
@@ -280,6 +293,47 @@ async function loginWithDeviceCode(
   return tokens;
 }
 
+/** How long the callback page waits to learn the account's name. */
+export const ACCOUNT_LOOKUP_TIMEOUT_MS = 3000;
+
+/**
+ * The email, else the profile name, from the userinfo endpoint, within the
+ * lookup budget; undefined when the endpoint fails, stalls, or returns
+ * claims that are not strings. Never throws. When the budget expires the
+ * request itself is aborted through `cancel`, which the configuration's
+ * fetch honors, so a stalled endpoint holds no socket open after the page
+ * has been served and the command can exit.
+ */
+async function lookupAccountName(
+  config: oidc.Configuration,
+  accessToken: string,
+  subject: string,
+  cancel: AbortController
+): Promise<string | undefined> {
+  let timer: NodeJS.Timeout | undefined;
+  const budget = new Promise<undefined>((resolve) => {
+    timer = setTimeout(() => {
+      cancel.abort();
+      resolve(undefined);
+    }, ACCOUNT_LOOKUP_TIMEOUT_MS);
+  });
+  const lookup = oidc
+    .fetchUserInfo(config, accessToken, subject)
+    .then((user) =>
+      typeof user.email === 'string'
+        ? user.email
+        : typeof user.name === 'string'
+          ? user.name
+          : undefined
+    )
+    .catch(() => undefined);
+  try {
+    return await Promise.race([lookup, budget]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** Browser S256/loopback, or device login for SSH, --no-browser and bind failure. */
 export async function login(options: LoginOptions = {}): Promise<OAuthTokens> {
   if (
@@ -292,7 +346,15 @@ export async function login(options: LoginOptions = {}): Promise<OAuthTokens> {
   }
   const authBaseUrl = options.authBaseUrl ?? getAuthBaseUrl();
   const resource = loginResource(options);
-  const config = await configuration({ ...options, authBaseUrl }).catch(
+  // Fired only by the account lookup's budget, after the exchange; nothing
+  // else is in flight on this configuration then.
+  const cancelLookup = new AbortController();
+  // The caller's signal stops the configuration's requests too, so an
+  // aborted login ends the exchange instead of finishing and storing it.
+  const signal = options.signal
+    ? AbortSignal.any([options.signal, cancelLookup.signal])
+    : cancelLookup.signal;
+  const config = await configuration({ ...options, authBaseUrl }, signal).catch(
     (error: unknown) => {
       throw oauthError(error, 'Could not discover the authorization server');
     }
@@ -311,32 +373,66 @@ export async function login(options: LoginOptions = {}): Promise<OAuthTokens> {
       code_challenge_method: 'S256',
     });
     assertEndpoint(authorizationUrl, new URL(authBaseUrl));
-    const callback = loopback.waitForCallback(async (callbackUrl) => {
-      const result = await oidc
-        .authorizationCodeGrant(
+    // The errors the page shows as a denial: the exchange read a validated
+    // access_denied response, so the page and the terminal agree.
+    const denials = new WeakSet<object>();
+    const callback = loopback.waitForCallback(
+      async (callbackUrl) => {
+        const result = await oidc
+          .authorizationCodeGrant(
+            config,
+            callbackUrl,
+            {
+              pkceCodeVerifier: codeVerifier,
+              expectedState: state,
+              idTokenExpected: true,
+            },
+            { resource }
+          )
+          .catch((error: unknown) => {
+            const failure = oauthError(
+              error,
+              'Failed to authenticate via web browser'
+            );
+            if (
+              error instanceof oidc.AuthorizationResponseError &&
+              error.error === 'access_denied'
+            )
+              denials.add(failure);
+            throw failure;
+          });
+        const tokens = { ...parseTokens(result), resource };
+        // The browser page names the account: the email when the userinfo
+        // carries one, else the profile name. The lookup is best effort: a
+        // failure, a malformed claim or a slow endpoint only leaves the name
+        // off the page.
+        const account = await lookupAccountName(
           config,
-          callbackUrl,
-          {
-            pkceCodeVerifier: codeVerifier,
-            expectedState: state,
-            idTokenExpected: true,
-          },
-          { resource }
-        )
-        .catch((error: unknown) => {
-          throw oauthError(error, 'Failed to authenticate via web browser');
-        });
-      const tokens = { ...parseTokens(result), resource };
-      await writeOAuthTokens(tokens, authBaseUrl);
-      return tokens;
-    }, options.timeoutMs);
+          tokens.accessToken,
+          tokens.subject,
+          cancelLookup
+        );
+        // The lookup swallows the caller's abort with its other errors. A
+        // login cancelled by now stores nothing, so the login it would have
+        // replaced stays as it was.
+        if (options.signal?.aborted) throw cancelledFailure();
+        await writeOAuthTokens(tokens, authBaseUrl);
+        return { tokens, account };
+      },
+      options.timeoutMs,
+      {
+        describe: (outcome) => ({ account: outcome.account }),
+        failure: (error) =>
+          error instanceof Error && denials.has(error) ? 'denied' : 'failed',
+      }
+    );
     // Printing/launching may fail before we await the listener.
     callback.catch(() => undefined);
     options.onAuthorizationUrl?.(authorizationUrl.href);
     void (options.openBrowser ?? open)(authorizationUrl.href).catch(
       () => undefined
     );
-    return await callback;
+    return (await callback).tokens;
   } finally {
     loopback.close();
   }
