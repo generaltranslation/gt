@@ -31,11 +31,14 @@ function computeNum({
     enableI18n: _enableI18n,
     localesProp,
   });
-  const gt = getI18nConfig().getGTClass();
+  const i18nConfig = getI18nConfig();
   if (children == null) return null;
   const parsedNumber =
     typeof children === 'string' ? parseFloat(children) : children;
-  return gt.formatNum(parsedNumber, { locales, ...options });
+  return i18nConfig.formatNum(parsedNumber, undefined, {
+    locales,
+    ...options,
+  });
 }
 
 export { computeNum };

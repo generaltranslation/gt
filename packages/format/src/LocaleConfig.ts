@@ -25,6 +25,10 @@ import { libraryDefaultLocale } from './settings/settings';
 import { _isSameDialect } from './locales/isSameDialect';
 import { _isSupersetLocale } from './locales/isSupersetLocale';
 import type { CustomMapping, FormatVariables } from './types';
+import {
+  getRegionProperties as _getRegionProperties,
+  type CustomRegionMapping,
+} from './locales/getRegionProperties';
 import { _resolveAliasLocale } from './locales/resolveAliasLocale';
 import { _resolveCanonicalLocale } from './locales/resolveCanonicalLocale';
 import { getCustomLocaleCode } from './locales/customLocaleMapping';
@@ -318,6 +322,45 @@ export class LocaleConfig {
 
   getLocaleProperties(locale: string) {
     return _getLocaleProperties(locale, this.defaultLocale, this.customMapping);
+  }
+
+  /**
+   * Region display properties (code, name, emoji) for a region code, with
+   * names in the target locale's language. Custom region names and emojis are
+   * derived from the customMapping regionCode entries unless a mapping is
+   * passed explicitly.
+   */
+  getRegionProperties(
+    region: string,
+    targetLocale?: string,
+    customMapping?: CustomRegionMapping
+  ) {
+    return _getRegionProperties(
+      region,
+      targetLocale,
+      customMapping ?? this.getCustomRegionMapping()
+    );
+  }
+
+  private getCustomRegionMapping(): CustomRegionMapping | undefined {
+    if (!this.customMapping) return undefined;
+    const customRegionMapping: CustomRegionMapping = {};
+    for (const [locale, lp] of Object.entries(this.customMapping)) {
+      if (
+        lp &&
+        typeof lp === 'object' &&
+        lp.regionCode &&
+        !customRegionMapping[lp.regionCode]
+      ) {
+        const { regionName: name, emoji } = lp;
+        customRegionMapping[lp.regionCode] = {
+          locale,
+          ...(name && { name }),
+          ...(emoji && { emoji }),
+        };
+      }
+    }
+    return customRegionMapping;
   }
 
   requiresTranslation(
