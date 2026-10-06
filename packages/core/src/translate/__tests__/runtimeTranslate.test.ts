@@ -166,6 +166,12 @@ describe.sequential('runtime translation requests', () => {
       code: 503,
       message: 'Service Unavailable',
     },
+    {
+      name: 'an empty body without status text',
+      response: () => new Response(null, { status: 503 }),
+      code: 503,
+      message: 'HTTP 503',
+    },
   ])(
     'preserves $name error details in ApiError',
     async ({ response, code, message }) => {
