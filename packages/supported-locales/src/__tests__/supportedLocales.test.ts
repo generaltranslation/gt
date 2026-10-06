@@ -36,4 +36,18 @@ describe('@generaltranslation/supported-locales', () => {
     expect(getSupportedLocale('en-MX')).toBe('en-MX');
     expect(getSupportedLocale('en-Latn-MX')).toBe('en-MX');
   });
+
+  it('supports Belarusian and Irish', () => {
+    expect(getSupportedLocale('be')).toBe('be');
+    expect(getSupportedLocale('be-BY')).toBe('be');
+    expect(getSupportedLocale('ga')).toBe('ga');
+    expect(getSupportedLocale('ga-IE')).toBe('ga');
+  });
+
+  it('keeps Latin-script Serbian distinct from Serbian', () => {
+    expect(getSupportedLocale('sr-Latn')).toBe('sr-Latn');
+    expect(getSupportedLocale('sr-Latn-RS')).toBe('sr-Latn');
+    expect(getSupportedLocale('sr')).toBe('sr');
+    expect(getSupportedLocale('sr-Cyrl')).toBe('sr');
+  });
 });
