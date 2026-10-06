@@ -526,13 +526,66 @@ describe('init development credentials', () => {
       new ApiError(details, 403, details)
     );
 
-    await expect(runInit()).rejects.toThrow(
-      /Development key creation was denied for project configured-project[\s\S]*gt login[\s\S]*cannot create other keys/
+    const error = await runInit().catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(Error);
+    const { message } = error as Error;
+    expect(message).toMatch(
+      /Development key creation was denied for project configured-project because GT_API_KEY is set/
     );
+    expect(message).toMatch(
+      /Remove GT_API_KEY from your shell and from \.env, \.env\.local, \.env\.production/
+    );
+    expect(message).not.toContain('gt login');
     expect(login).not.toHaveBeenCalled();
     expect(api.createProjectApiKey).toHaveBeenCalledTimes(1);
     expect(fs.existsSync(envPath())).toBe(false);
     expect(logger.endCommand).not.toHaveBeenCalled();
+  });
+
+  it('explains a denied mint for a signed-in user without blaming an API key', async () => {
+    fs.writeFileSync(
+      path.join(appDirectory, 'gt.config.json'),
+      JSON.stringify({ projectId: 'configured-project', defaultLocale: 'en' })
+    );
+    vi.mocked(api.createProjectApiKey).mockRejectedValue(
+      new ApiError('Forbidden', 403, 'Forbidden')
+    );
+
+    const error = await runInit().catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(Error);
+    const { message } = error as Error;
+    expect(message).toMatch(
+      /Development key creation was denied for project configured-project[\s\S]*project:api_keys:write/
+    );
+    expect(message).not.toMatch(/GT_API_KEY|API key/);
+    expect(fs.existsSync(envPath())).toBe(false);
+  });
+
+  it('explains a denied project creation through GT_API_KEY', async () => {
+    vi.stubEnv('GT_API_KEY', 'gtx-project-key');
+    vi.mocked(api.listOrgs).mockResolvedValue([{ id: 'o1', name: 'Acme' }]);
+    vi.mocked(api.createProject).mockRejectedValue(
+      new ApiError('Forbidden', 403, 'Forbidden')
+    );
+
+    const error = await runInit(
+      '--create-project',
+      '--project-name',
+      'New App'
+    ).catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(Error);
+    const { message } = error as Error;
+    expect(message).toMatch(
+      /Project creation was denied for organization o1 because GT_API_KEY is set/
+    );
+    expect(message).toMatch(/organization key with org:projects:create/);
+    expect(message).not.toContain('Ask an organization admin');
+    expect(login).not.toHaveBeenCalled();
+    expect(api.createProjectApiKey).not.toHaveBeenCalled();
+    expect(fs.existsSync(envPath())).toBe(false);
   });
 
   it('stops before any change or key when .env.local cannot be edited safely', async () => {
