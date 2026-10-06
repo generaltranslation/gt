@@ -12,6 +12,14 @@ const {
   mockInitializeReactGT: vi.fn(),
 }));
 
+// Run effects inline so GTProvider can be called as a plain function
+vi.mock('react', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('react')>()),
+  useEffect: (effect: () => void) => {
+    effect();
+  },
+}));
+
 vi.mock('gt-react', () => ({
   createOrUpdateBrowserConditionStore: mockCreateOrUpdateBrowserConditionStore,
   initializeGT: mockInitializeReactGT,
