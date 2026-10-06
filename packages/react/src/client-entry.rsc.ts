@@ -1,5 +1,6 @@
 // React Server Component counterpart of client-entry.client.ts, matching the
-// stubs index.rsc.ts exports for these client components.
+// stubs index.rsc.ts exports for these client components. Exists for the
+// Turbopack-specific tree-shaking reason described in client-entry.client.ts.
 
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 
