@@ -1,5 +1,12 @@
 # @generaltranslation/compiler
 
+## 1.3.61
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.5.5
+
 ## 1.3.60
 
 ### Patch Changes
