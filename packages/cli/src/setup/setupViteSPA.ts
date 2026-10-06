@@ -16,6 +16,7 @@ type SetupViteSPAOptions = {
 
 const defaultBootstrapFilename = 'gt-entry.ts';
 const alternateBootstrapFilename = 'gt-bootstrap.ts';
+const defaultSourceDirectory = 'src';
 
 function getBootstrapConflictError(filename: string): string {
   return createDiagnosticMessage({
@@ -103,7 +104,7 @@ function getModuleEntry(indexHtml: string): {
  */
 export async function inspectViteSPA(appDirectory: string) {
   const indexHtmlPath = path.join(appDirectory, 'index.html');
-  const sourceDirectory = path.join(appDirectory, 'src');
+  const sourceDirectory = path.join(appDirectory, defaultSourceDirectory);
   if (!fs.existsSync(indexHtmlPath)) {
     throw new Error(
       createDiagnosticMessage({
@@ -215,7 +216,7 @@ export async function writeViteLoader({
   translationsDir,
   previousTranslationsDir,
   create,
-  sourceDirectory = 'src',
+  sourceDirectory = defaultSourceDirectory,
 }: Omit<SetupViteSPAOptions, 'configFilepath' | 'translationsDir'> & {
   translationsDir: string;
   create: boolean;
@@ -267,7 +268,7 @@ export type ViteLoaderExport = 'default' | 'loadTranslations' | undefined;
 export async function getViteLoaderExport(
   appDirectory: string,
   loader: ViteLoaderResult,
-  sourceDirectory = 'src'
+  sourceDirectory = defaultSourceDirectory
 ): Promise<ViteLoaderExport> {
   return loader === 'custom'
     ? getLoaderExport(
