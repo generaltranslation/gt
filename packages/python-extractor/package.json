@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/python-extractor",
-  "version": "0.2.57",
+  "version": "0.2.59",
   "description": "Python source code extraction for General Translation",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -36,7 +36,8 @@
     "./constants": {
       "import": "./dist/constants.js",
       "types": "./dist/constants.d.ts"
-    }
+    },
+    "./tree-sitter-python.wasm": "./dist/tree-sitter-python.wasm"
   },
   "files": [
     "dist"
@@ -55,6 +56,7 @@
   ],
   "devDependencies": {
     "@types/node": "catalog:",
+    "tree-sitter-python": "^0.25.0",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
@@ -64,7 +66,6 @@
   },
   "dependencies": {
     "generaltranslation": "workspace:*",
-    "tree-sitter-python": "^0.25.0",
     "web-tree-sitter": "^0.26.6"
   }
 }

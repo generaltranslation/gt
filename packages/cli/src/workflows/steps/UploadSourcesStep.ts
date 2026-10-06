@@ -2,6 +2,10 @@ import type { GetFileInfoResponse } from 'generaltranslation/api';
 import type { FileToUpload } from 'generaltranslation/types';
 import { logger } from '../../console/logger.js';
 import { recordWarning } from '../../state/translateWarnings.js';
+import {
+  clearOrphanedFileNames,
+  recordOrphanedFileNames,
+} from '../../state/orphanedFileNames.js';
 import type { ApiClient } from '../../utils/api.js';
 import type { Settings } from '../../types/index.js';
 import chalk from 'chalk';
@@ -73,6 +77,7 @@ export class UploadSourcesStep {
     files: FileToUpload[];
     branchData: BranchData;
   }): Promise<FileReference[]> {
+    clearOrphanedFileNames();
     if (files.length === 0) {
       logger.info('No files to upload found... skipping upload step');
       return [];
@@ -98,6 +103,11 @@ export class UploadSourcesStep {
         files.map((f) => f.fileId)
       ),
     ]);
+
+    // Renamed and removed files, for localizing Mintlify redirects later
+    recordOrphanedFileNames(
+      orphanedFilesResult.orphanedFiles.map((orphan) => orphan.fileName)
+    );
 
     // Detect file moves
     const moves = this.detectMoves(files, orphanedFilesResult.orphanedFiles);

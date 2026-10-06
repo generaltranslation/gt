@@ -52,14 +52,19 @@ describe('gt git merge-driver command', () => {
   }
 
   it('exits with code 1 for unknown driver names', async () => {
-    const program = createProgram();
+    const program = new Command().exitOverride();
+    new BaseCLI(program, 'gt-react');
+    vi.spyOn(process.stderr, 'write').mockReturnValue(true);
 
     await expect(
       program.parseAsync(['git', 'merge-driver', 'bogus', 'a', 'b', 'c'], {
         from: 'user',
       })
-    ).rejects.toThrow('exit 1');
-    expect(logger.error).toHaveBeenCalledWith('Unknown GT merge driver: bogus');
+    ).rejects.toMatchObject({
+      code: 'commander.invalidArgument',
+      exitCode: 1,
+      message: expect.stringContaining('Allowed choices are gt-lock, gtjson'),
+    });
   });
 
   it('merges and writes the ours file for a clean gtjson merge', async () => {

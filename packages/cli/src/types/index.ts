@@ -51,6 +51,7 @@ export type OpenApiConfig = {
 export type MintlifyOptions = {
   openapi?: OpenApiConfig;
   inferTitleFromFilename?: boolean;
+  localizeRedirects?: boolean; // add localized redirects for pages renamed or removed in a translate run
 };
 
 export type SharedFlags = {
@@ -130,6 +131,7 @@ export const SUPPORTED_REACT_FRAMEWORKS = [
   'gatsby',
   'react',
   'redwood',
+  'tanstack-start',
 ] as const;
 
 export type FrameworkObject =
@@ -345,6 +347,8 @@ export type AdditionalOptions = {
     | {
         // Keep links to source pages that have no translation
         skipUntranslatedPages?: boolean;
+        // Extra JSX attribute names or globs to localize
+        attributes?: string[];
       };
   experimentalLocalizeRelativeAssets?: boolean; // Rewrites relative asset URLs in translated md/mdx files to valid paths
   experimentalAddHeaderAnchorIds?: 'mintlify' | 'default'; // Format for anchor IDs: 'mintlify' for Mintlify's native {#id} on every heading, 'default' or undefined for escaped inline \{#id\}. Can run independently of static url localization

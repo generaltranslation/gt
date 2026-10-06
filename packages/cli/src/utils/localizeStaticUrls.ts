@@ -17,12 +17,13 @@ import { parseMdxForRoundTrip, restoreAnchorIds } from './mdxAnchorSyntax.js';
 const { isMatch } = micromatch;
 
 /**
- * URL-bearing JSX attributes that we localize. Intentionally limited to link
- * attributes (`href`) — NOT asset attributes like `src`, which usually point at
- * shared, locale-agnostic assets (e.g. `/docs/images/...`) that would 404 if a
- * locale prefix were added. Extend deliberately.
+ * URL-bearing JSX attributes that we localize by default. Intentionally limited
+ * to link attributes (`href`) — NOT asset attributes like `src`, which usually
+ * point at shared, locale-agnostic assets (e.g. `/docs/images/...`) that would
+ * 404 if a locale prefix were added. Projects add their own link attributes
+ * with `experimentalLocalizeStaticUrls.attributes`.
  */
-const LOCALIZABLE_URL_ATTRIBUTES = new Set(['href']);
+const DEFAULT_URL_ATTRIBUTES = ['href'];
 
 // Docs routing conventions: page file formats, and the file that serves a
 // folder URL (`/a/` -> `a/index.mdx`).
@@ -47,7 +48,7 @@ function findPage(url: string): string | undefined {
  * its mapped output path or at the localized URL. URLs with no source page,
  * such as pages generated from an OpenAPI spec, are not missing a translation.
  */
-function translationMissing(
+export function translationMissing(
   url: string,
   localizedUrl: string,
   localizedFiles: Record<string, string>
@@ -80,6 +81,7 @@ function translationMissing(
 function localizeUrlsInExpressionSource(
   source: string,
   transformUrl: (url: string, linkType: 'markdown' | 'href') => string | null,
+  urlAttributes: string[],
   rootStringIsUrl: boolean = false
 ): string {
   if (!source.trim()) return source;
@@ -155,7 +157,7 @@ function localizeUrlsInExpressionSource(
     if (
       node.type === 'JSXAttribute' &&
       node.name?.type === 'JSXIdentifier' &&
-      LOCALIZABLE_URL_ATTRIBUTES.has(node.name.name) &&
+      isMatch(node.name.name, urlAttributes) &&
       node.value
     ) {
       if (node.value.type === 'StringLiteral') {
@@ -227,6 +229,11 @@ export default async function localizeStaticUrls(
   const skipUntranslatedPages =
     typeof localizeOptions === 'object' &&
     localizeOptions.skipUntranslatedPages === true;
+  const urlAttributes = [
+    ...DEFAULT_URL_ATTRIBUTES,
+    ...((typeof localizeOptions === 'object' && localizeOptions.attributes) ||
+      []),
+  ];
 
   // Use filtered locales if provided, otherwise use all locales
   const locales = targetLocales || settings.locales;
@@ -278,7 +285,9 @@ export default async function localizeStaticUrls(
             settings.options?.experimentalHideDefaultLocale || false,
             settings.options?.docsUrlPattern,
             settings.options?.excludeStaticUrls,
-            settings.options?.baseDomain
+            settings.options?.baseDomain,
+            undefined,
+            urlAttributes
           );
           // Only write the file if there were changes
           if (result.hasChanges) {
@@ -319,7 +328,8 @@ export default async function localizeStaticUrls(
             settings.options?.docsUrlPattern,
             settings.options?.excludeStaticUrls,
             settings.options?.baseDomain,
-            skipUntranslatedPages ? filesMap : undefined
+            skipUntranslatedPages ? filesMap : undefined,
+            urlAttributes
           );
           // Only write the file if there were changes
           if (result.hasChanges) {
@@ -499,8 +509,9 @@ function transformMdxUrls(
   hideDefaultLocale: boolean,
   pattern: string = '/[locale]',
   exclude: string[] = [],
-  baseDomain?: string,
-  localizedFiles?: Record<string, string>
+  baseDomain: string | undefined,
+  localizedFiles: Record<string, string> | undefined,
+  urlAttributes: string[]
 ): UrlTransformResult {
   const transformedUrls: Array<{
     originalPath: string;
@@ -671,7 +682,7 @@ function transformMdxUrls(
 
       // Plain string attribute value, e.g. <a href="/docs/x">
       if (typeof attr.value === 'string') {
-        if (LOCALIZABLE_URL_ATTRIBUTES.has(attr.name)) {
+        if (isMatch(attr.name, urlAttributes)) {
           const newUrl = transformUrl(attr.value, 'href');
           if (newUrl) {
             attr.value = newUrl;
@@ -694,7 +705,8 @@ function transformMdxUrls(
         const newValue = localizeUrlsInExpressionSource(
           attr.value.value,
           transformUrl,
-          LOCALIZABLE_URL_ATTRIBUTES.has(attr.name)
+          urlAttributes,
+          isMatch(attr.name, urlAttributes)
         );
         if (newValue !== attr.value.value) {
           attr.value.value = newValue;
@@ -710,7 +722,8 @@ function transformMdxUrls(
     if (typeof exprNode.value === 'string' && exprNode.value) {
       const newValue = localizeUrlsInExpressionSource(
         exprNode.value,
-        transformUrl
+        transformUrl,
+        urlAttributes
       );
       if (newValue !== exprNode.value) {
         exprNode.value = newValue;
@@ -833,8 +846,9 @@ function localizeStaticUrlsForFile(
   hideDefaultLocale: boolean,
   pattern: string = '/[locale]', // eg /docs/[locale] or /[locale]
   exclude: string[] = [],
-  baseDomain?: string,
-  localizedFiles?: Record<string, string>
+  baseDomain: string | undefined,
+  localizedFiles: Record<string, string> | undefined,
+  urlAttributes: string[]
 ): UrlTransformResult {
   // Use AST-based transformation for MDX files
   return transformMdxUrls(
@@ -845,7 +859,8 @@ function localizeStaticUrlsForFile(
     pattern,
     exclude,
     baseDomain || '',
-    localizedFiles
+    localizedFiles,
+    urlAttributes
   );
 }
 

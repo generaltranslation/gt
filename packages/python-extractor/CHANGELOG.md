@@ -1,5 +1,18 @@
 # @generaltranslation/python-extractor
 
+## 0.2.59
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.5.4
+
+## 0.2.58
+
+### Patch Changes
+
+- [#2362](https://github.com/generaltranslation/gt/pull/2362) [`b7c2a15`](https://github.com/generaltranslation/gt/commit/b7c2a154b35ed7348a078d1319ee8b0e90b4669e) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Bundle the tree-sitter Python grammar WASM instead of depending on `tree-sitter-python`, so installs no longer trigger its native build script (which pnpm 11 blocks by default).
+
 ## 0.2.57
 
 ### Patch Changes

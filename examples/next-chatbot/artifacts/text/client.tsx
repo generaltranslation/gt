@@ -157,9 +157,7 @@ export const textArtifact = new Artifact<'text', TextArtifactMetadata | null>({
       description: 'Add final polish',
       onClick: ({ appendMessage }) => {
         appendMessage({
-          role: 'user',
-          content:
-            'Please add final polish and check for grammar, add section titles for better structure, and ensure everything reads smoothly.',
+          text: 'Please add final polish and check for grammar, add section titles for better structure, and ensure everything reads smoothly.',
         });
       },
     },
@@ -168,9 +166,7 @@ export const textArtifact = new Artifact<'text', TextArtifactMetadata | null>({
       description: 'Request suggestions',
       onClick: ({ appendMessage }) => {
         appendMessage({
-          role: 'user',
-          content:
-            'Please add suggestions you have that could improve the writing.',
+          text: 'Please add suggestions you have that could improve the writing.',
         });
       },
     },

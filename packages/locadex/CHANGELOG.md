@@ -1,5 +1,33 @@
 # locadex
 
+## 1.0.240
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.25.1
+
+## 1.0.239
+
+### Patch Changes
+
+- Updated dependencies [[`64db558`](https://github.com/generaltranslation/gt/commit/64db558404e9124f9f6101262a69346e66e54dca), [`df1e47a`](https://github.com/generaltranslation/gt/commit/df1e47a3c8767546f61608c25d6183af96a7da82), [`c725b79`](https://github.com/generaltranslation/gt/commit/c725b797bf00e75241306f15b2690a8b467e80b5)]:
+  - gt@2.25.0
+
+## 1.0.238
+
+### Patch Changes
+
+- Updated dependencies [[`64f5530`](https://github.com/generaltranslation/gt/commit/64f553012418753076aff2782c876e66ee7da97a), [`b7c2a15`](https://github.com/generaltranslation/gt/commit/b7c2a154b35ed7348a078d1319ee8b0e90b4669e), [`168665b`](https://github.com/generaltranslation/gt/commit/168665bb48f60ba1d68d32137b777e6355f61b64), [`d7f8f92`](https://github.com/generaltranslation/gt/commit/d7f8f9284e3afcf530e5cc97d0f6dc1b93c380e4), [`aa64eb4`](https://github.com/generaltranslation/gt/commit/aa64eb4f5b8bbaac2d995dd76368ea7cad47f92f), [`2856ede`](https://github.com/generaltranslation/gt/commit/2856edeb435795d48ddfae914712ea852a1daf49), [`cb8ff12`](https://github.com/generaltranslation/gt/commit/cb8ff122716f8878f5b0ef95c908aca7b7a02090)]:
+  - gt@2.24.0
+
+## 1.0.237
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.23.2
+
 ## 1.0.236
 
 ### Patch Changes

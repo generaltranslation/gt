@@ -1,3 +1,4 @@
+import { isValidLocale } from 'generaltranslation';
 import { describe, expect, it } from 'vitest';
 import { getSupportedLocale, listSupportedLocales } from '../index';
 
@@ -15,6 +16,19 @@ describe('@generaltranslation/supported-locales', () => {
     expect(listSupportedLocales()).toContain('ar-OM');
     expect(getSupportedLocale('ar-OM')).toBe('ar-OM');
     expect(getSupportedLocale('ar-Arab-OM')).toBe('ar-OM');
+  });
+
+  it.each(listSupportedLocales())(
+    'accepts listed locale %s and resolves it to a listed locale',
+    (locale) => {
+      expect(isValidLocale(locale)).toBe(true);
+      expect(listSupportedLocales()).toContain(getSupportedLocale(locale));
+    }
+  );
+
+  it('supports Greek (Greece)', () => {
+    expect(listSupportedLocales()).toContain('el-GR');
+    expect(getSupportedLocale('el-GR')).toBe('el-GR');
   });
 
   it('supports Mexican English', () => {

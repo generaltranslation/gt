@@ -1,5 +1,12 @@
 # generaltranslation
 
+## 9.5.4
+
+### Patch Changes
+
+- Updated dependencies [[`7fa27b2`](https://github.com/generaltranslation/gt/commit/7fa27b2f2e8d33d244b30622b25dcd5d3e5d1cfa)]:
+  - @generaltranslation/api@0.5.2
+
 ## 9.5.3
 
 ### Patch Changes

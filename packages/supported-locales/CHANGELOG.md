@@ -1,5 +1,18 @@
 # @generaltranslation/supported-locales
 
+## 2.1.40
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.5.4
+
+## 2.1.39
+
+### Patch Changes
+
+- [#2370](https://github.com/generaltranslation/gt/pull/2370) [`f9fc280`](https://github.com/generaltranslation/gt/commit/f9fc28057c4352c367406ff4418dd7b75b5111fd) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - List Greek (Greece) as `el-GR` instead of the invalid tag `el-EL`, which `isValidLocale` rejects.
+
 ## 2.1.38
 
 ### Patch Changes

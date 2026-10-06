@@ -1,0 +1,207 @@
+{
+  "31b339eccc36d936": "Alimentation transmise à votre ordinateur portable",
+  "478e4760193a9042": "Ports USB-C, tous à pleine vitesse",
+  "7138a9fec73f867f": "Bande passante de données partagée",
+  "3743a90483f06f0a": "Poids sans le câble",
+  "f9a7da8c221623c5": "Graphite",
+  "fb08597714c8afd3": "Argent",
+  "9d6a84dcb34cb1d2": "Panier ({count})",
+  "a5c657d3ca1226e3": "Configurer la vôtre",
+  "24eb8f5407280920": "Lire la fiche technique",
+  "1ca2facc399b6d4c": "Finition",
+  "7637a571ff5e01b1": "Quantité",
+  "4b71561e661a9664": "Diminuer la quantité",
+  "6f9647f746db650d": "Augmenter la quantité",
+  "b227a54bbdb9b6cf": "Articles",
+  "f17b1e80db62c71d": "Sous-total",
+  "03d5f624d2a51612": "Expédition",
+  "dba25d3fe774a633": "Ajouter au panier",
+  "6ed27ff3a6de97a2": [
+    {
+      "t": "p",
+      "i": 1,
+      "c": "Matériel de bureau, modèle H4"
+    },
+    {
+      "t": "h1",
+      "i": 2,
+      "c": "Un seul câble pour tout le bureau."
+    },
+    {
+      "t": "p",
+      "i": 3,
+      "c": "Halyard est une station d’accueil USB-C à quatre ports. Elle transmet 100 W à votre ordinateur portable et tient dans une poche de veste."
+    }
+  ],
+  "c0d5c237727811ad": {
+    "t": "p",
+    "i": 1,
+    "c": [
+      "À partir de ",
+      {
+        "i": 2,
+        "k": "_gt_cost_2",
+        "v": "c"
+      },
+      ". Prochain lot expédié le",
+      " ",
+      {
+        "i": 3,
+        "k": "_gt_date_3",
+        "v": "d"
+      },
+      "."
+    ]
+  },
+  "46ae1289afb8f474": [
+    {
+      "t": "p",
+      "i": 1,
+      "c": "Configurer"
+    },
+    {
+      "t": "h2",
+      "i": 2,
+      "c": "Choisissez une finition et une quantité."
+    }
+  ],
+  "329b0ffb2be64f39": {
+    "t": "p",
+    "i": 1,
+    "c": {
+      "t": "Branch",
+      "i": 2,
+      "d": {
+        "b": {
+          "graphite": {
+            "t": "C3",
+            "i": 3,
+            "c": "Aluminium anodisé graphite, dessus microbillé."
+          },
+          "silver": {
+            "t": "C3",
+            "i": 3,
+            "c": "Aluminium argent brossé, usiné dans un seul bloc."
+          }
+        },
+        "t": "b"
+      },
+      "c": "Aluminium anodisé."
+    }
+  },
+  "eda6de344fac9922": {
+    "t": "p",
+    "i": 1,
+    "c": "Votre commande"
+  },
+  "f10ce9489f97836f": {
+    "t": "Plural",
+    "i": 1,
+    "d": {
+      "b": {
+        "one": {
+          "t": "C2",
+          "i": 2,
+          "c": "Une station d’accueil"
+        },
+        "other": {
+          "t": "C2",
+          "i": 2,
+          "c": [
+            {
+              "i": 3,
+              "k": "_gt_n_3",
+              "v": "n"
+            },
+            " stations d’accueil"
+          ]
+        }
+      },
+      "t": "p"
+    }
+  },
+  "c380115429f46f8d": {
+    "t": "p",
+    "i": 1,
+    "c": {
+      "t": "Plural",
+      "i": 2,
+      "d": {
+        "b": {
+          "one": {
+            "t": "C3",
+            "i": 3,
+            "c": "Une seule unité restante dans cette finition."
+          },
+          "other": {
+            "t": "C3",
+            "i": 3,
+            "c": [
+              {
+                "i": 4,
+                "k": "_gt_n_4",
+                "v": "n"
+              },
+              " unités restantes dans cette finition."
+            ]
+          }
+        },
+        "t": "p"
+      }
+    }
+  },
+  "43b9dc23dbbdd692": {
+    "t": "p",
+    "i": 1,
+    "c": [
+      "Finition ",
+      {
+        "i": 2,
+        "k": "_gt_value_2",
+        "v": "v"
+      },
+      " ajoutée à votre panier. Le paiement est désactivé dans cet exemple."
+    ]
+  },
+  "5126a81a448fa55d": [
+    {
+      "t": "h3",
+      "i": 1,
+      "c": "Dans la boîte"
+    },
+    {
+      "t": "p",
+      "i": 2,
+      "c": "La station, un câble USB-C tressé de 1 m et un patin en feutre pour le dessous."
+    }
+  ],
+  "a7da62bdf614bdbe": [
+    {
+      "t": "h3",
+      "i": 1,
+      "c": "Compatibilité"
+    },
+    {
+      "t": "p",
+      "i": 2,
+      "c": "Compatible avec tout ordinateur portable USB-C ou Thunderbolt. Aucun pilote à installer."
+    }
+  ],
+  "0cc257c0d0732a69": [
+    {
+      "t": "h3",
+      "i": 1,
+      "c": "Garantie"
+    },
+    {
+      "t": "p",
+      "i": 2,
+      "c": "Deux ans sur les pièces et la main-d’œuvre. Les réparations sont renvoyées sous cinq jours ouvrés."
+    }
+  ],
+  "4dcdc30b389b12b8": {
+    "t": "p",
+    "i": 1,
+    "c": "Halyard est un produit fictif. Cette page est un exemple gt-react."
+  }
+}

@@ -1,5 +1,57 @@
 # gtx-cli
 
+## 2.25.1
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.5.4
+  - @generaltranslation/python-extractor@0.2.59
+  - @generaltranslation/supported-locales@2.1.40
+  - @generaltranslation/vue-extractor@0.1.18
+
+## 2.25.0
+
+### Minor Changes
+
+- [#2378](https://github.com/generaltranslation/gt/pull/2378) [`df1e47a`](https://github.com/generaltranslation/gt/commit/df1e47a3c8767546f61608c25d6183af96a7da82) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Add `gt api --list` to print every API operation as `METHOD path operationId summary`, and accept an endpoint with `gt api --spec <endpoint>` to print only the matching operations with schema references resolved, plus the `components` (recursive schemas and security schemes) they still refer to. The endpoint can be an operation ID, a spec path, or a concrete request path such as `/v2/project/info/abc`.
+
+### Patch Changes
+
+- [#2382](https://github.com/generaltranslation/gt/pull/2382) [`64db558`](https://github.com/generaltranslation/gt/commit/64db558404e9124f9f6101262a69346e66e54dca) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add configurable attribute localization to `localizeStaticUrls`
+
+- [#2380](https://github.com/generaltranslation/gt/pull/2380) [`c725b79`](https://github.com/generaltranslation/gt/commit/c725b797bf00e75241306f15b2690a8b467e80b5) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Include GT JSONs in `save-local`
+
+## 2.24.0
+
+### Minor Changes
+
+- [#2350](https://github.com/generaltranslation/gt/pull/2350) [`2856ede`](https://github.com/generaltranslation/gt/commit/2856edeb435795d48ddfae914712ea852a1daf49) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - `gt init` now detects TanStack Start apps and sets them up with `gt-tanstack-start`: it installs the runtime, writes `src/loadTranslations.ts`, adds `gtMiddleware` in `src/start.ts`, calls `initializeGT` in `src/router.tsx`, and wraps the create-start root route in `GTProvider`. Root routes whose component renders a document component from the same file, such as the Fumadocs layout, are configured in that document. Files it does not recognize are left unchanged and reported as manual steps. Vite setup now reports a missing `index.html` instead of crashing, and `gt configure` on Vite apps no longer reports an unchanged `src/loadTranslations.ts` as updated.
+
+### Patch Changes
+
+- [#2376](https://github.com/generaltranslation/gt/pull/2376) [`64f5530`](https://github.com/generaltranslation/gt/commit/64f553012418753076aff2782c876e66ee7da97a) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - The argument parser now rejects credential flag pairs (`--[no-]dev-credentials` with `--[no-]live-translations`) before setup runs, including matching pairs like `--dev-credentials --live-translations`. Unknown `gt git merge-driver` names and invalid `--timeout` values now get the standard argument error and exit code 1 instead of a custom error or an uncaught exception.
+
+- [#2362](https://github.com/generaltranslation/gt/pull/2362) [`b7c2a15`](https://github.com/generaltranslation/gt/commit/b7c2a154b35ed7348a078d1319ee8b0e90b4669e) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - `gt` now bundles dictionary files with `esbuild-wasm` instead of native `esbuild`, so installing `gt` runs no dependency build scripts. With pnpm 11's default `strictDepBuilds`, installing `gt` and running `gt init` no longer fail because esbuild's build script was not approved.
+
+- [#2365](https://github.com/generaltranslation/gt/pull/2365) [`168665b`](https://github.com/generaltranslation/gt/commit/168665bb48f60ba1d68d32137b777e6355f61b64) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - `gt init` and `gt configure` reruns that change nothing no longer rewrite `gt.config.json` or the generated `loadTranslations.js`, and no longer list them as completed steps. When `gt.config.json` does change, it keeps its indentation and trailing newline, and the completed step says whether the file was created or updated. If `--defaults` leaves the development credentials question open, the error now asks for `--dev-credentials` or `--no-dev-credentials` and no longer suggests adding `--defaults`. Passing `--no-dev-credentials` with `--live-translations`, or `--dev-credentials` with `--no-live-translations`, now fails before any change instead of ignoring one of the flags.
+
+- [#2366](https://github.com/generaltranslation/gt/pull/2366) [`d7f8f92`](https://github.com/generaltranslation/gt/commit/d7f8f9284e3afcf530e5cc97d0f6dc1b93c380e4) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - When you're signed out, `gt init`'s "set up a project ID and hot-reload key" prompt now says it will sign you in to General Translation, and still defaults to Yes. A stored login that is obsolete or invalid is treated as signed out, so answering Yes signs you in again instead of failing. After creating a development key, setup names the key and the project (name and ID) it was created for; the key itself is never printed.
+
+- [#2361](https://github.com/generaltranslation/gt/pull/2361) [`aa64eb4`](https://github.com/generaltranslation/gt/commit/aa64eb4f5b8bbaac2d995dd76368ea7cad47f92f) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add `options.mintlify.localizeRedirects` to add localized copies of English redirects for pages that `gt translate` renamed or removed in the same run. Existing redirects are left untouched.
+
+- [#2363](https://github.com/generaltranslation/gt/pull/2363) [`cb8ff12`](https://github.com/generaltranslation/gt/commit/cb8ff122716f8878f5b0ef95c908aca7b7a02090) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - `gt init` now detects the package manager when run inside a workspace member (for example `apps/web` in a pnpm, npm, yarn or bun workspace) by reading the nearest lockfile, `packageManager` or `devEngines` field up to the git root, instead of asking you to pick one. Detection now uses `package-manager-detector`.
+
+- Updated dependencies [[`b7c2a15`](https://github.com/generaltranslation/gt/commit/b7c2a154b35ed7348a078d1319ee8b0e90b4669e)]:
+  - @generaltranslation/python-extractor@0.2.58
+
+## 2.23.2
+
+### Patch Changes
+
+- Updated dependencies [[`f9fc280`](https://github.com/generaltranslation/gt/commit/f9fc28057c4352c367406ff4418dd7b75b5111fd)]:
+  - @generaltranslation/supported-locales@2.1.39
+
 ## 2.23.1
 
 ### Patch Changes

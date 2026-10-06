@@ -1,4 +1,4 @@
-import esbuild from 'esbuild';
+import esbuild from 'esbuild-wasm';
 import fs from 'node:fs';
 import path from 'node:path';
 import { displayResolvedPaths } from '../../console/logging.js';

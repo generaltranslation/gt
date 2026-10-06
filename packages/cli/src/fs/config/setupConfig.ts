@@ -1,5 +1,9 @@
 import fs from 'node:fs';
-import { displayCreatedConfigFile } from '../../console/logging.js';
+import { isDeepStrictEqual } from 'node:util';
+import {
+  displayCreatedConfigFile,
+  displayUpdatedConfigFile,
+} from '../../console/logging.js';
 import { FilesOptions, SupportedFrameworks } from '../../types/index.js';
 import {
   createDiagnosticMessage,
@@ -78,22 +82,28 @@ export function mergeSetupConfig(
   return mergedContent;
 }
 
+export type SetupConfigChange = 'created' | 'updated' | 'unchanged';
+
 /**
- * Creates the config file, or applies the update to the existing one.
+ * Creates the config file, or applies the update to the existing one. An
+ * update keeps the file's indentation and trailing newline; a config that
+ * already has the update is not rewritten.
  * @param {string} configFilepath - The path to the config file.
  * @param {SetupConfigUpdate} options - The values setup resolved.
+ * @returns Whether the config was created, updated, or left unchanged.
  * @throws When the existing file is not valid JSON or cannot be written.
  */
-export async function createOrUpdateConfig(
+export async function applySetupConfig(
   configFilepath: string,
   options: SetupConfigUpdate
-): Promise<string> {
+): Promise<SetupConfigChange> {
   try {
     let oldContent: Record<string, unknown> = {};
-    if (fs.existsSync(configFilepath)) {
-      const parsed = JSON.parse(
-        await fs.promises.readFile(configFilepath, 'utf-8')
-      );
+    const oldText = fs.existsSync(configFilepath)
+      ? await fs.promises.readFile(configFilepath, 'utf-8')
+      : undefined;
+    if (oldText !== undefined) {
+      const parsed = JSON.parse(oldText);
       if (
         typeof parsed !== 'object' ||
         parsed === null ||
@@ -103,15 +113,29 @@ export async function createOrUpdateConfig(
       oldContent = parsed as Record<string, unknown>;
     }
 
-    const mergedJsonContent = JSON.stringify(
-      mergeSetupConfig(oldContent, options),
-      null,
-      2
-    );
-    await fs.promises.writeFile(configFilepath, mergedJsonContent, 'utf-8');
+    const mergedContent = mergeSetupConfig(oldContent, options);
+    if (oldText !== undefined && isDeepStrictEqual(mergedContent, oldContent))
+      return 'unchanged';
 
-    // show update in console
-    displayCreatedConfigFile(configFilepath);
+    // Nested keys are indented further, so the shallowest key line is the
+    // file's own indent unit.
+    const indent =
+      [...(oldText ?? '').matchAll(/^[ \t]+(?=")/gm)]
+        .map(([match]) => match)
+        .sort((a, b) => a.length - b.length)[0] ?? 2;
+    const newline = oldText === undefined || oldText.endsWith('\n') ? '\n' : '';
+    await fs.promises.writeFile(
+      configFilepath,
+      `${JSON.stringify(mergedContent, null, indent)}${newline}`,
+      'utf-8'
+    );
+
+    if (oldText === undefined) {
+      displayCreatedConfigFile(configFilepath);
+      return 'created';
+    }
+    displayUpdatedConfigFile(configFilepath);
+    return 'updated';
   } catch (error) {
     throw new Error(
       createDiagnosticMessage({
@@ -123,5 +147,20 @@ export async function createOrUpdateConfig(
       })
     );
   }
+}
+
+/**
+ * Same as {@link applySetupConfig}, keeping the published contract of
+ * returning the config filepath.
+ * @param {string} configFilepath - The path to the config file.
+ * @param {SetupConfigUpdate} options - The values setup resolved.
+ * @returns The config filepath.
+ * @throws When the existing file is not valid JSON or cannot be written.
+ */
+export async function createOrUpdateConfig(
+  configFilepath: string,
+  options: SetupConfigUpdate
+): Promise<string> {
+  await applySetupConfig(configFilepath, options);
   return configFilepath;
 }
