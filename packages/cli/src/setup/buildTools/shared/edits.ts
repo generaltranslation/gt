@@ -1,7 +1,7 @@
 // Offset-based source edits that follow the file's own code style.
 import * as t from '@babel/types';
 
-type Edit = { start: number; end?: number; text: string };
+export type Edit = { start: number; end?: number; text: string };
 
 export type CodeStyle = {
   quote: string;
