@@ -514,6 +514,23 @@ describe('createApiClient errors', () => {
     ).rejects.toMatchObject({ code: 503, message: 'Service Unavailable' });
   });
 
+  it('falls back to the status text for an HTML error page', async () => {
+    const htmlClient = createApiClient({
+      baseUrl: 'https://example.com',
+      fetch: async () =>
+        new Response('<html><body>Bad Gateway</body></html>', {
+          status: 502,
+          statusText: 'Bad Gateway',
+          headers: { 'Content-Type': 'text/html; charset=utf-8' },
+        }),
+      retryPolicy: 'none',
+    });
+
+    await expect(
+      htmlClient.get({ url: '/test', throwOnError: true })
+    ).rejects.toMatchObject({ code: 502, message: 'Bad Gateway' });
+  });
+
   it('keeps the decoded body in non-throwing results', async () => {
     const result = await client.get({ url: '/test' });
 
