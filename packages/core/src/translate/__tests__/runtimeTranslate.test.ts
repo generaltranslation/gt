@@ -159,6 +159,13 @@ describe.sequential('runtime translation requests', () => {
       code: 502,
       message: 'non-JSON runtime error',
     },
+    {
+      name: 'an empty body',
+      response: () =>
+        new Response(null, { status: 503, statusText: 'Service Unavailable' }),
+      code: 503,
+      message: 'Service Unavailable',
+    },
   ])(
     'preserves $name error details in ApiError',
     async ({ response, code, message }) => {

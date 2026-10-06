@@ -19,15 +19,6 @@ export const translationRequestFailedError = (error: string) =>
     details: error,
   });
 
-export const apiError = (status: number, statusText: string, error: string) =>
-  createDiagnosticMessage({
-    source: GT_SOURCE,
-    severity: 'Error',
-    whatHappened: `The translation API returned ${status} ${statusText}`,
-    fix: 'Check the request configuration and try again',
-    details: error,
-  });
-
 export const noTargetLocaleProvidedError = (functionName: string) =>
   createDiagnosticMessage({
     source: GT_SOURCE,
