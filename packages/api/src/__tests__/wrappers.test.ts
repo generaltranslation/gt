@@ -531,6 +531,34 @@ describe('createApiClient errors', () => {
     ).rejects.toMatchObject({ code: 502, message: 'Bad Gateway' });
   });
 
+  it('falls back to the status code for an HTML error page without status text', async () => {
+    const htmlClient = createApiClient({
+      baseUrl: 'https://example.com',
+      fetch: async () =>
+        new Response('<html><body>Bad Gateway</body></html>', {
+          status: 502,
+          headers: { 'Content-Type': 'text/html; charset=utf-8' },
+        }),
+      retryPolicy: 'none',
+    });
+
+    await expect(
+      htmlClient.get({ url: '/test', throwOnError: true })
+    ).rejects.toMatchObject({ code: 502, message: 'HTTP 502' });
+  });
+
+  it('falls back to the status code for an empty error body without status text', async () => {
+    const emptyClient = createApiClient({
+      baseUrl: 'https://example.com',
+      fetch: async () => new Response(null, { status: 503 }),
+      retryPolicy: 'none',
+    });
+
+    await expect(
+      emptyClient.get({ url: '/test', throwOnError: true })
+    ).rejects.toMatchObject({ code: 503, message: 'HTTP 503' });
+  });
+
   it('keeps the decoded body in non-throwing results', async () => {
     const result = await client.get({ url: '/test' });
 

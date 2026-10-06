@@ -12,7 +12,11 @@ export class ApiError extends Error {
   /** Builds the error for a failed response from its decoded body. */
   static fromResponse(body: unknown, response: Response): ApiError {
     // `||`: interceptors see an empty body as '', before the client maps it to {}.
-    const message = messageOf(body, response) || response.statusText;
+    // statusText is empty for HTTP/2 and many proxies, so end with the code.
+    const message =
+      messageOf(body, response) ||
+      response.statusText ||
+      `HTTP ${response.status}`;
     return new ApiError(message, response.status, message);
   }
 }
