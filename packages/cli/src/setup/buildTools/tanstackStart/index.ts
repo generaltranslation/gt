@@ -17,6 +17,7 @@ import type {
 } from '../index.js';
 import { VITE_LOADER_FILE, viteSetup } from '../vite.js';
 import { applyEdits, getCodeStyle, getImportEdit } from '../shared/edits.js';
+import { passesLoader } from '../shared/initializeGT.js';
 import { rendersElement } from '../shared/jsx.js';
 import { readSourceFile, type SourceFile } from '../shared/source.js';
 import {
@@ -29,7 +30,6 @@ import {
   findInitializeCall,
   getRouterLines,
   getStorageAction,
-  passesLoader,
 } from './router.js';
 import { DOCS_URL, inspectTanStackStart } from './source.js';
 
