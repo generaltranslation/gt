@@ -26,7 +26,7 @@ vi.mock('gt-i18n/internal', async (importOriginal) => ({
   getI18nConfig: mockGetI18nConfig,
 }));
 
-vi.mock('gt-react', () => ({
+vi.mock('gt-react/client-entry', () => ({
   GTProvider: mockGTProvider,
   LocaleSelector: () => null,
   RegionSelector: () => null,
