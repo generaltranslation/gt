@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import { devNull, tmpdir } from 'node:os';
 import path from 'node:path';
+import { ApiError } from 'generaltranslation/errors';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../utils/api.js', () => ({
@@ -421,11 +422,11 @@ describe('init development credentials', () => {
     vi.stubEnv('GT_API_KEY', 'gtx-project-key');
     vi.mocked(hasLogin).mockResolvedValue(false);
     vi.mocked(api.listProjects).mockRejectedValueOnce(
-      new Error('Missing required permission: project:files:read (403)')
+      new Error('Invalid API key (401)')
     );
 
     await expect(runInit()).rejects.toThrow(
-      /Failed to set up the development credentials[\s\S]*project:files:read/
+      /Failed to set up the development credentials[\s\S]*Invalid API key/
     );
     expect(login).not.toHaveBeenCalled();
     expect(api.createProjectApiKey).not.toHaveBeenCalled();
@@ -516,16 +517,17 @@ describe('init development credentials', () => {
     expect(loggedOutput()).not.toContain('gtx-secret-development-key');
   });
 
-  it('surfaces a failed mint through the tooling key without falling back to login', async () => {
+  it('explains a denied mint through the tooling key without falling back to login', async () => {
     setUpLocalVite(true);
     vi.stubEnv('GT_API_KEY', 'gtx-tooling-key');
     vi.stubEnv('VITE_GT_PROJECT_ID', 'configured-project');
+    const details = 'Project API keys cannot create other keys';
     vi.mocked(api.createProjectApiKey).mockRejectedValue(
-      new Error('insufficient permissions (403)')
+      new ApiError(details, 403, details)
     );
 
     await expect(runInit()).rejects.toThrow(
-      /Failed to set up the development credentials[\s\S]*insufficient permissions/
+      /Development key creation was denied for project configured-project[\s\S]*gt login[\s\S]*cannot create other keys/
     );
     expect(login).not.toHaveBeenCalled();
     expect(api.createProjectApiKey).toHaveBeenCalledTimes(1);

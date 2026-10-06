@@ -775,10 +775,7 @@ describe('CLI API client', () => {
 
   it('surfaces a forbidden listing as an ApiError', async () => {
     fetchMock.mockResolvedValue(
-      Response.json(
-        { error: 'Missing required permission: project:files:read' },
-        { status: 403 }
-      )
+      Response.json({ error: 'Forbidden' }, { status: 403 })
     );
 
     const error = await api.listProjects().catch((caught: unknown) => caught);
@@ -786,7 +783,7 @@ describe('CLI API client', () => {
     expect(error).toBeInstanceOf(ApiError);
     expect(error).toMatchObject({
       code: 403,
-      message: 'Missing required permission: project:files:read',
+      message: 'Forbidden',
     });
   });
 
