@@ -7,36 +7,14 @@ import {
   getImportEdit,
   getLineIndent,
   getOwnLineIndent,
-} from './edits.js';
-import { DOCS_URL, getPropertyName, type SourceFile } from './source.js';
-
-function isJsxElementNamed(node: t.Node, name: string): node is t.JSXElement {
-  return (
-    node.type === 'JSXElement' &&
-    t.isJSXIdentifier(node.openingElement.name, { name })
-  );
-}
-
-function isChildrenSlot(node: t.Node): boolean {
-  return (
-    node.type === 'JSXExpressionContainer' &&
-    node.expression.type === 'Identifier' &&
-    node.expression.name === 'children'
-  );
-}
-
-export function rendersElement(
-  nodes: (t.Node | undefined)[],
-  name: string
-): boolean {
-  let found = false;
-  for (const node of nodes) {
-    t.traverseFast(node, (child) => {
-      if (isJsxElementNamed(child, name)) found = true;
-    });
-  }
-  return found;
-}
+} from '../shared/edits.js';
+import {
+  isChildrenSlot,
+  isJsxElementNamed,
+  rendersElement,
+} from '../shared/jsx.js';
+import { getPropertyName, type SourceFile } from '../shared/source.js';
+import { DOCS_URL } from './source.js';
 
 function findLocalFunction(statements: t.Statement[], name: string) {
   for (const statement of statements) {

@@ -16,30 +16,22 @@ import type {
   ManualAction,
 } from '../index.js';
 import { VITE_LOADER_FILE, viteSetup } from '../vite.js';
-import { applyEdits, getCodeStyle, getImportEdit } from './edits.js';
+import { applyEdits, getCodeStyle, getImportEdit } from '../shared/edits.js';
+import { rendersElement } from '../shared/jsx.js';
+import { readSourceFile, type SourceFile } from '../shared/source.js';
 import {
   getMiddlewareAction,
   registersMiddleware,
   START_CONTENT,
 } from './middleware.js';
-import {
-  configureRootRoute,
-  findRootComponent,
-  getRootFix,
-  rendersElement,
-} from './root.js';
+import { configureRootRoute, findRootComponent, getRootFix } from './root.js';
 import {
   findInitializeCall,
   getRouterLines,
   getStorageAction,
   passesLoader,
 } from './router.js';
-import {
-  DOCS_URL,
-  inspectTanStackStart,
-  readSourceFile,
-  type SourceFile,
-} from './source.js';
+import { DOCS_URL, inspectTanStackStart } from './source.js';
 
 async function writeLoader(
   ctx: BuildToolContext & { translationsDir: string }
