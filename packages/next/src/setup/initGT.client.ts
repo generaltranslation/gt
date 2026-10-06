@@ -1,4 +1,7 @@
-import { internalInitializeGTSRA } from '@generaltranslation/react-core/pure';
+import {
+  initializeReactI18nCache,
+  internalInitializeGTSRA,
+} from '@generaltranslation/react-core/pure';
 import { getParams } from './shared';
 import type { NextSetupI18nConfigParams } from './shared';
 import type { NextI18nCacheParams } from '../i18n-cache/NextI18nCache';
@@ -15,7 +18,7 @@ export function initializeGTClient(
     nextI18nCacheParams: NextI18nCacheParams;
   } = getParams()
 ): void {
-  internalInitializeGTSRA({
+  const config = {
     ...i18nConfigParams,
     ...nextI18nCacheParams,
     /**
@@ -24,5 +27,12 @@ export function initializeGTClient(
      * client, so the client has no loader to refresh expired entries.
      */
     cacheExpiryTime: null,
-  });
+  };
+  internalInitializeGTSRA(config);
+
+  // Dev hot reload only: production client lookups read the server-provided
+  // snapshots, so no client i18nCache is needed
+  if (process.env.NODE_ENV !== 'production') {
+    initializeReactI18nCache(config);
+  }
 }

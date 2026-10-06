@@ -1,4 +1,5 @@
 import {
+  initializeReactI18nCache,
   internalInitializeGTSRA,
   type ReactInitializeGTParams,
 } from '@generaltranslation/react-core/pure';
@@ -10,5 +11,7 @@ export type InitializeGTParams = ReactInitializeGTParams;
  * Initialize GT for server-rendered React runtimes.
  */
 export function initializeGTSRA(config: InitializeGTParams): void {
-  internalInitializeGTSRA(addRuntimeCredentials(config));
+  const runtimeConfig = addRuntimeCredentials(config);
+  internalInitializeGTSRA(runtimeConfig);
+  initializeReactI18nCache(runtimeConfig);
 }

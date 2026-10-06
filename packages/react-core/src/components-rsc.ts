@@ -58,6 +58,7 @@ export {
 
 // ===== Internal ===== //
 export { internalInitializeGTSRA } from './setup/initializeGTSRA';
+export { initializeReactI18nCache } from './i18n-cache/initializeReactI18nCache';
 export { getReadonlyConditionStore } from './condition-store/singleton-operations';
 export {
   getReactI18nCache,
