@@ -10,20 +10,15 @@ const dictionariesSnapshotSingleton =
     namespace: 'reactCore',
     key: 'dictionariesSnapshot',
     source: '@generaltranslation/react-core',
-    notInitialized: () => createDictionariesSnapshotNotInitializedError(),
+    notInitialized: () =>
+      createDiagnosticMessage({
+        source: '@generaltranslation/react-core',
+        severity: 'Error',
+        whatHappened:
+          'Cannot access DictionariesSnapshot before it is initialized',
+        fix: 'Initialize GT before reading dictionaries snapshot.',
+      }),
   });
-
-function createDictionariesSnapshotNotInitializedError(): Error {
-  const errorMessage = createDiagnosticMessage({
-    source: '@generaltranslation/react-core',
-    severity: 'Error',
-    whatHappened:
-      'Cannot access DictionariesSnapshot before it is initialized.',
-    fix: 'Initialize GT before reading dictionaries snapshot.',
-  });
-
-  return new Error(errorMessage);
-}
 
 export const getGlobalDictionariesSnapshot = dictionariesSnapshotSingleton.get;
 export const setGlobalDictionariesSnapshot = dictionariesSnapshotSingleton.set;

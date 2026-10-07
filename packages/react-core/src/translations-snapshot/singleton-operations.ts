@@ -10,20 +10,15 @@ const translationsSnapshotSingleton =
     namespace: 'reactCore',
     key: 'translationsSnapshot',
     source: '@generaltranslation/react-core',
-    notInitialized: () => createTranslationsSnapshotNotInitializedError(),
+    notInitialized: () =>
+      createDiagnosticMessage({
+        source: '@generaltranslation/react-core',
+        severity: 'Error',
+        whatHappened:
+          'Cannot access TranslationsSnapshot before it is initialized',
+        fix: 'Initialize GT before reading translations snapshot.',
+      }),
   });
-
-function createTranslationsSnapshotNotInitializedError(): Error {
-  const errorMessage = createDiagnosticMessage({
-    source: '@generaltranslation/react-core',
-    severity: 'Error',
-    whatHappened:
-      'Cannot access TranslationsSnapshot before it is initialized.',
-    fix: 'Initialize GT before reading translations snapshot.',
-  });
-
-  return new Error(errorMessage);
-}
 
 export const getGlobalTranslationsSnapshot = translationsSnapshotSingleton.get;
 export const setGlobalTranslationsSnapshot = translationsSnapshotSingleton.set;
