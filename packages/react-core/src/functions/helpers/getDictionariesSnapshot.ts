@@ -10,8 +10,9 @@ import { getI18nConfig } from '../../setup/i18nConfig';
 /**
  * Serializable dictionaries for provider-less hydration: the requested locale
  * plus the default (source) locale, which dictionary lookups read source
- * entries from. A locale whose load fails is left out of the snapshot, so its
- * content renders untranslated.
+ * entries from. In development, a locale whose load fails is left out of the
+ * snapshot; in production the cache swallows the error and the locale gets an
+ * empty dictionary. Either way its content renders untranslated.
  */
 export async function getDictionariesSnapshot(
   locale: Locale
