@@ -41,6 +41,9 @@ export type InitializeGTSPAParams = I18nConfigParams &
  * - dictionariesSnapshot
  *
  * This is SPA for browser runtime
+ *
+ * Call once per page load. The snapshots keep their first value, so calling
+ * this again does not reload translations; changing locale reloads the page.
  */
 export async function initializeGTSPA(config: InitializeGTSPAParams) {
   const runtimeConfig = addRuntimeCredentials(config);
