@@ -1,5 +1,4 @@
 // src/router.tsx: the initializeGT call and its translation loader.
-import * as t from '@babel/types';
 import path from 'node:path';
 import { Libraries } from '../../../types/libraries.js';
 import { toRelativeImport, type ViteLoaderExport } from '../../setupViteSPA.js';
@@ -8,13 +7,6 @@ import type { CodeStyle } from '../shared/edits.js';
 import * as shared from '../shared/initializeGT.js';
 import type { SourceFile } from '../shared/source.js';
 import { DOCS_URL } from './source.js';
-
-/** The module-scope `initializeGT(...)` call TanStack Start's router makes. */
-export function findInitializeCall(
-  router: SourceFile
-): t.CallExpression | undefined {
-  return shared.findInitializeCall(router, Libraries.GT_TANSTACK_START);
-}
 
 export function getRouterLines(
   router: SourceFile,
