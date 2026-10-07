@@ -1,7 +1,14 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { getGlobalTranslationsSnapshot } from '@generaltranslation/react-core/pure';
+import { setGlobalTranslationsSnapshot } from '@generaltranslation/react-core/pure';
 import { initializeGTSPA } from '../initializeGTSPA';
+
+vi.mock('@generaltranslation/react-core/pure', async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import('@generaltranslation/react-core/pure')
+  >()),
+  setGlobalTranslationsSnapshot: vi.fn(),
+}));
 
 type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
 
@@ -17,6 +24,7 @@ describe('initializeGTSPA in production', () => {
 
   beforeEach(() => {
     resetGTGlobals();
+    vi.mocked(setGlobalTranslationsSnapshot).mockClear();
     process.env.NODE_ENV = 'production';
     warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
@@ -51,7 +59,7 @@ describe('initializeGTSPA in production', () => {
       ),
     ]);
     expect(fetchSpy).not.toHaveBeenCalled();
-    expect(getGlobalTranslationsSnapshot()).toEqual({ fr: {} });
+    expect(setGlobalTranslationsSnapshot).toHaveBeenCalledWith({ fr: {} });
   });
 
   it('warns when no translation loader is configured', async () => {
@@ -82,7 +90,7 @@ describe('initializeGTSPA in production', () => {
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(String(fetchSpy.mock.calls[0]?.[0])).toContain('project-id');
-    expect(getGlobalTranslationsSnapshot()).toEqual({
+    expect(setGlobalTranslationsSnapshot).toHaveBeenCalledWith({
       fr: { hash: 'Bonjour' },
     });
     expect(warnSpy).not.toHaveBeenCalled();
