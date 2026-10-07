@@ -22,6 +22,10 @@ import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 
 /**
  * Translate a message
+ *
+ * Only supported in single-page apps (SPA). Not supported in server-rendered
+ * apps; use `useGT()` there instead.
+ *
  * @param {string} message - The message to translate.
  * @param {GTTranslationOptions} [options] - The options for the translation.
  * @returns {string} The translated message.
