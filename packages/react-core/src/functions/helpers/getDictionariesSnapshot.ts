@@ -18,29 +18,24 @@ export async function getDictionariesSnapshot(
 ): Promise<Record<Locale, Dictionary>> {
   const i18nCache = getReactI18nCache();
   const defaultLocale = getI18nConfig().getDefaultLocale();
-  const locales = locale === defaultLocale ? [locale] : [locale, defaultLocale];
-
-  const results = await Promise.allSettled(
-    locales.map((l) => i18nCache.loadDictionary(l))
-  );
-
-  const snapshot: Record<Locale, Dictionary> = {};
-  results.forEach((result, index) => {
-    const resultLocale = locales[index];
-    if (result.status === 'fulfilled') {
-      snapshot[resultLocale] = result.value;
-      return;
-    }
+  // The default locale's source dictionary is set when the cache is created
+  // and never goes through a loader, so only the requested locale can fail
+  const snapshot: Record<Locale, Dictionary> = {
+    [defaultLocale]: await i18nCache.loadDictionary(defaultLocale),
+  };
+  try {
+    snapshot[locale] = await i18nCache.loadDictionary(locale);
+  } catch (error) {
     console.warn(
       createDiagnosticMessage({
         source: '@generaltranslation/react-core',
         severity: 'Warning',
-        whatHappened: `Could not load the dictionary for locale "${resultLocale}", so dictionary content for this locale renders untranslated`,
+        whatHappened: `Could not load the dictionary for locale "${locale}", so dictionary content for this locale renders untranslated`,
         why: 'the dictionary loader failed',
         fix: 'Check your loadDictionary configuration.',
-        details: formatDiagnosticErrorDetails(result.reason),
+        details: formatDiagnosticErrorDetails(error),
       })
     );
-  });
+  }
   return snapshot;
 }
