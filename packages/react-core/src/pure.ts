@@ -54,15 +54,11 @@ export {
 } from './i18n-cache/ReactI18nCache';
 export { setI18nStore } from './i18n-store/singleton-operations';
 export {
-  getGlobalTranslationsSnapshot,
   setGlobalTranslationsSnapshot,
-  isGlobalTranslationsSnapshotInitialized,
   type TranslationsSnapshot,
 } from './translations-snapshot/singleton-operations';
 export {
-  getGlobalDictionariesSnapshot,
   setGlobalDictionariesSnapshot,
-  isGlobalDictionariesSnapshotInitialized,
   type DictionariesSnapshot,
 } from './dictionaries-snapshot/singleton-operations';
 export { I18nStore } from './i18n-store/I18nStore';
