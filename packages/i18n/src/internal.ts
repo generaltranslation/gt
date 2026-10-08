@@ -16,7 +16,6 @@ export { createLookupOptions } from './translation-functions/internal/helpers';
 export { renderDictionaryEntry } from './translation-functions/internal/renderDictionaryEntry';
 export { renderDictionaryObject } from './translation-functions/internal/renderDictionaryObject';
 export { I18nCache } from './i18n-cache/I18nCache';
-export { createGTRuntime } from './i18n-config/createGTRuntime';
 export { createRemoteTranslationLoader } from './i18n-cache/translations-manager/translations-loaders/createRemoteTranslationLoader';
 export type { TranslationsCacheMissEvent } from './i18n-cache/I18nCache';
 export { ReadonlyConditionStore } from './condition-store/ReadonlyConditionStore';
