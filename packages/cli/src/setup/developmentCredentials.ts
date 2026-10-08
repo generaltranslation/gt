@@ -11,6 +11,7 @@ import { promptConfirm, promptSelect, promptText } from '../console/logging.js';
 import type { Settings, SupportedFrameworks } from '../types/index.js';
 import { api } from '../utils/api.js';
 import { setCredentials } from '../utils/credentials.js';
+import { envFiles } from '../utils/loadEnv.js';
 import { createUserAuthError } from '../auth/errors.js';
 import { loginInteractively } from '../auth/interactiveLogin.js';
 import { OnboardingError, type OnboardingSession } from './onboarding.js';
@@ -63,15 +64,62 @@ function noAccessibleOrgError(dashboardUrl: string): string {
   });
 }
 
-function projectCreationDeniedError(orgId: string, error: unknown): string {
+/**
+ * The API client sends GT_API_KEY instead of the sign-in whenever it is set,
+ * so signing in alone cannot fix a denial; GT_API_KEY has to go first.
+ */
+function apiKeyDeniedGuidance(created: string, permission: string) {
+  return {
+    why: `GT_API_KEY is set, so setup used that key instead of your sign-in, and creating ${created} requires ${permission}`,
+    fix: `Remove GT_API_KEY from your shell and from ${envFiles.join(', ')}, then rerun the setup wizard to sign in`,
+    wayOut: `set GT_API_KEY to an organization key with ${permission}`,
+  };
+}
+
+function projectCreationDeniedError(
+  orgId: string,
+  usingApiKey: boolean,
+  error: unknown
+): string {
   return createDiagnosticMessage({
     source: 'gt',
     severity: 'Error',
     whatHappened: `Project creation was denied for organization ${orgId}`,
-    why: 'Listing an organization does not confirm permission to create projects in it',
-    fix: 'Ask an organization admin for org:projects:create, or use credentials that have that permission for this organization',
+    ...(usingApiKey
+      ? apiKeyDeniedGuidance('a project', 'org:projects:create')
+      : {
+          why: 'listing an organization does not confirm permission to create projects in it',
+          fix: 'Ask an organization admin for org:projects:create, or use credentials that have that permission for this organization',
+        }),
     details: formatDiagnosticErrorDetails(error),
   });
+}
+
+function keyCreationDeniedError(
+  projectId: string,
+  usingApiKey: boolean,
+  error: unknown
+): string {
+  return createDiagnosticMessage({
+    source: 'gt',
+    severity: 'Error',
+    whatHappened: `Development key creation was denied for project ${projectId}`,
+    ...(usingApiKey
+      ? apiKeyDeniedGuidance('a key', 'project:api_keys:write')
+      : {
+          why: 'creating a key requires project:api_keys:write for this project',
+          fix: 'Ask a project admin for project:api_keys:write, then rerun the setup wizard',
+        }),
+    details: formatDiagnosticErrorDetails(error),
+  });
+}
+
+/** Replaces a 403 with setup guidance; other failures keep their own error. */
+function explainForbidden(diagnostic: (error: unknown) => string) {
+  return (error: unknown): never => {
+    if (!(error instanceof ApiError) || error.code !== 403) throw error;
+    throw new OnboardingError(diagnostic(error));
+  };
 }
 
 const noProjectChosenError = createDiagnosticMessage({
@@ -211,6 +259,8 @@ export async function provisionDevelopmentCredentials(
   framework: SupportedFrameworks | undefined,
   cwd: string = process.cwd()
 ): Promise<void> {
+  // Set exactly when the API client sends it in place of the sign-in.
+  const usingApiKey = Boolean(settings.apiKey);
   let projectId: string;
   let projectName: string | undefined;
   if ('id' in project) {
@@ -220,19 +270,26 @@ export async function provisionDevelopmentCredentials(
     const { orgId, name } = project.create;
     const { project: created } = await api
       .createProject(orgId, { name, defaultLocale: settings.defaultLocale })
-      .catch((error: unknown) => {
-        if (!(error instanceof ApiError) || error.code !== 403) throw error;
-        throw new OnboardingError(projectCreationDeniedError(orgId, error));
-      });
+      .catch(
+        explainForbidden((error) =>
+          projectCreationDeniedError(orgId, usingApiKey, error)
+        )
+      );
     logger.info(`Created ${created.name} (${created.id})`);
     session.step(`created project ${created.id}`);
     projectId = created.id;
     projectName = created.name;
   }
-  const { apiKey } = await api.createProjectApiKey(projectId, {
-    name: DEVELOPMENT_KEY_NAME,
-    permissions: [ProjectApiKeyPermission['PROJECT:TRANSLATIONS:GENERATE']],
-  });
+  const { apiKey } = await api
+    .createProjectApiKey(projectId, {
+      name: DEVELOPMENT_KEY_NAME,
+      permissions: [ProjectApiKeyPermission['PROJECT:TRANSLATIONS:GENERATE']],
+    })
+    .catch(
+      explainForbidden((error) =>
+        keyCreationDeniedError(projectId, usingApiKey, error)
+      )
+    );
   session.step('created a development key');
   await setCredentials({ projectId, apiKey: apiKey.key }, framework, cwd);
   session.step('saved development credentials to .env.local');
