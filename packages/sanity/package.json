@@ -1,6 +1,6 @@
 {
   "name": "gt-sanity",
-  "version": "4.0.22",
+  "version": "4.0.24",
   "description": "General Translation integration with Sanity",
   "keywords": [
     "sanity",
@@ -92,7 +92,8 @@
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "sanity": "^6.9.2",
-    "styled-components": "^6.1.19"
+    "styled-components": "^6.1.19",
+    "typescript": "catalog:"
   },
   "peerDependencies": {
     "@sanity/icons": "^5.2.1",

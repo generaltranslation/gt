@@ -8,6 +8,8 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import * as fs from 'node:fs/promises';
+import { createServer } from 'node:http';
+import type { AddressInfo, Socket } from 'node:net';
 import * as os from 'node:os';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -35,6 +37,7 @@ import {
   type OAuthTokens,
 } from '../credentialStore.js';
 import {
+  ACCOUNT_LOOKUP_TIMEOUT_MS,
   createUserTokenProvider,
   hasLogin,
   login,
@@ -117,6 +120,7 @@ function provider(
     token?: (init?: RequestInit) => Promise<Response>;
     device?: () => Promise<Response>;
     jwks?: (init?: RequestInit) => Promise<Response>;
+    userinfo?: (init?: RequestInit) => Promise<Response>;
     user?: string;
   } = {}
 ) {
@@ -140,11 +144,13 @@ function provider(
     if (url === `${issuer}/oauth2/revoke`)
       return new Response(null, { status: 200 });
     if (url === `${issuer}/oauth2/userinfo`)
-      return json({
-        sub: options.user ?? 'user-1',
-        name: 'Dev',
-        email: 'dev@example.com',
-      });
+      return options.userinfo
+        ? options.userinfo(init)
+        : json({
+            sub: options.user ?? 'user-1',
+            name: 'Dev',
+            email: 'dev@example.com',
+          });
     throw new Error(`Unexpected fixture request: ${url}`);
   });
 }
@@ -385,14 +391,21 @@ describe('discovery and browser authorization', () => {
       const html = await page;
       expect(html).toContain(
         outcome === 'success'
-          ? '<h1>Successfully authenticated gt CLI</h1>'
-          : '<h1>Authentication failed</h1>'
+          ? 'Signed in to the gt CLI'
+          : outcome === 'denied'
+            ? 'Request denied'
+            : 'Sign-in failed'
       );
-      expect(html).toContain(
-        'You may now close this tab and return to the terminal.'
-      );
-      if (outcome !== 'success') {
-        expect(html).not.toContain('Successfully authenticated');
+      if (outcome === 'success') {
+        expect(html).toContain(
+          'You can close this tab and return to your terminal.'
+        );
+        expect(html).toContain(
+          'Signed in as <span class="ink">dev@example.com</span>.'
+        );
+      } else {
+        expect(html).toContain('npx gt login');
+        expect(html).not.toContain('Signed in to the gt CLI');
         expect(html).not.toContain('Disk full');
       }
     }
@@ -430,15 +443,91 @@ describe('discovery and browser authorization', () => {
         )
       ).toString('base64url')
     ).toBe(authorize.searchParams.get('code_challenge'));
+    // The userinfo call only names the account on the browser page; the
+    // login does not depend on it.
     expect(fetcher.mock.calls.map(([url]) => String(url))).toEqual([
       `${authBaseUrl}/.well-known/openid-configuration`,
       `${authBaseUrl}/oauth2/token`,
       `${authBaseUrl}/jwks`,
+      `${authBaseUrl}/oauth2/userinfo`,
     ]);
     expect(
       fetcher.mock.calls.every(([, init]) => init?.redirect === 'manual')
     ).toBe(true);
   });
+  it('cancels a stalled userinfo request when the display budget expires', async () => {
+    // Real pending I/O: a server that accepts the request and never answers.
+    const stalled = createServer(() => {});
+    await new Promise<void>((resolve) =>
+      stalled.listen(0, '127.0.0.1', resolve)
+    );
+    const { port } = stalled.address() as AddressInfo;
+    const sockets = new Set<Socket>();
+    stalled.on('connection', (socket) => {
+      sockets.add(socket);
+      socket.on('close', () => sockets.delete(socket));
+    });
+    let requestSignal: AbortSignal | null | undefined;
+    try {
+      let page!: Promise<string>;
+      const started = Date.now();
+      const result = await browserLogin({
+        fetch: provider({
+          userinfo: (init) => {
+            requestSignal = init?.signal;
+            return networkFetch(`http://127.0.0.1:${port}/userinfo`, {
+              signal: init?.signal,
+            });
+          },
+        }),
+        openBrowser: (url) => {
+          page = callback(url);
+          return page;
+        },
+      });
+      expect(result.subject).toBe('user-1');
+      expect(await readOAuthTokens(authBaseUrl)).toEqual(result);
+      expect(Date.now() - started).toBeLessThan(
+        ACCOUNT_LOOKUP_TIMEOUT_MS + 2000
+      );
+      const html = await page;
+      expect(html).toContain('Signed in to the gt CLI');
+      expect(html).not.toContain('class="note"');
+      // The budget aborted the request and its connection is gone, so no
+      // socket keeps the process alive until the library's own timeout.
+      expect(requestSignal?.aborted).toBe(true);
+      await vi.waitFor(() => expect(sockets.size).toBe(0), { timeout: 2000 });
+    } finally {
+      for (const socket of sockets) socket.destroy();
+      await new Promise<void>((resolve) => stalled.close(() => resolve()));
+    }
+  }, 10_000);
+  it.each([
+    ['a malformed email', async () => json({ sub: 'user-1', email: {} })],
+    ['a failing userinfo endpoint', async () => json({ error: 'nope' }, 500)],
+  ])(
+    'stores the login and shows success without the note for %s',
+    async (_case, userinfo) => {
+      let page!: Promise<string>;
+      const started = Date.now();
+      const result = await browserLogin({
+        fetch: provider({ userinfo }),
+        openBrowser: (url) => {
+          page = callback(url);
+          return page;
+        },
+      });
+      expect(result.subject).toBe('user-1');
+      expect(await readOAuthTokens(authBaseUrl)).toEqual(result);
+      expect(Date.now() - started).toBeLessThan(
+        ACCOUNT_LOOKUP_TIMEOUT_MS + 2000
+      );
+      const html = await page;
+      expect(html).toContain('Signed in to the gt CLI');
+      expect(html).not.toContain('class="note"');
+    },
+    10_000
+  );
   it('requests a token for the configured API, letting GT_API_URL override it', async () => {
     const resources: (string | null)[] = [];
     const record = async (url: string) => {
@@ -485,6 +574,24 @@ describe('discovery and browser authorization', () => {
       })
     ).rejects.toThrow();
     expect(await readOAuthTokens(authBaseUrl)).toBeUndefined();
+  });
+  it('shows a denial with a forged state as a failed sign-in, as the terminal reports it', async () => {
+    let page!: Promise<string>;
+    await expect(
+      browserLogin({
+        openBrowser: (url) => {
+          page = callback(url, (params) => {
+            params.delete('code');
+            params.set('error', 'access_denied');
+            params.set('state', 'forged');
+          });
+          return page;
+        },
+      })
+    ).rejects.toThrow();
+    const html = await page;
+    expect(html).toContain('Sign-in failed');
+    expect(html).not.toContain('Request denied');
   });
   it('reports validated consent denial', async () => {
     await expect(
@@ -550,6 +657,36 @@ describe('discovery and browser authorization', () => {
       },
     });
   });
+  it.each(['token', 'userinfo'])(
+    'reports a cancellation and keeps the previous login when the caller aborts during the %s request',
+    async (stage) => {
+      await writeOAuthTokens(tokens, authBaseUrl);
+      const controller = new AbortController();
+      const abortingResponse = async (init?: RequestInit) => {
+        controller.abort();
+        expect(init?.signal?.aborted).toBe(true);
+        init?.signal?.throwIfAborted();
+        return json({});
+      };
+      let page!: Promise<string>;
+      await expect(
+        browserLogin({
+          fetch: provider(
+            stage === 'token'
+              ? { token: abortingResponse }
+              : { userinfo: abortingResponse }
+          ),
+          signal: controller.signal,
+          openBrowser: (url) => {
+            page = callback(url);
+            return page;
+          },
+        })
+      ).rejects.toThrow('cancelled');
+      expect(await readOAuthTokens(authBaseUrl)).toEqual(tokens);
+      expect(await page).toContain('Sign-in failed');
+    }
+  );
   it('times out even if browser opening fails', async () => {
     await expect(
       browserLogin({

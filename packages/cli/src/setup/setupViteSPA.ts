@@ -16,6 +16,7 @@ type SetupViteSPAOptions = {
 
 const defaultBootstrapFilename = 'gt-entry.ts';
 const alternateBootstrapFilename = 'gt-bootstrap.ts';
+const defaultSourceDirectory = 'src';
 
 function getBootstrapConflictError(filename: string): string {
   return createDiagnosticMessage({
@@ -103,7 +104,7 @@ function getModuleEntry(indexHtml: string): {
  */
 export async function inspectViteSPA(appDirectory: string) {
   const indexHtmlPath = path.join(appDirectory, 'index.html');
-  const sourceDirectory = path.join(appDirectory, 'src');
+  const sourceDirectory = path.join(appDirectory, defaultSourceDirectory);
   if (!fs.existsSync(indexHtmlPath)) {
     throw new Error(
       createDiagnosticMessage({
@@ -203,10 +204,10 @@ export type ViteLoaderResult =
   | 'missing';
 
 /**
- * Points the generated src/loadTranslations.ts at translationsDir and adds
- * empty locale stubs. Only a template matching the previous config is
- * refreshed; other existing loaders are left unchanged. An absent loader
- * is only created with `create`.
+ * Points the generated loadTranslations.ts in sourceDirectory (src by
+ * default) at translationsDir and adds empty locale stubs. Only a template
+ * matching the previous config is refreshed; other existing loaders are left
+ * unchanged. An absent loader is only created with `create`.
  */
 export async function writeViteLoader({
   appDirectory,
@@ -215,26 +216,28 @@ export async function writeViteLoader({
   translationsDir,
   previousTranslationsDir,
   create,
+  sourceDirectory = defaultSourceDirectory,
 }: Omit<SetupViteSPAOptions, 'configFilepath' | 'translationsDir'> & {
   translationsDir: string;
   create: boolean;
+  sourceDirectory?: string;
 }): Promise<ViteLoaderResult> {
-  const sourceDirectory = path.join(appDirectory, 'src');
+  const loaderDirectory = path.join(appDirectory, sourceDirectory);
   const translationsPath = path.resolve(appDirectory, translationsDir);
-  const loaderPath = path.join(sourceDirectory, 'loadTranslations.ts');
+  const loaderPath = path.join(loaderDirectory, 'loadTranslations.ts');
   const existingLoader = fs.existsSync(loaderPath)
     ? await fs.promises.readFile(loaderPath, 'utf8')
     : undefined;
   if (existingLoader === undefined && !create) return 'missing';
   const content = getLoaderContent(
-    toRelativeImport(sourceDirectory, translationsPath)
+    toRelativeImport(loaderDirectory, translationsPath)
   );
   const previousContent =
     previousTranslationsDir === undefined
       ? undefined
       : getLoaderContent(
           toRelativeImport(
-            sourceDirectory,
+            loaderDirectory,
             path.resolve(appDirectory, previousTranslationsDir)
           )
         );
@@ -264,12 +267,13 @@ export type ViteLoaderExport = 'default' | 'loadTranslations' | undefined;
 /** The generated loader's export, or a custom loader's own if it has one. */
 export async function getViteLoaderExport(
   appDirectory: string,
-  loader: ViteLoaderResult
+  loader: ViteLoaderResult,
+  sourceDirectory = defaultSourceDirectory
 ): Promise<ViteLoaderExport> {
   return loader === 'custom'
     ? getLoaderExport(
         await fs.promises.readFile(
-          path.join(appDirectory, 'src', 'loadTranslations.ts'),
+          path.join(appDirectory, sourceDirectory, 'loadTranslations.ts'),
           'utf8'
         )
       )

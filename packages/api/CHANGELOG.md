@@ -1,5 +1,17 @@
 # @generaltranslation/api
 
+## 0.5.3
+
+### Patch Changes
+
+- [#2386](https://github.com/generaltranslation/gt/pull/2386) [`1425b43`](https://github.com/generaltranslation/gt/commit/1425b43f885c73bfa2e5377061fbacc9dfe9e460) Thanks [@internal-gt-public-api-sync](https://github.com/apps/internal-gt-public-api-sync)! - Sync the GT API OpenAPI contract and regenerate the SDK.
+
+## 0.5.2
+
+### Patch Changes
+
+- [#2359](https://github.com/generaltranslation/gt/pull/2359) [`7fa27b2`](https://github.com/generaltranslation/gt/commit/7fa27b2f2e8d33d244b30622b25dcd5d3e5d1cfa) Thanks [@internal-gt-public-api-sync](https://github.com/apps/internal-gt-public-api-sync)! - Sync the GT API OpenAPI contract and regenerate the SDK.
+
 ## 0.5.1
 
 ### Patch Changes

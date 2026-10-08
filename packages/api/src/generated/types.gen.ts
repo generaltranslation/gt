@@ -48,11 +48,6 @@ export const FileFormat = {
 
 export type FileFormat = (typeof FileFormat)[keyof typeof FileFormat];
 
-export type Branch = {
-  id: string;
-  name: string;
-};
-
 export type JsonObject = {
   [key: string]: JsonValue;
 };
@@ -81,9 +76,15 @@ export const ModelProvider = {
   OPENAI: 'OPENAI',
   XAI: 'XAI',
   GOOGLE: 'GOOGLE',
+  HYPERCLOVA: 'HYPERCLOVA',
 } as const;
 
 export type ModelProvider = (typeof ModelProvider)[keyof typeof ModelProvider];
+
+export type Branch = {
+  id: string;
+  name: string;
+};
 
 export type RuntimeTranslationResponse = {
   [key: string]:
@@ -147,6 +148,11 @@ export const ProjectApiKeyPermission = {
 export type ProjectApiKeyPermission =
   (typeof ProjectApiKeyPermission)[keyof typeof ProjectApiKeyPermission];
 
+export type ContextGroup = {
+  id: string;
+  name: string;
+};
+
 export type CreateCliWizardSessionResponse = {
   sessionId: string;
 };
@@ -201,155 +207,6 @@ export type DeleteCliWizardSessionResponse = {
   message: string;
 };
 
-export type WorkspacePluginInfoData = {
-  body?: {
-    /**
-     * File ID assigned by Google Drive, found in the Google Docs or Slides URL after /d/. This is not a GT database file ID. May identify a source file or a GT-managed translated copy. Supply hostApp with fileId for file-specific context; omit both to list connected projects.
-     */
-    fileId?: string;
-    /**
-     * Google editor for the file: DOCS for Google Docs or SLIDES for Google Slides. Supply fileId with hostApp for file-specific context.
-     */
-    hostApp?: 'DOCS' | 'SLIDES';
-  };
-  path?: never;
-  query?: never;
-  url: '/v1/integrations/workspace-plugin/info';
-};
-
-export type WorkspacePluginInfoErrors = {
-  /**
-   * Request error
-   */
-  400: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
-  /**
-   * Request error
-   */
-  401: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
-  /**
-   * Request error
-   */
-  403: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
-  /**
-   * Request error
-   */
-  404: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
-  /**
-   * Request error
-   */
-  413: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
-  /**
-   * Request error
-   */
-  429: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
-  /**
-   * Request error
-   */
-  500: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
-  /**
-   * Request error
-   */
-  502: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
-};
-
-export type WorkspacePluginInfoError =
-  WorkspacePluginInfoErrors[keyof WorkspacePluginInfoErrors];
-
-export type WorkspacePluginInfoResponses = {
-  /**
-   * Workspace plugin result
-   */
-  200: {
-    linked: boolean;
-    user: {
-      email: string | null;
-    };
-    supportedLocales: Array<{
-      code: string;
-      name: string;
-      emoji: string;
-    }>;
-    projects: Array<{
-      id: string;
-      name: string;
-      orgName: string | null;
-      sourceLocale: {
-        code: string;
-        name: string;
-        emoji: string;
-      };
-      currentLocales: Array<{
-        code: string;
-        name: string;
-        emoji: string;
-      }>;
-      localeWhitelist: Array<{
-        code: string;
-        name: string;
-        emoji: string;
-      }>;
-      integrationConnected: boolean;
-      integrationId: string;
-      linkedFile: {
-        sourceLocale: {
-          code: string;
-          name: string;
-          emoji: string;
-        };
-      } | null;
-      translatedCopy: {
-        sourceName: string;
-        sourceResourceId: string;
-        sourceLocale: {
-          code: string;
-          name: string;
-          emoji: string;
-        };
-        targetLocale: {
-          code: string;
-          name: string;
-          emoji: string;
-        };
-      } | null;
-    }>;
-  };
-};
-
-export type WorkspacePluginInfoResponse =
-  WorkspacePluginInfoResponses[keyof WorkspacePluginInfoResponses];
-
 export type WorkspacePluginTranslateData = {
   body?: {
     /**
@@ -384,69 +241,41 @@ export type WorkspacePluginTranslateData = {
 
 export type WorkspacePluginTranslateErrors = {
   /**
-   * Request error
+   * The request is malformed or failed validation.
    */
-  400: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
+  400: ErrorResponse;
   /**
-   * Request error
+   * Authentication is missing or invalid.
    */
-  401: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
+  401: ErrorResponse;
   /**
-   * Request error
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
+  403: ErrorResponse;
   /**
-   * Request error
+   * The requested resource was not found.
    */
-  404: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
+  404: ErrorResponse;
   /**
-   * Request error
+   * The request, or the data it would return, exceeds a size or item limit.
    */
-  413: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
+  413: ErrorResponse;
   /**
-   * Request error
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
    */
-  429: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
+  415: ErrorResponse;
   /**
-   * Request error
+   * Too many requests. The rate limit was exceeded.
    */
-  500: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
+  429: ErrorResponse;
   /**
-   * Request error
+   * An unexpected server error occurred.
    */
-  502: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
+  500: ErrorResponse;
+  /**
+   * Translation could not be started for any of the requested locales.
+   */
+  502: ErrorResponse;
 };
 
 export type WorkspacePluginTranslateError =
@@ -491,69 +320,41 @@ export type WorkspacePluginStatusData = {
 
 export type WorkspacePluginStatusErrors = {
   /**
-   * Request error
+   * The request is malformed or failed validation.
    */
-  400: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
+  400: ErrorResponse;
   /**
-   * Request error
+   * Authentication is missing or invalid.
    */
-  401: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
+  401: ErrorResponse;
   /**
-   * Request error
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
-  403: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
+  403: ErrorResponse;
   /**
-   * Request error
+   * The requested resource was not found.
    */
-  404: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
+  404: ErrorResponse;
   /**
-   * Request error
+   * The request, or the data it would return, exceeds a size or item limit.
    */
-  413: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
+  413: ErrorResponse;
   /**
-   * Request error
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
    */
-  429: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
+  415: ErrorResponse;
   /**
-   * Request error
+   * Too many requests. The rate limit was exceeded.
    */
-  500: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
+  429: ErrorResponse;
   /**
-   * Request error
+   * An unexpected server error occurred.
    */
-  502: {
-    error: string;
-    errors?: Array<string>;
-    linked?: boolean;
-  };
+  500: ErrorResponse;
+  /**
+   * An upstream service failed to complete the request.
+   */
+  502: ErrorResponse;
 };
 
 export type WorkspacePluginStatusError =
@@ -612,39 +413,43 @@ export type PluginInfoData = {
 
 export type PluginInfoErrors = {
   /**
-   * Request error
+   * The request is malformed or failed validation.
    */
   400: ErrorResponse;
   /**
-   * Request error
+   * Authentication is missing or invalid.
    */
   401: ErrorResponse;
   /**
-   * Request error
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
   403: ErrorResponse;
   /**
-   * Request error
+   * The requested resource was not found.
    */
   404: ErrorResponse;
   /**
-   * Request error
+   * The request conflicts with existing data or the current state of the project or organization.
    */
   409: ErrorResponse;
   /**
-   * Request error
+   * The request, or the data it would return, exceeds a size or item limit.
    */
   413: ErrorResponse;
   /**
-   * Request error
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * The resource is locked by an operation in progress. Retry later.
    */
   423: ErrorResponse;
   /**
-   * Request error
+   * Too many requests. The rate limit was exceeded.
    */
   429: ErrorResponse;
   /**
-   * Request error
+   * An unexpected server error occurred.
    */
   500: ErrorResponse;
 };
@@ -829,39 +634,43 @@ export type PluginLayoutData = {
 
 export type PluginLayoutErrors = {
   /**
-   * Request error
+   * The request is malformed or failed validation.
    */
   400: ErrorResponse;
   /**
-   * Request error
+   * Authentication is missing or invalid.
    */
   401: ErrorResponse;
   /**
-   * Request error
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
   403: ErrorResponse;
   /**
-   * Request error
+   * The requested resource was not found.
    */
   404: ErrorResponse;
   /**
-   * Request error
+   * The request conflicts with existing data or the current state of the project or organization.
    */
   409: ErrorResponse;
   /**
-   * Request error
+   * The request, or the data it would return, exceeds a size or item limit.
    */
   413: ErrorResponse;
   /**
-   * Request error
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * The resource is locked by an operation in progress. Retry later.
    */
   423: ErrorResponse;
   /**
-   * Request error
+   * Too many requests. The rate limit was exceeded.
    */
   429: ErrorResponse;
   /**
-   * Request error
+   * An unexpected server error occurred.
    */
   500: ErrorResponse;
 };
@@ -1039,39 +848,43 @@ export type PluginSyncData = {
 
 export type PluginSyncErrors = {
   /**
-   * Request error
+   * The request is malformed or failed validation.
    */
   400: ErrorResponse;
   /**
-   * Request error
+   * Authentication is missing or invalid.
    */
   401: ErrorResponse;
   /**
-   * Request error
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
   403: ErrorResponse;
   /**
-   * Request error
+   * The requested resource was not found.
    */
   404: ErrorResponse;
   /**
-   * Request error
+   * The request conflicts with existing data or the current state of the project or organization.
    */
   409: ErrorResponse;
   /**
-   * Request error
+   * The request, or the data it would return, exceeds a size or item limit.
    */
   413: ErrorResponse;
   /**
-   * Request error
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * The resource is locked by an operation in progress. Retry later.
    */
   423: ErrorResponse;
   /**
-   * Request error
+   * Too many requests. The rate limit was exceeded.
    */
   429: ErrorResponse;
   /**
-   * Request error
+   * An unexpected server error occurred.
    */
   500: ErrorResponse;
 };
@@ -1189,39 +1002,43 @@ export type PluginImportTranslationsData = {
 
 export type PluginImportTranslationsErrors = {
   /**
-   * Request error
+   * The request is malformed or failed validation.
    */
   400: ErrorResponse;
   /**
-   * Request error
+   * Authentication is missing or invalid.
    */
   401: ErrorResponse;
   /**
-   * Request error
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
   403: ErrorResponse;
   /**
-   * Request error
+   * The requested resource was not found.
    */
   404: ErrorResponse;
   /**
-   * Request error
+   * The request conflicts with existing data or the current state of the project or organization.
    */
   409: ErrorResponse;
   /**
-   * Request error
+   * The request, or the data it would return, exceeds a size or item limit.
    */
   413: ErrorResponse;
   /**
-   * Request error
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * A translation is still running for the requested locale. Retry once it finishes.
    */
   423: ErrorResponse;
   /**
-   * Request error
+   * Too many requests. The rate limit was exceeded.
    */
   429: ErrorResponse;
   /**
-   * Request error
+   * An unexpected server error occurred.
    */
   500: ErrorResponse;
 };
@@ -1296,39 +1113,43 @@ export type PluginEnqueueData = {
 
 export type PluginEnqueueErrors = {
   /**
-   * Request error
+   * The request is malformed or failed validation.
    */
   400: ErrorResponse;
   /**
-   * Request error
+   * Authentication is missing or invalid.
    */
   401: ErrorResponse;
   /**
-   * Request error
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
   403: ErrorResponse;
   /**
-   * Request error
+   * The requested resource was not found.
    */
   404: ErrorResponse;
   /**
-   * Request error
+   * The request conflicts with existing data or the current state of the project or organization.
    */
   409: ErrorResponse;
   /**
-   * Request error
+   * The request, or the data it would return, exceeds a size or item limit.
    */
   413: ErrorResponse;
   /**
-   * Request error
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * The resource is locked by an operation in progress. Retry later.
    */
   423: ErrorResponse;
   /**
-   * Request error
+   * Too many requests. The rate limit was exceeded.
    */
   429: ErrorResponse;
   /**
-   * Request error
+   * An unexpected server error occurred.
    */
   500: ErrorResponse;
 };
@@ -1386,39 +1207,43 @@ export type PluginStatusData = {
 
 export type PluginStatusErrors = {
   /**
-   * Request error
+   * The request is malformed or failed validation.
    */
   400: ErrorResponse;
   /**
-   * Request error
+   * Authentication is missing or invalid.
    */
   401: ErrorResponse;
   /**
-   * Request error
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
   403: ErrorResponse;
   /**
-   * Request error
+   * The requested resource was not found.
    */
   404: ErrorResponse;
   /**
-   * Request error
+   * The request conflicts with existing data or the current state of the project or organization.
    */
   409: ErrorResponse;
   /**
-   * Request error
+   * The request, or the data it would return, exceeds a size or item limit.
    */
   413: ErrorResponse;
   /**
-   * Request error
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * The resource is locked by an operation in progress. Retry later.
    */
   423: ErrorResponse;
   /**
-   * Request error
+   * Too many requests. The rate limit was exceeded.
    */
   429: ErrorResponse;
   /**
-   * Request error
+   * An unexpected server error occurred.
    */
   500: ErrorResponse;
 };
@@ -1490,39 +1315,43 @@ export type PluginDownloadData = {
 
 export type PluginDownloadErrors = {
   /**
-   * Request error
+   * The request is malformed or failed validation.
    */
   400: ErrorResponse;
   /**
-   * Request error
+   * Authentication is missing or invalid.
    */
   401: ErrorResponse;
   /**
-   * Request error
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
   403: ErrorResponse;
   /**
-   * Request error
+   * The requested resource was not found.
    */
   404: ErrorResponse;
   /**
-   * Request error
+   * The request conflicts with existing data or the current state of the project or organization.
    */
   409: ErrorResponse;
   /**
-   * Request error
+   * The request, or the data it would return, exceeds a size or item limit.
    */
   413: ErrorResponse;
   /**
-   * Request error
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * The resource is locked by an operation in progress. Retry later.
    */
   423: ErrorResponse;
   /**
-   * Request error
+   * Too many requests. The rate limit was exceeded.
    */
   429: ErrorResponse;
   /**
-   * Request error
+   * An unexpected server error occurred.
    */
   500: ErrorResponse;
 };
@@ -1646,6 +1475,126 @@ export type PluginDownloadResponses = {
 export type PluginDownloadResponse =
   PluginDownloadResponses[keyof PluginDownloadResponses];
 
+export type WorkspacePluginInfoData = {
+  body?: {
+    /**
+     * File ID assigned by Google Drive, found in the Google Docs or Slides URL after /d/. This is not a GT database file ID. May identify a source file or a GT-managed translated copy. Supply hostApp with fileId for file-specific context; omit both to list connected projects.
+     */
+    fileId?: string;
+    /**
+     * Google editor for the file: DOCS for Google Docs or SLIDES for Google Slides. Supply fileId with hostApp for file-specific context.
+     */
+    hostApp?: 'DOCS' | 'SLIDES';
+  };
+  path?: never;
+  query?: never;
+  url: '/v1/integrations/workspace-plugin/info';
+};
+
+export type WorkspacePluginInfoErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse;
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse;
+  /**
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+  /**
+   * An upstream service failed to complete the request.
+   */
+  502: ErrorResponse;
+};
+
+export type WorkspacePluginInfoError =
+  WorkspacePluginInfoErrors[keyof WorkspacePluginInfoErrors];
+
+export type WorkspacePluginInfoResponses = {
+  /**
+   * Workspace plugin result
+   */
+  200: {
+    user: {
+      email: string | null;
+    };
+    supportedLocales: Array<{
+      code: string;
+      name: string;
+      emoji: string;
+    }>;
+    projects: Array<{
+      id: string;
+      name: string;
+      orgName: string | null;
+      sourceLocale: {
+        code: string;
+        name: string;
+        emoji: string;
+      };
+      currentLocales: Array<{
+        code: string;
+        name: string;
+        emoji: string;
+      }>;
+      localeWhitelist: Array<{
+        code: string;
+        name: string;
+        emoji: string;
+      }>;
+      integrationConnected: boolean;
+      integrationId: string;
+      linkedFile: {
+        sourceLocale: {
+          code: string;
+          name: string;
+          emoji: string;
+        };
+      } | null;
+      translatedCopy: {
+        sourceName: string;
+        sourceResourceId: string;
+        sourceLocale: {
+          code: string;
+          name: string;
+          emoji: string;
+        };
+        targetLocale: {
+          code: string;
+          name: string;
+          emoji: string;
+        };
+      } | null;
+    }>;
+  };
+};
+
+export type WorkspacePluginInfoResponse =
+  WorkspacePluginInfoResponses[keyof WorkspacePluginInfoResponses];
+
 export type GetProjectInfoData = {
   body?: never;
   headers?: {
@@ -1667,27 +1616,27 @@ export type GetProjectInfoData = {
 
 export type GetProjectInfoErrors = {
   /**
-   * Request error
+   * The request is malformed or failed validation.
    */
   400: ErrorResponse;
   /**
-   * Request error
+   * Authentication is missing or invalid.
    */
   401: ErrorResponse;
   /**
-   * Request error
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
   403: ErrorResponse;
   /**
-   * Request error
+   * The requested resource was not found.
    */
   404: ErrorResponse;
   /**
-   * Request error
+   * Too many requests. The rate limit was exceeded.
    */
   429: ErrorResponse;
   /**
-   * Request error
+   * An unexpected server error occurred.
    */
   500: ErrorResponse;
 };
@@ -1736,31 +1685,35 @@ export type UpdateProjectInfoData = {
 
 export type UpdateProjectInfoErrors = {
   /**
-   * Request error
+   * The request is malformed or failed validation.
    */
   400: ErrorResponse;
   /**
-   * Request error
+   * Authentication is missing or invalid.
    */
   401: ErrorResponse;
   /**
-   * Request error
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
   403: ErrorResponse;
   /**
-   * Request error
+   * The requested resource was not found.
    */
   404: ErrorResponse;
   /**
-   * Request error
+   * The request, or the data it would return, exceeds a size or item limit.
    */
   413: ErrorResponse;
   /**
-   * Request error
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
    */
   429: ErrorResponse;
   /**
-   * Request error
+   * An unexpected server error occurred.
    */
   500: ErrorResponse;
 };
@@ -1779,6 +1732,97 @@ export type UpdateProjectInfoResponses = {
 
 export type UpdateProjectInfoResponse =
   UpdateProjectInfoResponses[keyof UpdateProjectInfoResponses];
+
+export type GetTranslationJobInfoData = {
+  body: {
+    jobIds: Array<string>;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+    /**
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     */
+    'gt-project-id'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v2/project/jobs/info';
+};
+
+export type GetTranslationJobInfoErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse;
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse;
+  /**
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type GetTranslationJobInfoError =
+  GetTranslationJobInfoErrors[keyof GetTranslationJobInfoErrors];
+
+export type GetTranslationJobInfoResponses = {
+  /**
+   * Translation job statuses
+   */
+  200: Array<
+    | {
+        status: 'queued';
+        jobId: string;
+      }
+    | {
+        status: 'processing';
+        jobId: string;
+      }
+    | {
+        status: 'failed';
+        jobId: string;
+        error: {
+          message: string | null;
+        };
+      }
+    | {
+        status: 'completed';
+        jobId: string;
+      }
+    | {
+        status: 'unknown';
+        jobId: string;
+      }
+  >;
+};
+
+export type GetTranslationJobInfoResponse =
+  GetTranslationJobInfoResponses[keyof GetTranslationJobInfoResponses];
 
 export type GetTranslationStatusData = {
   body?: never;
@@ -1804,27 +1848,27 @@ export type GetTranslationStatusData = {
 
 export type GetTranslationStatusErrors = {
   /**
-   * Request error
+   * The request is malformed or failed validation.
    */
   400: ErrorResponse;
   /**
-   * Request error
+   * Authentication is missing or invalid.
    */
   401: ErrorResponse;
   /**
-   * Request error
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
   403: ErrorResponse;
   /**
-   * Request error
+   * The requested resource was not found.
    */
   404: ErrorResponse;
   /**
-   * Request error
+   * Too many requests. The rate limit was exceeded.
    */
   429: ErrorResponse;
   /**
-   * Request error
+   * An unexpected server error occurred.
    */
   500: ErrorResponse;
 };
@@ -1864,281 +1908,6 @@ export type GetTranslationStatusResponses = {
 export type GetTranslationStatusResponse =
   GetTranslationStatusResponses[keyof GetTranslationStatusResponses];
 
-export type GetBranchInfoData = {
-  body: {
-    branchNames?: Array<string>;
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?: ApiVersion;
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/branches/info';
-};
-
-export type GetBranchInfoErrors = {
-  /**
-   * Request error
-   */
-  400: ErrorResponse;
-  /**
-   * Request error
-   */
-  401: ErrorResponse;
-  /**
-   * Request error
-   */
-  403: ErrorResponse;
-  /**
-   * Request error
-   */
-  413: ErrorResponse;
-  /**
-   * Request error
-   */
-  429: ErrorResponse;
-  /**
-   * Request error
-   */
-  500: ErrorResponse;
-};
-
-export type GetBranchInfoError = GetBranchInfoErrors[keyof GetBranchInfoErrors];
-
-export type GetBranchInfoResponses = {
-  /**
-   * Branch information
-   */
-  200: {
-    branches: Array<Branch>;
-    defaultBranch: Branch &
-      ({
-        [key: string]: unknown;
-      } | null);
-  };
-};
-
-export type GetBranchInfoResponse =
-  GetBranchInfoResponses[keyof GetBranchInfoResponses];
-
-export type CreateBranchData = {
-  body: {
-    branchName: string;
-    defaultBranch?: boolean;
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?: ApiVersion;
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/branches/create';
-};
-
-export type CreateBranchErrors = {
-  /**
-   * Request error
-   */
-  400: ErrorResponse;
-  /**
-   * Request error
-   */
-  401: ErrorResponse;
-  /**
-   * Request error
-   */
-  403: ErrorResponse;
-  /**
-   * Request error
-   */
-  409: ErrorResponse;
-  /**
-   * Request error
-   */
-  413: ErrorResponse;
-  /**
-   * Request error
-   */
-  429: ErrorResponse;
-  /**
-   * Request error
-   */
-  500: ErrorResponse;
-};
-
-export type CreateBranchError = CreateBranchErrors[keyof CreateBranchErrors];
-
-export type CreateBranchResponses = {
-  /**
-   * Created or existing branch
-   */
-  200: {
-    branch: Branch;
-  };
-};
-
-export type CreateBranchResponse =
-  CreateBranchResponses[keyof CreateBranchResponses];
-
-export type CreateTagData = {
-  body: {
-    tagId: string;
-    files: Array<{
-      fileId: string;
-      versionId: string;
-      branchId: string;
-    }>;
-    message?: string;
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?: ApiVersion;
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/tags/create';
-};
-
-export type CreateTagErrors = {
-  /**
-   * Request error
-   */
-  400: ErrorResponse;
-  /**
-   * Request error
-   */
-  401: ErrorResponse;
-  /**
-   * Request error
-   */
-  403: ErrorResponse;
-  /**
-   * Request error
-   */
-  413: ErrorResponse;
-  /**
-   * Request error
-   */
-  429: ErrorResponse;
-  /**
-   * Request error
-   */
-  500: ErrorResponse;
-};
-
-export type CreateTagError = CreateTagErrors[keyof CreateTagErrors];
-
-export type CreateTagResponses = {
-  /**
-   * Created or updated file tag
-   */
-  200: {
-    tag: {
-      id: string;
-      tagId: string;
-      message: string | null;
-      createdAt: string;
-      updatedAt: string;
-    };
-  };
-};
-
-export type CreateTagResponse = CreateTagResponses[keyof CreateTagResponses];
-
-export type UploadAssetsData = {
-  body: {
-    assets: Array<{
-      assetType: 'FONT';
-      content: string;
-      fileName: string;
-      family?: string;
-      style?: string;
-    }>;
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?: ApiVersion;
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/assets';
-};
-
-export type UploadAssetsErrors = {
-  /**
-   * Request error
-   */
-  400: ErrorResponse;
-  /**
-   * Request error
-   */
-  401: ErrorResponse;
-  /**
-   * Request error
-   */
-  403: ErrorResponse;
-  /**
-   * Request error
-   */
-  404: ErrorResponse;
-  /**
-   * Request error
-   */
-  413: ErrorResponse;
-  /**
-   * Request error
-   */
-  429: ErrorResponse;
-  /**
-   * Request error
-   */
-  500: ErrorResponse;
-};
-
-export type UploadAssetsError = UploadAssetsErrors[keyof UploadAssetsErrors];
-
-export type UploadAssetsResponses = {
-  /**
-   * Uploaded assets
-   */
-  201: {
-    assets: Array<{
-      id: string;
-      assetKey: string;
-      fileName: string;
-    }>;
-    count: number;
-  };
-};
-
-export type UploadAssetsResponse =
-  UploadAssetsResponses[keyof UploadAssetsResponses];
-
 export type SubmitUserEditDiffsData = {
   body: {
     projectId?: string;
@@ -2168,27 +1937,31 @@ export type SubmitUserEditDiffsData = {
 
 export type SubmitUserEditDiffsErrors = {
   /**
-   * Request error
+   * The request is malformed or failed validation.
    */
   400: ErrorResponse;
   /**
-   * Request error
+   * Authentication is missing or invalid.
    */
   401: ErrorResponse;
   /**
-   * Request error
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
   403: ErrorResponse;
   /**
-   * Request error
+   * The request, or the data it would return, exceeds a size or item limit.
    */
   413: ErrorResponse;
   /**
-   * Request error
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
    */
   429: ErrorResponse;
   /**
-   * Request error
+   * An unexpected server error occurred.
    */
   500: ErrorResponse;
 };
@@ -2236,31 +2009,35 @@ export type ProcessFileMovesData = {
 
 export type ProcessFileMovesErrors = {
   /**
-   * Request error
+   * The request is malformed or failed validation.
    */
   400: ErrorResponse;
   /**
-   * Request error
+   * Authentication is missing or invalid.
    */
   401: ErrorResponse;
   /**
-   * Request error
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
   403: ErrorResponse;
   /**
-   * Request error
+   * The requested resource was not found.
    */
   404: ErrorResponse;
   /**
-   * Request error
+   * The request, or the data it would return, exceeds a size or item limit.
    */
   413: ErrorResponse;
   /**
-   * Request error
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
    */
   429: ErrorResponse;
   /**
-   * Request error
+   * An unexpected server error occurred.
    */
   500: ErrorResponse;
 };
@@ -2314,31 +2091,35 @@ export type GetOrphanedFilesData = {
 
 export type GetOrphanedFilesErrors = {
   /**
-   * Request error
+   * The request is malformed or failed validation.
    */
   400: ErrorResponse;
   /**
-   * Request error
+   * Authentication is missing or invalid.
    */
   401: ErrorResponse;
   /**
-   * Request error
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
   403: ErrorResponse;
   /**
-   * Request error
+   * The requested resource was not found.
    */
   404: ErrorResponse;
   /**
-   * Request error
+   * The request, or the data it would return, exceeds a size or item limit.
    */
   413: ErrorResponse;
   /**
-   * Request error
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
    */
   429: ErrorResponse;
   /**
-   * Request error
+   * An unexpected server error occurred.
    */
   500: ErrorResponse;
 };
@@ -2393,27 +2174,31 @@ export type GetFileInfoData = {
 
 export type GetFileInfoErrors = {
   /**
-   * Request error
+   * The request is malformed or failed validation.
    */
   400: ErrorResponse;
   /**
-   * Request error
+   * Authentication is missing or invalid.
    */
   401: ErrorResponse;
   /**
-   * Request error
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
   403: ErrorResponse;
   /**
-   * Request error
+   * The request, or the data it would return, exceeds a size or item limit.
    */
   413: ErrorResponse;
   /**
-   * Request error
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
    */
   429: ErrorResponse;
   /**
-   * Request error
+   * An unexpected server error occurred.
    */
   500: ErrorResponse;
 };
@@ -2482,27 +2267,31 @@ export type DownloadFilesData = {
 
 export type DownloadFilesErrors = {
   /**
-   * Request error
+   * The request is malformed or failed validation.
    */
   400: ErrorResponse;
   /**
-   * Request error
+   * Authentication is missing or invalid.
    */
   401: ErrorResponse;
   /**
-   * Request error
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
   403: ErrorResponse;
   /**
-   * Request error
+   * The request, or the data it would return, exceeds a size or item limit.
    */
   413: ErrorResponse;
   /**
-   * Request error
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
    */
   429: ErrorResponse;
   /**
-   * Request error
+   * An unexpected server error occurred.
    */
   500: ErrorResponse;
 };
@@ -2563,34 +2352,31 @@ export type DownloadFileData = {
 
 export type DownloadFileErrors = {
   /**
-   * Request error
+   * The request is malformed or failed validation.
    */
   400: ErrorResponse;
   /**
-   * Request error
+   * Authentication is missing or invalid.
    */
   401: ErrorResponse;
   /**
-   * Request error
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
   403: ErrorResponse;
   /**
-   * Request error
+   * The requested resource was not found.
    */
   404: ErrorResponse;
   /**
-   * Translation is still processing
+   * The requested translation has not finished yet. Retry later.
    */
-  425: {
-    status: 'processing';
-    message: string;
-  };
+  425: ErrorResponse;
   /**
-   * Request error
+   * Too many requests. The rate limit was exceeded.
    */
   429: ErrorResponse;
   /**
-   * Request error
+   * An unexpected server error occurred.
    */
   500: ErrorResponse;
 };
@@ -2608,169 +2394,6 @@ export type DownloadFileResponses = {
 
 export type DownloadFileResponse =
   DownloadFileResponses[keyof DownloadFileResponses];
-
-export type GetTranslationJobInfoData = {
-  body: {
-    jobIds: Array<string>;
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?: ApiVersion;
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/jobs/info';
-};
-
-export type GetTranslationJobInfoErrors = {
-  /**
-   * Request error
-   */
-  400: ErrorResponse;
-  /**
-   * Request error
-   */
-  401: ErrorResponse;
-  /**
-   * Request error
-   */
-  403: ErrorResponse;
-  /**
-   * Request error
-   */
-  404: ErrorResponse;
-  /**
-   * Request error
-   */
-  413: ErrorResponse;
-  /**
-   * Request error
-   */
-  429: ErrorResponse;
-  /**
-   * Request error
-   */
-  500: ErrorResponse;
-};
-
-export type GetTranslationJobInfoError =
-  GetTranslationJobInfoErrors[keyof GetTranslationJobInfoErrors];
-
-export type GetTranslationJobInfoResponses = {
-  /**
-   * Translation job statuses
-   */
-  200: Array<
-    | {
-        status: 'queued';
-        jobId: string;
-      }
-    | {
-        status: 'processing';
-        jobId: string;
-      }
-    | {
-        status: 'failed';
-        jobId: string;
-        error: {
-          message: string | null;
-        };
-      }
-    | {
-        status: 'completed';
-        jobId: string;
-      }
-    | {
-        status: 'unknown';
-        jobId: string;
-      }
-  >;
-};
-
-export type GetTranslationJobInfoResponse =
-  GetTranslationJobInfoResponses[keyof GetTranslationJobInfoResponses];
-
-export type GenerateProjectContextData = {
-  body: {
-    files: Array<{
-      branchId?: string;
-      fileId: string;
-      versionId: string;
-    }>;
-    locales?: Array<string>;
-    force?: boolean;
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?: ApiVersion;
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/setup/generate';
-};
-
-export type GenerateProjectContextErrors = {
-  /**
-   * Request error
-   */
-  400: ErrorResponse;
-  /**
-   * Request error
-   */
-  401: ErrorResponse;
-  /**
-   * Request error
-   */
-  403: ErrorResponse;
-  /**
-   * Request error
-   */
-  404: ErrorResponse;
-  /**
-   * Request error
-   */
-  413: ErrorResponse;
-  /**
-   * Request error
-   */
-  429: ErrorResponse;
-  /**
-   * Request error
-   */
-  500: ErrorResponse;
-};
-
-export type GenerateProjectContextError =
-  GenerateProjectContextErrors[keyof GenerateProjectContextErrors];
-
-export type GenerateProjectContextResponses = {
-  /**
-   * Context generation status
-   */
-  200:
-    | {
-        status: 'completed';
-      }
-    | {
-        setupJobId: string;
-        status: 'queued';
-      };
-};
-
-export type GenerateProjectContextResponse =
-  GenerateProjectContextResponses[keyof GenerateProjectContextResponses];
 
 export type PublishFilesData = {
   body: {
@@ -2798,31 +2421,35 @@ export type PublishFilesData = {
 
 export type PublishFilesErrors = {
   /**
-   * Request error
+   * The request is malformed or failed validation.
    */
   400: ErrorResponse;
   /**
-   * Request error
+   * Authentication is missing or invalid.
    */
   401: ErrorResponse;
   /**
-   * Request error
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
   403: ErrorResponse;
   /**
-   * Request error
+   * The requested resource was not found.
    */
   404: ErrorResponse;
   /**
-   * Request error
+   * The request, or the data it would return, exceeds a size or item limit.
    */
   413: ErrorResponse;
   /**
-   * Request error
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
    */
   429: ErrorResponse;
   /**
-   * Request error
+   * An unexpected server error occurred.
    */
   500: ErrorResponse;
 };
@@ -2906,35 +2533,39 @@ export type UploadSourceFilesData = {
 
 export type UploadSourceFilesErrors = {
   /**
-   * Request error
+   * The request is malformed or failed validation.
    */
   400: ErrorResponse;
   /**
-   * Request error
+   * Authentication is missing or invalid.
    */
   401: ErrorResponse;
   /**
-   * Request error
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
   403: ErrorResponse;
   /**
-   * Request error
+   * The requested resource was not found.
    */
   404: ErrorResponse;
   /**
-   * Request error
+   * The request, or the data it would return, exceeds a size or item limit.
    */
   413: ErrorResponse;
   /**
-   * Request error
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
    */
   429: ErrorResponse;
   /**
-   * Request error
+   * An unexpected server error occurred.
    */
   500: ErrorResponse;
   /**
-   * Request error
+   * The server is too busy to process the uploaded files. Retry later.
    */
   503: ErrorResponse;
 };
@@ -3029,31 +2660,35 @@ export type EnqueueFileTranslationsErrors = {
         count: number;
       };
   /**
-   * Request error
+   * Authentication is missing or invalid.
    */
   401: ErrorResponse;
   /**
-   * Request error
+   * The organization's billing account is blocked, or its plan usage limit, monthly spend limit, or credit balance does not cover this request.
    */
   402: ErrorResponse;
   /**
-   * Request error
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
   403: ErrorResponse;
   /**
-   * Request error
+   * The requested resource was not found.
    */
   404: ErrorResponse;
   /**
-   * Request error
+   * The request, or the data it would return, exceeds a size or item limit.
    */
   413: ErrorResponse;
   /**
-   * Request error
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
    */
   429: ErrorResponse;
   /**
-   * Request error
+   * An unexpected server error occurred.
    */
   500: ErrorResponse;
 };
@@ -3116,73 +2751,6 @@ export type EnqueueFileTranslationsResponses = {
 
 export type EnqueueFileTranslationsResponse =
   EnqueueFileTranslationsResponses[keyof EnqueueFileTranslationsResponses];
-
-export type TranslateData = {
-  body: RuntimeTranslationRequest;
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?: ApiVersion;
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/translate';
-};
-
-export type TranslateErrors = {
-  /**
-   * Request error
-   */
-  400: ErrorResponse;
-  /**
-   * Request error
-   */
-  401: ErrorResponse;
-  /**
-   * Request error
-   */
-  402: ErrorResponse;
-  /**
-   * Request error
-   */
-  403: ErrorResponse;
-  /**
-   * Request error
-   */
-  404: ErrorResponse;
-  /**
-   * Request error
-   */
-  413: ErrorResponse;
-  /**
-   * Request error
-   */
-  429: ErrorResponse;
-  /**
-   * Request error
-   */
-  500: ErrorResponse;
-};
-
-export type TranslateError = TranslateErrors[keyof TranslateErrors];
-
-export type TranslateResponses = {
-  /**
-   * All translations were served from cache
-   */
-  200: RuntimeTranslationResponse;
-  /**
-   * Translations completed
-   */
-  201: RuntimeTranslationResponse;
-};
-
-export type TranslateResponse = TranslateResponses[keyof TranslateResponses];
 
 export type UploadTranslationsData = {
   body: {
@@ -3290,35 +2858,39 @@ export type UploadTranslationsData = {
 
 export type UploadTranslationsErrors = {
   /**
-   * Request error
+   * The request is malformed or failed validation.
    */
   400: ErrorResponse;
   /**
-   * Request error
+   * Authentication is missing or invalid.
    */
   401: ErrorResponse;
   /**
-   * Request error
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
   403: ErrorResponse;
   /**
-   * Request error
+   * The requested resource was not found.
    */
   404: ErrorResponse;
   /**
-   * Request error
+   * The request, or the data it would return, exceeds a size or item limit.
    */
   413: ErrorResponse;
   /**
-   * Request error
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
    */
   429: ErrorResponse;
   /**
-   * Request error
+   * An unexpected server error occurred.
    */
   500: ErrorResponse;
   /**
-   * Request error
+   * The server is too busy to process the uploaded files. Retry later.
    */
   503: ErrorResponse;
 };
@@ -3347,6 +2919,368 @@ export type UploadTranslationsResponses = {
 
 export type UploadTranslationsResponse =
   UploadTranslationsResponses[keyof UploadTranslationsResponses];
+
+export type GetBranchInfoData = {
+  body: {
+    branchNames?: Array<string>;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+    /**
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     */
+    'gt-project-id'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v2/project/branches/info';
+};
+
+export type GetBranchInfoErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse;
+  /**
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type GetBranchInfoError = GetBranchInfoErrors[keyof GetBranchInfoErrors];
+
+export type GetBranchInfoResponses = {
+  /**
+   * Branch information
+   */
+  200: {
+    branches: Array<Branch>;
+    defaultBranch: Branch &
+      ({
+        [key: string]: unknown;
+      } | null);
+  };
+};
+
+export type GetBranchInfoResponse =
+  GetBranchInfoResponses[keyof GetBranchInfoResponses];
+
+export type CreateBranchData = {
+  body: {
+    branchName: string;
+    defaultBranch?: boolean;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+    /**
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     */
+    'gt-project-id'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v2/project/branches/create';
+};
+
+export type CreateBranchErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The request conflicts with existing data or the current state of the project or organization.
+   */
+  409: ErrorResponse;
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse;
+  /**
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type CreateBranchError = CreateBranchErrors[keyof CreateBranchErrors];
+
+export type CreateBranchResponses = {
+  /**
+   * Created or existing branch
+   */
+  200: {
+    branch: Branch;
+  };
+};
+
+export type CreateBranchResponse =
+  CreateBranchResponses[keyof CreateBranchResponses];
+
+export type CreateTagData = {
+  body: {
+    tagId: string;
+    files: Array<{
+      fileId: string;
+      versionId: string;
+      branchId: string;
+    }>;
+    message?: string;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+    /**
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     */
+    'gt-project-id'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v2/project/tags/create';
+};
+
+export type CreateTagErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse;
+  /**
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type CreateTagError = CreateTagErrors[keyof CreateTagErrors];
+
+export type CreateTagResponses = {
+  /**
+   * Created or updated file tag
+   */
+  200: {
+    tag: {
+      id: string;
+      tagId: string;
+      message: string | null;
+      createdAt: string;
+      updatedAt: string;
+    };
+  };
+};
+
+export type CreateTagResponse = CreateTagResponses[keyof CreateTagResponses];
+
+export type UploadAssetsData = {
+  body: {
+    assets: Array<{
+      assetType: 'FONT';
+      content: string;
+      fileName: string;
+      family?: string;
+      style?: string;
+    }>;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+    /**
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     */
+    'gt-project-id'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v2/project/assets';
+};
+
+export type UploadAssetsErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse;
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse;
+  /**
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type UploadAssetsError = UploadAssetsErrors[keyof UploadAssetsErrors];
+
+export type UploadAssetsResponses = {
+  /**
+   * Uploaded assets
+   */
+  201: {
+    assets: Array<{
+      id: string;
+      assetKey: string;
+      fileName: string;
+    }>;
+    count: number;
+  };
+};
+
+export type UploadAssetsResponse =
+  UploadAssetsResponses[keyof UploadAssetsResponses];
+
+export type TranslateData = {
+  body: RuntimeTranslationRequest;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+    /**
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     */
+    'gt-project-id'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v2/translate';
+};
+
+export type TranslateErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The organization's billing account is blocked, or its plan usage limit, monthly spend limit, or credit balance does not cover this request.
+   */
+  402: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse;
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse;
+  /**
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type TranslateError = TranslateErrors[keyof TranslateErrors];
+
+export type TranslateResponses = {
+  /**
+   * All translations were served from cache
+   */
+  200: RuntimeTranslationResponse;
+  /**
+   * Translations completed
+   */
+  201: RuntimeTranslationResponse;
+};
+
+export type TranslateResponse = TranslateResponses[keyof TranslateResponses];
 
 export type CreateProjectApiKeyData = {
   body: {
@@ -3380,31 +3314,35 @@ export type CreateProjectApiKeyData = {
 
 export type CreateProjectApiKeyErrors = {
   /**
-   * Request error
+   * The request is malformed or failed validation.
    */
   400: ErrorResponse;
   /**
-   * Request error
+   * Authentication is missing or invalid.
    */
   401: ErrorResponse;
   /**
-   * Request error
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
   403: ErrorResponse;
   /**
-   * Request error
+   * The requested resource was not found.
    */
   404: ErrorResponse;
   /**
-   * Request error
+   * The request, or the data it would return, exceeds a size or item limit.
    */
   413: ErrorResponse;
   /**
-   * Request error
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
    */
   429: ErrorResponse;
   /**
-   * Request error
+   * An unexpected server error occurred.
    */
   500: ErrorResponse;
 };
@@ -3459,23 +3397,23 @@ export type ListProjectsData = {
 
 export type ListProjectsErrors = {
   /**
-   * Request error
+   * The request is malformed or failed validation.
    */
   400: ErrorResponse;
   /**
-   * Request error
+   * Authentication is missing or invalid.
    */
   401: ErrorResponse;
   /**
-   * Request error
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
   403: ErrorResponse;
   /**
-   * Request error
+   * Too many requests. The rate limit was exceeded.
    */
   429: ErrorResponse;
   /**
-   * Request error
+   * An unexpected server error occurred.
    */
   500: ErrorResponse;
 };
@@ -3502,6 +3440,519 @@ export type ListProjectsResponses = {
 
 export type ListProjectsResponse =
   ListProjectsResponses[keyof ListProjectsResponses];
+
+export type GenerateProjectContextData = {
+  body: {
+    files: Array<{
+      branchId?: string;
+      fileId: string;
+      versionId: string;
+    }>;
+    locales?: Array<string>;
+    force?: boolean;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+    /**
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     */
+    'gt-project-id'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v2/project/setup/generate';
+};
+
+export type GenerateProjectContextErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse;
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse;
+  /**
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type GenerateProjectContextError =
+  GenerateProjectContextErrors[keyof GenerateProjectContextErrors];
+
+export type GenerateProjectContextResponses = {
+  /**
+   * Context generation status
+   */
+  200:
+    | {
+        status: 'completed';
+      }
+    | {
+        setupJobId: string;
+        status: 'queued';
+      };
+};
+
+export type GenerateProjectContextResponse =
+  GenerateProjectContextResponses[keyof GenerateProjectContextResponses];
+
+export type ListProjectContextGroupsData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Project ID.
+     */
+    projectId: string;
+  };
+  query?: {
+    /**
+     * The nextCursor from the previous page. Omit for the first page.
+     */
+    cursor?: string;
+    /**
+     * Maximum number of items to return, 1–100. Defaults to 50.
+     */
+    limit?: number;
+  };
+  url: '/v2/projects/{projectId}/context-groups';
+};
+
+export type ListProjectContextGroupsErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type ListProjectContextGroupsError =
+  ListProjectContextGroupsErrors[keyof ListProjectContextGroupsErrors];
+
+export type ListProjectContextGroupsResponses = {
+  /**
+   * Page of project context groups
+   */
+  200: {
+    items: Array<{
+      groupId: string;
+      groupName: string;
+      /**
+       * Lower values take precedence for duplicate terms.
+       */
+      priority: number;
+    }>;
+    /**
+     * Opaque cursor for the next page; `null` when there are no more items. Pages are read independently, so items changed between requests may be missed or repeated.
+     */
+    nextCursor: string | null;
+  };
+};
+
+export type ListProjectContextGroupsResponse =
+  ListProjectContextGroupsResponses[keyof ListProjectContextGroupsResponses];
+
+export type UnassignContextGroupData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Project ID.
+     */
+    projectId: string;
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/context-groups/{groupId}';
+};
+
+export type UnassignContextGroupErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type UnassignContextGroupError =
+  UnassignContextGroupErrors[keyof UnassignContextGroupErrors];
+
+export type UnassignContextGroupResponses = {
+  /**
+   * Assignment removed
+   */
+  200: {
+    committed: true;
+  };
+};
+
+export type UnassignContextGroupResponse =
+  UnassignContextGroupResponses[keyof UnassignContextGroupResponses];
+
+export type GetProjectContextGroupData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Project ID.
+     */
+    projectId: string;
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/context-groups/{groupId}';
+};
+
+export type GetProjectContextGroupErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type GetProjectContextGroupError =
+  GetProjectContextGroupErrors[keyof GetProjectContextGroupErrors];
+
+export type GetProjectContextGroupResponses = {
+  /**
+   * Project assignment
+   */
+  200: {
+    groupId: string;
+    groupName: string;
+    /**
+     * Lower values take precedence for duplicate terms.
+     */
+    priority: number;
+  };
+};
+
+export type GetProjectContextGroupResponse =
+  GetProjectContextGroupResponses[keyof GetProjectContextGroupResponses];
+
+export type ReorderContextGroupData = {
+  body: {
+    /**
+     * Zero-based position; out-of-range values move the group to the first or last position.
+     */
+    targetIndex: number;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Project ID.
+     */
+    projectId: string;
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/context-groups/{groupId}';
+};
+
+export type ReorderContextGroupErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse;
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse;
+  /**
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type ReorderContextGroupError =
+  ReorderContextGroupErrors[keyof ReorderContextGroupErrors];
+
+export type ReorderContextGroupResponses = {
+  /**
+   * Assignments reordered
+   */
+  200: {
+    committed: true;
+  };
+};
+
+export type ReorderContextGroupResponse =
+  ReorderContextGroupResponses[keyof ReorderContextGroupResponses];
+
+export type AssignContextGroupData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Project ID.
+     */
+    projectId: string;
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/context-groups/{groupId}';
+};
+
+export type AssignContextGroupErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type AssignContextGroupError =
+  AssignContextGroupErrors[keyof AssignContextGroupErrors];
+
+export type AssignContextGroupResponses = {
+  /**
+   * Already assigned
+   */
+  200: {
+    committed: true;
+    /**
+     * False when the group was already assigned; nothing changed.
+     */
+    created: boolean;
+  };
+  /**
+   * Context group assigned
+   */
+  201: {
+    committed: true;
+    /**
+     * False when the group was already assigned; nothing changed.
+     */
+    created: boolean;
+  };
+};
+
+export type AssignContextGroupResponse =
+  AssignContextGroupResponses[keyof AssignContextGroupResponses];
+
+export type ListOrgsData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path?: never;
+  query?: {
+    /**
+     * The nextCursor from the previous page. Omit for the first page.
+     */
+    cursor?: string;
+    /**
+     * Maximum number of items to return, 1–100. Defaults to 50.
+     */
+    limit?: number;
+  };
+  url: '/v2/orgs';
+};
+
+export type ListOrgsErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type ListOrgsError = ListOrgsErrors[keyof ListOrgsErrors];
+
+export type ListOrgsResponses = {
+  /**
+   * Page of Organizations
+   */
+  200: {
+    items: Array<{
+      id: string;
+      name: string;
+    }>;
+    /**
+     * Opaque cursor for the next page; `null` when there are no more items. Pages are read independently, so items changed between requests may be missed or repeated.
+     */
+    nextCursor: string | null;
+  };
+};
+
+export type ListOrgsResponse = ListOrgsResponses[keyof ListOrgsResponses];
 
 export type CreateProjectData = {
   body: {
@@ -3533,31 +3984,35 @@ export type CreateProjectData = {
 
 export type CreateProjectErrors = {
   /**
-   * Request error
+   * The request is malformed or failed validation.
    */
   400: ErrorResponse;
   /**
-   * Request error
+   * Authentication is missing or invalid.
    */
   401: ErrorResponse;
   /**
-   * Request error
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
   403: ErrorResponse;
   /**
-   * Request error
+   * The request conflicts with existing data or the current state of the project or organization.
    */
   409: ErrorResponse;
   /**
-   * Request error
+   * The request, or the data it would return, exceeds a size or item limit.
    */
   413: ErrorResponse;
   /**
-   * Request error
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
    */
   429: ErrorResponse;
   /**
-   * Request error
+   * An unexpected server error occurred.
    */
   500: ErrorResponse;
 };
@@ -3581,7 +4036,7 @@ export type CreateProjectResponses = {
 export type CreateProjectResponse =
   CreateProjectResponses[keyof CreateProjectResponses];
 
-export type ListOrgsData = {
+export type ListContextGroupsData = {
   body?: never;
   headers?: {
     /**
@@ -3589,7 +4044,12 @@ export type ListOrgsData = {
      */
     'gt-api-version'?: ApiVersion;
   };
-  path?: never;
+  path: {
+    /**
+     * Organization ID.
+     */
+    orgId: string;
+  };
   query?: {
     /**
      * The nextCursor from the previous page. Omit for the first page.
@@ -3600,42 +4060,391 @@ export type ListOrgsData = {
      */
     limit?: number;
   };
-  url: '/v2/orgs';
+  url: '/v2/orgs/{orgId}/context-groups';
 };
 
-export type ListOrgsErrors = {
+export type ListContextGroupsErrors = {
   /**
-   * Request error
+   * The request is malformed or failed validation.
    */
   400: ErrorResponse;
   /**
-   * Request error
+   * Authentication is missing or invalid.
    */
   401: ErrorResponse;
   /**
-   * Request error
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
    */
   403: ErrorResponse;
   /**
-   * Request error
+   * The requested resource was not found.
+   */
+  404: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
    */
   429: ErrorResponse;
   /**
-   * Request error
+   * An unexpected server error occurred.
    */
   500: ErrorResponse;
 };
 
-export type ListOrgsError = ListOrgsErrors[keyof ListOrgsErrors];
+export type ListContextGroupsError =
+  ListContextGroupsErrors[keyof ListContextGroupsErrors];
 
-export type ListOrgsResponses = {
+export type ListContextGroupsResponses = {
   /**
-   * Page of Organizations
+   * Page of context groups
+   */
+  200: {
+    items: Array<ContextGroup>;
+    /**
+     * Opaque cursor for the next page; `null` when there are no more items. Pages are read independently, so items changed between requests may be missed or repeated.
+     */
+    nextCursor: string | null;
+  };
+};
+
+export type ListContextGroupsResponse =
+  ListContextGroupsResponses[keyof ListContextGroupsResponses];
+
+export type CreateContextGroupData = {
+  body: {
+    /**
+     * Group name, 1–255 characters.
+     */
+    name: string;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Organization ID.
+     */
+    orgId: string;
+  };
+  query?: never;
+  url: '/v2/orgs/{orgId}/context-groups';
+};
+
+export type CreateContextGroupErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse;
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse;
+  /**
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type CreateContextGroupError =
+  CreateContextGroupErrors[keyof CreateContextGroupErrors];
+
+export type CreateContextGroupResponses = {
+  /**
+   * Context group created
+   */
+  201: {
+    committed: true;
+    groupId: string;
+  };
+};
+
+export type CreateContextGroupResponse =
+  CreateContextGroupResponses[keyof CreateContextGroupResponses];
+
+export type DeleteContextGroupData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+  };
+  query?: never;
+  url: '/v2/context-groups/{groupId}';
+};
+
+export type DeleteContextGroupErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type DeleteContextGroupError =
+  DeleteContextGroupErrors[keyof DeleteContextGroupErrors];
+
+export type DeleteContextGroupResponses = {
+  /**
+   * Context group deleted
+   */
+  200: {
+    committed: true;
+  };
+};
+
+export type DeleteContextGroupResponse =
+  DeleteContextGroupResponses[keyof DeleteContextGroupResponses];
+
+export type GetContextGroupData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+  };
+  query?: never;
+  url: '/v2/context-groups/{groupId}';
+};
+
+export type GetContextGroupErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type GetContextGroupError =
+  GetContextGroupErrors[keyof GetContextGroupErrors];
+
+export type GetContextGroupResponses = {
+  /**
+   * Context group
+   */
+  200: ContextGroup;
+};
+
+export type GetContextGroupResponse =
+  GetContextGroupResponses[keyof GetContextGroupResponses];
+
+export type UpdateContextGroupData = {
+  body: {
+    /**
+     * New group name, 1–255 characters.
+     */
+    name: string;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+  };
+  query?: never;
+  url: '/v2/context-groups/{groupId}';
+};
+
+export type UpdateContextGroupErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse;
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse;
+  /**
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type UpdateContextGroupError =
+  UpdateContextGroupErrors[keyof UpdateContextGroupErrors];
+
+export type UpdateContextGroupResponses = {
+  /**
+   * Context group updated
+   */
+  200: {
+    committed: true;
+  };
+};
+
+export type UpdateContextGroupResponse =
+  UpdateContextGroupResponses[keyof UpdateContextGroupResponses];
+
+export type ListContextGlossaryData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+  };
+  query?: {
+    /**
+     * The nextCursor from the previous page. Omit for the first page.
+     */
+    cursor?: string;
+    /**
+     * Maximum number of items to return, 1–100. Defaults to 50.
+     */
+    limit?: number;
+    /**
+     * Only the term whose stored keyword is exactly this value (case-sensitive).
+     */
+    keyword?: string;
+  };
+  url: '/v2/context-groups/{groupId}/glossary';
+};
+
+export type ListContextGlossaryErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type ListContextGlossaryError =
+  ListContextGlossaryErrors[keyof ListContextGlossaryErrors];
+
+export type ListContextGlossaryResponses = {
+  /**
+   * Page of glossary terms
    */
   200: {
     items: Array<{
       id: string;
-      name: string;
+      keyword: string;
+      definition: string | null;
+      userDefined: boolean;
     }>;
     /**
      * Opaque cursor for the next page; `null` when there are no more items. Pages are read independently, so items changed between requests may be missed or repeated.
@@ -3644,7 +4453,1046 @@ export type ListOrgsResponses = {
   };
 };
 
-export type ListOrgsResponse = ListOrgsResponses[keyof ListOrgsResponses];
+export type ListContextGlossaryResponse =
+  ListContextGlossaryResponses[keyof ListContextGlossaryResponses];
+
+export type UpsertContextGlossaryData = {
+  body: {
+    /**
+     * 1–100 terms, matched by keyword; a keyword may appear once.
+     */
+    entries: Array<{
+      keyword: string;
+      userDefined?: boolean;
+      /**
+       * null clears the definition.
+       */
+      definition?: string | null;
+      /**
+       * Translations by locale; null for a locale deletes its translation.
+       */
+      translations?: {
+        [key: string]: {
+          translation: string;
+          userDefined?: boolean;
+        } | null;
+      };
+    }>;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+  };
+  query?: never;
+  url: '/v2/context-groups/{groupId}/glossary';
+};
+
+export type UpsertContextGlossaryErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse;
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse;
+  /**
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type UpsertContextGlossaryError =
+  UpsertContextGlossaryErrors[keyof UpsertContextGlossaryErrors];
+
+export type UpsertContextGlossaryResponses = {
+  /**
+   * Glossary terms written
+   */
+  200: {
+    committed: true;
+    counts: {
+      created: number;
+      updated: number;
+      unchanged: number;
+    };
+  };
+};
+
+export type UpsertContextGlossaryResponse =
+  UpsertContextGlossaryResponses[keyof UpsertContextGlossaryResponses];
+
+export type DeleteContextGlossaryEntryData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+    /**
+     * Glossary term ID.
+     */
+    entryId: string;
+  };
+  query?: never;
+  url: '/v2/context-groups/{groupId}/glossary/{entryId}';
+};
+
+export type DeleteContextGlossaryEntryErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type DeleteContextGlossaryEntryError =
+  DeleteContextGlossaryEntryErrors[keyof DeleteContextGlossaryEntryErrors];
+
+export type DeleteContextGlossaryEntryResponses = {
+  /**
+   * Glossary term deleted
+   */
+  200: {
+    committed: true;
+  };
+};
+
+export type DeleteContextGlossaryEntryResponse =
+  DeleteContextGlossaryEntryResponses[keyof DeleteContextGlossaryEntryResponses];
+
+export type GetContextGlossaryEntryData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+    /**
+     * Glossary term ID.
+     */
+    entryId: string;
+  };
+  query?: never;
+  url: '/v2/context-groups/{groupId}/glossary/{entryId}';
+};
+
+export type GetContextGlossaryEntryErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type GetContextGlossaryEntryError =
+  GetContextGlossaryEntryErrors[keyof GetContextGlossaryEntryErrors];
+
+export type GetContextGlossaryEntryResponses = {
+  /**
+   * Glossary term
+   */
+  200: {
+    id: string;
+    keyword: string;
+    definition: string | null;
+  };
+};
+
+export type GetContextGlossaryEntryResponse =
+  GetContextGlossaryEntryResponses[keyof GetContextGlossaryEntryResponses];
+
+export type UpdateContextGlossaryEntryData = {
+  body: {
+    keyword?: string;
+    /**
+     * null clears the definition.
+     */
+    definition?: string | null;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+    /**
+     * Glossary term ID.
+     */
+    entryId: string;
+  };
+  query?: never;
+  url: '/v2/context-groups/{groupId}/glossary/{entryId}';
+};
+
+export type UpdateContextGlossaryEntryErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse;
+  /**
+   * The request conflicts with existing data or the current state of the project or organization.
+   */
+  409: ErrorResponse;
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse;
+  /**
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type UpdateContextGlossaryEntryError =
+  UpdateContextGlossaryEntryErrors[keyof UpdateContextGlossaryEntryErrors];
+
+export type UpdateContextGlossaryEntryResponses = {
+  /**
+   * Glossary term updated
+   */
+  200: {
+    committed: true;
+  };
+};
+
+export type UpdateContextGlossaryEntryResponse =
+  UpdateContextGlossaryEntryResponses[keyof UpdateContextGlossaryEntryResponses];
+
+export type ListContextGlossaryTranslationsData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+    /**
+     * Glossary term ID.
+     */
+    entryId: string;
+  };
+  query?: {
+    /**
+     * The nextCursor from the previous page. Omit for the first page.
+     */
+    cursor?: string;
+    /**
+     * Maximum number of items to return, 1–100. Defaults to 50.
+     */
+    limit?: number;
+  };
+  url: '/v2/context-groups/{groupId}/glossary/{entryId}/translations';
+};
+
+export type ListContextGlossaryTranslationsErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type ListContextGlossaryTranslationsError =
+  ListContextGlossaryTranslationsErrors[keyof ListContextGlossaryTranslationsErrors];
+
+export type ListContextGlossaryTranslationsResponses = {
+  /**
+   * Page of term translations
+   */
+  200: {
+    items: Array<{
+      id: string;
+      locale: string;
+      translation: string;
+      userDefined: boolean;
+    }>;
+    /**
+     * Opaque cursor for the next page; `null` when there are no more items. Pages are read independently, so items changed between requests may be missed or repeated.
+     */
+    nextCursor: string | null;
+  };
+};
+
+export type ListContextGlossaryTranslationsResponse =
+  ListContextGlossaryTranslationsResponses[keyof ListContextGlossaryTranslationsResponses];
+
+export type DeleteContextGlossaryTranslationData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+    /**
+     * Glossary term ID.
+     */
+    entryId: string;
+    /**
+     * Translation locale.
+     */
+    locale: string;
+  };
+  query?: never;
+  url: '/v2/context-groups/{groupId}/glossary/{entryId}/translations/{locale}';
+};
+
+export type DeleteContextGlossaryTranslationErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type DeleteContextGlossaryTranslationError =
+  DeleteContextGlossaryTranslationErrors[keyof DeleteContextGlossaryTranslationErrors];
+
+export type DeleteContextGlossaryTranslationResponses = {
+  /**
+   * Translation deleted
+   */
+  200: {
+    committed: true;
+  };
+};
+
+export type DeleteContextGlossaryTranslationResponse =
+  DeleteContextGlossaryTranslationResponses[keyof DeleteContextGlossaryTranslationResponses];
+
+export type SetContextGlossaryTranslationData = {
+  body: {
+    /**
+     * The locale's translation of the term.
+     */
+    translation: string;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+    /**
+     * Glossary term ID.
+     */
+    entryId: string;
+    /**
+     * Translation locale.
+     */
+    locale: string;
+  };
+  query?: never;
+  url: '/v2/context-groups/{groupId}/glossary/{entryId}/translations/{locale}';
+};
+
+export type SetContextGlossaryTranslationErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse;
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse;
+  /**
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type SetContextGlossaryTranslationError =
+  SetContextGlossaryTranslationErrors[keyof SetContextGlossaryTranslationErrors];
+
+export type SetContextGlossaryTranslationResponses = {
+  /**
+   * Translation replaced
+   */
+  200: {
+    committed: true;
+    outcome: 'created' | 'updated' | 'unchanged';
+  };
+  /**
+   * Translation created
+   */
+  201: {
+    committed: true;
+    outcome: 'created' | 'updated' | 'unchanged';
+  };
+};
+
+export type SetContextGlossaryTranslationResponse =
+  SetContextGlossaryTranslationResponses[keyof SetContextGlossaryTranslationResponses];
+
+export type ListContextCustomPromptsData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+  };
+  query?: {
+    /**
+     * The nextCursor from the previous page. Omit for the first page.
+     */
+    cursor?: string;
+    /**
+     * Maximum number of items to return, 1–100. Defaults to 50.
+     */
+    limit?: number;
+  };
+  url: '/v2/context-groups/{groupId}/custom-prompts';
+};
+
+export type ListContextCustomPromptsErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type ListContextCustomPromptsError =
+  ListContextCustomPromptsErrors[keyof ListContextCustomPromptsErrors];
+
+export type ListContextCustomPromptsResponses = {
+  /**
+   * Page of custom prompts
+   */
+  200: {
+    items: Array<{
+      id: string;
+      name: string;
+      description: string | null;
+      /**
+       * Locale the prompt applies to; null applies to all locales.
+       */
+      locale: string | null;
+      value: string;
+    }>;
+    /**
+     * Opaque cursor for the next page; `null` when there are no more items. Pages are read independently, so items changed between requests may be missed or repeated.
+     */
+    nextCursor: string | null;
+  };
+};
+
+export type ListContextCustomPromptsResponse =
+  ListContextCustomPromptsResponses[keyof ListContextCustomPromptsResponses];
+
+export type UpsertContextCustomPromptsData = {
+  body: {
+    /**
+     * 1–100 prompts, matched by name and locale; a name and locale may appear once.
+     */
+    customPrompts: Array<{
+      name: string;
+      /**
+       * Locale the prompt applies to; null applies it to every locale.
+       */
+      locale: string | null;
+      value: string;
+      /**
+       * null clears the description.
+       */
+      description?: string | null;
+    }>;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+  };
+  query?: never;
+  url: '/v2/context-groups/{groupId}/custom-prompts';
+};
+
+export type UpsertContextCustomPromptsErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse;
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse;
+  /**
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type UpsertContextCustomPromptsError =
+  UpsertContextCustomPromptsErrors[keyof UpsertContextCustomPromptsErrors];
+
+export type UpsertContextCustomPromptsResponses = {
+  /**
+   * Custom prompts written
+   */
+  200: {
+    committed: true;
+    counts: {
+      created: number;
+      updated: number;
+      unchanged: number;
+    };
+  };
+};
+
+export type UpsertContextCustomPromptsResponse =
+  UpsertContextCustomPromptsResponses[keyof UpsertContextCustomPromptsResponses];
+
+export type DeleteContextCustomPromptData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+    /**
+     * Custom prompt ID.
+     */
+    customPromptId: string;
+  };
+  query?: never;
+  url: '/v2/context-groups/{groupId}/custom-prompts/{customPromptId}';
+};
+
+export type DeleteContextCustomPromptErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type DeleteContextCustomPromptError =
+  DeleteContextCustomPromptErrors[keyof DeleteContextCustomPromptErrors];
+
+export type DeleteContextCustomPromptResponses = {
+  /**
+   * Custom prompt deleted
+   */
+  200: {
+    committed: true;
+  };
+};
+
+export type DeleteContextCustomPromptResponse =
+  DeleteContextCustomPromptResponses[keyof DeleteContextCustomPromptResponses];
+
+export type UpdateContextCustomPromptData = {
+  body: {
+    name?: string;
+    /**
+     * Locale the prompt applies to; null applies it to every locale.
+     */
+    locale?: string | null;
+    value?: string;
+    /**
+     * null clears the description.
+     */
+    description?: string | null;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+    /**
+     * Custom prompt ID.
+     */
+    customPromptId: string;
+  };
+  query?: never;
+  url: '/v2/context-groups/{groupId}/custom-prompts/{customPromptId}';
+};
+
+export type UpdateContextCustomPromptErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse;
+  /**
+   * The request conflicts with existing data or the current state of the project or organization.
+   */
+  409: ErrorResponse;
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse;
+  /**
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type UpdateContextCustomPromptError =
+  UpdateContextCustomPromptErrors[keyof UpdateContextCustomPromptErrors];
+
+export type UpdateContextCustomPromptResponses = {
+  /**
+   * Custom prompt updated
+   */
+  200: {
+    committed: true;
+  };
+};
+
+export type UpdateContextCustomPromptResponse =
+  UpdateContextCustomPromptResponses[keyof UpdateContextCustomPromptResponses];
+
+export type ImportContextContentData = {
+  body: {
+    /**
+     * Transfer document format.
+     */
+    format: 'json' | 'csv';
+    /**
+     * One JSON or CSV transfer document, up to 1 MiB as a JSON string, so escaped quotes and line breaks count toward the limit. An exported page always fits. It is validated in full before anything is written. A JSON document has the shape `{ glossary: [{ keyword, definition?, translations?: { <locale>: { translation } | null } }], customPrompts: [{ name, locale, value, description? }] }`; definition, locale and description may be null. An absent field keeps its stored value. `null` clears a nullable field or removes a map entry; other fields reject `null`. In batches and imports, items match stored items by natural key, stored items absent from the batch are untouched, and nothing else is deleted. A blank CSV cell counts as absent.
+     */
+    content: string;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+  };
+  query?: never;
+  url: '/v2/context-groups/{groupId}/import';
+};
+
+export type ImportContextContentErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse;
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse;
+  /**
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type ImportContextContentError =
+  ImportContextContentErrors[keyof ImportContextContentErrors];
+
+export type ImportContextContentResponses = {
+  /**
+   * Content imported
+   */
+  200: {
+    committed: true;
+    glossary: {
+      created: number;
+      updated: number;
+      unchanged: number;
+    };
+    customPrompts: {
+      created: number;
+      updated: number;
+      unchanged: number;
+    };
+  };
+};
+
+export type ImportContextContentResponse =
+  ImportContextContentResponses[keyof ImportContextContentResponses];
+
+export type ExportContextContentData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Context group ID.
+     */
+    groupId: string;
+  };
+  query: {
+    /**
+     * The nextCursor from the previous page. Omit for the first page.
+     */
+    cursor?: string;
+    /**
+     * Maximum number of items to return, 1–100. Defaults to 50.
+     */
+    limit?: number;
+    /**
+     * Transfer document format.
+     */
+    format: 'json' | 'csv';
+  };
+  url: '/v2/context-groups/{groupId}/export';
+};
+
+export type ExportContextContentErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse;
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse;
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse;
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse;
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse;
+};
+
+export type ExportContextContentError =
+  ExportContextContentErrors[keyof ExportContextContentErrors];
+
+export type ExportContextContentResponses = {
+  /**
+   * Page of exported content
+   */
+  200: {
+    /**
+     * Transfer document format.
+     */
+    format: 'json' | 'csv';
+    /**
+     * One self-contained transfer document that can be imported as a single batch.
+     */
+    content: string;
+    /**
+     * Pass as cursor for the next page; null ends the export.
+     */
+    nextCursor: string | null;
+  };
+};
+
+export type ExportContextContentResponse =
+  ExportContextContentResponses[keyof ExportContextContentResponses];
 
 export type CreateCliWizardSessionData = {
   body: CreateCliWizardSessionRequest;
@@ -3661,19 +5509,23 @@ export type CreateCliWizardSessionData = {
 
 export type CreateCliWizardSessionErrors = {
   /**
-   * Request error
+   * The request is malformed or failed validation.
    */
   400: ErrorResponse;
   /**
-   * Request error
+   * The request, or the data it would return, exceeds a size or item limit.
    */
   413: ErrorResponse;
   /**
-   * Request error
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse;
+  /**
+   * Too many requests. The rate limit was exceeded.
    */
   429: ErrorResponse;
   /**
-   * Request error
+   * An unexpected server error occurred.
    */
   500: ErrorResponse;
 };
@@ -3708,23 +5560,23 @@ export type DeleteCliWizardSessionData = {
 
 export type DeleteCliWizardSessionErrors = {
   /**
-   * Request error
+   * The request is malformed or failed validation.
    */
   400: ErrorResponse;
   /**
-   * Request error
+   * The requested resource was not found.
    */
   404: ErrorResponse;
   /**
-   * Request error
+   * The request, or the data it would return, exceeds a size or item limit.
    */
   413: ErrorResponse;
   /**
-   * Request error
+   * Too many requests. The rate limit was exceeded.
    */
   429: ErrorResponse;
   /**
-   * Request error
+   * An unexpected server error occurred.
    */
   500: ErrorResponse;
 };
@@ -3759,23 +5611,23 @@ export type GetCliWizardSessionData = {
 
 export type GetCliWizardSessionErrors = {
   /**
-   * Request error
+   * The request is malformed or failed validation.
    */
   400: ErrorResponse;
   /**
-   * Request error
+   * The requested resource was not found.
    */
   404: ErrorResponse;
   /**
-   * Request error
+   * The request, or the data it would return, exceeds a size or item limit.
    */
   413: ErrorResponse;
   /**
-   * Request error
+   * Too many requests. The rate limit was exceeded.
    */
   429: ErrorResponse;
   /**
-   * Request error
+   * An unexpected server error occurred.
    */
   500: ErrorResponse;
 };

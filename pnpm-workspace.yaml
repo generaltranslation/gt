@@ -2,6 +2,8 @@ packages:
   - packages/*
   - tests/apps/**/*
   - examples/*
+  - tools/bundle-analysis/analysis-app
+  - tools/bundle-analysis/examples/*
 
 enableGlobalVirtualStore: true
 hoist: false

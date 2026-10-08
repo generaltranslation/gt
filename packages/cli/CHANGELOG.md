@@ -1,5 +1,41 @@
 # gtx-cli
 
+## 2.25.2
+
+### Patch Changes
+
+- [#2341](https://github.com/generaltranslation/gt/pull/2341) [`60deece`](https://github.com/generaltranslation/gt/commit/60deececd8d1339aef7ef642d0e0f0f0b1d189d7) Thanks [@Kevin-Liu-01](https://github.com/Kevin-Liu-01)! - Restyle the page `gt login` shows in the browser after the loopback callback to match the dashboard's auth plate, centered on the plain ground: the GT mark, a heading with a status glyph, a lede, and a note naming the signed-in account. Nothing loads from the network. A denied request and a failed exchange get their own pages, and both say to run `npx gt login` again, which copies the command when clicked and shows a copy icon beside it that turns into a check for a moment after a copy (the page's one script, allowed by its hash in the Content-Security-Policy); the page calls a request denied only when the exchange read a validated denial, so it agrees with the terminal.
+
+  `gt login` returns to the shell as soon as the browser's callback is answered: a repeated callback request no longer holds a keep-alive socket open for the five second timeout. A browser that abandoned its first navigation while the exchange ran gets the result page on its repeat: `gt login` waits up to five seconds for that repeat, and exits at once when the first page arrived. A caller's AbortSignal now cancels the browser flow's token exchange and account lookup, reported as a cancellation.
+
+- Updated dependencies [[`ebb6c9e`](https://github.com/generaltranslation/gt/commit/ebb6c9efa403b2b6b2ec84521398a05825eb1ff0)]:
+  - @generaltranslation/supported-locales@2.1.41
+  - generaltranslation@9.5.5
+  - @generaltranslation/python-extractor@0.2.60
+  - @generaltranslation/vue-extractor@0.1.19
+
+## 2.25.1
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.5.4
+  - @generaltranslation/python-extractor@0.2.59
+  - @generaltranslation/supported-locales@2.1.40
+  - @generaltranslation/vue-extractor@0.1.18
+
+## 2.25.0
+
+### Minor Changes
+
+- [#2378](https://github.com/generaltranslation/gt/pull/2378) [`df1e47a`](https://github.com/generaltranslation/gt/commit/df1e47a3c8767546f61608c25d6183af96a7da82) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Add `gt api --list` to print every API operation as `METHOD path operationId summary`, and accept an endpoint with `gt api --spec <endpoint>` to print only the matching operations with schema references resolved, plus the `components` (recursive schemas and security schemes) they still refer to. The endpoint can be an operation ID, a spec path, or a concrete request path such as `/v2/project/info/abc`.
+
+### Patch Changes
+
+- [#2382](https://github.com/generaltranslation/gt/pull/2382) [`64db558`](https://github.com/generaltranslation/gt/commit/64db558404e9124f9f6101262a69346e66e54dca) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add configurable attribute localization to `localizeStaticUrls`
+
+- [#2380](https://github.com/generaltranslation/gt/pull/2380) [`c725b79`](https://github.com/generaltranslation/gt/commit/c725b797bf00e75241306f15b2690a8b467e80b5) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Include GT JSONs in `save-local`
+
 ## 2.24.0
 
 ### Minor Changes

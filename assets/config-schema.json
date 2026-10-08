@@ -792,6 +792,11 @@
                   "type": "boolean",
                   "description": "Keep links to source pages that have no translation on the default locale. Assumes URLs mirror source file paths and missing localized pages return a 404, as on Mintlify. Leave off for sites that serve untranslated pages at the localized URL, such as Docusaurus.",
                   "default": false
+                },
+                "attributes": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "Extra JSX attribute names or glob patterns whose URLs are localized, such as \"href2\" or \"href*\". \"href\" is always localized. Avoid patterns that match asset attributes like \"src\", since shared assets would 404 with a locale prefix."
                 }
               },
               "additionalProperties": false

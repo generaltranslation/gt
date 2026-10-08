@@ -1,0 +1,169 @@
+{
+  "d0e4315ff74c2dbd": "Langue",
+  "8d6b4a431317f5b0": [
+    {
+      "t": "p",
+      "i": 1,
+      "c": "Application de notes pour petites équipes"
+    },
+    {
+      "t": "h1",
+      "i": 2,
+      "c": "Des notes en texte brut synchronisées en 200 ms."
+    },
+    {
+      "t": "p",
+      "i": 3,
+      "c": " Quire enregistre chaque note comme un fichier Markdown sur votre disque. La synchronisation est chiffrée de bout en bout, et vous pouvez ouvrir le dossier dans n’importe quel éditeur. "
+    }
+  ],
+  "b2649736eefbe556": "Commencer l’essai gratuit",
+  "17c0a1fe2a4bde85": "Lire la FAQ",
+  "a5aab8024f2e0f60": {
+    "t": "p",
+    "i": 1,
+    "c": [
+      " La version 4.2 est sortie le ",
+      {
+        "i": 2,
+        "k": "_gt_date_2",
+        "v": "d"
+      },
+      " pour ",
+      {
+        "i": 3,
+        "k": "_gt_n_3",
+        "v": "n"
+      },
+      " rédacteurs. "
+    ]
+  },
+  "dd0d8977eb2ce78d": [
+    {
+      "t": "p",
+      "i": 1,
+      "c": "Tarifs"
+    },
+    {
+      "t": "h2",
+      "i": 2,
+      "c": "Une seule formule. Payez par utilisateur."
+    }
+  ],
+  "5eb6d2a3dcdaad22": "Facturation",
+  "6032f166f1b33374": "Mensuel",
+  "f29fe14e025576f8": "Annuel",
+  "76b3367e58ceaf9a": {
+    "t": "p",
+    "i": 1,
+    "c": {
+      "t": "Branch",
+      "i": 2,
+      "d": {
+        "b": {
+          "monthly": " Facturé chaque mois. Résiliable à tout moment. ",
+          "yearly": " Facturé une fois par an. Deux mois sont offerts. "
+        },
+        "t": "b"
+      },
+      "c": " Facturé par utilisateur. "
+    }
+  },
+  "29b8fb9be365cd8c": "Utilisateurs",
+  "e28b96105f447584": "Retirer un utilisateur",
+  "039627eef3f7e32e": "Ajouter un utilisateur",
+  "d6a895ada86e4dfa": "Nom de l’équipe",
+  "a62086e5a150cca8": {
+    "t": "p",
+    "i": 1,
+    "c": "Récapitulatif"
+  },
+  "99bc9a2184aa5e52": {
+    "t": "Plural",
+    "i": 1,
+    "d": {
+      "b": {
+        "one": "Un utilisateur",
+        "other": [
+          {
+            "i": 2,
+            "k": "_gt_n_2",
+            "v": "n"
+          },
+          " utilisateurs "
+        ]
+      },
+      "t": "p"
+    }
+  },
+  "fd0682261976e63a": "Prix par utilisateur",
+  "56b37609b45cf1f6": "Total",
+  "0eb2111fa22f5d06": "Fin de l’essai",
+  "6bcfa88bc3323735": {
+    "t": "p",
+    "i": 1,
+    "c": [
+      " Les factures sont envoyées à l’espace de travail ",
+      {
+        "i": 2,
+        "k": "_gt_value_2",
+        "v": "v"
+      },
+      ". Vous ne payez rien avant la fin de l’essai. "
+    ]
+  },
+  "2f9ae8acf75f755b": {
+    "t": "p",
+    "i": 1,
+    "c": [
+      " L’essai de ",
+      {
+        "i": 2,
+        "k": "_gt_value_2",
+        "v": "v"
+      },
+      " a commencé. L’inscription est désactivée dans cet exemple. "
+    ]
+  },
+  "faafb957e02b857f": [
+    {
+      "t": "h3",
+      "i": 1,
+      "c": "Où mes notes sont-elles stockées ?"
+    },
+    {
+      "t": "p",
+      "i": 2,
+      "c": " Dans un dossier de votre choix. Nos serveurs ne conservent que des copies chiffrées pour la synchronisation. "
+    }
+  ],
+  "fc28b68971e999a4": [
+    {
+      "t": "h3",
+      "i": 1,
+      "c": "Puis-je partir ?"
+    },
+    {
+      "t": "p",
+      "i": 2,
+      "c": " Oui. Vos notes sont de simples fichiers Markdown, il n’y a donc rien à exporter. "
+    }
+  ],
+  "5058c778cc03098e": [
+    {
+      "t": "h3",
+      "i": 1,
+      "c": "Fonctionne-t-il hors ligne ?"
+    },
+    {
+      "t": "p",
+      "i": 2,
+      "c": " Chaque modification est d’abord enregistrée localement. La synchronisation reprend dès que vous êtes de nouveau en ligne. "
+    }
+  ],
+  "c8c5c4e38c67fe93": "Quire est un produit fictif. Cette page est un exemple gt-vue.",
+  "fc4b615b203add59": "Temps de synchronisation médian entre appareils",
+  "78d9ba62cfe6899a": "Appareils inclus pour chaque utilisateur",
+  "5e78b83b4a0e6db2": "Clés AES qui ne quittent jamais vos appareils",
+  "04845e6dfa4c8569": "Jours d’essai gratuit, sans carte bancaire"
+}
