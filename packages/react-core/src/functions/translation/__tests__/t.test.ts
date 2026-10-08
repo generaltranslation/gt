@@ -1,7 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { hashSource } from 'generaltranslation/id';
 import type { ReactI18nCache } from '../../../i18n-cache/ReactI18nCache';
 import { setReactI18nCache } from '../../../i18n-cache/singleton-operations';
 import { setReadonlyConditionStore } from '../../../condition-store/singleton-operations';
+import { setGlobalTranslationsSnapshot } from '../../../translations-snapshot/singleton-operations';
 import { initializeI18nConfig } from '../../../setup/i18nConfig';
 import { t } from '../t';
 
@@ -14,17 +16,18 @@ function resetGTGlobals() {
 }
 
 const lookupTranslation = vi.fn();
+let currentLocale = 'en';
 
 function setup() {
   initializeI18nConfig(
     {
       defaultLocale: 'en',
-      locales: ['en', 'fr'],
+      locales: ['en', 'fr', 'es'],
     },
     'SPA'
   );
   setReadonlyConditionStore({
-    getLocale: () => 'en',
+    getLocale: () => currentLocale,
     getRegion: () => undefined,
     getEnableI18n: () => true,
     setLocale: () => {},
@@ -40,7 +43,12 @@ describe('t', () => {
   beforeEach(() => {
     resetGTGlobals();
     lookupTranslation.mockReset();
+    currentLocale = 'en';
     setup();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it('interpolates source strings when translation is not required', () => {
@@ -53,6 +61,35 @@ describe('t', () => {
     expect(lookupTranslation).toHaveBeenCalledWith('en', 'hello, brian', {
       $format: 'STRING',
       $locale: 'en',
+    });
+  });
+
+  describe('production', () => {
+    beforeEach(() => {
+      vi.stubEnv('NODE_ENV', 'production');
+      currentLocale = 'fr';
+    });
+
+    it('reads translations from the snapshot by source hash or compiler hash', () => {
+      setGlobalTranslationsSnapshot({
+        fr: {
+          [hashSource({ source: 'Hello', dataFormat: 'ICU' })]: 'Bonjour',
+          compilerHash: 'Bonjour, {name}',
+        },
+      });
+
+      expect(t('Hello')).toBe('Bonjour');
+      expect(
+        t('Hello, {name}', { name: 'Brian', $_hash: 'compilerHash' })
+      ).toBe('Bonjour, Brian');
+      expect(lookupTranslation).not.toHaveBeenCalled();
+    });
+
+    it('falls back to the source for a missing entry or locale', () => {
+      setGlobalTranslationsSnapshot({ fr: {} });
+
+      expect(t('Hello, {name}', { name: 'Brian' })).toBe('Hello, Brian');
+      expect(t('Hello', { $locale: 'es' })).toBe('Hello');
     });
   });
 });
