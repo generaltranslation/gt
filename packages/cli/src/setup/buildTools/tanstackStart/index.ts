@@ -50,6 +50,15 @@ export const tanstackStartSetup: BuildToolSetup = {
   async preflight(appDirectory) {
     await inspectTanStackStart(appDirectory);
   },
+  async getCDNStorageAction(ctx) {
+    const router = await readSourceFile(ctx.appDirectory, 'src/router');
+    const initializeCall =
+      router && findInitializeCall(router, Libraries.GT_TANSTACK_START);
+    if (!router || !initializeCall) return undefined;
+    const loaderPassed = passesLoader(router, initializeCall.arguments[0], ctx);
+    if (loaderPassed === undefined) return undefined;
+    return loaderPassed ? getStorageAction(router, ctx, undefined, true) : null;
+  },
   // The loader is the same file Vite generates, but a router that loads from
   // the CDN also needs the loader passed to initializeGT.
   async syncLoader(ctx) {

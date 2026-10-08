@@ -1031,6 +1031,45 @@ function RootDocument({ children }) { return <html><body>{children}</body></html
     });
   });
 
+  describe('getCDNStorageAction', () => {
+    const cdn = () => ({ ...ctx(), translationsDir: undefined });
+
+    // undefined keeps configure's generic step; null means nothing to change.
+    it.each([
+      ['a router it has not configured', async () => {}, undefined],
+      [
+        'a router whose options hide the loader',
+        () =>
+          write(
+            'src/router.tsx',
+            "import { initializeGT } from 'gt-tanstack-start'\nimport { options } from './options'\n\ninitializeGT(options)\n"
+          ),
+        undefined,
+      ],
+      [
+        'a router that loads from the CDN',
+        () => tanstackStartSetup.apply(cdn()),
+        null,
+      ],
+    ])('returns %s', async (_, setUp, expected) => {
+      await setUp();
+
+      expect(await tanstackStartSetup.getCDNStorageAction!(cdn())).toBe(
+        expected
+      );
+    });
+
+    it('asks a router that passes the loader to load from the CDN', async () => {
+      await tanstackStartSetup.apply(ctx());
+
+      expect(await tanstackStartSetup.getCDNStorageAction!(cdn())).toEqual({
+        whatHappened:
+          'src/router.tsx initializes GT for local translation files, but translations are now loaded from the CDN',
+        fix: 'Change the initializeGT call in src/router.tsx to initializeGT(gtConfig) and remove the loadTranslations import (see https://generaltranslation.com/docs/react/tanstack-start/setup)',
+      });
+    });
+  });
+
   it.each(['src/router.tsx', 'src/routes/__root.tsx'])(
     'rejects an app without %s before any change',
     async (missing) => {
