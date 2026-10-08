@@ -1,15 +1,16 @@
 import { createClient as createGeneratedClient } from '../generated/client';
 import type { Client } from '../generated/client';
-import type { GetProjectInfoData } from '../generated/types.gen';
+import { ApiVersion } from '../generated/types.gen';
 import { ApiError } from './errors';
 import { createRetryingFetch, createTimeoutFetch } from './transport';
 import type { RetryPolicy } from './transport';
 
-export type ApiVersion = NonNullable<
-  NonNullable<GetProjectInfoData['headers']>['gt-api-version']
->;
+export type { ApiVersion };
 
-export const API_VERSION: ApiVersion = '2026-03-06.v1';
+// The spec documents only the latest version, so the SDK must send it.
+// Enum order is the API's version order (oldest → newest). Not `.at(-1)`:
+// this runs at import, and JavaScriptCore before iOS 15.4 lacks it.
+export const API_VERSION: ApiVersion = Object.values(ApiVersion).pop()!;
 
 export type UserTokenProvider = {
   getAccessToken: () => Promise<string>;

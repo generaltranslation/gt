@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { awaitJobs, pollJobs } from '../wrappers/awaitJobs';
@@ -263,6 +264,22 @@ describe('createRetryingFetch', () => {
 
     expect(response.status).toBe(500);
     expect(fetchMock).toHaveBeenCalledOnce();
+  });
+});
+
+describe('API_VERSION', () => {
+  const spec = JSON.parse(
+    readFileSync(new URL('../../spec/openapi.json', import.meta.url), 'utf8')
+  ) as { components: { schemas: { ApiVersion: { enum: string[] } } } };
+  const specVersions = spec.components.schemas.ApiVersion.enum;
+
+  it('relies on the bundled spec listing ApiVersion oldest to newest', () => {
+    // Date-prefixed versions sort lexically in release order.
+    expect(specVersions).toEqual([...specVersions].sort());
+  });
+
+  it('is the newest ApiVersion in the bundled spec', () => {
+    expect(API_VERSION).toBe(specVersions.at(-1));
   });
 });
 
