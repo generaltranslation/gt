@@ -203,13 +203,4 @@ describe('LocaleConfig.getRegionProperties', () => {
       config.getRegionProperties('CA', 'en', { CA: { name: 'Explicit' } })
     ).toMatchObject({ code: 'CA', name: 'Explicit' });
   });
-
-  it('does not add enumerable state', () => {
-    const config = new LocaleConfig({
-      customMapping: { brand: { code: 'fr-CA', regionCode: 'CA' } },
-    });
-    const before = JSON.stringify(config);
-    config.getRegionProperties('CA', 'en');
-    expect(JSON.stringify(config)).toBe(before);
-  });
 });

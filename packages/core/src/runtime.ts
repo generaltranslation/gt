@@ -5,7 +5,6 @@
 
 import {
   LocaleConfig,
-  getRegionProperties as _getRegionProperties,
   isValidLocale as _isValidLocale,
   requiresTranslation as _requiresTranslation,
   resolveAliasLocale as _resolveAliasLocale,
@@ -113,9 +112,6 @@ export class GTRuntime {
 
   /** Lazily derived reverse custom mapping for alias locales */
   reverseCustomMapping?: Record<string, string>;
-
-  /** Lazily derived custom mapping for regions */
-  customRegionMapping?: CustomRegionMapping;
 
   /** Runtime-safe locale and formatting helpers (backing field) */
   private _localeConfig!: LocaleConfig;
@@ -705,30 +701,7 @@ export class GTRuntime {
     region = this.getLocaleProperties().regionCode,
     customMapping?: CustomRegionMapping
   ): { code: string; name: string; emoji: string } {
-    if (!customMapping) {
-      if (this.customMapping && !this.customRegionMapping) {
-        // Lazy derive custom region mapping from customMapping
-        const customRegionMapping: CustomRegionMapping = {};
-        for (const [locale, lp] of Object.entries(this.customMapping)) {
-          if (
-            lp &&
-            typeof lp === 'object' &&
-            lp.regionCode &&
-            !customRegionMapping[lp.regionCode]
-          ) {
-            const { regionName: name, emoji } = lp;
-            customRegionMapping[lp.regionCode] = {
-              locale,
-              ...(name && { name }),
-              ...(emoji && { emoji }),
-            };
-          }
-        }
-        this.customRegionMapping = customRegionMapping;
-      }
-      customMapping = this.customRegionMapping;
-    }
-    return _getRegionProperties(
+    return this.localeConfig.getRegionProperties(
       region,
       this.targetLocale, // this.targetLocale because we want it in the user's language
       customMapping

@@ -79,6 +79,8 @@ export class LocaleConfig {
   // locales. The snapshot is refreshed if callers mutate the public locale or
   // custom-mapping collections retained by this instance.
   private resolutionScope?: LocaleResolutionScope;
+  /** Lazily derived custom mapping for regions */
+  private customRegionMapping?: CustomRegionMapping;
 
   private getResolutionScope(): LocaleResolutionScope {
     if (
@@ -335,32 +337,30 @@ export class LocaleConfig {
     targetLocale?: string,
     customMapping?: CustomRegionMapping
   ) {
-    return _getRegionProperties(
-      region,
-      targetLocale,
-      customMapping ?? this.getCustomRegionMapping()
-    );
-  }
-
-  private getCustomRegionMapping(): CustomRegionMapping | undefined {
-    if (!this.customMapping) return undefined;
-    const customRegionMapping: CustomRegionMapping = {};
-    for (const [locale, lp] of Object.entries(this.customMapping)) {
-      if (
-        lp &&
-        typeof lp === 'object' &&
-        lp.regionCode &&
-        !customRegionMapping[lp.regionCode]
-      ) {
-        const { regionName: name, emoji } = lp;
-        customRegionMapping[lp.regionCode] = {
-          locale,
-          ...(name && { name }),
-          ...(emoji && { emoji }),
-        };
+    if (!customMapping) {
+      if (this.customMapping && !this.customRegionMapping) {
+        // Lazy derive custom region mapping from customMapping
+        const customRegionMapping: CustomRegionMapping = {};
+        for (const [locale, lp] of Object.entries(this.customMapping)) {
+          if (
+            lp &&
+            typeof lp === 'object' &&
+            lp.regionCode &&
+            !customRegionMapping[lp.regionCode]
+          ) {
+            const { regionName: name, emoji } = lp;
+            customRegionMapping[lp.regionCode] = {
+              locale,
+              ...(name && { name }),
+              ...(emoji && { emoji }),
+            };
+          }
+        }
+        this.customRegionMapping = customRegionMapping;
       }
+      customMapping = this.customRegionMapping;
     }
-    return customRegionMapping;
+    return _getRegionProperties(region, targetLocale, customMapping);
   }
 
   requiresTranslation(
