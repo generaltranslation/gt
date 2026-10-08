@@ -151,6 +151,7 @@ export type ProjectApiKeyPermission =
 export type ContextGroup = {
   id: string;
   name: string;
+  autoUpdate: boolean;
 };
 
 export type CreateCliWizardSessionResponse = {
@@ -4306,7 +4307,11 @@ export type UpdateContextGroupData = {
     /**
      * New group name, 1–255 characters.
      */
-    name: string;
+    name?: string;
+    /**
+     * Whether translation runs may add terms and context to this group automatically.
+     */
+    autoUpdate?: boolean;
   };
   headers?: {
     /**
