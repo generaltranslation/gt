@@ -295,7 +295,9 @@ export function configureRoot(
       ROOT_PROVIDER,
       'clientLoader',
       ...(hookImport ? [] : [hook]),
-    ])
+    ]) ||
+    // RootGTProvider's own data would hide a hook imported under that name.
+    hook === 'data'
   ) {
     return undefined;
   }

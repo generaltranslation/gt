@@ -213,6 +213,13 @@ describe('configureRoot', () => {
       'RootGTProvider',
       'useRouteLoaderData',
     ].map((name) => [`binds ${name}`, shadowing(name)]),
+    [
+      'imports the hook as data',
+      ROOT.replace(
+        'isRouteErrorResponse,',
+        'useRouteLoaderData as data,\n  isRouteErrorResponse,'
+      ),
+    ],
     // React Router hydrates with a clientLoader's data instead of the loader's.
     [
       'has a clientLoader',
