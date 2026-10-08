@@ -30,7 +30,16 @@ import { addRuntimeCredentials } from './runtimeCredentials';
 
 export type InitializeGTSPAParams = I18nConfigParams &
   BrowserI18nCacheParams &
-  CreateBrowserConditionStoreParams;
+  CreateBrowserConditionStoreParams &
+  SourceDictionaryParams;
+
+/**
+ * loadDictionary is never called for the default locale, so it requires the
+ * source dictionary
+ */
+type SourceDictionaryParams =
+  | { loadDictionary?: undefined }
+  | { dictionary: NonNullable<BrowserI18nCacheParams['dictionary']> };
 
 /**
  * Initialize GT for an SPA
