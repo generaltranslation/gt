@@ -12,7 +12,7 @@ export type HtmlDocument = {
   html: t.JSXElement;
   /** The literal `lang` attribute, when the document sets one. */
   lang?: t.JSXAttribute;
-  /** What `<body>` renders before `<Scripts />`: the content GTProvider wraps. */
+  /** What `<body>` renders before `<Scripts />`: the content setup wraps. */
   wrapped: t.JSXElement['children'];
   /** Set when reindenting the wrapped content would change a literal. */
   multilineLiteral: boolean;
@@ -20,7 +20,7 @@ export type HtmlDocument = {
 
 /**
  * The single `<html>` a root function body renders, its literal `lang` if any,
- * and the content GTProvider wraps, which must render the route's slot exactly
+ * and the content setup wraps, which must render the route's slot exactly
  * once. Returns undefined for any other shape.
  */
 export function findHtmlDocument(
@@ -83,13 +83,13 @@ export function getLangEdit({ html, lang }: HtmlDocument): Edit {
 }
 
 /**
- * Wraps the document's content in GTProvider, which takes its translations
- * from `translations`, reindented to the depth the provider adds.
+ * Wraps the document's content in the element `open` and `close` delimit,
+ * reindented to the depth the element adds.
  */
-export function getProviderEdit(
+export function getWrapEdit(
   content: string,
   { wrapped, multilineLiteral }: HtmlDocument,
-  translations: string,
+  { open, close }: { open: string; close: string },
   { eol, indent }: Pick<CodeStyle, 'eol' | 'indent'>
 ): Edit {
   const first = wrapped[0];
@@ -101,22 +101,16 @@ export function getProviderEdit(
   const nestedText = multilineLiteral
     ? wrappedText
     : wrappedText.replace(/\n(?=[ \t]*\S)/g, `\n${indent}`);
-  const open = getProviderTag(translations);
   return {
     start: first.start!,
     end: last.end!,
     text:
       wrappedIndent === undefined
-        ? `${open}${wrappedText}</GTProvider>`
+        ? `${open}${wrappedText}${close}`
         : [
             open,
             `${wrappedIndent}${indent}${nestedText}`,
-            `${wrappedIndent}</GTProvider>`,
+            `${wrappedIndent}${close}`,
           ].join(eol),
   };
-}
-
-/** The opening tag, so manual instructions quote what setup would write. */
-export function getProviderTag(translations: string): string {
-  return `<GTProvider locale={locale} translations={${translations}}>`;
 }

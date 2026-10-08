@@ -20,3 +20,4 @@ export const SURROUNDING_LINE_COUNT = 5;
 // Default translations directory paths
 export const DEFAULT_TRANSLATIONS_DIR = './public/_gt';
 export const DEFAULT_VITE_TRANSLATIONS_DIR = './src/_gt';
+export const DEFAULT_REACT_ROUTER_TRANSLATIONS_DIR = './app/_gt';

@@ -1,4 +1,5 @@
 import type { SupportedReactFrameworks } from '../../types/index.js';
+import { reactRouterSetup } from './reactRouter/index.js';
 import { tanstackStartSetup } from './tanstackStart/index.js';
 import { viteSetup } from './vite.js';
 
@@ -38,6 +39,10 @@ export type BuildToolSetup = {
   syncLoader(
     ctx: BuildToolContext & { translationsDir: string; keepAppSource?: boolean }
   ): Promise<SetupResult>;
+  /** CDN transition guidance; undefined keeps the generic loader-removal action. */
+  getCDNStorageAction?(
+    ctx: BuildToolContext
+  ): Promise<ManualAction | undefined>;
   /** Configures the app entry after gt.config.json is written. */
   apply(ctx: BuildToolContext): Promise<SetupResult>;
 };
@@ -45,6 +50,7 @@ export type BuildToolSetup = {
 export const BUILD_TOOL_SETUPS: BuildToolSetup[] = [
   viteSetup,
   tanstackStartSetup,
+  reactRouterSetup,
 ];
 
 export function getBuildToolSetup(

@@ -10,7 +10,7 @@ import path from 'node:path';
  * Detects the frontend framework used in the current project.
  *
  * Analyzes the project structure and dependencies to identify the framework.
- * Detection order: Mintlify → Next.js (App/Pages Router) → Gatsby → RedwoodJS → TanStack Start → Vite → React.
+ * Detection order: Mintlify → Next.js (App/Pages Router) → Gatsby → RedwoodJS → TanStack Start → React Router → Vite → React.
  *
  * For Next.js projects, further determines whether it uses App Router or Pages Router
  * by checking for the presence of `app/` or `pages/` directories.
@@ -68,6 +68,12 @@ export async function detectFramework(): Promise<
   // TanStack Start depends on Vite, so check it first
   if (isPackageInstalled('@tanstack/react-start', packageJson, false, true)) {
     return { name: 'tanstack-start', type: 'react' };
+  }
+
+  // React Router framework apps (e.g. Shopify Hydrogen) depend on Vite, so check them first
+  // Detect @react-router/dev (not react-router) since plain Vite apps can install react-router
+  if (isPackageInstalled('@react-router/dev', packageJson, false, true)) {
+    return { name: 'react-router', type: 'react' };
   }
 
   // Check for Vite

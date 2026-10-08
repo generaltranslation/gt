@@ -20,6 +20,7 @@ import { VITE_LOADER_FILE, viteSetup } from '../vite.js';
 import { applyEdits, getCodeStyle, getImportEdit } from '../shared/edits.js';
 import { findInitializeCall, passesLoader } from '../shared/initializeGT.js';
 import { rendersElement } from '../shared/jsx.js';
+import { getCustomLoaderAction } from '../shared/loader.js';
 import { readSourceFile, type SourceFile } from '../shared/source.js';
 import {
   getMiddlewareAction,
@@ -94,15 +95,7 @@ export const tanstackStartSetup: BuildToolSetup = {
       loaderExport = await getViteLoaderExport(appDirectory, loader);
       if (loader === 'custom') {
         manualActions.push(
-          loaderExport
-            ? {
-                whatHappened: `Your custom ${VITE_LOADER_FILE} was preserved`,
-                fix: `Verify ${VITE_LOADER_FILE} loads translations from ${translationsDir}`,
-              }
-            : {
-                whatHappened: `Your custom ${VITE_LOADER_FILE} has no runtime loadTranslations export`,
-                fix: `Export a default or named loadTranslations function from ${VITE_LOADER_FILE} that loads translations from ${translationsDir}, then rerun gt init`,
-              }
+          getCustomLoaderAction(VITE_LOADER_FILE, translationsDir, loaderExport)
         );
       }
     }

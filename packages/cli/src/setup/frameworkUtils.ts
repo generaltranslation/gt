@@ -25,6 +25,9 @@ export function getFrameworkDisplayName(
   if (frameworkObject.name === 'tanstack-start') {
     return 'TanStack Start';
   }
+  if (frameworkObject.name === 'react-router') {
+    return 'React Router';
+  }
   if (frameworkObject.type === 'react') {
     return 'React';
   }

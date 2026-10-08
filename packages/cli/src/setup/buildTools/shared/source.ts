@@ -17,9 +17,10 @@ export type SourceFile = {
 
 export async function readSourceFile(
   appDirectory: string,
-  basename: string
+  basename: string,
+  { extensions = SOURCE_EXTENSIONS }: { extensions?: string[] } = {}
 ): Promise<SourceFile | undefined> {
-  for (const extension of SOURCE_EXTENSIONS) {
+  for (const extension of extensions) {
     const relativePath = `${basename}${extension}`;
     const absolutePath = path.join(appDirectory, relativePath);
     if (!fs.existsSync(absolutePath)) continue;
@@ -33,24 +34,28 @@ export async function readSourceFile(
   return undefined;
 }
 
-/** The local name `name` is imported as from `source`. */
+/**
+ * The local name `name` is imported as from `source`. With `types`, type-only
+ * imports count too.
+ */
 export function getLocalImport(
   file: SourceFile,
   name: string,
-  source: string
+  source: string,
+  { types = false }: { types?: boolean } = {}
 ): string | undefined {
   for (const statement of file.statements ?? []) {
     if (
       statement.type !== 'ImportDeclaration' ||
       statement.source.value !== source ||
-      statement.importKind === 'type'
+      (!types && statement.importKind === 'type')
     ) {
       continue;
     }
     for (const specifier of statement.specifiers) {
       if (
         specifier.type === 'ImportSpecifier' &&
-        specifier.importKind !== 'type' &&
+        (types || specifier.importKind !== 'type') &&
         t.isIdentifier(specifier.imported, { name })
       ) {
         return specifier.local.name;
