@@ -1557,12 +1557,14 @@ See https://www.npmjs.com/package/gt-vue`);
       // Only the application setup rewrites the initializer; a loader passed
       // to it takes precedence over CDN loading.
       const action = await buildTool.getCDNStorageAction?.(buildToolContext);
-      reportManualAction(
-        action ?? {
-          whatHappened: `Translations now load from the CDN, but ${buildTool.initializer} may still receive the local loader for ${configuredTranslationsDir}`,
-          fix: `Remove the loadTranslations option and its import from the ${buildTool.initializer}() call so translations load from the CDN`,
-        }
-      );
+      if (action !== null) {
+        reportManualAction(
+          action ?? {
+            whatHappened: `Translations now load from the CDN, but ${buildTool.initializer} may still receive the local loader for ${configuredTranslationsDir}`,
+            fix: `Remove the loadTranslations option and its import from the ${buildTool.initializer}() call so translations load from the CDN`,
+          }
+        );
+      }
     } else if (
       storage === 'cdn' &&
       !buildTool &&

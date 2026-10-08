@@ -22,6 +22,8 @@ export const DOCS_URL =
 /** React Router's app directory, where the root module and loader live. */
 export const SOURCE_DIRECTORY = 'app';
 
+export const ROOT_MODULE = `${SOURCE_DIRECTORY}/root`;
+
 export const LOADER_FILE = `${SOURCE_DIRECTORY}/loadTranslations.ts`;
 
 /**
@@ -164,27 +166,21 @@ export async function inspectReactRouter(appDirectory: string) {
   // Framework mode installs @react-router/dev, which a monorepo may install
   // at its root, so a config also counts.
   const packageJson = await getPackageJson(appDirectory);
-  if (
-    packageJson &&
-    !config &&
-    !isPackageInstalled('@react-router/dev', packageJson, false, true)
-  ) {
-    throw new Error(notFrameworkRefusal);
-  }
-  if (
-    packageJson &&
-    isPackageInstalled('@vitejs/plugin-rsc', packageJson, false, true)
-  ) {
-    throw new Error(rscRefusal);
-  }
-  // An undeclared gt-react is installed at its latest version.
-  const gtReact =
-    packageJson && getPackageVersion(Libraries.GT_REACT, packageJson);
-  if (gtReact && permitsVersionBelow(gtReact, MINIMUM_GT_REACT)) {
-    throw new Error(outdatedGtReactRefusal);
+  if (packageJson) {
+    const installed = (name: string) =>
+      isPackageInstalled(name, packageJson, false, true);
+    if (!config && !installed('@react-router/dev')) {
+      throw new Error(notFrameworkRefusal);
+    }
+    if (installed('@vitejs/plugin-rsc')) throw new Error(rscRefusal);
+    // An undeclared gt-react is installed at its latest version.
+    const gtReact = getPackageVersion(Libraries.GT_REACT, packageJson);
+    if (gtReact && permitsVersionBelow(gtReact, MINIMUM_GT_REACT)) {
+      throw new Error(outdatedGtReactRefusal);
+    }
   }
   if (config) checkConfig(config, appDirectory);
-  const root = await readSourceFile(appDirectory, `${SOURCE_DIRECTORY}/root`);
+  const root = await readSourceFile(appDirectory, ROOT_MODULE);
   if (!root) throw new Error(missingRootRefusal);
   return root;
 }

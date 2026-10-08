@@ -72,10 +72,13 @@ function shadowing(name: string): string {
   );
 }
 
-const ALIASED_HOOK_ROOT = ROOT.replace(
-  'isRouteErrorResponse,',
-  'useRouteLoaderData as useRootData,\n  isRouteErrorResponse,'
-);
+/** The starter root module, importing the hook under `name`. */
+const importingHookAs = (name: string) =>
+  ROOT.replace(
+    'isRouteErrorResponse,',
+    `useRouteLoaderData${name === 'useRouteLoaderData' ? '' : ` as ${name}`},\n  isRouteErrorResponse,`
+  );
+const HOOK_ROOT = importingHookAs('useRouteLoaderData');
 
 /** Hydrogen 2025's Layout reads the root data and renders children in a ternary. */
 const HYDROGEN_2025_ROOT = HYDROGEN_ROOT.replace(
@@ -193,14 +196,6 @@ describe('configureRoot', () => {
     for (const line of lines) expect(configured).toContain(line);
   });
 
-  it('reuses an aliased useRouteLoaderData import', () => {
-    const configured = configure(ALIASED_HOOK_ROOT);
-    expect(configured).toContain(
-      'const locale = useRootData<typeof loader>("root")?.locale'
-    );
-    expect(configured).not.toContain('import { useRouteLoaderData }');
-  });
-
   it.each([
     // Each binds a name setup adds, in a scope the configured module still parses with.
     ...[
@@ -213,13 +208,7 @@ describe('configureRoot', () => {
       'RootGTProvider',
       'useRouteLoaderData',
     ].map((name) => [`binds ${name}`, shadowing(name)]),
-    [
-      'imports the hook as data',
-      ROOT.replace(
-        'isRouteErrorResponse,',
-        'useRouteLoaderData as data,\n  isRouteErrorResponse,'
-      ),
-    ],
+    ['imports the hook under another name', importingHookAs('useRootData')],
     // React Router hydrates with a clientLoader's data instead of the loader's.
     [
       'has a clientLoader',
@@ -289,16 +278,16 @@ describe('configureRoot', () => {
       layoutWith('const loader = null;', rootWithLoader(RETURN)),
     ],
     [
-      'rebinds an aliased hook in Layout',
-      layoutWith('const useRootData = () => null;', ALIASED_HOOK_ROOT),
+      'rebinds the hook in Layout',
+      layoutWith('const useRouteLoaderData = () => null;', HOOK_ROOT),
     ],
     [
-      'passes an aliased hook in Layout',
-      layoutWith('wrap(useRootData);', ALIASED_HOOK_ROOT),
+      'passes the hook in Layout',
+      layoutWith('wrap(useRouteLoaderData);', HOOK_ROOT),
     ],
     [
-      'optionally calls an aliased hook in Layout',
-      layoutWith("useRootData?.('root');", ALIASED_HOOK_ROOT),
+      'optionally calls the hook in Layout',
+      layoutWith("useRouteLoaderData?.('root');", HOOK_ROOT),
     ],
     [
       'has a concise arrow Layout',
@@ -344,6 +333,17 @@ describe('getRootFix', () => {
     expect(fix).toContain(DOCS_URL);
     expect(fix).toContain("loadTranslations from './loadTranslations'");
     expect(fix).toContain('await getTranslationsSnapshot(locale)');
+  });
+
+  it('imports a named loader export', () => {
+    expect(
+      getRootFix('app/root.tsx', {
+        configImport: '../gt.config.json',
+        loaderExport: 'loadTranslations',
+      })
+    ).toContain(
+      "gtConfig from '../gt.config.json' and { loadTranslations } from './loadTranslations', then call initializeGT({ ...gtConfig, loadTranslations })"
+    );
   });
 });
 
@@ -575,6 +575,31 @@ describe('reactRouterSetup', () => {
     );
 
     it.each([
+      ['apply', reactRouterSetup.apply],
+      ['syncLoader', reactRouterSetup.syncLoader],
+    ])(
+      'quotes a named loader export when %s moves a CDN root to local files',
+      async (_, run) => {
+        await reactRouterSetup.apply(ctx(undefined));
+        write(
+          'app/loadTranslations.ts',
+          'export async function loadTranslations() {\n  return {};\n}\n'
+        );
+
+        const { manualActions } = await run(ctx('app/_gt'));
+
+        expect(manualActions).toContainEqual({
+          whatHappened: expect.stringContaining(
+            'initializes GT for CDN translations'
+          ),
+          fix: expect.stringContaining(
+            "initializeGT({ ...gtConfig, loadTranslations }) and add import { loadTranslations } from './loadTranslations'"
+          ),
+        });
+      }
+    );
+
+    it.each([
       'initializeGT(options)',
       'initializeGT({ ...gtConfig, ...options })',
     ])('does not guess the storage of %s', async (call) => {
@@ -702,19 +727,20 @@ describe('reactRouterSetup', () => {
   });
 
   describe('getCDNStorageAction', () => {
+    // undefined keeps configure's generic step; null means nothing to change.
     it.each([
-      ['a root it has not configured', async () => {}],
-      // A root already on the CDN form needs no change.
+      ['a root it has not configured', async () => {}, undefined],
       [
         'a root that loads from the CDN',
         () => reactRouterSetup.apply(ctx(undefined)),
+        null,
       ],
-    ])('reports nothing for %s', async (_, setUp) => {
+    ])('returns %s', async (_, setUp, expected) => {
       await setUp();
 
-      expect(
-        await reactRouterSetup.getCDNStorageAction!(ctx(undefined))
-      ).toBeUndefined();
+      expect(await reactRouterSetup.getCDNStorageAction!(ctx(undefined))).toBe(
+        expected
+      );
     });
   });
 

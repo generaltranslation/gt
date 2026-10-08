@@ -504,6 +504,28 @@ export function Layout({ children }: { children: React.ReactNode }) {
       }
     );
 
+    // The root never received the loader, so configure has nothing to report.
+    it('reports nothing when configure moves a CDN root back to the CDN', async () => {
+      vi.stubEnv('VITE_GT_PROJECT_ID', undefined);
+      vi.stubEnv('VITE_GT_DEV_API_KEY', undefined);
+      const packageJson = JSON.parse(
+        fs.readFileSync(file('package.json'), 'utf8')
+      );
+      packageJson.dependencies['gt-react'] = '^11.1.3';
+      packageJson.devDependencies.gt = '*';
+      fs.writeFileSync(file('package.json'), JSON.stringify(packageJson));
+      const options = ['--json', '--defaults', '--no-dev-credentials'];
+      await run('init', ...options, '--locales', 'fr', '--storage', 'cdn');
+      await run('configure', ...options, '--storage', 'local');
+      vi.mocked(logger.warn).mockClear();
+
+      await run('configure', ...options, '--storage', 'cdn');
+
+      expect(logger.warn).not.toHaveBeenCalledWith(
+        expect.stringContaining('may still receive the local loader')
+      );
+    });
+
     it('configures the app and installs gt-react under --defaults', async () => {
       await run(
         'init',

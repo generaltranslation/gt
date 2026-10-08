@@ -39,10 +39,14 @@ export type BuildToolSetup = {
   syncLoader(
     ctx: BuildToolContext & { translationsDir: string; keepAppSource?: boolean }
   ): Promise<SetupResult>;
-  /** CDN transition guidance; undefined keeps the generic loader-removal action. */
+  /**
+   * The change a configured app entry needs after translations switch to the
+   * CDN: null when it needs none, undefined to keep the generic loader-removal
+   * action.
+   */
   getCDNStorageAction?(
     ctx: BuildToolContext
-  ): Promise<ManualAction | undefined>;
+  ): Promise<ManualAction | null | undefined>;
   /** Configures the app entry after gt.config.json is written. */
   apply(ctx: BuildToolContext): Promise<SetupResult>;
 };

@@ -22,6 +22,7 @@ import {
   DOCS_URL,
   inspectReactRouter,
   LOADER_FILE,
+  ROOT_MODULE,
   SOURCE_DIRECTORY,
 } from './source.js';
 
@@ -37,14 +38,13 @@ export const reactRouterSetup: BuildToolSetup = {
     await inspectReactRouter(appDirectory);
   },
   async getCDNStorageAction(ctx) {
-    const root = await readSourceFile(
-      ctx.appDirectory,
-      `${SOURCE_DIRECTORY}/root`
+    const root = await readSourceFile(ctx.appDirectory, ROOT_MODULE);
+    const initializeCall = root && findInitializeCall(root, Libraries.GT_REACT);
+    return (
+      root &&
+      initializeCall &&
+      getStorageAction(root, initializeCall, ctx, undefined)
     );
-    if (!root) return undefined;
-    const initializeCall = findInitializeCall(root, Libraries.GT_REACT);
-    if (!initializeCall) return undefined;
-    return getStorageAction(root, initializeCall, ctx, undefined);
   },
   // init --no-react-setup only reads the loader; configure also refreshes a
   // generated one. Either way, a root still initialized for the CDN after a
@@ -67,7 +67,7 @@ export const reactRouterSetup: BuildToolSetup = {
         )
       : [];
     // Only a root that initializes GT reads the loader.
-    const root = await readSourceFile(appDirectory, `${SOURCE_DIRECTORY}/root`);
+    const root = await readSourceFile(appDirectory, ROOT_MODULE);
     const initializeCall = root && findInitializeCall(root, Libraries.GT_REACT);
     if (!root || !initializeCall) return { steps, manualActions };
     // The root imports a loader left as it is by that loader's own export.

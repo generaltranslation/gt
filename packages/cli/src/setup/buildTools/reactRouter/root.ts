@@ -50,8 +50,13 @@ function getLoaderBinding(loaderExport: NonNullable<ViteLoaderExport>) {
     : '{ loadTranslations }';
 }
 
+type Style = Pick<CodeStyle, 'quote' | 'semi'>;
+
+/** The style manual steps quote code in. */
+const PROSE: Style = { quote: "'", semi: '' };
+
 function getLoaderImport(
-  { quote, semi }: Pick<CodeStyle, 'quote' | 'semi'>,
+  { quote, semi }: Style,
   loaderExport: NonNullable<ViteLoaderExport>
 ): string {
   return `import ${getLoaderBinding(loaderExport)} from ${quote}./loadTranslations${quote}${semi}`;
@@ -66,7 +71,7 @@ const PROJECT_ID_ENV = getDevelopmentEnvNames('react-router').projectId;
  * build and cannot read it there; a nonempty gtConfig.projectId still wins.
  */
 function getInitializeCall(
-  { quote, semi }: Pick<CodeStyle, 'quote' | 'semi'>,
+  { quote, semi }: Style,
   loaderExport: ViteLoaderExport
 ) {
   const configured = `${quote}projectId${quote} in gtConfig && typeof gtConfig.projectId === ${quote}string${quote} && gtConfig.projectId`;
@@ -281,10 +286,11 @@ export function configureRoot(
   const { content, statements } = root;
   if (!statements) return undefined;
   const hookImport = getLocalImport(root, 'useRouteLoaderData', 'react-router');
-  const hook = hookImport ?? 'useRouteLoaderData';
   // Setup's bindings must not collide with the app's, and a clientLoader's
-  // data would replace the loader's while the page hydrates.
+  // data would replace the loader's while the page hydrates. A hook imported
+  // under another name is left for manual setup too.
   if (
+    (hookImport !== undefined && hookImport !== 'useRouteLoaderData') ||
     usesName(statements, [
       'GTProvider',
       'initializeGT',
@@ -294,10 +300,8 @@ export function configureRoot(
       'loadTranslations',
       ROOT_PROVIDER,
       'clientLoader',
-      ...(hookImport ? [] : [hook]),
-    ]) ||
-    // RootGTProvider's own data would hide a hook imported under that name.
-    hook === 'data'
+      ...(hookImport ? [] : ['useRouteLoaderData']),
+    ])
   ) {
     return undefined;
   }
@@ -306,7 +310,7 @@ export function configureRoot(
   if (
     layout?.fn.body.type !== 'BlockStatement' ||
     usesName([layout.fn], ['locale', 'loader']) ||
-    !onlyCalls(layout.fn, hook)
+    !onlyCalls(layout.fn, 'useRouteLoaderData')
   ) {
     return undefined;
   }
@@ -330,7 +334,7 @@ export function configureRoot(
   );
   if (!loaderEdits) return undefined;
 
-  const rootData = `${hook}${typed ? '<typeof loader>' : ''}(${quote}root${quote})`;
+  const rootData = `useRouteLoaderData${typed ? '<typeof loader>' : ''}(${quote}root${quote})`;
   const [first] = layout.fn.body.body;
   // Without semicolons, Layout's new first line would join a statement that
   // starts with one of these.
@@ -371,23 +375,21 @@ export function configureRoot(
 
 /**
  * For a root that initializes GT, the change its initializeGT call needs when
- * translations moved between local files and the CDN since setup ran.
+ * translations moved between local files and the CDN since setup ran: null
+ * when the call already matches, undefined when its options hide the loader.
  */
 export function getStorageAction(
   root: SourceFile,
   initializeCall: t.CallExpression,
   ctx: BuildToolContext,
   loaderExport: ViteLoaderExport
-): ManualAction | undefined {
+): ManualAction | null | undefined {
   const loaderPassed = passesLoader(root, initializeCall.arguments[0], ctx);
-  // Options this cannot read may pass the loader either way, so say nothing.
-  if (loaderPassed === undefined || loaderPassed === Boolean(loaderExport)) {
-    return undefined;
-  }
+  if (loaderPassed === undefined) return undefined;
+  if (loaderPassed === Boolean(loaderExport)) return null;
   return getStorageChangeAction(root, ctx, loaderPassed, {
-    call: getInitializeCall({ quote: "'", semi: '' }, loaderExport),
-    loaderImport:
-      loaderExport && getLoaderImport({ quote: "'", semi: '' }, loaderExport),
+    call: getInitializeCall(PROSE, loaderExport),
+    loaderImport: loaderExport && getLoaderImport(PROSE, loaderExport),
     docsUrl: DOCS_URL,
   });
 }
@@ -403,5 +405,5 @@ export function getRootFix(
   const loaderImport = loaderExport
     ? ` and ${getLoaderBinding(loaderExport)} from './loadTranslations'`
     : '';
-  return `In ${rootPath}, import GTProvider, getTranslationsSnapshot, initializeGT and parseLocale from '${Libraries.GT_REACT}', useRouteLoaderData from 'react-router', gtConfig from '${configImport}'${loaderImport}, then call ${getInitializeCall({ quote: "'", semi: '' }, loaderExport)}. Return the locale from parseLocale(request) and translations from await getTranslationsSnapshot(locale) in the root loader. In Layout, set <html lang> to that locale, and wrap what <body> renders before <Scripts /> in a GTProvider that renders only when the root loader returned data (see ${DOCS_URL})`;
+  return `In ${rootPath}, import GTProvider, getTranslationsSnapshot, initializeGT and parseLocale from '${Libraries.GT_REACT}', useRouteLoaderData from 'react-router', gtConfig from '${configImport}'${loaderImport}, then call ${getInitializeCall(PROSE, loaderExport)}. Return the locale from parseLocale(request) and translations from await getTranslationsSnapshot(locale) in the root loader. In Layout, set <html lang> to that locale, and wrap what <body> renders before <Scripts /> in a GTProvider that renders only when the root loader returned data (see ${DOCS_URL})`;
 }
