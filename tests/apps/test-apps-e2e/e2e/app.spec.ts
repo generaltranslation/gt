@@ -307,14 +307,39 @@ async function testTanStackApp(page: Page) {
 
 // Every route serves the shell prerendered in the default locale, so the
 // client must hydrate it as rendered and then switch to the visitor's locale.
+// /spa's loader runs in the browser; a static host cannot answer the server
+// functions other routes call.
 async function testTanStackSpaShell(page: Page) {
   const localeCookie = 'generaltranslation.locale';
   await page.context().clearCookies();
   await page
     .context()
     .addCookies([{ name: localeCookie, value: 'fr', url: app.baseURL }]);
+  // Records every locale cookie write: the shell's locale must never replace
+  // the visitor's, even between the hydration and visitor renders.
+  await page.addInitScript((cookieName) => {
+    const cookie = Object.getOwnPropertyDescriptor(
+      Document.prototype,
+      'cookie'
+    )!;
+    const writes: string[] = [];
+    Object.assign(window, { __gtLocaleCookieWrites: writes });
+    Object.defineProperty(document, 'cookie', {
+      get: () => cookie.get!.call(document),
+      set: (value: string) => {
+        if (value.startsWith(`${cookieName}=`))
+          writes.push(value.split(';')[0]);
+        cookie.set!.call(document, value);
+      },
+    });
+  }, localeCookie);
+  const errors: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') errors.push(message.text());
+  });
+  page.on('pageerror', (error) => errors.push(error.message));
 
-  await page.goto('/ssr');
+  await page.goto('/spa');
   await page.waitForLoadState('networkidle');
   await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
   await expectTanStackLocale(page, 'fr');
@@ -323,6 +348,14 @@ async function testTanStackSpaShell(page: Page) {
   ).toBeVisible();
   const cookies = await page.context().cookies();
   expect(cookies.find(({ name }) => name === localeCookie)?.value).toBe('fr');
+  const writes = await page.evaluate(
+    () =>
+      (window as unknown as { __gtLocaleCookieWrites: string[] })
+        .__gtLocaleCookieWrites
+  );
+  expect(writes).not.toHaveLength(0);
+  expect(writes.every((write) => write === `${localeCookie}=fr`)).toBe(true);
+  expect(errors).toEqual([]);
 
   await selectLocale(page, 'zh');
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh');

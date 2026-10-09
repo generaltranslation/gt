@@ -241,6 +241,11 @@ describe.sequential('setupRouterGTIntegration client', () => {
     expect(
       renderToString(createElement(router.options.Wrap!, null, 'app'))
     ).toBe('en');
+    // The provider must not save the shell's locale to the visitor's cookies.
+    expect(mockProvider).toHaveBeenLastCalledWith(
+      expect.objectContaining({ locale: 'en', _syncConditions: false }),
+      undefined
+    );
   });
 
   it('integrates a router only once', async () => {
