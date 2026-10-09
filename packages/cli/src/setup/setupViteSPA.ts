@@ -196,6 +196,26 @@ export async function inspectViteSPA(appDirectory: string) {
   };
 }
 
+/** Adds an empty JSON file for each missing non-default locale. */
+export async function writeTranslationStubs({
+  appDirectory,
+  defaultLocale,
+  locales,
+  translationsDir,
+}: Pick<SetupViteSPAOptions, 'appDirectory' | 'defaultLocale' | 'locales'> & {
+  translationsDir: string;
+}): Promise<void> {
+  const translationsPath = path.resolve(appDirectory, translationsDir);
+  await fs.promises.mkdir(translationsPath, { recursive: true });
+  for (const locale of new Set(locales)) {
+    if (locale === defaultLocale) continue;
+    const stubPath = path.join(translationsPath, `${locale}.json`);
+    if (!fs.existsSync(stubPath)) {
+      await fs.promises.writeFile(stubPath, '{}\n');
+    }
+  }
+}
+
 export type ViteLoaderResult =
   | 'created'
   | 'updated'
@@ -248,14 +268,12 @@ export async function writeViteLoader({
     normalizedLoader !== previousContent?.trimEnd();
 
   // Stubs first, so a directory failure leaves no loader pointing at it.
-  await fs.promises.mkdir(translationsPath, { recursive: true });
-  for (const locale of new Set(locales)) {
-    if (locale === defaultLocale) continue;
-    const stubPath = path.join(translationsPath, `${locale}.json`);
-    if (!fs.existsSync(stubPath)) {
-      await fs.promises.writeFile(stubPath, '{}\n');
-    }
-  }
+  await writeTranslationStubs({
+    appDirectory,
+    defaultLocale,
+    locales,
+    translationsDir,
+  });
   if (custom) return 'custom';
   if (existingLoader === content) return 'unchanged';
   await fs.promises.writeFile(loaderPath, content);
@@ -280,8 +298,11 @@ export async function getViteLoaderExport(
     : 'default';
 }
 
-function getLoaderExport(content: string): ViteLoaderExport {
-  const statements = parseModule(content, 'loadTranslations.ts');
+export function getLoaderExport(
+  content: string,
+  filename = 'loadTranslations.ts'
+): ViteLoaderExport {
+  const statements = parseModule(content, filename);
   if (!statements) return undefined;
   const names = new Set<string>();
   for (const statement of statements) {
