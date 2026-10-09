@@ -44,3 +44,23 @@ export const serializeString = (value: string, className?: string): string => {
     ? `<pre${classAttribute}>\n${escapeHTML(value)}</pre>`
     : `<span${classAttribute}>${escapeHTML(value)}</span>`;
 };
+
+/**
+ * Field that temporarily holds an inline object's original `_key` while it
+ * passes through `htmlToBlocks`, which assigns every child a new key.
+ */
+export const INLINE_OBJECT_KEY_FIELD = '__gtInlineObjectKey';
+
+/** Restore inline object keys stashed under `INLINE_OBJECT_KEY_FIELD`. */
+export const restoreInlineObjectKeys = (block: PortableTextTextBlock) => {
+  (block.children as Array<Record<string, unknown>> | undefined)?.forEach(
+    (child) => {
+      if (!(INLINE_OBJECT_KEY_FIELD in child)) return;
+      if (typeof child[INLINE_OBJECT_KEY_FIELD] === 'string') {
+        child._key = child[INLINE_OBJECT_KEY_FIELD];
+      }
+      delete child[INLINE_OBJECT_KEY_FIELD];
+    }
+  );
+  return block;
+};

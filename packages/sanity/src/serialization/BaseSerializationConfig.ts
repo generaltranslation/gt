@@ -13,7 +13,8 @@ import {
 import { htmlToBlocks } from '@portabletext/block-tools';
 import { blockContentType } from './deserialize/helpers';
 import { PortableTextObject, PortableTextTextBlock, TypedObject } from 'sanity';
-import { detachGTData } from './data';
+import { attachGTData, detachGTData } from './data';
+import { INLINE_OBJECT_KEY_FIELD } from './helpers';
 import type { CustomDeserializers } from './types';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -71,7 +72,17 @@ const unknownBlockFunc: PortableTextBlockComponent = ({ value, children }) =>
   `<p id="${value._key}" data-type="unknown-block-style" data-style="${value.style}">${children}</p>`;
 
 export const customSerializers: Partial<PortableTextHtmlComponents> = {
-  unknownType: ({ value }) => `<div class="${value._type}"></div>`,
+  // Inline objects must stay inline: a <div> inside a <p> closes the
+  // paragraph and the rest of its text is dropped on import. The object is
+  // carried as data and restored by the inline-object rule below.
+  unknownType: ({ value, isInline }) =>
+    isInline
+      ? attachGTData(
+          `<span class="${value._type}"></span>`,
+          value as unknown as Record<string, unknown>,
+          'inlineObject'
+        )
+      : `<div class="${value._type}"></div>`,
   types: {},
   marks: defaultMarks,
   block: defaultPortableTextBlockStyles,
@@ -83,6 +94,29 @@ export const customSerializers: Partial<PortableTextHtmlComponents> = {
 export const customDeserializers: CustomDeserializers = { types: {} };
 
 export const customBlockDeserializers: Array<unknown> = [
+  // handle inline objects with data-gt-internal
+  {
+    deserialize(node: Node): TypedObject | undefined {
+      if (node.nodeType !== 1) {
+        return undefined;
+      }
+      const el = node as HTMLElement;
+      if (!el.getAttribute('data-gt-internal')) {
+        return undefined;
+      }
+      const inlineObject = detachGTData(el.outerHTML).data?.inlineObject;
+      if (!isRecord(inlineObject) || typeof inlineObject._type !== 'string') {
+        return undefined;
+      }
+      // htmlToBlocks re-keys every child; the original key is restored once
+      // the block is built (restoreInlineObjectKeys)
+      return {
+        ...inlineObject,
+        _type: inlineObject._type,
+        [INLINE_OBJECT_KEY_FIELD]: inlineObject._key,
+      };
+    },
+  },
   // handle marks with data-gt-internal
   {
     deserialize(
