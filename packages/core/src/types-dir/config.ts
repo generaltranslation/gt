@@ -41,8 +41,10 @@ export type GTCompilerOptions = {
   disableBuildChecks?: boolean;
   /**
    * Whether to wrap translatable JSX automatically, for example
-   * `<div>Hello</div>` becomes `<div><T>Hello</T></div>`. Defaults to
-   * gt.config.json's `files.gt.parsingFlags.enableAutoJsxInjection`, or false.
+   * `<div>Hello</div>` becomes `<div><T>Hello</T></div>`. Defaults to false,
+   * or to gt.config.json's `files.gt.parsingFlags.enableAutoJsxInjection` in
+   * integrations that pass the config to the compiler, such as
+   * gt-tanstack-start.
    */
   enableAutoJsxInjection?: boolean;
 };
