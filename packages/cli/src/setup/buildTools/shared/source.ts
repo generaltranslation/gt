@@ -60,6 +60,24 @@ export function getLocalImport(
   return undefined;
 }
 
+/**
+ * Whether code uses a name as an identifier: a binding, a reference, or a
+ * property name such as `obj.name` or `{ name: 1 }`. Deliberately broad, since
+ * a false match only sends setup to manual steps. Strings, comments, JSX
+ * attributes and JSX element names are not identifiers, so they do not count.
+ */
+export function usesName(nodes: t.Node[], names: string[]): boolean {
+  let used = false;
+  for (const node of nodes) {
+    t.traverseFast(node, (child) => {
+      if (child.type === 'Identifier' && names.includes(child.name)) {
+        used = true;
+      }
+    });
+  }
+  return used;
+}
+
 export type DeclaredFunction = {
   /** The statement that declares it, which may be an export. */
   statement: t.Statement;

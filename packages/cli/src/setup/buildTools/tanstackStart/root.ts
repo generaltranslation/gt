@@ -23,6 +23,7 @@ import {
 import {
   findDeclaredFunction,
   getPropertyName,
+  usesName,
   type DeclaredFunction,
   type SourceFile,
 } from '../shared/source.js';
@@ -161,7 +162,7 @@ export function configureRootRoute({
 }: SourceFile): string | undefined {
   if (!statements) return undefined;
   // Generated bindings must not shadow or collide with the app's own.
-  if (/\b(?:getLocale|getTranslationsSnapshot)\b/.test(content)) {
+  if (usesName(statements, ['getLocale', 'getTranslationsSnapshot'])) {
     return undefined;
   }
   const found = findRootComponent(statements);
@@ -188,6 +189,9 @@ export function configureRootRoute({
     componentProperty?.type !== 'ObjectProperty' ||
     !component ||
     document?.body.type !== 'BlockStatement' ||
+    // Deliberately text, not usesName: a component taking a locale or
+    // translations prop has its own plumbing, and a JSX attribute name is not
+    // an identifier.
     [component, document].some((fn) =>
       /\b(?:locale|translations)\b/.test(content.slice(fn.start!, fn.end!))
     )
