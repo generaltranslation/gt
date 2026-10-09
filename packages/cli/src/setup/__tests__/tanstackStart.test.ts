@@ -680,6 +680,39 @@ export function getRouter() {
     expect(result).toEqual({ steps: [], manualActions: [routerAction] });
   });
 
+  it.each([
+    [
+      'getRouter replaces the integrated router',
+      (router: string) =>
+        router
+          .replace(
+            'const router = createTanStackRouter',
+            'let router = createTanStackRouter'
+          )
+          .replace(
+            '  setupRouterGTIntegration({ router })\n',
+            '  setupRouterGTIntegration({ router })\n  router = createTanStackRouter({ routeTree })\n'
+          ),
+    ],
+    [
+      'a local function hides the setupRouterGTIntegration import',
+      (router: string) =>
+        router.replace(
+          'export function getRouter() {\n',
+          'export function getRouter() {\n  const setupRouterGTIntegration = (_options: object) => {}\n'
+        ),
+    ],
+  ])('asks for review when %s', async (_case, edit) => {
+    const router = edit(configuredRouter);
+    write('src/router.tsx', router);
+    write('vite.config.ts', configuredVite);
+
+    const result = await tanstackStartSetup.apply(ctx());
+
+    expect(read('src/router.tsx')).toBe(router);
+    expect(result).toEqual({ steps: [], manualActions: [routerAction] });
+  });
+
   describe('the root route lang', () => {
     it.each([
       [
