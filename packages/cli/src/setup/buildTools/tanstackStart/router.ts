@@ -11,6 +11,7 @@ import {
 } from '../shared/edits.js';
 import {
   callsFunction,
+  findDeclaredFunction,
   getBindingAt,
   getLocalImport,
   getPropertyName,
@@ -76,30 +77,8 @@ export function callsRouterIntegration(router: SourceFile): boolean {
 function findGetRouterBody(
   statements: t.Statement[]
 ): t.BlockStatement | undefined {
-  for (const statement of statements) {
-    const declaration =
-      statement.type === 'ExportNamedDeclaration'
-        ? statement.declaration
-        : statement;
-    if (
-      declaration?.type === 'FunctionDeclaration' &&
-      declaration.id?.name === 'getRouter'
-    ) {
-      return declaration.body;
-    }
-    if (declaration?.type !== 'VariableDeclaration') continue;
-    for (const { id, init } of declaration.declarations) {
-      if (
-        t.isIdentifier(id, { name: 'getRouter' }) &&
-        (init?.type === 'ArrowFunctionExpression' ||
-          init?.type === 'FunctionExpression') &&
-        init.body.type === 'BlockStatement'
-      ) {
-        return init.body;
-      }
-    }
-  }
-  return undefined;
+  const getRouter = findDeclaredFunction(statements, 'getRouter')?.fn;
+  return getRouter?.body.type === 'BlockStatement' ? getRouter.body : undefined;
 }
 
 /**
