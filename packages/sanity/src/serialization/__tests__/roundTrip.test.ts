@@ -42,7 +42,7 @@ const sourceDocument = {
   _id: 'post-round-trip',
   _rev: 'rev-1',
   _type: 'roundTripPost',
-  title: 'Shipping and receiving checklist',
+  title: 'Shipping <i>& receiving</i> checklist',
   excerpt:
     '  Starts with spaces.\nSecond line\n\n\tTabbed line after a blank line\nEnds with spaces.  ',
   seo: {
@@ -50,13 +50,13 @@ const sourceDocument = {
     description:
       'First sentence of the summary.\nSecond sentence on its own line.',
   },
-  tags: ['warehouses', 'cold storage\nand freezers'],
+  tags: ['warehouses', 'cold storage\nand freezers', 'dry <b>goods</b>'],
   sections: [
     {
       _key: 'section-table',
       _type: 'markdownBlock',
       content:
-        '| Supplier | Ships to |\n| --- | --- |\n| Northwind | Oslo, Lyon |\n| Contoso | Porto & Turin |',
+        '| Supplier | Ships to |\n| --- | --- |\n| Northwind | Oslo, Lyon<sup>†</sup> |\n| Contoso | Porto & Turin |',
     },
     {
       _key: 'section-list',
@@ -67,6 +67,12 @@ const sourceDocument = {
       _key: 'section-indented',
       _type: 'markdownBlock',
       content: 'Paragraph one.\n\n    indented code\n\nTrailing newline\n',
+    },
+    {
+      _key: 'section-inline-html',
+      _type: 'markdownBlock',
+      content:
+        'Line one<br>Line two\n\nSee <a href="https://example.test/docs?a=1&b=2">the docs</a>.',
     },
   ],
 } as unknown as SanityDocument;
@@ -151,7 +157,16 @@ describe('string elements', () => {
       Array.from(exported.querySelectorAll('.tags > *')).map(
         (element) => element.tagName
       )
-    ).toEqual(['SPAN', 'PRE']);
+    ).toEqual(['SPAN', 'PRE', 'SPAN']);
+  });
+
+  test('carry tag-like values as literal text inside the field element', () => {
+    const title = exported.querySelector('span.title');
+    expect(title?.children.length).toBe(0);
+    expect(title?.textContent).toBe(sourceDocument.title);
+    const sections = exported.querySelectorAll('pre.content');
+    expect(sections.length).toBe((sourceDocument.sections as unknown[]).length);
+    sections.forEach((section) => expect(section.children.length).toBe(0));
   });
 
   test('read <pre> text the same with or without the leading newline', () => {

@@ -159,15 +159,9 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
         const fieldDef = knownFields?.find(
           (field) => field.name === fieldName
         ) as RawFieldDef | undefined;
-        //strings are either string fields or have recursively been turned
-        //into HTML because they were a nested object or array
+        //strings are document values, even if they look like HTML
         if (typeof value === 'string') {
-          const htmlRegex = new RegExp(/<("[^"]*"|'[^']*'|[^'">])*>/);
-          if (htmlRegex.test(value)) {
-            htmlField = value;
-          } else {
-            htmlField = serializeString(value, fieldName);
-          }
+          htmlField = serializeString(value, fieldName);
         }
 
         //array fields get filtered and its children serialized
@@ -334,48 +328,10 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
       );
     }
 
-    const serializedFields: Record<string, unknown> = {};
-
-    for (const key in filteredObj) {
-      if (filteredObj.hasOwnProperty(key) === false) continue;
-      const value = filteredObj[key];
-      const fieldDef = schema?.fields?.find((field) => field.name === key) as
-        | RawFieldDef
-        | undefined;
-
-      if (typeof value === 'string') {
-        serializedFields[key] = value;
-      } else if (Array.isArray(value)) {
-        serializedFields[key] = serializeArray(
-          value.filter(
-            (item): item is Record<string, unknown> | string =>
-              typeof item === 'string' || isRecord(item)
-          ),
-          key,
-          stopTypes,
-          serializers,
-          fieldDef?.of
-        );
-      } else if (
-        value &&
-        isRecord(value) &&
-        !stopTypes.find((stopType) => stopType == value?._type)
-      ) {
-        const serialized = serializeObject(
-          value as TypedObject,
-          stopTypes,
-          serializers,
-          fieldDef?.fields
-        );
-        serializedFields[key] =
-          `<div class="${key}" data-level='field'>${serialized}</div>`;
-      }
-    }
-
     //create a valid HTML file
     const rawHTMLBody = document.createElement('body');
     rawHTMLBody.innerHTML = serializeObject(
-      serializedFields as TypedObject,
+      filteredObj as TypedObject,
       stopTypes,
       serializers
     );
