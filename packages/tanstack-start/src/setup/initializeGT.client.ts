@@ -5,6 +5,8 @@ import {
 import type { SharedGTProviderProps } from 'gt-react';
 import {
   config as pluginConfig,
+  dictionary as pluginDictionary,
+  loadDictionary as pluginLoadDictionary,
   loadTranslations as pluginLoadTranslations,
 } from 'gt-tanstack-start/internal/_config';
 import { determineLocaleClient } from '../functions/parseLocale';
@@ -28,7 +30,7 @@ export function isLocaleRoutingEnabled(): boolean {
  * Initialize GT and its browser condition store from the pathname locale (with
  * localeRouting) or the locale cookie.
  */
-export function initializeGT(config: InitializeGTParams): void {
+function initialize(config: InitializeGTParams): void {
   const browserConfig =
     config.localeRouting && !config._reload
       ? {
@@ -56,10 +58,25 @@ export function initializeGT(config: InitializeGTParams): void {
 }
 
 /**
+ * @deprecated Add `gtTanstackStart()` from `gt-tanstack-start/plugin/vite` to
+ * your Vite plugins and call `setupRouterGTIntegration({ router })` in
+ * `getRouter()` instead. The plugin reads gt.config.json and takes the other
+ * settings as options. See the README's migration section.
+ */
+export function initializeGT(config: InitializeGTParams): void {
+  initialize(config);
+}
+
+/**
  * Initialize from the Vite plugin's config unless the app already called
  * initializeGT(). Without the plugin this is a no-op.
  */
 export function ensureInitialized(): void {
   if (initialized || !pluginConfig) return;
-  initializeGT({ ...pluginConfig, loadTranslations: pluginLoadTranslations });
+  initialize({
+    ...pluginConfig,
+    loadTranslations: pluginLoadTranslations,
+    dictionary: pluginDictionary,
+    loadDictionary: pluginLoadDictionary,
+  });
 }

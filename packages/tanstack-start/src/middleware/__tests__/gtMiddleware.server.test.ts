@@ -56,7 +56,7 @@ describe.sequential('gtMiddleware', () => {
     mockSetCookie.mockReset();
   });
 
-  it('requires initializeGT to create the server condition store', () => {
+  it('asks for the Vite plugin when GT has no config', () => {
     resetSingletons();
 
     expect(() =>
@@ -69,7 +69,7 @@ describe.sequential('gtMiddleware', () => {
         request: new Request('https://example.com'),
         next: async () => undefined,
       })
-    ).toThrow("Call initializeGT() from 'gt-tanstack-start'");
+    ).toThrow("Add gtTanstackStart() from 'gt-tanstack-start/plugin/vite'");
   });
 
   it('makes request conditions available to downstream server code', async () => {
