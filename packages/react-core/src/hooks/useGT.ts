@@ -6,19 +6,21 @@ import type { StringFormat } from '@generaltranslation/format/types';
 import { useDefaultLocale } from './i18n-config';
 import {
   type Message,
+  TrackedTranslationResolver,
   useTrackedTranslationResolver,
 } from './external-store/useTrackedTranslationResolver';
+import { useGetLookupCb } from './lookup';
 
 // ===== Hook ===== //
 
 export function useGT(_messages?: Message[]): GTFunctionType {
   const { locale, shouldTranslate } = useTranslationConditions();
   const defaultLocale = useDefaultLocale();
-  const resolveTranslation = useTrackedTranslationResolver(
-    _messages,
-    locale,
-    shouldTranslate
-  );
+
+  const resolveTranslation: TrackedTranslationResolver =
+    process.env.NODE_ENV === 'production'
+      ? useGetLookupCb()
+      : useTrackedTranslationResolver(_messages, locale, shouldTranslate);
 
   /**
    * gt() string translation callback
