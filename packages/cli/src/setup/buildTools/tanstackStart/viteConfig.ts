@@ -103,24 +103,27 @@ function getStaticPluginConfig(call: t.CallExpression): string | undefined {
 }
 
 /**
- * The loadTranslationsPath the registered plugin gets, relative to the app.
- * The plugin then ignores the default loader files.
+ * The loadTranslationsPath the registered plugin gets, relative to the app,
+ * which replaces the default loader files; null when only runtime values,
+ * such as an environment variable or spread options, could tell.
  */
 export function getVitePluginLoaderPath(
   viteConfig: SourceFile,
   appDirectory: string
-): string | undefined {
-  // ponytail: an option only runtime values could tell counts as unset, so
-  // its loader goes unreported; resolve env or spread options if apps need it.
-  const loaderPath = findVitePluginCalls(viteConfig)
-    .map((call) => getStaticPluginOption(call, 'loadTranslationsPath'))
-    .find((option): option is string => typeof option === 'string');
-  return loaderPath === undefined
-    ? undefined
-    : path
-        .relative(appDirectory, path.resolve(appDirectory, loaderPath))
-        .split(path.sep)
-        .join(path.posix.sep);
+): string | null | undefined {
+  const options = findVitePluginCalls(viteConfig).map((call) =>
+    getStaticPluginOption(call, 'loadTranslationsPath')
+  );
+  const loaderPath = options.find(
+    (option): option is string => typeof option === 'string'
+  );
+  if (loaderPath === undefined) {
+    return options.includes(null) ? null : undefined;
+  }
+  return path
+    .relative(appDirectory, path.resolve(appDirectory, loaderPath))
+    .split(path.sep)
+    .join(path.posix.sep);
 }
 
 /** The config path as the plugin option names it, relative to the app. */
