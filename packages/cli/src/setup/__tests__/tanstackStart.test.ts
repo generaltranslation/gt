@@ -1116,7 +1116,7 @@ export function getRouter() {
       const storageAction = {
         whatHappened:
           'src/router.tsx initializes GT for CDN translations, but translations are now stored in src/_gt',
-        fix: "Pass loadTranslations to the initializeGT call in src/router.tsx, such as initializeGT({ ...gtConfig, loadTranslations }), and add import loadTranslations from './loadTranslations' (see https://generaltranslation.com/docs/react/tanstack-start/setup)",
+        fix: "Change the initializeGT call in src/router.tsx to initializeGT({ ...gtConfig, loadTranslations }) and add import loadTranslations from './loadTranslations' (see https://generaltranslation.com/docs/react/tanstack-start/setup)",
       };
 
       it('creates the loader and asks to pass it when configure switches to local files', async () => {
