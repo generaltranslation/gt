@@ -1,3 +1,5 @@
+import type { GTCompilerOptions } from 'generaltranslation/types';
+
 export type HeadersAndCookies = {
   localeHeaderName?: string;
   localeCookieName?: string;
@@ -7,32 +9,12 @@ export type HeadersAndCookies = {
   resetLocaleCookieName?: string;
 };
 
-export type CompilerOptions = {
+export type CompilerOptions = GTCompilerOptions & {
   /**
    * Which compiler plugin to use: babel, swc, or none
    * @default 'none'
    */
   type: 'babel' | 'swc' | 'none';
-  /**
-   * Log level for the compiler plugin.
-   * @default 'warn'
-   */
-  logLevel?: 'silent' | 'error' | 'warn' | 'info' | 'debug';
-  /**
-   * Whether to compile the translations at build time.
-   * @default true
-   */
-  compileTimeHash?: boolean;
-  /**
-   * Whether to disable build checks.
-   * @default false
-   */
-  disableBuildChecks?: boolean;
-  /**
-   * Whether to automatically wrap translatable JSX.
-   * @default false
-   */
-  enableAutoJsxInjection?: boolean;
 };
 
 export type RenderMethod = 'skeleton' | 'replace' | 'default';
