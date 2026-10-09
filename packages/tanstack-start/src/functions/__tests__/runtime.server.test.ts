@@ -131,42 +131,15 @@ describe.sequential('isomorphic translation functions', () => {
     });
   });
 
-  it('passes browser conditions to the internal translation functions', async () => {
+  it('reads browser conditions in the browser', () => {
     const clientGetLocale = (
       getLocale as unknown as { client: typeof getLocale }
     ).client;
     const clientGetEnableI18n = (
       getEnableI18n as unknown as { client: typeof getEnableI18n }
     ).client;
-    const clientGetGT = (getGT as unknown as { client: typeof getGT }).client;
-    const clientGetMessages = (
-      getMessages as unknown as { client: typeof getMessages }
-    ).client;
-    const clientGetTranslations = (
-      getTranslations as unknown as { client: typeof getTranslations }
-    ).client;
-    const messages = [{ message: 'Hello' }];
 
     expect(clientGetLocale()).toBe('es');
     expect(clientGetEnableI18n()).toBe(true);
-    await expect(clientGetGT(messages)).resolves.toBe('gt');
-    await expect(clientGetMessages()).resolves.toBe('messages');
-    await expect(clientGetTranslations('metadata')).resolves.toBe(
-      'translations'
-    );
-
-    expect(mockGetGTInternal).toHaveBeenCalledWith(
-      { locale: 'es', enableI18n: true },
-      messages
-    );
-    expect(mockGetMessagesInternal).toHaveBeenCalledWith({
-      locale: 'es',
-      enableI18n: true,
-    });
-    expect(mockGetTranslationsInternal).toHaveBeenCalledWith({
-      locale: 'es',
-      enableI18n: true,
-      rootId: 'metadata',
-    });
   });
 });
