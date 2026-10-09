@@ -4,13 +4,7 @@ import {
   Scripts,
   createRootRoute,
 } from '@tanstack/react-router';
-import {
-  GTProvider,
-  getLocale,
-  getTranslationsSnapshot,
-  LocaleSelector,
-  useGT,
-} from 'gt-tanstack-start';
+import { LocaleSelector, useGT, useLocale } from 'gt-tanstack-start';
 import { GtMark } from '../components/GtMark';
 import '../styles.css';
 
@@ -21,30 +15,20 @@ export const Route = createRootRoute({
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
     ],
   }),
-  loader: async () => {
-    const locale = getLocale();
-    return {
-      locale,
-      translations: await getTranslationsSnapshot(locale),
-    };
-  },
   shellComponent: RootDocument,
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-  const { locale, translations } = Route.useLoaderData();
   return (
-    <html lang={locale}>
+    <html lang={useLocale()}>
       <head>
         <HeadContent />
       </head>
       <body>
-        <GTProvider locale={locale} translations={translations}>
-          <div className='gt-frame'>
-            <Nav />
-            {children}
-          </div>
-        </GTProvider>
+        <div className='gt-frame'>
+          <Nav />
+          {children}
+        </div>
         <Scripts />
       </body>
     </html>
