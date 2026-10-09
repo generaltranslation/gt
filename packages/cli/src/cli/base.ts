@@ -1548,22 +1548,21 @@ See https://www.npmjs.com/package/gt-vue`);
         translationsDir,
       });
       if (guidance) logger.message(guidance);
-    } else if (
-      storage === 'cdn' &&
-      buildTool &&
-      !reactSetup &&
-      configuredTranslationsDir !== undefined
-    ) {
+    } else if (storage === 'cdn' && buildTool && !reactSetup) {
       // Only the application setup rewrites the initializer; a loader passed
-      // to it takes precedence over CDN loading.
+      // to it takes precedence over CDN loading. A setup can name that loader
+      // without a previous output path, which the generic step needs.
       const action = await buildTool.getCDNStorageAction?.(buildToolContext);
-      if (action !== null) {
-        reportManualAction(
-          action ?? {
-            whatHappened: `Translations now load from the CDN, but ${buildTool.initializer} may still receive the local loader for ${configuredTranslationsDir}`,
-            fix: `Remove the loadTranslations option and its import from the ${buildTool.initializer}() call so translations load from the CDN`,
-          }
-        );
+      if (action) {
+        reportManualAction(action);
+      } else if (
+        action === undefined &&
+        configuredTranslationsDir !== undefined
+      ) {
+        reportManualAction({
+          whatHappened: `Translations now load from the CDN, but ${buildTool.initializer} may still receive the local loader for ${configuredTranslationsDir}`,
+          fix: `Remove the loadTranslations option and its import from the ${buildTool.initializer}() call so translations load from the CDN`,
+        });
       }
     } else if (
       storage === 'cdn' &&
