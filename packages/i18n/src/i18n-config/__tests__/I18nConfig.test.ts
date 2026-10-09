@@ -126,6 +126,18 @@ describe('I18nConfig', () => {
     ).toBe('fr');
   });
 
+  it('supports the default locale in one-off overrides that do not list it', () => {
+    const config = new I18nConfig({ defaultLocale: 'en', locales: ['ja'] });
+
+    // A locale cookie choosing the default must win over Accept-Language.
+    expect(
+      config.resolveSupportedLocale(['en', 'ja'], {
+        defaultLocale: 'en',
+        locales: ['ja'],
+      })
+    ).toBe('en');
+  });
+
   it('enables dev hot reload with dev credentials, a project id, and development environment', () => {
     vi.stubEnv('NODE_ENV', 'development');
 

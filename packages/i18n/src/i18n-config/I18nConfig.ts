@@ -230,7 +230,8 @@ function getLocaleResolverConfigParams({
 }: I18nConfigParams = {}): LocaleConfigConstructorParams {
   return {
     defaultLocale,
-    locales: locales?.length ? locales : [defaultLocale],
+    // As in the constructor, the default locale is always supported.
+    locales: Array.from(new Set([defaultLocale, ...(locales ?? [])])),
     customMapping: customMapping || {},
   };
 }

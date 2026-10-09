@@ -21,6 +21,9 @@ export {
   RelativeTime,
   Var,
   Num,
+  // Imported by the compiler's auto JSX injection
+  GtInternalTranslateJsx,
+  GtInternalVar,
   // ===== Hooks ===== //
   useLocale,
   useSetLocale,
