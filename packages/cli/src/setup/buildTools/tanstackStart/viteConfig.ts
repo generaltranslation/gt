@@ -68,25 +68,59 @@ export function registersVitePlugin(viteConfig: SourceFile): boolean {
 }
 
 /**
- * The config path a plugin call reads, or undefined when only runtime values
- * such as an environment variable or a spread could tell.
+ * A string option of a plugin call: undefined when it is not passed, or null
+ * when only runtime values such as an environment variable or a spread could
+ * tell.
  */
-function getStaticPluginConfig(call: t.CallExpression): string | undefined {
-  if (call.arguments.length === 0) return VITE_PLUGIN_DEFAULT_CONFIG;
+function getStaticPluginOption(
+  call: t.CallExpression,
+  name: string
+): string | null | undefined {
+  if (call.arguments.length === 0) return undefined;
   const [options] = call.arguments;
   if (call.arguments.length !== 1 || options.type !== 'ObjectExpression') {
-    return undefined;
+    return null;
   }
   const names = options.properties.map(getPropertyName);
-  if (names.includes(undefined)) return undefined;
+  if (names.includes(undefined)) return null;
   // The last duplicate key wins at runtime.
-  const index = names.lastIndexOf('config');
-  if (index === -1) return VITE_PLUGIN_DEFAULT_CONFIG;
-  const config = options.properties[index];
-  return config.type === 'ObjectProperty' &&
-    config.value.type === 'StringLiteral'
-    ? config.value.value
-    : undefined;
+  const index = names.lastIndexOf(name);
+  if (index === -1) return undefined;
+  const option = options.properties[index];
+  return option.type === 'ObjectProperty' &&
+    option.value.type === 'StringLiteral'
+    ? option.value.value
+    : null;
+}
+
+/**
+ * The config path a plugin call reads, or undefined when only runtime values
+ * could tell.
+ */
+function getStaticPluginConfig(call: t.CallExpression): string | undefined {
+  const config = getStaticPluginOption(call, 'config');
+  return config === null ? undefined : (config ?? VITE_PLUGIN_DEFAULT_CONFIG);
+}
+
+/**
+ * The loadTranslationsPath the registered plugin gets, relative to the app.
+ * The plugin then ignores the default loader files.
+ */
+export function getVitePluginLoaderPath(
+  viteConfig: SourceFile,
+  appDirectory: string
+): string | undefined {
+  // ponytail: an option only runtime values could tell counts as unset, so
+  // its loader goes unreported; resolve env or spread options if apps need it.
+  const loaderPath = findVitePluginCalls(viteConfig)
+    .map((call) => getStaticPluginOption(call, 'loadTranslationsPath'))
+    .find((option): option is string => typeof option === 'string');
+  return loaderPath === undefined
+    ? undefined
+    : path
+        .relative(appDirectory, path.resolve(appDirectory, loaderPath))
+        .split(path.sep)
+        .join(path.posix.sep);
 }
 
 /** The config path as the plugin option names it, relative to the app. */
