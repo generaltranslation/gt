@@ -25,13 +25,17 @@ function getMissingFileError(file: string): Error {
   );
 }
 
+export function readViteConfig(appDirectory: string) {
+  return readSourceFile(appDirectory, 'vite.config', {
+    extensions: VITE_CONFIG_EXTENSIONS,
+  });
+}
+
 /** Reads the Start entries without writing, so a missing one stops setup. */
 export async function inspectTanStackStart(appDirectory: string) {
   const router = await readSourceFile(appDirectory, 'src/router');
   if (!router) throw getMissingFileError('src/router.tsx');
-  const viteConfig = await readSourceFile(appDirectory, 'vite.config', {
-    extensions: VITE_CONFIG_EXTENSIONS,
-  });
+  const viteConfig = await readViteConfig(appDirectory);
   if (!viteConfig) throw getMissingFileError('vite.config.ts');
   return { router, viteConfig };
 }

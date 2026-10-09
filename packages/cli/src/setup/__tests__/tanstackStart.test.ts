@@ -1434,6 +1434,57 @@ export function getRouter() {
       });
     });
 
+    describe('a loader set with loadTranslationsPath', () => {
+      // The plugin then uses only that file, not the default loaders.
+      const withLoaderPath = () => {
+        write(
+          'vite.config.ts',
+          configuredVite.replace(
+            'gtTanstackStart()',
+            "gtTanstackStart({ loadTranslationsPath: './src/i18n/load.ts' })"
+          )
+        );
+        write('src/i18n/load.ts', templateLoader);
+        write('src/loadTranslations.ts', templateLoader);
+      };
+
+      it('asks to remove the option after a switch to the CDN', async () => {
+        withLoaderPath();
+
+        const action = await tanstackStartSetup.getCDNStorageAction!({
+          ...ctx(),
+          translationsDir: undefined,
+          previousTranslationsDir: 'src/_gt',
+        });
+
+        // Deleting the file would fail the build instead.
+        expect(action).toEqual({
+          whatHappened:
+            'Translations now load from the CDN, but gt-tanstack-start still loads them with src/i18n/load.ts',
+          fix: 'Remove the loadTranslationsPath option from gtTanstackStart() in your Vite config so translations load from the CDN',
+        });
+      });
+
+      it('names it for a new translations directory', async () => {
+        withLoaderPath();
+
+        const result = await tanstackStartSetup.syncLoader({
+          ...ctx(),
+          translationsDir: 'public/_gt',
+          previousTranslationsDir: 'src/_gt',
+        });
+
+        expect(read('src/i18n/load.ts')).toBe(templateLoader);
+        expect(result.manualActions).toEqual([
+          {
+            whatHappened:
+              'Your custom src/i18n/load.ts was left unchanged, but translations now go to public/_gt',
+            fix: 'Update your custom src/i18n/load.ts to load translations from public/_gt',
+          },
+        ]);
+      });
+    });
+
     it('names every leftover loader after a switch to the CDN', async () => {
       write('src/loadTranslations.ts', templateLoader);
       write('src/loadTranslations.js', templateLoader);
