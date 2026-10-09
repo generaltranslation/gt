@@ -1,4 +1,5 @@
-import type { ReactElement } from 'react';
+import { createElement, type ReactElement } from 'react';
+import { renderToString } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
@@ -7,6 +8,7 @@ const {
   mockEnsureInitialized,
   mockGetTranslationsSnapshot,
   mockIsLocaleRouting,
+  mockProvider,
 } = vi.hoisted(() => ({
   mockConditionStore: {
     getLocale: vi.fn(() => 'fr'),
@@ -19,6 +21,7 @@ const {
     async (): Promise<Record<string, string>> => ({})
   ),
   mockIsLocaleRouting: vi.fn(() => true),
+  mockProvider: vi.fn((props: { locale: string }) => props.locale),
 }));
 
 vi.mock('gt-react', () => ({
@@ -33,7 +36,9 @@ vi.mock('@generaltranslation/react-core/pure', async (importOriginal) => ({
   getReadonlyConditionStore: () => mockConditionStore,
 }));
 
-vi.mock('../../provider/GTProvider.client', () => ({ GTProvider: () => null }));
+vi.mock('../../provider/GTProvider.client', () => ({
+  GTProvider: mockProvider,
+}));
 
 vi.mock('../../setup/initializeGT.client', () => ({
   ensureInitialized: mockEnsureInitialized,
@@ -200,6 +205,42 @@ describe.sequential('setupRouterGTIntegration client', () => {
 
     await expect(renderOrSuspend(Wrap)).rejects.toBe(error);
     expect(renderOrSuspend(Wrap)).toBe(error);
+  });
+
+  it('hydrates a prerendered SPA shell with its own state, then renders the visitor state', async () => {
+    mockGetTranslationsSnapshot.mockResolvedValueOnce({ hello: 'bonjour' });
+    const appHydrate = vi.fn();
+    const router = createRouter({ hydrate: appHydrate });
+    setupRouterGTIntegration({ router });
+    const shellState = { locale: 'en', enableI18n: true, translations: {} };
+
+    await router.options.hydrate?.({ gt: { ...shellState, shell: true } });
+
+    // The condition store keeps the visitor's locale, and their state is
+    // ready before the app hydrate callback runs.
+    expect(mockCreateOrUpdateBrowserConditionStore).not.toHaveBeenCalled();
+    expect(mockGetTranslationsSnapshot).toHaveBeenCalledWith('fr');
+    expect(
+      mockGetTranslationsSnapshot.mock.invocationCallOrder[0]
+    ).toBeLessThan(appHydrate.mock.invocationCallOrder[0]);
+    const Wrap = router.options.Wrap as unknown as WrapComponent;
+    const visitorState = {
+      locale: 'fr',
+      region: undefined,
+      enableI18n: true,
+      translations: { hello: 'bonjour' },
+    };
+    expect(Wrap({ children: 'app' }).props.children.props).toEqual({
+      Provider: mockProvider,
+      shell: shellState,
+      state: visitorState,
+      children: 'app',
+    });
+    // React renders the server snapshot while hydrating, so the first render
+    // matches the shell HTML.
+    expect(
+      renderToString(createElement(router.options.Wrap!, null, 'app'))
+    ).toBe('en');
   });
 
   it('integrates a router only once', async () => {
