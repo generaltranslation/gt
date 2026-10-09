@@ -11,6 +11,7 @@ import {
   getLineIndent,
 } from '../shared/edits.js';
 import {
+  callsFunction,
   getLocalImport,
   getPropertyName,
   usesName,
@@ -226,6 +227,9 @@ export function configureViteConfig(
   if (!plugins || last === null || last?.extra?.parenthesized) {
     return undefined;
   }
+  // A call behind a condition or wrapper registers the plugin when it holds,
+  // so another call could register it twice.
+  if (local && callsFunction(plugins.elements, local)) return undefined;
   const { quote, semi, eol } = getCodeStyle(content, statements);
   const call = getVitePluginCall(local ?? VITE_PLUGIN, ctx, quote);
   const pluginEdit = !last
