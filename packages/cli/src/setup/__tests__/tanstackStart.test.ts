@@ -444,6 +444,28 @@ export function getRouter() {
   });
 
   it.each([
+    ['a condition', 'process.env.GT && gtTanstackStart()'],
+    ['a condition that never holds', 'false && gtTanstackStart()'],
+    ['a ternary', 'process.env.GT ? gtTanstackStart() : null'],
+  ])(
+    'asks for review when the plugin is registered behind %s',
+    async (_case, plugin) => {
+      const vite = configuredVite.replace('gtTanstackStart()]', `${plugin}]`);
+      write('vite.config.ts', vite);
+
+      const result = await tanstackStartSetup.apply(ctx());
+
+      // Adding another call would register the plugin twice when it holds.
+      expect(read('vite.config.ts')).toBe(vite);
+      expect(read('src/router.tsx')).toBe(templateRouter);
+      expect(result).toEqual({
+        steps: [],
+        manualActions: [viteAction('gtTanstackStart()'), routerAction],
+      });
+    }
+  );
+
+  it.each([
     ['a spread', '...gtTanstackStart()'],
     ['a nested array', '[gtTanstackStart()]'],
   ])('accepts the plugin registered through %s', async (_case, plugin) => {
@@ -924,27 +946,6 @@ export function getRouter() {
       vite.replace('viteReact()]', 'viteReact(), gtTanstackStart()]')
     );
     expect(read('src/router.tsx')).toBe(configuredRouter);
-    expect(result.steps).toEqual([
-      'configured vite.config.ts',
-      'configured src/router.tsx',
-    ]);
-  });
-
-  it('adds the plugin when the plugins array only calls gtTanstackStart conditionally', async () => {
-    const vite = configuredVite.replace(
-      'viteReact(), gtTanstackStart()]',
-      'viteReact(), false && gtTanstackStart()]'
-    );
-    write('vite.config.ts', vite);
-
-    const result = await tanstackStartSetup.apply(ctx());
-
-    expect(read('vite.config.ts')).toBe(
-      vite.replace(
-        'false && gtTanstackStart()]',
-        'false && gtTanstackStart(), gtTanstackStart()]'
-      )
-    );
     expect(result.steps).toEqual([
       'configured vite.config.ts',
       'configured src/router.tsx',
