@@ -18,6 +18,7 @@ import {
   toHTML,
 } from '@portabletext/to-html';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
+import { serializeString } from '../helpers';
 
 const META_FIELDS = ['_key', '_type', '_id', '_weak'];
 
@@ -165,7 +166,7 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
           if (htmlRegex.test(value)) {
             htmlField = value;
           } else {
-            htmlField = `<span class="${fieldName}">${value}</span>`;
+            htmlField = serializeString(value, fieldName);
           }
         }
 
@@ -280,7 +281,7 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
     const output = validBlocks.map((block) => {
       //if object in array is just a string, just return it
       if (typeof block === 'string') {
-        return `<span>${block}</span>`;
+        return serializeString(block);
       }
       //take out any fields in this block that should
       //not be sent to translation
