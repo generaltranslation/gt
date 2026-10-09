@@ -183,7 +183,7 @@ describe.sequential('setupRouterGTIntegration server', () => {
     });
   });
 
-  it('leaves GT state out of a prerendered SPA shell', async () => {
+  it('marks the GT state of a prerendered SPA shell', async () => {
     let shell = false;
     const router = createRouter(
       { dehydrate: () => ({ app: true }) },
@@ -194,6 +194,15 @@ describe.sequential('setupRouterGTIntegration server', () => {
     // Start marks the shell render after the router is created.
     shell = true;
 
-    await expect(router.options.dehydrate?.()).resolves.toEqual({ app: true });
+    await expect(router.options.dehydrate?.()).resolves.toEqual({
+      app: true,
+      gt: {
+        locale: 'fr',
+        region: undefined,
+        enableI18n: true,
+        translations: { hello: 'bonjour' },
+        shell: true,
+      },
+    });
   });
 });

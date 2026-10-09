@@ -9,7 +9,8 @@ export default defineConfig({
     strictPort: true,
   },
   plugins: [
-    tanstackStart(),
+    // The e2e suite also serves this app as a prerendered SPA shell.
+    tanstackStart(process.env.GT_TEST_SPA ? { spa: { enabled: true } } : {}),
     react(),
     gtTanstackStart({
       // The e2e suite reuses this app with locale routing enabled.
