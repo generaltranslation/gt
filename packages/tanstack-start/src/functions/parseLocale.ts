@@ -17,9 +17,10 @@ export const determineLocale = createIsomorphicFn()
 /**
  * Resolve the user's locale for the current TanStack Start request or browser.
  *
- * @deprecated Use `getLocale()` with `gtMiddleware` instead. This function is
- * retained as a fallback for server setups that have not initialized request
- * scope through the middleware.
+ * @deprecated Use `getLocale()` instead. Once GT is initialized, this returns
+ * the same request locale; it is retained as a fallback for server setups
+ * that have not initialized GT, where it resolves the locale from the
+ * request's cookie and Accept-Language header.
  */
 export function parseLocale(): string {
   const i18nConfig = getI18nConfig();
@@ -35,11 +36,10 @@ function determineLocaleServer({
   locales,
   customMapping,
 }: LocaleResolverConfig) {
+  // The store resolves each request once, with or without gtMiddleware, so
+  // this matches getLocale() and writes no conflicting locale cookie.
   if (isConditionStoreInitialized()) {
-    const conditionStore = getConditionStore();
-    if (conditionStore.hasActiveScope()) {
-      return conditionStore.getLocale();
-    }
+    return getConditionStore().getLocale();
   }
 
   return resolveRequestConditions(getRequest(), {

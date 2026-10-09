@@ -101,6 +101,7 @@ export enum GT_IMPORT_SOURCES {
   GT_REACT_CLIENT = 'gt-react/client',
   GT_REACT_BROWSER = 'gt-react/browser',
   GT_I18N = 'gt-i18n',
+  GT_TANSTACK_START = 'gt-tanstack-start',
 }
 
 /**
