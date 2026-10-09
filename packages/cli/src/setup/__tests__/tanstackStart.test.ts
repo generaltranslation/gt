@@ -1034,8 +1034,8 @@ export function getRouter() {
           steps: [],
           manualActions: [
             {
-              whatHappened: `This app uses the previous gt-tanstack-start setup (${marker}), so GT left its source files unchanged`,
-              fix: 'Keep the previous setup, which still works, or switch to setupRouterGTIntegration and the gtTanstackStart Vite plugin (see https://generaltranslation.com/docs/react/tanstack-start/setup)',
+              whatHappened: `This app uses the deprecated gt-tanstack-start setup (${marker}), so GT left its source files unchanged`,
+              fix: 'Switch to the gtTanstackStart Vite plugin and setupRouterGTIntegration (see https://github.com/generaltranslation/gt/tree/main/packages/tanstack-start#migrating-from-the-previous-setup). The previous setup keeps working until a future major release',
             },
           ],
         });
@@ -1081,8 +1081,8 @@ export function getRouter() {
         manualActions: [
           {
             whatHappened:
-              'This app uses the previous gt-tanstack-start setup (initializeGT in src/router.tsx, gtMiddleware in src/start.ts, GTProvider in src/routes/__root.tsx), so GT left its source files unchanged',
-            fix: 'Keep the previous setup, which still works, or switch to setupRouterGTIntegration and the gtTanstackStart Vite plugin (see https://generaltranslation.com/docs/react/tanstack-start/setup)',
+              'This app uses the deprecated gt-tanstack-start setup (initializeGT in src/router.tsx, gtMiddleware in src/start.ts, GTProvider in src/routes/__root.tsx), so GT left its source files unchanged',
+            fix: 'Switch to the gtTanstackStart Vite plugin and setupRouterGTIntegration (see https://github.com/generaltranslation/gt/tree/main/packages/tanstack-start#migrating-from-the-previous-setup). The previous setup keeps working until a future major release',
           },
         ],
       });
@@ -1147,7 +1147,7 @@ export function getRouter() {
             storageAction,
             expect.objectContaining({
               whatHappened: expect.stringContaining(
-                'This app uses the previous gt-tanstack-start setup'
+                'This app uses the deprecated gt-tanstack-start setup'
               ),
             }),
           ],
