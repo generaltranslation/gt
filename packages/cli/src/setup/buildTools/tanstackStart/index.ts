@@ -20,6 +20,7 @@ import { VITE_LOADER_FILE, viteSetup } from '../vite.js';
 import { applyEdits, getCodeStyle, getImportEdit } from '../shared/edits.js';
 import { findInitializeCall, passesLoader } from '../shared/initializeGT.js';
 import { rendersElement } from '../shared/jsx.js';
+import { getCustomLoaderAction } from '../shared/loader.js';
 import { readSourceFile, type SourceFile } from '../shared/source.js';
 import {
   getMiddlewareAction,
@@ -48,6 +49,15 @@ export const tanstackStartSetup: BuildToolSetup = {
   docsUrl: DOCS_URL,
   async preflight(appDirectory) {
     await inspectTanStackStart(appDirectory);
+  },
+  async getCDNStorageAction(ctx) {
+    const router = await readSourceFile(ctx.appDirectory, 'src/router');
+    const initializeCall =
+      router && findInitializeCall(router, Libraries.GT_TANSTACK_START);
+    if (!router || !initializeCall) return undefined;
+    const loaderPassed = passesLoader(router, initializeCall.arguments[0], ctx);
+    if (loaderPassed === undefined) return undefined;
+    return loaderPassed ? getStorageAction(router, ctx, undefined, true) : null;
   },
   // The loader is the same file Vite generates, but a router that loads from
   // the CDN also needs the loader passed to initializeGT.
@@ -94,15 +104,7 @@ export const tanstackStartSetup: BuildToolSetup = {
       loaderExport = await getViteLoaderExport(appDirectory, loader);
       if (loader === 'custom') {
         manualActions.push(
-          loaderExport
-            ? {
-                whatHappened: `Your custom ${VITE_LOADER_FILE} was preserved`,
-                fix: `Verify ${VITE_LOADER_FILE} loads translations from ${translationsDir}`,
-              }
-            : {
-                whatHappened: `Your custom ${VITE_LOADER_FILE} has no runtime loadTranslations export`,
-                fix: `Export a default or named loadTranslations function from ${VITE_LOADER_FILE} that loads translations from ${translationsDir}, then rerun gt init`,
-              }
+          getCustomLoaderAction(VITE_LOADER_FILE, translationsDir, loaderExport)
         );
       }
     }

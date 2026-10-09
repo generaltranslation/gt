@@ -1,3 +1,4 @@
+import type { ViteLoaderExport } from '../../setupViteSPA.js';
 import type { ManualAction } from '../index.js';
 
 /** A loader left unchanged may not read the newly chosen directory. */
@@ -17,4 +18,21 @@ export function getLoaderUpdateActions(
       fix,
     },
   ];
+}
+
+/** A custom loader setup preserved, which needs an export initializeGT can pass. */
+export function getCustomLoaderAction(
+  loaderFile: string,
+  translationsDir: string,
+  loaderExport: ViteLoaderExport
+): ManualAction {
+  return loaderExport
+    ? {
+        whatHappened: `Your custom ${loaderFile} was preserved`,
+        fix: `Verify ${loaderFile} loads translations from ${translationsDir}`,
+      }
+    : {
+        whatHappened: `Your custom ${loaderFile} has no runtime loadTranslations export`,
+        fix: `Export a default or named loadTranslations function from ${loaderFile} that loads translations from ${translationsDir}, then rerun gt init`,
+      };
 }

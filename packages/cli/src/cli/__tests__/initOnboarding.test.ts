@@ -420,6 +420,156 @@ describe('init and configure onboarding', () => {
     expect(events().at(-1)).toMatchObject({ outcome: 'success' });
   });
 
+  describe('React Router', () => {
+    beforeEach(() => {
+      useFreshApp({
+        name: 'example-app',
+        packageManager: 'pnpm@10.20.0',
+        dependencies: { 'react-router': '*', react: '*' },
+        devDependencies: { '@react-router/dev': '*', vite: '*' },
+      });
+      vi.mocked(detectFramework).mockResolvedValue({
+        name: 'react-router',
+        type: 'react',
+      });
+      fs.mkdirSync(file('app'), { recursive: true });
+      fs.writeFileSync(
+        file('app/root.tsx'),
+        `import { Scripts } from 'react-router'
+
+export function Layout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        {children}
+        <Scripts />
+      </body>
+    </html>
+  )
+}
+`
+      );
+    });
+
+    it.each([['configure'], ['init', '--no-react-setup']])(
+      'reports the complete CDN initializer when switching storage with %s',
+      async (...command) => {
+        vi.stubEnv('VITE_GT_PROJECT_ID', undefined);
+        vi.stubEnv('VITE_GT_DEV_API_KEY', undefined);
+        const packageJson = JSON.parse(
+          fs.readFileSync(file('package.json'), 'utf8')
+        );
+        packageJson.dependencies['gt-react'] = '^11.1.3';
+        packageJson.devDependencies.gt = '*';
+        fs.writeFileSync(file('package.json'), JSON.stringify(packageJson));
+
+        await run(
+          'init',
+          '--json',
+          '--defaults',
+          '--locales',
+          'fr',
+          '--live-translations',
+          '--project-id',
+          'p1'
+        );
+        const root = fs.readFileSync(file('app/root.tsx'), 'utf8');
+        const loader = fs.readFileSync(file('app/loadTranslations.ts'), 'utf8');
+        expect(readConfig().projectId).toBeUndefined();
+        expect(fs.readFileSync(file('.env.local'), 'utf8')).toContain(
+          'VITE_GT_PROJECT_ID=p1'
+        );
+        vi.mocked(logger.warn).mockClear();
+
+        await run(
+          ...command,
+          '--json',
+          '--defaults',
+          '--storage',
+          'cdn',
+          '--no-dev-credentials'
+        );
+
+        expect(readConfig()).toMatchObject({ publish: true });
+        expect(readConfig().projectId).toBeUndefined();
+        expect(fs.readFileSync(file('app/root.tsx'), 'utf8')).toBe(root);
+        expect(fs.readFileSync(file('app/loadTranslations.ts'), 'utf8')).toBe(
+          loader
+        );
+        expect(logger.warn).toHaveBeenCalledWith(
+          expect.stringContaining(
+            "initializeGT({ ...gtConfig, projectId: ('projectId' in gtConfig && typeof gtConfig.projectId === 'string' && gtConfig.projectId) || import.meta.env.VITE_GT_PROJECT_ID }) and remove the loadTranslations import"
+          )
+        );
+      }
+    );
+
+    // The root never received the loader, so configure has nothing to report.
+    it('reports nothing when configure moves a CDN root back to the CDN', async () => {
+      vi.stubEnv('VITE_GT_PROJECT_ID', undefined);
+      vi.stubEnv('VITE_GT_DEV_API_KEY', undefined);
+      const packageJson = JSON.parse(
+        fs.readFileSync(file('package.json'), 'utf8')
+      );
+      packageJson.dependencies['gt-react'] = '^11.1.3';
+      packageJson.devDependencies.gt = '*';
+      fs.writeFileSync(file('package.json'), JSON.stringify(packageJson));
+      const options = ['--json', '--defaults', '--no-dev-credentials'];
+      await run('init', ...options, '--locales', 'fr', '--storage', 'cdn');
+      await run('configure', ...options, '--storage', 'local');
+      vi.mocked(logger.warn).mockClear();
+
+      await run('configure', ...options, '--storage', 'cdn');
+
+      expect(logger.warn).not.toHaveBeenCalledWith(
+        expect.stringContaining('may still receive the local loader')
+      );
+    });
+
+    it('configures the app and installs gt-react under --defaults', async () => {
+      await run(
+        'init',
+        '--json',
+        '--defaults',
+        '--locales',
+        'es',
+        'fr',
+        '--no-live-translations'
+      );
+
+      for (const prompt of prompts) expect(prompt).not.toHaveBeenCalled();
+      expect(vi.mocked(installPackage).mock.calls).toEqual([
+        ['gt-react', expect.objectContaining({ id: 'pnpm' }), false],
+        ['gt', expect.objectContaining({ id: 'pnpm' }), true],
+      ]);
+      expect(readConfig()).toMatchObject({
+        framework: 'react-router',
+        locales: ['es', 'fr'],
+        files: { gt: { output: path.join('app/_gt', '[locale].json') } },
+      });
+      expect(fs.existsSync(file('loadTranslations.js'))).toBe(false);
+      expect(fs.readFileSync(file('app/root.tsx'), 'utf8')).toContain(
+        'initializeGT({ ...gtConfig, loadTranslations })'
+      );
+      expect(fs.readFileSync(file('app/_gt/es.json'), 'utf8')).toBe('{}\n');
+      expect(events().at(-1)).toMatchObject({
+        outcome: 'success',
+        completedSteps: [
+          'installed gt-react',
+          'created gt.config.json',
+          'created app/loadTranslations.ts',
+          'configured app/root.tsx',
+          'installed gt',
+        ],
+      });
+      expect(logger.endCommand).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'https://generaltranslation.com/docs/react/react-quickstart'
+        )
+      );
+    });
+  });
+
   describe('TanStack Start', () => {
     beforeEach(() => {
       useFreshApp({

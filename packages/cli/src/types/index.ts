@@ -132,6 +132,7 @@ export const SUPPORTED_REACT_FRAMEWORKS = [
   'react',
   'redwood',
   'tanstack-start',
+  'react-router',
 ] as const;
 
 export type FrameworkObject =

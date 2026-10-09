@@ -4,8 +4,7 @@ import { Libraries } from '../../../types/libraries.js';
 import {
   findHtmlDocument,
   getLangEdit,
-  getProviderEdit,
-  getProviderTag,
+  getWrapEdit,
   LOADER_TRANSLATIONS,
 } from '../shared/document.js';
 import {
@@ -29,8 +28,8 @@ import {
 } from '../shared/source.js';
 import { DOCS_URL } from './source.js';
 
-/** The translations GTProvider reads, which the root loader returns. */
-const TRANSLATIONS = 'translations';
+/** The provider the document is wrapped in, reading the root loader's data. */
+const PROVIDER_TAG = '<GTProvider locale={locale} translations={translations}>';
 
 type LocalFunction = DeclaredFunction['fn'];
 
@@ -236,10 +235,15 @@ export function configureRootRoute({
       text: `${eol}${statementIndent}const { locale, translations } = ${rootRoute.routeName}.useLoaderData()${semi}`,
     },
     getLangEdit(htmlDocument),
-    getProviderEdit(content, htmlDocument, TRANSLATIONS, style),
+    getWrapEdit(
+      content,
+      htmlDocument,
+      { open: PROVIDER_TAG, close: '</GTProvider>' },
+      style
+    ),
   ]);
 }
 
 export function getRootFix(rootPath: string): string {
-  return `In ${rootPath}, add loader: async () => { const locale = getLocale(); return { locale, ${LOADER_TRANSLATIONS} }; } to the root route options, read const { locale, translations } = Route.useLoaderData() in the document, set <html lang={locale}>, and wrap everything its <body> renders before <Scripts /> in ${getProviderTag(TRANSLATIONS)}, importing GTProvider, getLocale and getTranslationsSnapshot from '${Libraries.GT_TANSTACK_START}' (see ${DOCS_URL})`;
+  return `In ${rootPath}, add loader: async () => { const locale = getLocale(); return { locale, ${LOADER_TRANSLATIONS} }; } to the root route options, read const { locale, translations } = Route.useLoaderData() in the document, set <html lang={locale}>, and wrap everything its <body> renders before <Scripts /> in ${PROVIDER_TAG}, importing GTProvider, getLocale and getTranslationsSnapshot from '${Libraries.GT_TANSTACK_START}' (see ${DOCS_URL})`;
 }

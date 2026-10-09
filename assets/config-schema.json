@@ -94,7 +94,8 @@
         "gatsby",
         "react",
         "redwood",
-        "tanstack-start"
+        "tanstack-start",
+        "react-router"
       ]
     },
     "version": {
