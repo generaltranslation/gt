@@ -1,0 +1,37 @@
+name: Close Inactive Pull Requests and Issues
+
+on:
+  schedule:
+    # Run weekly on Mondays at 08:03 UTC, off the top of the hour when Actions is busiest.
+    - cron: '3 8 * * 1'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  close-inactive:
+    name: Close items inactive for two weeks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Close inactive pull requests and issues
+        run: |
+          query="updated:<$(date -u -d '14 days ago' +%FT%TZ) -label:keep-open"
+          comment='Closed due to inactivity. Reopen it if it is still relevant, and add the `keep-open` label to exempt it.'
+
+          # Assign first so a failed search fails the step instead of looping over nothing.
+          prs=$(gh pr list --search "$query" --limit 1000 --json number --jq '.[].number')
+          issues=$(gh issue list --search "$query" --limit 1000 --json number --jq '.[].number')
+
+          for n in $prs; do
+            gh pr close "$n" --comment "$comment"
+          done
+
+          for n in $issues; do
+            gh issue close "$n" --comment "$comment" --reason 'not planned'
+          done
