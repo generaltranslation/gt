@@ -22,7 +22,6 @@ import {
 } from '../fs/config/downloadedVersions.js';
 import { recordDownloaded, recordRemerged } from '../state/recentDownloads.js';
 import { recordWarning } from '../state/translateWarnings.js';
-import stringify from 'fast-json-stable-stringify';
 import type { FileStatusTracker } from '../workflows/steps/PollJobsStep.js';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import { hasNonIdentityFileFormatTransformForType } from '../formats/files/transformFormat.js';
@@ -89,10 +88,20 @@ function countGtJsonEntries(content: string): number | undefined {
  * other JSON files belong to the user and keep their key order.
  */
 function formatJsonString(data: string, fileFormat: string): string {
-  const json = JSON.parse(
-    fileFormat === 'GTJSON' ? stringify(JSON.parse(data)) : data
+  return JSON.stringify(
+    JSON.parse(data),
+    fileFormat === 'GTJSON' ? sortKeys : undefined,
+    2
   );
-  return JSON.stringify(json, null, 2);
+}
+
+function sortKeys(_key: string, value: unknown): unknown {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+  );
 }
 
 /**
