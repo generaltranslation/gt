@@ -1,4 +1,9 @@
-import { Fragment, type ComponentType, type ReactNode } from 'react';
+import {
+  Fragment,
+  useSyncExternalStore,
+  type ComponentType,
+  type ReactNode,
+} from 'react';
 import { getTranslationsSnapshot } from 'gt-react';
 import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
 import type { GTRouterState } from './types';
@@ -20,6 +25,34 @@ export async function readGTRouterState(
   };
 }
 
+type GTProvider = ComponentType<GTRouterState & { children: ReactNode }>;
+
+const subscribeToNothing = () => () => {};
+
+/**
+ * Hydrates a prerendered SPA shell with the state it was rendered with, then
+ * re-renders with the visitor's state. React renders the server snapshot
+ * while hydrating and re-renders right after when the client snapshot differs.
+ */
+function ShellProvider({
+  Provider,
+  shell,
+  state,
+  children,
+}: {
+  Provider: GTProvider;
+  shell: GTRouterState;
+  state: GTRouterState;
+  children: ReactNode;
+}) {
+  const current = useSyncExternalStore(
+    subscribeToNothing,
+    () => state,
+    () => shell
+  );
+  return <Provider {...current}>{children}</Provider>;
+}
+
 /**
  * Router Wrap that renders the GT provider once GT state is known, suspending
  * on loadState until then. Each entry passes its own provider and loader so
@@ -31,10 +64,11 @@ export function createGTRouterWrap({
   loadState,
 }: {
   Wrap?: ComponentType<{ children: ReactNode }>;
-  Provider: ComponentType<GTRouterState & { children: ReactNode }>;
+  Provider: GTProvider;
   loadState: () => Promise<GTRouterState>;
 }) {
   let resolved: GTRouterState | undefined;
+  let shell: GTRouterState | undefined;
   let failure: { error: unknown } | undefined;
   let pending: Promise<GTRouterState> | undefined;
   const load = () =>
@@ -51,6 +85,9 @@ export function createGTRouterWrap({
     resolve(state: GTRouterState) {
       resolved = state;
     },
+    hydrateShell(state: GTRouterState) {
+      shell = state;
+    },
     Wrap: function GTRouterWrap({ children }: { children: ReactNode }) {
       // Throwing the pending promise suspends on React 18 and 19; use() is
       // React 19-only.
@@ -59,7 +96,13 @@ export function createGTRouterWrap({
       const state = resolved;
       return (
         <OriginalWrap>
-          <Provider {...state}>{children}</Provider>
+          {shell ? (
+            <ShellProvider Provider={Provider} shell={shell} state={state}>
+              {children}
+            </ShellProvider>
+          ) : (
+            <Provider {...state}>{children}</Provider>
+          )}
         </OriginalWrap>
       );
     },
