@@ -823,6 +823,30 @@ export function getRouter() {
       });
     });
 
+    it.each([
+      [
+        'imports its document from another file',
+        "import { createRootRoute } from '@tanstack/react-router'\nimport { RootDocument } from '../document'\n\nexport const Route = createRootRoute({ shellComponent: RootDocument })\n",
+      ],
+      ['cannot be parsed', 'export const Route = <html lang="en">\n'],
+    ])(
+      'reminds about the lang during setup when the root %s',
+      async (_case, root) => {
+        write('src/routes/__root.tsx', root);
+
+        const result = await tanstackStartSetup.apply(ctx());
+
+        expect(read('src/routes/__root.tsx')).toBe(root);
+        expect(result.manualActions).toEqual([rootLangAction]);
+
+        // A rerun cannot see whether the document was fixed.
+        await expect(tanstackStartSetup.apply(ctx())).resolves.toEqual({
+          steps: [],
+          manualActions: [],
+        });
+      }
+    );
+
     it('leaves the root unchanged until the router is integrated', async () => {
       write('vite.config.ts', 'export default { plugins: [] }\n');
       write('src/routes/__root.tsx', templateRoot);

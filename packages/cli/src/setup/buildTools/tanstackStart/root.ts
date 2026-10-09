@@ -139,22 +139,24 @@ function setLang(
 
 /**
  * The root route with `<html lang={useLocale()}>` in place of a hard-coded
- * or missing lang, a manual step when that edit is not clearly safe, or
- * undefined when there is nothing to change. useLocale reads the provider
- * setupRouterGTIntegration renders, so write the result only once the router
- * is integrated.
+ * or missing lang, a manual step when that edit is not clearly safe,
+ * undefined when there is nothing to change, or null when the root has no
+ * `<html>` to inspect, such as a document imported from another file.
+ * useLocale reads the provider setupRouterGTIntegration renders, so write the
+ * result only once the router is integrated.
  */
 export function configureRootLang(
   root: SourceFile
-): string | ManualAction | undefined {
+): string | ManualAction | null | undefined {
   const { statements } = root;
-  if (!statements) return undefined;
+  if (!statements) return null;
   const htmlElements: t.JSXElement[] = [];
   for (const statement of statements) {
     t.traverseFast(statement, (node) => {
       if (isJsxElementNamed(node, 'html')) htmlElements.push(node);
     });
   }
+  if (htmlElements.length === 0) return null;
   // A computed lang is the app's own locale logic.
   if (htmlElements.every(hasComputedLang)) {
     return undefined;
