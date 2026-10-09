@@ -2,13 +2,11 @@ import type { ComponentType, ReactNode } from 'react';
 import type { SharedGTProviderProps } from 'gt-react';
 
 /** GT state shuttled from the server render to client hydration. */
-export type GTRouterState = {
-  locale: string;
-  region?: string;
-  enableI18n: boolean;
-  translations: SharedGTProviderProps['translations'];
-  dictionaries: NonNullable<SharedGTProviderProps['dictionaries']>;
-};
+export type GTRouterState = Pick<
+  SharedGTProviderProps,
+  'locale' | 'region' | 'translations'
+> &
+  Required<Pick<SharedGTProviderProps, 'enableI18n' | 'dictionaries'>>;
 
 export type GTDehydratedRouterData =
   | {
