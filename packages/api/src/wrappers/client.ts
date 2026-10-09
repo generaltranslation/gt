@@ -7,6 +7,7 @@ import type { RetryPolicy } from './transport';
 
 export type { ApiVersion };
 
+// Not `.at(-1)`: this runs at import, and JavaScriptCore before iOS 15.4 lacks it.
 export const API_VERSION: ApiVersion = Object.values(ApiVersion).pop()!;
 
 export type UserTokenProvider = {
