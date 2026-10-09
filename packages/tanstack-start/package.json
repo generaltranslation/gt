@@ -13,7 +13,9 @@
   "peerDependencies": {
     "react": ">=16.8.0",
     "react-dom": ">=16.8.0",
-    "@tanstack/react-start": ">=1.159.0"
+    "@tanstack/react-start": ">=1.159.0",
+    "vite": ">=6.0.0",
+    "@generaltranslation/compiler": "^1.3.61"
   },
   "dependencies": {
     "gt-react": "workspace:*",
@@ -49,7 +51,9 @@
     "@types/react-dom": ">=18.0.0 <20.0.0",
     "tsdown": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "vite": "^7.1.7",
+    "@generaltranslation/compiler": "workspace:*"
   },
   "exports": {
     ".": {
@@ -86,12 +90,29 @@
         "default": "./dist/server.mjs"
       },
       "default": "./dist/server.mjs"
+    },
+    "./plugin/vite": {
+      "import": {
+        "types": "./dist/plugin/vite.d.mts",
+        "default": "./dist/plugin/vite.mjs"
+      },
+      "default": "./dist/plugin/vite.mjs"
+    },
+    "./internal/_config": {
+      "import": {
+        "types": "./dist/internal/_config.d.mts",
+        "default": "./dist/internal/_config.mjs"
+      },
+      "default": "./dist/internal/_config.mjs"
     }
   },
   "typesVersions": {
     "*": {
       "server": [
         "./dist/server.d.mts"
+      ],
+      "plugin/vite": [
+        "./dist/plugin/vite.d.mts"
       ]
     }
   },
@@ -103,5 +124,13 @@
     "internationalization",
     "localization",
     "i18n"
-  ]
+  ],
+  "peerDependenciesMeta": {
+    "vite": {
+      "optional": true
+    },
+    "@generaltranslation/compiler": {
+      "optional": true
+    }
+  }
 }

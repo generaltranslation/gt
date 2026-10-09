@@ -54,7 +54,7 @@ import {
   getLocale,
   getMessages,
   getTranslations,
-} from '../runtime';
+} from '../runtime.server';
 
 type GlobalWithRegistry = {
   __generaltranslation?: {

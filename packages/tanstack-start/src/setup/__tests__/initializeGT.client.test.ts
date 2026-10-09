@@ -26,7 +26,11 @@ vi.mock('../../functions/localeRouting', () => ({
   getPathnameForLocale: mockGetPathnameForLocale,
 }));
 
-import { getClientReload, initializeGT } from '../initializeGT.client';
+import {
+  getClientReload,
+  initializeGT,
+  isLocaleRoutingEnabled,
+} from '../initializeGT.client';
 import { GTProvider } from '../../provider/GTProvider.client';
 
 describe('initializeGT client', () => {
@@ -165,5 +169,13 @@ describe('initializeGT client', () => {
     expect(mockInitializeReactGT.mock.invocationCallOrder[0]).toBeLessThan(
       mockDetermineLocaleClient.mock.invocationCallOrder[0]
     );
+  });
+
+  it('exposes the initialized locale routing setting', () => {
+    initializeGT({ defaultLocale: 'en', locales: ['en'], localeRouting: true });
+    expect(isLocaleRoutingEnabled()).toBe(true);
+
+    initializeGT({ defaultLocale: 'en', locales: ['en'] });
+    expect(isLocaleRoutingEnabled()).toBe(false);
   });
 });
