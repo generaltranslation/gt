@@ -83,16 +83,8 @@ function countGtJsonEntries(content: string): number | undefined {
   }
 }
 
-/**
- * Pretty-prints JSON output. Only GTJSON keys are sorted, for stable diffs:
- * other JSON files belong to the user and keep their key order.
- */
-function formatJsonString(data: string, fileFormat: string): string {
-  return JSON.stringify(
-    JSON.parse(data),
-    fileFormat === 'GTJSON' ? sortKeys : undefined,
-    2
-  );
+function sortJsonString(data: string): string {
+  return JSON.stringify(JSON.parse(data), sortKeys, 2);
 }
 
 function sortKeys(_key: string, value: unknown): unknown {
@@ -405,19 +397,8 @@ export async function downloadFileBatch(
                 inputPath,
                 options
               );
-              let remergedData = remerged;
-              if (outputPath.endsWith('.json')) {
-                try {
-                  remergedData = formatJsonString(
-                    remergedData,
-                    file.fileFormat
-                  );
-                } catch {
-                  // Fall through with unformatted content
-                }
-              }
-              if (remergedData !== existingContent) {
-                await fs.promises.writeFile(outputPath, remergedData);
+              if (remerged !== existingContent) {
+                await fs.promises.writeFile(outputPath, remerged);
               }
               // Track for postprocessing (e.g. openapi path localization)
               // even when the API download was skipped
@@ -444,7 +425,7 @@ export async function downloadFileBatch(
         }
         let data: string;
         if (isXcstringsCatalog) {
-          // The pinned serializer owns the bytes and the JSON formatter below
+          // The pinned serializer owns the bytes and the JSON key sorter below
           // must never see them. JSON.parse hoists integer-like keys ("404")
           // first; versionId is unaffected (slices come from the parsed object)
           // and Xcode re-sorts on its next save, so the only effect is a
@@ -453,11 +434,12 @@ export async function downloadFileBatch(
         } else {
           data = mergeWithSource(file.data, locale, inputPath, options);
 
-          if (file.fileFormat === 'GTJSON' || outputPath.endsWith('.json')) {
+          // Sort GTJSON keys for stable diffs
+          if (file.fileFormat === 'GTJSON') {
             try {
-              data = formatJsonString(data, file.fileFormat);
+              data = sortJsonString(data);
             } catch (error) {
-              logger.warn(`Failed to format JSON file: ${file.id}: ` + error);
+              logger.warn(`Failed to sort JSON file: ${file.id}: ` + error);
             }
           }
         }

@@ -248,7 +248,7 @@ describe('downloadFileBatch', () => {
     expect(result.failed).toHaveLength(0);
   });
 
-  it('keeps the key order of other JSON output files', async () => {
+  it('writes other JSON output files as downloaded', async () => {
     const mockResponseData = createMockResponseData({
       files: [
         {
@@ -275,7 +275,7 @@ describe('downloadFileBatch', () => {
 
     expect(fs.promises.writeFile).toHaveBeenCalledWith(
       '/output/file1.json',
-      JSON.stringify({ z: 1, a: { c: 3, b: 2 } }, null, 2)
+      '{"z":1,"a":{"c":3,"b":2}}'
     );
   });
 
