@@ -46,10 +46,11 @@ const subscribeToNothing = () => () => {};
 
 /**
  * Hydrates a prerendered SPA shell with the state it was rendered with, then
- * re-renders with the visitor's state. React renders the server snapshot
- * while hydrating and re-renders right after when the client snapshot differs.
- * The provider's effects run between the two renders, so it must not save the
- * shell's locale to the visitor's cookies.
+ * re-renders with the visitor's state, remounting the app when their locale
+ * differs. React renders the server snapshot while hydrating and re-renders
+ * right after when the client snapshot differs. The provider's effects run
+ * between the two renders, so it must not save the shell's locale to the
+ * visitor's cookies.
  */
 function ShellProvider({
   Provider,
@@ -68,7 +69,13 @@ function ShellProvider({
     () => shell
   );
   return (
-    <Provider {...current} _syncConditions={current !== shell}>
+    <Provider
+      {...current}
+      // Output that does not read GT state, such as a <Link>'s href built
+      // through the locale rewrite, would otherwise keep the shell's locale.
+      key={current.locale}
+      _syncConditions={current !== shell}
+    >
       {children}
     </Provider>
   );

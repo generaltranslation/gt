@@ -307,6 +307,8 @@ async function testTanStackApp(page: Page) {
 
 // Every route serves the shell prerendered in the default locale, so the
 // client must hydrate it as rendered and then switch to the visitor's locale.
+// The app uses locale routing, so the shell's links must take the visitor's
+// locale prefix too.
 // /spa's loader runs in the browser; a static host cannot answer the server
 // functions other routes call.
 async function testTanStackSpaShell(page: Page) {
@@ -346,6 +348,9 @@ async function testTanStackSpaShell(page: Page) {
   await expect(
     page.getByText('Bonjour depuis le fournisseur racine.')
   ).toBeVisible();
+  await expect(
+    page.getByRole('navigation').getByRole('link', { name: 'SSR', exact: true })
+  ).toHaveAttribute('href', '/fr/ssr');
   const cookies = await page.context().cookies();
   expect(cookies.find(({ name }) => name === localeCookie)?.value).toBe('fr');
   const writes = await page.evaluate(
