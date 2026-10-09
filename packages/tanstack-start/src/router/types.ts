@@ -7,6 +7,7 @@ export type GTRouterState = {
   region?: string;
   enableI18n: boolean;
   translations: SharedGTProviderProps['translations'];
+  dictionaries: NonNullable<SharedGTProviderProps['dictionaries']>;
 };
 
 export type GTDehydratedRouterData =
