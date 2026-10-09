@@ -2,9 +2,12 @@
  * Configuration types for the GT Babel plugin
  */
 
-import type { GTConfig as SharedGTConfig } from 'generaltranslation/types';
+import type {
+  GTCompilerOptions,
+  GTConfig as SharedGTConfig,
+} from 'generaltranslation/types';
 
-export type LogLevel = 'silent' | 'error' | 'warn' | 'info' | 'debug';
+export type LogLevel = NonNullable<GTCompilerOptions['logLevel']>;
 
 /** A complete or partial gt.config.json accepted by compiler integrations. */
 export type GTConfig = Partial<SharedGTConfig>;
@@ -12,21 +15,13 @@ export type GTConfig = Partial<SharedGTConfig>;
 /**
  * Plugin configuration options (from babel config)
  */
-export interface PluginConfig {
-  /** Log level for the plugin */
-  logLevel?: LogLevel;
+export interface PluginConfig extends GTCompilerOptions {
   /** GT Configuration object — pass the parsed gt.config.json to sync settings */
   gtConfig?: GTConfig;
-  /** Enable compile-time hash generation (default: true) */
-  compileTimeHash?: boolean;
-  /** Disable dynamic content validation checks */
-  disableBuildChecks?: boolean;
   /** Enable macro transform (t`...`, t(`...`), t("a" + b)) */
   enableMacroTransform?: boolean;
   /** Name of the string translation macro function */
   stringTranslationMacro?: string;
-  /** Enable Auto Jsx Injection (e.g. <div>Hello</div> -> <div><T>Hello</T></div>) */
-  enableAutoJsxInjection?: boolean;
   /** Package source for components inserted by Auto JSX Injection */
   autoJsxImportSource?: string;
   /** Automatically treat interpolated/concatenated values as derive() calls */
