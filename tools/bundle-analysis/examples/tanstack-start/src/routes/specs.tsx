@@ -4,7 +4,7 @@ import { Crosses } from '../components/Crosses';
 import { Footer } from '../components/Footer';
 
 // This route skips server rendering, so its translations resolve in the
-// browser from the snapshot the root loader sent down.
+// browser from the snapshot the router integration sent down.
 export const Route = createFileRoute('/specs')({
   ssr: false,
   component: Specs,
