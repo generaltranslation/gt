@@ -1,48 +1,172 @@
-// TanStack Start setup: configures src/router.tsx, src/start.ts and
-// src/routes/__root.tsx in dependency order, or reports manual steps.
+// TanStack Start setup: adds the gtTanstackStart Vite plugin to the Vite
+// config, setupRouterGTIntegration to src/router.tsx and the resolved locale
+// to the root route's <html lang>, or reports manual steps. The plugin builds
+// the translation loader from gt.config.json.
 import fs from 'node:fs';
 import path from 'node:path';
 import { Libraries } from '../../../types/libraries.js';
 import { DEFAULT_VITE_TRANSLATIONS_DIR } from '../../../utils/constants.js';
 import {
+  getLoaderExport,
   getViteLoaderExport,
-  parseModule,
+  writeTranslationStubs,
   writeViteLoader,
-  type ViteLoaderExport,
-  type ViteLoaderResult,
 } from '../../setupViteSPA.js';
 import type {
   BuildToolContext,
   BuildToolSetup,
   ManualAction,
+  SetupResult,
 } from '../index.js';
-import { VITE_LOADER_FILE, viteSetup } from '../vite.js';
-import { applyEdits, getCodeStyle, getImportEdit } from '../shared/edits.js';
 import { findInitializeCall, passesLoader } from '../shared/initializeGT.js';
-import { rendersElement } from '../shared/jsx.js';
-import { getCustomLoaderAction } from '../shared/loader.js';
-import { readSourceFile, type SourceFile } from '../shared/source.js';
+import { getLoaderUpdateActions } from '../shared/loader.js';
+import { readSourceFile } from '../shared/source.js';
+import { VITE_LOADER_FILE } from '../vite.js';
 import {
-  getMiddlewareAction,
-  registersMiddleware,
-  START_CONTENT,
-} from './middleware.js';
-import { configureRootRoute, findRootComponent, getRootFix } from './root.js';
-import { getRouterLines, getStorageAction } from './router.js';
+  findPreviousSetup,
+  getInitializeLoaderAction,
+  getPreviousSetupAction,
+  importsFromStart,
+  initializesWithoutLoader,
+} from './previousSetup.js';
+import { configureRootLang, getRootLangAction } from './root.js';
+import {
+  callsRouterIntegration,
+  configureRouter,
+  getRouterAction,
+} from './router.js';
 import { DOCS_URL, inspectTanStackStart } from './source.js';
+import {
+  configureViteConfig,
+  getViteConfigAction,
+  getVitePluginConfigAction,
+  registersVitePlugin,
+} from './viteConfig.js';
 
-async function writeLoader(
+// The Vite plugin loads translations with the first of these that exists,
+// instead of from gt.config.json (CUSTOM_LOADER_FILES in gt-tanstack-start).
+const LOADER_FILES = [
+  VITE_LOADER_FILE,
+  'src/loadTranslations.tsx',
+  'src/loadTranslations.js',
+  'src/loadTranslations.jsx',
+];
+
+function findLoaders(appDirectory: string): string[] {
+  return LOADER_FILES.filter((file) =>
+    fs.existsSync(path.join(appDirectory, file))
+  );
+}
+
+/** The Vite plugin calls the default or loadTranslations export of a loader. */
+async function getLoaderExportActions(
+  appDirectory: string
+): Promise<ManualAction[]> {
+  const [loader] = findLoaders(appDirectory);
+  if (!loader) return [];
+  const content = await fs.promises.readFile(
+    path.join(appDirectory, loader),
+    'utf8'
+  );
+  if (getLoaderExport(content, loader)) return [];
+  return [
+    {
+      whatHappened: `Your custom ${loader} has no default or named loadTranslations export, so ${Libraries.GT_TANSTACK_START} cannot load translations with it`,
+      fix: `Update your custom ${loader} to export a default or named loadTranslations function`,
+    },
+  ];
+}
+
+/**
+ * Adds locale stubs, keeps an existing template loader pointing at the
+ * translations directory and asks to update any other loader, since the Vite
+ * plugin prefers a loader over the config. The previous setup's initializeGT
+ * reads local files only through a loader passed to it, so it gets the
+ * template and a request to pass it.
+ */
+async function syncTranslationFiles(
   ctx: BuildToolContext & { translationsDir: string }
-): Promise<{ loader: ViteLoaderResult; steps: string[] }> {
-  const loader = await writeViteLoader({ ...ctx, create: true });
-  const changed = loader === 'created' || loader === 'updated';
-  return { loader, steps: changed ? [`${loader} ${VITE_LOADER_FILE}`] : [] };
+): Promise<SetupResult> {
+  const { appDirectory, translationsDir, previousTranslationsDir } = ctx;
+  const router = await readSourceFile(appDirectory, 'src/router');
+  const cdnRouter =
+    router && initializesWithoutLoader(router, ctx) ? router : undefined;
+  const loader = await writeViteLoader({ ...ctx, create: Boolean(cdnRouter) });
+  if (loader === 'missing') await writeTranslationStubs(ctx);
+  const manualActions = findLoaders(appDirectory)
+    .filter((file) => file !== VITE_LOADER_FILE || loader === 'custom')
+    .flatMap((file) =>
+      getLoaderUpdateActions(
+        file,
+        translationsDir,
+        previousTranslationsDir,
+        true
+      )
+    );
+  manualActions.push(...(await getLoaderExportActions(appDirectory)));
+  const loaderExport =
+    cdnRouter && (await getViteLoaderExport(appDirectory, loader));
+  if (cdnRouter && loaderExport) {
+    manualActions.push(
+      getInitializeLoaderAction(cdnRouter.path, translationsDir, loaderExport)
+    );
+  }
+  return {
+    steps:
+      loader === 'created' || loader === 'updated'
+        ? [`${loader} ${VITE_LOADER_FILE}`]
+        : [],
+    manualActions,
+  };
+}
+
+/**
+ * What still loads local translations once they move to the CDN: null when
+ * nothing does. Without a previous output path (first CDN setup, or a rerun
+ * after the switch) a leftover loader is the only sign of local loading.
+ */
+async function getCDNStorageAction(
+  ctx: BuildToolContext
+): Promise<ManualAction | null | undefined> {
+  const { appDirectory, previousTranslationsDir } = ctx;
+  const router = await readSourceFile(appDirectory, 'src/router');
+  // Name every loader: deleting only the first makes the plugin use the next.
+  const loaders = findLoaders(appDirectory).join(', ');
+  // The previous setup passes the loader to initializeGT, which takes
+  // precedence over CDN loading.
+  if (router && importsFromStart(router, 'initializeGT')) {
+    const initializeCall = findInitializeCall(
+      router,
+      Libraries.GT_TANSTACK_START
+    );
+    if (
+      initializeCall &&
+      passesLoader(router, initializeCall.arguments[0], ctx) === false
+    ) {
+      return null;
+    }
+    if (previousTranslationsDir === undefined && !loaders) return undefined;
+    const loader =
+      previousTranslationsDir === undefined
+        ? `in ${loaders}`
+        : `for ${previousTranslationsDir}`;
+    return {
+      whatHappened: `Translations now load from the CDN, but initializeGT in ${router.path} may still receive the local loader ${loader}`,
+      fix: 'Remove the loadTranslations option and its import from the initializeGT() call so translations load from the CDN',
+    };
+  }
+  return loaders
+    ? {
+        whatHappened: `Translations now load from the CDN, but ${Libraries.GT_TANSTACK_START} still loads them with ${loaders}`,
+        fix: `Delete ${loaders} so translations load from the CDN`,
+      }
+    : null;
 }
 
 export const tanstackStartSetup: BuildToolSetup = {
   framework: 'tanstack-start',
   defaultTranslationsDir: DEFAULT_VITE_TRANSLATIONS_DIR,
-  initializer: 'initializeGT',
+  initializer: 'setupRouterGTIntegration',
   ownsLoader: true,
   skipsGTInstall: () => false,
   devCredentialsOption: '--live-translations',
@@ -50,168 +174,85 @@ export const tanstackStartSetup: BuildToolSetup = {
   async preflight(appDirectory) {
     await inspectTanStackStart(appDirectory);
   },
-  async getCDNStorageAction(ctx) {
-    const router = await readSourceFile(ctx.appDirectory, 'src/router');
-    const initializeCall =
-      router && findInitializeCall(router, Libraries.GT_TANSTACK_START);
-    if (!router || !initializeCall) return undefined;
-    const loaderPassed = passesLoader(router, initializeCall.arguments[0], ctx);
-    if (loaderPassed === undefined) return undefined;
-    return loaderPassed ? getStorageAction(router, ctx, undefined, true) : null;
-  },
-  // The loader is the same file Vite generates, but a router that loads from
-  // the CDN also needs the loader passed to initializeGT.
+  // Init that keeps the app source only reports loaders left behind.
   async syncLoader(ctx) {
-    const result = await viteSetup.syncLoader(ctx);
-    if (ctx.keepAppSource) return result;
-    const router = await readSourceFile(ctx.appDirectory, 'src/router');
-    const initializeCall =
-      router && findInitializeCall(router, Libraries.GT_TANSTACK_START);
-    if (
-      !initializeCall ||
-      passesLoader(router, initializeCall.arguments[0], ctx) !== false
-    ) {
-      return result;
-    }
-    const { loader, steps } = await writeLoader(ctx);
-    const loaderExport = await getViteLoaderExport(ctx.appDirectory, loader);
+    if (!ctx.keepAppSource) return syncTranslationFiles(ctx);
     return {
-      steps: [...result.steps, ...steps],
-      manualActions: loaderExport
-        ? [
-            ...result.manualActions,
-            getStorageAction(router, ctx, loaderExport, false),
-          ]
-        : result.manualActions,
+      steps: [],
+      manualActions: findLoaders(ctx.appDirectory).flatMap((file) =>
+        getLoaderUpdateActions(
+          file,
+          ctx.translationsDir,
+          ctx.previousTranslationsDir,
+          false
+        )
+      ),
     };
   },
+  getCDNStorageAction,
   async apply(ctx) {
     const { appDirectory, translationsDir } = ctx;
-    const { router, root, start } = await inspectTanStackStart(appDirectory);
-    const steps: string[] = [];
-    const manualActions: ManualAction[] = [];
+    const { router, viteConfig } = await inspectTanStackStart(appDirectory);
+    const { steps, manualActions }: SetupResult = translationsDir
+      ? await syncTranslationFiles({ ...ctx, translationsDir })
+      : {
+          steps: [],
+          manualActions: [await getCDNStorageAction(ctx)].filter(
+            (action): action is ManualAction => !!action
+          ),
+        };
     const writeSource = async (file: string, content: string) => {
       await fs.promises.writeFile(path.join(appDirectory, file), content);
     };
 
-    let loaderExport: ViteLoaderExport;
-    if (translationsDir) {
-      const { loader, steps: loaderSteps } = await writeLoader({
-        ...ctx,
-        translationsDir,
-      });
-      steps.push(...loaderSteps);
-      loaderExport = await getViteLoaderExport(appDirectory, loader);
-      if (loader === 'custom') {
-        manualActions.push(
-          getCustomLoaderAction(VITE_LOADER_FILE, translationsDir, loaderExport)
-        );
+    const routerReady = callsRouterIntegration(router);
+    const previousSetup = routerReady
+      ? []
+      : await findPreviousSetup(appDirectory, router);
+    if (previousSetup.length > 0) {
+      manualActions.push(getPreviousSetupAction(previousSetup));
+      return { steps, manualActions };
+    }
+
+    let viteReady = registersVitePlugin(viteConfig);
+    if (viteReady) {
+      const configAction = getVitePluginConfigAction(viteConfig, ctx);
+      if (configAction) manualActions.push(configAction);
+    } else {
+      const configured = configureViteConfig(viteConfig, ctx);
+      if (configured) {
+        await writeSource(viteConfig.path, configured);
+        steps.push(`configured ${viteConfig.path}`);
+        viteReady = true;
+      } else {
+        manualActions.push(getViteConfigAction(viteConfig, ctx));
       }
     }
 
-    // An insertion that breaks the file's syntax falls back to manual setup.
-    const parses = (file: SourceFile, content: string | undefined) =>
-      content !== undefined && parseModule(content, file.path) !== undefined
-        ? content
-        : undefined;
-
-    const initializeCall = findInitializeCall(
-      router,
-      Libraries.GT_TANSTACK_START
-    );
-    let routerReady = initializeCall !== undefined;
-    let configuredRouter: string | undefined;
-    // Storage chosen on a rerun must match how the router loads translations.
-    const wantsLoader = Boolean(translationsDir);
-    const loaderPassed = passesLoader(
-      router,
-      initializeCall?.arguments[0],
-      ctx
-    );
-    if (
-      loaderPassed !== undefined &&
-      loaderPassed !== wantsLoader &&
-      (!translationsDir || loaderExport)
-    ) {
-      manualActions.push(
-        getStorageAction(router, ctx, loaderExport, loaderPassed)
-      );
-    }
-    // A custom loader without an export already has its own action.
-    if (!routerReady && (!translationsDir || loaderExport)) {
-      // Any other mention may be an app-owned initializer; a second
-      // initializeGT call would override it.
-      if (router.statements && !/\binitializeGT\b/.test(router.content)) {
-        const style = getCodeStyle(router.content, router.statements);
-        configuredRouter = parses(
-          router,
-          applyEdits(router.content, [
-            getImportEdit(
-              router.statements,
-              getRouterLines(router, ctx, loaderExport, style),
-              style.eol
-            ),
-          ])
-        );
-      }
-      routerReady = configuredRouter !== undefined;
-      if (!routerReady) {
-        const lines = getRouterLines(router, ctx, loaderExport, {
-          quote: "'",
-          semi: ';',
-        });
-        manualActions.push({
-          whatHappened: `${router.path} was not configured automatically`,
-          fix: `Initialize GT after the imports in ${router.path}: ${lines.filter(Boolean).join(' ')}, then rerun gt init (see ${DOCS_URL})`,
-        });
-      }
-    }
-
-    const startReady = !start || registersMiddleware(start);
-    if (!startReady) {
-      manualActions.push(getMiddlewareAction(start!.path));
-    }
-
-    const rootComponent = root.statements && findRootComponent(root.statements);
-    const rootConfigured = rendersElement(
-      [rootComponent?.component, rootComponent?.document],
-      'GTProvider'
-    );
-    // A provider elsewhere may wrap the document indirectly; adding a second
-    // one could nest them, so a person decides.
-    const providerElsewhere =
-      !rootConfigured && rendersElement(root.statements ?? [], 'GTProvider');
-    const configuredRoot =
-      rootConfigured || providerElsewhere
-        ? undefined
-        : parses(root, configureRootRoute(root));
-    if (!rootConfigured && !configuredRoot) {
-      manualActions.push({
-        whatHappened: providerElsewhere
-          ? `${root.path} renders GTProvider outside the root route's document`
-          : `${root.path} does not match the create-start root route`,
-        fix: getRootFix(root.path),
-      });
-    }
-
-    // gtMiddleware and the root loader need initializeGT to have run, so
-    // they are only added alongside a router that calls it; the actions
-    // above ask for a rerun to finish.
-    if (routerReady) {
-      if (!start) {
-        await writeSource('src/start.ts', START_CONTENT);
-        steps.push('created src/start.ts');
-      }
-      if (configuredRouter) {
-        await writeSource(router.path, configuredRouter);
+    // Without the plugin, setupRouterGTIntegration has no config to load and
+    // every page would fail to render, so the router is only edited once the
+    // plugin is registered. Until then it is listed as a manual step.
+    let routerIntegrated = routerReady;
+    if (!routerReady) {
+      const configured = viteReady ? configureRouter(router) : undefined;
+      if (configured) {
+        await writeSource(router.path, configured);
         steps.push(`configured ${router.path}`);
+        routerIntegrated = true;
+      } else {
+        manualActions.push(getRouterAction(router.path));
       }
-      // The root loader reads the request scope gtMiddleware sets up, so
-      // without it every page would fail to render.
-      if (configuredRoot && startReady) {
-        await writeSource(root.path, configuredRoot);
-        steps.push(`configured ${root.path}`);
-      }
+    }
+
+    // useLocale reads the provider the router integration renders, so the
+    // root is only edited once the router is integrated.
+    const root = await readSourceFile(appDirectory, 'src/routes/__root');
+    const rootLang = root ? configureRootLang(root) : undefined;
+    if (root && typeof rootLang === 'string' && routerIntegrated) {
+      await writeSource(root.path, rootLang);
+      steps.push(`configured ${root.path}`);
+    } else if (root && rootLang !== undefined) {
+      manualActions.push(getRootLangAction(root.path));
     }
 
     return { steps, manualActions };
