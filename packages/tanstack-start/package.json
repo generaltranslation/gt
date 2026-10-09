@@ -15,7 +15,7 @@
     "react-dom": ">=16.8.0",
     "@tanstack/react-start": ">=1.159.0",
     "vite": ">=6.0.0",
-    "@generaltranslation/compiler": "^1.3.61"
+    "@generaltranslation/compiler": "^1.3.62"
   },
   "dependencies": {
     "gt-react": "workspace:*",
