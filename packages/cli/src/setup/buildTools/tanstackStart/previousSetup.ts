@@ -1,6 +1,7 @@
 // The previous setup: initializeGT in the router, gtMiddleware in the start
-// entry and GTProvider in the root route. It keeps working, and the new setup
-// on top of it would nest a second GTProvider, so setup leaves it alone.
+// entry and GTProvider in the root route. It is deprecated but keeps working,
+// and the new setup on top of it would nest a second GTProvider, so setup
+// leaves it alone and points to the migration guide.
 import * as t from '@babel/types';
 import { Libraries } from '../../../types/libraries.js';
 import type { ManualAction } from '../index.js';
@@ -11,7 +12,9 @@ import {
   readSourceFile,
   type SourceFile,
 } from '../shared/source.js';
-import { DOCS_URL } from './source.js';
+
+const MIGRATION_URL =
+  'https://github.com/generaltranslation/gt/tree/main/packages/tanstack-start#migrating-from-the-previous-setup';
 
 // Unparseable files fall back to a text check: a false positive only leaves
 // the app unchanged, while a miss could nest a second GTProvider.
@@ -74,7 +77,7 @@ export async function findPreviousSetup(
 
 export function getPreviousSetupAction(markers: string[]): ManualAction {
   return {
-    whatHappened: `This app uses the previous ${Libraries.GT_TANSTACK_START} setup (${markers.join(', ')}), so GT left its source files unchanged`,
-    fix: `Keep the previous setup, which still works, or switch to setupRouterGTIntegration and the gtTanstackStart Vite plugin (see ${DOCS_URL})`,
+    whatHappened: `This app uses the deprecated ${Libraries.GT_TANSTACK_START} setup (${markers.join(', ')}), so GT left its source files unchanged`,
+    fix: `Switch to the gtTanstackStart Vite plugin and setupRouterGTIntegration (see ${MIGRATION_URL}). The previous setup keeps working until a future major release`,
   };
 }
