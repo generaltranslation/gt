@@ -37,11 +37,12 @@ import {
   configureRouter,
   getRouterAction,
 } from './router.js';
-import { DOCS_URL, inspectTanStackStart } from './source.js';
+import { DOCS_URL, inspectTanStackStart, readViteConfig } from './source.js';
 import {
   configureViteConfig,
   getViteConfigAction,
   getVitePluginConfigAction,
+  getVitePluginLoaderPath,
   registersVitePlugin,
 } from './viteConfig.js';
 
@@ -54,17 +55,30 @@ const LOADER_FILES = [
   'src/loadTranslations.jsx',
 ];
 
-function findLoaders(appDirectory: string): string[] {
-  return LOADER_FILES.filter((file) =>
-    fs.existsSync(path.join(appDirectory, file))
-  );
+/**
+ * The loaders the Vite plugin would use: the loadTranslationsPath it gets,
+ * which replaces the default files, or else the default files that exist.
+ */
+async function findLoaders(
+  appDirectory: string
+): Promise<{ files: string[]; fromOption: boolean }> {
+  const viteConfig = await readViteConfig(appDirectory);
+  const option =
+    viteConfig && getVitePluginLoaderPath(viteConfig, appDirectory);
+  const candidates = option ? [option] : LOADER_FILES;
+  return {
+    files: candidates.filter((file) =>
+      fs.existsSync(path.join(appDirectory, file))
+    ),
+    fromOption: Boolean(option),
+  };
 }
 
 /** The Vite plugin calls the default or loadTranslations export of a loader. */
 async function getLoaderExportActions(
   appDirectory: string
 ): Promise<ManualAction[]> {
-  const [loader] = findLoaders(appDirectory);
+  const [loader] = (await findLoaders(appDirectory)).files;
   if (!loader) return [];
   const content = await fs.promises.readFile(
     path.join(appDirectory, loader),
@@ -100,7 +114,7 @@ async function syncTranslationFiles(
       : undefined;
   const loader = await writeViteLoader({ ...ctx, create: Boolean(cdnRouter) });
   if (loader === 'missing') await writeTranslationStubs(ctx);
-  const manualActions = findLoaders(appDirectory)
+  const manualActions = (await findLoaders(appDirectory)).files
     .filter((file) => file !== VITE_LOADER_FILE || loader === 'custom')
     .flatMap((file) =>
       getLoaderUpdateActions(
@@ -142,7 +156,8 @@ async function getCDNStorageAction(
   const { appDirectory, previousTranslationsDir } = ctx;
   const router = await readSourceFile(appDirectory, 'src/router');
   // Name every loader: deleting only the first makes the plugin use the next.
-  const loaders = findLoaders(appDirectory).join(', ');
+  const { files, fromOption } = await findLoaders(appDirectory);
+  const loaders = files.join(', ');
   // The previous setup passes the loader to initializeGT, which takes
   // precedence over CDN loading.
   if (router && importsFromStart(router, 'initializeGT')) {
@@ -166,12 +181,14 @@ async function getCDNStorageAction(
       fix: 'Remove the loadTranslations option and its import from the initializeGT() call so translations load from the CDN',
     };
   }
-  return loaders
-    ? {
-        whatHappened: `Translations now load from the CDN, but ${Libraries.GT_TANSTACK_START} still loads them with ${loaders}`,
-        fix: `Delete ${loaders} so translations load from the CDN`,
-      }
-    : null;
+  if (!loaders) return null;
+  return {
+    whatHappened: `Translations now load from the CDN, but ${Libraries.GT_TANSTACK_START} still loads them with ${loaders}`,
+    // Deleting a configured loader would fail the build instead.
+    fix: fromOption
+      ? `Remove the loadTranslationsPath option from gtTanstackStart() in your Vite config so translations load from the CDN`
+      : `Delete ${loaders} so translations load from the CDN`,
+  };
 }
 
 export const tanstackStartSetup: BuildToolSetup = {
@@ -190,13 +207,14 @@ export const tanstackStartSetup: BuildToolSetup = {
     if (!ctx.keepAppSource) return syncTranslationFiles(ctx);
     return {
       steps: [],
-      manualActions: findLoaders(ctx.appDirectory).flatMap((file) =>
-        getLoaderUpdateActions(
-          file,
-          ctx.translationsDir,
-          ctx.previousTranslationsDir,
-          false
-        )
+      manualActions: (await findLoaders(ctx.appDirectory)).files.flatMap(
+        (file) =>
+          getLoaderUpdateActions(
+            file,
+            ctx.translationsDir,
+            ctx.previousTranslationsDir,
+            false
+          )
       ),
     };
   },
