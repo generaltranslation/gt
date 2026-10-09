@@ -84,9 +84,15 @@ function countGtJsonEntries(content: string): number | undefined {
   }
 }
 
-function sortJsonString(data: string): string {
-  const sortedData = stringify(JSON.parse(data));
-  return JSON.stringify(JSON.parse(sortedData), null, 2);
+/**
+ * Pretty-prints JSON output. Only GTJSON keys are sorted, for stable diffs:
+ * other JSON files belong to the user and keep their key order.
+ */
+function formatJsonString(data: string, fileFormat: string): string {
+  const json = JSON.parse(
+    fileFormat === 'GTJSON' ? stringify(JSON.parse(data)) : data
+  );
+  return JSON.stringify(json, null, 2);
 }
 
 /**
@@ -393,9 +399,12 @@ export async function downloadFileBatch(
               let remergedData = remerged;
               if (outputPath.endsWith('.json')) {
                 try {
-                  remergedData = sortJsonString(remergedData);
+                  remergedData = formatJsonString(
+                    remergedData,
+                    file.fileFormat
+                  );
                 } catch {
-                  // Fall through with unsorted content
+                  // Fall through with unformatted content
                 }
               }
               if (remergedData !== existingContent) {
@@ -426,7 +435,7 @@ export async function downloadFileBatch(
         }
         let data: string;
         if (isXcstringsCatalog) {
-          // The pinned serializer owns the bytes and the JSON key sorter below
+          // The pinned serializer owns the bytes and the JSON formatter below
           // must never see them. JSON.parse hoists integer-like keys ("404")
           // first; versionId is unaffected (slices come from the parsed object)
           // and Xcode re-sorts on its next save, so the only effect is a
@@ -435,12 +444,11 @@ export async function downloadFileBatch(
         } else {
           data = mergeWithSource(file.data, locale, inputPath, options);
 
-          // Stable sort JSON keys for deterministic output
           if (file.fileFormat === 'GTJSON' || outputPath.endsWith('.json')) {
             try {
-              data = sortJsonString(data);
+              data = formatJsonString(data, file.fileFormat);
             } catch (error) {
-              logger.warn(`Failed to sort JSON file: ${file.id}: ` + error);
+              logger.warn(`Failed to format JSON file: ${file.id}: ` + error);
             }
           }
         }

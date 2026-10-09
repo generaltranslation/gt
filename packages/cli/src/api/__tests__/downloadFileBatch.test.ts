@@ -211,7 +211,7 @@ describe('downloadFileBatch', () => {
     expect(result.failed).toHaveLength(0);
   });
 
-  it('should sort JSON keys when writing JSON output files', async () => {
+  it('sorts the keys of GTJSON output files', async () => {
     const mockResponseData = createMockResponseData({
       files: [
         {
@@ -220,7 +220,7 @@ describe('downloadFileBatch', () => {
           fileId: 'file-1',
           versionId: 'version-1',
           locale: 'en',
-          fileFormat: 'JSON' as FileFormat,
+          fileFormat: 'GTJSON' as FileFormat,
           data: '{"z":1,"a":{"c":3,"b":2}}',
           fileName: 'file1.json',
           metadata: {},
@@ -246,6 +246,37 @@ describe('downloadFileBatch', () => {
     );
     expect(result.successful).toHaveLength(1);
     expect(result.failed).toHaveLength(0);
+  });
+
+  it('keeps the key order of other JSON output files', async () => {
+    const mockResponseData = createMockResponseData({
+      files: [
+        {
+          id: 'translation-1',
+          branchId: 'branch-1',
+          fileId: 'file-1',
+          versionId: 'version-1',
+          locale: 'en',
+          fileFormat: 'JSON' as FileFormat,
+          data: '{"z":1,"a":{"c":3,"b":2}}',
+          fileName: 'file1.json',
+          metadata: {},
+        },
+      ],
+      count: 1,
+    });
+    const files = createBatchedFiles(1);
+    const fileTracker = createMockFileTracker(files);
+
+    vi.mocked(api.downloadFileBatch).mockResolvedValue(mockResponseData);
+    setupFileSystemMocks();
+
+    await downloadFileBatch(fileTracker, files, createMockSettings());
+
+    expect(fs.promises.writeFile).toHaveBeenCalledWith(
+      '/output/file1.json',
+      JSON.stringify({ z: 1, a: { c: 3, b: 2 } }, null, 2)
+    );
   });
 
   it('should create directories if they do not exist', async () => {
