@@ -154,3 +154,53 @@ describe('determineLocale approved spelling', () => {
     expect(config.determineLocale('en-US')).toBe('EN-us');
   });
 });
+
+describe('LocaleConfig.getRegionProperties', () => {
+  it('names regions in the target locale', () => {
+    const config = new LocaleConfig({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+    });
+    expect(config.getRegionProperties('US', 'fr')).toMatchObject({
+      code: 'US',
+      name: 'États-Unis',
+    });
+    expect(config.getRegionProperties('US', 'en')).toMatchObject({
+      code: 'US',
+      name: 'United States',
+    });
+  });
+
+  it('derives custom region names and emojis from customMapping', () => {
+    const config = new LocaleConfig({
+      defaultLocale: 'en',
+      locales: ['en', 'brand'],
+      customMapping: {
+        brand: {
+          code: 'fr-CA',
+          regionCode: 'CA',
+          regionName: 'Brand Canada',
+          emoji: '🍁',
+        },
+      },
+    });
+    expect(config.getRegionProperties('CA', 'en')).toEqual({
+      code: 'CA',
+      name: 'Brand Canada',
+      emoji: '🍁',
+      locale: 'brand',
+    });
+  });
+
+  it('prefers an explicitly passed region mapping', () => {
+    const config = new LocaleConfig({
+      defaultLocale: 'en',
+      customMapping: {
+        brand: { code: 'fr-CA', regionCode: 'CA', regionName: 'Brand Canada' },
+      },
+    });
+    expect(
+      config.getRegionProperties('CA', 'en', { CA: { name: 'Explicit' } })
+    ).toMatchObject({ code: 'CA', name: 'Explicit' });
+  });
+});

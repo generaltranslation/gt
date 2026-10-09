@@ -39,7 +39,7 @@ function computeRelativeTime({
     enableI18n: _enableI18n,
     localesProp,
   });
-  const gt = getI18nConfig().getGTClass();
+  const i18nConfig = getI18nConfig();
   const resolvedDate = date ?? children;
 
   if (process.env.NODE_ENV === 'development' && value !== undefined && !unit) {
@@ -50,7 +50,7 @@ function computeRelativeTime({
   }
 
   if (value !== undefined && unit) {
-    return gt.formatRelativeTime(value, unit, {
+    return i18nConfig.formatRelativeTime(value, unit, undefined, {
       locales,
       numeric: options.numeric,
       style: options.style,
@@ -59,7 +59,7 @@ function computeRelativeTime({
   }
 
   if (resolvedDate != null) {
-    return gt.formatRelativeTimeFromDate(resolvedDate, {
+    return i18nConfig.formatRelativeTimeFromDate(resolvedDate, undefined, {
       locales,
       baseDate: baseDate ?? new Date(),
       numeric: options.numeric,
