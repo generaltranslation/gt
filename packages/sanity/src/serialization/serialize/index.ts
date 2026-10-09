@@ -43,15 +43,6 @@ type RawFieldDef = {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
-/**
- * HTML that serializeDocument already produced for a top-level object or
- * array field. serializeObject inserts it as-is; every plain string it meets
- * is a document value.
- */
-class SerializedHTML {
-  constructor(readonly html: string) {}
-}
-
 export const BaseDocumentSerializer = (schemas: Schema) => {
   /*
    * Helper function that allows us to get metadata (like `localize: false`) from schema fields.
@@ -168,14 +159,8 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
         const fieldDef = knownFields?.find(
           (field) => field.name === fieldName
         ) as RawFieldDef | undefined;
-        //top-level object and array fields serializeDocument has already
-        //turned into HTML
-        if (value instanceof SerializedHTML) {
-          htmlField = value.html;
-        }
-
-        //any other string is a document value, even if it looks like HTML
-        else if (typeof value === 'string') {
+        //strings are document values, even if they look like HTML
+        if (typeof value === 'string') {
           htmlField = serializeString(value, fieldName);
         }
 
@@ -343,51 +328,10 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
       );
     }
 
-    const serializedFields: Record<string, unknown> = {};
-
-    for (const key in filteredObj) {
-      if (filteredObj.hasOwnProperty(key) === false) continue;
-      const value = filteredObj[key];
-      const fieldDef = schema?.fields?.find((field) => field.name === key) as
-        | RawFieldDef
-        | undefined;
-
-      if (typeof value === 'string') {
-        serializedFields[key] = value;
-      } else if (Array.isArray(value)) {
-        serializedFields[key] = new SerializedHTML(
-          serializeArray(
-            value.filter(
-              (item): item is Record<string, unknown> | string =>
-                typeof item === 'string' || isRecord(item)
-            ),
-            key,
-            stopTypes,
-            serializers,
-            fieldDef?.of
-          )
-        );
-      } else if (
-        value &&
-        isRecord(value) &&
-        !stopTypes.find((stopType) => stopType == value?._type)
-      ) {
-        const serialized = serializeObject(
-          value as TypedObject,
-          stopTypes,
-          serializers,
-          fieldDef?.fields
-        );
-        serializedFields[key] = new SerializedHTML(
-          `<div class="${key}" data-level='field'>${serialized}</div>`
-        );
-      }
-    }
-
     //create a valid HTML file
     const rawHTMLBody = document.createElement('body');
     rawHTMLBody.innerHTML = serializeObject(
-      serializedFields as TypedObject,
+      filteredObj as TypedObject,
       stopTypes,
       serializers
     );
