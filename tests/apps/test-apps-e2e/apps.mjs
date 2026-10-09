@@ -57,6 +57,15 @@ export const apps = Object.freeze({
       'pnpm --filter gt-test-tanstack-start exec vite dev --port 5273 --strictPort',
     readyPath: '/',
   },
+  'tanstack-start-locale-routing': {
+    packageName: 'gt-test-tanstack-start',
+    entryPackage: 'gt-tanstack-start',
+    kind: 'tanstack-routing',
+    baseURL: 'http://localhost:5275',
+    command:
+      'GT_TEST_CONFIG=gt.config.locale-routing.json pnpm --filter gt-test-tanstack-start exec vite dev --port 5275 --strictPort',
+    readyPath: '/',
+  },
   'vite-react': {
     packageName: 'gt-test-vite-react',
     entryPackage: 'gt-react',

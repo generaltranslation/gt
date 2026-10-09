@@ -9,7 +9,10 @@
     "sourceMap": true,
     "declarationMap": true,
     "jsx": "react-jsx",
-    "composite": true
+    "composite": true,
+    "paths": {
+      "gt-tanstack-start/internal/_config": ["./src/internal/_config.ts"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["**/*.test.ts"],
