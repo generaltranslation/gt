@@ -58,20 +58,54 @@ const LOADER_FILES = [
 /**
  * The loaders the Vite plugin would use: the loadTranslationsPath it gets,
  * which replaces the default files, or else the default files that exist.
+ * With an option GT cannot read, the default files are listed in case it is
+ * unset, and `unreadableOption` asks callers to name the option too.
+ * `defaults` are the default files that exist, which the plugin falls back
+ * to once the option is removed.
  */
-async function findLoaders(
-  appDirectory: string
-): Promise<{ files: string[]; fromOption: boolean }> {
+async function findLoaders(appDirectory: string): Promise<{
+  files: string[];
+  defaults: string[];
+  fromOption: boolean;
+  unreadableOption: boolean;
+}> {
   const viteConfig = await readViteConfig(appDirectory);
   const option =
     viteConfig && getVitePluginLoaderPath(viteConfig, appDirectory);
-  const candidates = option ? [option] : LOADER_FILES;
+  const exists = (file: string) => fs.existsSync(path.join(appDirectory, file));
+  const defaults = LOADER_FILES.filter(exists);
   return {
-    files: candidates.filter((file) =>
-      fs.existsSync(path.join(appDirectory, file))
-    ),
+    files: option ? [option].filter(exists) : defaults,
+    defaults,
     fromOption: Boolean(option),
+    unreadableOption: option === null,
   };
+}
+
+const UNREADABLE_LOADER =
+  'gtTanstackStart() in your Vite config may pass a loadTranslationsPath loader that GT cannot read';
+
+/**
+ * A loader GT cannot name may still read the previous directory. Only a move
+ * is reported: options such as `gtTanstackStart(options)` are common, and
+ * most pass no loader.
+ */
+function getUnreadableLoaderActions(
+  translationsDir: string,
+  previousTranslationsDir: string | undefined
+): ManualAction[] {
+  if (
+    previousTranslationsDir === undefined ||
+    translationsDir === previousTranslationsDir
+  ) {
+    return [];
+  }
+  return [
+    {
+      whatHappened: `Translations now go to ${translationsDir}, but ${UNREADABLE_LOADER}`,
+      fix: `If it does, update that loader to load translations from ${translationsDir}`,
+    },
+  ];
 }
 
 /** The Vite plugin calls the default or loadTranslations export of a loader. */
@@ -114,7 +148,8 @@ async function syncTranslationFiles(
       : undefined;
   const loader = await writeViteLoader({ ...ctx, create: Boolean(cdnRouter) });
   if (loader === 'missing') await writeTranslationStubs(ctx);
-  const manualActions = (await findLoaders(appDirectory)).files
+  const { files, unreadableOption } = await findLoaders(appDirectory);
+  const manualActions = files
     .filter((file) => file !== VITE_LOADER_FILE || loader === 'custom')
     .flatMap((file) =>
       getLoaderUpdateActions(
@@ -124,6 +159,11 @@ async function syncTranslationFiles(
         true
       )
     );
+  if (unreadableOption) {
+    manualActions.push(
+      ...getUnreadableLoaderActions(translationsDir, previousTranslationsDir)
+    );
+  }
   manualActions.push(...(await getLoaderExportActions(appDirectory)));
   const loaderExport =
     cdnRouter && (await getViteLoaderExport(appDirectory, loader));
@@ -156,7 +196,8 @@ async function getCDNStorageAction(
   const { appDirectory, previousTranslationsDir } = ctx;
   const router = await readSourceFile(appDirectory, 'src/router');
   // Name every loader: deleting only the first makes the plugin use the next.
-  const { files, fromOption } = await findLoaders(appDirectory);
+  const { files, defaults, fromOption, unreadableOption } =
+    await findLoaders(appDirectory);
   const loaders = files.join(', ');
   // The previous setup passes the loader to initializeGT, which takes
   // precedence over CDN loading.
@@ -181,12 +222,19 @@ async function getCDNStorageAction(
       fix: 'Remove the loadTranslations option and its import from the initializeGT() call so translations load from the CDN',
     };
   }
+  if (unreadableOption && previousTranslationsDir !== undefined) {
+    return {
+      whatHappened: `Translations now load from the CDN, but ${UNREADABLE_LOADER}${loaders ? `, or ${Libraries.GT_TANSTACK_START} loads them with ${loaders}` : ''}`,
+      fix: `Remove any loadTranslationsPath option from gtTanstackStart()${loaders ? ` and delete ${loaders}` : ''} so translations load from the CDN`,
+    };
+  }
   if (!loaders) return null;
   return {
     whatHappened: `Translations now load from the CDN, but ${Libraries.GT_TANSTACK_START} still loads them with ${loaders}`,
-    // Deleting a configured loader would fail the build instead.
+    // Deleting a configured loader would fail the build instead, and without
+    // the option the plugin falls back to the default files.
     fix: fromOption
-      ? `Remove the loadTranslationsPath option from gtTanstackStart() in your Vite config so translations load from the CDN`
+      ? `Remove the loadTranslationsPath option from gtTanstackStart() in your Vite config${defaults.length ? ` and delete ${defaults.join(', ')}` : ''} so translations load from the CDN`
       : `Delete ${loaders} so translations load from the CDN`,
   };
 }
@@ -205,17 +253,25 @@ export const tanstackStartSetup: BuildToolSetup = {
   // Init that keeps the app source only reports loaders left behind.
   async syncLoader(ctx) {
     if (!ctx.keepAppSource) return syncTranslationFiles(ctx);
+    const { files, unreadableOption } = await findLoaders(ctx.appDirectory);
     return {
       steps: [],
-      manualActions: (await findLoaders(ctx.appDirectory)).files.flatMap(
-        (file) =>
+      manualActions: [
+        ...files.flatMap((file) =>
           getLoaderUpdateActions(
             file,
             ctx.translationsDir,
             ctx.previousTranslationsDir,
             false
           )
-      ),
+        ),
+        ...(unreadableOption
+          ? getUnreadableLoaderActions(
+              ctx.translationsDir,
+              ctx.previousTranslationsDir
+            )
+          : []),
+      ],
     };
   },
   getCDNStorageAction,
