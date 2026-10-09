@@ -2,15 +2,12 @@
 // entry and GTProvider in the root route. It keeps working, and the new setup
 // on top of it would nest a second GTProvider, so setup leaves it alone.
 import * as t from '@babel/types';
-import path from 'node:path';
 import { Libraries } from '../../../types/libraries.js';
-import type { ViteLoaderExport } from '../../setupViteSPA.js';
-import type { BuildToolContext, ManualAction } from '../index.js';
+import type { ManualAction } from '../index.js';
 import { rendersElement } from '../shared/jsx.js';
 import {
   getLocalImport,
   getNamespaceImport,
-  getPropertyName,
   readSourceFile,
   type SourceFile,
 } from '../shared/source.js';
@@ -79,73 +76,5 @@ export function getPreviousSetupAction(markers: string[]): ManualAction {
   return {
     whatHappened: `This app uses the previous ${Libraries.GT_TANSTACK_START} setup (${markers.join(', ')}), so GT left its source files unchanged`,
     fix: `Keep the previous setup, which still works, or switch to setupRouterGTIntegration and the gtTanstackStart Vite plugin (see ${DOCS_URL})`,
-  };
-}
-
-/** The previous setup's module-scope `initializeGT(...)` call. */
-function findInitializeCall(router: SourceFile): t.CallExpression | undefined {
-  const local = getLocalImport(
-    router,
-    'initializeGT',
-    Libraries.GT_TANSTACK_START
-  );
-  if (!local) return undefined;
-  for (const statement of router.statements ?? []) {
-    if (
-      statement.type === 'ExpressionStatement' &&
-      statement.expression.type === 'CallExpression' &&
-      t.isIdentifier(statement.expression.callee, { name: local })
-    ) {
-      return statement.expression;
-    }
-  }
-  return undefined;
-}
-
-/**
- * Whether the previous setup's initializeGT gets the config without a loader,
- * so it loads translations from the CDN. Options that could hide a loader
- * (other spreads, variables, computed keys) do not count.
- */
-export function initializesWithoutLoader(
-  router: SourceFile,
-  { appDirectory, configFilepath }: BuildToolContext
-): boolean {
-  const options = findInitializeCall(router)?.arguments[0];
-  if (!options) return false;
-  const configPath = path.resolve(appDirectory, configFilepath);
-  const routerDirectory = path.dirname(path.join(appDirectory, router.path));
-  const configBinding = router.statements
-    ?.filter((statement) => statement.type === 'ImportDeclaration')
-    .find(
-      (statement) =>
-        path.resolve(routerDirectory, statement.source.value) === configPath
-    )
-    ?.specifiers.find(
-      (specifier) => specifier.type === 'ImportDefaultSpecifier'
-    )?.local.name;
-  const isConfig = (node: t.Node) =>
-    configBinding !== undefined &&
-    t.isIdentifier(node, { name: configBinding });
-  if (isConfig(options)) return true;
-  if (options.type !== 'ObjectExpression') return false;
-  return options.properties.every((property) =>
-    property.type === 'SpreadElement'
-      ? isConfig(property.argument)
-      : ![undefined, 'loadTranslations'].includes(getPropertyName(property))
-  );
-}
-
-/** Asks to pass the loader to the previous setup's initializeGT. */
-export function getInitializeLoaderAction(
-  routerPath: string,
-  translationsDir: string,
-  loaderExport: Exclude<ViteLoaderExport, undefined>
-): ManualAction {
-  const loaderImport =
-    loaderExport === 'default' ? 'loadTranslations' : '{ loadTranslations }';
-  return {
-    whatHappened: `${routerPath} initializes GT for CDN translations, but translations are now stored in ${translationsDir}`,
-    fix: `Pass loadTranslations to the initializeGT call in ${routerPath}, such as initializeGT({ ...gtConfig, loadTranslations }), and add import ${loaderImport} from './loadTranslations' (see ${DOCS_URL})`,
   };
 }

@@ -18,16 +18,18 @@ import type {
   ManualAction,
   SetupResult,
 } from '../index.js';
-import { findInitializeCall, passesLoader } from '../shared/initializeGT.js';
+import {
+  findInitializeCall,
+  getStorageChangeAction,
+  passesLoader,
+} from '../shared/initializeGT.js';
 import { getLoaderUpdateActions } from '../shared/loader.js';
 import { readSourceFile } from '../shared/source.js';
 import { VITE_LOADER_FILE } from '../vite.js';
 import {
   findPreviousSetup,
-  getInitializeLoaderAction,
   getPreviousSetupAction,
   importsFromStart,
-  initializesWithoutLoader,
 } from './previousSetup.js';
 import { configureRootLang, getRootLangAction } from './root.js';
 import {
@@ -89,8 +91,13 @@ async function syncTranslationFiles(
 ): Promise<SetupResult> {
   const { appDirectory, translationsDir, previousTranslationsDir } = ctx;
   const router = await readSourceFile(appDirectory, 'src/router');
+  const initializeCall =
+    router && findInitializeCall(router, Libraries.GT_TANSTACK_START);
   const cdnRouter =
-    router && initializesWithoutLoader(router, ctx) ? router : undefined;
+    initializeCall &&
+    passesLoader(router, initializeCall.arguments[0], ctx) === false
+      ? router
+      : undefined;
   const loader = await writeViteLoader({ ...ctx, create: Boolean(cdnRouter) });
   if (loader === 'missing') await writeTranslationStubs(ctx);
   const manualActions = findLoaders(appDirectory)
@@ -108,7 +115,11 @@ async function syncTranslationFiles(
     cdnRouter && (await getViteLoaderExport(appDirectory, loader));
   if (cdnRouter && loaderExport) {
     manualActions.push(
-      getInitializeLoaderAction(cdnRouter.path, translationsDir, loaderExport)
+      getStorageChangeAction(cdnRouter, ctx, false, {
+        call: 'initializeGT({ ...gtConfig, loadTranslations })',
+        loaderImport: `import ${loaderExport === 'default' ? 'loadTranslations' : '{ loadTranslations }'} from './loadTranslations'`,
+        docsUrl: DOCS_URL,
+      })
     );
   }
   return {
