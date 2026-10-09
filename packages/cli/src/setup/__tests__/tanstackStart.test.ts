@@ -466,6 +466,33 @@ export function getRouter() {
   );
 
   it.each([
+    ['a variable', 'const gt = gtTanstackStart()\n\n', '...gt'],
+    [
+      'a function',
+      'function gtPlugins() {\n  return [gtTanstackStart()]\n}\n\n',
+      '...gtPlugins()',
+    ],
+  ])(
+    'asks for review when the plugin is registered through %s',
+    async (_case, declaration, plugin) => {
+      const vite = configuredVite
+        .replace('gtTanstackStart()]', `${plugin}]`)
+        .replace('export default', `${declaration}export default`);
+      write('vite.config.ts', vite);
+
+      const result = await tanstackStartSetup.apply(ctx());
+
+      // Adding another call would register the plugin twice.
+      expect(read('vite.config.ts')).toBe(vite);
+      expect(read('src/router.tsx')).toBe(templateRouter);
+      expect(result).toEqual({
+        steps: [],
+        manualActions: [viteAction('gtTanstackStart()'), routerAction],
+      });
+    }
+  );
+
+  it.each([
     ['a spread', '...gtTanstackStart()'],
     ['a nested array', '[gtTanstackStart()]'],
   ])('accepts the plugin registered through %s', async (_case, plugin) => {
@@ -861,6 +888,10 @@ export function getRouter() {
         // Calling it outside a render would run the hook outside React.
         'a document component called directly',
         'import { createRootRoute } from \'@tanstack/react-router\'\n\nfunction RootDocument() {\n  return <html lang="en"><body /></html>\n}\nconst doc = RootDocument()\n\nexport const Route = createRootRoute({ shellComponent: () => doc })\n',
+      ],
+      [
+        'a document component called optionally',
+        'import { createRootRoute } from \'@tanstack/react-router\'\n\nfunction RootDocument() {\n  return <html lang="en"><body /></html>\n}\nconst doc = RootDocument?.()\n\nexport const Route = createRootRoute({ shellComponent: () => doc })\n',
       ],
       [
         'an inline shell component',
