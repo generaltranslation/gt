@@ -93,9 +93,9 @@ describe.sequential('isomorphic translation functions', () => {
     mockGetTranslationsInternal.mockClear();
   });
 
-  it('requires an active middleware request scope', () => {
+  it('requires a TanStack Start request', () => {
     expect(() => getLocale()).toThrow(
-      "Register gtMiddleware from 'gt-tanstack-start'"
+      'Cannot read GT request state outside a request scope'
     );
   });
 

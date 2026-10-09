@@ -88,6 +88,23 @@ describe('gt-tanstack-start package exports', () => {
     ]);
   });
 
+  it('exports the components injected by the compiler from both entrypoints', () => {
+    for (const conditions of [[], ['--conditions=browser']]) {
+      node([
+        ...conditions,
+        '--input-type=module',
+        '-e',
+        `
+          import assert from 'node:assert/strict';
+          import { GtInternalTranslateJsx, GtInternalVar } from 'gt-tanstack-start';
+
+          assert.equal(typeof GtInternalTranslateJsx, 'function');
+          assert.equal(typeof GtInternalVar, 'function');
+        `,
+      ]);
+    }
+  });
+
   it('loads isomorphic helpers from the browser ESM entrypoint', () => {
     node([
       '--conditions=browser',
