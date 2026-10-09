@@ -1,5 +1,6 @@
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import react from '@vitejs/plugin-react';
+import { gtTanstackStart } from 'gt-tanstack-start/plugin/vite';
 import { defineConfig } from 'vite';
 
 // The bundle analysis app builds this example with GT_ANALYZE=1 and toggles
@@ -10,7 +11,7 @@ const treeShake = process.env.GT_ANALYZE_TREESHAKE !== '0';
 
 export default defineConfig({
   server: { port: 4611, strictPort: true },
-  plugins: [tanstackStart(), react()],
+  plugins: [tanstackStart(), react(), gtTanstackStart()],
   build: {
     sourcemap: analyze,
     minify,
