@@ -19,6 +19,34 @@ export type GTParsingFlags = {
   };
 };
 
+/**
+ * Options that framework integrations, such as gt-next and gt-tanstack-start,
+ * pass through to the @generaltranslation/compiler plugin.
+ */
+export type GTCompilerOptions = {
+  /**
+   * Log level for the compiler plugin.
+   * @default 'warn'
+   */
+  logLevel?: 'silent' | 'error' | 'warn' | 'info' | 'debug';
+  /**
+   * Whether to compute translation hashes at build time.
+   * @default true
+   */
+  compileTimeHash?: boolean;
+  /**
+   * Whether to disable the build checks for dynamic content.
+   * @default false
+   */
+  disableBuildChecks?: boolean;
+  /**
+   * Whether to wrap translatable JSX automatically, for example
+   * `<div>Hello</div>` becomes `<div><T>Hello</T></div>`. Defaults to
+   * gt.config.json's `files.gt.parsingFlags.enableAutoJsxInjection`, or false.
+   */
+  enableAutoJsxInjection?: boolean;
+};
+
 /** Configuration for generated GT translation files. */
 export type GTOutputFileConfig = {
   output?: string;

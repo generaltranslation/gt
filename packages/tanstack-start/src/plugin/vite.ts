@@ -5,38 +5,17 @@ import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/internal';
-import type { GTConfig } from 'generaltranslation/types';
+import type { GTCompilerOptions, GTConfig } from 'generaltranslation/types';
 import type { Logger, Plugin } from 'vite';
 
 /** Mirrors gt-next's withGTConfig experimentalCompilerOptions. */
-export type GTTanstackStartCompilerOptions = {
+export type GTTanstackStartCompilerOptions = GTCompilerOptions & {
   /**
    * Which compiler plugin to use: babel or none. 'babel' requires
    * @generaltranslation/compiler to be installed.
    * @default 'none'
    */
   type?: 'babel' | 'none';
-  /**
-   * Log level for the compiler plugin.
-   * @default 'warn'
-   */
-  logLevel?: 'silent' | 'error' | 'warn' | 'info' | 'debug';
-  /**
-   * Whether to compile the translations at build time. false disables the
-   * compiler.
-   * @default true
-   */
-  compileTimeHash?: boolean;
-  /**
-   * Whether to disable build checks.
-   * @default false
-   */
-  disableBuildChecks?: boolean;
-  /**
-   * Whether to automatically wrap translatable JSX. Defaults to
-   * gt.config.json's files.gt.parsingFlags.enableAutoJsxInjection.
-   */
-  enableAutoJsxInjection?: boolean;
 };
 
 export type GTTanstackStartPluginOptions = {
