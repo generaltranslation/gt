@@ -1,5 +1,13 @@
 # @generaltranslation/api
 
+## 0.5.4
+
+### Patch Changes
+
+- [#2402](https://github.com/generaltranslation/gt/pull/2402) [`9764db8`](https://github.com/generaltranslation/gt/commit/9764db8ddb466d243bbb44c7c9fb031053d683fa) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - `ApiError` no longer uses an HTML error page as its message; it falls back to the response status text, or to the HTTP status code when there is none.
+
+- [#2417](https://github.com/generaltranslation/gt/pull/2417) [`bd632a8`](https://github.com/generaltranslation/gt/commit/bd632a888ce27257efeed8512eb6261a16987bb2) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Derive `API_VERSION` and the `ApiVersion` type from the spec's `ApiVersion` schema instead of a single endpoint's header type. The default version stays `2026-03-06.v1`.
+
 ## 0.5.3
 
 ### Patch Changes

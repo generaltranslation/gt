@@ -1,5 +1,12 @@
 # gtx-cli
 
+## 2.26.0
+
+### Patch Changes
+
+- Updated dependencies [[`94ee3b4`](https://github.com/generaltranslation/gt/commit/94ee3b4b895b86db6ae942ec78621a5927d1b2f3), [`fe2e16a`](https://github.com/generaltranslation/gt/commit/fe2e16a904e0e9287e19be9a212e628fc3fd77fc), [`98ef8cd`](https://github.com/generaltranslation/gt/commit/98ef8cd8e2fc2af495ecc45e1d126ae862fa4671), [`1e4135b`](https://github.com/generaltranslation/gt/commit/1e4135b754c47c37ec9dcdd7d2cb815f6d9ba2eb)]:
+  - gt@2.26.0
+
 ## 2.25.2
 
 ### Patch Changes
