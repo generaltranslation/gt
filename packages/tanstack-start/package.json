@@ -44,6 +44,7 @@
   },
   "homepage": "https://generaltranslation.com/",
   "devDependencies": {
+    "@tanstack/react-start": "^1.168.60",
     "@types/node": "catalog:",
     "@types/react": ">=18.0.0 <20.0.0",
     "@types/react-dom": ">=18.0.0 <20.0.0",
