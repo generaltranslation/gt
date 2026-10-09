@@ -17,6 +17,7 @@ export function BrowserGTProvider(props: SharedGTProviderProps) {
   const i18nConfig = getI18nConfig();
   const { locale, region } = props;
   const enableI18n = props.enableI18n ?? true;
+  const syncConditions = props._syncConditions ?? true;
   const reload = useCallback(
     (next: Conditions) => {
       if (props._reload) props._reload(next);
@@ -61,6 +62,7 @@ export function BrowserGTProvider(props: SharedGTProviderProps) {
   );
 
   useEffect(() => {
+    if (!syncConditions) return;
     setCookieValue({
       cookieName: i18nConfig.getLocaleCookieName(),
       value: locale,
@@ -75,7 +77,14 @@ export function BrowserGTProvider(props: SharedGTProviderProps) {
       cookieName: i18nConfig.getEnableI18nCookieName(),
       value: enableI18n ? 'true' : 'false',
     });
-  }, [i18nConfig, locale, region, enableI18n, props.translations]);
+  }, [
+    i18nConfig,
+    locale,
+    region,
+    enableI18n,
+    props.translations,
+    syncConditions,
+  ]);
 
   const i18nStore = useI18nStore();
 

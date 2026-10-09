@@ -25,7 +25,9 @@ export async function readGTRouterState(
   };
 }
 
-type GTProvider = ComponentType<GTRouterState & { children: ReactNode }>;
+type GTProvider = ComponentType<
+  GTRouterState & { children: ReactNode; _syncConditions?: boolean }
+>;
 
 const subscribeToNothing = () => () => {};
 
@@ -33,6 +35,8 @@ const subscribeToNothing = () => () => {};
  * Hydrates a prerendered SPA shell with the state it was rendered with, then
  * re-renders with the visitor's state. React renders the server snapshot
  * while hydrating and re-renders right after when the client snapshot differs.
+ * The provider's effects run between the two renders, so it must not save the
+ * shell's locale to the visitor's cookies.
  */
 function ShellProvider({
   Provider,
@@ -50,7 +54,11 @@ function ShellProvider({
     () => state,
     () => shell
   );
-  return <Provider {...current}>{children}</Provider>;
+  return (
+    <Provider {...current} _syncConditions={current !== shell}>
+      {children}
+    </Provider>
+  );
 }
 
 /**
