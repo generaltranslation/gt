@@ -35,10 +35,16 @@ function getRouterIntegrationImport(router: SourceFile): string | undefined {
  */
 export function callsRouterIntegration(router: SourceFile): boolean {
   const local = getRouterIntegrationImport(router);
+  const { statements } = router;
   const onlyReturn =
-    local && router.statements ? findOnlyReturn(router.statements) : undefined;
-  if (!onlyReturn) return false;
-  const { body, returned } = onlyReturn;
+    local && statements ? findOnlyReturn(statements) : undefined;
+  if (!local || !statements || !onlyReturn) return false;
+  const { body, routerReturn, returned } = onlyReturn;
+  // A reassigned router may not be the one that was integrated.
+  const routerBinding = getBindingAt(statements, routerReturn, returned);
+  if (!routerBinding || routerBinding.constantViolations.length > 0) {
+    return false;
+  }
   return body.some((statement) => {
     if (
       statement.type !== 'ExpressionStatement' ||
@@ -58,7 +64,11 @@ export function callsRouterIntegration(router: SourceFile): boolean {
     return (
       routers.length === 1 &&
       routers[0].type === 'ObjectProperty' &&
-      t.isIdentifier(routers[0].value, { name: returned })
+      t.isIdentifier(routers[0].value, { name: returned }) &&
+      // A local binding could hide the import.
+      getBindingAt(statements, statement, local)?.kind === 'module' &&
+      getBindingAt(statements, statement, returned)?.identifier ===
+        routerBinding.identifier
     );
   });
 }
