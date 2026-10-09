@@ -22,8 +22,11 @@ vi.mock('@tanstack/react-start/server', () => ({
   setCookie: (...args: unknown[]) => mockSetCookie(...args),
 }));
 
-vi.mock('../runtime', () => ({
-  getLocale: mockGetLocale,
+vi.mock('@generaltranslation/react-core/pure', async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import('@generaltranslation/react-core/pure')
+  >()),
+  getReadonlyConditionStore: () => ({ getLocale: mockGetLocale }),
 }));
 
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
@@ -107,6 +110,7 @@ describe.sequential('parseLocale', () => {
 
   afterEach(() => {
     restoreGlobalProperty('document', originalDocumentDescriptor);
+    vi.unstubAllGlobals();
   });
 
   it('uses the server cookie before Accept-Language', () => {
@@ -283,5 +287,30 @@ describe.sequential('parseLocale', () => {
     });
 
     expect(determineLocaleClient(localeConfig)).toBe('en');
+  });
+
+  it('prefers the pathname locale during client initialization with locale routing', () => {
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      value: { cookie: 'generaltranslation.locale=es' },
+    });
+    vi.stubGlobal('window', { location: { pathname: '/fr/about' } });
+
+    expect(
+      determineLocaleClient({ ...localeConfig, localeRouting: true })
+    ).toBe('brand-french');
+    expect(determineLocaleClient(localeConfig)).toBe('es');
+  });
+
+  it('falls back to the cookie without a pathname locale', () => {
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      value: { cookie: 'generaltranslation.locale=es' },
+    });
+    vi.stubGlobal('window', { location: { pathname: '/about' } });
+
+    expect(
+      determineLocaleClient({ ...localeConfig, localeRouting: true })
+    ).toBe('es');
   });
 });

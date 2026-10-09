@@ -57,6 +57,24 @@ export const apps = Object.freeze({
       'pnpm --filter gt-test-tanstack-start exec vite dev --port 5273 --strictPort',
     readyPath: '/',
   },
+  'tanstack-start-locale-routing': {
+    packageName: 'gt-test-tanstack-start',
+    entryPackage: 'gt-tanstack-start',
+    kind: 'tanstack-routing',
+    baseURL: 'http://localhost:5275',
+    command:
+      'GT_TEST_CONFIG=gt.config.locale-routing.json pnpm --filter gt-test-tanstack-start exec vite dev --port 5275 --strictPort',
+    readyPath: '/',
+  },
+  'tanstack-start-spa': {
+    packageName: 'gt-test-tanstack-start',
+    entryPackage: 'gt-tanstack-start',
+    kind: 'tanstack-spa',
+    baseURL: 'http://localhost:5277',
+    command:
+      'GT_TEST_SPA=1 GT_TEST_CONFIG=gt.config.locale-routing.json pnpm --filter gt-test-tanstack-start exec vite build && node tests/apps/test-apps-e2e/serveSpaShell.mjs tests/apps/tanstack-start/dist/client 5277',
+    readyPath: '/',
+  },
   'vite-react': {
     packageName: 'gt-test-vite-react',
     entryPackage: 'gt-react',

@@ -1,18 +1,22 @@
 import { createIsomorphicFn } from '@tanstack/react-start';
 import { getRequest } from '@tanstack/react-start/server';
-import { getI18nConfig } from '@generaltranslation/react-core/pure';
+import {
+  getI18nConfig,
+  getReadonlyConditionStore,
+} from '@generaltranslation/react-core/pure';
 import { getCookieValue } from 'gt-i18n/internal';
 import type { LocaleResolverConfig } from 'gt-i18n/internal/types';
 import {
   getConditionStore,
   isConditionStoreInitialized,
 } from '../condition-store/singleton';
+import type { InitializeGTParams } from '../types/InitializeGTParams';
+import { getLocaleFromPath } from './localeRouting';
 import { resolveRequestConditions } from './requestConditions';
-import { getLocale } from './runtime';
 
 export const determineLocale = createIsomorphicFn()
   .server(determineLocaleServer)
-  .client(() => getLocale());
+  .client(() => getReadonlyConditionStore().getLocale());
 
 /**
  * Resolve the user's locale for the current TanStack Start request or browser.
@@ -49,15 +53,25 @@ function determineLocaleServer({
   }).locale;
 }
 
-/** Read the server-synchronized locale cookie during client initialization. */
+/**
+ * Read the server-synchronized locale cookie during client initialization.
+ * With localeRouting, a pathname locale wins: SPA roots and visits with a
+ * stale cookie have no server state to correct it.
+ */
 export function determineLocaleClient({
   defaultLocale,
   locales,
   customMapping,
-}: LocaleResolverConfig): string {
+  localeRouting,
+}: LocaleResolverConfig & Pick<InitializeGTParams, 'localeRouting'>): string {
   const i18nConfig = getI18nConfig();
   const localeCookieName = i18nConfig.getLocaleCookieName();
   const candidates: string[] = [];
+
+  if (localeRouting) {
+    const pathLocale = getLocaleFromPath(window.location.pathname);
+    if (pathLocale) candidates.push(pathLocale);
+  }
 
   const cookie = getCookieValue(document.cookie, localeCookieName);
   if (cookie) candidates.push(cookie);

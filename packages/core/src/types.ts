@@ -40,6 +40,7 @@ export type {
 export type { RuntimeFileFormat } from '@generaltranslation/api';
 export type { HashMetadata } from './id/types';
 export type {
+  GTCompilerOptions,
   GTConfig,
   GTFilesConfig,
   GTOutputFileConfig,

@@ -2,7 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { mockConditionStore, mockInitializeReactGT, mockStoreConstructor } =
   vi.hoisted(() => {
-    const conditionStore = { id: 'condition-store' };
+    const conditionStore = {
+      id: 'condition-store',
+      isLocaleRoutingEnabled: vi.fn(() => true),
+    };
     return {
       mockConditionStore: conditionStore,
       mockInitializeReactGT: vi.fn(),
@@ -21,7 +24,7 @@ vi.mock('../../condition-store/AsyncLocalConditionStore', () => ({
 }));
 
 import { getConditionStore } from '../../condition-store/singleton';
-import { initializeGT } from '../initializeGT.server';
+import { initializeGT, isLocaleRoutingEnabled } from '../initializeGT.server';
 
 type GlobalWithRegistry = {
   __generaltranslation?: {
@@ -57,5 +60,15 @@ describe.sequential('initializeGT server', () => {
     expect(mockInitializeReactGT).toHaveBeenCalledWith(config);
     expect(mockStoreConstructor).toHaveBeenCalledWith(config);
     expect(getConditionStore()).toBe(mockConditionStore);
+  });
+
+  it('reads locale routing from the initialized condition store', () => {
+    expect(isLocaleRoutingEnabled()).toBe(false);
+
+    initializeGT({ defaultLocale: 'en', locales: ['en'], localeRouting: true });
+    expect(isLocaleRoutingEnabled()).toBe(true);
+
+    mockConditionStore.isLocaleRoutingEnabled.mockReturnValue(false);
+    expect(isLocaleRoutingEnabled()).toBe(false);
   });
 });

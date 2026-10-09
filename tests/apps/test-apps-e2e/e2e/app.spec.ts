@@ -36,6 +36,12 @@ test(`${appName} renders local translations and switches locales`, async ({
     case 'tanstack':
       await testTanStackApp(page);
       break;
+    case 'tanstack-routing':
+      await testTanStackRoutingApp(page, request);
+      break;
+    case 'tanstack-spa':
+      await testTanStackSpaShell(page);
+      break;
     case 'node':
       await testNodeApp(browser, request);
       break;
@@ -297,6 +303,125 @@ async function testTanStackApp(page: Page) {
     await expectTanStackLocale(page, route.locale);
     currentLocale = route.locale;
   }
+}
+
+// Every route serves the shell prerendered in the default locale, so the
+// client must hydrate it as rendered and then switch to the visitor's locale.
+// The app uses locale routing, so the shell's links must take the visitor's
+// locale prefix too.
+// /spa's loader runs in the browser; a static host cannot answer the server
+// functions other routes call.
+async function testTanStackSpaShell(page: Page) {
+  const localeCookie = 'generaltranslation.locale';
+  await page.context().clearCookies();
+  await page
+    .context()
+    .addCookies([{ name: localeCookie, value: 'fr', url: app.baseURL }]);
+  // Records every locale cookie write: the shell's locale must never replace
+  // the visitor's, even between the hydration and visitor renders.
+  await page.addInitScript((cookieName) => {
+    const cookie = Object.getOwnPropertyDescriptor(
+      Document.prototype,
+      'cookie'
+    )!;
+    const writes: string[] = [];
+    Object.assign(window, { __gtLocaleCookieWrites: writes });
+    Object.defineProperty(document, 'cookie', {
+      get: () => cookie.get!.call(document),
+      set: (value: string) => {
+        if (value.startsWith(`${cookieName}=`))
+          writes.push(value.split(';')[0]);
+        cookie.set!.call(document, value);
+      },
+    });
+  }, localeCookie);
+  const errors: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') errors.push(message.text());
+  });
+  page.on('pageerror', (error) => errors.push(error.message));
+
+  await page.goto('/spa');
+  await page.waitForLoadState('networkidle');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+  await expectTanStackLocale(page, 'fr');
+  await expect(
+    page.getByText('Bonjour depuis le fournisseur racine.')
+  ).toBeVisible();
+  await expect(
+    page.getByRole('navigation').getByRole('link', { name: 'SSR', exact: true })
+  ).toHaveAttribute('href', '/fr/ssr');
+  const cookies = await page.context().cookies();
+  expect(cookies.find(({ name }) => name === localeCookie)?.value).toBe('fr');
+  const writes = await page.evaluate(
+    () =>
+      (window as unknown as { __gtLocaleCookieWrites: string[] })
+        .__gtLocaleCookieWrites
+  );
+  expect(writes).not.toHaveLength(0);
+  expect(writes.every((write) => write === `${localeCookie}=fr`)).toBe(true);
+  expect(errors).toEqual([]);
+
+  await selectLocale(page, 'zh');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'zh');
+  await expectTanStackLocale(page, 'zh');
+  await expect(page.getByText('来自根级 Provider 的问候。')).toBeVisible();
+}
+
+async function testTanStackRoutingApp(page: Page, request: APIRequestContext) {
+  const localeCookie = 'generaltranslation.locale';
+  const redirect = await request.get('/ssr', {
+    headers: { cookie: `${localeCookie}=fr` },
+    maxRedirects: 0,
+  });
+  expect(redirect.status()).toBeGreaterThanOrEqual(300);
+  expect(redirect.status()).toBeLessThan(400);
+  expect(redirect.headers()['location']).toMatch(/\/fr\/ssr$/);
+
+  const navLink = (name: string) =>
+    page.getByRole('navigation').getByRole('link', { name, exact: true });
+  const expectURL = (pathname: string) =>
+    expect(page).toHaveURL(new URL(pathname, app.baseURL).href);
+
+  await page.context().clearCookies();
+  await page
+    .context()
+    .addCookies([{ name: localeCookie, value: 'fr', url: app.baseURL }]);
+  await page.goto('/ssr');
+  await page.waitForLoadState('networkidle');
+  await expectURL('/fr/ssr');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+  await expectTanStackLocale(page, 'fr');
+  await expect(
+    page.getByText('Bonjour depuis le fournisseur racine.')
+  ).toBeVisible();
+  await expect(navLink('Home')).toHaveAttribute('href', '/fr');
+  await expect(navLink('SSR')).toHaveAttribute('href', '/fr/ssr');
+  await expect(navLink('SPA')).toHaveAttribute('href', '/fr/spa');
+  await page.reload();
+  await expectURL('/fr/ssr');
+  await expectTanStackLocale(page, 'fr');
+
+  await navLink('Data only').click();
+  await expectURL('/fr/data-only');
+  await expectTanStackLocale(page, 'fr');
+
+  await page.goto('/zh/spa');
+  await page.waitForLoadState('networkidle');
+  await expectURL('/zh/spa');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'zh');
+  await expectTanStackLocale(page, 'zh');
+  await expect(page.getByText('来自根级 Provider 的问候。')).toBeVisible();
+  await expect(navLink('SSR')).toHaveAttribute('href', '/zh/ssr');
+
+  await selectLocale(page, 'en');
+  await expectURL('/spa');
+  await expectTanStackLocale(page, 'en');
+  await expect(navLink('SSR')).toHaveAttribute('href', '/ssr');
+  await page.reload();
+  await expectURL('/spa');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expectTanStackLocale(page, 'en');
 }
 
 async function testNodeApp(browser: Browser, request: APIRequestContext) {

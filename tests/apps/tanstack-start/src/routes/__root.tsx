@@ -6,12 +6,7 @@ import {
   Scripts,
   createRootRoute,
 } from '@tanstack/react-router';
-import {
-  getTranslationsSnapshot,
-  GTProvider,
-  LocaleSelector,
-  parseLocale,
-} from 'gt-tanstack-start';
+import { LocaleSelector, useLocale } from 'gt-tanstack-start';
 import '../styles.css';
 
 export const Route = createRootRoute({
@@ -28,44 +23,34 @@ export const Route = createRootRoute({
     ],
   }),
   component: RootComponent,
-  loader: async () => {
-    const locale = parseLocale();
-    return {
-      locale,
-      translations: await getTranslationsSnapshot(locale),
-    };
-  },
 });
 
 function RootComponent() {
-  const { locale, translations } = Route.useLoaderData();
   return (
     <RootDocument>
-      <GTProvider locale={locale} translations={translations}>
-        <div className='app-shell'>
-          <header className='topbar'>
-            <div className='brand'>
-              <strong>gt-tanstack-start</strong>
-              <span>Rendering mode test bed</span>
-            </div>
-            <nav className='nav'>
-              <Link to='/'>Home</Link>
-              <Link to='/ssr'>SSR</Link>
-              <Link to='/spa'>SPA</Link>
-              <Link to='/data-only'>Data only</Link>
-            </nav>
-            <LocaleSelector />
-          </header>
-          <Outlet />
-        </div>
-      </GTProvider>
+      <div className='app-shell'>
+        <header className='topbar'>
+          <div className='brand'>
+            <strong>gt-tanstack-start</strong>
+            <span>Rendering mode test bed</span>
+          </div>
+          <nav className='nav'>
+            <Link to='/'>Home</Link>
+            <Link to='/ssr'>SSR</Link>
+            <Link to='/spa'>SPA</Link>
+            <Link to='/data-only'>Data only</Link>
+          </nav>
+          <LocaleSelector />
+        </header>
+        <Outlet />
+      </div>
     </RootDocument>
   );
 }
 
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang='en'>
+    <html lang={useLocale()}>
       <head>
         <HeadContent />
       </head>

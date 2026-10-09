@@ -1,8 +1,10 @@
 import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
+import { builtinModules } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { parseAst } from 'vite';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
@@ -20,11 +22,74 @@ function buildPackage(): void {
   });
 }
 
+function readDistFile(file: string): string {
+  return readFileSync(join(packageRoot, 'dist', file), 'utf8');
+}
+
+type ModuleNode = {
+  type: string;
+  source?: { value?: unknown } | null;
+  specifiers?: {
+    type: string;
+    imported?: { name?: string; value?: unknown };
+    local?: { name?: string; value?: unknown };
+  }[];
+};
+
+/**
+ * Static imports, re-exports and dynamic imports with a literal source, each
+ * with the names it binds from that module.
+ */
+function getModuleImports(
+  code: string
+): { source: string; names: unknown[] }[] {
+  const imports: { source: string; names: unknown[] }[] = [];
+  const visit = (value: unknown): void => {
+    if (Array.isArray(value)) return value.forEach(visit);
+    if (!value || typeof value !== 'object') return;
+    const { type, source, specifiers = [] } = value as ModuleNode;
+    if (
+      /^(?:ImportDeclaration|ExportAllDeclaration|ExportNamedDeclaration|ImportExpression)$/.test(
+        type
+      ) &&
+      typeof source?.value === 'string'
+    ) {
+      imports.push({
+        source: source.value,
+        names: specifiers.flatMap(({ type, imported, local }) => {
+          const name =
+            type === 'ImportSpecifier'
+              ? imported
+              : type === 'ExportSpecifier'
+                ? local
+                : undefined;
+          return name ? [name.name ?? name.value] : [];
+        }),
+      });
+    }
+    Object.values(value).forEach(visit);
+  };
+  visit(parseAst(code));
+  return imports;
+}
+
+function getImportSpecifiers(code: string): string[] {
+  return getModuleImports(code).map(({ source }) => source);
+}
+
+function getNamedReactImports(code: string): unknown[] {
+  return getModuleImports(code)
+    .filter(({ source }) => source === 'react')
+    .flatMap(({ names }) => names);
+}
+
 function node(args: string[]): void {
   execFileSync(process.execPath, args, { cwd: packageRoot, stdio: 'pipe' });
 }
 
-describe('gt-tanstack-start package exports', () => {
+// Each test blocks on child processes, so concurrent tests only queue and every
+// timeout would also count the time spent waiting for the others.
+describe.sequential('gt-tanstack-start package exports', () => {
   beforeAll(() => {
     // Turbo guarantees this package's build task completes before its test
     // task. Standalone package tests rebuild so they cannot use stale output.
@@ -68,17 +133,44 @@ describe('gt-tanstack-start package exports', () => {
     }
   });
 
+  it('keeps Node.js builtins out of the browser entrypoint', () => {
+    // Browser bundlers cannot resolve Node.js builtins such as
+    // node:async_hooks, which backs the server request condition store.
+    const builtins = new Set(builtinModules);
+    const specifiers = getImportSpecifiers(readDistFile('index.client.mjs'));
+
+    expect(specifiers.length).toBeGreaterThan(0);
+    expect(
+      specifiers.filter(
+        (specifier) => specifier.startsWith('node:') || builtins.has(specifier)
+      )
+    ).toEqual([]);
+  });
+
+  it.each(['index.client.mjs', 'index.server.mjs'])(
+    'does not import React 19-only use from %s',
+    (file) => {
+      // The peer range includes React 18, whose ESM build has no `use` export,
+      // so importing it fails at module link time.
+      const reactImports = getNamedReactImports(readDistFile(file));
+
+      expect(reactImports.length).toBeGreaterThan(0);
+      expect(reactImports).not.toContain('use');
+    }
+  );
+
   it('loads isomorphic helpers and middleware from the main ESM entrypoint', () => {
     node([
       '--input-type=module',
       '-e',
       `
         import assert from 'node:assert/strict';
-        import { GTProvider, getGT, getLocale, gtMiddleware, parseLocale } from 'gt-tanstack-start';
+        import { GTProvider, getGT, getLocale, gtMiddleware, parseLocale, setupRouterGTIntegration } from 'gt-tanstack-start';
         import { getGT as legacyGetGT, gtMiddleware as legacyGtMiddleware } from 'gt-tanstack-start/server';
 
         assert.equal(typeof GTProvider, 'function');
         assert.equal(typeof parseLocale, 'function');
+        assert.equal(typeof setupRouterGTIntegration, 'function');
         assert.equal(typeof getGT, 'function');
         assert.equal(typeof getLocale, 'function');
         assert.equal(typeof gtMiddleware, 'object');
@@ -103,6 +195,29 @@ describe('gt-tanstack-start package exports', () => {
         `,
       ]);
     }
+  });
+
+  it('loads the Vite plugin and its opt-in GT compiler from the ESM entrypoint', () => {
+    node([
+      '--input-type=module',
+      '-e',
+      `
+        import assert from 'node:assert/strict';
+        import { gtTanstackStart } from 'gt-tanstack-start/plugin/vite';
+
+        assert.deepEqual(
+          gtTanstackStart().map((plugin) => plugin.name),
+          ['gt-tanstack-start']
+        );
+        const plugins = gtTanstackStart({
+          experimentalCompilerOptions: { type: 'babel', logLevel: 'silent' },
+        });
+        assert.deepEqual(
+          plugins.map((plugin) => plugin.name),
+          ['gt-tanstack-start', '@generaltranslation/GT_PLUGIN']
+        );
+      `,
+    ]);
   });
 
   it('loads isomorphic helpers from the browser ESM entrypoint', () => {

@@ -36,6 +36,15 @@ export class AsyncLocalConditionStore implements ReadonlyConditionStoreInterface
     return this.storage.run(conditions, callback);
   }
 
+  /**
+   * Read from the store rather than a module flag: the main and /server
+   * entrypoints are bundled separately but share this global store, so either
+   * one may have initialized it.
+   */
+  isLocaleRoutingEnabled(): boolean {
+    return this.config.localeRouting === true;
+  }
+
   getLocale = (): string => this.getConditions().locale;
 
   getRegion = (): string | undefined => this.getConditions().region;
