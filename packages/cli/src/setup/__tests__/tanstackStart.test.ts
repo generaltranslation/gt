@@ -1457,11 +1457,12 @@ export function getRouter() {
           previousTranslationsDir: 'src/_gt',
         });
 
-        // Deleting the file would fail the build instead.
+        // Deleting the file would fail the build instead, and without the
+        // option the plugin falls back to src/loadTranslations.ts.
         expect(action).toEqual({
           whatHappened:
             'Translations now load from the CDN, but gt-tanstack-start still loads them with src/i18n/load.ts',
-          fix: 'Remove the loadTranslationsPath option from gtTanstackStart() in your Vite config so translations load from the CDN',
+          fix: 'Remove the loadTranslationsPath option from gtTanstackStart() in your Vite config and delete src/loadTranslations.ts so translations load from the CDN',
         });
       });
 
@@ -1482,6 +1483,65 @@ export function getRouter() {
             fix: 'Update your custom src/i18n/load.ts to load translations from public/_gt',
           },
         ]);
+      });
+    });
+
+    describe('a loadTranslationsPath GT cannot read', () => {
+      const withUnreadableOption = () =>
+        write(
+          'vite.config.ts',
+          configuredVite.replace(
+            'gtTanstackStart()',
+            'gtTanstackStart({ loadTranslationsPath: process.env.GT_LOADER })'
+          )
+        );
+
+      it('asks to remove it and the default loaders after a switch to the CDN', async () => {
+        withUnreadableOption();
+        write('src/loadTranslations.ts', templateLoader);
+
+        const action = await tanstackStartSetup.getCDNStorageAction!({
+          ...ctx(),
+          translationsDir: undefined,
+          previousTranslationsDir: 'src/_gt',
+        });
+
+        expect(action).toEqual({
+          whatHappened:
+            'Translations now load from the CDN, but gtTanstackStart() in your Vite config may pass a loadTranslationsPath loader that GT cannot read, or gt-tanstack-start loads them with src/loadTranslations.ts',
+          fix: 'Remove any loadTranslationsPath option from gtTanstackStart() and delete src/loadTranslations.ts so translations load from the CDN',
+        });
+      });
+
+      it('names it for a new translations directory', async () => {
+        withUnreadableOption();
+
+        const result = await tanstackStartSetup.syncLoader({
+          ...ctx(),
+          translationsDir: 'public/_gt',
+          previousTranslationsDir: 'src/_gt',
+        });
+
+        expect(result.manualActions).toEqual([
+          {
+            whatHappened:
+              'Translations now go to public/_gt, but gtTanstackStart() in your Vite config may pass a loadTranslationsPath loader that GT cannot read',
+            fix: 'If it does, update that loader to load translations from public/_gt',
+          },
+        ]);
+      });
+
+      it('says nothing on first setup, when no loader can be out of date', async () => {
+        withUnreadableOption();
+
+        const result = await tanstackStartSetup.syncLoader(ctx());
+        const action = await tanstackStartSetup.getCDNStorageAction!({
+          ...ctx(),
+          translationsDir: undefined,
+        });
+
+        expect(result.manualActions).toEqual([]);
+        expect(action).toBeNull();
       });
     });
 
