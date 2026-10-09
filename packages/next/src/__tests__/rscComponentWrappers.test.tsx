@@ -120,12 +120,20 @@ describe('rsc component wrappers', () => {
     expect(module.GTProvider).toBeTypeOf('function');
     expect(module.T).toBeTypeOf('function');
     expect(module.GtInternalTranslateJsx).toBeTypeOf('function');
-    expect(module.GtInternalTranslateJsx._gtt).toBe(
-      'translate-server-automatic'
-    );
+    const serverT = await import('../server-dir/buildtime/T');
+    const serverVar = await import('../variables/Var');
+    expect(module.GtInternalTranslateJsx).toBe(serverT.GtInternalTranslateJsx);
+    expect(module.GtInternalTranslateJsx._gtt).toEqual({
+      kind: 'translate',
+      injection: 'automatic',
+    });
     expect(module.Var).toBeTypeOf('function');
-    expect(module.GtInternalVar).toBeTypeOf('function');
-    expect(module.GtInternalVar._gtt).toBe('variable-variable-automatic');
+    expect(module.GtInternalVar).toBe(serverVar.GtInternalVar);
+    expect(module.GtInternalVar._gtt).toEqual({
+      kind: 'variable',
+      variableType: 'variable',
+      injection: 'automatic',
+    });
     expect(module.Num).toBeTypeOf('function');
     expect(module.Currency).toBeTypeOf('function');
     expect(module.DateTime).toBeTypeOf('function');

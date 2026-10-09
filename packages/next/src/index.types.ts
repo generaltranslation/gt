@@ -55,6 +55,7 @@ import {
   mFallback,
   gtFallback,
 } from '@generaltranslation/react-core/pure';
+import type { GTComponentMetadata } from '@generaltranslation/react-core/pure';
 
 type Message = {
   message: string;
@@ -114,13 +115,16 @@ export function GTProvider(
 export const T: typeof _T = () => {
   throw new Error(typesFileError);
 };
-/** @internal _gtt - The GT transformation for the component. */
-T._gtt = 'translate';
+/** @internal _gtt - The GT metadata for the component. */
+T._gtt = { kind: 'translate' } satisfies GTComponentMetadata;
 
 export const GtInternalTranslateJsx: typeof _GtInternalTranslateJsx = () => {
   throw new Error(typesFileError);
 };
-GtInternalTranslateJsx._gtt = 'translate-client-automatic';
+GtInternalTranslateJsx._gtt = {
+  kind: 'translate',
+  injection: 'automatic',
+} satisfies GTComponentMetadata;
 
 /**
  * The `<Currency>` component renders a formatted currency string, allowing customization of name, default value, currency type, and formatting options.
@@ -142,8 +146,11 @@ GtInternalTranslateJsx._gtt = 'translate-client-automatic';
 export const Currency: typeof _Currency = () => {
   throw new Error(typesFileError);
 };
-/** @internal _gtt - The GT transformation for the component. */
-Currency._gtt = 'variable-currency';
+/** @internal _gtt - The GT metadata for the component. */
+Currency._gtt = {
+  kind: 'variable',
+  variableType: 'currency',
+} satisfies GTComponentMetadata;
 
 /**
  * The `<DateTime>` component renders a formatted date or time string, allowing customization of the name, default value, and formatting options.
@@ -163,8 +170,11 @@ Currency._gtt = 'variable-currency';
 export const DateTime: typeof _DateTime = () => {
   throw new Error(typesFileError);
 };
-/** @internal _gtt - The GT transformation for the component. */
-DateTime._gtt = 'variable-datetime';
+/** @internal _gtt - The GT metadata for the component. */
+DateTime._gtt = {
+  kind: 'variable',
+  variableType: 'datetime',
+} satisfies GTComponentMetadata;
 
 /**
  * The `<RelativeTime>` component renders a localized relative time string
@@ -185,8 +195,11 @@ DateTime._gtt = 'variable-datetime';
 export const RelativeTime: typeof _RelativeTime = () => {
   throw new Error(typesFileError);
 };
-/** @internal _gtt - The GT transformation for the component. */
-RelativeTime._gtt = 'variable-relative-time';
+/** @internal _gtt - The GT metadata for the component. */
+RelativeTime._gtt = {
+  kind: 'variable',
+  variableType: 'relative-time',
+} satisfies GTComponentMetadata;
 
 /**
  * The `<Num>` component renders a formatted number string, allowing customization of the name, default value, and formatting options.
@@ -208,8 +221,11 @@ RelativeTime._gtt = 'variable-relative-time';
 export const Num: typeof _Num = () => {
   throw new Error(typesFileError);
 };
-/** @internal _gtt - The GT transformation for the component. */
-Num._gtt = 'variable-number';
+/** @internal _gtt - The GT metadata for the component. */
+Num._gtt = {
+  kind: 'variable',
+  variableType: 'number',
+} satisfies GTComponentMetadata;
 
 /**
  * The `<Var>` component renders a variable value, which can either be passed as `children` or a `value`.
@@ -228,13 +244,20 @@ Num._gtt = 'variable-number';
 export const Var: typeof _Var = () => {
   throw new Error(typesFileError);
 };
-/** @internal _gtt - The GT transformation for the component. */
-Var._gtt = 'variable-variable';
+/** @internal _gtt - The GT metadata for the component. */
+Var._gtt = {
+  kind: 'variable',
+  variableType: 'variable',
+} satisfies GTComponentMetadata;
 
 export const GtInternalVar: typeof _GtInternalVar = () => {
   throw new Error(typesFileError);
 };
-GtInternalVar._gtt = 'variable-variable-automatic';
+GtInternalVar._gtt = {
+  kind: 'variable',
+  variableType: 'variable',
+  injection: 'automatic',
+} satisfies GTComponentMetadata;
 
 /**
  * Marks JSX children as derivable by the GT compiler and CLI.
@@ -271,8 +294,8 @@ GtInternalVar._gtt = 'variable-variable-automatic';
 export const Derive: typeof _Derive = () => {
   throw new Error(typesFileError);
 };
-/** @internal _gtt - The GT transformation for the component. */
-Derive._gtt = 'derive';
+/** @internal _gtt - The GT metadata for the component. */
+Derive._gtt = { kind: 'derive' } satisfies GTComponentMetadata;
 
 /**
  * The `<Branch>` component dynamically renders a specified branch of content or a fallback child component.
@@ -301,8 +324,8 @@ Derive._gtt = 'derive';
 export const Branch: typeof _Branch = () => {
   throw new Error(typesFileError);
 };
-/** @internal _gtt - The GT transformation for the component. */
-Branch._gtt = 'branch';
+/** @internal _gtt - The GT metadata for the component. */
+Branch._gtt = { kind: 'branch' } satisfies GTComponentMetadata;
 
 /**
  * The `<Plural>` component dynamically renders content based on the plural form of the given number (`n`).
@@ -332,8 +355,8 @@ Branch._gtt = 'branch';
 export const Plural: typeof _Plural = () => {
   throw new Error(typesFileError);
 };
-/** @internal _gtt - The GT transformation for the component. */
-Plural._gtt = 'plural';
+/** @internal _gtt - The GT metadata for the component. */
+Plural._gtt = { kind: 'plural' } satisfies GTComponentMetadata;
 
 /**
  * A dropdown component that allows users to select a locale.
