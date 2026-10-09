@@ -8,6 +8,19 @@ import { CustomDeserializers, Deserializer } from '../types';
 import { blockContentType, preprocess } from './helpers';
 import { mergeBlocks } from '../helpers';
 
+//string values: <pre> holds whitespace-sensitive text and is read verbatim,
+//<span> holds single-line text and is sanitized through block-tools
+const deserializeString = (element: Element): string | undefined => {
+  const tagName = element.tagName?.toLowerCase();
+  if (tagName === 'pre') {
+    return element.textContent ?? '';
+  }
+  if (tagName === 'span') {
+    return preprocess(element.innerHTML);
+  }
+  return undefined;
+};
+
 export const deserializeArray = (
   arrayHTML: Element,
   deserializers: CustomDeserializers = customDeserializers,
@@ -18,8 +31,9 @@ export const deserializeArray = (
   children.forEach((child) => {
     let deserializedObject: unknown;
     try {
-      if (child.tagName?.toLowerCase() === 'span') {
-        deserializedObject = preprocess(child.innerHTML);
+      const stringValue = deserializeString(child);
+      if (stringValue !== undefined) {
+        deserializedObject = stringValue;
       }
       //has specific class name or data type, so it's an obj
       else if (
@@ -79,8 +93,9 @@ export const deserializeObject = (
 
   children.forEach((child) => {
     //string field
-    if (child.tagName?.toLowerCase() === 'span') {
-      output[child.className] = preprocess(child.innerHTML);
+    const stringValue = deserializeString(child);
+    if (stringValue !== undefined) {
+      output[child.className] = stringValue;
     }
     //richer field, either object or array
     else if (child.getAttribute('data-level') === 'field') {

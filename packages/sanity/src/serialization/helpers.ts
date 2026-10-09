@@ -16,3 +16,20 @@ export function mergeBlocks(blocks: PortableTextTextBlock[]) {
 
   return mergedBlock;
 }
+
+// Whitespace that HTML formatting would collapse or trim: newlines, leading or
+// trailing whitespace, and runs of whitespace.
+const SIGNIFICANT_WHITESPACE = /\n|^\s|\s$|\s\s/;
+
+/**
+ * Serialize a string value. Values whose whitespace matters (multi-line text,
+ * markdown) go in a <pre>, which HTML tools leave untouched; everything else
+ * stays a <span>.
+ */
+export const serializeString = (value: string, className?: string): string => {
+  const classAttribute = className ? ` class="${className}"` : '';
+  // the parser drops one newline right after <pre>, so lead with one
+  return SIGNIFICANT_WHITESPACE.test(value)
+    ? `<pre${classAttribute}>\n${value}</pre>`
+    : `<span${classAttribute}>${value}</span>`;
+};
