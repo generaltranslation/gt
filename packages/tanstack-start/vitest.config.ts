@@ -1,6 +1,14 @@
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      'gt-tanstack-start/internal/_config': new URL(
+        './src/internal/_config.ts',
+        import.meta.url
+      ).pathname,
+    },
+  },
   test: {
     pool: 'threads',
     poolOptions: {

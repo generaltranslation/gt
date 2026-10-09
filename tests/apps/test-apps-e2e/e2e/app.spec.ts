@@ -36,6 +36,9 @@ test(`${appName} renders local translations and switches locales`, async ({
     case 'tanstack':
       await testTanStackApp(page);
       break;
+    case 'tanstack-routing':
+      await testTanStackRoutingApp(page, request);
+      break;
     case 'node':
       await testNodeApp(browser, request);
       break;
@@ -297,6 +300,62 @@ async function testTanStackApp(page: Page) {
     await expectTanStackLocale(page, route.locale);
     currentLocale = route.locale;
   }
+}
+
+async function testTanStackRoutingApp(page: Page, request: APIRequestContext) {
+  const localeCookie = 'generaltranslation.locale';
+  const redirect = await request.get('/ssr', {
+    headers: { cookie: `${localeCookie}=fr` },
+    maxRedirects: 0,
+  });
+  expect(redirect.status()).toBeGreaterThanOrEqual(300);
+  expect(redirect.status()).toBeLessThan(400);
+  expect(redirect.headers()['location']).toMatch(/\/fr\/ssr$/);
+
+  const navLink = (name: string) =>
+    page.getByRole('navigation').getByRole('link', { name, exact: true });
+  const expectURL = (pathname: string) =>
+    expect(page).toHaveURL(new URL(pathname, app.baseURL).href);
+
+  await page.context().clearCookies();
+  await page
+    .context()
+    .addCookies([{ name: localeCookie, value: 'fr', url: app.baseURL }]);
+  await page.goto('/ssr');
+  await page.waitForLoadState('networkidle');
+  await expectURL('/fr/ssr');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+  await expectTanStackLocale(page, 'fr');
+  await expect(
+    page.getByText('Bonjour depuis le fournisseur racine.')
+  ).toBeVisible();
+  await expect(navLink('Home')).toHaveAttribute('href', '/fr');
+  await expect(navLink('SSR')).toHaveAttribute('href', '/fr/ssr');
+  await expect(navLink('SPA')).toHaveAttribute('href', '/fr/spa');
+  await page.reload();
+  await expectURL('/fr/ssr');
+  await expectTanStackLocale(page, 'fr');
+
+  await navLink('Data only').click();
+  await expectURL('/fr/data-only');
+  await expectTanStackLocale(page, 'fr');
+
+  await page.goto('/zh/spa');
+  await page.waitForLoadState('networkidle');
+  await expectURL('/zh/spa');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'zh');
+  await expectTanStackLocale(page, 'zh');
+  await expect(page.getByText('来自根级 Provider 的问候。')).toBeVisible();
+  await expect(navLink('SSR')).toHaveAttribute('href', '/zh/ssr');
+
+  await selectLocale(page, 'en');
+  await expectURL('/spa');
+  await expectTanStackLocale(page, 'en');
+  await expect(navLink('SSR')).toHaveAttribute('href', '/ssr');
+  await page.reload();
+  await expectURL('/spa');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expectTanStackLocale(page, 'en');
 }
 
 async function testNodeApp(browser: Browser, request: APIRequestContext) {

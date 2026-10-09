@@ -9,6 +9,10 @@ const deps = {
     /^react-dom\//,
     /^@tanstack\/react-start$/,
     /^@tanstack\/react-start\//,
+    /^vite$/,
+    /^@generaltranslation\/compiler$/,
+    // Kept as a bare import so the Vite plugin can replace it.
+    /^gt-tanstack-start\/internal\/_config$/,
     /^@generaltranslation\/react-core$/,
     /^@generaltranslation\/react-core\//,
     /^gt-react$/,
@@ -20,13 +24,20 @@ const deps = {
   alwaysBundle: [/^generaltranslation\//],
 };
 
-const entries = ['src/index.client.ts', 'src/index.server.ts', 'src/server.ts'];
+const entries: Record<string, string> = {
+  'index.client': 'src/index.client.ts',
+  'index.server': 'src/index.server.ts',
+  server: 'src/server.ts',
+  'plugin/vite': 'src/plugin/vite.ts',
+  'internal/_config': 'src/internal/_config.ts',
+};
 
 export default defineConfig(
-  entries.map((entry, index) => {
+  Object.entries(entries).map(([name, entry], index) => {
     const [, esmConfig] = createTsdownConfig([entry], deps);
     return {
       ...esmConfig,
+      entry: { [name]: entry },
       clean: index === 0,
       dts: true,
       deps: {

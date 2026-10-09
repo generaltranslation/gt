@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/react-start';
-import { getEnableI18n, getGT, getLocale } from 'gt-tanstack-start/server';
+import { getEnableI18n, getGT, getLocale } from 'gt-tanstack-start';
 import { ModePanel } from '../components/ModePanel';
 
 const loadSsrData = createServerFn({ method: 'GET' }).handler(async () => {

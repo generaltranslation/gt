@@ -1,12 +1,12 @@
 import type { RequestMiddlewareAfterServer } from '@tanstack/react-start';
-import { gtMiddleware as mainGtMiddleware } from './middleware/gtMiddleware';
+import { gtMiddleware as mainGtMiddleware } from './middleware/gtMiddleware.server';
 import {
   getEnableI18n as mainGetEnableI18n,
   getGT as mainGetGT,
   getLocale as mainGetLocale,
   getMessages as mainGetMessages,
   getTranslations as mainGetTranslations,
-} from './functions/runtime';
+} from './functions/runtime.server';
 
 /** @deprecated Import `gtMiddleware` from `gt-tanstack-start` instead. */
 export const gtMiddleware: RequestMiddlewareAfterServer<

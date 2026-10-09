@@ -2,7 +2,7 @@ import {
   createMiddleware,
   type RequestMiddlewareAfterServer,
 } from '@tanstack/react-start';
-import { getConditionStore } from '../condition-store/singleton';
+import { getServerConditionStore } from '../setup/initializeGT.server';
 
 /**
  * Establish request-scoped GT conditions for SSR, server routes, and server
@@ -13,5 +13,5 @@ export const gtMiddleware: RequestMiddlewareAfterServer<
   undefined,
   undefined
 > = createMiddleware().server(({ request, pathname, next }) => {
-  return getConditionStore().run(request, () => next(), pathname);
+  return getServerConditionStore().run(request, () => next(), pathname);
 });

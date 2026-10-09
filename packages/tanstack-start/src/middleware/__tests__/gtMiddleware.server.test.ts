@@ -21,8 +21,8 @@ vi.mock('@tanstack/react-start/server', () => ({
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 import { AsyncLocalConditionStore } from '../../condition-store/AsyncLocalConditionStore';
 import { setConditionStore } from '../../condition-store/singleton';
-import { getEnableI18n, getLocale } from '../../functions/runtime';
-import { gtMiddleware } from '../gtMiddleware';
+import { getEnableI18n, getLocale } from '../../functions/runtime.server';
+import { gtMiddleware } from '../gtMiddleware.server';
 
 type GlobalWithRegistry = {
   __generaltranslation?: {
