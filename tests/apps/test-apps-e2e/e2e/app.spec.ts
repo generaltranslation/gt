@@ -39,6 +39,9 @@ test(`${appName} renders local translations and switches locales`, async ({
     case 'tanstack-routing':
       await testTanStackRoutingApp(page, request);
       break;
+    case 'tanstack-spa':
+      await testTanStackSpaShell(page);
+      break;
     case 'node':
       await testNodeApp(browser, request);
       break;
@@ -300,6 +303,31 @@ async function testTanStackApp(page: Page) {
     await expectTanStackLocale(page, route.locale);
     currentLocale = route.locale;
   }
+}
+
+// Every route serves the shell prerendered in the default locale, so the
+// client must hydrate it as rendered and then switch to the visitor's locale.
+async function testTanStackSpaShell(page: Page) {
+  const localeCookie = 'generaltranslation.locale';
+  await page.context().clearCookies();
+  await page
+    .context()
+    .addCookies([{ name: localeCookie, value: 'fr', url: app.baseURL }]);
+
+  await page.goto('/ssr');
+  await page.waitForLoadState('networkidle');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+  await expectTanStackLocale(page, 'fr');
+  await expect(
+    page.getByText('Bonjour depuis le fournisseur racine.')
+  ).toBeVisible();
+  const cookies = await page.context().cookies();
+  expect(cookies.find(({ name }) => name === localeCookie)?.value).toBe('fr');
+
+  await selectLocale(page, 'zh');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'zh');
+  await expectTanStackLocale(page, 'zh');
+  await expect(page.getByText('来自根级 Provider 的问候。')).toBeVisible();
 }
 
 async function testTanStackRoutingApp(page: Page, request: APIRequestContext) {

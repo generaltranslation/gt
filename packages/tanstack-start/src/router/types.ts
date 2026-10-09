@@ -9,7 +9,14 @@ export type GTRouterState = {
   translations: SharedGTProviderProps['translations'];
 };
 
-export type GTDehydratedRouterData = { gt?: GTRouterState } | undefined;
+export type GTDehydratedRouterData =
+  | {
+      gt?: GTRouterState & {
+        /** Rendered into a prerendered SPA shell served to every visitor. */
+        shell?: boolean;
+      };
+    }
+  | undefined;
 
 /** Matches TanStack Router's LocationRewriteFunction. */
 export type GTLocationRewriteFunction = (options: {

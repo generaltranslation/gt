@@ -41,11 +41,14 @@ export function setupRouterGTIntegration({
     dehydrate: async () => {
       const dehydrated =
         (await originalDehydrate?.()) as GTDehydratedRouterData;
-      // A prerendered SPA shell is served to every visitor, so its state would
-      // pin the build-time locale. Without it the client loads the visitor's
-      // locale; the shell HTML itself still renders in the build-time locale.
-      if (router.isShell?.()) return dehydrated;
-      return { ...dehydrated, gt: await gt.load() };
+      const state = await gt.load();
+      // A prerendered SPA shell is served to every visitor in the build-time
+      // locale. The client hydrates it with that state, then renders the
+      // visitor's own.
+      return {
+        ...dehydrated,
+        gt: router.isShell?.() ? { ...state, shell: true } : state,
+      };
     },
     Wrap: gt.Wrap,
   };

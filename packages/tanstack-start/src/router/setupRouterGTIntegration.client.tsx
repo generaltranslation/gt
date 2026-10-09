@@ -34,14 +34,21 @@ export function setupRouterGTIntegration({
   const gt = createGTRouterWrap({
     Wrap: router.options.Wrap,
     Provider: GTProvider,
-    // Client-only roots (ssr: false, SPA mode) receive no dehydrated state.
+    // The visitor's state, for client-only roots (ssr: false) and SPA shells.
     loadState: () => readGTRouterState(getReadonlyConditionStore()),
   });
   const options: Partial<GTRouterOptions> = {
     // Apply the server's locale first, so the app's hydrate callback and the
     // links it builds see it.
     hydrate: async (dehydrated: GTDehydratedRouterData) => {
-      if (dehydrated?.gt) {
+      if (dehydrated?.gt?.shell) {
+        const { shell: _shell, ...state } = dehydrated.gt;
+        // The condition store keeps the visitor's locale. Their state loads
+        // before hydration, so the provider never commits the shell's locale
+        // to the locale cookie. A load failure is thrown from Wrap.
+        gt.hydrateShell(state);
+        await gt.load().catch(() => undefined);
+      } else if (dehydrated?.gt) {
         const { locale, region, enableI18n } = dehydrated.gt;
         gt.resolve(dehydrated.gt);
         createOrUpdateBrowserConditionStore({ locale, region, enableI18n });
