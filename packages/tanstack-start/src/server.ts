@@ -8,7 +8,10 @@ import {
   getTranslations as mainGetTranslations,
 } from './functions/runtime.server';
 
-/** @deprecated Import `gtMiddleware` from `gt-tanstack-start` instead. */
+/**
+ * @deprecated No longer needed: GT resolves each request's locale from
+ * TanStack Start's request context. Remove it from `requestMiddleware`.
+ */
 export const gtMiddleware: RequestMiddlewareAfterServer<
   {},
   undefined,
