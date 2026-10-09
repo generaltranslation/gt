@@ -43,6 +43,15 @@ type RawFieldDef = {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
+/**
+ * HTML that serializeDocument already produced for a top-level object or
+ * array field. serializeObject inserts it as-is; every plain string it meets
+ * is a document value.
+ */
+class SerializedHTML {
+  constructor(readonly html: string) {}
+}
+
 export const BaseDocumentSerializer = (schemas: Schema) => {
   /*
    * Helper function that allows us to get metadata (like `localize: false`) from schema fields.
@@ -159,15 +168,15 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
         const fieldDef = knownFields?.find(
           (field) => field.name === fieldName
         ) as RawFieldDef | undefined;
-        //strings are either string fields or have recursively been turned
-        //into HTML because they were a nested object or array
-        if (typeof value === 'string') {
-          const htmlRegex = new RegExp(/<("[^"]*"|'[^']*'|[^'">])*>/);
-          if (htmlRegex.test(value)) {
-            htmlField = value;
-          } else {
-            htmlField = serializeString(value, fieldName);
-          }
+        //top-level object and array fields serializeDocument has already
+        //turned into HTML
+        if (value instanceof SerializedHTML) {
+          htmlField = value.html;
+        }
+
+        //any other string is a document value, even if it looks like HTML
+        else if (typeof value === 'string') {
+          htmlField = serializeString(value, fieldName);
         }
 
         //array fields get filtered and its children serialized
@@ -346,15 +355,17 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
       if (typeof value === 'string') {
         serializedFields[key] = value;
       } else if (Array.isArray(value)) {
-        serializedFields[key] = serializeArray(
-          value.filter(
-            (item): item is Record<string, unknown> | string =>
-              typeof item === 'string' || isRecord(item)
-          ),
-          key,
-          stopTypes,
-          serializers,
-          fieldDef?.of
+        serializedFields[key] = new SerializedHTML(
+          serializeArray(
+            value.filter(
+              (item): item is Record<string, unknown> | string =>
+                typeof item === 'string' || isRecord(item)
+            ),
+            key,
+            stopTypes,
+            serializers,
+            fieldDef?.of
+          )
         );
       } else if (
         value &&
@@ -367,8 +378,9 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
           serializers,
           fieldDef?.fields
         );
-        serializedFields[key] =
-          `<div class="${key}" data-level='field'>${serialized}</div>`;
+        serializedFields[key] = new SerializedHTML(
+          `<div class="${key}" data-level='field'>${serialized}</div>`
+        );
       }
     }
 
