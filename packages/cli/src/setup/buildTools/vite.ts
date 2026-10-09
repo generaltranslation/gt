@@ -6,27 +6,10 @@ import {
   setupViteSPA,
   writeViteLoader,
 } from '../setupViteSPA.js';
-import type { BuildToolSetup, ManualAction } from './index.js';
+import type { BuildToolSetup } from './index.js';
+import { getLoaderUpdateActions } from './shared/loader.js';
 
 export const VITE_LOADER_FILE = 'src/loadTranslations.ts';
-
-/** A loader left unchanged may not read the newly chosen directory. */
-function loaderUpdateActions(
-  translationsDir: string,
-  previousTranslationsDir: string | undefined,
-  custom: boolean
-): ManualAction[] {
-  if (translationsDir === previousTranslationsDir) return [];
-  const fix = `Update ${custom ? 'your custom ' : ''}${VITE_LOADER_FILE} to load translations from ${translationsDir}`;
-  return [
-    {
-      whatHappened: custom
-        ? `Your custom ${VITE_LOADER_FILE} was left unchanged, but translations now go to ${translationsDir}`
-        : `${VITE_LOADER_FILE} was left unchanged because the React setup was skipped, but translations now go to ${translationsDir}`,
-      fix,
-    },
-  ];
-}
 
 export const viteSetup: BuildToolSetup = {
   framework: 'vite',
@@ -52,7 +35,12 @@ export const viteSetup: BuildToolSetup = {
       return {
         steps: [],
         manualActions: fs.existsSync(path.join(appDirectory, VITE_LOADER_FILE))
-          ? loaderUpdateActions(translationsDir, previousTranslationsDir, false)
+          ? getLoaderUpdateActions(
+              VITE_LOADER_FILE,
+              translationsDir,
+              previousTranslationsDir,
+              false
+            )
           : [],
       };
     }
@@ -68,7 +56,12 @@ export const viteSetup: BuildToolSetup = {
       steps: loader === 'updated' ? [`updated ${VITE_LOADER_FILE}`] : [],
       manualActions:
         loader === 'custom'
-          ? loaderUpdateActions(translationsDir, previousTranslationsDir, true)
+          ? getLoaderUpdateActions(
+              VITE_LOADER_FILE,
+              translationsDir,
+              previousTranslationsDir,
+              true
+            )
           : [],
     };
   },

@@ -2,6 +2,7 @@
 // src/routes/__root.tsx in dependency order, or reports manual steps.
 import fs from 'node:fs';
 import path from 'node:path';
+import { Libraries } from '../../../types/libraries.js';
 import { DEFAULT_VITE_TRANSLATIONS_DIR } from '../../../utils/constants.js';
 import {
   getViteLoaderExport,
@@ -17,6 +18,7 @@ import type {
 } from '../index.js';
 import { VITE_LOADER_FILE, viteSetup } from '../vite.js';
 import { applyEdits, getCodeStyle, getImportEdit } from '../shared/edits.js';
+import { findInitializeCall, passesLoader } from '../shared/initializeGT.js';
 import { rendersElement } from '../shared/jsx.js';
 import { readSourceFile, type SourceFile } from '../shared/source.js';
 import {
@@ -25,12 +27,7 @@ import {
   START_CONTENT,
 } from './middleware.js';
 import { configureRootRoute, findRootComponent, getRootFix } from './root.js';
-import {
-  findInitializeCall,
-  getRouterLines,
-  getStorageAction,
-  passesLoader,
-} from './router.js';
+import { getRouterLines, getStorageAction } from './router.js';
 import { DOCS_URL, inspectTanStackStart } from './source.js';
 
 async function writeLoader(
@@ -58,7 +55,8 @@ export const tanstackStartSetup: BuildToolSetup = {
     const result = await viteSetup.syncLoader(ctx);
     if (ctx.keepAppSource) return result;
     const router = await readSourceFile(ctx.appDirectory, 'src/router');
-    const initializeCall = router && findInitializeCall(router);
+    const initializeCall =
+      router && findInitializeCall(router, Libraries.GT_TANSTACK_START);
     if (
       !initializeCall ||
       passesLoader(router, initializeCall.arguments[0], ctx) !== false
@@ -115,7 +113,10 @@ export const tanstackStartSetup: BuildToolSetup = {
         ? content
         : undefined;
 
-    const initializeCall = findInitializeCall(router);
+    const initializeCall = findInitializeCall(
+      router,
+      Libraries.GT_TANSTACK_START
+    );
     let routerReady = initializeCall !== undefined;
     let configuredRouter: string | undefined;
     // Storage chosen on a rerun must match how the router loads translations.

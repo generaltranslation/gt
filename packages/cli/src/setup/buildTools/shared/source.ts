@@ -60,6 +60,46 @@ export function getLocalImport(
   return undefined;
 }
 
+export type DeclaredFunction = {
+  /** The statement that declares it, which may be an export. */
+  statement: t.Statement;
+  fn: t.FunctionDeclaration | t.ArrowFunctionExpression | t.FunctionExpression;
+};
+
+/**
+ * The `function name` or `const name = () => ...` a module declares, with the
+ * statement declaring it. With `exported`, only an exported one counts.
+ */
+export function findDeclaredFunction(
+  statements: t.Statement[],
+  name: string,
+  { exported = false }: { exported?: boolean } = {}
+): DeclaredFunction | undefined {
+  for (const statement of statements) {
+    const isExport = statement.type === 'ExportNamedDeclaration';
+    if (exported && !isExport) continue;
+    const declaration = isExport ? statement.declaration : statement;
+    if (
+      declaration?.type === 'FunctionDeclaration' &&
+      declaration.id?.name === name
+    ) {
+      return { statement, fn: declaration };
+    }
+    if (declaration?.type !== 'VariableDeclaration') continue;
+    if (declaration.kind !== 'const') continue;
+    for (const declarator of declaration.declarations) {
+      if (
+        t.isIdentifier(declarator.id, { name }) &&
+        (declarator.init?.type === 'ArrowFunctionExpression' ||
+          declarator.init?.type === 'FunctionExpression')
+      ) {
+        return { statement, fn: declarator.init };
+      }
+    }
+  }
+  return undefined;
+}
+
 export function getPropertyName(
   property: t.ObjectExpression['properties'][number]
 ): string | undefined {
