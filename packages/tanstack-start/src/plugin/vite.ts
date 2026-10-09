@@ -7,6 +7,7 @@ import {
 } from 'generaltranslation/internal';
 import type { GTCompilerOptions, GTConfig } from 'generaltranslation/types';
 import type { Logger, Plugin } from 'vite';
+import type { InitializeGTParams } from '../types/InitializeGTParams';
 
 /** Mirrors gt-next's withGTConfig experimentalCompilerOptions. */
 export type GTTanstackStartCompilerOptions = GTCompilerOptions & {
@@ -18,11 +19,49 @@ export type GTTanstackStartCompilerOptions = GTCompilerOptions & {
   type?: 'babel' | 'none';
 };
 
-export type GTTanstackStartPluginOptions = {
+/**
+ * initializeGT() settings that gt.config.json cannot hold. They override
+ * gt.config.json, as withGTConfig() options do in gt-next.
+ */
+export type GTTanstackStartRuntimeOptions = Pick<
+  InitializeGTParams,
+  | 'localeCookieName'
+  | 'regionCookieName'
+  | 'enableI18nCookieName'
+  | 'cacheExpiryTime'
+  | 'batchConfig'
+  | 'runtimeTranslation'
+>;
+
+export type GTTanstackStartPluginOptions = GTTanstackStartRuntimeOptions & {
   /** Path to gt.config.json, relative to the current working directory. */
   config?: string;
+  /**
+   * Path to a dictionary file with a default or named `dictionary` export,
+   * relative to the current working directory. Defaults to `dictionary.ts`,
+   * `.js` or `.json` in the app root or `src/`, as in gt-next.
+   */
+  dictionary?: string;
+  /**
+   * Path to a file with a default or named `loadDictionary` function, relative
+   * to the current working directory. Defaults to `loadDictionary.ts` or `.js`
+   * in the app root or `src/`, as in gt-next.
+   */
+  loadDictionaryPath?: string;
+  /**
+   * Path to a file with a default or named `loadTranslations` function,
+   * relative to the current working directory. Defaults to
+   * `src/loadTranslations.*`, then to the files.gt.output pattern of
+   * gt.config.json.
+   */
+  loadTranslationsPath?: string;
   experimentalCompilerOptions?: GTTanstackStartCompilerOptions;
 };
+
+type ConfigModuleOptions = Omit<
+  GTTanstackStartPluginOptions,
+  'config' | 'experimentalCompilerOptions'
+>;
 
 const CONFIG_MODULE_ID = 'gt-tanstack-start/internal/_config';
 const RESOLVED_CONFIG_MODULE_ID = '\0gt-tanstack-start:config';
@@ -32,14 +71,29 @@ const CUSTOM_LOADER_FILES = [
   'src/loadTranslations.js',
   'src/loadTranslations.jsx',
 ];
+const DICTIONARY_FILES = ['', 'src/'].flatMap((directory) =>
+  ['.ts', '.js', '.json'].map(
+    (extension) => `${directory}dictionary${extension}`
+  )
+);
+const DICTIONARY_LOADER_FILES = ['', 'src/'].flatMap((directory) =>
+  ['.ts', '.js'].map((extension) => `${directory}loadDictionary${extension}`)
+);
 const NODE_MODULES_PATTERN = /[\\/]node_modules[\\/]/;
 
 // GT's server state is a first-write-wins global that outlives Vite module
 // reloads and in-process restarts, so the config module is generated once per
 // process too. Any later read could hand the browser settings SSR never applied.
 // Keyed by app root and working directory too: the loader depends on both.
+// The options it was generated with are kept to warn when a restart with
+// other options keeps serving it.
 const configModules = ((
-  globalThis as { __gtTanstackStartConfigModules?: Map<string, string> }
+  globalThis as {
+    __gtTanstackStartConfigModules?: Map<
+      string,
+      { code: string; options: string }
+    >;
+  }
 ).__gtTanstackStartConfigModules ??= new Map());
 
 const compileTimeHashDisabledWarning = createDiagnosticMessage({
@@ -78,13 +132,28 @@ const duplicateCompilerWarning = createDiagnosticMessage({
   wayOut: "set experimentalCompilerOptions.type to 'none' in gtTanstackStart()",
 });
 
-function createInvalidLoaderError(loaderFile: string): string {
+function createInvalidExportError(
+  file: string,
+  what: string,
+  expected: string
+): string {
   return createDiagnosticMessage({
     source: 'gt-tanstack-start',
     severity: 'Error',
-    whatHappened: `${loaderFile} does not export a translation loader`,
-    fix: 'In that file, export a default or named loadTranslations function',
+    whatHappened: `${file} does not export ${what}`,
+    fix: `In that file, export a default or named ${expected}`,
   });
+}
+
+function createMissingFileError(option: string, file: string): Error {
+  return new Error(
+    createDiagnosticMessage({
+      source: 'gt-tanstack-start',
+      severity: 'Error',
+      whatHappened: `The gtTanstackStart() ${option} option points to ${file}, which does not exist`,
+      fix: `Create the file, or set ${option} to its path relative to the working directory`,
+    })
+  );
 }
 
 function createConfigChangedWarning(configFileName: string): string {
@@ -146,11 +215,17 @@ export function gtTanstackStart(
   // compiler keeps its factory-time snapshot until Vite restarts.
   // files.gt.output also resolves from here, matching the gt CLI.
   const cwd = process.cwd();
-  const configFile = path.resolve(cwd, options.config ?? 'gt.config.json');
+  const {
+    config,
+    experimentalCompilerOptions,
+    ...configModuleOptions
+  }: GTTanstackStartPluginOptions = options;
+  const configFile = path.resolve(cwd, config ?? 'gt.config.json');
   const { compilerPlugin, warnings } = createCompilerPlugin(
-    options.experimentalCompilerOptions,
+    experimentalCompilerOptions,
     configFile
   );
+  const moduleOptions = JSON.stringify(configModuleOptions);
   let root = cwd;
   let logger: Logger | undefined;
 
@@ -189,18 +264,31 @@ export function gtTanstackStart(
     load(id) {
       if (id !== RESOLVED_CONFIG_MODULE_ID) return;
       const key = JSON.stringify([root, cwd, configFile]);
-      let code = configModules.get(key);
-      if (code === undefined) {
-        const configModule = createConfigModule(root, cwd, configFile);
-        code = configModule.code;
-        configModules.set(key, code);
-        if (configModule.omittedApiKeys) {
+      const cached = configModules.get(key);
+      if (cached) {
+        if (cached.options !== moduleOptions) {
           logger?.warnOnce(
-            createApiKeysOmittedWarning(path.relative(cwd, configFile))
+            createConfigChangedWarning('The gtTanstackStart() options')
           );
         }
+        return cached.code;
       }
-      return code;
+      const configModule = createConfigModule(
+        root,
+        cwd,
+        configFile,
+        configModuleOptions
+      );
+      configModules.set(key, {
+        code: configModule.code,
+        options: moduleOptions,
+      });
+      if (configModule.omittedApiKeys) {
+        logger?.warnOnce(
+          createApiKeysOmittedWarning(path.relative(cwd, configFile))
+        );
+      }
+      return configModule.code;
     },
   };
 
@@ -293,30 +381,127 @@ function getCompilerId(id: string): string {
   return query.has('tsr-split') ? id.slice(0, queryStart) : id;
 }
 
+/**
+ * The file an option names, relative to the working directory, or else the
+ * first default that exists, relative to the app root.
+ */
+function findModuleFile(
+  root: string,
+  cwd: string,
+  option: string,
+  configured: string | undefined,
+  defaults: string[]
+): string | undefined {
+  if (configured !== undefined) {
+    const file = path.resolve(cwd, configured);
+    if (!fs.existsSync(file)) throw createMissingFileError(option, configured);
+    return file;
+  }
+  return defaults
+    .map((file) => path.join(root, file))
+    .find((file) => fs.existsSync(file));
+}
+
+/**
+ * Exports `name` from the file's default or named export, failing loudly
+ * when neither exists: a fallback would silently drop the app's setting.
+ */
+function exportFromFile(
+  root: string,
+  file: string,
+  name: string,
+  type: 'function' | 'object',
+  what: string
+): string[] {
+  const relative = path.relative(root, file).split(path.sep).join('/');
+  const local = `${name}Module`;
+  return [
+    `import * as ${local} from ${JSON.stringify(`/${relative}`)};`,
+    `const ${name} = ${local}.default ?? ${local}.${name};`,
+    `if (typeof ${name} !== '${type}' || ${name} === null) {`,
+    `  throw new Error(${JSON.stringify(createInvalidExportError(relative, what, type === 'function' ? `${name} function` : `${name} object`))});`,
+    '}',
+    `export { ${name} };`,
+  ];
+}
+
 function createConfigModule(
   root: string,
   cwd: string,
-  configFile: string
+  configFile: string,
+  {
+    dictionary,
+    loadDictionaryPath,
+    loadTranslationsPath,
+    ...runtimeOptions
+  }: ConfigModuleOptions
 ): { code: string; omittedApiKeys: boolean } {
   const config = readConfigFile(configFile);
   // The browser imports this module too, so credentials must never be in it.
   const { apiKey, devApiKey, ...publicConfig } = config;
-  const lines = [`export const config = ${JSON.stringify(publicConfig)};`];
+  // An explicit undefined would erase the gt.config.json value.
+  const definedRuntimeOptions = Object.fromEntries(
+    Object.entries(runtimeOptions).filter(([, value]) => value !== undefined)
+  );
+  const lines = [
+    `export const config = ${JSON.stringify({ ...publicConfig, ...definedRuntimeOptions })};`,
+  ];
 
-  const customLoader = CUSTOM_LOADER_FILES.find((file) =>
-    fs.existsSync(path.join(root, file))
+  const dictionaryFile = findModuleFile(
+    root,
+    cwd,
+    'dictionary',
+    dictionary,
+    DICTIONARY_FILES
+  );
+  lines.push(
+    ...(dictionaryFile
+      ? exportFromFile(
+          root,
+          dictionaryFile,
+          'dictionary',
+          'object',
+          'a dictionary'
+        )
+      : ['export const dictionary = undefined;'])
+  );
+  const dictionaryLoader = findModuleFile(
+    root,
+    cwd,
+    'loadDictionaryPath',
+    loadDictionaryPath,
+    DICTIONARY_LOADER_FILES
+  );
+  lines.push(
+    ...(dictionaryLoader
+      ? exportFromFile(
+          root,
+          dictionaryLoader,
+          'loadDictionary',
+          'function',
+          'a dictionary loader'
+        )
+      : ['export const loadDictionary = undefined;'])
+  );
+
+  const customLoader = findModuleFile(
+    root,
+    cwd,
+    'loadTranslationsPath',
+    loadTranslationsPath,
+    CUSTOM_LOADER_FILES
   );
   const output = config.files?.gt?.output;
 
   if (customLoader) {
     lines.push(
-      `import * as loader from ${JSON.stringify(`/${customLoader}`)};`,
-      'const loadTranslations = loader.default ?? loader.loadTranslations;',
-      // Fail loudly: falling back would silently mask local translations.
-      "if (typeof loadTranslations !== 'function') {",
-      `  throw new Error(${JSON.stringify(createInvalidLoaderError(customLoader))});`,
-      '}',
-      'export { loadTranslations };'
+      ...exportFromFile(
+        root,
+        customLoader,
+        'loadTranslations',
+        'function',
+        'a translation loader'
+      )
     );
   } else if (output?.includes('[locale]')) {
     const pattern = `/${path

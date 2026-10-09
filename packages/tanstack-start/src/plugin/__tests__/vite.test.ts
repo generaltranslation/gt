@@ -212,6 +212,8 @@ const CONFIG_MODULE_ID = 'gt-tanstack-start/internal/_config';
 type ConfigModuleExports = {
   config: unknown;
   loadTranslations?: (locale: string) => Promise<unknown>;
+  dictionary?: unknown;
+  loadDictionary?: (locale: string) => Promise<unknown>;
 };
 
 /**
@@ -220,7 +222,8 @@ type ConfigModuleExports = {
  */
 function createProject(
   files: Record<string, string>,
-  config = 'gt.config.json'
+  config = 'gt.config.json',
+  options: Omit<GTTanstackStartPluginOptions, 'config'> = {}
 ): { configPlugin: Plugin; root: string } {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-tanstack-start-'));
   tempDirs.push(root);
@@ -233,6 +236,7 @@ function createProject(
     const [configPlugin] = gtTanstackStart({
       config,
       experimentalCompilerOptions: { type: 'none' },
+      ...options,
     });
     return { configPlugin, root };
   } finally {
@@ -508,7 +512,7 @@ describe.sequential('gtTanstackStart config module', () => {
 
       const { code } = await loadConfigModuleCode(configPlugin, root);
       expect(code).toContain(
-        `import * as loader from ${JSON.stringify(`/${file}`)};`
+        `import * as loadTranslationsModule from ${JSON.stringify(`/${file}`)};`
       );
       expect(code).not.toContain('import.meta.glob');
 
@@ -580,6 +584,175 @@ describe.sequential('gtTanstackStart config module', () => {
       });
     }
   );
+
+  it('adds initializeGT settings from the plugin options over gt.config.json', async () => {
+    const { configPlugin, root } = createProject(
+      {
+        'gt.config.json': JSON.stringify({
+          defaultLocale: 'en',
+          locales: ['en', 'fr'],
+          cacheExpiryTime: 1000,
+        }),
+      },
+      'gt.config.json',
+      {
+        localeCookieName: 'app.locale',
+        cacheExpiryTime: null,
+        batchConfig: { maxBatchSize: 5 },
+        runtimeTranslation: { timeout: 2000 },
+        regionCookieName: undefined,
+      }
+    );
+
+    await withConfigModule(configPlugin, root, async (module) => {
+      expect(module.config).toEqual({
+        defaultLocale: 'en',
+        locales: ['en', 'fr'],
+        cacheExpiryTime: null,
+        localeCookieName: 'app.locale',
+        batchConfig: { maxBatchSize: 5 },
+        runtimeTranslation: { timeout: 2000 },
+      });
+      expect(module.dictionary).toBeUndefined();
+      expect(module.loadDictionary).toBeUndefined();
+    });
+  });
+
+  it.each([
+    {
+      name: 'a default dictionary.json in the app root',
+      files: { 'dictionary.json': '{"greeting":"Hello"}' },
+      options: {},
+    },
+    {
+      name: 'a default src/dictionary.ts named export',
+      files: {
+        'src/dictionary.ts': 'export const dictionary = { greeting: "Hello" };',
+      },
+      options: {},
+    },
+    {
+      name: 'the dictionary option',
+      files: {
+        'i18n/messages.ts': 'export default { greeting: "Hello" };',
+        'dictionary.json': '{"greeting":"ignored"}',
+      },
+      options: { dictionary: 'i18n/messages.ts' },
+    },
+  ])('exports $name', async ({ files, options }) => {
+    const { configPlugin, root } = createProject(
+      { 'gt.config.json': gtConfig(), ...files },
+      'gt.config.json',
+      options
+    );
+
+    await withConfigModule(configPlugin, root, async (module) => {
+      expect(module.dictionary).toEqual({ greeting: 'Hello' });
+    });
+  });
+
+  it.each([
+    {
+      name: 'a default src/loadDictionary.ts',
+      files: {
+        'src/loadDictionary.ts':
+          'export default async (locale: string) => ({ locale });',
+      },
+      options: {},
+    },
+    {
+      name: 'the loadDictionaryPath option',
+      files: {
+        'i18n/dictionaries.js':
+          'export async function loadDictionary(locale) { return { locale }; }',
+      },
+      options: { loadDictionaryPath: 'i18n/dictionaries.js' },
+    },
+  ])('exports the dictionary loader from $name', async ({ files, options }) => {
+    const { configPlugin, root } = createProject(
+      { 'gt.config.json': gtConfig(), ...files },
+      'gt.config.json',
+      options
+    );
+
+    await withConfigModule(configPlugin, root, async (module) => {
+      await expect(module.loadDictionary?.('fr')).resolves.toEqual({
+        locale: 'fr',
+      });
+    });
+  });
+
+  it('prefers the loadTranslationsPath option over the default loader', async () => {
+    const { configPlugin, root } = createProject(
+      {
+        'gt.config.json': gtConfig('src/_gt/[locale].json'),
+        'src/loadTranslations.ts':
+          'export default async () => ({ from: "default" });',
+        'i18n/load.ts':
+          'export const loadTranslations = async (locale: string) => ({ from: "option", locale });',
+      },
+      'gt.config.json',
+      { loadTranslationsPath: 'i18n/load.ts' }
+    );
+
+    await withConfigModule(configPlugin, root, async (module) => {
+      await expect(module.loadTranslations?.('fr')).resolves.toEqual({
+        from: 'option',
+        locale: 'fr',
+      });
+    });
+  });
+
+  it('reports a path option that names a missing file', async () => {
+    const { configPlugin, root } = createProject(
+      { 'gt.config.json': gtConfig() },
+      'gt.config.json',
+      { loadDictionaryPath: 'i18n/missing.ts' }
+    );
+
+    await expect(loadConfigModuleCode(configPlugin, root)).rejects.toThrow(
+      /^gt-tanstack-start Error: The gtTanstackStart\(\) loadDictionaryPath option points to i18n\/missing\.ts, which does not exist/
+    );
+  });
+
+  it('reports a dictionary file without a dictionary export', async () => {
+    const { configPlugin, root } = createProject({
+      'gt.config.json': gtConfig(),
+      'src/dictionary.ts': 'export const messages = {};',
+    });
+
+    const loading = withConfigModule(configPlugin, root, async () => {});
+    await expect(loading).rejects.toThrow(
+      'src/dictionary.ts does not export a dictionary'
+    );
+    await expect(loading).rejects.toThrow(
+      'export a default or named dictionary object'
+    );
+  });
+
+  it('warns when a restart changes the plugin options it keeps serving', async () => {
+    const { configPlugin, root } = createProject({
+      'gt.config.json': gtConfig(),
+    });
+    const { code: first } = await loadConfigModuleCode(configPlugin, root);
+    const cwd = vi.spyOn(process, 'cwd').mockReturnValue(root);
+    const [restartedPlugin] = gtTanstackStart({
+      experimentalCompilerOptions: { type: 'none' },
+      localeCookieName: 'app.locale',
+    });
+    cwd.mockRestore();
+
+    const { code, warnOnce } = await loadConfigModuleCode(
+      restartedPlugin,
+      root
+    );
+
+    expect(code).toBe(first);
+    expect(warnOnce).toHaveBeenCalledOnce();
+    expect(warnOnce.mock.calls[0][0]).toContain(
+      'The gtTanstackStart() options changed, but the running dev server keeps the version it read at startup'
+    );
+  });
 
   it('reports a malformed gt.config.json when the plugin is created', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-tanstack-start-'));

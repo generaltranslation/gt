@@ -6,8 +6,8 @@ const conditionStoreNotInitializedError = createDiagnosticMessage({
   source: 'gt-tanstack-start',
   severity: 'Error',
   whatHappened: 'Cannot read GT server request state before initialization',
-  why: 'initializeGT() has not initialized the TanStack Start server condition store',
-  fix: "Call initializeGT() from 'gt-tanstack-start' during application setup before using gtMiddleware or server APIs.",
+  why: 'the gtTanstackStart() Vite plugin is not registered, so GT has no config',
+  fix: "Add gtTanstackStart() from 'gt-tanstack-start/plugin/vite' to the plugins in your Vite config",
 });
 
 const conditionStoreSingleton = createGlobalSingleton<AsyncLocalConditionStore>(
