@@ -236,6 +236,40 @@ function findPluginsArray(
     : undefined;
 }
 
+/**
+ * Whether a plugins element names a top-level declaration that calls the
+ * plugin, as in `const gt = gtTanstackStart()` with `plugins: [...gt]`.
+ */
+function referencesPluginCall(
+  statements: t.Statement[],
+  elements: t.ArrayExpression['elements'],
+  local: string
+): boolean {
+  const names = new Set<string>();
+  for (const element of elements) {
+    if (!element) continue;
+    t.traverseFast(element, (node) => {
+      if (node.type === 'Identifier') names.add(node.name);
+    });
+  }
+  return statements.some((statement) => {
+    const declaration =
+      statement.type === 'ExportNamedDeclaration'
+        ? statement.declaration
+        : statement;
+    const declared =
+      declaration?.type === 'FunctionDeclaration'
+        ? [declaration.id]
+        : declaration?.type === 'VariableDeclaration'
+          ? declaration.declarations.map(({ id }) => id)
+          : [];
+    return (
+      declared.some((id) => id?.type === 'Identifier' && names.has(id.name)) &&
+      callsFunction([statement], local)
+    );
+  });
+}
+
 /** The config with the plugin appended, or undefined when unsupported. */
 export function configureViteConfig(
   viteConfig: SourceFile,
@@ -258,7 +292,13 @@ export function configureViteConfig(
   }
   // A call behind a condition or wrapper registers the plugin when it holds,
   // so another call could register it twice.
-  if (local && callsFunction(plugins.elements, local)) return undefined;
+  if (
+    local &&
+    (callsFunction(plugins.elements, local) ||
+      referencesPluginCall(statements, plugins.elements, local))
+  ) {
+    return undefined;
+  }
   const { quote, semi, eol } = getCodeStyle(content, statements);
   const call = getVitePluginCall(local ?? VITE_PLUGIN, ctx, quote);
   const pluginEdit = !last

@@ -158,7 +158,8 @@ export function callsFunction(
     if (!node) continue;
     t.traverseFast(node, (child) => {
       if (
-        child.type === 'CallExpression' &&
+        (child.type === 'CallExpression' ||
+          child.type === 'OptionalCallExpression') &&
         t.isIdentifier(child.callee, { name: local })
       ) {
         found = true;
