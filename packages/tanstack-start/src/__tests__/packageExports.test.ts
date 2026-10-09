@@ -4,6 +4,7 @@ import { builtinModules } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { parseAst } from 'vite';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
@@ -25,21 +26,61 @@ function readDistFile(file: string): string {
   return readFileSync(join(packageRoot, 'dist', file), 'utf8');
 }
 
-function getImportSpecifiers(code: string): string[] {
-  return [...code.matchAll(/\b(?:from|import)\s*\(?\s*["']([^"']+)["']/g)].map(
-    ([, specifier]) => specifier
-  );
+type ModuleNode = {
+  type: string;
+  source?: { value?: unknown } | null;
+  specifiers?: {
+    type: string;
+    imported?: { name?: string; value?: unknown };
+    local?: { name?: string; value?: unknown };
+  }[];
+};
+
+/**
+ * Static imports, re-exports and dynamic imports with a literal source, each
+ * with the names it binds from that module.
+ */
+function getModuleImports(
+  code: string
+): { source: string; names: unknown[] }[] {
+  const imports: { source: string; names: unknown[] }[] = [];
+  const visit = (value: unknown): void => {
+    if (Array.isArray(value)) return value.forEach(visit);
+    if (!value || typeof value !== 'object') return;
+    const { type, source, specifiers = [] } = value as ModuleNode;
+    if (
+      /^(?:ImportDeclaration|ExportAllDeclaration|ExportNamedDeclaration|ImportExpression)$/.test(
+        type
+      ) &&
+      typeof source?.value === 'string'
+    ) {
+      imports.push({
+        source: source.value,
+        names: specifiers.flatMap(({ type, imported, local }) => {
+          const name =
+            type === 'ImportSpecifier'
+              ? imported
+              : type === 'ExportSpecifier'
+                ? local
+                : undefined;
+          return name ? [name.name ?? name.value] : [];
+        }),
+      });
+    }
+    Object.values(value).forEach(visit);
+  };
+  visit(parseAst(code));
+  return imports;
 }
 
-function getNamedReactImports(code: string): string[] {
-  return [
-    ...code.matchAll(/\bimport\s*\{([^}]*)\}\s*from\s*["']react["']/g),
-  ].flatMap(([, names]) =>
-    names
-      .split(',')
-      .map((name) => name.trim().split(/\s+as\s+/)[0])
-      .filter(Boolean)
-  );
+function getImportSpecifiers(code: string): string[] {
+  return getModuleImports(code).map(({ source }) => source);
+}
+
+function getNamedReactImports(code: string): unknown[] {
+  return getModuleImports(code)
+    .filter(({ source }) => source === 'react')
+    .flatMap(({ names }) => names);
 }
 
 function node(args: string[]): void {
