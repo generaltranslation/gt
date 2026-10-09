@@ -7,7 +7,7 @@ import { isGTReactImportSource } from '../constants/gt/helpers';
  * string translation macro.
  *
  * The macro is valid when it is an unbound bare identifier, or when it is
- * imported from gt-react. This covers global `t`, but not explicit
+ * imported from gt-react (or gt-tanstack-start, which re-exports it). This covers global `t`, but not explicit
  * member access such as `globalThis.t` or `window.t`. Other bindings are left
  * alone so local/i18next t tags do not get transformed or extracted.
  */
