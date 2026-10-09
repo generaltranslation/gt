@@ -251,7 +251,10 @@ export const tanstackStartSetup: BuildToolSetup = {
     if (root && typeof rootLang === 'string' && routerIntegrated) {
       await writeSource(root.path, rootLang);
       steps.push(`configured ${root.path}`);
-    } else if (root && rootLang !== undefined) {
+    } else if (root && (rootLang || (rootLang === null && !routerReady))) {
+      // A document the CLI cannot inspect may still hard-code its language.
+      // Remind only while setup is first applied: a rerun could never tell
+      // that it was fixed.
       manualActions.push(getRootLangAction(root.path));
     }
 
