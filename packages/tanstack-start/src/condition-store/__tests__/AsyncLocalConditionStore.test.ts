@@ -39,6 +39,18 @@ function createRequest({
 }
 
 describe('AsyncLocalConditionStore', () => {
+  it('reports whether its config enables locale routing', () => {
+    expect(
+      new AsyncLocalConditionStore({
+        ...config,
+        localeRouting: true,
+      }).isLocaleRoutingEnabled()
+    ).toBe(true);
+    expect(new AsyncLocalConditionStore(config).isLocaleRoutingEnabled()).toBe(
+      false
+    );
+  });
+
   it('isolates conditions between concurrent requests', async () => {
     const conditionStore = new AsyncLocalConditionStore(config);
     let releaseFirstRequest!: () => void;
