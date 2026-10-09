@@ -23,63 +23,21 @@ export const getEnableI18n: () => boolean = createIsomorphicFn()
   .server((): boolean => getServerConditionStore().getEnableI18n())
   .client((): boolean => getReadonlyConditionStore().getEnableI18n());
 
+// The translation functions read the locale through the isomorphic getters
+// above, so they need no server and browser variants of their own.
+
 /** Return a string translation function for the current runtime. */
-export const getGT: (messages?: Message[]) => Promise<GTFunctionType> =
-  createIsomorphicFn()
-    .server((messages?: Message[]) => {
-      const conditionStore = getServerConditionStore();
-      return getGTInternal(
-        {
-          locale: conditionStore.getLocale(),
-          enableI18n: conditionStore.getEnableI18n(),
-        },
-        messages
-      );
-    })
-    .client((messages?: Message[]) => {
-      const conditionStore = getReadonlyConditionStore();
-      return getGTInternal(
-        {
-          locale: conditionStore.getLocale(),
-          enableI18n: conditionStore.getEnableI18n(),
-        },
-        messages
-      );
-    });
+export const getGT = (messages?: Message[]): Promise<GTFunctionType> =>
+  getGTInternal({ locale: getLocale(), enableI18n: getEnableI18n() }, messages);
 
 /** Return a registered-message translation function for the current runtime. */
-export const getMessages: () => Promise<MFunctionType> = createIsomorphicFn()
-  .server(() => {
-    const conditionStore = getServerConditionStore();
-    return getMessagesInternal({
-      locale: conditionStore.getLocale(),
-      enableI18n: conditionStore.getEnableI18n(),
-    });
-  })
-  .client(() => {
-    const conditionStore = getReadonlyConditionStore();
-    return getMessagesInternal({
-      locale: conditionStore.getLocale(),
-      enableI18n: conditionStore.getEnableI18n(),
-    });
-  });
+export const getMessages = (): Promise<MFunctionType> =>
+  getMessagesInternal({ locale: getLocale(), enableI18n: getEnableI18n() });
 
 /** Return a dictionary translation function for the current runtime. */
-export const getTranslations: (rootId?: string) => Promise<TFunctionType> =
-  createIsomorphicFn()
-    .server((rootId?: string) => {
-      const conditionStore = getServerConditionStore();
-      return getTranslationsInternal({
-        locale: conditionStore.getLocale(),
-        enableI18n: conditionStore.getEnableI18n(),
-        rootId,
-      });
-    })
-    .client((rootId?: string) => {
-      const conditionStore = getReadonlyConditionStore();
-      return getTranslationsInternal({
-        locale: conditionStore.getLocale(),
-        enableI18n: conditionStore.getEnableI18n(),
-        rootId,
-      });
-    });
+export const getTranslations = (rootId?: string): Promise<TFunctionType> =>
+  getTranslationsInternal({
+    locale: getLocale(),
+    enableI18n: getEnableI18n(),
+    rootId,
+  });
