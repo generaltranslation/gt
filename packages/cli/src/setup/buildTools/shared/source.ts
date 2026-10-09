@@ -1,8 +1,11 @@
 // Source-file reading and AST lookups shared by framework setups.
+import traverseModule, { type Binding } from '@babel/traverse';
 import * as t from '@babel/types';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseModule } from '../../setupViteSPA.js';
+
+const traverse = traverseModule.default || traverseModule;
 
 // Frameworks resolve entries by basename, so any of these may be the entry.
 const SOURCE_EXTENSIONS = ['.tsx', '.ts', '.jsx', '.js'];
@@ -121,6 +124,65 @@ export function findDeclaredFunction(
     }
   }
   return undefined;
+}
+
+/** The local name of a `* as` import from `source`. */
+export function getNamespaceImport(
+  file: SourceFile,
+  source: string
+): string | undefined {
+  for (const statement of file.statements ?? []) {
+    if (
+      statement.type !== 'ImportDeclaration' ||
+      statement.source.value !== source ||
+      statement.importKind === 'type'
+    ) {
+      continue;
+    }
+    for (const specifier of statement.specifiers) {
+      if (specifier.type === 'ImportNamespaceSpecifier') {
+        return specifier.local.name;
+      }
+    }
+  }
+  return undefined;
+}
+
+/** Whether `local` is called anywhere in the nodes. */
+export function callsFunction(
+  nodes: readonly (t.Node | null)[],
+  local: string
+): boolean {
+  let found = false;
+  for (const node of nodes) {
+    if (!node) continue;
+    t.traverseFast(node, (child) => {
+      if (
+        child.type === 'CallExpression' &&
+        t.isIdentifier(child.callee, { name: local })
+      ) {
+        found = true;
+      }
+    });
+  }
+  return found;
+}
+
+/** The binding `name` refers to at `target`. */
+export function getBindingAt(
+  statements: t.Statement[],
+  target: t.Node,
+  name: string
+): Binding | undefined {
+  let binding: Binding | undefined;
+  traverse(t.file(t.program(statements)), {
+    enter(path) {
+      if (path.node !== target) return;
+      binding = path.scope.getBinding(name);
+      path.stop();
+    },
+  });
+  return binding;
 }
 
 export function getPropertyName(
