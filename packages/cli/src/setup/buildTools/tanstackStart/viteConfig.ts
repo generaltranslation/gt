@@ -1,5 +1,4 @@
 // vite.config.*: the gtTanstackStart plugin in defineConfig's plugins.
-import traverseModule, { type Binding } from '@babel/traverse';
 import * as t from '@babel/types';
 import path from 'node:path';
 import { parseModule } from '../../setupViteSPA.js';
@@ -12,14 +11,13 @@ import {
 } from '../shared/edits.js';
 import {
   callsFunction,
+  getBindingAt,
   getLocalImport,
   getPropertyName,
   usesName,
   type SourceFile,
 } from '../shared/source.js';
 import { DOCS_URL, VITE_PLUGIN_SOURCE } from './source.js';
-
-const traverse = traverseModule.default || traverseModule;
 
 const VITE_PLUGIN = 'gtTanstackStart';
 // The plugin reads this config path, relative to the working directory, by default.
@@ -194,13 +192,7 @@ function getExportedConfig(statements: t.Statement[]): t.Node | undefined {
     (statement) => statement.type === 'ExportDefaultDeclaration'
   )?.declaration;
   if (exported?.type !== 'Identifier') return exported;
-  let binding: Binding | undefined;
-  traverse(t.file(t.program(statements)), {
-    Program(program) {
-      binding = program.scope.getBinding(exported.name);
-      program.stop();
-    },
-  });
+  const binding = getBindingAt(statements, exported, exported.name);
   // Any other use, such as `config.plugins = [...]`, could change what Vite
   // reads after the declaration.
   if (

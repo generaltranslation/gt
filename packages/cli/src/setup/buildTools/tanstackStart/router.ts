@@ -67,9 +67,7 @@ export function callsRouterIntegration(router: SourceFile): boolean {
       routers[0].type === 'ObjectProperty' &&
       t.isIdentifier(routers[0].value, { name: returned }) &&
       // A local binding could hide the import.
-      getBindingAt(statements, statement, local)?.kind === 'module' &&
-      getBindingAt(statements, statement, returned)?.identifier ===
-        routerBinding.identifier
+      getBindingAt(statements, statement, local)?.kind === 'module'
     );
   });
 }
