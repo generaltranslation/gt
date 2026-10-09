@@ -8,8 +8,10 @@ const {
   mockEnsureInitialized,
   mockGetTranslationsSnapshot,
   mockIsLocaleRouting,
+  mockLoadDictionary,
   mockProvider,
 } = vi.hoisted(() => ({
+  mockLoadDictionary: vi.fn(async (locale: string) => ({ greeting: locale })),
   mockConditionStore: {
     getLocale: vi.fn(() => 'fr'),
     getRegion: vi.fn(() => undefined),
@@ -27,6 +29,7 @@ const {
 vi.mock('gt-react', () => ({
   createOrUpdateBrowserConditionStore: mockCreateOrUpdateBrowserConditionStore,
   getTranslationsSnapshot: mockGetTranslationsSnapshot,
+  getReactI18nCache: () => ({ loadDictionary: mockLoadDictionary }),
 }));
 
 vi.mock('@generaltranslation/react-core/pure', async (importOriginal) => ({
@@ -86,6 +89,7 @@ const gtState = {
   region: 'TW',
   enableI18n: true,
   translations: {},
+  dictionaries: {},
 };
 
 describe.sequential('setupRouterGTIntegration client', () => {
@@ -192,6 +196,7 @@ describe.sequential('setupRouterGTIntegration client', () => {
       region: undefined,
       enableI18n: true,
       translations: { hello: 'bonjour' },
+      dictionaries: { fr: { greeting: 'fr' } },
       children: 'app',
     });
   });
@@ -212,7 +217,12 @@ describe.sequential('setupRouterGTIntegration client', () => {
     const appHydrate = vi.fn();
     const router = createRouter({ hydrate: appHydrate });
     setupRouterGTIntegration({ router });
-    const shellState = { locale: 'en', enableI18n: true, translations: {} };
+    const shellState = {
+      locale: 'en',
+      enableI18n: true,
+      translations: {},
+      dictionaries: {},
+    };
 
     await router.options.hydrate?.({ gt: { ...shellState, shell: true } });
 
@@ -229,6 +239,7 @@ describe.sequential('setupRouterGTIntegration client', () => {
       region: undefined,
       enableI18n: true,
       translations: { hello: 'bonjour' },
+      dictionaries: { fr: { greeting: 'fr' } },
     };
     expect(Wrap({ children: 'app' }).props.children.props).toEqual({
       Provider: mockProvider,

@@ -4,7 +4,8 @@ import {
   type ComponentType,
   type ReactNode,
 } from 'react';
-import { getTranslationsSnapshot } from 'gt-react';
+import { getI18nConfig } from '@generaltranslation/react-core/pure';
+import { getReactI18nCache, getTranslationsSnapshot } from 'gt-react';
 import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
 import type { GTRouterState } from './types';
 
@@ -17,11 +18,23 @@ export async function readGTRouterState(
   conditionStore: GTConditionSource
 ): Promise<GTRouterState> {
   const locale = conditionStore.getLocale();
+  const [translations, dictionaries] = await Promise.all([
+    getTranslationsSnapshot(locale),
+    // Dictionary reads only use loaded dictionaries, so the translated one is
+    // loaded before render, as gt-next's GTProvider does. Both sides already
+    // bundle the source dictionary, which serves the default locale.
+    locale === getI18nConfig().getDefaultLocale()
+      ? {}
+      : getReactI18nCache()
+          .loadDictionary(locale)
+          .then((dictionary) => ({ [locale]: dictionary })),
+  ]);
   return {
     locale,
     region: conditionStore.getRegion(),
     enableI18n: conditionStore.getEnableI18n(),
-    translations: await getTranslationsSnapshot(locale),
+    translations,
+    dictionaries,
   };
 }
 
