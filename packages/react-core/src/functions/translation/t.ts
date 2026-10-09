@@ -1,22 +1,31 @@
 import {
   createLookupOptions,
   getRuntimeEnvironment,
+  hashMessage,
   interpolateMessage,
 } from 'gt-i18n/internal';
 import type { GTTranslationOptions } from 'gt-i18n/types';
-import type { LookupOptionsFor } from 'gt-i18n/internal/types';
+import type {
+  LookupOptionsFor,
+  NormalizedLookupOptions,
+} from 'gt-i18n/internal/types';
 import { getI18nConfig } from '../../setup/i18nConfig';
 import {
   getReadonlyConditionStore,
   isReadonlyConditionStoreInitialized,
 } from '../../condition-store/singleton-operations';
 import { StringContent, StringFormat } from 'generaltranslation/types';
-import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 import { getShouldTranslate } from '../../hooks/utils/getShouldTranslate';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { getGlobalTranslationsSnapshot } from '../../translations-snapshot/singleton-operations';
+import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 
 /**
  * Translate a message
+ *
+ * Only supported in single-page apps (SPA). Not supported in server-rendered
+ * apps; use `useGT()` there instead.
+ *
  * @param {string} message - The message to translate.
  * @param {GTTranslationOptions} [options] - The options for the translation.
  * @returns {string} The translated message.
@@ -60,7 +69,6 @@ export function resolveStringContent(
   content: StringContent,
   options: LookupOptionsFor<StringFormat> = {}
 ): StringContent {
-  const i18nCache = getReactI18nCache();
   const defaultLocale = getI18nConfig().getDefaultLocale();
   if (!getShouldTranslate()) {
     return interpolateMessage({
@@ -71,11 +79,11 @@ export function resolveStringContent(
   }
 
   const lookupOptions = createLookupOptions(locale, options, 'ICU');
-  const translation = i18nCache.lookupTranslation(
-    lookupOptions.$locale,
-    content,
-    lookupOptions
-  );
+  const translation = lookupTranslation({
+    message: content,
+    options: lookupOptions,
+  });
+
   return interpolateMessage({
     source: content,
     target: translation,
@@ -106,12 +114,10 @@ function handleTaggedTemplateLiteralTranslation(
     messageOrStrings,
     values
   );
-  const i18nCache = getReactI18nCache();
-  const translatedInterpolatedTemplate = i18nCache.lookupTranslation(
-    locale,
-    interpolatedTemplate,
-    { $format: 'STRING' }
-  );
+  const translatedInterpolatedTemplate = lookupTranslation({
+    message: interpolatedTemplate,
+    options: { $format: 'STRING', $locale: locale },
+  });
   if (translatedInterpolatedTemplate) return translatedInterpolatedTemplate;
 
   // (2) resolve uninterpolated message
@@ -237,3 +243,22 @@ type TemplateSyncResolutionFunction = (
   strings: TemplateStringsArray,
   ...values: unknown[]
 ) => string;
+
+function lookupTranslation({
+  message,
+  options,
+}: {
+  message: string;
+  options: NormalizedLookupOptions<StringFormat>;
+}) {
+  if (process.env.NODE_ENV === 'production') {
+    const translationsSnapshot = getGlobalTranslationsSnapshot();
+    const translation = translationsSnapshot[options.$locale]?.[
+      options.$_hash ?? hashMessage(message, options)
+    ] as string | undefined;
+    return translation;
+  } else {
+    const i18nCache = getReactI18nCache();
+    return i18nCache.lookupTranslation(options.$locale, message, options);
+  }
+}
