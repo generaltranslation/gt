@@ -133,6 +133,15 @@ function encodeInline(node: LexicalNode, state: EncodeState): boolean {
   return true;
 }
 
+// Whether an element's inline content holds any nonblank text.
+export function hasInlineText(element: LexicalNode): boolean {
+  return (element.children ?? []).some((child) =>
+    child.type === 'text'
+      ? String(child.text ?? '').trim() !== ''
+      : hasInlineText(child)
+  );
+}
+
 export function isInlineNode(node: LexicalNode): boolean {
   return (
     ['text', 'linebreak', 'tab'].includes(node.type) ||

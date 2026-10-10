@@ -16,7 +16,7 @@ import {
 } from './content/file';
 import { walkFields } from './content/fields';
 import { readPlainText } from './content/html';
-import { decodeElement, encodeElement } from './content/inline';
+import { decodeElement, encodeElement, hasInlineText } from './content/inline';
 import { createGtPayloadDiagnostic } from './diagnostics';
 import { fitToLimits, type OverLimit } from './limits';
 import { targetKey } from './targets';
@@ -454,11 +454,12 @@ async function applyTranslation(
         // With saveLocalEdits, an edit that could not be saved is kept.
         if (
           batch.keepEdits &&
-          current?.children?.length &&
+          current &&
+          hasInlineText(current) &&
           encodeElement(current, encoded) === null
         ) {
           kept.add(key);
-          return undefined;
+          return structuredClone(current.children);
         }
         const html = translations.get(fileKey(key));
         if (html === undefined) return undefined;

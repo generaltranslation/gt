@@ -11,7 +11,7 @@ import {
   type HtmlParent,
 } from './html';
 import type { Data } from '../types';
-import { encodeElement } from './inline';
+import { encodeElement, hasInlineText } from './inline';
 
 export type Unit = {
   key: string;
@@ -63,7 +63,8 @@ export function collectUnits(
           source: encoded.html,
           target: currentEncoded?.html || undefined,
           ...(currentEncoded === null &&
-            (current?.children ?? []).length > 0 && { unsaved: true as const }),
+            current &&
+            hasInlineText(current) && { unsaved: true as const }),
         });
         return undefined;
       },

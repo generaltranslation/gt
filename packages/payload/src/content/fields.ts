@@ -532,16 +532,28 @@ function walkNode(
   if (node.type === 'block' && isData(node.fields)) {
     const fields = richTextBlockFields(field, node.fields.blockType);
     if (!fields) return false;
+    const targetFields = isData(sameTarget?.fields)
+      ? sameTarget.fields
+      : undefined;
     const walked = walkFields(
       fields,
       node.fields,
-      isData(sameTarget?.fields) ? sameTarget.fields : undefined,
+      targetFields,
       `${key}#${path}`,
       true,
       visitor,
       ctx
     );
-    if (walked.changed) node.fields = { ...node.fields, ...walked.value };
+    // Fields the walk left alone keep the locale's own values, as in a
+    // locale's group or row.
+    const sourceFields: Data = node.fields;
+    const kept = Object.fromEntries(
+      Object.entries(targetFields ?? {}).filter(
+        ([name, value]) =>
+          name !== 'id' && name in sourceFields && !isEmpty(value)
+      )
+    );
+    node.fields = { ...sourceFields, ...clone(kept), ...walked.value };
     return walked.changed;
   }
   if (isTextElement(node)) {
