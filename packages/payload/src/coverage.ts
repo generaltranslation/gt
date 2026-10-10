@@ -91,7 +91,9 @@ export async function siteCoverage({
             return [
               locale,
               coverageOf(
-                units.filter((unit) => unit.target !== undefined).length,
+                units.filter(
+                  (unit) => unit.target !== undefined || unit.unsaved
+                ).length,
                 total
               ),
             ];

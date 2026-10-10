@@ -321,6 +321,7 @@ async function finishReady(
     const documents = await finishTranslation({
       payload,
       gt,
+      saveLocalEdits: run.saveLocalEdits,
       jobs: held.flatMap((h) => h.jobs),
       statuses,
       user,
@@ -356,7 +357,17 @@ export async function stepRun({
     };
   // Kept while the step runs, however long it takes.
   const renewal = setInterval(
-    () => void renewLock(payload, lock, token, LEASE_MS),
+    () =>
+      void renewLock(payload, lock, token, LEASE_MS).catch((error: unknown) =>
+        payload.logger.warn(
+          createGtPayloadDiagnostic({
+            severity: 'Warning',
+            whatHappened: 'Could not renew a translation run lock',
+            reassurance: 'The step checks the lock again before saving',
+            details: formatDiagnosticErrorDetails(error),
+          })
+        )
+      ),
     LEASE_MS / 4
   );
   try {

@@ -27,7 +27,10 @@ export type SkippedReason =
   // A link or format did not come back, or an unexpected tag did.
   | 'broken_markup'
   // The translation has no value for it.
-  | 'missing';
+  | 'missing'
+  // The locale's edit to it could not be saved to GT, as its links differ
+  // from the source's, so it was kept rather than replaced.
+  | 'unsaved_edit';
 
 export type SkippedString = { key: string; reason: SkippedReason };
 

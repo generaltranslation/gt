@@ -16,7 +16,7 @@ import {
 } from './content/file';
 import { walkFields } from './content/fields';
 import { readPlainText } from './content/html';
-import { decodeElement } from './content/inline';
+import { decodeElement, encodeElement } from './content/inline';
 import { createGtPayloadDiagnostic } from './diagnostics';
 import { fitToLimits, type OverLimit } from './limits';
 import { targetKey } from './targets';
@@ -112,6 +112,9 @@ type Batch = {
   sourceLocale: string;
   locales: string[];
   access: Access;
+  // Set with saveLocalEdits: locale edits that could not be saved to GT are
+  // kept instead of replaced.
+  keepEdits: boolean;
 };
 
 const FILE_FORMAT = 'HTML' as const;
@@ -139,7 +142,8 @@ function batchFor(
   payload: Payload,
   gt: GtClient,
   locales: string[],
-  access: Access
+  access: Access,
+  keepEdits = false
 ): Batch {
   const sourceLocale = sourceLocaleOf(payload);
   return {
@@ -148,6 +152,7 @@ function batchFor(
     sourceLocale,
     locales: [...new Set(locales)].filter((l) => l !== sourceLocale),
     access,
+    keepEdits,
   };
 }
 
@@ -355,16 +360,18 @@ function skippedFor(
   units: Unit[],
   translations: Map<string, string>,
   applied: Set<string>,
-  broken: Set<string>
+  broken: Set<string>,
+  kept: Set<string>
 ): SkippedString[] {
-  const used = new Set([...applied, ...broken].map(fileKey));
+  const used = new Set([...applied, ...broken, ...kept].map(fileKey));
   return [
     ...[...broken].map((key) => ({ key, reason: 'broken_markup' as const })),
+    ...[...kept].map((key) => ({ key, reason: 'unsaved_edit' as const })),
     ...[...translations.keys()]
       .filter((key) => !used.has(key))
       .map((key) => ({ key, reason: 'removed' as const })),
     ...units
-      .filter((u) => !translations.has(fileKey(u.key)))
+      .filter((u) => !translations.has(fileKey(u.key)) && !kept.has(u.key))
       .map((u) => ({ key: u.key, reason: 'missing' as const })),
   ];
 }
@@ -390,6 +397,7 @@ async function applyTranslation(
   const ctx = fieldContext(batch.payload);
   const applied = new Set<string>();
   const broken = new Set<string>();
+  const kept = new Set<string>();
   const plainText = (key: string) => {
     const html = translations.get(fileKey(key));
     return html === undefined ? undefined : readPlainText(html);
@@ -442,7 +450,16 @@ async function applyTranslation(
         else applied.add(key);
         return text ?? undefined;
       },
-      element(key, encoded) {
+      element(key, encoded, current) {
+        // With saveLocalEdits, an edit that could not be saved is kept.
+        if (
+          batch.keepEdits &&
+          current?.children?.length &&
+          encodeElement(current, encoded) === null
+        ) {
+          kept.add(key);
+          return undefined;
+        }
         const html = translations.get(fileKey(key));
         if (html === undefined) return undefined;
         const decoded = decodeElement(html, encoded);
@@ -468,7 +485,7 @@ async function applyTranslation(
   return {
     status: 'applied',
     applied: [...applied],
-    skipped: skippedFor(sent, translations, applied, broken),
+    skipped: skippedFor(sent, translations, applied, broken, kept),
   };
 }
 
@@ -608,16 +625,23 @@ export async function finishTranslation({
   gt,
   jobs,
   statuses,
+  saveLocalEdits = false,
   user,
 }: {
   payload: Payload;
   gt: GtClient;
   jobs: TranslationJob[];
   statuses: JobStatus[];
+  // Keep locale edits that saveLocalEdits could not send.
+  saveLocalEdits?: boolean;
 } & Access): Promise<DocumentResult<TranslateResult>[]> {
-  const batch = batchFor(payload, gt, [...new Set(jobs.map((j) => j.locale))], {
-    user,
-  });
+  const batch = batchFor(
+    payload,
+    gt,
+    [...new Set(jobs.map((j) => j.locale))],
+    { user },
+    saveLocalEdits
+  );
   const status = new Map<string | undefined, JobStatus>(
     statuses.map((s) => [s.jobId, s])
   );
