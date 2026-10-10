@@ -1,0 +1,1 @@
+export { GtTranslationsView } from './GtTranslationsView';
