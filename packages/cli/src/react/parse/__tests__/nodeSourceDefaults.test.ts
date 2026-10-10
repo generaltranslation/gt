@@ -1,0 +1,115 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { createInlineUpdates } from '../createInlineUpdates.js';
+import { GT_PARSING_FLAGS_DEFAULT } from '../../../config/defaults.js';
+import { Libraries } from '../../../types/libraries.js';
+
+const parsingOptions = { conditionNames: ['import', 'default'] };
+
+function writeHandler(file: string, text: string) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(
+    file,
+    `import { getGT } from 'gt-node';
+
+export async function handler() {
+  const gt = await getGT();
+  return gt('${text}');
+}
+`
+  );
+}
+
+describe('createInlineUpdates default source scope for gt-node', () => {
+  let originalCwd: string;
+  let tmpDir: string;
+
+  beforeEach(() => {
+    originalCwd = process.cwd();
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-node-src-'));
+    process.chdir(tmpDir);
+  });
+
+  afterEach(() => {
+    process.chdir(originalCwd);
+    if (fs.existsSync(path.join(tmpDir, 'pgdata'))) {
+      fs.chmodSync(path.join(tmpDir, 'pgdata'), 0o755);
+    }
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('scans root and nested files, but not dependencies, build output, public files or tests', async () => {
+    writeHandler('server.js', 'From the root');
+    writeHandler('routes/users.mjs', 'From a route');
+    writeHandler('src/app.ts', 'From src');
+    writeHandler('node_modules/dep/index.js', 'From a dependency');
+    writeHandler('dist/server.js', 'From build output');
+    writeHandler('public/app.js', 'From a public file');
+    writeHandler('server.test.js', 'From a test');
+    writeHandler('__tests__/server.js', 'From a test folder');
+    writeHandler('test/server.js', 'From a test runner folder');
+    writeHandler('services/api/dist/server.js', 'From nested build output');
+
+    const { updates } = await createInlineUpdates(
+      Libraries.GT_NODE,
+      false,
+      undefined,
+      GT_PARSING_FLAGS_DEFAULT,
+      parsingOptions
+    );
+
+    expect(updates.map((update) => update.source).sort()).toEqual([
+      'From a route',
+      'From src',
+      'From the root',
+    ]);
+  });
+
+  it('skips folders it cannot read and parses CommonJS scripts', async () => {
+    writeHandler('server.js', 'From the root');
+    fs.writeFileSync(
+      'migrate.cjs',
+      `const { getGT } = require('gt-node');
+if (!process.env.DATABASE_URL) return;
+async function main() {
+  const gt = await getGT();
+  return gt('From a CommonJS script');
+}
+main();
+`
+    );
+    // A database volume owned by another user, as Docker leaves it.
+    fs.mkdirSync('pgdata/base', { recursive: true });
+    fs.chmodSync('pgdata', 0o000);
+
+    const { updates, errors } = await createInlineUpdates(
+      Libraries.GT_NODE,
+      false,
+      undefined,
+      GT_PARSING_FLAGS_DEFAULT,
+      parsingOptions
+    );
+
+    expect(errors).toEqual([]);
+    expect(updates.map((update) => update.source).sort()).toEqual([
+      'From a CommonJS script',
+      'From the root',
+    ]);
+  });
+
+  it('keeps the React default scope for other libraries', async () => {
+    writeHandler('server.js', 'From the root');
+
+    const { updates } = await createInlineUpdates(
+      Libraries.GT_REACT,
+      false,
+      undefined,
+      GT_PARSING_FLAGS_DEFAULT,
+      parsingOptions
+    );
+
+    expect(updates).toEqual([]);
+  });
+});
