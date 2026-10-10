@@ -64,6 +64,9 @@ export function testConfig(
 ) {
   return buildConfig({
     secret: 'test-secret',
+    // Payload otherwise starts a type generation process per instance that
+    // outlives the test run.
+    typescript: { autoGenerate: false },
     db: sqliteAdapter({ client: { url: ':memory:' } }),
     editor: lexicalEditor(),
     localization: localization
