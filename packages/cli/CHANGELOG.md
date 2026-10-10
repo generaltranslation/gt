@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.26.1
+
+### Patch Changes
+
+- [#2426](https://github.com/generaltranslation/gt/pull/2426) [`01f8a21`](https://github.com/generaltranslation/gt/commit/01f8a21cd2abdf1945e172e57344b0b98cec8311) Thanks [@brian-lou](https://github.com/brian-lou)! - `GT_API_URL` now sets the API that every command sends requests to, overriding `baseUrl` in gt.config.json, as it already did for `gt auth login`.
+
 ## 2.26.0
 
 ### Minor Changes
