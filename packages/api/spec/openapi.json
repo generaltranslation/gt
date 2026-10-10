@@ -330,9 +330,12 @@
           },
           "name": {
             "type": "string"
+          },
+          "autoUpdate": {
+            "type": "boolean"
           }
         },
-        "required": ["id", "name"]
+        "required": ["id", "name", "autoUpdate"]
       },
       "CreateCliWizardSessionResponse": {
         "type": "object",
@@ -12485,9 +12488,12 @@
                     "minLength": 1,
                     "maxLength": 255,
                     "description": "New group name, 1–255 characters."
+                  },
+                  "autoUpdate": {
+                    "type": "boolean",
+                    "description": "Whether translation runs may add terms and context to this group automatically."
                   }
                 },
-                "required": ["name"],
                 "additionalProperties": false
               }
             }
