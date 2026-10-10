@@ -1,5 +1,6 @@
 // What the plugin adds to a Payload config.
 import { describe, expect, it } from 'vitest';
+import { hasTranslatableFields } from '../content/fields';
 import { gtPlugin } from '../plugin';
 import { testConfig } from './support/createTestPayload';
 import { FakeGt } from './support/fakeGt';
@@ -48,5 +49,21 @@ describe('gtPlugin config', () => {
         slug
       ).toContain('gt-payload/client#GtDocumentControls');
     }
+  });
+
+  it('loads a config with a block that can hold itself', async () => {
+    const config = await testConfig([gtPlugin({ client: new FakeGt() })], {
+      recursiveBlocks: true,
+    });
+    const trees = config.collections.find((c) => c.slug === 'trees');
+
+    expect(trees?.admin.components?.edit?.beforeDocumentControls).toContain(
+      'gt-payload/client#GtDocumentControls'
+    );
+    expect(
+      hasTranslatableFields(trees!.flattenedFields, {
+        blocks: config.blocks ?? [],
+      })
+    ).toBe(true);
   });
 });

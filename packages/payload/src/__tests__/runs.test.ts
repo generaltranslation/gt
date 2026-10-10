@@ -11,7 +11,7 @@ import {
   it,
   vi,
 } from 'vitest';
-import { acquireLock } from '../locks';
+import { acquireLock, releaseLock } from '../locks';
 import { gtPlugin } from '../plugin';
 import {
   RUNS_SLUG,
@@ -259,5 +259,55 @@ describe('runs', () => {
 
     expect(takenOver).toBeTruthy();
     expect(await readRun(run.id)).toMatchObject({ status: 'running', done: 0 });
+  });
+
+  it('clears removed text only while holding the document, like other saves', async () => {
+    const media = await payload.create({
+      collection: 'media',
+      locale: 'en',
+      data: { alt: 'Photo' },
+    });
+    const target = { collection: 'media', id: media.id };
+    const first = await startRun({
+      payload,
+      kind: 'translate',
+      targets: [target],
+      locales: ['es'],
+    });
+    await stepUntilDone(first.id);
+    await payload.update({
+      collection: 'media',
+      id: media.id,
+      locale: 'en',
+      data: { alt: '' },
+    });
+    const token = await acquireLock(
+      payload,
+      `document:media:${media.id}`,
+      60_000
+    );
+    const run = await startRun({
+      payload,
+      kind: 'translate',
+      targets: [target],
+      locales: ['es'],
+    });
+    for (let i = 0; i < 3; i += 1) await stepRun({ payload, gt, id: run.id });
+    const esAlt = async () =>
+      (
+        await payload.findByID({
+          collection: 'media',
+          id: media.id,
+          locale: 'es',
+          fallbackLocale: false,
+          depth: 0,
+        })
+      ).alt;
+
+    expect(await esAlt()).toBe('PHOTO');
+    expect(await readRun(run.id)).toMatchObject({ status: 'running' });
+    await releaseLock(payload, `document:media:${media.id}`, token!);
+    await stepUntilDone(run.id);
+    expect((await esAlt()) || null).toBeNull();
   });
 });

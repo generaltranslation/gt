@@ -5,7 +5,7 @@ import {
   lexicalEditor,
 } from '@payloadcms/richtext-lexical';
 import { buildConfig, getPayload, slugField } from 'payload';
-import type { Field, Payload, Plugin } from 'payload';
+import type { Block, CollectionConfig, Field, Payload, Plugin } from 'payload';
 
 // A link as Payload's website template defines it: a URL and a label. A new
 // object per use, since Payload's config setup changes nested fields.
@@ -17,6 +17,26 @@ const link = (): Field => ({
     { name: 'label', type: 'text', localized: true },
   ],
 });
+
+// A block that can hold itself, and a collection with text only inside it.
+const NESTED_BLOCK: Block = {
+  slug: 'nested',
+  fields: [
+    {
+      name: 'children',
+      type: 'blocks',
+      blocks: [],
+      blockReferences: ['nested'],
+    },
+    { name: 'title', type: 'text', localized: true },
+  ],
+};
+const TREES: CollectionConfig = {
+  slug: 'trees',
+  fields: [
+    { name: 'root', type: 'blocks', blocks: [], blockReferences: ['nested'] },
+  ],
+};
 
 // Emails of users who may read notices but not update them.
 export const LOCKED_OUT = new Set<string>();
@@ -33,7 +53,14 @@ export function testConfig(
   {
     defaultLocale = 'en',
     localization = true,
-  }: { defaultLocale?: string; localization?: boolean } = {}
+    recursiveBlocks = false,
+  }: {
+    defaultLocale?: string;
+    localization?: boolean;
+    // Adds a block that can hold itself, which Payload's SQL adapters cannot
+    // store, so only for configs that never open a database.
+    recursiveBlocks?: boolean;
+  } = {}
 ) {
   return buildConfig({
     secret: 'test-secret',
@@ -245,6 +272,20 @@ export function testConfig(
           },
         ],
       },
+      ...(recursiveBlocks ? [TREES] : []),
+      {
+        // Readable and editable while the latest draft is marked editable.
+        slug: 'memos',
+        versions: { drafts: true },
+        access: {
+          read: () => ({ editable: { equals: true } }),
+          update: () => ({ editable: { equals: true } }),
+        },
+        fields: [
+          { name: 'editable', type: 'checkbox' },
+          { name: 'note', type: 'text', localized: true },
+        ],
+      },
       {
         // Editors in LOCKED_OUT can read these but not change them.
         slug: 'notices',
@@ -276,6 +317,7 @@ export function testConfig(
         slug: 'quote',
         fields: [{ name: 'text', type: 'text', localized: true }],
       },
+      ...(recursiveBlocks ? [NESTED_BLOCK] : []),
     ],
     globals: [
       {

@@ -259,4 +259,51 @@ describe('gtPlugin endpoints', () => {
     });
     expect(es.message ?? null).toBeNull();
   });
+
+  it("checks permission against the latest draft, as Payload's own update does", async () => {
+    const memo = await payload.create({
+      collection: 'memos',
+      locale: 'en',
+      data: { editable: false, note: 'Hello', _status: 'published' },
+    });
+    await payload.update({
+      collection: 'memos',
+      id: memo.id,
+      locale: 'en',
+      draft: true,
+      data: { editable: true },
+    });
+    const { status } = await call('/gt/runs', {
+      targets: [{ collection: 'memos', id: memo.id }],
+      locales: ['es'],
+    });
+
+    expect(status).toBe(200);
+  });
+
+  it('lists in coverage the drafts the user can read', async () => {
+    const memo = await payload.create({
+      collection: 'memos',
+      locale: 'en',
+      data: { editable: false, note: 'Hi', _status: 'published' },
+    });
+    await payload.update({
+      collection: 'memos',
+      id: memo.id,
+      locale: 'en',
+      draft: true,
+      data: { editable: true },
+    });
+    const listed: unknown[] = [];
+    for (let page = 1; ; page += 1) {
+      const { json } = await call<CoveragePage>('/gt/coverage', {
+        page,
+        limit: 100,
+      });
+      listed.push(...json.documents.map((d) => d.target));
+      if (page >= json.totalPages) break;
+    }
+
+    expect(listed).toContainEqual({ collection: 'memos', id: memo.id });
+  });
 });
