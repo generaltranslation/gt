@@ -418,6 +418,27 @@ describe('generateSettings - composite patterns', () => {
     });
   });
 
+  it('sends requests to GT_API_URL over the configured base URL', async () => {
+    mockResolveConfig.mockReturnValue({
+      config: { baseUrl: 'https://configured.example' },
+      path: '/test/gt.config.json',
+    });
+    expect((await generateSettings({}, '/test/cwd')).baseUrl).toBe(
+      'https://configured.example'
+    );
+
+    vi.stubEnv('GT_API_URL', 'https://staging.example');
+    try {
+      const settings = await generateSettings({}, '/test/cwd');
+      expect(settings.baseUrl).toBe('https://staging.example');
+      expect(vi.mocked(createUserTokenProvider)).toHaveBeenLastCalledWith({
+        baseUrl: 'https://staging.example',
+      });
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it('should not call resolveFiles when files are not provided', async () => {
     const options = {
       options: {
