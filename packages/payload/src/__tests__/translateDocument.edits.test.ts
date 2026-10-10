@@ -291,4 +291,45 @@ describe('translateDocument: edits made in Payload', () => {
       false
     );
   });
+
+  it('keeps an edit it could not save when saving local edits before translating', async () => {
+    const page = await createPage(payload);
+    const gt = new FakeGt();
+    const target = { collection: 'pages', id: page.id };
+    await translateDocument({ payload, gt, target, locales: ['es'] });
+    const es = await read(page.id, 'es');
+    const edited = paragraph(
+      text('Lee la documentación o visita '),
+      link('https://example.com', text('nuestro sitio')),
+      text('.')
+    );
+    await editSpanish(page.id, {
+      hero: {
+        ...es.hero,
+        richText: richText(
+          (es.hero?.richText?.root.children[0] ?? paragraph()) as Record<
+            string,
+            unknown
+          >,
+          edited
+        ),
+      },
+    });
+    const result = await translateDocument({
+      payload,
+      gt,
+      target,
+      locales: ['es'],
+      saveLocalEdits: true,
+    });
+
+    expect(plainText((await read(page.id, 'es')).hero?.richText)).toContain(
+      'Lee la documentación o visita '
+    );
+    expect(result.locales.es).toMatchObject({ status: 'applied' });
+    if (result.locales.es?.status === 'applied')
+      expect(result.locales.es.skipped.map((s) => s.reason)).toContain(
+        'unsaved_edit'
+      );
+  });
 });

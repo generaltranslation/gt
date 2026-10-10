@@ -323,4 +323,27 @@ describe('runs', () => {
 
     expect(await readRun(run.id)).toMatchObject({ status: 'done', done: 1 });
   });
+
+  it('survives a failed lock renewal during a long step', async () => {
+    const { run } = await startPage();
+    await stepRun({ payload, gt, id: run.id });
+    const rejections: unknown[] = [];
+    const onRejection = (reason: unknown) => rejections.push(reason);
+    process.on('unhandledRejection', onRejection);
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    const updateMany = vi
+      .spyOn(payload.db, 'updateMany')
+      .mockRejectedValueOnce(new Error('database unavailable'));
+    gt.duringTranslation = async () => {
+      await vi.advanceTimersByTimeAsync(31_000);
+    };
+    const step = await stepRun({ payload, gt, id: run.id });
+    gt.duringTranslation = null;
+    updateMany.mockRestore();
+    await new Promise((resolve) => setImmediate(resolve));
+    process.off('unhandledRejection', onRejection);
+
+    expect(rejections).toEqual([]);
+    expect(step.progress).toMatchObject({ status: 'done', done: 1 });
+  });
 });

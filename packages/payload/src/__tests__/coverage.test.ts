@@ -8,6 +8,7 @@ import type { TranslateTarget } from '../types';
 import { createTestPayload } from './support/createTestPayload';
 import { FakeGt } from './support/fakeGt';
 import { createPage, setHeader } from './support/fixtures';
+import { link, paragraph, richText, text } from './support/lexical';
 
 let payload: Payload;
 
@@ -163,5 +164,48 @@ describe('siteCoverage', () => {
     find.mockRestore();
 
     expect(unbounded).toEqual([]);
+  });
+
+  it('counts a translated paragraph whose links were changed as translated', async () => {
+    const page = await createPage(payload);
+    await translateDocument({
+      payload,
+      gt: new FakeGt(),
+      target: pageTarget(page.id),
+      locales: ['es'],
+    });
+    const es = await payload.findByID({
+      collection: 'pages',
+      id: page.id,
+      locale: 'es',
+      draft: true,
+      fallbackLocale: false,
+      depth: 0,
+    });
+    await payload.update({
+      collection: 'pages',
+      id: page.id,
+      locale: 'es',
+      draft: true,
+      data: {
+        hero: {
+          ...es.hero,
+          richText: richText(
+            (es.hero?.richText?.root.children[0] ?? paragraph()) as Record<
+              string,
+              unknown
+            >,
+            paragraph(
+              text('Lee o visita '),
+              link('https://example.org', text('otro sitio'))
+            )
+          ),
+        },
+      },
+    });
+
+    expect((await coverageOf(pageTarget(page.id)))?.locales.es).toBe(
+      'complete'
+    );
   });
 });
