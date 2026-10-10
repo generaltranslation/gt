@@ -208,4 +208,42 @@ describe('siteCoverage', () => {
       'complete'
     );
   });
+
+  it('counts an emptied paragraph as missing even though the source has a link there', async () => {
+    const page = await createPage(payload);
+    await translateDocument({
+      payload,
+      gt: new FakeGt(),
+      target: pageTarget(page.id),
+      locales: ['es'],
+    });
+    const es = await payload.findByID({
+      collection: 'pages',
+      id: page.id,
+      locale: 'es',
+      draft: true,
+      fallbackLocale: false,
+      depth: 0,
+    });
+    await payload.update({
+      collection: 'pages',
+      id: page.id,
+      locale: 'es',
+      draft: true,
+      data: {
+        hero: {
+          ...es.hero,
+          richText: richText(
+            (es.hero?.richText?.root.children[0] ?? paragraph()) as Record<
+              string,
+              unknown
+            >,
+            paragraph(text(''))
+          ),
+        },
+      },
+    });
+
+    expect((await coverageOf(pageTarget(page.id)))?.locales.es).toBe('partial');
+  });
 });

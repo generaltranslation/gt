@@ -9,6 +9,7 @@ import { FakeGt, readKeyedHtml } from './support/fakeGt';
 import { createPage } from './support/fixtures';
 import {
   BOLD,
+  block,
   heading,
   link,
   paragraph,
@@ -331,5 +332,71 @@ describe('translateDocument: edits made in Payload', () => {
       expect(result.locales.es.skipped.map((s) => s.reason)).toContain(
         'unsaved_edit'
       );
+  });
+
+  it('keeps an unsaved edit inside a block while translating text outside it', async () => {
+    const page = await createPage(payload);
+    const gt = new FakeGt();
+    const target = { collection: 'pages', id: page.id };
+    const banner = (content: Record<string, unknown>) =>
+      block('banner', { content: richText(content) });
+    await payload.update({
+      collection: 'pages',
+      id: page.id,
+      locale: 'en',
+      draft: true,
+      data: {
+        body: richText(
+          banner(
+            paragraph(text('Read '), link('/docs', text('documentation')))
+          ),
+          paragraph(text('Outside'))
+        ),
+      },
+    });
+    await translateDocument({ payload, gt, target, locales: ['es'] });
+    const es = await read(page.id, 'es');
+    const esBanner = es.body!.root.children[0] as {
+      fields: Record<string, unknown>;
+    };
+    await editSpanish(page.id, {
+      body: richText(
+        {
+          ...esBanner,
+          fields: {
+            ...esBanner.fields,
+            content: richText(
+              paragraph(
+                text('Mi texto local '),
+                link('/es/docs', text('documentos'))
+              )
+            ),
+          },
+        },
+        paragraph(text('FUERA'))
+      ),
+    });
+    await payload.update({
+      collection: 'pages',
+      id: page.id,
+      locale: 'en',
+      draft: true,
+      data: { title: 'Home page' },
+    });
+    await translateDocument({
+      payload,
+      gt,
+      target,
+      locales: ['es'],
+      saveLocalEdits: true,
+    });
+
+    const body = (await read(page.id, 'es')).body!;
+    const content = (
+      body.root.children[0] as {
+        fields: { content: Parameters<typeof plainText>[0] };
+      }
+    ).fields.content;
+    expect(plainText(content)).toEqual(['Mi texto local ', 'documentos']);
   });
 });
