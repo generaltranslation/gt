@@ -40,6 +40,8 @@ const TREES: CollectionConfig = {
 
 // Emails of users who may read notices but not update them.
 export const LOCKED_OUT = new Set<string>();
+// Emails of users who may not read notices.
+export const CANNOT_READ = new Set<string>();
 
 // The SEO plugin's meta title and description fields render with these.
 const SEO_TITLE = '@payloadcms/plugin-seo/client#MetaTitleComponent';
@@ -277,6 +279,16 @@ export function testConfig(
       },
       ...(recursiveBlocks ? [TREES] : []),
       {
+        // Editors may save drafts but not change a published document.
+        slug: 'gated',
+        versions: { drafts: true },
+        access: {
+          read: () => true,
+          update: ({ data }) => data?._status !== 'published',
+        },
+        fields: [{ name: 'note', type: 'text', localized: true }],
+      },
+      {
         // Readable and editable while the latest draft is marked editable.
         slug: 'memos',
         versions: { drafts: true },
@@ -293,7 +305,7 @@ export function testConfig(
         // Editors in LOCKED_OUT can read these but not change them.
         slug: 'notices',
         access: {
-          read: () => true,
+          read: ({ req }) => !CANNOT_READ.has(String(req.user?.email)),
           update: ({ req }) => !LOCKED_OUT.has(String(req.user?.email)),
         },
         fields: [{ name: 'message', type: 'text', localized: true }],

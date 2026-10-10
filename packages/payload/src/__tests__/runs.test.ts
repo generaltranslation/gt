@@ -310,4 +310,17 @@ describe('runs', () => {
     await stepUntilDone(run.id);
     expect((await esAlt()) || null).toBeNull();
   });
+
+  it('keeps the progress of a step that ran past its lock when nobody took over', async () => {
+    const { run } = await startPage();
+    await stepRun({ payload, gt, id: run.id });
+    vi.useFakeTimers({ toFake: ['Date'] });
+    gt.duringTranslation = async () => {
+      vi.setSystemTime(Date.now() + 10 * 60_000);
+    };
+    await stepRun({ payload, gt, id: run.id });
+    gt.duringTranslation = null;
+
+    expect(await readRun(run.id)).toMatchObject({ status: 'done', done: 1 });
+  });
 });

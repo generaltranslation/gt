@@ -7,7 +7,15 @@ import { saveTranslations, translateDocument } from '../translation';
 import { createTestPayload } from './support/createTestPayload';
 import { FakeGt, readKeyedHtml } from './support/fakeGt';
 import { createPage } from './support/fixtures';
-import { BOLD, link, paragraph, richText, text } from './support/lexical';
+import {
+  BOLD,
+  heading,
+  link,
+  paragraph,
+  plainText,
+  richText,
+  text,
+} from './support/lexical';
 
 let payload: Payload;
 
@@ -174,7 +182,79 @@ describe('translateDocument: edits made in Payload', () => {
     expect(saved).toContain('<a data-gt-link-0=""><strong>DOCS</strong></a>');
   });
 
-  it('saves an edited paragraph whose text styling no longer matches the source', async () => {
+  it('saves an edited heading whose text styling no longer matches the source', async () => {
+    const page = await createPage(payload);
+    const gt = new FakeGt();
+    const target = { collection: 'pages', id: page.id };
+    await translateDocument({ payload, gt, target, locales: ['es'] });
+    const es = await read(page.id, 'es');
+    await editSpanish(page.id, {
+      hero: {
+        ...es.hero,
+        richText: richText(
+          heading('h1', { ...text('Bienvenidos a casa'), style: 'color: red' }),
+          (es.hero?.richText?.root.children[1] ?? paragraph()) as Record<
+            string,
+            unknown
+          >
+        ),
+      },
+    });
+    await saveTranslations({ payload, gt, target, locales: ['es'] });
+
+    const values = [
+      ...readKeyedHtml(gt.uploadedTranslations.at(-1)!.content).values(),
+    ];
+    expect(values).toContain('Bienvenidos a casa');
+  });
+
+  it('restores a saved edit whose text styling differs from the source', async () => {
+    const page = await createPage(payload);
+    const gt = new FakeGt();
+    const target = { collection: 'pages', id: page.id };
+    const en = await read(page.id, 'en');
+    await payload.update({
+      collection: 'pages',
+      id: page.id,
+      locale: 'en',
+      draft: true,
+      data: {
+        hero: {
+          ...en.hero,
+          richText: richText(
+            paragraph(text('Read the '), {
+              ...text('docs'),
+              style: 'color: blue',
+            })
+          ),
+        },
+      },
+    });
+    await translateDocument({ payload, gt, target, locales: ['es'] });
+    const es = await read(page.id, 'es');
+    await editSpanish(page.id, {
+      hero: {
+        ...es.hero,
+        richText: richText(
+          paragraph(text('Lee los '), {
+            ...text('documentos'),
+            style: 'color: red',
+          })
+        ),
+      },
+    });
+    await saveTranslations({ payload, gt, target, locales: ['es'] });
+    await editSpanish(page.id, {
+      hero: { ...es.hero, richText: richText(paragraph(text('Cambio local'))) },
+    });
+    await translateDocument({ payload, gt, target, locales: ['es'] });
+
+    expect(plainText((await read(page.id, 'es')).hero?.richText).join('')).toBe(
+      'Lee los documentos'
+    );
+  });
+
+  it("does not save, and counts, an edit whose links no longer match the source's", async () => {
     const page = await createPage(payload);
     const gt = new FakeGt();
     const target = { collection: 'pages', id: page.id };
@@ -188,20 +268,27 @@ describe('translateDocument: edits made in Payload', () => {
             string,
             unknown
           >,
-          paragraph({
-            ...text('Lee nuestra documentación'),
-            style: 'color: red',
-          })
+          paragraph(
+            text('Lee la documentación o visita '),
+            link('https://example.com', text('nuestro sitio')),
+            text('.')
+          )
         ),
       },
     });
-    await saveTranslations({ payload, gt, target, locales: ['es'] });
+    const result = await saveTranslations({
+      payload,
+      gt,
+      target,
+      locales: ['es'],
+    });
 
+    expect(result.locales.es).toMatchObject({ status: 'saved', unsaved: 1 });
     const values = [
       ...readKeyedHtml(gt.uploadedTranslations.at(-1)!.content).values(),
     ];
-    expect(
-      values.some((value) => value.includes('Lee nuestra documentación'))
-    ).toBe(true);
+    expect(values.some((value) => value.includes('Lee la documentación'))).toBe(
+      false
+    );
   });
 });
