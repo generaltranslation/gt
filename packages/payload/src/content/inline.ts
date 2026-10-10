@@ -1,7 +1,9 @@
 // One Lexical text element <-> a string with simple inline tags. Formats
-// become tags and each link becomes <a data-gt-link-N="">, so link settings
-// never leave Payload. A distinct attribute name per link lets GT's HTML
-// structure check pair links correctly when a translation reorders them.
+// become tags, each link becomes <a data-gt-link-N=""> and text whose other
+// settings (such as style) differ from the element's first text becomes
+// <span data-gt-text-N="">, so those settings never leave Payload. Distinct
+// attribute names let GT's HTML structure check pair them correctly when a
+// translation reorders them.
 import {
   escapeText,
   isElement,
@@ -29,13 +31,16 @@ const FORMAT_TAGS: [number, string][] = [
 const TAG_BITS = new Map(FORMAT_TAGS.map(([bit, tag]) => [tag, bit]));
 const LINK_TYPES = new Set(['link', 'autolink']);
 const LINK_ATTRIBUTE = 'data-gt-link-';
+const TEXT_ATTRIBUTE = 'data-gt-text-';
 
 export type EncodedElement = {
   html: string;
   // Each link node without its children, by the index in its attribute.
   links: LexicalNode[];
-  // A source text node whose settings translated text reuses.
+  // The text node whose settings translated text reuses.
   textTemplate: LexicalNode;
+  // Text nodes with other settings, by the index in their attribute.
+  textStyles: LexicalNode[];
 };
 
 const DEFAULT_TEXT: LexicalNode = {
@@ -46,18 +51,68 @@ const DEFAULT_TEXT: LexicalNode = {
   style: '',
 };
 
-function encodeText(node: LexicalNode): string {
+// The same string for equal values, whatever their key order.
+function stableKey(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableKey).join(',')}]`;
+  if (value && typeof value === 'object')
+    return `{${Object.keys(value)
+      .sort()
+      .map(
+        (key) =>
+          `${JSON.stringify(key)}:${stableKey((value as Record<string, unknown>)[key])}`
+      )
+      .join(',')}}`;
+  return JSON.stringify(value) ?? 'undefined';
+}
+
+// A text node's settings other than its text and format.
+function settingsKey(node: LexicalNode): string {
+  const { text: _text, format: _format, ...settings } = node;
+  return stableKey(settings);
+}
+
+// What a link points to, which identifies it across locales.
+const linkKey = (link: LexicalNode) => stableKey(link.fields ?? link.url);
+
+type EncodeState = EncodedElement & {
+  // The source encoding a target element is encoded against, if any.
+  reference?: EncodedElement;
+  usedLinks: Set<number>;
+};
+
+function encodeText(node: LexicalNode, state: EncodeState): string | null {
   let html = escapeText(String(node.text ?? ''));
   const format = Number(node.format ?? 0);
   for (const [bit, tag] of [...FORMAT_TAGS].reverse()) {
     if (format & bit) html = `<${tag}>${html}</${tag}>`;
   }
-  return html;
+  const key = settingsKey(node);
+  if (key === settingsKey(state.textTemplate)) return html;
+  const styles = state.reference?.textStyles ?? state.textStyles;
+  let index = styles.findIndex((style) => settingsKey(style) === key);
+  if (index < 0) {
+    if (state.reference) return null;
+    index = state.textStyles.push(node) - 1;
+  }
+  return `<span ${TEXT_ATTRIBUTE}${index}="">${html}</span>`;
 }
 
-function encodeInline(node: LexicalNode, state: EncodedElement): boolean {
+function linkIndexFor(link: LexicalNode, state: EncodeState): number | null {
+  if (!state.reference) return state.links.push(link) - 1;
+  const index = state.reference.links.findIndex(
+    (candidate, i) =>
+      !state.usedLinks.has(i) && linkKey(candidate) === linkKey(link)
+  );
+  if (index < 0) return null;
+  state.usedLinks.add(index);
+  return index;
+}
+
+function encodeInline(node: LexicalNode, state: EncodeState): boolean {
   if (node.type === 'text') {
-    state.html += encodeText(node);
+    const html = encodeText(node, state);
+    if (html === null) return false;
+    state.html += html;
     return true;
   }
   if (node.type === 'linebreak') {
@@ -71,8 +126,11 @@ function encodeInline(node: LexicalNode, state: EncodedElement): boolean {
   if (!LINK_TYPES.has(node.type)) return false;
   const { children = [], ...link } = node;
   if (!children.every((child) => child.type === 'text')) return false;
-  const index = state.links.push(link as LexicalNode) - 1;
-  state.html += `<a ${LINK_ATTRIBUTE}${index}="">${children.map(encodeText).join('')}</a>`;
+  const texts = children.map((child) => encodeText(child, state));
+  if (texts.some((text) => text === null)) return false;
+  const index = linkIndexFor(link as LexicalNode, state);
+  if (index === null) return false;
+  state.html += `<a ${LINK_ATTRIBUTE}${index}="">${texts.join('')}</a>`;
   return true;
 }
 
@@ -84,72 +142,102 @@ export function isInlineNode(node: LexicalNode): boolean {
 }
 
 // The element's inline content as a tagged string, or null when it holds a
-// node this encoding does not cover.
-export function encodeElement(element: LexicalNode): EncodedElement | null {
-  const state: EncodedElement = {
-    html: '',
-    links: [],
-    textTemplate: DEFAULT_TEXT,
-  };
+// node this encoding does not cover. With a reference, the element is encoded
+// as a translation of it: links take the index of the reference link they
+// point to and styles the index of the reference's, or the result is null.
+export function encodeElement(
+  element: LexicalNode,
+  reference?: EncodedElement
+): EncodedElement | null {
   const firstText = (element.children ?? []).flatMap((c) =>
     c.type === 'text'
       ? [c]
       : (c.children?.filter((g) => g.type === 'text') ?? [])
   )[0];
-  if (firstText) state.textTemplate = firstText;
+  const state: EncodeState = {
+    html: '',
+    links: [],
+    textTemplate: reference?.textTemplate ?? firstText ?? DEFAULT_TEXT,
+    textStyles: [],
+    reference,
+    usedLinks: new Set(),
+  };
   for (const child of element.children ?? []) {
     if (!encodeInline(child, state)) return null;
   }
-  return state;
+  return {
+    html: state.html,
+    links: state.links,
+    textTemplate: state.textTemplate,
+    textStyles: state.textStyles,
+  };
 }
 
 type Run =
-  | { text: string; format: number; link: number | null }
+  | { text: string; format: number; link: number | null; style: number | null }
   | { lineBreak: true; link: number | null };
 
-function linkIndex(element: { attrs: { name: string }[] }): number | null {
-  const attribute = element.attrs.find((a) =>
-    a.name.startsWith(LINK_ATTRIBUTE)
-  );
+function markerIndex(
+  element: { attrs: { name: string }[] },
+  prefix: string
+): number | null {
+  const attribute = element.attrs.find((a) => a.name.startsWith(prefix));
   if (!attribute) return null;
-  const index = Number(attribute.name.slice(LINK_ATTRIBUTE.length));
+  const index = Number(attribute.name.slice(prefix.length));
   return Number.isInteger(index) ? index : null;
 }
 
+type Context = {
+  format: number;
+  link: number | null;
+  style: number | null;
+};
+
+type Limits = { links: number; styles: number };
+
 function collectRuns(
   node: HtmlParent,
-  format: number,
-  link: number | null,
+  context: Context,
   runs: Run[],
   problems: string[],
-  links: number
+  limits: Limits
 ) {
   for (const child of node.childNodes) {
     if (isText(child)) {
-      runs.push({ text: child.value, format, link });
+      runs.push({ text: child.value, ...context });
     } else if (!isElement(child)) {
       continue;
     } else if (child.tagName === 'br') {
-      runs.push({ lineBreak: true, link });
+      runs.push({ lineBreak: true, link: context.link });
     } else if (child.tagName === 'a') {
-      const index = linkIndex(child);
-      if (index === null || index >= links) problems.push('unknown link');
+      const index = markerIndex(child, LINK_ATTRIBUTE);
+      const known = index !== null && index < limits.links;
+      if (!known) problems.push('unknown link');
       collectRuns(
         child,
-        format,
-        index !== null && index < links ? index : link,
+        { ...context, link: known ? index : context.link },
         runs,
         problems,
-        links
+        limits
+      );
+    } else if (child.tagName === 'span') {
+      const index = markerIndex(child, TEXT_ATTRIBUTE);
+      const known = index !== null && index < limits.styles;
+      if (!known) problems.push('unknown text style');
+      collectRuns(
+        child,
+        { ...context, style: known ? index : context.style },
+        runs,
+        problems,
+        limits
       );
     } else if (TAG_BITS.has(child.tagName)) {
       collectRuns(
         child,
-        format | TAG_BITS.get(child.tagName)!,
-        link,
+        { ...context, format: context.format | TAG_BITS.get(child.tagName)! },
         runs,
         problems,
-        links
+        limits
       );
     } else {
       problems.push(`unexpected <${child.tagName}>`);
@@ -157,9 +245,19 @@ function collectRuns(
   }
 }
 
-function formatsIn(html: string): Set<number> {
+const START: Context = { format: 0, link: null, style: null };
+const ANY: Limits = {
+  links: Number.MAX_SAFE_INTEGER,
+  styles: Number.MAX_SAFE_INTEGER,
+};
+
+function runsIn(html: string): Run[] {
   const runs: Run[] = [];
-  collectRuns(parseHtml(html), 0, null, runs, [], Number.MAX_SAFE_INTEGER);
+  collectRuns(parseHtml(html), START, runs, [], ANY);
+  return runs;
+}
+
+function formatsIn(runs: Run[]): Set<number> {
   return new Set(
     runs.flatMap((run) =>
       'text' in run && run.text.trim() ? [run.format] : []
@@ -168,8 +266,10 @@ function formatsIn(html: string): Set<number> {
 }
 
 // A run's Lexical leaves, with each tab character as Lexical's tab node.
-function leavesOf(run: Run, template: LexicalNode): LexicalNode[] {
+function leavesOf(run: Run, encoded: EncodedElement): LexicalNode[] {
   if ('lineBreak' in run) return [{ type: 'linebreak', version: 1 }];
+  const template =
+    run.style === null ? encoded.textTemplate : encoded.textStyles[run.style];
   return run.text.split('\t').flatMap((part, index) => [
     ...(index > 0
       ? [
@@ -190,22 +290,31 @@ export type DecodedElement =
   | { children: LexicalNode[] }
   | { problems: string[] };
 
-// Rebuilds the element's children from a translated string. Every link must
-// come back, every format the source used must still be present, and no
-// other tags may appear.
+// Rebuilds the element's children from a translated string. Every link and
+// text style must come back, every format the source used must still be
+// present, and no other tags may appear.
 export function decodeElement(
   html: string,
   encoded: EncodedElement
 ): DecodedElement {
   const runs: Run[] = [];
   const problems: string[] = [];
-  collectRuns(parseHtml(html), 0, null, runs, problems, encoded.links.length);
-  const seen = new Set(runs.map((run) => run.link));
-  encoded.links.forEach((_, index) => {
-    if (!seen.has(index)) problems.push(`link ${index} missing`);
+  collectRuns(parseHtml(html), START, runs, problems, {
+    links: encoded.links.length,
+    styles: encoded.textStyles.length,
   });
-  const translatedFormats = [...formatsIn(html)];
-  for (const format of formatsIn(encoded.html)) {
+  const links = new Set(runs.map((run) => run.link));
+  encoded.links.forEach((_, index) => {
+    if (!links.has(index)) problems.push(`link ${index} missing`);
+  });
+  const styles = new Set(
+    runs.map((run) => ('style' in run ? run.style : null))
+  );
+  encoded.textStyles.forEach((_, index) => {
+    if (!styles.has(index)) problems.push(`text style ${index} missing`);
+  });
+  const translatedFormats = [...formatsIn(runs)];
+  for (const format of formatsIn(runsIn(encoded.html))) {
     if (format && !translatedFormats.some((f) => (f & format) === format))
       problems.push(`format ${format} missing`);
   }
@@ -214,7 +323,7 @@ export function decodeElement(
   const children: LexicalNode[] = [];
   let openLink: { index: number; node: LexicalNode } | null = null;
   for (const run of runs) {
-    for (const leaf of leavesOf(run, encoded.textTemplate)) {
+    for (const leaf of leavesOf(run, encoded)) {
       if (run.link === null) {
         openLink = null;
         children.push(leaf);

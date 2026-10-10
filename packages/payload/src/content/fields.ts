@@ -145,15 +145,25 @@ function needsSourceValue(
   );
 }
 
+// A blocks field's blocks, including those defined once and referenced.
+function blocksOf(
+  field: Extract<FlattenedField, { type: 'blocks' }>,
+  ctx: FieldContext
+): FlattenedBlock[] {
+  const references = (field.blockReferences ?? []).flatMap((ref) => {
+    const block =
+      typeof ref === 'string' ? ctx.blocks.find((b) => b.slug === ref) : ref;
+    return block ? [block] : [];
+  });
+  return [...field.blocks, ...references];
+}
+
 function blockFields(
   field: Extract<FlattenedField, { type: 'blocks' }>,
   blockType: unknown,
   ctx: FieldContext
 ): FlattenedField[] | undefined {
-  const references = (field.blockReferences ?? []).map((ref) =>
-    typeof ref === 'string' ? ctx.blocks.find((b) => b.slug === ref) : ref
-  );
-  return [...field.blocks, ...references].find((b) => b?.slug === blockType)
+  return blocksOf(field, ctx).find((b) => b.slug === blockType)
     ?.flattenedFields;
 }
 
@@ -178,6 +188,20 @@ function richTextBlockFields(
     ...(props?.inlineBlocks ?? []),
   ].find((b) => b.slug === blockType);
   return config ? flattenAllFields({ fields: config.fields }) : undefined;
+}
+
+// A group or row in a locale's own copy, rebuilt with the source's shape: the
+// translated values, then the locale's own values for fields it did not
+// translate, then the source's where the locale has none.
+function rebuildCopy(source: unknown, target: unknown, translated: Data): Data {
+  const copy = withoutRowIds(clone(isData(source) ? source : {})) as Data;
+  if (isData(target)) {
+    for (const [name, value] of Object.entries(target)) {
+      if (name !== 'id' && name in copy && !isEmpty(value))
+        copy[name] = withoutRowIds(clone(value));
+    }
+  }
+  return { ...copy, ...translated };
 }
 
 // Row ids removed, for a list each locale holds its own rows of.
@@ -332,7 +356,12 @@ function walkTextList(
   visitor: Visitor,
   limit: LengthLimit | undefined
 ): Walked {
-  if (!Array.isArray(source)) return { value: target, changed: false };
+  if (!Array.isArray(source) || source.length === 0) {
+    // A list emptied in the source is emptied in the locale too.
+    return isEmpty(target)
+      ? { value: target, changed: false }
+      : { value: [], changed: true };
+  }
   const targets = Array.isArray(target) ? target : [];
   let changed = false;
   const value = source.map((item, index) => {
@@ -371,12 +400,8 @@ function walkGroup(
     ctx
   );
   if (!walked.changed) return { value: target, changed: false };
-  // A group in a locale's own copy is rebuilt from the source, so the fields
-  // it does not translate come along.
   return {
-    value: copy
-      ? { ...(withoutRowIds(clone(source)) as Data), ...walked.value }
-      : walked.value,
+    value: copy ? rebuildCopy(source, target, walked.value) : walked.value,
     changed: true,
   };
 }
@@ -416,8 +441,13 @@ function walkRows(
     changed ||= walked.changed;
     if (localeCopy) {
       // Row ids are unique across locales, so a locale's copy gets new ones.
-      const { id: _id, ...copy } = withoutRowIds(clone(row)) as Data;
-      return { ...copy, ...walked.value };
+      const sameBlock = targetRow && targetRow.blockType === row.blockType;
+      const { id: _id, ...copy } = rebuildCopy(
+        row,
+        sameBlock ? targetRow : undefined,
+        walked.value
+      );
+      return copy;
     }
     return {
       id: row.id,
@@ -542,6 +572,7 @@ function walkNode(
 // Whether a field list holds anything walkFields would translate.
 export function hasTranslatableFields(
   fields: FlattenedField[],
+  ctx: FieldContext,
   inLocaleCopy = false
 ): boolean {
   return fields.some((field) => {
@@ -556,10 +587,10 @@ export function hasTranslatableFields(
       case 'group':
       case 'tab':
       case 'array':
-        return hasTranslatableFields(field.flattenedFields, localized);
+        return hasTranslatableFields(field.flattenedFields, ctx, localized);
       case 'blocks':
-        return field.blocks.some((block) =>
-          hasTranslatableFields(block.flattenedFields, localized)
+        return blocksOf(field, ctx).some((block) =>
+          hasTranslatableFields(block.flattenedFields, ctx, localized)
         );
       default:
         return false;

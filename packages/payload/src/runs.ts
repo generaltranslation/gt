@@ -1,13 +1,14 @@
 // Translations and saves of local edits as runs stored in Payload, so they
 // finish whether or not the browser that started them stays open. A run is
 // moved forward one bounded step at a time by whoever steps it: the admin
-// panel, or Payload's job queue. A short lease keeps two steppers from doing
-// the same step.
-import { randomUUID } from 'node:crypto';
+// panel, or Payload's job queue. A lock on the run keeps two steppers from
+// doing the same step, and a lock on each document keeps two runs from saving
+// it at once.
 import type { CollectionConfig, Payload, TaskConfig, TypedUser } from 'payload';
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
 import { createGtPayloadDiagnostic } from './diagnostics';
 import { listSiteTargets } from './documents';
+import { acquireLock, releaseLock } from './locks';
 import { targetKey } from './targets';
 import {
   checkTranslation,
@@ -37,6 +38,8 @@ export type RunProgress = {
   failedDocuments: number;
   // GT refused the work because the plan's usage limit is reached.
   usageLimitReached: boolean;
+  // Strings left as they were: their translation broke markup or was missing.
+  skippedStrings: number;
 };
 
 type Run = RunProgress & {
@@ -45,8 +48,6 @@ type Run = RunProgress & {
   pending: TranslateTarget[];
   jobs: TranslationJob[];
   startedBy: { collection: string; id: string | number } | null;
-  leaseToken?: string | null;
-  leaseUntil?: string | null;
   // Steps in a row that threw.
   failures: number;
   createdAt: string;
@@ -56,7 +57,8 @@ type Run = RunProgress & {
 const START_BATCH = 25;
 // Documents saved into Payload per step.
 const FINISH_BATCH = 10;
-// How long a stepper holds a run before another may take it over.
+// How long a stepper holds a run or document before another may take it
+// over, longer than any one step.
 const LEASE_MS = 2 * 60 * 1000;
 // A running run nobody has stepped for this long is picked up by any admin.
 const STALE_MS = 30 * 1000;
@@ -99,10 +101,9 @@ export const runsCollection: CollectionConfig = {
     { name: 'failedLocales', type: 'json', required: true },
     { name: 'failedDocuments', type: 'number', required: true },
     { name: 'usageLimitReached', type: 'checkbox' },
+    { name: 'skippedStrings', type: 'number', defaultValue: 0 },
     { name: 'startedBy', type: 'json' },
     { name: 'failures', type: 'number', defaultValue: 0 },
-    { name: 'leaseToken', type: 'text' },
-    { name: 'leaseUntil', type: 'date' },
   ],
 };
 
@@ -115,6 +116,7 @@ const progressOf = (run: Run): RunProgress => ({
   failedLocales: run.failedLocales,
   failedDocuments: run.failedDocuments,
   usageLimitReached: Boolean(run.usageLimitReached),
+  skippedStrings: run.skippedStrings ?? 0,
 });
 
 const readRun = async (payload: Payload, id: string | number) =>
@@ -139,11 +141,15 @@ function tally(
   run: Run,
   documents: DocumentResult<{
     error?: string;
-    locales: Record<string, { status: string; error?: string }>;
+    locales: Record<
+      string,
+      { status: string; error?: string; skipped?: unknown[] }
+    >;
   }>[]
-): Pick<Run, 'done' | 'failedLocales' | 'failedDocuments'> {
+): Pick<Run, 'done' | 'failedLocales' | 'failedDocuments' | 'skippedStrings'> {
   const failed = new Set(run.failedLocales);
   let failedDocuments = run.failedDocuments;
+  let skippedStrings = run.skippedStrings ?? 0;
   for (const { target, result } of documents) {
     if (result.error && !Object.keys(result.locales).length) {
       failedDocuments += 1;
@@ -156,6 +162,7 @@ function tally(
       );
     }
     for (const [locale, outcome] of Object.entries(result.locales)) {
+      skippedStrings += outcome.skipped?.length ?? 0;
       if (outcome.status !== 'failed') continue;
       failed.add(locale);
       payload.logger.warn(
@@ -174,6 +181,7 @@ function tally(
     done: run.done + documents.length,
     failedLocales: [...failed],
     failedDocuments,
+    skippedStrings,
   };
 }
 
@@ -225,6 +233,7 @@ export async function startRun({
       failedLocales: [],
       failedDocuments: 0,
       usageLimitReached: false,
+      skippedStrings: 0,
       startedBy: user ? { collection: user.collection, id: user.id } : null,
     } as unknown as Record<string, unknown>,
     depth: 0,
@@ -235,25 +244,6 @@ export async function startRun({
       input: { runId: String(run.id) },
     });
   return progressOf(run);
-}
-
-// Takes the run for one step, or returns null when another stepper holds it
-// or it is done.
-async function claim(
-  payload: Payload,
-  id: string | number
-): Promise<{ run: Run; token: string } | null> {
-  const current = await readRun(payload, id);
-  if (current.status === 'done') return null;
-  if (current.leaseUntil && new Date(current.leaseUntil).getTime() > Date.now())
-    return null;
-  const token = randomUUID();
-  await updateRun(payload, id, {
-    leaseToken: token,
-    leaseUntil: new Date(Date.now() + LEASE_MS).toISOString(),
-  });
-  const run = await readRun(payload, id);
-  return run.leaseToken === token ? { run, token } : null;
 }
 
 async function startNext(
@@ -318,19 +308,31 @@ async function finishReady(
   const ready = [...byFile.values()]
     .filter((jobs) => expired || jobs.every(isReady))
     .slice(0, FINISH_BATCH);
-  if (!ready.length) return null;
-  const readyFiles = new Set(ready.map((jobs) => jobs[0].fileId));
-  const documents = await finishTranslation({
-    payload,
-    gt,
-    jobs: ready.flat(),
-    statuses,
-    user,
-  });
-  return {
-    jobs: run.jobs.filter((job) => !readyFiles.has(job.fileId)),
-    ...tally(payload, run, documents),
-  };
+  // Another run may be saving the same document; its locales are saved one
+  // at a time, so a document another run holds waits for a later step.
+  const held: { key: string; token: string; jobs: TranslationJob[] }[] = [];
+  for (const jobs of ready) {
+    const key = `document:${targetKey(jobs[0].target)}`;
+    const token = await acquireLock(payload, key, LEASE_MS);
+    if (token) held.push({ key, token, jobs });
+  }
+  if (!held.length) return null;
+  try {
+    const documents = await finishTranslation({
+      payload,
+      gt,
+      jobs: held.flatMap((h) => h.jobs),
+      statuses,
+      user,
+    });
+    const finishedFiles = new Set(held.map((h) => h.jobs[0].fileId));
+    return {
+      jobs: run.jobs.filter((job) => !finishedFiles.has(job.fileId)),
+      ...tally(payload, run, documents),
+    };
+  } finally {
+    for (const { key, token } of held) await releaseLock(payload, key, token);
+  }
 }
 
 export type StepResult = { progress: RunProgress; progressed: boolean };
@@ -345,13 +347,29 @@ export async function stepRun({
   gt: GtClient;
   id: string | number;
 }): Promise<StepResult> {
-  const claimed = await claim(payload, id);
-  if (!claimed)
+  const lock = `run:${id}`;
+  const token = await acquireLock(payload, lock, LEASE_MS);
+  if (!token)
     return {
       progress: progressOf(await readRun(payload, id)),
       progressed: false,
     };
-  const { run } = claimed;
+  try {
+    return await stepHeld(payload, gt, id);
+  } finally {
+    await releaseLock(payload, lock, token);
+  }
+}
+
+// One step of a run this stepper holds the lock of.
+async function stepHeld(
+  payload: Payload,
+  gt: GtClient,
+  id: string | number
+): Promise<StepResult> {
+  const run = await readRun(payload, id);
+  if (run.status === 'done')
+    return { progress: progressOf(run), progressed: false };
   let changes: Partial<Run> | null = null;
   let failed = false;
   try {
@@ -392,8 +410,6 @@ export async function stepRun({
       givenUp || !(next.pending.length || next.jobs.length)
         ? 'done'
         : 'running',
-    leaseToken: null,
-    leaseUntil: null,
   });
   return {
     progress: progressOf(await readRun(payload, id)),

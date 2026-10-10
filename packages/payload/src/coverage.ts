@@ -4,7 +4,7 @@ import { collectUnits } from './content/file';
 import {
   fieldContext,
   labelOf,
-  listSiteTargets,
+  listSiteTargetsPage,
   readDocuments,
   resolveTarget,
   sourceLocaleOf,
@@ -56,8 +56,12 @@ export async function siteCoverage({
   user,
 }: SiteCoverageInput): Promise<CoveragePage> {
   const access = { user };
-  const all = await listSiteTargets(payload, access);
-  const targets = all.slice((page - 1) * limit, page * limit);
+  const { targets, totalPages, totalDocs } = await listSiteTargetsPage(
+    payload,
+    page,
+    limit,
+    access
+  );
   const sources = await readDocuments(
     payload,
     targets,
@@ -107,7 +111,7 @@ export async function siteCoverage({
   return {
     documents,
     page,
-    totalPages: Math.max(1, Math.ceil(all.length / limit)),
-    totalDocs: all.length,
+    totalPages,
+    totalDocs,
   };
 }

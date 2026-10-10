@@ -62,6 +62,10 @@ export function useTranslate(options: LocaleOption[], onDone?: () => void) {
           toast.error(
             `Couldn't translate ${documents(done.failedDocuments)}. Try again.`
           );
+        else if (done.skippedStrings)
+          toast.warning(
+            `Translated into ${localeNames(locales, options)}, but some text couldn't be translated. Translate again to retry it.`
+          );
         else toast.success(`Translated into ${localeNames(locales, options)}.`);
       },
       "Couldn't translate. Try again."

@@ -13,6 +13,7 @@ export type GtClient = Pick<
   | 'uploadTranslations'
   | 'checkJobStatus'
   | 'translateMany'
+  | 'customMapping'
 >;
 
 export type TranslateTarget =

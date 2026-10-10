@@ -1,4 +1,9 @@
 // Reading and writing documents through Payload's Local API.
+import {
+  createLocalReq,
+  docAccessOperation,
+  docAccessOperationGlobal,
+} from 'payload';
 import type { FlattenedField, Payload, TypedUser } from 'payload';
 import { hasTranslatableFields, type FieldContext } from './content/fields';
 import { createGtPayloadDiagnostic } from './diagnostics';
@@ -208,10 +213,19 @@ export function fileNameOf(
 }
 
 function translatableCollections(payload: Payload) {
+  const ctx = fieldContext(payload);
   return payload.config.collections.filter(
     (c) =>
-      !c.slug.startsWith('payload-') && hasTranslatableFields(c.flattenedFields)
+      !c.slug.startsWith('payload-') &&
+      hasTranslatableFields(c.flattenedFields, ctx)
   );
+}
+
+function translatableGlobals(payload: Payload): TranslateTarget[] {
+  const ctx = fieldContext(payload);
+  return payload.config.globals
+    .filter((g) => hasTranslatableFields(g.flattenedFields, ctx))
+    .map((g) => ({ global: g.slug }));
 }
 
 // Every document in every collection and global with something to
@@ -235,9 +249,104 @@ export async function listSiteTargets(
       ...result.docs.map((doc) => ({ collection: collection.slug, id: doc.id }))
     );
   }
-  for (const global of payload.config.globals) {
-    if (hasTranslatableFields(global.flattenedFields))
-      targets.push({ global: global.slug });
+  return [...targets, ...translatableGlobals(payload)];
+}
+
+export type TargetPage = {
+  targets: TranslateTarget[];
+  page: number;
+  totalPages: number;
+  totalDocs: number;
+};
+
+// One page of what listSiteTargets lists, reading only that page. Each
+// collection starts a new page and globals come last, so a page can hold
+// fewer than `limit` documents.
+export async function listSiteTargetsPage(
+  payload: Payload,
+  page: number,
+  limit: number,
+  access: Access = {}
+): Promise<TargetPage> {
+  const counts = await Promise.all(
+    translatableCollections(payload).map(async (collection) => ({
+      slug: collection.slug,
+      count: (
+        await payload.count({
+          collection: collection.slug,
+          ...accessOptions(access),
+        })
+      ).totalDocs,
+    }))
+  );
+  const globals = translatableGlobals(payload);
+  const pagesOf = (count: number) => Math.ceil(count / limit);
+  const totalPages = Math.max(
+    1,
+    counts.reduce((sum, c) => sum + pagesOf(c.count), 0) +
+      pagesOf(globals.length)
+  );
+  const totalDocs =
+    counts.reduce((sum, c) => sum + c.count, 0) + globals.length;
+  let first = 1;
+  for (const { slug, count } of counts) {
+    const pages = pagesOf(count);
+    if (page < first + pages) {
+      const result = await payload.find({
+        collection: slug,
+        page: page - first + 1,
+        limit,
+        depth: 0,
+        draft: true,
+        select: {},
+        ...accessOptions(access),
+      });
+      return {
+        targets: result.docs.map((doc) => ({ collection: slug, id: doc.id })),
+        page,
+        totalPages,
+        totalDocs,
+      };
+    }
+    first += pages;
   }
-  return targets;
+  const start = (page - first) * limit;
+  return {
+    targets: globals.slice(start, start + limit),
+    page,
+    totalPages,
+    totalDocs,
+  };
+}
+
+// Whether the user may update the document. Without a user, as for server
+// code, access rules do not apply.
+export async function canUpdate(
+  payload: Payload,
+  target: TranslateTarget,
+  access: Access
+): Promise<boolean> {
+  if (!access.user) return true;
+  const req = await createLocalReq({ user: access.user }, payload);
+  const permissions =
+    'global' in target
+      ? await docAccessOperationGlobal({
+          globalConfig: payload.globals.config.find(
+            (g) => g.slug === target.global
+          )!,
+          req,
+        })
+      : await docAccessOperation({
+          collection: payload.collections[target.collection],
+          id: target.id,
+          req,
+        });
+  const update = permissions.update as
+    | boolean
+    | { permission?: boolean }
+    | undefined;
+  return (
+    update === true ||
+    (typeof update === 'object' && Boolean(update.permission))
+  );
 }

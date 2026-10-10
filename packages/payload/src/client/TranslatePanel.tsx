@@ -86,7 +86,7 @@ export function TranslatePanel({
           size='small'
           margin={false}
           id='gt-save'
-          disabled={busy}
+          disabled={busy || Boolean(blocked)}
           onClick={() => void save(route, scope, codes)}
         >
           Save local edits

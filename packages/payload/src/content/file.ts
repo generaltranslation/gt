@@ -52,7 +52,9 @@ export function collectUnits(
         return undefined;
       },
       element(key, encoded, current) {
-        const currentHtml = current ? encodeElement(current)?.html : undefined;
+        const currentHtml = current
+          ? encodeElement(current, encoded)?.html
+          : undefined;
         units.push({
           key,
           source: encoded.html,

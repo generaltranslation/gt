@@ -2,6 +2,7 @@
 // start (read, upload, enqueue), check (job statuses) and finish (download
 // and save into Payload). translateDocument and translateSite run all three.
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
+import { resolveCanonicalLocale } from 'generaltranslation';
 import { ApiError } from 'generaltranslation/errors';
 import type { Payload } from 'payload';
 import type { FileReference } from 'generaltranslation/types';
@@ -20,6 +21,7 @@ import { createGtPayloadDiagnostic } from './diagnostics';
 import { fitToLimits, type OverLimit } from './limits';
 import { targetKey } from './targets';
 import {
+  canUpdate,
   fieldContext,
   fileNameOf,
   listSiteTargets,
@@ -150,9 +152,22 @@ async function prepare(batch: Batch, targets: TranslateTarget[]) {
   const ctx = fieldContext(batch.payload);
   const prepared: Prepared[] = [];
   const done: DocumentResult<TranslateResult>[] = [];
+  // Documents with nothing left to translate, whose locales may still hold
+  // text removed from the source.
+  const emptied: ResolvedTarget[] = [];
   for (const target of targets) {
     try {
       const resolved = resolveTarget(batch.payload, target);
+      if (!(await canUpdate(batch.payload, target, batch.access))) {
+        done.push({
+          target,
+          result: {
+            error: 'You do not have permission to edit this document.',
+            locales: {},
+          },
+        });
+        continue;
+      }
       const source = await readDocument(
         batch.payload,
         target,
@@ -174,7 +189,10 @@ async function prepare(batch: Batch, targets: TranslateTarget[]) {
           source,
           fileName: fileNameOf(batch.payload, target, source),
         });
-      else done.push({ target, result: { locales: {} } });
+      else {
+        emptied.push(resolved);
+        done.push({ target, result: { locales: {} } });
+      }
     } catch (error) {
       done.push({
         target,
@@ -182,7 +200,27 @@ async function prepare(batch: Batch, targets: TranslateTarget[]) {
       });
     }
   }
-  return { prepared, done };
+  return { prepared, done, emptied };
+}
+
+// Clears text removed from the source in each locale of documents that have
+// nothing left to translate, recording a failure on the document's result.
+async function clearRemoved(
+  batch: Batch,
+  docs: ResolvedTarget[],
+  done: DocumentResult<TranslateResult>[]
+) {
+  for (const doc of docs) {
+    try {
+      for (const locale of batch.locales)
+        await applyTranslation(batch, doc, locale, new Map());
+    } catch (error) {
+      const result = done.find(
+        (d) => targetKey(d.target) === targetKey(doc.target)
+      )?.result;
+      if (result) result.error = errorMessage(error);
+    }
+  }
 }
 
 const fileReference = (
@@ -445,6 +483,15 @@ const failedLocales = (locales: string[], error: string): TranslateResult => ({
   ),
 });
 
+// The requested Payload locale GT reports under its own code, which differs
+// for a locale mapped with customMapping.
+const payloadLocale = (batch: Batch, code: string) =>
+  batch.locales.find(
+    (locale) =>
+      locale === code ||
+      resolveCanonicalLocale(locale, batch.gt.customMapping) === code
+  ) ?? code;
+
 // Reads and uploads the documents and puts them in GT's queue.
 export async function startTranslation({
   payload,
@@ -455,7 +502,8 @@ export async function startTranslation({
   user,
 }: TargetsInput): Promise<StartResult> {
   const batch = batchFor(payload, gt, locales, { user });
-  const { prepared, done } = await prepare(batch, targets);
+  const { prepared, done, emptied } = await prepare(batch, targets);
+  await clearRemoved(batch, emptied, done);
   if (!prepared.length || !batch.locales.length) {
     return {
       jobs: [],
@@ -489,7 +537,7 @@ export async function startTranslation({
       fileId: job.fileId,
       versionId: job.versionId,
       branchId: job.branchId,
-      locale: job.targetLocale,
+      locale: payloadLocale(batch, job.targetLocale),
     }));
     const isQueued = new Set(
       queued.map((job) => `${job.fileId}|${job.locale}`)
