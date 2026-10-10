@@ -3,6 +3,7 @@
 import type { PortableTextBlockStyle } from '@portabletext/types';
 
 import {
+  defaultComponents,
   PortableTextBlockComponent,
   PortableTextListComponent,
   PortableTextListItemComponent,
@@ -12,9 +13,9 @@ import {
 
 import { htmlToBlocks } from '@portabletext/block-tools';
 import { blockContentType } from './deserialize/helpers';
-import { PortableTextObject, PortableTextTextBlock, TypedObject } from 'sanity';
+import { PortableTextTextBlock, TypedObject } from 'sanity';
 import { attachGTData, detachGTData } from './data';
-import { INLINE_OBJECT_KEY_FIELD } from './helpers';
+import { escapeHTML, INLINE_OBJECT_KEY_FIELD } from './helpers';
 import type { CustomDeserializers } from './types';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -36,7 +37,38 @@ export const defaultStopTypes = [
   'code',
 ];
 
-export const defaultMarks: Record<string, PortableTextMarkComponent> = {};
+/**
+ * Annotations (marks backed by an entry in the block's `markDefs`, such as
+ * links) carry their whole markDef, so every field and the original `_key`
+ * survive the round trip. Decorators keep the default rendering.
+ */
+const annotationMark =
+  (
+    fallback: PortableTextMarkComponent
+  ): PortableTextMarkComponent<TypedObject> =>
+  (props) => {
+    const { value, children, markType } = props;
+    if (!(isRecord(value) && typeof value._key === 'string')) {
+      return fallback(props);
+    }
+    // keep href on links as context for the translator
+    const href =
+      markType === 'link' && typeof value.href === 'string'
+        ? ` href="${escapeHTML(value.href)}"`
+        : '';
+    const tag = markType === 'link' ? 'a' : 'span';
+    return attachGTData(
+      `<${tag}${href}>${children}</${tag}>`,
+      value as unknown as Record<string, unknown>,
+      'markDef'
+    );
+  };
+
+export const defaultMarks: Record<string, PortableTextMarkComponent> = {
+  link: annotationMark(
+    defaultComponents.marks.link as PortableTextMarkComponent
+  ),
+};
 
 export const defaultPortableTextBlockStyles: Record<
   PortableTextBlockStyle,
@@ -87,6 +119,7 @@ export const customSerializers: Partial<PortableTextHtmlComponents> = {
           'inlineObject'
         )
       : `<div class="${value._type}"></div>`,
+  unknownMark: annotationMark(defaultComponents.unknownMark),
   types: {},
   marks: defaultMarks,
   block: defaultPortableTextBlockStyles,
@@ -141,36 +174,19 @@ export const customBlockDeserializers: Array<unknown> = [
         return undefined;
       }
 
-      const { html, data } = detachGTData(el.outerHTML);
-      const block = htmlToBlocks(html, blockContentType)[0];
+      const markDef = detachGTData(el.outerHTML).data?.markDef;
+      if (!isRecord(markDef) || typeof markDef._key !== 'string') {
+        return undefined;
+      }
 
-      const children = next(el.childNodes);
-
-      let markDefs: PortableTextObject[] = [];
-      if ('markDefs' in block) {
-        markDefs = (block.markDefs as PortableTextObject[]) ?? [];
-      }
-      if (data?.markDef) {
-        markDefs.push(data.markDef as PortableTextObject);
-      }
-      if (Array.isArray(children)) {
-        children.forEach((child) => {
-          if (!isRecord(child)) {
-            return;
-          }
-          const marks = Array.isArray(child.marks) ? child.marks : [];
-          child.marks = data?.markDef?._key
-            ? [...marks, data.markDef._key]
-            : marks;
-        });
-      }
-      // Resolve marks in the child nodes
-      const output = {
-        ...block,
-        markDefs,
-        children,
+      // block-tools' inline annotation form: the markDef (with its original
+      // _key) is added to the enclosing block and applied to every child,
+      // without splitting the block or trimming whitespace around it
+      return {
+        _type: '__annotation',
+        markDef,
+        children: next(el.childNodes),
       };
-      return output;
     },
   },
   //handle undeclared styles

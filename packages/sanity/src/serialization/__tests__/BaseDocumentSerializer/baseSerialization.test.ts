@@ -150,15 +150,17 @@ test('Unhandled inline objects and annotations should not hinder translation flo
   const docTree = getHTMLNode(serialized).body.children[0];
   const arrayField = findByClass(docTree.children, 'content');
 
-  //expect annotated object to have underlying text
+  //expect annotated object to have underlying text and carry its markDef
   const blockWithAnnotation = Array.from(arrayField!.children).find(
     (node) => node.id === '0e55995095df'
   );
-  const unhandledAnnotation = findByClass(
-    blockWithAnnotation!.children,
-    'unknown__pt__mark__annotation'
+  const unhandledAnnotation = blockWithAnnotation!.querySelector(
+    'span[data-gt-internal]'
   );
   expect(unhandledAnnotation?.innerHTML).toContain('text');
+  expect(
+    detachGTData(unhandledAnnotation!.outerHTML).data?.markDef
+  ).toMatchObject({ _key: '2f5ec56ab061', _type: 'annotation' });
 
   //expect unknown inline object to stay inline in its block, with no
   //translatable text and carrying its data (merged back safely, but not sent
