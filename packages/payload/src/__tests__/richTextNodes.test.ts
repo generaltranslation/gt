@@ -192,4 +192,16 @@ describe('rich text node types', () => {
     expect(result.locales.es).toMatchObject({ status: 'applied' });
     expect(body.root.children[0]).toMatchObject({ type: 'relationship' });
   });
+
+  it('keeps each text run its own style', async () => {
+    const { body } = await translateBody(
+      paragraph({ ...text('Red'), style: 'color: red' }, text(' and plain'))
+    );
+
+    const children = (body.root.children[0] as { children: Node[] }).children;
+    expect(children.map((c) => [c.text, c.style])).toEqual([
+      ['RED', 'color: red'],
+      [' AND PLAIN', ''],
+    ]);
+  });
 });

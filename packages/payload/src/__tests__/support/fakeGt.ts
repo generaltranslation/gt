@@ -1,6 +1,8 @@
 import { parse, parseFragment, serialize } from 'parse5';
 import type { DefaultTreeAdapterMap } from 'parse5';
+import { resolveCanonicalLocale } from 'generaltranslation';
 import { ApiError } from 'generaltranslation/errors';
+import type { CustomMapping } from 'generaltranslation/types';
 import type { GtClient } from '../../types';
 
 type Element = DefaultTreeAdapterMap['element'];
@@ -130,6 +132,8 @@ export class FakeGt {
   failLocales = new Set<string>();
   // Locales the project does not have: enqueue refuses the whole request.
   unsupportedLocales = new Set<string>();
+  // Like the SDK's: enqueue reports jobs under GT's code for a mapped locale.
+  customMapping: CustomMapping | undefined = undefined;
   // When set, enqueue refuses the work as GT does at a plan's usage limit.
   usageLimitReached = false;
   // When set, every call fails as if GT were unreachable.
@@ -298,7 +302,7 @@ export class FakeGt {
           fileId: file.fileId,
           versionId: file.versionId!,
           branchId: 'main',
-          targetLocale: locale,
+          targetLocale: resolveCanonicalLocale(locale, this.customMapping),
           projectId: 'test-project',
           force: false,
         };

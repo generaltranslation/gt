@@ -195,4 +195,133 @@ describe('translateDocument: field rules', () => {
       'BLOG',
     ]);
   });
+
+  it("keeps a language's own value for an opted-out field in a localized group", async () => {
+    const article = await createArticle({
+      promo: { headline: 'Save more', terms: 'Terms apply' },
+    });
+    await payload.update({
+      collection: 'articles',
+      id: article.id,
+      locale: 'es',
+      data: {
+        name: 'Precios',
+        legalNote: 'Aplican',
+        promo: { headline: 'Ahorra', terms: 'Aplican condiciones' },
+      },
+    });
+    await translate(new FakeGt(), article.id);
+
+    expect((await read(article.id, 'es')).promo).toMatchObject({
+      headline: 'SAVE MORE',
+      terms: 'Aplican condiciones',
+    });
+  });
+
+  it("keeps a language's own value for an opted-out field in its list rows", async () => {
+    const article = await createArticle({
+      tags: [{ label: 'Billing', code: 'BILL' }],
+    });
+    await payload.update({
+      collection: 'articles',
+      id: article.id,
+      locale: 'es',
+      data: {
+        name: 'Precios',
+        legalNote: 'Aplican',
+        tags: [{ label: 'Facturación', code: 'FACT' }],
+      },
+    });
+    await translate(new FakeGt(), article.id);
+
+    expect((await read(article.id, 'es')).tags).toMatchObject([
+      { label: 'BILLING', code: 'FACT' },
+    ]);
+  });
+
+  it('clears a multi-value text field whose source was emptied', async () => {
+    const article = await createArticle({ keywords: ['pricing', 'plans'] });
+    const gt = new FakeGt();
+    await translate(gt, article.id);
+    expect((await read(article.id, 'es')).keywords).toEqual([
+      'PRICING',
+      'PLANS',
+    ]);
+    await updateEnglish(article.id, { keywords: [] });
+    await translate(gt, article.id);
+
+    expect((await read(article.id, 'es')).keywords ?? []).toEqual([]);
+  });
+
+  it('clears the last translatable text when the source has none left', async () => {
+    const media = await payload.create({
+      collection: 'media',
+      locale: 'en',
+      data: { alt: 'Photo' },
+    });
+    const gt = new FakeGt();
+    const target = { collection: 'media', id: media.id };
+    await translateDocument({ payload, gt, target, locales: ['es'] });
+    await payload.update({
+      collection: 'media',
+      id: media.id,
+      locale: 'en',
+      data: { alt: '' },
+    });
+    await translateDocument({ payload, gt, target, locales: ['es'] });
+
+    const es = await payload.findByID({
+      collection: 'media',
+      id: media.id,
+      locale: 'es',
+      fallbackLocale: false,
+      depth: 0,
+    });
+    expect(es.alt || null).toBeNull();
+  });
+
+  it('translates text inside a named localized tab', async () => {
+    const faq = await payload.create({
+      collection: 'faqs',
+      locale: 'en',
+      data: { content: { question: 'How much?' } },
+    });
+    await translateDocument({
+      payload,
+      gt: new FakeGt(),
+      target: { collection: 'faqs', id: faq.id },
+      locales: ['es'],
+    });
+
+    const es = await payload.findByID({
+      collection: 'faqs',
+      id: faq.id,
+      locale: 'es',
+      fallbackLocale: false,
+      depth: 0,
+    });
+    expect(es.content?.question).toBe('HOW MUCH?');
+  });
+
+  it('includes documents whose text is only in a referenced block', async () => {
+    const story = await payload.create({
+      collection: 'stories',
+      locale: 'en',
+      data: { layout: [{ blockType: 'quote', text: 'Well said' }] },
+    });
+    const site = await translateSite({
+      payload,
+      gt: new FakeGt(),
+      locales: ['es'],
+    });
+
+    expect(
+      site.documents.some(
+        (d) =>
+          'collection' in d.target &&
+          d.target.collection === 'stories' &&
+          d.target.id === story.id
+      )
+    ).toBe(true);
+  });
 });

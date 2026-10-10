@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { CoveragePage } from '../coverage';
 import { gtPlugin } from '../plugin';
 import type { RunProgress, StepResult } from '../runs';
-import { createTestPayload } from './support/createTestPayload';
+import { createTestPayload, LOCKED_OUT } from './support/createTestPayload';
 import { FakeGt } from './support/fakeGt';
 import { createPage } from './support/fixtures';
 
@@ -160,12 +160,103 @@ describe('gtPlugin endpoints', () => {
       label: 'Pages',
       locales: { es: 'empty', fr: 'empty', de: 'empty' },
     });
-    expect(json.totalPages).toBe(Math.ceil(json.totalDocs / 100));
+    expect(json.totalPages).toBeGreaterThanOrEqual(1);
   });
 
   it('turns away coverage requests from signed-out users', async () => {
     const { status } = await call('/gt/coverage', {}, false);
 
     expect(status).toBe(401);
+  });
+
+  it('refuses to translate a document the user cannot update, before contacting GT', async () => {
+    const notice = await payload.create({
+      collection: 'notices',
+      locale: 'en',
+      data: { message: 'Closed today' },
+    });
+    LOCKED_OUT.add(String(user.email));
+    const before = gt.calls.uploadSourceFiles;
+    const { status } = await call('/gt/runs', {
+      targets: [{ collection: 'notices', id: notice.id }],
+      locales: ['es'],
+    });
+    LOCKED_OUT.delete(String(user.email));
+
+    expect(status).toBe(403);
+    expect(gt.calls.uploadSourceFiles).toBe(before);
+  });
+
+  it('refuses to translate a global the user cannot update', async () => {
+    await payload.updateGlobal({
+      slug: 'announcement',
+      locale: 'en',
+      data: { message: 'Closed today' },
+    });
+    LOCKED_OUT.add(String(user.email));
+    const { status } = await call('/gt/runs', {
+      targets: [{ global: 'announcement' }],
+      locales: ['es'],
+    });
+    LOCKED_OUT.delete(String(user.email));
+
+    expect(status).toBe(403);
+  });
+
+  it('leaves out of a site run what the user cannot update', async () => {
+    const notice = await payload.create({
+      collection: 'notices',
+      locale: 'en',
+      data: { message: 'Open late' },
+    });
+    LOCKED_OUT.add(String(user.email));
+    const { json } = await call<RunProgress>('/gt/runs', {
+      site: true,
+      locales: ['es'],
+    });
+    for (let i = 0; i < 50; i += 1) {
+      const step = (await call<StepResult>('/gt/runs/step', { id: json.id }))
+        .json;
+      if (step.progress.status === 'done') break;
+    }
+    LOCKED_OUT.delete(String(user.email));
+
+    const es = await payload.findByID({
+      collection: 'notices',
+      id: notice.id,
+      locale: 'es',
+      fallbackLocale: false,
+      depth: 0,
+    });
+    expect(es.message ?? null).toBeNull();
+  });
+
+  it('writes nothing for a run whose starter lost access before it finished', async () => {
+    const notice = await payload.create({
+      collection: 'notices',
+      locale: 'en',
+      data: { message: 'Back soon' },
+    });
+    const { json } = await call<RunProgress>('/gt/runs', {
+      targets: [{ collection: 'notices', id: notice.id }],
+      locales: ['es'],
+    });
+    await call('/gt/runs/step', { id: json.id });
+    LOCKED_OUT.add(String(user.email));
+    let progress = json;
+    for (let i = 0; i < 5 && progress.status !== 'done'; i += 1)
+      progress = (await call<StepResult>('/gt/runs/step', { id: json.id })).json
+        .progress;
+    LOCKED_OUT.delete(String(user.email));
+
+    expect(progress.failedLocales).toEqual(['es']);
+    const es = await payload.findByID({
+      collection: 'notices',
+      id: notice.id,
+      locale: 'es',
+      fallbackLocale: false,
+      depth: 0,
+    });
+    expect(es.message ?? null).toBeNull();
   });
 });

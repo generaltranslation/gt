@@ -1,7 +1,7 @@
 // Which languages hold text for each document, read from Payload alone: every
 // string, some of them, or none.
 import type { Payload } from 'payload';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { siteCoverage } from '../coverage';
 import { translateDocument } from '../translation';
 import type { TranslateTarget } from '../types';
@@ -23,14 +23,18 @@ afterAll(async () => {
 const LOCALES = ['es', 'fr'];
 
 async function coverageOf(target: TranslateTarget) {
-  const { documents } = await siteCoverage({
-    payload,
-    locales: LOCALES,
-    limit: 100,
-  });
-  return documents.find(
-    (d) => JSON.stringify(d.target) === JSON.stringify(target)
-  );
+  for (let page = 1; ; page += 1) {
+    const result = await siteCoverage({
+      payload,
+      locales: LOCALES,
+      page,
+      limit: 100,
+    });
+    const found = result.documents.find(
+      (d) => JSON.stringify(d.target) === JSON.stringify(target)
+    );
+    if (found || page >= result.totalPages) return found;
+  }
 }
 
 const pageTarget = (id: string | number): TranslateTarget => ({
@@ -128,23 +132,36 @@ describe('siteCoverage', () => {
     expect((await coverageOf({ global: 'footer' }))?.locales).toEqual({});
   });
 
-  it('pages through the site', async () => {
+  it('pages through the site, each document once', async () => {
     const first = await siteCoverage({
       payload,
       locales: LOCALES,
       page: 1,
       limit: 2,
     });
-    const second = await siteCoverage({
-      payload,
-      locales: LOCALES,
-      page: 2,
-      limit: 2,
-    });
+    const pages = [first];
+    for (let page = 2; page <= first.totalPages; page += 1)
+      pages.push(
+        await siteCoverage({ payload, locales: LOCALES, page, limit: 2 })
+      );
+    const targets = pages.flatMap((p) =>
+      p.documents.map((d) => JSON.stringify(d.target))
+    );
 
-    expect(first.documents).toHaveLength(2);
-    expect(second.documents).toHaveLength(2);
-    expect(first.totalPages).toBe(Math.ceil(first.totalDocs / 2));
-    expect(second.documents[0].target).not.toEqual(first.documents[0].target);
+    expect(pages.every((p) => p.documents.length <= 2)).toBe(true);
+    expect(new Set(targets).size).toBe(targets.length);
+    expect(targets).toHaveLength(first.totalDocs);
+  });
+
+  it('reads one page of documents rather than every document on the site', async () => {
+    const find = vi.spyOn(payload, 'find');
+    await siteCoverage({ payload, locales: LOCALES, page: 1, limit: 2 });
+    // A query for the page's own documents names them; a scan does not.
+    const unbounded = find.mock.calls.filter(
+      ([args]) => !args.where && (args.pagination === false || args.limit === 0)
+    );
+    find.mockRestore();
+
+    expect(unbounded).toEqual([]);
   });
 });

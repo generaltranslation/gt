@@ -18,6 +18,9 @@ const link = (): Field => ({
   ],
 });
 
+// Emails of users who may read notices but not update them.
+export const LOCKED_OUT = new Set<string>();
+
 // The SEO plugin's meta title and description fields render with these.
 const SEO_TITLE = '@payloadcms/plugin-seo/client#MetaTitleComponent';
 const SEO_DESCRIPTION =
@@ -178,8 +181,29 @@ export function testConfig(
             name: 'tags',
             type: 'array',
             localized: true,
-            fields: [{ name: 'label', type: 'text' }],
+            fields: [
+              { name: 'label', type: 'text' },
+              {
+                name: 'code',
+                type: 'text',
+                custom: { gt: { translate: false } },
+              },
+            ],
           },
+          {
+            name: 'promo',
+            type: 'group',
+            localized: true,
+            fields: [
+              { name: 'headline', type: 'text' },
+              {
+                name: 'terms',
+                type: 'text',
+                custom: { gt: { translate: false } },
+              },
+            ],
+          },
+          { name: 'keywords', type: 'text', hasMany: true, localized: true },
           {
             name: 'body',
             type: 'richText',
@@ -192,6 +216,43 @@ export function testConfig(
             }),
           },
         ],
+      },
+      {
+        // Localized text only inside a named localized tab.
+        slug: 'faqs',
+        fields: [
+          {
+            type: 'tabs',
+            tabs: [
+              {
+                name: 'content',
+                localized: true,
+                fields: [{ name: 'question', type: 'text' }],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        // Localized text only inside a block defined once and referenced.
+        slug: 'stories',
+        fields: [
+          {
+            name: 'layout',
+            type: 'blocks',
+            blocks: [],
+            blockReferences: ['quote'],
+          },
+        ],
+      },
+      {
+        // Editors in LOCKED_OUT can read these but not change them.
+        slug: 'notices',
+        access: {
+          read: () => true,
+          update: ({ req }) => !LOCKED_OUT.has(String(req.user?.email)),
+        },
+        fields: [{ name: 'message', type: 'text', localized: true }],
       },
       {
         // Like the search plugin's collection: copies kept by a plugin.
@@ -210,7 +271,21 @@ export function testConfig(
         fields: [{ name: 'alt', type: 'text', localized: true }],
       },
     ],
+    blocks: [
+      {
+        slug: 'quote',
+        fields: [{ name: 'text', type: 'text', localized: true }],
+      },
+    ],
     globals: [
+      {
+        slug: 'announcement',
+        access: {
+          read: () => true,
+          update: ({ req }) => !LOCKED_OUT.has(String(req.user?.email)),
+        },
+        fields: [{ name: 'message', type: 'text', localized: true }],
+      },
       {
         slug: 'header',
         versions: { drafts: true },

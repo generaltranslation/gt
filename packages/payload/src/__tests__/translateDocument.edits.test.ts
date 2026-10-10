@@ -3,7 +3,7 @@
 // used as context when their source changes. Without it, nothing is sent.
 import type { Payload } from 'payload';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { translateDocument } from '../translation';
+import { saveTranslations, translateDocument } from '../translation';
 import { createTestPayload } from './support/createTestPayload';
 import { FakeGt, readKeyedHtml } from './support/fakeGt';
 import { createPage } from './support/fixtures';
@@ -157,5 +157,20 @@ describe('translateDocument: edits made in Payload', () => {
     expect(values).toContain(
       'Lee la <a data-gt-link-0=""><strong>documentación</strong></a> o visita <a data-gt-link-1="">nuestro sitio</a>.'
     );
+  });
+
+  it('keeps each link with its own source link when a saved translation reordered them', async () => {
+    const page = await createPage(payload);
+    const gt = new FakeGt();
+    gt.swapLinksWhen = (source) => source.includes('docs');
+    const target = { collection: 'pages', id: page.id };
+    await translateDocument({ payload, gt, target, locales: ['es'] });
+    await saveTranslations({ payload, gt, target, locales: ['es'] });
+
+    const saved = [
+      ...readKeyedHtml(gt.uploadedTranslations.at(-1)!.content).values(),
+    ].find((value) => value.includes('OUR SITE'));
+    expect(saved).toContain('<a data-gt-link-1="">OUR SITE</a>');
+    expect(saved).toContain('<a data-gt-link-0=""><strong>DOCS</strong></a>');
   });
 });

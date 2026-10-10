@@ -37,4 +37,16 @@ describe('gtPlugin config', () => {
 
     expect(config.admin.custom).toMatchObject({ gtPayload: { customMapping } });
   });
+
+  it('adds the Translate button where text is only in a named localized tab or a referenced block', async () => {
+    const config = await testConfig([gtPlugin({ client: new FakeGt() })]);
+
+    for (const slug of ['faqs', 'stories']) {
+      const collection = config.collections.find((c) => c.slug === slug);
+      expect(
+        collection?.admin.components?.edit?.beforeDocumentControls,
+        slug
+      ).toContain('gt-payload/client#GtDocumentControls');
+    }
+  });
 });

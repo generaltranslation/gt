@@ -211,4 +211,36 @@ describe('runs', () => {
     });
     expect(gt.calls.enqueueFiles - before).toBe(1);
   });
+
+  it('counts strings that could not be written', async () => {
+    gt.breakMarkupWhen = (source) => source.includes('docs');
+    const { run } = await startPage();
+    const progress = await stepUntilDone(run.id);
+    gt.breakMarkupWhen = () => false;
+
+    expect(progress.skippedStrings).toBeGreaterThan(0);
+  });
+
+  it('keeps both languages when two runs finish the same document at once', async () => {
+    const page = await createPage(payload);
+    const target = { collection: 'pages', id: page.id };
+    const es = await startRun({
+      payload,
+      kind: 'translate',
+      targets: [target],
+      locales: ['es'],
+    });
+    const fr = await startRun({
+      payload,
+      kind: 'translate',
+      targets: [target],
+      locales: ['fr'],
+    });
+    await stepRun({ payload, gt, id: es.id });
+    await stepRun({ payload, gt, id: fr.id });
+    await Promise.all([stepUntilDone(es.id), stepUntilDone(fr.id)]);
+
+    expect((await readPage(page.id, 'es')).title).toBe('HOME');
+    expect((await readPage(page.id, 'fr')).title).toBe('HOME');
+  });
 });
