@@ -83,6 +83,9 @@ export type TranslationJob = {
   versionId: string;
   branchId: string;
   locale: string;
+  // The document has no text left to translate, so the locale only has text
+  // removed from the source cleared and nothing is downloaded.
+  clearOnly?: true;
 };
 
 export type JobStatus = { jobId: string; status: string; error?: string };
@@ -158,16 +161,6 @@ async function prepare(batch: Batch, targets: TranslateTarget[]) {
   for (const target of targets) {
     try {
       const resolved = resolveTarget(batch.payload, target);
-      if (!(await canUpdate(batch.payload, target, batch.access))) {
-        done.push({
-          target,
-          result: {
-            error: 'You do not have permission to edit this document.',
-            locales: {},
-          },
-        });
-        continue;
-      }
       const source = await readDocument(
         batch.payload,
         target,
@@ -181,6 +174,16 @@ async function prepare(batch: Batch, targets: TranslateTarget[]) {
         });
         continue;
       }
+      if (!(await canUpdate(batch.payload, target, batch.access, source))) {
+        done.push({
+          target,
+          result: {
+            error: 'You do not have permission to edit this document.',
+            locales: {},
+          },
+        });
+        continue;
+      }
       const units = collectUnits(resolved.fields, source, undefined, ctx);
       if (units.length)
         prepared.push({
@@ -189,10 +192,7 @@ async function prepare(batch: Batch, targets: TranslateTarget[]) {
           source,
           fileName: fileNameOf(batch.payload, target, source),
         });
-      else {
-        emptied.push(resolved);
-        done.push({ target, result: { locales: {} } });
-      }
+      else emptied.push(resolved);
     } catch (error) {
       done.push({
         target,
@@ -201,26 +201,6 @@ async function prepare(batch: Batch, targets: TranslateTarget[]) {
     }
   }
   return { prepared, done, emptied };
-}
-
-// Clears text removed from the source in each locale of documents that have
-// nothing left to translate, recording a failure on the document's result.
-async function clearRemoved(
-  batch: Batch,
-  docs: ResolvedTarget[],
-  done: DocumentResult<TranslateResult>[]
-) {
-  for (const doc of docs) {
-    try {
-      for (const locale of batch.locales)
-        await applyTranslation(batch, doc, locale, new Map());
-    } catch (error) {
-      const result = done.find(
-        (d) => targetKey(d.target) === targetKey(doc.target)
-      )?.result;
-      if (result) result.error = errorMessage(error);
-    }
-  }
 }
 
 const fileReference = (
@@ -503,12 +483,26 @@ export async function startTranslation({
 }: TargetsInput): Promise<StartResult> {
   const batch = batchFor(payload, gt, locales, { user });
   const { prepared, done, emptied } = await prepare(batch, targets);
-  await clearRemoved(batch, emptied, done);
+  // Saved when the other jobs are, so runs hold the document while clearing.
+  const clearing: TranslationJob[] = emptied.flatMap((doc) =>
+    batch.locales.map((locale) => ({
+      target: doc.target,
+      fileId: doc.fileId,
+      versionId: '',
+      branchId: '',
+      locale,
+      clearOnly: true as const,
+    }))
+  );
   if (!prepared.length || !batch.locales.length) {
     return {
-      jobs: [],
+      jobs: clearing,
       documents: [
         ...done,
+        ...(batch.locales.length ? [] : emptied).map((doc) => ({
+          target: doc.target,
+          result: { locales: {} },
+        })),
         ...prepared.map((doc) => ({
           target: doc.target,
           result: { locales: {} },
@@ -554,13 +548,13 @@ export async function startTranslation({
           locale,
         }));
     });
-    return { jobs: [...queued, ...ready], documents: done };
+    return { jobs: [...queued, ...ready, ...clearing], documents: done };
   } catch (error) {
     const message = errorMessage(error);
     // GT answers 402 only when billing stops the work.
     const usageLimitReached = error instanceof ApiError && error.code === 402;
     return {
-      jobs: [],
+      jobs: clearing,
       documents: [
         ...done,
         ...prepared.map((doc) => ({
@@ -613,7 +607,9 @@ export async function finishTranslation({
   );
   const statusOf = (job: TranslationJob): JobStatus | undefined =>
     job.jobId ? status.get(job.jobId) : { jobId: '', status: 'completed' };
-  const completed = jobs.filter((job) => statusOf(job)?.status === 'completed');
+  const completed = jobs.filter(
+    (job) => !job.clearOnly && statusOf(job)?.status === 'completed'
+  );
   const downloads = completed.length
     ? await gt.downloadFileBatch(
         completed.map((job) => ({
@@ -640,6 +636,16 @@ export async function finishTranslation({
     const result: TranslateResult = { locales: {} };
     results.push({ target, result });
     const doc = resolveTarget(payload, target);
+    if (fileJobs.every((job) => job.clearOnly)) {
+      // Nothing to translate, as when translateSite leaves a document out.
+      try {
+        for (const job of fileJobs)
+          await applyTranslation(batch, doc, job.locale, new Map());
+      } catch (error) {
+        result.error = errorMessage(error);
+      }
+      return;
+    }
     for (const job of fileJobs) {
       const jobStatus = statusOf(job);
       const content = contents.get(`${job.fileId}|${job.locale}`);

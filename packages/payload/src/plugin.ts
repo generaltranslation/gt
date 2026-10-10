@@ -65,16 +65,21 @@ const TRANSLATIONS_VIEW_PATH = '/translations';
 
 // Whether any field is localized, including named tabs and blocks defined
 // once in the config and referenced by slug.
-function hasLocalizedField(fields: Field[], blocks: Block[]): boolean {
+function hasLocalizedField(
+  fields: Field[],
+  blocks: Block[],
+  // Blocks being checked, as a block can hold itself.
+  visiting = new Set<string>()
+): boolean {
   return fields.some((field) => {
     if ('localized' in field && field.localized) return true;
-    if ('fields' in field && hasLocalizedField(field.fields, blocks))
+    if ('fields' in field && hasLocalizedField(field.fields, blocks, visiting))
       return true;
     if (field.type === 'tabs')
       return field.tabs.some(
         (tab) =>
           ('localized' in tab && Boolean(tab.localized)) ||
-          hasLocalizedField(tab.fields, blocks)
+          hasLocalizedField(tab.fields, blocks, visiting)
       );
     if (field.type === 'blocks') {
       const referenced = (field.blockReferences ?? []).flatMap((ref) => {
@@ -82,9 +87,13 @@ function hasLocalizedField(fields: Field[], blocks: Block[]): boolean {
           typeof ref === 'string' ? blocks.find((b) => b.slug === ref) : ref;
         return block ? [block] : [];
       });
-      return [...(field.blocks ?? []), ...referenced].some((block) =>
-        hasLocalizedField(block.fields, blocks)
-      );
+      return [...(field.blocks ?? []), ...referenced].some((block) => {
+        if (visiting.has(block.slug)) return false;
+        visiting.add(block.slug);
+        const found = hasLocalizedField(block.fields, blocks, visiting);
+        visiting.delete(block.slug);
+        return found;
+      });
     }
     return false;
   });

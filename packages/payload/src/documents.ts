@@ -1,9 +1,5 @@
 // Reading and writing documents through Payload's Local API.
-import {
-  createLocalReq,
-  docAccessOperation,
-  docAccessOperationGlobal,
-} from 'payload';
+import { createLocalReq, docAccessOperationGlobal } from 'payload';
 import type { FlattenedField, Payload, TypedUser } from 'payload';
 import { hasTranslatableFields, type FieldContext } from './content/fields';
 import { createGtPayloadDiagnostic } from './diagnostics';
@@ -271,9 +267,14 @@ export async function listSiteTargetsPage(
   const counts = await Promise.all(
     translatableCollections(payload).map(async (collection) => ({
       slug: collection.slug,
+      // The same draft-aware, access-filtered query the page fetch makes.
       count: (
-        await payload.count({
+        await payload.find({
           collection: collection.slug,
+          limit: 1,
+          depth: 0,
+          draft: true,
+          select: {},
           ...accessOptions(access),
         })
       ).totalDocs,
@@ -324,29 +325,51 @@ export async function listSiteTargetsPage(
 export async function canUpdate(
   payload: Payload,
   target: TranslateTarget,
-  access: Access
+  access: Access,
+  // The document as readDocument returns it, latest draft included.
+  latest?: Data | null
 ): Promise<boolean> {
   if (!access.user) return true;
+  const data =
+    latest !== undefined
+      ? latest
+      : await readDocument(payload, target, sourceLocaleOf(payload), access);
+  if (!data) return false;
   const req = await createLocalReq({ user: access.user }, payload);
-  const permissions =
-    'global' in target
-      ? await docAccessOperationGlobal({
-          globalConfig: payload.globals.config.find(
-            (g) => g.slug === target.global
-          )!,
-          req,
-        })
-      : await docAccessOperation({
-          collection: payload.collections[target.collection],
-          id: target.id,
-          req,
-        });
-  const update = permissions.update as
-    | boolean
-    | { permission?: boolean }
-    | undefined;
-  return (
-    update === true ||
-    (typeof update === 'object' && Boolean(update.permission))
-  );
+  if ('global' in target) {
+    const permissions = await docAccessOperationGlobal({
+      globalConfig: payload.globals.config.find(
+        (g) => g.slug === target.global
+      )!,
+      data,
+      req,
+    });
+    const update = permissions.update as
+      | boolean
+      | { permission?: boolean }
+      | undefined;
+    return (
+      update === true ||
+      (typeof update === 'object' && Boolean(update.permission))
+    );
+  }
+  // As Payload's own update does: the update rule, and a rule that depends
+  // on field values checked against the latest draft.
+  const rule = await payload.collections[
+    target.collection
+  ].config.access.update({
+    id: target.id,
+    data,
+    req,
+  });
+  if (typeof rule === 'boolean') return rule;
+  const { totalDocs } = await payload.find({
+    collection: target.collection,
+    where: { and: [{ id: { equals: target.id } }, rule] },
+    draft: true,
+    limit: 1,
+    depth: 0,
+    select: {},
+  });
+  return totalDocs > 0;
 }

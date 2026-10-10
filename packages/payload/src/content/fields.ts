@@ -573,7 +573,9 @@ function walkNode(
 export function hasTranslatableFields(
   fields: FlattenedField[],
   ctx: FieldContext,
-  inLocaleCopy = false
+  inLocaleCopy = false,
+  // Blocks being checked, as a block can hold itself.
+  visiting = new Set<string>()
 ): boolean {
   return fields.some((field) => {
     if (skipped(field)) return false;
@@ -587,11 +589,26 @@ export function hasTranslatableFields(
       case 'group':
       case 'tab':
       case 'array':
-        return hasTranslatableFields(field.flattenedFields, ctx, localized);
-      case 'blocks':
-        return blocksOf(field, ctx).some((block) =>
-          hasTranslatableFields(block.flattenedFields, ctx, localized)
+        return hasTranslatableFields(
+          field.flattenedFields,
+          ctx,
+          localized,
+          visiting
         );
+      case 'blocks':
+        return blocksOf(field, ctx).some((block) => {
+          const key = `${block.slug}|${localized}`;
+          if (visiting.has(key)) return false;
+          visiting.add(key);
+          const found = hasTranslatableFields(
+            block.flattenedFields,
+            ctx,
+            localized,
+            visiting
+          );
+          visiting.delete(key);
+          return found;
+        });
       default:
         return false;
     }
