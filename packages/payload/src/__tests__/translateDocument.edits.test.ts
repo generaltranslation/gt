@@ -173,4 +173,35 @@ describe('translateDocument: edits made in Payload', () => {
     expect(saved).toContain('<a data-gt-link-1="">OUR SITE</a>');
     expect(saved).toContain('<a data-gt-link-0=""><strong>DOCS</strong></a>');
   });
+
+  it('saves an edited paragraph whose text styling no longer matches the source', async () => {
+    const page = await createPage(payload);
+    const gt = new FakeGt();
+    const target = { collection: 'pages', id: page.id };
+    await translateDocument({ payload, gt, target, locales: ['es'] });
+    const es = await read(page.id, 'es');
+    await editSpanish(page.id, {
+      hero: {
+        ...es.hero,
+        richText: richText(
+          (es.hero?.richText?.root.children[0] ?? paragraph()) as Record<
+            string,
+            unknown
+          >,
+          paragraph({
+            ...text('Lee nuestra documentación'),
+            style: 'color: red',
+          })
+        ),
+      },
+    });
+    await saveTranslations({ payload, gt, target, locales: ['es'] });
+
+    const values = [
+      ...readKeyedHtml(gt.uploadedTranslations.at(-1)!.content).values(),
+    ];
+    expect(
+      values.some((value) => value.includes('Lee nuestra documentación'))
+    ).toBe(true);
+  });
 });

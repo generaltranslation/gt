@@ -11,6 +11,7 @@ import {
   it,
   vi,
 } from 'vitest';
+import { acquireLock } from '../locks';
 import { gtPlugin } from '../plugin';
 import {
   RUNS_SLUG,
@@ -242,5 +243,21 @@ describe('runs', () => {
 
     expect((await readPage(page.id, 'es')).title).toBe('HOME');
     expect((await readPage(page.id, 'fr')).title).toBe('HOME');
+  });
+
+  it('drops the progress of a step that lost its lock to another stepper', async () => {
+    const { run } = await startPage();
+    await stepRun({ payload, gt, id: run.id });
+    vi.useFakeTimers({ toFake: ['Date'] });
+    let takenOver: string | null = null;
+    gt.duringTranslation = async () => {
+      vi.setSystemTime(Date.now() + 10 * 60_000);
+      takenOver = await acquireLock(payload, `run:${run.id}`, 60_000);
+    };
+    await stepRun({ payload, gt, id: run.id });
+    gt.duringTranslation = null;
+
+    expect(takenOver).toBeTruthy();
+    expect(await readRun(run.id)).toMatchObject({ status: 'running', done: 0 });
   });
 });
