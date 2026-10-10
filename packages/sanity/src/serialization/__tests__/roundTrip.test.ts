@@ -312,6 +312,17 @@ describe('inline objects', () => {
     );
   });
 
+  test('keep the spaces around them when HTML whitespace is collapsed', () => {
+    // HTML formatters such as GT's rehype-format treat the spaces on both
+    // sides of an empty element as adjacent and keep only the first
+    const collapseAroundEmptyElements = (html: string) =>
+      html.replace(/(\s<span[^>]*><\/span>)\s+/g, '$1');
+    const body = roundTrip(collapseAroundEmptyElements).body as Block[];
+    body.forEach((block, index) => {
+      expect(blockText(block)).toBe(blockText(sourceBody[index]));
+    });
+  });
+
   test('keep a following link and its text in the same block', () => {
     const paragraph = {
       _key: 'block-link',
