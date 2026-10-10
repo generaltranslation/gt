@@ -76,6 +76,8 @@ import type { Settings } from '../../types/index.js';
 import { api } from '../../utils/api.js';
 import { installPackage } from '../../utils/installPackage.js';
 import { BaseCLI } from '../base.js';
+import { NodeCLI } from '../node.js';
+import { Libraries } from '../../types/libraries.js';
 
 const prompts = [
   logging.promptConfirm,
@@ -362,6 +364,39 @@ describe('init and configure onboarding', () => {
     expect(config.publish).toBe(publish ? true : undefined);
     expect(config.files?.gt?.output).toBe(
       publish ? undefined : path.join('public/_gt', '[locale].json')
+    );
+  });
+
+  it('writes the Node.js loader and gt-node guidance for a gt-node service', async () => {
+    useFreshApp({
+      name: 'example-service',
+      type: 'module',
+      dependencies: { 'gt-node': '*' },
+      devDependencies: { gt: '*' },
+    });
+    fs.writeFileSync(
+      file('gt.config.json'),
+      JSON.stringify({ defaultLocale: 'en', locales: ['fr'] })
+    );
+    const program = new Command().exitOverride();
+    new NodeCLI(program, Libraries.GT_NODE);
+
+    await program.parseAsync(
+      [
+        '--skip-version-check',
+        'configure',
+        '--no-interactive',
+        '--no-dev-credentials',
+        '--defaults',
+      ],
+      { from: 'user' }
+    );
+
+    expect(fs.readFileSync(file('loadTranslations.js'), 'utf8')).toContain(
+      "JSON.parse(await readFile(file, 'utf8'))"
+    );
+    expect(logger.message).toHaveBeenCalledWith(
+      expect.stringContaining('initializeGT({ loadTranslations })')
     );
   });
 

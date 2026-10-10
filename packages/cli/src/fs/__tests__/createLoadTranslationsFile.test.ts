@@ -1,7 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { createLoadTranslationsFile } from '../createLoadTranslationsFile.js';
+import { logger } from '../../console/logger.js';
 import {
   DEFAULT_TRANSLATIONS_DIR,
   DEFAULT_VITE_TRANSLATIONS_DIR,
@@ -337,6 +341,108 @@ describe('createLoadTranslationsFile', () => {
       fs.readFileSync(path.join(translationsPath, 'es.json'), 'utf-8')
     );
     expect(content).toEqual({ hello: 'hola' });
+  });
+
+  describe('for gt-node', () => {
+    const nodeLoader = {
+      translationsDir: path.normalize(DEFAULT_TRANSLATIONS_DIR),
+      defaultLocale: 'en',
+      locales: ['es'],
+      runtime: 'node',
+    } as const;
+
+    it('writes a loader that Node.js can run', async () => {
+      await createLoadTranslationsFile({
+        appDirectory: tmpDir,
+        ...nodeLoader,
+      });
+      fs.writeFileSync(
+        path.join(tmpDir, 'public/_gt/es.json'),
+        '{"a1b2":"Hola"}'
+      );
+
+      // Node.js itself loads it, from another directory, as a server would.
+      const output = execFileSync(
+        process.execPath,
+        [
+          '--input-type=module',
+          '-e',
+          "const { default: load } = await import(process.argv[1]); console.log(JSON.stringify(await load('es')));",
+          pathToFileURL(path.join(tmpDir, 'loadTranslations.js')).href,
+        ],
+        { cwd: os.tmpdir(), encoding: 'utf8' }
+      );
+      expect(JSON.parse(output)).toEqual({ a1b2: 'Hola' });
+    });
+
+    it('keeps a bundler loader on a rerun, which a bundled server can run, and says how to replace it', async () => {
+      await createLoadTranslationsFile({
+        appDirectory: tmpDir,
+        translationsDir: DEFAULT_TRANSLATIONS_DIR,
+        defaultLocale: 'en',
+        locales: ['es'],
+      });
+      const loaderPath = path.join(tmpDir, 'loadTranslations.js');
+      const loader = fs.readFileSync(loaderPath, 'utf8');
+      const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
+
+      await expect(
+        createLoadTranslationsFile({
+          appDirectory: tmpDir,
+          ...nodeLoader,
+          previousTranslationsDir: nodeLoader.translationsDir,
+        })
+      ).resolves.toBe('unchanged');
+      expect(fs.readFileSync(loaderPath, 'utf8')).toBe(loader);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('without an import attribute')
+      );
+      warn.mockRestore();
+    });
+
+    it('keeps each loader runtime when the directory changes', async () => {
+      const loaderPath = path.join(tmpDir, 'loadTranslations.js');
+      for (const runtime of ['bundler', 'node'] as const) {
+        fs.rmSync(loaderPath, { force: true });
+        await createLoadTranslationsFile({
+          appDirectory: tmpDir,
+          ...nodeLoader,
+          runtime,
+        });
+        const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
+
+        await expect(
+          createLoadTranslationsFile({
+            appDirectory: tmpDir,
+            ...nodeLoader,
+            translationsDir: 'translations',
+            previousTranslationsDir: nodeLoader.translationsDir,
+          })
+        ).resolves.toBe('updated');
+        const loader = fs.readFileSync(loaderPath, 'utf8');
+        expect(loader).toContain('./translations/${locale}.json');
+        expect(loader.includes('readFile')).toBe(runtime === 'node');
+        warn.mockRestore();
+      }
+    });
+
+    it('leaves an edited loader unchanged', async () => {
+      const loaderPath = path.join(tmpDir, 'loadTranslations.js');
+      const edited = `export default async function loadTranslations(locale) {
+  return (await import(\`./public/_gt/\${locale}.json\`, { with: { type: 'json' } })).default;
+}
+`;
+      fs.writeFileSync(loaderPath, edited);
+
+      await expect(
+        createLoadTranslationsFile({
+          appDirectory: tmpDir,
+          ...nodeLoader,
+          previousTranslationsDir: nodeLoader.translationsDir,
+        })
+      ).resolves.toBe('custom');
+      expect(fs.readFileSync(loaderPath, 'utf8')).toBe(edited);
+    });
   });
 
   it('defaults to ./public/_gt when no translationsDir is provided', async () => {
