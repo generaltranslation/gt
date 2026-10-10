@@ -63,6 +63,11 @@ describe('PollTranslationJobsStep inline catalog labels', () => {
     expect(getStatusText()).toContain('<React Elements>');
   });
 
+  it('labels gt-node and Python catalogs as strings', () => {
+    expect(getStatusText(Libraries.GT_NODE)).toContain('<Strings>');
+    expect(getStatusText(Libraries.GT_FLASK)).toContain('<Strings>');
+  });
+
   it('moves files between tracker maps from awaited job statuses', async () => {
     const files = ['completed', 'failed', 'unknown'].map((status) => ({
       ...templateFile,
