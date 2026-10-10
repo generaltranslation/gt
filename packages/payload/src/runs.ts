@@ -8,7 +8,7 @@ import type { CollectionConfig, Payload, TaskConfig, TypedUser } from 'payload';
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
 import { createGtPayloadDiagnostic } from './diagnostics';
 import { listSiteTargets } from './documents';
-import { acquireLock, holdsLock, releaseLock } from './locks';
+import { acquireLock, releaseLock, renewLock } from './locks';
 import { targetKey } from './targets';
 import {
   checkTranslation,
@@ -143,7 +143,7 @@ function tally(
     error?: string;
     locales: Record<
       string,
-      { status: string; error?: string; skipped?: unknown[] }
+      { status: string; error?: string; skipped?: unknown[]; unsaved?: number }
     >;
   }>[]
 ): Pick<Run, 'done' | 'failedLocales' | 'failedDocuments' | 'skippedStrings'> {
@@ -162,7 +162,7 @@ function tally(
       );
     }
     for (const [locale, outcome] of Object.entries(result.locales)) {
-      skippedStrings += outcome.skipped?.length ?? 0;
+      skippedStrings += (outcome.skipped?.length ?? 0) + (outcome.unsaved ?? 0);
       if (outcome.status !== 'failed') continue;
       failed.add(locale);
       payload.logger.warn(
@@ -354,9 +354,15 @@ export async function stepRun({
       progress: progressOf(await readRun(payload, id)),
       progressed: false,
     };
+  // Kept while the step runs, however long it takes.
+  const renewal = setInterval(
+    () => void renewLock(payload, lock, token, LEASE_MS),
+    LEASE_MS / 4
+  );
   try {
     return await stepHeld(payload, gt, id, { key: lock, token });
   } finally {
+    clearInterval(renewal);
     await releaseLock(payload, lock, token);
   }
 }
@@ -398,9 +404,9 @@ async function stepHeld(
       JSON.stringify(t)
     )
   ).size;
-  // A step that outlived its lock leaves the run to the stepper that took it
-  // over, which repeats the step; saving here would overwrite its progress.
-  if (!(await holdsLock(payload, lock.key, lock.token)))
+  // A step whose lock another stepper took over leaves the run to it, which
+  // repeats the step; saving here would overwrite its progress.
+  if (!(await renewLock(payload, lock.key, lock.token, LEASE_MS)))
     return { progress: progressOf(run), progressed: false };
   await updateRun(payload, id, {
     ...changes,

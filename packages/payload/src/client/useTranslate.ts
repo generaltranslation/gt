@@ -78,6 +78,10 @@ export function useTranslate(options: LocaleOption[], onDone?: () => void) {
       (done) => {
         if (done.failedLocales.length || done.failedDocuments)
           toast.error("Couldn't save all your edits. Try again.");
+        else if (done.skippedStrings)
+          toast.warning(
+            'Your edits are saved, except text whose links you changed. Keep the original links to save it.'
+          );
         else toast.success('Your edits are saved.');
       },
       "Couldn't save your edits. Try again."

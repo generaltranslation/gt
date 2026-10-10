@@ -325,17 +325,17 @@ export async function listSiteTargetsPage(
 export async function canUpdate(
   payload: Payload,
   target: TranslateTarget,
-  access: Access,
-  // The document as readDocument returns it, latest draft included.
-  latest?: Data | null
+  access: Access
 ): Promise<boolean> {
   if (!access.user) return true;
-  const data =
-    latest !== undefined
-      ? latest
-      : await readDocument(payload, target, sourceLocaleOf(payload), access);
-  if (!data) return false;
   const req = await createLocalReq({ user: access.user }, payload);
+  // The change a translation makes: a draft where drafts are on.
+  const config =
+    'global' in target
+      ? payload.config.globals.find((g) => g.slug === target.global)
+      : payload.collections[target.collection]?.config;
+  const data =
+    config?.versions && config.versions.drafts ? { _status: 'draft' } : {};
   if ('global' in target) {
     const permissions = await docAccessOperationGlobal({
       globalConfig: payload.globals.config.find(
@@ -353,8 +353,9 @@ export async function canUpdate(
       (typeof update === 'object' && Boolean(update.permission))
     );
   }
-  // As Payload's own update does: the update rule, and a rule that depends
-  // on field values checked against the latest draft.
+  // As Payload's own update does: the update rule for that change, and a rule
+  // that depends on field values met by the latest draft or, failing that,
+  // the main document.
   const rule = await payload.collections[
     target.collection
   ].config.access.update({
@@ -363,13 +364,16 @@ export async function canUpdate(
     req,
   });
   if (typeof rule === 'boolean') return rule;
-  const { totalDocs } = await payload.find({
-    collection: target.collection,
-    where: { and: [{ id: { equals: target.id } }, rule] },
-    draft: true,
-    limit: 1,
-    depth: 0,
-    select: {},
-  });
-  return totalDocs > 0;
+  const matches = async (draft: boolean) =>
+    (
+      await payload.find({
+        collection: target.collection,
+        where: { and: [{ id: { equals: target.id } }, rule] },
+        draft,
+        limit: 1,
+        depth: 0,
+        select: {},
+      })
+    ).totalDocs > 0;
+  return (await matches(true)) || (await matches(false));
 }

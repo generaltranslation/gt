@@ -18,6 +18,9 @@ export type Unit = {
   source: string;
   // The target locale's current text at the same place, when asked for.
   target?: string;
+  // The target has text here that cannot be sent as its translation, as its
+  // links differ from the source's.
+  unsaved?: true;
 };
 
 // The id a string carries in the file: a hash of its field path. Field names
@@ -52,13 +55,15 @@ export function collectUnits(
         return undefined;
       },
       element(key, encoded, current) {
-        const currentHtml = current
-          ? encodeElement(current, encoded)?.html
+        const currentEncoded = current
+          ? encodeElement(current, encoded)
           : undefined;
         units.push({
           key,
           source: encoded.html,
-          target: currentHtml || undefined,
+          target: currentEncoded?.html || undefined,
+          ...(currentEncoded === null &&
+            (current?.children ?? []).length > 0 && { unsaved: true as const }),
         });
         return undefined;
       },

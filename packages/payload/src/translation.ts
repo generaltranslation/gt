@@ -67,9 +67,11 @@ export type SaveTranslationsResult = {
   error?: string;
   locales: Record<
     string,
-    | { status: 'saved' }
+    // unsaved counts text that could not be sent, as its links differ from
+    // the source's.
+    | { status: 'saved'; unsaved?: number }
     // The locale has no text in Payload for this document.
-    | { status: 'no_translations' }
+    | { status: 'no_translations'; unsaved?: number }
     | { status: 'failed'; error: string }
   >;
 };
@@ -174,7 +176,7 @@ async function prepare(batch: Batch, targets: TranslateTarget[]) {
         });
         continue;
       }
-      if (!(await canUpdate(batch.payload, target, batch.access, source))) {
+      if (!(await canUpdate(batch.payload, target, batch.access))) {
         done.push({
           target,
           result: {
@@ -231,9 +233,11 @@ async function uploadSources(batch: Batch, docs: Prepared[]) {
 }
 
 // Each locale's current text in Payload for a document, as files.
+type TargetFile = { content: string | null; unsaved: number };
+
 async function targetFiles(batch: Batch, doc: Prepared) {
   const ctx = fieldContext(batch.payload);
-  const files = new Map<string, string | null>();
+  const files = new Map<string, TargetFile>();
   for (const locale of batch.locales) {
     const target = await readDocument(
       batch.payload,
@@ -241,15 +245,20 @@ async function targetFiles(batch: Batch, doc: Prepared) {
       locale,
       batch.access
     );
-    files.set(
-      locale,
-      target
-        ? targetFile(collectUnits(doc.fields, doc.source, target, ctx))
-        : null
-    );
+    const units = target
+      ? collectUnits(doc.fields, doc.source, target, ctx)
+      : [];
+    files.set(locale, {
+      content: target ? targetFile(units) : null,
+      unsaved: units.filter((unit) => unit.unsaved).length,
+    });
   }
   return files;
 }
+
+// Per document and locale, whether anything was sent and how much text could
+// not be.
+type SentFiles = Map<string, Map<string, { sent: boolean; unsaved: number }>>;
 
 type TranslationUpload = Parameters<GtClient['uploadTranslations']>[0][number];
 
@@ -259,16 +268,23 @@ async function sendTranslations(
   batch: Batch,
   docs: { doc: Prepared; version: FileReference; sourceContent: string }[]
 ) {
-  const sent = new Map<string, Map<string, boolean>>();
+  const sent: SentFiles = new Map();
   const uploads: TranslationUpload[] = [];
   for (const { doc, version, sourceContent } of docs) {
     const files = await targetFiles(batch, doc);
     sent.set(
       doc.fileId,
-      new Map([...files].map(([locale, content]) => [locale, content !== null]))
+      new Map(
+        [...files].map(([locale, file]) => [
+          locale,
+          { sent: file.content !== null, unsaved: file.unsaved },
+        ])
+      )
     );
-    const translations = [...files].flatMap(([locale, content]) =>
-      content === null ? [] : [{ ...version, locale, content }]
+    const translations = [...files].flatMap(([locale, file]) =>
+      file.content === null
+        ? []
+        : [{ ...version, locale, content: file.content }]
     );
     if (translations.length)
       uploads.push({
@@ -306,7 +322,7 @@ async function saveToGt(
   docs: Prepared[],
   { onlyKnown = false } = {}
 ) {
-  if (!docs.length) return new Map<string, Map<string, boolean>>();
+  if (!docs.length) return new Map() as SentFiles;
   const latest = await latestVersions(batch, docs);
   const unknown = onlyKnown
     ? []
@@ -637,12 +653,23 @@ export async function finishTranslation({
     results.push({ target, result });
     const doc = resolveTarget(payload, target);
     if (fileJobs.every((job) => job.clearOnly)) {
-      // Nothing to translate, as when translateSite leaves a document out.
-      try {
-        for (const job of fileJobs)
-          await applyTranslation(batch, doc, job.locale, new Map());
-      } catch (error) {
-        result.error = errorMessage(error);
+      // Nothing to translate, as when translateSite leaves a document out,
+      // unless clearing a locale fails.
+      for (const job of fileJobs) {
+        try {
+          const cleared = await applyTranslation(
+            batch,
+            doc,
+            job.locale,
+            new Map()
+          );
+          if (cleared.status === 'failed') result.locales[job.locale] = cleared;
+        } catch (error) {
+          result.locales[job.locale] = {
+            status: 'failed',
+            error: errorMessage(error),
+          };
+        }
       }
       return;
     }
@@ -725,6 +752,14 @@ export async function translateSite(
   };
 }
 
+// What saving one locale of one document did.
+function saveOutcome(file: { sent: boolean; unsaved: number } | undefined) {
+  const unsaved = file?.unsaved ? { unsaved: file.unsaved } : {};
+  return file?.sent
+    ? { status: 'saved' as const, ...unsaved }
+    : { status: 'no_translations' as const, ...unsaved };
+}
+
 // saveTranslations for a list of documents, in one batch.
 export async function saveDocuments(input: TargetsInput) {
   const batch = batchFor(input.payload, input.gt, input.locales, {
@@ -744,9 +779,7 @@ export async function saveDocuments(input: TargetsInput) {
       const locales = Object.fromEntries(
         batch.locales.map((locale) => [
           locale,
-          sent.get(doc.fileId)?.get(locale)
-            ? { status: 'saved' as const }
-            : { status: 'no_translations' as const },
+          saveOutcome(sent.get(doc.fileId)?.get(locale)),
         ])
       );
       results.push({ target: doc.target, result: { locales } });

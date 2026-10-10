@@ -71,22 +71,20 @@ export async function releaseLock(
   });
 }
 
-// Whether the token still holds the lock: it has not expired and no one else
-// took it over.
-export async function holdsLock(
+// Extends the lock for ttlMs while the token holds it, and returns whether it
+// does. An expired lock is still held until someone else takes it over.
+export async function renewLock(
   payload: Payload,
   key: string,
-  token: string
+  token: string,
+  ttlMs: number
 ): Promise<boolean> {
-  const { totalDocs } = await payload.db.count({
+  const renewed = await payload.db.updateMany({
     collection: LOCKS_SLUG,
     where: {
-      and: [
-        { key: { equals: key } },
-        { token: { equals: token } },
-        { expiresAt: { greater_than: new Date().toISOString() } },
-      ],
+      and: [{ key: { equals: key } }, { token: { equals: token } }],
     },
+    data: { expiresAt: new Date(Date.now() + ttlMs).toISOString() },
   });
-  return totalDocs > 0;
+  return Boolean(renewed?.length);
 }

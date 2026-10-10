@@ -128,9 +128,8 @@ function encodeInline(node: LexicalNode, state: EncodeState): boolean {
   if (!children.every((child) => child.type === 'text')) return false;
   const texts = children.map((child) => encodeText(child, state)).join('');
   const index = linkIndexFor(link as LexicalNode, state);
-  // A translation's link the source does not have keeps only its text.
-  state.html +=
-    index === null ? texts : `<a ${LINK_ATTRIBUTE}${index}="">${texts}</a>`;
+  if (index === null) return false;
+  state.html += `<a ${LINK_ATTRIBUTE}${index}="">${texts}</a>`;
   return true;
 }
 
@@ -144,8 +143,8 @@ export function isInlineNode(node: LexicalNode): boolean {
 // The element's inline content as a tagged string, or null when it holds a
 // node this encoding does not cover. With a reference, the element is encoded
 // as a translation of it: links take the index of the reference link they
-// point to and styles the index of the reference's, and links or styles the
-// reference lacks keep only their text.
+// point to and styles the index of the reference's. Styles the reference lacks
+// keep only their text, and links that differ from the reference's give null.
 export function encodeElement(
   element: LexicalNode,
   reference?: EncodedElement
@@ -166,6 +165,8 @@ export function encodeElement(
   for (const child of element.children ?? []) {
     if (!encodeInline(child, state)) return null;
   }
+  // A translation must keep every link of its source to be decoded later.
+  if (reference && state.usedLinks.size !== reference.links.length) return null;
   return {
     html: state.html,
     links: state.links,
@@ -291,9 +292,9 @@ export type DecodedElement =
   | { children: LexicalNode[] }
   | { problems: string[] };
 
-// Rebuilds the element's children from a translated string. Every link and
-// text style must come back, every format the source used must still be
-// present, and no other tags may appear.
+// Rebuilds the element's children from a translated string. Every link must
+// come back and every format the source used must still be present; text
+// styles may be dropped, and no other tags may appear.
 export function decodeElement(
   html: string,
   encoded: EncodedElement
@@ -307,12 +308,6 @@ export function decodeElement(
   const links = new Set(runs.map((run) => run.link));
   encoded.links.forEach((_, index) => {
     if (!links.has(index)) problems.push(`link ${index} missing`);
-  });
-  const styles = new Set(
-    runs.map((run) => ('style' in run ? run.style : null))
-  );
-  encoded.textStyles.forEach((_, index) => {
-    if (!styles.has(index)) problems.push(`text style ${index} missing`);
   });
   const translatedFormats = [...formatsIn(runs)];
   for (const format of formatsIn(runsIn(encoded.html))) {
