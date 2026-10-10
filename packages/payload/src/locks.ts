@@ -3,7 +3,7 @@
 // at once only one succeeds.
 import { randomUUID } from 'node:crypto';
 import { ValidationError } from 'payload';
-import type { CollectionConfig, Payload } from 'payload';
+import type { CollectionConfig, Payload, Where } from 'payload';
 
 const LOCKS_SLUG = 'gt-translation-locks';
 
@@ -79,12 +79,19 @@ export async function renewLock(
   token: string,
   ttlMs: number
 ): Promise<boolean> {
-  const renewed = await payload.db.updateMany({
+  const held: Where = {
+    and: [{ key: { equals: key } }, { token: { equals: token } }],
+  };
+  // Payload's SQL adapters select the rows and then update them, so the
+  // result is no proof the token still holds the lock; the count is.
+  await payload.db.updateMany({
     collection: LOCKS_SLUG,
-    where: {
-      and: [{ key: { equals: key } }, { token: { equals: token } }],
-    },
+    where: held,
     data: { expiresAt: new Date(Date.now() + ttlMs).toISOString() },
   });
-  return Boolean(renewed?.length);
+  const { totalDocs } = await payload.db.count({
+    collection: LOCKS_SLUG,
+    where: held,
+  });
+  return totalDocs > 0;
 }
