@@ -80,7 +80,7 @@ type EncodeState = EncodedElement & {
   usedLinks: Set<number>;
 };
 
-function encodeText(node: LexicalNode, state: EncodeState): string | null {
+function encodeText(node: LexicalNode, state: EncodeState): string {
   let html = escapeText(String(node.text ?? ''));
   const format = Number(node.format ?? 0);
   for (const [bit, tag] of [...FORMAT_TAGS].reverse()) {
@@ -91,7 +91,9 @@ function encodeText(node: LexicalNode, state: EncodeState): string | null {
   const styles = state.reference?.textStyles ?? state.textStyles;
   let index = styles.findIndex((style) => settingsKey(style) === key);
   if (index < 0) {
-    if (state.reference) return null;
+    // A translation's styling the source does not have is not kept, but its
+    // text is.
+    if (state.reference) return html;
     index = state.textStyles.push(node) - 1;
   }
   return `<span ${TEXT_ATTRIBUTE}${index}="">${html}</span>`;
@@ -110,9 +112,7 @@ function linkIndexFor(link: LexicalNode, state: EncodeState): number | null {
 
 function encodeInline(node: LexicalNode, state: EncodeState): boolean {
   if (node.type === 'text') {
-    const html = encodeText(node, state);
-    if (html === null) return false;
-    state.html += html;
+    state.html += encodeText(node, state);
     return true;
   }
   if (node.type === 'linebreak') {
@@ -126,11 +126,11 @@ function encodeInline(node: LexicalNode, state: EncodeState): boolean {
   if (!LINK_TYPES.has(node.type)) return false;
   const { children = [], ...link } = node;
   if (!children.every((child) => child.type === 'text')) return false;
-  const texts = children.map((child) => encodeText(child, state));
-  if (texts.some((text) => text === null)) return false;
+  const texts = children.map((child) => encodeText(child, state)).join('');
   const index = linkIndexFor(link as LexicalNode, state);
-  if (index === null) return false;
-  state.html += `<a ${LINK_ATTRIBUTE}${index}="">${texts.join('')}</a>`;
+  // A translation's link the source does not have keeps only its text.
+  state.html +=
+    index === null ? texts : `<a ${LINK_ATTRIBUTE}${index}="">${texts}</a>`;
   return true;
 }
 
@@ -144,7 +144,8 @@ export function isInlineNode(node: LexicalNode): boolean {
 // The element's inline content as a tagged string, or null when it holds a
 // node this encoding does not cover. With a reference, the element is encoded
 // as a translation of it: links take the index of the reference link they
-// point to and styles the index of the reference's, or the result is null.
+// point to and styles the index of the reference's, and links or styles the
+// reference lacks keep only their text.
 export function encodeElement(
   element: LexicalNode,
   reference?: EncodedElement

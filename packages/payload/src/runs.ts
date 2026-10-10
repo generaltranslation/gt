@@ -8,7 +8,7 @@ import type { CollectionConfig, Payload, TaskConfig, TypedUser } from 'payload';
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
 import { createGtPayloadDiagnostic } from './diagnostics';
 import { listSiteTargets } from './documents';
-import { acquireLock, releaseLock } from './locks';
+import { acquireLock, holdsLock, releaseLock } from './locks';
 import { targetKey } from './targets';
 import {
   checkTranslation,
@@ -355,7 +355,7 @@ export async function stepRun({
       progressed: false,
     };
   try {
-    return await stepHeld(payload, gt, id);
+    return await stepHeld(payload, gt, id, { key: lock, token });
   } finally {
     await releaseLock(payload, lock, token);
   }
@@ -365,7 +365,8 @@ export async function stepRun({
 async function stepHeld(
   payload: Payload,
   gt: GtClient,
-  id: string | number
+  id: string | number,
+  lock: { key: string; token: string }
 ): Promise<StepResult> {
   const run = await readRun(payload, id);
   if (run.status === 'done')
@@ -397,6 +398,10 @@ async function stepHeld(
       JSON.stringify(t)
     )
   ).size;
+  // A step that outlived its lock leaves the run to the stepper that took it
+  // over, which repeats the step; saving here would overwrite its progress.
+  if (!(await holdsLock(payload, lock.key, lock.token)))
+    return { progress: progressOf(run), progressed: false };
   await updateRun(payload, id, {
     ...changes,
     ...(givenUp && {

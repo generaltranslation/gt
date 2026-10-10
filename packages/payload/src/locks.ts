@@ -70,3 +70,23 @@ export async function releaseLock(
     },
   });
 }
+
+// Whether the token still holds the lock: it has not expired and no one else
+// took it over.
+export async function holdsLock(
+  payload: Payload,
+  key: string,
+  token: string
+): Promise<boolean> {
+  const { totalDocs } = await payload.db.count({
+    collection: LOCKS_SLUG,
+    where: {
+      and: [
+        { key: { equals: key } },
+        { token: { equals: token } },
+        { expiresAt: { greater_than: new Date().toISOString() } },
+      ],
+    },
+  });
+  return totalDocs > 0;
+}
