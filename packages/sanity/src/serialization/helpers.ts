@@ -13,6 +13,13 @@ export function mergeBlocks(blocks: PortableTextTextBlock[]) {
     mergedBlock.markDefs.push(...(block.markDefs ?? []));
   }
   mergedBlock._type = 'block';
+  // block-tools adds an annotation's markDef once per run of text it covers
+  const seenMarkKeys = new Set<string>();
+  mergedBlock.markDefs = mergedBlock.markDefs.filter((markDef) => {
+    if (seenMarkKeys.has(markDef._key)) return false;
+    seenMarkKeys.add(markDef._key);
+    return true;
+  });
 
   return mergedBlock;
 }
@@ -21,11 +28,15 @@ const htmlEscapes: Record<string, string> = {
   '&': '&amp;',
   '<': '&lt;',
   '>': '&gt;',
+  '"': '&quot;',
 };
 
-/** Escape text so it is read as literal text, never as markup. */
-const escapeHTML = (value: string): string =>
-  value.replace(/[&<>]/g, (char) => htmlEscapes[char]);
+/**
+ * Escape text so it is read as literal text, never as markup. Also safe for
+ * double-quoted attribute values.
+ */
+export const escapeHTML = (value: string): string =>
+  value.replace(/[&<>"]/g, (char) => htmlEscapes[char]);
 
 // Whitespace that HTML formatting would collapse or trim: newlines, leading or
 // trailing whitespace, and runs of whitespace.
