@@ -1,5 +1,6 @@
 import { useEnableI18n, useLocale } from '../../hooks/condition-store';
 import { computeNum, type NumProps } from './Num.shared';
+import type { GTComponentMetadata } from '../../utils/types';
 
 // ===== Component ===== //
 
@@ -19,9 +20,16 @@ function Num(props: NumProps): React.JSX.Element {
   return <GtInternalNum {...props} />;
 }
 
-/** @internal _gtt - The GT transformation for the component. */
-GtInternalNum._gtt = 'variable-number-automatic';
-Num._gtt = 'variable-number';
+/** @internal _gtt - The GT metadata for the component. */
+GtInternalNum._gtt = {
+  kind: 'variable',
+  variableType: 'number',
+  injection: 'automatic',
+} satisfies GTComponentMetadata;
+Num._gtt = {
+  kind: 'variable',
+  variableType: 'number',
+} satisfies GTComponentMetadata;
 
 // ===== Exports ===== //
 

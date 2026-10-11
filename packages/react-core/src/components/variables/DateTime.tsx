@@ -1,5 +1,6 @@
 import { useEnableI18n, useLocale } from '../../hooks/condition-store';
 import { computeDateTime, type DateTimeProps } from './DateTime.shared';
+import type { GTComponentMetadata } from '../../utils/types';
 
 // ===== Component ===== //
 
@@ -19,9 +20,16 @@ function DateTime(props: DateTimeProps): React.JSX.Element {
   return <GtInternalDateTime {...props} />;
 }
 
-/** @internal _gtt - The GT transformation for the component. */
-GtInternalDateTime._gtt = 'variable-datetime-automatic';
-DateTime._gtt = 'variable-datetime';
+/** @internal _gtt - The GT metadata for the component. */
+GtInternalDateTime._gtt = {
+  kind: 'variable',
+  variableType: 'datetime',
+  injection: 'automatic',
+} satisfies GTComponentMetadata;
+DateTime._gtt = {
+  kind: 'variable',
+  variableType: 'datetime',
+} satisfies GTComponentMetadata;
 
 // ===== Exports ===== //
 

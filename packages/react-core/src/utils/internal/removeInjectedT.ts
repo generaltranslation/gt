@@ -1,5 +1,4 @@
 import { isAcceptedPluralForm } from 'generaltranslation/internal';
-import { InjectionType, TransformationPrefix } from 'generaltranslation/types';
 import {
   ReactNode,
   ReactElement,
@@ -7,6 +6,7 @@ import {
   cloneElement,
   Children,
 } from 'react';
+import { getGTMetadata } from './getGTMetadata';
 
 /**
  * Remove injected _T components at runtime. This is only for i18n-context T components to use.
@@ -42,14 +42,15 @@ function handleSingleChildElement(
   derivationDepth: number
 ): ReactNode {
   const { type: elementType, props: elementProps } = child;
-  const transformation = getTransformation(elementType);
+  const metadata = getGTMetadata(elementType);
   // unlikely edge case: encountered an element with props that cannot be processed
   if (typeof elementProps !== 'object' || elementProps === null) {
     return child;
   }
 
-  if (transformation) {
-    const { componentType, injectionType } = transformation;
+  if (metadata) {
+    const componentType = metadata.kind;
+    const injectionType = metadata.injection ?? 'manual';
 
     // (1) If the element is a variable component, hands off
     if (componentType === 'variable') {
@@ -167,38 +168,5 @@ function handleChildren(
 }
 
 // ----- Helper Functions ----- //
-
-/**
- * Extracts the transformation from the element type.
- * @param elementType - The element type to extract the transformation from.
- * @returns The transformation.
- */
-function getTransformation(elementType: ReactElement['type']):
-  | {
-      componentType: TransformationPrefix;
-      injectionType: InjectionType;
-    }
-  | undefined {
-  // Extract transformation string
-  const transformation =
-    typeof elementType === 'function' && '_gtt' in elementType
-      ? elementType._gtt
-      : undefined;
-  if (transformation == null || typeof transformation !== 'string')
-    return undefined;
-
-  // Extract metadata from transformation string
-  const parts = transformation.split('-');
-  const componentType = parts[0] as TransformationPrefix;
-  const injectionType =
-    parts[1] === 'automatic' || parts[2] === 'automatic'
-      ? 'automatic'
-      : 'manual';
-
-  return {
-    componentType,
-    injectionType,
-  };
-}
 
 const warnNestedInternalTComponent = `'@generaltranslation/react-core Warning: A <_T> component was found injected outside of a <Derive> boundary. This may affect translation resolution for this component.`;

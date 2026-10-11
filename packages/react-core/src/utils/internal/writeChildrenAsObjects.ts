@@ -1,5 +1,10 @@
 import { getVariableName } from '../variables/getVariableName';
-import { TaggedChild, TaggedChildren, TaggedElement } from '../../utils/types';
+import {
+  GTTag,
+  TaggedChild,
+  TaggedChildren,
+  TaggedElement,
+} from '../../utils/types';
 import { isValidTaggedElement } from '../../utils/utils';
 import { minifyVariableType } from 'generaltranslation/internal';
 import {
@@ -11,7 +16,6 @@ import {
   JsxElement,
   Variable,
 } from '@generaltranslation/format/types';
-import type { Transformation } from 'generaltranslation/types';
 
 /**
  * Gets the tag name of a React element.
@@ -37,7 +41,7 @@ const getTagName = (child: TaggedElement): string => {
   return 'function';
 };
 const createGTProp = (
-  transformation: Transformation,
+  transformation: GTTag['transformation'],
   props: Record<string, unknown>,
   branches?: Record<string, TaggedChildren>
 ): GTProp | undefined => {
@@ -108,7 +112,7 @@ const handleSingleChildElement = (
 
     // Add GT prop
     minifiedElement.d = createGTProp(
-      transformation as Transformation,
+      transformation,
       props,
       generaltranslation.branches
     );

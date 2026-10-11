@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { GTComponentMetadata } from '../../utils/types';
 
 type BranchProps = {
   children?: ReactNode;
@@ -36,9 +37,12 @@ function Branch(props: BranchProps): React.JSX.Element {
   return <GtInternalBranch {...props} />;
 }
 
-/** @internal _gtt - The GT transformation for the component. */
-Branch._gtt = 'branch';
-GtInternalBranch._gtt = 'branch-automatic';
+/** @internal _gtt - The GT metadata for the component. */
+Branch._gtt = { kind: 'branch' } satisfies GTComponentMetadata;
+GtInternalBranch._gtt = {
+  kind: 'branch',
+  injection: 'automatic',
+} satisfies GTComponentMetadata;
 
 // ===== Exports ===== //
 

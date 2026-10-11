@@ -59,7 +59,10 @@ describe('renderVariable locale handling', () => {
       _locale: string;
       _enableI18n: boolean;
     }>;
-    expect((element.type as { _gtt?: string })._gtt).toBe('variable-number');
+    expect((element.type as { _gtt?: unknown })._gtt).toEqual({
+      kind: 'variable',
+      variableType: 'number',
+    });
     expect(element.props._locale).toBe('fr');
     expect(element.props._enableI18n).toBe(true);
   });
@@ -76,9 +79,11 @@ describe('renderVariable locale handling', () => {
 
     expect(React.isValidElement(result)).toBe(true);
     if (!React.isValidElement(result)) return;
-    expect((result.type as { _gtt?: string })._gtt).toBe(
-      'variable-variable-automatic'
-    );
+    expect((result.type as { _gtt?: unknown })._gtt).toEqual({
+      kind: 'variable',
+      variableType: 'variable',
+      injection: 'automatic',
+    });
   });
 
   it('uses the external raw variable component for manual variables', () => {
@@ -93,7 +98,10 @@ describe('renderVariable locale handling', () => {
 
     expect(React.isValidElement(result)).toBe(true);
     if (!React.isValidElement(result)) return;
-    expect((result.type as { _gtt?: string })._gtt).toBe('variable-variable');
+    expect((result.type as { _gtt?: unknown })._gtt).toEqual({
+      kind: 'variable',
+      variableType: 'variable',
+    });
   });
 
   it('passes the default locale when rendering source variables', () => {

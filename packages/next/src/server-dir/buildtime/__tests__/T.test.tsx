@@ -40,6 +40,6 @@ describe('buildtime T', () => {
       _enableI18n: false,
       _renderPreparedT: expect.any(Function),
     });
-    expect(T._gtt).toBe('translate-server');
+    expect(T._gtt).toEqual({ kind: 'translate' });
   });
 });

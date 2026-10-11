@@ -1440,7 +1440,11 @@ describe('auto JSX injection simulation', () => {
       const source = result.updates[0].source;
       expect(Array.isArray(source)).toBe(true);
       expect((source as JsxChild[])[0]).toBe('Updated: ');
-      expect((source as JsxChild[])[1]).toHaveProperty('v', 'rt');
+      expect((source as JsxChild[])[1]).toEqual({
+        i: 1,
+        k: '_gt_time_1',
+        v: 'rt',
+      });
     });
 
     it('user Num is preserved as variable component', () => {

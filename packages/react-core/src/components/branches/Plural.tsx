@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useEnableI18n, useLocale } from '../../hooks/condition-store';
 import { renderPlural, type PluralProps } from './Plural.shared';
+import type { GTComponentMetadata } from '../../utils/types';
 
 // ===== Component ===== //
 
@@ -20,9 +21,12 @@ function Plural(props: PluralProps): React.JSX.Element {
   return <GtInternalPlural {...props} />;
 }
 
-/** @internal _gtt - The GT transformation for the component. */
-Plural._gtt = 'plural';
-GtInternalPlural._gtt = 'plural-automatic';
+/** @internal _gtt - The GT metadata for the component. */
+Plural._gtt = { kind: 'plural' } satisfies GTComponentMetadata;
+GtInternalPlural._gtt = {
+  kind: 'plural',
+  injection: 'automatic',
+} satisfies GTComponentMetadata;
 
 // ===== Exports ===== //
 

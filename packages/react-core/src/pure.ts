@@ -40,6 +40,8 @@ export type {
   VariableProps,
   RelativeTimeFormatOptions,
   RenderVariable,
+  /** @internal */
+  GTComponentMetadata,
 } from './utils/types';
 
 export {
