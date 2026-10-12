@@ -51,13 +51,17 @@ export const LEADING_NEWLINES_ATTRIBUTE = 'data-gt-leading-newlines';
 
 /**
  * Serialize a string value as escaped text, so tag-like content (e.g. `<br>`
- * in markdown) stays literal text. Values whose whitespace matters
- * (multi-line text, markdown) go in a <pre>, which HTML tools leave
- * untouched; everything else stays a <span>.
+ * in markdown) stays literal text. Multi-line fields (`multiline`, e.g.
+ * `text` and markdown) and values whose whitespace matters go in a <pre>,
+ * which HTML tools leave untouched; everything else stays a <span>.
  */
-export const serializeString = (value: string, className?: string): string => {
+export const serializeString = (
+  value: string,
+  className?: string,
+  multiline = false
+): string => {
   const classAttribute = className ? ` class="${className}"` : '';
-  if (!SIGNIFICANT_WHITESPACE.test(value)) {
+  if (!multiline && !SIGNIFICANT_WHITESPACE.test(value)) {
     return `<span${classAttribute}>${escapeHTML(value)}</span>`;
   }
   const text = value.replace(/^\n+/, '');

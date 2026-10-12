@@ -50,6 +50,7 @@ const schema = Schema.compile({
         { name: 'excerpt', type: 'text' },
         { name: 'seo', type: 'seo' },
         { name: 'tags', type: 'array', of: [{ type: 'string' }] },
+        { name: 'notes', type: 'array', of: [{ type: 'text' }] },
         { name: 'sections', type: 'array', of: [{ type: 'markdownBlock' }] },
         {
           name: 'body',
@@ -328,6 +329,47 @@ describe('string elements', () => {
     );
     expect(merged.title).toBe(sourceDocument.title);
     expect(typeof merged.excerpt).toBe('string');
+  });
+});
+
+describe('multi-line field types', () => {
+  // one-line values of `text` fields: a translation may still add lines
+  const document = {
+    ...sourceDocument,
+    excerpt: 'One-line summary.',
+    sections: [
+      {
+        _key: 'section-one-line',
+        _type: 'markdownBlock',
+        content: 'One line.',
+      },
+    ],
+    notes: ['A one-line note.'],
+  } as unknown as SanityDocument;
+  const exported = new DOMParser().parseFromString(
+    serializeDocument(document, schema, 'en').content,
+    'text/html'
+  );
+
+  test('export text fields as <pre> even when one line', () => {
+    expect(exported.querySelector('.excerpt')?.tagName).toBe('PRE');
+    expect(exported.querySelector('.content')?.tagName).toBe('PRE');
+    expect(exported.querySelector('.notes > *')?.tagName).toBe('PRE');
+    expect(exported.querySelector('.title')?.tagName).toBe('SPAN');
+  });
+
+  test('keep lines a translation adds', () => {
+    const merged = roundTrip(
+      (html) =>
+        html
+          .replace('One-line summary.', 'First line.\nSecond line.')
+          .replace('One line.', '# Heading\n\nBody.')
+          .replace('A one-line note.', 'Note,\ncontinued.'),
+      document
+    );
+    expect(merged.excerpt).toBe('First line.\nSecond line.');
+    expect(sectionContents(merged)).toEqual(['# Heading\n\nBody.']);
+    expect(merged.notes).toEqual(['Note,\ncontinued.']);
   });
 });
 

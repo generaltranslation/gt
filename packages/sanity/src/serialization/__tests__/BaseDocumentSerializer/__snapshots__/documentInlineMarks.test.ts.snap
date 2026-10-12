@@ -2,7 +2,7 @@
 
 exports[`Global test of working doc-level functionality and snapshot match 1`] = `
 {
-  "content": "<html><head><meta name="_id" content="drafts.d8ffc675-ce86-4f60-9ac8-da164cde3b0a"><meta name="_type" content="documentLevelArticle"><meta name="_rev" content="fxcnqj-uew-gr7-v6r-z965tfm69"><meta name="version" content="3"></head><body><div class="documentLevelArticle" id="drafts.d8ffc675-ce86-4f60-9ac8-da164cde3b0a" data-type="object"><span class="title">My Document-Level Article</span><span class="snippet">This is text in my text field.</span><div class="tags" data-type="array"><span>tag 1</span><span>tag 2</span><span>tag 3</span></div><div class="content" data-type="array"><p id="a4d177e92666">This is block text with <span data-gt-internal="eyJtYXJrRGVmIjp7Il9rZXkiOiJ0b3BMaW5rMSIsIl90eXBlIjoibGlua0ZpZWxkIiwibGlua1R5cGUiOiJocmVmIiwiaHJlZiI6Imh0dHBzOi8vZXhhbXBsZS5jb20iLCJvcGVuSW5OZXdUYWIiOnRydWV9fQ==">a website link</span> and <span data-gt-internal="eyJtYXJrRGVmIjp7Il9rZXkiOiJ0b3BMaW5rMiIsIl90eXBlIjoibGlua0ZpZWxkIiwibGlua1R5cGUiOiJwb3N0IiwicG9zdCI6eyJfcmVmIjoicG9zdC0xMjMtYWJjIiwiX3R5cGUiOiJyZWZlcmVuY2UifSwib3BlbkluTmV3VGFiIjpmYWxzZX19">a post reference</span><span data-gt-internal="eyJtYXJrRGVmIjp7Il9rZXkiOiJ0b3BMaW5rMSIsIl90eXBlIjoibGlua0ZpZWxkIiwibGlua1R5cGUiOiJocmVmIiwiaHJlZiI6Imh0dHBzOi8vZXhhbXBsZS5jb20iLCJvcGVuSW5OZXdUYWIiOnRydWV9fQ=="> at the top level.</span></p></div></div></body></html>",
+  "content": "<html><head><meta name="_id" content="drafts.d8ffc675-ce86-4f60-9ac8-da164cde3b0a"><meta name="_type" content="documentLevelArticle"><meta name="_rev" content="fxcnqj-uew-gr7-v6r-z965tfm69"><meta name="version" content="3"></head><body><div class="documentLevelArticle" id="drafts.d8ffc675-ce86-4f60-9ac8-da164cde3b0a" data-type="object"><span class="title">My Document-Level Article</span><pre class="snippet">This is text in my text field.</pre><div class="tags" data-type="array"><span>tag 1</span><span>tag 2</span><span>tag 3</span></div><div class="content" data-type="array"><p id="a4d177e92666">This is block text with <span data-gt-internal="eyJtYXJrRGVmIjp7Il9rZXkiOiJ0b3BMaW5rMSIsIl90eXBlIjoibGlua0ZpZWxkIiwibGlua1R5cGUiOiJocmVmIiwiaHJlZiI6Imh0dHBzOi8vZXhhbXBsZS5jb20iLCJvcGVuSW5OZXdUYWIiOnRydWV9fQ==">a website link</span> and <span data-gt-internal="eyJtYXJrRGVmIjp7Il9rZXkiOiJ0b3BMaW5rMiIsIl90eXBlIjoibGlua0ZpZWxkIiwibGlua1R5cGUiOiJwb3N0IiwicG9zdCI6eyJfcmVmIjoicG9zdC0xMjMtYWJjIiwiX3R5cGUiOiJyZWZlcmVuY2UifSwib3BlbkluTmV3VGFiIjpmYWxzZX19">a post reference</span><span data-gt-internal="eyJtYXJrRGVmIjp7Il9rZXkiOiJ0b3BMaW5rMSIsIl90eXBlIjoibGlua0ZpZWxkIiwibGlua1R5cGUiOiJocmVmIiwiaHJlZiI6Imh0dHBzOi8vZXhhbXBsZS5jb20iLCJvcGVuSW5OZXdUYWIiOnRydWV9fQ=="> at the top level.</span></p></div></div></body></html>",
   "name": "drafts.d8ffc675-ce86-4f60-9ac8-da164cde3b0a",
 }
 `;
@@ -18,13 +18,13 @@ exports[`Test of working deserialization and snapshot match 1`] = `
       "_type": "block",
       "children": [
         {
-          "_key": "randomKey-10",
+          "_key": "randomKey-8",
           "_type": "span",
           "marks": [],
           "text": "This is block text with ",
         },
         {
-          "_key": "randomKey-11",
+          "_key": "randomKey-9",
           "_type": "span",
           "marks": [
             "topLink1",
@@ -32,13 +32,13 @@ exports[`Test of working deserialization and snapshot match 1`] = `
           "text": "a website link",
         },
         {
-          "_key": "randomKey-12",
+          "_key": "randomKey-10",
           "_type": "span",
           "marks": [],
           "text": " and ",
         },
         {
-          "_key": "randomKey-13",
+          "_key": "randomKey-11",
           "_type": "span",
           "marks": [
             "topLink2",
@@ -46,7 +46,7 @@ exports[`Test of working deserialization and snapshot match 1`] = `
           "text": "a post reference",
         },
         {
-          "_key": "randomKey-14",
+          "_key": "randomKey-12",
           "_type": "span",
           "marks": [
             "topLink1",
