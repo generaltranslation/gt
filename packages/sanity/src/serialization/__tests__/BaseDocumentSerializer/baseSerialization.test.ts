@@ -1,6 +1,7 @@
 import { PortableTextBlock } from 'sanity';
 import { describe, expect, test, vi } from 'vitest';
 import { BaseDocumentSerializer } from '../../serialize/index';
+import { detachGTData } from '../../data';
 import {
   customSerializers,
   defaultStopTypes,
@@ -159,11 +160,15 @@ test('Unhandled inline objects and annotations should not hinder translation flo
   );
   expect(unhandledAnnotation?.innerHTML).toContain('text');
 
-  //expect unknown inline object to stay inline in its block and empty
-  //(this keeps the text after it, but is not sent to translation)
+  //expect unknown inline object to stay inline in its block, with no
+  //translatable text and carrying its data (merged back safely, but not sent
+  //to translation)
   const inlineObject = arrayField!.querySelector('p > .childObjectField');
   expect(inlineObject?.tagName.toLowerCase()).toEqual('span');
-  expect(inlineObject?.innerHTML.length).toEqual(0);
+  expect(inlineObject?.textContent).toEqual('\u200B');
+  expect(
+    detachGTData(inlineObject!.outerHTML).data?.inlineObject
+  ).toMatchObject({ _type: 'childObjectField' });
 });
 
 test('Handled inline objects should be accurately represented per serializer', () => {

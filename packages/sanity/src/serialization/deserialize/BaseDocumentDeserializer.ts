@@ -6,7 +6,7 @@ import {
 } from '../BaseSerializationConfig';
 import { CustomDeserializers, Deserializer } from '../types';
 import { blockContentType, preprocess } from './helpers';
-import { mergeBlocks } from '../helpers';
+import { mergeBlocks, restoreInlineObjectKeys } from '../helpers';
 
 //string values: <pre> holds whitespace-sensitive text and is read verbatim,
 //<span> holds single-line text and is sanitized through block-tools
@@ -58,8 +58,8 @@ export const deserializeArray = (
             Parameters<typeof htmlToBlocks>[2]
           >['rules'],
         });
-        deserializedObject = mergeBlocks(
-          blocks as unknown as Parameters<typeof mergeBlocks>[0]
+        deserializedObject = restoreInlineObjectKeys(
+          mergeBlocks(blocks as unknown as Parameters<typeof mergeBlocks>[0])
         );
         (deserializedObject as Record<string, unknown>)._key = child.id;
       }
