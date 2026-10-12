@@ -87,3 +87,36 @@ export const restoreInlineObjectKeys = (block: PortableTextTextBlock) => {
   );
   return block;
 };
+
+type MarkedSpan = { _type: string; text?: string; marks?: string[] };
+
+const isSpanWithMarks = (child: MarkedSpan | undefined, marks: string) =>
+  child?._type === 'span' && [...(child.marks ?? [])].sort().join() === marks;
+
+/**
+ * Rejoin text that a line break split out of its marks. A `\n` inside a mark
+ * is exported as `<br>`, which block-tools imports as an unmarked span:
+ * `[em "one"] ["\n"] [em "two"]` becomes `[em "one\ntwo"]` again.
+ */
+export const rejoinMarkedLineBreaks = (block: PortableTextTextBlock) => {
+  const children = block.children as MarkedSpan[] | undefined;
+  if (!children) return block;
+  for (let index = 1; index < children.length - 1; index++) {
+    const lineBreak = children[index];
+    const previous = children[index - 1];
+    const marks = [...(previous.marks ?? [])].sort().join();
+    if (
+      !marks ||
+      previous._type !== 'span' ||
+      !isSpanWithMarks(lineBreak, '') ||
+      !/^\n+$/.test(lineBreak.text ?? '') ||
+      !isSpanWithMarks(children[index + 1], marks)
+    ) {
+      continue;
+    }
+    previous.text = `${previous.text ?? ''}${lineBreak.text}${children[index + 1].text ?? ''}`;
+    children.splice(index, 2);
+    index--;
+  }
+  return block;
+};

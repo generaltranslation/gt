@@ -64,10 +64,31 @@ const annotationMark =
     );
   };
 
+/**
+ * Decorators without a standard HTML element are carried by name, so custom
+ * decorators survive the round trip.
+ */
+const DECORATOR_ATTRIBUTE = 'data-gt-decorator';
+
+const decoratorMark: PortableTextMarkComponent = ({ children, markType }) =>
+  `<span ${DECORATOR_ATTRIBUTE}="${escapeHTML(markType)}">${children}</span>`;
+
+// Decorators rendered as their own element. block-tools only restores the
+// ones the generic import schema declares, so these are restored by name
+// (the decorator rule below).
+const DECORATOR_ELEMENTS: Record<string, string> = {
+  sup: 'sup',
+  sub: 'sub',
+  u: 'underline',
+};
+
 export const defaultMarks: Record<string, PortableTextMarkComponent> = {
   link: annotationMark(
     defaultComponents.marks.link as PortableTextMarkComponent
   ),
+  sup: ({ children }) => `<sup>${children}</sup>`,
+  sub: ({ children }) => `<sub>${children}</sub>`,
+  underline: ({ children }) => `<u>${children}</u>`,
 };
 
 export const defaultPortableTextBlockStyles: Record<
@@ -119,7 +140,7 @@ export const customSerializers: Partial<PortableTextHtmlComponents> = {
           'inlineObject'
         )
       : `<div class="${value._type}"></div>`,
-  unknownMark: annotationMark(defaultComponents.unknownMark),
+  unknownMark: annotationMark(decoratorMark),
   types: {},
   marks: defaultMarks,
   block: defaultPortableTextBlockStyles,
@@ -226,6 +247,31 @@ export const customBlockDeserializers: Array<unknown> = [
         markDef,
         children: next(el.childNodes),
       };
+    },
+  },
+  // handle decorators, whether or not the generic import schema declares them
+  {
+    deserialize(
+      node: Node,
+      next: (
+        elements: Node | Node[] | NodeList
+      ) => TypedObject | TypedObject[] | undefined
+    ): TypedObject | undefined {
+      if (node.nodeType !== 1) {
+        return undefined;
+      }
+      const el = node as HTMLElement;
+      const name =
+        el.getAttribute(DECORATOR_ATTRIBUTE) ??
+        DECORATOR_ELEMENTS[el.tagName.toLowerCase()];
+      if (!name) {
+        return undefined;
+      }
+      return {
+        _type: '__decorator',
+        name,
+        children: next(el.childNodes),
+      } as TypedObject;
     },
   },
   //handle undeclared styles

@@ -510,3 +510,77 @@ describe('whitespace-only marks', () => {
     ]);
   });
 });
+
+describe('decorators', () => {
+  const paragraph = {
+    _key: 'block-decorators',
+    _type: 'block',
+    style: 'normal',
+    markDefs: [
+      { _key: 'link-terms', _type: 'link', href: 'https://example.test/terms' },
+    ],
+    children: [
+      span('Plans start at $9'),
+      span('*', ['sup']),
+      span(' and cut CO'),
+      span('2', ['sub']),
+      span(' by '),
+      span('half', ['underline']),
+      span(', see the '),
+      span('terms', ['link-terms', 'underline']),
+      span('. '),
+      span('Old price', ['strike-through']),
+      span(', '),
+      span('npm i', ['code']),
+      span(', '),
+      span('new', ['highlight']),
+      span('. '),
+      span('First line\nsecond line', ['em']),
+      span(' and '),
+      span('x\ny', ['strong', 'sup']),
+    ],
+  };
+  const document = {
+    ...sourceDocument,
+    body: [paragraph],
+  } as unknown as SanityDocument;
+
+  /** Text runs with their set of marks, independent of span boundaries. */
+  const markedRuns = (block: Block) =>
+    block.children.reduce<Array<[string, string]>>((runs, child) => {
+      const marks = [...((child.marks as string[]) ?? [])].sort().join('+');
+      const last = runs[runs.length - 1];
+      if (last && last[1] === marks) last[0] += child.text as string;
+      else runs.push([child.text as string, marks]);
+      return runs;
+    }, []);
+
+  test('keep every decorator on its text', () => {
+    const [block] = roundTrip((html) => html, document).body as Block[];
+    expect(markedRuns(block)).toEqual(markedRuns(paragraph as Block));
+  });
+
+  test('stay on their text while it is translated', () => {
+    const [block] = roundTrip(markerTranslate, document).body as Block[];
+    const runs = markedRuns(block);
+    expect(runs).toContainEqual([`${MARKER}*`, 'sup']);
+    expect(runs).toContainEqual([`${MARKER}2`, 'sub']);
+    expect(runs).toContainEqual([`${MARKER}terms`, 'link-terms+underline']);
+    expect(runs).toContainEqual([`${MARKER}new`, 'highlight']);
+    expect(runs).toContainEqual([
+      `${MARKER}First line\n${MARKER}second line`,
+      'em',
+    ]);
+  });
+
+  test('export standard decorators as their own elements', () => {
+    const { content } = serializeDocument(document, schema, 'en');
+    const exported = new DOMParser().parseFromString(content, 'text/html');
+    expect(exported.querySelector('sup')?.textContent).toBe('*');
+    expect(exported.querySelector('sub')?.textContent).toBe('2');
+    expect(exported.querySelector('a > u')?.textContent).toBe('terms');
+    expect(
+      exported.querySelector('[data-gt-decorator="highlight"]')?.textContent
+    ).toBe('new');
+  });
+});
