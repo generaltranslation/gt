@@ -267,6 +267,29 @@ describe('localizeMintlifyRedirects', () => {
     expect(read('docs.json')).toBe(afterFirst);
   });
 
+  it('never localizes a redirect that is already localized', async () => {
+    // Translated pages can be reported as orphaned alongside the English one;
+    // their redirects must not gain a second locale (/docs/ja-jp/fr-ca/old)
+    setup([
+      { source: '/docs/old', destination: '/docs/new' },
+      { source: '/docs/fr-ca/old', destination: '/docs/fr-ca/new' },
+      { source: '/docs/ja-jp/old', destination: '/docs/ja-jp/new' },
+    ]);
+    // Without translated destination pages on disk, nothing else rules out
+    // the nested-locale URLs
+    page('new', []);
+    const before = read('docs.json');
+
+    const added = await run([
+      ...removed('old'),
+      'docs/fr-ca/old.mdx',
+      'docs/ja-jp/old.mdx',
+    ]);
+
+    expect(added).toEqual([]);
+    expect(read('docs.json')).toBe(before);
+  });
+
   it('writes to the file docs.json references with $ref', async () => {
     setup({ $ref: './config/redirects.json' });
     writeJson('config/redirects.json', [
