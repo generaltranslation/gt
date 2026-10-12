@@ -79,6 +79,11 @@ export function localizeMintlifyRedirects(
     );
     return localized === null ? null : normalizeUrl(localized);
   };
+  // Translated pages can be orphaned too, so their redirects are already
+  // localized. Localizing them again would nest locales (/docs/ja-jp/fr-ca/...)
+  const localeSegmentIndex = urlPatternHead.split('/').filter(Boolean).length;
+  const isLocalized = (url: string) =>
+    targetLocales.includes(url.split('/').filter(Boolean)[localeSegmentIndex]);
   const takenSources = new Set(
     location.redirects.filter(isRedirect).map((r) => normalizeUrl(r.source))
   );
@@ -89,7 +94,13 @@ export function localizeMintlifyRedirects(
     const [destinationPath, anchor] = splitAnchor(entry.destination);
     const sourceUrl = normalizeUrl(entry.source);
     const destinationUrl = normalizeUrl(destinationPath);
-    if (!oldPageUrls.has(sourceUrl)) return [entry];
+    if (
+      !oldPageUrls.has(sourceUrl) ||
+      isLocalized(sourceUrl) ||
+      isLocalized(destinationUrl)
+    ) {
+      return [entry];
+    }
 
     const localized: Redirect[] = [];
     for (const locale of targetLocales) {
