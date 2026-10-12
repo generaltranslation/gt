@@ -159,9 +159,10 @@ test('Unhandled inline objects and annotations should not hinder translation flo
   );
   expect(unhandledAnnotation?.innerHTML).toContain('text');
 
-  //expect unknown inline object to be present but empty
-  //(this allows it to be merged back safely, but not sent to translation)
-  const inlineObject = findByClass(arrayField!.children, 'childObjectField');
+  //expect unknown inline object to stay inline in its block and empty
+  //(this keeps the text after it, but is not sent to translation)
+  const inlineObject = arrayField!.querySelector('p > .childObjectField');
+  expect(inlineObject?.tagName.toLowerCase()).toEqual('span');
   expect(inlineObject?.innerHTML.length).toEqual(0);
 });
 
