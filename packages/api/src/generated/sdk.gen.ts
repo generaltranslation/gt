@@ -205,28 +205,6 @@ export type Options<
 };
 
 /**
- * Workspace plugin info
- *
- * Run the Google Drive Workspace plugin info command.
- */
-export const workspacePluginInfo = <ThrowOnError extends boolean = false>(
-  options: Options<WorkspacePluginInfoData, ThrowOnError>
-) =>
-  options.client.post<
-    WorkspacePluginInfoResponses,
-    WorkspacePluginInfoErrors,
-    ThrowOnError
-  >({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/integrations/workspace-plugin/info',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-/**
  * Workspace plugin translate
  *
  * Run the Google Drive Workspace plugin translate command.
@@ -430,9 +408,31 @@ export const pluginDownload = <ThrowOnError extends boolean = false>(
   });
 
 /**
+ * Workspace plugin info
+ *
+ * Run the Google Drive Workspace plugin info command.
+ */
+export const workspacePluginInfo = <ThrowOnError extends boolean = false>(
+  options: Options<WorkspacePluginInfoData, ThrowOnError>
+) =>
+  options.client.post<
+    WorkspacePluginInfoResponses,
+    WorkspacePluginInfoErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v1/integrations/workspace-plugin/info',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
  * Get Project information
  *
- * Get a project's ID, name, Organization, locales, and auto-approval setting. Requires `project:files:read`.
+ * Get a project's ID, name, Organization, locales, and auto-approval setting. No permission is needed beyond access to the project.
  */
 export const getProjectInfo = <ThrowOnError extends boolean = false>(
   options: Options<GetProjectInfoData, ThrowOnError>
@@ -476,6 +476,31 @@ export const updateProjectInfo = <ThrowOnError extends boolean = false>(
   });
 
 /**
+ * Get translation job status
+ *
+ * Get the status of one or more translation or context generation jobs.
+ */
+export const getTranslationJobInfo = <ThrowOnError extends boolean = false>(
+  options: Options<GetTranslationJobInfoData, ThrowOnError>
+) =>
+  options.client.post<
+    GetTranslationJobInfoResponses,
+    GetTranslationJobInfoErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/project/jobs/info',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
  * Get translation status for a file
  *
  * Return translation progress and availability by locale for one source file, along with its source metadata.
@@ -494,94 +519,6 @@ export const getTranslationStatus = <ThrowOnError extends boolean = false>(
     ],
     url: '/v2/project/translations/files/status/{fileId}',
     ...options,
-  });
-
-/**
- * Get branch information
- *
- * Return the Project's default branch and any branches requested by name.
- */
-export const getBranchInfo = <ThrowOnError extends boolean = false>(
-  options: Options<GetBranchInfoData, ThrowOnError>
-) =>
-  options.client.post<
-    GetBranchInfoResponses,
-    GetBranchInfoErrors,
-    ThrowOnError
-  >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/project/branches/info',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-/**
- * Create a branch
- *
- * Create a new branch, or rename and confirm the default branch.
- */
-export const createBranch = <ThrowOnError extends boolean = false>(
-  options: Options<CreateBranchData, ThrowOnError>
-) =>
-  options.client.post<CreateBranchResponses, CreateBranchErrors, ThrowOnError>({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/project/branches/create',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-/**
- * Create or update a tag
- *
- * Create or update a tag for a set of file versions.
- */
-export const createTag = <ThrowOnError extends boolean = false>(
-  options: Options<CreateTagData, ThrowOnError>
-) =>
-  options.client.post<CreateTagResponses, CreateTagErrors, ThrowOnError>({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/project/tags/create',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-/**
- * Upload Project assets
- *
- * Upload OpenType or TrueType fonts for Lottie translations across your Organization. Uploading the same font family, weight, and italic style replaces the existing font. You can safely retry the full upload after a `500` response.
- */
-export const uploadAssets = <ThrowOnError extends boolean = false>(
-  options: Options<UploadAssetsData, ThrowOnError>
-) =>
-  options.client.post<UploadAssetsResponses, UploadAssetsErrors, ThrowOnError>({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/project/assets',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
   });
 
 /**
@@ -725,31 +662,6 @@ export const downloadFile = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Get translation job status
- *
- * Get the status of one or more translation or context generation jobs.
- */
-export const getTranslationJobInfo = <ThrowOnError extends boolean = false>(
-  options: Options<GetTranslationJobInfoData, ThrowOnError>
-) =>
-  options.client.post<
-    GetTranslationJobInfoResponses,
-    GetTranslationJobInfoErrors,
-    ThrowOnError
-  >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/project/jobs/info',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-/**
  * Publish or unpublish files
  *
  * Publish or unpublish translated files to the CDN. Requires CDN to be enabled.
@@ -821,27 +733,6 @@ export const enqueueFileTranslations = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Translate content at runtime
- *
- * Translate strings, structured content, or Markdown and MDX documents. Send documents as strings with `fileFormat` set to `MD` or `MDX`. Requires `project:translations:generate`. Existing development API keys are also accepted.
- */
-export const translate = <ThrowOnError extends boolean = false>(
-  options: Options<TranslateData, ThrowOnError>
-) =>
-  options.client.post<TranslateResponses, TranslateErrors, ThrowOnError>({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/translate',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-/**
  * Upload translated files
  *
  * Upload translated files linked to their source files. Max 100 files per request.
@@ -859,6 +750,115 @@ export const uploadTranslations = <ThrowOnError extends boolean = false>(
       { scheme: 'bearer', type: 'http' },
     ],
     url: '/v2/project/files/upload-translations',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Get branch information
+ *
+ * Return the Project's default branch and any branches requested by name.
+ */
+export const getBranchInfo = <ThrowOnError extends boolean = false>(
+  options: Options<GetBranchInfoData, ThrowOnError>
+) =>
+  options.client.post<
+    GetBranchInfoResponses,
+    GetBranchInfoErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/project/branches/info',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Create a branch
+ *
+ * Create a new branch, or rename and confirm the default branch.
+ */
+export const createBranch = <ThrowOnError extends boolean = false>(
+  options: Options<CreateBranchData, ThrowOnError>
+) =>
+  options.client.post<CreateBranchResponses, CreateBranchErrors, ThrowOnError>({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/project/branches/create',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Create or update a tag
+ *
+ * Create or update a tag for a set of file versions.
+ */
+export const createTag = <ThrowOnError extends boolean = false>(
+  options: Options<CreateTagData, ThrowOnError>
+) =>
+  options.client.post<CreateTagResponses, CreateTagErrors, ThrowOnError>({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/project/tags/create',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Upload Project assets
+ *
+ * Upload OpenType or TrueType fonts for Lottie translations across your Organization. Uploading the same font family, weight, and italic style replaces the existing font. You can safely retry the full upload after a `500` response.
+ */
+export const uploadAssets = <ThrowOnError extends boolean = false>(
+  options: Options<UploadAssetsData, ThrowOnError>
+) =>
+  options.client.post<UploadAssetsResponses, UploadAssetsErrors, ThrowOnError>({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/project/assets',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Translate content at runtime
+ *
+ * Translate strings, structured content, or Markdown and MDX documents. Send documents as strings with `fileFormat` set to `MD` or `MDX`. Requires `project:translations:generate`. Existing development API keys are also accepted.
+ */
+export const translate = <ThrowOnError extends boolean = false>(
+  options: Options<TranslateData, ThrowOnError>
+) =>
+  options.client.post<TranslateResponses, TranslateErrors, ThrowOnError>({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/translate',
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -894,7 +894,7 @@ export const createProjectApiKey = <ThrowOnError extends boolean = false>(
 /**
  * List Projects
  *
- * List projects you can access, ordered by ID. Requires `project:files:read`. No `gt-project-id` header is needed. Omit `cursor` for the first page. When the response's `nextCursor` is a string, pass it as `cursor` to fetch the next page; when it is `null`, there are no more results.
+ * List projects you are a member of, or the projects your API key is bound to, ordered by ID. No permission or `gt-project-id` header is needed. Omit `cursor` for the first page. When the response's `nextCursor` is a string, pass it as `cursor` to fetch the next page; when it is `null`, there are no more results.
  */
 export const listProjects = <ThrowOnError extends boolean = false>(
   options: Options<ListProjectsData, ThrowOnError>
@@ -1043,6 +1043,23 @@ export const assignContextGroup = <ThrowOnError extends boolean = false>(
   });
 
 /**
+ * List Organizations
+ *
+ * List Organizations you can access, ordered by ID. Organization and Project keys each return only their own Organization; user tokens return every Organization the user belongs to. No project ID, permission, or token scope is required. Omit `cursor` for the first page. When the response's `nextCursor` is a string, pass it as `cursor` to fetch the next page; when it is `null`, there are no more results.
+ */
+export const listOrgs = <ThrowOnError extends boolean = false>(
+  options: Options<ListOrgsData, ThrowOnError>
+) =>
+  options.client.get<ListOrgsResponses, ListOrgsErrors, ThrowOnError>({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/orgs',
+    ...options,
+  });
+
+/**
  * Create a Project
  *
  * Create a project in the specified Organization. Requires `org:projects:create`. Returns `409` if your plan's project limit has been reached. Each successful request creates a new project.
@@ -1065,23 +1082,6 @@ export const createProject = <ThrowOnError extends boolean = false>(
       'Content-Type': 'application/json',
       ...options.headers,
     },
-  });
-
-/**
- * List Organizations
- *
- * List Organizations accessible to your API key, ordered by ID. Organization and Project keys each return only their own Organization. No project ID or project-creation permission is required. Omit `cursor` for the first page. When the response's `nextCursor` is a string, pass it as `cursor` to fetch the next page; when it is `null`, there are no more results.
- */
-export const listOrgs = <ThrowOnError extends boolean = false>(
-  options: Options<ListOrgsData, ThrowOnError>
-) =>
-  options.client.get<ListOrgsResponses, ListOrgsErrors, ThrowOnError>({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/orgs',
-    ...options,
   });
 
 /**

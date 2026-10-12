@@ -3,11 +3,11 @@ import * as t from '@babel/types';
 import { Libraries } from '../../../types/libraries.js';
 import type { ManualAction } from '../index.js';
 import {
-  DOCS_URL,
   getLocalImport,
   getPropertyName,
   type SourceFile,
-} from './source.js';
+} from '../shared/source.js';
+import { DOCS_URL } from './source.js';
 
 export const START_CONTENT = `import { createCsrfMiddleware, createStart } from '@tanstack/react-start';
 import { gtMiddleware } from '${Libraries.GT_TANSTACK_START}';
@@ -69,7 +69,11 @@ function getStartOptions(start: SourceFile): t.ObjectExpression | undefined {
  * the startInstance options. A spread or computed key could override it.
  */
 export function registersMiddleware(start: SourceFile): boolean {
-  const local = getLocalImport(start, 'gtMiddleware');
+  const local = getLocalImport(
+    start,
+    'gtMiddleware',
+    Libraries.GT_TANSTACK_START
+  );
   const options = local ? getStartOptions(start) : undefined;
   if (!options) return false;
   const names = options.properties.map(getPropertyName);

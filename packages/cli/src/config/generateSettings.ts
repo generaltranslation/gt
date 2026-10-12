@@ -7,10 +7,7 @@ import {
 } from '../console/logging.js';
 import { loadConfig, withJsonExtension } from '../fs/config/loadConfig.js';
 import { FilesOptions, Settings } from '../types/index.js';
-import {
-  defaultBaseUrl,
-  libraryDefaultLocale,
-} from 'generaltranslation/internal';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { resolveFiles } from '../fs/config/parseFilesConfig.js';
 import { validateSettings } from './validateSettings.js';
 import {
@@ -26,6 +23,7 @@ import fs from 'node:fs';
 import chalk from 'chalk';
 import { resolveConfig } from './resolveConfig.js';
 import { configureApiClient } from '../utils/api.js';
+import { resolveApiBaseUrl } from '../utils/apiBaseUrl.js';
 import { generatePreset } from './optionPresets.js';
 import { GT_PARSING_FLAGS_DEFAULT } from './defaults.js';
 import { normalizeFilesOptions } from '../formats/files/transformFormat.js';
@@ -217,8 +215,7 @@ export async function generateSettings(
   // Add projectId if not provided
   mergedOptions.projectId = mergedOptions.projectId || resolveProjectId();
 
-  // Add baseUrl if not provided
-  mergedOptions.baseUrl = mergedOptions.baseUrl || defaultBaseUrl;
+  mergedOptions.baseUrl = resolveApiBaseUrl(mergedOptions.baseUrl);
 
   // The API client prefers apiKey when both are set; the provider is lazy.
   mergedOptions.apiKey = mergedOptions.apiKey || process.env.GT_API_KEY;
