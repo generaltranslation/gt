@@ -14,6 +14,8 @@ const schema = Schema.compile({
   name: 'roundTrip',
   types: [
     { name: 'markdown', type: 'text' },
+    { name: 'noteList', type: 'array', of: [{ type: 'text' }] },
+    { name: 'reviewNotes', type: 'noteList' },
     {
       name: 'markdownBlock',
       type: 'object',
@@ -22,7 +24,10 @@ const schema = Schema.compile({
     {
       name: 'seo',
       type: 'object',
-      fields: [{ name: 'description', type: 'text' }],
+      fields: [
+        { name: 'description', type: 'text' },
+        { name: 'reviewNotes', type: 'reviewNotes' },
+      ],
     },
     {
       name: 'roundTripPost',
@@ -33,6 +38,7 @@ const schema = Schema.compile({
         { name: 'seo', type: 'seo' },
         { name: 'tags', type: 'array', of: [{ type: 'string' }] },
         { name: 'notes', type: 'array', of: [{ type: 'text' }] },
+        { name: 'checklist', type: 'noteList' },
         { name: 'sections', type: 'array', of: [{ type: 'markdownBlock' }] },
       ],
     },
@@ -208,6 +214,12 @@ describe('multi-line field types', () => {
       },
     ],
     notes: ['A one-line note.'],
+    // named array types, directly and through an alias in a nested object
+    checklist: ['One checklist item.'],
+    seo: {
+      ...(sourceDocument.seo as Record<string, unknown>),
+      reviewNotes: ['One review note.'],
+    },
   } as unknown as SanityDocument;
   const exported = new DOMParser().parseFromString(
     serializeDocument(document, schema, 'en').content,
@@ -218,6 +230,8 @@ describe('multi-line field types', () => {
     expect(exported.querySelector('.excerpt')?.tagName).toBe('PRE');
     expect(exported.querySelector('.content')?.tagName).toBe('PRE');
     expect(exported.querySelector('.notes > *')?.tagName).toBe('PRE');
+    expect(exported.querySelector('.checklist > *')?.tagName).toBe('PRE');
+    expect(exported.querySelector('.reviewNotes > *')?.tagName).toBe('PRE');
     expect(exported.querySelector('.title')?.tagName).toBe('SPAN');
   });
 
@@ -227,12 +241,18 @@ describe('multi-line field types', () => {
         html
           .replace('One-line summary.', 'First line.\nSecond line.')
           .replace('One line.', '# Heading\n\nBody.')
-          .replace('A one-line note.', 'Note,\ncontinued.'),
+          .replace('A one-line note.', 'Note,\ncontinued.')
+          .replace('One checklist item.', 'Item,\ncontinued.')
+          .replace('One review note.', 'Review,\ncontinued.'),
       document
     );
     expect(merged.excerpt).toBe('First line.\nSecond line.');
     expect(sectionContents(merged)).toEqual(['# Heading\n\nBody.']);
     expect(merged.notes).toEqual(['Note,\ncontinued.']);
+    expect(merged.checklist).toEqual(['Item,\ncontinued.']);
+    expect((merged.seo as { reviewNotes: string[] }).reviewNotes).toEqual([
+      'Review,\ncontinued.',
+    ]);
   });
 });
 

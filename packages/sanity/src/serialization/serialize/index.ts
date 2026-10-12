@@ -25,6 +25,7 @@ const META_FIELDS = ['_key', '_type', '_id', '_weak'];
 type SchemaTypeWithFields = {
   type?: unknown;
   fields?: ObjectField[];
+  of?: RawFieldDef[];
   options?: unknown;
 };
 
@@ -85,6 +86,25 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
       current = typeof typeDef?.type === 'string' ? typeDef.type : undefined;
     }
     return false;
+  };
+
+  /*
+   * The member definitions of an array field: declared inline in its `of`, or
+   * on the named array type it references (through any aliases).
+   */
+  const resolveArrayMembers = (
+    fieldDef: RawFieldDef | undefined
+  ): RawFieldDef[] | undefined => {
+    if (fieldDef?.of) return fieldDef.of;
+    const seen = new Set<string>();
+    let current = fieldDef?.type;
+    while (current && !seen.has(current)) {
+      seen.add(current);
+      const typeDef = getSchema(current);
+      if (typeDef?.of) return typeDef.of;
+      current = typeof typeDef?.type === 'string' ? typeDef.type : undefined;
+    }
+    return undefined;
   };
 
   const serializeObject = (
@@ -200,7 +220,7 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
               ...serializers,
               types: { ...typeSerializers },
             },
-            fieldDef?.of
+            resolveArrayMembers(fieldDef)
           );
         }
 
@@ -378,7 +398,7 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
           key,
           stopTypes,
           serializers,
-          fieldDef?.of
+          resolveArrayMembers(fieldDef)
         );
       } else if (
         value &&
