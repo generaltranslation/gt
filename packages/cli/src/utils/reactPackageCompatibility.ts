@@ -1,20 +1,19 @@
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import { minVersion } from 'semver';
+import { lt, minVersion } from 'semver';
 import { logger } from '../console/logger.js';
 import { REACT_LIBRARIES } from '../types/libraries.js';
 import { getPackageJson, getPackageVersion } from './packageJson.js';
 
-const MINIMUM_REACT_PACKAGE_MAJOR = 11;
+const MINIMUM_REACT_PACKAGE_VERSION = '11.0.0';
 
-function permitsVersionBelowMinimum(version: string): boolean {
-  // A range is potentially incompatible if it permits any version below the
-  // minimum; invalid ranges (workspace:*, tags, URLs) fail open
+/**
+ * Whether a dependency range permits any version below `minimum`. Invalid
+ * ranges (workspace:*, tags, URLs) fail open.
+ */
+export function permitsVersionBelow(range: string, minimum: string): boolean {
   try {
-    const minimumVersion = minVersion(version);
-    return (
-      minimumVersion !== null &&
-      minimumVersion.major < MINIMUM_REACT_PACKAGE_MAJOR
-    );
+    const lowest = minVersion(range);
+    return lowest !== null && lt(lowest, minimum);
   } catch {
     return false;
   }
@@ -34,7 +33,7 @@ export async function warnReactPackageCompatibility(
       const version = getPackageVersion(packageName, packageJson);
       if (!version) return [];
 
-      return permitsVersionBelowMinimum(version)
+      return permitsVersionBelow(version, MINIMUM_REACT_PACKAGE_VERSION)
         ? [`${packageName}@${version}`]
         : [];
     });

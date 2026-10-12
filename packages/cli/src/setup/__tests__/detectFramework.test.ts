@@ -47,4 +47,32 @@ describe('detectFramework', () => {
       type: 'react',
     });
   });
+
+  it('detects a Hydrogen app as React Router before its Vite dependency', async () => {
+    writePackageJson({
+      dependencies: {
+        '@shopify/hydrogen': '^2026.4.0',
+        'react-router': '^7.0.0',
+        react: '^18.0.0',
+      },
+      devDependencies: { '@react-router/dev': '^7.0.0', vite: '^7.0.0' },
+    });
+
+    await expect(detectFramework()).resolves.toEqual({
+      name: 'react-router',
+      type: 'react',
+    });
+  });
+
+  it('keeps a Vite SPA using only the react-router library as Vite', async () => {
+    writePackageJson({
+      dependencies: { 'react-router': '^7.0.0', react: '^19.0.0' },
+      devDependencies: { vite: '^7.0.0' },
+    });
+
+    await expect(detectFramework()).resolves.toEqual({
+      name: 'vite',
+      type: 'react',
+    });
+  });
 });
