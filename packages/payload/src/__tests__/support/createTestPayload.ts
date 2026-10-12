@@ -145,6 +145,10 @@ export function testConfig(
                       slug: 'banner',
                       fields: [{ name: 'content', type: 'richText' }],
                     },
+                    {
+                      slug: 'callout',
+                      fields: [{ name: 'content', type: 'richText' }],
+                    },
                   ],
                 }),
               ],

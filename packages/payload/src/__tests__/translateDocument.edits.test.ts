@@ -399,4 +399,34 @@ describe('translateDocument: edits made in Payload', () => {
     ).fields.content;
     expect(plainText(content)).toEqual(['Mi texto local ', 'documentos']);
   });
+
+  it('gives a block the source changed to another type the new type', async () => {
+    const page = await createPage(payload);
+    const gt = new FakeGt();
+    const target = { collection: 'pages', id: page.id };
+    const body = (type: string, words: string) =>
+      richText(block(type, { content: richText(paragraph(text(words))) }));
+    await payload.update({
+      collection: 'pages',
+      id: page.id,
+      locale: 'en',
+      draft: true,
+      data: { body: body('banner', 'Limited offer') },
+    });
+    await translateDocument({ payload, gt, target, locales: ['es'] });
+    await payload.update({
+      collection: 'pages',
+      id: page.id,
+      locale: 'en',
+      draft: true,
+      data: { body: body('callout', 'Read this') },
+    });
+    await translateDocument({ payload, gt, target, locales: ['es'] });
+
+    const esBlock = (await read(page.id, 'es')).body!.root.children[0] as {
+      fields: { blockType: string; content: Parameters<typeof plainText>[0] };
+    };
+    expect(esBlock.fields.blockType).toBe('callout');
+    expect(plainText(esBlock.fields.content)).toEqual(['READ THIS']);
+  });
 });
