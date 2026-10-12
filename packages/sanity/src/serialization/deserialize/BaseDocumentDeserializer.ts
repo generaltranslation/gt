@@ -6,13 +6,18 @@ import {
 } from '../BaseSerializationConfig';
 import { CustomDeserializers, Deserializer } from '../types';
 import { blockContentType, preprocess } from './helpers';
-import { LEADING_NEWLINES_ATTRIBUTE, mergeBlocks } from '../helpers';
+import {
+  LEADING_NEWLINES_ATTRIBUTE,
+  mergeBlocks,
+  STRING_ATTRIBUTE,
+} from '../helpers';
 
 //string values: <pre> holds whitespace-sensitive text and is read verbatim,
-//<span> holds single-line text and is sanitized through block-tools
+//<span> holds single-line text and is sanitized through block-tools. a <pre>
+//without the string marker comes from a custom serializer
 const deserializeString = (element: Element): string | undefined => {
   const tagName = element.tagName?.toLowerCase();
-  if (tagName === 'pre') {
+  if (tagName === 'pre' && element.hasAttribute(STRING_ATTRIBUTE)) {
     // leading newlines are carried by the attribute, so any left in the text
     // are parser artifacts
     const text = (element.textContent ?? '').replace(/^\n+/, '');
@@ -39,12 +44,7 @@ export const deserializeArray = (
   children.forEach((child) => {
     let deserializedObject: unknown;
     try {
-      //string items are exported without a class, so a <pre> with one comes
-      //from a custom serializer and is an object
-      const stringValue =
-        child.tagName.toLowerCase() === 'pre' && child.className
-          ? undefined
-          : deserializeString(child);
+      const stringValue = deserializeString(child);
       if (stringValue !== undefined) {
         deserializedObject = stringValue;
       }
