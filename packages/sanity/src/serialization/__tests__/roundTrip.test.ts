@@ -213,21 +213,60 @@ describe('string elements', () => {
   });
 
   test('read <pre> text the same with or without the leading newline', () => {
-    // GT re-serializes the HTML and drops the newline the export adds after
-    // <pre>; the parser drops it on our side when it is still there
-    const merged = roundTrip((html) => html.replace(/(<pre[^>]*>)\n/g, '$1'));
+    // the parser drops a newline right after <pre>, so one added by a
+    // re-serializer or translator never reaches the value
+    const merged = roundTrip((html) => html.replace(/(<pre[^>]*>)/g, '$1\n'));
     expect(merged).toEqual(sourceDocument);
   });
 
   test('legacy <span> fields still import', () => {
     const merged = roundTrip((html) =>
       html.replace(
-        /<pre class="excerpt">\n([\s\S]*?)<\/pre>/,
+        /<pre class="excerpt">([\s\S]*?)<\/pre>/,
         '<span class="excerpt">$1</span>'
       )
     );
     expect(merged.title).toBe(sourceDocument.title);
     expect(typeof merged.excerpt).toBe('string');
+  });
+});
+
+describe('leading newlines', () => {
+  const values = ['\n', '\nx', '\n\nx', 'x\n', '\nline one\nline two'];
+  const document = {
+    ...sourceDocument,
+    excerpt: '\n\n  Indented after two blank lines',
+    tags: values,
+  } as unknown as SanityDocument;
+
+  // Each HTML parse drops one newline right after <pre>; GT parses the file
+  // again before formatting it
+  const translators: Record<string, (html: string) => string> = {
+    identity: (html) => html,
+    're-parsed': (html) =>
+      new DOMParser().parseFromString(html, 'text/html').documentElement
+        .outerHTML,
+    'newline added after <pre>': (html) =>
+      html.replace(/(<pre[^>]*>)/g, '$1\n\n'),
+  };
+
+  test.each(Object.entries(translators))(
+    'round-trip byte-identically: %s',
+    (_, translate) => {
+      const merged = roundTrip(translate, document);
+      expect(merged.tags).toEqual(values);
+      expect(merged.excerpt).toBe(document.excerpt);
+    }
+  );
+
+  test('stay before the translated text', () => {
+    const merged = roundTrip(markerTranslate, document);
+    expect(merged.tags).toEqual(
+      values.map((value) => value.replace(/^(\n*)(?=[^\n])/, `$1${MARKER}`))
+    );
+    expect(merged.excerpt).toBe(
+      `\n\n${MARKER}  Indented after two blank lines`
+    );
   });
 });
 
