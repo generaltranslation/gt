@@ -49,6 +49,7 @@ Turbo tasks: `build`, `test`, `lint`, `lint:fix`, `format`, `format:fix`, `trans
 | `gt-react-native`                       | `packages/react-native`      | React Native i18n with native module support                      |
 | `gt-tanstack-start`                     | `packages/tanstack-start`    | TanStack Start integration                                        |
 | `gt-sanity`                             | `packages/sanity`            | Sanity CMS plugin                                                 |
+| `gt-payload`                            | `packages/payload`           | Payload CMS plugin                                                |
 | `@generaltranslation/compiler`          | `packages/compiler`          | Build plugin (webpack, Vite, Rollup, esbuild) via unplugin        |
 | `gt`                                    | `packages/cli`               | Main CLI tool (`npx gt`)                                          |
 | `gtx-cli`                               | `packages/gtx-cli`           | Wrapper CLI for gt (backward compatibility)                       |
