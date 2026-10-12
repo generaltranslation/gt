@@ -55,9 +55,9 @@ Set `"localeRouting": true` in `gt.config.json` to put the locale in the URL (`/
    ```ts
    import { index, prefix, type RouteConfig } from '@react-router/dev/routes';
 
-   export default [
-     ...prefix(':locale?', [index('routes/home.tsx')]),
-   ] satisfies RouteConfig;
+   export default prefix(':locale?', [
+     index('routes/home.tsx'),
+   ]) satisfies RouteConfig;
    ```
 
 2. Resolve the locale in the root loader. `getRequestLocale` reads it from the URL first, then the locale cookie and the `Accept-Language` header, and throws a redirect when the URL does not match, such as `/about` to `/fr/about` for a French visitor:
