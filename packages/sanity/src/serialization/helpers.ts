@@ -38,9 +38,10 @@ const htmlEscapes: Record<string, string> = {
 export const escapeHTML = (value: string): string =>
   value.replace(/[&<>"]/g, (char) => htmlEscapes[char]);
 
-// Whitespace that HTML formatting would collapse or trim: newlines, leading or
-// trailing whitespace, and runs of whitespace.
-const SIGNIFICANT_WHITESPACE = /\n|^\s|\s$|\s\s/;
+// Whitespace that HTML formatting would collapse or trim: newlines, tabs and
+// other control whitespace, leading or trailing whitespace, and runs of
+// whitespace.
+const SIGNIFICANT_WHITESPACE = /[\t\n\f\r]|^\s|\s$|\s\s/;
 
 /**
  * Number of newlines a <pre> value starts with. Every HTML parse drops one

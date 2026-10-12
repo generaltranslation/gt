@@ -306,6 +306,19 @@ describe('string elements', () => {
     expect(withoutSpanKeys(merged)).toEqual(withoutSpanKeys(sourceDocument));
   });
 
+  test('keep tabs between words', () => {
+    // a lone tab is collapsed to a space in a <span>
+    const document = {
+      ...sourceDocument,
+      tags: ['Name\tDescription'],
+    } as unknown as SanityDocument;
+    const { content } = serializeDocument(document, schema, 'en');
+    expect(content).toContain('<pre>Name\tDescription</pre>');
+    expect(roundTrip((html) => html, document).tags).toEqual([
+      'Name\tDescription',
+    ]);
+  });
+
   test('legacy <span> fields still import', () => {
     const merged = roundTrip((html) =>
       html.replace(
