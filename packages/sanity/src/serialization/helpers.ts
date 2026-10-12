@@ -22,14 +22,25 @@ export function mergeBlocks(blocks: PortableTextTextBlock[]) {
 const SIGNIFICANT_WHITESPACE = /\n|^\s|\s$|\s\s/;
 
 /**
+ * Number of newlines a <pre> value starts with. Every HTML parse drops one
+ * newline right after <pre>, so they are carried here instead of in the text.
+ */
+export const LEADING_NEWLINES_ATTRIBUTE = 'data-gt-leading-newlines';
+
+/**
  * Serialize a string value. Values whose whitespace matters (multi-line text,
  * markdown) go in a <pre>, which HTML tools leave untouched; everything else
  * stays a <span>.
  */
 export const serializeString = (value: string, className?: string): string => {
   const classAttribute = className ? ` class="${className}"` : '';
-  // the parser drops one newline right after <pre>, so lead with one
-  return SIGNIFICANT_WHITESPACE.test(value)
-    ? `<pre${classAttribute}>\n${value}</pre>`
-    : `<span${classAttribute}>${value}</span>`;
+  if (!SIGNIFICANT_WHITESPACE.test(value)) {
+    return `<span${classAttribute}>${value}</span>`;
+  }
+  const text = value.replace(/^\n+/, '');
+  const leadingNewlines = value.length - text.length;
+  const leadingNewlinesAttribute = leadingNewlines
+    ? ` ${LEADING_NEWLINES_ATTRIBUTE}="${leadingNewlines}"`
+    : '';
+  return `<pre${classAttribute}${leadingNewlinesAttribute}>${text}</pre>`;
 };
