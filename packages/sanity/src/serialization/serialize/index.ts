@@ -71,6 +71,22 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
     return undefined;
   };
 
+  /*
+   * Whether a type is `text` or an alias of it (e.g. a `markdown` type), so
+   * its values are multi-line even when a particular value is one line.
+   */
+  const isTextType = (typeName: string | undefined): boolean => {
+    const seen = new Set<string>();
+    let current = typeName;
+    while (current && !seen.has(current)) {
+      if (current === 'text') return true;
+      seen.add(current);
+      const typeDef = getSchema(current);
+      current = typeof typeDef?.type === 'string' ? typeDef.type : undefined;
+    }
+    return false;
+  };
+
   const serializeObject = (
     obj: TypedObject,
     stopTypes: string[],
@@ -166,7 +182,11 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
           if (htmlRegex.test(value)) {
             htmlField = value;
           } else {
-            htmlField = serializeString(value, fieldName);
+            htmlField = serializeString(
+              value,
+              fieldName,
+              isTextType(fieldDef?.type)
+            );
           }
         }
 
@@ -281,7 +301,11 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
     const output = validBlocks.map((block) => {
       //if object in array is just a string, just return it
       if (typeof block === 'string') {
-        return serializeString(block);
+        return serializeString(
+          block,
+          undefined,
+          memberDefs?.some((def) => isTextType(def.type))
+        );
       }
       //take out any fields in this block that should
       //not be sent to translation
