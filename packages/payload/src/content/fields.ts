@@ -532,9 +532,13 @@ function walkNode(
   if (node.type === 'block' && isData(node.fields)) {
     const fields = richTextBlockFields(field, node.fields.blockType);
     if (!fields) return false;
-    const targetFields = isData(sameTarget?.fields)
-      ? sameTarget.fields
-      : undefined;
+    // The locale's block only counts as the same block when it has the same
+    // block type.
+    const targetFields =
+      isData(sameTarget?.fields) &&
+      sameTarget.fields.blockType === node.fields.blockType
+        ? sameTarget.fields
+        : undefined;
     const walked = walkFields(
       fields,
       node.fields,
@@ -550,7 +554,7 @@ function walkNode(
     const kept = Object.fromEntries(
       Object.entries(targetFields ?? {}).filter(
         ([name, value]) =>
-          name !== 'id' && name in sourceFields && !isEmpty(value)
+          !ROW_FIELDS.has(name) && name in sourceFields && !isEmpty(value)
       )
     );
     node.fields = { ...sourceFields, ...clone(kept), ...walked.value };
