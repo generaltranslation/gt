@@ -94,6 +94,7 @@ Make sure you have committed or stashed any changes. Do you want to continue?`
             { value: 'react', label: chalk.yellow('React') },
             { value: 'redwood', label: chalk.red('RedwoodJS') },
             { value: 'tanstack-start', label: chalk.cyan('TanStack Start') },
+            { value: 'react-router', label: chalk.cyan('React Router') },
             { value: 'other', label: chalk.dim('Other') },
           ],
           defaultValue: detected.name,
