@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { awaitJobs, pollJobs } from '../wrappers/awaitJobs';
@@ -266,6 +267,22 @@ describe('createRetryingFetch', () => {
   });
 });
 
+describe('API_VERSION', () => {
+  const spec = JSON.parse(
+    readFileSync(new URL('../../spec/openapi.json', import.meta.url), 'utf8')
+  ) as { components: { schemas: { ApiVersion: { enum: string[] } } } };
+  const specVersions = spec.components.schemas.ApiVersion.enum;
+
+  it('relies on the bundled spec listing ApiVersion oldest to newest', () => {
+    // Date-prefixed versions sort lexically in release order.
+    expect(specVersions).toEqual([...specVersions].sort());
+  });
+
+  it('is the newest ApiVersion in the bundled spec', () => {
+    expect(API_VERSION).toBe(specVersions.at(-1));
+  });
+});
+
 describe('createApiClient', () => {
   it('configures the generated client URL and auth headers', async () => {
     let request: Request | undefined;
@@ -512,6 +529,51 @@ describe('createApiClient errors', () => {
     await expect(
       emptyClient.get({ url: '/test', throwOnError: true })
     ).rejects.toMatchObject({ code: 503, message: 'Service Unavailable' });
+  });
+
+  it('falls back to the status text for an HTML error page', async () => {
+    const htmlClient = createApiClient({
+      baseUrl: 'https://example.com',
+      fetch: async () =>
+        new Response('<html><body>Bad Gateway</body></html>', {
+          status: 502,
+          statusText: 'Bad Gateway',
+          headers: { 'Content-Type': 'text/html; charset=utf-8' },
+        }),
+      retryPolicy: 'none',
+    });
+
+    await expect(
+      htmlClient.get({ url: '/test', throwOnError: true })
+    ).rejects.toMatchObject({ code: 502, message: 'Bad Gateway' });
+  });
+
+  it('falls back to the status code for an HTML error page without status text', async () => {
+    const htmlClient = createApiClient({
+      baseUrl: 'https://example.com',
+      fetch: async () =>
+        new Response('<html><body>Bad Gateway</body></html>', {
+          status: 502,
+          headers: { 'Content-Type': 'text/html; charset=utf-8' },
+        }),
+      retryPolicy: 'none',
+    });
+
+    await expect(
+      htmlClient.get({ url: '/test', throwOnError: true })
+    ).rejects.toMatchObject({ code: 502, message: 'HTTP 502' });
+  });
+
+  it('falls back to the status code for an empty error body without status text', async () => {
+    const emptyClient = createApiClient({
+      baseUrl: 'https://example.com',
+      fetch: async () => new Response(null, { status: 503 }),
+      retryPolicy: 'none',
+    });
+
+    await expect(
+      emptyClient.get({ url: '/test', throwOnError: true })
+    ).rejects.toMatchObject({ code: 503, message: 'HTTP 503' });
   });
 
   it('keeps the decoded body in non-throwing results', async () => {

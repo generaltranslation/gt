@@ -115,6 +115,7 @@ describe('initializeGTSPA in production', () => {
     await initializeGTSPA({
       ...baseConfig,
       loadTranslations: async () => ({}),
+      dictionary: { greeting: 'Hello' },
       loadDictionary: async () => {
         throw new Error('not found');
       },
