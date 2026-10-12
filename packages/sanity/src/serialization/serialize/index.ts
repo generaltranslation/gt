@@ -282,7 +282,7 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
   };
 
   const serializeArray = (
-    fieldContent: Array<Record<string, unknown> | string>,
+    fieldContent: unknown[],
     fieldName: string,
     stopTypes: string[],
     serializers: Partial<PortableTextHtmlComponents>,
@@ -291,12 +291,13 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
     memberDefs?: RawFieldDef[]
   ) => {
     //filter for any blocks that user has indicated
-    //should not be sent for translation
+    //should not be sent for translation, and entries that are neither
+    //strings nor objects (e.g. null)
     const validBlocks = fieldContent.filter(
-      (block) =>
+      (block): block is Record<string, unknown> | string =>
         typeof block === 'string' ||
-        typeof block._type !== 'string' ||
-        !stopTypes.includes(block._type)
+        (isRecord(block) &&
+          (typeof block._type !== 'string' || !stopTypes.includes(block._type)))
     );
 
     //fields declared inline on the matching array-member definition
