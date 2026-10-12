@@ -43,7 +43,12 @@ export const deserializeArray = (
   children.forEach((child) => {
     let deserializedObject: unknown;
     try {
-      const stringValue = deserializeString(child);
+      //string items are exported without a class, so a <pre> with one comes
+      //from a custom serializer and is an object
+      const stringValue =
+        child.tagName.toLowerCase() === 'pre' && child.className
+          ? undefined
+          : deserializeString(child);
       if (stringValue !== undefined) {
         deserializedObject = stringValue;
       }
