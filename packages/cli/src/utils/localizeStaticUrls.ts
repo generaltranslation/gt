@@ -878,7 +878,8 @@ export function findPatternHead(
   url: string,
   patternHeads: string[]
 ): string | undefined {
-  const urlSegments = pathSegments(url);
+  // Query strings and fragments are not part of the path
+  const urlSegments = pathSegments(url.split(/[?#]/)[0]);
   return patternHeads.find((patternHead) =>
     checkIfPathMatchesPattern(urlSegments, pathSegments(patternHead))
   );

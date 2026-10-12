@@ -641,6 +641,18 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
       );
     });
 
+    it('picks the pattern from the path, ignoring queries and fragments', async () => {
+      // /docs?tab=api must select /docs/[locale], not fall back to /[locale]
+      const content = await localize(
+        `[A](/docs?tab=api) [B](/docs#intro) [C](/docs/guide?tab=api)`,
+        ['/[locale]', '/docs/[locale]']
+      );
+
+      expect(content).toBe(
+        `[A](/docs?tab=api) [B](/docs#intro) [C](/docs/ja/guide?tab=api)`
+      );
+    });
+
     it('treats a single pattern the same as a one-item list', async () => {
       const fileContent = `[Guide](/docs/guide) and [MCP](/ai/docs/mcp)`;
 
