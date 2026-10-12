@@ -6,14 +6,26 @@ import {
 } from '../BaseSerializationConfig';
 import { CustomDeserializers, Deserializer } from '../types';
 import { blockContentType, preprocess } from './helpers';
-import { mergeBlocks, restoreInlineObjectKeys } from '../helpers';
+import {
+  LEADING_NEWLINES_ATTRIBUTE,
+  mergeBlocks,
+  restoreInlineObjectKeys,
+} from '../helpers';
 
 //string values: <pre> holds whitespace-sensitive text and is read verbatim,
 //<span> holds single-line text and is sanitized through block-tools
 const deserializeString = (element: Element): string | undefined => {
   const tagName = element.tagName?.toLowerCase();
   if (tagName === 'pre') {
-    return element.textContent ?? '';
+    // leading newlines are carried by the attribute, so any left in the text
+    // are parser artifacts
+    const text = (element.textContent ?? '').replace(/^\n+/, '');
+    const leadingNewlines =
+      Number.parseInt(
+        element.getAttribute(LEADING_NEWLINES_ATTRIBUTE) ?? '',
+        10
+      ) || 0;
+    return '\n'.repeat(Math.max(leadingNewlines, 0)) + text;
   }
   if (tagName === 'span') {
     return preprocess(element.innerHTML);

@@ -32,6 +32,12 @@ const escapeHTML = (value: string): string =>
 const SIGNIFICANT_WHITESPACE = /\n|^\s|\s$|\s\s/;
 
 /**
+ * Number of newlines a <pre> value starts with. Every HTML parse drops one
+ * newline right after <pre>, so they are carried here instead of in the text.
+ */
+export const LEADING_NEWLINES_ATTRIBUTE = 'data-gt-leading-newlines';
+
+/**
  * Serialize a string value as escaped text, so tag-like content (e.g. `<br>`
  * in markdown) stays literal text. Values whose whitespace matters
  * (multi-line text, markdown) go in a <pre>, which HTML tools leave
@@ -39,10 +45,15 @@ const SIGNIFICANT_WHITESPACE = /\n|^\s|\s$|\s\s/;
  */
 export const serializeString = (value: string, className?: string): string => {
   const classAttribute = className ? ` class="${className}"` : '';
-  // the parser drops one newline right after <pre>, so lead with one
-  return SIGNIFICANT_WHITESPACE.test(value)
-    ? `<pre${classAttribute}>\n${escapeHTML(value)}</pre>`
-    : `<span${classAttribute}>${escapeHTML(value)}</span>`;
+  if (!SIGNIFICANT_WHITESPACE.test(value)) {
+    return `<span${classAttribute}>${escapeHTML(value)}</span>`;
+  }
+  const text = value.replace(/^\n+/, '');
+  const leadingNewlines = value.length - text.length;
+  const leadingNewlinesAttribute = leadingNewlines
+    ? ` ${LEADING_NEWLINES_ATTRIBUTE}="${leadingNewlines}"`
+    : '';
+  return `<pre${classAttribute}${leadingNewlinesAttribute}>${escapeHTML(text)}</pre>`;
 };
 
 /**
