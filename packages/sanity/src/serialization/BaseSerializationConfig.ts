@@ -130,7 +130,46 @@ export const customSerializers: Partial<PortableTextHtmlComponents> = {
 
 export const customDeserializers: CustomDeserializers = { types: {} };
 
+// Inline elements Portable Text marks are rendered as
+const MARK_ELEMENTS = new Set([
+  'a',
+  'b',
+  'code',
+  'del',
+  'em',
+  'i',
+  's',
+  'span',
+  'strike',
+  'strong',
+  'sub',
+  'sup',
+  'u',
+]);
+
 export const customBlockDeserializers: Array<unknown> = [
+  // keep whitespace-only text inside a mark (`Note:<strong> </strong>The`):
+  // block-tools drops it and glues the words on either side together
+  {
+    deserialize(node: Node): TypedObject | undefined {
+      const parent = node.parentElement;
+      if (
+        node.nodeType !== 3 ||
+        !node.textContent ||
+        node.textContent.trim() ||
+        !parent ||
+        parent.childNodes.length !== 1 ||
+        !MARK_ELEMENTS.has(parent.tagName.toLowerCase())
+      ) {
+        return undefined;
+      }
+      return {
+        _type: 'span',
+        marks: [],
+        text: node.textContent.replace(/[\t\n\f\r ]+/g, ' '),
+      } as TypedObject;
+    },
+  },
   // handle inline objects with data-gt-internal
   {
     deserialize(node: Node): TypedObject | undefined {

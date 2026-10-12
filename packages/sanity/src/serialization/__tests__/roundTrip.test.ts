@@ -461,3 +461,52 @@ describe('annotations', () => {
     ).toEqual(['term-latency']);
   });
 });
+
+describe('whitespace-only marks', () => {
+  const paragraph = (key: string, children: unknown[]) => ({
+    _key: key,
+    _type: 'block',
+    style: 'normal',
+    markDefs: [
+      { _key: 'link-space', _type: 'link', href: 'https://example.test' },
+    ],
+    children,
+  });
+  const body = [
+    paragraph('block-strong-space', [
+      span('Note:'),
+      span(' ', ['strong']),
+      span('The rest is unchanged.'),
+    ]),
+    paragraph('block-dash', [
+      span('March '),
+      span('–'),
+      span(' ', ['strong']),
+      span('the launch'),
+    ]),
+    paragraph('block-link-space', [
+      span('a'),
+      span(' ', ['link-space']),
+      span('b'),
+    ]),
+  ];
+  const document = { ...sourceDocument, body } as unknown as SanityDocument;
+  const texts = (doc: Record<string, unknown>) =>
+    (doc.body as Block[]).map(blockText);
+
+  test('keep the space between the words around them', () => {
+    expect(texts(roundTrip((html) => html, document))).toEqual([
+      'Note: The rest is unchanged.',
+      'March – the launch',
+      'a b',
+    ]);
+  });
+
+  test('keep the space while the words are translated', () => {
+    expect(texts(roundTrip(markerTranslate, document))).toEqual([
+      `${MARKER}Note: ${MARKER}The rest is unchanged.`,
+      `${MARKER}March – ${MARKER}the launch`,
+      `${MARKER}a ${MARKER}b`,
+    ]);
+  });
+});
