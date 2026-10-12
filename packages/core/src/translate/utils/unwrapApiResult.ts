@@ -9,10 +9,6 @@ export function isErrorResult(error: unknown): error is { error: string } {
   );
 }
 
-export function hasDecodedError(result: { error: unknown }): boolean {
-  return isErrorResult(result.error) || typeof result.error === 'string';
-}
-
 /**
  * Unwraps a `@generaltranslation/api` SDK result, returning its data or
  * throwing an `ApiError` built from the failed response.
