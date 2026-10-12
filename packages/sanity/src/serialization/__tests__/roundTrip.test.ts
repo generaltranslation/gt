@@ -309,3 +309,34 @@ describe('leading newlines', () => {
     );
   });
 });
+
+describe('null array entries', () => {
+  // saved documents can hold null entries; they are skipped, not exported
+  const document = {
+    ...sourceDocument,
+    tags: ['warehouses', null],
+    sections: [...(sourceDocument.sections as unknown[]), null],
+    seo: {
+      ...(sourceDocument.seo as Record<string, unknown>),
+      reviewNotes: [null, 'Check the page title.'],
+    },
+  } as unknown as SanityDocument;
+
+  test('do not stop the rest of the document from being translated', () => {
+    const merged = roundTrip(markerTranslate, document);
+    expect(merged.title).toBe(MARKER + sourceDocument.title);
+    expect(merged.tags).toContain(`${MARKER}warehouses`);
+    expect(
+      sectionContents({
+        sections: (merged.sections as unknown[]).filter(Boolean),
+      })
+    ).toEqual(
+      sectionContents(sourceDocument as unknown as Record<string, unknown>).map(
+        (content) => MARKER + content
+      )
+    );
+    expect((merged.seo as { reviewNotes: unknown[] }).reviewNotes).toContain(
+      `${MARKER}Check the page title.`
+    );
+  });
+});
