@@ -172,21 +172,26 @@ describe('string elements', () => {
       tags: ['Name\tDescription'],
     } as unknown as SanityDocument;
     const { content } = serializeDocument(document, schema, 'en');
-    expect(content).toContain('<pre>Name\tDescription</pre>');
+    expect(content).toContain('<pre data-gt-string="">Name\tDescription</pre>');
     expect(roundTrip((html) => html, document).tags).toEqual([
       'Name\tDescription',
     ]);
   });
 
   test('legacy <span> fields still import', () => {
-    const merged = roundTrip((html) =>
-      html.replace(
-        /<pre class="excerpt">([\s\S]*?)<\/pre>/,
+    const merged = roundTrip((html) => {
+      const legacy = html.replace(
+        /<pre class="excerpt"[^>]*>([\s\S]*?)<\/pre>/,
         '<span class="excerpt">$1</span>'
-      )
-    );
+      );
+      expect(legacy).toContain('<span class="excerpt">');
+      return legacy;
+    });
     expect(merged.title).toBe(sourceDocument.title);
-    expect(typeof merged.excerpt).toBe('string');
+    // a <span> is read as HTML, so its whitespace collapses
+    expect(merged.excerpt).toBe(
+      'Starts with spaces. Second line Tabbed line after a blank line Ends with spaces.'
+    );
   });
 });
 
