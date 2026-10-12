@@ -581,6 +581,78 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
     });
   });
 
+  describe('multiple docsUrlPatterns', () => {
+    /** Localizes one translated page into ja and returns what was written. */
+    const localize = async (
+      fileContent: string,
+      docsUrlPattern: string | string[]
+    ): Promise<string | undefined> => {
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(createFileMapping).mockReturnValue({
+        ja: { 'test.mdx': '/path/test.mdx' },
+      });
+      await localizeStaticUrls(
+        createSettings({
+          files: {
+            placeholderPaths: { docs: '/docs' },
+            resolvedPaths: { mdx: ['test.mdx'] },
+            transformPaths: {},
+            transformFormats: {},
+          },
+          defaultLocale: 'en',
+          locales: ['en', 'ja'],
+          options: { docsUrlPattern, experimentalHideDefaultLocale: true },
+        })
+      );
+      const written = vi.mocked(fs.promises.writeFile).mock.calls[0];
+      return written?.[1] as string | undefined;
+    };
+
+    it('localizes links under every pattern', async () => {
+      const content = await localize(
+        `[Guide](/docs/guide) and <a href="/ai/docs/mcp/intro">MCP</a>`,
+        ['/docs/[locale]', '/ai/docs/[locale]']
+      );
+
+      expect(content).toBe(
+        `[Guide](/docs/ja/guide) and <a href="/ai/docs/ja/mcp/intro">MCP</a>`
+      );
+    });
+
+    it('leaves links that match no pattern alone', async () => {
+      const content = await localize(
+        `[Guide](/docs/guide) and [Blog](/blog/post)`,
+        ['/docs/[locale]', '/ai/docs/[locale]']
+      );
+
+      expect(content).toBe(`[Guide](/docs/ja/guide) and [Blog](/blog/post)`);
+    });
+
+    it('localizes each link with its longest matching pattern', async () => {
+      // /docs/x falls under both patterns; /docs/[locale] must win, and a link
+      // it leaves alone (already localized) must not fall through to /[locale]
+      const content = await localize(
+        `[A](/docs/guide) [B](/docs/ja/guide) [C](/pricing)`,
+        ['/[locale]', '/docs/[locale]']
+      );
+
+      expect(content).toBe(
+        `[A](/docs/ja/guide) [B](/docs/ja/guide) [C](/ja/pricing)`
+      );
+    });
+
+    it('treats a single pattern the same as a one-item list', async () => {
+      const fileContent = `[Guide](/docs/guide) and [MCP](/ai/docs/mcp)`;
+
+      const single = await localize(fileContent, '/docs/[locale]');
+      vi.mocked(fs.promises.writeFile).mockClear();
+      const list = await localize(fileContent, ['/docs/[locale]']);
+
+      expect(single).toBe(`[Guide](/docs/ja/guide) and [MCP](/ai/docs/mcp)`);
+      expect(list).toBe(single);
+    });
+  });
+
   describe('exclude parameter functionality', () => {
     describe('with hideDefaultLocale = false', () => {
       it('should exclude markdown links matching exact paths', async () => {
