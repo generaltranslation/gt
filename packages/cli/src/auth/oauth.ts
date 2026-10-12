@@ -2,8 +2,8 @@ import open from 'open';
 import * as oidc from 'openid-client';
 import type { UserTokenProvider } from 'generaltranslation/api';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import { defaultBaseUrl } from 'generaltranslation/internal';
 import { GT_DASHBOARD_URL } from '../utils/constants.js';
+import { resolveApiBaseUrl } from '../utils/apiBaseUrl.js';
 import { logger } from '../console/logger.js';
 import {
   deleteOAuthTokens,
@@ -35,7 +35,7 @@ export type UserTokenProviderOptions = OAuthRequestOptions & {
   baseUrl: string;
 };
 export type LoginOptions = OAuthRequestOptions & {
-  /** API the token is issued for; GT_API_URL overrides, then the public API. */
+  /** API the token is issued for; GT_API_URL overrides it, and the public API is the default. */
   baseUrl?: string;
   noBrowser?: boolean;
   onDeviceCode?: (deviceCode: DeviceCode) => void;
@@ -217,9 +217,7 @@ function toApiResource(baseUrl: string): string {
 }
 
 function loginResource(options: LoginOptions): string {
-  return toApiResource(
-    process.env.GT_API_URL ?? options.baseUrl ?? defaultBaseUrl
-  );
+  return toApiResource(resolveApiBaseUrl(options.baseUrl));
 }
 
 async function loginWithDeviceCode(
