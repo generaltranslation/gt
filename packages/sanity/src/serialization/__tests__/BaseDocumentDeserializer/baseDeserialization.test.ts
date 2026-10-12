@@ -6,7 +6,10 @@ import {
   PortableTextTextBlock,
 } from 'sanity';
 import { beforeEach, expect, test, vi } from 'vitest';
-import { BaseDocumentDeserializer } from '../../deserialize/BaseDocumentDeserializer';
+import {
+  BaseDocumentDeserializer,
+  deserializeArray,
+} from '../../deserialize/BaseDocumentDeserializer';
 import { BaseDocumentSerializer } from '../../serialize/index';
 import {
   customBlockDeserializers,
@@ -400,4 +403,20 @@ test('Content with anonymous inline objects deserializes all fields, at any dept
   expect(deserializedArray.length).toEqual(origArray.length);
   expect(deserializedArray[0]._key).toEqual(origArray[0]._key);
   expect(Object.keys(deserializedArray[0])).not.toContain('span');
+});
+
+test('A <pre> array member from a custom serializer goes to its custom deserializer', () => {
+  const array = new DOMParser().parseFromString(
+    '<div class="items" data-type="array"><pre class="snippet" id="snippet-1">const a = 1;\n  return a;</pre><pre>Plain\ntext</pre></div>',
+    'text/html'
+  ).body.firstElementChild!;
+  const snippet = (element: HTMLElement) => ({
+    _type: 'snippet',
+    code: element.textContent,
+  });
+
+  expect(deserializeArray(array, { types: { snippet } })).toEqual([
+    { _type: 'snippet', _key: 'snippet-1', code: 'const a = 1;\n  return a;' },
+    'Plain\ntext',
+  ]);
 });
