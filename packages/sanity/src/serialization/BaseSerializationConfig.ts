@@ -148,7 +148,8 @@ const MARK_ELEMENTS = new Set([
 ]);
 
 export const customBlockDeserializers: Array<unknown> = [
-  // keep whitespace-only text inside a mark (`Note:<strong> </strong>The`):
+  // keep whitespace-only text inside a mark (`Note:<strong> </strong>The`,
+  // or next to a nested mark: `<strong><em>Note:</em> </strong>The`):
   // block-tools drops it and glues the words on either side together
   {
     deserialize(node: Node): TypedObject | undefined {
@@ -158,7 +159,6 @@ export const customBlockDeserializers: Array<unknown> = [
         !node.textContent ||
         node.textContent.trim() ||
         !parent ||
-        parent.childNodes.length !== 1 ||
         !MARK_ELEMENTS.has(parent.tagName.toLowerCase())
       ) {
         return undefined;
