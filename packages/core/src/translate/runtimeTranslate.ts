@@ -43,8 +43,7 @@ import {
   supportedModelProviders,
 } from '../adapter/modelProvider';
 import { fetchWithTimeout } from './utils/fetchWithTimeout';
-import { hasDecodedError, unwrapApiResult } from './utils/unwrapApiResult';
-import { validateResponse } from './utils/validateResponse';
+import { unwrapApiResult } from './utils/unwrapApiResult';
 
 type TranslateFunctionName = 'translate' | 'translateMany';
 type TranslateDefaults = Partial<
@@ -370,18 +369,6 @@ async function executeTranslationBatch(
     },
   } satisfies TranslateData['body'];
   const result = await translateEndpoint({ body, client });
-
-  // The generated client only decodes JSON errors, so non-JSON response bodies
-  // must be re-read here to preserve legacy ApiError details.
-  if (
-    result.data === undefined &&
-    result.response &&
-    !hasDecodedError(result)
-  ) {
-    await validateResponse(result.response);
-    throw result.error;
-  }
-
   const runtimeResponse = unwrapApiResult(result);
   const response: Record<string, TranslationResult> = Object.fromEntries(
     Object.entries(runtimeResponse).map(([hash, translationResult]) => [
