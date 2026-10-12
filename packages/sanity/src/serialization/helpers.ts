@@ -33,6 +33,12 @@ const escapeHTML = (value: string): string =>
 const SIGNIFICANT_WHITESPACE = /[\t\n\f\r]|^\s|\s$|\s\s/;
 
 /**
+ * Marks the <pre> elements that hold string values, so a <pre> from a custom
+ * serializer is never mistaken for one.
+ */
+export const STRING_ATTRIBUTE = 'data-gt-string';
+
+/**
  * Number of newlines a <pre> value starts with. Every HTML parse drops one
  * newline right after <pre>, so they are carried here instead of in the text.
  */
@@ -58,7 +64,7 @@ export const serializeString = (
   const leadingNewlinesAttribute = leadingNewlines
     ? ` ${LEADING_NEWLINES_ATTRIBUTE}="${leadingNewlines}"`
     : '';
-  return `<pre${classAttribute}${leadingNewlinesAttribute}>${escapeHTML(text)}</pre>`;
+  return `<pre${classAttribute} ${STRING_ATTRIBUTE}=""${leadingNewlinesAttribute}>${escapeHTML(text)}</pre>`;
 };
 
 /**
