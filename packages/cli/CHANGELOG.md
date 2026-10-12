@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.26.2
+
+### Patch Changes
+
+- [#2437](https://github.com/generaltranslation/gt/pull/2437) [`d7943fe`](https://github.com/generaltranslation/gt/commit/d7943fee01740975387a6e1ff43a71c8ed78b886) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Stop `options.mintlify.localizeRedirects` from adding nested-locale redirects (such as `/docs/ja-jp/fr-ca/...`) when translated pages are orphaned.
+
 ## 2.26.1
 
 ### Patch Changes
