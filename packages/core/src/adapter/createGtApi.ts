@@ -458,12 +458,12 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
       );
     },
 
-    /** Every project the configured credentials can read. */
+    /** Projects the signed-in user is a member of, or the API key is bound to. */
     async listProjects() {
       return collect(paginate(listProjects, { client: getClient() }));
     },
 
-    /** Organizations where the signed-in user can create projects; user tokens only. */
+    /** Organizations the credentials can access; listing one does not grant project creation. */
     async listOrgs() {
       return collect(paginate(listOrgs, { client: getClient() }));
     },

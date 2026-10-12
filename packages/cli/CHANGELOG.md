@@ -1,5 +1,45 @@
 # gtx-cli
 
+## 2.26.1
+
+### Patch Changes
+
+- [#2426](https://github.com/generaltranslation/gt/pull/2426) [`01f8a21`](https://github.com/generaltranslation/gt/commit/01f8a21cd2abdf1945e172e57344b0b98cec8311) Thanks [@brian-lou](https://github.com/brian-lou)! - `GT_API_URL` now sets the API that every command sends requests to, overriding `baseUrl` in gt.config.json, as it already did for `gt auth login`.
+
+## 2.26.0
+
+### Minor Changes
+
+- [#2409](https://github.com/generaltranslation/gt/pull/2409) [`fe2e16a`](https://github.com/generaltranslation/gt/commit/fe2e16a904e0e9287e19be9a212e628fc3fd77fc) Thanks [@kevinwu98](https://github.com/kevinwu98)! - `gt init` now sets up React Router framework apps, including Shopify Hydrogen, with `gt-react`: it writes `app/loadTranslations.ts` and configures an `app/root.tsx` shaped like the create-react-router or Hydrogen starters to load each visitor's locale and translations in the root loader. Other roots get manual steps. SPA mode, pre-rendering, RSC Framework Mode, an `appDirectory` other than `app`, or a `gt-react` older than 11.1.3 stop setup before any change.
+
+### Patch Changes
+
+- [#2404](https://github.com/generaltranslation/gt/pull/2404) [`94ee3b4`](https://github.com/generaltranslation/gt/commit/94ee3b4b895b86db6ae942ec78621a5927d1b2f3) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - `gt init` explains a denied development key instead of reporting a generic credentials failure. When `GT_API_KEY` is set, a denied key or project creation explains that setup used that key instead of your sign-in and how to remove it.
+
+- [#2423](https://github.com/generaltranslation/gt/pull/2423) [`98ef8cd`](https://github.com/generaltranslation/gt/commit/98ef8cd8e2fc2af495ecc45e1d126ae862fa4671) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Remove default JSON alphabetization
+
+- [#2411](https://github.com/generaltranslation/gt/pull/2411) [`1e4135b`](https://github.com/generaltranslation/gt/commit/1e4135b754c47c37ec9dcdd7d2cb815f6d9ba2eb) Thanks [@kevinwu98](https://github.com/kevinwu98)! - `gt init` no longer leaves a TanStack Start root route for manual setup when a comment or string mentions `getLocale` or `getTranslationsSnapshot`. Only code that binds or uses those names blocks the automatic edit.
+
+- Updated dependencies [[`fe9f4b8`](https://github.com/generaltranslation/gt/commit/fe9f4b898548b94d7809be18f5e0dd9e80987428)]:
+  - generaltranslation@9.5.6
+  - @generaltranslation/python-extractor@0.2.61
+  - @generaltranslation/supported-locales@2.1.42
+  - @generaltranslation/vue-extractor@0.1.20
+
+## 2.25.2
+
+### Patch Changes
+
+- [#2341](https://github.com/generaltranslation/gt/pull/2341) [`60deece`](https://github.com/generaltranslation/gt/commit/60deececd8d1339aef7ef642d0e0f0f0b1d189d7) Thanks [@Kevin-Liu-01](https://github.com/Kevin-Liu-01)! - Restyle the page `gt login` shows in the browser after the loopback callback to match the dashboard's auth plate, centered on the plain ground: the GT mark, a heading with a status glyph, a lede, and a note naming the signed-in account. Nothing loads from the network. A denied request and a failed exchange get their own pages, and both say to run `npx gt login` again, which copies the command when clicked and shows a copy icon beside it that turns into a check for a moment after a copy (the page's one script, allowed by its hash in the Content-Security-Policy); the page calls a request denied only when the exchange read a validated denial, so it agrees with the terminal.
+
+  `gt login` returns to the shell as soon as the browser's callback is answered: a repeated callback request no longer holds a keep-alive socket open for the five second timeout. A browser that abandoned its first navigation while the exchange ran gets the result page on its repeat: `gt login` waits up to five seconds for that repeat, and exits at once when the first page arrived. A caller's AbortSignal now cancels the browser flow's token exchange and account lookup, reported as a cancellation.
+
+- Updated dependencies [[`ebb6c9e`](https://github.com/generaltranslation/gt/commit/ebb6c9efa403b2b6b2ec84521398a05825eb1ff0)]:
+  - @generaltranslation/supported-locales@2.1.41
+  - generaltranslation@9.5.5
+  - @generaltranslation/python-extractor@0.2.60
+  - @generaltranslation/vue-extractor@0.1.19
+
 ## 2.25.1
 
 ### Patch Changes

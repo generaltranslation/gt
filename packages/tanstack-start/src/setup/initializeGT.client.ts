@@ -44,7 +44,7 @@ export function initializeGT(config: InitializeGTParams): void {
     initializeReactI18nCache({
       cacheExpiryTime: null,
       ...config,
-      projectId: config.projectId ?? getI18nConfig().getProjectId(),
+      projectId: config.projectId || getI18nConfig().getProjectId(),
     });
   }
 
