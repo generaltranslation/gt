@@ -531,6 +531,17 @@ describe('whitespace-only marks', () => {
       span(' ', ['link-space']),
       span('b'),
     ]),
+    paragraph('block-nested-strong-space', [
+      span('Note:', ['strong', 'em']),
+      span(' ', ['strong']),
+      span('The rest.', ['em']),
+    ]),
+    paragraph('block-nested-link-space', [
+      span('into '),
+      span('the city', ['link-space', 'strong']),
+      span(' ', ['link-space']),
+      span('and back'),
+    ]),
   ];
   const document = { ...sourceDocument, body } as unknown as SanityDocument;
   const texts = (doc: Record<string, unknown>) =>
@@ -541,6 +552,8 @@ describe('whitespace-only marks', () => {
       'Note: The rest is unchanged.',
       'March – the launch',
       'a b',
+      'Note: The rest.',
+      'into the city and back',
     ]);
   });
 
@@ -549,6 +562,8 @@ describe('whitespace-only marks', () => {
       `${MARKER}Note: ${MARKER}The rest is unchanged.`,
       `${MARKER}March – ${MARKER}the launch`,
       `${MARKER}a ${MARKER}b`,
+      `${MARKER}Note: ${MARKER}The rest.`,
+      `${MARKER}into ${MARKER}the city ${MARKER}and back`,
     ]);
   });
 });
