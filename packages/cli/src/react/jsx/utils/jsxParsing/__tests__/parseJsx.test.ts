@@ -8,6 +8,12 @@ import { resolveImportPath } from '../../resolveImportPath.js';
 import { ParsingConfigOptions } from '../../../../../types/parsing.js';
 import { Updates } from '../../../../../types/index.js';
 import { hashSource } from 'generaltranslation/id';
+import type {
+  JsxChild,
+  JsxChildren,
+  JsxElement,
+  Variable,
+} from '@generaltranslation/format/types';
 import { Libraries } from '../../../../../types/libraries.js';
 
 // Mock fs and resolveImportPath
@@ -2361,11 +2367,38 @@ describe('parseTranslationComponent with cross-file resolution', () => {
   // shared counter through Branch/Plural children. Branch props start their own
   // counter from the branching element's ID in both implementations.
   describe('GT IDs after Branch/Plural element children', () => {
-    type IdNode = {
-      i: number;
-      c: IdNode & IdNode[];
-      d: { b: Record<string, IdNode> };
-    };
+    function asChildArray(children: JsxChildren | undefined): JsxChild[] {
+      if (!Array.isArray(children)) {
+        throw new Error(
+          `Expected an array of children: ${JSON.stringify(children)}`
+        );
+      }
+      return children;
+    }
+
+    function asElement(child: JsxChildren | undefined): JsxElement {
+      if (
+        !child ||
+        typeof child !== 'object' ||
+        Array.isArray(child) ||
+        'k' in child
+      ) {
+        throw new Error(`Expected a JSX element: ${JSON.stringify(child)}`);
+      }
+      return child;
+    }
+
+    function asVariable(child: JsxChildren | undefined): Variable {
+      if (
+        !child ||
+        typeof child !== 'object' ||
+        Array.isArray(child) ||
+        !('k' in child)
+      ) {
+        throw new Error(`Expected a variable: ${JSON.stringify(child)}`);
+      }
+      return child;
+    }
 
     function parseSource(body: string): Updates {
       const pageFile = `
@@ -2430,10 +2463,10 @@ describe('parseTranslationComponent with cross-file resolution', () => {
         </T>
       `);
 
-      const [plural, span] = update.source as unknown as IdNode[];
-      expect(plural.i).toBe(1);
-      expect(plural.c[0].i).toBe(2);
-      expect(span.i).toBe(3);
+      const [plural, span] = asChildArray(update.source);
+      expect(asElement(plural).i).toBe(1);
+      expect(asVariable(asChildArray(asElement(plural).c)[0]).i).toBe(2);
+      expect(asElement(span).i).toBe(3);
     });
 
     it('numbers an element after Branch children like the runtime', () => {
@@ -2444,10 +2477,10 @@ describe('parseTranslationComponent with cross-file resolution', () => {
         </T>
       `);
 
-      const [branch, span] = update.source as unknown as IdNode[];
-      expect(branch.i).toBe(1);
-      expect(branch.c.i).toBe(2);
-      expect(span.i).toBe(3);
+      const [branch, span] = asChildArray(update.source);
+      expect(asElement(branch).i).toBe(1);
+      expect(asElement(asElement(branch).c).i).toBe(2);
+      expect(asElement(span).i).toBe(3);
     });
 
     it('numbers branch props of a later element like the runtime', () => {
@@ -2458,9 +2491,9 @@ describe('parseTranslationComponent with cross-file resolution', () => {
         </T>
       `);
 
-      const [, branch] = update.source as unknown as IdNode[];
-      expect(branch.i).toBe(3);
-      expect(branch.d.b.open.i).toBe(4);
+      const [, branch] = asChildArray(update.source);
+      expect(asElement(branch).i).toBe(3);
+      expect(asElement(asElement(branch).d?.b?.open).i).toBe(4);
     });
   });
 });
