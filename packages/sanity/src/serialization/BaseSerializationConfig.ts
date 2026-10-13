@@ -3,6 +3,7 @@
 import type { PortableTextBlockStyle } from '@portabletext/types';
 
 import {
+  defaultComponents,
   PortableTextBlockComponent,
   PortableTextListComponent,
   PortableTextListItemComponent,
@@ -12,7 +13,7 @@ import {
 
 import { htmlToBlocks } from '@portabletext/block-tools';
 import { blockContentType } from './deserialize/helpers';
-import { PortableTextObject, PortableTextTextBlock, TypedObject } from 'sanity';
+import { PortableTextTextBlock, TypedObject } from 'sanity';
 import { attachGTData, detachGTData } from './data';
 import { escapeHTML, INLINE_OBJECT_KEY_FIELD } from './helpers';
 import type { CustomDeserializers } from './types';
@@ -36,7 +37,43 @@ export const defaultStopTypes = [
   'code',
 ];
 
-export const defaultMarks: Record<string, PortableTextMarkComponent> = {};
+/**
+ * Annotations (marks backed by an entry in the block's `markDefs`, such as
+ * links) carry their whole markDef, so every field and the original `_key`
+ * survive the round trip. Decorators keep the default rendering.
+ */
+// Marks annotations exported by the built-in serializers. They are restored
+// after the user's additionalBlockDeserializers, so a user rule for `<a>`
+// still sees every link first.
+const BUILTIN_ATTRIBUTE = 'data-gt-builtin';
+
+const annotationMark =
+  (
+    fallback: PortableTextMarkComponent
+  ): PortableTextMarkComponent<TypedObject> =>
+  (props) => {
+    const { value, children, markType } = props;
+    if (!(isRecord(value) && typeof value._key === 'string')) {
+      return fallback(props);
+    }
+    // keep href on links as context for the translator
+    const href =
+      markType === 'link' && typeof value.href === 'string'
+        ? ` href="${escapeHTML(value.href)}"`
+        : '';
+    const tag = markType === 'link' ? 'a' : 'span';
+    return attachGTData(
+      `<${tag}${href} ${BUILTIN_ATTRIBUTE}="">${children}</${tag}>`,
+      value as unknown as Record<string, unknown>,
+      'markDef'
+    );
+  };
+
+export const defaultMarks: Record<string, PortableTextMarkComponent> = {
+  link: annotationMark(
+    defaultComponents.marks.link as PortableTextMarkComponent
+  ),
+};
 
 export const defaultPortableTextBlockStyles: Record<
   PortableTextBlockStyle,
@@ -87,6 +124,7 @@ export const customSerializers: Partial<PortableTextHtmlComponents> = {
           'inlineObject'
         )
       : `<div class="${escapeHTML(value._type)}"></div>`,
+  unknownMark: annotationMark(defaultComponents.unknownMark),
   types: {},
   marks: defaultMarks,
   block: defaultPortableTextBlockStyles,
@@ -96,6 +134,42 @@ export const customSerializers: Partial<PortableTextHtmlComponents> = {
 };
 
 export const customDeserializers: CustomDeserializers = { types: {} };
+
+// Restores an annotation from the markDef attached to its element
+const markDefRule = (claims: (el: HTMLElement) => boolean) => ({
+  deserialize(
+    node: Node,
+    next: (
+      elements: Node | Node[] | NodeList
+    ) => TypedObject | TypedObject[] | undefined
+  ): TypedObject | undefined {
+    if (node.nodeType !== 1) {
+      return undefined;
+    }
+    const el = node as HTMLElement;
+    if (
+      !el.hasChildNodes() ||
+      !el.getAttribute('data-gt-internal') ||
+      !claims(el)
+    ) {
+      return undefined;
+    }
+
+    const markDef = detachGTData(el.outerHTML).data?.markDef;
+    if (!isRecord(markDef) || typeof markDef._key !== 'string') {
+      return undefined;
+    }
+
+    // block-tools' inline annotation form: the markDef (with its original
+    // _key) is added to the enclosing block and applied to every child,
+    // without splitting the block or trimming whitespace around it
+    return {
+      _type: '__annotation',
+      markDef,
+      children: next(el.childNodes),
+    } as TypedObject;
+  },
+});
 
 export const customBlockDeserializers: Array<unknown> = [
   // handle inline objects with data-gt-internal
@@ -121,58 +195,9 @@ export const customBlockDeserializers: Array<unknown> = [
       };
     },
   },
-  // handle marks with data-gt-internal
-  {
-    deserialize(
-      node: Node,
-      next: (
-        elements: Node | Node[] | NodeList
-      ) => TypedObject | TypedObject[] | undefined
-    ): PortableTextTextBlock | TypedObject | undefined {
-      if (node.nodeType !== 1) {
-        return undefined;
-      }
-      const el = node as HTMLElement;
-      if (!el.hasChildNodes()) {
-        return undefined;
-      }
-
-      if (!el.getAttribute('data-gt-internal')) {
-        return undefined;
-      }
-
-      const { html, data } = detachGTData(el.outerHTML);
-      const block = htmlToBlocks(html, blockContentType)[0];
-
-      const children = next(el.childNodes);
-
-      let markDefs: PortableTextObject[] = [];
-      if ('markDefs' in block) {
-        markDefs = (block.markDefs as PortableTextObject[]) ?? [];
-      }
-      if (data?.markDef) {
-        markDefs.push(data.markDef as PortableTextObject);
-      }
-      if (Array.isArray(children)) {
-        children.forEach((child) => {
-          if (!isRecord(child)) {
-            return;
-          }
-          const marks = Array.isArray(child.marks) ? child.marks : [];
-          child.marks = data?.markDef?._key
-            ? [...marks, data.markDef._key]
-            : marks;
-        });
-      }
-      // Resolve marks in the child nodes
-      const output = {
-        ...block,
-        markDefs,
-        children,
-      };
-      return output;
-    },
-  },
+  // handle marks with data-gt-internal from a user's serializer
+  // (attachGTData); the built-in ones are in fallbackBlockDeserializers
+  markDefRule((el) => !el.hasAttribute(BUILTIN_ATTRIBUTE)),
   //handle undeclared styles
   {
     deserialize(
@@ -282,4 +307,10 @@ export const customBlockDeserializers: Array<unknown> = [
       };
     },
   },
+];
+
+// Rules that run after the user's additionalBlockDeserializers, so a user
+// rule can claim the elements the built-in serializers export
+export const fallbackBlockDeserializers: Array<unknown> = [
+  markDefRule((el) => el.hasAttribute(BUILTIN_ATTRIBUTE)),
 ];

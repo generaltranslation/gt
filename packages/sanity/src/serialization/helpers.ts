@@ -13,6 +13,13 @@ export function mergeBlocks(blocks: PortableTextTextBlock[]) {
     mergedBlock.markDefs.push(...(block.markDefs ?? []));
   }
   mergedBlock._type = 'block';
+  // block-tools adds an annotation's markDef once per run of text it covers
+  const seenMarkKeys = new Set<string>();
+  mergedBlock.markDefs = mergedBlock.markDefs.filter((markDef) => {
+    if (seenMarkKeys.has(markDef._key)) return false;
+    seenMarkKeys.add(markDef._key);
+    return true;
+  });
 
   return mergedBlock;
 }

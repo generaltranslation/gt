@@ -1,6 +1,8 @@
 import { Schema } from '@sanity/schema';
-import { SanityDocument } from 'sanity';
-import { describe, expect, test } from 'vitest';
+import { SanityDocument, TypedObject } from 'sanity';
+import { afterEach, describe, expect, test, vi } from 'vitest';
+import { pluginConfig } from '../../adapter/core';
+import { attachGTData } from '../data';
 import { deserializeDocument, serializeDocument } from '../../utils/serialize';
 import { BaseDocumentMerger } from '../BaseDocumentMerger';
 import {
@@ -71,6 +73,23 @@ const schema = Schema.compile({
             {
               type: 'block',
               of: [{ type: 'productReference' }, { type: 'statValue' }],
+              marks: {
+                annotations: [
+                  {
+                    name: 'link',
+                    type: 'object',
+                    fields: [
+                      { name: 'href', type: 'url' },
+                      { name: 'openInNewTab', type: 'boolean' },
+                    ],
+                  },
+                  {
+                    name: 'glossaryTerm',
+                    type: 'object',
+                    fields: [{ name: 'termId', type: 'string' }],
+                  },
+                ],
+              },
             },
           ],
         },
@@ -148,11 +167,25 @@ const sourceDocument = {
       style: 'normal',
       listItem: 'bullet',
       level: 1,
-      markDefs: [],
+      markDefs: [
+        {
+          _key: 'link-report',
+          _type: 'link',
+          href: 'https://example.test/report?q=1&r=2',
+          openInNewTab: true,
+        },
+        { _key: 'term-latency', _type: 'glossaryTerm', termId: 'latency' },
+      ],
       children: [
-        span('Median latency dropped by '),
+        span('Median '),
+        span('latency', ['term-latency']),
+        span(' dropped by '),
         { _key: 'inline-stat-2', _type: 'statValue', value: 18, unit: 'ms' },
-        span(' after the change.'),
+        span(' after the change, per the '),
+        span('quarterly report', ['link-report', 'strong']),
+        span('. See the '),
+        span('report', ['link-report']),
+        span(' for details.'),
       ],
     },
     {
@@ -473,13 +506,34 @@ describe('inline objects', () => {
     >;
     expect(blockText(block)).toBe('A  B pricing page C');
     expect(inlineObjects(block)).toEqual([paragraph.children[1]]);
-    const linkSpan = block.children.find(
-      (child) => child.text === 'pricing page'
-    ) as { marks: string[] };
-    const linkDef = block.markDefs.find(
-      (markDef) => markDef._key === linkSpan.marks[0]
+    expect(withoutSpanKeys(block)).toEqual(withoutSpanKeys(paragraph));
+  });
+});
+
+describe('annotations', () => {
+  const sourceListItem = (
+    sourceDocument.body as Array<Record<string, unknown>>
+  )[1];
+
+  test('keep every markDef field and key, and the marks that use them', () => {
+    const listItem = (
+      roundTrip((html) => html).body as Array<Record<string, unknown>>
+    )[1];
+    expect(listItem.markDefs).toEqual(sourceListItem.markDefs);
+    expect(withoutSpanKeys(listItem.children)).toEqual(
+      withoutSpanKeys(sourceListItem.children)
     );
-    expect(linkDef?.href).toBe('https://example.test/pricing');
+  });
+
+  test('stay unchanged while the annotated text is translated', () => {
+    const listItem = (
+      roundTrip(markerTranslate).body as Array<Record<string, unknown>>
+    )[1] as Block & { markDefs: unknown };
+    expect(listItem.markDefs).toEqual(sourceListItem.markDefs);
+    expect(
+      listItem.children.find((child) => child.text === `${MARKER}latency`)
+        ?.marks
+    ).toEqual(['term-latency']);
   });
 
   test('escape their type name in the exported markup', () => {
@@ -663,5 +717,77 @@ describe('top-level object fields', () => {
     expect(
       changes.localizedCta.find((item) => item.language === 'fr')?.value
     ).toEqual(cta);
+  });
+});
+
+describe('user rules for links', () => {
+  const paragraph = {
+    _key: 'block-pricing',
+    _type: 'block',
+    style: 'normal',
+    markDefs: [
+      {
+        _key: 'link-pricing',
+        _type: 'link',
+        href: 'https://example.test/en/pricing',
+      },
+    ],
+    children: [span('See '), span('our pricing', ['link-pricing'])],
+  };
+  const document = {
+    ...sourceDocument,
+    body: [paragraph],
+  } as unknown as SanityDocument;
+  // a site that makes links locale-neutral on import
+  const localeNeutralLinks = {
+    deserialize(node: Node, next: (nodes: NodeList) => unknown) {
+      const el = node as HTMLElement;
+      if (el.tagName?.toLowerCase() !== 'a') return undefined;
+      return {
+        _type: '__annotation',
+        markDef: {
+          _key: 'link-neutral',
+          _type: 'link',
+          href: el.getAttribute('href')?.replace('/en/', '/'),
+        },
+        children: next(el.childNodes),
+      };
+    },
+  };
+  const linkHrefs = (doc: Record<string, unknown>) =>
+    (doc.body as Array<{ markDefs: Array<{ href?: string }> }>)[0].markDefs.map(
+      (markDef) => markDef.href
+    );
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  test('decide the links the built-in serializer exports', () => {
+    vi.spyOn(pluginConfig, 'getAdditionalBlockDeserializers').mockReturnValue([
+      localeNeutralLinks,
+    ]);
+    expect(linkHrefs(roundTrip((html) => html, document))).toEqual([
+      'https://example.test/pricing',
+    ]);
+  });
+
+  test('run after the links a user serializer exports with attachGTData', () => {
+    vi.spyOn(pluginConfig, 'getAdditionalSerializers').mockReturnValue({
+      marks: {
+        link: ({ value, children }: { value: TypedObject; children: string }) =>
+          attachGTData(
+            `<a>${children}</a>`,
+            value as unknown as Record<string, unknown>,
+            'markDef'
+          ),
+      },
+    } as never);
+    vi.spyOn(pluginConfig, 'getAdditionalBlockDeserializers').mockReturnValue([
+      localeNeutralLinks,
+    ]);
+    expect(linkHrefs(roundTrip((html) => html, document))).toEqual([
+      'https://example.test/en/pricing',
+    ]);
   });
 });
