@@ -30,10 +30,6 @@ npm install gt --save-dev
 
 ## Quick Start
 
-```bash
-npx gt init
-```
-
 ```jsx
 import { T } from 'gt-react-router';
 
@@ -48,26 +44,30 @@ export default function Page() {
 
 ## Locale routing
 
-Set `"localeRouting": true` in `gt.config.json` to put the locale in the URL (`/fr/about`). The default locale stays unprefixed.
+Set `"localeRouting": true` in `gt.config.json` to put the locale in the URL (`/fr/about`). The default locale stays unprefixed. Locale routing does not yet support a router `basename` or Shopify Hydrogen apps.
 
-1. Accept an optional locale segment in `app/routes.ts`:
+1. Accept an optional locale segment in front of the routes in `app/routes.ts`:
 
    ```ts
    import { index, prefix, type RouteConfig } from '@react-router/dev/routes';
 
-   export default prefix(':locale?', [
-     index('routes/home.tsx'),
-   ]) satisfies RouteConfig;
+   export default [
+     ...prefix(':locale?', [index('routes/home.tsx')]),
+   ] satisfies RouteConfig;
    ```
 
-2. Resolve the locale in the root loader. `getRequestLocale` reads it from the URL first, then the locale cookie and the `Accept-Language` header, and throws a redirect when the URL does not match, such as `/about` to `/fr/about` for a French visitor:
+   Keep the segment named `locale` and first in the path; flat routes' `($locale)` works too. Put every page route inside the prefix, a `*` 404 route included: a route outside it gets no `locale` param, so with a top-level `*` route, `/nope` and `/en/nope` redirect to each other for an English visitor. React Router reads any first segment as the locale when the rest of the URL matches a route, so keep `:slug` routes and content catch-alls behind a static segment, such as `blog/:slug`. Typed `href()` paths include the segment: `href('/:locale?/about', { locale: 'fr' })` is `/fr/about`.
+
+2. Resolve the locale in the root loader. `getRequestLocale` reads the route's `locale` param first, then the locale cookie and the `Accept-Language` header, and throws a redirect when the URL does not match the locale. `/about` goes to `/fr/about` for a French visitor, `/fr-CA/about` goes to `/fr/about`, and `/nope`, which React Router reads as the home page in locale `nope`, goes to `/en/nope` for an English visitor, where your `*` route or the router's 404 renders:
 
    ```ts
-   export async function loader({ request }: Route.LoaderArgs) {
-     const locale = getRequestLocale(request);
+   export async function loader(args: Route.LoaderArgs) {
+     const locale = getRequestLocale(args);
      return { locale, translations: await getTranslationsSnapshot(locale) };
    }
    ```
+
+   Give `<Form action>` and `submit()` targets the locale prefix, or leave out `action` to submit to the current route. An unprefixed target sends visitors who prefer another locale through this redirect, which drops the action's result.
 
 Changing the locale with `LocaleSelector` or `useSetLocale` then opens the page at the new locale's URL.
 
