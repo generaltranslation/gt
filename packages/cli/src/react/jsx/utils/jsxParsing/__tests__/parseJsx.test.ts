@@ -2355,4 +2355,112 @@ describe('parseTranslationComponent with cross-file resolution', () => {
       expect(updates).toHaveLength(6); // 2 (formal) x 3 (children fallback)
     });
   });
+
+  // https://github.com/generaltranslation/gt/issues/2449
+  // IDs must match the runtime's addGTIdentifier (react-core), which keeps a
+  // shared counter through Branch/Plural children. Branch props start their own
+  // counter from the branching element's ID in both implementations.
+  describe('GT IDs after Branch/Plural element children', () => {
+    type IdNode = {
+      i: number;
+      c: IdNode & IdNode[];
+      d: { b: Record<string, IdNode> };
+    };
+
+    function parseSource(body: string): Updates {
+      const pageFile = `
+        import { T, Plural, Branch, Num } from "gt-react";
+
+        export default function Page() {
+          return (${body});
+        }
+      `;
+
+      const ast = parse(pageFile, {
+        sourceType: 'module',
+        plugins: ['jsx', 'typescript'],
+      });
+
+      const importAliases: Record<string, string> = {};
+      traverse(ast, {
+        ImportDeclaration(path) {
+          path.node.specifiers.forEach((spec) => {
+            if (t.isImportSpecifier(spec) && t.isIdentifier(spec.imported)) {
+              importAliases[spec.local.name] = spec.imported.name;
+            }
+          });
+        },
+      });
+
+      traverse(ast, {
+        Program(programPath) {
+          const tBinding = programPath.scope.getBinding('T');
+          if (tBinding) {
+            parseTranslationComponent({
+              originalName: 'T',
+              localName: 'T',
+              path: tBinding.path,
+              updates,
+              config: {
+                importAliases,
+                parsingOptions,
+                pkgs: [Libraries.GT_REACT],
+                file: '/test/branch-children-ids/page.tsx',
+              },
+              output: {
+                errors,
+                warnings,
+                unwrappedExpressions: [],
+              },
+            });
+          }
+        },
+      });
+
+      expect(errors).toHaveLength(0);
+      expect(updates).toHaveLength(1);
+      return updates;
+    }
+
+    it('numbers an element after Plural children like the runtime', () => {
+      const [update] = parseSource(`
+        <T>
+          <Plural n={2} one="one bottle"><Num>{2}</Num> bottles</Plural>
+          <span> live</span>
+        </T>
+      `);
+
+      const [plural, span] = update.source as unknown as IdNode[];
+      expect(plural.i).toBe(1);
+      expect(plural.c[0].i).toBe(2);
+      expect(span.i).toBe(3);
+    });
+
+    it('numbers an element after Branch children like the runtime', () => {
+      const [update] = parseSource(`
+        <T>
+          <Branch branch="open" open="Open"><span>Closed</span></Branch>
+          <span> live</span>
+        </T>
+      `);
+
+      const [branch, span] = update.source as unknown as IdNode[];
+      expect(branch.i).toBe(1);
+      expect(branch.c.i).toBe(2);
+      expect(span.i).toBe(3);
+    });
+
+    it('numbers branch props of a later element like the runtime', () => {
+      const [update] = parseSource(`
+        <T>
+          <Plural n={2} one="one bottle"><Num>{2}</Num> bottles</Plural>
+          <Branch branch="open" open={<b>Open</b>}>Closed</Branch>
+        </T>
+      `);
+
+      const [, branch] = update.source as unknown as IdNode[];
+      expect(branch.i).toBe(3);
+      expect(branch.d.b.open.i).toBe(4);
+    });
+  });
 });
