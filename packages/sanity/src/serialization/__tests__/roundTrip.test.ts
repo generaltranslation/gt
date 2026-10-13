@@ -763,6 +763,28 @@ describe('decorators', () => {
     expect(blockText(block)).toBe(`${MARKER}Plain ${MARKER}bold${MARKER} end`);
     expect(inlineObjects(block)).toEqual([paragraph.children[1]]);
   });
+
+  test('leave a line break between two marked runs unmarked', () => {
+    const paragraph = {
+      _key: 'block-breaks',
+      _type: 'block',
+      style: 'normal',
+      markDefs: [],
+      children: [
+        span('first', ['code']),
+        span('\n'),
+        span('second', ['code']),
+        span(' then '),
+        span('a line that ends\n', ['em']),
+        span('here'),
+      ],
+    };
+    const [block] = roundTrip((html) => html, {
+      ...sourceDocument,
+      body: [paragraph],
+    } as unknown as SanityDocument).body as Block[];
+    expect(markedRuns(block)).toEqual(markedRuns(paragraph as Block));
+  });
 });
 
 describe('null array entries', () => {

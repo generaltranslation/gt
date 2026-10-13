@@ -98,39 +98,18 @@ export const restoreInlineObjectKeys = (block: PortableTextTextBlock) => {
   return block;
 };
 
-// a block child: a span, or an inline object with any other _type
-type BlockChild = Partial<Pick<PortableTextSpan, 'text' | 'marks'>> & {
-  _type: string;
-};
+// A line break inside a mark is imported as this placeholder, then turned
+// back into `\n`. block-tools never marks whitespace, so a `\n` would lose
+// the marks around it. U+FDD0 is a noncharacter: reserved for internal use,
+// never in content.
+export const MARKED_LINE_BREAK = '\uFDD0';
 
-// a span's marks as a sorted set; undefined for inline objects, whose own
-// fields may include one named `marks`
-const spanMarks = (child: BlockChild | undefined) =>
-  child?._type === 'span' ? [...(child.marks ?? [])].sort().join() : undefined;
-
-/**
- * Rejoin text that a line break split out of its marks. A `\n` inside a mark
- * is exported as `<br>`, which block-tools imports as an unmarked span:
- * `[em "one"] ["\n"] [em "two"]` becomes `[em "one\ntwo"]` again.
- */
-export const rejoinMarkedLineBreaks = (block: PortableTextTextBlock) => {
-  const children = block.children as BlockChild[] | undefined;
-  if (!children) return block;
-  for (let index = 1; index < children.length - 1; index++) {
-    const lineBreak = children[index];
-    const previous = children[index - 1];
-    const marks = spanMarks(previous);
-    if (
-      !marks ||
-      spanMarks(lineBreak) !== '' ||
-      !/^\n+$/.test(lineBreak.text ?? '') ||
-      spanMarks(children[index + 1]) !== marks
-    ) {
-      continue;
+/** Turn line breaks imported inside a mark back into `\n`. */
+export const restoreMarkedLineBreaks = (block: PortableTextTextBlock) => {
+  block.children?.forEach((child) => {
+    if (typeof child.text === 'string') {
+      child.text = child.text.replaceAll(MARKED_LINE_BREAK, '\n');
     }
-    previous.text = `${previous.text ?? ''}${lineBreak.text}${children[index + 1].text ?? ''}`;
-    children.splice(index, 2);
-    index--;
-  }
+  });
   return block;
 };

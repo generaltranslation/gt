@@ -15,7 +15,11 @@ import { htmlToBlocks } from '@portabletext/block-tools';
 import { blockContentType } from './deserialize/helpers';
 import { PortableTextTextBlock, TypedObject } from 'sanity';
 import { attachGTData, detachGTData } from './data';
-import { escapeHTML, INLINE_OBJECT_KEY_FIELD } from './helpers';
+import {
+  escapeHTML,
+  INLINE_OBJECT_KEY_FIELD,
+  MARKED_LINE_BREAK,
+} from './helpers';
 import type { CustomDeserializers } from './types';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -389,7 +393,26 @@ export const customBlockDeserializers: Array<unknown> = [
 ];
 
 // Rules that run after the user's additionalBlockDeserializers, so a user
-// rule can claim <sup>, <sub> or <u> for its own mark
+// rule can claim <sup>, <sub>, <u> or <br> for its own content
 export const fallbackBlockDeserializers: Array<unknown> = [
   decoratorRule((el) => DECORATOR_ELEMENTS[el.tagName.toLowerCase()]),
+  // a line break inside a mark (`<em>one<br>two</em>`) keeps that mark; one
+  // between marks (`<em>one</em><br><em>two</em>`) stays unmarked
+  {
+    deserialize(node: Node): TypedObject | undefined {
+      const parent = node.parentElement;
+      if (
+        node.nodeName !== 'BR' ||
+        !parent ||
+        !MARK_ELEMENTS.has(parent.tagName.toLowerCase())
+      ) {
+        return undefined;
+      }
+      return {
+        _type: 'span',
+        marks: [],
+        text: MARKED_LINE_BREAK,
+      } as TypedObject;
+    },
+  },
 ];

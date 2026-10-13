@@ -10,7 +10,7 @@ import { blockContentType, preprocess } from './helpers';
 import {
   LEADING_NEWLINES_ATTRIBUTE,
   mergeBlocks,
-  rejoinMarkedLineBreaks,
+  restoreMarkedLineBreaks,
   restoreInlineObjectKeys,
   STRING_ATTRIBUTE,
 } from '../helpers';
@@ -79,7 +79,7 @@ export const deserializeArray = (
             Parameters<typeof htmlToBlocks>[2]
           >['rules'],
         });
-        deserializedObject = rejoinMarkedLineBreaks(
+        deserializedObject = restoreMarkedLineBreaks(
           restoreInlineObjectKeys(
             mergeBlocks(blocks as unknown as Parameters<typeof mergeBlocks>[0])
           )
