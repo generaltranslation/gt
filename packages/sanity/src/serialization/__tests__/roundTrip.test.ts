@@ -3,6 +3,12 @@ import { SanityDocument } from 'sanity';
 import { describe, expect, test } from 'vitest';
 import { deserializeDocument, serializeDocument } from '../../utils/serialize';
 import { BaseDocumentMerger } from '../BaseDocumentMerger';
+import {
+  customSerializers,
+  defaultStopTypes,
+} from '../BaseSerializationConfig';
+import { mergeInternationalizedArrays } from '../internationalizedArray/merge';
+import { BaseDocumentSerializer } from '../serialize';
 
 /*
  * Serialize → translate → deserialize → merge, as an import does it. With an
@@ -557,5 +563,105 @@ describe('null array entries', () => {
     expect((merged.seo as { reviewNotes: unknown[] }).reviewNotes).toContain(
       `${MARKER}Check the page title.`
     );
+  });
+});
+
+describe('top-level object fields', () => {
+  const ctaSchema = Schema.compile({
+    name: 'topLevelObjects',
+    types: [
+      {
+        name: 'cta',
+        type: 'object',
+        fields: [
+          { name: 'label', type: 'string' },
+          { name: 'href', type: 'url' },
+          { name: 'publishedAt', type: 'date' },
+        ],
+      },
+      {
+        name: 'internationalizedArrayCtaValue',
+        type: 'object',
+        fields: [
+          { name: 'language', type: 'string' },
+          { name: 'value', type: 'cta' },
+        ],
+      },
+      {
+        name: 'internationalizedArrayCta',
+        type: 'array',
+        of: [{ type: 'internationalizedArrayCtaValue' }],
+      },
+      {
+        name: 'landingPage',
+        type: 'document',
+        fields: [
+          { name: 'cta', type: 'cta' },
+          { name: 'localizedCta', type: 'internationalizedArrayCta' },
+        ],
+      },
+    ],
+  });
+  const cta = {
+    _type: 'cta',
+    label: 'Start a trial',
+    href: 'https://example.test/trial',
+    publishedAt: '2024-01-01',
+  };
+
+  test('reach their custom serializer with every field', () => {
+    const document = {
+      _id: 'landing',
+      _rev: 'r1',
+      _type: 'landingPage',
+      cta,
+    } as unknown as SanityDocument;
+    const serializers = {
+      ...customSerializers,
+      types: {
+        ...customSerializers.types,
+        cta: ({ value }: { value: typeof cta }) =>
+          `<div class="cta" data-href="${value.href}"><span>${value.label}</span></div>`,
+      },
+    };
+    const { content } = BaseDocumentSerializer(ctaSchema).serializeDocument(
+      document,
+      'document',
+      'en',
+      defaultStopTypes,
+      serializers
+    );
+    expect(content).toContain('data-href="https://example.test/trial"');
+  });
+
+  test('keep their url and date fields in an internationalized array', () => {
+    const document = {
+      _id: 'landing',
+      _rev: 'r1',
+      _type: 'landingPage',
+      localizedCta: [
+        {
+          _key: 'en',
+          _type: 'internationalizedArrayCtaValue',
+          language: 'en',
+          value: cta,
+        },
+      ],
+    } as unknown as SanityDocument;
+    const { content } = serializeDocument(
+      document,
+      ctaSchema,
+      'en',
+      'internationalizedArray'
+    );
+    const changes = mergeInternationalizedArrays(
+      document,
+      deserializeDocument(content),
+      'fr',
+      'en'
+    ) as { localizedCta: Array<{ language: string; value: unknown }> };
+    expect(
+      changes.localizedCta.find((item) => item.language === 'fr')?.value
+    ).toEqual(cta);
   });
 });
