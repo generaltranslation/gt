@@ -4,12 +4,15 @@
   "workspaces": [
     "packages/*",
     "examples/*",
-    "tests/apps/**/*"
+    "tests/apps/**/*",
+    "tools/bundle-analysis/analysis-app",
+    "tools/bundle-analysis/examples/*"
   ],
   "scripts": {
     "build": "turbo run build --filter='./packages/*' --ui tui",
     "watch": "pnpm build:watch",
     "build:watch": "turbo watch build --filter='./packages/*' --ui tui",
+    "analyze:bundle": "pnpm --filter gt-bundle-analysis start",
     "test": "turbo run test --filter='./packages/*'",
     "lint": "pnpm check:library-defaults && oxlint packages && pnpm --filter './examples/*' --filter './tests/apps/**/*' --if-present run lint && oxfmt --check .",
     "lint:fix": "oxlint packages --fix && pnpm --filter './examples/*' --filter './tests/apps/**/*' --if-present lint --fix && oxfmt .",

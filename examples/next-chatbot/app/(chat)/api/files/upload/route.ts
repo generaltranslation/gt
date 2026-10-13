@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     const validatedFile = FileSchema.safeParse({ file });
 
     if (!validatedFile.success) {
-      const errorMessage = validatedFile.error.errors
+      const errorMessage = validatedFile.error.issues
         .map((error) => error.message)
         .join(', ');
 
@@ -53,6 +53,7 @@ export async function POST(request: Request) {
     try {
       const data = await put(`${filename}`, fileBuffer, {
         access: 'public',
+        addRandomSuffix: true,
       });
 
       return NextResponse.json(data);

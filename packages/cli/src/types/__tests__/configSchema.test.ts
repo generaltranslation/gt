@@ -116,6 +116,18 @@ describe('GT config schema static url options', () => {
 
     expect(validate(true)).toBe(true);
     expect(validate({ skipUntranslatedPages: true })).toBe(true);
+    expect(validate({ attributes: ['href*'] })).toBe(true);
     expect(validate({ unknownOption: true })).toBe(false);
+  });
+
+  it('accepts docsUrlPattern as one pattern or a list', () => {
+    const validate = new Ajv({ strict: false }).compile(
+      schema.properties?.options?.properties?.docsUrlPattern ?? {}
+    );
+
+    expect(validate('/docs/[locale]')).toBe(true);
+    expect(validate(['/docs/[locale]', '/ai/docs/[locale]'])).toBe(true);
+    expect(validate([])).toBe(false);
+    expect(validate([1])).toBe(false);
   });
 });

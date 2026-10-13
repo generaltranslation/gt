@@ -1,5 +1,54 @@
 # gtx-cli
 
+## 2.26.3
+
+### Patch Changes
+
+- Updated dependencies [[`77d1437`](https://github.com/generaltranslation/gt/commit/77d14376ca70fd00c11806d6a721add6481b48cb)]:
+  - gt@2.26.3
+
+## 2.26.2
+
+### Patch Changes
+
+- Updated dependencies [[`d7943fe`](https://github.com/generaltranslation/gt/commit/d7943fee01740975387a6e1ff43a71c8ed78b886)]:
+  - gt@2.26.2
+
+## 2.26.1
+
+### Patch Changes
+
+- Updated dependencies [[`01f8a21`](https://github.com/generaltranslation/gt/commit/01f8a21cd2abdf1945e172e57344b0b98cec8311)]:
+  - gt@2.26.1
+
+## 2.26.0
+
+### Patch Changes
+
+- Updated dependencies [[`94ee3b4`](https://github.com/generaltranslation/gt/commit/94ee3b4b895b86db6ae942ec78621a5927d1b2f3), [`fe2e16a`](https://github.com/generaltranslation/gt/commit/fe2e16a904e0e9287e19be9a212e628fc3fd77fc), [`98ef8cd`](https://github.com/generaltranslation/gt/commit/98ef8cd8e2fc2af495ecc45e1d126ae862fa4671), [`1e4135b`](https://github.com/generaltranslation/gt/commit/1e4135b754c47c37ec9dcdd7d2cb815f6d9ba2eb)]:
+  - gt@2.26.0
+
+## 2.25.2
+
+### Patch Changes
+
+- Updated dependencies [[`60deece`](https://github.com/generaltranslation/gt/commit/60deececd8d1339aef7ef642d0e0f0f0b1d189d7)]:
+  - gt@2.25.2
+
+## 2.25.1
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.25.1
+
+## 2.25.0
+
+### Patch Changes
+
+- Updated dependencies [[`64db558`](https://github.com/generaltranslation/gt/commit/64db558404e9124f9f6101262a69346e66e54dca), [`df1e47a`](https://github.com/generaltranslation/gt/commit/df1e47a3c8767546f61608c25d6183af96a7da82), [`c725b79`](https://github.com/generaltranslation/gt/commit/c725b797bf00e75241306f15b2690a8b467e80b5)]:
+  - gt@2.25.0
+
 ## 2.24.0
 
 ### Patch Changes

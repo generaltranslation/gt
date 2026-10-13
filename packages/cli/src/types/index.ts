@@ -132,6 +132,7 @@ export const SUPPORTED_REACT_FRAMEWORKS = [
   'react',
   'redwood',
   'tanstack-start',
+  'react-router',
 ] as const;
 
 export type FrameworkObject =
@@ -331,7 +332,7 @@ export type AdditionalOptions = {
   };
   // Optional Mintlify-specific options container
   mintlify?: MintlifyOptions;
-  docsUrlPattern?: string; // eg /docs/[locale] or /[locale] for localizing static urls in markdown files
+  docsUrlPattern?: string | string[]; // eg /docs/[locale] or /[locale] for localizing static urls in markdown files; a list localizes several URL prefixes
   docsImportPattern?: string; // eg /docs/[locale]/foo.md or /[locale]/foo.md for localizing static imports in markdown files
   excludeStaticUrls?: string[]; // A list of file globs to include for static url localization
   excludeStaticImports?: string[]; // A list of file globs to include for static import localization
@@ -347,6 +348,8 @@ export type AdditionalOptions = {
     | {
         // Keep links to source pages that have no translation
         skipUntranslatedPages?: boolean;
+        // Extra JSX attribute names or globs to localize
+        attributes?: string[];
       };
   experimentalLocalizeRelativeAssets?: boolean; // Rewrites relative asset URLs in translated md/mdx files to valid paths
   experimentalAddHeaderAnchorIds?: 'mintlify' | 'default'; // Format for anchor IDs: 'mintlify' for Mintlify's native {#id} on every heading, 'default' or undefined for escaped inline \{#id\}. Can run independently of static url localization

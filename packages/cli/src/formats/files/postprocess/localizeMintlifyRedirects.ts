@@ -8,6 +8,8 @@ import type { Settings } from '../../../types/index.js';
 import {
   INDEX_PAGE,
   PAGE_EXTENSIONS,
+  findPatternHead,
+  getPatternHeads,
   transformUrlPath,
   translationMissing,
 } from '../../../utils/localizeStaticUrls.js';
@@ -42,7 +44,7 @@ export function localizeMintlifyRedirects(
     return [];
   }
   const urlPattern = settings.options.docsUrlPattern;
-  if (!urlPattern) {
+  if (!urlPattern || urlPattern.length === 0) {
     logger.warn(missingDocsUrlPatternWarning);
     return [];
   }
@@ -68,8 +70,10 @@ export function localizeMintlifyRedirects(
     settings.defaultLocale
   );
   // Localize URLs the way links inside pages are localized
-  const urlPatternHead = urlPattern.split('[locale]')[0];
+  const urlPatternHeads = getPatternHeads(urlPattern);
   const localizeUrl = (url: string, locale: string) => {
+    const urlPatternHead = findPatternHead(url, urlPatternHeads);
+    if (urlPatternHead === undefined) return null;
     const localized = transformUrlPath(
       url,
       urlPatternHead,
@@ -78,6 +82,16 @@ export function localizeMintlifyRedirects(
       settings.options?.experimentalHideDefaultLocale ?? false
     );
     return localized === null ? null : normalizeUrl(localized);
+  };
+  // Translated pages can be orphaned too, so their redirects are already
+  // localized. Localizing them again would nest locales (/docs/ja-jp/fr-ca/...)
+  const isLocalized = (url: string) => {
+    const urlPatternHead = findPatternHead(url, urlPatternHeads);
+    if (urlPatternHead === undefined) return false;
+    const localeSegmentIndex = urlPatternHead.split('/').filter(Boolean).length;
+    return targetLocales.includes(
+      url.split('/').filter(Boolean)[localeSegmentIndex]
+    );
   };
   const takenSources = new Set(
     location.redirects.filter(isRedirect).map((r) => normalizeUrl(r.source))
@@ -89,7 +103,13 @@ export function localizeMintlifyRedirects(
     const [destinationPath, anchor] = splitAnchor(entry.destination);
     const sourceUrl = normalizeUrl(entry.source);
     const destinationUrl = normalizeUrl(destinationPath);
-    if (!oldPageUrls.has(sourceUrl)) return [entry];
+    if (
+      !oldPageUrls.has(sourceUrl) ||
+      isLocalized(sourceUrl) ||
+      isLocalized(destinationUrl)
+    ) {
+      return [entry];
+    }
 
     const localized: Redirect[] = [];
     for (const locale of targetLocales) {

@@ -1,11 +1,7 @@
 'use client';
 
-import type {
-  Attachment,
-  ChatRequestOptions,
-  CreateMessage,
-  Message,
-} from 'ai';
+import type { UIMessage } from 'ai';
+import type { UseChatHelpers } from '@ai-sdk/react';
 import cx from 'classnames';
 import type React from 'react';
 import {
@@ -21,7 +17,7 @@ import {
 import { toast } from 'sonner';
 import { useLocalStorage, useWindowSize } from 'usehooks-ts';
 
-import { sanitizeUIMessages } from '@/lib/utils';
+import { type Attachment, sanitizeUIMessages } from '@/lib/utils';
 
 import { ArrowUpIcon, PaperclipIcon, StopIcon } from './icons';
 import { PreviewAttachment } from './preview-attachment';
@@ -48,7 +44,6 @@ function PureMultimodalInput({
   messages,
   setMessages,
   append,
-  handleSubmit,
   className,
 }: {
   chatId: string;
@@ -58,18 +53,9 @@ function PureMultimodalInput({
   stop: () => void;
   attachments: Array<Attachment>;
   setAttachments: Dispatch<SetStateAction<Array<Attachment>>>;
-  messages: Array<Message>;
-  setMessages: Dispatch<SetStateAction<Array<Message>>>;
-  append: (
-    message: Message | CreateMessage,
-    chatRequestOptions?: ChatRequestOptions
-  ) => Promise<string | null | undefined>;
-  handleSubmit: (
-    event?: {
-      preventDefault?: () => void;
-    },
-    chatRequestOptions?: ChatRequestOptions
-  ) => void;
+  messages: Array<UIMessage>;
+  setMessages: UseChatHelpers<UIMessage>['setMessages'];
+  append: UseChatHelpers<UIMessage>['sendMessage'];
   className?: string;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -140,10 +126,17 @@ function PureMultimodalInput({
   const submitForm = useCallback(() => {
     window.history.replaceState({}, '', `/chat/${chatId}`);
 
-    handleSubmit(undefined, {
-      experimental_attachments: attachments,
+    append({
+      text: input,
+      files: attachments.map((attachment) => ({
+        type: 'file' as const,
+        url: attachment.url,
+        filename: attachment.name,
+        mediaType: attachment.contentType,
+      })),
     });
 
+    setInput('');
     setAttachments([]);
     setLocalStorageInput('');
     resetHeight();
@@ -152,8 +145,10 @@ function PureMultimodalInput({
       textareaRef.current?.focus();
     }
   }, [
+    input,
+    setInput,
     attachments,
-    handleSubmit,
+    append,
     setAttachments,
     setLocalStorageInput,
     width,
@@ -337,7 +332,7 @@ function PureStopButton({
   setMessages,
 }: {
   stop: () => void;
-  setMessages: Dispatch<SetStateAction<Array<Message>>>;
+  setMessages: UseChatHelpers<UIMessage>['setMessages'];
 }) {
   return (
     <Button

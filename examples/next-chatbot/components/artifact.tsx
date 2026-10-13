@@ -1,9 +1,5 @@
-import type {
-  Attachment,
-  ChatRequestOptions,
-  CreateMessage,
-  Message,
-} from 'ai';
+import type { UIMessage } from 'ai';
+import type { UseChatHelpers } from '@ai-sdk/react';
 import { formatDistance } from 'date-fns';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -17,7 +13,7 @@ import {
 import useSWR, { useSWRConfig } from 'swr';
 import { useDebounceCallback, useWindowSize } from 'usehooks-ts';
 import type { Document, Vote } from '@/lib/db/schema';
-import { fetcher } from '@/lib/utils';
+import { type Attachment, fetcher } from '@/lib/utils';
 import { MultimodalInput } from './multimodal-input';
 import { Toolbar } from './toolbar';
 import { VersionFooter } from './version-footer';
@@ -84,7 +80,6 @@ function PureArtifact({
   chatId,
   input,
   setInput,
-  handleSubmit,
   isLoading,
   stop,
   attachments,
@@ -103,20 +98,11 @@ function PureArtifact({
   stop: () => void;
   attachments: Array<Attachment>;
   setAttachments: Dispatch<SetStateAction<Array<Attachment>>>;
-  messages: Array<Message>;
-  setMessages: Dispatch<SetStateAction<Array<Message>>>;
+  messages: Array<UIMessage>;
+  setMessages: UseChatHelpers<UIMessage>['setMessages'];
   votes: Array<Vote> | undefined;
-  append: (
-    message: Message | CreateMessage,
-    chatRequestOptions?: ChatRequestOptions
-  ) => Promise<string | null | undefined>;
-  handleSubmit: (
-    event?: { preventDefault?: () => void },
-    chatRequestOptions?: ChatRequestOptions
-  ) => void;
-  reload: (
-    chatRequestOptions?: ChatRequestOptions
-  ) => Promise<string | null | undefined>;
+  append: UseChatHelpers<UIMessage>['sendMessage'];
+  reload: UseChatHelpers<UIMessage>['regenerate'];
   isReadonly: boolean;
 }) {
   const { artifact, setArtifact, metadata, setMetadata } = useArtifact();
@@ -360,7 +346,6 @@ function PureArtifact({
                     chatId={chatId}
                     input={input}
                     setInput={setInput}
-                    handleSubmit={handleSubmit}
                     isLoading={isLoading}
                     stop={stop}
                     attachments={attachments}
