@@ -338,6 +338,48 @@ describe('localizeMintlifyRedirects', () => {
     expect(read('docs.json')).toBe(before);
   });
 
+  it('localizes redirects under every docsUrlPattern', async () => {
+    // auth0 serves a second docs tree from /ai/docs
+    setup(
+      [
+        { source: '/docs/old', destination: '/docs/new' },
+        { source: '/ai/docs/old', destination: '/ai/docs/new' },
+        { source: '/ai/docs/fr-ca/old', destination: '/ai/docs/fr-ca/new' },
+      ],
+      {
+        ...gtConfig({
+          docsUrlPattern: ['/docs/[locale]', '/ai/docs/[locale]'],
+        }),
+        files: {
+          mdx: {
+            include: ['./docs/**/*.mdx', './ai/docs/**/*.mdx'],
+            exclude: ['./docs/[locales]/**', './ai/docs/[locales]/**'],
+            transform: [
+              { match: '^((?:ai/)?docs/)(.*)$', replace: '$1{locale}/$2' },
+            ],
+          },
+        },
+      }
+    );
+    page('new');
+    write('ai/docs/new.mdx', '# new\n');
+    for (const locale of LOCALES) {
+      write(`ai/docs/${locale}/new.mdx`, `# new (${locale})\n`);
+    }
+
+    const added = await run([
+      ...removed('old'),
+      'ai/docs/old.mdx',
+      'ai/docs/fr-ca/old.mdx',
+    ]);
+
+    expect(added).toEqual([
+      { source: '/docs/fr-ca/old', destination: '/docs/fr-ca/new' },
+      { source: '/docs/ja-jp/old', destination: '/docs/ja-jp/new' },
+      { source: '/ai/docs/ja-jp/old', destination: '/ai/docs/ja-jp/new' },
+    ]);
+  });
+
   it('does nothing without docsUrlPattern', async () => {
     setup(
       [{ source: '/docs/old', destination: '/docs/new' }],

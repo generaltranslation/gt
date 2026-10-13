@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.26.3
+
+### Patch Changes
+
+- [#2443](https://github.com/generaltranslation/gt/pull/2443) [`77d1437`](https://github.com/generaltranslation/gt/commit/77d14376ca70fd00c11806d6a721add6481b48cb) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Accept a list for `options.docsUrlPattern`, such as `["/docs/[locale]", "/ai/docs/[locale]"]`, so static URL and Mintlify redirect localization cover docs served from several URL prefixes. Each URL is localized with the longest pattern it matches.
+
 ## 2.26.2
 
 ### Patch Changes
