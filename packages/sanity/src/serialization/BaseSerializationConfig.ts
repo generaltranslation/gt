@@ -75,7 +75,7 @@ const decoratorMark: PortableTextMarkComponent = ({ children, markType }) =>
 
 // Decorators rendered as their own element. block-tools only restores the
 // ones the generic import schema declares, so these are restored by name
-// (the decorator rule below).
+// (fallbackBlockDeserializers).
 const DECORATOR_ELEMENTS: Record<string, string> = {
   sup: 'sup',
   sub: 'sub',
@@ -170,6 +170,30 @@ const MARK_ELEMENTS = new Set([
   'u',
 ]);
 
+const decoratorRule = (
+  decoratorName: (el: HTMLElement) => string | null | undefined
+) => ({
+  deserialize(
+    node: Node,
+    next: (
+      elements: Node | Node[] | NodeList
+    ) => TypedObject | TypedObject[] | undefined
+  ): TypedObject | undefined {
+    if (node.nodeType !== 1) {
+      return undefined;
+    }
+    const name = decoratorName(node as HTMLElement);
+    if (!name) {
+      return undefined;
+    }
+    return {
+      _type: '__decorator',
+      name,
+      children: next(node.childNodes),
+    } as TypedObject;
+  },
+});
+
 export const customBlockDeserializers: Array<unknown> = [
   // keep whitespace-only text inside a mark (`Note:<strong> </strong>The`,
   // or next to a nested mark: `<strong><em>Note:</em> </strong>The`):
@@ -252,30 +276,7 @@ export const customBlockDeserializers: Array<unknown> = [
     },
   },
   // handle decorators, whether or not the generic import schema declares them
-  {
-    deserialize(
-      node: Node,
-      next: (
-        elements: Node | Node[] | NodeList
-      ) => TypedObject | TypedObject[] | undefined
-    ): TypedObject | undefined {
-      if (node.nodeType !== 1) {
-        return undefined;
-      }
-      const el = node as HTMLElement;
-      const name =
-        el.getAttribute(DECORATOR_ATTRIBUTE) ??
-        DECORATOR_ELEMENTS[el.tagName.toLowerCase()];
-      if (!name) {
-        return undefined;
-      }
-      return {
-        _type: '__decorator',
-        name,
-        children: next(el.childNodes),
-      } as TypedObject;
-    },
-  },
+  decoratorRule((el) => el.getAttribute(DECORATOR_ATTRIBUTE)),
   //handle undeclared styles
   {
     deserialize(
@@ -385,4 +386,10 @@ export const customBlockDeserializers: Array<unknown> = [
       };
     },
   },
+];
+
+// Rules that run after the user's additionalBlockDeserializers, so a user
+// rule can claim <sup>, <sub> or <u> for its own mark
+export const fallbackBlockDeserializers: Array<unknown> = [
+  decoratorRule((el) => DECORATOR_ELEMENTS[el.tagName.toLowerCase()]),
 ];

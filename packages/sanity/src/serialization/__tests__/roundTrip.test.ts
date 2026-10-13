@@ -1,6 +1,7 @@
 import { Schema } from '@sanity/schema';
 import { SanityDocument } from 'sanity';
-import { describe, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { pluginConfig } from '../../adapter/core';
 import { deserializeDocument, serializeDocument } from '../../utils/serialize';
 import { BaseDocumentMerger } from '../BaseDocumentMerger';
 import {
@@ -892,5 +893,96 @@ describe('top-level object fields', () => {
     expect(
       changes.localizedCta.find((item) => item.language === 'fr')?.value
     ).toEqual(cta);
+  });
+});
+
+describe('user rules for <sup>, <sub> and <u>', () => {
+  const span = (_key: string, text: string, marks: string[] = []) => ({
+    _key,
+    _type: 'span',
+    text,
+    marks,
+  });
+  const userSerializers = {
+    marks: {
+      footnote: ({
+        value,
+        children,
+      }: {
+        value: { _key: string; note: string };
+        children: string;
+      }) =>
+        `<sup data-note="${value.note}" data-key="${value._key}">${children}</sup>`,
+      superscript: ({ children }: { children: string }) =>
+        `<sup>${children}</sup>`,
+    },
+  };
+  // a site that renders both a footnote annotation and a superscript
+  // decorator as <sup>, and tells them apart on import
+  const userRules = [
+    {
+      deserialize(node: Node, next: (nodes: NodeList) => unknown) {
+        const el = node as HTMLElement;
+        if (el.tagName?.toLowerCase() !== 'sup') return undefined;
+        if (!el.hasAttribute('data-note')) {
+          return {
+            _type: '__decorator',
+            name: 'superscript',
+            children: next(el.childNodes),
+          };
+        }
+        return {
+          _type: '__annotation',
+          markDef: {
+            _key: el.getAttribute('data-key'),
+            _type: 'footnote',
+            note: el.getAttribute('data-note'),
+          },
+          children: next(el.childNodes),
+        };
+      },
+    },
+  ];
+
+  beforeEach(() => {
+    vi.spyOn(pluginConfig, 'getAdditionalSerializers').mockReturnValue(
+      userSerializers as never
+    );
+    vi.spyOn(pluginConfig, 'getAdditionalBlockDeserializers').mockReturnValue(
+      userRules
+    );
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  test('run before the built-in rule that restores those elements', () => {
+    const body = [
+      {
+        _key: 'latency',
+        _type: 'block',
+        style: 'normal',
+        markDefs: [{ _key: 'fn1', _type: 'footnote', note: 'Measured in May' }],
+        children: [
+          span('s1', 'Median '),
+          span('s2', 'latency', ['fn1']),
+          span('s3', ' dropped by E = mc'),
+          span('s4', '2', ['superscript']),
+        ],
+      },
+    ];
+    const merged = roundTrip((html) => html, {
+      ...sourceDocument,
+      body,
+    } as unknown as SanityDocument) as {
+      body: Array<{
+        markDefs: unknown[];
+        children: Array<{ text: string; marks: string[] }>;
+      }>;
+    };
+    expect(merged.body[0].markDefs).toEqual(body[0].markDefs);
+    expect(
+      merged.body[0].children.map(({ text, marks }) => [text, marks])
+    ).toEqual(body[0].children.map(({ text, marks }) => [text, marks]));
   });
 });
