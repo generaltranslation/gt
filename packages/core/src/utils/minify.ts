@@ -5,7 +5,7 @@ const VARIABLE_TRANSFORMATION_SUFFIXES_TO_MINIFIED_NAMES = {
   number: 'n',
   datetime: 'd',
   currency: 'c',
-  'relative-time': 'rt',
+  relativetime: 'rt',
 } as const;
 
 export function minifyVariableType(

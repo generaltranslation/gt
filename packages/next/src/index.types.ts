@@ -186,7 +186,7 @@ export const RelativeTime: typeof _RelativeTime = () => {
   throw new Error(typesFileError);
 };
 /** @internal _gtt - The GT transformation for the component. */
-RelativeTime._gtt = 'variable-relative-time';
+RelativeTime._gtt = 'variable-relativetime';
 
 /**
  * The `<Num>` component renders a formatted number string, allowing customization of the name, default value, and formatting options.
