@@ -114,7 +114,10 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
     // Declared fields from the enclosing field or array-member definition.
     // Used when the value itself resolves to no schema type — anonymous
     // inline objects carry no `_type`.
-    declaredFields?: ObjectField[]
+    declaredFields?: ObjectField[],
+    // The document itself: its object fields are serialized unfiltered, so
+    // custom serializers see their full value, as before single-pass export.
+    isDocument = false
   ) => {
     if (stopTypes.includes(obj._type)) {
       return '';
@@ -195,19 +198,13 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
         const fieldDef = knownFields?.find(
           (field) => field.name === fieldName
         ) as RawFieldDef | undefined;
-        //strings are either string fields or have recursively been turned
-        //into HTML because they were a nested object or array
+        //strings are document values, even if they look like HTML
         if (typeof value === 'string') {
-          const htmlRegex = new RegExp(/<("[^"]*"|'[^']*'|[^'">])*>/);
-          if (htmlRegex.test(value)) {
-            htmlField = value;
-          } else {
-            htmlField = serializeString(
-              value,
-              fieldName,
-              isTextType(fieldDef?.type)
-            );
-          }
+          htmlField = serializeString(
+            value,
+            fieldName,
+            isTextType(fieldDef?.type)
+          );
         }
 
         //array fields get filtered and its children serialized
@@ -229,7 +226,7 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
           const embeddedObject = value as TypedObject;
           const embeddedFields = resolveSchemaFields(embeddedObject._type);
           let toTranslate = embeddedObject;
-          if (embeddedFields) {
+          if (embeddedFields && !isDocument) {
             toTranslate = fieldFilter(
               toTranslate,
               embeddedFields,
@@ -288,7 +285,7 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
   };
 
   const serializeArray = (
-    fieldContent: Array<Record<string, unknown> | string>,
+    fieldContent: unknown[],
     fieldName: string,
     stopTypes: string[],
     serializers: Partial<PortableTextHtmlComponents>,
@@ -297,12 +294,13 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
     memberDefs?: RawFieldDef[]
   ) => {
     //filter for any blocks that user has indicated
-    //should not be sent for translation
+    //should not be sent for translation, and entries that are neither
+    //strings nor objects (e.g. null)
     const validBlocks = fieldContent.filter(
-      (block) =>
+      (block): block is Record<string, unknown> | string =>
         typeof block === 'string' ||
-        typeof block._type !== 'string' ||
-        !stopTypes.includes(block._type)
+        (isRecord(block) &&
+          (typeof block._type !== 'string' || !stopTypes.includes(block._type)))
     );
 
     //fields declared inline on the matching array-member definition
@@ -378,50 +376,14 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
       );
     }
 
-    const serializedFields: Record<string, unknown> = {};
-
-    for (const key in filteredObj) {
-      if (filteredObj.hasOwnProperty(key) === false) continue;
-      const value = filteredObj[key];
-      const fieldDef = schema?.fields?.find((field) => field.name === key) as
-        | RawFieldDef
-        | undefined;
-
-      if (typeof value === 'string') {
-        serializedFields[key] = value;
-      } else if (Array.isArray(value)) {
-        serializedFields[key] = serializeArray(
-          value.filter(
-            (item): item is Record<string, unknown> | string =>
-              typeof item === 'string' || isRecord(item)
-          ),
-          key,
-          stopTypes,
-          serializers,
-          resolveArrayMembers(fieldDef)
-        );
-      } else if (
-        value &&
-        isRecord(value) &&
-        !stopTypes.find((stopType) => stopType == value?._type)
-      ) {
-        const serialized = serializeObject(
-          value as TypedObject,
-          stopTypes,
-          serializers,
-          fieldDef?.fields
-        );
-        serializedFields[key] =
-          `<div class="${key}" data-level='field'>${serialized}</div>`;
-      }
-    }
-
     //create a valid HTML file
     const rawHTMLBody = document.createElement('body');
     rawHTMLBody.innerHTML = serializeObject(
-      serializedFields as TypedObject,
+      filteredObj as TypedObject,
       stopTypes,
-      serializers
+      serializers,
+      undefined,
+      true
     );
 
     const rawHTMLHead = document.createElement('head');

@@ -3,6 +3,12 @@ import { SanityDocument } from 'sanity';
 import { describe, expect, test } from 'vitest';
 import { deserializeDocument, serializeDocument } from '../../utils/serialize';
 import { BaseDocumentMerger } from '../BaseDocumentMerger';
+import {
+  customSerializers,
+  defaultStopTypes,
+} from '../BaseSerializationConfig';
+import { mergeInternationalizedArrays } from '../internationalizedArray/merge';
+import { BaseDocumentSerializer } from '../serialize';
 
 /*
  * Serialize → translate → deserialize → merge, as an import does it. With an
@@ -49,7 +55,7 @@ const sourceDocument = {
   _id: 'post-round-trip',
   _rev: 'rev-1',
   _type: 'roundTripPost',
-  title: 'Shipping and receiving checklist',
+  title: 'Shipping <i>& receiving</i> checklist',
   excerpt:
     '  Starts with spaces.\nSecond line\n\n\tTabbed line after a blank line\nEnds with spaces.  ',
   seo: {
@@ -57,13 +63,13 @@ const sourceDocument = {
     description:
       'First sentence of the summary.\nSecond sentence on its own line.',
   },
-  tags: ['warehouses', 'cold storage\nand freezers'],
+  tags: ['warehouses', 'cold storage\nand freezers', 'dry <b>goods</b>'],
   sections: [
     {
       _key: 'section-table',
       _type: 'markdownBlock',
       content:
-        '| Supplier | Ships to |\n| --- | --- |\n| Northwind | Oslo, Lyon |\n| Contoso | Porto & Turin |',
+        '| Supplier | Ships to |\n| --- | --- |\n| Northwind | Oslo, Lyon<sup>†</sup> |\n| Contoso | Porto & Turin |',
     },
     {
       _key: 'section-list',
@@ -74,6 +80,12 @@ const sourceDocument = {
       _key: 'section-indented',
       _type: 'markdownBlock',
       content: 'Paragraph one.\n\n    indented code\n\nTrailing newline\n',
+    },
+    {
+      _key: 'section-inline-html',
+      _type: 'markdownBlock',
+      content:
+        'Line one<br>Line two\n\nSee <a href="https://example.test/docs?a=1&b=2">the docs</a>.',
     },
   ],
 } as unknown as SanityDocument;
@@ -161,7 +173,16 @@ describe('string elements', () => {
       Array.from(exported.querySelectorAll('.tags > *')).map(
         (element) => element.tagName
       )
-    ).toEqual(['SPAN', 'PRE']);
+    ).toEqual(['SPAN', 'PRE', 'SPAN']);
+  });
+
+  test('carry tag-like values as literal text inside the field element', () => {
+    const title = exported.querySelector('span.title');
+    expect(title?.children.length).toBe(0);
+    expect(title?.textContent).toBe(sourceDocument.title);
+    const sections = exported.querySelectorAll('pre.content');
+    expect(sections.length).toBe((sourceDocument.sections as unknown[]).length);
+    sections.forEach((section) => expect(section.children.length).toBe(0));
   });
 
   test('read <pre> text the same with or without the leading newline', () => {
@@ -292,5 +313,136 @@ describe('leading newlines', () => {
     expect(merged.excerpt).toBe(
       `\n\n${MARKER}  Indented after two blank lines`
     );
+  });
+});
+
+describe('null array entries', () => {
+  // saved documents can hold null entries; they are skipped, not exported
+  const document = {
+    ...sourceDocument,
+    tags: ['warehouses', null],
+    sections: [...(sourceDocument.sections as unknown[]), null],
+    seo: {
+      ...(sourceDocument.seo as Record<string, unknown>),
+      reviewNotes: [null, 'Check the page title.'],
+    },
+  } as unknown as SanityDocument;
+
+  test('do not stop the rest of the document from being translated', () => {
+    const merged = roundTrip(markerTranslate, document);
+    expect(merged.title).toBe(MARKER + sourceDocument.title);
+    expect(merged.tags).toContain(`${MARKER}warehouses`);
+    expect(
+      sectionContents({
+        sections: (merged.sections as unknown[]).filter(Boolean),
+      })
+    ).toEqual(
+      sectionContents(sourceDocument as unknown as Record<string, unknown>).map(
+        (content) => MARKER + content
+      )
+    );
+    expect((merged.seo as { reviewNotes: unknown[] }).reviewNotes).toContain(
+      `${MARKER}Check the page title.`
+    );
+  });
+});
+
+describe('top-level object fields', () => {
+  const ctaSchema = Schema.compile({
+    name: 'topLevelObjects',
+    types: [
+      {
+        name: 'cta',
+        type: 'object',
+        fields: [
+          { name: 'label', type: 'string' },
+          { name: 'href', type: 'url' },
+          { name: 'publishedAt', type: 'date' },
+        ],
+      },
+      {
+        name: 'internationalizedArrayCtaValue',
+        type: 'object',
+        fields: [
+          { name: 'language', type: 'string' },
+          { name: 'value', type: 'cta' },
+        ],
+      },
+      {
+        name: 'internationalizedArrayCta',
+        type: 'array',
+        of: [{ type: 'internationalizedArrayCtaValue' }],
+      },
+      {
+        name: 'landingPage',
+        type: 'document',
+        fields: [
+          { name: 'cta', type: 'cta' },
+          { name: 'localizedCta', type: 'internationalizedArrayCta' },
+        ],
+      },
+    ],
+  });
+  const cta = {
+    _type: 'cta',
+    label: 'Start a trial',
+    href: 'https://example.test/trial',
+    publishedAt: '2024-01-01',
+  };
+
+  test('reach their custom serializer with every field', () => {
+    const document = {
+      _id: 'landing',
+      _rev: 'r1',
+      _type: 'landingPage',
+      cta,
+    } as unknown as SanityDocument;
+    const serializers = {
+      ...customSerializers,
+      types: {
+        ...customSerializers.types,
+        cta: ({ value }: { value: typeof cta }) =>
+          `<div class="cta" data-href="${value.href}"><span>${value.label}</span></div>`,
+      },
+    };
+    const { content } = BaseDocumentSerializer(ctaSchema).serializeDocument(
+      document,
+      'document',
+      'en',
+      defaultStopTypes,
+      serializers
+    );
+    expect(content).toContain('data-href="https://example.test/trial"');
+  });
+
+  test('keep their url and date fields in an internationalized array', () => {
+    const document = {
+      _id: 'landing',
+      _rev: 'r1',
+      _type: 'landingPage',
+      localizedCta: [
+        {
+          _key: 'en',
+          _type: 'internationalizedArrayCtaValue',
+          language: 'en',
+          value: cta,
+        },
+      ],
+    } as unknown as SanityDocument;
+    const { content } = serializeDocument(
+      document,
+      ctaSchema,
+      'en',
+      'internationalizedArray'
+    );
+    const changes = mergeInternationalizedArrays(
+      document,
+      deserializeDocument(content),
+      'fr',
+      'en'
+    ) as { localizedCta: Array<{ language: string; value: unknown }> };
+    expect(
+      changes.localizedCta.find((item) => item.language === 'fr')?.value
+    ).toEqual(cta);
   });
 });

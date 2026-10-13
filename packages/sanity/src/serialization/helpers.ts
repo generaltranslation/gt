@@ -17,6 +17,16 @@ export function mergeBlocks(blocks: PortableTextTextBlock[]) {
   return mergedBlock;
 }
 
+const htmlEscapes: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+};
+
+/** Escape text so it is read as literal text, never as markup. */
+const escapeHTML = (value: string): string =>
+  value.replace(/[&<>]/g, (char) => htmlEscapes[char]);
+
 // Whitespace that HTML formatting would collapse or trim: newlines, tabs and
 // other control whitespace, leading or trailing whitespace, and runs of
 // whitespace.
@@ -35,9 +45,10 @@ export const STRING_ATTRIBUTE = 'data-gt-string';
 export const LEADING_NEWLINES_ATTRIBUTE = 'data-gt-leading-newlines';
 
 /**
- * Serialize a string value. Multi-line fields (`multiline`, e.g. `text` and
- * markdown) and values whose whitespace matters go in a <pre>, which HTML
- * tools leave untouched; everything else stays a <span>.
+ * Serialize a string value as escaped text, so tag-like content (e.g. `<br>`
+ * in markdown) stays literal text. Multi-line fields (`multiline`, e.g.
+ * `text` and markdown) and values whose whitespace matters go in a <pre>,
+ * which HTML tools leave untouched; everything else stays a <span>.
  */
 export const serializeString = (
   value: string,
@@ -46,12 +57,12 @@ export const serializeString = (
 ): string => {
   const classAttribute = className ? ` class="${className}"` : '';
   if (!multiline && !SIGNIFICANT_WHITESPACE.test(value)) {
-    return `<span${classAttribute}>${value}</span>`;
+    return `<span${classAttribute}>${escapeHTML(value)}</span>`;
   }
   const text = value.replace(/^\n+/, '');
   const leadingNewlines = value.length - text.length;
   const leadingNewlinesAttribute = leadingNewlines
     ? ` ${LEADING_NEWLINES_ATTRIBUTE}="${leadingNewlines}"`
     : '';
-  return `<pre${classAttribute} ${STRING_ATTRIBUTE}=""${leadingNewlinesAttribute}>${text}</pre>`;
+  return `<pre${classAttribute} ${STRING_ATTRIBUTE}=""${leadingNewlinesAttribute}>${escapeHTML(text)}</pre>`;
 };
