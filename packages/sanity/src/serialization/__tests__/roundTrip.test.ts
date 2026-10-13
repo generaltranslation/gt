@@ -589,6 +589,70 @@ describe('annotations', () => {
   });
 });
 
+describe('whitespace-only marks', () => {
+  const paragraph = (key: string, children: unknown[]) => ({
+    _key: key,
+    _type: 'block',
+    style: 'normal',
+    markDefs: [
+      { _key: 'link-space', _type: 'link', href: 'https://example.test' },
+    ],
+    children,
+  });
+  const body = [
+    paragraph('block-strong-space', [
+      span('Note:'),
+      span(' ', ['strong']),
+      span('The rest is unchanged.'),
+    ]),
+    paragraph('block-dash', [
+      span('March '),
+      span('–'),
+      span(' ', ['strong']),
+      span('the launch'),
+    ]),
+    paragraph('block-link-space', [
+      span('a'),
+      span(' ', ['link-space']),
+      span('b'),
+    ]),
+    paragraph('block-nested-strong-space', [
+      span('Note:', ['strong', 'em']),
+      span(' ', ['strong']),
+      span('The rest.', ['em']),
+    ]),
+    paragraph('block-nested-link-space', [
+      span('into '),
+      span('the city', ['link-space', 'strong']),
+      span(' ', ['link-space']),
+      span('and back'),
+    ]),
+  ];
+  const document = { ...sourceDocument, body } as unknown as SanityDocument;
+  const texts = (doc: Record<string, unknown>) =>
+    (doc.body as Block[]).map(blockText);
+
+  test('keep the space between the words around them', () => {
+    expect(texts(roundTrip((html) => html, document))).toEqual([
+      'Note: The rest is unchanged.',
+      'March – the launch',
+      'a b',
+      'Note: The rest.',
+      'into the city and back',
+    ]);
+  });
+
+  test('keep the space while the words are translated', () => {
+    expect(texts(roundTrip(markerTranslate, document))).toEqual([
+      `${MARKER}Note: ${MARKER}The rest is unchanged.`,
+      `${MARKER}March – ${MARKER}the launch`,
+      `${MARKER}a ${MARKER}b`,
+      `${MARKER}Note: ${MARKER}The rest.`,
+      `${MARKER}into ${MARKER}the city ${MARKER}and back`,
+    ]);
+  });
+});
+
 describe('null array entries', () => {
   // saved documents can hold null entries; they are skipped, not exported
   const document = {
