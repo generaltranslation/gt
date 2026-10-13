@@ -17,12 +17,14 @@ export {
   // ===== Hooks ===== //
   useLocale,
   useSetLocale,
+  useRegion,
   useCustomMapping,
   useDefaultLocale,
   useEnableI18n,
-  useSetEnableI18n,
   useLocales,
   useLocaleSelector,
+  useLocaleDirection,
+  useLocaleProperties,
   useFormatLocales,
   useGT,
   useMessages,
@@ -36,6 +38,12 @@ export {
   decodeVars,
   mFallback,
   gtFallback,
+  getDefaultLocale,
+  getLocales,
+  getLocaleProperties,
+  resolveCanonicalLocale,
   getTranslationsSnapshot,
+  getVersionId,
   t,
 } from 'gt-react';
+export type { GTTranslationOptions, RuntimeTranslationOptions } from 'gt-react';
