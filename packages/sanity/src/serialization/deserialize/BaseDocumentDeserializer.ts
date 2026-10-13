@@ -3,6 +3,7 @@ import { htmlToBlocks } from '@portabletext/block-tools';
 import {
   customDeserializers,
   customBlockDeserializers,
+  fallbackBlockDeserializers,
 } from '../BaseSerializationConfig';
 import { CustomDeserializers, Deserializer } from '../types';
 import { blockContentType, preprocess } from './helpers';
@@ -12,6 +13,11 @@ import {
   restoreInlineObjectKeys,
   STRING_ATTRIBUTE,
 } from '../helpers';
+
+const defaultBlockDeserializers = [
+  ...customBlockDeserializers,
+  ...fallbackBlockDeserializers,
+];
 
 //string values: <pre> holds whitespace-sensitive text and is read verbatim,
 //<span> holds single-line text and is sanitized through block-tools. a <pre>
@@ -38,7 +44,7 @@ const deserializeString = (element: Element): string | undefined => {
 export const deserializeArray = (
   arrayHTML: Element,
   deserializers: CustomDeserializers = customDeserializers,
-  blockDeserializers: Array<unknown> = customBlockDeserializers
+  blockDeserializers: Array<unknown> = defaultBlockDeserializers
 ) => {
   const output: unknown[] = [];
   const children = Array.from(arrayHTML.children);
@@ -91,7 +97,7 @@ export const deserializeArray = (
 export const deserializeObject = (
   objectHTML: Element,
   deserializers: CustomDeserializers = customDeserializers,
-  blockDeserializers: Array<unknown> = customBlockDeserializers
+  blockDeserializers: Array<unknown> = defaultBlockDeserializers
 ) => {
   const deserialize = deserializers.types?.[objectHTML.className];
   if (deserialize) {
@@ -181,7 +187,7 @@ export const deserializeDocument = <
 >(
   serializedDoc: string,
   deserializers: CustomDeserializers = customDeserializers,
-  blockDeserializers: Array<unknown> = customBlockDeserializers
+  blockDeserializers: Array<unknown> = defaultBlockDeserializers
 ): TDocument => {
   const metadata: Record<string, unknown> = {};
   const head = new DOMParser().parseFromString(serializedDoc, 'text/html').head;
