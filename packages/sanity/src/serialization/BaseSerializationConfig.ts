@@ -258,9 +258,17 @@ export const customBlockDeserializers: Array<unknown> = [
             style: customStyle ?? (newBlock as PortableTextTextBlock).style,
           };
 
-          //next(childNodes) plays poorly with custom styles, issue to be filed.
+          //a custom style wraps the item's content in its own element; read
+          //that element's children so inline objects and annotations are
+          //restored by the rules above
           if (customStyle) {
-            return block as PortableTextTextBlock;
+            return {
+              ...block,
+              level,
+              _key,
+              listItem,
+              children: next(el.children[0].childNodes),
+            };
           }
         }
       }

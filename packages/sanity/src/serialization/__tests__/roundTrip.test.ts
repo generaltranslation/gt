@@ -475,6 +475,38 @@ describe('inline objects', () => {
     );
     expect(linkDef?.href).toBe('https://example.test/pricing');
   });
+
+  test('keep them in list items with a custom style', () => {
+    const item = {
+      _key: 'block-callout-item',
+      _type: 'block',
+      style: 'callout',
+      listItem: 'bullet',
+      level: 2,
+      markDefs: [],
+      children: [
+        span('Before '),
+        { _key: 'inline-ref-3', _type: 'productReference', _ref: 'product-c' },
+        span(' after'),
+      ],
+    };
+    const document = {
+      ...sourceDocument,
+      body: [item],
+    } as unknown as SanityDocument;
+    const [block] = roundTrip(markerTranslate, document).body as Array<
+      Block & Record<string, unknown>
+    >;
+    expect(inlineObjects(block)).toEqual([item.children[1]]);
+    expect(blockText(block)).toBe(`${MARKER}Before ${MARKER} after`);
+    expect(blockText(block)).not.toContain('\u200B');
+    expect(block).toMatchObject({
+      _key: 'block-callout-item',
+      style: 'callout',
+      listItem: 'bullet',
+      level: 2,
+    });
+  });
 });
 
 describe('null array entries', () => {
