@@ -1,6 +1,8 @@
 import { Schema } from '@sanity/schema';
-import { SanityDocument } from 'sanity';
-import { describe, expect, test } from 'vitest';
+import { SanityDocument, TypedObject } from 'sanity';
+import { afterEach, describe, expect, test, vi } from 'vitest';
+import { pluginConfig } from '../../adapter/core';
+import { attachGTData } from '../data';
 import { deserializeDocument, serializeDocument } from '../../utils/serialize';
 import { BaseDocumentMerger } from '../BaseDocumentMerger';
 import {
@@ -715,5 +717,77 @@ describe('top-level object fields', () => {
     expect(
       changes.localizedCta.find((item) => item.language === 'fr')?.value
     ).toEqual(cta);
+  });
+});
+
+describe('user rules for links', () => {
+  const paragraph = {
+    _key: 'block-pricing',
+    _type: 'block',
+    style: 'normal',
+    markDefs: [
+      {
+        _key: 'link-pricing',
+        _type: 'link',
+        href: 'https://example.test/en/pricing',
+      },
+    ],
+    children: [span('See '), span('our pricing', ['link-pricing'])],
+  };
+  const document = {
+    ...sourceDocument,
+    body: [paragraph],
+  } as unknown as SanityDocument;
+  // a site that makes links locale-neutral on import
+  const localeNeutralLinks = {
+    deserialize(node: Node, next: (nodes: NodeList) => unknown) {
+      const el = node as HTMLElement;
+      if (el.tagName?.toLowerCase() !== 'a') return undefined;
+      return {
+        _type: '__annotation',
+        markDef: {
+          _key: 'link-neutral',
+          _type: 'link',
+          href: el.getAttribute('href')?.replace('/en/', '/'),
+        },
+        children: next(el.childNodes),
+      };
+    },
+  };
+  const linkHrefs = (doc: Record<string, unknown>) =>
+    (doc.body as Array<{ markDefs: Array<{ href?: string }> }>)[0].markDefs.map(
+      (markDef) => markDef.href
+    );
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  test('decide the links the built-in serializer exports', () => {
+    vi.spyOn(pluginConfig, 'getAdditionalBlockDeserializers').mockReturnValue([
+      localeNeutralLinks,
+    ]);
+    expect(linkHrefs(roundTrip((html) => html, document))).toEqual([
+      'https://example.test/pricing',
+    ]);
+  });
+
+  test('run after the links a user serializer exports with attachGTData', () => {
+    vi.spyOn(pluginConfig, 'getAdditionalSerializers').mockReturnValue({
+      marks: {
+        link: ({ value, children }: { value: TypedObject; children: string }) =>
+          attachGTData(
+            `<a>${children}</a>`,
+            value as unknown as Record<string, unknown>,
+            'markDef'
+          ),
+      },
+    } as never);
+    vi.spyOn(pluginConfig, 'getAdditionalBlockDeserializers').mockReturnValue([
+      localeNeutralLinks,
+    ]);
+    expect(linkHrefs(roundTrip((html) => html, document))).toEqual([
+      'https://example.test/en/pricing',
+    ]);
   });
 });

@@ -42,6 +42,11 @@ export const defaultStopTypes = [
  * links) carry their whole markDef, so every field and the original `_key`
  * survive the round trip. Decorators keep the default rendering.
  */
+// Marks annotations exported by the built-in serializers. They are restored
+// after the user's additionalBlockDeserializers, so a user rule for `<a>`
+// still sees every link first.
+const BUILTIN_ATTRIBUTE = 'data-gt-builtin';
+
 const annotationMark =
   (
     fallback: PortableTextMarkComponent
@@ -58,7 +63,7 @@ const annotationMark =
         : '';
     const tag = markType === 'link' ? 'a' : 'span';
     return attachGTData(
-      `<${tag}${href}>${children}</${tag}>`,
+      `<${tag}${href} ${BUILTIN_ATTRIBUTE}="">${children}</${tag}>`,
       value as unknown as Record<string, unknown>,
       'markDef'
     );
@@ -130,6 +135,42 @@ export const customSerializers: Partial<PortableTextHtmlComponents> = {
 
 export const customDeserializers: CustomDeserializers = { types: {} };
 
+// Restores an annotation from the markDef attached to its element
+const markDefRule = (claims: (el: HTMLElement) => boolean) => ({
+  deserialize(
+    node: Node,
+    next: (
+      elements: Node | Node[] | NodeList
+    ) => TypedObject | TypedObject[] | undefined
+  ): TypedObject | undefined {
+    if (node.nodeType !== 1) {
+      return undefined;
+    }
+    const el = node as HTMLElement;
+    if (
+      !el.hasChildNodes() ||
+      !el.getAttribute('data-gt-internal') ||
+      !claims(el)
+    ) {
+      return undefined;
+    }
+
+    const markDef = detachGTData(el.outerHTML).data?.markDef;
+    if (!isRecord(markDef) || typeof markDef._key !== 'string') {
+      return undefined;
+    }
+
+    // block-tools' inline annotation form: the markDef (with its original
+    // _key) is added to the enclosing block and applied to every child,
+    // without splitting the block or trimming whitespace around it
+    return {
+      _type: '__annotation',
+      markDef,
+      children: next(el.childNodes),
+    } as TypedObject;
+  },
+});
+
 export const customBlockDeserializers: Array<unknown> = [
   // handle inline objects with data-gt-internal
   {
@@ -154,41 +195,9 @@ export const customBlockDeserializers: Array<unknown> = [
       };
     },
   },
-  // handle marks with data-gt-internal
-  {
-    deserialize(
-      node: Node,
-      next: (
-        elements: Node | Node[] | NodeList
-      ) => TypedObject | TypedObject[] | undefined
-    ): PortableTextTextBlock | TypedObject | undefined {
-      if (node.nodeType !== 1) {
-        return undefined;
-      }
-      const el = node as HTMLElement;
-      if (!el.hasChildNodes()) {
-        return undefined;
-      }
-
-      if (!el.getAttribute('data-gt-internal')) {
-        return undefined;
-      }
-
-      const markDef = detachGTData(el.outerHTML).data?.markDef;
-      if (!isRecord(markDef) || typeof markDef._key !== 'string') {
-        return undefined;
-      }
-
-      // block-tools' inline annotation form: the markDef (with its original
-      // _key) is added to the enclosing block and applied to every child,
-      // without splitting the block or trimming whitespace around it
-      return {
-        _type: '__annotation',
-        markDef,
-        children: next(el.childNodes),
-      };
-    },
-  },
+  // handle marks with data-gt-internal from a user's serializer
+  // (attachGTData); the built-in ones are in fallbackBlockDeserializers
+  markDefRule((el) => !el.hasAttribute(BUILTIN_ATTRIBUTE)),
   //handle undeclared styles
   {
     deserialize(
@@ -298,4 +307,10 @@ export const customBlockDeserializers: Array<unknown> = [
       };
     },
   },
+];
+
+// Rules that run after the user's additionalBlockDeserializers, so a user
+// rule can claim the elements the built-in serializers export
+export const fallbackBlockDeserializers: Array<unknown> = [
+  markDefRule((el) => el.hasAttribute(BUILTIN_ATTRIBUTE)),
 ];

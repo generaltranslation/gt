@@ -5,6 +5,7 @@ import {
   defaultStopTypes,
   customSerializers,
   customBlockDeserializers,
+  fallbackBlockDeserializers,
 } from '../serialization/BaseSerializationConfig';
 import { PortableTextHtmlComponents } from '@portabletext/to-html';
 import { pluginConfig } from '../adapter/core';
@@ -26,6 +27,7 @@ export function deserializeDocument(document: string) {
   const blockDeserializers = [
     ...customBlockDeserializers,
     ...pluginConfig.getAdditionalBlockDeserializers(),
+    ...fallbackBlockDeserializers,
   ];
   const deserialized = BaseDocumentDeserializer.deserializeDocument(
     document,
