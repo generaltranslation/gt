@@ -1,6 +1,6 @@
 import { Schema } from '@sanity/schema';
 import { SanityDocument, TypedObject } from 'sanity';
-import { afterEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { pluginConfig } from '../../adapter/core';
 import { attachGTData } from '../data';
 import { deserializeDocument, serializeDocument } from '../../utils/serialize';
@@ -653,6 +653,141 @@ describe('whitespace-only marks', () => {
   });
 });
 
+describe('decorators', () => {
+  const paragraph = {
+    _key: 'block-decorators',
+    _type: 'block',
+    style: 'normal',
+    markDefs: [
+      { _key: 'link-terms', _type: 'link', href: 'https://example.test/terms' },
+    ],
+    children: [
+      span('Plans start at $9'),
+      span('*', ['sup']),
+      span(' and cut CO'),
+      span('2', ['sub']),
+      span(' by '),
+      span('half', ['underline']),
+      span(', see the '),
+      span('terms', ['link-terms', 'underline']),
+      span('. '),
+      span('Old price', ['strike-through']),
+      span(', '),
+      span('npm i', ['code']),
+      span(', '),
+      span('new', ['highlight']),
+      span('. '),
+      span('First line\nsecond line', ['em']),
+      span(' and '),
+      span('x\ny', ['strong', 'sup']),
+    ],
+  };
+  const document = {
+    ...sourceDocument,
+    body: [paragraph],
+  } as unknown as SanityDocument;
+
+  /** Text runs with their set of marks, independent of span boundaries. */
+  const markedRuns = (block: Block) =>
+    block.children.reduce<Array<[string, string]>>((runs, child) => {
+      const marks = [...((child.marks as string[]) ?? [])].sort().join('+');
+      const last = runs[runs.length - 1];
+      if (last && last[1] === marks) last[0] += child.text as string;
+      else runs.push([child.text as string, marks]);
+      return runs;
+    }, []);
+
+  test('keep every decorator on its text', () => {
+    const [block] = roundTrip((html) => html, document).body as Block[];
+    expect(markedRuns(block)).toEqual(markedRuns(paragraph as Block));
+  });
+
+  test('stay on their text while it is translated', () => {
+    const [block] = roundTrip(markerTranslate, document).body as Block[];
+    const runs = markedRuns(block);
+    expect(runs).toContainEqual([`${MARKER}*`, 'sup']);
+    expect(runs).toContainEqual([`${MARKER}2`, 'sub']);
+    expect(runs).toContainEqual([`${MARKER}terms`, 'link-terms+underline']);
+    expect(runs).toContainEqual([`${MARKER}new`, 'highlight']);
+    expect(runs).toContainEqual([
+      `${MARKER}First line\n${MARKER}second line`,
+      'em',
+    ]);
+  });
+
+  test('export standard decorators as their own elements', () => {
+    const { content } = serializeDocument(document, schema, 'en');
+    const exported = new DOMParser().parseFromString(content, 'text/html');
+    expect(exported.querySelector('sup')?.textContent).toBe('*');
+    expect(exported.querySelector('sub')?.textContent).toBe('2');
+    expect(exported.querySelector('a > u')?.textContent).toBe('terms');
+    expect(
+      exported.querySelector('[data-gt-decorator="highlight"]')?.textContent
+    ).toBe('new');
+  });
+
+  test('leave annotations named like a decorator as annotations', () => {
+    const footnote = {
+      _key: 'block-footnote',
+      _type: 'block',
+      style: 'normal',
+      markDefs: [{ _key: 'note-1', _type: 'sup', reference: 'fn-1' }],
+      children: [span('See the note'), span('1', ['note-1'])],
+    };
+    const [block] = roundTrip((html) => html, {
+      ...sourceDocument,
+      body: [footnote],
+    } as unknown as SanityDocument).body as Array<
+      Block & { markDefs: unknown[] }
+    >;
+    expect(block.markDefs).toEqual(footnote.markDefs);
+    expect(markedRuns(block)).toEqual(markedRuns(footnote as Block));
+  });
+
+  test('ignore a marks field on an inline object', () => {
+    const paragraph = {
+      _key: 'block-scored',
+      _type: 'block',
+      style: 'normal',
+      markDefs: [],
+      children: [
+        span('Plain '),
+        { _key: 'stat-marks', _type: 'statValue', value: 3, marks: 42 },
+        span('bold', ['strong']),
+        span(' end'),
+      ],
+    };
+    const [block] = roundTrip(markerTranslate, {
+      ...sourceDocument,
+      body: [paragraph],
+    } as unknown as SanityDocument).body as Block[];
+    expect(blockText(block)).toBe(`${MARKER}Plain ${MARKER}bold${MARKER} end`);
+    expect(inlineObjects(block)).toEqual([paragraph.children[1]]);
+  });
+
+  test('leave a line break between two marked runs unmarked', () => {
+    const paragraph = {
+      _key: 'block-breaks',
+      _type: 'block',
+      style: 'normal',
+      markDefs: [],
+      children: [
+        span('first', ['code']),
+        span('\n'),
+        span('second', ['code']),
+        span(' then '),
+        span('a line that ends\n', ['em']),
+        span('here'),
+      ],
+    };
+    const [block] = roundTrip((html) => html, {
+      ...sourceDocument,
+      body: [paragraph],
+    } as unknown as SanityDocument).body as Block[];
+    expect(markedRuns(block)).toEqual(markedRuns(paragraph as Block));
+  });
+});
+
 describe('null array entries', () => {
   // saved documents can hold null entries; they are skipped, not exported
   const document = {
@@ -781,6 +916,97 @@ describe('top-level object fields', () => {
     expect(
       changes.localizedCta.find((item) => item.language === 'fr')?.value
     ).toEqual(cta);
+  });
+});
+
+describe('user rules for <sup>, <sub> and <u>', () => {
+  const span = (_key: string, text: string, marks: string[] = []) => ({
+    _key,
+    _type: 'span',
+    text,
+    marks,
+  });
+  const userSerializers = {
+    marks: {
+      footnote: ({
+        value,
+        children,
+      }: {
+        value: { _key: string; note: string };
+        children: string;
+      }) =>
+        `<sup data-note="${value.note}" data-key="${value._key}">${children}</sup>`,
+      superscript: ({ children }: { children: string }) =>
+        `<sup>${children}</sup>`,
+    },
+  };
+  // a site that renders both a footnote annotation and a superscript
+  // decorator as <sup>, and tells them apart on import
+  const userRules = [
+    {
+      deserialize(node: Node, next: (nodes: NodeList) => unknown) {
+        const el = node as HTMLElement;
+        if (el.tagName?.toLowerCase() !== 'sup') return undefined;
+        if (!el.hasAttribute('data-note')) {
+          return {
+            _type: '__decorator',
+            name: 'superscript',
+            children: next(el.childNodes),
+          };
+        }
+        return {
+          _type: '__annotation',
+          markDef: {
+            _key: el.getAttribute('data-key'),
+            _type: 'footnote',
+            note: el.getAttribute('data-note'),
+          },
+          children: next(el.childNodes),
+        };
+      },
+    },
+  ];
+
+  beforeEach(() => {
+    vi.spyOn(pluginConfig, 'getAdditionalSerializers').mockReturnValue(
+      userSerializers as never
+    );
+    vi.spyOn(pluginConfig, 'getAdditionalBlockDeserializers').mockReturnValue(
+      userRules
+    );
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  test('run before the built-in rule that restores those elements', () => {
+    const body = [
+      {
+        _key: 'latency',
+        _type: 'block',
+        style: 'normal',
+        markDefs: [{ _key: 'fn1', _type: 'footnote', note: 'Measured in May' }],
+        children: [
+          span('s1', 'Median '),
+          span('s2', 'latency', ['fn1']),
+          span('s3', ' dropped by E = mc'),
+          span('s4', '2', ['superscript']),
+        ],
+      },
+    ];
+    const merged = roundTrip((html) => html, {
+      ...sourceDocument,
+      body,
+    } as unknown as SanityDocument) as {
+      body: Array<{
+        markDefs: unknown[];
+        children: Array<{ text: string; marks: string[] }>;
+      }>;
+    };
+    expect(merged.body[0].markDefs).toEqual(body[0].markDefs);
+    expect(
+      merged.body[0].children.map(({ text, marks }) => [text, marks])
+    ).toEqual(body[0].children.map(({ text, marks }) => [text, marks]));
   });
 });
 

@@ -1,4 +1,4 @@
-import { PortableTextTextBlock } from 'sanity';
+import { PortableTextSpan, PortableTextTextBlock } from 'sanity';
 
 // Helper function to merge multiple blocks
 // Prioritize blocks[0]
@@ -95,5 +95,21 @@ export const restoreInlineObjectKeys = (block: PortableTextTextBlock) => {
       delete child[INLINE_OBJECT_KEY_FIELD];
     }
   );
+  return block;
+};
+
+// A line break inside a mark is imported as this placeholder, then turned
+// back into `\n`. block-tools never marks whitespace, so a `\n` would lose
+// the marks around it. U+FDD0 is a noncharacter: reserved for internal use,
+// never in content.
+export const MARKED_LINE_BREAK = '\uFDD0';
+
+/** Turn line breaks imported inside a mark back into `\n`. */
+export const restoreMarkedLineBreaks = (block: PortableTextTextBlock) => {
+  block.children?.forEach((child) => {
+    if (typeof child.text === 'string') {
+      child.text = child.text.replaceAll(MARKED_LINE_BREAK, '\n');
+    }
+  });
   return block;
 };

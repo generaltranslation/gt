@@ -15,7 +15,11 @@ import { htmlToBlocks } from '@portabletext/block-tools';
 import { blockContentType } from './deserialize/helpers';
 import { PortableTextTextBlock, TypedObject } from 'sanity';
 import { attachGTData, detachGTData } from './data';
-import { escapeHTML, INLINE_OBJECT_KEY_FIELD } from './helpers';
+import {
+  escapeHTML,
+  INLINE_OBJECT_KEY_FIELD,
+  MARKED_LINE_BREAK,
+} from './helpers';
 import type { CustomDeserializers } from './types';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -69,10 +73,33 @@ const annotationMark =
     );
   };
 
+/**
+ * Decorators without a standard HTML element are carried by name, so custom
+ * decorators survive the round trip.
+ */
+const DECORATOR_ATTRIBUTE = 'data-gt-decorator';
+
+const decoratorMark: PortableTextMarkComponent = ({ children, markType }) =>
+  `<span ${DECORATOR_ATTRIBUTE}="${escapeHTML(markType)}">${children}</span>`;
+
+// Decorators rendered as their own element. block-tools only restores the
+// ones the generic import schema declares, so these are restored by name
+// (fallbackBlockDeserializers).
+const DECORATOR_ELEMENTS: Record<string, string> = {
+  sup: 'sup',
+  sub: 'sub',
+  u: 'underline',
+};
+
 export const defaultMarks: Record<string, PortableTextMarkComponent> = {
   link: annotationMark(
     defaultComponents.marks.link as PortableTextMarkComponent
   ),
+  // annotations share the mark registry, so an annotation named like one of
+  // these decorators keeps its markDef
+  sup: annotationMark(({ children }) => `<sup>${children}</sup>`),
+  sub: annotationMark(({ children }) => `<sub>${children}</sub>`),
+  underline: annotationMark(({ children }) => `<u>${children}</u>`),
 };
 
 export const defaultPortableTextBlockStyles: Record<
@@ -124,7 +151,7 @@ export const customSerializers: Partial<PortableTextHtmlComponents> = {
           'inlineObject'
         )
       : `<div class="${escapeHTML(value._type)}"></div>`,
-  unknownMark: annotationMark(defaultComponents.unknownMark),
+  unknownMark: annotationMark(decoratorMark),
   types: {},
   marks: defaultMarks,
   block: defaultPortableTextBlockStyles,
@@ -188,6 +215,30 @@ const markDefRule = (claims: (el: HTMLElement) => boolean) => ({
   },
 });
 
+const decoratorRule = (
+  decoratorName: (el: HTMLElement) => string | null | undefined
+) => ({
+  deserialize(
+    node: Node,
+    next: (
+      elements: Node | Node[] | NodeList
+    ) => TypedObject | TypedObject[] | undefined
+  ): TypedObject | undefined {
+    if (node.nodeType !== 1) {
+      return undefined;
+    }
+    const name = decoratorName(node as HTMLElement);
+    if (!name) {
+      return undefined;
+    }
+    return {
+      _type: '__decorator',
+      name,
+      children: next(node.childNodes),
+    } as TypedObject;
+  },
+});
+
 export const customBlockDeserializers: Array<unknown> = [
   // keep whitespace-only text inside a mark (`Note:<strong> </strong>The`,
   // or next to a nested mark: `<strong><em>Note:</em> </strong>The`):
@@ -237,6 +288,8 @@ export const customBlockDeserializers: Array<unknown> = [
   // handle marks with data-gt-internal from a user's serializer
   // (attachGTData); the built-in ones are in fallbackBlockDeserializers
   markDefRule((el) => !el.hasAttribute(BUILTIN_ATTRIBUTE)),
+  // handle decorators, whether or not the generic import schema declares them
+  decoratorRule((el) => el.getAttribute(DECORATOR_ATTRIBUTE)),
   //handle undeclared styles
   {
     deserialize(
@@ -349,7 +402,28 @@ export const customBlockDeserializers: Array<unknown> = [
 ];
 
 // Rules that run after the user's additionalBlockDeserializers, so a user
-// rule can claim the elements the built-in serializers export
+// rule can claim the elements the built-in serializers export, and
+// <sup>, <sub>, <u> or <br>
 export const fallbackBlockDeserializers: Array<unknown> = [
   markDefRule((el) => el.hasAttribute(BUILTIN_ATTRIBUTE)),
+  decoratorRule((el) => DECORATOR_ELEMENTS[el.tagName.toLowerCase()]),
+  // a line break inside a mark (`<em>one<br>two</em>`) keeps that mark; one
+  // between marks (`<em>one</em><br><em>two</em>`) stays unmarked
+  {
+    deserialize(node: Node): TypedObject | undefined {
+      const parent = node.parentElement;
+      if (
+        node.nodeName !== 'BR' ||
+        !parent ||
+        !MARK_ELEMENTS.has(parent.tagName.toLowerCase())
+      ) {
+        return undefined;
+      }
+      return {
+        _type: 'span',
+        marks: [],
+        text: MARKED_LINE_BREAK,
+      } as TypedObject;
+    },
+  },
 ];
