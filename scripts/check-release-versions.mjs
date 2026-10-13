@@ -87,7 +87,14 @@ for (const manifestPath of changedManifests) {
   const registryUrl = `https://registry.npmjs.org/${encodeURIComponent(manifest.name)}`;
   const response = await fetch(registryUrl);
 
-  if (response.status === 404) continue;
+  // Trusted publishing cannot create a package, so CI only publishes names
+  // that already exist on npm.
+  if (response.status === 404) {
+    errors.push(
+      `${manifest.name} is not on npm: publish a 0.0.0 placeholder and add a trusted publisher for release.yml before releasing it`
+    );
+    continue;
+  }
   if (!response.ok) {
     throw new Error(
       `Failed to read npm metadata for ${manifest.name}: ${response.status}`
