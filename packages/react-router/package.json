@@ -17,8 +17,7 @@
   },
   "dependencies": {
     "gt-react": "workspace:*",
-    "gt-i18n": "workspace:*",
-    "generaltranslation": "workspace:*"
+    "gt-i18n": "workspace:*"
   },
   "scripts": {
     "build": "tsdown",

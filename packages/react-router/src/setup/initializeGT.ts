@@ -1,5 +1,5 @@
+import type { GTConfig } from 'gt-i18n/internal/types';
 import { initializeGT as initializeReactGT } from 'gt-react';
-import type { InitializeGTParams } from '../types/InitializeGTParams';
 
 let localeRouting = false;
 
@@ -9,7 +9,10 @@ export function isLocaleRoutingEnabled(): boolean {
 }
 
 /** Initialize GT for a React Router app. */
-export function initializeGT(config: InitializeGTParams): void {
+export function initializeGT(
+  config: Parameters<typeof initializeReactGT>[0] &
+    Pick<GTConfig, 'localeRouting'>
+): void {
   initializeReactGT(config);
   localeRouting = config.localeRouting === true;
 }

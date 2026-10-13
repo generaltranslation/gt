@@ -1,7 +1,6 @@
 export { getRequestLocale } from './functions/getRequestLocale';
 export { GTProvider } from './provider/GTProvider';
 export { initializeGT } from './setup/initializeGT';
-export type { InitializeGTParams } from './types/InitializeGTParams';
 
 export {
   // ===== Components ===== //
