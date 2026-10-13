@@ -12,5 +12,3 @@ Fix content lost or changed when translations are imported:
 - The `sup`, `sub`, `underline`, and custom decorators are kept.
 
 The HTML that documents are exported as has changed. Nothing is re-sent automatically: documents that are already translated keep their current translations until they are sent for translation again.
-
-`detachGTData()` now types `data.markDef` as optional, because the attached data can also be an inline object. TypeScript code that reads `data?.markDef._key` needs to check `markDef` first.
