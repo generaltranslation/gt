@@ -114,7 +114,10 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
     // Declared fields from the enclosing field or array-member definition.
     // Used when the value itself resolves to no schema type — anonymous
     // inline objects carry no `_type`.
-    declaredFields?: ObjectField[]
+    declaredFields?: ObjectField[],
+    // The document itself: its object fields are serialized unfiltered, so
+    // custom serializers see their full value, as before single-pass export.
+    isDocument = false
   ) => {
     if (stopTypes.includes(obj._type)) {
       return '';
@@ -223,7 +226,7 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
           const embeddedObject = value as TypedObject;
           const embeddedFields = resolveSchemaFields(embeddedObject._type);
           let toTranslate = embeddedObject;
-          if (embeddedFields) {
+          if (embeddedFields && !isDocument) {
             toTranslate = fieldFilter(
               toTranslate,
               embeddedFields,
@@ -378,7 +381,9 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
     rawHTMLBody.innerHTML = serializeObject(
       filteredObj as TypedObject,
       stopTypes,
-      serializers
+      serializers,
+      undefined,
+      true
     );
 
     const rawHTMLHead = document.createElement('head');
