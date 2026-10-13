@@ -4,7 +4,8 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [gtCompiler(), react()],
-  // Workspace gt-react resolves its own devDependency React; bundle only the
-  // app's copy, as the other bundler test apps do.
+  // pnpm installs gt-react's React peer into the workspace package, so its
+  // imports can resolve a separate copy; bundle only the app's copy, as the
+  // other bundler test apps do.
   resolve: { dedupe: ['react', 'react-dom'] },
 });
