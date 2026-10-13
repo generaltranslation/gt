@@ -1489,24 +1489,18 @@ importers:
         specifier: workspace:*
         version: link:../react
       react:
-        specifier: '>=16.8.0'
+        specifier: '>=18.0.0'
         version: 19.3.0
       react-dom:
-        specifier: '>=16.8.0'
+        specifier: '>=18.0.0'
         version: 19.3.0(react@19.3.0)
       react-router:
         specifier: '>=7.0.0'
         version: 8.4.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
     devDependencies:
-      '@types/node':
-        specifier: 'catalog:'
-        version: 22.13.10
       '@types/react':
         specifier: '>=18.0.0 <20.0.0'
         version: 19.2.14
-      '@types/react-dom':
-        specifier: '>=18.0.0 <20.0.0'
-        version: 19.3.0(@types/react@19.2.14)
       tsdown:
         specifier: 'catalog:'
         version: 0.21.10(synckit@0.11.11)(typescript@5.9.3)
@@ -1515,7 +1509,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@edge-runtime/vm@4.0.4)(@types/debug@4.1.12)(@types/node@22.13.10)(happy-dom@20.14.5(bufferutil@4.0.9))(jiti@2.7.0)(jsdom@29.1.1(@noble/hashes@2.2.0))(lightningcss@1.33.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
+        version: 3.2.4(@edge-runtime/vm@4.0.4)(@types/debug@4.1.12)(@types/node@26.6.3)(happy-dom@20.14.5(bufferutil@4.0.9))(jiti@2.7.0)(jsdom@29.1.1(@noble/hashes@2.2.0))(lightningcss@1.33.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
 
   packages/remark:
     dependencies:
@@ -30420,10 +30414,6 @@ snapshots:
   '@types/react-dom@19.2.3(@types/react@19.2.17)':
     dependencies:
       '@types/react': 19.2.17
-
-  '@types/react-dom@19.3.0(@types/react@19.2.14)':
-    dependencies:
-      '@types/react': 19.2.14
 
   '@types/react-dom@19.3.0(@types/react@19.3.0)':
     dependencies:

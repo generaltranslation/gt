@@ -14,7 +14,7 @@ function getReload(props: { _reload?: Reload } = {}) {
   return element.props._reload;
 }
 
-describe.sequential('GTProvider', () => {
+describe('GTProvider', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });

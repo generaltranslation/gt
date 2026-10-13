@@ -4,7 +4,6 @@ const reactPeerIgnore = ['react', 'react-dom'];
 const reactNativePeerIgnore = ['react', 'react-native'];
 const nextPeerIgnore = ['next', 'react', 'react-dom', 'server-only'];
 const tanstackPeerIgnore = ['@tanstack/react-start', 'react', 'react-dom'];
-const reactRouterPeerIgnore = ['react', 'react-dom', 'react-router'];
 
 const entry = (name, path, limit, options = {}) => ({
   name,
@@ -71,11 +70,6 @@ const tanstack = (name, file) =>
 const tanstackNode = (name, file) =>
   nodeEntry(name, `packages/tanstack-start/dist/${file}.mjs`, '52 kB', {
     ignore: tanstackPeerIgnore,
-  });
-
-const reactRouter = (name, file) =>
-  entry(name, `packages/react-router/dist/${file}.mjs`, '52 kB', {
-    ignore: reactRouterPeerIgnore,
   });
 
 const reactNative = (name, file, limit = '50 kB') =>
@@ -155,7 +149,9 @@ module.exports = [
   tanstackNode('gt-tanstack-start (server)', 'index.server'),
   tanstackNode('gt-tanstack-start/server', 'server'),
 
-  reactRouter('gt-react-router', 'index'),
+  entry('gt-react-router', 'packages/react-router/dist/index.mjs', '52 kB', {
+    ignore: ['react', 'react-dom', 'react-router'],
+  }),
 
   reactNative('gt-react-native', 'index', '52 kB'),
   reactNativeNode('gt-react-native/plugin', 'plugin'),

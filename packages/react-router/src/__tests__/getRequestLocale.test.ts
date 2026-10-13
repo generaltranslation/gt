@@ -36,7 +36,7 @@ function resolve(
   }
 }
 
-describe.sequential('getRequestLocale', () => {
+describe('getRequestLocale', () => {
   describe('with locale routing', () => {
     beforeEach(() => {
       initializeGT({

@@ -15,19 +15,10 @@
   "exclude": ["**/*.test.ts", "**/*.test.tsx"],
   "references": [
     {
-      "path": "../core"
-    },
-    {
-      "path": "../supported-locales"
-    },
-    {
       "path": "../react"
     },
     {
       "path": "../i18n"
-    },
-    {
-      "path": "../react-core"
     }
   ]
 }
