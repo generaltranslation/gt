@@ -18,12 +18,14 @@ import {
   toHTML,
 } from '@portabletext/to-html';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
+import { serializeString } from '../helpers';
 
 const META_FIELDS = ['_key', '_type', '_id', '_weak'];
 
 type SchemaTypeWithFields = {
   type?: unknown;
   fields?: ObjectField[];
+  of?: RawFieldDef[];
   options?: unknown;
 };
 
@@ -66,6 +68,41 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
       if (!typeDef) return undefined;
       if (typeDef.fields) return typeDef.fields;
       current = typeof typeDef.type === 'string' ? typeDef.type : undefined;
+    }
+    return undefined;
+  };
+
+  /*
+   * Whether a type is `text` or an alias of it (e.g. a `markdown` type), so
+   * its values are multi-line even when a particular value is one line.
+   */
+  const isTextType = (typeName: string | undefined): boolean => {
+    const seen = new Set<string>();
+    let current = typeName;
+    while (current && !seen.has(current)) {
+      if (current === 'text') return true;
+      seen.add(current);
+      const typeDef = getSchema(current);
+      current = typeof typeDef?.type === 'string' ? typeDef.type : undefined;
+    }
+    return false;
+  };
+
+  /*
+   * The member definitions of an array field: declared inline in its `of`, or
+   * on the named array type it references (through any aliases).
+   */
+  const resolveArrayMembers = (
+    fieldDef: RawFieldDef | undefined
+  ): RawFieldDef[] | undefined => {
+    if (fieldDef?.of) return fieldDef.of;
+    const seen = new Set<string>();
+    let current = fieldDef?.type;
+    while (current && !seen.has(current)) {
+      seen.add(current);
+      const typeDef = getSchema(current);
+      if (typeDef?.of) return typeDef.of;
+      current = typeof typeDef?.type === 'string' ? typeDef.type : undefined;
     }
     return undefined;
   };
@@ -165,7 +202,11 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
           if (htmlRegex.test(value)) {
             htmlField = value;
           } else {
-            htmlField = `<span class="${fieldName}">${value}</span>`;
+            htmlField = serializeString(
+              value,
+              fieldName,
+              isTextType(fieldDef?.type)
+            );
           }
         }
 
@@ -179,7 +220,7 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
               ...serializers,
               types: { ...typeSerializers },
             },
-            fieldDef?.of
+            resolveArrayMembers(fieldDef)
           );
         }
 
@@ -280,7 +321,11 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
     const output = validBlocks.map((block) => {
       //if object in array is just a string, just return it
       if (typeof block === 'string') {
-        return `<span>${block}</span>`;
+        return serializeString(
+          block,
+          undefined,
+          memberDefs?.some((def) => isTextType(def.type))
+        );
       }
       //take out any fields in this block that should
       //not be sent to translation
@@ -353,7 +398,7 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
           key,
           stopTypes,
           serializers,
-          fieldDef?.of
+          resolveArrayMembers(fieldDef)
         );
       } else if (
         value &&

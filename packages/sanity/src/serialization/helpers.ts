@@ -16,3 +16,42 @@ export function mergeBlocks(blocks: PortableTextTextBlock[]) {
 
   return mergedBlock;
 }
+
+// Whitespace that HTML formatting would collapse or trim: newlines, tabs and
+// other control whitespace, leading or trailing whitespace, and runs of
+// whitespace.
+const SIGNIFICANT_WHITESPACE = /[\t\n\f\r]|^\s|\s$|\s\s/;
+
+/**
+ * Marks the <pre> elements that hold string values, so a <pre> from a custom
+ * serializer is never mistaken for one.
+ */
+export const STRING_ATTRIBUTE = 'data-gt-string';
+
+/**
+ * Number of newlines a <pre> value starts with. Every HTML parse drops one
+ * newline right after <pre>, so they are carried here instead of in the text.
+ */
+export const LEADING_NEWLINES_ATTRIBUTE = 'data-gt-leading-newlines';
+
+/**
+ * Serialize a string value. Multi-line fields (`multiline`, e.g. `text` and
+ * markdown) and values whose whitespace matters go in a <pre>, which HTML
+ * tools leave untouched; everything else stays a <span>.
+ */
+export const serializeString = (
+  value: string,
+  className?: string,
+  multiline = false
+): string => {
+  const classAttribute = className ? ` class="${className}"` : '';
+  if (!multiline && !SIGNIFICANT_WHITESPACE.test(value)) {
+    return `<span${classAttribute}>${value}</span>`;
+  }
+  const text = value.replace(/^\n+/, '');
+  const leadingNewlines = value.length - text.length;
+  const leadingNewlinesAttribute = leadingNewlines
+    ? ` ${LEADING_NEWLINES_ATTRIBUTE}="${leadingNewlines}"`
+    : '';
+  return `<pre${classAttribute} ${STRING_ATTRIBUTE}=""${leadingNewlinesAttribute}>${text}</pre>`;
+};
