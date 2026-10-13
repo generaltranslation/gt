@@ -21,11 +21,15 @@ const htmlEscapes: Record<string, string> = {
   '&': '&amp;',
   '<': '&lt;',
   '>': '&gt;',
+  '"': '&quot;',
 };
 
-/** Escape text so it is read as literal text, never as markup. */
-const escapeHTML = (value: string): string =>
-  value.replace(/[&<>]/g, (char) => htmlEscapes[char]);
+/**
+ * Escape text so it is read as literal text, never as markup. Also safe for
+ * double-quoted attribute values.
+ */
+export const escapeHTML = (value: string): string =>
+  value.replace(/[&<>"]/g, (char) => htmlEscapes[char]);
 
 // Whitespace that HTML formatting would collapse or trim: newlines, tabs and
 // other control whitespace, leading or trailing whitespace, and runs of

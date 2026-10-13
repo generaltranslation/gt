@@ -476,6 +476,26 @@ describe('inline objects', () => {
     expect(linkDef?.href).toBe('https://example.test/pricing');
   });
 
+  test('escape their type name in the exported markup', () => {
+    const type = 'x"><img src="https://example.test/i.png">';
+    const document = {
+      ...sourceDocument,
+      body: [
+        {
+          _key: 'block-odd-type',
+          _type: 'block',
+          style: 'normal',
+          markDefs: [],
+          children: [span('A '), { _key: 'odd-inline', _type: type }],
+        },
+        { _key: 'odd-block', _type: type },
+      ],
+    } as unknown as SanityDocument;
+    const { content } = serializeDocument(document, schema, 'en');
+    const exported = new DOMParser().parseFromString(content, 'text/html');
+    expect(exported.querySelector('img')).toBeNull();
+  });
+
   test('keep them in list items with a custom style', () => {
     const item = {
       _key: 'block-callout-item',

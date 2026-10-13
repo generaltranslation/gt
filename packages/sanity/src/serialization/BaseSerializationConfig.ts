@@ -14,7 +14,7 @@ import { htmlToBlocks } from '@portabletext/block-tools';
 import { blockContentType } from './deserialize/helpers';
 import { PortableTextObject, PortableTextTextBlock, TypedObject } from 'sanity';
 import { attachGTData, detachGTData } from './data';
-import { INLINE_OBJECT_KEY_FIELD } from './helpers';
+import { escapeHTML, INLINE_OBJECT_KEY_FIELD } from './helpers';
 import type { CustomDeserializers } from './types';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -82,11 +82,11 @@ export const customSerializers: Partial<PortableTextHtmlComponents> = {
   unknownType: ({ value, isInline }) =>
     isInline
       ? attachGTData(
-          `<span class="${value._type}">${INLINE_OBJECT_CONTENT}</span>`,
+          `<span class="${escapeHTML(value._type)}">${INLINE_OBJECT_CONTENT}</span>`,
           value as unknown as Record<string, unknown>,
           'inlineObject'
         )
-      : `<div class="${value._type}"></div>`,
+      : `<div class="${escapeHTML(value._type)}"></div>`,
   types: {},
   marks: defaultMarks,
   block: defaultPortableTextBlockStyles,
