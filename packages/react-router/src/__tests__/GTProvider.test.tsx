@@ -1,7 +1,6 @@
 import type { ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { GTProvider } from '../provider/GTProvider';
-import { initializeGT } from '../setup/initializeGT';
+import { GTProvider, initializeGT } from '../index';
 
 type Reload = (state: { locale: string }) => void;
 
@@ -47,6 +46,18 @@ describe.sequential('GTProvider', () => {
       expect(assign).toHaveBeenLastCalledWith(
         'https://example.com/about?view=full#bio'
       );
+    });
+
+    it('reloads when the URL for the locale is the current one', () => {
+      const assign = vi.fn();
+      const reload = vi.fn();
+      vi.stubGlobal('window', {
+        location: { href: 'https://example.com/fr/about#bio', assign, reload },
+      });
+
+      getReload()?.({ locale: 'fr' });
+      expect(reload).toHaveBeenCalledOnce();
+      expect(assign).not.toHaveBeenCalled();
     });
 
     it('keeps a reload passed by the app', () => {
