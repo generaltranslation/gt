@@ -21,11 +21,15 @@ const htmlEscapes: Record<string, string> = {
   '&': '&amp;',
   '<': '&lt;',
   '>': '&gt;',
+  '"': '&quot;',
 };
 
-/** Escape text so it is read as literal text, never as markup. */
-const escapeHTML = (value: string): string =>
-  value.replace(/[&<>]/g, (char) => htmlEscapes[char]);
+/**
+ * Escape text so it is read as literal text, never as markup. Also safe for
+ * double-quoted attribute values.
+ */
+export const escapeHTML = (value: string): string =>
+  value.replace(/[&<>"]/g, (char) => htmlEscapes[char]);
 
 // Whitespace that HTML formatting would collapse or trim: newlines, tabs and
 // other control whitespace, leading or trailing whitespace, and runs of
@@ -65,4 +69,24 @@ export const serializeString = (
     ? ` ${LEADING_NEWLINES_ATTRIBUTE}="${leadingNewlines}"`
     : '';
   return `<pre${classAttribute} ${STRING_ATTRIBUTE}=""${leadingNewlinesAttribute}>${escapeHTML(text)}</pre>`;
+};
+
+/**
+ * Field that temporarily holds an inline object's original `_key` while it
+ * passes through `htmlToBlocks`, which assigns every child a new key.
+ */
+export const INLINE_OBJECT_KEY_FIELD = '__gtInlineObjectKey';
+
+/** Restore inline object keys stashed under `INLINE_OBJECT_KEY_FIELD`. */
+export const restoreInlineObjectKeys = (block: PortableTextTextBlock) => {
+  (block.children as Array<Record<string, unknown>> | undefined)?.forEach(
+    (child) => {
+      if (!(INLINE_OBJECT_KEY_FIELD in child)) return;
+      if (typeof child[INLINE_OBJECT_KEY_FIELD] === 'string') {
+        child._key = child[INLINE_OBJECT_KEY_FIELD];
+      }
+      delete child[INLINE_OBJECT_KEY_FIELD];
+    }
+  );
+  return block;
 };

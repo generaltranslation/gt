@@ -9,6 +9,7 @@ import { blockContentType, preprocess } from './helpers';
 import {
   LEADING_NEWLINES_ATTRIBUTE,
   mergeBlocks,
+  restoreInlineObjectKeys,
   STRING_ATTRIBUTE,
 } from '../helpers';
 
@@ -71,8 +72,8 @@ export const deserializeArray = (
             Parameters<typeof htmlToBlocks>[2]
           >['rules'],
         });
-        deserializedObject = mergeBlocks(
-          blocks as unknown as Parameters<typeof mergeBlocks>[0]
+        deserializedObject = restoreInlineObjectKeys(
+          mergeBlocks(blocks as unknown as Parameters<typeof mergeBlocks>[0])
         );
         (deserializedObject as Record<string, unknown>)._key = child.id;
       }
