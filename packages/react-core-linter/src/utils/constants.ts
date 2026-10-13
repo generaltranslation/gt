@@ -3,6 +3,7 @@ import { TSESTree } from '@typescript-eslint/utils';
 export const GT_LIBRARIES = [
   'gt-react',
   'gt-next',
+  'gt-tanstack-start',
   'gt-react-native',
   'gt-i18n',
   '@generaltranslation/react-core/components',
