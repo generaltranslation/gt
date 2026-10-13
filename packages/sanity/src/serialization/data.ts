@@ -7,7 +7,11 @@ import { decode, encode } from 'generaltranslation/internal';
  */
 export type GTDataType = 'markDef' | 'inlineObject';
 
-export type GTData = Partial<Record<GTDataType, Record<string, unknown>>>;
+// `markDef` keeps the type it had before inline objects could be attached,
+// so existing callers still compile. It is absent when an element carries an
+// inline object instead: check it before use.
+export type GTData = Record<'markDef', Record<string, unknown>> &
+  Partial<Record<'inlineObject', Record<string, unknown>>>;
 
 export function attachGTData(
   html: string,
