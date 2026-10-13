@@ -1814,8 +1814,8 @@ describe('auto JSX injection simulation', () => {
   //  11. BRANCHING INDEX INDEPENDENCE — siblings after Branch/Plural
   // ================================================================ //
 
-  describe('branching index independence', () => {
-    it('Branch children use independent index — sibling after Branch gets i:2 not i:3', () => {
+  describe('branching index numbering', () => {
+    it('Branch children share the index — sibling after Branch gets i:3', () => {
       // SOURCE:
       //   <div>
       //     <Branch branch={status} draft={<span>Draft</span>}>
@@ -1827,12 +1827,11 @@ describe('auto JSX injection simulation', () => {
       // The <div> has an opaque child (Branch) → _T wraps at div.
       // Inside the _T:
       //   - Branch gets i:1
-      //   - Branch props and children independently use i:2
-      //   - The SIBLING <span>Last saved...</span> should also get i:2
-      //     (not i:3), because Branch children use an independent counter
-      //
-      // BUG: CLI advances the shared counter through Branch children,
-      // causing the sibling span to get i:3 instead of i:2.
+      //   - Branch props and children each start counting from i:1, so both
+      //     <span>s get i:2
+      //   - The SIBLING <span>Last saved...</span> gets i:3, because the
+      //     runtime's addGTIdentifier keeps counting through Branch children
+      //     (https://github.com/generaltranslation/gt/issues/2449)
       const code = `
         import { Branch } from "gt-react";
         export default function Page() {
@@ -1859,7 +1858,6 @@ describe('auto JSX injection simulation', () => {
       expect(mainUpdate).toBeDefined();
 
       const source = mainUpdate!.source as unknown[];
-      // The sibling span should have i:2, not i:3
       const siblingSpan = source.find(
         (child) =>
           typeof child === 'object' &&
@@ -1870,10 +1868,10 @@ describe('auto JSX injection simulation', () => {
           )
       ) as Record<string, unknown>;
       expect(siblingSpan).toBeDefined();
-      expect(siblingSpan.i).toBe(2);
+      expect(siblingSpan.i).toBe(3);
     });
 
-    it('Plural children use independent index — sibling after Plural gets i:2 not i:3', () => {
+    it('Plural children share the index — sibling after Plural gets i:3', () => {
       // Same principle but with Plural.
       //
       // SOURCE:
@@ -1916,7 +1914,7 @@ describe('auto JSX injection simulation', () => {
           JSON.stringify((child as Record<string, unknown>).c).includes('Total')
       ) as Record<string, unknown>;
       expect(siblingSpan).toBeDefined();
-      expect(siblingSpan.i).toBe(2);
+      expect(siblingSpan.i).toBe(3);
     });
   });
 });
