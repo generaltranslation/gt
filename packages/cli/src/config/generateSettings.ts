@@ -146,9 +146,12 @@ export async function generateSettings(
     );
   }
 
+  const docsUrlPatterns = flags.options?.docsUrlPattern;
   if (
-    flags.options?.docsUrlPattern &&
-    !flags.options?.docsUrlPattern.includes('[locale]')
+    docsUrlPatterns &&
+    (Array.isArray(docsUrlPatterns) ? docsUrlPatterns : [docsUrlPatterns]).some(
+      (pattern) => !pattern.includes('[locale]')
+    )
   ) {
     logErrorAndExit(
       'Static URLs could not be localized because the URL pattern is missing "[locale]". Add "[locale]" where the locale should appear in the generated URL.'
