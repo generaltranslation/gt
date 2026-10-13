@@ -717,6 +717,24 @@ describe('decorators', () => {
       exported.querySelector('[data-gt-decorator="highlight"]')?.textContent
     ).toBe('new');
   });
+
+  test('leave annotations named like a decorator as annotations', () => {
+    const footnote = {
+      _key: 'block-footnote',
+      _type: 'block',
+      style: 'normal',
+      markDefs: [{ _key: 'note-1', _type: 'sup', reference: 'fn-1' }],
+      children: [span('See the note'), span('1', ['note-1'])],
+    };
+    const [block] = roundTrip((html) => html, {
+      ...sourceDocument,
+      body: [footnote],
+    } as unknown as SanityDocument).body as Array<
+      Block & { markDefs: unknown[] }
+    >;
+    expect(block.markDefs).toEqual(footnote.markDefs);
+    expect(markedRuns(block)).toEqual(markedRuns(footnote as Block));
+  });
 });
 
 describe('null array entries', () => {

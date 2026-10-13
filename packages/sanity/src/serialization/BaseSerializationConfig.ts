@@ -86,9 +86,11 @@ export const defaultMarks: Record<string, PortableTextMarkComponent> = {
   link: annotationMark(
     defaultComponents.marks.link as PortableTextMarkComponent
   ),
-  sup: ({ children }) => `<sup>${children}</sup>`,
-  sub: ({ children }) => `<sub>${children}</sub>`,
-  underline: ({ children }) => `<u>${children}</u>`,
+  // annotations share the mark registry, so an annotation named like one of
+  // these decorators keeps its markDef
+  sup: annotationMark(({ children }) => `<sup>${children}</sup>`),
+  sub: annotationMark(({ children }) => `<sub>${children}</sub>`),
+  underline: annotationMark(({ children }) => `<u>${children}</u>`),
 };
 
 export const defaultPortableTextBlockStyles: Record<
