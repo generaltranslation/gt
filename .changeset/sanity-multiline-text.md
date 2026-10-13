@@ -12,3 +12,10 @@ Fix content lost or changed when translations are imported:
 - The `sup`, `sub`, `underline`, and custom decorators are kept.
 
 The HTML that documents are exported as has changed. Nothing is re-sent automatically: documents that are already translated keep their current translations until they are sent for translation again.
+
+If you customize serialization:
+
+- Inline objects without a custom serializer are exported as a `<span>` that carries the object, instead of an empty `<div>`. Custom annotations without a serializer are exported with their markDef instead of `<span class="unknown__pt__mark__…">`. Block rules that matched the old elements no longer match newly exported HTML; the plugin now restores these itself.
+- Wrapping a `link` serializer in `attachGTData` is no longer needed to keep a link's fields; the default link serializer does it.
+- A custom serializer for a document type itself receives the document's raw field values. Before, arrays and objects arrived already serialized as HTML.
+- `serializeObject` escapes string values, so HTML passed to it as a string is exported as text.
