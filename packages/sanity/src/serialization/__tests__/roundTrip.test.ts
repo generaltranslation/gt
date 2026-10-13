@@ -23,6 +23,24 @@ const schema = Schema.compile({
     { name: 'noteList', type: 'array', of: [{ type: 'text' }] },
     { name: 'reviewNotes', type: 'noteList' },
     {
+      name: 'product',
+      type: 'document',
+      fields: [{ name: 'name', type: 'string' }],
+    },
+    {
+      name: 'productReference',
+      type: 'reference',
+      to: [{ type: 'product' }],
+    },
+    {
+      name: 'statValue',
+      type: 'object',
+      fields: [
+        { name: 'value', type: 'number' },
+        { name: 'unit', type: 'string' },
+      ],
+    },
+    {
       name: 'markdownBlock',
       type: 'object',
       fields: [{ name: 'content', type: 'markdown' }],
@@ -46,9 +64,27 @@ const schema = Schema.compile({
         { name: 'notes', type: 'array', of: [{ type: 'text' }] },
         { name: 'checklist', type: 'noteList' },
         { name: 'sections', type: 'array', of: [{ type: 'markdownBlock' }] },
+        {
+          name: 'body',
+          type: 'array',
+          of: [
+            {
+              type: 'block',
+              of: [{ type: 'productReference' }, { type: 'statValue' }],
+            },
+          ],
+        },
       ],
     },
   ],
+});
+
+let spanCount = 0;
+const span = (text: string, marks: string[] = []) => ({
+  _key: `span-${spanCount++}`,
+  _type: 'span',
+  marks,
+  text,
 });
 
 const sourceDocument = {
@@ -118,6 +154,10 @@ const roundTrip = (
     source
   ) as unknown as Record<string, unknown>;
 };
+
+type Block = { _key?: string; children: Array<Record<string, unknown>> };
+const blockText = (block: Block) =>
+  block.children.map((child) => child.text ?? '').join('');
 
 const sectionContents = (doc: Record<string, unknown>) =>
   (doc.sections as Array<{ content: string }>).map(
@@ -313,6 +353,97 @@ describe('leading newlines', () => {
     expect(merged.excerpt).toBe(
       `\n\n${MARKER}  Indented after two blank lines`
     );
+  });
+});
+
+describe('inline objects', () => {
+  const body = [
+    {
+      _key: 'block-paragraph',
+      _type: 'block',
+      style: 'normal',
+      markDefs: [],
+      children: [
+        span('Every plan includes '),
+        {
+          _key: 'inline-ref',
+          _type: 'productReference',
+          _ref: 'product-seats',
+        },
+        span(' seats per team, and '),
+        { _key: 'inline-stat', _type: 'statValue', value: 42, unit: '%' },
+        span(' of teams add more.'),
+      ],
+    },
+    {
+      _key: 'block-list-item',
+      _type: 'block',
+      style: 'normal',
+      listItem: 'bullet',
+      level: 1,
+      markDefs: [],
+      children: [
+        span('Median latency dropped by '),
+        { _key: 'inline-stat-2', _type: 'statValue', value: 18, unit: 'ms' },
+        span(' after the change.'),
+      ],
+    },
+    {
+      _key: 'block-heading',
+      _type: 'block',
+      style: 'h2',
+      markDefs: [],
+      children: [span('What comes next')],
+    },
+  ];
+  const withBody = (blocks: unknown[]) =>
+    ({ ...sourceDocument, body: blocks }) as unknown as SanityDocument;
+
+  test('keep the text after them in the same block', () => {
+    const merged = roundTrip((html) => html, withBody(body));
+    const mergedBody = merged.body as Block[];
+    expect(mergedBody.map((block) => block._key)).toEqual(
+      body.map((block) => block._key)
+    );
+    mergedBody.forEach((block, index) => {
+      const sourceSpans = body[index].children.filter(
+        (child) => child._type === 'span'
+      ) as Array<{ text: string }>;
+      expect(blockText(block)).toContain(
+        sourceSpans[sourceSpans.length - 1].text.trim()
+      );
+    });
+  });
+
+  test('keep a following link and its text in the same block', () => {
+    const paragraph = {
+      _key: 'block-link',
+      _type: 'block',
+      style: 'normal',
+      markDefs: [
+        { _key: 'link-1', _type: 'link', href: 'https://example.test/pricing' },
+      ],
+      children: [
+        span('A '),
+        { _key: 'inline-ref-2', _type: 'productReference', _ref: 'product-a' },
+        span(' B '),
+        span('pricing page', ['link-1']),
+        span(' C'),
+      ],
+    };
+    const merged = roundTrip((html) => html, withBody([paragraph]));
+    const [block] = merged.body as Array<
+      Block & { markDefs: Array<{ _key: string; href: string }> }
+    >;
+    expect(merged.body).toHaveLength(1);
+    expect(blockText(block)).toMatch(/^A\s+B pricing page C$/);
+    const linkSpan = block.children.find(
+      (child) => child.text === 'pricing page'
+    ) as { marks: string[] };
+    const linkDef = block.markDefs.find(
+      (markDef) => markDef._key === linkSpan.marks[0]
+    );
+    expect(linkDef?.href).toBe('https://example.test/pricing');
   });
 });
 

@@ -71,7 +71,12 @@ const unknownBlockFunc: PortableTextBlockComponent = ({ value, children }) =>
   `<p id="${value._key}" data-type="unknown-block-style" data-style="${value.style}">${children}</p>`;
 
 export const customSerializers: Partial<PortableTextHtmlComponents> = {
-  unknownType: ({ value }) => `<div class="${value._type}"></div>`,
+  // Inline objects must stay inline: a <div> inside a <p> closes the
+  // paragraph and the rest of its text is dropped on import
+  unknownType: ({ value, isInline }) =>
+    isInline
+      ? `<span class="${value._type}"></span>`
+      : `<div class="${value._type}"></div>`,
   types: {},
   marks: defaultMarks,
   block: defaultPortableTextBlockStyles,
