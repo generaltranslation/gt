@@ -1,4 +1,4 @@
-import { PortableTextTextBlock } from 'sanity';
+import { PortableTextSpan, PortableTextTextBlock } from 'sanity';
 
 // Helper function to merge multiple blocks
 // Prioritize blocks[0]
@@ -98,10 +98,15 @@ export const restoreInlineObjectKeys = (block: PortableTextTextBlock) => {
   return block;
 };
 
-type MarkedSpan = { _type: string; text?: string; marks?: string[] };
+// a block child: a span, or an inline object with any other _type
+type BlockChild = Partial<Pick<PortableTextSpan, 'text' | 'marks'>> & {
+  _type: string;
+};
 
-const isSpanWithMarks = (child: MarkedSpan | undefined, marks: string) =>
-  child?._type === 'span' && [...(child.marks ?? [])].sort().join() === marks;
+// a span's marks as a sorted set; undefined for inline objects, whose own
+// fields may include one named `marks`
+const spanMarks = (child: BlockChild | undefined) =>
+  child?._type === 'span' ? [...(child.marks ?? [])].sort().join() : undefined;
 
 /**
  * Rejoin text that a line break split out of its marks. A `\n` inside a mark
@@ -109,18 +114,17 @@ const isSpanWithMarks = (child: MarkedSpan | undefined, marks: string) =>
  * `[em "one"] ["\n"] [em "two"]` becomes `[em "one\ntwo"]` again.
  */
 export const rejoinMarkedLineBreaks = (block: PortableTextTextBlock) => {
-  const children = block.children as MarkedSpan[] | undefined;
+  const children = block.children as BlockChild[] | undefined;
   if (!children) return block;
   for (let index = 1; index < children.length - 1; index++) {
     const lineBreak = children[index];
     const previous = children[index - 1];
-    const marks = [...(previous.marks ?? [])].sort().join();
+    const marks = spanMarks(previous);
     if (
       !marks ||
-      previous._type !== 'span' ||
-      !isSpanWithMarks(lineBreak, '') ||
+      spanMarks(lineBreak) !== '' ||
       !/^\n+$/.test(lineBreak.text ?? '') ||
-      !isSpanWithMarks(children[index + 1], marks)
+      spanMarks(children[index + 1]) !== marks
     ) {
       continue;
     }

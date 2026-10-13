@@ -735,6 +735,27 @@ describe('decorators', () => {
     expect(block.markDefs).toEqual(footnote.markDefs);
     expect(markedRuns(block)).toEqual(markedRuns(footnote as Block));
   });
+
+  test('ignore a marks field on an inline object', () => {
+    const paragraph = {
+      _key: 'block-scored',
+      _type: 'block',
+      style: 'normal',
+      markDefs: [],
+      children: [
+        span('Plain '),
+        { _key: 'stat-marks', _type: 'statValue', value: 3, marks: 42 },
+        span('bold', ['strong']),
+        span(' end'),
+      ],
+    };
+    const [block] = roundTrip(markerTranslate, {
+      ...sourceDocument,
+      body: [paragraph],
+    } as unknown as SanityDocument).body as Block[];
+    expect(blockText(block)).toBe(`${MARKER}Plain ${MARKER}bold${MARKER} end`);
+    expect(inlineObjects(block)).toEqual([paragraph.children[1]]);
+  });
 });
 
 describe('null array entries', () => {
