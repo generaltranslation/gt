@@ -1159,6 +1159,9 @@ importers:
 
   packages/next:
     dependencies:
+      '@generaltranslation/compiler':
+        specifier: workspace:*
+        version: link:../compiler
       '@generaltranslation/format':
         specifier: workspace:*
         version: link:../format
@@ -1184,9 +1187,6 @@ importers:
       '@edge-runtime/vm':
         specifier: ^4.0.0
         version: 4.0.4
-      '@generaltranslation/compiler':
-        specifier: workspace:*
-        version: link:../compiler
       '@types/node':
         specifier: 'catalog:'
         version: 22.13.10
