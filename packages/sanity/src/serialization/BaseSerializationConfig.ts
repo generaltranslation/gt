@@ -3,6 +3,7 @@
 import type { PortableTextBlockStyle } from '@portabletext/types';
 
 import {
+  defaultComponents,
   PortableTextBlockComponent,
   PortableTextListComponent,
   PortableTextListItemComponent,
@@ -12,8 +13,13 @@ import {
 
 import { htmlToBlocks } from '@portabletext/block-tools';
 import { blockContentType } from './deserialize/helpers';
-import { PortableTextObject, PortableTextTextBlock, TypedObject } from 'sanity';
-import { detachGTData } from './data';
+import { PortableTextTextBlock, TypedObject } from 'sanity';
+import { attachGTData, detachGTData } from './data';
+import {
+  escapeHTML,
+  INLINE_OBJECT_KEY_FIELD,
+  MARKED_LINE_BREAK,
+} from './helpers';
 import type { CustomDeserializers } from './types';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -35,7 +41,66 @@ export const defaultStopTypes = [
   'code',
 ];
 
-export const defaultMarks: Record<string, PortableTextMarkComponent> = {};
+/**
+ * Annotations (marks backed by an entry in the block's `markDefs`, such as
+ * links) carry their whole markDef, so every field and the original `_key`
+ * survive the round trip. Decorators keep the default rendering.
+ */
+// Marks annotations exported by the built-in serializers. They are restored
+// after the user's additionalBlockDeserializers, so a user rule for `<a>`
+// still sees every link first.
+const BUILTIN_ATTRIBUTE = 'data-gt-builtin';
+
+const annotationMark =
+  (
+    fallback: PortableTextMarkComponent
+  ): PortableTextMarkComponent<TypedObject> =>
+  (props) => {
+    const { value, children, markType } = props;
+    if (!(isRecord(value) && typeof value._key === 'string')) {
+      return fallback(props);
+    }
+    // keep href on links as context for the translator
+    const href =
+      markType === 'link' && typeof value.href === 'string'
+        ? ` href="${escapeHTML(value.href)}"`
+        : '';
+    const tag = markType === 'link' ? 'a' : 'span';
+    return attachGTData(
+      `<${tag}${href} ${BUILTIN_ATTRIBUTE}="">${children}</${tag}>`,
+      value as unknown as Record<string, unknown>,
+      'markDef'
+    );
+  };
+
+/**
+ * Decorators without a standard HTML element are carried by name, so custom
+ * decorators survive the round trip.
+ */
+const DECORATOR_ATTRIBUTE = 'data-gt-decorator';
+
+const decoratorMark: PortableTextMarkComponent = ({ children, markType }) =>
+  `<span ${DECORATOR_ATTRIBUTE}="${escapeHTML(markType)}">${children}</span>`;
+
+// Decorators rendered as their own element. block-tools only restores the
+// ones the generic import schema declares, so these are restored by name
+// (fallbackBlockDeserializers).
+const DECORATOR_ELEMENTS: Record<string, string> = {
+  sup: 'sup',
+  sub: 'sub',
+  u: 'underline',
+};
+
+export const defaultMarks: Record<string, PortableTextMarkComponent> = {
+  link: annotationMark(
+    defaultComponents.marks.link as PortableTextMarkComponent
+  ),
+  // annotations share the mark registry, so an annotation named like one of
+  // these decorators keeps its markDef
+  sup: annotationMark(({ children }) => `<sup>${children}</sup>`),
+  sub: annotationMark(({ children }) => `<sub>${children}</sub>`),
+  underline: annotationMark(({ children }) => `<u>${children}</u>`),
+};
 
 export const defaultPortableTextBlockStyles: Record<
   PortableTextBlockStyle,
@@ -70,8 +135,23 @@ const defaultListItem: PortableTextListItemComponent = ({
 const unknownBlockFunc: PortableTextBlockComponent = ({ value, children }) =>
   `<p id="${value._key}" data-type="unknown-block-style" data-style="${value.style}">${children}</p>`;
 
+const INLINE_OBJECT_CONTENT = '\u200B';
+
 export const customSerializers: Partial<PortableTextHtmlComponents> = {
-  unknownType: ({ value }) => `<div class="${value._type}"></div>`,
+  // Inline objects must stay inline: a <div> inside a <p> closes the
+  // paragraph and the rest of its text is dropped on import. The object is
+  // carried as data and restored by the inline-object rule below. The
+  // zero-width space keeps the span non-empty: HTML formatters (GT's
+  // included) collapse the spaces on both sides of an empty element into one.
+  unknownType: ({ value, isInline }) =>
+    isInline
+      ? attachGTData(
+          `<span class="${escapeHTML(value._type)}">${INLINE_OBJECT_CONTENT}</span>`,
+          value as unknown as Record<string, unknown>,
+          'inlineObject'
+        )
+      : `<div class="${escapeHTML(value._type)}"></div>`,
+  unknownMark: annotationMark(decoratorMark),
   types: {},
   marks: defaultMarks,
   block: defaultPortableTextBlockStyles,
@@ -82,59 +162,134 @@ export const customSerializers: Partial<PortableTextHtmlComponents> = {
 
 export const customDeserializers: CustomDeserializers = { types: {} };
 
+// Inline elements Portable Text marks are rendered as
+const MARK_ELEMENTS = new Set([
+  'a',
+  'b',
+  'code',
+  'del',
+  'em',
+  'i',
+  's',
+  'span',
+  'strike',
+  'strong',
+  'sub',
+  'sup',
+  'u',
+]);
+
+// Restores an annotation from the markDef attached to its element
+const markDefRule = (claims: (el: HTMLElement) => boolean) => ({
+  deserialize(
+    node: Node,
+    next: (
+      elements: Node | Node[] | NodeList
+    ) => TypedObject | TypedObject[] | undefined
+  ): TypedObject | undefined {
+    if (node.nodeType !== 1) {
+      return undefined;
+    }
+    const el = node as HTMLElement;
+    if (
+      !el.hasChildNodes() ||
+      !el.getAttribute('data-gt-internal') ||
+      !claims(el)
+    ) {
+      return undefined;
+    }
+
+    const markDef = detachGTData(el.outerHTML).data?.markDef;
+    if (!isRecord(markDef) || typeof markDef._key !== 'string') {
+      return undefined;
+    }
+
+    // block-tools' inline annotation form: the markDef (with its original
+    // _key) is added to the enclosing block and applied to every child,
+    // without splitting the block or trimming whitespace around it
+    return {
+      _type: '__annotation',
+      markDef,
+      children: next(el.childNodes),
+    } as TypedObject;
+  },
+});
+
+const decoratorRule = (
+  decoratorName: (el: HTMLElement) => string | null | undefined
+) => ({
+  deserialize(
+    node: Node,
+    next: (
+      elements: Node | Node[] | NodeList
+    ) => TypedObject | TypedObject[] | undefined
+  ): TypedObject | undefined {
+    if (node.nodeType !== 1) {
+      return undefined;
+    }
+    const name = decoratorName(node as HTMLElement);
+    if (!name) {
+      return undefined;
+    }
+    return {
+      _type: '__decorator',
+      name,
+      children: next(node.childNodes),
+    } as TypedObject;
+  },
+});
+
 export const customBlockDeserializers: Array<unknown> = [
-  // handle marks with data-gt-internal
+  // keep whitespace-only text inside a mark (`Note:<strong> </strong>The`,
+  // or next to a nested mark: `<strong><em>Note:</em> </strong>The`):
+  // block-tools drops it and glues the words on either side together
   {
-    deserialize(
-      node: Node,
-      next: (
-        elements: Node | Node[] | NodeList
-      ) => TypedObject | TypedObject[] | undefined
-    ): PortableTextTextBlock | TypedObject | undefined {
+    deserialize(node: Node): TypedObject | undefined {
+      const parent = node.parentElement;
+      if (
+        node.nodeType !== 3 ||
+        !node.textContent ||
+        node.textContent.trim() ||
+        !parent ||
+        !MARK_ELEMENTS.has(parent.tagName.toLowerCase())
+      ) {
+        return undefined;
+      }
+      return {
+        _type: 'span',
+        marks: [],
+        text: node.textContent.replace(/[\t\n\f\r ]+/g, ' '),
+      } as TypedObject;
+    },
+  },
+  // handle inline objects with data-gt-internal
+  {
+    deserialize(node: Node): TypedObject | undefined {
       if (node.nodeType !== 1) {
         return undefined;
       }
       const el = node as HTMLElement;
-      if (!el.hasChildNodes()) {
-        return undefined;
-      }
-
       if (!el.getAttribute('data-gt-internal')) {
         return undefined;
       }
-
-      const { html, data } = detachGTData(el.outerHTML);
-      const block = htmlToBlocks(html, blockContentType)[0];
-
-      const children = next(el.childNodes);
-
-      let markDefs: PortableTextObject[] = [];
-      if ('markDefs' in block) {
-        markDefs = (block.markDefs as PortableTextObject[]) ?? [];
+      const inlineObject = detachGTData(el.outerHTML).data?.inlineObject;
+      if (!isRecord(inlineObject) || typeof inlineObject._type !== 'string') {
+        return undefined;
       }
-      if (data?.markDef) {
-        markDefs.push(data.markDef as PortableTextObject);
-      }
-      if (Array.isArray(children)) {
-        children.forEach((child) => {
-          if (!isRecord(child)) {
-            return;
-          }
-          const marks = Array.isArray(child.marks) ? child.marks : [];
-          child.marks = data?.markDef?._key
-            ? [...marks, data.markDef._key]
-            : marks;
-        });
-      }
-      // Resolve marks in the child nodes
-      const output = {
-        ...block,
-        markDefs,
-        children,
+      // htmlToBlocks re-keys every child; the original key is restored once
+      // the block is built (restoreInlineObjectKeys)
+      return {
+        ...inlineObject,
+        _type: inlineObject._type,
+        [INLINE_OBJECT_KEY_FIELD]: inlineObject._key,
       };
-      return output;
     },
   },
+  // handle marks with data-gt-internal from a user's serializer
+  // (attachGTData); the built-in ones are in fallbackBlockDeserializers
+  markDefRule((el) => !el.hasAttribute(BUILTIN_ATTRIBUTE)),
+  // handle decorators, whether or not the generic import schema declares them
+  decoratorRule((el) => el.getAttribute(DECORATOR_ATTRIBUTE)),
   //handle undeclared styles
   {
     deserialize(
@@ -220,9 +375,17 @@ export const customBlockDeserializers: Array<unknown> = [
             style: customStyle ?? (newBlock as PortableTextTextBlock).style,
           };
 
-          //next(childNodes) plays poorly with custom styles, issue to be filed.
+          //a custom style wraps the item's content in its own element; read
+          //that element's children so inline objects and annotations are
+          //restored by the rules above
           if (customStyle) {
-            return block as PortableTextTextBlock;
+            return {
+              ...block,
+              level,
+              _key,
+              listItem,
+              children: next(el.children[0].childNodes),
+            };
           }
         }
       }
@@ -234,6 +397,33 @@ export const customBlockDeserializers: Array<unknown> = [
         listItem,
         children: next(el.childNodes),
       };
+    },
+  },
+];
+
+// Rules that run after the user's additionalBlockDeserializers, so a user
+// rule can claim the elements the built-in serializers export, and
+// <sup>, <sub>, <u> or <br>
+export const fallbackBlockDeserializers: Array<unknown> = [
+  markDefRule((el) => el.hasAttribute(BUILTIN_ATTRIBUTE)),
+  decoratorRule((el) => DECORATOR_ELEMENTS[el.tagName.toLowerCase()]),
+  // a line break inside a mark (`<em>one<br>two</em>`) keeps that mark; one
+  // between marks (`<em>one</em><br><em>two</em>`) stays unmarked
+  {
+    deserialize(node: Node): TypedObject | undefined {
+      const parent = node.parentElement;
+      if (
+        node.nodeName !== 'BR' ||
+        !parent ||
+        !MARK_ELEMENTS.has(parent.tagName.toLowerCase())
+      ) {
+        return undefined;
+      }
+      return {
+        _type: 'span',
+        marks: [],
+        text: MARKED_LINE_BREAK,
+      } as TypedObject;
     },
   },
 ];
