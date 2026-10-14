@@ -1,9 +1,22 @@
 import { decode, encode } from 'generaltranslation/internal';
 
+/**
+ * Kinds of Sanity data that can be carried on an element:
+ * - `markDef`: an annotation (e.g. a link) applied to the element's children
+ * - `inlineObject`: an inline object in a block's `children`, restored as-is
+ */
+export type GTDataType = 'markDef' | 'inlineObject';
+
+// `markDef` keeps the type it had before inline objects could be attached,
+// so existing callers still compile. It is absent when an element carries an
+// inline object instead: check it before use.
+export type GTData = Record<'markDef', Record<string, unknown>> &
+  Partial<Record<'inlineObject', Record<string, unknown>>>;
+
 export function attachGTData(
   html: string,
   data: Record<string, unknown>,
-  type: 'markDef'
+  type: GTDataType
 ): string {
   // Parse the HTML string to find the first element
   const parser = new DOMParser();
@@ -26,7 +39,7 @@ export function attachGTData(
 
 export function detachGTData(html: string): {
   html: string;
-  data?: Record<'markDef', Record<string, unknown>>;
+  data?: GTData;
 } {
   // Parse the HTML string to find the first element
   const parser = new DOMParser();
@@ -41,7 +54,7 @@ export function detachGTData(html: string): {
   // Get the encoded data
   const encodedData = firstElement.getAttribute('data-gt-internal');
 
-  let extractedData: Record<'markDef', Record<string, unknown>> | undefined;
+  let extractedData: GTData | undefined;
   if (encodedData) {
     try {
       // Decode and parse the data
