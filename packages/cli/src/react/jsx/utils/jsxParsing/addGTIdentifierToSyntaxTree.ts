@@ -156,24 +156,12 @@ export default function addGTIdentifierToSyntaxTree(
       );
 
       // Save current index and recurse.
-      // For Branch/Plural, children use an independent index counter
-      // (same as branch props) so they don't inflate sibling indices.
-      // This matches the compiler's id.copy() behavior.
+      // Number Branch/Plural children with the running counter like any other
+      // children (only branch props restart), to match the runtime's addGTIdentifier.
       const currentIndex = indexObject.index;
-      const isBranching =
-        type === BRANCH_COMPONENT || type === PLURAL_COMPONENT;
-      let children: JsxChildren;
-      if (isBranching) {
-        const savedIndex = indexObject.index;
-        children = handleChildren(
-          props?.children === undefined ? null : props?.children
-        );
-        indexObject.index = savedIndex;
-      } else {
-        children = handleChildren(
-          props?.children === undefined ? null : props?.children
-        );
-      }
+      const children = handleChildren(
+        props?.children === undefined ? null : props?.children
+      );
 
       // Enforce boolean rendering behavior
       // <T>{true}</T> -> true <- this is a boolean value, not a string
