@@ -1,5 +1,14 @@
 # gt-react
 
+## 11.4.12
+
+### Patch Changes
+
+- Updated dependencies [[`c220f39`](https://github.com/generaltranslation/gt/commit/c220f39182a61be3d8139bfe18c5bced0f2956dc)]:
+  - generaltranslation@9.5.7
+  - @generaltranslation/react-core@11.4.12
+  - gt-i18n@1.0.38
+
 ## 11.4.11
 
 ### Patch Changes
