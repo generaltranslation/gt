@@ -1,5 +1,18 @@
 # gt-next
 
+## 11.4.12
+
+### Patch Changes
+
+- [#2457](https://github.com/generaltranslation/gt/pull/2457) [`2aa8259`](https://github.com/generaltranslation/gt/commit/2aa825947b5d443f1b05db683571f15794d6ea13) Thanks [@eoinest](https://github.com/eoinest)! - Install `@generaltranslation/compiler` as a regular dependency of `gt-next` instead of an optional peer dependency, so the experimental babel compiler works without a separate install and `gt-next` is released alongside every compiler update.
+
+- Updated dependencies [[`c220f39`](https://github.com/generaltranslation/gt/commit/c220f39182a61be3d8139bfe18c5bced0f2956dc)]:
+  - generaltranslation@9.5.7
+  - @generaltranslation/react-core@11.4.12
+  - @generaltranslation/compiler@1.3.64
+  - gt-i18n@1.0.38
+  - gt-react@11.4.12
+
 ## 11.4.11
 
 ### Patch Changes
