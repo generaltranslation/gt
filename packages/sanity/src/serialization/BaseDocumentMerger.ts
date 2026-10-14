@@ -8,6 +8,35 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
+/**
+ * Deserialized blocks list markDefs in the order their marks first appear;
+ * keep the source block's order so an unchanged block stays unchanged.
+ */
+const withMarkDefOrder = (
+  translatedBlock: Record<string, unknown>,
+  origBlock: Record<string, unknown>
+): Record<string, unknown> => {
+  if (
+    !Array.isArray(translatedBlock.markDefs) ||
+    !Array.isArray(origBlock.markDefs)
+  ) {
+    return translatedBlock;
+  }
+  const origOrder = origBlock.markDefs.map((markDef) =>
+    isRecord(markDef) ? markDef._key : undefined
+  );
+  const position = (markDef: unknown) => {
+    const index = isRecord(markDef) ? origOrder.indexOf(markDef._key) : -1;
+    return index < 0 ? origOrder.length : index;
+  };
+  return {
+    ...translatedBlock,
+    markDefs: [...translatedBlock.markDefs].sort(
+      (a, b) => position(a) - position(b)
+    ),
+  };
+};
+
 const reconcileArray = (
   origArray: unknown[],
   translatedArray: unknown[]
@@ -40,7 +69,10 @@ const reconcileArray = (
       (origArray[foundBlockIdx]._type === 'block' ||
         origArray[foundBlockIdx]._type === 'span')
     ) {
-      combined[foundBlockIdx] = translatedItem;
+      combined[foundBlockIdx] = withMarkDefOrder(
+        translatedItem,
+        origArray[foundBlockIdx]
+      );
     } else if (isRecord(origArray[foundBlockIdx])) {
       combined[foundBlockIdx] = reconcileObject(
         origArray[foundBlockIdx],

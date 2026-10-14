@@ -1,5 +1,11 @@
 # @generaltranslation/compiler
 
+## 1.3.63
+
+### Patch Changes
+
+- [#2452](https://github.com/generaltranslation/gt/pull/2452) [`aafa001`](https://github.com/generaltranslation/gt/commit/aafa0010d06d13d0c2d4f33a5cd86907037396b8) Thanks [@eoinest](https://github.com/eoinest)! - Number JSX elements after `Branch`/`Plural` children the same way the React runtime does, so extracted and compile-time hashes match the rendered `<T>` content.
+
 ## 1.3.62
 
 ### Patch Changes
