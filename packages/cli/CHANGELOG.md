@@ -1,5 +1,23 @@
 # gtx-cli
 
+## 2.26.4
+
+### Patch Changes
+
+- [#2452](https://github.com/generaltranslation/gt/pull/2452) [`aafa001`](https://github.com/generaltranslation/gt/commit/aafa0010d06d13d0c2d4f33a5cd86907037396b8) Thanks [@eoinest](https://github.com/eoinest)! - Number JSX elements after `Branch`/`Plural` children the same way the React runtime does, so extracted and compile-time hashes match the rendered `<T>` content.
+
+## 2.26.3
+
+### Patch Changes
+
+- [#2443](https://github.com/generaltranslation/gt/pull/2443) [`77d1437`](https://github.com/generaltranslation/gt/commit/77d14376ca70fd00c11806d6a721add6481b48cb) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Accept a list for `options.docsUrlPattern`, such as `["/docs/[locale]", "/ai/docs/[locale]"]`, so static URL and Mintlify redirect localization cover docs served from several URL prefixes. Each URL is localized with the longest pattern it matches.
+
+## 2.26.2
+
+### Patch Changes
+
+- [#2437](https://github.com/generaltranslation/gt/pull/2437) [`d7943fe`](https://github.com/generaltranslation/gt/commit/d7943fee01740975387a6e1ff43a71c8ed78b886) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Stop `options.mintlify.localizeRedirects` from adding nested-locale redirects (such as `/docs/ja-jp/fr-ca/...`) when translated pages are orphaned.
+
 ## 2.26.1
 
 ### Patch Changes
