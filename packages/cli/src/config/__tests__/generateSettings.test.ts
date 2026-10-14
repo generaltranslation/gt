@@ -8,6 +8,7 @@ import { logger } from '../../console/logger.js';
 import { resolveConfig } from '../resolveConfig.js';
 import { createUserTokenProvider } from '../../auth/oauth.js';
 import { configureApiClient } from '../../utils/api.js';
+import { logErrorAndExit } from '../../console/logging.js';
 
 // Mock resolveFiles
 vi.mock('../../fs/config/parseFilesConfig', () => ({
@@ -282,6 +283,26 @@ describe('generateSettings - composite patterns', () => {
     expect(mockLogWarning).toHaveBeenCalledWith(
       expect.stringContaining('Config IDs will be omitted')
     );
+  });
+
+  it('rejects a docsUrlPattern list entry without [locale]', async () => {
+    await generateSettings(
+      { options: { docsUrlPattern: ['/docs/[locale]', '/ai/docs'] } },
+      '/test/cwd'
+    );
+
+    expect(vi.mocked(logErrorAndExit)).toHaveBeenCalledWith(
+      expect.stringContaining('missing "[locale]"')
+    );
+  });
+
+  it('accepts a docsUrlPattern list', async () => {
+    await generateSettings(
+      { options: { docsUrlPattern: ['/docs/[locale]', '/ai/docs/[locale]'] } },
+      '/test/cwd'
+    );
+
+    expect(vi.mocked(logErrorAndExit)).not.toHaveBeenCalled();
   });
 
   describe('options.saveLocal', () => {
