@@ -3,23 +3,58 @@ import { htmlToBlocks } from '@portabletext/block-tools';
 import {
   customDeserializers,
   customBlockDeserializers,
+  fallbackBlockDeserializers,
 } from '../BaseSerializationConfig';
 import { CustomDeserializers, Deserializer } from '../types';
 import { blockContentType, preprocess } from './helpers';
-import { mergeBlocks } from '../helpers';
+import {
+  LEADING_NEWLINES_ATTRIBUTE,
+  mergeBlocks,
+  restoreMarkedLineBreaks,
+  restoreInlineObjectKeys,
+  STRING_ATTRIBUTE,
+} from '../helpers';
+
+const defaultBlockDeserializers = [
+  ...customBlockDeserializers,
+  ...fallbackBlockDeserializers,
+];
+
+//string values: <pre> holds whitespace-sensitive text and is read verbatim,
+//<span> holds single-line text and is sanitized through block-tools. a <pre>
+//without the string marker comes from a custom serializer
+const deserializeString = (element: Element): string | undefined => {
+  const tagName = element.tagName?.toLowerCase();
+  if (tagName === 'pre' && element.hasAttribute(STRING_ATTRIBUTE)) {
+    // leading newlines are carried by the attribute, so any left in the text
+    // are parser artifacts
+    const text = (element.textContent ?? '').replace(/^\n+/, '');
+    const leadingNewlines =
+      Number.parseInt(
+        element.getAttribute(LEADING_NEWLINES_ATTRIBUTE) ?? '',
+        10
+      ) || 0;
+    return '\n'.repeat(Math.max(leadingNewlines, 0)) + text;
+  }
+  if (tagName === 'span') {
+    return preprocess(element.innerHTML);
+  }
+  return undefined;
+};
 
 export const deserializeArray = (
   arrayHTML: Element,
   deserializers: CustomDeserializers = customDeserializers,
-  blockDeserializers: Array<unknown> = customBlockDeserializers
+  blockDeserializers: Array<unknown> = defaultBlockDeserializers
 ) => {
   const output: unknown[] = [];
   const children = Array.from(arrayHTML.children);
   children.forEach((child) => {
     let deserializedObject: unknown;
     try {
-      if (child.tagName?.toLowerCase() === 'span') {
-        deserializedObject = preprocess(child.innerHTML);
+      const stringValue = deserializeString(child);
+      if (stringValue !== undefined) {
+        deserializedObject = stringValue;
       }
       //has specific class name or data type, so it's an obj
       else if (
@@ -44,8 +79,10 @@ export const deserializeArray = (
             Parameters<typeof htmlToBlocks>[2]
           >['rules'],
         });
-        deserializedObject = mergeBlocks(
-          blocks as unknown as Parameters<typeof mergeBlocks>[0]
+        deserializedObject = restoreMarkedLineBreaks(
+          restoreInlineObjectKeys(
+            mergeBlocks(blocks as unknown as Parameters<typeof mergeBlocks>[0])
+          )
         );
         (deserializedObject as Record<string, unknown>)._key = child.id;
       }
@@ -63,7 +100,7 @@ export const deserializeArray = (
 export const deserializeObject = (
   objectHTML: Element,
   deserializers: CustomDeserializers = customDeserializers,
-  blockDeserializers: Array<unknown> = customBlockDeserializers
+  blockDeserializers: Array<unknown> = defaultBlockDeserializers
 ) => {
   const deserialize = deserializers.types?.[objectHTML.className];
   if (deserialize) {
@@ -79,8 +116,9 @@ export const deserializeObject = (
 
   children.forEach((child) => {
     //string field
-    if (child.tagName?.toLowerCase() === 'span') {
-      output[child.className] = preprocess(child.innerHTML);
+    const stringValue = deserializeString(child);
+    if (stringValue !== undefined) {
+      output[child.className] = stringValue;
     }
     //richer field, either object or array
     else if (child.getAttribute('data-level') === 'field') {
@@ -152,7 +190,7 @@ export const deserializeDocument = <
 >(
   serializedDoc: string,
   deserializers: CustomDeserializers = customDeserializers,
-  blockDeserializers: Array<unknown> = customBlockDeserializers
+  blockDeserializers: Array<unknown> = defaultBlockDeserializers
 ): TDocument => {
   const metadata: Record<string, unknown> = {};
   const head = new DOMParser().parseFromString(serializedDoc, 'text/html').head;
