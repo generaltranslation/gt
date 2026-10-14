@@ -1,6 +1,7 @@
 import { PortableTextBlock } from 'sanity';
 import { describe, expect, test, vi } from 'vitest';
 import { BaseDocumentSerializer } from '../../serialize/index';
+import { detachGTData } from '../../data';
 import {
   customSerializers,
   defaultStopTypes,
@@ -149,20 +150,27 @@ test('Unhandled inline objects and annotations should not hinder translation flo
   const docTree = getHTMLNode(serialized).body.children[0];
   const arrayField = findByClass(docTree.children, 'content');
 
-  //expect annotated object to have underlying text
+  //expect annotated object to have underlying text and carry its markDef
   const blockWithAnnotation = Array.from(arrayField!.children).find(
     (node) => node.id === '0e55995095df'
   );
-  const unhandledAnnotation = findByClass(
-    blockWithAnnotation!.children,
-    'unknown__pt__mark__annotation'
+  const unhandledAnnotation = blockWithAnnotation!.querySelector(
+    'span[data-gt-internal]'
   );
   expect(unhandledAnnotation?.innerHTML).toContain('text');
+  expect(
+    detachGTData(unhandledAnnotation!.outerHTML).data?.markDef
+  ).toMatchObject({ _key: '2f5ec56ab061', _type: 'annotation' });
 
-  //expect unknown inline object to be present but empty
-  //(this allows it to be merged back safely, but not sent to translation)
-  const inlineObject = findByClass(arrayField!.children, 'childObjectField');
-  expect(inlineObject?.innerHTML.length).toEqual(0);
+  //expect unknown inline object to stay inline in its block, with no
+  //translatable text and carrying its data (merged back safely, but not sent
+  //to translation)
+  const inlineObject = arrayField!.querySelector('p > .childObjectField');
+  expect(inlineObject?.tagName.toLowerCase()).toEqual('span');
+  expect(inlineObject?.textContent).toEqual('\u200B');
+  expect(
+    detachGTData(inlineObject!.outerHTML).data?.inlineObject
+  ).toMatchObject({ _type: 'childObjectField' });
 });
 
 test('Handled inline objects should be accurately represented per serializer', () => {
