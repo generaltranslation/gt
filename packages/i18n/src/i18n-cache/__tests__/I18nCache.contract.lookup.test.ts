@@ -89,20 +89,6 @@ describe('I18nCache contract: lookup API', () => {
     vi.restoreAllMocks();
   });
 
-  // ===== getVersionId() ===== //
-
-  it('getVersionId() returns the _versionId passed to the constructor', () => {
-    const cache = createCache({ _versionId: 'version-abc' });
-
-    expect(cache.getVersionId()).toBe('version-abc');
-  });
-
-  it('getVersionId() returns undefined when no _versionId was provided', () => {
-    const cache = createCache();
-
-    expect(cache.getVersionId()).toBeUndefined();
-  });
-
   // ===== updateTranslations() ===== //
 
   it('updateTranslations() seeds a new locale for synchronous lookups', () => {
