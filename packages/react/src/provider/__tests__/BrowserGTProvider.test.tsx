@@ -13,6 +13,9 @@ import {
 
 const mockSetCookieValue = vi.hoisted(() => vi.fn());
 const mockGetCookieValue = vi.hoisted(() => vi.fn());
+const mockReloadPage = vi.hoisted(() => vi.fn());
+
+vi.mock('../../utils/reloadPage', () => ({ reloadPage: mockReloadPage }));
 
 vi.mock('@generaltranslation/react-core/pure', () => ({
   defaultResetLocaleCookieName: 'generaltranslation.locale-reset',
@@ -49,6 +52,7 @@ describe('BrowserGTProvider', () => {
     ).IS_REACT_ACT_ENVIRONMENT = true;
     mockSetCookieValue.mockClear();
     mockGetCookieValue.mockClear();
+    mockReloadPage.mockClear();
   });
 
   afterEach(() => {
@@ -184,28 +188,22 @@ describe('BrowserGTProvider', () => {
       vi.restoreAllMocks();
     });
 
-    it('reloads instead of overwriting a newer locale choice', async () => {
+    it('reloads its URL instead of overwriting a newer locale choice', async () => {
       mockNavigationType('back_forward');
       mockGetCookieValue.mockReturnValue('fr');
 
       const { reload, render, root } = await mount('en');
-      expect(reload).toHaveBeenCalledWith({
-        locale: 'fr',
-        region: undefined,
-        enableI18n: true,
-      });
+      // The server decides between the cookie and any locale in the URL, so a
+      // router's locale navigation would turn Back into a redirect.
+      expect(mockReloadPage).toHaveBeenCalledTimes(1);
+      expect(reload).not.toHaveBeenCalled();
       expect(localeCookieWrites()).toEqual([]);
 
-      // A rerender with the same stale locale neither writes nor reloads again.
+      // Rerenders before the page unloads neither write nor reload again.
       await act(async () => render('en'));
-      expect(reload).toHaveBeenCalledTimes(1);
-      expect(localeCookieWrites()).toEqual([]);
-
-      // Once the reload renders the chosen locale, the cookie stays in sync.
       await act(async () => render('fr'));
-      expect(localeCookieWrites()).toEqual([
-        [{ cookieName: 'generaltranslation.locale', value: 'fr' }],
-      ]);
+      expect(mockReloadPage).toHaveBeenCalledTimes(1);
+      expect(localeCookieWrites()).toEqual([]);
 
       await act(async () => root.unmount());
     });
@@ -214,8 +212,8 @@ describe('BrowserGTProvider', () => {
       mockNavigationType('back_forward');
       mockGetCookieValue.mockReturnValue('en');
 
-      const { reload, root } = await mount('en');
-      expect(reload).not.toHaveBeenCalled();
+      const { root } = await mount('en');
+      expect(mockReloadPage).not.toHaveBeenCalled();
       expect(localeCookieWrites()).toEqual([
         [{ cookieName: 'generaltranslation.locale', value: 'en' }],
       ]);
@@ -227,8 +225,8 @@ describe('BrowserGTProvider', () => {
       mockNavigationType('navigate');
       mockGetCookieValue.mockReturnValue('fr');
 
-      const { reload, root } = await mount('en');
-      expect(reload).not.toHaveBeenCalled();
+      const { root } = await mount('en');
+      expect(mockReloadPage).not.toHaveBeenCalled();
       expect(mockGetCookieValue).not.toHaveBeenCalled();
       expect(localeCookieWrites()).toEqual([
         [{ cookieName: 'generaltranslation.locale', value: 'en' }],
