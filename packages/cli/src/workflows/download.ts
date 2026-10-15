@@ -92,60 +92,50 @@ export async function runDownloadWorkflow({
     skipped: new Map<string, FileProperties>(),
   };
 
-  // Step 1: Poll translation jobs if jobData exists
+  // Step 1: Poll translation jobs, or the staged files when there are no jobs
   let pollTimedOut = false;
-  if (jobData) {
-    const pollStep = new PollTranslationJobsStep(api, inlineLibrary);
-    const pollResult = await pollStep.run({
-      fileTracker,
-      fileQueryData,
-      jobData,
-      timeoutDuration,
-      forceRetranslation,
-    });
+  const pollStep = new PollTranslationJobsStep(api, inlineLibrary);
+  const pollResult = await pollStep.run({
+    fileTracker,
+    fileQueryData,
+    jobData,
+    timeoutDuration,
+    forceRetranslation,
+  });
 
-    if (pollResult.fileTracker.failed.size > 0) {
-      logger.error(
-        `${chalk.red(`${pollResult.fileTracker.failed.size} file(s) failed to translate:`)}\n${Array.from(
-          pollResult.fileTracker.failed.entries()
+  if (pollResult.fileTracker.failed.size > 0) {
+    logger.error(
+      `${chalk.red(`${pollResult.fileTracker.failed.size} file(s) failed to translate:`)}\n${Array.from(
+        pollResult.fileTracker.failed.entries()
+      )
+        .map(([, value]) => `- ${value.fileName}`)
+        .join('\n')}`
+    );
+    for (const [, value] of pollResult.fileTracker.failed) {
+      recordWarning(
+        'failed_translation',
+        value.fileName,
+        `Failed to translate for locale ${value.locale}`
+      );
+    }
+
+    // If all files failed translation, exit early
+    if (pollResult.fileTracker.completed.size === 0) {
+      return false;
+    }
+  }
+
+  // Even if polling timed out, still download whatever completed successfully
+  if (!pollResult.success) {
+    pollTimedOut = true;
+    if (pollResult.fileTracker.completed.size > 0) {
+      logger.warn(
+        chalk.yellow(
+          `Timed out, but ${pollResult.fileTracker.completed.size} translation(s) completed successfully. Downloading completed files...`
         )
-          .map(([, value]) => `- ${value.fileName}`)
-          .join('\n')}`
       );
-      for (const [, value] of pollResult.fileTracker.failed) {
-        recordWarning(
-          'failed_translation',
-          value.fileName,
-          `Failed to translate for locale ${value.locale}`
-        );
-      }
-
-      // If all files failed translation, exit early
-      if (pollResult.fileTracker.completed.size === 0) {
-        return false;
-      }
-    }
-
-    // Even if polling timed out, still download whatever completed successfully
-    if (!pollResult.success) {
-      pollTimedOut = true;
-      if (pollResult.fileTracker.completed.size > 0) {
-        logger.warn(
-          chalk.yellow(
-            `Timed out, but ${pollResult.fileTracker.completed.size} translation(s) completed successfully. Downloading completed files...`
-          )
-        );
-      } else {
-        return false;
-      }
-    }
-  } else {
-    for (const file of fileQueryData) {
-      // Staging - assume all files are completed
-      fileTracker.completed.set(
-        `${file.branchId}:${file.fileId}:${file.versionId}:${file.locale}`,
-        file
-      );
+    } else {
+      return false;
     }
   }
 

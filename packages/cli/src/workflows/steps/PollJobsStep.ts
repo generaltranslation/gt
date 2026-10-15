@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import type { JobResult } from 'generaltranslation/api';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { logger } from '../../console/logger.js';
 import type { ApiClient } from '../../utils/api.js';
 import { EnqueueFilesResult } from 'generaltranslation/types';
@@ -14,10 +15,13 @@ import {
   type InlineLibrary,
 } from '../../types/libraries.js';
 
+const POLLING_INTERVAL_SECONDS = 5;
+
 export type PollJobsInput = {
   fileTracker: FileStatusTracker;
   fileQueryData: FileProperties[];
-  jobData: EnqueueFilesResult;
+  /** Absent when downloading staged files, whose job IDs are not saved */
+  jobData?: EnqueueFilesResult;
   timeoutDuration: number;
   forceRetranslation?: boolean;
 };
@@ -84,9 +88,9 @@ export class PollTranslationJobsStep {
     // branchId:fileId:versionId:locale -> job
     const jobMap = new Map<
       string,
-      (typeof jobData.jobData)[number] & { jobId: string }
+      EnqueueFilesResult['jobData'][string] & { jobId: string }
     >();
-    Object.entries(jobData.jobData).forEach(([jobId, job]) => {
+    Object.entries(jobData?.jobData ?? {}).forEach(([jobId, job]) => {
       const jobLocale = this.api.resolveAliasLocale(job.targetLocale);
       const key = `${job.branchId}:${job.fileId}:${job.versionId}:${jobLocale}`;
       jobMap.set(key, { ...job, jobId, targetLocale: jobLocale });
@@ -103,7 +107,7 @@ export class PollTranslationJobsStep {
         locale: string;
       }
     >();
-    Object.entries(jobData.jobData).forEach(([jobId, job]) => {
+    Object.entries(jobData?.jobData ?? {}).forEach(([jobId, job]) => {
       const jobLocale = this.api.resolveAliasLocale(job.targetLocale);
       jobFileMap.set(jobId, {
         branchId: job.branchId,
@@ -128,8 +132,8 @@ export class PollTranslationJobsStep {
       const jobKey = `${item.branchId}:${item.fileId}:${item.versionId}:${item.locale}`;
       const job = jobMap.get(jobKey);
 
-      if (job) {
-        // Job exists - mark as in progress initially
+      if (job || !jobData) {
+        // A job exists, or a staged file has not completed yet: mark it as in progress
         fileTracker.inProgress.set(fileKey, item);
       } else {
         // No job and no existing translation - mark as skipped
@@ -183,12 +187,20 @@ export class PollTranslationJobsStep {
     };
 
     try {
-      const result = await this.api.awaitJobs([...jobFileMap.keys()], {
-        pollingIntervalSeconds: 5,
-        timeoutSeconds,
-        onPoll: updateJobStatuses,
-      });
-      if (result.complete) updateJobStatuses(result.jobs);
+      if (jobData) {
+        const result = await this.api.awaitJobs([...jobFileMap.keys()], {
+          pollingIntervalSeconds: POLLING_INTERVAL_SECONDS,
+          timeoutSeconds,
+          onPoll: updateJobStatuses,
+        });
+        if (result.complete) updateJobStatuses(result.jobs);
+      } else {
+        await this.awaitCompletedFiles(
+          fileTracker,
+          fileQueryData,
+          timeoutSeconds
+        );
+      }
     } catch (error) {
       this.spinner.stop(chalk.red('Error checking translation job status'));
       throw error;
@@ -200,7 +212,55 @@ export class PollTranslationJobsStep {
     }
 
     this.spinner.stop(chalk.red('Timed out waiting for translation jobs'));
+    logger.warn(
+      createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Warning',
+        whatHappened: `${fileTracker.inProgress.size} file(s) are still processing and were not downloaded`,
+        fix: 'Run npx gt download later to fetch them',
+        details: Array.from(fileTracker.inProgress.values()).map(
+          (file) => `${this.getDisplayName(file.fileName)} (${file.locale})`
+        ),
+      })
+    );
     return { success: false, fileTracker };
+  }
+
+  /**
+   * Staged downloads have no job IDs, so this polls the files until each
+   * translation is complete or the timeout passes.
+   */
+  private async awaitCompletedFiles(
+    fileTracker: FileStatusTracker,
+    fileQueryData: FileProperties[],
+    timeoutSeconds: number
+  ): Promise<void> {
+    const deadline = Date.now() + timeoutSeconds * 1000;
+    while (fileTracker.inProgress.size > 0 && Date.now() < deadline) {
+      await new Promise((resolve) =>
+        setTimeout(
+          resolve,
+          Math.min(POLLING_INTERVAL_SECONDS * 1000, deadline - Date.now())
+        )
+      );
+      const completedKeys = await queryCompletedTranslationKeys(
+        this.api,
+        Array.from(fileTracker.inProgress.values())
+      );
+      for (const fileKey of completedKeys) {
+        const fileProperties = fileTracker.inProgress.get(fileKey);
+        if (!fileProperties) continue;
+        fileTracker.inProgress.delete(fileKey);
+        fileTracker.completed.set(fileKey, fileProperties);
+      }
+      this.updateSpinner(fileTracker, fileQueryData);
+    }
+  }
+
+  private getDisplayName(fileName: string): string {
+    return fileName === TEMPLATE_FILE_NAME
+      ? `<${getInlineElementsLabel(this.inlineLibrary)}>`
+      : fileName;
   }
 
   private updateSpinner(
@@ -371,11 +431,9 @@ export class PollTranslationJobsStep {
         .join(', ');
 
       // Format the line
-      const prettyFileName =
-        fileName === TEMPLATE_FILE_NAME
-          ? `<${getInlineElementsLabel(this.inlineLibrary)}>`
-          : fileName;
-      newSuffixText.push(`${chalk.bold(prettyFileName)} [${localeString}]`);
+      newSuffixText.push(
+        `${chalk.bold(this.getDisplayName(fileName))} [${localeString}]`
+      );
     }
 
     // If we couldn't show all files, add an indicator

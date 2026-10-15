@@ -9,6 +9,7 @@ import {
 
 vi.mock('../../../console/logger.js', () => ({
   logger: {
+    warn: vi.fn(),
     createProgressBar: vi.fn(() => ({
       start: vi.fn(),
       stop: vi.fn(),
