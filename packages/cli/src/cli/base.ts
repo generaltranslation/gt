@@ -687,9 +687,12 @@ export class BaseCLI {
     if (!settings.stageTranslations) {
       // Update settings.stageTranslations to true
       settings.stageTranslations = true;
-      await updateConfig(settings.config, {
-        stageTranslations: true,
-      });
+      // A dry run only parses and validates, so it leaves gt.config.json as is
+      if (!initOptions.dryRun) {
+        await updateConfig(settings.config, {
+          stageTranslations: true,
+        });
+      }
     }
     await handleStage(initOptions, settings, this.library, true);
   }
