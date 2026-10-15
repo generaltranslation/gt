@@ -8,9 +8,22 @@ import {
 } from '@generaltranslation/react-core/pure';
 import { useCallback, useEffect, useRef } from 'react';
 import type { SharedGTProviderProps } from './GTProviderProps';
-import { setCookieValue } from '../condition-store/cookies';
+import { getCookieValue, setCookieValue } from '../condition-store/cookies';
 
 type Conditions = Parameters<NonNullable<SharedGTProviderProps['_reload']>>[0];
+
+/**
+ * Whether the browser restored this document from its history (Back or
+ * Forward). Browsers can reuse a cached page for these navigations, rendered
+ * before the visitor's latest locale choice.
+ */
+function isHistoryNavigation(): boolean {
+  if (typeof performance === 'undefined') return false;
+  const [entry] = performance.getEntriesByType?.('navigation') ?? [];
+  return (
+    (entry as PerformanceNavigationTiming | undefined)?.type === 'back_forward'
+  );
+}
 
 /** Client-side provider for server-rendered applications. */
 export function BrowserGTProvider(props: SharedGTProviderProps) {
@@ -60,9 +73,35 @@ export function BrowserGTProvider(props: SharedGTProviderProps) {
     [i18nConfig, locale, region, reload]
   );
 
+  // 'stale' while a page restored from history shows an older locale than the
+  // cookie. The cookie then holds the visitor's newer choice, so the provider
+  // reloads instead of writing the page's locale over it.
+  const restoredLocale = useRef<'unchecked' | 'stale' | 'current'>('unchecked');
+
   useEffect(() => {
+    const localeCookieName = i18nConfig.getLocaleCookieName();
+    const readCookieLocale = () => {
+      const value = getCookieValue({ cookieName: localeCookieName });
+      return value ? i18nConfig.resolveSupportedLocale(value) : undefined;
+    };
+    if (restoredLocale.current === 'unchecked') {
+      const cookieLocale = isHistoryNavigation()
+        ? readCookieLocale()
+        : undefined;
+      if (cookieLocale && cookieLocale !== locale) {
+        restoredLocale.current = 'stale';
+        reload({ locale: cookieLocale, region, enableI18n });
+      } else {
+        restoredLocale.current = 'current';
+      }
+    }
+    if (restoredLocale.current === 'stale') {
+      if (readCookieLocale() !== locale) return;
+      restoredLocale.current = 'current';
+    }
+
     setCookieValue({
-      cookieName: i18nConfig.getLocaleCookieName(),
+      cookieName: localeCookieName,
       value: locale,
     });
     if (region !== undefined) {
@@ -75,7 +114,7 @@ export function BrowserGTProvider(props: SharedGTProviderProps) {
       cookieName: i18nConfig.getEnableI18nCookieName(),
       value: enableI18n ? 'true' : 'false',
     });
-  }, [i18nConfig, locale, region, enableI18n, props.translations]);
+  }, [i18nConfig, locale, region, enableI18n, props.translations, reload]);
 
   const i18nStore = useI18nStore();
 
