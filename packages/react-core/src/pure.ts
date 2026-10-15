@@ -15,6 +15,7 @@ export {
 
 export { getFormatLocales } from './hooks/utils/getFormatLocales';
 export { getTranslationsSnapshot } from './functions/helpers/getTranslationsSnapshot';
+export { getDictionariesSnapshot } from './functions/helpers/getDictionariesSnapshot';
 export { t } from './functions/translation/t';
 export { createRenderPipeline } from './utils/rendering/createRenderPipeline';
 export type { RenderPipeline } from './utils/rendering/createRenderPipeline';
@@ -52,6 +53,14 @@ export {
   type ReactI18nCacheParams,
 } from './i18n-cache/ReactI18nCache';
 export { setI18nStore } from './i18n-store/singleton-operations';
+export {
+  setGlobalTranslationsSnapshot,
+  type TranslationsSnapshot,
+} from './translations-snapshot/singleton-operations';
+export {
+  setGlobalDictionariesSnapshot,
+  type DictionariesSnapshot,
+} from './dictionaries-snapshot/singleton-operations';
 export { I18nStore } from './i18n-store/I18nStore';
 export { getI18nConfig, initializeI18nConfig } from './setup/i18nConfig';
 export { getReadonlyConditionStore } from './condition-store/singleton-operations';
