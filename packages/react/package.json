@@ -109,6 +109,61 @@
       },
       "default": "./dist/index.server.mjs"
     },
+    "./client-entry": {
+      "react-server": {
+        "require": {
+          "types": "./dist/client-entry.rsc.d.cts",
+          "default": "./dist/client-entry.rsc.cjs"
+        },
+        "import": {
+          "types": "./dist/client-entry.rsc.d.mts",
+          "default": "./dist/client-entry.rsc.mjs"
+        },
+        "default": "./dist/client-entry.rsc.mjs"
+      },
+      "workerd": {
+        "require": {
+          "types": "./dist/client-entry.client.d.cts",
+          "default": "./dist/client-entry.server.cjs"
+        },
+        "import": {
+          "types": "./dist/client-entry.client.d.mts",
+          "default": "./dist/client-entry.server.mjs"
+        },
+        "default": "./dist/client-entry.server.mjs"
+      },
+      "worker": {
+        "require": {
+          "types": "./dist/client-entry.client.d.cts",
+          "default": "./dist/client-entry.server.cjs"
+        },
+        "import": {
+          "types": "./dist/client-entry.client.d.mts",
+          "default": "./dist/client-entry.server.mjs"
+        },
+        "default": "./dist/client-entry.server.mjs"
+      },
+      "browser": {
+        "require": {
+          "types": "./dist/client-entry.client.d.cts",
+          "default": "./dist/client-entry.client.cjs"
+        },
+        "import": {
+          "types": "./dist/client-entry.client.d.mts",
+          "default": "./dist/client-entry.client.mjs"
+        },
+        "default": "./dist/client-entry.client.mjs"
+      },
+      "require": {
+        "types": "./dist/client-entry.client.d.cts",
+        "default": "./dist/client-entry.server.cjs"
+      },
+      "import": {
+        "types": "./dist/client-entry.client.d.mts",
+        "default": "./dist/client-entry.server.mjs"
+      },
+      "default": "./dist/client-entry.server.mjs"
+    },
     "./macros": {
       "require": {
         "types": "./dist/macros.d.cts",
@@ -124,6 +179,9 @@
     "*": {
       "macros": [
         "./dist/macros.d.cts"
+      ],
+      "client-entry": [
+        "./dist/client-entry.client.d.cts"
       ]
     }
   },
