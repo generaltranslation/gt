@@ -23,6 +23,11 @@ export function productionRuntimeKeyGuidance(dashboardUrl: string): string {
   return `${chalk.dim('For runtime translation in production, create an API key in the dashboard')} ${chalk.cyan(dashboardUrl)} ${chalk.dim('and set GT_API_KEY and GT_PROJECT_ID in your hosting environment.')}`;
 }
 
+/** New projects have CDN delivery off, and setup cannot read the setting. */
+export function cdnDeliveryGuidance(dashboardUrl: string): string {
+  return `${chalk.dim('Translations load from the CDN only when CDN delivery is enabled in the project settings. Check it in the dashboard')} ${chalk.cyan(dashboardUrl)}${chalk.dim('.')}`;
+}
+
 /**
  * Interactive setup keeps the browser login with its device fallback;
  * noninteractive setup always shows a device code (and emits it as a JSON
@@ -47,7 +52,7 @@ type ProjectChoice = Awaited<ReturnType<typeof api.listProjects>>[number];
 /** An existing project, or the inputs for creating one. */
 export type DevelopmentProject =
   | { id: string; name?: string }
-  | { create: { orgId: string; name: string } };
+  | { create: { orgId: string; name: string; cdnEnabled?: boolean } };
 
 export type DevelopmentProjectOptions = {
   createProject?: boolean;
@@ -267,9 +272,13 @@ export async function provisionDevelopmentCredentials(
     projectId = project.id;
     projectName = project.name;
   } else {
-    const { orgId, name } = project.create;
+    const { orgId, name, cdnEnabled } = project.create;
     const { project: created } = await api
-      .createProject(orgId, { name, defaultLocale: settings.defaultLocale })
+      .createProject(orgId, {
+        name,
+        defaultLocale: settings.defaultLocale,
+        cdnEnabled,
+      })
       .catch(
         explainForbidden((error) =>
           projectCreationDeniedError(orgId, usingApiKey, error)

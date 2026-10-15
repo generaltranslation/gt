@@ -378,6 +378,7 @@ describe('init development credentials', () => {
     expect(api.createProject).toHaveBeenCalledWith('o2', {
       name: 'New App',
       defaultLocale: 'en',
+      cdnEnabled: false,
     });
     expect(api.createProjectApiKey).toHaveBeenCalledWith(
       'p-new',
@@ -385,6 +386,60 @@ describe('init development credentials', () => {
     );
     expect(fs.readFileSync(envPath(), 'utf8')).toContain(
       'GT_PROJECT_ID=p-new\n'
+    );
+  });
+
+  // CDN storage applies only to an app that already uses a GT runtime.
+  const useGTReact = () =>
+    fs.writeFileSync(
+      path.join(appDirectory, 'package.json'),
+      JSON.stringify({
+        name: 'example-app',
+        dependencies: { 'gt-react': '*' },
+        devDependencies: { gt: '*' },
+      })
+    );
+
+  it('enables CDN delivery on a project it creates for CDN translations', async () => {
+    useGTReact();
+    vi.mocked(api.listOrgs).mockResolvedValue([{ id: 'o1', name: 'Acme' }]);
+    vi.mocked(api.createProject).mockResolvedValue({
+      project: {
+        id: 'p-new',
+        name: 'New App',
+        orgId: 'o1',
+        defaultLocale: 'en',
+      },
+    });
+
+    await runInit(
+      '--create-project',
+      '--project-name',
+      'New App',
+      '--storage',
+      'cdn'
+    );
+
+    expect(api.createProject).toHaveBeenCalledWith('o1', {
+      name: 'New App',
+      defaultLocale: 'en',
+      cdnEnabled: true,
+    });
+    expect(loggedOutput()).not.toContain('CDN delivery is enabled');
+  });
+
+  it('asks to check CDN delivery on an existing project for CDN translations', async () => {
+    useGTReact();
+    fs.writeFileSync(
+      path.join(appDirectory, 'gt.config.json'),
+      JSON.stringify({ projectId: 'configured-project', defaultLocale: 'en' })
+    );
+
+    await runInit('--storage', 'cdn');
+
+    expect(api.createProject).not.toHaveBeenCalled();
+    expect(loggedOutput()).toContain(
+      'Translations load from the CDN only when CDN delivery is enabled in the project settings'
     );
   });
 

@@ -983,6 +983,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       expect(api.createProject).toHaveBeenCalledWith('o1', {
         name: 'App',
         defaultLocale: 'es',
+        cdnEnabled: false,
       });
       expect(readConfig()).toMatchObject({ defaultLocale: 'es' });
     });

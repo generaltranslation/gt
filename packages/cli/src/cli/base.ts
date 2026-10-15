@@ -57,6 +57,7 @@ import {
 } from '../utils/credentials.js';
 import {
   checkDevelopmentProjectInputs,
+  cdnDeliveryGuidance,
   productionRuntimeKeyGuidance,
   provisionDevelopmentCredentials,
   resolveDevelopmentProject,
@@ -1606,17 +1607,26 @@ See https://www.npmjs.com/package/gt-vue`);
       await installWithProgress(session, 'gt', packageManager, true);
     }
 
+    // A project created here gets CDN delivery when translations use the CDN.
+    const createsProject = project !== undefined && 'create' in project;
     if (project) {
       await withCredentialsError(() =>
         provisionDevelopmentCredentials(
           session,
-          project,
+          createsProject
+            ? {
+                create: { ...project.create, cdnEnabled: storage === 'cdn' },
+              }
+            : project,
           settings,
           envFramework,
           cwd
         )
       );
       logger.message(productionRuntimeKeyGuidance(settings.dashboardUrl));
+    }
+    if (storage === 'cdn' && !createsProject) {
+      logger.message(cdnDeliveryGuidance(settings.dashboardUrl));
     }
   }
 }
