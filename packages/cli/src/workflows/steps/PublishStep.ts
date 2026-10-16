@@ -3,8 +3,12 @@ import type { PublishFileEntry } from 'generaltranslation/types';
 import type { ApiClient } from '../../utils/api.js';
 import chalk from 'chalk';
 
-/** A file the CDN did not update, and why. */
-export type PublishFailure = { fileName: string; reason: string };
+/** A file the CDN did not publish or unpublish, and why. */
+export type PublishFailure = {
+  fileName: string;
+  publish: boolean;
+  reason: string;
+};
 
 export class PublishStep {
   private spinner = logger.createSpinner('dots');
@@ -25,11 +29,14 @@ export class PublishStep {
       );
       if (failed.length > 0) {
         this.spinner.stop(chalk.red('CDN updated with errors'));
-        return failed.map((f) => ({
-          fileName:
-            files.find((p) => p.fileId === f.fileId)?.fileName ?? f.fileId,
-          reason: f.error ?? 'unknown error',
-        }));
+        return failed.map((f) => {
+          const file = files.find((p) => p.fileId === f.fileId);
+          return {
+            fileName: file?.fileName ?? f.fileId,
+            publish: file?.publish ?? true,
+            reason: f.error ?? 'unknown error',
+          };
+        });
       }
       this.spinner.stop(chalk.green('CDN updated'));
       return [];
@@ -38,6 +45,7 @@ export class PublishStep {
       const reason = err instanceof Error ? err.message : String(err);
       return files.map((file) => ({
         fileName: file.fileName ?? file.fileId,
+        publish: file.publish,
         reason,
       }));
     }

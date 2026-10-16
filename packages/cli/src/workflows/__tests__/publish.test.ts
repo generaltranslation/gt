@@ -7,6 +7,7 @@ import { runPublishWorkflow } from '../publish.js';
 vi.mock('../../console/logger.js', () => ({
   logger: {
     error: vi.fn(),
+    warn: vi.fn(),
     createSpinner: () => ({ start: vi.fn(), stop: vi.fn() }),
   },
 }));
@@ -34,6 +35,7 @@ describe('runPublishWorkflow', () => {
   beforeEach(() => {
     process.exitCode = undefined;
     vi.mocked(logger.error).mockClear();
+    vi.mocked(logger.warn).mockClear();
   });
 
   afterEach(() => {
@@ -70,5 +72,27 @@ describe('runPublishWorkflow', () => {
     expect(message).toContain('ja.json (CDN disabled)');
     expect(message).not.toContain('fr.json');
     expect(message).toContain('https://dash.example.com');
+  });
+
+  it('only warns when an unpublish fails', async () => {
+    vi.mocked(api.publishFiles).mockRejectedValue(
+      new Error('CDN must be enabled for this project')
+    );
+
+    await runPublishWorkflow(
+      files,
+      new Map([
+        ['fr-id', false],
+        ['ja-id', false],
+      ]),
+      'branch-id',
+      settings
+    );
+
+    expect(process.exitCode).toBeUndefined();
+    expect(logger.error).not.toHaveBeenCalled();
+    expect(vi.mocked(logger.warn).mock.calls[0][0]).toContain(
+      'CDN updates failed for 2 files'
+    );
   });
 });

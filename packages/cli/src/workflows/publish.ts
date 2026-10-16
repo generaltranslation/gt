@@ -1,19 +1,22 @@
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import {
+  createDiagnosticMessage,
+  type DiagnosticSeverity,
+} from 'generaltranslation/internal';
 import { Settings } from '../types/index.js';
 import { PublishStep, type PublishFailure } from './steps/PublishStep.js';
 import { api } from '../utils/api.js';
 import { hasPublishConfig } from '../utils/resolvePublish.js';
 import { logger } from '../console/logger.js';
 
-function publishFailedError(
+function publishFailedDiagnostic(
   failures: PublishFailure[],
-  dashboardUrl: string
+  dashboardUrl: string,
+  severity: DiagnosticSeverity
 ): string {
   const files = failures.length === 1 ? '1 file' : `${failures.length} files`;
   return createDiagnosticMessage({
     source: 'gt',
-    severity: 'Error',
-    // The workflow both publishes and unpublishes files.
+    severity,
     whatHappened: `CDN updates failed for ${files}`,
     fix: `Check that the CDN is enabled in the project's settings in the dashboard ${dashboardUrl}, then run the command again`,
     details: failures.map(({ fileName, reason }) => `${fileName} (${reason})`),
@@ -24,7 +27,7 @@ function publishFailedError(
  * Publishes files to the CDN if publish config exists and the publishMap is non-empty.
  * Shared by translate, upload, and save-local commands. A failed publish sets
  * a failing exit code, so a deploy that runs the command stops instead of
- * shipping without its translations.
+ * shipping without its translations. A failed unpublish only warns.
  */
 export async function runPublishWorkflow(
   files: { fileId: string; versionId: string; fileName: string }[],
@@ -48,6 +51,16 @@ export async function runPublishWorkflow(
   const failures = await new PublishStep(api).run(allFileRefs);
   if (failures.length === 0) return;
 
-  logger.error(publishFailedError(failures, settings.dashboardUrl));
-  process.exitCode = 1;
+  // Only a failed publish fails the command: a project without the CDN also
+  // rejects unpublishing, which `publish: false` sends.
+  if (failures.some((failure) => failure.publish)) {
+    logger.error(
+      publishFailedDiagnostic(failures, settings.dashboardUrl, 'Error')
+    );
+    process.exitCode = 1;
+  } else {
+    logger.warn(
+      publishFailedDiagnostic(failures, settings.dashboardUrl, 'Warning')
+    );
+  }
 }
