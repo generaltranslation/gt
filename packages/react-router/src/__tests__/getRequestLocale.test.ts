@@ -22,13 +22,15 @@ function run(args: Parameters<typeof getRequestLocale>[0]) {
   }
 }
 
-/** Resolve a page request, with the params React Router matches for it. */
+/**
+ * Resolve a page request, with the params React Router matches for it. The
+ * page URL comes from the request, as before React Router 7.13.2.
+ */
 function resolve(path: string, headers: Record<string, string> = {}) {
   const url = new URL(path, 'https://example.com');
   return run({
     request: new Request(url, { headers }),
     params: matchRoutes(routes, url.pathname)?.[0].params ?? {},
-    url,
   });
 }
 
@@ -87,15 +89,6 @@ describe('getRequestLocale', () => {
           url: new URL('https://example.com/about'),
         })
       ).toBe('redirect /fr/about');
-    });
-
-    it('reads the page URL from the request before React Router 7.13.2', () => {
-      expect(
-        getRequestLocale({
-          request: new Request('https://example.com/fr/about'),
-          params: { locale: 'fr' },
-        })
-      ).toBe('fr');
     });
   });
 
