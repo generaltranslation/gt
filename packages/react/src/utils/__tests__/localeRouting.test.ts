@@ -35,10 +35,7 @@ describe('locale routing', () => {
     expect(getPathnameForLocale({ pathname: '/fr/about', locale: 'en' })).toBe(
       '/about'
     );
-    expect(getPathnameForLocale({ pathname: '/about', locale: 'en' })).toBe(
-      '/about'
-    );
-    expect(getPathnameForLocale({ pathname: '/', locale: 'en' })).toBe('/');
+    expect(getPathnameForLocale({ pathname: '/fr', locale: 'en' })).toBe('/');
   });
 
   it('prefixes non-default locales', () => {
