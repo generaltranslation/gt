@@ -6,7 +6,6 @@ const KNOWN_NON_VUE_GT_RUNTIME_PACKAGES = [
   'gt-node',
   'gt-react',
   'gt-react-native',
-  'gt-react-router',
   'gt-tanstack-start',
 ] as const;
 
