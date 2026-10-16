@@ -151,6 +151,7 @@ export type ProjectApiKeyPermission =
 export type ContextGroup = {
   id: string;
   name: string;
+  autoUpdate: boolean;
 };
 
 export type CreateCliWizardSessionResponse = {
@@ -214,13 +215,13 @@ export type WorkspacePluginTranslateData = {
      */
     projectId: string;
     /**
-     * File ID assigned by Google Drive, found in the Google Docs or Slides URL after /d/. This is not a GT database file ID. May identify a source file or a GT-managed translated copy.
+     * File ID assigned by Google Drive, found in the Google Docs, Slides or Sheets URL after /d/. This is not a GT database file ID. May identify a source file or a GT-managed translated copy.
      */
     fileId: string;
     /**
-     * Google editor for the file: DOCS for Google Docs or SLIDES for Google Slides.
+     * Google editor for the file: DOCS for Google Docs, SLIDES for Google Slides or SHEETS for Google Sheets.
      */
-    hostApp: 'DOCS' | 'SLIDES';
+    hostApp: 'DOCS' | 'SLIDES' | 'SHEETS';
     /**
      * One to 100 supported target locale codes, such as fr or es-MX. Must respect the project locale whitelist. For a GT-managed translated copy, only that copy’s target locale is used.
      */
@@ -305,13 +306,13 @@ export type WorkspacePluginStatusData = {
      */
     projectId: string;
     /**
-     * File ID assigned by Google Drive, found in the Google Docs or Slides URL after /d/. This is not a GT database file ID. May identify a source file or a GT-managed translated copy.
+     * File ID assigned by Google Drive, found in the Google Docs, Slides or Sheets URL after /d/. This is not a GT database file ID. May identify a source file or a GT-managed translated copy.
      */
     fileId: string;
     /**
-     * Google editor for the file: DOCS for Google Docs or SLIDES for Google Slides.
+     * Google editor for the file: DOCS for Google Docs, SLIDES for Google Slides or SHEETS for Google Sheets.
      */
-    hostApp: 'DOCS' | 'SLIDES';
+    hostApp: 'DOCS' | 'SLIDES' | 'SHEETS';
   };
   path?: never;
   query?: never;
@@ -1478,13 +1479,13 @@ export type PluginDownloadResponse =
 export type WorkspacePluginInfoData = {
   body?: {
     /**
-     * File ID assigned by Google Drive, found in the Google Docs or Slides URL after /d/. This is not a GT database file ID. May identify a source file or a GT-managed translated copy. Supply hostApp with fileId for file-specific context; omit both to list connected projects.
+     * File ID assigned by Google Drive, found in the Google Docs, Slides or Sheets URL after /d/. This is not a GT database file ID. May identify a source file or a GT-managed translated copy. Supply hostApp with fileId for file-specific context; omit both to list connected projects.
      */
     fileId?: string;
     /**
-     * Google editor for the file: DOCS for Google Docs or SLIDES for Google Slides. Supply fileId with hostApp for file-specific context.
+     * Google editor for the file: DOCS for Google Docs, SLIDES for Google Slides or SHEETS for Google Sheets. Supply fileId with hostApp for file-specific context.
      */
-    hostApp?: 'DOCS' | 'SLIDES';
+    hostApp?: 'DOCS' | 'SLIDES' | 'SHEETS';
   };
   path?: never;
   query?: never;
@@ -4306,7 +4307,11 @@ export type UpdateContextGroupData = {
     /**
      * New group name, 1–255 characters.
      */
-    name: string;
+    name?: string;
+    /**
+     * Whether translation runs may add terms and context to this group automatically.
+     */
+    autoUpdate?: boolean;
   };
   headers?: {
     /**
