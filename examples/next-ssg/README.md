@@ -41,4 +41,4 @@ npm start
 ## Documentation
 
 - [gt-next docs](https://generaltranslation.com/docs/next)
-- [SSG guide](https://generaltranslation.com/docs/next/guides/ssg)
+- [SSG guide](https://generaltranslation.com/docs/react/nextjs/app-router-static-site-generation)
