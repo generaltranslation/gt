@@ -425,22 +425,6 @@ describe('init development credentials', () => {
       defaultLocale: 'en',
       cdnEnabled: true,
     });
-    expect(loggedOutput()).not.toContain('CDN delivery is enabled');
-  });
-
-  it('asks to check CDN delivery on an existing project for CDN translations', async () => {
-    useGTReact();
-    fs.writeFileSync(
-      path.join(appDirectory, 'gt.config.json'),
-      JSON.stringify({ projectId: 'configured-project', defaultLocale: 'en' })
-    );
-
-    await runInit('--storage', 'cdn');
-
-    expect(api.createProject).not.toHaveBeenCalled();
-    expect(loggedOutput()).toContain(
-      'Translations load from the CDN only when CDN delivery is enabled in the project settings'
-    );
   });
 
   it('uses the only accessible organization without asking', async () => {

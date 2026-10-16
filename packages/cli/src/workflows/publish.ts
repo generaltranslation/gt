@@ -15,7 +15,6 @@ function publishFailedError(
     severity: 'Error',
     // The workflow both publishes and unpublishes files.
     whatHappened: `CDN updates failed for ${files}`,
-    why: 'apps that load translations from the CDN keep getting the previous state of these files',
     fix: `Check that the CDN is enabled in the project's settings in the dashboard ${dashboardUrl}, then run the command again`,
     details: failures.map(({ fileName, reason }) => `${fileName} (${reason})`),
   });
@@ -46,13 +45,7 @@ export async function runPublishWorkflow(
     }));
   if (allFileRefs.length === 0) return;
 
-  let failures: PublishFailure[];
-  try {
-    failures = await new PublishStep(api).run(allFileRefs);
-  } catch (error) {
-    const reason = error instanceof Error ? error.message : String(error);
-    failures = allFileRefs.map(({ fileName }) => ({ fileName, reason }));
-  }
+  const failures = await new PublishStep(api).run(allFileRefs);
   if (failures.length === 0) return;
 
   logger.error(publishFailedError(failures, settings.dashboardUrl));

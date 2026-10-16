@@ -71,16 +71,4 @@ describe('runPublishWorkflow', () => {
     expect(message).not.toContain('fr.json');
     expect(message).toContain('https://dash.example.com');
   });
-
-  it('fails the command when the publish request throws', async () => {
-    vi.mocked(api.publishFiles).mockRejectedValue(new Error('network down'));
-
-    await runPublishWorkflow(files, publishMap, 'branch-id', settings);
-
-    expect(process.exitCode).toBe(1);
-    const message = vi.mocked(logger.error).mock.calls[0][0];
-    expect(message).toContain('CDN updates failed for 2 files');
-    expect(message).toContain('fr.json (network down)');
-    expect(message).toContain('ja.json (network down)');
-  });
 });
