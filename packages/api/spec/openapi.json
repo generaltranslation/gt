@@ -330,9 +330,12 @@
           },
           "name": {
             "type": "string"
+          },
+          "autoUpdate": {
+            "type": "boolean"
           }
         },
-        "required": ["id", "name"]
+        "required": ["id", "name", "autoUpdate"]
       },
       "CreateCliWizardSessionResponse": {
         "type": "object",
@@ -452,12 +455,12 @@
                   "fileId": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "File ID assigned by Google Drive, found in the Google Docs or Slides URL after /d/. This is not a GT database file ID. May identify a source file or a GT-managed translated copy."
+                    "description": "File ID assigned by Google Drive, found in the Google Docs, Slides or Sheets URL after /d/. This is not a GT database file ID. May identify a source file or a GT-managed translated copy."
                   },
                   "hostApp": {
                     "type": "string",
-                    "enum": ["DOCS", "SLIDES"],
-                    "description": "Google editor for the file: DOCS for Google Docs or SLIDES for Google Slides."
+                    "enum": ["DOCS", "SLIDES", "SHEETS"],
+                    "description": "Google editor for the file: DOCS for Google Docs, SLIDES for Google Slides or SHEETS for Google Sheets."
                   },
                   "targetLocales": {
                     "type": "array",
@@ -695,12 +698,12 @@
                   "fileId": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "File ID assigned by Google Drive, found in the Google Docs or Slides URL after /d/. This is not a GT database file ID. May identify a source file or a GT-managed translated copy."
+                    "description": "File ID assigned by Google Drive, found in the Google Docs, Slides or Sheets URL after /d/. This is not a GT database file ID. May identify a source file or a GT-managed translated copy."
                   },
                   "hostApp": {
                     "type": "string",
-                    "enum": ["DOCS", "SLIDES"],
-                    "description": "Google editor for the file: DOCS for Google Docs or SLIDES for Google Slides."
+                    "enum": ["DOCS", "SLIDES", "SHEETS"],
+                    "description": "Google editor for the file: DOCS for Google Docs, SLIDES for Google Slides or SHEETS for Google Sheets."
                   }
                 },
                 "required": ["projectId", "fileId", "hostApp"]
@@ -4759,12 +4762,12 @@
                   "fileId": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "File ID assigned by Google Drive, found in the Google Docs or Slides URL after /d/. This is not a GT database file ID. May identify a source file or a GT-managed translated copy. Supply hostApp with fileId for file-specific context; omit both to list connected projects."
+                    "description": "File ID assigned by Google Drive, found in the Google Docs, Slides or Sheets URL after /d/. This is not a GT database file ID. May identify a source file or a GT-managed translated copy. Supply hostApp with fileId for file-specific context; omit both to list connected projects."
                   },
                   "hostApp": {
                     "type": "string",
-                    "enum": ["DOCS", "SLIDES"],
-                    "description": "Google editor for the file: DOCS for Google Docs or SLIDES for Google Slides. Supply fileId with hostApp for file-specific context."
+                    "enum": ["DOCS", "SLIDES", "SHEETS"],
+                    "description": "Google editor for the file: DOCS for Google Docs, SLIDES for Google Slides or SHEETS for Google Sheets. Supply fileId with hostApp for file-specific context."
                   }
                 }
               }
@@ -12485,9 +12488,12 @@
                     "minLength": 1,
                     "maxLength": 255,
                     "description": "New group name, 1–255 characters."
+                  },
+                  "autoUpdate": {
+                    "type": "boolean",
+                    "description": "Whether translation runs may add terms and context to this group automatically."
                   }
                 },
-                "required": ["name"],
                 "additionalProperties": false
               }
             }
