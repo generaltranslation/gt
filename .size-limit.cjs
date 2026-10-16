@@ -149,10 +149,6 @@ module.exports = [
   tanstackNode('gt-tanstack-start (server)', 'index.server'),
   tanstackNode('gt-tanstack-start/server', 'server'),
 
-  entry('gt-react-router', 'packages/react-router/dist/index.mjs', '52 kB', {
-    ignore: ['react', 'react-dom', 'react-router'],
-  }),
-
   reactNative('gt-react-native', 'index', '52 kB'),
   reactNativeNode('gt-react-native/plugin', 'plugin'),
   reactNative('gt-react-native/internal', 'internal'),
