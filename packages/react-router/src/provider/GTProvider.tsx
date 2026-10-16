@@ -1,4 +1,4 @@
-import { getPathnameForLocale } from 'gt-i18n/internal';
+import { getPathnameForLocale } from 'gt-react/paths';
 import {
   GTProvider as ReactGTProvider,
   type SharedGTProviderProps,

@@ -1,4 +1,4 @@
-import { getLocaleFromPath, getPathnameForLocale } from 'gt-i18n/internal';
+import { getLocaleFromPath, getPathnameForLocale } from 'gt-react/paths';
 import { parseLocale } from 'gt-react';
 import { redirect, type Params } from 'react-router';
 import { isLocaleRoutingEnabled } from '../setup/initializeGT';
