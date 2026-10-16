@@ -1,4 +1,5 @@
 import type { FileReference } from 'generaltranslation/types';
+import { ApiError } from 'generaltranslation/errors';
 import { logger } from '../../console/logger.js';
 import type { ApiClient } from '../../utils/api.js';
 import type { Settings } from '../../types/index.js';
@@ -26,10 +27,30 @@ export class SetupStep {
       return [];
     }
 
-    const result = await this.gt.setupProject(files, {
-      locales: this.settings.locales,
-      force,
-    });
+    let result: Awaited<ReturnType<SetupClient['setupProject']>>;
+    try {
+      result = await this.gt.setupProject(files, {
+        locales: this.settings.locales,
+        force,
+      });
+    } catch (error) {
+      // Translation can run without generated context, so a failed setup
+      // request warns and continues, as a failed setup job already does.
+      if (error instanceof ApiError && error.code === 403) {
+        this.spinner.stop(
+          chalk.yellow(
+            'Setup permission denied: setup needs project:context:write, proceeding without generated context'
+          )
+        );
+      } else {
+        this.spinner.stop(
+          chalk.yellow(
+            `Setup failed: ${error instanceof Error ? error.message : String(error)}, proceeding without setup`
+          )
+        );
+      }
+      return files;
+    }
 
     if (result.status === 'completed') {
       this.spinner.stop(chalk.green('Setup successfully completed'));
