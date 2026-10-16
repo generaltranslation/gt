@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://generaltranslation.com/docs/react">
+  <a href="https://generaltranslation.com/docs/react/react-router-quickstart">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://generaltranslation.com/brand/gt-logo-dark.svg">
       <img alt="General Translation" src="https://generaltranslation.com/brand/gt-logo-light.svg" width="100" height="100">
@@ -8,12 +8,12 @@
 </p>
 
 <p align="center">
-  <a href="https://generaltranslation.com/docs/react"><strong>Documentation</strong></a> · <a href="https://github.com/generaltranslation/gt/issues">Report Bug</a>
+  <a href="https://generaltranslation.com/docs/react/react-router-quickstart"><strong>Documentation</strong></a> · <a href="https://github.com/generaltranslation/gt/issues">Report Bug</a>
 </p>
 
 # gt-react-router
 
-Automatic i18n for React Router framework mode, including Shopify Hydrogen.
+Automatic i18n for React Router framework mode.
 
 **EXPERIMENTAL**
 
@@ -44,9 +44,9 @@ export default function Page() {
 
 ## Locale routing
 
-Set `"localeRouting": true` in `gt.config.json` to put the locale in the URL (`/fr/about`). The default locale stays unprefixed. Locale routing does not yet support a router `basename` or Shopify Hydrogen apps.
+Set `"localeRouting": true` in `gt.config.json` to put the locale in the URL (`/fr/about`), with the default locale unprefixed. Locale routing doesn't support a router `basename` or Shopify Hydrogen yet.
 
-1. Accept an optional locale segment in front of the routes in `app/routes.ts`:
+1. Put every page route in `app/routes.ts` behind an optional `locale` segment:
 
    ```ts
    import { index, prefix, type RouteConfig } from '@react-router/dev/routes';
@@ -56,9 +56,9 @@ Set `"localeRouting": true` in `gt.config.json` to put the locale in the URL (`/
    ] satisfies RouteConfig;
    ```
 
-   Keep the segment named `locale` and first in the path; flat routes' `($locale)` works too. Put every page route inside the prefix, a `*` 404 route included: a route outside it gets no `locale` param, so with a top-level `*` route, `/nope` and `/en/nope` redirect to each other for an English visitor. React Router reads any first segment as the locale when the rest of the URL matches a route, so keep `:slug` routes and content catch-alls behind a static segment, such as `blog/:slug`. Typed `href()` paths include the segment: `href('/:locale?/about', { locale: 'fr' })` is `/fr/about`.
+   A first segment that names a locale is read as the locale, so don't start a page path with a locale code. Keep `:slug` routes and catch-alls behind a static segment, such as `blog/:slug`.
 
-2. Resolve the locale in the root loader. `getRequestLocale` reads the route's `locale` param first, then the locale cookie and the `Accept-Language` header, and throws a redirect when the URL does not match the locale. `/about` goes to `/fr/about` for a French visitor, `/fr-CA/about` goes to `/fr/about`, and `/nope`, which React Router reads as the home page in locale `nope`, goes to `/en/nope` for an English visitor, where your `*` route or the router's 404 renders:
+2. Resolve the locale in the root loader. `getRequestLocale` reads the locale from the URL, then the locale cookie and the `Accept-Language` header, and redirects a URL that doesn't match, such as `/about` to `/fr/about` for a French visitor:
 
    ```ts
    export async function loader(args: Route.LoaderArgs) {
@@ -67,8 +67,8 @@ Set `"localeRouting": true` in `gt.config.json` to put the locale in the URL (`/
    }
    ```
 
-   Give `<Form action>` and `submit()` targets the locale prefix, or leave out `action` to submit to the current route. An unprefixed target sends visitors who prefer another locale through this redirect, which drops the action's result.
+   Give `<Form action>` and `submit()` targets the locale prefix, or leave out `action`.
 
 Changing the locale with `LocaleSelector` or `useSetLocale` then opens the page at the new locale's URL.
 
-See the [full documentation](https://generaltranslation.com/docs/react) for guides and API reference.
+See the [full documentation](https://generaltranslation.com/docs/react/react-router-quickstart) for guides and API reference.
