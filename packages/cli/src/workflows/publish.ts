@@ -9,13 +9,13 @@ function publishFailedError(
   failures: PublishFailure[],
   dashboardUrl: string
 ): string {
-  const files =
-    failures.length === 1 ? '1 file was' : `${failures.length} files were`;
+  const files = failures.length === 1 ? '1 file' : `${failures.length} files`;
   return createDiagnosticMessage({
     source: 'gt',
     severity: 'Error',
-    whatHappened: `${files} not published to the CDN`,
-    why: 'apps that load translations from the CDN keep serving the previous version of these files, or none at all',
+    // The workflow both publishes and unpublishes files.
+    whatHappened: `CDN updates failed for ${files}`,
+    why: 'apps that load translations from the CDN keep getting the previous state of these files',
     fix: `Check that the CDN is enabled in the project's settings in the dashboard ${dashboardUrl}, then run the command again`,
     details: failures.map(({ fileName, reason }) => `${fileName} (${reason})`),
   });

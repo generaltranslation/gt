@@ -66,7 +66,7 @@ describe('runPublishWorkflow', () => {
 
     expect(process.exitCode).toBe(1);
     const message = vi.mocked(logger.error).mock.calls[0][0];
-    expect(message).toContain('1 file was not published to the CDN');
+    expect(message).toContain('CDN updates failed for 1 file');
     expect(message).toContain('ja.json (CDN disabled)');
     expect(message).not.toContain('fr.json');
     expect(message).toContain('https://dash.example.com');
@@ -79,7 +79,7 @@ describe('runPublishWorkflow', () => {
 
     expect(process.exitCode).toBe(1);
     const message = vi.mocked(logger.error).mock.calls[0][0];
-    expect(message).toContain('2 files were not published to the CDN');
+    expect(message).toContain('CDN updates failed for 2 files');
     expect(message).toContain('fr.json (network down)');
     expect(message).toContain('ja.json (network down)');
   });
