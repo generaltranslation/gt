@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act } from 'react';
+import { act, StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -159,13 +159,17 @@ describe('BrowserGTProvider', () => {
       ]);
     }
 
-    async function mount(locale: string, reload = vi.fn()) {
+    async function mount(
+      locale: string,
+      { strict = false }: { strict?: boolean } = {}
+    ) {
+      const reload = vi.fn();
       const { BrowserGTProvider } = await import('../BrowserGTProvider');
       const element = document.createElement('div');
       document.body.append(element);
       const root = createRoot(element);
-      const render = (nextLocale: string) =>
-        root.render(
+      const render = (nextLocale: string) => {
+        const provider = (
           <BrowserGTProvider
             locale={nextLocale}
             translations={{ [nextLocale]: {} }}
@@ -175,6 +179,8 @@ describe('BrowserGTProvider', () => {
             <span />
           </BrowserGTProvider>
         );
+        root.render(strict ? <StrictMode>{provider}</StrictMode> : provider);
+      };
       await act(async () => render(locale));
       return { reload, render, root };
     }
@@ -203,6 +209,20 @@ describe('BrowserGTProvider', () => {
       await act(async () => render('en'));
       await act(async () => render('fr'));
       expect(mockReloadPage).toHaveBeenCalledTimes(1);
+      expect(localeCookieWrites()).toEqual([]);
+
+      await act(async () => root.unmount());
+    });
+
+    // Strict Mode runs the mount effect twice; the second run must neither
+    // reload again nor write the page's older locale before the reload.
+    it('reloads once and keeps the cookie in Strict Mode', async () => {
+      mockNavigationType('back_forward');
+      mockGetCookieValue.mockReturnValue('fr');
+
+      const { reload, root } = await mount('en', { strict: true });
+      expect(mockReloadPage).toHaveBeenCalledTimes(1);
+      expect(reload).not.toHaveBeenCalled();
       expect(localeCookieWrites()).toEqual([]);
 
       await act(async () => root.unmount());
