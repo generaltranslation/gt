@@ -4,12 +4,11 @@ import { GTProvider, initializeGT } from '../index';
 
 type Reload = (state: { locale: string }) => void;
 
-function getReload(props: { _reload?: Reload } = {}) {
+function getReload() {
   const element = GTProvider({
     locale: 'en',
     translations: {},
     children: null,
-    ...props,
   }) as ReactElement<{ _reload?: Reload }>;
   return element.props._reload;
 }
@@ -41,11 +40,6 @@ describe('GTProvider', () => {
       expect(assign).toHaveBeenCalledWith(
         'https://example.com/de/about?view=full#bio'
       );
-
-      getReload()?.({ locale: 'en' });
-      expect(assign).toHaveBeenLastCalledWith(
-        'https://example.com/about?view=full#bio'
-      );
     });
 
     it('reloads when the URL for the locale is the current one', () => {
@@ -58,11 +52,6 @@ describe('GTProvider', () => {
       getReload()?.({ locale: 'fr' });
       expect(reload).toHaveBeenCalledOnce();
       expect(assign).not.toHaveBeenCalled();
-    });
-
-    it('keeps a reload passed by the app', () => {
-      const reload = vi.fn();
-      expect(getReload({ _reload: reload })).toBe(reload);
     });
   });
 

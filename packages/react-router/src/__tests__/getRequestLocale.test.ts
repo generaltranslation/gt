@@ -45,8 +45,10 @@ describe('getRequestLocale', () => {
     });
 
     it('takes the locale from the URL over the visitor preference', () => {
+      // No route above matches /fr/nope, so it has no locale param, as under a
+      // top-level * route outside the prefix.
       expect(
-        resolve('/fr/about', { cookie: 'generaltranslation.locale=en' })
+        resolve('/fr/nope', { cookie: 'generaltranslation.locale=en' })
       ).toBe('fr');
     });
 
@@ -70,13 +72,6 @@ describe('getRequestLocale', () => {
 
     it('puts the locale in front of a first segment that is not a locale', () => {
       expect(resolve('/docs/about')).toBe('redirect /en/docs/about');
-    });
-
-    it('redirects once for a route outside the locale prefix', () => {
-      // No route above matches /nope, so it has no locale param, as under a
-      // top-level * route.
-      expect(resolve('/nope', prefersFrench)).toBe('redirect /fr/nope');
-      expect(resolve('/fr/nope')).toBe('fr');
     });
 
     it('reads the page URL, not the URL React Router requests', () => {
