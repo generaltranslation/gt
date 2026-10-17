@@ -25,9 +25,10 @@ function toRelativeImportPath(relativePath: string) {
 }
 
 /**
- * Where the generated loader runs. A bundler resolves the JSON import itself;
+ * Where the generated loader runs. A bundler resolves the JSON import itself.
  * Node.js refuses a JSON import without `with { type: 'json' }`, so the Node
- * loader reads the file instead.
+ * loader reads the file when the import fails. It imports node:fs/promises
+ * only then, so a bundler can still build it, for a server or a browser.
  */
 const LOADER_RUNTIMES = ['bundler', 'node'] as const;
 export type LoadTranslationsRuntime = (typeof LOADER_RUNTIMES)[number];
@@ -38,14 +39,22 @@ function getLoaderContent(
   runtime: LoadTranslationsRuntime = 'bundler'
 ) {
   if (runtime === 'node') {
-    return `import { readFile } from 'node:fs/promises';
-
-export default async function loadTranslations(locale) {
+    // new URL() reads #, ? and % in a path as URL syntax, so the file URL
+    // encodes each directory name.
+    const fileUrlPath = publicPath.split('/').map(encodeURIComponent).join('/');
+    return `export default async function loadTranslations(locale) {
   try {
     // Load translations from ${translationsDir} directory
     // This matches the GT config files.gt.output path
-    const file = new URL(\`${publicPath}\${locale}.json\`, import.meta.url);
-    return JSON.parse(await readFile(file, 'utf8'));
+    try {
+      // A bundler resolves this import when it builds the app or server
+      return (await import(\`${publicPath}\${locale}.json\`)).default;
+    } catch {
+      // Node.js refuses a JSON import without an import attribute
+      const { readFile } = await import('node:fs/promises');
+      const file = new URL(\`${fileUrlPath}\${locale}.json\`, import.meta.url);
+      return JSON.parse(await readFile(file, 'utf8'));
+    }
   } catch (error) {
     console.warn(\`Failed to load translations for locale \${locale}:\`, error);
     return {};

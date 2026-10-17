@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
+import esbuild from 'esbuild-wasm';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -348,32 +349,104 @@ describe('createLoadTranslationsFile', () => {
       translationsDir: path.normalize(DEFAULT_TRANSLATIONS_DIR),
       defaultLocale: 'en',
       locales: ['es'],
-      runtime: 'node',
-    } as const;
+      runtime: 'node' as const,
+    };
 
-    it('writes a loader that Node.js can run', async () => {
-      await createLoadTranslationsFile({
-        appDirectory: tmpDir,
-        ...nodeLoader,
-      });
-      fs.writeFileSync(
-        path.join(tmpDir, 'public/_gt/es.json'),
-        '{"a1b2":"Hola"}'
-      );
-
-      // Node.js itself loads it, from another directory, as a server would.
-      const output = execFileSync(
+    // Node.js itself loads it, from another directory, as a server would.
+    function runLoader(locale: string) {
+      const { stdout, stderr } = spawnSync(
         process.execPath,
         [
           '--input-type=module',
           '-e',
-          "const { default: load } = await import(process.argv[1]); console.log(JSON.stringify(await load('es')));",
+          'const { default: load } = await import(process.argv[1]); console.log(JSON.stringify(await load(process.argv[2])));',
           pathToFileURL(path.join(tmpDir, 'loadTranslations.js')).href,
+          locale,
         ],
         { cwd: os.tmpdir(), encoding: 'utf8' }
       );
-      expect(JSON.parse(output)).toEqual({ a1b2: 'Hola' });
+      return { translations: JSON.parse(stdout), stderr };
+    }
+
+    it.each([nodeLoader.translationsDir, path.join('public', 'gt #1%')])(
+      'writes a loader that Node.js can run for %s',
+      async (translationsDir) => {
+        await createLoadTranslationsFile({
+          appDirectory: tmpDir,
+          ...nodeLoader,
+          translationsDir,
+        });
+        fs.writeFileSync(
+          path.join(tmpDir, translationsDir, 'es.json'),
+          '{"a1b2":"Hola"}'
+        );
+
+        const { translations, stderr } = runLoader('es');
+        expect(translations).toEqual({ a1b2: 'Hola' });
+        expect(stderr).not.toContain('Failed to load translations');
+      }
+    );
+
+    it.each([
+      ['a missing file', 'de'],
+      ['malformed JSON', 'es'],
+    ])('warns and returns no translations for %s', async (_case, locale) => {
+      await createLoadTranslationsFile({
+        appDirectory: tmpDir,
+        ...nodeLoader,
+      });
+      fs.writeFileSync(path.join(tmpDir, 'public/_gt/es.json'), '{"a1b2":');
+
+      const { translations, stderr } = runLoader(locale);
+      expect(translations).toEqual({});
+      expect(stderr).toContain(
+        `Failed to load translations for locale ${locale}`
+      );
     });
+
+    it.each([
+      ['node', 'cjs'],
+      ['node', 'esm'],
+      ['browser', 'esm'],
+    ] as const)(
+      'loads translations from a %s %s bundle',
+      async (platform, format) => {
+        await createLoadTranslationsFile({
+          appDirectory: tmpDir,
+          ...nodeLoader,
+        });
+        fs.writeFileSync(
+          path.join(tmpDir, 'public/_gt/es.json'),
+          '{"a1b2":"Hola"}'
+        );
+        fs.writeFileSync(
+          path.join(tmpDir, 'entry.js'),
+          "import loadTranslations from './loadTranslations.js';\nloadTranslations('es').then((t) => console.log(JSON.stringify(t)));\n"
+        );
+        const outfile = path.join(
+          tmpDir,
+          'dist',
+          format === 'cjs' ? 'entry.cjs' : 'entry.mjs'
+        );
+
+        await esbuild.build({
+          entryPoints: [path.join(tmpDir, 'entry.js')],
+          bundle: true,
+          platform,
+          format,
+          outfile,
+          logLevel: 'silent',
+        });
+
+        const output = execFileSync(process.execPath, [outfile], {
+          cwd: os.tmpdir(),
+          encoding: 'utf8',
+        });
+        expect(JSON.parse(output)).toEqual({ a1b2: 'Hola' });
+      },
+      // The first esbuild-wasm build compiles the WebAssembly module.
+      60_000
+    );
 
     it('keeps a bundler loader on a rerun, which a bundled server can run, and says how to replace it', async () => {
       await createLoadTranslationsFile({
