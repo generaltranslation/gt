@@ -252,6 +252,27 @@ describe('createRetryingFetch', () => {
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 
+  it('stops waiting to retry when the caller aborts during the wait', async () => {
+    vi.useFakeTimers();
+    const controller = new AbortController();
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(new Response('rate limited', { status: 429 }));
+
+    const response = createRetryingFetch({ fetch: fetchMock })(
+      'https://example.com/test',
+      { method: 'POST', signal: controller.signal }
+    );
+    const expectation = expect(response).rejects.toThrow('caller gave up');
+    await vi.advanceTimersByTimeAsync(1000);
+    controller.abort(new Error('caller gave up'));
+
+    // The 60 second wait is cleared, so no timer keeps the process alive
+    expect(vi.getTimerCount()).toBe(0);
+    await expectation;
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
   it('does not retry when retryPolicy is none', async () => {
     const fetchMock = vi
       .fn<typeof fetch>()

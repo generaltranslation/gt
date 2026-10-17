@@ -497,7 +497,11 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
       };
     },
 
-    async queryFileData(body: GetFileInfoData['body'], timeoutMs?: number) {
+    async queryFileData(
+      body: GetFileInfoData['body'],
+      timeoutMs?: number,
+      signal?: AbortSignal
+    ) {
       const result = unwrapApiResult(
         await getFileInfo({
           body: {
@@ -508,6 +512,7 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
             })),
           },
           client: getClient(timeoutMs),
+          signal,
         })
       );
       return {

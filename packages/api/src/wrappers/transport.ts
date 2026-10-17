@@ -48,8 +48,17 @@ export function createTimeoutFetch({
   };
 }
 
-const sleep = (ms: number): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, ms));
+// Ends early, and clears its timer, when the signal aborts
+const sleep = (ms: number, signal: AbortSignal): Promise<void> =>
+  new Promise((resolve) => {
+    const finish = () => {
+      clearTimeout(timeoutId);
+      signal.removeEventListener('abort', finish);
+      resolve();
+    };
+    const timeoutId = setTimeout(finish, ms);
+    signal.addEventListener('abort', finish, { once: true });
+  });
 
 function parseDelayMs(value: string | null): number | undefined {
   if (!value) return undefined;
@@ -121,7 +130,9 @@ export function createRetryingFetch({
 
       // Drain the discarded 429/5xx body so undici can release the socket.
       void response?.body?.cancel();
-      await sleep(retryDelay(response, attempt, retryPolicy));
+      await sleep(retryDelay(response, attempt, retryPolicy), request.signal);
+      // A caller that gives up during the wait gets no retry
+      if (request.signal.aborted) throw request.signal.reason;
     }
 
     throw new Error('Max retries exceeded');

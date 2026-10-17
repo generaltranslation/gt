@@ -195,6 +195,29 @@ describe('clearLocaleDirs', () => {
     await expect(fs.access(ptBRDir)).rejects.toThrow();
   });
 
+  it('should keep locale directories that hold pending files', async () => {
+    const esDir = path.join(testDir, 'docs', 'es');
+    const frDir = path.join(testDir, 'docs', 'fr');
+    await fs.mkdir(esDir, { recursive: true });
+    await fs.mkdir(frDir, { recursive: true });
+    await fs.writeFile(path.join(esDir, 'a.mdx'), 'content');
+    await fs.writeFile(path.join(esDir, 'b.mdx'), 'content');
+    await fs.writeFile(path.join(frDir, 'a.mdx'), 'content');
+
+    await clearLocaleDirs(
+      new Set([path.join(esDir, 'a.mdx'), path.join(frDir, 'a.mdx')]),
+      ['es', 'fr'],
+      undefined,
+      testDir,
+      new Set([path.join(esDir, 'b.mdx')])
+    );
+
+    // es/b.mdx is still processing, so docs/es keeps its files
+    await expect(fs.access(path.join(esDir, 'b.mdx'))).resolves.toBeUndefined();
+    await expect(fs.access(path.join(esDir, 'a.mdx'))).resolves.toBeUndefined();
+    await expect(fs.access(frDir)).rejects.toThrow();
+  });
+
   describe('with exclude patterns', () => {
     it('should exclude files matching glob patterns with [locale]', async () => {
       // Create test structure with files to exclude
