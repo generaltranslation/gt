@@ -28,18 +28,4 @@ npm install gt-react-router
 npm install gt --save-dev
 ```
 
-## Quick Start
-
-```jsx
-import { T } from 'gt-react-router';
-
-export default function Page() {
-  return (
-    <T>
-      <p>This gets translated automatically.</p>
-    </T>
-  );
-}
-```
-
 See the [full documentation](https://generaltranslation.com/docs/react/react-router-quickstart) for guides and API reference.
