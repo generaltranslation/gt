@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import type { JobResult } from 'generaltranslation/api';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
+import { defaultTimeout } from 'generaltranslation/internal';
 import { logger } from '../../console/logger.js';
 import type { ApiClient } from '../../utils/api.js';
 import { EnqueueFilesResult } from 'generaltranslation/types';
@@ -16,9 +17,6 @@ import {
 } from '../../types/libraries.js';
 
 const POLLING_INTERVAL_SECONDS = 5;
-// The API client's default request timeout. A status check that hangs fails
-// after this long, even when more of the wait is left.
-const MAX_STATUS_CHECK_MS = 60_000;
 
 export type PollJobsInput = {
   fileTracker: FileStatusTracker;
@@ -246,12 +244,11 @@ export class PollTranslationJobsStep {
       const sleepMs = Math.min(intervalMs, remainingMs);
       await new Promise((resolve) => setTimeout(resolve, sleepMs));
 
-      // A check gets only the time left before the deadline. None is left
-      // after the last sleep, so no check starts after it.
-      const checkTimeoutMs = Math.min(
-        remainingMs - sleepMs,
-        MAX_STATUS_CHECK_MS
-      );
+      // A check gets only the time left before the deadline, and a check
+      // that hangs fails after the default request timeout even when more
+      // of the wait is left. No time is left after the last sleep, so no
+      // check starts after it.
+      const checkTimeoutMs = Math.min(remainingMs - sleepMs, defaultTimeout);
       if (checkTimeoutMs <= 0) return;
 
       let completedKeys: Set<string>;
