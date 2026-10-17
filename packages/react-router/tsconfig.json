@@ -1,0 +1,24 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "target": "ES6",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "moduleResolution": "Bundler",
+    "sourceMap": true,
+    "declarationMap": true,
+    "jsx": "react-jsx",
+    "composite": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["**/*.test.ts", "**/*.test.tsx"],
+  "references": [
+    {
+      "path": "../react"
+    },
+    {
+      "path": "../i18n"
+    }
+  ]
+}
