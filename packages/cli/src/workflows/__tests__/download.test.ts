@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createGtApiAdapter } from 'generaltranslation/internal';
 import type { Settings } from '../../types/index.js';
 import { logger } from '../../console/logger.js';
 import { clearLocaleDirs } from '../../fs/clearLocaleDirs.js';
@@ -205,33 +206,51 @@ describe('runDownloadWorkflow', () => {
     expect(api.queryFileData).toHaveBeenCalledTimes(1);
   });
 
-  it('downloads completed staged files when a status check outlives the timeout', async () => {
-    vi.useFakeTimers();
-    vi.mocked(api.queryFileData)
-      .mockResolvedValue({ translatedFiles: [completedTranslation] })
-      .mockResolvedValueOnce({ translatedFiles: [completedTranslation] })
-      // Like the API client, a request with no response fails at its
-      // timeout, which is 60 seconds unless the caller sets one
-      .mockImplementationOnce(
-        (_body, timeoutMs = 60_000) =>
-          new Promise<never>((_resolve, reject) =>
-            setTimeout(() => reject(new Error('Request timed out')), timeoutMs)
+  it.each([
+    [
+      'gets no response',
+      (request: Request) =>
+        new Promise<Response>((_resolve, reject) =>
+          request.signal.addEventListener('abort', () =>
+            reject(request.signal.reason)
           )
+        ),
+    ],
+    [
+      'is rate limited',
+      async () => new Response('Too many requests', { status: 429 }),
+    ],
+  ])(
+    'downloads completed staged files when a status check %s at the timeout',
+    async (_case, answerCheck) => {
+      vi.useFakeTimers();
+      const completed = async () =>
+        Response.json({
+          translatedFiles: [completedTranslation],
+          sourceFiles: [],
+        });
+      const answers = [completed, answerCheck, completed];
+      const fetch = vi.fn(
+        async (input: RequestInfo | URL, init?: RequestInit) =>
+          answers.shift()!(new Request(input, init))
       );
+      // The real adapter and transport, with their timeouts and retries
+      const adapter = createGtApiAdapter({
+        baseUrl: 'https://api.test',
+        fetch,
+      });
+      vi.mocked(api.queryFileData).mockImplementation(adapter.queryFileData);
 
-    const startedAt = Date.now();
-    const download = runStagedPagesDownload(7);
-    await vi.runAllTimersAsync();
+      const startedAt = Date.now();
+      const download = runStagedPagesDownload(7);
+      await vi.runAllTimersAsync();
 
-    await expect(download).resolves.toBe(false);
-    expect(Date.now() - startedAt).toBe(7000);
-    expect(api.queryFileData).toHaveBeenNthCalledWith(
-      2,
-      expect.anything(),
-      2000
-    );
-    expect(downloadFileBatch).toHaveBeenCalledTimes(1);
-  });
+      await expect(download).resolves.toBe(false);
+      expect(Date.now() - startedAt).toBe(7000);
+      expect(fetch).toHaveBeenCalledTimes(3);
+      expect(downloadFileBatch).toHaveBeenCalledTimes(1);
+    }
+  );
 
   it('passes staged files still processing to locale dir clearing', async () => {
     vi.useFakeTimers();

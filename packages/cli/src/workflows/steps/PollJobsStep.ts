@@ -1,7 +1,6 @@
 import chalk from 'chalk';
 import type { JobResult } from 'generaltranslation/api';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import { defaultTimeout } from 'generaltranslation/internal';
 import { logger } from '../../console/logger.js';
 import type { ApiClient } from '../../utils/api.js';
 import { EnqueueFilesResult } from 'generaltranslation/types';
@@ -244,19 +243,23 @@ export class PollTranslationJobsStep {
       const sleepMs = Math.min(intervalMs, remainingMs);
       await new Promise((resolve) => setTimeout(resolve, sleepMs));
 
-      // A check gets only the time left before the deadline, and a check
-      // that hangs fails after the default request timeout even when more
-      // of the wait is left. No time is left after the last sleep, so no
-      // check starts after it.
-      const checkTimeoutMs = Math.min(remainingMs - sleepMs, defaultTimeout);
+      // A check, retry waits included, ends at the deadline, and each attempt
+      // keeps the API client's default timeout. No time is left after the
+      // last sleep, so no check starts after it.
+      const checkTimeoutMs = remainingMs - sleepMs;
       if (checkTimeoutMs <= 0) return;
+      const checkDeadline = new AbortController();
+      const checkTimer = setTimeout(
+        () => checkDeadline.abort(),
+        checkTimeoutMs
+      );
 
       let completedKeys: Set<string>;
       try {
         completedKeys = await queryCompletedTranslationKeys(
           {
             queryFileData: (body) =>
-              this.api.queryFileData(body, checkTimeoutMs),
+              this.api.queryFileData(body, undefined, checkDeadline.signal),
           },
           Array.from(fileTracker.inProgress.values())
         );
@@ -266,6 +269,8 @@ export class PollTranslationJobsStep {
         // the completed files still download
         if (deadline - Date.now() <= intervalMs) return;
         throw error;
+      } finally {
+        clearTimeout(checkTimer);
       }
       for (const fileKey of completedKeys) {
         const fileProperties = fileTracker.inProgress.get(fileKey);

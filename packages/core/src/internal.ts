@@ -11,7 +11,7 @@ export type {
   DiagnosticMessageInput,
   DiagnosticSeverity,
 } from './logging/diagnostics';
-export { defaultTimeout, libraryDefaultLocale } from './settings/settings';
+export { libraryDefaultLocale } from './settings/settings';
 export type { RuntimeTranslateManyOptions } from './types-dir/api/entry';
 export { pluralForms, isAcceptedPluralForm } from './settings/plurals';
 
