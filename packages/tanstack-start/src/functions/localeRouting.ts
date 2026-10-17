@@ -12,7 +12,13 @@ export function getLocaleFromPath(pathname: string): string | undefined {
 }
 
 /** Replace the pathname locale, leaving the default locale unprefixed. */
-export function getPathnameForLocale(pathname: string, locale: string): string {
+export function getPathnameForLocale({
+  pathname,
+  locale,
+}: {
+  pathname: string;
+  locale: string;
+}): string {
   return getSharedPathnameForLocale({
     pathname,
     locale,

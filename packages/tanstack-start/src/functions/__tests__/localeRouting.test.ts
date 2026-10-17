@@ -18,6 +18,8 @@ describe.sequential('locale routing', () => {
     vi.stubEnv('TSS_ROUTER_BASEPATH', 'app');
 
     expect(getLocaleFromPath('/app/fr/about')).toBe('fr');
-    expect(getPathnameForLocale('/app/fr/about', 'ar')).toBe('/app/ar/about');
+    expect(
+      getPathnameForLocale({ pathname: '/app/fr/about', locale: 'ar' })
+    ).toBe('/app/ar/about');
   });
 });
