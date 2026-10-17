@@ -15,27 +15,31 @@ import { isLocaleRoutingEnabled } from '../setup/initializeGT';
 export function getRequestLocale({
   request,
   params,
-  unstable_url,
-  url = unstable_url ?? new URL(request.url),
+  url = new URL(request.url),
 }: {
   request: Pick<Request, 'headers' | 'url'>;
   params: Params;
+  /** The page URL, which React Router 7.15 and later pass to loaders. */
   url?: URL;
-  /** React Router 7.13.2 to 7.14's name for `url`. */
-  unstable_url?: URL;
 }): string {
   if (!isLocaleRoutingEnabled()) return parseLocale(request);
   const pathLocale = getLocaleFromPath({ pathname: url.pathname });
-  const locale = pathLocale ?? parseLocale(request);
-  // A locale prefix stays, even the default locale's: redirecting /en/about
-  // to /about would let a stale locale cookie redirect away from it again. A
-  // locale param that is not a locale is part of the path, as when /docs/about
-  // matches the about route.
-  const pathname = pathLocale
-    ? `/${encodeURIComponent(pathLocale)}${url.pathname.replace(/^\/[^/]+/, '')}`
-    : params.locale === undefined
-      ? getPathnameForLocale({ pathname: url.pathname, locale })
-      : `/${encodeURIComponent(locale)}${url.pathname}`;
+  if (pathLocale) {
+    // Keep the prefix, even the default locale's, so a stale cookie can't
+    // redirect away from /en/about.
+    const pathname = `/${encodeURIComponent(pathLocale)}${url.pathname.replace(/^\/[^/]+/, '')}`;
+    if (pathname !== url.pathname) throw redirect(`${pathname}${url.search}`);
+    return pathLocale;
+  }
+  const locale = parseLocale(request);
+  // React Router read a first segment that isn't a locale as one, as when
+  // /docs/about matches the about route.
+  if (params.locale !== undefined) {
+    throw redirect(
+      `/${encodeURIComponent(locale)}${url.pathname}${url.search}`
+    );
+  }
+  const pathname = getPathnameForLocale({ pathname: url.pathname, locale });
   if (pathname !== url.pathname) throw redirect(`${pathname}${url.search}`);
   return locale;
 }

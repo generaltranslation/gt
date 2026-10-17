@@ -41,18 +41,6 @@ describe('GTProvider', () => {
         'https://example.com/de/about?view=full#bio'
       );
     });
-
-    it('reloads when the URL for the locale is the current one', () => {
-      const assign = vi.fn();
-      const reload = vi.fn();
-      vi.stubGlobal('window', {
-        location: { href: 'https://example.com/fr/about#bio', assign, reload },
-      });
-
-      getReload()?.({ locale: 'fr' });
-      expect(reload).toHaveBeenCalledOnce();
-      expect(assign).not.toHaveBeenCalled();
-    });
   });
 
   it('leaves the reload to gt-react without locale routing', () => {

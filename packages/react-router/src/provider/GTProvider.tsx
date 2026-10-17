@@ -9,9 +9,7 @@ import { isLocaleRoutingEnabled } from '../setup/initializeGT';
 function navigateToLocale({ locale }: { locale: string }): void {
   const url = new URL(window.location.href);
   url.pathname = getPathnameForLocale({ pathname: url.pathname, locale });
-  // Assigning the current URL only scrolls to its #hash, so reload instead.
-  if (url.href === window.location.href) window.location.reload();
-  else window.location.assign(url.href);
+  window.location.assign(url.href);
 }
 
 /**
