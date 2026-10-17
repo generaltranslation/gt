@@ -8,6 +8,9 @@ import { Libraries } from '../../../types/libraries.js';
 
 const parsingOptions = { conditionNames: ['import', 'default'] };
 
+// chmod cannot take read access away on Windows or from root.
+const canDenyReads = process.platform !== 'win32' && process.getuid?.() !== 0;
+
 function writeHandler(file: string, text: string) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(
@@ -98,6 +101,42 @@ main();
       'From the root',
     ]);
   });
+
+  it.skipIf(!canDenyReads)('skips files it cannot read', async () => {
+    writeHandler('server.js', 'From the root');
+    // A script owned by another user, as a container can leave it.
+    writeHandler('scripts/migrate.cjs', 'From an unreadable script');
+    fs.chmodSync('scripts/migrate.cjs', 0o000);
+
+    const { updates, errors } = await createInlineUpdates(
+      Libraries.GT_NODE,
+      false,
+      undefined,
+      GT_PARSING_FLAGS_DEFAULT,
+      parsingOptions
+    );
+
+    expect(errors).toEqual([]);
+    expect(updates.map((update) => update.source)).toEqual(['From the root']);
+  });
+
+  it.skipIf(!canDenyReads)(
+    'still fails on an unreadable file that src matches',
+    async () => {
+      writeHandler('server.js', 'From the root');
+      fs.chmodSync('server.js', 0o000);
+
+      await expect(
+        createInlineUpdates(
+          Libraries.GT_NODE,
+          false,
+          ['**/*.js'],
+          GT_PARSING_FLAGS_DEFAULT,
+          parsingOptions
+        )
+      ).rejects.toThrow(/EACCES|EPERM/);
+    }
+  );
 
   it('keeps the React default scope for other libraries', async () => {
     writeHandler('server.js', 'From the root');

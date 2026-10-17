@@ -57,9 +57,10 @@ export async function createInlineUpdates(
   const autoderive = resolveAutoderive(parsingFlags.autoderive);
 
   // Use the provided app directory or default to the current directory
+  const isNodeDefaultScan = !filePatterns && pkg === Libraries.GT_NODE;
   const files = filePatterns
     ? matchFiles(process.cwd(), filePatterns)
-    : pkg === Libraries.GT_NODE
+    : isNodeDefaultScan
       ? // The whole-project scan skips folders it cannot read, such as a
         // database volume, instead of failing.
         matchFiles(
@@ -73,7 +74,21 @@ export async function createInlineUpdates(
       : matchFiles(process.cwd(), DEFAULT_SRC_PATTERNS);
 
   for (const file of files) {
-    const code = await fs.promises.readFile(file, 'utf8');
+    let code: string;
+    try {
+      code = await fs.promises.readFile(file, 'utf8');
+    } catch (error) {
+      // The whole-project scan also skips files it cannot read. Files that
+      // src patterns match must be readable.
+      const errorCode = (error as NodeJS.ErrnoException).code;
+      if (
+        isNodeDefaultScan &&
+        (errorCode === 'EACCES' || errorCode === 'EPERM')
+      ) {
+        continue;
+      }
+      throw error;
+    }
     let ast;
     try {
       ast = parse(code, {
