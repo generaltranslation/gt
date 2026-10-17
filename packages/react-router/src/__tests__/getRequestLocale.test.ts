@@ -24,7 +24,7 @@ function run(args: Parameters<typeof getRequestLocale>[0]) {
 
 /**
  * Resolve a page request, with the params React Router matches for it. The
- * page URL comes from the request, as before React Router 7.13.2.
+ * page URL comes from the request, as before React Router 7.15.
  */
 function resolve(path: string, headers: Record<string, string> = {}) {
   const url = new URL(path, 'https://example.com');
