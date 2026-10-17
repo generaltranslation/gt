@@ -79,6 +79,22 @@ describe('runDownloadWorkflow', () => {
       options: settings,
     });
 
+  // Two staged pages whose translations share the docs/es directory
+  const runStagedPagesDownload = (timeoutDuration: number) =>
+    runDownloadWorkflow({
+      fileVersionData: {
+        'file-1': { versionId: 'version-1', fileName: 'docs/a.mdx' },
+        'file-2': { versionId: 'version-2', fileName: 'docs/b.mdx' },
+      },
+      jobData: undefined,
+      branchData,
+      locales: ['es'],
+      timeoutDuration,
+      resolveOutputPath: (sourcePath, locale) =>
+        sourcePath.replace('docs/', `docs/${locale}/`),
+      options: settings,
+    });
+
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(downloadFileBatch).mockResolvedValue({
@@ -174,10 +190,62 @@ describe('runDownloadWorkflow', () => {
     await vi.advanceTimersByTimeAsync(10000);
 
     await expect(download).resolves.toBe(false);
-    expect(api.queryFileData).toHaveBeenCalledTimes(3);
+    // Checks at 0 and 5 seconds; none starts at the deadline
+    expect(api.queryFileData).toHaveBeenCalledTimes(2);
     expect(downloadFileBatch).not.toHaveBeenCalled();
     expect(logger.warn).toHaveBeenCalledWith(
       expect.stringContaining('1 file(s) are still processing')
     );
+  });
+
+  it('checks staged files once with a zero timeout', async () => {
+    vi.mocked(api.queryFileData).mockResolvedValue({ translatedFiles: [] });
+
+    await expect(runStagedDownload(0)).resolves.toBe(false);
+    expect(api.queryFileData).toHaveBeenCalledTimes(1);
+  });
+
+  it('downloads completed staged files when a status check outlives the timeout', async () => {
+    vi.useFakeTimers();
+    vi.mocked(api.queryFileData)
+      .mockResolvedValue({ translatedFiles: [completedTranslation] })
+      .mockResolvedValueOnce({ translatedFiles: [completedTranslation] })
+      // Like the API client, a request with no response fails at its
+      // timeout, which is 60 seconds unless the caller sets one
+      .mockImplementationOnce(
+        (_body, timeoutMs = 60_000) =>
+          new Promise<never>((_resolve, reject) =>
+            setTimeout(() => reject(new Error('Request timed out')), timeoutMs)
+          )
+      );
+
+    const startedAt = Date.now();
+    const download = runStagedPagesDownload(7);
+    await vi.runAllTimersAsync();
+
+    await expect(download).resolves.toBe(false);
+    expect(Date.now() - startedAt).toBe(7000);
+    expect(api.queryFileData).toHaveBeenNthCalledWith(
+      2,
+      expect.anything(),
+      2000
+    );
+    expect(downloadFileBatch).toHaveBeenCalledTimes(1);
+  });
+
+  it('passes staged files still processing to locale dir clearing', async () => {
+    vi.useFakeTimers();
+    vi.mocked(api.queryFileData).mockResolvedValue({
+      translatedFiles: [completedTranslation],
+    });
+
+    const download = runStagedPagesDownload(5);
+    await vi.runAllTimersAsync();
+
+    await expect(download).resolves.toBe(false);
+    const [translatedFiles, , , , pendingFiles] =
+      vi.mocked(clearLocaleDirs).mock.calls[0];
+    expect([...translatedFiles]).toEqual(['docs/es/a.mdx']);
+    expect([...(pendingFiles ?? [])]).toEqual(['docs/es/b.mdx']);
   });
 });

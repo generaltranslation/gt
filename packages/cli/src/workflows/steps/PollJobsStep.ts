@@ -16,6 +16,9 @@ import {
 } from '../../types/libraries.js';
 
 const POLLING_INTERVAL_SECONDS = 5;
+// The API client's default request timeout. A status check that hangs fails
+// after this long, even when more of the wait is left.
+const MAX_STATUS_CHECK_MS = 60_000;
 
 export type PollJobsInput = {
   fileTracker: FileStatusTracker;
@@ -235,18 +238,38 @@ export class PollTranslationJobsStep {
     fileQueryData: FileProperties[],
     timeoutSeconds: number
   ): Promise<void> {
+    const intervalMs = POLLING_INTERVAL_SECONDS * 1000;
     const deadline = Date.now() + timeoutSeconds * 1000;
-    while (fileTracker.inProgress.size > 0 && Date.now() < deadline) {
-      await new Promise((resolve) =>
-        setTimeout(
-          resolve,
-          Math.min(POLLING_INTERVAL_SECONDS * 1000, deadline - Date.now())
-        )
+    while (fileTracker.inProgress.size > 0) {
+      const remainingMs = deadline - Date.now();
+      if (remainingMs <= 0) return;
+      const sleepMs = Math.min(intervalMs, remainingMs);
+      await new Promise((resolve) => setTimeout(resolve, sleepMs));
+
+      // A check gets only the time left before the deadline. None is left
+      // after the last sleep, so no check starts after it.
+      const checkTimeoutMs = Math.min(
+        remainingMs - sleepMs,
+        MAX_STATUS_CHECK_MS
       );
-      const completedKeys = await queryCompletedTranslationKeys(
-        this.api,
-        Array.from(fileTracker.inProgress.values())
-      );
+      if (checkTimeoutMs <= 0) return;
+
+      let completedKeys: Set<string>;
+      try {
+        completedKeys = await queryCompletedTranslationKeys(
+          {
+            queryFileData: (body) =>
+              this.api.queryFileData(body, checkTimeoutMs),
+          },
+          Array.from(fileTracker.inProgress.values())
+        );
+      } catch (error) {
+        // A check that fails with no time left for another one, such as a
+        // check cut off at the deadline, ends the wait like a timeout, and
+        // the completed files still download
+        if (deadline - Date.now() <= intervalMs) return;
+        throw error;
+      }
       for (const fileKey of completedKeys) {
         const fileProperties = fileTracker.inProgress.get(fileKey);
         if (!fileProperties) continue;

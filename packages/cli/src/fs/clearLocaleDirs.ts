@@ -71,17 +71,28 @@ async function getFilesToDelete(
  * @param locales - Array of locale codes to match against
  * @param excludePatterns - Optional array of glob patterns to exclude from clearing (supports [locale] and [locales])
  * @param cwd - Current working directory for resolving relative exclude patterns (defaults to process.cwd())
+ * @param pendingFilePaths - Translated file paths that are still processing; locale directories that contain them are not cleared
  */
 export async function clearLocaleDirs(
   filePaths: Set<string>,
   locales: string[],
   excludePatterns?: string[],
-  cwd: string = process.cwd()
+  cwd: string = process.cwd(),
+  pendingFilePaths: Set<string> = new Set()
 ): Promise<void> {
   // Extract locale directories
   const localeDirs = extractLocaleDirectories(filePaths, locales);
+  // Pending files are not downloaded in this run, so clearing their
+  // directories would delete their current translations
+  const pendingDirs = extractLocaleDirectories(pendingFilePaths, locales);
 
   for (const dir of localeDirs) {
+    if (pendingDirs.has(dir)) {
+      logger.info(
+        `Skipped clearing ${dir} because some of its translations are still processing`
+      );
+      continue;
+    }
     try {
       await fs.stat(dir);
 

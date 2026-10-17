@@ -198,13 +198,20 @@ async function clearCompletedLocaleDirs({
 
   if (translatedFiles.size === 0) return;
 
+  const pendingFiles = new Set(
+    Array.from(fileTracker.inProgress.values())
+      .map((file) => resolveOutputPath(file.fileName, file.locale))
+      .filter((filePath): filePath is string => filePath !== null)
+  );
+
   const cwd = path.dirname(options.config);
 
   await clearLocaleDirs(
     translatedFiles,
     locales,
     options.options?.clearLocaleDirsExclude,
-    cwd
+    cwd,
+    pendingFiles
   );
 }
 
