@@ -1067,7 +1067,7 @@ export function getRouter() {
           manualActions: [
             {
               whatHappened: `This app uses the deprecated gt-tanstack-start setup (${marker}), so GT left its source files unchanged`,
-              fix: 'Switch to the gtTanstackStart Vite plugin and setupRouterGTIntegration (see https://github.com/generaltranslation/gt/tree/main/packages/tanstack-start#migrating-from-the-previous-setup). The previous setup keeps working until a future major release',
+              fix: 'Switch to the gtTanstackStart Vite plugin and setupRouterGTIntegration (see https://generaltranslation.com/docs/react/tanstack-start/setup). The previous setup keeps working until a future major release',
             },
           ],
         });
@@ -1114,7 +1114,7 @@ export function getRouter() {
           {
             whatHappened:
               'This app uses the deprecated gt-tanstack-start setup (initializeGT in src/router.tsx, gtMiddleware in src/start.ts, GTProvider in src/routes/__root.tsx), so GT left its source files unchanged',
-            fix: 'Switch to the gtTanstackStart Vite plugin and setupRouterGTIntegration (see https://github.com/generaltranslation/gt/tree/main/packages/tanstack-start#migrating-from-the-previous-setup). The previous setup keeps working until a future major release',
+            fix: 'Switch to the gtTanstackStart Vite plugin and setupRouterGTIntegration (see https://generaltranslation.com/docs/react/tanstack-start/setup). The previous setup keeps working until a future major release',
           },
         ],
       });
