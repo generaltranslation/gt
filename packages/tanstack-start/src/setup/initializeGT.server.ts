@@ -31,7 +31,7 @@ function initialize(config: InitializeGTParams): void {
  * @deprecated Add `gtTanstackStart()` from `gt-tanstack-start/plugin/vite` to
  * your Vite plugins and call `setupRouterGTIntegration({ router })` in
  * `getRouter()` instead. The plugin reads gt.config.json and takes the other
- * settings as options. See the README's migration section.
+ * settings as options.
  */
 export function initializeGT(config: InitializeGTParams): void {
   initialize(config);
