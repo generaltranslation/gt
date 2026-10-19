@@ -11,11 +11,11 @@ const parsingOptions = { conditionNames: ['import', 'default'] };
 // chmod cannot take read access away on Windows or from root.
 const canDenyReads = process.platform !== 'win32' && process.getuid?.() !== 0;
 
-function writeHandler(file: string, text: string) {
+function writeHandler(file: string, text: string, library = 'gt-node') {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(
     file,
-    `import { getGT } from 'gt-node';
+    `import { getGT } from '${library}';
 
 export async function handler() {
   const gt = await getGT();
@@ -137,7 +137,8 @@ main();
   );
 
   it('keeps the React default scope for other libraries', async () => {
-    writeHandler('server.js', 'From the root');
+    writeHandler('server.js', 'From the root', 'gt-react');
+    writeHandler('src/app.js', 'From src', 'gt-react');
 
     const { updates } = await createInlineUpdates(
       Libraries.GT_REACT,
@@ -147,6 +148,6 @@ main();
       parsingOptions
     );
 
-    expect(updates).toEqual([]);
+    expect(updates.map((update) => update.source)).toEqual(['From src']);
   });
 });
