@@ -6,6 +6,6 @@ TanStack Start setup now takes two lines: add `gtTanstackStart()` from `gt-tanst
 
 Settings that `gt.config.json` cannot hold are `gtTanstackStart()` options: cookie names, `cacheExpiryTime`, `batchConfig` and `runtimeTranslation`, plus `dictionary`, `loadDictionaryPath` and `loadTranslationsPath` files. Without these options, the plugin finds `dictionary` and `loadDictionary` files in the app root or `src/`, as gt-next does.
 
-`initializeGT()` and `gtMiddleware` are deprecated. The previous manual setup keeps working until a future major release; the README has a migration guide.
+`initializeGT()` and `gtMiddleware` are deprecated. The previous manual setup keeps working until a future major release.
 
 When `localeRouting` is enabled, `setupRouterGTIntegration` also installs a router URL rewrite: routes and links stay locale-free, non-default locales are prefixed in the URL, and the default locale stays unprefixed. If your app already handles locale prefixes with `{-$locale}` route segments or its own rewrite, pass `localeRewrite: false` to keep your setup.
