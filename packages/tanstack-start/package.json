@@ -14,14 +14,14 @@
     "react": ">=16.8.0",
     "react-dom": ">=16.8.0",
     "@tanstack/react-start": ">=1.159.0",
-    "vite": ">=6.0.0",
-    "@generaltranslation/compiler": "^1.3.63"
+    "vite": ">=6.0.0"
   },
   "dependencies": {
     "gt-react": "workspace:*",
     "@generaltranslation/react-core": "workspace:*",
     "gt-i18n": "workspace:*",
-    "generaltranslation": "workspace:*"
+    "generaltranslation": "workspace:*",
+    "@generaltranslation/compiler": "workspace:*"
   },
   "scripts": {
     "build": "tsdown",
@@ -52,8 +52,7 @@
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
-    "vite": "^7.1.7",
-    "@generaltranslation/compiler": "workspace:*"
+    "vite": "^7.1.7"
   },
   "exports": {
     ".": {
@@ -127,9 +126,6 @@
   ],
   "peerDependenciesMeta": {
     "vite": {
-      "optional": true
-    },
-    "@generaltranslation/compiler": {
       "optional": true
     }
   }
