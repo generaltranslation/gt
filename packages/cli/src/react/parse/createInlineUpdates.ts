@@ -6,7 +6,11 @@ import { parseTranslationComponent } from '../jsx/utils/jsxParsing/parseJsx.js';
 import { parseStrings } from '../jsx/utils/parseStringFunction.js';
 import { logger } from '../../console/logger.js';
 import { matchFiles } from '../../fs/matchFiles.js';
-import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
+import {
+  DEFAULT_NODE_SRC_EXCLUDES,
+  DEFAULT_NODE_SRC_PATTERNS,
+  DEFAULT_SRC_PATTERNS,
+} from '../../config/generateSettings.js';
 import type {
   ParsingConfigOptions,
   GTParsingFlags,
@@ -16,6 +20,7 @@ import { getPathsAndAliases } from '../jsx/utils/getPathsAndAliases.js';
 import {
   GTLibrary,
   GT_LIBRARIES_UPSTREAM,
+  Libraries,
   REACT_LIBRARIES,
   ReactLibrary,
 } from '../../types/libraries.js';
@@ -52,14 +57,44 @@ export async function createInlineUpdates(
   const autoderive = resolveAutoderive(parsingFlags.autoderive);
 
   // Use the provided app directory or default to the current directory
-  const files = matchFiles(process.cwd(), filePatterns || DEFAULT_SRC_PATTERNS);
+  const isNodeDefaultScan = !filePatterns && pkg === Libraries.GT_NODE;
+  const files = filePatterns
+    ? matchFiles(process.cwd(), filePatterns)
+    : isNodeDefaultScan
+      ? // The whole-project scan skips folders it cannot read, such as a
+        // database volume, instead of failing.
+        matchFiles(
+          process.cwd(),
+          [
+            ...DEFAULT_NODE_SRC_PATTERNS,
+            ...DEFAULT_NODE_SRC_EXCLUDES.map((pattern) => `!${pattern}`),
+          ],
+          { suppressErrors: true }
+        )
+      : matchFiles(process.cwd(), DEFAULT_SRC_PATTERNS);
 
   for (const file of files) {
-    const code = await fs.promises.readFile(file, 'utf8');
+    let code: string;
+    try {
+      code = await fs.promises.readFile(file, 'utf8');
+    } catch (error) {
+      // The whole-project scan also skips files it cannot read. Files that
+      // src patterns match must be readable.
+      const errorCode = (error as NodeJS.ErrnoException).code;
+      if (
+        isNodeDefaultScan &&
+        (errorCode === 'EACCES' || errorCode === 'EPERM')
+      ) {
+        continue;
+      }
+      throw error;
+    }
     let ast;
     try {
       ast = parse(code, {
         sourceType: 'module',
+        // CommonJS scripts may return at the top level.
+        allowReturnOutsideFunction: true,
         plugins: ['jsx', 'typescript'],
       });
     } catch (error) {

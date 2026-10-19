@@ -36,6 +36,13 @@ export const DEFAULT_SRC_PATTERNS = [
   'components/**/*.{js,jsx,ts,tsx}',
 ];
 
+// gt-node services keep code anywhere in the project, often in a root server.js.
+export const DEFAULT_NODE_SRC_PATTERNS = [
+  '**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}',
+];
+// The default gt-node scan skips these paths at any depth.
+export const DEFAULT_NODE_SRC_EXCLUDES = ['**/node_modules/**'];
+
 export const DEFAULT_PYTHON_SRC_PATTERNS = ['**/*.py'];
 export const DEFAULT_PYTHON_SRC_EXCLUDES = [
   'venv/**',
