@@ -12,8 +12,7 @@ import type { InitializeGTParams } from '../types/InitializeGTParams';
 /** Mirrors gt-next's withGTConfig experimentalCompilerOptions. */
 export type GTTanstackStartCompilerOptions = GTCompilerOptions & {
   /**
-   * Which compiler plugin to use: babel or none. 'babel' requires
-   * @generaltranslation/compiler to be installed.
+   * Which compiler plugin to use: babel or none.
    * @default 'none'
    */
   type?: 'babel' | 'none';
@@ -118,7 +117,6 @@ function createCompilerUnresolvedWarning(error: unknown): string {
     severity: 'Warning',
     whatHappened: 'The GT babel compiler could not be resolved',
     wayOut: 'Skipping compiler optimizations',
-    fix: 'Install @generaltranslation/compiler to enable the experimental babel compiler',
     details: formatDiagnosticErrorDetails(error),
   });
 }
@@ -318,8 +316,7 @@ function createCompilerPlugin(
   }
   if (!enabled) return { compilerPlugin: undefined, warnings };
 
-  // Loaded only when enabled: the compiler is an optional peer dependency,
-  // as in gt-next, so apps that do not opt in skip installing Babel.
+  // Loaded only when enabled, so apps that do not opt in never load Babel.
   let gtCompiler: CompilerVitePlugin;
   try {
     gtCompiler = createRequire(import.meta.url)(

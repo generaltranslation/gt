@@ -1678,6 +1678,9 @@ importers:
 
   packages/tanstack-start:
     dependencies:
+      '@generaltranslation/compiler':
+        specifier: workspace:*
+        version: link:../compiler
       '@generaltranslation/react-core':
         specifier: workspace:*
         version: link:../react-core
@@ -1700,9 +1703,6 @@ importers:
         specifier: '>=16.8.0'
         version: 19.2.3(react@19.2.3)
     devDependencies:
-      '@generaltranslation/compiler':
-        specifier: workspace:*
-        version: link:../compiler
       '@types/node':
         specifier: 'catalog:'
         version: 22.13.10
@@ -2480,9 +2480,6 @@ importers:
         specifier: ^19.2.4
         version: 19.2.4(react@19.2.4)
     devDependencies:
-      '@generaltranslation/compiler':
-        specifier: workspace:*
-        version: link:../../../packages/compiler
       '@types/node':
         specifier: ^20
         version: 20.19.17
