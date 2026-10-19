@@ -18,7 +18,6 @@
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
-    "@generaltranslation/compiler": "workspace:*",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

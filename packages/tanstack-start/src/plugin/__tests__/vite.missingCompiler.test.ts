@@ -5,7 +5,7 @@ import type { ResolvedConfig } from 'vite';
 import { afterEach, expect, it, vi } from 'vitest';
 import { gtTanstackStart } from '../vite';
 
-// The compiler is an optional peer dependency; simulate an app without it.
+// Simulate an install where the compiler dependency cannot be resolved.
 vi.mock('node:module', async (importOriginal) => ({
   ...(await importOriginal<typeof import('node:module')>()),
   createRequire: () => () => {
