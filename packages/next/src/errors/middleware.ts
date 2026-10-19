@@ -23,3 +23,11 @@ export const createInvalidMiddlewareEnvConfigError = (
     fix: 'Configure gt-next through withGTConfig() instead of setting this variable manually',
     details: formatDiagnosticErrorDetails(error),
   });
+
+export const createLinkRoutingConfigMismatchWarning = (options: string[]) =>
+  createGtNextDiagnostic({
+    severity: 'Warning',
+    whatHappened: `createNextMiddleware() and withGTConfig() set different values for ${options.join(', ')}`,
+    why: 'gt-next/link reads these options from withGTConfig(), so its links may redirect',
+    fix: 'Set these options in withGTConfig() instead of createNextMiddleware()',
+  });

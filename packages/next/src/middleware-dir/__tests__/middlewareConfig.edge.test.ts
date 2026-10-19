@@ -127,3 +127,29 @@ describe('createNextMiddleware config precedence', () => {
     );
   });
 });
+
+describe('createNextMiddleware Link routing warning', () => {
+  beforeEach(() => vi.stubEnv('NODE_ENV', 'development'));
+
+  it('warns when Link cannot see a middleware-only routing option', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    createNextMiddleware({ prefixDefaultLocale: true });
+
+    expect(warn).toHaveBeenCalledOnce();
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('prefixDefaultLocale')
+    );
+    warn.mockRestore();
+  });
+
+  it('does not warn when withGTConfig sets the same options', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    stubMiddlewareEnv({ prefixDefaultLocale: true });
+
+    createNextMiddleware({ prefixDefaultLocale: true, localeRoutes: {} });
+
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+});
