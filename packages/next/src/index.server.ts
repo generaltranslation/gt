@@ -67,6 +67,7 @@ export {
   mFallback,
   msg,
 } from 'gt-react';
+export { useLocalizeHref } from './link/useLocalizeHref';
 export { isLocaleSupported } from './request/localeValidation';
 
 // ===== Types ===== //
