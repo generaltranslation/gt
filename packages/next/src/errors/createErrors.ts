@@ -150,9 +150,6 @@ export const createGTCompilerUnresolvedWarning = (type: 'babel' | 'swc') =>
   createGtNextPluginDiagnostic({
     whatHappened: `The GT ${type} compiler could not be resolved`,
     wayOut: 'Skipping compiler optimizations',
-    ...(type === 'babel' && {
-      fix: 'Install @generaltranslation/compiler to enable the experimental babel compiler',
-    }),
   });
 
 export const autoJsxInjectionCompilerWarning = createGtNextPluginDiagnostic({
