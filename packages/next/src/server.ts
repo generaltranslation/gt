@@ -13,6 +13,9 @@ export { getLocaleDirection } from './request/getLocaleDirection';
 export { registerLocale } from './request/registerLocale';
 export { resolveCanonicalLocale } from 'gt-i18n';
 
+// Link localization
+export { getLocalizeHref } from './link/getLocalizeHref';
+
 // Region management
 export { getRegion } from './request/getRegion';
 
