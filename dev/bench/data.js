@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1791949510596,
+  "lastUpdate": 1792527198562,
   "repoUrl": "https://github.com/generaltranslation/gt",
   "entries": {
     "Middleware Benchmarks": [
@@ -12064,6 +12064,122 @@ window.BENCHMARK_DATA = {
             "value": 84.20000000001164,
             "unit": "ms",
             "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.12\"\n}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "2899afff3f887f47fc460c710fbacb32b655f059",
+          "message": "[ci] release (#2462)\n\nThis PR was opened by the [Changesets\nrelease](https://github.com/changesets/action) GitHub action. When\nyou're ready to do a release, you can merge this and the packages will\nbe published to npm automatically. If you're not ready to do a release\nyet, that's fine, whenever you add more changesets to main, this PR will\nbe updated.\n\n\n# Releases\n## gt@2.26.6\n\n### Patch Changes\n\n- [#2461](https://github.com/generaltranslation/gt/pull/2461)\n[`81cc726`](https://github.com/generaltranslation/gt/commit/81cc7269baa6a5acf476eeeaccf40bbecf0eeb61)\nThanks [@kevinwu98](https://github.com/kevinwu98)! - `gt init` now links\nReact Router and Shopify Hydrogen apps to the React Router quickstart\ninstead of the generic React quickstart.\n## gtx-cli@2.26.6\n\n### Patch Changes\n\n- Updated dependencies\n[[`81cc726`](https://github.com/generaltranslation/gt/commit/81cc7269baa6a5acf476eeeaccf40bbecf0eeb61)]:\n  - gt@2.26.6\n## locadex@1.0.248\n\n### Patch Changes\n\n- Updated dependencies\n[[`81cc726`](https://github.com/generaltranslation/gt/commit/81cc7269baa6a5acf476eeeaccf40bbecf0eeb61)]:\n  - gt@2.26.6\n## gt-next@11.4.13\n\n### Patch Changes\n\n- [#2480](https://github.com/generaltranslation/gt/pull/2480)\n[`76f4a34`](https://github.com/generaltranslation/gt/commit/76f4a34c3b2cb9b0a23416430bb7a23939ffd994)\nThanks [@eoinest](https://github.com/eoinest)! - Improve `gt-next/link`\nlocale prefixing and share routing options with the middleware:\n- `withGTConfig()` now accepts the `createNextMiddleware()` routing\noptions (`localeRouting`, `prefixDefaultLocale`, `enableSmartRouting`,\n`ignoreSourceMaps`, `pathConfig`, `routeOverrides`, `localeRoutes`).\nOptions passed directly to `createNextMiddleware()` still take\nprecedence.\n- `gt-next/link` no longer prefixes default-locale links when\n`prefixDefaultLocale` is `false`, avoiding a middleware redirect.\nExplicit `locale` props for the default locale stay prefixed unless\n`enableSmartRouting` is `false`. Set these options in `withGTConfig()`\nso Link can read them; `createNextMiddleware()` warns in development\nwhen its values differ.\n- Add `useLocalizeHref()` to `gt-next/link`. It returns a function that\nlocalizes path strings the same way `<Link>` does, for navigation that\ndoesn't render a link, such as `router.push()`. It is also exported from\n`gt-next`, where Server Components get a server version, and\n`getLocalizeHref()` is exported from `gt-next/server`.\n\n- Updated dependencies []:\n  - @generaltranslation/react-core@11.4.13\n  - gt-react@11.4.13\n## gt-react@11.4.13\n\n### Patch Changes\n\n- Updated dependencies []:\n  - @generaltranslation/react-core@11.4.13\n## gt-react-native@11.4.13\n\n### Patch Changes\n\n- Updated dependencies []:\n  - @generaltranslation/react-core@11.4.13\n## gt-tanstack-start@11.4.13\n\n### Patch Changes\n\n- Updated dependencies []:\n  - @generaltranslation/react-core@11.4.13\n  - gt-react@11.4.13\n## @generaltranslation/react-core@11.4.13\n\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+          "timestamp": "2026-10-20T20:06:05Z",
+          "url": "https://github.com/generaltranslation/gt/commit/2899afff3f887f47fc460c710fbacb32b655f059"
+        },
+        "date": 1792527196834,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "gt-next > unit > middleware: factory creation latency > createNextMiddleware() (mean)",
+            "value": 0.02724326806145817,
+            "range": "±0.0341",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.13\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > default locale request (/) (mean)",
+            "value": 0.08596583960804607,
+            "range": "±0.0471",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.13\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > non-default locale request (/fr) (mean)",
+            "value": 0.10674809820666374,
+            "range": "±0.1029",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.13\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > nested route (/fr/about) (mean)",
+            "value": 0.09517409935287159,
+            "range": "±0.0656",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > ttfb",
+            "value": 106.30000000001746,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > domContentLoaded",
+            "value": 128,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > load",
+            "value": 196.80000000001746,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > elapsed",
+            "value": 97,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > ttfb",
+            "value": 13.799999999988358,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > domContentLoaded",
+            "value": 50.19999999998254,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > load",
+            "value": 90.69999999998254,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: locale-switch-en-to-fr > elapsed",
+            "value": 570,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > ttfb",
+            "value": 8.299999999988358,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > domContentLoaded",
+            "value": 16.79999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > load",
+            "value": 80.29999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.13\"\n}"
           }
         ]
       }
