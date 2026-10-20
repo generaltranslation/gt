@@ -13,7 +13,7 @@ vi.mock('../../console/logger.js', () => ({
 
 vi.mock('../../utils/api.js', () => ({
   api: {
-    getProjectInfo: vi.fn(),
+    getProject: vi.fn(),
   },
 }));
 
@@ -57,7 +57,7 @@ describe('warnManualReviewSetup', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Default: setting unavailable (older API / no credentials)
-    vi.mocked(api.getProjectInfo).mockRejectedValue(new Error('unavailable'));
+    vi.mocked(api.getProject).mockRejectedValue(new Error('unavailable'));
   });
 
   it('does not warn when nothing requires review', async () => {
@@ -100,7 +100,7 @@ describe('warnManualReviewSetup', () => {
   });
 
   it('does not warn when the project has manual review enabled (autoApprove false)', async () => {
-    vi.mocked(api.getProjectInfo).mockResolvedValue({
+    vi.mocked(api.getProject).mockResolvedValue({
       autoApprove: false,
     });
     await warnManualReviewSetup(makeSettings(['a.json']), [
@@ -111,7 +111,7 @@ describe('warnManualReviewSetup', () => {
 
   it('does not fetch project info when nothing requires review', async () => {
     await warnManualReviewSetup(makeSettings(), [normalFile('a.json')]);
-    expect(api.getProjectInfo).not.toHaveBeenCalled();
+    expect(api.getProject).not.toHaveBeenCalled();
   });
 
   // Wrapping may break phrases across lines, so assert on unwrapped text
@@ -119,7 +119,7 @@ describe('warnManualReviewSetup', () => {
     (vi.mocked(logger.warn).mock.calls[0][0] as string).replace(/\n/g, ' ');
 
   it('warns definitively when the project auto-approves', async () => {
-    vi.mocked(api.getProjectInfo).mockResolvedValue({
+    vi.mocked(api.getProject).mockResolvedValue({
       autoApprove: true,
     });
     await warnManualReviewSetup(makeSettings(['a.json']), [
@@ -140,7 +140,7 @@ describe('warnManualReviewSetup', () => {
   });
 
   it('names the exact dashboard setting in the call to action', async () => {
-    vi.mocked(api.getProjectInfo).mockResolvedValue({
+    vi.mocked(api.getProject).mockResolvedValue({
       autoApprove: true,
     });
     await warnManualReviewSetup(makeSettings(['a.json']), [

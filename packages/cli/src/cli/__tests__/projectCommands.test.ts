@@ -8,7 +8,7 @@ vi.mock('../../config/generateSettings.js', () => ({
 
 vi.mock('../../utils/api.js', () => ({
   api: {
-    checkJobStatus: vi.fn(),
+    queryJobs: vi.fn(),
     createProject: vi.fn(),
   },
 }));
@@ -138,10 +138,24 @@ describe('project commands', () => {
     ).rejects.toThrow(/Failed to create the project[\s\S]*upstream denied/);
   });
 
+  it.each(['processing', 'not_found'] as const)(
+    'prints the %s status of a project setup job',
+    async (status) => {
+      vi.mocked(api.queryJobs).mockResolvedValue({
+        results: [{ id: 'job-id', status }],
+      });
+
+      await createProgram().parseAsync(['project', 'status', 'job-id'], {
+        from: 'user',
+      });
+
+      expect(api.queryJobs).toHaveBeenCalledWith(['job-id']);
+      expect(logger.info).toHaveBeenCalledWith(status);
+    }
+  );
+
   it('formats project status failures instead of leaking a rejection', async () => {
-    vi.mocked(api.checkJobStatus).mockRejectedValue(
-      new Error('status unavailable')
-    );
+    vi.mocked(api.queryJobs).mockRejectedValue(new Error('status unavailable'));
 
     await expect(
       createProgram().parseAsync(['project', 'status', 'job-id'], {

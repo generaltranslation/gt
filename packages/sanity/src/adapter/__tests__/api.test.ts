@@ -33,6 +33,11 @@ const translatedFile = {
   locale: 'es-ES',
 };
 
+const emptyBatch = {
+  summary: { total: 0, succeeded: 0, failed: 0 },
+  results: [],
+};
+
 describe('Sanity API adapter', () => {
   const fetchMock = vi.fn<typeof fetch>();
 
@@ -40,6 +45,7 @@ describe('Sanity API adapter', () => {
     vi.resetAllMocks();
     configureApiClient({
       baseUrl: 'https://api.example.com',
+      projectId: 'project-id',
       fetch: fetchMock,
       customMapping: {
         source: { code: 'en-US' },
@@ -52,7 +58,7 @@ describe('Sanity API adapter', () => {
     ['source', 'target'],
     ['en-us', 'es-es'],
   ])(
-    'canonicalizes enqueue locales %s / %s',
+    'canonicalizes translateFiles locales %s / %s',
     async (sourceLocale, targetLocale) => {
       fetchMock.mockImplementation(async (request) => {
         const body = JSON.parse(await new Request(request).text()) as {
@@ -61,17 +67,13 @@ describe('Sanity API adapter', () => {
         };
         expect(body.sourceLocale).toBe('en-US');
         expect(body.targetLocales).toEqual(['es-ES']);
-        return Response.json({
-          jobData: {},
-          locales: [],
-          message: 'Enqueued files',
-        });
+        return Response.json({ jobs: [] }, { status: 202 });
       });
 
-      await api.enqueueFiles([{ fileId: 'file-id', versionId: 'version-id' }], {
-        sourceLocale,
-        targetLocales: [targetLocale],
-      });
+      await api.translateFiles(
+        [{ fileId: 'file-id', versionId: 'version-id' }],
+        { sourceLocale, targetLocales: [targetLocale] }
+      );
 
       expect(fetchMock).toHaveBeenCalledOnce();
     }
@@ -91,37 +93,30 @@ describe('Sanity API adapter', () => {
             translations: Array<{ locale: string }>;
           }>;
         };
-        expect(body.sourceLocale).toBe('en-US');
+        expect(body.sourceLocale).toBeUndefined();
         expect(body.data[0].source.locale).toBe('en-US');
         expect(body.data[0].translations[0].locale).toBe('es-ES');
-        return Response.json({
-          uploadedFiles: [],
-          count: 0,
-          message: 'Uploaded files',
-        });
+        return Response.json(emptyBatch);
       });
 
-      await api.uploadTranslations(
-        [
-          {
-            source: {
-              content: 'source',
+      await api.uploadTranslations([
+        {
+          source: {
+            content: 'source',
+            fileName: 'document.html',
+            fileFormat: 'HTML',
+            locale: sourceLocale,
+          },
+          translations: [
+            {
+              content: 'translation',
               fileName: 'document.html',
               fileFormat: 'HTML',
-              locale: sourceLocale,
+              locale: targetLocale,
             },
-            translations: [
-              {
-                content: 'translation',
-                fileName: 'document.html',
-                fileFormat: 'HTML',
-                locale: targetLocale,
-              },
-            ],
-          },
-        ],
-        { sourceLocale }
-      );
+          ],
+        },
+      ]);
 
       expect(fetchMock).toHaveBeenCalledOnce();
     }
@@ -134,11 +129,7 @@ describe('Sanity API adapter', () => {
         sourceLocale: 'en-US',
         data: [{ source: { locale: 'en-US' } }],
       });
-      return Response.json({
-        uploadedFiles: [],
-        count: 0,
-        message: 'Uploaded files',
-      });
+      return Response.json(emptyBatch);
     });
     const files = [
       {
@@ -157,30 +148,32 @@ describe('Sanity API adapter', () => {
     expect(files[0].source.locale).toBe('en-us');
   });
 
-  it('canonicalizes project setup locales', async () => {
+  it('canonicalizes project context locales', async () => {
     fetchMock.mockImplementation(async (request) => {
       const body = JSON.parse(await new Request(request).text());
       expect(body.locales).toEqual(['en-US', 'es-ES']);
-      return Response.json({ status: 'completed' });
+      return Response.json({ job: null });
     });
 
-    await api.setupProject([], { locales: ['source', 'es-es'] });
+    await expect(
+      api.generateProjectContext([], { locales: ['source', 'es-es'] })
+    ).resolves.toEqual({ job: null });
 
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 
   it.each(['target', 'es-es'])(
-    'maps batch-download locale %s in both directions',
+    'sends queryFilesContent locale %s as its service locale, answers with the requested locale, and decodes data',
     async (locale) => {
       fetchMock.mockImplementation(async (request) => {
-        const body = JSON.parse(await new Request(request).text()) as Array<{
-          locale?: string;
-        }>;
-        expect(body).toEqual([{ fileId: 'file-id', locale: 'es-ES' }]);
+        const body = JSON.parse(await new Request(request).text()) as {
+          files: Array<{ locale?: string }>;
+        };
+        expect(body.files).toEqual([{ fileId: 'file-id', locale: 'es-ES' }]);
         return Response.json({
-          files: [
+          results: [
             {
-              id: 'id',
+              status: 'ready',
               branchId: 'branch-id',
               fileId: 'file-id',
               locale: 'es-ES',
@@ -191,26 +184,23 @@ describe('Sanity API adapter', () => {
               fileFormat: 'HTML',
             },
           ],
-          count: 1,
-          pending: [],
         });
       });
 
-      const response = await api.downloadFileBatch([
+      const response = await api.queryFilesContent([
         { fileId: 'file-id', locale },
       ]);
 
       expect(fetchMock).toHaveBeenCalledOnce();
-      expect(response.files[0].locale).toBe('target');
+      expect(response.results[0]).toMatchObject({
+        locale,
+        data: 'translated',
+      });
     }
   );
 
-  it('does not request an empty batch download', async () => {
-    await expect(api.downloadFileBatch([])).resolves.toEqual({
-      files: [],
-      count: 0,
-      pending: [],
-    });
+  it('does not request an empty content query', async () => {
+    await expect(api.queryFilesContent([])).resolves.toEqual({ results: [] });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -228,6 +218,33 @@ describe('Sanity API adapter', () => {
     );
   });
 
+  it('returns the existing main branch when createBranch conflicts by name', async () => {
+    fetchMock.mockImplementation(async (request) => {
+      const parsed = new Request(request);
+      const url = new URL(parsed.url);
+      expect(url.pathname).toBe('/v2/projects/project-id/branches');
+      if (parsed.method === 'POST') {
+        expect(JSON.parse(await parsed.text())).toEqual({
+          name: 'main',
+          isDefault: true,
+        });
+        return Response.json({ error: 'branch exists' }, { status: 409 });
+      }
+      expect(url.searchParams.getAll('name')).toEqual(['main']);
+      return Response.json({
+        items: [{ id: 'main-id', name: 'main', isDefault: true }],
+        nextCursor: null,
+      });
+    });
+
+    await expect(
+      api.createBranch({ name: 'main', isDefault: true })
+    ).resolves.toEqual({
+      branch: { id: 'main-id', name: 'main', isDefault: true },
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it('does not expose shared adapter configuration internals', () => {
     expect(api).not.toHaveProperty('getClientConfig');
   });
@@ -242,7 +259,9 @@ describe('Sanity API adapter', () => {
     });
     fetchMock.mockImplementation(async (request) => {
       const parsed = new Request(request);
-      expect(new URL(parsed.url).pathname).toBe('/v2/translate');
+      expect(new URL(parsed.url).pathname).toBe(
+        '/v2/projects/project-id/translate'
+      );
       const body = JSON.parse(await parsed.text()) as {
         requests: Record<string, unknown>;
         sourceLocale: string;
@@ -252,8 +271,8 @@ describe('Sanity API adapter', () => {
         sourceLocale: 'en-US',
         targetLocale: 'es-ES',
       });
-      return Response.json(
-        Object.fromEntries(
+      return Response.json({
+        translations: Object.fromEntries(
           Object.keys(body.requests).map((hash) => [
             hash,
             {
@@ -263,8 +282,9 @@ describe('Sanity API adapter', () => {
               dataFormat: 'STRING',
             },
           ])
-        )
-      );
+        ),
+        generated: true,
+      });
     });
 
     await expect(
@@ -275,29 +295,30 @@ describe('Sanity API adapter', () => {
   it('maps file-info locales in both directions', async () => {
     fetchMock.mockImplementation(async (request) => {
       const body = JSON.parse(await new Request(request).text()) as {
-        translatedFiles: Array<{ locale: string }>;
+        files: Array<{ locale?: string }>;
       };
-      expect(body.translatedFiles[0].locale).toBe('es-ES');
+      expect(body.files[1].locale).toBe('es-ES');
       return Response.json({
-        sourceFiles: [sourceFile],
-        translatedFiles: [translatedFile],
+        results: [
+          { ...sourceFile, status: 'found' },
+          { ...translatedFile, status: 'found' },
+        ],
       });
     });
 
-    const response = await api.queryFileData({
-      translatedFiles: [
-        {
-          branchId: 'branch-id',
-          fileId: 'file-id',
-          versionId: 'version-id',
-          locale: 'target',
-        },
-      ],
-    });
+    const response = await api.queryFiles([
+      { branchId: 'branch-id', fileId: 'file-id', versionId: 'version-id' },
+      {
+        branchId: 'branch-id',
+        fileId: 'file-id',
+        versionId: 'version-id',
+        locale: 'target',
+      },
+    ]);
 
     expect(fetchMock).toHaveBeenCalledOnce();
-    expect(response.translatedFiles[0].locale).toBe('target');
-    expect(response.sourceFiles[0]).toMatchObject({
+    expect(response.results[1].locale).toBe('target');
+    expect(response.results[0]).toMatchObject({
       sourceLocale: 'source',
       locales: ['target'],
     });
@@ -306,9 +327,7 @@ describe('Sanity API adapter', () => {
   it('alias-resolves translation-status locales', async () => {
     fetchMock.mockImplementation(async (request) => {
       const url = new URL(new Request(request).url);
-      expect(url.pathname).toBe(
-        '/v2/project/translations/files/status/file-id'
-      );
+      expect(url.pathname).toBe('/v2/projects/project-id/files/file-id/status');
       expect(url.searchParams.get('branchId')).toBe('branch-id');
       return Response.json({
         translations: [
@@ -325,8 +344,7 @@ describe('Sanity API adapter', () => {
       });
     });
 
-    const response = await api.querySourceFile({
-      fileId: 'file-id',
+    const response = await api.getFileStatus('file-id', {
       branchId: 'branch-id',
     });
 

@@ -16,9 +16,10 @@ import { shouldPublishGt } from '../utils/resolvePublish.js';
 /**
  * Uploads current source files to obtain file references, then collects and sends
  * diffs for all locales based on last downloaded versions. Does not enqueue translations.
+ * Returns false when every edit failed or the publish request failed.
  */
-export async function saveLocalEdits(settings: Settings): Promise<void> {
-  if (!settings.files) return;
+export async function saveLocalEdits(settings: Settings): Promise<boolean> {
+  if (!settings.files) return true;
 
   // Collect current files from config
   const { files, publishMap } = await aggregateFiles(settings);
@@ -45,7 +46,7 @@ export async function saveLocalEdits(settings: Settings): Promise<void> {
       publishMap.set(TEMPLATE_FILE_ID, gtPublishValue);
     }
   }
-  if (!fileRefs.length) return;
+  if (!fileRefs.length) return true;
 
   // run branch query to get branch id
   // Run the branch step
@@ -63,16 +64,38 @@ export async function saveLocalEdits(settings: Settings): Promise<void> {
   const spinner = logger.createSpinner('dots');
   spinner.start('Saving local edits...');
 
-  const hadDiffs = await collectAndSendUserEditDiffs(uploads, settings);
-  spinner.stop(chalk.green('Local edits saved successfully'));
-
-  // Publish files to CDN if diffs were detected and publish config exists
-  if (hadDiffs) {
-    await runPublishWorkflow(
-      fileRefs,
-      publishMap,
-      branchResult.currentBranch.id,
-      settings
+  const { saved, failed } = await collectAndSendUserEditDiffs(
+    uploads,
+    settings
+  );
+  if (failed.length === 0) {
+    spinner.stop(chalk.green('Local edits saved successfully'));
+  } else if (saved.length === 0) {
+    spinner.stop(chalk.red('Local edits could not be saved'));
+  } else {
+    spinner.stop(
+      chalk.yellow(
+        `Saved ${saved.length} of ${saved.length + failed.length} local edits`
+      )
     );
   }
+
+  if (saved.length === 0) return failed.length === 0;
+
+  // Publish every configured file and every version an edit was saved to,
+  // except versions with a failed edit, if publish config exists
+  const versionKey = (file: { fileId: string; versionId: string }) =>
+    `${file.fileId}:${file.versionId}`;
+  const failedVersions = new Set(failed.map(versionKey));
+  const versions = new Map(
+    [...saved, ...fileRefs].map((file) => [versionKey(file), file])
+  );
+  return runPublishWorkflow(
+    [...versions.values()].filter(
+      (file) => !failedVersions.has(versionKey(file))
+    ),
+    publishMap,
+    branchResult.currentBranch.id,
+    settings
+  );
 }

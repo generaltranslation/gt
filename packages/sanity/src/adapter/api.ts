@@ -1,12 +1,8 @@
-import type {
-  ApiClientConfig,
-  GetTranslationStatusData,
-} from 'generaltranslation/api';
 import {
   createGtApiAdapter,
   defaultBaseUrl,
+  type GtApiAdapterConfig,
 } from 'generaltranslation/internal';
-import type { CustomMapping } from 'generaltranslation/types';
 
 const {
   configure: configureSharedApi,
@@ -15,22 +11,9 @@ const {
 } = createGtApiAdapter({ baseUrl: defaultBaseUrl });
 
 export function configureApiClient(
-  config: Omit<ApiClientConfig, 'baseUrl'> & {
-    baseUrl?: string;
-    customMapping?: CustomMapping;
-  }
+  config: Omit<GtApiAdapterConfig, 'baseUrl'> & { baseUrl?: string }
 ): void {
   configureSharedApi({ baseUrl: defaultBaseUrl, ...config });
 }
 
-export const api = {
-  ...sharedApi,
-
-  async querySourceFile(
-    query: GetTranslationStatusData['path'] &
-      NonNullable<GetTranslationStatusData['query']>
-  ) {
-    const { fileId, ...queryParams } = query;
-    return sharedApi.querySourceFile({ fileId }, queryParams);
-  },
-};
+export const api = sharedApi;

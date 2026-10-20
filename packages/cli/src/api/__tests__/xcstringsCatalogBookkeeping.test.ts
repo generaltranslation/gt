@@ -27,14 +27,15 @@ import {
   type XcstringsCatalog,
 } from '../../formats/xcstrings/parseXcstrings.js';
 import { createMockSettings } from '../__mocks__/settings.js';
+import { saveEveryDiff } from '../__mocks__/saveEveryDiff.js';
 import type { FileStatusTracker } from '../../workflows/steps/PollJobsStep.js';
 import type { Settings } from '../../types/index.js';
 
 vi.mock('../../utils/api.js', () => ({
   api: {
-    queryFileData: vi.fn(),
-    downloadFileBatch: vi.fn(),
-    submitUserEditDiffs: vi.fn(),
+    queryFiles: vi.fn(),
+    queryFilesContent: vi.fn(),
+    overwriteTranslations: vi.fn(),
     resolveAliasLocale: vi.fn((locale: string) => locale),
     resolveCanonicalLocale: vi.fn((locale: string) => locale),
   },
@@ -155,6 +156,7 @@ describe('.xcstrings catalog bookkeeping across translate runs', () => {
     clearDownloaded();
     clearWarnings();
     server.clear();
+    saveEveryDiff(api.overwriteTranslations);
 
     const catalogPath = path.join(tempDir, CATALOG);
     settings = {
@@ -180,31 +182,32 @@ describe('.xcstrings catalog bookkeeping across translate runs', () => {
       },
     };
 
-    vi.mocked(api.queryFileData).mockImplementation(async (body) => ({
-      translatedFiles: (body.translatedFiles ?? []).map((file) => ({
+    vi.mocked(api.queryFiles).mockImplementation(async (files) => ({
+      results: files.map((file) => ({
         ...file,
+        status: 'found' as const,
         completedAt: new Date().toISOString(),
       })),
     }));
-    vi.mocked(api.downloadFileBatch).mockImplementation(async (requests) => {
+    vi.mocked(api.queryFilesContent).mockImplementation(async (requests) => {
       const { fileId, versionId } = ids();
-      const files = requests.flatMap((request) => {
+      const results = requests.map((request) => {
         const data = server.get(request.locale ?? '');
-        if (data === undefined) return [];
-        return [
-          {
-            id: `translation-${request.locale}`,
-            branchId: BRANCH,
-            fileId,
-            versionId,
-            locale: request.locale,
-            fileFormat: 'XCSTRINGS' as const,
-            data,
-            metadata: {},
-          },
-        ];
+        if (data === undefined) {
+          return { ...request, status: 'not_found' as const };
+        }
+        return {
+          status: 'ready' as const,
+          branchId: BRANCH,
+          fileId,
+          versionId,
+          locale: request.locale,
+          fileFormat: 'XCSTRINGS' as const,
+          data,
+          metadata: {},
+        };
       });
-      return { files, count: files.length };
+      return { results };
     });
   });
 
@@ -224,9 +227,7 @@ describe('.xcstrings catalog bookkeeping across translate runs', () => {
     readLockfile(settings).entryMap.get(ids().fileId)?.translations ?? {};
   /** The locales save-local asked the server about, in order. */
   const queriedLocales = () =>
-    vi
-      .mocked(api.queryFileData)
-      .mock.calls[0][0].translatedFiles?.map((file) => file.locale);
+    vi.mocked(api.queryFiles).mock.calls[0][0].map((file) => file.locale);
 
   /**
    * A download as the server returns it: the source slice of the current
@@ -303,7 +304,7 @@ describe('.xcstrings catalog bookkeeping across translate runs', () => {
 
     expect(result.failed).toEqual([]);
     expect(result.successful).toHaveLength(3);
-    expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
+    expect(api.overwriteTranslations).not.toHaveBeenCalled();
     expect(readCatalog()).toBe(serializeXcstringsSlice(translatedCatalog));
 
     // One file holds every locale, and each locale is fingerprinted by its
@@ -333,11 +334,11 @@ describe('.xcstrings catalog bookkeeping across translate runs', () => {
 
     const result = await translateRun();
 
-    expect(api.queryFileData).not.toHaveBeenCalled();
-    expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
+    expect(api.queryFiles).not.toHaveBeenCalled();
+    expect(api.overwriteTranslations).not.toHaveBeenCalled();
     // The lockfile records every locale, yet the catalog is downloaded and
     // merged again: it always reflects what the server stores
-    expect(api.downloadFileBatch).toHaveBeenCalledTimes(1);
+    expect(api.queryFilesContent).toHaveBeenCalledTimes(1);
     expect(result.skipped).toEqual([]);
     expect(result.successful).toHaveLength(3);
     expect(readCatalog()).toBe(before);
@@ -373,10 +374,10 @@ describe('.xcstrings catalog bookkeeping across translate runs', () => {
     await translateRun();
 
     // Only the de slice changed, so only de is checked against the server
-    expect(api.queryFileData).toHaveBeenCalledTimes(1);
+    expect(api.queryFiles).toHaveBeenCalledTimes(1);
     expect(queriedLocales()).toEqual(['de']);
-    expect(api.submitUserEditDiffs).toHaveBeenCalledTimes(1);
-    const { diffs } = vi.mocked(api.submitUserEditDiffs).mock.calls[0][0];
+    expect(api.overwriteTranslations).toHaveBeenCalledTimes(1);
+    const diffs = vi.mocked(api.overwriteTranslations).mock.calls[0][0];
     expect(diffs).toHaveLength(1);
     expect(diffs[0]).toMatchObject({ fileName: CATALOG, locale: 'de' });
     expect(diffs[0].localContent).toBe(
@@ -400,9 +401,18 @@ describe('.xcstrings catalog bookkeeping across translate runs', () => {
     // de edited in the dashboard: the server now holds a newer de slice
     server.set('de', served('de', { ...TRANSLATIONS.de, Save: 'Speichern' }));
     // The server applies a submitted edit before it is downloaded again
-    vi.mocked(api.submitUserEditDiffs).mockImplementation(async ({ diffs }) => {
+    vi.mocked(api.overwriteTranslations).mockImplementation(async (diffs) => {
       for (const diff of diffs) server.set(diff.locale, diff.localContent);
-      return { success: true };
+      return {
+        summary: { total: diffs.length, succeeded: diffs.length, failed: 0 },
+        results: diffs.map(({ fileId, versionId, locale }) => ({
+          branchId: BRANCH,
+          fileId,
+          versionId,
+          locale,
+          status: 'succeeded' as const,
+        })),
+      };
     });
     // fr edited by hand
     const edited = parseXcstringsCatalog(readCatalog());
@@ -413,8 +423,8 @@ describe('.xcstrings catalog bookkeeping across translate runs', () => {
     const result = await translateRun();
 
     // The local de slice is stale, not edited: only fr is submitted
-    expect(api.submitUserEditDiffs).toHaveBeenCalledTimes(1);
-    const { diffs } = vi.mocked(api.submitUserEditDiffs).mock.calls[0][0];
+    expect(api.overwriteTranslations).toHaveBeenCalledTimes(1);
+    const diffs = vi.mocked(api.overwriteTranslations).mock.calls[0][0];
     expect(diffs.map((diff) => diff.locale)).toEqual(['fr']);
     expect(diffs[0].localContent).toBe(
       localeContent(editedContent, 'XCSTRINGS', 'fr')
@@ -463,8 +473,8 @@ describe('.xcstrings catalog bookkeeping across translate runs', () => {
 
     await translateRun();
 
-    expect(api.queryFileData).not.toHaveBeenCalled();
-    expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
+    expect(api.queryFiles).not.toHaveBeenCalled();
+    expect(api.overwriteTranslations).not.toHaveBeenCalled();
     expect(readCatalog()).toBe(disk);
   });
 
@@ -486,8 +496,8 @@ describe('.xcstrings catalog bookkeeping across translate runs', () => {
     // Only fr changed on disk; it is compared against a baseline of nothing
     // and submitted
     expect(queriedLocales()).toEqual(['fr']);
-    expect(api.submitUserEditDiffs).toHaveBeenCalledTimes(1);
-    const { diffs } = vi.mocked(api.submitUserEditDiffs).mock.calls[0][0];
+    expect(api.overwriteTranslations).toHaveBeenCalledTimes(1);
+    const diffs = vi.mocked(api.overwriteTranslations).mock.calls[0][0];
     expect(diffs.map((diff) => diff.locale)).toEqual(['fr']);
     expect(diffs[0].localContent).toBe(
       localeContent(editedContent, 'XCSTRINGS', 'fr')

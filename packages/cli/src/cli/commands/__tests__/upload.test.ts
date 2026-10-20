@@ -28,6 +28,7 @@ vi.mock('../../../fs/findFilepath.js', () => ({
 vi.mock('../../../workflows/upload.js', () => ({
   runUploadFilesWorkflow: vi.fn(async () => ({
     branchData: { currentBranch: { id: 'branch-id' } },
+    uploadedFiles: [],
   })),
 }));
 vi.mock('../../../workflows/publish.js', () => ({
@@ -165,6 +166,35 @@ describe('upload - Twilio Content JSON', () => {
     expect(call.files[0].source.fileFormat).toBe('TWILIO_CONTENT_JSON');
     expect(runPublishWorkflow).toHaveBeenCalledTimes(1);
     expect(vi.mocked(runPublishWorkflow).mock.calls[0][2]).toBe('branch-id');
+  });
+
+  it('publishes only the files the upload saved', async () => {
+    setMockFiles({
+      'twilio/saved.json': JSON.stringify({ body: 'Saved' }),
+      'twilio/failed.json': JSON.stringify({ body: 'Failed' }),
+    });
+    vi.mocked(runUploadFilesWorkflow).mockImplementationOnce(
+      async ({ files }) => ({
+        branchData: {
+          currentBranch: { id: 'branch-id', name: 'main' },
+          incomingBranch: null,
+          checkedOutBranch: null,
+        },
+        uploadedFiles: files
+          .filter((file) => file.source.fileName === 'twilio/saved.json')
+          .map((file) => ({ ...file.source, branchId: 'branch-id' })),
+      })
+    );
+
+    await uploadWithFiles(
+      { twilioContentJson: ['twilio/saved.json', 'twilio/failed.json'] },
+      makeSettings({ options: {} })
+    );
+
+    const [publishedFiles] = vi.mocked(runPublishWorkflow).mock.calls[0];
+    expect(publishedFiles.map((file) => file.fileName)).toEqual([
+      'twilio/saved.json',
+    ]);
   });
 
   it('should use fileMapping for Twilio Content JSON files (no composite)', async () => {

@@ -1,4 +1,4 @@
-import { EnqueueFilesResult } from 'generaltranslation/types';
+import type { EnqueueFilesResult } from '../../workflows/steps/EnqueueStep.js';
 import { TranslateFlags } from '../../types/index.js';
 import { Settings } from '../../types/index.js';
 import {

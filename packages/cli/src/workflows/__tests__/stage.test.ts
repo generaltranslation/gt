@@ -19,7 +19,12 @@ vi.mock('../../console/logging.js', () => ({
   }),
 }));
 vi.mock('../../utils/api.js', () => ({
-  api: { uploadFonts: vi.fn(async () => ({ assets: [], count: 2 })) },
+  api: {
+    upsertAssets: vi.fn(async () => ({
+      summary: { total: 0, succeeded: 0, failed: 0 },
+      results: [],
+    })),
+  },
 }));
 vi.mock('../../formats/files/collectFonts.js', () => ({
   collectFonts: vi.fn(async () => []),
@@ -64,6 +69,7 @@ vi.mock('../utils/filterFilesForEnqueue.js', () => ({
 import { api } from '../../utils/api.js';
 import { collectFonts } from '../../formats/files/collectFonts.js';
 import { logger } from '../../console/logger.js';
+import { clearWarnings, getWarnings } from '../../state/translateWarnings.js';
 
 const files: FileToUpload[] = [
   {
@@ -96,7 +102,7 @@ describe('runStageFilesWorkflow font sync', () => {
     const result = await runStageFilesWorkflow({ files, options, settings });
 
     expect(collectFonts).toHaveBeenCalledWith(settings);
-    expect(api.uploadFonts).toHaveBeenCalledWith(fonts);
+    expect(api.upsertAssets).toHaveBeenCalledWith(fonts);
     expect(result.enqueueResult).toEqual({ message: 'enqueued', jobData: {} });
   });
 
@@ -105,20 +111,55 @@ describe('runStageFilesWorkflow font sync', () => {
 
     await runStageFilesWorkflow({ files, options, settings });
 
-    expect(api.uploadFonts).not.toHaveBeenCalled();
+    expect(api.upsertAssets).not.toHaveBeenCalled();
   });
 
   it('continues staging when the font upload fails', async () => {
     vi.mocked(collectFonts).mockResolvedValue([
       { assetType: 'FONT', fileName: 'Inter.ttf', content: 'Zm9udA==' },
     ]);
-    vi.mocked(api.uploadFonts).mockRejectedValueOnce(new Error('server down'));
+    vi.mocked(api.upsertAssets).mockRejectedValueOnce(new Error('server down'));
 
     const result = await runStageFilesWorkflow({ files, options, settings });
 
     expect(logger.warn).toHaveBeenCalledWith(
       expect.stringContaining('Font sync failed')
     );
+    expect(result.enqueueResult).toEqual({ message: 'enqueued', jobData: {} });
+  });
+
+  it('records fonts the API failed to save and keeps the saved ones', async () => {
+    clearWarnings();
+    vi.mocked(collectFonts).mockResolvedValue([
+      { assetType: 'FONT', fileName: 'Inter.ttf', content: 'Zm9udA==' },
+      { assetType: 'FONT', fileName: 'Broken.ttf', content: 'Zm9udA==' },
+    ]);
+    vi.mocked(api.upsertAssets).mockResolvedValueOnce({
+      summary: { total: 2, succeeded: 1, failed: 1 },
+      results: [
+        {
+          fileName: 'Inter.ttf',
+          status: 'succeeded',
+          id: 'asset-1',
+          assetKey: 'Inter:400',
+        },
+        { fileName: 'Broken.ttf', status: 'failed', error: 'no family' },
+      ],
+    });
+
+    const result = await runStageFilesWorkflow({ files, options, settings });
+
+    expect(logger.success).toHaveBeenCalledWith('Synced 1 font(s)');
+    expect(logger.warn).toHaveBeenCalledWith(
+      'Font sync failed for Broken.ttf; continuing without it: no family'
+    );
+    expect(getWarnings()).toEqual([
+      {
+        category: 'failed_upload',
+        fileName: 'Broken.ttf',
+        reason: 'no family',
+      },
+    ]);
     expect(result.enqueueResult).toEqual({ message: 'enqueued', jobData: {} });
   });
 });

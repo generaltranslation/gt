@@ -4,6 +4,7 @@ import * as path from 'node:path';
 import os from 'node:os';
 import { collectAndSendUserEditDiffs } from '../collectUserEditDiffs.js';
 import { createMockSettings } from '../__mocks__/settings.js';
+import { saveEveryDiff } from '../__mocks__/saveEveryDiff.js';
 import { api } from '../../utils/api.js';
 import { getGitUnifiedDiff } from '../../utils/gitDiff.js';
 import { hashStringSync } from '../../utils/hash.js';
@@ -22,9 +23,9 @@ import type { FileReference } from 'generaltranslation/types';
 
 vi.mock('../../utils/api.js', () => ({
   api: {
-    queryFileData: vi.fn(),
-    downloadFileBatch: vi.fn(),
-    submitUserEditDiffs: vi.fn(),
+    queryFiles: vi.fn(),
+    queryFilesContent: vi.fn(),
+    overwriteTranslations: vi.fn(),
     resolveCanonicalLocale: vi.fn((locale: string) => locale),
   },
 }));
@@ -44,6 +45,7 @@ describe('collectAndSendUserEditDiffs', () => {
     process.chdir(tempDir);
     vi.clearAllMocks();
     clearWarnings();
+    saveEveryDiff(api.overwriteTranslations);
   });
 
   afterEach(() => {
@@ -117,9 +119,9 @@ describe('collectAndSendUserEditDiffs', () => {
 
     await collectAndSendUserEditDiffs(files, settings);
 
-    expect(api.queryFileData).not.toHaveBeenCalled();
-    expect(api.downloadFileBatch).not.toHaveBeenCalled();
-    expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
+    expect(api.queryFiles).not.toHaveBeenCalled();
+    expect(api.queryFilesContent).not.toHaveBeenCalled();
+    expect(api.overwriteTranslations).not.toHaveBeenCalled();
   });
 
   it('submits diffs when local file hash differs from postprocessed hash', async () => {
@@ -155,9 +157,10 @@ describe('collectAndSendUserEditDiffs', () => {
       },
     });
 
-    vi.mocked(api.queryFileData).mockResolvedValue({
-      translatedFiles: [
+    vi.mocked(api.queryFiles).mockResolvedValue({
+      results: [
         {
+          status: 'found',
           branchId: 'branch1',
           fileId: 'file1',
           versionId: 'version1',
@@ -167,13 +170,15 @@ describe('collectAndSendUserEditDiffs', () => {
       ],
     });
 
-    vi.mocked(api.downloadFileBatch).mockResolvedValue({
-      files: [
+    vi.mocked(api.queryFilesContent).mockResolvedValue({
+      results: [
         {
+          status: 'ready',
           branchId: 'branch1',
           fileId: 'file1',
           versionId: 'version1',
           locale: 'ja',
+          fileFormat: 'MD',
           data: 'server content',
         },
       ],
@@ -193,10 +198,121 @@ describe('collectAndSendUserEditDiffs', () => {
 
     await collectAndSendUserEditDiffs(files, settings);
 
-    expect(api.queryFileData).toHaveBeenCalledTimes(1);
-    expect(api.downloadFileBatch).toHaveBeenCalledTimes(1);
+    expect(api.queryFiles).toHaveBeenCalledTimes(1);
+    expect(api.queryFilesContent).toHaveBeenCalledTimes(1);
     expect(getGitUnifiedDiff).toHaveBeenCalledTimes(1);
-    expect(api.submitUserEditDiffs).toHaveBeenCalledTimes(1);
+    expect(api.overwriteTranslations).toHaveBeenCalledTimes(1);
+  });
+
+  describe('saving edits', () => {
+    const files: FileReference[] = [
+      {
+        fileName: 'docs/doc.md',
+        fileFormat: 'MD',
+        branchId: 'branch1',
+        fileId: 'file1',
+        versionId: 'version1',
+      },
+    ];
+
+    /** A ja translation edited on disk to `localContent` since its download. */
+    const editTranslation = (localContent: string) => {
+      const translatedPath = path.join(tempDir, 'docs', 'ja', 'doc.md');
+      fs.mkdirSync(path.dirname(translatedPath), { recursive: true });
+      fs.writeFileSync(translatedPath, localContent);
+      writeLockFile({
+        version: 1,
+        entries: {
+          branch1: {
+            file1: {
+              version1: {
+                ja: {
+                  updatedAt: new Date().toISOString(),
+                  postProcessHash: hashStringSync('server content'),
+                },
+              },
+            },
+          },
+        },
+      });
+      const selector = {
+        branchId: 'branch1',
+        fileId: 'file1',
+        versionId: 'version1',
+        locale: 'ja',
+      };
+      vi.mocked(api.queryFiles).mockResolvedValue({
+        results: [
+          { ...selector, status: 'found', completedAt: '2026-01-01T00:00:00Z' },
+        ],
+      });
+      vi.mocked(api.queryFilesContent).mockResolvedValue({
+        results: [
+          {
+            ...selector,
+            status: 'ready',
+            fileFormat: 'MD',
+            data: 'server content',
+          },
+        ],
+      });
+      vi.mocked(getGitUnifiedDiff).mockResolvedValue('mock-diff');
+    };
+
+    it('records an edit the API failed to save and returns it as failed', async () => {
+      const settings = buildSettings();
+      editTranslation('changed content');
+      vi.mocked(api.overwriteTranslations).mockResolvedValue({
+        summary: { total: 1, succeeded: 0, failed: 1 },
+        results: [
+          {
+            branchId: 'branch1',
+            fileId: 'file1',
+            versionId: 'version1',
+            locale: 'ja',
+            status: 'failed',
+            error: 'translation not found',
+          },
+        ],
+      });
+
+      const results = await collectAndSendUserEditDiffs(files, settings);
+
+      expect(results).toEqual({
+        saved: [],
+        failed: [
+          expect.objectContaining({
+            fileName: 'docs/doc.md',
+            fileId: 'file1',
+            locale: 'ja',
+          }),
+        ],
+      });
+      expect(getWarnings()).toEqual([
+        {
+          category: 'failed_edit_save',
+          fileName: 'docs/doc.md',
+          reason: 'Locale ja: translation not found',
+        },
+      ]);
+    });
+
+    it('skips an emptied translation, which the API cannot save', async () => {
+      const settings = buildSettings();
+      editTranslation('');
+
+      const results = await collectAndSendUserEditDiffs(files, settings);
+
+      expect(results).toEqual({ saved: [], failed: [] });
+      expect(api.overwriteTranslations).not.toHaveBeenCalled();
+      expect(getWarnings()).toEqual([
+        {
+          category: 'skipped_file',
+          fileName: 'docs/ja/doc.md',
+          reason: 'Edited file is empty, so its changes cannot be submitted',
+        },
+      ]);
+    });
   });
 
   it('uses the latest downloaded version when the uploaded version has changed', async () => {
@@ -222,9 +338,10 @@ describe('collectAndSendUserEditDiffs', () => {
       },
     });
 
-    vi.mocked(api.queryFileData).mockResolvedValue({
-      translatedFiles: [
+    vi.mocked(api.queryFiles).mockResolvedValue({
+      results: [
         {
+          status: 'found',
           branchId: 'branch1',
           fileId: 'file1',
           versionId: 'version1',
@@ -234,13 +351,15 @@ describe('collectAndSendUserEditDiffs', () => {
       ],
     });
 
-    vi.mocked(api.downloadFileBatch).mockResolvedValue({
-      files: [
+    vi.mocked(api.queryFilesContent).mockResolvedValue({
+      results: [
         {
+          status: 'ready',
           branchId: 'branch1',
           fileId: 'file1',
           versionId: 'version1',
           locale: 'ja',
+          fileFormat: 'MD',
           data: 'server content',
         },
       ],
@@ -260,12 +379,12 @@ describe('collectAndSendUserEditDiffs', () => {
 
     await collectAndSendUserEditDiffs(files, settings);
 
-    expect(api.queryFileData).toHaveBeenCalledTimes(1);
-    expect(
-      vi.mocked(api.queryFileData).mock.calls[0][0].translatedFiles[0].versionId
-    ).toBe('version1');
-    expect(api.downloadFileBatch).toHaveBeenCalledTimes(1);
-    expect(api.submitUserEditDiffs).toHaveBeenCalledTimes(1);
+    expect(api.queryFiles).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(api.queryFiles).mock.calls[0][0][0].versionId).toBe(
+      'version1'
+    );
+    expect(api.queryFilesContent).toHaveBeenCalledTimes(1);
+    expect(api.overwriteTranslations).toHaveBeenCalledTimes(1);
   });
 
   describe('Apple .xcstrings catalogs', () => {
@@ -365,15 +484,16 @@ describe('collectAndSendUserEditDiffs', () => {
     };
     /** The server holds the catalog's translations as they were downloaded. */
     const serveTranslations = () => {
-      vi.mocked(api.queryFileData).mockImplementation(async (body) => ({
-        translatedFiles: (body.translatedFiles ?? []).map((file) => ({
+      vi.mocked(api.queryFiles).mockImplementation(async (files) => ({
+        results: files.map((file) => ({
           ...file,
+          status: 'found' as const,
           completedAt: new Date().toISOString(),
         })),
       }));
-      vi.mocked(api.downloadFileBatch).mockImplementation(async (files) => ({
-        files: files.map((file) => ({
-          id: `translation-${file.locale}`,
+      vi.mocked(api.queryFilesContent).mockImplementation(async (files) => ({
+        results: files.map((file) => ({
+          status: 'ready' as const,
           branchId: 'branch1',
           fileId: 'file1',
           versionId: 'version1',
@@ -385,13 +505,10 @@ describe('collectAndSendUserEditDiffs', () => {
               : served('fr', { greeting: 'Bonjour', farewell: 'Au revoir' }),
           metadata: {},
         })),
-        count: files.length,
       }));
     };
     const queriedLocales = () =>
-      vi
-        .mocked(api.queryFileData)
-        .mock.calls[0][0].translatedFiles?.map((file) => file.locale);
+      vi.mocked(api.queryFiles).mock.calls[0][0].map((file) => file.locale);
 
     it('skips every locale while each slice still hashes to its recorded post-process hash', async () => {
       const settings = buildCatalogSettings();
@@ -404,9 +521,9 @@ describe('collectAndSendUserEditDiffs', () => {
 
       await collectAndSendUserEditDiffs([reference], settings);
 
-      expect(api.queryFileData).not.toHaveBeenCalled();
-      expect(api.downloadFileBatch).not.toHaveBeenCalled();
-      expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
+      expect(api.queryFiles).not.toHaveBeenCalled();
+      expect(api.queryFilesContent).not.toHaveBeenCalled();
+      expect(api.overwriteTranslations).not.toHaveBeenCalled();
     });
 
     it('submits nothing when the catalog was only re-saved in another layout', async () => {
@@ -422,9 +539,9 @@ describe('collectAndSendUserEditDiffs', () => {
       await collectAndSendUserEditDiffs([reference], settings);
 
       // Each slice still hashes to its recorded hash, so no locale is checked
-      expect(api.queryFileData).not.toHaveBeenCalled();
+      expect(api.queryFiles).not.toHaveBeenCalled();
       expect(getGitUnifiedDiff).not.toHaveBeenCalled();
-      expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
+      expect(api.overwriteTranslations).not.toHaveBeenCalled();
     });
 
     it('submits one slice diff for the edited locale and nothing for the others', async () => {
@@ -448,8 +565,8 @@ describe('collectAndSendUserEditDiffs', () => {
       // Only the de slice changed, so only de is checked against the server
       expect(queriedLocales()).toEqual(['de']);
       expect(getGitUnifiedDiff).toHaveBeenCalledTimes(1);
-      expect(api.submitUserEditDiffs).toHaveBeenCalledTimes(1);
-      const { diffs } = vi.mocked(api.submitUserEditDiffs).mock.calls[0][0];
+      expect(api.overwriteTranslations).toHaveBeenCalledTimes(1);
+      const diffs = vi.mocked(api.overwriteTranslations).mock.calls[0][0];
       expect(diffs).toHaveLength(1);
       expect(diffs[0]).toMatchObject({
         fileName: CATALOG,
@@ -476,9 +593,10 @@ describe('collectAndSendUserEditDiffs', () => {
       writeCatalog(local);
       writeLockHashes({ de: hashStringSync('stale') });
 
-      vi.mocked(api.queryFileData).mockResolvedValue({
-        translatedFiles: [
+      vi.mocked(api.queryFiles).mockResolvedValue({
+        results: [
           {
+            status: 'found',
             branchId: 'branch1',
             fileId: 'file1',
             versionId: 'version1',
@@ -487,10 +605,10 @@ describe('collectAndSendUserEditDiffs', () => {
           },
         ],
       });
-      vi.mocked(api.downloadFileBatch).mockResolvedValue({
-        files: [
+      vi.mocked(api.queryFilesContent).mockResolvedValue({
+        results: [
           {
-            id: 'translation-de',
+            status: 'ready',
             branchId: 'branch1',
             fileId: 'file1',
             versionId: 'version1',
@@ -501,7 +619,6 @@ describe('collectAndSendUserEditDiffs', () => {
             metadata: {},
           },
         ],
-        count: 1,
       });
       const { getGitUnifiedDiff: realGitUnifiedDiff } = await vi.importActual<
         typeof import('../../utils/gitDiff.js')
@@ -510,8 +627,8 @@ describe('collectAndSendUserEditDiffs', () => {
 
       await collectAndSendUserEditDiffs([reference], settings);
 
-      expect(api.submitUserEditDiffs).toHaveBeenCalledTimes(1);
-      const { diffs } = vi.mocked(api.submitUserEditDiffs).mock.calls[0][0];
+      expect(api.overwriteTranslations).toHaveBeenCalledTimes(1);
+      const diffs = vi.mocked(api.overwriteTranslations).mock.calls[0][0];
       expect(diffs.map((diff) => diff.locale)).toEqual(['de']);
       expect(diffs[0].localContent).toBe(slice(local, 'de'));
       // The diff adds the hand-written slice to a catalog with no entries
@@ -536,9 +653,9 @@ describe('collectAndSendUserEditDiffs', () => {
       writeCatalog(JSON.stringify(edited));
       serveTranslations();
       // de, checked first, comes back as something other than a catalog
-      vi.mocked(api.downloadFileBatch).mockImplementation(async (files) => ({
-        files: files.map((file) => ({
-          id: `translation-${file.locale}`,
+      vi.mocked(api.queryFilesContent).mockImplementation(async (files) => ({
+        results: files.map((file) => ({
+          status: 'ready' as const,
           branchId: 'branch1',
           fileId: 'file1',
           versionId: 'version1',
@@ -550,7 +667,6 @@ describe('collectAndSendUserEditDiffs', () => {
               : served('fr', { greeting: 'Bonjour', farewell: 'Au revoir' }),
           metadata: {},
         })),
-        count: files.length,
       }));
       const { getGitUnifiedDiff: realGitUnifiedDiff } = await vi.importActual<
         typeof import('../../utils/gitDiff.js')
@@ -567,8 +683,8 @@ describe('collectAndSendUserEditDiffs', () => {
           reason: expect.stringContaining('Invalid .xcstrings content'),
         },
       ]);
-      expect(api.submitUserEditDiffs).toHaveBeenCalledTimes(1);
-      const { diffs } = vi.mocked(api.submitUserEditDiffs).mock.calls[0][0];
+      expect(api.overwriteTranslations).toHaveBeenCalledTimes(1);
+      const diffs = vi.mocked(api.overwriteTranslations).mock.calls[0][0];
       expect(diffs.map((diff) => diff.locale)).toEqual(['fr']);
       expect(diffs[0].localContent).toBe(slice(JSON.stringify(edited), 'fr'));
     });

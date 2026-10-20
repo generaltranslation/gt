@@ -1,5 +1,6 @@
 import { api, overrideConfig, pluginConfig } from '../adapter/core';
 import type { Secrets } from '../types';
+import { succeededResults } from '../utils/batchResults';
 
 export async function initProject(
   uploadResult: Awaited<ReturnType<typeof api.uploadSourceFiles>>,
@@ -13,12 +14,14 @@ export async function initProject(
     options?.timeout !== undefined ? Number(options.timeout) : 600;
   const setupTimeoutSeconds = Number.isFinite(timeoutVal) ? timeoutVal : 600;
 
-  const setupResult = await api.setupProject(uploadResult.uploadedFiles, {
-    locales: pluginConfig.getLocales(),
-  });
+  // A null job means the project context is already current.
+  const { job: setupJob } = await api.generateProjectContext(
+    succeededResults(uploadResult),
+    { locales: pluginConfig.getLocales() }
+  );
 
-  if (setupResult.status === 'queued') {
-    const { complete, jobs } = await api.awaitJobs([setupResult.setupJobId], {
+  if (setupJob) {
+    const { complete, jobs } = await api.awaitJobs([setupJob.id], {
       pollingIntervalSeconds: 2,
       timeoutSeconds: setupTimeoutSeconds,
     });
@@ -35,7 +38,7 @@ export async function initProject(
     } else if (job?.status === 'failed') {
       // eslint-disable-next-line no-console
       console.log(
-        `Setup failed — proceeding without setup (${job.error?.message ?? 'Unknown error'})`
+        `Setup failed — proceeding without setup (${job.error ?? 'Unknown error'})`
       );
     } else {
       // eslint-disable-next-line no-console

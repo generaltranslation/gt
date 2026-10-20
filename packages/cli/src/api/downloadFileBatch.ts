@@ -241,7 +241,7 @@ export async function downloadFileBatch(
 
   try {
     // Download the files
-    const responseData = await api.downloadFileBatch(
+    const { results } = await api.queryFilesContent(
       files.map((file) => ({
         fileId: file.fileId,
         branchId: file.branchId,
@@ -249,7 +249,14 @@ export async function downloadFileBatch(
         locale: file.locale,
       }))
     );
-    const downloadedFiles = responseData.files || [];
+    // Pending and missing files are marked failed below
+    const downloadedFiles = results.flatMap((file) =>
+      file.status === 'ready' &&
+      typeof file.data === 'string' &&
+      file.fileFormat
+        ? [{ ...file, data: file.data, fileFormat: file.fileFormat }]
+        : []
+    );
 
     // Process each file in the response
     for (const file of downloadedFiles) {
@@ -439,7 +446,7 @@ export async function downloadFileBatch(
             try {
               data = sortJsonString(data);
             } catch (error) {
-              logger.warn(`Failed to sort JSON file: ${file.id}: ` + error);
+              logger.warn(`Failed to sort JSON file: ${fileKey}: ` + error);
             }
           }
         }

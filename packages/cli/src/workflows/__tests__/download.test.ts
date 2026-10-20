@@ -23,7 +23,7 @@ vi.mock('../../fs/clearLocaleDirs.js', () => ({
 
 vi.mock('../../utils/api.js', () => ({
   api: {
-    queryFileData: vi.fn(),
+    queryFiles: vi.fn(),
     resolveAliasLocale: vi.fn((locale: string) => locale),
   },
 }));
@@ -69,8 +69,8 @@ describe('runDownloadWorkflow', () => {
   });
 
   it('does not clear locale dirs when no translations are completed', async () => {
-    vi.mocked(api.queryFileData).mockResolvedValue({
-      translatedFiles: [],
+    vi.mocked(api.queryFiles).mockResolvedValue({
+      results: [{ status: 'pending', fileId: 'file-1', locale: 'es' }],
     });
 
     await runDownloadWorkflow({
@@ -88,9 +88,10 @@ describe('runDownloadWorkflow', () => {
   });
 
   it('clears locale dirs only after translations are confirmed completed', async () => {
-    vi.mocked(api.queryFileData).mockResolvedValue({
-      translatedFiles: [
+    vi.mocked(api.queryFiles).mockResolvedValue({
+      results: [
         {
+          status: 'found',
           branchId: 'branch-1',
           fileId: 'file-1',
           versionId: 'version-1',

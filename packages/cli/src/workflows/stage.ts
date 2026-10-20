@@ -3,10 +3,10 @@ import { branchResolutionError, withOriginalError } from '../console/index.js';
 import { logger } from '../console/logger.js';
 import { Settings, TranslateFlags } from '../types/index.js';
 import { api } from '../utils/api.js';
-import { EnqueueFilesResult, FileToUpload } from 'generaltranslation/types';
+import { FileReference, FileToUpload } from 'generaltranslation/types';
 import { UploadSourcesStep } from './steps/UploadSourcesStep.js';
 import { SetupStep } from './steps/SetupStep.js';
-import { EnqueueStep } from './steps/EnqueueStep.js';
+import { EnqueueStep, type EnqueueFilesResult } from './steps/EnqueueStep.js';
 import { BranchStep } from './steps/BranchStep.js';
 import { TagStep } from './steps/TagStep.js';
 import { UserEditDiffsStep } from './steps/UserEditDiffsStep.js';
@@ -36,6 +36,7 @@ export async function runStageFilesWorkflow({
 }): Promise<{
   branchData: BranchData;
   enqueueResult: EnqueueFilesResult;
+  uploadedFiles: FileReference[];
 }> {
   try {
     // Log files to be translated
@@ -98,7 +99,7 @@ export async function runStageFilesWorkflow({
 
     const enqueueResult = await enqueueStep.run(filesToEnqueue);
 
-    return { branchData, enqueueResult };
+    return { branchData, enqueueResult, uploadedFiles };
   } catch (error) {
     return logErrorAndExit(
       withOriginalError(

@@ -30,7 +30,7 @@ vi.mock('../../../api/downloadFileBatch.js', () => ({
 
 describe('DownloadTranslationsStep', () => {
   const mockGt = {
-    queryFileData: vi.fn(),
+    queryFiles: vi.fn(),
   };
 
   const mockSettings = {};
@@ -41,8 +41,8 @@ describe('DownloadTranslationsStep', () => {
   });
 
   it('shows a warning stop message when every completed file is missing', async () => {
-    mockGt.queryFileData.mockResolvedValue({
-      translatedFiles: [],
+    mockGt.queryFiles.mockResolvedValue({
+      results: [{ status: 'pending', fileId: 'file-1', locale: 'fr' }],
     });
 
     const fileTracker = {
@@ -97,7 +97,7 @@ describe('DownloadTranslationsStep', () => {
 
 describe('DownloadTranslationsStep review gating', () => {
   const mockGt = {
-    queryFileData: vi.fn(),
+    queryFiles: vi.fn(),
   };
 
   const makeTracker = (fileName: string) => ({
@@ -119,6 +119,7 @@ describe('DownloadTranslationsStep review gating', () => {
   });
 
   const makeTranslation = (approvedAt: string | null) => ({
+    status: 'found',
     branchId: 'branch-1',
     fileId: 'file-1',
     versionId: 'version-1',
@@ -146,8 +147,8 @@ describe('DownloadTranslationsStep review gating', () => {
     approvedAt: string | null,
     reviewPaths: string[]
   ) => {
-    mockGt.queryFileData.mockResolvedValue({
-      translatedFiles: [makeTranslation(approvedAt)],
+    mockGt.queryFiles.mockResolvedValue({
+      results: [makeTranslation(approvedAt)],
     });
     vi.mocked(downloadFileBatch).mockResolvedValue({
       successful: [{ inputPath: fileName, locale: 'fr' }],

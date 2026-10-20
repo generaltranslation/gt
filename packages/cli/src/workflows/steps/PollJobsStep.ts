@@ -1,8 +1,8 @@
 import chalk from 'chalk';
-import type { JobResult } from 'generaltranslation/api';
+import type { JobResult, UnpolledJobResult } from 'generaltranslation/api';
 import { logger } from '../../console/logger.js';
 import type { ApiClient } from '../../utils/api.js';
-import { EnqueueFilesResult } from 'generaltranslation/types';
+import type { EnqueueFilesResult } from './EnqueueStep.js';
 import { TEMPLATE_FILE_NAME } from '../../utils/constants.js';
 import type { FileProperties } from '../../types/files.js';
 import {
@@ -154,13 +154,11 @@ export class PollTranslationJobsStep {
       timeoutDuration - (Date.now() - startTime) / 1000
     );
 
-    // onPoll receives raw statuses and result.jobs normalized ones; only the
-    // shared fields are read here.
     const updateJobStatuses = (
-      statuses: readonly Pick<JobResult, 'jobId' | 'status'>[]
+      statuses: readonly (JobResult | UnpolledJobResult)[]
     ) => {
       for (const job of statuses) {
-        const jobFileProperties = jobFileMap.get(job.jobId);
+        const jobFileProperties = jobFileMap.get(job.id);
         if (!jobFileProperties) continue;
 
         const fileKey = `${jobFileProperties.branchId}:${jobFileProperties.fileId}:${jobFileProperties.versionId}:${jobFileProperties.locale}`;
@@ -171,13 +169,13 @@ export class PollTranslationJobsStep {
           fileTracker.completed.set(fileKey, fileProperties);
         } else if (job.status === 'failed') {
           fileTracker.failed.set(fileKey, fileProperties);
-        } else if (job.status === 'unknown') {
+        } else if (job.status === 'not_found' || job.status === 'unknown') {
           fileTracker.skipped.set(fileKey, fileProperties);
         } else {
           continue;
         }
         fileTracker.inProgress.delete(fileKey);
-        jobFileMap.delete(job.jobId);
+        jobFileMap.delete(job.id);
       }
       this.updateSpinner(fileTracker, fileQueryData);
     };

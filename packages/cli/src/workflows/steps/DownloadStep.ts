@@ -55,34 +55,27 @@ export class DownloadTranslationsStep {
       }
 
       // Check for translations
-      const responseData = await this.api.queryFileData({
-        translatedFiles: currentQueryData.map((item) => ({
+      const { results } = await this.api.queryFiles(
+        currentQueryData.map((item) => ({
           fileId: item.fileId,
           versionId: item.versionId,
           branchId: item.branchId,
           locale: item.locale,
-        })),
-      });
-      const translatedFiles = responseData.translatedFiles || [];
+        }))
+      );
 
-      // Filter for ready translations
-      const readyTranslations = translatedFiles.filter(
-        (file) => file.completedAt !== null
+      // Filter for ready translations; results follow the selector order
+      const isReady = (index: number) =>
+        results[index]?.status === 'found' && !!results[index].completedAt;
+      const readyTranslations = currentQueryData.flatMap((item, index) =>
+        isReady(index)
+          ? [{ ...item, approvedAt: results[index].approvedAt }]
+          : []
       );
       let missingCount = 0;
 
       if (readyTranslations.length < currentQueryData.length) {
-        const readyKeys = new Set(
-          readyTranslations.map(
-            (t) => `${t.branchId}:${t.fileId}:${t.versionId}:${t.locale}`
-          )
-        );
-        const missing = currentQueryData.filter(
-          (item) =>
-            !readyKeys.has(
-              `${item.branchId}:${item.fileId}:${item.versionId}:${item.locale}`
-            )
-        );
+        const missing = currentQueryData.filter((_, index) => !isReady(index));
         missingCount = missing.length;
         logger.warn(
           `Failed to download ${missing.length} file(s):\n${missing.map((f) => `- ${f.fileName} (${f.locale})`).join('\n')}`
@@ -107,7 +100,7 @@ export class DownloadTranslationsStep {
       const reviewGatedKeys = new Set<string>();
       if (requiresReviewPaths.size > 0) {
         for (const translation of readyTranslations) {
-          if (translation.approvedAt !== null) continue;
+          if (translation.approvedAt) continue;
           const fileKey = `${translation.branchId}:${translation.fileId}:${translation.versionId}:${translation.locale}`;
           const fileProperties = fileTracker.completed.get(fileKey);
           if (!fileProperties) continue;

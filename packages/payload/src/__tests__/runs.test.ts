@@ -39,6 +39,7 @@ afterEach(() => {
   gt.unreachable = false;
   gt.usageLimitReached = false;
   gt.failLocales.clear();
+  gt.lostLocales.clear();
   vi.useRealTimers();
 });
 
@@ -138,6 +139,17 @@ describe('runs', () => {
     });
   });
 
+  it('reports locales whose job GT does not have', async () => {
+    gt.lostLocales.add('fr');
+    const { page, run } = await startPage(['es', 'fr']);
+
+    expect(await stepUntilDone(run.id)).toMatchObject({
+      status: 'done',
+      failedLocales: ['fr'],
+    });
+    expect((await readPage(page.id, 'es')).title).toBe('HOME');
+  });
+
   it('saves local edits in a save run', async () => {
     const { page, run } = await startPage();
     await stepUntilDone(run.id);
@@ -198,7 +210,7 @@ describe('runs', () => {
   it("stops at the plan's usage limit instead of trying every document", async () => {
     for (let i = 0; i < 30; i += 1) await createPage(payload);
     gt.usageLimitReached = true;
-    const before = gt.calls.enqueueFiles;
+    const before = gt.calls.translateFiles;
     const run = await startRun({
       payload,
       kind: 'translate',
@@ -210,7 +222,7 @@ describe('runs', () => {
       status: 'done',
       usageLimitReached: true,
     });
-    expect(gt.calls.enqueueFiles - before).toBe(1);
+    expect(gt.calls.translateFiles - before).toBe(1);
   });
 
   it('counts strings that could not be written', async () => {

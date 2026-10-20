@@ -12,6 +12,13 @@ const uploadedFile = {
   locale: 'en',
 };
 
+function succeededBatch<T>(results: T[]) {
+  return {
+    summary: { total: results.length, succeeded: results.length, failed: 0 },
+    results: results.map((result) => ({ ...result, status: 'succeeded' })),
+  };
+}
+
 describe('CLI API client', () => {
   const fetchMock = vi.fn<typeof fetch>();
   const configure = (
@@ -34,9 +41,7 @@ describe('CLI API client', () => {
     vi.resetModules();
     const unconfiguredModule = await import('../api.js');
 
-    await expect(
-      unconfiguredModule.api.queryBranchData({ branchNames: [] })
-    ).rejects.toThrow(
+    await expect(unconfiguredModule.api.listBranches()).rejects.toThrow(
       'API client not configured — call configureApiClient first'
     );
   });
@@ -48,17 +53,19 @@ describe('CLI API client', () => {
     });
     const bodies: Array<{ sourceLocale: string; targetLocale: string }> = [];
     fetchMock.mockImplementation(async (request) => {
-      expect(new URL(request.url).pathname).toBe('/v2/translate');
+      expect(new URL(request.url).pathname).toBe(
+        '/v2/projects/project-id/translate'
+      );
       expect(request.headers.get('authorization')).toBe('Bearer api-key');
-      expect(request.headers.get('gt-project-id')).toBe('project-id');
+      expect(request.headers.get('gt-project-id')).toBeNull();
       const body = JSON.parse(await request.text()) as {
         requests: Record<string, unknown>;
         sourceLocale: string;
         targetLocale: string;
       };
       bodies.push(body);
-      return Response.json(
-        Object.fromEntries(
+      return Response.json({
+        translations: Object.fromEntries(
           Object.keys(body.requests).map((hash) => [
             hash,
             {
@@ -68,8 +75,9 @@ describe('CLI API client', () => {
               dataFormat: 'STRING',
             },
           ])
-        )
-      );
+        ),
+        generated: true,
+      });
     });
 
     await expect(
@@ -108,50 +116,56 @@ describe('CLI API client', () => {
     });
     fetchMock.mockImplementation(async (request) => {
       const body = JSON.parse(await request.text()) as {
-        translatedFiles: Array<{ locale: string }>;
+        files: Array<{ locale?: string }>;
       };
-      expect(body.translatedFiles[0].locale).toBe('en-US');
+      expect(body.files[1].locale).toBe('en-US');
       return Response.json({
-        translatedFiles: [{ locale: 'en-US' }],
-        sourceFiles: [{ sourceLocale: 'en-US', locales: ['en-US', 'es'] }],
+        results: [
+          {
+            status: 'found',
+            fileId: 'file-id',
+            sourceLocale: 'en-US',
+            locales: ['en-US', 'es'],
+          },
+          { status: 'found', fileId: 'file-id', locale: 'en-US' },
+        ],
       });
     });
 
-    const result = await api.queryFileData({
-      translatedFiles: [
-        {
-          branchId: 'branch-id',
-          fileId: 'file-id',
-          versionId: 'version-id',
-          locale: 'brand-english',
-        },
-      ],
-    });
+    const { results } = await api.queryFiles([
+      { branchId: 'branch-id', fileId: 'file-id', versionId: 'version-id' },
+      {
+        branchId: 'branch-id',
+        fileId: 'file-id',
+        versionId: 'version-id',
+        locale: 'brand-english',
+      },
+    ]);
 
-    expect(result.translatedFiles[0].locale).toBe('brand-english');
-    expect(result.sourceFiles[0].sourceLocale).toBe('brand-english');
-    expect(result.sourceFiles[0].locales).toEqual(['brand-english', 'es']);
+    expect(results[1].locale).toBe('brand-english');
+    expect(results[0].sourceLocale).toBe('brand-english');
+    expect(results[0].locales).toEqual(['brand-english', 'es']);
   });
 
   it('standardizes lowercase file query locales for the service', async () => {
     fetchMock.mockImplementation(async (request) => {
       const body = JSON.parse(await request.text()) as {
-        translatedFiles: Array<{ locale: string }>;
+        files: Array<{ fileId: string; locale: string }>;
       };
-      expect(body.translatedFiles[0].locale).toBe('en-US');
-      return Response.json({ translatedFiles: [], sourceFiles: [] });
+      expect(body.files[0].locale).toBe('en-US');
+      return Response.json({
+        results: body.files.map((file) => ({ ...file, status: 'not_found' })),
+      });
     });
 
-    await api.queryFileData({
-      translatedFiles: [
-        {
-          branchId: 'branch-id',
-          fileId: 'file-id',
-          versionId: 'version-id',
-          locale: 'en-us',
-        },
-      ],
-    });
+    await api.queryFiles([
+      {
+        branchId: 'branch-id',
+        fileId: 'file-id',
+        versionId: 'version-id',
+        locale: 'en-us',
+      },
+    ]);
   });
 
   it('preserves HTTP status on API errors', async () => {
@@ -159,7 +173,7 @@ describe('CLI API client', () => {
       Response.json({ error: 'branching unavailable' }, { status: 403 })
     );
 
-    await expect(api.queryBranchData({ branchNames: [] })).rejects.toEqual(
+    await expect(api.listBranches()).rejects.toEqual(
       expect.objectContaining<ApiError>({
         code: 403,
         message: 'branching unavailable',
@@ -173,7 +187,7 @@ describe('CLI API client', () => {
       new Response('service unavailable', { status: 503 })
     );
 
-    await expect(api.queryBranchData({ branchNames: [] })).rejects.toEqual(
+    await expect(api.listBranches()).rejects.toEqual(
       expect.objectContaining<ApiError>({
         code: 503,
         message: 'service unavailable',
@@ -199,9 +213,7 @@ describe('CLI API client', () => {
     configure({ retryPolicy: 'none' });
     fetchMock.mockRejectedValue(networkError);
 
-    await expect(api.queryBranchData({ branchNames: [] })).rejects.toBe(
-      networkError
-    );
+    await expect(api.listBranches()).rejects.toBe(networkError);
   });
 
   it('creates a project in the selected organization with a canonical default locale', async () => {
@@ -235,12 +247,12 @@ describe('CLI API client', () => {
     });
   });
 
-  it('fetches raw project information through the SDK adapter', async () => {
+  it('fetches project information with configured locale aliases', async () => {
     configure({
       customMapping: { 'brand-english': { code: 'en-US' } },
     });
     fetchMock.mockImplementation(async (request) => {
-      expect(new URL(request.url).pathname).toBe('/v2/project/info/project-id');
+      expect(new URL(request.url).pathname).toBe('/v2/projects/project-id');
       return Response.json({
         id: 'project-id',
         name: 'Project',
@@ -248,15 +260,16 @@ describe('CLI API client', () => {
         defaultLocale: 'en-US',
         currentLocales: ['en-US', 'es'],
         autoApprove: false,
+        cdnEnabled: true,
       });
     });
 
-    await expect(api.getProjectInfo(10_000)).resolves.toEqual(
+    await expect(api.getProject({ timeout: 10_000 })).resolves.toEqual(
       expect.objectContaining({
         id: 'project-id',
         autoApprove: false,
-        defaultLocale: 'en-US',
-        currentLocales: ['en-US', 'es'],
+        defaultLocale: 'brand-english',
+        currentLocales: ['brand-english', 'es'],
       })
     );
   });
@@ -264,7 +277,7 @@ describe('CLI API client', () => {
   it('requires a project ID to fetch project information', async () => {
     configure({ projectId: undefined });
 
-    await expect(api.getProjectInfo(10_000)).rejects.toThrow(
+    await expect(api.getProject({ timeout: 10_000 })).rejects.toThrow(
       'Project ID is required to fetch project information'
     );
     expect(fetchMock).not.toHaveBeenCalled();
@@ -281,23 +294,27 @@ describe('CLI API client', () => {
         })
     );
 
-    await expect(api.getProjectInfo(0)).rejects.toThrow(
+    await expect(api.getProject({ timeout: 0 })).rejects.toThrow(
       'Request timed out after 0ms'
     );
   });
 
-  it('checks job status through the job info endpoint', async () => {
+  it('checks job status through the job query endpoint', async () => {
     fetchMock.mockImplementation(async (request) => {
-      expect(new URL(request.url).pathname).toBe('/v2/project/jobs/info');
-      await expect(request.json()).resolves.toEqual({ jobIds: ['setup-job'] });
-      return Response.json([
-        { jobId: 'setup-job', status: 'failed', error: { message: null } },
-      ]);
+      expect(new URL(request.url).pathname).toBe(
+        '/v2/projects/project-id/jobs/query'
+      );
+      await expect(request.json()).resolves.toEqual({
+        jobs: [{ id: 'setup-job' }],
+      });
+      return Response.json({
+        results: [{ id: 'setup-job', status: 'failed', error: null }],
+      });
     });
 
-    await expect(api.checkJobStatus(['setup-job'])).resolves.toEqual([
-      { jobId: 'setup-job', status: 'failed', error: { message: null } },
-    ]);
+    await expect(api.queryJobs(['setup-job'])).resolves.toEqual({
+      results: [{ id: 'setup-job', status: 'failed', error: null }],
+    });
   });
 
   it('forwards abort signals to in-flight job status requests', async () => {
@@ -314,7 +331,9 @@ describe('CLI API client', () => {
     );
 
     const controller = new AbortController();
-    const pendingRequest = api.checkJobStatus(['setup-job'], controller.signal);
+    const pendingRequest = api.queryJobs(['setup-job'], {
+      signal: controller.signal,
+    });
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
     const rejection = expect(pendingRequest).rejects.toThrow(
       'poll deadline exceeded'
@@ -343,11 +362,11 @@ describe('CLI API client', () => {
           localContent: 'content',
         },
       ]);
-      return Response.json({
-        filesProcessed: 1,
-        entriesReceived: 1,
-        message: 'processed',
-      });
+      return Response.json(
+        succeededBatch([
+          { fileId: 'file-id', versionId: 'version-id', locale: 'en-US' },
+        ])
+      );
     });
 
     const diffs = [
@@ -360,13 +379,16 @@ describe('CLI API client', () => {
         localContent: 'content',
       },
     ];
-    await api.submitUserEditDiffs({ diffs });
+    const result = await api.overwriteTranslations(diffs);
     expect(fetchMock).toHaveBeenCalledOnce();
+    expect(result.summary).toEqual({ total: 1, succeeded: 1, failed: 0 });
   });
 
   it('publishes only contract fields for CDN entries', async () => {
     fetchMock.mockImplementation(async (request) => {
-      expect(new URL(request.url).pathname).toBe('/v2/project/files/publish');
+      expect(new URL(request.url).pathname).toBe(
+        '/v2/projects/project-id/files/publish'
+      );
       await expect(request.json()).resolves.toEqual({
         files: [
           {
@@ -377,10 +399,10 @@ describe('CLI API client', () => {
           },
         ],
       });
-      return Response.json({ results: [] });
+      return Response.json(succeededBatch([]));
     });
 
-    const entries: PublishFileEntry[] = [
+    const entries: (PublishFileEntry & { fileName: string })[] = [
       {
         fileId: 'file-id',
         versionId: 'version-id',
@@ -404,14 +426,8 @@ describe('CLI API client', () => {
         sourceLocale: string;
       };
       requestBodies.push(body);
-      return Response.json(
-        {
-          uploadedFiles: body.data.map(() => uploadedFile),
-          count: body.data.length,
-          message: 'uploaded',
-        },
-        { status: 201 }
-      );
+      const { locale: _locale, ...sourceResult } = uploadedFile;
+      return Response.json(succeededBatch(body.data.map(() => sourceResult)));
     });
 
     const result = await api.uploadSourceFiles(
@@ -431,7 +447,8 @@ describe('CLI API client', () => {
     expect(requestBodies[0].data[0].source.content).toBe('bWVzc2FnZS0w');
     expect(requestBodies[0].data[0].source.locale).toBe('en-US');
     expect(requestBodies[0].sourceLocale).toBe('en-US');
-    expect(result.uploadedFiles).toHaveLength(101);
+    expect(result.summary.succeeded).toBe(101);
+    expect(result.results).toHaveLength(101);
   });
 
   it('canonicalizes project setup locales', async () => {
@@ -441,12 +458,14 @@ describe('CLI API client', () => {
     fetchMock.mockImplementation(async (request) => {
       const body = JSON.parse(await request.text()) as { locales: string[] };
       expect(body.locales).toEqual(['en-US', 'es-ES']);
-      return Response.json({ status: 'completed' });
+      return Response.json({ job: null });
     });
 
-    await api.setupProject([], {
-      locales: ['brand-english', 'es-es'],
-    });
+    await expect(
+      api.generateProjectContext([], {
+        locales: ['brand-english', 'es-es'],
+      })
+    ).resolves.toEqual({ job: null });
   });
 
   it('base64-encodes and uploads translation files through the SDK', async () => {
@@ -459,10 +478,7 @@ describe('CLI API client', () => {
       };
       expect(body.data[0].source.content).toBe('c291cmNl');
       expect(body.data[0].translations[0].content).toBe('dHJhbnNsYXRpb24=');
-      return Response.json(
-        { uploadedFiles: [uploadedFile], count: 1, message: 'uploaded' },
-        { status: 201 }
-      );
+      return Response.json(succeededBatch([uploadedFile]));
     });
 
     const result = await api.uploadTranslations(
@@ -487,7 +503,7 @@ describe('CLI API client', () => {
       { sourceLocale: 'en' }
     );
 
-    expect(result.uploadedFiles).toEqual([uploadedFile]);
+    expect(result.results).toEqual([{ ...uploadedFile, status: 'succeeded' }]);
   });
 
   it('canonicalizes uploaded translation locales', async () => {
@@ -505,14 +521,10 @@ describe('CLI API client', () => {
         }>;
         sourceLocale: string;
       };
-      expect(body.sourceLocale).toBe('en-US');
+      expect(body.sourceLocale).toBeUndefined();
       expect(body.data[0].source.locale).toBe('en-US');
       expect(body.data[0].translations[0].locale).toBe('es-ES');
-      return Response.json({
-        uploadedFiles: [uploadedFile],
-        count: 1,
-        message: 'uploaded',
-      });
+      return Response.json(succeededBatch([uploadedFile]));
     });
 
     const files = [
@@ -544,9 +556,9 @@ describe('CLI API client', () => {
   it('decodes text downloads and preserves binary downloads', async () => {
     fetchMock.mockResolvedValue(
       Response.json({
-        files: [
+        results: [
           {
-            id: 'text',
+            status: 'ready',
             branchId: 'branch-id',
             fileId: 'text-id',
             versionId: 'version-id',
@@ -555,7 +567,7 @@ describe('CLI API client', () => {
             fileFormat: 'JSON',
           },
           {
-            id: 'binary',
+            status: 'ready',
             branchId: 'branch-id',
             fileId: 'binary-id',
             versionId: 'version-id',
@@ -564,16 +576,15 @@ describe('CLI API client', () => {
             fileFormat: 'LOTTIE',
           },
         ],
-        count: 2,
       })
     );
 
-    const result = await api.downloadFileBatch([
+    const result = await api.queryFilesContent([
       { fileId: 'text-id' },
       { fileId: 'binary-id' },
     ]);
 
-    expect(result.files.map(({ data }) => data)).toEqual([
+    expect(result.results.map(({ data }) => data)).toEqual([
       'hello',
       'binary-base64',
     ]);
@@ -584,14 +595,14 @@ describe('CLI API client', () => {
       customMapping: { 'brand-english': { code: 'en-US' } },
     });
     fetchMock.mockImplementation(async (request) => {
-      const body = JSON.parse(await request.text()) as Array<{
-        locale: string;
-      }>;
-      expect(body[0].locale).toBe('en-US');
+      const body = JSON.parse(await request.text()) as {
+        files: Array<{ locale: string }>;
+      };
+      expect(body.files[0].locale).toBe('en-US');
       return Response.json({
-        files: [
+        results: [
           {
-            id: 'text',
+            status: 'ready',
             branchId: 'branch-id',
             fileId: 'file-id',
             versionId: 'version-id',
@@ -601,34 +612,31 @@ describe('CLI API client', () => {
             fileFormat: 'JSON',
           },
         ],
-        count: 1,
       });
     });
 
-    const result = await api.downloadFileBatch([
+    const result = await api.queryFilesContent([
       { fileId: 'file-id', locale: 'brand-english' },
     ]);
 
-    expect(result.files[0].locale).toBe('brand-english');
+    expect(result.results[0].locale).toBe('brand-english');
   });
 
-  it('returns an empty download aggregate without an HTTP request', async () => {
-    await expect(api.downloadFileBatch([])).resolves.toEqual({
-      files: [],
-      count: 0,
-      pending: [],
+  it('returns no content results without an HTTP request', async () => {
+    await expect(api.queryFilesContent([])).resolves.toEqual({
+      results: [],
     });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('downloads files in batches of 100', async () => {
     fetchMock.mockImplementation(async (request) => {
-      const body = JSON.parse(await request.text()) as Array<{
-        fileId: string;
-      }>;
+      const body = JSON.parse(await request.text()) as {
+        files: Array<{ fileId: string }>;
+      };
       return Response.json({
-        files: body.map(({ fileId }) => ({
-          id: fileId,
+        results: body.files.map(({ fileId }) => ({
+          status: 'ready',
           branchId: 'branch-id',
           fileId,
           versionId: 'version-id',
@@ -636,85 +644,99 @@ describe('CLI API client', () => {
           metadata: {},
           fileFormat: 'JSON',
         })),
-        count: body.length,
       });
     });
 
-    const result = await api.downloadFileBatch(
+    const result = await api.queryFilesContent(
       Array.from({ length: 101 }, (_, index) => ({ fileId: `file-${index}` }))
     );
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(result.files).toHaveLength(101);
+    expect(result.results).toHaveLength(101);
   });
 
-  it('intersects orphan results across file ID batches', async () => {
-    let requestCount = 0;
-    fetchMock.mockImplementation(async () => {
-      requestCount += 1;
-      return Response.json({
-        orphanedFiles: [
-          {
-            fileId: 'common-orphan',
-            versionId: 'version-id',
-            fileName: 'orphan.json',
-          },
-          {
-            fileId: `batch-${requestCount}-only`,
-            versionId: 'version-id',
-            fileName: 'batch.json',
-          },
-        ],
-      });
+  it('lists one page of branch files', async () => {
+    const branchFile = {
+      fileId: 'file-id',
+      versionId: 'version-id',
+      fileName: 'messages.json',
+    };
+    fetchMock.mockImplementation(async (request) => {
+      const url = new URL(request.url);
+      expect(url.pathname).toBe(
+        '/v2/projects/project-id/branches/branch-id/files'
+      );
+      expect(url.searchParams.get('cursor')).toBe('next');
+      expect(url.searchParams.get('limit')).toBe('100');
+      return Response.json({ items: [branchFile], nextCursor: null });
     });
 
-    const result = await api.getOrphanedFiles(
-      'branch-id',
-      Array.from({ length: 101 }, (_, index) => `file-${index}`)
-    );
-
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(result.orphanedFiles).toEqual([
-      {
-        fileId: 'common-orphan',
-        versionId: 'version-id',
-        fileName: 'orphan.json',
-      },
-    ]);
+    await expect(
+      api.listBranchFiles('branch-id', { cursor: 'next', limit: 100 })
+    ).resolves.toEqual({ items: [branchFile], nextCursor: null });
   });
 
-  it('enqueues files in batches of 100 and merges job data', async () => {
+  it('awaits jobs through queryJobs with not_found as terminal', async () => {
+    const statuses = [
+      [
+        { id: 'job-1', status: 'processing' },
+        { id: 'job-2', status: 'not_found' },
+      ],
+      [{ id: 'job-1', status: 'completed' }],
+    ];
+    fetchMock.mockImplementation(async (request) => {
+      expect(new URL(request.url).pathname).toBe(
+        '/v2/projects/project-id/jobs/query'
+      );
+      return Response.json({ results: statuses.shift() });
+    });
+
+    await expect(
+      api.awaitJobs(['job-1', 'job-2'], { pollingIntervalSeconds: 0 })
+    ).resolves.toEqual({
+      complete: true,
+      jobs: [
+        { id: 'job-1', status: 'completed' },
+        { id: 'job-2', status: 'not_found' },
+      ],
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('translates files in batches of 100 and merges jobs', async () => {
     configure({
       customMapping: { 'brand-english': { code: 'en-US' } },
     });
-    let requestCount = 0;
     const batchSizes: number[] = [];
     fetchMock.mockImplementation(async (request) => {
       const body = JSON.parse(await request.text()) as {
-        files: unknown[];
+        files: Array<{ fileId: string }>;
         sourceLocale?: string;
       };
       expect(body.sourceLocale).toBe('en-US');
       batchSizes.push(body.files.length);
-      requestCount += 1;
-      return Response.json({
-        jobData: {
-          [`job-${requestCount}`]: {
-            sourceFileId: 'source-file-id',
-            fileId: 'file-id',
-            versionId: 'version-id',
-            branchId: 'branch-id',
-            targetLocale: 'es',
-            projectId: 'project-id',
-            force: false,
-          },
+      const [{ fileId }] = body.files;
+      return Response.json(
+        {
+          jobs: [
+            {
+              id: `job-${fileId}`,
+              status: 'queued',
+              subject: {
+                type: 'file_translation',
+                branchId: 'branch-id',
+                fileId,
+                versionId: 'version-id',
+                locale: 'es',
+              },
+            },
+          ],
         },
-        locales: ['es'],
-        message: 'enqueued',
-      });
+        { status: 202 }
+      );
     });
 
-    const result = await api.enqueueFiles(
+    const result = await api.translateFiles(
       Array.from({ length: 101 }, (_, index) => ({
         branchId: 'branch-id',
         fileId: `file-${index}`,
@@ -726,7 +748,10 @@ describe('CLI API client', () => {
     );
 
     expect(batchSizes).toEqual([100, 1]);
-    expect(Object.keys(result.jobData)).toEqual(['job-1', 'job-2']);
+    expect(result.jobs.map((job) => job.id)).toEqual([
+      'job-file-0',
+      'job-file-100',
+    ]);
   });
 
   it('lists projects across every cursor page', async () => {

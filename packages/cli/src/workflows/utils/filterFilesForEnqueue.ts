@@ -6,7 +6,7 @@ import {
   queryCompletedTranslationKeys,
 } from './queryCompletedTranslations.js';
 
-type FilterFilesForEnqueueClient = Pick<ApiClient, 'queryFileData'>;
+type FilterFilesForEnqueueClient = Pick<ApiClient, 'queryFiles'>;
 
 export type EnqueueFilterResult = {
   filesToEnqueue: FileReference[];

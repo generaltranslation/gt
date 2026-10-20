@@ -62,7 +62,8 @@ const FINISH_BATCH = 10;
 const LEASE_MS = 2 * 60 * 1000;
 // A running run nobody has stepped for this long is picked up by any admin.
 const STALE_MS = 30 * 1000;
-const FINISHED = new Set(['completed', 'failed']);
+// A not_found job is one GT does not have, so it never finishes.
+const FINISHED = new Set(['completed', 'failed', 'not_found']);
 // Steps in a row that may throw before the run gives up on what is left.
 const MAX_FAILURES = 5;
 // After this long, jobs GT has not finished are reported as failed.

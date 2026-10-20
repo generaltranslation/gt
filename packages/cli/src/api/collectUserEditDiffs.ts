@@ -12,9 +12,9 @@ import { api } from '../utils/api.js';
 import {
   FileReference,
   isBinaryFileFormat,
-  SubmitUserEditDiff,
   type FileFormat,
 } from 'generaltranslation/types';
+import type { OverwriteTranslationsData } from 'generaltranslation/api';
 import { readFileContent } from '../fs/fileContent.js';
 import os from 'node:os';
 import { randomUUID } from 'node:crypto';
@@ -28,6 +28,19 @@ import { extractYaml } from '../formats/yaml/extractYaml.js';
 import { logger } from '../console/logger.js';
 import { recordWarning } from '../state/translateWarnings.js';
 import { getRelative } from '../fs/findFilepath.js';
+import {
+  getFileTranslationKey,
+  queryCompletedTranslationKeys,
+} from '../workflows/utils/queryCompletedTranslations.js';
+
+type UserEditDiff = OverwriteTranslationsData['body']['diffs'][number] & {
+  fileName: string;
+};
+
+export type UserEditDiffResults = {
+  saved: UserEditDiff[];
+  failed: UserEditDiff[];
+};
 
 type LatestDownloadedVersion = {
   versionId: string;
@@ -65,12 +78,13 @@ const findLatestDownloadedVersion = (
  * edit to one locale is submitted under that locale alone.
  *
  * Must run before enqueueing new translations so rules are available to the generator.
+ * Returns the edits the API saved and the ones it failed to save; each failure is logged.
  */
 export async function collectAndSendUserEditDiffs(
   files: FileReference[],
   settings: Settings
-): Promise<boolean> {
-  if (!settings.files) return false;
+): Promise<UserEditDiffResults> {
+  if (!settings.files) return { saved: [], failed: [] };
 
   const { resolvedPaths, placeholderPaths, transformPaths, transformFormats } =
     settings.files;
@@ -149,7 +163,7 @@ export async function collectAndSendUserEditDiffs(
     }
   }
 
-  const collectedDiffs: SubmitUserEditDiff[] = [];
+  const collectedDiffs: UserEditDiff[] = [];
 
   if (candidates.length > 0) {
     const fileQueryData = candidates.map((c) => ({
@@ -159,32 +173,31 @@ export async function collectAndSendUserEditDiffs(
       branchId: c.branchId,
     }));
 
-    // Single batched check to obtain translation IDs
-    const checkResponse = await api.queryFileData({
-      translatedFiles: fileQueryData,
-    });
-    const translatedFiles =
-      checkResponse.translatedFiles?.filter((t) => t.completedAt) ?? [];
+    const completedKeys = await queryCompletedTranslationKeys(api, candidates);
+    const translatedFiles = fileQueryData.filter((f) =>
+      completedKeys.has(getFileTranslationKey(f))
+    );
 
     // The server's copy of each candidate, keyed like the candidates
     type ServerPayload = { data: string; fileFormat: FileFormat };
     const serverPayloadByKey = new Map<string, ServerPayload>();
     try {
-      const resp = await api.downloadFileBatch(
-        translatedFiles.map((file) => ({
-          branchId: file.branchId,
-          fileId: file.fileId,
-          locale: file.locale,
-          versionId: file.versionId,
-        }))
-      );
-      for (const f of resp?.files || []) {
-        if (!f.locale) continue;
+      const { results: contentResults } =
+        await api.queryFilesContent(translatedFiles);
+      contentResults.forEach((result, index) => {
+        if (
+          result.status !== 'ready' ||
+          typeof result.data !== 'string' ||
+          !result.fileFormat
+        ) {
+          return;
+        }
+        const f = translatedFiles[index];
         serverPayloadByKey.set(
           `${f.branchId}:${f.fileId}:${f.versionId}:${f.locale}`,
-          { data: f.data, fileFormat: f.fileFormat }
+          { data: result.data, fileFormat: result.fileFormat }
         );
-      }
+      });
     } catch {
       // Ignore chunk failures; proceed with what we have
     }
@@ -306,6 +319,16 @@ export async function collectAndSendUserEditDiffs(
             }
           }
 
+          // The API rejects empty content, so an emptied file cannot be saved
+          if (localContent.length === 0) {
+            const relativePath = getRelative(c.outputPath);
+            const reason =
+              'Edited file is empty, so its changes cannot be submitted';
+            logger.warn(`Skipping local edits to ${relativePath}: ${reason}`);
+            recordWarning('skipped_file', relativePath, reason);
+            continue;
+          }
+
           collectedDiffs.push({
             fileName: c.fileName,
             locale: c.locale,
@@ -314,7 +337,7 @@ export async function collectAndSendUserEditDiffs(
             versionId: c.versionId,
             fileId: c.fileId,
             localContent,
-          } satisfies SubmitUserEditDiff);
+          } satisfies UserEditDiff);
         }
       } catch {
         // Ignore failures for this file
@@ -322,9 +345,22 @@ export async function collectAndSendUserEditDiffs(
     }
   }
 
-  if (collectedDiffs.length > 0) {
-    await api.submitUserEditDiffs({ diffs: collectedDiffs });
-  }
+  const saveResults: UserEditDiffResults = { saved: [], failed: [] };
+  if (collectedDiffs.length === 0) return saveResults;
 
-  return collectedDiffs.length > 0;
+  // Results follow request order; a failed edit is reported and skipped.
+  const { results } = await api.overwriteTranslations(collectedDiffs);
+  results.forEach((result, index) => {
+    const edit = collectedDiffs[index];
+    if (result.status !== 'failed') {
+      saveResults.saved.push(edit);
+      return;
+    }
+    const reason = `Locale ${edit.locale}: ${result.error ?? 'Unknown error'}`;
+    logger.warn(`Failed to save local edits to ${edit.fileName}: ${reason}`);
+    recordWarning('failed_edit_save', edit.fileName, reason);
+    saveResults.failed.push(edit);
+  });
+
+  return saveResults;
 }

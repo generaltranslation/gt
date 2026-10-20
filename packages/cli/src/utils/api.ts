@@ -1,33 +1,44 @@
-import type { CustomMapping } from '@generaltranslation/format/types';
-import type { ApiClientConfig } from 'generaltranslation/api';
-import { createGtApiAdapter } from 'generaltranslation/internal';
+import {
+  createGtApiAdapter,
+  type GtApiAdapterConfig,
+} from 'generaltranslation/internal';
 
-const {
-  configure: configureSharedApi,
-  getClient: _getClient,
-  loadJobStatuses,
-  loadProjectInfo,
-  ...sharedApi
-} = createGtApiAdapter();
+const sharedApi = createGtApiAdapter();
 
-export function configureApiClient(
-  config: ApiClientConfig & { customMapping?: CustomMapping }
-): void {
-  configureSharedApi(config);
+export function configureApiClient(config: GtApiAdapterConfig): void {
+  sharedApi.configure(config);
 }
 
-// CLI keeps the raw service views: unaliased project locales and nullable
-// job errors, plus per-request cancellation for polling.
 export const api = {
-  ...sharedApi,
+  resolveAliasLocale: sharedApi.resolveAliasLocale,
+  resolveCanonicalLocale: sharedApi.resolveCanonicalLocale,
+  translate: sharedApi.translate,
+  translateMany: sharedApi.translateMany,
 
-  async checkJobStatus(jobIds: string[], signal?: AbortSignal) {
-    return loadJobStatuses(jobIds, { signal });
-  },
+  getProject: sharedApi.getProject,
+  updateProject: sharedApi.updateProject,
+  listBranches: sharedApi.listBranches,
+  createBranch: sharedApi.createBranch,
+  updateBranch: sharedApi.updateBranch,
+  moveFiles: sharedApi.moveFiles,
+  listBranchFiles: sharedApi.listBranchFiles,
+  generateProjectContext: sharedApi.generateProjectContext,
+  queryJobs: sharedApi.queryJobs,
+  awaitJobs: sharedApi.awaitJobs,
+  translateFiles: sharedApi.translateFiles,
+  setTag: sharedApi.setTag,
+  publishFiles: sharedApi.publishFiles,
+  overwriteTranslations: sharedApi.overwriteTranslations,
+  queryFiles: sharedApi.queryFiles,
+  queryFilesContent: sharedApi.queryFilesContent,
+  uploadSourceFiles: sharedApi.uploadSourceFiles,
+  uploadTranslations: sharedApi.uploadTranslations,
+  upsertAssets: sharedApi.upsertAssets,
 
-  async getProjectInfo(timeoutMs: number) {
-    return loadProjectInfo(undefined, timeoutMs);
-  },
+  createProject: sharedApi.createProject,
+  listProjects: sharedApi.listProjects,
+  listOrgs: sharedApi.listOrgs,
+  createProjectApiKey: sharedApi.createProjectApiKey,
 };
 
 export type ApiClient = typeof api;

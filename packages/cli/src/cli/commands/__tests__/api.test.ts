@@ -138,6 +138,36 @@ describe('gt api', () => {
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 
+  it('keeps a gt-project-id header the caller passes and sends none without a project', async () => {
+    vi.stubEnv('GT_PROJECT_ID', undefined);
+    const projectIds: Array<string | null> = [];
+    const fetchMock = vi.fn<typeof fetch>(async (request) => {
+      projectIds.push(new Request(request).headers.get('gt-project-id'));
+      return new Response('{}');
+    });
+    const dependencies = { fetch: fetchMock, writeStdout: () => undefined };
+    const config = writeInput('{}');
+
+    await handleApiCommand(
+      'v1/integrations/plugins/figma/info',
+      {
+        apiKey: 'api-key',
+        config,
+        header: ['GT-Project-Id: header-project'],
+        method: 'post',
+        projectId: 'flag-project',
+      },
+      dependencies
+    );
+    await handleApiCommand(
+      'v2/projects',
+      { apiKey: 'api-key', config, method: 'get' },
+      dependencies
+    );
+
+    expect(projectIds).toEqual(['header-project', null]);
+  });
+
   it('rejects a project ID that conflicts with the configuration', async () => {
     const configPath = writeInput(
       JSON.stringify({
@@ -263,13 +293,13 @@ describe('gt api', () => {
     );
 
     expect(outputText(stdout).split('\n')).toContain(
-      'POST\t/v2/project/files/info\tgetFileInfo\tGet file metadata'
+      'POST\t/v2/projects/{projectId}/files/query\tqueryFiles\tQuery file metadata'
     );
   });
 
   it.each([
-    ['a concrete path', '/v2/project/info/abc?x=1'],
-    ['an operation ID', 'getProjectInfo'],
+    ['a concrete path', '/v2/projects/abc?x=1'],
+    ['an operation ID', 'getProject'],
   ])(
     'prints one operation with references resolved for %s',
     async (_, endpoint) => {
@@ -283,7 +313,7 @@ describe('gt api', () => {
 
       const output = outputText(stdout);
       expect(Object.keys(JSON.parse(output).paths)).toEqual([
-        '/v2/project/info/{projectId}',
+        '/v2/projects/{projectId}',
       ]);
       expect(output).not.toContain('#/components/schemas/ApiVersion');
     }
@@ -300,7 +330,7 @@ describe('gt api', () => {
       return JSON.parse(outputText(stdout));
     };
 
-    const translate = await lookup('translate');
+    const translate = await lookup('translateContent');
     expect(JSON.stringify(translate.paths)).toContain(
       '#/components/schemas/JsonValue'
     );

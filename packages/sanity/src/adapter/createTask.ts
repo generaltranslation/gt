@@ -2,6 +2,11 @@ import type { Adapter, GTFile, GTSerializedDocument, Secrets } from '../types';
 import { getTranslationTask } from './getTranslationTask';
 import { api, gt, overrideConfig } from './core';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
+import {
+  failedResultsDiagnostic,
+  succeededResults,
+} from '../utils/batchResults';
+import { syncProjectDefaultLocale } from './syncProjectDefaultLocale';
 
 // note: this function is used to create a new translation task
 // uploads files & calls the getTranslationTask function
@@ -32,7 +37,17 @@ export const createTask: Adapter['createTask'] = async (
       sourceLocale: gt.sourceLocale || libraryDefaultLocale,
     }
   );
-  await api.enqueueFiles(uploadResult.uploadedFiles, {
+  if (uploadResult.summary.failed > 0) {
+    throw new Error(
+      failedResultsDiagnostic(
+        'The document could not be uploaded to General Translation',
+        uploadResult,
+        'Error'
+      )
+    );
+  }
+  await syncProjectDefaultLocale(gt.sourceLocale || libraryDefaultLocale);
+  await api.translateFiles(succeededResults(uploadResult), {
     sourceLocale: gt.sourceLocale || libraryDefaultLocale,
     targetLocales: localeIds,
   });

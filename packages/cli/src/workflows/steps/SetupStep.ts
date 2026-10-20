@@ -4,7 +4,7 @@ import type { ApiClient } from '../../utils/api.js';
 import type { Settings } from '../../types/index.js';
 import chalk from 'chalk';
 
-type SetupClient = Pick<ApiClient, 'setupProject' | 'awaitJobs'>;
+type SetupClient = Pick<ApiClient, 'generateProjectContext' | 'awaitJobs'>;
 
 export class SetupStep {
   private spinner = logger.createSpinner('dots');
@@ -26,24 +26,18 @@ export class SetupStep {
       return [];
     }
 
-    const result = await this.gt.setupProject(files, {
+    const { job: setupJob } = await this.gt.generateProjectContext(files, {
       locales: this.settings.locales,
       force,
     });
 
-    if (result.status === 'completed') {
+    // No job: the project context is already current
+    if (!setupJob) {
       this.spinner.stop(chalk.green('Setup successfully completed'));
       return files;
     }
 
-    if (result.status !== 'queued' || !result.setupJobId) {
-      this.spinner.stop(
-        chalk.yellow('Setup status unknown — proceeding without setup')
-      );
-      return files;
-    }
-
-    const { complete, jobs } = await this.gt.awaitJobs([result.setupJobId], {
+    const { complete, jobs } = await this.gt.awaitJobs([setupJob.id], {
       pollingIntervalSeconds: 5,
       timeoutSeconds: this.timeoutMs / 1000,
     });
@@ -58,7 +52,7 @@ export class SetupStep {
     } else if (job?.status === 'failed') {
       this.spinner.stop(
         chalk.yellow(
-          `Setup failed: ${job.error?.message || 'Unknown error'} — proceeding without setup`
+          `Setup failed: ${job.error || 'Unknown error'} — proceeding without setup`
         )
       );
     } else {

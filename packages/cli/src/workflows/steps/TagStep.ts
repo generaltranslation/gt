@@ -1,4 +1,4 @@
-import type { CreateTagResult } from 'generaltranslation/types';
+import type { SetTagResponse } from 'generaltranslation/api';
 import { logger } from '../../console/logger.js';
 import type { ApiClient } from '../../utils/api.js';
 import { Settings } from '../../types/index.js';
@@ -14,14 +14,14 @@ export class TagStep {
     private userProvided: boolean
   ) {}
 
-  async run(files: FileReference[]): Promise<CreateTagResult> {
+  async run(files: FileReference[]): Promise<SetTagResponse> {
     if (this.userProvided) {
       this.spinner.start('Creating translation tag...');
     }
 
     try {
-      const result = await this.api.createTag({
-        tagId: this.settings.tag!,
+      // The tag's file list is replaced by these files.
+      const result = await this.api.setTag(this.settings.tag!, {
         files: files.map((f) => ({
           fileId: f.fileId,
           versionId: f.versionId,

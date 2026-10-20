@@ -7,11 +7,11 @@ export type Data = Record<string, unknown>;
 export type GtClient = Pick<
   GT,
   | 'uploadSourceFiles'
-  | 'enqueueFiles'
+  | 'translateFiles'
   | 'awaitJobs'
-  | 'downloadFileBatch'
+  | 'queryFilesContent'
   | 'uploadTranslations'
-  | 'checkJobStatus'
+  | 'queryJobs'
   | 'translateMany'
   | 'customMapping'
 >;

@@ -229,14 +229,16 @@ export async function upload(
 
   try {
     // Send all files in a single API call
-    const { branchData } = await runUploadFilesWorkflow({
+    const { branchData, uploadedFiles } = await runUploadFilesWorkflow({
       files: uploadData,
       options: settings,
     });
 
-    // Publish files to CDN if publish config exists
+    // Publish files to CDN if publish config exists; files whose upload
+    // failed are skipped
+    const uploadedFileIds = new Set(uploadedFiles.map((file) => file.fileId));
     await runPublishWorkflow(
-      allFiles,
+      allFiles.filter((file) => uploadedFileIds.has(file.fileId)),
       publishMap,
       branchData.currentBranch.id,
       settings

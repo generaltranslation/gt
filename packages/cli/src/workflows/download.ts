@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { Settings } from '../types/index.js';
 import { api } from '../utils/api.js';
-import { EnqueueFilesResult } from 'generaltranslation/types';
+import type { EnqueueFilesResult } from './steps/EnqueueStep.js';
 import { clearLocaleDirs } from '../fs/clearLocaleDirs.js';
 import {
   FileStatusTracker,

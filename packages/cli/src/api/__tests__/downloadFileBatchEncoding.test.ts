@@ -11,7 +11,7 @@ import type { FileStatusTracker } from '../../workflows/steps/PollJobsStep.js';
 // this path is the bytes that land on disk, which a mocked writer cannot show.
 vi.mock('../../utils/api.js', () => ({
   api: {
-    downloadFileBatch: vi.fn(),
+    queryFilesContent: vi.fn(),
     resolveAliasLocale: vi.fn((locale: string) => locale),
     resolveCanonicalLocale: vi.fn((locale: string) => locale),
   },
@@ -125,9 +125,10 @@ describe('downloadFileBatch - source file encodings', () => {
     } as unknown as FileStatusTracker;
 
     // Text formats arrive already decoded to a UTF-8 string from core.
-    vi.mocked(api.downloadFileBatch).mockResolvedValue({
-      files: [
+    vi.mocked(api.queryFilesContent).mockResolvedValue({
+      results: [
         {
+          status: 'ready',
           branchId: 'branch1',
           fileId: 'file1',
           versionId: 'version1',
@@ -136,7 +137,7 @@ describe('downloadFileBatch - source file encodings', () => {
           data: translatedBody,
         },
       ],
-    } as unknown as Awaited<ReturnType<typeof api.downloadFileBatch>>);
+    } as unknown as Awaited<ReturnType<typeof api.queryFilesContent>>);
 
     const result = await downloadFileBatch(
       fileTracker,

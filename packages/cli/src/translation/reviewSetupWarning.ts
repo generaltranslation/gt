@@ -43,7 +43,7 @@ export async function warnManualReviewSetup(
 
   let autoApprove: boolean | undefined;
   try {
-    autoApprove = (await api.getProjectInfo(PROJECT_INFO_TIMEOUT_MS))
+    autoApprove = (await api.getProject({ timeout: PROJECT_INFO_TIMEOUT_MS }))
       .autoApprove;
   } catch {
     // Setting unavailable — fall through to the conditional wording

@@ -13,8 +13,7 @@ export const getTranslationTask: Adapter['getTranslationTask'] = async (
     };
   }
   overrideConfig(secrets);
-  const task = await api.querySourceFile({
-    fileId: documentInfo.documentId,
+  const task = await api.getFileStatus(documentInfo.documentId, {
     versionId: documentInfo.versionId || undefined,
   });
 
