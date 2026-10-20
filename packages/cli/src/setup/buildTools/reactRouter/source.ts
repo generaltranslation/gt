@@ -17,7 +17,7 @@ import {
 } from '../shared/source.js';
 
 export const DOCS_URL =
-  'https://generaltranslation.com/docs/react/react-quickstart';
+  'https://generaltranslation.com/docs/react/react-router-quickstart';
 
 /** React Router's app directory, where the root module and loader live. */
 export const SOURCE_DIRECTORY = 'app';
