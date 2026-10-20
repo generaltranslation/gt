@@ -6,8 +6,11 @@ import { localizeHref, type LinkLocale } from './localize-utils';
  * Returns a function that localizes hrefs the same way `gt-next/link` does,
  * for navigation that does not render a `<Link>`, such as `router.push()`.
  *
- * Internal paths are prefixed only when the middleware would otherwise
- * redirect them. External URLs are never prefixed.
+ * Internal paths are prefixed with the target locale, except default-locale
+ * paths when `prefixDefaultLocale` is `false` (an explicit default `locale`
+ * keeps its prefix while `enableSmartRouting` is on). Localized path aliases
+ * and locale availability are still resolved by the middleware. External URLs
+ * are never prefixed.
  *
  * @example
  * ```tsx
