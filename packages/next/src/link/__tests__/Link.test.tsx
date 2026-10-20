@@ -1,6 +1,7 @@
 import type React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { MiddlewareConfig } from '../../middleware-dir/types';
 
 const { mockNextLink, mockUseLocale } = vi.hoisted(() => ({
   mockNextLink: vi.fn(),
@@ -9,6 +10,7 @@ const { mockNextLink, mockUseLocale } = vi.hoisted(() => ({
 
 vi.mock('gt-react', () => ({
   useLocale: mockUseLocale,
+  useDefaultLocale: () => 'en',
 }));
 
 vi.mock('next/link', async () => {
@@ -28,11 +30,26 @@ vi.mock('next/link', async () => {
   };
 });
 
+async function importLink(middlewareConfig: MiddlewareConfig = {}) {
+  vi.stubEnv(
+    '_GENERALTRANSLATION_MIDDLEWARE_CONFIG',
+    JSON.stringify(middlewareConfig)
+  );
+  vi.resetModules();
+  return (await import('../Link')).Link;
+}
+
+function renderedHref() {
+  return mockNextLink.mock.calls[0][0].href;
+}
+
 describe('Link', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseLocale.mockReturnValue('fr');
   });
+
+  afterEach(() => vi.unstubAllEnvs());
 
   it('prefixes internal links with the current locale without forwarding locale', async () => {
     const { Link } = await import('../Link');
@@ -58,5 +75,61 @@ describe('Link', () => {
       href: '/legal',
     });
     expect(mockNextLink.mock.calls[0][0]).not.toHaveProperty('locale');
+  });
+
+  describe('default locale', () => {
+    beforeEach(() => mockUseLocale.mockReturnValue('en'));
+
+    it('leaves current default-locale links unprefixed', async () => {
+      const Link = await importLink();
+
+      renderToStaticMarkup(<Link href='/home'>Home</Link>);
+
+      expect(renderedHref()).toBe('/home');
+    });
+
+    it('prefixes current default-locale links with prefixDefaultLocale', async () => {
+      const Link = await importLink({ prefixDefaultLocale: true });
+
+      renderToStaticMarkup(<Link href='/home'>Home</Link>);
+
+      expect(renderedHref()).toBe('/en/home');
+    });
+
+    it('prefixes explicit default-locale links with smart routing', async () => {
+      const Link = await importLink();
+
+      renderToStaticMarkup(
+        <Link href='/home' locale='en'>
+          English
+        </Link>
+      );
+
+      expect(renderedHref()).toBe('/en/home');
+    });
+
+    it('leaves explicit default-locale links unprefixed without smart routing', async () => {
+      const Link = await importLink({ enableSmartRouting: false });
+
+      renderToStaticMarkup(
+        <Link href='/home' locale='en'>
+          English
+        </Link>
+      );
+
+      expect(renderedHref()).toBe('/home');
+    });
+
+    it('prefixes explicit non-default-locale links', async () => {
+      const Link = await importLink({ enableSmartRouting: false });
+
+      renderToStaticMarkup(
+        <Link href='/home' locale='fr'>
+          French
+        </Link>
+      );
+
+      expect(renderedHref()).toBe('/fr/home');
+    });
   });
 });

@@ -33,6 +33,7 @@ export { GtInternalVar, Var } from './variables/Var';
 export { useLocale } from './request/getLocale';
 export { useRegion } from './request/getRegion';
 export { useLocaleDirection } from './request/getLocaleDirection';
+export { useLocalizeHref } from './link/getLocalizeHref';
 export {
   useTranslations,
   useMessages,
