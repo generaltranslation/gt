@@ -1,5 +1,21 @@
 # gtx-cli
 
+## 2.26.6
+
+### Patch Changes
+
+- [#2461](https://github.com/generaltranslation/gt/pull/2461) [`81cc726`](https://github.com/generaltranslation/gt/commit/81cc7269baa6a5acf476eeeaccf40bbecf0eeb61) Thanks [@kevinwu98](https://github.com/kevinwu98)! - `gt init` now links React Router and Shopify Hydrogen apps to the React Router quickstart instead of the generic React quickstart.
+
+## 2.26.5
+
+### Patch Changes
+
+- Updated dependencies [[`c220f39`](https://github.com/generaltranslation/gt/commit/c220f39182a61be3d8139bfe18c5bced0f2956dc)]:
+  - generaltranslation@9.5.7
+  - @generaltranslation/python-extractor@0.2.62
+  - @generaltranslation/supported-locales@2.1.43
+  - @generaltranslation/vue-extractor@0.1.21
+
 ## 2.26.4
 
 ### Patch Changes

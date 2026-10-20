@@ -1,3 +1,5 @@
+import type { MiddlewareConfig } from '../../middleware-dir/types';
+
 export type HeadersAndCookies = {
   localeHeaderName?: string;
   localeCookieName?: string;
@@ -42,7 +44,8 @@ export const REQUEST_FUNCTION_TO_CONFIG_KEY = {
   getRegion: 'getRegionPath',
 } as const;
 
-export type BaseWithGTConfigProps = {
+// Middleware options are defaults for createNextMiddleware(), passed via env.
+export type BaseWithGTConfigProps = MiddlewareConfig & {
   // Additional top-level keys are forwarded as runtime translation metadata.
   [key: string]: unknown;
   // Request scoped filepath

@@ -23,8 +23,8 @@ function RelativeTime(props: RelativeTimeProps): React.JSX.Element {
 }
 
 /** @internal _gtt - The GT transformation for the component. */
-GtInternalRelativeTime._gtt = 'variable-relative-time-automatic';
-RelativeTime._gtt = 'variable-relative-time';
+GtInternalRelativeTime._gtt = 'variable-relativetime-automatic';
+RelativeTime._gtt = 'variable-relativetime';
 
 // ===== Exports ===== //
 
