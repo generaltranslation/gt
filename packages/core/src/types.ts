@@ -1,9 +1,4 @@
-import type {
-  ApiClientConfig,
-  CreateTagData,
-  CreateTagResponse,
-  GetOrphanedFilesResponse,
-} from '@generaltranslation/api';
+import type { ApiClientConfig } from '@generaltranslation/api';
 import type {
   CustomMapping as FormatCustomMapping,
   DataFormat as FormatDataFormat,
@@ -52,15 +47,9 @@ export type {
 } from './types-dir/api/json';
 
 export type { CheckFileTranslationsOptions } from './types-dir/api/checkFileTranslations';
-export type {
-  DownloadFileBatchOptions,
-  DownloadFileBatchResult,
-} from './types-dir/api/downloadFileBatch';
-export type { EnqueueFilesOptions } from './translate/enqueueFiles';
-export type { EnqueueFilesResult, Updates } from './types-dir/api/enqueueFiles';
-export type CreateTagOptions = CreateTagData['body'];
-export type CreateTagResult = CreateTagResponse;
-export type { SetupProjectFileReference } from './translate/setupProject';
+export type { DownloadFileBatchOptions } from './types-dir/api/downloadFileBatch';
+export type { Updates } from './types-dir/api/enqueueFiles';
+export type { CreateBranchQuery } from './translate/createBranch';
 export type { FileToUpload } from './types-dir/api/file';
 export type { FileUpload } from './types-dir/api/uploadFiles';
 export type { FileReference } from './types-dir/api/file';
@@ -68,7 +57,6 @@ export type {
   PublishFileEntry,
   PublishFilesResult,
 } from './translate/publishFiles';
-export type { DownloadedFile } from './types-dir/api/downloadFileBatch';
 export type { DownloadFileOptions } from './types-dir/api/downloadFile';
 export type { FileFormat } from './types-dir/api/file';
 export { isBinaryFileFormat, BINARY_FILE_FORMATS } from './types-dir/api/file';
@@ -78,30 +66,10 @@ export type {
   TranslationError,
   TranslationResultReference,
 } from './types-dir/api/translate';
-export type { BranchDataResult } from './types-dir/api/branch';
-export type { BranchQuery } from './translate/queryBranchData';
-export type { FileDataQuery, FileDataResult } from './translate/queryFileData';
-export type OrphanedFile = GetOrphanedFilesResponse['orphanedFiles'][number];
-export type GetOrphanedFilesResult = GetOrphanedFilesResponse;
 export type {
   MoveMapping,
-  MoveResult,
-  ProcessMovesResponse,
   ProcessMovesOptions,
 } from './translate/processFileMoves';
-export type {
-  JobStatus,
-  CheckJobStatusResult,
-} from './translate/checkJobStatus';
-export type {
-  AwaitJobsOptions,
-  AwaitJobsResult,
-  JobResult,
-} from './translate/awaitJobs';
-export type {
-  SubmitUserEditDiff,
-  SubmitUserEditDiffsPayload,
-} from './translate/submitUserEditDiffs';
 
 export type {
   Transformation,

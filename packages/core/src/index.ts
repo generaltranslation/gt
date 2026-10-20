@@ -4,62 +4,60 @@
 // ----- IMPORTS ----- //
 
 import {
-  EnqueueFilesResult,
+  type AwaitJobsOptions,
+  type AwaitJobsResult,
+  type CreateBranchData,
+  type CreateBranchResponse,
+  type GenerateProjectContextData,
+  type GenerateProjectContextResponse,
+  type GetFileContentData,
+  type GetFileContentResponse,
+  type GetFileStatusData,
+  type GetFileStatusResponse,
+  type GetJobResponse,
+  type GetProjectResponse,
+  type ListBranchesData,
+  type ListBranchesResponse,
+  type ListBranchFilesData,
+  type ListBranchFilesResponse,
+  type MoveFilesResponse,
+  type OverwriteTranslationsData,
+  type OverwriteTranslationsResponse,
+  type QueryFilesContentData,
+  type QueryFilesContentResponse,
+  type QueryFilesData,
+  type QueryFilesResponse,
+  type QueryJobsResponse,
+  type SetTagData,
+  type SetTagResponse,
+  type TranslateFilesData,
+  type TranslateFilesResponse,
+  type UpdateBranchData,
+  type UpdateBranchResponse,
+  type UpdateProjectData,
+  type UpdateProjectResponse,
+  type UploadSourceFilesResponse,
+  type UploadTranslationsResponse,
+  type UpsertAssetsData,
+  type UpsertAssetsResponse,
+} from '@generaltranslation/api';
+import {
   CheckFileTranslationsOptions,
   DownloadFileBatchOptions,
-  DownloadFileBatchResult,
   DownloadFileOptions,
-  CreateTagOptions,
-  CreateTagResult,
-  GetOrphanedFilesResult,
 } from './types';
 import { libraryDefaultLocale } from './settings/settings';
 import { defaultBaseUrl } from './settings/settingsUrls';
-import {
-  noSourceLocaleProvidedError,
-  noTargetLocaleProvidedError,
-} from './logging/errors';
+import { noSourceLocaleProvidedError } from './logging/errors';
 import { gtInstanceLogger } from './logging/logger';
-import type {
-  SetupProjectResult,
-  SetupProjectOptions,
-  SetupProjectFileReference,
-} from './translate/setupProject';
-import type { EnqueueFilesOptions } from './translate/enqueueFiles';
-import type {
-  FileQuery,
-  FileQueryResult,
-} from './types-dir/api/checkFileTranslations';
-import type { SubmitUserEditDiffsPayload } from './translate/submitUserEditDiffs';
 import type {
   FileUpload,
   UploadFilesOptions,
-  UploadFilesResponse,
 } from './types-dir/api/uploadFiles';
-import type {
-  AssetUpload,
-  UploadAssetsOptions,
-  UploadAssetsResponse,
-} from './types-dir/api/uploadAssets';
-import type { ProjectData } from './types-dir/api/project';
-import type { DownloadFileBatchRequest } from './types-dir/api/downloadFileBatch';
-import type { CheckJobStatusResult } from './translate/checkJobStatus';
-import type { AwaitJobsOptions, AwaitJobsResult } from './translate/awaitJobs';
-import type { FileDataQuery, FileDataResult } from './translate/queryFileData';
-import type {
-  GetProjectInfoOptions,
-  ProjectInfoResult,
-} from './translate/getProjectInfo';
-import type { BranchQuery } from './translate/queryBranchData';
-import type { BranchDataResult } from './types-dir/api/branch';
-import type {
-  CreateBranchQuery,
-  CreateBranchResult,
-} from './translate/createBranch';
-import type { FileReferenceIds } from './types-dir/api/file';
+import type { UploadAssetsOptions } from './types-dir/api/uploadAssets';
+import type { GetProjectInfoOptions } from './translate/getProjectInfo';
 import type {
   MoveMapping,
-  ProcessMovesResponse,
   ProcessMovesOptions,
 } from './translate/processFileMoves';
 import type {
@@ -156,619 +154,446 @@ export class GT extends GTRuntime {
     return this._apiAdapter;
   }
 
-  // -------------- Branch Methods -------------- //
+  private restoreProjectLocales<
+    T extends { defaultLocale: string; currentLocales: string[] },
+  >(project: T): T {
+    return {
+      ...project,
+      defaultLocale: this.resolveServiceResponseLocale(project.defaultLocale),
+      currentLocales: project.currentLocales.map((locale) =>
+        this.resolveServiceResponseLocale(locale)
+      ),
+    };
+  }
+
+  // -------------- Project Methods -------------- //
 
   /**
-   * Queries branch information from the API.
-   *
-   * @param {BranchQuery} query - Object mapping the current branch and incoming branches
-   * @returns {Promise<BranchDataResult>} The branch information.
+   * Fetches the configured project: name, locales, review and CDN settings.
    */
-  async queryBranchData(query: BranchQuery): Promise<BranchDataResult> {
-    validateAuth('queryBranchData', this._getTranslationConfig());
-    return await this._getApiAdapter().queryBranchData(query);
+  async getProject(
+    options: GetProjectInfoOptions = {}
+  ): Promise<GetProjectResponse> {
+    validateAuth('getProject', this._getTranslationConfig());
+    return this.restoreProjectLocales(
+      await this._getApiAdapter().getProject(options)
+    );
   }
 
   /**
-   * Creates a new branch in the API. If the branch already exists, it will be returned.
+   * Updates settings of the configured project. Omitted settings stay unchanged.
    *
-   * @param {CreateBranchQuery} query - Object mapping the branch name and default branch flag
-   * @returns {Promise<CreateBranchResult>} The created branch information.
+   * @param body - The settings to change.
    */
-  async createBranch(query: CreateBranchQuery): Promise<CreateBranchResult> {
+  async updateProject(
+    body: UpdateProjectData['body'],
+    options: GetProjectInfoOptions = {}
+  ): Promise<UpdateProjectResponse> {
+    validateAuth('updateProject', this._getTranslationConfig());
+    return this.restoreProjectLocales(
+      await this._getApiAdapter().updateProject(body, options)
+    );
+  }
+
+  // -------------- Branch Methods -------------- //
+
+  /**
+   * Lists one page of the project's branches.
+   *
+   * @param query - Filters (`name`, `isDefault`) and paging (`cursor`, `limit`).
+   */
+  async listBranches(
+    query: ListBranchesData['query'] = {},
+    options: { timeout?: number } = {}
+  ): Promise<ListBranchesResponse> {
+    validateAuth('listBranches', this._getTranslationConfig());
+    return await this._getApiAdapter().listBranches(query, options);
+  }
+
+  /**
+   * Creates a branch. If a branch with the name already exists, it is returned;
+   * that lookup needs branch read access, so a key without it gets the 409.
+   *
+   * @param query - The branch `name` and whether it `isDefault`.
+   * @returns The created or existing branch.
+   */
+  async createBranch(
+    query: CreateBranchData['body']
+  ): Promise<CreateBranchResponse> {
     validateAuth('createBranch', this._getTranslationConfig());
     return await this._getApiAdapter().createBranch(query);
   }
 
   /**
-   * Processes file moves by cloning source files and translations with new fileIds.
-   * This is called when files have been moved/renamed and we want to preserve translations.
+   * Renames a branch or makes it the project's default branch. Omitted
+   * fields stay unchanged.
    *
-   * @param {MoveMapping[]} moves - Array of move mappings (old fileId to new fileId)
-   * @param {ProcessMovesOptions} options - Options including branchId and timeout
-   * @returns {Promise<ProcessMovesResponse>} The move processing results.
-   *
-   * @example
-   * const result = await gt.processFileMoves([
-   *   { oldFileId: 'abc123', newFileId: 'def456', newFileName: 'locales/en.json' }
-   * ], { branchId: 'main' });
+   * @param branchId - The branch to update.
+   * @param body - The new `name` and/or `isDefault: true`.
    */
-  async processFileMoves(
-    moves: MoveMapping[],
-    options: ProcessMovesOptions = {}
-  ): Promise<ProcessMovesResponse> {
-    validateAuth('processFileMoves', this._getTranslationConfig());
-    return await this._getApiAdapter().processFileMoves(moves, options);
+  async updateBranch(
+    branchId: string,
+    body: UpdateBranchData['body'],
+    options: { timeout?: number } = {}
+  ): Promise<UpdateBranchResponse> {
+    validateAuth('updateBranch', this._getTranslationConfig());
+    return await this._getApiAdapter().updateBranch(branchId, body, options);
   }
 
   /**
-   * Gets orphaned files for a branch - files that exist on the branch
-   * but whose fileIds are not in the provided list.
-   * Used for move detection.
+   * Lists one page of the files on a branch, with their head versions.
    *
-   * @param {string} branchId - The branch to check for orphaned files.
-   * @param {string[]} fileIds - List of current file IDs (files that are NOT orphaned)
-   * @param {Object} options - Options including timeout.
-   * @returns {Promise<GetOrphanedFilesResult>} The orphaned files.
-   *
-   * @example
-   * const result = await gt.getOrphanedFiles('branch-id', ['file-1', 'file-2']);
+   * @param branchId - The branch to list.
+   * @param query - Paging (`cursor`, `limit`).
    */
-  async getOrphanedFiles(
+  async listBranchFiles(
     branchId: string,
-    fileIds: string[],
+    query: ListBranchFilesData['query'] = {},
     options: { timeout?: number } = {}
-  ): Promise<GetOrphanedFilesResult> {
-    validateAuth('getOrphanedFiles', this._getTranslationConfig());
-    return await this._getApiAdapter().getOrphanedFiles(
+  ): Promise<ListBranchFilesResponse> {
+    validateAuth('listBranchFiles', this._getTranslationConfig());
+    return await this._getApiAdapter().listBranchFiles(
       branchId,
-      fileIds,
+      query,
       options
     );
+  }
+
+  /**
+   * Moves files to new file IDs, cloning each source file and its translations,
+   * in batches the server accepts. A move can fail on its own; check
+   * `summary.failed` and each result's `status`.
+   *
+   * @param {MoveMapping[]} moves - Old file ID to new file ID and name.
+   * @param {ProcessMovesOptions} options - Branch and timeout.
+   * @returns The summary and one result per move, in request order.
+   */
+  async moveFiles(
+    moves: MoveMapping[],
+    options: ProcessMovesOptions = {}
+  ): Promise<MoveFilesResponse> {
+    validateAuth('moveFiles', this._getTranslationConfig());
+    return await this._getApiAdapter().moveFiles(moves, options);
+  }
+
+  // -------------- Job Methods -------------- //
+
+  /**
+   * Queues context generation for the project from previously uploaded source files.
+   *
+   * @param files - Source file versions to generate the context from.
+   * @param options - Target `locales`, `force`, and timeout.
+   * @returns The queued job, or `job: null` when the context is already current.
+   */
+  async generateProjectContext(
+    files: GenerateProjectContextData['body']['files'],
+    options: Omit<GenerateProjectContextData['body'], 'files'> & {
+      timeout?: number;
+    } = {}
+  ): Promise<GenerateProjectContextResponse> {
+    validateAuth('generateProjectContext', this._getTranslationConfig());
+    return await this._getApiAdapter().generateProjectContext(files, options);
+  }
+
+  /**
+   * Reads the statuses of project jobs, in batches the server accepts.
+   * A job the project does not have is `not_found`.
+   *
+   * @param jobIds - The jobs to read; each ID may appear once.
+   * @returns One result per job ID, in request order.
+   */
+  async queryJobs(
+    jobIds: string[],
+    options: { timeout?: number } = {}
+  ): Promise<QueryJobsResponse> {
+    validateAuth('queryJobs', this._getTranslationConfig());
+    return await this._getApiAdapter().queryJobs(jobIds, options);
+  }
+
+  /**
+   * Reads one project job.
+   *
+   * @param jobId - The job to read.
+   */
+  async getJob(
+    jobId: string,
+    options: { timeout?: number } = {}
+  ): Promise<GetJobResponse> {
+    validateAuth('getJob', this._getTranslationConfig());
+    return await this._getApiAdapter().getJob(jobId, options);
+  }
+
+  /**
+   * Polls job statuses until all jobs are finished or the timeout is reached.
+   * A job the project does not have is `not_found`; one not polled before the
+   * timeout is `unknown`.
+   *
+   * @param jobIds - The jobs to poll.
+   * @param options - Polling interval, timeout, and an `onPoll` callback.
+   * @returns The final status of all jobs and whether they all completed.
+   */
+  async awaitJobs(
+    jobIds: string[],
+    options?: AwaitJobsOptions
+  ): Promise<AwaitJobsResult> {
+    validateAuth('awaitJobs', this._getTranslationConfig());
+    return await this._getApiAdapter().awaitJobs(jobIds, options);
   }
 
   // -------------- Translation Methods -------------- //
 
   /**
-   * Enqueues project setup job using the specified file references
+   * Queues translation jobs for previously uploaded source files, in batches
+   * the server accepts. Poll the returned jobs with `awaitJobs()` or `queryJobs()`.
    *
-   * This method creates setup jobs that will process source file references
-   * and generate a project setup. The files parameter contains references (IDs) to source
-   * files that have already been uploaded via uploadSourceFiles. The setup jobs are queued
-   * for processing and will generate a project setup based on the source files.
-   *
-   * @param {SetupProjectFileReference[]} files - Array of file references containing IDs of previously uploaded source files
-   * @param {SetupProjectOptions} [options] - Optional settings for target locales and timeout.
-   * @returns {Promise<SetupProjectResult>} Object containing the jobId and status
+   * @param files - Source file versions to translate.
+   * @param options - Target and source locales, `force`, `modelProvider`, `publish`, and timeout.
+   * @returns One job per file and target locale that needs translating; empty when nothing is queued.
    */
-  async setupProject(
-    files: SetupProjectFileReference[],
-    options?: SetupProjectOptions
-  ): Promise<SetupProjectResult> {
-    validateAuth('setupProject', this._getTranslationConfig());
-    options = {
-      ...options,
-      locales: options?.locales?.map((locale) =>
-        this.resolveServiceLocale(locale)
-      ),
-    };
-    return await this._getApiAdapter().setupProject(files, options);
+  async translateFiles(
+    files: TranslateFilesData['body']['files'],
+    options: Omit<TranslateFilesData['body'], 'files'> & {
+      timeout?: number;
+    } = {}
+  ): Promise<TranslateFilesResponse> {
+    validateAuth('translateFiles', this._getTranslationConfig());
+    return await this._getApiAdapter().translateFiles(files, options);
   }
 
   /**
-   * Checks the current status of one or more project jobs by their unique identifiers.
+   * Creates or replaces a tag: points `tagId` at exactly the given source file
+   * versions and sets its message (omitted clears it).
    *
-   * This method polls the API to determine whether one or more jobs are still running,
-   * have completed successfully, or have failed. Jobs are created after calling either enqueueFiles or setupProject.
-   *
-   * @param {string[]} jobIds - The unique identifiers of the jobs to check.
-   * @param {number} [timeoutMs] - Optional timeout in milliseconds for the API request.
-   * @returns {Promise<CheckJobStatusResult>} Object containing the job status.
-   *
-   * @example
-   * const result = await gt.checkJobStatus([
-   *   'job-123',
-   *   'job-456',
-   * ], 10000);
+   * @param tagId - The tag name, unique within the project.
+   * @param body - The tagged file versions and optional message.
+   * @returns The tag, and whether this request `created` it.
    */
-  async checkJobStatus(
-    jobIds: string[],
-    timeoutMs?: number
-  ): Promise<CheckJobStatusResult> {
-    validateAuth('checkJobStatus', this._getTranslationConfig());
-    return await this._getApiAdapter().checkJobStatus(jobIds, timeoutMs);
+  async setTag(
+    tagId: string,
+    body: SetTagData['body']
+  ): Promise<SetTagResponse> {
+    validateAuth('setTag', this._getTranslationConfig());
+    return await this._getApiAdapter().setTag(tagId, body);
   }
 
   /**
-   * Polls job statuses until all jobs are finished or the timeout is reached.
+   * Publishes or unpublishes file versions on the CDN, in batches the server
+   * accepts. A version can fail on its own; check `summary.failed` and each
+   * result's `status` and `translations`.
    *
-   * @param {EnqueueFilesResult | string[]} jobs - Job IDs or the result returned from enqueueFiles.
-   * @param {AwaitJobsOptions} [options] - Polling configuration (interval, timeout).
-   * @returns {Promise<AwaitJobsResult>} The final status of all jobs and whether they all completed.
-   */
-  async awaitJobs(
-    jobs: EnqueueFilesResult | string[],
-    options?: AwaitJobsOptions
-  ): Promise<AwaitJobsResult> {
-    validateAuth('awaitJobs', this._getTranslationConfig());
-    const jobIds = Array.isArray(jobs) ? jobs : Object.keys(jobs.jobData);
-    return await this._getApiAdapter().awaitJobs(jobIds, options);
-  }
-
-  /**
-   * Enqueues translation jobs for previously uploaded source files.
-   *
-   * This method creates translation jobs that will process existing source files
-   * and generate translations in the specified target languages. The files parameter
-   * contains references (IDs) to source files that have already been uploaded via
-   * uploadSourceFiles. The translation jobs are queued for processing and will
-   * generate translated content based on the source files and target locales provided.
-   *
-   * @param {FileReferenceIds[]} files - Array of file references containing IDs of previously uploaded source files
-   * @param {EnqueueFilesOptions} options - Configuration options including source locale, target locales, and job settings.
-   * @returns {Promise<EnqueueFilesResult>} Result containing job IDs, queue status, and processing information.
-   */
-  async enqueueFiles(
-    files: FileReferenceIds[],
-    options: EnqueueFilesOptions
-  ): Promise<EnqueueFilesResult> {
-    // Validation
-    validateAuth('enqueueFiles', this._getTranslationConfig());
-
-    // Merge instance settings with options.
-    let mergedOptions: EnqueueFilesOptions = {
-      ...options,
-      sourceLocale: options.sourceLocale ?? this.sourceLocale!,
-      targetLocales: options.targetLocales ?? [this.targetLocale!],
-    };
-
-    // Require source locale
-    if (!mergedOptions.sourceLocale) {
-      const error = noSourceLocaleProvidedError('enqueueFiles');
-      gtInstanceLogger.error(error);
-      throw new Error(error);
-    }
-
-    // Require target locale(s)
-    if (
-      !mergedOptions.targetLocales ||
-      mergedOptions.targetLocales.length === 0
-    ) {
-      const error = noTargetLocaleProvidedError('enqueueFiles');
-      gtInstanceLogger.error(error);
-      throw new Error(error);
-    }
-
-    // The adapter synthesizes result.locales from targetLocales, so retain
-    // the caller's identities before converting the request to service
-    // language codes.
-    const targetLocaleIdentities = [...mergedOptions.targetLocales];
-
-    // Convert configured identities at the service boundary.
-    mergedOptions = {
-      ...mergedOptions,
-      sourceLocale: this.resolveServiceLocale(mergedOptions.sourceLocale),
-      targetLocales: mergedOptions.targetLocales.map((locale) =>
-        this.resolveServiceLocale(locale)
-      ),
-    };
-
-    const result = await this._getApiAdapter().enqueueFiles(
-      files,
-      mergedOptions
-    );
-    return {
-      ...result,
-      locales: targetLocaleIdentities,
-    };
-  }
-
-  /**
-   * Creates or upserts a file tag, associating a set of source files
-   * with a user-defined tag ID and optional message.
-   *
-   * @param {CreateTagOptions} options - Tag creation options including tagId, sourceFileIds, and optional message
-   * @returns {Promise<CreateTagResult>} The created or updated tag.
-   */
-  async createTag(options: CreateTagOptions): Promise<CreateTagResult> {
-    validateAuth('createTag', this._getTranslationConfig());
-    return await this._getApiAdapter().createTag(options);
-  }
-
-  /**
-   * Publishes or unpublishes files on the CDN.
-   *
-   * @param {PublishFileEntry[]} files - Array of file entries with publish flags
-   * @returns {Promise<PublishFilesResult>} Result containing per-file success/failure
+   * @param {PublishFileEntry[]} files - File versions with publish flags; each branch, file, and version may appear once.
+   * @returns {Promise<PublishFilesResult>} The summary and one result per file version, in request order.
    */
   async publishFiles(files: PublishFileEntry[]): Promise<PublishFilesResult> {
     validateAuth('publishFiles', this._getTranslationConfig());
     const result = await this._getApiAdapter().publishFiles(files);
     return {
+      ...result,
       results: result.results.map((item) => ({
         ...item,
-        ...(item.locale && {
-          locale: this.resolveServiceResponseLocale(item.locale),
+        translations: item.translations.map((translation) => ({
+          ...translation,
+          locale: this.resolveServiceResponseLocale(translation.locale),
+        })),
+      })),
+    };
+  }
+
+  /**
+   * Replaces translations with full local content so future generations
+   * preserve user edits, in batches the server accepts. A translation can fail
+   * on its own; check `summary.failed` and each result's `status`.
+   *
+   * @param diffs - One entry per translation with its diff and full local content.
+   * @returns The summary and one result per translation, in request order.
+   */
+  async overwriteTranslations(
+    diffs: OverwriteTranslationsData['body']['diffs'],
+    options: { timeout?: number } = {}
+  ): Promise<OverwriteTranslationsResponse> {
+    validateAuth('overwriteTranslations', this._getTranslationConfig());
+    const result = await this._getApiAdapter().overwriteTranslations(
+      diffs,
+      options
+    );
+    return {
+      ...result,
+      results: result.results.map((item, index) => ({
+        ...item,
+        locale: diffs[index].locale,
+      })),
+    };
+  }
+
+  // -------------- File Methods -------------- //
+
+  /**
+   * Reads metadata of source files and translations, in batches the server
+   * accepts. A selector without `locale` reads the source file.
+   *
+   * @param files - Selectors sharing a file ID, branch ID, version ID, and resolved locale share one request result.
+   * @returns One result per selector, in selector order: `found`, `pending`, or `not_found`.
+   */
+  async queryFiles(
+    files: QueryFilesData['body']['files'],
+    options: CheckFileTranslationsOptions = {}
+  ): Promise<QueryFilesResponse> {
+    validateAuth('queryFiles', this._getTranslationConfig());
+    const { results } = await this._getApiAdapter().queryFiles(files, options);
+    return {
+      results: results.map((result) => ({
+        ...result,
+        ...(result.sourceLocale && {
+          sourceLocale: this.resolveServiceResponseLocale(result.sourceLocale),
+        }),
+        ...(result.locales && {
+          locales: result.locales.map((locale) =>
+            this.resolveServiceResponseLocale(locale)
+          ),
         }),
       })),
     };
   }
 
   /**
-   * Submits user edit diffs for existing translations so future generations preserve user intent.
+   * Reads a source file's status and the status of each of its translations.
    *
-   * @param {SubmitUserEditDiffsPayload} payload - Project-scoped diff payload.
-   * @returns {Promise<void>} Resolves when submission succeeds.
+   * @param fileId - The source file.
+   * @param query - Branch and source version; default to the default branch and its head.
+   * @returns The source file and its translations.
    */
-  async submitUserEditDiffs(
-    payload: SubmitUserEditDiffsPayload
-  ): Promise<void> {
-    validateAuth('submitUserEditDiffs', this._getTranslationConfig());
-    // Normalize locales to canonical form before submission.
-    const normalized: SubmitUserEditDiffsPayload = {
-      ...payload,
-      diffs: (payload.diffs || []).map((d) => ({
-        ...d,
-        locale: this.resolveServiceLocale(d.locale),
+  async getFileStatus(
+    fileId: string,
+    query: GetFileStatusData['query'] = {},
+    options: CheckFileTranslationsOptions = {}
+  ): Promise<GetFileStatusResponse> {
+    validateAuth('getFileStatus', this._getTranslationConfig());
+    const result = await this._getApiAdapter().getFileStatus(
+      fileId,
+      query,
+      options
+    );
+    return {
+      translations: result.translations.map((item) => ({
+        ...item,
+        ...(item.locale && {
+          locale: this.resolveServiceResponseLocale(item.locale),
+        }),
       })),
-    };
-    await this._getApiAdapter().submitUserEditDiffs(normalized);
-  }
-
-  /**
-   * Queries data about one or more source or translation files.
-   *
-   * @param {FileDataQuery} data - Object mapping source and translation file information.
-   * @param {CheckFileTranslationsOptions} options - Options for the API call.
-   * @returns {Promise<FileDataResult>} The source and translation file data information.
-   *
-   * @example
-   * const result = await gt.queryFileData({
-   *   sourceFiles: [
-   *     { fileId: '1234567890', versionId: '1234567890', branchId: '1234567890' },
-   *   ],
-   *   translatedFiles: [
-   *     { fileId: '1234567890', versionId: '1234567890', branchId: '1234567890', locale: 'es-ES' },
-   *   ],
-   * }, {
-   *   timeout: 10000,
-   * });
-   *
-   */
-  /**
-   * Fetches project info (name, locales, review settings) for the
-   * authenticated project.
-   * @param options - The options for the API call.
-   * @returns The project info.
-   */
-  async getProjectInfo(
-    options: GetProjectInfoOptions = {}
-  ): Promise<ProjectInfoResult> {
-    validateAuth('getProjectInfo', this._getTranslationConfig());
-    const result = await this._getApiAdapter().getProjectInfo(
-      undefined,
-      options.timeout
-    );
-    return {
-      ...result,
-      defaultLocale: this.resolveServiceResponseLocale(result.defaultLocale),
-      currentLocales: result.currentLocales.map((locale) =>
-        this.resolveServiceResponseLocale(locale)
-      ),
-    };
-  }
-
-  async queryFileData(
-    data: FileDataQuery,
-    options: CheckFileTranslationsOptions = {}
-  ): Promise<FileDataResult> {
-    // Validation
-    validateAuth('queryFileData', this._getTranslationConfig());
-
-    // Replace target locales with canonical locales
-    data.translatedFiles = data.translatedFiles?.map((item) => ({
-      ...item,
-      locale: this.resolveServiceLocale(item.locale),
-    }));
-
-    // Request the file translation status
-    const result = await this._getApiAdapter().queryFileData(
-      data,
-      options.timeout
-    );
-
-    // Restore configured identities from service language codes.
-    result.translatedFiles = result.translatedFiles?.map((item) => ({
-      ...item,
-      ...(item.locale && {
-        locale: this.resolveServiceResponseLocale(item.locale),
-      }),
-    }));
-    result.sourceFiles = result.sourceFiles?.map((item) => ({
-      ...item,
-      ...(item.sourceLocale && {
-        sourceLocale: this.resolveServiceResponseLocale(item.sourceLocale),
-      }),
-      locales: item.locales.map((locale) =>
-        this.resolveServiceResponseLocale(locale)
-      ),
-    }));
-    return result;
-  }
-
-  /**
-   * Gets source and translation information for a given file ID and version ID.
-   *
-   * @param {FileQuery} data - File query containing file ID and version ID.
-   * @param {CheckFileTranslationsOptions} options - Options for getting source and translation information.
-   * @returns {Promise<FileQueryResult>} The source file and translation information.
-   *
-   * @example
-   * const result = await gt.querySourceFile(
-   *   { fileId: '1234567890', versionId: '1234567890' },
-   *   { timeout: 10000 }
-   * );
-   *
-   */
-  async querySourceFile(
-    data: FileQuery,
-    options: CheckFileTranslationsOptions = {}
-  ): Promise<FileQueryResult> {
-    // Validation
-    validateAuth('querySourceFile', this._getTranslationConfig());
-
-    const result = await this._getApiAdapter().querySourceFile(
-      { fileId: data.fileId },
-      { branchId: data.branchId, versionId: data.versionId },
-      options.timeout
-    );
-    // Restore configured identities from service language codes.
-    result.translations = result.translations.map((item) => ({
-      ...item,
-      ...(item.locale && {
-        locale: this.resolveServiceResponseLocale(item.locale),
-      }),
-    }));
-    result.sourceFile.locales = result.sourceFile.locales.map((locale) =>
-      this.resolveServiceResponseLocale(locale)
-    );
-    if (result.sourceFile.sourceLocale) {
-      result.sourceFile.sourceLocale = this.resolveServiceResponseLocale(
-        result.sourceFile.sourceLocale
-      );
-    }
-    return result;
-  }
-  /**
-   * Get project data for a given project ID.
-   *
-   * @deprecated Use `getProjectInfo()` on a `GT` instance configured with the
-   * target `projectId`; it reads the same resource and also returns
-   * `autoApprove`. This method will be removed in the next major version.
-   * @param {string} projectId - The ID of the project to get the data for.
-   * @returns {Promise<ProjectData>} The project data.
-   *
-   * @example
-   * const result = await gt.getProjectData(
-   *   '1234567890'
-   * );
-   *
-   */
-  async getProjectData(
-    projectId: string,
-    options: { timeout?: number } = {}
-  ): Promise<ProjectData> {
-    // Validation
-    validateAuth('getProjectData', this._getTranslationConfig());
-
-    const { autoApprove: _autoApprove, ...project } =
-      await this._getApiAdapter().getProjectInfo(projectId, options.timeout);
-    // Restore configured identities from service language codes.
-    return {
-      ...project,
-      defaultLocale: this.resolveServiceResponseLocale(project.defaultLocale),
-      currentLocales: project.currentLocales.map((item) =>
-        this.resolveServiceResponseLocale(item)
-      ),
+      sourceFile: {
+        ...result.sourceFile,
+        ...(result.sourceFile.sourceLocale && {
+          sourceLocale: this.resolveServiceResponseLocale(
+            result.sourceFile.sourceLocale
+          ),
+        }),
+        locales: result.sourceFile.locales.map((locale) =>
+          this.resolveServiceResponseLocale(locale)
+        ),
+      },
     };
   }
 
   /**
-   * Downloads a single file.
+   * Reads the decoded content of a source file, or with `locale` of one translation.
+   * Without `versionId`, a translation is the newest completed version on the branch.
    *
-   * @param file - The file query object.
-   * @param {string} file.fileId - The ID of the file to download.
-   * @param {string} [file.branchId] - The ID of the branch to download the file from. If not provided, the default branch will be used.
-   * @param {string} [file.locale] - The locale to download the file for. If not provided, the source file will be downloaded.
-   * @param {string} [file.versionId] - The version ID to download the file from. If not provided, the latest version will be used.
-   * @param {DownloadFileOptions} options - Options for downloading the file.
-   * @returns {Promise<string>} The downloaded file content.
-   *
-   * @example
-   * const result = await gt.downloadFile({
-   *   fileId: '1234567890',
-   *   branchId: '1234567890',
-   *   locale: 'es-ES',
-   *   versionId: '1234567890',
-   * }, {
-   *   timeout: 10000,
-   * });
+   * @param fileId - The source file.
+   * @param query - Branch, source version, and translation locale.
+   * @returns The content, or `status: 'pending'` with `data: null` when the translation is stored but not
+   * completed yet (for example during a layout pass). Until its translation job stores the translation
+   * the read is a 404, so wait for the job with `awaitJobs` or `getJob` first.
    */
-  async downloadFile(
-    file: {
-      fileId: string;
-      branchId?: string;
-      locale?: string;
-      versionId?: string;
-      useLatestAvailableVersion?: boolean;
-    },
+  async getFileContent(
+    fileId: string,
+    query: GetFileContentData['query'] = {},
     options: DownloadFileOptions = {}
-  ): Promise<string> {
-    // Validation
-    validateAuth('downloadTranslatedFile', this._getTranslationConfig());
-
-    const result = await this._getApiAdapter().downloadFileBatch(
-      [
-        {
-          ...file,
-          locale: file.locale
-            ? this.resolveServiceLocale(file.locale)
-            : undefined,
-        },
-      ],
+  ): Promise<GetFileContentResponse> {
+    validateAuth('getFileContent', this._getTranslationConfig());
+    const result = await this._getApiAdapter().getFileContent(
+      fileId,
+      query,
       options
     );
-    return result.files[0]?.data ?? '';
+    return result.locale ? { ...result, locale: query.locale } : result;
   }
 
   /**
-   * Downloads multiple files in a batch.
+   * Reads the decoded content of source files and translations, in batches the
+   * server accepts. A selector without `locale` reads the source file.
    *
-   * @param {DownloadFileBatchRequest} requests - Array of file query objects to download.
-   * @param {DownloadFileBatchOptions} options - Options for the batch download.
-   * @returns {Promise<DownloadFileBatchResult>} The batch download results.
-   *
-   * @example
-   * const result = await gt.downloadFileBatch([{
-   *   fileId: '1234567890',
-   *   locale: 'es-ES',
-   *   versionId: '1234567890',
-   * }], {
-   *   timeout: 10000,
-   * });
+   * @param files - Selectors sharing a file ID, branch ID, version ID, and resolved locale share one request result.
+   * @returns One result per selector, in selector order: `ready`, `pending`, or `not_found`.
    */
-  async downloadFileBatch(
-    requests: DownloadFileBatchRequest,
+  async queryFilesContent(
+    files: QueryFilesContentData['body']['files'],
     options: DownloadFileBatchOptions = {}
-  ): Promise<DownloadFileBatchResult> {
-    // Validation
-    validateAuth('downloadFileBatch', this._getTranslationConfig());
-
-    const requestedFiles = new Map<string, DownloadFileBatchRequest>();
-    requests = requests.map((request) => {
-      const locale = request.locale
-        ? this.resolveServiceLocale(request.locale)
-        : undefined;
-      if (locale) {
-        const key = JSON.stringify([request.fileId, locale]);
-        const group = requestedFiles.get(key) ?? [];
-        group.push(request);
-        requestedFiles.set(key, group);
-      }
-      return { ...request, locale };
-    });
-
-    // Request the batch download.
-    const result = await this._getApiAdapter().downloadFileBatch(
-      requests,
-      options
-    );
-
-    return {
-      files: result.files.map((file) => {
-        if (!file.locale) return file;
-        // The adapter may already have restored an alias; canonicalize before
-        // matching against the service codes the requests were keyed by.
-        const serviceLocale = this.resolveServiceLocale(file.locale);
-        const matchingRequests = (
-          requestedFiles.get(JSON.stringify([file.fileId, serviceLocale])) ?? []
-        ).filter(
-          (request) =>
-            (!request.branchId || request.branchId === file.branchId) &&
-            (!request.versionId || request.versionId === file.versionId)
-        );
-        return {
-          ...file,
-          locale:
-            matchingRequests.length === 1
-              ? matchingRequests[0].locale
-              : this.resolveServiceResponseLocale(file.locale),
-        };
-      }),
-      count: result.count,
-    };
+  ): Promise<QueryFilesContentResponse> {
+    validateAuth('queryFilesContent', this._getTranslationConfig());
+    return await this._getApiAdapter().queryFilesContent(files, options);
   }
 
+  // -------------- Upload Methods -------------- //
+
   /**
-   * Uploads source files to the translation service without any translation content.
-   *
-   * This method creates or replaces source file entries in your project. Each uploaded
-   * file becomes a source that can later be translated into target languages. The files
-   * are processed and stored as base entries that serve as the foundation for generating
-   * translations through the translation workflow.
+   * Uploads source files to the translation service without any translation content,
+   * in batches the server accepts. A file can fail on its own; check
+   * `summary.failed` and each result's `status`.
    *
    * @param {Array<{source: FileUpload}>} files - Array of objects containing source file data to upload
    * @param {UploadFilesOptions} options - Configuration options including source locale and other upload settings.
-   * @returns {Promise<UploadFilesResponse>} Upload result containing file IDs, version information, and upload status.
+   * @returns {Promise<UploadSourceFilesResponse>} The summary and one result per file, in request order.
    */
   async uploadSourceFiles(
     files: { source: FileUpload }[],
     options: UploadFilesOptions
-  ): Promise<UploadFilesResponse> {
-    // Validation
+  ): Promise<UploadSourceFilesResponse> {
     validateAuth('uploadSourceFiles', this._getTranslationConfig());
 
-    // Merge instance settings with options.
-    const mergedOptions: UploadFilesOptions = {
-      ...options,
-      sourceLocale: this.resolveServiceLocale(
-        options.sourceLocale ?? this.sourceLocale ?? libraryDefaultLocale
-      ),
-    };
-
-    // resolve canonical locales
-    files = files.map((f) => ({
-      ...f,
-      source: {
-        ...f.source,
-        locale: this.resolveServiceLocale(f.source.locale),
-      },
-    }));
-
-    // Process files in batches and convert result to UploadFilesResponse
-    const result = await this._getApiAdapter().uploadSourceFiles(
-      files,
-      mergedOptions
+    return await this._getApiAdapter().uploadSourceFiles(
+      files.map((f) => ({
+        ...f,
+        source: {
+          ...f.source,
+          locale: this.resolveServiceLocale(f.source.locale),
+        },
+      })),
+      {
+        ...options,
+        sourceLocale: this.resolveServiceLocale(
+          options.sourceLocale ?? this.sourceLocale ?? libraryDefaultLocale
+        ),
+      }
     );
-
-    const { uploadedFiles } = result;
-    return {
-      uploadedFiles,
-      count: uploadedFiles.length,
-      message: `Successfully uploaded ${uploadedFiles.length} files in ${Math.ceil(files.length / 100)} batch(es)`,
-    };
   }
 
   /**
    * Uploads fonts used when translating formats that need the source font.
-   * Persistent and reused across translation jobs; idempotent on the server, so
-   * re-running only stores new fonts.
-   * @param {AssetUpload[]} fonts - Fonts to upload (`content` base64-encoded).
-   * @param {UploadAssetsOptions} options - Optional settings (e.g. timeout).
-   * @returns {Promise<UploadAssetsResponse>} The stored assets.
+   * Persistent and reused across translation jobs for the project's
+   * organization, in batches the server accepts. A font can fail on its own;
+   * check `summary.failed` and each result's `status`.
+   *
+   * @param assets - Fonts to upload (`content` base64-encoded).
+   * @returns The summary and one result per font, in request order.
    */
-  async uploadFonts(
-    fonts: AssetUpload[],
+  async upsertAssets(
+    assets: UpsertAssetsData['body']['assets'],
     options: UploadAssetsOptions = {}
-  ): Promise<UploadAssetsResponse> {
-    validateAuth('uploadFonts', this._getTranslationConfig());
-
-    return await this._getApiAdapter().uploadFonts(fonts, options);
+  ): Promise<UpsertAssetsResponse> {
+    validateAuth('upsertAssets', this._getTranslationConfig());
+    return await this._getApiAdapter().upsertAssets(assets, options);
   }
 
   /**
-   * Uploads translation files that correspond to previously uploaded source files.
-   *
-   * This method allows you to provide translated content for existing source files in your project.
-   * Each translation must reference an existing source file and include the translated content
-   * along with the target locale information. This is used when you have pre-existing translations
-   * that you want to upload directly rather than generating them through the translation service.
+   * Uploads translation files that correspond to previously uploaded source files,
+   * in batches the server accepts. A translation can fail on its own; check
+   * `summary.failed` and each result's `status`.
    *
    * @param {Array<{source: FileUpload, translations: FileUpload[]}>} files - Array of file objects where:
    *   - `source`: Reference to the existing source file (contains IDs but no content).
    *   - `translations`: Array of translated files, each containing content, locale, and reference IDs
    * @param {UploadFilesOptions} options - Configuration options including source locale and upload settings.
-   * @returns {Promise<UploadFilesResponse>} Upload result containing translation IDs, status, and processing information.
+   * @returns {Promise<UploadTranslationsResponse>} The summary and one result per translation, in request order.
    */
   async uploadTranslations(
     files: {
@@ -776,51 +601,29 @@ export class GT extends GTRuntime {
       translations: FileUpload[]; // each has content + ids + locale
     }[],
     options: UploadFilesOptions
-  ): Promise<UploadFilesResponse> {
-    // Validation
+  ): Promise<UploadTranslationsResponse> {
     validateAuth('uploadTranslations', this._getTranslationConfig());
 
-    // Merge instance settings with options.
-    const mergedOptions: UploadFilesOptions = {
-      ...options,
-      sourceLocale: options.sourceLocale ?? this.sourceLocale,
-    };
-
     // Require source locale
-    if (!mergedOptions.sourceLocale) {
+    if (!(options.sourceLocale ?? this.sourceLocale)) {
       const error = noSourceLocaleProvidedError('uploadTranslations');
       gtInstanceLogger.error(error);
       throw new Error(error);
     }
 
-    mergedOptions.sourceLocale = this.resolveServiceLocale(
-      mergedOptions.sourceLocale
-    );
-
-    // Ensure all file locales use canonical locales
-    const targetFiles = files.map((f) => ({
-      ...f,
-      source: {
-        ...f.source,
-        locale: this.resolveServiceLocale(f.source.locale),
-      },
-      translations: f.translations.map((t) => ({
-        ...t,
-        locale: this.resolveServiceLocale(t.locale),
+    return await this._getApiAdapter().uploadTranslations(
+      files.map((f) => ({
+        ...f,
+        source: {
+          ...f.source,
+          locale: this.resolveServiceLocale(f.source.locale),
+        },
+        translations: f.translations.map((t) => ({
+          ...t,
+          locale: this.resolveServiceLocale(t.locale),
+        })),
       })),
-    }));
-
-    // Process files in batches and convert result to UploadFilesResponse
-    const result = await this._getApiAdapter().uploadTranslations(
-      targetFiles,
-      mergedOptions
+      { timeout: options.timeout }
     );
-
-    const { uploadedFiles } = result;
-    return {
-      uploadedFiles,
-      count: uploadedFiles.length,
-      message: `Successfully uploaded ${uploadedFiles.length} files in ${Math.ceil(files.length / 100)} batch(es)`,
-    };
   }
 }

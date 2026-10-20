@@ -1,9 +1,12 @@
-import type { RuntimeFileFormat, TranslateData } from '@generaltranslation/api';
+import type {
+  RuntimeFileFormat,
+  TranslateContentData,
+} from '@generaltranslation/api';
 import type { Content, DataFormat } from '../../types';
 
 export type ActionType = NonNullable<
   NonNullable<
-    TranslateData['body']['requests'][string]['metadata']
+    TranslateContentData['body']['requests'][string]['metadata']
   >['actionType']
 >;
 

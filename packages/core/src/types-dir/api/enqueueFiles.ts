@@ -38,20 +38,3 @@ export type Updates = ({
       source: string;
     }
 ))[];
-
-export type EnqueueFilesResult = {
-  jobData: {
-    [jobId: string]: {
-      sourceFileId: string;
-      fileId: string;
-      versionId: string;
-      branchId: string;
-      targetLocale: string;
-      projectId: string;
-      force: boolean;
-      modelProvider?: string;
-    };
-  };
-  locales: string[];
-  message: string;
-};

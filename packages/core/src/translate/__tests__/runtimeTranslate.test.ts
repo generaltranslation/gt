@@ -1,6 +1,6 @@
 import type {
   RuntimeTranslationResponse,
-  TranslateData,
+  TranslateContentData,
 } from '@generaltranslation/api';
 import type { Content } from '@generaltranslation/format/types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -17,10 +17,12 @@ const options = { targetLocale: 'es', sourceLocale: 'en' };
 const fetchMock = vi.fn<typeof fetch>();
 
 function mockTranslateResponse(data: RuntimeTranslationResponse): void {
-  fetchMock.mockResolvedValue(Response.json(data));
+  fetchMock.mockResolvedValue(
+    Response.json({ translations: data, generated: true })
+  );
 }
 
-async function requestBody(): Promise<TranslateData['body']> {
+async function requestBody(): Promise<TranslateContentData['body']> {
   const [input, init] = fetchMock.mock.calls[0];
   return new Request(input, init).json();
 }
@@ -56,10 +58,12 @@ describe.sequential('runtime translation requests', () => {
 
     const [input, init] = fetchMock.mock.calls[0];
     const request = new Request(input, init);
-    expect(request.url).toBe('https://api.test.com/v2/translate');
+    expect(request.url).toBe(
+      'https://api.test.com/v2/projects/test-project/translate'
+    );
     expect(request.method).toBe('POST');
     expect(request.headers.get('authorization')).toBe('Bearer test-api-key');
-    expect(request.headers.get('gt-project-id')).toBe('test-project');
+    expect(request.headers.has('gt-project-id')).toBe(false);
     expect(await request.json()).toEqual({
       requests: sources,
       targetLocale: 'es',

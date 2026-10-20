@@ -11,13 +11,26 @@ describe('GT.uploadTranslations', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(uploadTranslations).mockResolvedValue({
-      data: { uploadedFiles: [], count: 0, message: 'Uploaded files' },
+      data: {
+        summary: { total: 1, succeeded: 1, failed: 0 },
+        results: [
+          {
+            branchId: 'branch-id',
+            fileId: 'file-id',
+            versionId: 'version-id',
+            fileName: 'messages.json',
+            fileFormat: 'JSON',
+            locale: 'fr',
+            status: 'succeeded',
+          },
+        ],
+      },
       request: new Request('https://api.example.com'),
       response: new Response(),
     });
   });
 
-  it('canonicalizes the configured source locale', async () => {
+  it('canonicalizes upload locales and no longer sends sourceLocale', async () => {
     const gt = new GT({
       apiKey: 'test-api-key',
       projectId: 'test-project',
@@ -48,12 +61,16 @@ describe('GT.uploadTranslations', () => {
       },
     ];
 
-    await gt.uploadTranslations(files, { sourceLocale: 'brand-english' });
+    const result = await gt.uploadTranslations(files, {
+      sourceLocale: 'brand-english',
+    });
 
-    expect(uploadTranslations).toHaveBeenCalledWith(
-      expect.objectContaining({
-        body: expect.objectContaining({ sourceLocale: 'en-US' }),
-      })
-    );
+    const { body } = vi.mocked(uploadTranslations).mock.calls[0][0];
+    expect(body).not.toHaveProperty('sourceLocale');
+    expect(body.data[0].source.locale).toBe('en-US');
+    expect(result).toMatchObject({
+      summary: { total: 1, succeeded: 1, failed: 0 },
+      results: [{ fileId: 'file-id', locale: 'fr' }],
+    });
   });
 });

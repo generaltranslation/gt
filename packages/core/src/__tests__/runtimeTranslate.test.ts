@@ -40,7 +40,7 @@ function captureRequests(): {
         },
       ])
     );
-    return Response.json(translations);
+    return Response.json({ translations, generated: true });
   };
   return { fetch: fetchImplementation, requests };
 }
@@ -81,10 +81,10 @@ describe.sequential('runtime translate helpers', () => {
         expect(request.headers.get('authorization')).toBe(
           first.headers.get('authorization')
         );
-        expect(request.headers.get('gt-project-id')).toBe('test-project');
+        expect(request.headers.has('gt-project-id')).toBe(false);
         expect(request.headers.get('gt-api-version')).toBe(API_VERSION);
       }
-      expect(first.url.pathname).toBe('/v2/translate');
+      expect(first.url.pathname).toBe('/v2/projects/test-project/translate');
       expect(first.body).toMatchObject({
         targetLocale: 'es-ES',
         sourceLocale: 'en-US',
@@ -236,7 +236,7 @@ describe.sequential('runtime translate helpers', () => {
         authorizations.push(request.headers.get('authorization'));
         return authorizations.length === 1
           ? new Response('unauthorized', { status: 401 })
-          : Response.json({});
+          : Response.json({ translations: {}, generated: false });
       };
 
       await translateMany(['Hello'], 'es', {
@@ -316,7 +316,8 @@ describe.sequential('runtime translate helpers', () => {
           new Promise((resolve, reject) => {
             const { signal } = new Request(input, init);
             signal.addEventListener('abort', () => reject(signal.reason));
-            resolveResponse = () => resolve(Response.json({}));
+            resolveResponse = () =>
+              resolve(Response.json({ translations: {}, generated: false }));
           });
 
         const adapter = createGtApiAdapter({
@@ -395,7 +396,10 @@ describe.sequential('runtime translate helpers', () => {
 
       expect(requests[0].url.origin).toBe('https://reconfigured.test');
       expect(requests[0].headers.get('authorization')).toBe('Bearer new-key');
-      expect(requests[0].headers.get('gt-project-id')).toBe('new-project');
+      expect(requests[0].url.pathname).toBe(
+        '/v2/projects/new-project/translate'
+      );
+      expect(requests[0].headers.has('gt-project-id')).toBe(false);
       expect(requests[0].body.targetLocale).toBe('de-DE');
     });
   });

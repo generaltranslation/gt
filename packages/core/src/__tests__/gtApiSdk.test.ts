@@ -1,16 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  createTag,
-  getProjectInfo,
-  uploadAssets,
-} from '@generaltranslation/api';
+import { setTag } from '@generaltranslation/api';
 import { GT } from '../index';
 
 vi.mock('@generaltranslation/api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@generaltranslation/api')>()),
-  createTag: vi.fn(),
-  getProjectInfo: vi.fn(),
-  uploadAssets: vi.fn(),
+  setTag: vi.fn(),
 }));
 
 // Tests in this file run concurrently, so constructions are recorded per
@@ -38,81 +32,6 @@ function result<T>(data: T) {
   };
 }
 
-const gt = new GT({
-  apiKey: 'api-key',
-  baseUrl: 'https://api.example.com',
-  projectId: 'project-id',
-});
-
-describe('GT generated SDK transport', () => {
-  beforeEach(() => {
-    vi.resetAllMocks();
-  });
-
-  it('routes tag creation through the generated operation', async () => {
-    const tag = {
-      id: 'id',
-      tagId: 'release',
-      message: null,
-      createdAt: '2026-01-01',
-      updatedAt: '2026-01-01',
-    };
-    vi.mocked(createTag).mockResolvedValue(result({ tag }));
-
-    await expect(
-      gt.createTag({
-        tagId: 'release',
-        files: [
-          { fileId: 'file-id', versionId: 'version-id', branchId: 'branch-id' },
-        ],
-      })
-    ).resolves.toEqual({ tag });
-
-    expect(createTag).toHaveBeenCalledWith(
-      expect.objectContaining({
-        body: expect.objectContaining({ tagId: 'release' }),
-      })
-    );
-  });
-
-  it('strips autoApprove from getProjectData to match the published shape', async () => {
-    vi.mocked(getProjectInfo).mockResolvedValue(
-      result({
-        id: 'project-id',
-        name: 'Project',
-        orgId: 'org-id',
-        defaultLocale: 'en',
-        currentLocales: ['es'],
-        autoApprove: false,
-      })
-    );
-    await expect(gt.getProjectData('project-id')).resolves.toEqual({
-      id: 'project-id',
-      name: 'Project',
-      orgId: 'org-id',
-      defaultLocale: 'en',
-      currentLocales: ['es'],
-    });
-  });
-
-  it('returns the generated font asset shape without a deduped field', async () => {
-    const asset = {
-      id: 'asset-id',
-      assetKey: 'font-key',
-      fileName: 'font.woff2',
-    };
-    vi.mocked(uploadAssets).mockResolvedValue(
-      result({ assets: [asset], count: 1 })
-    );
-
-    await expect(
-      gt.uploadFonts([
-        { assetType: 'FONT', content: 'base64', fileName: 'font.woff2' },
-      ])
-    ).resolves.toEqual({ assets: [asset], count: 1 });
-  });
-});
-
 describe('GT adapter lifetime', () => {
   const tag = {
     id: 'id',
@@ -122,20 +41,19 @@ describe('GT adapter lifetime', () => {
     updatedAt: '2026-01-01',
   };
   const request = {
-    tagId: 'release',
     files: [{ fileId: 'file-id', versionId: 'version-id' }],
   };
 
   beforeEach(() => {
-    vi.mocked(createTag).mockResolvedValue(result({ tag }));
+    vi.mocked(setTag).mockResolvedValue(result({ created: true, tag }));
   });
 
   it('constructs one adapter per instance across calls', async () => {
     const projectId = 'lifetime-reuse';
     const instance = new GT({ apiKey: 'api-key', projectId });
 
-    await instance.createTag(request);
-    await instance.createTag(request);
+    await instance.setTag('release', request);
+    await instance.setTag('release', request);
 
     expect(adapterConstructions.get(projectId)).toHaveLength(1);
   });
@@ -144,9 +62,9 @@ describe('GT adapter lifetime', () => {
     const projectId = 'lifetime-reconfigure';
     const instance = new GT({ apiKey: 'api-key', projectId });
 
-    await instance.createTag(request);
+    await instance.setTag('release', request);
     instance.setConfig({ apiKey: 'other-key' });
-    await instance.createTag(request);
+    await instance.setTag('release', request);
 
     expect(
       adapterConstructions.get(projectId)?.map((config) => config.apiKey)
@@ -157,11 +75,11 @@ describe('GT adapter lifetime', () => {
     const projectId = 'lifetime-failed-reconfigure';
     const instance = new GT({ apiKey: 'api-key', projectId });
 
-    await instance.createTag(request);
+    await instance.setTag('release', request);
     expect(() =>
       instance.setConfig({ apiKey: 'other-key', sourceLocale: '!' })
     ).toThrow();
-    await instance.createTag(request);
+    await instance.setTag('release', request);
 
     expect(
       adapterConstructions.get(projectId)?.map((config) => config.apiKey)

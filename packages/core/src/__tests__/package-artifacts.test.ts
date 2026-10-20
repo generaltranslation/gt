@@ -17,7 +17,7 @@ import { expect, it } from 'vitest';
 
 const packageRoot = fileURLToPath(new URL('../..', import.meta.url));
 const adapterMarker = 'call configureApiClient first';
-const projectPath = '/v2/project/info/{projectId}';
+const projectPath = '/v2/projects/{projectId}/files/query';
 const config = `{ projectId: 'project', apiKey: 'key', baseUrl: 'https://example.test' }`;
 
 // Parse imports rather than grep one entry: cover re-exports, require and dynamic
@@ -123,11 +123,11 @@ it('loads packed ESM/CJS, typechecks NodeNext declarations and keeps the publish
       globalThis.fetch = async (input, init) => {
         const request = new Request(input, init);
         const body = await request.json();
-        assert.equal(new URL(request.url).pathname, '/v2/translate');
-        assert.equal(request.headers.get('gt-project-id'), 'project');
+        assert.equal(new URL(request.url).pathname, '/v2/projects/project/translate');
+        assert.equal(request.headers.has('gt-project-id'), false);
         assert.equal(request.headers.get('authorization'), 'Bearer key');
-        return Response.json(Object.fromEntries(Object.keys(body.requests).map(key => [key,
-          { success: true, translation: 'Hola', locale: 'es', dataFormat: 'STRING' }])));
+        return Response.json({ generated: true, translations: Object.fromEntries(Object.keys(body.requests).map(key => [key,
+          { success: true, translation: 'Hola', locale: 'es', dataFormat: 'STRING' }])) });
       };
       const runtime = LOAD('generaltranslation/runtime');
       const { GT } = LOAD('generaltranslation');
@@ -155,7 +155,7 @@ it('loads packed ESM/CJS, typechecks NodeNext declarations and keeps the publish
       import { createGtApiAdapter } from 'generaltranslation/internal';
       import type { TranslateManyResult, TranslateOptions, TranslationResult } from 'generaltranslation/types';
       import { API_VERSION, type ApiClientConfig } from 'generaltranslation/api';
-      const config = { projectId: 'project', apiKey: 'key', baseUrl: 'https://example.test', timeoutMs: false, fetch, apiVersion: API_VERSION } satisfies ApiClientConfig;
+      const config = { apiKey: 'key', baseUrl: 'https://example.test', timeoutMs: false, fetch, apiVersion: API_VERSION } satisfies ApiClientConfig;
       const options = { targetLocale: 'es' } satisfies TranslateOptions;
       const adapter = createGtApiAdapter(config);
       const array: Promise<TranslateManyResult> = adapter.translateMany(['Hello'], options);

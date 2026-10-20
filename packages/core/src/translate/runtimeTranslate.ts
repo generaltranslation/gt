@@ -1,10 +1,11 @@
 import {
+  API_VERSION,
   createApiClient,
-  translate as translateEndpoint,
+  translateContent,
   type JsonObject,
   type JsonValue,
   type RuntimeTranslationResponse,
-  type TranslateData,
+  type TranslateContentData,
 } from '@generaltranslation/api';
 import {
   resolveCanonicalLocale,
@@ -355,7 +356,6 @@ async function executeTranslationBatch(
     baseUrl: config.baseUrl || defaultRuntimeApiUrl,
     fetch: (input, init) =>
       fetchWithTimeout(input, init ?? {}, config.timeoutMs, config.fetch),
-    projectId: config.projectId,
     retryPolicy: 'none',
     timeoutMs: false,
   });
@@ -367,9 +367,14 @@ async function executeTranslationBatch(
       ...globalMetadata,
       modelProvider: globalMetadata.modelProvider,
     },
-  } satisfies TranslateData['body'];
-  const result = await translateEndpoint({ body, client });
-  const runtimeResponse = unwrapApiResult(result);
+  } satisfies TranslateContentData['body'];
+  const result = await translateContent({
+    body,
+    client,
+    headers: { 'gt-api-version': config.apiVersion ?? API_VERSION },
+    path: { projectId: config.projectId },
+  });
+  const { translations: runtimeResponse } = unwrapApiResult(result);
   const response: Record<string, TranslationResult> = Object.fromEntries(
     Object.entries(runtimeResponse).map(([hash, translationResult]) => [
       hash,

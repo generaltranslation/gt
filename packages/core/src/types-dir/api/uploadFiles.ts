@@ -1,5 +1,5 @@
 import type { DataFormat } from '@generaltranslation/format/types';
-import { FileFormat, FileReference, type FormatMetadata } from './file';
+import { FileFormat, type FormatMetadata } from './file';
 
 /**
  * Metadata stored alongside GTJSON file entries.
@@ -42,12 +42,6 @@ export type UploadFilesOptions = {
   sourceLocale: string;
   modelProvider?: string;
   timeout?: number;
-};
-
-export type UploadFilesResponse = {
-  uploadedFiles: FileReference[];
-  count: number;
-  message: string;
 };
 
 export type RequiredUploadFilesOptions = UploadFilesOptions &

@@ -3,10 +3,6 @@ import type {
   PublishFilesResponse,
 } from '@generaltranslation/api';
 
-// Compatibility input: fileName is retained for published callers even though
-// the generated request ignores it.
-export type PublishFileEntry = PublishFilesData['body']['files'][number] & {
-  fileName?: string;
-};
+export type PublishFileEntry = PublishFilesData['body']['files'][number];
 
 export type PublishFilesResult = PublishFilesResponse;

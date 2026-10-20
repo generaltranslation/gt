@@ -72,19 +72,3 @@ export type FileReference = {
   transformFormat?: FileFormat;
   dataFormat?: DataFormat;
 };
-
-/**
- * File reference object structure for referencing files.
- * @see {@link FileReference}
- * @property {string} [branchId] - The ID of the branch of the file
- */
-export type FileReferenceIds = Omit<
-  FileReference,
-  'branchId' | 'fileName' | 'fileFormat' | 'dataFormat'
-> & {
-  branchId?: string;
-  fileName?: string;
-  fileFormat?: FileFormat;
-  transformFormat?: FileFormat;
-  dataFormat?: DataFormat;
-};

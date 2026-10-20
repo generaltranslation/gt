@@ -48,7 +48,12 @@ describe.sequential('GT Translation Methods', () => {
         locale: 'fr',
         dataFormat: 'ICU',
       } as const;
-      fetchMock.mockResolvedValue(Response.json({ greeting: translated }));
+      fetchMock.mockResolvedValue(
+        Response.json({
+          translations: { greeting: translated },
+          generated: true,
+        })
+      );
       const entry = {
         source: 'Hello {name}',
         metadata: { hash: 'greeting', id: 'welcome', dataFormat: 'ICU' },
@@ -69,9 +74,11 @@ describe.sequential('GT Translation Methods', () => {
       );
       const [input, init] = fetchMock.mock.calls[0];
       const request = new Request(input, init);
-      expect(request.url).toBe('https://api.test.com/v2/translate');
+      expect(request.url).toBe(
+        'https://api.test.com/v2/projects/test-project/translate'
+      );
       expect(request.headers.get('authorization')).toBe('Bearer test-api-key');
-      expect(request.headers.get('gt-project-id')).toBe('test-project');
+      expect(request.headers.has('gt-project-id')).toBe(false);
       expect(await request.json()).toMatchObject({
         requests: { greeting: entry },
         targetLocale: 'fr',

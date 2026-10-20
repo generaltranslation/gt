@@ -4,7 +4,7 @@ import { GT } from '../index';
 
 vi.mock('../adapter/createGtApi', () => ({
   createGtApiAdapter: vi.fn(() => ({
-    createTag: vi.fn().mockResolvedValue({ tag: { tagId: 'release' } }),
+    setTag: vi.fn().mockResolvedValue({ tag: { tagId: 'release' } }),
   })),
 }));
 
@@ -20,7 +20,7 @@ describe('GT user-token authentication', () => {
       userTokenProvider,
     });
 
-    await gt.createTag({ tagId: 'release', files: [] });
+    await gt.setTag('release', { files: [] });
 
     expect(createGtApiAdapter).toHaveBeenCalledWith(
       expect.objectContaining({ apiKey: undefined, userTokenProvider })
