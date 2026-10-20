@@ -2,8 +2,7 @@
 
 import NextLink from 'next/link';
 import { forwardRef, type ComponentProps, type ComponentRef } from 'react';
-import { useDefaultLocale, useLocale } from 'gt-react';
-import { localizeHref } from './localize-utils';
+import { useLocalizeHref } from './useLocalizeHref';
 
 type LinkRef = ComponentRef<typeof NextLink>;
 
@@ -19,7 +18,7 @@ export type LinkProps = ComponentProps<typeof NextLink>;
  * With `prefixDefaultLocale: false` (the default), current default-locale links
  * are left unprefixed. Explicit default-locale links are left unprefixed only
  * when `enableSmartRouting` is `false`. Set these options in `withGTConfig()`
- * so Link can read them.
+ * so Link can read them. Use `useLocalizeHref()` to localize hrefs outside Link.
  *
  * @example
  * ```tsx
@@ -66,19 +65,13 @@ export const Link = forwardRef<LinkRef, LinkProps>(function Link(
   { href, locale, ...props },
   ref
 ) {
-  const currentLocale = useLocale();
-  const defaultLocale = useDefaultLocale();
+  const localizeHref = useLocalizeHref();
 
   let localizedHref = href;
   if (typeof href === 'string') {
-    localizedHref = localizeHref(href, locale, currentLocale, defaultLocale);
+    localizedHref = localizeHref(href, locale);
   } else if (typeof href.pathname === 'string') {
-    const pathname = localizeHref(
-      href.pathname,
-      locale,
-      currentLocale,
-      defaultLocale
-    );
+    const pathname = localizeHref(href.pathname, locale);
     if (pathname !== href.pathname) localizedHref = { ...href, pathname };
   }
 
