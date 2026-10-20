@@ -18,8 +18,8 @@ function RscRelativeTime(props: ResolvedRelativeTimeProps): React.JSX.Element {
 }
 
 /** @internal _gtt - The GT transformation for the component. */
-RscRelativeTime._gtt = 'variable-relative-time';
-RscGtInternalRelativeTime._gtt = 'variable-relative-time-automatic';
+RscRelativeTime._gtt = 'variable-relativetime';
+RscGtInternalRelativeTime._gtt = 'variable-relativetime-automatic';
 
 // ===== Exports ===== //
 
