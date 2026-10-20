@@ -4,4 +4,4 @@
 export { Link as default } from './link/Link';
 export type { LinkProps } from './link/Link';
 export { useLocalizeHref } from './link/useLocalizeHref';
-export type { LinkHref, LinkLocale } from './link/localize-utils';
+export type { LinkLocale } from './link/localize-utils';

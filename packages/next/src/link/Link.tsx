@@ -66,5 +66,14 @@ export const Link = forwardRef<LinkRef, LinkProps>(function Link(
   ref
 ) {
   const localizeHref = useLocalizeHref();
-  return <NextLink {...props} href={localizeHref(href, locale)} ref={ref} />;
+
+  let localizedHref = href;
+  if (typeof href === 'string') {
+    localizedHref = localizeHref(href, locale);
+  } else if (typeof href.pathname === 'string') {
+    const pathname = localizeHref(href.pathname, locale);
+    if (pathname !== href.pathname) localizedHref = { ...href, pathname };
+  }
+
+  return <NextLink {...props} href={localizedHref} ref={ref} />;
 });

@@ -2,10 +2,8 @@ import type NextLink from 'next/link';
 import type { ComponentProps } from 'react';
 import { resolveMiddlewareConfig } from '../middleware-dir/resolveMiddlewareConfig';
 
-export type LinkHref = ComponentProps<typeof NextLink>['href'];
-
 /** A locale to prefix, `undefined` for the current locale, or `false` for none. */
-export type LinkLocale = string | false | undefined;
+export type LinkLocale = ComponentProps<typeof NextLink>['locale'];
 
 let routingConfig: ReturnType<typeof resolveMiddlewareConfig> | undefined;
 
@@ -38,10 +36,10 @@ function getPrefixLocale(
   return locale !== undefined && enableSmartRouting ? targetLocale : false;
 }
 
-function localizePath(href: string, locale: string): string {
-  if (!href.startsWith('/') || href.startsWith('//')) return href;
+function prefixPath(path: string, locale: string): string {
+  if (!path.startsWith('/') || path.startsWith('//')) return path;
 
-  const url = new URL(href, 'http://localhost');
+  const url = new URL(path, 'http://localhost');
   url.pathname =
     url.pathname === '/'
       ? `/${encodeURIComponent(locale)}`
@@ -50,36 +48,16 @@ function localizePath(href: string, locale: string): string {
   return `${url.pathname}${url.search}${url.hash}`;
 }
 
-function prefixHref<T extends LinkHref>(href: T, locale: string | false): T {
-  if (!locale) return href;
-
-  if (typeof href === 'string') {
-    return localizePath(href, locale) as T;
-  }
-
-  if (typeof href.pathname !== 'string') return href;
-
-  const localizedPathname = localizePath(href.pathname, locale);
-  if (localizedPathname === href.pathname) return href;
-
-  return {
-    ...href,
-    pathname: localizedPathname,
-  };
-}
-
 /**
  * Localizes an href the way `gt-next/link` does: internal paths are prefixed
  * only when the middleware would otherwise redirect them.
  */
-export function localizeHref<T extends LinkHref>(
-  href: T,
+export function localizeHref(
+  href: string,
   locale: LinkLocale,
   currentLocale: string,
   defaultLocale: string
-): T {
-  return prefixHref(
-    href,
-    getPrefixLocale(locale, currentLocale, defaultLocale)
-  );
+): string {
+  const prefixLocale = getPrefixLocale(locale, currentLocale, defaultLocale);
+  return prefixLocale ? prefixPath(href, prefixLocale) : href;
 }

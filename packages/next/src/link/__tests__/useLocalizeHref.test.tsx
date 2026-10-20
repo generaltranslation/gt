@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { LinkHref, LinkLocale } from '../localize-utils';
+import type { LinkLocale } from '../localize-utils';
 
 const { mockUseLocale } = vi.hoisted(() => ({ mockUseLocale: vi.fn() }));
 
@@ -9,10 +9,10 @@ vi.mock('gt-react', () => ({
   useDefaultLocale: () => 'en',
 }));
 
-async function localize(href: LinkHref, locale?: LinkLocale) {
+async function localize(href: string, locale?: LinkLocale) {
   vi.resetModules();
   const { useLocalizeHref } = await import('../useLocalizeHref');
-  let result: LinkHref | undefined;
+  let result: string | undefined;
   function Probe() {
     result = useLocalizeHref()(href, locale);
     return null;

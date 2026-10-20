@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useDefaultLocale, useLocale } from 'gt-react';
-import { localizeHref, type LinkHref, type LinkLocale } from './localize-utils';
+import { localizeHref, type LinkLocale } from './localize-utils';
 
 /**
  * Returns a function that localizes hrefs the same way `gt-next/link` does,
@@ -27,10 +27,10 @@ import { localizeHref, type LinkHref, type LinkLocale } from './localize-utils';
  * @returns A function taking an href and an optional locale (a locale string,
  * or `false` to leave the href unchanged) that returns the localized href.
  */
-export function useLocalizeHref(): <T extends LinkHref>(
-  href: T,
+export function useLocalizeHref(): (
+  href: string,
   locale?: LinkLocale
-) => T {
+) => string {
   const currentLocale = useLocale();
   const defaultLocale = useDefaultLocale();
   return useCallback(
