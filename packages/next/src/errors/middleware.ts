@@ -19,7 +19,8 @@ export const createInvalidMiddlewareEnvConfigError = (
   createGtNextDiagnostic({
     severity: 'Error',
     whatHappened: `${envName} is not valid JSON`,
-    wayOut: 'Middleware ignores this config and uses the defaults',
+    reassurance:
+      'gt-next ignores this variable; options passed to createNextMiddleware() still apply',
     fix: 'Configure gt-next through withGTConfig() instead of setting this variable manually',
     details: formatDiagnosticErrorDetails(error),
   });
