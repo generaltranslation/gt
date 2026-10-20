@@ -1,5 +1,18 @@
 # gt-next
 
+## 11.4.13
+
+### Patch Changes
+
+- [#2480](https://github.com/generaltranslation/gt/pull/2480) [`76f4a34`](https://github.com/generaltranslation/gt/commit/76f4a34c3b2cb9b0a23416430bb7a23939ffd994) Thanks [@eoinest](https://github.com/eoinest)! - Improve `gt-next/link` locale prefixing and share routing options with the middleware:
+  - `withGTConfig()` now accepts the `createNextMiddleware()` routing options (`localeRouting`, `prefixDefaultLocale`, `enableSmartRouting`, `ignoreSourceMaps`, `pathConfig`, `routeOverrides`, `localeRoutes`). Options passed directly to `createNextMiddleware()` still take precedence.
+  - `gt-next/link` no longer prefixes default-locale links when `prefixDefaultLocale` is `false`, avoiding a middleware redirect. Explicit `locale` props for the default locale stay prefixed unless `enableSmartRouting` is `false`. Set these options in `withGTConfig()` so Link can read them; `createNextMiddleware()` warns in development when its values differ.
+  - Add `useLocalizeHref()` to `gt-next/link`. It returns a function that localizes path strings the same way `<Link>` does, for navigation that doesn't render a link, such as `router.push()`. It is also exported from `gt-next`, where Server Components get a server version, and `getLocalizeHref()` is exported from `gt-next/server`.
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.4.13
+  - gt-react@11.4.13
+
 ## 11.4.12
 
 ### Patch Changes
