@@ -14,6 +14,9 @@ import { localizeHref, type LinkLocale } from './localize-utils';
  *
  * @example
  * ```tsx
+ * 'use client';
+ *
+ * import { useRouter } from 'next/navigation';
  * import { useLocalizeHref } from 'gt-next/link';
  *
  * export function Checkout() {
