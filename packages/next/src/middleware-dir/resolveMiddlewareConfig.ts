@@ -9,13 +9,15 @@ import type { MiddlewareConfig, ResolvedMiddlewareConfig } from './types';
 export function parseEnvConfig<T extends object>(
   envName: string,
   value: string | undefined
-): T {
-  if (!value) return {} as T;
+): Partial<T> {
+  if (!value) return {};
   try {
-    return JSON.parse(value) as T;
+    const parsed: unknown = JSON.parse(value);
+    // Valid JSON that isn't an object (e.g. `null`) is treated as unset.
+    return parsed && typeof parsed === 'object' ? (parsed as Partial<T>) : {};
   } catch (error) {
     console.error(createInvalidMiddlewareEnvConfigError(envName, error));
-    return {} as T;
+    return {};
   }
 }
 
