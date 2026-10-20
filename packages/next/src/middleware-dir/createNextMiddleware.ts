@@ -14,10 +14,17 @@ import { pathnameMatchesRegex } from '../utils/pathRegex';
 import { createMiddlewareRouting } from './createMiddlewareRouting';
 import { resolveMiddlewareConfig } from './resolveMiddlewareConfig';
 import type { MiddlewareConfig } from './types';
+import { createLinkRoutingConfigMismatchWarning } from '../errors/middleware';
 
 export type { RouteOverrides, LocaleRoutes } from './types';
 
 const NEXT_JS_SOURCE_MAP_PATH = '/__nextjs_source-map';
+
+// Options gt-next/link reads from withGTConfig() to avoid redirects.
+const LINK_ROUTING_OPTIONS = [
+  'prefixDefaultLocale',
+  'enableSmartRouting',
+] as const;
 
 /**
  * Middleware factory to create a Next.js middleware for i18n routing and locale detection.
@@ -40,6 +47,14 @@ const NEXT_JS_SOURCE_MAP_PATH = '/__nextjs_source-map';
  */
 export function createNextMiddleware(options: MiddlewareConfig = {}) {
   const config = resolveMiddlewareConfig(options);
+  if (process.env.NODE_ENV === 'development') {
+    const linkConfig = resolveMiddlewareConfig();
+    const mismatches = LINK_ROUTING_OPTIONS.filter(
+      (option) => config[option] !== linkConfig[option]
+    );
+    if (mismatches.length)
+      console.warn(createLinkRoutingConfigMismatchWarning(mismatches));
+  }
   const {
     localeRouting,
     prefixDefaultLocale,

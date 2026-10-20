@@ -1,30 +1,13 @@
 'use client';
 
 import NextLink from 'next/link';
-import {
-  forwardRef,
-  type ComponentProps,
-  type ComponentRef,
-  type ForwardedRef,
-} from 'react';
-import { useLocale } from 'gt-react';
+import { forwardRef, type ComponentProps, type ComponentRef } from 'react';
+import { useDefaultLocale, useLocale } from 'gt-react';
+import { localizeHref } from './localize-utils';
 
-type NextLinkProps = ComponentProps<typeof NextLink>;
 type LinkRef = ComponentRef<typeof NextLink>;
-type LinkHref = NextLinkProps['href'];
 
-export type LinkProps = NextLinkProps;
-
-type ResolvedLinkProps = Omit<LinkProps, 'locale'> & {
-  locale: NonNullable<LinkProps['locale']>;
-};
-
-const LinkWithLocale = forwardRef<LinkRef, Omit<LinkProps, 'locale'>>(
-  function LinkWithLocale({ href, ...props }, ref) {
-    const locale = useLocale();
-    return renderLink({ ...props, href, locale }, ref);
-  }
-);
+export type LinkProps = ComponentProps<typeof NextLink>;
 
 /**
  * Locale-aware wrapper around Next.js's `<Link>` component.
@@ -33,12 +16,17 @@ const LinkWithLocale = forwardRef<LinkRef, Omit<LinkProps, 'locale'>>(
  * locale string to use a specific locale, or pass `locale={false}` to leave the
  * href unchanged. External URLs are never prefixed.
  *
+ * With `prefixDefaultLocale: false` (the default), current default-locale links
+ * are left unprefixed. Explicit default-locale links are left unprefixed only
+ * when `enableSmartRouting` is `false`. Set these options in `withGTConfig()`
+ * so Link can read them.
+ *
  * @example
  * ```tsx
  * import Link from 'gt-next/link';
  *
  * export function Navigation() {
- *   return <Link href="/home">Home</Link>; // /en/home
+ *   return <Link href="/home">Home</Link>; // /fr/home, or /home for the default locale
  * }
  * ```
  *
@@ -78,46 +66,21 @@ export const Link = forwardRef<LinkRef, LinkProps>(function Link(
   { href, locale, ...props },
   ref
 ) {
-  if (locale === undefined) {
-    return <LinkWithLocale {...props} href={href} ref={ref} />;
-  }
+  const currentLocale = useLocale();
+  const defaultLocale = useDefaultLocale();
 
-  return renderLink({ ...props, href, locale }, ref);
-});
-
-function renderLink(
-  { href, locale, ...props }: ResolvedLinkProps,
-  ref: ForwardedRef<LinkRef>
-) {
-  return <NextLink {...props} href={localizeHref(href, locale)} ref={ref} />;
-}
-
-function localizeHref(href: LinkHref, locale: LinkProps['locale']): LinkHref {
-  if (!locale) return href;
-
+  let localizedHref = href;
   if (typeof href === 'string') {
-    return localizePath(href, locale);
+    localizedHref = localizeHref(href, locale, currentLocale, defaultLocale);
+  } else if (typeof href.pathname === 'string') {
+    const pathname = localizeHref(
+      href.pathname,
+      locale,
+      currentLocale,
+      defaultLocale
+    );
+    if (pathname !== href.pathname) localizedHref = { ...href, pathname };
   }
 
-  if (typeof href.pathname !== 'string') return href;
-
-  const localizedPathname = localizePath(href.pathname, locale);
-  if (localizedPathname === href.pathname) return href;
-
-  return {
-    ...href,
-    pathname: localizedPathname,
-  };
-}
-
-function localizePath(href: string, locale: string): string {
-  if (!href.startsWith('/') || href.startsWith('//')) return href;
-
-  const url = new URL(href, 'http://localhost');
-  url.pathname =
-    url.pathname === '/'
-      ? `/${encodeURIComponent(locale)}`
-      : `/${encodeURIComponent(locale)}${url.pathname}`;
-
-  return `${url.pathname}${url.search}${url.hash}`;
-}
+  return <NextLink {...props} href={localizedHref} ref={ref} />;
+});
