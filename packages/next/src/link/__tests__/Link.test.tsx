@@ -81,6 +81,27 @@ describe('Link', () => {
     expect(mockNextLink.mock.calls[0][0]).not.toHaveProperty('locale');
   });
 
+  it('leaves paths outside pathRegex unprefixed', async () => {
+    vi.stubEnv('_GENERALTRANSLATION_PATH_REGEX', '^/(?!api(?:/|$)).*');
+    const Link = await importLink();
+
+    renderToStaticMarkup(
+      <>
+        <Link href='/api/export'>Export</Link>
+        <Link href={{ pathname: '/api/export', query: { format: 'csv' } }}>
+          Export CSV
+        </Link>
+        <Link href='/home'>Home</Link>
+      </>
+    );
+
+    expect(mockNextLink.mock.calls.map(([props]) => props.href)).toEqual([
+      '/api/export',
+      { pathname: '/api/export', query: { format: 'csv' } },
+      '/fr/home',
+    ]);
+  });
+
   describe('default locale', () => {
     beforeEach(() => mockUseLocale.mockReturnValue('en'));
 
@@ -178,6 +199,18 @@ describe('Link', () => {
         <ProductionLink href='/de/about'>About</ProductionLink>
       );
 
+      expect(warn).not.toHaveBeenCalled();
+      warn.mockRestore();
+    });
+
+    it('does not warn for paths outside pathRegex', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      vi.stubEnv('_GENERALTRANSLATION_PATH_REGEX', '^/(?!de(?:/|$)).*');
+      const Link = await importLink();
+
+      renderToStaticMarkup(<Link href='/de/about'>About</Link>);
+
+      expect(mockNextLink.mock.calls[0][0].href).toBe('/de/about');
       expect(warn).not.toHaveBeenCalled();
       warn.mockRestore();
     });

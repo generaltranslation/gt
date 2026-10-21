@@ -181,7 +181,7 @@ function haveSameLocales(
  * @param {number} [batchInterval=defaultInitGTProps.batchInterval] - The interval in milliseconds between batched translation requests.
  * @param {boolean} [ignoreBrowserLocales=defaultWithGTConfigProps.ignoreBrowserLocales] - Whether to ignore browser's preferred locales.
  * @param {boolean} [disableInvalidLocaleWarning=defaultWithGTConfigProps.disableInvalidLocaleWarning] - Whether to disable invalid request locale warnings.
- * @param {string|undefined} [pathRegex] - Regular expression that request pathnames must match for i18n middleware to be applied.
+ * @param {string|undefined} [pathRegex] - Regular expression that request pathnames must match for i18n middleware to be applied. Write it for paths without the locale prefix: `<Link>`, `useLocalizeHref()` and `getLocalizeHref()` test the unprefixed path and leave non-matching paths unprefixed.
  * @param {object} headersAndCookies - Additional headers and cookies that can be passed for extended configuration.
  * @param {boolean} [localeRouting] - Default for createNextMiddleware's `localeRouting` option.
  * @param {boolean} [prefixDefaultLocale] - Default for createNextMiddleware's `prefixDefaultLocale` option.
