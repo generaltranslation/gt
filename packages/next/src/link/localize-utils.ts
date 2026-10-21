@@ -1,5 +1,7 @@
 import type NextLink from 'next/link';
 import type { ComponentProps } from 'react';
+import { getI18nConfig } from 'gt-i18n/internal';
+import { createLocalePrefixedHrefWarning } from '../errors/link';
 import { resolveMiddlewareConfig } from '../middleware-dir/resolveMiddlewareConfig';
 
 /** A locale to prefix, `undefined` for the current locale, or `false` for none. */
@@ -36,10 +38,23 @@ function getPrefixLocale(
   return locale !== undefined && enableSmartRouting ? targetLocale : false;
 }
 
+let warnedLocalePrefixedHref = false;
+
+/** Warns once when an href already starts with a configured locale. */
+function warnLocalePrefixedHref(href: string, pathname: string) {
+  if (warnedLocalePrefixedHref) return;
+  const pathLocale = pathname.split('/')[1];
+  if (!getI18nConfig().getLocales().includes(pathLocale)) return;
+  warnedLocalePrefixedHref = true;
+  console.warn(createLocalePrefixedHrefWarning(href, pathLocale));
+}
+
 function prefixPath(path: string, locale: string): string {
   if (!path.startsWith('/') || path.startsWith('//')) return path;
 
   const url = new URL(path, 'http://localhost');
+  if (process.env.NODE_ENV === 'development')
+    warnLocalePrefixedHref(path, url.pathname);
   url.pathname =
     url.pathname === '/'
       ? `/${encodeURIComponent(locale)}`
