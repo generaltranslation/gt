@@ -5,14 +5,14 @@ import {
 } from '../cacheComponents';
 
 describe('Cache Components diagnostics', () => {
-  it('says that next build fails without custom getLocale() and getRegion()', () => {
+  it('says when next build fails without custom getLocale() and getRegion()', () => {
     expect(
       createCacheComponentsMissingRequestFunctionsWarning([
         'getLocale',
         'getRegion',
       ])
     ).toBe(
-      'gt-next Warning: cacheComponents is enabled, but custom getLocale() and getRegion() are not configured, so next build will fail with "uncached or runtime data during prerendering" because the default functions read request headers or cookies. Add getLocale.ts and getRegion.ts, or configure getLocalePath and getRegionPath. Learn more: https://generaltranslation.com/en-US/docs/react/nextjs/cache-components#request-values'
+      'gt-next Warning: cacheComponents is enabled, but custom getLocale() and getRegion() are not configured, so next build fails with "uncached or runtime data during prerendering" when the default functions run outside a <Suspense> boundary because they read request headers or cookies. Add getLocale.ts and getRegion.ts, or configure getLocalePath and getRegionPath. Learn more: https://generaltranslation.com/en-US/docs/react/nextjs/cache-components#request-values'
     );
   });
 
@@ -20,7 +20,7 @@ describe('Cache Components diagnostics', () => {
     expect(
       createCacheComponentsMissingRequestFunctionsWarning(['getRegion'])
     ).toBe(
-      'gt-next Warning: cacheComponents is enabled, but custom getRegion() is not configured, so next build will fail with "uncached or runtime data during prerendering" because the default function reads request headers or cookies. Add getRegion.ts, or configure getRegionPath. Learn more: https://generaltranslation.com/en-US/docs/react/nextjs/cache-components#request-values'
+      'gt-next Warning: cacheComponents is enabled, but custom getRegion() is not configured, so next build fails with "uncached or runtime data during prerendering" when the default function runs outside a <Suspense> boundary because it reads request headers or cookies. Add getRegion.ts, or configure getRegionPath. Learn more: https://generaltranslation.com/en-US/docs/react/nextjs/cache-components#request-values'
     );
   });
 

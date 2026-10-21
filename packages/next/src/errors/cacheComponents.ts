@@ -19,8 +19,8 @@ export const createCacheComponentsMissingRequestFunctionsWarning = (
 
   return createGtNextDiagnostic({
     severity: 'Warning',
-    whatHappened: `cacheComponents is enabled, but custom ${functionNames} ${isPlural ? 'are' : 'is'} not configured, so next build will fail with "uncached or runtime data during prerendering"`,
-    why: `the default ${isPlural ? 'functions read' : 'function reads'} request headers or cookies`,
+    whatHappened: `cacheComponents is enabled, but custom ${functionNames} ${isPlural ? 'are' : 'is'} not configured, so next build fails with "uncached or runtime data during prerendering" when the default ${isPlural ? 'functions run' : 'function runs'} outside a <Suspense> boundary`,
+    why: `${isPlural ? 'they read' : 'it reads'} request headers or cookies`,
     fix: `Add ${fileNames}, or configure ${configKeys}`,
     docsUrl:
       'https://generaltranslation.com/en-US/docs/react/nextjs/cache-components#request-values',
