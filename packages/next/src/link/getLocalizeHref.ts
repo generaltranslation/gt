@@ -12,7 +12,7 @@ import { localizeHref, type LinkLocale } from './localize-utils';
  * paths when `prefixDefaultLocale` is `false` (an explicit default `locale`
  * keeps its prefix while `enableSmartRouting` is on). Localized path aliases
  * and locale availability are still resolved by the middleware. External URLs
- * are never prefixed.
+ * and paths that don't match `pathRegex` are never prefixed.
  *
  * @example
  * ```tsx
