@@ -1,5 +1,19 @@
 # gt-next
 
+## 11.4.14
+
+### Patch Changes
+
+- [#2489](https://github.com/generaltranslation/gt/pull/2489) [`6afc901`](https://github.com/generaltranslation/gt/commit/6afc90177e2a597c5c557bf167307121bb529e3a) Thanks [@ruymon](https://github.com/ruymon)! - `gt-next/link`, `useLocalizeHref()` and `getLocalizeHref()` now log a warning once in development when an href already starts with a configured locale and is prefixed again, for example `/de/about` rendering as `/fr/de/about`. The href output is unchanged.
+
+- [#2488](https://github.com/generaltranslation/gt/pull/2488) [`b7e53f8`](https://github.com/generaltranslation/gt/commit/b7e53f864ca5448d2b06c8c51817652bb2cb6259) Thanks [@ruymon](https://github.com/ruymon)! - `gt-next/link`, `useLocalizeHref()` and `getLocalizeHref()` no longer prefix paths that don't match the `pathRegex` passed to `withGTConfig()`. The middleware leaves those paths unlocalized, so a prefixed link to them, such as `/fr/api/export`, would not resolve.
+
+  A `pathRegex` that matches only locale-prefixed paths, such as `^/(?:en|fr)(?:/|$)`, now produces unprefixed links. Write `pathRegex` for paths without the locale prefix.
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.4.14
+  - gt-react@11.4.14
+
 ## 11.4.13
 
 ### Patch Changes
