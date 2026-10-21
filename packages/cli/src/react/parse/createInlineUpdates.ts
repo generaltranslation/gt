@@ -5,7 +5,7 @@ import { parse } from '@babel/parser';
 import { parseTranslationComponent } from '../jsx/utils/jsxParsing/parseJsx.js';
 import { parseStrings } from '../jsx/utils/parseStringFunction.js';
 import { logger } from '../../console/logger.js';
-import { matchFiles } from '../../fs/matchFiles.js';
+import { isPermissionError, matchFiles } from '../../fs/matchFiles.js';
 import {
   DEFAULT_NODE_SRC_EXCLUDES,
   DEFAULT_NODE_SRC_PATTERNS,
@@ -39,12 +39,17 @@ import traverseModule from '@babel/traverse';
 import * as t from '@babel/types';
 const traverse = traverseModule.default || traverseModule;
 
+/**
+ * @param skippedPaths - Receives the folders and files that the gt-node
+ * default scan skipped because it could not read them.
+ */
 export async function createInlineUpdates(
   pkg: GTLibrary,
   validate: boolean,
   filePatterns: string[] | undefined,
   parsingFlags: GTParsingFlags,
-  parsingOptions: ParsingConfigOptions
+  parsingOptions: ParsingConfigOptions,
+  skippedPaths: string[] = []
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   const updates: Updates = [];
 
@@ -70,7 +75,7 @@ export async function createInlineUpdates(
             ...DEFAULT_NODE_SRC_PATTERNS,
             ...DEFAULT_NODE_SRC_EXCLUDES.map((pattern) => `!${pattern}`),
           ],
-          { suppressErrors: true }
+          { unreadableFolders: skippedPaths }
         )
       : matchFiles(process.cwd(), DEFAULT_SRC_PATTERNS);
 
@@ -81,11 +86,8 @@ export async function createInlineUpdates(
     } catch (error) {
       // The whole-project scan also skips files it cannot read. Files that
       // src patterns match must be readable.
-      const errorCode = (error as NodeJS.ErrnoException).code;
-      if (
-        isNodeDefaultScan &&
-        (errorCode === 'EACCES' || errorCode === 'EPERM')
-      ) {
+      if (isNodeDefaultScan && isPermissionError(error)) {
+        skippedPaths.push(file);
         continue;
       }
       throw error;

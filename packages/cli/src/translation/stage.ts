@@ -8,10 +8,14 @@ import { logger } from '../console/logger.js';
 import { createUpdates } from './parse.js';
 import { InlineLibrary } from '../types/libraries.js';
 
+/**
+ * @param skippedPaths - Receives the paths the scan could not read.
+ */
 export async function aggregateInlineTranslations(
   options: TranslateFlags,
   settings: Settings,
-  library: InlineLibrary
+  library: InlineLibrary,
+  skippedPaths?: string[]
 ): Promise<Updates> {
   if (!options.dictionary) {
     options.dictionary = findFilepath([
@@ -32,7 +36,8 @@ export async function aggregateInlineTranslations(
     library,
     false,
     settings.files.gtJson.parsingFlags,
-    settings.parsingOptions
+    settings.parsingOptions,
+    skippedPaths
   );
 
   if (warnings.length > 0) {
