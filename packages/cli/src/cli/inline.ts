@@ -124,10 +124,12 @@ export class InlineCLI extends BaseCLI {
       requireConfig: true,
     });
 
+    const skippedPaths: string[] = [];
     const updates = await aggregateInlineTranslations(
       initOptions,
       settings,
-      this.getInlineLibrary()
+      this.getInlineLibrary(),
+      skippedPaths
     );
 
     // Convert updates to the proper data format
@@ -152,6 +154,13 @@ export class InlineCLI extends BaseCLI {
       }
       await saveJSON(translationFiles.gt, newData);
       logger.step('Source file saved successfully!');
+      // An unread path may hold the source of saved translations, so keep
+      // every saved translation.
+      if (skippedPaths.length > 0) {
+        logger.warn(
+          `Kept every saved translation because the scan could not read these paths:\n${skippedPaths.join('\n')}`
+        );
+      }
       // Also save translations (after merging with existing translations)
       for (const locale of settings.locales) {
         const translationsFile = resolveLocaleFiles(
@@ -168,9 +177,14 @@ export class InlineCLI extends BaseCLI {
           ...existingTranslations,
         };
         // Filter out keys that don't exist in newData
-        const filteredTranslations = Object.fromEntries(
-          Object.entries(mergedTranslations).filter(([key]) => newData[key])
-        );
+        const filteredTranslations =
+          skippedPaths.length > 0
+            ? mergedTranslations
+            : Object.fromEntries(
+                Object.entries(mergedTranslations).filter(
+                  ([key]) => newData[key]
+                )
+              );
         await saveJSON(translationsFile.gt, filteredTranslations);
       }
       logger.step('Merged translations successfully!');

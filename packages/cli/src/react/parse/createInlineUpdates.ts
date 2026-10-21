@@ -5,7 +5,7 @@ import { parse } from '@babel/parser';
 import { parseTranslationComponent } from '../jsx/utils/jsxParsing/parseJsx.js';
 import { parseStrings } from '../jsx/utils/parseStringFunction.js';
 import { logger } from '../../console/logger.js';
-import { matchFiles } from '../../fs/matchFiles.js';
+import { isPermissionError, matchFiles } from '../../fs/matchFiles.js';
 import {
   DEFAULT_NODE_SRC_EXCLUDES,
   DEFAULT_NODE_SRC_PATTERNS,
@@ -36,14 +36,20 @@ import {
 } from '../jsx/utils/jsxParsing/autoInsertion.js';
 import { INTERNAL_TRANSLATION_COMPONENT } from '../jsx/utils/constants.js';
 import traverseModule from '@babel/traverse';
+import * as t from '@babel/types';
 const traverse = traverseModule.default || traverseModule;
 
+/**
+ * @param skippedPaths - Receives the folders and files that the gt-node
+ * default scan skipped because it could not read them.
+ */
 export async function createInlineUpdates(
   pkg: GTLibrary,
   validate: boolean,
   filePatterns: string[] | undefined,
   parsingFlags: GTParsingFlags,
-  parsingOptions: ParsingConfigOptions
+  parsingOptions: ParsingConfigOptions,
+  skippedPaths: string[] = []
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   const updates: Updates = [];
 
@@ -69,7 +75,7 @@ export async function createInlineUpdates(
             ...DEFAULT_NODE_SRC_PATTERNS,
             ...DEFAULT_NODE_SRC_EXCLUDES.map((pattern) => `!${pattern}`),
           ],
-          { suppressErrors: true }
+          { unreadableFolders: skippedPaths }
         )
       : matchFiles(process.cwd(), DEFAULT_SRC_PATTERNS);
 
@@ -80,11 +86,8 @@ export async function createInlineUpdates(
     } catch (error) {
       // The whole-project scan also skips files it cannot read. Files that
       // src patterns match must be readable.
-      const errorCode = (error as NodeJS.ErrnoException).code;
-      if (
-        isNodeDefaultScan &&
-        (errorCode === 'EACCES' || errorCode === 'EPERM')
-      ) {
+      if (isNodeDefaultScan && isPermissionError(error)) {
+        skippedPaths.push(file);
         continue;
       }
       throw error;
@@ -101,6 +104,7 @@ export async function createInlineUpdates(
       logger.error(`Error parsing file ${file}: ${error}`);
       continue;
     }
+    removeTypeOnlyImports(ast);
 
     // First pass: collect imports and process translation functions
     const { importAliases, inlineTranslationPaths, translationComponentPaths } =
@@ -247,6 +251,28 @@ export async function createInlineUpdates(
  */
 function getUpstreamPackages(pkg: GTLibrary): GTLibrary[] {
   return GT_LIBRARIES_UPSTREAM[pkg];
+}
+
+/**
+ * Removes type-only imports, which have no runtime value. Babel's scope
+ * tracker counts them as bindings, so `import type { Foo }` next to
+ * `let Foo` makes traversal throw, although TypeScript accepts a type and a
+ * value with the same name.
+ */
+function removeTypeOnlyImports(ast: t.File): void {
+  const isTypeOnly = (importKind?: string | null) =>
+    importKind === 'type' || importKind === 'typeof';
+  ast.program.body = ast.program.body.filter((node) => {
+    if (t.isTSImportEqualsDeclaration(node))
+      return !isTypeOnly(node.importKind);
+    if (!t.isImportDeclaration(node)) return true;
+    if (isTypeOnly(node.importKind)) return false;
+    node.specifiers = node.specifiers.filter(
+      (specifier) =>
+        !t.isImportSpecifier(specifier) || !isTypeOnly(specifier.importKind)
+    );
+    return true;
+  });
 }
 
 export { dedupeUpdates as _test_dedupeUpdates };
