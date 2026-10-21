@@ -136,6 +136,41 @@ main();
     }
   );
 
+  it('scans TypeScript that gives a type and a value the same name', async () => {
+    fs.writeFileSync('types.ts', 'export interface Foo { id: string }\n');
+    fs.writeFileSync(
+      'root.d.ts',
+      "import type { Foo } from './types';\nexport declare let Foo: Foo;\n"
+    );
+    fs.writeFileSync(
+      'server.ts',
+      `import { type Foo } from './types';
+import { getGT } from 'gt-node';
+
+let Foo: Foo | undefined;
+
+export async function handler() {
+  const gt = await getGT();
+  return gt('From a typed file');
+}
+`
+    );
+    writeHandler('src/app.ts', 'From src');
+
+    const { updates } = await createInlineUpdates(
+      Libraries.GT_NODE,
+      false,
+      undefined,
+      GT_PARSING_FLAGS_DEFAULT,
+      parsingOptions
+    );
+
+    expect(updates.map((update) => update.source).sort()).toEqual([
+      'From a typed file',
+      'From src',
+    ]);
+  });
+
   it('keeps the React default scope for other libraries', async () => {
     writeHandler('server.js', 'From the root', 'gt-react');
     writeHandler('src/app.js', 'From src', 'gt-react');

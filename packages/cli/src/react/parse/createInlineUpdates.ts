@@ -36,6 +36,7 @@ import {
 } from '../jsx/utils/jsxParsing/autoInsertion.js';
 import { INTERNAL_TRANSLATION_COMPONENT } from '../jsx/utils/constants.js';
 import traverseModule from '@babel/traverse';
+import * as t from '@babel/types';
 const traverse = traverseModule.default || traverseModule;
 
 export async function createInlineUpdates(
@@ -101,6 +102,7 @@ export async function createInlineUpdates(
       logger.error(`Error parsing file ${file}: ${error}`);
       continue;
     }
+    removeTypeOnlyImports(ast);
 
     // First pass: collect imports and process translation functions
     const { importAliases, inlineTranslationPaths, translationComponentPaths } =
@@ -247,6 +249,28 @@ export async function createInlineUpdates(
  */
 function getUpstreamPackages(pkg: GTLibrary): GTLibrary[] {
   return GT_LIBRARIES_UPSTREAM[pkg];
+}
+
+/**
+ * Removes type-only imports, which have no runtime value. Babel's scope
+ * tracker counts them as bindings, so `import type { Foo }` next to
+ * `let Foo` makes traversal throw, although TypeScript accepts a type and a
+ * value with the same name.
+ */
+function removeTypeOnlyImports(ast: t.File): void {
+  const isTypeOnly = (importKind?: string | null) =>
+    importKind === 'type' || importKind === 'typeof';
+  ast.program.body = ast.program.body.filter((node) => {
+    if (t.isTSImportEqualsDeclaration(node))
+      return !isTypeOnly(node.importKind);
+    if (!t.isImportDeclaration(node)) return true;
+    if (isTypeOnly(node.importKind)) return false;
+    node.specifiers = node.specifiers.filter(
+      (specifier) =>
+        !t.isImportSpecifier(specifier) || !isTypeOnly(specifier.importKind)
+    );
+    return true;
+  });
 }
 
 export { dedupeUpdates as _test_dedupeUpdates };
