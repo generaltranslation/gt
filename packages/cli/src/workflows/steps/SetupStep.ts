@@ -36,19 +36,13 @@ export class SetupStep {
     } catch (error) {
       // Translation can run without generated context, so a failed setup
       // request warns and continues, as a failed setup job already does.
-      if (error instanceof ApiError && error.code === 403) {
-        this.spinner.stop(
-          chalk.yellow(
-            'Setup permission denied: setup needs project:context:write, proceeding without generated context'
-          )
-        );
-      } else {
-        this.spinner.stop(
-          chalk.yellow(
-            `Setup failed: ${error instanceof Error ? error.message : String(error)}, proceeding without setup`
-          )
-        );
-      }
+      // The reason goes to logger.warn because --quiet hides spinner text.
+      this.spinner.stop(chalk.yellow('Setup request failed'));
+      logger.warn(
+        error instanceof ApiError && error.code === 403
+          ? 'Setup permission denied: setup needs project:context:write, proceeding without generated context'
+          : `Setup failed: ${error instanceof Error ? error.message : String(error)}, proceeding without setup`
+      );
       return files;
     }
 

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from 'generaltranslation/errors';
 import type { FileReference } from 'generaltranslation/types';
+import { logger } from '../../../console/logger.js';
 import type { Settings } from '../../../types/index.js';
 import { SetupStep } from '../SetupStep.js';
 
@@ -12,6 +13,7 @@ const spinner = {
 vi.mock('../../../console/logger.js', () => ({
   logger: {
     createSpinner: vi.fn(() => spinner),
+    warn: vi.fn(),
   },
 }));
 
@@ -120,7 +122,7 @@ describe('SetupStep', () => {
       'Setup failed: connection reset',
     ],
   ])(
-    'proceeds without setup after %s',
+    'warns through logger.warn and proceeds without setup after %s',
     async (_description, error, expectedMessage) => {
       gt.setupProject.mockRejectedValue(error);
       const step = new SetupStep(gt, settings, 1_000);
@@ -131,6 +133,11 @@ describe('SetupStep', () => {
       expect(gt.awaitJobs).not.toHaveBeenCalled();
       expect(spinner.stop).toHaveBeenCalledTimes(1);
       expect(spinner.stop).toHaveBeenCalledWith(
+        expect.stringContaining('Setup request failed')
+      );
+      // --quiet hides spinner text but keeps logger.warn output.
+      expect(logger.warn).toHaveBeenCalledTimes(1);
+      expect(logger.warn).toHaveBeenCalledWith(
         expect.stringContaining(expectedMessage)
       );
     }
