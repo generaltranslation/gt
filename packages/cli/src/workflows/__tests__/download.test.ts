@@ -220,6 +220,24 @@ describe('runDownloadWorkflow', () => {
       'is rate limited',
       async () => new Response('Too many requests', { status: 429 }),
     ],
+    [
+      // Headers now, and the body ends 5 seconds later unless fetch's signal
+      // aborts first, which fails the body read as fetch does
+      'stalls its body',
+      async (request: Request) =>
+        new Response(
+          new ReadableStream({
+            start(body) {
+              const timer = setTimeout(() => body.close(), 5000);
+              request.signal.addEventListener('abort', () => {
+                clearTimeout(timer);
+                body.error(request.signal.reason);
+              });
+            },
+          }),
+          { headers: { 'content-type': 'application/json' } }
+        ),
+    ],
   ])(
     'downloads completed staged files when a status check %s at the timeout',
     async (_case, answerCheck) => {

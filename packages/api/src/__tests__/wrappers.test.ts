@@ -1,5 +1,7 @@
 import { readFileSync } from 'node:fs';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { createServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 
 import { awaitJobs, pollJobs } from '../wrappers/awaitJobs';
 import { createBatches, processBatches } from '../wrappers/batch';
@@ -53,6 +55,30 @@ describe('createTimeoutFetch', () => {
     controller.abort(new Error('caller gave up'));
 
     await expect(response).rejects.toThrow('caller gave up');
+  });
+
+  it('cancels a pending body read when the caller aborts after the headers', async () => {
+    // Real fetch against a server that sends the headers and holds the body
+    const server = createServer((_request, response) => {
+      response.writeHead(200).flushHeaders();
+    });
+    onTestFinished(() => {
+      server.closeAllConnections();
+      server.close();
+    });
+    await new Promise<void>((resolve) =>
+      server.listen(0, '127.0.0.1', resolve)
+    );
+    const { port } = server.address() as AddressInfo;
+    const controller = new AbortController();
+
+    const response = await createTimeoutFetch()(`http://127.0.0.1:${port}`, {
+      signal: controller.signal,
+    });
+    controller.abort(new Error('caller gave up'));
+
+    // fetch may report the abort reason or a generic AbortError
+    await expect(response.text()).rejects.toThrow();
   });
 
   it('allows a custom fetch implementation to own request timeouts', async () => {

@@ -27,14 +27,13 @@ export function createTimeoutFetch({
 
     const request = new Request(input, init);
     const controller = new AbortController();
-    const forwardAbort = () => controller.abort(request.signal.reason);
-    if (request.signal.aborted) forwardAbort();
-    else request.signal.addEventListener('abort', forwardAbort, { once: true });
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
       return await fetchImplementation(
-        new Request(request, { signal: controller.signal })
+        new Request(request, {
+          signal: followBoth(request.signal, controller),
+        })
       );
     } catch (error) {
       if (controller.signal.aborted && !request.signal.aborted) {
@@ -43,9 +42,24 @@ export function createTimeoutFetch({
       throw error;
     } finally {
       clearTimeout(timeoutId);
-      request.signal.removeEventListener('abort', forwardAbort);
     }
   };
+}
+
+// The caller's signal stays linked after the headers arrive, so its abort
+// also cancels a pending body read. Runtimes without AbortSignal.any forward
+// the caller's abort to the timeout controller instead.
+function followBoth(
+  callerSignal: AbortSignal,
+  controller: AbortController
+): AbortSignal {
+  if (typeof AbortSignal.any === 'function') {
+    return AbortSignal.any([callerSignal, controller.signal]);
+  }
+  const forwardAbort = () => controller.abort(callerSignal.reason);
+  if (callerSignal.aborted) forwardAbort();
+  else callerSignal.addEventListener('abort', forwardAbort, { once: true });
+  return controller.signal;
 }
 
 // Ends early, and clears its timer, when the signal aborts
