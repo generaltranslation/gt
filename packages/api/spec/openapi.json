@@ -91,9 +91,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "error"
-        ]
+        "required": ["error"]
       },
       "ApiVersion": {
         "type": "string",
@@ -146,11 +144,7 @@
             "minimum": 0
           }
         },
-        "required": [
-          "total",
-          "succeeded",
-          "failed"
-        ],
+        "required": ["total", "succeeded", "failed"],
         "description": "Number of `results` in total and by `status`."
       },
       "JsonObject": {
@@ -204,12 +198,7 @@
       },
       "DataFormat": {
         "type": "string",
-        "enum": [
-          "JSX",
-          "ICU",
-          "I18NEXT",
-          "STRING"
-        ]
+        "enum": ["JSX", "ICU", "I18NEXT", "STRING"]
       },
       "Branch": {
         "type": "object",
@@ -225,11 +214,7 @@
             "description": "Whether this is the project's one default branch."
           }
         },
-        "required": [
-          "id",
-          "name",
-          "isDefault"
-        ]
+        "required": ["id", "name", "isDefault"]
       },
       "Tag": {
         "type": "object",
@@ -241,10 +226,7 @@
             "type": "string"
           },
           "message": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "createdAt": {
             "type": "string",
@@ -255,23 +237,11 @@
             "format": "date-time"
           }
         },
-        "required": [
-          "id",
-          "tagId",
-          "message",
-          "createdAt",
-          "updatedAt"
-        ]
+        "required": ["id", "tagId", "message", "createdAt", "updatedAt"]
       },
       "ModelProvider": {
         "type": "string",
-        "enum": [
-          "ANTHROPIC",
-          "OPENAI",
-          "XAI",
-          "GOOGLE",
-          "HYPERCLOVA"
-        ]
+        "enum": ["ANTHROPIC", "OPENAI", "XAI", "GOOGLE", "HYPERCLOVA"]
       },
       "RuntimeTranslationResponse": {
         "type": "object",
@@ -282,9 +252,7 @@
               "properties": {
                 "success": {
                   "type": "boolean",
-                  "enum": [
-                    true
-                  ]
+                  "enum": [true]
                 },
                 "translation": {
                   "$ref": "#/components/schemas/JsonValue"
@@ -296,20 +264,14 @@
                   "type": "string"
                 }
               },
-              "required": [
-                "success",
-                "dataFormat",
-                "locale"
-              ]
+              "required": ["success", "dataFormat", "locale"]
             },
             {
               "type": "object",
               "properties": {
                 "success": {
                   "type": "boolean",
-                  "enum": [
-                    false
-                  ]
+                  "enum": [false]
                 },
                 "error": {
                   "type": "string"
@@ -318,11 +280,7 @@
                   "type": "number"
                 }
               },
-              "required": [
-                "success",
-                "error",
-                "code"
-              ]
+              "required": ["success", "error", "code"]
             }
           ]
         }
@@ -359,10 +317,7 @@
                     },
                     "actionType": {
                       "type": "string",
-                      "enum": [
-                        "fast",
-                        "standard"
-                      ],
+                      "enum": ["fast", "standard"],
                       "default": "fast"
                     },
                     "sourceCode": {
@@ -382,11 +337,7 @@
                               "type": "string"
                             }
                           },
-                          "required": [
-                            "before",
-                            "target",
-                            "after"
-                          ]
+                          "required": ["before", "target", "after"]
                         }
                       }
                     }
@@ -416,19 +367,11 @@
             }
           }
         },
-        "required": [
-          "requests",
-          "targetLocale",
-          "sourceLocale",
-          "metadata"
-        ]
+        "required": ["requests", "targetLocale", "sourceLocale", "metadata"]
       },
       "RuntimeFileFormat": {
         "type": "string",
-        "enum": [
-          "MD",
-          "MDX"
-        ],
+        "enum": ["MD", "MDX"],
         "description": "Marks the source as a whole document in this file format. Send the document as a string."
       },
       "ProjectApiKeyPermission": {
@@ -456,11 +399,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "id",
-          "name",
-          "autoUpdate"
-        ]
+        "required": ["id", "name", "autoUpdate"]
       },
       "CreateCliWizardSessionResponse": {
         "type": "object",
@@ -469,9 +408,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "sessionId"
-        ]
+        "required": ["sessionId"]
       },
       "CreateCliWizardSessionRequest": {
         "type": "object",
@@ -483,11 +420,7 @@
       },
       "CliKeyType": {
         "type": "string",
-        "enum": [
-          "development",
-          "production",
-          "all"
-        ],
+        "enum": ["development", "production", "all"],
         "default": "production",
         "deprecated": true,
         "description": "Deprecated: the wizard creates one project API key and returns it in each requested slot."
@@ -509,20 +442,14 @@
                       "$ref": "#/components/schemas/ApiKeyType"
                     }
                   },
-                  "required": [
-                    "key",
-                    "type"
-                  ]
+                  "required": ["key", "type"]
                 }
               },
               "projectId": {
                 "type": "string"
               }
             },
-            "required": [
-              "apiKeys",
-              "projectId"
-            ]
+            "required": ["apiKeys", "projectId"]
           },
           {
             "type": "object",
@@ -534,19 +461,13 @@
                 "type": "string"
               }
             },
-            "required": [
-              "apiKey",
-              "projectId"
-            ]
+            "required": ["apiKey", "projectId"]
           }
         ]
       },
       "ApiKeyType": {
         "type": "string",
-        "enum": [
-          "development",
-          "production"
-        ]
+        "enum": ["development", "production"]
       },
       "CliWizardSessionWaitingResponse": {
         "type": "object",
@@ -555,9 +476,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "message"
-        ]
+        "required": ["message"]
       },
       "DeleteCliWizardSessionResponse": {
         "type": "object",
@@ -566,9 +485,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "message"
-        ]
+        "required": ["message"]
       }
     },
     "parameters": {}
@@ -580,9 +497,7 @@
         "x-internal": true,
         "summary": "Workspace plugin translate",
         "description": "Run the Google Drive Workspace plugin translate command.",
-        "tags": [
-          "Integrations"
-        ],
+        "tags": ["Integrations"],
         "security": [
           {
             "GoogleIdentityToken": []
@@ -608,11 +523,7 @@
                   },
                   "hostApp": {
                     "type": "string",
-                    "enum": [
-                      "DOCS",
-                      "SLIDES",
-                      "SHEETS"
-                    ],
+                    "enum": ["DOCS", "SLIDES", "SHEETS"],
                     "description": "Google editor for the file: DOCS for Google Docs, SLIDES for Google Slides or SHEETS for Google Sheets."
                   },
                   "targetLocales": {
@@ -635,12 +546,7 @@
                     "description": "Whether to force retranslation of existing translations. Defaults to false. Retranslation may incur additional translation charges."
                   }
                 },
-                "required": [
-                  "projectId",
-                  "fileId",
-                  "hostApp",
-                  "targetLocales"
-                ]
+                "required": ["projectId", "fileId", "hostApp", "targetLocales"]
               }
             }
           }
@@ -834,9 +740,7 @@
         "x-internal": true,
         "summary": "Workspace plugin status",
         "description": "Run the Google Drive Workspace plugin status command.",
-        "tags": [
-          "Integrations"
-        ],
+        "tags": ["Integrations"],
         "security": [
           {
             "GoogleIdentityToken": []
@@ -862,19 +766,11 @@
                   },
                   "hostApp": {
                     "type": "string",
-                    "enum": [
-                      "DOCS",
-                      "SLIDES",
-                      "SHEETS"
-                    ],
+                    "enum": ["DOCS", "SLIDES", "SHEETS"],
                     "description": "Google editor for the file: DOCS for Google Docs, SLIDES for Google Slides or SHEETS for Google Sheets."
                   }
                 },
-                "required": [
-                  "projectId",
-                  "fileId",
-                  "hostApp"
-                ]
+                "required": ["projectId", "fileId", "hostApp"]
               }
             }
           }
@@ -908,23 +804,13 @@
                                 "type": "string"
                               }
                             },
-                            "required": [
-                              "code",
-                              "name",
-                              "emoji"
-                            ]
+                            "required": ["code", "name", "emoji"]
                           },
                           "translationProgress": {
-                            "type": [
-                              "number",
-                              "null"
-                            ]
+                            "type": ["number", "null"]
                           },
                           "layoutProgress": {
-                            "type": [
-                              "number",
-                              "null"
-                            ]
+                            "type": ["number", "null"]
                           },
                           "done": {
                             "type": "boolean"
@@ -939,10 +825,7 @@
                                 "type": "string"
                               }
                             },
-                            "required": [
-                              "fileId",
-                              "url"
-                            ]
+                            "required": ["fileId", "url"]
                           }
                         },
                         "required": [
@@ -955,9 +838,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "locales"
-                  ]
+                  "required": ["locales"]
                 }
               }
             }
@@ -1106,9 +987,7 @@
         "x-internal": true,
         "summary": "Plugin info",
         "description": "Run the info command for a design-tool plugin.",
-        "tags": [
-          "Integrations"
-        ],
+        "tags": ["Integrations"],
         "security": [
           {
             "BearerAuth": []
@@ -1121,10 +1000,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "figma",
-                "after-effects"
-              ]
+              "enum": ["figma", "after-effects"]
             },
             "required": true,
             "name": "provider",
@@ -1165,9 +1041,7 @@
                         "maxLength": 255
                       }
                     },
-                    "required": [
-                      "fileName"
-                    ],
+                    "required": ["fileName"],
                     "additionalProperties": false
                   },
                   {
@@ -1179,9 +1053,7 @@
                         "maxLength": 255
                       }
                     },
-                    "required": [
-                      "projectStamp"
-                    ],
+                    "required": ["projectStamp"],
                     "additionalProperties": false
                   }
                 ]
@@ -1224,11 +1096,7 @@
                                   "type": "string"
                                 }
                               },
-                              "required": [
-                                "code",
-                                "name",
-                                "emoji"
-                              ]
+                              "required": ["code", "name", "emoji"]
                             },
                             "currentLocales": {
                               "type": "array",
@@ -1245,11 +1113,7 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "code",
-                                  "name",
-                                  "emoji"
-                                ]
+                                "required": ["code", "name", "emoji"]
                               }
                             },
                             "localeWhitelist": {
@@ -1267,11 +1131,7 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "code",
-                                  "name",
-                                  "emoji"
-                                ]
+                                "required": ["code", "name", "emoji"]
                               }
                             }
                           },
@@ -1299,11 +1159,7 @@
                                 "type": "string"
                               }
                             },
-                            "required": [
-                              "code",
-                              "name",
-                              "emoji"
-                            ]
+                            "required": ["code", "name", "emoji"]
                           }
                         },
                         "linked": {
@@ -1336,11 +1192,7 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "code",
-                                  "name",
-                                  "emoji"
-                                ]
+                                "required": ["code", "name", "emoji"]
                               },
                               "locales": {
                                 "type": "array",
@@ -1357,11 +1209,7 @@
                                       "type": "string"
                                     }
                                   },
-                                  "required": [
-                                    "code",
-                                    "name",
-                                    "emoji"
-                                  ]
+                                  "required": ["code", "name", "emoji"]
                                 }
                               },
                               "updatedAt": {
@@ -1445,11 +1293,7 @@
                           }
                         }
                       },
-                      "required": [
-                        "project",
-                        "supportedLocales",
-                        "linked"
-                      ]
+                      "required": ["project", "supportedLocales", "linked"]
                     },
                     {
                       "type": "object",
@@ -1479,11 +1323,7 @@
                                   "type": "string"
                                 }
                               },
-                              "required": [
-                                "code",
-                                "name",
-                                "emoji"
-                              ]
+                              "required": ["code", "name", "emoji"]
                             },
                             "currentLocales": {
                               "type": "array",
@@ -1500,11 +1340,7 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "code",
-                                  "name",
-                                  "emoji"
-                                ]
+                                "required": ["code", "name", "emoji"]
                               }
                             },
                             "localeWhitelist": {
@@ -1522,11 +1358,7 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "code",
-                                  "name",
-                                  "emoji"
-                                ]
+                                "required": ["code", "name", "emoji"]
                               }
                             }
                           },
@@ -1554,11 +1386,7 @@
                                 "type": "string"
                               }
                             },
-                            "required": [
-                              "code",
-                              "name",
-                              "emoji"
-                            ]
+                            "required": ["code", "name", "emoji"]
                           }
                         },
                         "linked": {
@@ -1591,11 +1419,7 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "code",
-                                  "name",
-                                  "emoji"
-                                ]
+                                "required": ["code", "name", "emoji"]
                               },
                               "locales": {
                                 "type": "array",
@@ -1612,11 +1436,7 @@
                                       "type": "string"
                                     }
                                   },
-                                  "required": [
-                                    "code",
-                                    "name",
-                                    "emoji"
-                                  ]
+                                  "required": ["code", "name", "emoji"]
                                 }
                               },
                               "updatedAt": {
@@ -1700,11 +1520,7 @@
                           }
                         }
                       },
-                      "required": [
-                        "project",
-                        "supportedLocales",
-                        "linked"
-                      ]
+                      "required": ["project", "supportedLocales", "linked"]
                     }
                   ]
                 }
@@ -1870,9 +1686,7 @@
         "x-internal": true,
         "summary": "Plugin layout",
         "description": "Run the layout command for a design-tool plugin.",
-        "tags": [
-          "Integrations"
-        ],
+        "tags": ["Integrations"],
         "security": [
           {
             "BearerAuth": []
@@ -1885,10 +1699,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "figma",
-                "after-effects"
-              ]
+              "enum": ["figma", "after-effects"]
             },
             "required": true,
             "name": "provider",
@@ -1969,10 +1780,7 @@
                                   "maxLength": 6000000
                                 }
                               },
-                              "required": [
-                                "mediaType",
-                                "base64"
-                              ],
+                              "required": ["mediaType", "base64"],
                               "additionalProperties": false
                             },
                             "after": {
@@ -1992,10 +1800,7 @@
                                   "maxLength": 6000000
                                 }
                               },
-                              "required": [
-                                "mediaType",
-                                "base64"
-                              ],
+                              "required": ["mediaType", "base64"],
                               "additionalProperties": false
                             },
                             "nodes": {
@@ -2024,12 +1829,7 @@
                                         "type": "number"
                                       }
                                     },
-                                    "required": [
-                                      "x",
-                                      "y",
-                                      "width",
-                                      "height"
-                                    ],
+                                    "required": ["x", "y", "width", "height"],
                                     "additionalProperties": false
                                   },
                                   "text": {
@@ -2043,34 +1843,20 @@
                                     "type": "boolean"
                                   }
                                 },
-                                "required": [
-                                  "nodeId",
-                                  "rect",
-                                  "text"
-                                ],
+                                "required": ["nodeId", "rect", "text"],
                                 "additionalProperties": false
                               },
                               "maxItems": 200
                             }
                           },
-                          "required": [
-                            "frameId",
-                            "before",
-                            "after",
-                            "nodes"
-                          ],
+                          "required": ["frameId", "before", "after", "nodes"],
                           "additionalProperties": false
                         },
                         "minItems": 1,
                         "maxItems": 4
                       }
                     },
-                    "required": [
-                      "fileName",
-                      "pageId",
-                      "locale",
-                      "frames"
-                    ],
+                    "required": ["fileName", "pageId", "locale", "frames"],
                     "additionalProperties": false
                   },
                   {
@@ -2113,23 +1899,15 @@
                                       "type": "string"
                                     }
                                   },
-                                  "required": [
-                                    "nodeId",
-                                    "rephrase"
-                                  ]
+                                  "required": ["nodeId", "rephrase"]
                                 }
                               }
                             },
-                            "required": [
-                              "frameId",
-                              "remedies"
-                            ]
+                            "required": ["frameId", "remedies"]
                           }
                         }
                       },
-                      "required": [
-                        "frames"
-                      ]
+                      "required": ["frames"]
                     },
                     {
                       "type": "object",
@@ -2300,9 +2078,7 @@
         "x-internal": true,
         "summary": "Plugin sync",
         "description": "Run the sync command for a design-tool plugin.",
-        "tags": [
-          "Integrations"
-        ],
+        "tags": ["Integrations"],
         "security": [
           {
             "BearerAuth": []
@@ -2315,10 +2091,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "figma",
-                "after-effects"
-              ]
+              "enum": ["figma", "after-effects"]
             },
             "required": true,
             "name": "provider",
@@ -2427,12 +2200,7 @@
                                       "type": "number"
                                     }
                                   },
-                                  "required": [
-                                    "x",
-                                    "y",
-                                    "width",
-                                    "height"
-                                  ],
+                                  "required": ["x", "y", "width", "height"],
                                   "additionalProperties": false
                                 },
                                 "render": {
@@ -2451,12 +2219,7 @@
                                       "type": "number"
                                     }
                                   },
-                                  "required": [
-                                    "x",
-                                    "y",
-                                    "width",
-                                    "height"
-                                  ],
+                                  "required": ["x", "y", "width", "height"],
                                   "additionalProperties": false
                                 },
                                 "room": {
@@ -2479,12 +2242,7 @@
                                       "minimum": 0
                                     }
                                   },
-                                  "required": [
-                                    "left",
-                                    "right",
-                                    "up",
-                                    "down"
-                                  ],
+                                  "required": ["left", "right", "up", "down"],
                                   "additionalProperties": false
                                 },
                                 "autoResize": {
@@ -2516,9 +2274,7 @@
                                   "type": "number"
                                 }
                               },
-                              "required": [
-                                "boxId"
-                              ],
+                              "required": ["boxId"],
                               "additionalProperties": false
                             },
                             "styleRuns": {
@@ -2547,10 +2303,7 @@
                                             "type": "string"
                                           }
                                         },
-                                        "required": [
-                                          "family",
-                                          "style"
-                                        ],
+                                        "required": ["family", "style"],
                                         "additionalProperties": false
                                       },
                                       "fontSize": {
@@ -2572,10 +2325,7 @@
                                             "type": "string"
                                           }
                                         },
-                                        "required": [
-                                          "value",
-                                          "unit"
-                                        ],
+                                        "required": ["value", "unit"],
                                         "additionalProperties": false
                                       },
                                       "lineHeight": {
@@ -2588,9 +2338,7 @@
                                             "type": "string"
                                           }
                                         },
-                                        "required": [
-                                          "unit"
-                                        ],
+                                        "required": ["unit"],
                                         "additionalProperties": false
                                       },
                                       "fills": {
@@ -2601,31 +2349,21 @@
                                         }
                                       },
                                       "hyperlink": {
-                                        "type": [
-                                          "object",
-                                          "null"
-                                        ],
+                                        "type": ["object", "null"],
                                         "additionalProperties": {}
                                       }
                                     },
                                     "additionalProperties": false
                                   }
                                 },
-                                "required": [
-                                  "start",
-                                  "end",
-                                  "style"
-                                ],
+                                "required": ["start", "end", "style"],
                                 "additionalProperties": false
                               },
                               "maxItems": 512
                             },
                             "instanceTextOrigin": {
                               "type": "string",
-                              "enum": [
-                                "inherited",
-                                "overridden"
-                              ]
+                              "enum": ["inherited", "overridden"]
                             }
                           },
                           "required": [
@@ -2709,12 +2447,7 @@
                         "maxItems": 500
                       }
                     },
-                    "required": [
-                      "fileName",
-                      "pageId",
-                      "pageName",
-                      "units"
-                    ],
+                    "required": ["fileName", "pageId", "pageName", "units"],
                     "additionalProperties": false
                   },
                   {
@@ -2838,11 +2571,7 @@
                                     "additionalProperties": false
                                   }
                                 },
-                                "required": [
-                                  "start",
-                                  "end",
-                                  "style"
-                                ],
+                                "required": ["start", "end", "style"],
                                 "additionalProperties": false
                               },
                               "maxItems": 512
@@ -2871,9 +2600,7 @@
                                   "minimum": 0
                                 }
                               },
-                              "required": [
-                                "boxText"
-                              ],
+                              "required": ["boxText"],
                               "additionalProperties": false
                             }
                           },
@@ -2958,12 +2685,7 @@
                         "maxItems": 500
                       }
                     },
-                    "required": [
-                      "projectStamp",
-                      "compId",
-                      "compName",
-                      "units"
-                    ],
+                    "required": ["projectStamp", "compId", "compName", "units"],
                     "additionalProperties": false
                   }
                 ]
@@ -3202,9 +2924,7 @@
         "x-internal": true,
         "summary": "Plugin import-translations",
         "description": "Run the import-translations command for a design-tool plugin.",
-        "tags": [
-          "Integrations"
-        ],
+        "tags": ["Integrations"],
         "security": [
           {
             "BearerAuth": []
@@ -3217,10 +2937,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "figma",
-                "after-effects"
-              ]
+              "enum": ["figma", "after-effects"]
             },
             "required": true,
             "name": "provider",
@@ -3309,10 +3026,7 @@
                                             "type": "string"
                                           }
                                         },
-                                        "required": [
-                                          "family",
-                                          "style"
-                                        ],
+                                        "required": ["family", "style"],
                                         "additionalProperties": false
                                       },
                                       "fontSize": {
@@ -3334,10 +3048,7 @@
                                             "type": "string"
                                           }
                                         },
-                                        "required": [
-                                          "value",
-                                          "unit"
-                                        ],
+                                        "required": ["value", "unit"],
                                         "additionalProperties": false
                                       },
                                       "lineHeight": {
@@ -3350,9 +3061,7 @@
                                             "type": "string"
                                           }
                                         },
-                                        "required": [
-                                          "unit"
-                                        ],
+                                        "required": ["unit"],
                                         "additionalProperties": false
                                       },
                                       "fills": {
@@ -3363,29 +3072,20 @@
                                         }
                                       },
                                       "hyperlink": {
-                                        "type": [
-                                          "object",
-                                          "null"
-                                        ],
+                                        "type": ["object", "null"],
                                         "additionalProperties": {}
                                       }
                                     },
                                     "additionalProperties": false
                                   }
                                 },
-                                "required": [
-                                  "start",
-                                  "end",
-                                  "style"
-                                ],
+                                "required": ["start", "end", "style"],
                                 "additionalProperties": false
                               },
                               "maxItems": 512
                             }
                           },
-                          "required": [
-                            "text"
-                          ],
+                          "required": ["text"],
                           "additionalProperties": false
                         }
                       }
@@ -3503,19 +3203,13 @@
                                     "additionalProperties": false
                                   }
                                 },
-                                "required": [
-                                  "start",
-                                  "end",
-                                  "style"
-                                ],
+                                "required": ["start", "end", "style"],
                                 "additionalProperties": false
                               },
                               "maxItems": 512
                             }
                           },
-                          "required": [
-                            "text"
-                          ],
+                          "required": ["text"],
                           "additionalProperties": false
                         }
                       }
@@ -3571,10 +3265,7 @@
                                 "type": "string"
                               }
                             },
-                            "required": [
-                              "key",
-                              "reason"
-                            ]
+                            "required": ["key", "reason"]
                           }
                         }
                       },
@@ -3616,10 +3307,7 @@
                                 "type": "string"
                               }
                             },
-                            "required": [
-                              "key",
-                              "reason"
-                            ]
+                            "required": ["key", "reason"]
                           }
                         }
                       },
@@ -3795,9 +3483,7 @@
         "x-internal": true,
         "summary": "Plugin enqueue",
         "description": "Run the enqueue command for a design-tool plugin.",
-        "tags": [
-          "Integrations"
-        ],
+        "tags": ["Integrations"],
         "security": [
           {
             "BearerAuth": []
@@ -3810,10 +3496,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "figma",
-                "after-effects"
-              ]
+              "enum": ["figma", "after-effects"]
             },
             "required": true,
             "name": "provider",
@@ -3877,11 +3560,7 @@
                         "type": "boolean"
                       }
                     },
-                    "required": [
-                      "fileName",
-                      "pageId",
-                      "targetLocales"
-                    ],
+                    "required": ["fileName", "pageId", "targetLocales"],
                     "additionalProperties": false
                   },
                   {
@@ -3916,11 +3595,7 @@
                         "type": "boolean"
                       }
                     },
-                    "required": [
-                      "projectStamp",
-                      "compId",
-                      "targetLocales"
-                    ],
+                    "required": ["projectStamp", "compId", "targetLocales"],
                     "additionalProperties": false
                   }
                 ]
@@ -4151,9 +3826,7 @@
         "x-internal": true,
         "summary": "Plugin status",
         "description": "Run the status command for a design-tool plugin.",
-        "tags": [
-          "Integrations"
-        ],
+        "tags": ["Integrations"],
         "security": [
           {
             "BearerAuth": []
@@ -4166,10 +3839,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "figma",
-                "after-effects"
-              ]
+              "enum": ["figma", "after-effects"]
             },
             "required": true,
             "name": "provider",
@@ -4215,10 +3885,7 @@
                         "maxLength": 255
                       }
                     },
-                    "required": [
-                      "fileName",
-                      "pageId"
-                    ],
+                    "required": ["fileName", "pageId"],
                     "additionalProperties": false
                   },
                   {
@@ -4235,10 +3902,7 @@
                         "maxLength": 255
                       }
                     },
-                    "required": [
-                      "projectStamp",
-                      "compId"
-                    ],
+                    "required": ["projectStamp", "compId"],
                     "additionalProperties": false
                   }
                 ]
@@ -4277,17 +3941,10 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "code",
-                                  "name",
-                                  "emoji"
-                                ]
+                                "required": ["code", "name", "emoji"]
                               },
                               "translationProgress": {
-                                "type": [
-                                  "number",
-                                  "null"
-                                ]
+                                "type": ["number", "null"]
                               },
                               "done": {
                                 "type": "boolean"
@@ -4301,10 +3958,7 @@
                           }
                         }
                       },
-                      "required": [
-                        "versionId",
-                        "locales"
-                      ]
+                      "required": ["versionId", "locales"]
                     },
                     {
                       "type": "object",
@@ -4330,17 +3984,10 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "code",
-                                  "name",
-                                  "emoji"
-                                ]
+                                "required": ["code", "name", "emoji"]
                               },
                               "translationProgress": {
-                                "type": [
-                                  "number",
-                                  "null"
-                                ]
+                                "type": ["number", "null"]
                               },
                               "done": {
                                 "type": "boolean"
@@ -4354,10 +4001,7 @@
                           }
                         }
                       },
-                      "required": [
-                        "versionId",
-                        "locales"
-                      ]
+                      "required": ["versionId", "locales"]
                     }
                   ]
                 }
@@ -4523,9 +4167,7 @@
         "x-internal": true,
         "summary": "Plugin download",
         "description": "Run the download command for a design-tool plugin.",
-        "tags": [
-          "Integrations"
-        ],
+        "tags": ["Integrations"],
         "security": [
           {
             "BearerAuth": []
@@ -4538,10 +4180,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "figma",
-                "after-effects"
-              ]
+              "enum": ["figma", "after-effects"]
             },
             "required": true,
             "name": "provider",
@@ -4592,11 +4231,7 @@
                         "maxLength": 16
                       }
                     },
-                    "required": [
-                      "fileName",
-                      "pageId",
-                      "locale"
-                    ],
+                    "required": ["fileName", "pageId", "locale"],
                     "additionalProperties": false
                   },
                   {
@@ -4618,11 +4253,7 @@
                         "maxLength": 16
                       }
                     },
-                    "required": [
-                      "projectStamp",
-                      "compId",
-                      "locale"
-                    ],
+                    "required": ["projectStamp", "compId", "locale"],
                     "additionalProperties": false
                   }
                 ]
@@ -4667,10 +4298,7 @@
                                         "type": "string"
                                       }
                                     },
-                                    "required": [
-                                      "family",
-                                      "style"
-                                    ],
+                                    "required": ["family", "style"],
                                     "additionalProperties": false
                                   },
                                   "fontSize": {
@@ -4692,10 +4320,7 @@
                                         "type": "string"
                                       }
                                     },
-                                    "required": [
-                                      "value",
-                                      "unit"
-                                    ],
+                                    "required": ["value", "unit"],
                                     "additionalProperties": false
                                   },
                                   "lineHeight": {
@@ -4708,9 +4333,7 @@
                                         "type": "string"
                                       }
                                     },
-                                    "required": [
-                                      "unit"
-                                    ],
+                                    "required": ["unit"],
                                     "additionalProperties": false
                                   },
                                   "fills": {
@@ -4721,10 +4344,7 @@
                                     }
                                   },
                                   "hyperlink": {
-                                    "type": [
-                                      "object",
-                                      "null"
-                                    ],
+                                    "type": ["object", "null"],
                                     "additionalProperties": {}
                                   }
                                 },
@@ -4756,10 +4376,7 @@
                                               "type": "string"
                                             }
                                           },
-                                          "required": [
-                                            "family",
-                                            "style"
-                                          ],
+                                          "required": ["family", "style"],
                                           "additionalProperties": false
                                         },
                                         "fontSize": {
@@ -4781,10 +4398,7 @@
                                               "type": "string"
                                             }
                                           },
-                                          "required": [
-                                            "value",
-                                            "unit"
-                                          ],
+                                          "required": ["value", "unit"],
                                           "additionalProperties": false
                                         },
                                         "lineHeight": {
@@ -4797,9 +4411,7 @@
                                               "type": "string"
                                             }
                                           },
-                                          "required": [
-                                            "unit"
-                                          ],
+                                          "required": ["unit"],
                                           "additionalProperties": false
                                         },
                                         "fills": {
@@ -4810,29 +4422,19 @@
                                           }
                                         },
                                         "hyperlink": {
-                                          "type": [
-                                            "object",
-                                            "null"
-                                          ],
+                                          "type": ["object", "null"],
                                           "additionalProperties": {}
                                         }
                                       },
                                       "additionalProperties": false
                                     }
                                   },
-                                  "required": [
-                                    "start",
-                                    "end",
-                                    "style"
-                                  ],
+                                  "required": ["start", "end", "style"],
                                   "additionalProperties": false
                                 }
                               }
                             },
-                            "required": [
-                              "text",
-                              "styleRuns"
-                            ]
+                            "required": ["text", "styleRuns"]
                           }
                         },
                         "warnings": {
@@ -4850,10 +4452,7 @@
                                 "type": "string"
                               }
                             },
-                            "required": [
-                              "key",
-                              "reason"
-                            ]
+                            "required": ["key", "reason"]
                           }
                         }
                       },
@@ -5013,19 +4612,12 @@
                                       "additionalProperties": false
                                     }
                                   },
-                                  "required": [
-                                    "start",
-                                    "end",
-                                    "style"
-                                  ],
+                                  "required": ["start", "end", "style"],
                                   "additionalProperties": false
                                 }
                               }
                             },
-                            "required": [
-                              "text",
-                              "styleRuns"
-                            ]
+                            "required": ["text", "styleRuns"]
                           }
                         },
                         "warnings": {
@@ -5043,10 +4635,7 @@
                                 "type": "string"
                               }
                             },
-                            "required": [
-                              "key",
-                              "reason"
-                            ]
+                            "required": ["key", "reason"]
                           }
                         }
                       },
@@ -5221,9 +4810,7 @@
         "x-internal": true,
         "summary": "Workspace plugin info",
         "description": "Run the Google Drive Workspace plugin info command.",
-        "tags": [
-          "Integrations"
-        ],
+        "tags": ["Integrations"],
         "security": [
           {
             "GoogleIdentityToken": []
@@ -5243,11 +4830,7 @@
                   },
                   "hostApp": {
                     "type": "string",
-                    "enum": [
-                      "DOCS",
-                      "SLIDES",
-                      "SHEETS"
-                    ],
+                    "enum": ["DOCS", "SLIDES", "SHEETS"],
                     "description": "Google editor for the file: DOCS for Google Docs, SLIDES for Google Slides or SHEETS for Google Sheets. Supply fileId with hostApp for file-specific context."
                   }
                 }
@@ -5267,15 +4850,10 @@
                       "type": "object",
                       "properties": {
                         "email": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
+                          "type": ["string", "null"]
                         }
                       },
-                      "required": [
-                        "email"
-                      ]
+                      "required": ["email"]
                     },
                     "supportedLocales": {
                       "type": "array",
@@ -5292,11 +4870,7 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "code",
-                          "name",
-                          "emoji"
-                        ]
+                        "required": ["code", "name", "emoji"]
                       }
                     },
                     "projects": {
@@ -5311,10 +4885,7 @@
                             "type": "string"
                           },
                           "orgName": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
+                            "type": ["string", "null"]
                           },
                           "sourceLocale": {
                             "type": "object",
@@ -5329,11 +4900,7 @@
                                 "type": "string"
                               }
                             },
-                            "required": [
-                              "code",
-                              "name",
-                              "emoji"
-                            ]
+                            "required": ["code", "name", "emoji"]
                           },
                           "currentLocales": {
                             "type": "array",
@@ -5350,11 +4917,7 @@
                                   "type": "string"
                                 }
                               },
-                              "required": [
-                                "code",
-                                "name",
-                                "emoji"
-                              ]
+                              "required": ["code", "name", "emoji"]
                             }
                           },
                           "localeWhitelist": {
@@ -5372,11 +4935,7 @@
                                   "type": "string"
                                 }
                               },
-                              "required": [
-                                "code",
-                                "name",
-                                "emoji"
-                              ]
+                              "required": ["code", "name", "emoji"]
                             }
                           },
                           "integrationConnected": {
@@ -5386,10 +4945,7 @@
                             "type": "string"
                           },
                           "linkedFile": {
-                            "type": [
-                              "object",
-                              "null"
-                            ],
+                            "type": ["object", "null"],
                             "properties": {
                               "sourceLocale": {
                                 "type": "object",
@@ -5404,22 +4960,13 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "code",
-                                  "name",
-                                  "emoji"
-                                ]
+                                "required": ["code", "name", "emoji"]
                               }
                             },
-                            "required": [
-                              "sourceLocale"
-                            ]
+                            "required": ["sourceLocale"]
                           },
                           "translatedCopy": {
-                            "type": [
-                              "object",
-                              "null"
-                            ],
+                            "type": ["object", "null"],
                             "properties": {
                               "sourceName": {
                                 "type": "string"
@@ -5440,11 +4987,7 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "code",
-                                  "name",
-                                  "emoji"
-                                ]
+                                "required": ["code", "name", "emoji"]
                               },
                               "targetLocale": {
                                 "type": "object",
@@ -5459,11 +5002,7 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "code",
-                                  "name",
-                                  "emoji"
-                                ]
+                                "required": ["code", "name", "emoji"]
                               }
                             },
                             "required": [
@@ -5489,11 +5028,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "user",
-                    "supportedLocales",
-                    "projects"
-                  ]
+                  "required": ["user", "supportedLocales", "projects"]
                 }
               }
             }
@@ -5719,38 +5254,23 @@
                             "type": "string"
                           },
                           "completedAt": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
+                            "type": ["string", "null"],
                             "format": "date-time"
                           },
                           "approvedAt": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
+                            "type": ["string", "null"],
                             "format": "date-time"
                           },
                           "publishedAt": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
+                            "type": ["string", "null"],
                             "format": "date-time"
                           },
                           "createdAt": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
+                            "type": ["string", "null"],
                             "format": "date-time"
                           },
                           "updatedAt": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
+                            "type": ["string", "null"],
                             "format": "date-time"
                           }
                         },
@@ -5789,10 +5309,7 @@
                           "$ref": "#/components/schemas/FileFormat"
                         },
                         "dataFormat": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
+                          "type": ["string", "null"]
                         },
                         "createdAt": {
                           "type": "string",
@@ -5824,10 +5341,7 @@
                       ]
                     }
                   },
-                  "required": [
-                    "translations",
-                    "sourceFile"
-                  ]
+                  "required": ["translations", "sourceFile"]
                 }
               }
             }
@@ -5923,9 +5437,7 @@
             }
           }
         },
-        "tags": [
-          "Files"
-        ]
+        "tags": ["Files"]
       }
     },
     "/v2/projects/{projectId}/files/translations/overwrite": {
@@ -6012,9 +5524,7 @@
                     "description": "1–100 translations; each branch, file, version and locale may appear once."
                   }
                 },
-                "required": [
-                  "diffs"
-                ]
+                "required": ["diffs"]
               }
             }
           }
@@ -6049,10 +5559,7 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": [
-                              "succeeded",
-                              "failed"
-                            ]
+                            "enum": ["succeeded", "failed"]
                           },
                           "error": {
                             "type": "string",
@@ -6070,10 +5577,7 @@
                       "description": "One result per translation, in request order."
                     }
                   },
-                  "required": [
-                    "summary",
-                    "results"
-                  ]
+                  "required": ["summary", "results"]
                 }
               }
             }
@@ -6184,9 +5688,7 @@
             }
           }
         },
-        "tags": [
-          "Files"
-        ]
+        "tags": ["Files"]
       }
     },
     "/v2/projects/{projectId}/files/move": {
@@ -6253,20 +5755,14 @@
                           "minLength": 1
                         }
                       },
-                      "required": [
-                        "oldFileId",
-                        "newFileId",
-                        "newFileName"
-                      ]
+                      "required": ["oldFileId", "newFileId", "newFileName"]
                     },
                     "minItems": 1,
                     "maxItems": 25,
                     "description": "1–25 moves; each old and each new file ID may appear once, and no file ID may be both an old and a new file ID."
                   }
                 },
-                "required": [
-                  "moves"
-                ]
+                "required": ["moves"]
               }
             }
           }
@@ -6301,29 +5797,19 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": [
-                              "succeeded",
-                              "failed"
-                            ]
+                            "enum": ["succeeded", "failed"]
                           },
                           "error": {
                             "type": "string",
                             "description": "Why the item failed."
                           }
                         },
-                        "required": [
-                          "oldFileId",
-                          "newFileId",
-                          "status"
-                        ]
+                        "required": ["oldFileId", "newFileId", "status"]
                       },
                       "description": "One result per move, in request order."
                     }
                   },
-                  "required": [
-                    "summary",
-                    "results"
-                  ]
+                  "required": ["summary", "results"]
                 }
               }
             }
@@ -6449,9 +5935,7 @@
             }
           }
         },
-        "tags": [
-          "Files"
-        ]
+        "tags": ["Files"]
       }
     },
     "/v2/projects/{projectId}/files/query": {
@@ -6520,18 +6004,14 @@
                           "description": "Translation locale. Omit to read the source file."
                         }
                       },
-                      "required": [
-                        "fileId"
-                      ]
+                      "required": ["fileId"]
                     },
                     "minItems": 1,
                     "maxItems": 100,
                     "description": "Files to describe, at most 100. Each selector is a source file, or with `locale` one translation; a selector repeated field for field is rejected."
                   }
                 },
-                "required": [
-                  "files"
-                ]
+                "required": ["files"]
               }
             }
           }
@@ -6551,11 +6031,7 @@
                         "properties": {
                           "status": {
                             "type": "string",
-                            "enum": [
-                              "found",
-                              "pending",
-                              "not_found"
-                            ],
+                            "enum": ["found", "pending", "not_found"],
                             "description": "`found` with the metadata; `pending` when the translation is stored but not completed yet, for example during a layout pass; `not_found` when there is neither, including while its translation job has not stored the translation yet. Only completed translations are `found`."
                           },
                           "branchId": {
@@ -6584,10 +6060,7 @@
                             ]
                           },
                           "dataFormat": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
+                            "type": ["string", "null"],
                             "description": "Present when `status` is `found`."
                           },
                           "createdAt": {
@@ -6601,26 +6074,17 @@
                             "description": "Present when `status` is `found`."
                           },
                           "approvedAt": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
+                            "type": ["string", "null"],
                             "format": "date-time",
                             "description": "Present when `status` is `found` for a translation."
                           },
                           "publishedAt": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
+                            "type": ["string", "null"],
                             "format": "date-time",
                             "description": "Present when `status` is `found`."
                           },
                           "completedAt": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
+                            "type": ["string", "null"],
                             "format": "date-time",
                             "description": "Present when `status` is `found` for a translation."
                           },
@@ -6640,17 +6104,12 @@
                             "description": "The selector's locale, as requested; present only for translations."
                           }
                         },
-                        "required": [
-                          "status",
-                          "fileId"
-                        ]
+                        "required": ["status", "fileId"]
                       },
                       "description": "One result per selector, in selector order."
                     }
                   },
-                  "required": [
-                    "results"
-                  ]
+                  "required": ["results"]
                 }
               }
             }
@@ -6761,9 +6220,7 @@
             }
           }
         },
-        "tags": [
-          "Files"
-        ]
+        "tags": ["Files"]
       }
     },
     "/v2/projects/{projectId}/files/content/query": {
@@ -6832,18 +6289,14 @@
                           "description": "Translation locale. Omit to download the source file."
                         }
                       },
-                      "required": [
-                        "fileId"
-                      ]
+                      "required": ["fileId"]
                     },
                     "minItems": 1,
                     "maxItems": 100,
                     "description": "Files to download, at most 100. Each selector is a source file, or with `locale` one translation; a selector repeated field for field is rejected."
                   }
                 },
-                "required": [
-                  "files"
-                ]
+                "required": ["files"]
               }
             }
           }
@@ -6863,11 +6316,7 @@
                         "properties": {
                           "status": {
                             "type": "string",
-                            "enum": [
-                              "ready",
-                              "pending",
-                              "not_found"
-                            ],
+                            "enum": ["ready", "pending", "not_found"],
                             "description": "`ready` with the content; `pending` when the translation is stored but not completed yet, for example during a layout pass (request it again later); `not_found` when there is neither, including while its translation job has not stored the translation yet."
                           },
                           "branchId": {
@@ -6890,10 +6339,7 @@
                             "description": "Present when `status` is `ready`. For a translation, its source file's name."
                           },
                           "data": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
+                            "type": ["string", "null"],
                             "description": "Base64 file content when `status` is `ready`; `null` when `pending`; absent when `not_found`."
                           },
                           "metadata": {
@@ -6910,17 +6356,12 @@
                             ]
                           }
                         },
-                        "required": [
-                          "status",
-                          "fileId"
-                        ]
+                        "required": ["status", "fileId"]
                       },
                       "description": "One result per selector, in selector order."
                     }
                   },
-                  "required": [
-                    "results"
-                  ]
+                  "required": ["results"]
                 }
               }
             }
@@ -7031,9 +6472,7 @@
             }
           }
         },
-        "tags": [
-          "Files"
-        ]
+        "tags": ["Files"]
       }
     },
     "/v2/projects/{projectId}/files/{fileId}/content": {
@@ -7122,10 +6561,7 @@
                   "properties": {
                     "status": {
                       "type": "string",
-                      "enum": [
-                        "ready",
-                        "pending"
-                      ],
+                      "enum": ["ready", "pending"],
                       "description": "`pending` when the translation is stored but not completed yet, for example during a layout pass; request it again later."
                     },
                     "branchId": {
@@ -7146,10 +6582,7 @@
                       "description": "Present when `status` is `ready`. For a translation, its source file's name."
                     },
                     "data": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
+                      "type": ["string", "null"],
                       "description": "Base64 file content; `null` exactly when `status` is `pending`."
                     },
                     "metadata": {
@@ -7268,9 +6701,7 @@
             }
           }
         },
-        "tags": [
-          "Files"
-        ]
+        "tags": ["Files"]
       }
     },
     "/v2/projects/{projectId}/files/publish": {
@@ -7335,20 +6766,14 @@
                           "type": "boolean"
                         }
                       },
-                      "required": [
-                        "fileId",
-                        "versionId",
-                        "publish"
-                      ]
+                      "required": ["fileId", "versionId", "publish"]
                     },
                     "minItems": 1,
                     "maxItems": 100,
                     "description": "1–100 file versions; each branch, file and version may appear once."
                   }
                 },
-                "required": [
-                  "files"
-                ]
+                "required": ["files"]
               }
             }
           }
@@ -7380,10 +6805,7 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": [
-                              "succeeded",
-                              "failed"
-                            ]
+                            "enum": ["succeeded", "failed"]
                           },
                           "error": {
                             "type": "string",
@@ -7399,20 +6821,14 @@
                                 },
                                 "status": {
                                   "type": "string",
-                                  "enum": [
-                                    "succeeded",
-                                    "failed"
-                                  ]
+                                  "enum": ["succeeded", "failed"]
                                 },
                                 "error": {
                                   "type": "string",
                                   "description": "Why the item failed."
                                 }
                               },
-                              "required": [
-                                "locale",
-                                "status"
-                              ]
+                              "required": ["locale", "status"]
                             },
                             "description": "Result for each completed translation of the version."
                           }
@@ -7428,10 +6844,7 @@
                       "description": "One result per file version, in request order."
                     }
                   },
-                  "required": [
-                    "summary",
-                    "results"
-                  ]
+                  "required": ["summary", "results"]
                 }
               }
             }
@@ -7557,9 +6970,7 @@
             }
           }
         },
-        "tags": [
-          "Files"
-        ]
+        "tags": ["Files"]
       }
     },
     "/v2/projects/{projectId}/files": {
@@ -7686,9 +7097,7 @@
                           ]
                         }
                       },
-                      "required": [
-                        "source"
-                      ]
+                      "required": ["source"]
                     },
                     "minItems": 1,
                     "maxItems": 100,
@@ -7699,9 +7108,7 @@
                     "description": "Locale of the uploaded files. Defaults to the project's default locale, which the upload does not change."
                   }
                 },
-                "required": [
-                  "data"
-                ]
+                "required": ["data"]
               }
             }
           }
@@ -7742,10 +7149,7 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": [
-                              "succeeded",
-                              "failed"
-                            ]
+                            "enum": ["succeeded", "failed"]
                           },
                           "error": {
                             "type": "string",
@@ -7764,10 +7168,7 @@
                       "description": "One result per uploaded source file, in request order."
                     }
                   },
-                  "required": [
-                    "summary",
-                    "results"
-                  ]
+                  "required": ["summary", "results"]
                 }
               }
             }
@@ -7908,9 +7309,7 @@
             }
           }
         },
-        "tags": [
-          "Files"
-        ]
+        "tags": ["Files"]
       }
     },
     "/v2/projects/{projectId}/files/translations": {
@@ -8117,19 +7516,14 @@
                           "minItems": 1
                         }
                       },
-                      "required": [
-                        "source",
-                        "translations"
-                      ]
+                      "required": ["source", "translations"]
                     },
                     "minItems": 1,
                     "maxItems": 100,
                     "description": "1–100 source files with their translations; each file and locale may appear once."
                   }
                 },
-                "required": [
-                  "data"
-                ]
+                "required": ["data"]
               }
             }
           }
@@ -8173,10 +7567,7 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": [
-                              "succeeded",
-                              "failed"
-                            ]
+                            "enum": ["succeeded", "failed"]
                           },
                           "error": {
                             "type": "string",
@@ -8196,10 +7587,7 @@
                       "description": "One result per uploaded translation, in request order."
                     }
                   },
-                  "required": [
-                    "summary",
-                    "results"
-                  ]
+                  "required": ["summary", "results"]
                 }
               }
             }
@@ -8340,9 +7728,7 @@
             }
           }
         },
-        "tags": [
-          "Files"
-        ]
+        "tags": ["Files"]
       }
     },
     "/v2/projects/{projectId}/branches": {
@@ -8414,10 +7800,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "true",
-                "false"
-              ],
+              "enum": ["true", "false"],
               "description": "With `true`, list only the project's default branch; with `false`, every other branch. With `name`, a branch must match both."
             },
             "required": false,
@@ -8450,17 +7833,11 @@
                       }
                     },
                     "nextCursor": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
+                      "type": ["string", "null"],
                       "description": "Opaque cursor for the next page; `null` when there are no more items. Pages are read independently, so items changed between requests may be missed or repeated."
                     }
                   },
-                  "required": [
-                    "items",
-                    "nextCursor"
-                  ]
+                  "required": ["items", "nextCursor"]
                 }
               }
             }
@@ -8556,9 +7933,7 @@
             }
           }
         },
-        "tags": [
-          "Branches and tags"
-        ]
+        "tags": ["Branches and tags"]
       },
       "post": {
         "operationId": "createBranch",
@@ -8612,9 +7987,7 @@
                     "description": "Create the project's default branch. Rejected with 409 when the project already has one; change the default by updating a branch instead."
                   }
                 },
-                "required": [
-                  "name"
-                ],
+                "required": ["name"],
                 "additionalProperties": false
               }
             }
@@ -8632,9 +8005,7 @@
                       "$ref": "#/components/schemas/Branch"
                     }
                   },
-                  "required": [
-                    "branch"
-                  ]
+                  "required": ["branch"]
                 }
               }
             }
@@ -8775,9 +8146,7 @@
             }
           }
         },
-        "tags": [
-          "Branches and tags"
-        ]
+        "tags": ["Branches and tags"]
       }
     },
     "/v2/projects/{projectId}/branches/{branchId}": {
@@ -8839,9 +8208,7 @@
                   },
                   "isDefault": {
                     "type": "boolean",
-                    "enum": [
-                      true
-                    ],
+                    "enum": [true],
                     "description": "Make this the default branch; the previous default branch stops being the default."
                   }
                 },
@@ -8998,9 +8365,7 @@
             }
           }
         },
-        "tags": [
-          "Branches and tags"
-        ]
+        "tags": ["Branches and tags"]
       }
     },
     "/v2/projects/{projectId}/branches/{branchId}/files": {
@@ -9100,25 +8465,15 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "fileId",
-                          "versionId",
-                          "fileName"
-                        ]
+                        "required": ["fileId", "versionId", "fileName"]
                       }
                     },
                     "nextCursor": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
+                      "type": ["string", "null"],
                       "description": "Opaque cursor for the next page; `null` when there are no more items. Pages are read independently, so items changed between requests may be missed or repeated."
                     }
                   },
-                  "required": [
-                    "items",
-                    "nextCursor"
-                  ]
+                  "required": ["items", "nextCursor"]
                 }
               }
             }
@@ -9214,9 +8569,7 @@
             }
           }
         },
-        "tags": [
-          "Branches and tags"
-        ]
+        "tags": ["Branches and tags"]
       }
     },
     "/v2/projects/{projectId}/tags/{tagId}": {
@@ -9290,11 +8643,7 @@
                           "minLength": 1
                         }
                       },
-                      "required": [
-                        "fileId",
-                        "versionId",
-                        "branchId"
-                      ]
+                      "required": ["fileId", "versionId", "branchId"]
                     },
                     "minItems": 1,
                     "maxItems": 5000,
@@ -9306,9 +8655,7 @@
                     "description": "Tag message. Omitting it clears the tag's message."
                   }
                 },
-                "required": [
-                  "files"
-                ],
+                "required": ["files"],
                 "additionalProperties": false
               }
             }
@@ -9330,10 +8677,7 @@
                       "$ref": "#/components/schemas/Tag"
                     }
                   },
-                  "required": [
-                    "created",
-                    "tag"
-                  ]
+                  "required": ["created", "tag"]
                 }
               }
             }
@@ -9353,10 +8697,7 @@
                       "$ref": "#/components/schemas/Tag"
                     }
                   },
-                  "required": [
-                    "created",
-                    "tag"
-                  ]
+                  "required": ["created", "tag"]
                 }
               }
             }
@@ -9482,9 +8823,7 @@
             }
           }
         },
-        "tags": [
-          "Branches and tags"
-        ]
+        "tags": ["Branches and tags"]
       }
     },
     "/v2/projects/{projectId}/files/translate": {
@@ -9574,10 +8913,7 @@
                           ]
                         }
                       },
-                      "required": [
-                        "fileId",
-                        "versionId"
-                      ]
+                      "required": ["fileId", "versionId"]
                     },
                     "minItems": 1,
                     "maxItems": 100,
@@ -9605,9 +8941,7 @@
                     "type": "boolean"
                   }
                 },
-                "required": [
-                  "files"
-                ]
+                "required": ["files"]
               }
             }
           }
@@ -9645,9 +8979,7 @@
                                 "properties": {
                                   "type": {
                                     "type": "string",
-                                    "enum": [
-                                      "file_translation"
-                                    ]
+                                    "enum": ["file_translation"]
                                   },
                                   "branchId": {
                                     "type": "string",
@@ -9679,45 +9011,31 @@
                                 "properties": {
                                   "type": {
                                     "type": "string",
-                                    "enum": [
-                                      "context_generation"
-                                    ]
+                                    "enum": ["context_generation"]
                                   }
                                 },
-                                "required": [
-                                  "type"
-                                ]
+                                "required": ["type"]
                               },
                               {
                                 "type": "object",
                                 "properties": {
                                   "type": {
                                     "type": "string",
-                                    "enum": [
-                                      "search_index"
-                                    ]
+                                    "enum": ["search_index"]
                                   }
                                 },
-                                "required": [
-                                  "type"
-                                ]
+                                "required": ["type"]
                               }
                             ],
                             "description": "What the job works on, by `type`. A file translation names its source file version and target locale."
                           }
                         },
-                        "required": [
-                          "id",
-                          "status",
-                          "subject"
-                        ]
+                        "required": ["id", "status", "subject"]
                       },
                       "description": "One job per file and target locale that needs translating; empty when every file is already translated into every target locale."
                     }
                   },
-                  "required": [
-                    "jobs"
-                  ]
+                  "required": ["jobs"]
                 }
               }
             }
@@ -9858,9 +9176,7 @@
             }
           }
         },
-        "tags": [
-          "Translation"
-        ]
+        "tags": ["Translation"]
       }
     },
     "/v2/projects/{projectId}/context/generate": {
@@ -9922,10 +9238,7 @@
                           "minLength": 1
                         }
                       },
-                      "required": [
-                        "fileId",
-                        "versionId"
-                      ]
+                      "required": ["fileId", "versionId"]
                     },
                     "minItems": 1
                   },
@@ -9940,9 +9253,7 @@
                     "default": false
                   }
                 },
-                "required": [
-                  "files"
-                ]
+                "required": ["files"]
               }
             }
           }
@@ -9956,10 +9267,7 @@
                   "type": "object",
                   "properties": {
                     "job": {
-                      "type": [
-                        "object",
-                        "null"
-                      ],
+                      "type": ["object", "null"],
                       "properties": {
                         "id": {
                           "type": "string"
@@ -9981,9 +9289,7 @@
                               "properties": {
                                 "type": {
                                   "type": "string",
-                                  "enum": [
-                                    "file_translation"
-                                  ]
+                                  "enum": ["file_translation"]
                                 },
                                 "branchId": {
                                   "type": "string",
@@ -10015,44 +9321,30 @@
                               "properties": {
                                 "type": {
                                   "type": "string",
-                                  "enum": [
-                                    "context_generation"
-                                  ]
+                                  "enum": ["context_generation"]
                                 }
                               },
-                              "required": [
-                                "type"
-                              ]
+                              "required": ["type"]
                             },
                             {
                               "type": "object",
                               "properties": {
                                 "type": {
                                   "type": "string",
-                                  "enum": [
-                                    "search_index"
-                                  ]
+                                  "enum": ["search_index"]
                                 }
                               },
-                              "required": [
-                                "type"
-                              ]
+                              "required": ["type"]
                             }
                           ],
                           "description": "What the job works on, by `type`. A file translation names its source file version and target locale."
                         }
                       },
-                      "required": [
-                        "id",
-                        "status",
-                        "subject"
-                      ],
+                      "required": ["id", "status", "subject"],
                       "description": "The queued context generation job; `null` when the project's context is already current and nothing was queued."
                     }
                   },
-                  "required": [
-                    "job"
-                  ]
+                  "required": ["job"]
                 }
               }
             }
@@ -10065,10 +9357,7 @@
                   "type": "object",
                   "properties": {
                     "job": {
-                      "type": [
-                        "object",
-                        "null"
-                      ],
+                      "type": ["object", "null"],
                       "properties": {
                         "id": {
                           "type": "string"
@@ -10090,9 +9379,7 @@
                               "properties": {
                                 "type": {
                                   "type": "string",
-                                  "enum": [
-                                    "file_translation"
-                                  ]
+                                  "enum": ["file_translation"]
                                 },
                                 "branchId": {
                                   "type": "string",
@@ -10124,44 +9411,30 @@
                               "properties": {
                                 "type": {
                                   "type": "string",
-                                  "enum": [
-                                    "context_generation"
-                                  ]
+                                  "enum": ["context_generation"]
                                 }
                               },
-                              "required": [
-                                "type"
-                              ]
+                              "required": ["type"]
                             },
                             {
                               "type": "object",
                               "properties": {
                                 "type": {
                                   "type": "string",
-                                  "enum": [
-                                    "search_index"
-                                  ]
+                                  "enum": ["search_index"]
                                 }
                               },
-                              "required": [
-                                "type"
-                              ]
+                              "required": ["type"]
                             }
                           ],
                           "description": "What the job works on, by `type`. A file translation names its source file version and target locale."
                         }
                       },
-                      "required": [
-                        "id",
-                        "status",
-                        "subject"
-                      ],
+                      "required": ["id", "status", "subject"],
                       "description": "The queued context generation job; `null` when the project's context is already current and nothing was queued."
                     }
                   },
-                  "required": [
-                    "job"
-                  ]
+                  "required": ["job"]
                 }
               }
             }
@@ -10287,9 +9560,7 @@
             }
           }
         },
-        "tags": [
-          "Translation"
-        ]
+        "tags": ["Translation"]
       }
     },
     "/v2/projects/{projectId}/translate": {
@@ -10352,10 +9623,7 @@
                       "description": "Whether this request ran translation; false when every result came from cache or was rejected before translation."
                     }
                   },
-                  "required": [
-                    "translations",
-                    "generated"
-                  ]
+                  "required": ["translations", "generated"]
                 }
               }
             }
@@ -10496,9 +9764,7 @@
             }
           }
         },
-        "tags": [
-          "Translation"
-        ]
+        "tags": ["Translation"]
       }
     },
     "/v2/projects/{projectId}": {
@@ -10672,9 +9938,7 @@
             }
           }
         },
-        "tags": [
-          "Projects"
-        ]
+        "tags": ["Projects"]
       },
       "patch": {
         "operationId": "updateProject",
@@ -10898,9 +10162,7 @@
             }
           }
         },
-        "tags": [
-          "Projects"
-        ]
+        "tags": ["Projects"]
       }
     },
     "/v2/projects/{projectId}/api-keys": {
@@ -10960,17 +10222,12 @@
                   },
                   "type": {
                     "type": "string",
-                    "enum": [
-                      "production",
-                      "development"
-                    ],
+                    "enum": ["production", "development"],
                     "deprecated": true,
                     "description": "Ignored. All new keys are project-scoped API keys for any environment."
                   }
                 },
-                "required": [
-                  "name"
-                ],
+                "required": ["name"],
                 "additionalProperties": false
               }
             }
@@ -11001,25 +10258,15 @@
                         },
                         "type": {
                           "type": "string",
-                          "enum": [
-                            "production"
-                          ],
+                          "enum": ["production"],
                           "deprecated": true,
                           "description": "Compatibility field. All project API keys work in any environment."
                         }
                       },
-                      "required": [
-                        "id",
-                        "name",
-                        "key",
-                        "projectId",
-                        "type"
-                      ]
+                      "required": ["id", "name", "key", "projectId", "type"]
                     }
                   },
-                  "required": [
-                    "apiKey"
-                  ]
+                  "required": ["apiKey"]
                 }
               }
             }
@@ -11145,9 +10392,7 @@
             }
           }
         },
-        "tags": [
-          "Projects"
-        ]
+        "tags": ["Projects"]
       }
     },
     "/v2/projects": {
@@ -11224,26 +10469,15 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "id",
-                          "name",
-                          "orgId",
-                          "orgName"
-                        ]
+                        "required": ["id", "name", "orgId", "orgName"]
                       }
                     },
                     "nextCursor": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
+                      "type": ["string", "null"],
                       "description": "Opaque cursor for the next page; `null` when there are no more items. Pages are read independently, so items changed between requests may be missed or repeated."
                     }
                   },
-                  "required": [
-                    "items",
-                    "nextCursor"
-                  ]
+                  "required": ["items", "nextCursor"]
                 }
               }
             }
@@ -11324,9 +10558,7 @@
             }
           }
         },
-        "tags": [
-          "Projects"
-        ]
+        "tags": ["Projects"]
       }
     },
     "/v2/projects/{projectId}/context-groups": {
@@ -11413,25 +10645,15 @@
                             "description": "Lower values take precedence for duplicate terms."
                           }
                         },
-                        "required": [
-                          "groupId",
-                          "groupName",
-                          "priority"
-                        ]
+                        "required": ["groupId", "groupName", "priority"]
                       }
                     },
                     "nextCursor": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
+                      "type": ["string", "null"],
                       "description": "Opaque cursor for the next page; `null` when there are no more items. Pages are read independently, so items changed between requests may be missed or repeated."
                     }
                   },
-                  "required": [
-                    "items",
-                    "nextCursor"
-                  ]
+                  "required": ["items", "nextCursor"]
                 }
               }
             }
@@ -11527,9 +10749,7 @@
             }
           }
         },
-        "tags": [
-          "Context groups"
-        ]
+        "tags": ["Context groups"]
       }
     },
     "/v2/projects/{projectId}/context-groups/{groupId}": {
@@ -11599,11 +10819,7 @@
                       "description": "Lower values take precedence for duplicate terms."
                     }
                   },
-                  "required": [
-                    "groupId",
-                    "groupName",
-                    "priority"
-                  ]
+                  "required": ["groupId", "groupName", "priority"]
                 }
               }
             }
@@ -11699,9 +10915,7 @@
             }
           }
         },
-        "tags": [
-          "Context groups"
-        ]
+        "tags": ["Context groups"]
       },
       "put": {
         "operationId": "assignContextGroup",
@@ -11760,19 +10974,14 @@
                   "properties": {
                     "committed": {
                       "type": "boolean",
-                      "enum": [
-                        true
-                      ]
+                      "enum": [true]
                     },
                     "created": {
                       "type": "boolean",
                       "description": "False when the group was already assigned; nothing changed."
                     }
                   },
-                  "required": [
-                    "committed",
-                    "created"
-                  ]
+                  "required": ["committed", "created"]
                 }
               }
             }
@@ -11786,19 +10995,14 @@
                   "properties": {
                     "committed": {
                       "type": "boolean",
-                      "enum": [
-                        true
-                      ]
+                      "enum": [true]
                     },
                     "created": {
                       "type": "boolean",
                       "description": "False when the group was already assigned; nothing changed."
                     }
                   },
-                  "required": [
-                    "committed",
-                    "created"
-                  ]
+                  "required": ["committed", "created"]
                 }
               }
             }
@@ -11894,9 +11098,7 @@
             }
           }
         },
-        "tags": [
-          "Context groups"
-        ]
+        "tags": ["Context groups"]
       },
       "delete": {
         "operationId": "unassignContextGroup",
@@ -11955,14 +11157,10 @@
                   "properties": {
                     "committed": {
                       "type": "boolean",
-                      "enum": [
-                        true
-                      ]
+                      "enum": [true]
                     }
                   },
-                  "required": [
-                    "committed"
-                  ]
+                  "required": ["committed"]
                 }
               }
             }
@@ -12058,9 +11256,7 @@
             }
           }
         },
-        "tags": [
-          "Context groups"
-        ]
+        "tags": ["Context groups"]
       },
       "patch": {
         "operationId": "reorderContextGroup",
@@ -12121,9 +11317,7 @@
                     "description": "Zero-based position; out-of-range values move the group to the first or last position."
                   }
                 },
-                "required": [
-                  "targetIndex"
-                ],
+                "required": ["targetIndex"],
                 "additionalProperties": false
               }
             }
@@ -12139,14 +11333,10 @@
                   "properties": {
                     "committed": {
                       "type": "boolean",
-                      "enum": [
-                        true
-                      ]
+                      "enum": [true]
                     }
                   },
-                  "required": [
-                    "committed"
-                  ]
+                  "required": ["committed"]
                 }
               }
             }
@@ -12272,9 +11462,7 @@
             }
           }
         },
-        "tags": [
-          "Context groups"
-        ]
+        "tags": ["Context groups"]
       }
     },
     "/v2/projects/{projectId}/jobs/{jobId}": {
@@ -12336,12 +11524,7 @@
                     },
                     "status": {
                       "type": "string",
-                      "enum": [
-                        "queued",
-                        "processing",
-                        "completed",
-                        "failed"
-                      ],
+                      "enum": ["queued", "processing", "completed", "failed"],
                       "description": "`queued`: accepted and waiting to run. `processing`: running, or waiting to retry after a failed attempt. `completed` and `failed` are final."
                     },
                     "subject": {
@@ -12351,9 +11534,7 @@
                           "properties": {
                             "type": {
                               "type": "string",
-                              "enum": [
-                                "file_translation"
-                              ]
+                              "enum": ["file_translation"]
                             },
                             "branchId": {
                               "type": "string",
@@ -12385,46 +11566,30 @@
                           "properties": {
                             "type": {
                               "type": "string",
-                              "enum": [
-                                "context_generation"
-                              ]
+                              "enum": ["context_generation"]
                             }
                           },
-                          "required": [
-                            "type"
-                          ]
+                          "required": ["type"]
                         },
                         {
                           "type": "object",
                           "properties": {
                             "type": {
                               "type": "string",
-                              "enum": [
-                                "search_index"
-                              ]
+                              "enum": ["search_index"]
                             }
                           },
-                          "required": [
-                            "type"
-                          ]
+                          "required": ["type"]
                         }
                       ],
                       "description": "What the job works on, by `type`. A file translation names its source file version and target locale."
                     },
                     "error": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
+                      "type": ["string", "null"],
                       "description": "Failure reason of a failed job; `null` otherwise."
                     }
                   },
-                  "required": [
-                    "id",
-                    "status",
-                    "subject",
-                    "error"
-                  ]
+                  "required": ["id", "status", "subject", "error"]
                 }
               }
             }
@@ -12520,9 +11685,7 @@
             }
           }
         },
-        "tags": [
-          "Jobs"
-        ]
+        "tags": ["Jobs"]
       }
     },
     "/v2/projects/{projectId}/jobs/query": {
@@ -12578,18 +11741,14 @@
                           "description": "Job ID returned when the job was queued."
                         }
                       },
-                      "required": [
-                        "id"
-                      ]
+                      "required": ["id"]
                     },
                     "minItems": 1,
                     "maxItems": 100,
                     "description": "Jobs to read, 1–100; a job ID repeated is rejected."
                   }
                 },
-                "required": [
-                  "jobs"
-                ]
+                "required": ["jobs"]
               }
             }
           }
@@ -12628,9 +11787,7 @@
                                 "properties": {
                                   "type": {
                                     "type": "string",
-                                    "enum": [
-                                      "file_translation"
-                                    ]
+                                    "enum": ["file_translation"]
                                   },
                                   "branchId": {
                                     "type": "string",
@@ -12662,51 +11819,35 @@
                                 "properties": {
                                   "type": {
                                     "type": "string",
-                                    "enum": [
-                                      "context_generation"
-                                    ]
+                                    "enum": ["context_generation"]
                                   }
                                 },
-                                "required": [
-                                  "type"
-                                ]
+                                "required": ["type"]
                               },
                               {
                                 "type": "object",
                                 "properties": {
                                   "type": {
                                     "type": "string",
-                                    "enum": [
-                                      "search_index"
-                                    ]
+                                    "enum": ["search_index"]
                                   }
                                 },
-                                "required": [
-                                  "type"
-                                ]
+                                "required": ["type"]
                               }
                             ],
                             "description": "Absent when `status` is `not_found`."
                           },
                           "error": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
+                            "type": ["string", "null"],
                             "description": "Absent when `status` is `not_found`."
                           }
                         },
-                        "required": [
-                          "id",
-                          "status"
-                        ]
+                        "required": ["id", "status"]
                       },
                       "description": "One result per selector, in selector order."
                     }
                   },
-                  "required": [
-                    "results"
-                  ]
+                  "required": ["results"]
                 }
               }
             }
@@ -12817,9 +11958,7 @@
             }
           }
         },
-        "tags": [
-          "Jobs"
-        ]
+        "tags": ["Jobs"]
       }
     },
     "/v2/orgs": {
@@ -12890,24 +12029,15 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "id",
-                          "name"
-                        ]
+                        "required": ["id", "name"]
                       }
                     },
                     "nextCursor": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
+                      "type": ["string", "null"],
                       "description": "Opaque cursor for the next page; `null` when there are no more items. Pages are read independently, so items changed between requests may be missed or repeated."
                     }
                   },
-                  "required": [
-                    "items",
-                    "nextCursor"
-                  ]
+                  "required": ["items", "nextCursor"]
                 }
               }
             }
@@ -12988,9 +12118,7 @@
             }
           }
         },
-        "tags": [
-          "Organizations"
-        ]
+        "tags": ["Organizations"]
       }
     },
     "/v2/orgs/{orgId}/projects": {
@@ -13047,10 +12175,7 @@
                     "description": "Enable CDN delivery. Defaults to false when omitted."
                   }
                 },
-                "required": [
-                  "name",
-                  "defaultLocale"
-                ],
+                "required": ["name", "defaultLocale"],
                 "additionalProperties": false
               }
             }
@@ -13080,17 +12205,10 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "id",
-                        "name",
-                        "orgId",
-                        "defaultLocale"
-                      ]
+                      "required": ["id", "name", "orgId", "defaultLocale"]
                     }
                   },
-                  "required": [
-                    "project"
-                  ]
+                  "required": ["project"]
                 }
               }
             }
@@ -13216,9 +12334,7 @@
             }
           }
         },
-        "tags": [
-          "Projects"
-        ]
+        "tags": ["Projects"]
       }
     },
     "/v2/orgs/{orgId}/context-groups": {
@@ -13296,17 +12412,11 @@
                       }
                     },
                     "nextCursor": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
+                      "type": ["string", "null"],
                       "description": "Opaque cursor for the next page; `null` when there are no more items. Pages are read independently, so items changed between requests may be missed or repeated."
                     }
                   },
-                  "required": [
-                    "items",
-                    "nextCursor"
-                  ]
+                  "required": ["items", "nextCursor"]
                 }
               }
             }
@@ -13402,9 +12512,7 @@
             }
           }
         },
-        "tags": [
-          "Context groups"
-        ]
+        "tags": ["Context groups"]
       },
       "post": {
         "operationId": "createContextGroup",
@@ -13455,9 +12563,7 @@
                     "description": "Group name, 1–255 characters."
                   }
                 },
-                "required": [
-                  "name"
-                ],
+                "required": ["name"],
                 "additionalProperties": false
               }
             }
@@ -13473,18 +12579,13 @@
                   "properties": {
                     "committed": {
                       "type": "boolean",
-                      "enum": [
-                        true
-                      ]
+                      "enum": [true]
                     },
                     "groupId": {
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "committed",
-                    "groupId"
-                  ]
+                  "required": ["committed", "groupId"]
                 }
               }
             }
@@ -13610,9 +12711,7 @@
             }
           }
         },
-        "tags": [
-          "Context groups"
-        ]
+        "tags": ["Context groups"]
       }
     },
     "/v2/context-groups/{groupId}": {
@@ -13753,9 +12852,7 @@
             }
           }
         },
-        "tags": [
-          "Context groups"
-        ]
+        "tags": ["Context groups"]
       },
       "patch": {
         "operationId": "updateContextGroup",
@@ -13825,14 +12922,10 @@
                   "properties": {
                     "committed": {
                       "type": "boolean",
-                      "enum": [
-                        true
-                      ]
+                      "enum": [true]
                     }
                   },
-                  "required": [
-                    "committed"
-                  ]
+                  "required": ["committed"]
                 }
               }
             }
@@ -13958,9 +13051,7 @@
             }
           }
         },
-        "tags": [
-          "Context groups"
-        ]
+        "tags": ["Context groups"]
       },
       "delete": {
         "operationId": "deleteContextGroup",
@@ -14007,14 +13098,10 @@
                   "properties": {
                     "committed": {
                       "type": "boolean",
-                      "enum": [
-                        true
-                      ]
+                      "enum": [true]
                     }
                   },
-                  "required": [
-                    "committed"
-                  ]
+                  "required": ["committed"]
                 }
               }
             }
@@ -14110,9 +13197,7 @@
             }
           }
         },
-        "tags": [
-          "Context groups"
-        ]
+        "tags": ["Context groups"]
       }
     },
     "/v2/context-groups/{groupId}/glossary": {
@@ -14207,10 +13292,7 @@
                             "type": "string"
                           },
                           "definition": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
+                            "type": ["string", "null"]
                           },
                           "userDefined": {
                             "type": "boolean"
@@ -14225,17 +13307,11 @@
                       }
                     },
                     "nextCursor": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
+                      "type": ["string", "null"],
                       "description": "Opaque cursor for the next page; `null` when there are no more items. Pages are read independently, so items changed between requests may be missed or repeated."
                     }
                   },
-                  "required": [
-                    "items",
-                    "nextCursor"
-                  ]
+                  "required": ["items", "nextCursor"]
                 }
               }
             }
@@ -14331,9 +13407,7 @@
             }
           }
         },
-        "tags": [
-          "Glossary"
-        ]
+        "tags": ["Glossary"]
       },
       "post": {
         "operationId": "upsertContextGlossary",
@@ -14389,19 +13463,13 @@
                           "type": "boolean"
                         },
                         "definition": {
-                          "type": [
-                            "string",
-                            "null"
-                          ],
+                          "type": ["string", "null"],
                           "description": "null clears the definition."
                         },
                         "translations": {
                           "type": "object",
                           "additionalProperties": {
-                            "type": [
-                              "object",
-                              "null"
-                            ],
+                            "type": ["object", "null"],
                             "properties": {
                               "translation": {
                                 "type": "string"
@@ -14410,17 +13478,13 @@
                                 "type": "boolean"
                               }
                             },
-                            "required": [
-                              "translation"
-                            ],
+                            "required": ["translation"],
                             "additionalProperties": false
                           },
                           "description": "Translations by locale; null for a locale deletes its translation."
                         }
                       },
-                      "required": [
-                        "keyword"
-                      ],
+                      "required": ["keyword"],
                       "additionalProperties": false
                     },
                     "minItems": 1,
@@ -14428,9 +13492,7 @@
                     "description": "1–100 terms, matched by keyword; a keyword may appear once."
                   }
                 },
-                "required": [
-                  "entries"
-                ],
+                "required": ["entries"],
                 "additionalProperties": false,
                 "description": "An absent field keeps its stored value. `null` clears a nullable field or removes a map entry; other fields reject `null`. In batches and imports, items match stored items by natural key, stored items absent from the batch are untouched, and nothing else is deleted. A blank CSV cell counts as absent."
               }
@@ -14447,9 +13509,7 @@
                   "properties": {
                     "committed": {
                       "type": "boolean",
-                      "enum": [
-                        true
-                      ]
+                      "enum": [true]
                     },
                     "counts": {
                       "type": "object",
@@ -14464,17 +13524,10 @@
                           "type": "integer"
                         }
                       },
-                      "required": [
-                        "created",
-                        "updated",
-                        "unchanged"
-                      ]
+                      "required": ["created", "updated", "unchanged"]
                     }
                   },
-                  "required": [
-                    "committed",
-                    "counts"
-                  ]
+                  "required": ["committed", "counts"]
                 }
               }
             }
@@ -14600,9 +13653,7 @@
             }
           }
         },
-        "tags": [
-          "Glossary"
-        ]
+        "tags": ["Glossary"]
       }
     },
     "/v2/context-groups/{groupId}/glossary/{entryId}": {
@@ -14668,17 +13719,10 @@
                       "type": "string"
                     },
                     "definition": {
-                      "type": [
-                        "string",
-                        "null"
-                      ]
+                      "type": ["string", "null"]
                     }
                   },
-                  "required": [
-                    "id",
-                    "keyword",
-                    "definition"
-                  ]
+                  "required": ["id", "keyword", "definition"]
                 }
               }
             }
@@ -14774,9 +13818,7 @@
             }
           }
         },
-        "tags": [
-          "Glossary"
-        ]
+        "tags": ["Glossary"]
       },
       "patch": {
         "operationId": "updateContextGlossaryEntry",
@@ -14836,10 +13878,7 @@
                     "type": "string"
                   },
                   "definition": {
-                    "type": [
-                      "string",
-                      "null"
-                    ],
+                    "type": ["string", "null"],
                     "description": "null clears the definition."
                   }
                 },
@@ -14859,14 +13898,10 @@
                   "properties": {
                     "committed": {
                       "type": "boolean",
-                      "enum": [
-                        true
-                      ]
+                      "enum": [true]
                     }
                   },
-                  "required": [
-                    "committed"
-                  ]
+                  "required": ["committed"]
                 }
               }
             }
@@ -15007,9 +14042,7 @@
             }
           }
         },
-        "tags": [
-          "Glossary"
-        ]
+        "tags": ["Glossary"]
       },
       "delete": {
         "operationId": "deleteContextGlossaryEntry",
@@ -15068,14 +14101,10 @@
                   "properties": {
                     "committed": {
                       "type": "boolean",
-                      "enum": [
-                        true
-                      ]
+                      "enum": [true]
                     }
                   },
-                  "required": [
-                    "committed"
-                  ]
+                  "required": ["committed"]
                 }
               }
             }
@@ -15171,9 +14200,7 @@
             }
           }
         },
-        "tags": [
-          "Glossary"
-        ]
+        "tags": ["Glossary"]
       }
     },
     "/v2/context-groups/{groupId}/glossary/{entryId}/translations": {
@@ -15283,17 +14310,11 @@
                       }
                     },
                     "nextCursor": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
+                      "type": ["string", "null"],
                       "description": "Opaque cursor for the next page; `null` when there are no more items. Pages are read independently, so items changed between requests may be missed or repeated."
                     }
                   },
-                  "required": [
-                    "items",
-                    "nextCursor"
-                  ]
+                  "required": ["items", "nextCursor"]
                 }
               }
             }
@@ -15389,9 +14410,7 @@
             }
           }
         },
-        "tags": [
-          "Glossary"
-        ]
+        "tags": ["Glossary"]
       }
     },
     "/v2/context-groups/{groupId}/glossary/{entryId}/translations/{locale}": {
@@ -15466,9 +14485,7 @@
                     "description": "The locale's translation of the term."
                   }
                 },
-                "required": [
-                  "translation"
-                ],
+                "required": ["translation"],
                 "additionalProperties": false
               }
             }
@@ -15484,23 +14501,14 @@
                   "properties": {
                     "committed": {
                       "type": "boolean",
-                      "enum": [
-                        true
-                      ]
+                      "enum": [true]
                     },
                     "outcome": {
                       "type": "string",
-                      "enum": [
-                        "created",
-                        "updated",
-                        "unchanged"
-                      ]
+                      "enum": ["created", "updated", "unchanged"]
                     }
                   },
-                  "required": [
-                    "committed",
-                    "outcome"
-                  ]
+                  "required": ["committed", "outcome"]
                 }
               }
             }
@@ -15514,23 +14522,14 @@
                   "properties": {
                     "committed": {
                       "type": "boolean",
-                      "enum": [
-                        true
-                      ]
+                      "enum": [true]
                     },
                     "outcome": {
                       "type": "string",
-                      "enum": [
-                        "created",
-                        "updated",
-                        "unchanged"
-                      ]
+                      "enum": ["created", "updated", "unchanged"]
                     }
                   },
-                  "required": [
-                    "committed",
-                    "outcome"
-                  ]
+                  "required": ["committed", "outcome"]
                 }
               }
             }
@@ -15656,9 +14655,7 @@
             }
           }
         },
-        "tags": [
-          "Glossary"
-        ]
+        "tags": ["Glossary"]
       },
       "delete": {
         "operationId": "deleteContextGlossaryTranslation",
@@ -15729,14 +14726,10 @@
                   "properties": {
                     "committed": {
                       "type": "boolean",
-                      "enum": [
-                        true
-                      ]
+                      "enum": [true]
                     }
                   },
-                  "required": [
-                    "committed"
-                  ]
+                  "required": ["committed"]
                 }
               }
             }
@@ -15832,9 +14825,7 @@
             }
           }
         },
-        "tags": [
-          "Glossary"
-        ]
+        "tags": ["Glossary"]
       }
     },
     "/v2/context-groups/{groupId}/custom-prompts": {
@@ -15917,16 +14908,10 @@
                             "type": "string"
                           },
                           "description": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
+                            "type": ["string", "null"]
                           },
                           "locale": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
+                            "type": ["string", "null"],
                             "description": "Locale the prompt applies to; null applies to all locales."
                           },
                           "value": {
@@ -15943,17 +14928,11 @@
                       }
                     },
                     "nextCursor": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
+                      "type": ["string", "null"],
                       "description": "Opaque cursor for the next page; `null` when there are no more items. Pages are read independently, so items changed between requests may be missed or repeated."
                     }
                   },
-                  "required": [
-                    "items",
-                    "nextCursor"
-                  ]
+                  "required": ["items", "nextCursor"]
                 }
               }
             }
@@ -16049,9 +15028,7 @@
             }
           }
         },
-        "tags": [
-          "Custom prompts"
-        ]
+        "tags": ["Custom prompts"]
       },
       "post": {
         "operationId": "upsertContextCustomPrompts",
@@ -16104,28 +15081,18 @@
                           "type": "string"
                         },
                         "locale": {
-                          "type": [
-                            "string",
-                            "null"
-                          ],
+                          "type": ["string", "null"],
                           "description": "Locale the prompt applies to; null applies it to every locale."
                         },
                         "value": {
                           "type": "string"
                         },
                         "description": {
-                          "type": [
-                            "string",
-                            "null"
-                          ],
+                          "type": ["string", "null"],
                           "description": "null clears the description."
                         }
                       },
-                      "required": [
-                        "name",
-                        "locale",
-                        "value"
-                      ],
+                      "required": ["name", "locale", "value"],
                       "additionalProperties": false
                     },
                     "minItems": 1,
@@ -16133,9 +15100,7 @@
                     "description": "1–100 prompts, matched by name and locale; a name and locale may appear once."
                   }
                 },
-                "required": [
-                  "customPrompts"
-                ],
+                "required": ["customPrompts"],
                 "additionalProperties": false,
                 "description": "An absent field keeps its stored value. `null` clears a nullable field or removes a map entry; other fields reject `null`. In batches and imports, items match stored items by natural key, stored items absent from the batch are untouched, and nothing else is deleted. A blank CSV cell counts as absent."
               }
@@ -16152,9 +15117,7 @@
                   "properties": {
                     "committed": {
                       "type": "boolean",
-                      "enum": [
-                        true
-                      ]
+                      "enum": [true]
                     },
                     "counts": {
                       "type": "object",
@@ -16169,17 +15132,10 @@
                           "type": "integer"
                         }
                       },
-                      "required": [
-                        "created",
-                        "updated",
-                        "unchanged"
-                      ]
+                      "required": ["created", "updated", "unchanged"]
                     }
                   },
-                  "required": [
-                    "committed",
-                    "counts"
-                  ]
+                  "required": ["committed", "counts"]
                 }
               }
             }
@@ -16305,9 +15261,7 @@
             }
           }
         },
-        "tags": [
-          "Custom prompts"
-        ]
+        "tags": ["Custom prompts"]
       }
     },
     "/v2/context-groups/{groupId}/custom-prompts/{customPromptId}": {
@@ -16369,20 +15323,14 @@
                     "type": "string"
                   },
                   "locale": {
-                    "type": [
-                      "string",
-                      "null"
-                    ],
+                    "type": ["string", "null"],
                     "description": "Locale the prompt applies to; null applies it to every locale."
                   },
                   "value": {
                     "type": "string"
                   },
                   "description": {
-                    "type": [
-                      "string",
-                      "null"
-                    ],
+                    "type": ["string", "null"],
                     "description": "null clears the description."
                   }
                 },
@@ -16402,14 +15350,10 @@
                   "properties": {
                     "committed": {
                       "type": "boolean",
-                      "enum": [
-                        true
-                      ]
+                      "enum": [true]
                     }
                   },
-                  "required": [
-                    "committed"
-                  ]
+                  "required": ["committed"]
                 }
               }
             }
@@ -16550,9 +15494,7 @@
             }
           }
         },
-        "tags": [
-          "Custom prompts"
-        ]
+        "tags": ["Custom prompts"]
       },
       "delete": {
         "operationId": "deleteContextCustomPrompt",
@@ -16611,14 +15553,10 @@
                   "properties": {
                     "committed": {
                       "type": "boolean",
-                      "enum": [
-                        true
-                      ]
+                      "enum": [true]
                     }
                   },
-                  "required": [
-                    "committed"
-                  ]
+                  "required": ["committed"]
                 }
               }
             }
@@ -16714,9 +15652,7 @@
             }
           }
         },
-        "tags": [
-          "Custom prompts"
-        ]
+        "tags": ["Custom prompts"]
       }
     },
     "/v2/context-groups/{groupId}/import": {
@@ -16764,10 +15700,7 @@
                 "properties": {
                   "format": {
                     "type": "string",
-                    "enum": [
-                      "json",
-                      "csv"
-                    ],
+                    "enum": ["json", "csv"],
                     "description": "Transfer document format."
                   },
                   "content": {
@@ -16775,10 +15708,7 @@
                     "description": "One JSON or CSV transfer document, up to 1 MiB as a JSON string, so escaped quotes and line breaks count toward the limit. An exported page always fits. It is validated in full before anything is written. A JSON document has the shape `{ glossary: [{ keyword, definition?, translations?: { <locale>: { translation } | null } }], customPrompts: [{ name, locale, value, description? }] }`; definition, locale and description may be null. An absent field keeps its stored value. `null` clears a nullable field or removes a map entry; other fields reject `null`. In batches and imports, items match stored items by natural key, stored items absent from the batch are untouched, and nothing else is deleted. A blank CSV cell counts as absent. In CSV, a blank prompt locale means every locale, and the term, prompt name and prompt text can't be blank."
                   }
                 },
-                "required": [
-                  "format",
-                  "content"
-                ],
+                "required": ["format", "content"],
                 "additionalProperties": false
               }
             }
@@ -16794,9 +15724,7 @@
                   "properties": {
                     "committed": {
                       "type": "boolean",
-                      "enum": [
-                        true
-                      ]
+                      "enum": [true]
                     },
                     "glossary": {
                       "type": "object",
@@ -16811,11 +15739,7 @@
                           "type": "integer"
                         }
                       },
-                      "required": [
-                        "created",
-                        "updated",
-                        "unchanged"
-                      ]
+                      "required": ["created", "updated", "unchanged"]
                     },
                     "customPrompts": {
                       "type": "object",
@@ -16830,18 +15754,10 @@
                           "type": "integer"
                         }
                       },
-                      "required": [
-                        "created",
-                        "updated",
-                        "unchanged"
-                      ]
+                      "required": ["created", "updated", "unchanged"]
                     }
                   },
-                  "required": [
-                    "committed",
-                    "glossary",
-                    "customPrompts"
-                  ]
+                  "required": ["committed", "glossary", "customPrompts"]
                 }
               }
             }
@@ -16967,9 +15883,7 @@
             }
           }
         },
-        "tags": [
-          "Context groups"
-        ]
+        "tags": ["Context groups"]
       }
     },
     "/v2/context-groups/{groupId}/export": {
@@ -17025,10 +15939,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "json",
-                "csv"
-              ],
+              "enum": ["json", "csv"],
               "description": "Transfer document format."
             },
             "required": true,
@@ -17056,10 +15967,7 @@
                   "properties": {
                     "format": {
                       "type": "string",
-                      "enum": [
-                        "json",
-                        "csv"
-                      ],
+                      "enum": ["json", "csv"],
                       "description": "Transfer document format."
                     },
                     "content": {
@@ -17067,18 +15975,11 @@
                       "description": "One self-contained transfer document that can be imported as a single batch."
                     },
                     "nextCursor": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
+                      "type": ["string", "null"],
                       "description": "Pass as cursor for the next page; null ends the export."
                     }
                   },
-                  "required": [
-                    "format",
-                    "content",
-                    "nextCursor"
-                  ]
+                  "required": ["format", "content", "nextCursor"]
                 }
               }
             }
@@ -17174,9 +16075,7 @@
             }
           }
         },
-        "tags": [
-          "Context groups"
-        ]
+        "tags": ["Context groups"]
       }
     },
     "/v2/orgs/{orgId}/assets": {
@@ -17229,9 +16128,7 @@
                       "properties": {
                         "assetType": {
                           "type": "string",
-                          "enum": [
-                            "FONT"
-                          ]
+                          "enum": ["FONT"]
                         },
                         "content": {
                           "type": "string",
@@ -17256,20 +16153,14 @@
                           "description": "Weight and italic style, such as `Bold Italic` or `350`. Read only with `family`; a `family` without `style` is regular weight (400), not italic."
                         }
                       },
-                      "required": [
-                        "assetType",
-                        "content",
-                        "fileName"
-                      ]
+                      "required": ["assetType", "content", "fileName"]
                     },
                     "minItems": 1,
                     "maxItems": 10,
                     "description": "1–10 assets; OpenType or TrueType fonts (`assetType: FONT`) are the only asset type today. A font is matched by family, weight and italic style, and an identity may appear once. Uploading a matching font replaces it for the whole organization."
                   }
                 },
-                "required": [
-                  "assets"
-                ],
+                "required": ["assets"],
                 "additionalProperties": false
               }
             }
@@ -17298,9 +16189,7 @@
                               },
                               "status": {
                                 "type": "string",
-                                "enum": [
-                                  "succeeded"
-                                ]
+                                "enum": ["succeeded"]
                               },
                               "id": {
                                 "type": "string"
@@ -17310,12 +16199,7 @@
                                 "description": "Normalized family, weight and italic style of the font."
                               }
                             },
-                            "required": [
-                              "fileName",
-                              "status",
-                              "id",
-                              "assetKey"
-                            ]
+                            "required": ["fileName", "status", "id", "assetKey"]
                           },
                           {
                             "type": "object",
@@ -17325,29 +16209,20 @@
                               },
                               "status": {
                                 "type": "string",
-                                "enum": [
-                                  "failed"
-                                ]
+                                "enum": ["failed"]
                               },
                               "error": {
                                 "type": "string"
                               }
                             },
-                            "required": [
-                              "fileName",
-                              "status",
-                              "error"
-                            ]
+                            "required": ["fileName", "status", "error"]
                           }
                         ]
                       },
                       "description": "One result per requested font, in request order."
                     }
                   },
-                  "required": [
-                    "summary",
-                    "results"
-                  ]
+                  "required": ["summary", "results"]
                 }
               }
             }
@@ -17458,9 +16333,7 @@
             }
           }
         },
-        "tags": [
-          "Organizations"
-        ]
+        "tags": ["Organizations"]
       }
     },
     "/cli/wizard/session": {
@@ -17470,9 +16343,7 @@
         "deprecated": true,
         "summary": "Create a CLI wizard session",
         "description": "Create a temporary session for CLI browser authentication.",
-        "tags": [
-          "CLI Wizard"
-        ],
+        "tags": ["CLI Wizard"],
         "parameters": [
           {
             "schema": {
@@ -17590,9 +16461,7 @@
         "deprecated": true,
         "summary": "Get a CLI wizard session",
         "description": "Get credentials for a completed CLI wizard session or its current waiting status.",
-        "tags": [
-          "CLI Wizard"
-        ],
+        "tags": ["CLI Wizard"],
         "parameters": [
           {
             "schema": {
@@ -17717,9 +16586,7 @@
         "deprecated": true,
         "summary": "Delete a CLI wizard session",
         "description": "Delete a completed or abandoned CLI wizard session.",
-        "tags": [
-          "CLI Wizard"
-        ],
+        "tags": ["CLI Wizard"],
         "parameters": [
           {
             "schema": {
