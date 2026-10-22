@@ -1,12 +1,12 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   resolve: {
     alias: {
-      'gt-tanstack-start/internal/_config': new URL(
-        './src/internal/_config.ts',
-        import.meta.url
-      ).pathname,
+      'gt-tanstack-start/internal/_config': fileURLToPath(
+        new URL('./src/internal/_config.ts', import.meta.url)
+      ),
     },
   },
   test: {

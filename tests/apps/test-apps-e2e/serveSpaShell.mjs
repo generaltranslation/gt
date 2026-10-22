@@ -17,9 +17,16 @@ const contentTypes = {
 };
 
 createServer(async (request, response) => {
-  const pathname = decodeURIComponent(
-    new URL(request.url ?? '/', 'http://x').pathname
-  );
+  let pathname;
+  try {
+    pathname = decodeURIComponent(
+      new URL(request.url ?? '/', 'http://x').pathname
+    );
+  } catch {
+    response.statusCode = 400;
+    response.end();
+    return;
+  }
   const file = path.join(root, path.normalize(pathname));
   const isFile =
     file.startsWith(root + path.sep) &&
