@@ -1,0 +1,64 @@
+name: Samsara Sync Guard
+
+# Syncs from main must land on samsara as merge commits. A squashed sync drops
+# main's ancestry, so every later sync and the final samsara -> main merge
+# conflict on changes samsara already has. GitHub cannot restrict the merge
+# method per pull request, so sync pull requests must enable auto-merge with a
+# merge commit, which this check verifies. Feature pull requests pass as-is.
+
+on:
+  pull_request:
+    branches: [samsara]
+    types:
+      [opened, synchronize, reopened, auto_merge_enabled, auto_merge_disabled]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  sync-merge-method:
+    name: Sync merge method
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          filter: blob:none
+
+      - name: Require a merge commit for syncs from main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          git fetch --quiet --filter=blob:none origin main
+
+          # The pull request brings in main commits when its newest common
+          # ancestor with main is not already part of samsara.
+          main_base=$(git merge-base "$HEAD_SHA" origin/main)
+          if git merge-base --is-ancestor "$main_base" "$BASE_SHA"; then
+            echo "No new commits from main; any merge method is allowed."
+            exit 0
+          fi
+
+          # Read the live setting so reruns see the current auto-merge state.
+          merge_method=$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" \
+            --json autoMergeRequest --jq '.autoMergeRequest.mergeMethod // ""')
+          if [ "$merge_method" = "MERGE" ]; then
+            echo "Sync from main will land as a merge commit."
+            exit 0
+          fi
+
+          echo "::error title=Sync from main must be a merge commit::This pull request brings commits from main into samsara. Enable auto-merge with a merge commit so it cannot be squashed: gh pr merge $PR_NUMBER --auto --merge"
+          exit 1
