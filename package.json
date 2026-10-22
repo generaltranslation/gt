@@ -30,7 +30,7 @@
     "format": "oxfmt --check .",
     "format:fix": "oxfmt .",
     "changeset": "changeset",
-    "version-packages": "changeset version && oxfmt packages/*/CHANGELOG.md"
+    "version-packages": "changeset version && oxfmt --no-error-on-unmatched-pattern packages/*/CHANGELOG.md .changeset/pre.json"
   },
   "repository": {
     "type": "git",
