@@ -126,28 +126,6 @@ export function findDeclaredFunction(
   return undefined;
 }
 
-/** The local name of a `* as` import from `source`. */
-export function getNamespaceImport(
-  file: SourceFile,
-  source: string
-): string | undefined {
-  for (const statement of file.statements ?? []) {
-    if (
-      statement.type !== 'ImportDeclaration' ||
-      statement.source.value !== source ||
-      statement.importKind === 'type'
-    ) {
-      continue;
-    }
-    for (const specifier of statement.specifiers) {
-      if (specifier.type === 'ImportNamespaceSpecifier') {
-        return specifier.local.name;
-      }
-    }
-  }
-  return undefined;
-}
-
 /** Whether `local` is called anywhere in the nodes. */
 export function callsFunction(
   nodes: readonly (t.Node | null)[],
