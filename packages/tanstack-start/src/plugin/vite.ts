@@ -81,8 +81,8 @@ const DICTIONARY_LOADER_FILES = ['', 'src/'].flatMap((directory) =>
 const NODE_MODULES_PATTERN = /[\\/]node_modules[\\/]/;
 
 // GT's server state is a first-write-wins global that outlives Vite module
-// reloads and in-process restarts, so the config module is generated once per
-// process too. Any later read could hand the browser settings SSR never applied.
+// reloads and in-process restarts, so in dev the config module is generated
+// once per process too. Builds read the config fresh. Any later read could hand the browser settings SSR never applied.
 // Keyed by app root and working directory too: the loader depends on both.
 // The options it was generated with are kept to warn when a restart with
 // other options keeps serving it.
@@ -226,6 +226,7 @@ export function gtTanstackStart(
   const moduleOptions = JSON.stringify(configModuleOptions);
   let root = cwd;
   let logger: Logger | undefined;
+  let isServe = false;
 
   const configPlugin: Plugin = {
     name: 'gt-tanstack-start',
@@ -233,6 +234,7 @@ export function gtTanstackStart(
     configResolved(config) {
       root = config.root;
       logger = config.logger;
+      isServe = config.command === 'serve';
       for (const warning of warnings) config.logger.warnOnce(warning);
       if (
         compilerPlugin &&
@@ -262,7 +264,7 @@ export function gtTanstackStart(
     load(id) {
       if (id !== RESOLVED_CONFIG_MODULE_ID) return;
       const key = JSON.stringify([root, cwd, configFile]);
-      const cached = configModules.get(key);
+      const cached = isServe ? configModules.get(key) : undefined;
       if (cached) {
         if (cached.options !== moduleOptions) {
           logger?.warnOnce(
@@ -277,10 +279,12 @@ export function gtTanstackStart(
         configFile,
         configModuleOptions
       );
-      configModules.set(key, {
-        code: configModule.code,
-        options: moduleOptions,
-      });
+      if (isServe) {
+        configModules.set(key, {
+          code: configModule.code,
+          options: moduleOptions,
+        });
+      }
       if (configModule.omittedApiKeys) {
         logger?.warnOnce(
           createApiKeysOmittedWarning(path.relative(cwd, configFile))
@@ -367,15 +371,18 @@ function adaptCompilerPlugin(plugin: Plugin): Plugin {
 
 /**
  * TanStack Router code-splitting moves route components into virtual modules
- * such as `index.tsx?tsr-split=component`. The compiler only accepts ids that
- * end in a source extension, so it gets the file path for those modules. Other
+ * such as `index.tsx?tsr-split=component`, and code shared by several split
+ * groups into `index.tsx?tsr-shared=1`. The compiler only accepts ids that end
+ * in a source extension, so it gets the file path for those modules. Other
  * query ids (?raw, ?url, ...) stay unchanged and are skipped by the compiler.
  */
 function getCompilerId(id: string): string {
   const queryStart = id.indexOf('?');
   if (queryStart === -1) return id;
   const query = new URLSearchParams(id.slice(queryStart + 1));
-  return query.has('tsr-split') ? id.slice(0, queryStart) : id;
+  return query.has('tsr-split') || query.has('tsr-shared')
+    ? id.slice(0, queryStart)
+    : id;
 }
 
 /**
@@ -410,10 +417,14 @@ function exportFromFile(
   type: 'function' | 'object',
   what: string
 ): string[] {
-  const relative = path.relative(root, file).split(path.sep).join('/');
+  const relative = path.relative(root, file);
+  // A file on another Windows drive has no relative path.
+  const specifier = path.isAbsolute(relative)
+    ? `/@fs/${file.split(path.sep).join('/')}`
+    : `/${relative.split(path.sep).join('/')}`;
   const local = `${name}Module`;
   return [
-    `import * as ${local} from ${JSON.stringify(`/${relative}`)};`,
+    `import * as ${local} from ${JSON.stringify(specifier)};`,
     `const ${name} = ${local}.default ?? ${local}.${name};`,
     `if (typeof ${name} !== '${type}' || ${name} === null) {`,
     `  throw new Error(${JSON.stringify(createInvalidExportError(relative, what, type === 'function' ? `${name} function` : `${name} object`))});`,
@@ -505,10 +516,14 @@ function createConfigModule(
       .relative(root, path.resolve(cwd, output))
       .split(path.sep)
       .join('/')}`;
-    // Like the gt CLI, replace every placeholder.
+    // Like the gt CLI, replace every placeholder. The rest of the path is
+    // literal, so its glob characters are escaped.
     const segments = pattern.split('[locale]');
+    const glob = segments
+      .map((segment) => segment.replace(/[*?[\]{}()!+@]/g, '\\$&'))
+      .join('*');
     lines.push(
-      `const files = import.meta.glob(${JSON.stringify(segments.join('*'))}, { import: 'default' });`,
+      `const files = import.meta.glob(${JSON.stringify(glob)}, { import: 'default' });`,
       'export async function loadTranslations(locale) {',
       `  const load = files[${segments.map((segment) => JSON.stringify(segment)).join(' + locale + ')}];`,
       '  return load ? load() : {};',
