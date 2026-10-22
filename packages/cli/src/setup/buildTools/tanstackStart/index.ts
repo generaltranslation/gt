@@ -26,7 +26,12 @@ import {
   configureRouter,
   getRouterAction,
 } from './router.js';
-import { DOCS_URL, inspectTanStackStart, readViteConfig } from './source.js';
+import {
+  DOCS_URL,
+  hasVitePlugin,
+  inspectTanStackStart,
+  readViteConfig,
+} from './source.js';
 import {
   configureViteConfig,
   getViteConfigAction,
@@ -233,6 +238,16 @@ export const tanstackStartSetup: BuildToolSetup = {
     const writeSource = async (file: string, content: string) => {
       await fs.promises.writeFile(path.join(appDirectory, file), content);
     };
+
+    // Installing gt-tanstack-start keeps an existing version, and an older one
+    // has neither export the new setup imports.
+    if ((await hasVitePlugin(appDirectory)) === false) {
+      manualActions.push({
+        whatHappened: `The installed ${Libraries.GT_TANSTACK_START} has no Vite plugin, so GT left ${viteConfig.path} and ${router.path} unchanged`,
+        fix: `Upgrade ${Libraries.GT_TANSTACK_START} to 12 or later, then rerun \`npx gt@latest init\` (see ${DOCS_URL})`,
+      });
+      return { steps, manualActions };
+    }
 
     const routerReady = callsRouterIntegration(router);
 

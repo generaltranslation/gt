@@ -122,7 +122,7 @@ const viteAction = (fix: string) => ({
 
 const rootLangAction = {
   whatHappened: 'src/routes/__root.tsx was not configured automatically',
-  fix: "Set <html lang={useLocale()}> in the root route's document component, with import { useLocale } from 'gt-tanstack-start', so the page language follows the resolved locale (see https://generaltranslation.com/docs/react/tanstack-start/setup)",
+  fix: "Call const locale = useLocale() at the top of the root route's document component, before any early return, and render <html lang={locale}>, with import { useLocale } from 'gt-tanstack-start', so the page language follows the resolved locale (see https://generaltranslation.com/docs/react/tanstack-start/setup)",
 };
 
 const routerAction = {
@@ -472,6 +472,7 @@ export function getRouter() {
       'function gtPlugins() {\n  return [gtTanstackStart()]\n}\n\n',
       '...gtPlugins()',
     ],
+    ['an alias', 'const gt = gtTanstackStart\n\n', 'gt()'],
   ])(
     'asks for review when the plugin is registered through %s',
     async (_case, declaration, plugin) => {
@@ -890,6 +891,10 @@ export function getRouter() {
         'import { createRootRoute } from \'@tanstack/react-router\'\n\nfunction RootDocument() {\n  return <html lang="en"><body /></html>\n}\nconst doc = RootDocument()\n\nexport const Route = createRootRoute({ shellComponent: () => doc })\n',
       ],
       [
+        'a document component called through an alias',
+        'import { createRootRoute } from \'@tanstack/react-router\'\n\nfunction RootDocument() {\n  return <html lang="en"><body /></html>\n}\nconst renderDocument = RootDocument\nconst doc = renderDocument()\n\nexport const Route = createRootRoute({ shellComponent: () => doc })\n',
+      ],
+      [
         'a document component called optionally',
         'import { createRootRoute } from \'@tanstack/react-router\'\n\nfunction RootDocument() {\n  return <html lang="en"><body /></html>\n}\nconst doc = RootDocument?.()\n\nexport const Route = createRootRoute({ shellComponent: () => doc })\n',
       ],
@@ -962,7 +967,7 @@ export function getRouter() {
     expect(result).toEqual({ steps: [], manualActions: [] });
   });
 
-  it('adds the plugin when gtTanstackStart is only called outside the plugins array', async () => {
+  it('asks for review when gtTanstackStart is used outside the plugins array', async () => {
     const vite = configuredVite
       .replace('viteReact(), gtTanstackStart()]', 'viteReact()]')
       .replace(
@@ -973,14 +978,63 @@ export function getRouter() {
 
     const result = await tanstackStartSetup.apply(ctx());
 
-    expect(read('vite.config.ts')).toBe(
-      vite.replace('viteReact()]', 'viteReact(), gtTanstackStart()]')
+    expect(read('vite.config.ts')).toBe(vite);
+    expect(result).toEqual({
+      steps: [],
+      manualActions: [viteAction('gtTanstackStart()'), routerAction],
+    });
+  });
+
+  it('asks for review when a comment ends the last plugin line', async () => {
+    const vite = templateVite.replace(
+      'plugins: [tanstackStart(), viteReact()],',
+      'plugins: [\n    tanstackStart(),\n    viteReact(), // eslint-disable-line\n  ],'
     );
-    expect(read('src/router.tsx')).toBe(configuredRouter);
-    expect(result.steps).toEqual([
-      'configured vite.config.ts',
-      'configured src/router.tsx',
-    ]);
+    write('vite.config.ts', vite);
+
+    const result = await tanstackStartSetup.apply(ctx());
+
+    expect(read('vite.config.ts')).toBe(vite);
+    expect(result).toEqual({
+      steps: [],
+      manualActions: [viteAction('gtTanstackStart()'), routerAction],
+    });
+  });
+
+  it('leaves the app unchanged when the installed gt-tanstack-start has no Vite plugin', async () => {
+    write(
+      'node_modules/gt-tanstack-start/package.json',
+      JSON.stringify({ version: '11.4.12', exports: { '.': './index.mjs' } })
+    );
+
+    const result = await tanstackStartSetup.apply(ctx());
+
+    expect(read('vite.config.ts')).toBe(templateVite);
+    expect(read('src/router.tsx')).toBe(templateRouter);
+    expect(result).toEqual({
+      steps: [],
+      manualActions: [
+        {
+          whatHappened:
+            'The installed gt-tanstack-start has no Vite plugin, so GT left vite.config.ts and src/router.tsx unchanged',
+          fix: 'Upgrade gt-tanstack-start to 12 or later, then rerun `npx gt@latest init` (see https://generaltranslation.com/docs/react/tanstack-start/setup)',
+        },
+      ],
+    });
+  });
+
+  it('configures an app whose installed gt-tanstack-start has the Vite plugin', async () => {
+    write(
+      'node_modules/gt-tanstack-start/package.json',
+      JSON.stringify({
+        version: '12.0.0-samsara.1',
+        exports: { '.': './index.mjs', './plugin/vite': './vite.mjs' },
+      })
+    );
+
+    await tanstackStartSetup.apply(ctx());
+
+    expect(read('vite.config.ts')).toBe(configuredVite);
   });
 
   it('keeps a same-line comment on the last import', async () => {

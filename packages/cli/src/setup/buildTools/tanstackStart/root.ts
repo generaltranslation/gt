@@ -6,7 +6,6 @@ import type { ManualAction } from '../index.js';
 import { applyEdits, getCodeStyle, getImportEdit } from '../shared/edits.js';
 import { isJsxElementNamed } from '../shared/jsx.js';
 import {
-  callsFunction,
   getBindingAt,
   getLocalImport,
   usesName,
@@ -86,6 +85,26 @@ function getAlwaysReturned(fn: t.Function): t.Node | undefined {
     : undefined;
 }
 
+/**
+ * Whether the component is only rendered: used as a JSX element or passed as
+ * a route option. A call, an alias or any other use could run it outside a
+ * render, where a hook throws.
+ */
+function isOnlyRendered(
+  statements: t.Statement[],
+  component: { name: string; fn: t.Function }
+): boolean {
+  const binding = getBindingAt(statements, component.fn, component.name);
+  return (
+    binding !== undefined &&
+    binding.referencePaths.every(
+      ({ node, parent }) =>
+        node.type === 'JSXIdentifier' ||
+        (parent.type === 'ObjectProperty' && parent.value === node)
+    )
+  );
+}
+
 /** `<html lang={useLocale()}>` in place of a literal or missing lang. */
 function setLang(
   root: SourceFile,
@@ -102,7 +121,7 @@ function setLang(
   const component = getTopLevelComponents(statements).find(
     ({ fn }) => getAlwaysReturned(fn) === html
   );
-  if (!component || callsFunction(statements, component.name)) {
+  if (!component || !isOnlyRendered(statements, component)) {
     return undefined;
   }
   const local = getLocalImport(root, USE_LOCALE, Libraries.GT_TANSTACK_START);
@@ -170,6 +189,6 @@ export function configureRootLang(
 export function getRootLangAction(rootPath: string): ManualAction {
   return {
     whatHappened: `${rootPath} was not configured automatically`,
-    fix: `Set <html lang={${USE_LOCALE}()}> in the root route's document component, with import { ${USE_LOCALE} } from '${Libraries.GT_TANSTACK_START}', so the page language follows the resolved locale (see ${DOCS_URL})`,
+    fix: `Call const locale = ${USE_LOCALE}() at the top of the root route's document component, before any early return, and render <html lang={locale}>, with import { ${USE_LOCALE} } from '${Libraries.GT_TANSTACK_START}', so the page language follows the resolved locale (see ${DOCS_URL})`,
   };
 }
