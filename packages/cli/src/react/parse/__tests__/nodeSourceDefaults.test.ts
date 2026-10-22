@@ -176,7 +176,7 @@ main();
   );
 
   it.skipIf(!canDenyReads).each(['scripts/migrate.cjs', 'scripts'])(
-    'generate keeps saved translations when it cannot read %s',
+    'generate keeps saved entries when it cannot read %s',
     async (unreadable) => {
       writeHandler('server.js', 'From the root');
       writeHandler('scripts/migrate.cjs', 'From a script');
@@ -195,6 +195,7 @@ main();
       fs.chmodSync(unreadable, 0o000);
       await cli.generate();
 
+      expect(readJSON('_gt/en.json')).toEqual(source);
       expect(readJSON('_gt/fr.json')).toEqual(saved);
     }
   );
