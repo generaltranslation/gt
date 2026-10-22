@@ -60,7 +60,8 @@ async function runTransform(
 function resolveConfig(
   configPlugin: Plugin,
   root: string,
-  plugins: Plugin[]
+  plugins: Plugin[],
+  command: ResolvedConfig['command'] = 'serve'
 ): ReturnType<typeof vi.fn> {
   const warnOnce = vi.fn();
   const configResolved = configPlugin.configResolved;
@@ -69,7 +70,12 @@ function resolveConfig(
   }
   configResolved.call(
     {} as ThisParameterType<typeof configResolved>,
-    { root, plugins, logger: { warnOnce } } as unknown as ResolvedConfig
+    {
+      root,
+      plugins,
+      command,
+      logger: { warnOnce },
+    } as unknown as ResolvedConfig
   );
   return warnOnce;
 }
@@ -143,18 +149,21 @@ describe('gtTanstackStart', () => {
     expect(output).toContain('_hash: "');
   });
 
-  it('injects _hash into TanStack Router code-split route modules', async () => {
-    const { plugins, root } = createPlugins(BABEL);
-    const compiler = findPlugin(plugins, COMPILER_PLUGIN_NAME)!;
+  it.each(['tsr-split=component', 'tsr-shared=1'])(
+    'injects _hash into TanStack Router code-split route modules (?%s)',
+    async (query) => {
+      const { plugins, root } = createPlugins(BABEL);
+      const compiler = findPlugin(plugins, COMPILER_PLUGIN_NAME)!;
 
-    const output = await runTransform(
-      compiler,
-      T_FIXTURE,
-      `${path.join(root, 'src/routes/index.tsx')}?tsr-split=component`
-    );
+      const output = await runTransform(
+        compiler,
+        T_FIXTURE,
+        `${path.join(root, 'src/routes/index.tsx')}?${query}`
+      );
 
-    expect(output).toContain('_hash: "');
-  });
+      expect(output).toContain('_hash: "');
+    }
+  );
 
   it('skips other query modules', async () => {
     const { plugins, root } = createPlugins(BABEL);
@@ -255,13 +264,14 @@ function gtConfig(output?: string): string {
 /** Runs the plugin's resolveId and load hooks for the config module. */
 async function loadConfigModuleCode(
   configPlugin: Plugin,
-  root: string
+  root: string,
+  command: ResolvedConfig['command'] = 'serve'
 ): Promise<{
   code: string;
   watchFiles: string[];
   warnOnce: ReturnType<typeof vi.fn>;
 }> {
-  const warnOnce = resolveConfig(configPlugin, root, [configPlugin]);
+  const warnOnce = resolveConfig(configPlugin, root, [configPlugin], command);
   const resolveId = configPlugin.resolveId;
   const load = configPlugin.load;
   if (typeof resolveId !== 'function' || typeof load !== 'function') {
@@ -423,6 +433,30 @@ describe.sequential('gtTanstackStart config module', () => {
     expect(restarted).toBe(first);
   });
 
+  it('reads the config fresh for each build', async () => {
+    const { configPlugin, root } = createProject({
+      'gt.config.json': gtConfig(),
+    });
+    const { code: first } = await loadConfigModuleCode(
+      configPlugin,
+      root,
+      'build'
+    );
+    fs.writeFileSync(
+      path.join(root, 'gt.config.json'),
+      JSON.stringify({ defaultLocale: 'en', locales: ['en', 'de'] })
+    );
+
+    const { code: rebuilt } = await loadConfigModuleCode(
+      configPlugin,
+      root,
+      'build'
+    );
+
+    expect(rebuilt).not.toBe(first);
+    expect(rebuilt).toContain('"de"');
+  });
+
   it.each([
     { config: 'gt.config.json', changed: 'gt.config.json' },
     { config: 'config/gt.config.json', changed: 'config/gt.config.json' },
@@ -553,6 +587,13 @@ describe.sequential('gtTanstackStart config module', () => {
       output: 'src/_gt/[locale]/[locale].json',
       file: 'src/_gt/fr/fr.json',
       glob: '/src/_gt/*/*.json',
+    },
+    {
+      name: 'glob characters in the literal path',
+      config: 'gt.config.json',
+      output: 'src/_gt-{old,new}/[locale].json',
+      file: 'src/_gt-{old,new}/fr.json',
+      glob: '/src/_gt-\\{old,new\\}/*.json',
     },
     {
       // The gt CLI resolves output from the working directory, not the config.
