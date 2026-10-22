@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - samsara
 
 permissions:
   id-token: write # Required for OIDC
@@ -295,9 +296,9 @@ jobs:
           pnpm --filter gtx-cli run bin:restore
           pnpm --filter gtx-cli run build:clean
 
-  odysseus-release:
-    if: github.ref_name == 'odysseus'
-    name: Odysseus Release
+  samsara-release:
+    if: github.ref_name == 'samsara'
+    name: Samsara Prerelease
     runs-on: ubuntu-latest
     environment:
       name: 'release'
@@ -305,11 +306,11 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - name: Verify Odysseus prerelease mode
+      - name: Verify Samsara prerelease mode
         run: |
           test -f .changeset/pre.json
           test "$(jq -r '.mode' .changeset/pre.json)" = "pre"
-          test "$(jq -r '.tag' .changeset/pre.json)" = "odysseus"
+          test "$(jq -r '.tag' .changeset/pre.json)" = "samsara"
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
@@ -342,13 +343,15 @@ jobs:
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
-      - name: Create Odysseus Release Pull Request or Publish to npm
+      # Samsara publishes npm prereleases only. Stable CLI binary aliases, R2
+      # uploads, and PyPI releases remain exclusive to the main release job.
+      - name: Create Samsara release pull request or publish to npm
         id: changesets
         uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1
         with:
-          version: bash scripts/version-packages-odysseus.sh
+          version: bash scripts/version-packages-samsara.sh
           publish: pnpm run release
-          commit: '[ci] odysseus release'
-          title: '[ci] odysseus release'
+          commit: '[ci] samsara release'
+          title: '[ci] samsara release'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
