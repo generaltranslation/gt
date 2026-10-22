@@ -8,7 +8,6 @@ import { Libraries } from '../../../types/libraries.js';
 import { DEFAULT_VITE_TRANSLATIONS_DIR } from '../../../utils/constants.js';
 import {
   getLoaderExport,
-  getViteLoaderExport,
   writeTranslationStubs,
   writeViteLoader,
 } from '../../setupViteSPA.js';
@@ -18,19 +17,9 @@ import type {
   ManualAction,
   SetupResult,
 } from '../index.js';
-import {
-  findInitializeCall,
-  getStorageChangeAction,
-  passesLoader,
-} from '../shared/initializeGT.js';
 import { getLoaderUpdateActions } from '../shared/loader.js';
 import { readSourceFile } from '../shared/source.js';
 import { VITE_LOADER_FILE } from '../vite.js';
-import {
-  findPreviousSetup,
-  getPreviousSetupAction,
-  importsFromStart,
-} from './previousSetup.js';
 import { configureRootLang, getRootLangAction } from './root.js';
 import {
   callsRouterIntegration,
@@ -130,23 +119,13 @@ async function getLoaderExportActions(
 /**
  * Adds locale stubs, keeps an existing template loader pointing at the
  * translations directory and asks to update any other loader, since the Vite
- * plugin prefers a loader over the config. The previous setup's initializeGT
- * reads local files only through a loader passed to it, so it gets the
- * template and a request to pass it.
+ * plugin prefers a loader over the config.
  */
 async function syncTranslationFiles(
   ctx: BuildToolContext & { translationsDir: string }
 ): Promise<SetupResult> {
   const { appDirectory, translationsDir, previousTranslationsDir } = ctx;
-  const router = await readSourceFile(appDirectory, 'src/router');
-  const initializeCall =
-    router && findInitializeCall(router, Libraries.GT_TANSTACK_START);
-  const cdnRouter =
-    initializeCall &&
-    passesLoader(router, initializeCall.arguments[0], ctx) === false
-      ? router
-      : undefined;
-  const loader = await writeViteLoader({ ...ctx, create: Boolean(cdnRouter) });
+  const loader = await writeViteLoader({ ...ctx, create: false });
   if (loader === 'missing') await writeTranslationStubs(ctx);
   const { files, unreadableOption } = await findLoaders(appDirectory);
   const manualActions = files
@@ -165,17 +144,6 @@ async function syncTranslationFiles(
     );
   }
   manualActions.push(...(await getLoaderExportActions(appDirectory)));
-  const loaderExport =
-    cdnRouter && (await getViteLoaderExport(appDirectory, loader));
-  if (cdnRouter && loaderExport) {
-    manualActions.push(
-      getStorageChangeAction(cdnRouter, ctx, false, {
-        call: 'initializeGT({ ...gtConfig, loadTranslations })',
-        loaderImport: `import ${loaderExport === 'default' ? 'loadTranslations' : '{ loadTranslations }'} from './loadTranslations'`,
-        docsUrl: DOCS_URL,
-      })
-    );
-  }
   return {
     steps:
       loader === 'created' || loader === 'updated'
@@ -192,36 +160,12 @@ async function syncTranslationFiles(
  */
 async function getCDNStorageAction(
   ctx: BuildToolContext
-): Promise<ManualAction | null | undefined> {
+): Promise<ManualAction | null> {
   const { appDirectory, previousTranslationsDir } = ctx;
-  const router = await readSourceFile(appDirectory, 'src/router');
   // Name every loader: deleting only the first makes the plugin use the next.
   const { files, defaults, fromOption, unreadableOption } =
     await findLoaders(appDirectory);
   const loaders = files.join(', ');
-  // The previous setup passes the loader to initializeGT, which takes
-  // precedence over CDN loading.
-  if (router && importsFromStart(router, 'initializeGT')) {
-    const initializeCall = findInitializeCall(
-      router,
-      Libraries.GT_TANSTACK_START
-    );
-    if (
-      initializeCall &&
-      passesLoader(router, initializeCall.arguments[0], ctx) === false
-    ) {
-      return null;
-    }
-    if (previousTranslationsDir === undefined && !loaders) return undefined;
-    const loader =
-      previousTranslationsDir === undefined
-        ? `in ${loaders}`
-        : `for ${previousTranslationsDir}`;
-    return {
-      whatHappened: `Translations now load from the CDN, but initializeGT in ${router.path} may still receive the local loader ${loader}`,
-      fix: 'Remove the loadTranslations option and its import from the initializeGT() call so translations load from the CDN',
-    };
-  }
   if (unreadableOption && previousTranslationsDir !== undefined) {
     return {
       whatHappened: `Translations now load from the CDN, but ${UNREADABLE_LOADER}${loaders ? `, or ${Libraries.GT_TANSTACK_START} loads them with ${loaders}` : ''}`,
@@ -291,13 +235,6 @@ export const tanstackStartSetup: BuildToolSetup = {
     };
 
     const routerReady = callsRouterIntegration(router);
-    const previousSetup = routerReady
-      ? []
-      : await findPreviousSetup(appDirectory, router);
-    if (previousSetup.length > 0) {
-      manualActions.push(getPreviousSetupAction(previousSetup));
-      return { steps, manualActions };
-    }
 
     let viteReady = registersVitePlugin(viteConfig);
     if (viteReady) {
