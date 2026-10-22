@@ -1,0 +1,202 @@
+# THROWAWAY: validates the release.yml skip-build gating from PR #2504.
+# Never merged. Read-only token, no id-token, no environment, no secrets,
+# and no `changeset publish`, so nothing can reach npm or open a PR.
+name: Release Dry Run
+
+on:
+  push:
+    branches:
+      - e/release/dry-run-skip-build
+
+permissions:
+  contents: read
+
+jobs:
+  dry-run:
+    name: ${{ matrix.case }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Publish path: no changesets on disk, build must run.
+          - case: no-changesets
+            expect: 'false'
+            full: true
+          # Version path: build skipped, `changeset version` runs without
+          # dist, then the binary self-heal path builds CLI deps on demand.
+          - case: pending-changesets
+            expect: 'true'
+            full: true
+          - case: prerelease-all-consumed
+            expect: 'false'
+            full: false
+          - case: prerelease-one-pending
+            expect: 'true'
+            full: false
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 2
+
+      - name: Set up case
+        run: |
+          write_changeset() {
+            printf -- "---\n'gt-remark': patch\n---\n\nDry run %s\n" "$1" > ".changeset/$1.md"
+          }
+          case '${{ matrix.case }}' in
+            no-changesets) ;;
+            pending-changesets)
+              write_changeset dry-run-a
+              ;;
+            prerelease-all-consumed)
+              write_changeset dry-run-a
+              write_changeset dry-run-b
+              echo '{"mode":"pre","tag":"dry-run","initialVersions":{},"changesets":["dry-run-a","dry-run-b"]}' > .changeset/pre.json
+              ;;
+            prerelease-one-pending)
+              write_changeset dry-run-a
+              write_changeset dry-run-b
+              echo '{"mode":"pre","tag":"dry-run","initialVersions":{},"changesets":["dry-run-a"]}' > .changeset/pre.json
+              ;;
+          esac
+          ls -la .changeset
+
+      # Copied verbatim from release.yml.
+      - name: Detect unreleased changesets
+        id: changeset-state
+        # changesets/action only versions (opens the release PR) while
+        # unreleased changesets exist, and only publishes once none remain.
+        # Versioning needs no build output, so the build runs only for publish.
+        # In prerelease mode, consumed changesets stay on disk and are listed
+        # in pre.json.
+        run: |
+          consumed='[]'
+          if [ -f .changeset/pre.json ]; then
+            consumed=$(jq -c 'if .mode == "pre" then .changesets else [] end' .changeset/pre.json)
+          fi
+          has_changesets=false
+          for file in .changeset/*.md; do
+            [ -e "$file" ] || continue
+            name=$(basename "$file" .md)
+            [ "$name" = README ] && continue
+            if ! jq -e --arg name "$name" 'any(.[]; . == $name)' <<< "$consumed" > /dev/null; then
+              has_changesets=true
+              break
+            fi
+          done
+          echo "has_changesets=$has_changesets" >> "$GITHUB_OUTPUT"
+
+      - name: Assert detection
+        run: |
+          actual='${{ steps.changeset-state.outputs.has_changesets }}'
+          echo "has_changesets=$actual (expected ${{ matrix.expect }})"
+          test "$actual" = '${{ matrix.expect }}'
+
+      - name: Setup Rust
+        id: rust
+        if: matrix.full && steps.changeset-state.outputs.has_changesets == 'false'
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
+
+      - name: Setup development tools
+        if: matrix.full
+        uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3
+        with:
+          cache: true
+
+      - name: Get pnpm store directory
+        id: pnpm-store
+        if: matrix.full
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        if: matrix.full
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-
+
+      - name: Install Dependencies
+        if: matrix.full
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build packages
+        id: build
+        if: matrix.full && steps.changeset-state.outputs.has_changesets == 'false'
+        run: pnpm run build:release
+
+      - name: Assert step gating and dist state
+        if: matrix.full
+        run: |
+          rust='${{ steps.rust.outcome }}'
+          build='${{ steps.build.outcome }}'
+          echo "Setup Rust: $rust, Build packages: $build"
+          missing=()
+          present=()
+          for manifest in packages/*/package.json; do
+            dir=$(dirname "$manifest")
+            name=$(jq -r 'select(.private != true) | .name' "$manifest")
+            [ -n "$name" ] || continue
+            if [ -n "$(ls -A "$dir/dist" 2> /dev/null)" ]; then
+              present+=("$name")
+            else
+              missing+=("$name")
+            fi
+          done
+          echo "dist present (${#present[@]}): ${present[*]}"
+          echo "dist missing (${#missing[@]}): ${missing[*]}"
+          if [ '${{ matrix.expect }}' = 'false' ]; then
+            # Publish path: every public package must be publishable.
+            test "$rust" = success
+            test "$build" = success
+            test "${#missing[@]}" -eq 0
+          else
+            # Version path: nothing built.
+            test "$rust" = skipped
+            test "$build" = skipped
+            test "${#present[@]}" -eq 0
+          fi
+
+      # Stands in for changesets/action's version path, minus commit/push/PR.
+      - name: Run version command without dist
+        if: matrix.full && steps.changeset-state.outputs.has_changesets == 'true'
+        run: |
+          pnpm run version-packages
+          git status --short
+          git diff --exit-code --quiet -- packages/remark/package.json && {
+            echo "expected gt-remark to be versioned"
+            exit 1
+          }
+          test ! -e .changeset/dry-run-a.md
+        env:
+          # Read-only (permissions above); changelog-github only queries.
+          GITHUB_TOKEN: ${{ github.token }}
+
+      # Exercises the self-heal steps that release.yml adds for binaries on a
+      # versioning run, forcing should_release_bin.
+      - name: Build gt binary dependencies
+        if: matrix.full && steps.changeset-state.outputs.has_changesets == 'true'
+        run: pnpm exec turbo run build:release --filter='gt^...'
+
+      - name: Build gt binaries
+        if: matrix.full && steps.changeset-state.outputs.has_changesets == 'true'
+        run: pnpm --filter gt run build:bin:clean
+
+      - name: Build gtx-cli binary dependencies
+        if: matrix.full && steps.changeset-state.outputs.has_changesets == 'true'
+        run: pnpm exec turbo run build:release --filter='gtx-cli^...'
+
+      - name: Build gtx-cli binaries
+        if: matrix.full && steps.changeset-state.outputs.has_changesets == 'true'
+        run: pnpm --filter gtx-cli run build:bin:clean
+
+      - name: Assert binaries
+        if: matrix.full && steps.changeset-state.outputs.has_changesets == 'true'
+        run: |
+          ls -la packages/cli/binaries packages/gtx-cli/binaries
+          test -n "$(ls -A packages/cli/binaries)"
+          test -n "$(ls -A packages/gtx-cli/binaries)"
+          ./packages/cli/binaries/gt-linux-x64 --version
