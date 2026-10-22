@@ -42,6 +42,11 @@ function readJSON(file: string) {
 // chmod cannot take read access away on Windows or from root.
 const canDenyReads = process.platform !== 'win32' && process.getuid?.() !== 0;
 
+// Valid TypeScript, because TypeScript removes an import that names only a
+// type, but Babel's scope tracker throws on the two bindings of Foo.
+const importedTypeAndValue =
+  "import { Foo } from './types';\nlet Foo: Foo | undefined;\n";
+
 function writeHandler(file: string, text: string, library = 'gt-node') {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(
@@ -226,6 +231,49 @@ export async function handler() {
       'From a typed file',
       'From src',
     ]);
+  });
+
+  it('skips files that fail to parse, and scans the rest', async () => {
+    fs.writeFileSync('types.ts', 'export interface Foo { id: string }\n');
+    fs.writeFileSync('models.ts', importedTypeAndValue);
+    fs.writeFileSync('broken.js', 'const = ;\n');
+    writeHandler('src/app.ts', 'From src');
+    const skippedPaths: string[] = [];
+
+    const { updates, errors, warnings } = await createInlineUpdates(
+      Libraries.GT_NODE,
+      false,
+      undefined,
+      GT_PARSING_FLAGS_DEFAULT,
+      parsingOptions,
+      skippedPaths
+    );
+
+    expect(errors).toEqual([]);
+    expect(updates.map((update) => update.source)).toEqual(['From src']);
+    expect(skippedPaths.map((file) => path.basename(file)).sort()).toEqual([
+      'broken.js',
+      'models.ts',
+    ]);
+    expect(warnings.sort()).toEqual([
+      expect.stringMatching(/broken\.js.*Unexpected token/),
+      expect.stringMatching(/models\.ts.*buildError/),
+    ]);
+  });
+
+  it('still fails on a file that src matches and Babel cannot traverse', async () => {
+    fs.writeFileSync('types.ts', 'export interface Foo { id: string }\n');
+    fs.writeFileSync('models.ts', importedTypeAndValue);
+
+    await expect(
+      createInlineUpdates(
+        Libraries.GT_NODE,
+        false,
+        ['**/*.ts'],
+        GT_PARSING_FLAGS_DEFAULT,
+        parsingOptions
+      )
+    ).rejects.toThrow(/buildError/);
   });
 
   it('keeps the React default scope for other libraries', async () => {

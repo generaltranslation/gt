@@ -154,11 +154,11 @@ export class InlineCLI extends BaseCLI {
       }
       await saveJSON(translationFiles.gt, newData);
       logger.step('Source file saved successfully!');
-      // An unread path may hold the source of saved translations, so keep
+      // A skipped path may hold the source of saved translations, so keep
       // every saved translation.
       if (skippedPaths.length > 0) {
         logger.warn(
-          `Kept every saved translation because the scan could not read these paths:\n${skippedPaths.join('\n')}`
+          `Kept every saved translation because the scan skipped these paths:\n${skippedPaths.join('\n')}`
         );
       }
       // Also save translations (after merging with existing translations)

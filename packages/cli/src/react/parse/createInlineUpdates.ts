@@ -41,7 +41,7 @@ const traverse = traverseModule.default || traverseModule;
 
 /**
  * @param skippedPaths - Receives the folders and files that the gt-node
- * default scan skipped because it could not read them.
+ * default scan skipped because it could not read or parse them.
  */
 export async function createInlineUpdates(
   pkg: GTLibrary,
@@ -92,6 +92,23 @@ export async function createInlineUpdates(
       }
       throw error;
     }
+    if (!isNodeDefaultScan) {
+      extractFile(file, code);
+      continue;
+    }
+    // The whole-project scan also skips a file that fails to parse, or that
+    // Babel cannot traverse, such as TypeScript with an import and a variable
+    // of the same name. Files that src patterns match must be traversable.
+    try {
+      extractFile(file, code);
+    } catch (error) {
+      skippedPaths.push(file);
+      warnings.add(`Skipped ${file}, which failed to parse: ${error}`);
+    }
+  }
+
+  /** Adds the translatable content of one file to the scan results. */
+  function extractFile(file: string, code: string): void {
     let ast;
     try {
       ast = parse(code, {
@@ -101,8 +118,9 @@ export async function createInlineUpdates(
         plugins: ['jsx', 'typescript'],
       });
     } catch (error) {
+      if (isNodeDefaultScan) throw error;
       logger.error(`Error parsing file ${file}: ${error}`);
-      continue;
+      return;
     }
     removeTypeOnlyImports(ast);
 

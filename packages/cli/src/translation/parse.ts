@@ -26,7 +26,7 @@ import {
  * @param options - The options object
  * @param sourceDictionary - The source dictionary file path
  * @param pkg - The package name
- * @param skippedPaths - Receives the paths the scan could not read
+ * @param skippedPaths - Receives the paths the scan skipped
  * @returns An object containing the updates and errors
  */
 export async function createUpdates(
