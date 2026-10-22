@@ -342,6 +342,11 @@ export async function handler() {
       denied: ['server.spec.ts', 'src/routes/users.spec.mjs'],
       similar: 'routes/specials.js',
     },
+    {
+      entry: '*.d.{ts,mts,cts}',
+      denied: ['env.d.ts', 'src/types/express.d.mts', 'lib/legacy.d.cts'],
+      similar: 'routes/upload.ts',
+    },
   ])('skips $entry, but still scans $similar', async ({ denied, similar }) => {
     for (const file of [...denied, similar]) {
       writeHandler(file, `From ${file}`);

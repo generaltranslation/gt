@@ -52,6 +52,7 @@ export const DEFAULT_NODE_SRC_EXCLUDES = [
   '**/__tests__/**',
   '**/*.test.*',
   '**/*.spec.*',
+  '**/*.d.{ts,mts,cts}',
 ];
 
 export const DEFAULT_PYTHON_SRC_PATTERNS = ['**/*.py'];
