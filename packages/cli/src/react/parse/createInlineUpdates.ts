@@ -92,23 +92,11 @@ export async function createInlineUpdates(
       }
       throw error;
     }
-    if (!isNodeDefaultScan) {
-      extractFile(file, code);
-      continue;
-    }
     // The whole-project scan also skips a file that fails to parse, or that
     // Babel cannot traverse, such as TypeScript with an import and a variable
     // of the same name. Files that src patterns match must be traversable.
-    try {
-      extractFile(file, code);
-    } catch (error) {
-      skippedPaths.push(file);
-      warnings.add(`Skipped ${file}, which failed to parse: ${error}`);
-    }
-  }
-
-  /** Adds the translatable content of one file to the scan results. */
-  function extractFile(file: string, code: string): void {
+    // Later errors, such as a malformed tsconfig.json met while following an
+    // import, stop every scan, so no scan returns part of a file's entries.
     let ast;
     try {
       ast = parse(code, {
@@ -118,15 +106,23 @@ export async function createInlineUpdates(
         plugins: ['jsx', 'typescript'],
       });
     } catch (error) {
-      if (isNodeDefaultScan) throw error;
-      logger.error(`Error parsing file ${file}: ${error}`);
-      return;
+      if (isNodeDefaultScan) skipFile(file, error);
+      else logger.error(`Error parsing file ${file}: ${error}`);
+      continue;
     }
     removeTypeOnlyImports(ast);
 
     // First pass: collect imports and process translation functions
+    let pathsAndAliases;
+    try {
+      pathsAndAliases = getPathsAndAliases(ast, pkgs);
+    } catch (error) {
+      if (!isNodeDefaultScan) throw error;
+      skipFile(file, error);
+      continue;
+    }
     const { importAliases, inlineTranslationPaths, translationComponentPaths } =
-      getPathsAndAliases(ast, pkgs);
+      pathsAndAliases;
 
     // Process translation functions asynchronously
     for (const {
@@ -247,6 +243,12 @@ export async function createInlineUpdates(
         }
       }
     }
+  }
+
+  /** Records a file that the whole-project scan skips, with a warning. */
+  function skipFile(file: string, error: unknown): void {
+    skippedPaths.push(file);
+    warnings.add(`Skipped ${file}, which failed to parse: ${error}`);
   }
 
   // Warn once per scan about deprecated $-prefixed <T> props

@@ -5,6 +5,7 @@ import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createInlineUpdates } from '../createInlineUpdates.js';
 import { GT_PARSING_FLAGS_DEFAULT } from '../../../config/defaults.js';
+import { clearParsingCaches } from '../../jsx/utils/parseStringFunction.js';
 import { generateSettings } from '../../../config/generateSettings.js';
 import { InlineCLI } from '../../../cli/inline.js';
 import { Libraries } from '../../../types/libraries.js';
@@ -175,7 +176,7 @@ main();
   );
 
   it.skipIf(!canDenyReads).each(['scripts/migrate.cjs', 'scripts'])(
-    'generate keeps saved translations when it cannot read %s',
+    'generate keeps saved entries when it cannot read %s',
     async (unreadable) => {
       writeHandler('server.js', 'From the root');
       writeHandler('scripts/migrate.cjs', 'From a script');
@@ -194,9 +195,45 @@ main();
       fs.chmodSync(unreadable, 0o000);
       await cli.generate();
 
+      expect(readJSON('_gt/en.json')).toEqual(source);
       expect(readJSON('_gt/fr.json')).toEqual(saved);
     }
   );
+
+  it('generate stops when an imported helper meets a malformed tsconfig.json', async () => {
+    fs.writeFileSync(
+      'server.js',
+      `import { getGT } from 'gt-node';
+import { helper } from './helper.js';
+
+export async function handler() {
+  const gt = await getGT();
+  gt('Before');
+  helper(gt);
+  gt('After');
+}
+`
+    );
+    fs.writeFileSync(
+      'helper.js',
+      "export function helper(t) {\n  return t('From helper');\n}\n"
+    );
+    const cli = new GenerateCLI(new Command(), Libraries.GT_NODE);
+    await cli.generate();
+    const source: Record<string, string> = readJSON('_gt/en.json');
+    expect(Object.values(source).sort()).toEqual([
+      'After',
+      'Before',
+      'From helper',
+    ]);
+
+    fs.writeFileSync('tsconfig.json', '{');
+    // Each gt generate runs in a new process with empty caches.
+    clearParsingCaches();
+
+    await expect(cli.generate()).rejects.toThrow(/tsconfig\.json/);
+    expect(readJSON('_gt/en.json')).toEqual(source);
+  });
 
   it('scans TypeScript that gives a type and a value the same name', async () => {
     fs.writeFileSync('types.ts', 'export interface Foo { id: string }\n');
