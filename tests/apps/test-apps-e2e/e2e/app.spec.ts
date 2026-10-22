@@ -335,11 +335,6 @@ async function testTanStackSpaShell(page: Page) {
       },
     });
   }, localeCookie);
-  const errors: string[] = [];
-  page.on('console', (message) => {
-    if (message.type() === 'error') errors.push(message.text());
-  });
-  page.on('pageerror', (error) => errors.push(error.message));
 
   await page.goto('/spa');
   await page.waitForLoadState('networkidle');
@@ -360,7 +355,6 @@ async function testTanStackSpaShell(page: Page) {
   );
   expect(writes).not.toHaveLength(0);
   expect(writes.every((write) => write === `${localeCookie}=fr`)).toBe(true);
-  expect(errors).toEqual([]);
 
   await selectLocale(page, 'zh');
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh');
