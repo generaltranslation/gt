@@ -191,7 +191,7 @@ jobs:
         if: matrix.full && steps.changeset-state.outputs.has_changesets == 'true'
         run: |
           ls -la packages/cli/binaries
-          ./packages/cli/binaries/gt-linux-x64 --version
+          ./packages/cli/binaries/gt-linux-x64 --help
 
       - name: Build gtx-cli binary dependencies
         if: matrix.full && steps.changeset-state.outputs.has_changesets == 'true'
@@ -205,4 +205,4 @@ jobs:
         if: matrix.full && steps.changeset-state.outputs.has_changesets == 'true'
         run: |
           ls -la packages/gtx-cli/binaries
-          ./packages/gtx-cli/binaries/gtx-cli-linux-x64 --version
+          ./packages/gtx-cli/binaries/gtx-cli-linux-x64 --help
