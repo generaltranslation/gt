@@ -81,13 +81,15 @@ describe.sequential('createLocaleRewrite', () => {
     expect(output('/about')).toBe('/zh/about');
   });
 
-  it('round-trips internal paths that start with a locale-shaped segment', () => {
+  it('round-trips internal paths that start with a locale-shaped segment in a non-default locale', () => {
     locale = 'fr';
     expect(input('/fr/fr/about')).toBe('/fr/about');
     expect(output('/fr/about')).toBe('/fr/fr/about');
+  });
+
+  it('reserves locale codes as first route segments in the default locale', () => {
     locale = 'en';
-    expect(input('/fr/about')).toBe('/about');
-    expect(output('/fr/about')).toBe('/fr/about');
+    expect(input(output('/fr/about'))).toBe('/about');
   });
 
   it('does not mutate the URL it receives', () => {

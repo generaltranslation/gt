@@ -13,6 +13,10 @@ import type {
  * prefix and output adds the current non-default locale. Router strips its
  * basepath before input and adds it after output, so both see basepath-free
  * URLs.
+ *
+ * Locale codes are reserved as first route segments: the default locale is
+ * never prefixed, so its link to a route such as `/fr/about` reads back as the
+ * `fr` locale and `/about`.
  */
 export function createLocaleRewrite(
   getLocale: () => string

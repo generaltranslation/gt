@@ -49,6 +49,10 @@ export type GTIntegrableRouter = {
   isShell?: () => boolean;
 };
 
+/**
+ * The integration adds a `gt` key to the router's dehydrated data, so the
+ * app's own `dehydrate()` must not return one.
+ */
 export type SetupRouterGTIntegrationOptions = {
   router: GTIntegrableRouter;
   /**
