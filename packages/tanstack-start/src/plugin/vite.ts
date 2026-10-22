@@ -520,7 +520,7 @@ function createConfigModule(
     // literal, so its glob characters are escaped.
     const segments = pattern.split('[locale]');
     const glob = segments
-      .map((segment) => segment.replace(/[*?[\]{}()!+@]/g, '\\$&'))
+      .map((segment) => segment.replace(/[\\*?[\]{}()!+@]/g, '\\$&'))
       .join('*');
     lines.push(
       `const files = import.meta.glob(${JSON.stringify(glob)}, { import: 'default' });`,

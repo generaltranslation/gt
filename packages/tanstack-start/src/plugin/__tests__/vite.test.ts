@@ -591,9 +591,9 @@ describe.sequential('gtTanstackStart config module', () => {
     {
       name: 'glob characters in the literal path',
       config: 'gt.config.json',
-      output: 'src/_gt-{old,new}/[locale].json',
-      file: 'src/_gt-{old,new}/fr.json',
-      glob: '/src/_gt-\\{old,new\\}/*.json',
+      output: 'src/_gt-{old,new}\\x/[locale].json',
+      file: 'src/_gt-{old,new}\\x/fr.json',
+      glob: '/src/_gt-\\{old,new\\}\\\\x/*.json',
     },
     {
       // The gt CLI resolves output from the working directory, not the config.
