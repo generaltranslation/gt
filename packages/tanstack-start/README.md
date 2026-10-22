@@ -121,7 +121,9 @@ Changes to `gt.config.json` or these options apply after the dev server restarts
 
 To run the experimental GT compiler, which adds build-time hashes and build checks, pass `gtTanstackStart({ experimentalCompilerOptions: { type: 'babel' } })`. It is off by default, as in gt-next.
 
-When `localeRouting` is enabled, the integration also rewrites URLs so non-default locales are prefixed (`/fr/about`) while your routes and links stay locale-free. Pass `setupRouterGTIntegration({ router, localeRewrite: false })` if your app handles locale prefixes itself.
+When `localeRouting` is enabled, the integration also rewrites URLs so non-default locales are prefixed (`/fr/about`) while your routes and links stay locale-free. Pass `setupRouterGTIntegration({ router, localeRewrite: false })` if your app handles locale prefixes itself. With the rewrite, don't start a route with a locale code: in the default locale, a link to `/fr/about` reads back as the `fr` locale and `/about`.
+
+The integration stores its state under a `gt` key in the router's dehydrated data, so your router's own `dehydrate()` must not return a `gt` key.
 
 Then translate:
 
