@@ -67,20 +67,21 @@ function getRouterBasepath(): string {
   return process.env.TSS_ROUTER_BASEPATH || '/';
 }
 
+// Case-insensitive, as TanStack Router matches its basepath by default. The
+// returned basepath keeps the URL's own spelling.
 function splitBasepath(
   pathname: string,
   basepath: string
 ): { basepath: string; pathname: string } {
   const normalizedBasepath = `/${basepath.replace(/^\/+|\/+$/g, '')}`;
-  if (normalizedBasepath === '/' || pathname === normalizedBasepath) {
+  if (normalizedBasepath === '/') return { basepath: '', pathname };
+  const lowerPathname = pathname.toLowerCase();
+  const lowerBasepath = normalizedBasepath.toLowerCase();
+  if (lowerPathname === lowerBasepath)
+    return { basepath: pathname, pathname: '/' };
+  if (lowerPathname.startsWith(`${lowerBasepath}/`)) {
     return {
-      basepath: normalizedBasepath === '/' ? '' : normalizedBasepath,
-      pathname: pathname === normalizedBasepath ? '/' : pathname,
-    };
-  }
-  if (pathname.startsWith(`${normalizedBasepath}/`)) {
-    return {
-      basepath: normalizedBasepath,
+      basepath: pathname.slice(0, normalizedBasepath.length),
       pathname: pathname.slice(normalizedBasepath.length),
     };
   }
