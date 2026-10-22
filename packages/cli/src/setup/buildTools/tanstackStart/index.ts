@@ -104,9 +104,9 @@ function getUnreadableLoaderActions(
 
 /** The Vite plugin calls the default or loadTranslations export of a loader. */
 async function getLoaderExportActions(
-  appDirectory: string
+  appDirectory: string,
+  loader: string | undefined
 ): Promise<ManualAction[]> {
-  const [loader] = (await findLoaders(appDirectory)).files;
   if (!loader) return [];
   const content = await fs.promises.readFile(
     path.join(appDirectory, loader),
@@ -148,7 +148,7 @@ async function syncTranslationFiles(
       ...getUnreadableLoaderActions(translationsDir, previousTranslationsDir)
     );
   }
-  manualActions.push(...(await getLoaderExportActions(appDirectory)));
+  manualActions.push(...(await getLoaderExportActions(appDirectory, files[0])));
   return {
     steps:
       loader === 'created' || loader === 'updated'
