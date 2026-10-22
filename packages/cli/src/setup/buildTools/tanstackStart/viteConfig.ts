@@ -10,7 +10,6 @@ import {
   getLineIndent,
 } from '../shared/edits.js';
 import {
-  callsFunction,
   getBindingAt,
   getLocalImport,
   getPropertyName,
@@ -236,40 +235,6 @@ function findPluginsArray(
     : undefined;
 }
 
-/**
- * Whether a plugins element names a top-level declaration that calls the
- * plugin, as in `const gt = gtTanstackStart()` with `plugins: [...gt]`.
- */
-function referencesPluginCall(
-  statements: t.Statement[],
-  elements: t.ArrayExpression['elements'],
-  local: string
-): boolean {
-  const names = new Set<string>();
-  for (const element of elements) {
-    if (!element) continue;
-    t.traverseFast(element, (node) => {
-      if (node.type === 'Identifier') names.add(node.name);
-    });
-  }
-  return statements.some((statement) => {
-    const declaration =
-      statement.type === 'ExportNamedDeclaration'
-        ? statement.declaration
-        : statement;
-    const declared =
-      declaration?.type === 'FunctionDeclaration'
-        ? [declaration.id]
-        : declaration?.type === 'VariableDeclaration'
-          ? declaration.declarations.map(({ id }) => id)
-          : [];
-    return (
-      declared.some((id) => id?.type === 'Identifier' && names.has(id.name)) &&
-      callsFunction([statement], local)
-    );
-  });
-}
-
 /** The config with the plugin appended, or undefined when unsupported. */
 export function configureViteConfig(
   viteConfig: SourceFile,
@@ -290,12 +255,22 @@ export function configureViteConfig(
   if (!plugins || last === null || last?.extra?.parenthesized) {
     return undefined;
   }
-  // A call behind a condition or wrapper registers the plugin when it holds,
-  // so another call could register it twice.
+  // Any use of the import, such as a call behind a condition or an alias,
+  // may already register the plugin, so another call could register it twice.
   if (
     local &&
-    (callsFunction(plugins.elements, local) ||
-      referencesPluginCall(statements, plugins.elements, local))
+    usesName(
+      statements.filter((statement) => statement.type !== 'ImportDeclaration'),
+      [local]
+    )
+  ) {
+    return undefined;
+  }
+  // The new call would take over a comment that ends the last element's line,
+  // such as an eslint-disable-line.
+  if (
+    last &&
+    /\/[/*]/.test(content.slice(last.end!, plugins.end! - 1).split('\n')[0])
   ) {
     return undefined;
   }
