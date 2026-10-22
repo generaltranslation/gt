@@ -1,5 +1,12 @@
 # @generaltranslation/format
 
+## 0.1.10-samsara.0
+
+### Patch Changes
+
+- Updated dependencies [0604209]
+  - @generaltranslation/icu@0.1.3-samsara.0
+
 ## 0.1.9
 
 ### Patch Changes

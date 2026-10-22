@@ -1,5 +1,11 @@
 # @generaltranslation/icu
 
+## 0.1.3-samsara.0
+
+### Patch Changes
+
+- 0604209: Seed the Samsara prerelease channel.
+
 ## 0.1.2-iris.0
 
 ### Patch Changes

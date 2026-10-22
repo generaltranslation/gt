@@ -1,5 +1,11 @@
 # @generaltranslation/api
 
+## 0.5.5-samsara.0
+
+### Patch Changes
+
+- 0604209: Seed the Samsara prerelease channel.
+
 ## 0.5.4
 
 ### Patch Changes

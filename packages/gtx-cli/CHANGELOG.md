@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.26.7-samsara.0
+
+### Patch Changes
+
+- gt@2.26.7-samsara.0
+
 ## 2.26.6
 
 ### Patch Changes
