@@ -1,5 +1,11 @@
 # locadex
 
+## 1.0.249-samsara.0
+
+### Patch Changes
+
+- gt@2.26.7-samsara.0
+
 ## 1.0.248
 
 ### Patch Changes

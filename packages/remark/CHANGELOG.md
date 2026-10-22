@@ -1,5 +1,11 @@
 # gt-remark
 
+## 1.0.13-samsara.0
+
+### Patch Changes
+
+- 0604209: Seed the Samsara prerelease channel.
+
 ## 1.0.12-iris.0
 
 ### Patch Changes

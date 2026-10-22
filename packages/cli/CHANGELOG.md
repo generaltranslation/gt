@@ -1,5 +1,18 @@
 # gtx-cli
 
+## 2.26.7-samsara.0
+
+### Patch Changes
+
+- Updated dependencies [0604209]
+  - @generaltranslation/icu@0.1.3-samsara.0
+  - gt-remark@1.0.13-samsara.0
+  - generaltranslation@9.5.8-samsara.0
+  - @generaltranslation/format@0.1.10-samsara.0
+  - @generaltranslation/python-extractor@0.2.63-samsara.0
+  - @generaltranslation/supported-locales@2.1.44-samsara.0
+  - @generaltranslation/vue-extractor@0.1.22-samsara.0
+
 ## 2.26.6
 
 ### Patch Changes

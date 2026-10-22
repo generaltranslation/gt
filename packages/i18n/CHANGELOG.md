@@ -1,5 +1,12 @@
 # gt-i18n
 
+## 1.0.39-samsara.0
+
+### Patch Changes
+
+- generaltranslation@9.5.8-samsara.0
+- @generaltranslation/format@0.1.10-samsara.0
+
 ## 1.0.38
 
 ### Patch Changes

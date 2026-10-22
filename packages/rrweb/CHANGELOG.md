@@ -1,5 +1,11 @@
 # gt-rrweb
 
+## 0.2.1-samsara.0
+
+### Patch Changes
+
+- 0604209: Seed the Samsara prerelease channel.
+
 ## 0.2.0
 
 ### Minor Changes

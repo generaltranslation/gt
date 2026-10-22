@@ -1,5 +1,13 @@
 # gt-react
 
+## 11.4.15-samsara.0
+
+### Patch Changes
+
+- generaltranslation@9.5.8-samsara.0
+- gt-i18n@1.0.39-samsara.0
+- @generaltranslation/react-core@11.4.15-samsara.0
+
 ## 11.4.14
 
 ### Patch Changes

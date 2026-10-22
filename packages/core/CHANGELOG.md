@@ -1,5 +1,14 @@
 # generaltranslation
 
+## 9.5.8-samsara.0
+
+### Patch Changes
+
+- Updated dependencies [0604209]
+  - @generaltranslation/icu@0.1.3-samsara.0
+  - @generaltranslation/api@0.5.5-samsara.0
+  - @generaltranslation/format@0.1.10-samsara.0
+
 ## 9.5.7
 
 ### Patch Changes
