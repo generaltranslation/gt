@@ -18,3 +18,7 @@ jq '.baseBranch = "samsara" | .changelog = "@changesets/cli/changelog"' "$config
 mv "$config_updated" "$config_file"
 
 pnpm run version-packages
+
+# Changesets rewrites pre.json on every versioning run without the repository
+# formatting, which fails the lint check on the release branch.
+pnpm exec oxfmt .changeset/pre.json

@@ -1,0 +1,101 @@
+name: Samsara Sync Guard
+
+# Syncs from main must land on samsara as merge commits. A squashed sync drops
+# main's ancestry, so every later sync and the final samsara -> main merge
+# conflict on changes samsara already has. GitHub cannot restrict the merge
+# method per pull request, so sync pull requests must enable auto-merge with a
+# merge commit, which this check verifies. Feature pull requests pass as-is.
+#
+# A check cannot stop someone from choosing "Squash and merge" by hand once it
+# passes, or an admin from bypassing it, so the closed run also flags a sync
+# that was squashed anyway and explains how to restore the ancestry.
+
+on:
+  pull_request:
+    branches: [samsara]
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited
+      - auto_merge_enabled
+      - auto_merge_disabled
+      - closed
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  sync-merge-method:
+    name: Sync merge method
+    # Every open-state event runs the full check, including title and body
+    # edits: a skipped run counts as passing for a required check, and
+    # retargeting a pull request to samsara arrives as an edit.
+    if: github.event.action != 'closed' || github.event.pull_request.merged
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          filter: blob:none
+
+      - name: Require a merge commit for syncs from main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ACTION: ${{ github.event.action }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          git fetch --quiet --filter=blob:none origin main samsara
+
+          # The pull request brings in main commits when its newest common
+          # ancestor with main is not already part of the base.
+          is_sync() {
+            local main_base
+            main_base=$(git merge-base "$HEAD_SHA" origin/main)
+            ! git merge-base --is-ancestor "$main_base" "$1"
+          }
+
+          if [ "$ACTION" = "closed" ]; then
+            # A merge commit keeps the pull request head as a parent. A squash
+            # leaves one parent: samsara as it was before the merge.
+            if [ "$(git rev-list --parents -n 1 "$MERGE_SHA" | wc -w)" -gt 2 ]; then
+              echo "Merged with a merge commit."
+              exit 0
+            fi
+            if ! is_sync "$MERGE_SHA^"; then
+              echo "Not a sync from main; any merge method is allowed."
+              exit 0
+            fi
+            main_sha=$(git merge-base "$HEAD_SHA" origin/main)
+            echo "::error title=Sync from main was squashed::samsara lost main's ancestry. Restore it without changing any files: on a branch from samsara, run git merge -s ours $main_sha, then open and merge that pull request with a merge commit."
+            exit 1
+          fi
+
+          if ! is_sync "$BASE_SHA"; then
+            echo "No new commits from main; any merge method is allowed."
+            exit 0
+          fi
+
+          # Read the live setting so reruns see the current auto-merge state.
+          merge_method=$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" \
+            --json autoMergeRequest --jq '.autoMergeRequest.mergeMethod // ""')
+          if [ "$merge_method" = "MERGE" ]; then
+            echo "Sync from main will land as a merge commit."
+            exit 0
+          fi
+
+          echo "::error title=Sync from main must be a merge commit::This pull request brings commits from main into samsara. Enable auto-merge with a merge commit so it cannot be squashed: gh pr merge $PR_NUMBER --auto --merge"
+          exit 1

@@ -66,7 +66,5 @@
     "gt-bundle-example-vite-react": "0.0.0",
     "gt-bundle-example-vite-vue": "0.0.0"
   },
-  "changesets": [
-    "samsara-seed-prerelease"
-  ]
+  "changesets": ["samsara-seed-prerelease"]
 }
