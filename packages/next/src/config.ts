@@ -35,6 +35,7 @@ import {
   rootParamStability,
   turboConfigStable,
 } from './plugin/getStableNextVersionInfo';
+import { distDir, nodeRequire } from './plugin/nodeCompat';
 import { validateCompiler } from './config-dir/utils/validateCompiler';
 import {
   REQUEST_FUNCTION_ALIASES,
@@ -366,11 +367,11 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   if (mergedConfig.experimentalCompilerOptions?.type === 'swc') {
     try {
       if (turboPackEnabled) {
-        const absolutePath = path.resolve(__dirname, './gt_swc_plugin.wasm');
+        const absolutePath = path.resolve(distDir, './gt_swc_plugin.wasm');
         resolvedWasmFilePath =
           './' + path.relative(process.cwd(), absolutePath).replace(/\\/g, '/');
       } else {
-        resolvedWasmFilePath = path.resolve(__dirname, './gt_swc_plugin.wasm');
+        resolvedWasmFilePath = path.resolve(distDir, './gt_swc_plugin.wasm');
       }
     } catch (error) {
       console.error(
@@ -814,9 +815,9 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
         // Try to load GT compiler if available
         if (mergedConfig.experimentalCompilerOptions?.type === 'babel') {
           try {
-            const {
-              webpack: gtUnplugin,
-            } = require('@generaltranslation/compiler');
+            const { webpack: gtUnplugin } = nodeRequire(
+              '@generaltranslation/compiler'
+            );
             webpackConfig.plugins.unshift(
               gtUnplugin({
                 ...mergedConfig.experimentalCompilerOptions,
