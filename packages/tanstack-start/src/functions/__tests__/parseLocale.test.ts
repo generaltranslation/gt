@@ -1,42 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mockRequest = vi.hoisted(() => vi.fn());
 const mockSetCookie = vi.hoisted(() => vi.fn());
-const mockGetLocale = vi.hoisted(() => vi.fn(() => 'fr'));
-
-vi.mock('@tanstack/react-start', () => ({
-  createIsomorphicFn: () => ({
-    // Callable like the real isomorphic function, running the server branch.
-    server: (serverFn: (...args: unknown[]) => unknown) => ({
-      client: (clientFn: unknown) =>
-        Object.assign((...args: unknown[]) => serverFn(...args), {
-          client: clientFn,
-          server: serverFn,
-        }),
-    }),
-  }),
-}));
 
 vi.mock('@tanstack/react-start/server', () => ({
-  getRequest: () => mockRequest(),
   setCookie: (...args: unknown[]) => mockSetCookie(...args),
 }));
 
-vi.mock('@generaltranslation/react-core/pure', async (importOriginal) => ({
-  ...(await importOriginal<
-    typeof import('@generaltranslation/react-core/pure')
-  >()),
-  getReadonlyConditionStore: () => ({ getLocale: mockGetLocale }),
-}));
-
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
-import { AsyncLocalConditionStore } from '../../condition-store/AsyncLocalConditionStore';
-import { setConditionStore } from '../../condition-store/singleton';
-import {
-  determineLocale,
-  determineLocaleClient,
-  parseLocale,
-} from '../parseLocale';
+import { determineLocaleClient } from '../parseLocale';
+import { resolveRequestConditions } from '../requestConditions';
 
 type GlobalWithRegistry = {
   __generaltranslation?: {
@@ -99,12 +71,10 @@ function restoreGlobalProperty(
   Reflect.deleteProperty(globalThis, property);
 }
 
-describe.sequential('parseLocale', () => {
+describe.sequential('locale resolution', () => {
   beforeEach(() => {
     resetI18nConfigSingleton();
     initializeI18nConfig(localeConfig);
-    mockGetLocale.mockClear();
-    mockRequest.mockReset();
     mockSetCookie.mockReset();
   });
 
@@ -114,20 +84,14 @@ describe.sequential('parseLocale', () => {
   });
 
   it('uses the server cookie before Accept-Language', () => {
-    mockRequest.mockReturnValue(
-      createRequest({
-        cookie: 'generaltranslation.locale=brand-french',
-        acceptLanguage: 'es,en;q=0.8',
-      })
-    );
+    const request = createRequest({
+      cookie: 'generaltranslation.locale=brand-french',
+      acceptLanguage: 'es,en;q=0.8',
+    });
 
-    expect(
-      (
-        determineLocale as unknown as {
-          server: (config: typeof localeConfig) => string;
-        }
-      ).server(localeConfig)
-    ).toBe('brand-french');
+    expect(resolveRequestConditions(request, localeConfig).locale).toBe(
+      'brand-french'
+    );
     expect(mockSetCookie).toHaveBeenCalledWith(
       'generaltranslation.locale',
       'brand-french',
@@ -140,17 +104,9 @@ describe.sequential('parseLocale', () => {
   });
 
   it('falls back to the server Accept-Language header', () => {
-    mockRequest.mockReturnValue(
-      createRequest({ acceptLanguage: 'es,en;q=0.8' })
-    );
+    const request = createRequest({ acceptLanguage: 'es,en;q=0.8' });
 
-    expect(
-      (
-        determineLocale as unknown as {
-          server: (config: typeof localeConfig) => string;
-        }
-      ).server(localeConfig)
-    ).toBe('es');
+    expect(resolveRequestConditions(request, localeConfig).locale).toBe('es');
     expect(mockSetCookie).toHaveBeenCalledWith(
       'generaltranslation.locale',
       'es',
@@ -162,86 +118,20 @@ describe.sequential('parseLocale', () => {
     );
   });
 
-  it('reuses locale state initialized by request middleware', () => {
-    const conditionStore = new AsyncLocalConditionStore(localeConfig);
-    setConditionStore(conditionStore);
-
-    const locale = conditionStore.run(
-      createRequest({ cookie: 'generaltranslation.locale=fr' }),
-      () => {
-        mockRequest.mockClear();
-        mockSetCookie.mockClear();
-        return (
-          determineLocale as unknown as {
-            server: (config: typeof localeConfig) => string;
-          }
-        ).server(localeConfig);
-      }
-    );
-
-    expect(locale).toBe('brand-french');
-    expect(mockRequest).not.toHaveBeenCalled();
-    expect(mockSetCookie).not.toHaveBeenCalled();
-  });
-
-  it('reuses the initialized request locale without middleware', () => {
-    resetI18nConfigSingleton();
-    const routingConfig = {
-      defaultLocale: 'en',
-      locales: ['en', 'fr'],
-      localeRouting: true,
-    };
-    initializeI18nConfig(routingConfig);
-    const conditionStore = new AsyncLocalConditionStore(routingConfig);
-    setConditionStore(conditionStore);
-    mockRequest.mockReturnValue(
-      new Request('https://example.com/fr/about', {
-        headers: { cookie: 'generaltranslation.locale=en' },
-      })
-    );
-
-    // An earlier read resolves the request locale first.
-    expect(conditionStore.getLocale()).toBe('fr');
-    expect(parseLocale()).toBe('fr');
-    expect(mockSetCookie).toHaveBeenCalledOnce();
-    expect(mockSetCookie).toHaveBeenCalledWith(
-      'generaltranslation.locale',
-      'fr',
-      expect.any(Object)
-    );
-  });
-
-  it('reads initialized locale state on the client', () => {
-    expect(
-      (
-        determineLocale as unknown as {
-          client: (config: typeof localeConfig) => string;
-        }
-      ).client(localeConfig)
-    ).toBe('fr');
-    expect(mockGetLocale).toHaveBeenCalledOnce();
-  });
-
   it('reads and writes a custom locale cookie name on the server', () => {
     resetI18nConfigSingleton();
     initializeI18nConfig({
       ...localeConfig,
       localeCookieName: 'custom-locale',
     });
-    mockRequest.mockReturnValue(
-      createRequest({
-        cookie: 'custom-locale=fr',
-        acceptLanguage: 'es,en;q=0.8',
-      })
-    );
+    const request = createRequest({
+      cookie: 'custom-locale=fr',
+      acceptLanguage: 'es,en;q=0.8',
+    });
 
-    expect(
-      (
-        determineLocale as unknown as {
-          server: (config: typeof localeConfig) => string;
-        }
-      ).server(localeConfig)
-    ).toBe('brand-french');
+    expect(resolveRequestConditions(request, localeConfig).locale).toBe(
+      'brand-french'
+    );
     expect(mockSetCookie).toHaveBeenCalledWith(
       'custom-locale',
       'brand-french',

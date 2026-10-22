@@ -146,7 +146,6 @@ module.exports = [
 
   tanstack('gt-tanstack-start (client)', 'index.client'),
   tanstackNode('gt-tanstack-start (server)', 'index.server'),
-  tanstackNode('gt-tanstack-start/server', 'server'),
 
   reactNative('gt-react-native', 'index', '52 kB'),
   reactNativeNode('gt-react-native/plugin', 'plugin'),

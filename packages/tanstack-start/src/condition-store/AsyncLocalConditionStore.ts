@@ -1,4 +1,3 @@
-import { AsyncLocalStorage } from 'node:async_hooks';
 import { getRequest } from '@tanstack/react-start/server';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
@@ -20,10 +19,10 @@ const missingRequestScopeError = createDiagnosticMessage({
 });
 
 /**
- * Read-only ConditionStore backed by request-scoped AsyncLocalStorage.
+ * Read-only ConditionStore that resolves each TanStack Start request's
+ * conditions once, from Start's own request context.
  */
 export class AsyncLocalConditionStore implements ReadonlyConditionStoreInterface {
-  private readonly storage = new AsyncLocalStorage<RequestConditions>();
   private readonly requestConditions = new WeakMap<
     Request,
     RequestConditions
@@ -31,16 +30,6 @@ export class AsyncLocalConditionStore implements ReadonlyConditionStoreInterface
 
   constructor(private readonly config: InitializeGTParams) {}
 
-  run<T>(request: Request, callback: () => T, pathname?: string): T {
-    const conditions = resolveRequestConditions(request, this.config, pathname);
-    return this.storage.run(conditions, callback);
-  }
-
-  /**
-   * Read from the store rather than a module flag: the main and /server
-   * entrypoints are bundled separately but share this global store, so either
-   * one may have initialized it.
-   */
   isLocaleRoutingEnabled(): boolean {
     return this.config.localeRouting === true;
   }
@@ -58,13 +47,9 @@ export class AsyncLocalConditionStore implements ReadonlyConditionStoreInterface
   setEnableI18n = (_enableI18n: boolean): void => {};
 
   private getConditions(): RequestConditions {
-    const scoped = this.storage.getStore();
-    if (scoped) return scoped;
-
-    // Without gtMiddleware, fall back to Start's own request context and
-    // resolve once per request. Resolving writes the locale cookie, which only
-    // reaches the browser if this first read happens before Start sends the
-    // response headers (for example in a route loader, not in streamed content).
+    // Resolving writes the locale cookie, which only reaches the browser if
+    // this first read happens before Start sends the response headers (for
+    // example in a route loader, not in streamed content).
     let request: Request;
     try {
       request = getRequest();

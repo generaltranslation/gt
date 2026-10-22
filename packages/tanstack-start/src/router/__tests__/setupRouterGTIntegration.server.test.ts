@@ -26,6 +26,7 @@ vi.mock('@tanstack/react-start/server', () => ({
   setCookie: vi.fn(),
 }));
 
+import { getRequest } from '@tanstack/react-start/server';
 import { AsyncLocalConditionStore } from '../../condition-store/AsyncLocalConditionStore';
 import { setConditionStore } from '../../condition-store/singleton';
 import { setupRouterGTIntegration } from '../setupRouterGTIntegration.server';
@@ -82,9 +83,7 @@ describe.sequential('setupRouterGTIntegration server', () => {
     expect(output(router.options, '/about')).toBe('/about');
   });
 
-  it('reads locale routing from a store initialized through another entrypoint', () => {
-    // The main and /server entrypoints bundle their own copy of initializeGT;
-    // only the global condition store is shared between them.
+  it('reads locale routing and the request locale from the condition store', () => {
     const conditionStore = new AsyncLocalConditionStore({
       defaultLocale: 'en',
       locales: ['en', 'fr'],
@@ -96,11 +95,10 @@ describe.sequential('setupRouterGTIntegration server', () => {
     setupRouterGTIntegration({ router });
 
     expect(router.update.mock.calls[0][0]).toHaveProperty('rewrite');
-    expect(
-      conditionStore.run(new Request('https://example.com/fr/about'), () =>
-        output(router.options, '/about')
-      )
-    ).toBe('/fr/about');
+    vi.mocked(getRequest).mockReturnValueOnce(
+      new Request('https://example.com/fr/about')
+    );
+    expect(output(router.options, '/about')).toBe('/fr/about');
   });
 
   it('composes with the app rewrite', () => {
