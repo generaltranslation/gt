@@ -95,8 +95,10 @@ function isOnlyRendered(
   component: { name: string; fn: t.Function }
 ): boolean {
   const binding = getBindingAt(statements, component.fn, component.name);
+  // A same-named function expression or parameter hides the module binding,
+  // whose references are the ones that matter.
   return (
-    binding !== undefined &&
+    binding?.scope.block.type === 'Program' &&
     binding.referencePaths.every(
       ({ node, parent }) =>
         node.type === 'JSXIdentifier' ||

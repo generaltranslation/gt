@@ -895,6 +895,14 @@ export function getRouter() {
         'import { createRootRoute } from \'@tanstack/react-router\'\n\nfunction RootDocument() {\n  return <html lang="en"><body /></html>\n}\nconst renderDocument = RootDocument\nconst doc = renderDocument()\n\nexport const Route = createRootRoute({ shellComponent: () => doc })\n',
       ],
       [
+        'a same-named function expression called directly',
+        'import { createRootRoute } from \'@tanstack/react-router\'\n\nconst RootDocument = function RootDocument() {\n  return <html lang="en"><body /></html>\n}\nconst doc = RootDocument()\n\nexport const Route = createRootRoute({ shellComponent: () => doc })\n',
+      ],
+      [
+        'a document component whose parameter shadows its name',
+        'import { createRootRoute } from \'@tanstack/react-router\'\n\nfunction RootDocument(RootDocument) {\n  return <html lang="en"><body /></html>\n}\nconst doc = RootDocument()\n\nexport const Route = createRootRoute({ shellComponent: () => doc })\n',
+      ],
+      [
         'a document component called optionally',
         'import { createRootRoute } from \'@tanstack/react-router\'\n\nfunction RootDocument() {\n  return <html lang="en"><body /></html>\n}\nconst doc = RootDocument?.()\n\nexport const Route = createRootRoute({ shellComponent: () => doc })\n',
       ],
