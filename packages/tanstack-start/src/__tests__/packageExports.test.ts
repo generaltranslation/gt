@@ -116,15 +116,11 @@ describe.sequential('gt-tanstack-start package exports', () => {
       readdirSync(join(packageRoot, 'dist'))
         .filter((file) => /\.(cjs|mjs)$/.test(file))
         .sort()
-    ).toEqual(['index.client.mjs', 'index.server.mjs', 'server.mjs']);
+    ).toEqual(['index.client.mjs', 'index.server.mjs']);
   });
 
   it('references only declared dependencies from public declarations', () => {
-    for (const file of [
-      'index.client.d.mts',
-      'index.server.d.mts',
-      'server.d.mts',
-    ]) {
+    for (const file of ['index.client.d.mts', 'index.server.d.mts']) {
       const declaration = readFileSync(join(packageRoot, 'dist', file), 'utf8');
 
       expect(declaration).not.toMatch(
@@ -134,8 +130,7 @@ describe.sequential('gt-tanstack-start package exports', () => {
   });
 
   it('keeps Node.js builtins out of the browser entrypoint', () => {
-    // Browser bundlers cannot resolve Node.js builtins such as
-    // node:async_hooks, which backs the server request condition store.
+    // Browser bundlers cannot resolve Node.js builtins.
     const builtins = new Set(builtinModules);
     const specifiers = getImportSpecifiers(readDistFile('index.client.mjs'));
 
@@ -159,23 +154,20 @@ describe.sequential('gt-tanstack-start package exports', () => {
     }
   );
 
-  it('loads isomorphic helpers and middleware from the main ESM entrypoint', () => {
+  it('loads isomorphic helpers from the main ESM entrypoint', () => {
     node([
       '--input-type=module',
       '-e',
       `
         import assert from 'node:assert/strict';
-        import { GTProvider, getGT, getLocale, gtMiddleware, parseLocale, setupRouterGTIntegration } from 'gt-tanstack-start';
-        import { getGT as legacyGetGT, gtMiddleware as legacyGtMiddleware } from 'gt-tanstack-start/server';
+        import { getGT, getLocale, setupRouterGTIntegration } from 'gt-tanstack-start';
 
-        assert.equal(typeof GTProvider, 'function');
-        assert.equal(typeof parseLocale, 'function');
         assert.equal(typeof setupRouterGTIntegration, 'function');
         assert.equal(typeof getGT, 'function');
         assert.equal(typeof getLocale, 'function');
-        assert.equal(typeof gtMiddleware, 'object');
-        assert.equal(typeof legacyGetGT, 'function');
-        assert.equal(typeof legacyGtMiddleware, 'object');
+        await assert.rejects(import('gt-tanstack-start/server'), {
+          code: 'ERR_PACKAGE_PATH_NOT_EXPORTED',
+        });
       `,
     ]);
   });
@@ -227,12 +219,11 @@ describe.sequential('gt-tanstack-start package exports', () => {
       '-e',
       `
         import assert from 'node:assert/strict';
-        import { getGT, getLocale, gtMiddleware, initializeGT } from 'gt-tanstack-start';
+        import { getGT, getLocale, setupRouterGTIntegration } from 'gt-tanstack-start';
 
         assert.equal(typeof getGT, 'function');
         assert.equal(typeof getLocale, 'function');
-        assert.equal(typeof gtMiddleware, 'object');
-        assert.equal(typeof initializeGT, 'function');
+        assert.equal(typeof setupRouterGTIntegration, 'function');
       `,
     ]);
   });

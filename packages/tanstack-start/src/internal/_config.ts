@@ -2,8 +2,7 @@ import type { InitializeGTParams } from '../types/InitializeGTParams';
 
 /**
  * Replaced at build time by the gt-tanstack-start Vite plugin with the app's
- * gt.config.json, plugin options, dictionary and loaders. Without the plugin,
- * apps call initializeGT() themselves.
+ * gt.config.json, plugin options, dictionary and loaders.
  */
 export const config: InitializeGTParams | undefined = undefined;
 

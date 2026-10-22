@@ -5,12 +5,21 @@ const {
   mockDetermineLocaleClient,
   mockGetPathnameForLocale,
   mockInitializeReactGT,
+  pluginModule,
 } = vi.hoisted(() => ({
   mockCreateOrUpdateBrowserConditionStore: vi.fn(),
   mockDetermineLocaleClient: vi.fn(() => 'fr'),
   mockGetPathnameForLocale: vi.fn(() => '/fr/about'),
   mockInitializeReactGT: vi.fn(),
+  pluginModule: {
+    config: undefined as Record<string, unknown> | undefined,
+    loadTranslations: undefined,
+    dictionary: undefined,
+    loadDictionary: undefined,
+  },
 }));
+
+vi.mock('gt-tanstack-start/internal/_config', () => pluginModule);
 
 vi.mock('gt-react', () => ({
   createOrUpdateBrowserConditionStore: mockCreateOrUpdateBrowserConditionStore,
@@ -26,14 +35,18 @@ vi.mock('../../functions/localeRouting', () => ({
   getPathnameForLocale: mockGetPathnameForLocale,
 }));
 
-import {
-  getClientReload,
-  initializeGT,
-  isLocaleRoutingEnabled,
-} from '../initializeGT.client';
-import { GTProvider } from '../../provider/GTProvider.client';
+// Initialization runs once per module instance, so each case loads fresh
+// modules with its own plugin config.
+async function initializeWith(config: Record<string, unknown>) {
+  pluginModule.config = config;
+  vi.resetModules();
+  const setup = await import('../initializeGT.client');
+  const { GTProvider } = await import('../../provider/GTProvider.client');
+  setup.ensureInitialized();
+  return { ...setup, GTProvider };
+}
 
-describe('initializeGT client', () => {
+describe.sequential('client initialization', () => {
   beforeEach(() => {
     mockCreateOrUpdateBrowserConditionStore.mockReset();
     mockDetermineLocaleClient.mockClear();
@@ -42,7 +55,7 @@ describe('initializeGT client', () => {
     vi.unstubAllGlobals();
   });
 
-  it('reloads through the locale pathname when locale routing is enabled', () => {
+  it('reloads through the locale pathname when locale routing is enabled', async () => {
     const assign = vi.fn();
     vi.stubGlobal('window', {
       location: {
@@ -59,7 +72,7 @@ describe('initializeGT client', () => {
       localeRouting: true,
     };
 
-    initializeGT(config);
+    await initializeWith(config);
 
     const browserConfig =
       mockCreateOrUpdateBrowserConditionStore.mock.calls[0][0];
@@ -70,7 +83,7 @@ describe('initializeGT client', () => {
     );
   });
 
-  it('passes the initialized route reload to the provider without overriding a prop', () => {
+  it('passes the initialized route reload to the provider', async () => {
     const assign = vi.fn();
     vi.stubGlobal('window', {
       location: {
@@ -79,7 +92,7 @@ describe('initializeGT client', () => {
         assign,
       },
     });
-    initializeGT({
+    const { GTProvider, getClientReload } = await initializeWith({
       defaultLocale: 'en',
       locales: ['en', 'fr', 'de'],
       localeRouting: true,
@@ -102,14 +115,9 @@ describe('initializeGT client', () => {
     expect(assign).toHaveBeenCalledWith(
       'https://example.com/de/products?view=full#details'
     );
-
-    const customReload = vi.fn();
-    expect(GTProvider({ ...props, _reload: customReload }).props._reload).toBe(
-      customReload
-    );
   });
 
-  it('keeps protocol-relative pathnames on the current origin', () => {
+  it('keeps protocol-relative pathnames on the current origin', async () => {
     const assign = vi.fn();
     vi.stubGlobal('window', {
       location: {
@@ -122,7 +130,7 @@ describe('initializeGT client', () => {
     });
     mockGetPathnameForLocale.mockReturnValueOnce('//evil.example');
 
-    initializeGT({
+    await initializeWith({
       defaultLocale: 'en',
       locales: ['en', 'fr'],
       localeRouting: true,
@@ -136,29 +144,13 @@ describe('initializeGT client', () => {
     );
   });
 
-  it('preserves a custom reload when locale routing is enabled', () => {
-    const customReload = vi.fn();
-    const config = {
-      defaultLocale: 'en',
-      locales: ['en', 'fr'],
-      localeRouting: true,
-      _reload: customReload,
-    };
-
-    initializeGT(config);
-
-    const browserConfig =
-      mockCreateOrUpdateBrowserConditionStore.mock.calls.at(-1)![0];
-    expect(browserConfig._reload).toBe(customReload);
-  });
-
-  it('initializes React with the cookie locale', () => {
+  it('initializes React with the cookie locale', async () => {
     const config = {
       defaultLocale: 'en',
       locales: ['en', 'fr'],
     };
 
-    initializeGT(config);
+    await initializeWith(config);
 
     expect(mockInitializeReactGT).toHaveBeenCalledWith(config);
     expect(mockDetermineLocaleClient).toHaveBeenCalledWith(config);
@@ -171,11 +163,34 @@ describe('initializeGT client', () => {
     );
   });
 
-  it('exposes the initialized locale routing setting', () => {
-    initializeGT({ defaultLocale: 'en', locales: ['en'], localeRouting: true });
-    expect(isLocaleRoutingEnabled()).toBe(true);
+  it('exposes the initialized locale routing setting', async () => {
+    const routed = await initializeWith({
+      defaultLocale: 'en',
+      locales: ['en'],
+      localeRouting: true,
+    });
+    expect(routed.isLocaleRoutingEnabled()).toBe(true);
 
-    initializeGT({ defaultLocale: 'en', locales: ['en'] });
-    expect(isLocaleRoutingEnabled()).toBe(false);
+    const unrouted = await initializeWith({
+      defaultLocale: 'en',
+      locales: ['en'],
+    });
+    expect(unrouted.isLocaleRoutingEnabled()).toBe(false);
+  });
+
+  it('initializes once, and not without the plugin', async () => {
+    const setup = await initializeWith({
+      defaultLocale: 'en',
+      locales: ['en'],
+    });
+    setup.ensureInitialized();
+    expect(mockInitializeReactGT).toHaveBeenCalledOnce();
+
+    mockInitializeReactGT.mockReset();
+    pluginModule.config = undefined;
+    vi.resetModules();
+    const { ensureInitialized } = await import('../initializeGT.client');
+    ensureInitialized();
+    expect(mockInitializeReactGT).not.toHaveBeenCalled();
   });
 });

@@ -19,7 +19,7 @@ export type GTTanstackStartCompilerOptions = GTCompilerOptions & {
 };
 
 /**
- * initializeGT() settings that gt.config.json cannot hold. They override
+ * Runtime settings that gt.config.json cannot hold. They override
  * gt.config.json, as withGTConfig() options do in gt-next.
  */
 export type GTTanstackStartRuntimeOptions = Pick<
@@ -198,7 +198,7 @@ function readConfigFile(configFile: string): GTConfig {
 
 /**
  * Supplies gt-tanstack-start with the app's gt.config.json and translation
- * loader, so the app does not call initializeGT() or write a loader, and runs
+ * loader, so the app does not write a loader, and runs
  * the experimental GT compiler on the app's source when enabled.
  *
  * TanStack Start already processes gt-tanstack-start through Vite (it is

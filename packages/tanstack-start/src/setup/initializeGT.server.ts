@@ -13,7 +13,7 @@ import {
 } from '../condition-store/singleton';
 import type { InitializeGTParams } from '../types/InitializeGTParams';
 
-/** Whether the initialized config, manual or from the plugin, routes by locale. */
+/** Whether the plugin's config routes by locale. */
 export function isLocaleRoutingEnabled(): boolean {
   return (
     isConditionStoreInitialized() &&
@@ -28,18 +28,8 @@ function initialize(config: InitializeGTParams): void {
 }
 
 /**
- * @deprecated Add `gtTanstackStart()` from `gt-tanstack-start/plugin/vite` to
- * your Vite plugins and call `setupRouterGTIntegration({ router })` in
- * `getRouter()` instead. The plugin reads gt.config.json and takes the other
- * settings as options.
- */
-export function initializeGT(config: InitializeGTParams): void {
-  initialize(config);
-}
-
-/**
- * Initialize from the Vite plugin's config unless the app already called
- * initializeGT(). Without the plugin this is a no-op.
+ * Initialize once from the Vite plugin's config. Without the plugin this is a
+ * no-op, and reading request state throws the plugin setup error.
  */
 export function ensureInitialized(): void {
   if (isConditionStoreInitialized() || !pluginConfig) return;

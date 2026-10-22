@@ -1,6 +1,3 @@
-export { parseLocale } from './functions/parseLocale';
-export type { InitializeGTParams } from './types/InitializeGTParams';
-
 export {
   // ===== Components ===== //
   Branch,
@@ -38,6 +35,5 @@ export {
   decodeVars,
   mFallback,
   gtFallback,
-  getTranslationsSnapshot,
   t,
 } from 'gt-react';

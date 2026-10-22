@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
-import { setCookie } from '@tanstack/react-start/server';
+import { getRequest, setCookie } from '@tanstack/react-start/server';
 import { AsyncLocalConditionStore } from '../../condition-store/AsyncLocalConditionStore';
 
 vi.mock('@tanstack/react-start/server', () => ({
+  getRequest: vi.fn(),
   setCookie: vi.fn(),
 }));
 
@@ -16,6 +17,11 @@ const config = {
   },
   localeRouting: true,
 };
+
+function readLocale(store: AsyncLocalConditionStore, request: Request) {
+  vi.mocked(getRequest).mockReturnValueOnce(request);
+  return store.getLocale();
+}
 
 describe('request locale aliases', () => {
   beforeEach(() => {
@@ -43,7 +49,7 @@ describe('request locale aliases', () => {
         headers: headers as Record<string, string>,
       });
 
-      expect(store.run(request, () => store.getLocale())).toBe('en-gb');
+      expect(readLocale(store, request)).toBe('en-gb');
       expect(setCookie).toHaveBeenCalledWith(
         'generaltranslation.locale',
         'en-gb',
@@ -58,7 +64,7 @@ describe('request locale aliases', () => {
       headers: { 'accept-language': 'ja' },
     });
 
-    expect(store.run(request, () => store.getLocale())).toBe('en-us');
+    expect(readLocale(store, request)).toBe('en-us');
   });
 
   it('preserves canonical codes without a mapping', () => {
@@ -73,6 +79,6 @@ describe('request locale aliases', () => {
       headers: { 'accept-language': 'en-GB' },
     });
 
-    expect(store.run(request, () => store.getLocale())).toBe('en-GB');
+    expect(readLocale(store, request)).toBe('en-GB');
   });
 });

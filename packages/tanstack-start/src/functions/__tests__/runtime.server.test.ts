@@ -39,15 +39,16 @@ vi.mock('gt-i18n/internal', async (importOriginal) => ({
 }));
 
 vi.mock('@tanstack/react-start/server', () => ({
+  getRequest: vi.fn(() => {
+    throw new Error('No StartEvent found in AsyncLocalStorage.');
+  }),
   setCookie: vi.fn(),
 }));
 
+import { getRequest } from '@tanstack/react-start/server';
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 import { AsyncLocalConditionStore } from '../../condition-store/AsyncLocalConditionStore';
-import {
-  getConditionStore,
-  setConditionStore,
-} from '../../condition-store/singleton';
+import { setConditionStore } from '../../condition-store/singleton';
 import {
   getEnableI18n,
   getGT,
@@ -102,19 +103,19 @@ describe.sequential('isomorphic translation functions', () => {
   it('passes request conditions to the internal translation functions', async () => {
     const messages = [{ message: 'Hello' }];
 
-    await getConditionStore().run(
+    vi.mocked(getRequest).mockReturnValue(
       new Request('https://example.com', {
         headers: {
           cookie:
             'generaltranslation.locale=fr; generaltranslation.region=FR; generaltranslation.enable-i18n=false',
         },
-      }),
-      async () => {
-        await expect(getGT(messages)).resolves.toBe('gt');
-        await expect(getMessages()).resolves.toBe('messages');
-        await expect(getTranslations('metadata')).resolves.toBe('translations');
-      }
+      })
     );
+
+    await expect(getGT(messages)).resolves.toBe('gt');
+    await expect(getMessages()).resolves.toBe('messages');
+    await expect(getTranslations('metadata')).resolves.toBe('translations');
+    vi.mocked(getRequest).mockRestore();
 
     expect(mockGetGTInternal).toHaveBeenCalledWith(
       { locale: 'fr', enableI18n: false },

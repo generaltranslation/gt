@@ -83,13 +83,6 @@
       },
       "default": "./dist/index.server.mjs"
     },
-    "./server": {
-      "import": {
-        "types": "./dist/server.d.mts",
-        "default": "./dist/server.mjs"
-      },
-      "default": "./dist/server.mjs"
-    },
     "./plugin/vite": {
       "import": {
         "types": "./dist/plugin/vite.d.mts",

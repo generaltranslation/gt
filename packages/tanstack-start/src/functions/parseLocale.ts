@@ -1,57 +1,8 @@
-import { createIsomorphicFn } from '@tanstack/react-start';
-import { getRequest } from '@tanstack/react-start/server';
-import {
-  getI18nConfig,
-  getReadonlyConditionStore,
-} from '@generaltranslation/react-core/pure';
+import { getI18nConfig } from '@generaltranslation/react-core/pure';
 import { getCookieValue } from 'gt-i18n/internal';
 import type { LocaleResolverConfig } from 'gt-i18n/internal/types';
-import {
-  getConditionStore,
-  isConditionStoreInitialized,
-} from '../condition-store/singleton';
 import type { InitializeGTParams } from '../types/InitializeGTParams';
 import { getLocaleFromPath } from './localeRouting';
-import { resolveRequestConditions } from './requestConditions';
-
-export const determineLocale = createIsomorphicFn()
-  .server(determineLocaleServer)
-  .client(() => getReadonlyConditionStore().getLocale());
-
-/**
- * Resolve the user's locale for the current TanStack Start request or browser.
- *
- * @deprecated Use `getLocale()` instead. Once GT is initialized, this returns
- * the same request locale; it is retained as a fallback for server setups
- * that have not initialized GT, where it resolves the locale from the
- * request's cookie and Accept-Language header.
- */
-export function parseLocale(): string {
-  const i18nConfig = getI18nConfig();
-  return determineLocale({
-    defaultLocale: i18nConfig.getDefaultLocale(),
-    locales: i18nConfig.getLocales(),
-    customMapping: i18nConfig.getCustomMapping(),
-  });
-}
-
-function determineLocaleServer({
-  defaultLocale,
-  locales,
-  customMapping,
-}: LocaleResolverConfig) {
-  // The store resolves each request once, with or without gtMiddleware, so
-  // this matches getLocale() and writes no conflicting locale cookie.
-  if (isConditionStoreInitialized()) {
-    return getConditionStore().getLocale();
-  }
-
-  return resolveRequestConditions(getRequest(), {
-    defaultLocale,
-    locales,
-    customMapping,
-  }).locale;
-}
 
 /**
  * Read the server-synchronized locale cookie during client initialization.

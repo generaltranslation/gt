@@ -27,7 +27,6 @@ const deps = {
 const entries: Record<string, string> = {
   'index.client': 'src/index.client.ts',
   'index.server': 'src/index.server.ts',
-  server: 'src/server.ts',
   'plugin/vite': 'src/plugin/vite.ts',
   'internal/_config': 'src/internal/_config.ts',
 };

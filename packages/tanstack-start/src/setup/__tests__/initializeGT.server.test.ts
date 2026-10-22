@@ -1,19 +1,31 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockConditionStore, mockInitializeReactGT, mockStoreConstructor } =
-  vi.hoisted(() => {
-    const conditionStore = {
-      id: 'condition-store',
-      isLocaleRoutingEnabled: vi.fn(() => true),
-    };
-    return {
-      mockConditionStore: conditionStore,
-      mockInitializeReactGT: vi.fn(),
-      mockStoreConstructor: vi.fn(function () {
-        return conditionStore;
-      }),
-    };
-  });
+const {
+  mockConditionStore,
+  mockInitializeReactGT,
+  mockStoreConstructor,
+  pluginModule,
+} = vi.hoisted(() => {
+  const conditionStore = {
+    id: 'condition-store',
+    isLocaleRoutingEnabled: vi.fn(() => true),
+  };
+  return {
+    mockConditionStore: conditionStore,
+    mockInitializeReactGT: vi.fn(),
+    mockStoreConstructor: vi.fn(function () {
+      return conditionStore;
+    }),
+    pluginModule: {
+      config: undefined as Record<string, unknown> | undefined,
+      loadTranslations: undefined,
+      dictionary: undefined,
+      loadDictionary: undefined,
+    },
+  };
+});
+
+vi.mock('gt-tanstack-start/internal/_config', () => pluginModule);
 
 vi.mock('gt-react', () => ({
   initializeGT: mockInitializeReactGT,
@@ -24,7 +36,10 @@ vi.mock('../../condition-store/AsyncLocalConditionStore', () => ({
 }));
 
 import { getConditionStore } from '../../condition-store/singleton';
-import { initializeGT, isLocaleRoutingEnabled } from '../initializeGT.server';
+import {
+  ensureInitialized,
+  isLocaleRoutingEnabled,
+} from '../initializeGT.server';
 
 type GlobalWithRegistry = {
   __generaltranslation?: {
@@ -42,30 +57,44 @@ function resetConditionStoreSingleton() {
   }
 }
 
-describe.sequential('initializeGT server', () => {
+describe.sequential('server initialization', () => {
   beforeEach(() => {
     resetConditionStoreSingleton();
     mockInitializeReactGT.mockReset();
     mockStoreConstructor.mockClear();
   });
 
-  it('initializes React and the request condition store with the same config', () => {
-    const config = {
-      defaultLocale: 'en',
-      locales: ['en', 'fr'],
-    };
+  it('initializes React and the request condition store once with the same config', () => {
+    pluginModule.config = { defaultLocale: 'en', locales: ['en', 'fr'] };
 
-    initializeGT(config);
+    ensureInitialized();
+    ensureInitialized();
 
-    expect(mockInitializeReactGT).toHaveBeenCalledWith(config);
-    expect(mockStoreConstructor).toHaveBeenCalledWith(config);
+    expect(mockInitializeReactGT).toHaveBeenCalledOnce();
+    expect(mockStoreConstructor).toHaveBeenCalledWith(
+      mockInitializeReactGT.mock.calls[0][0]
+    );
     expect(getConditionStore()).toBe(mockConditionStore);
+  });
+
+  it('does nothing without the plugin', () => {
+    pluginModule.config = undefined;
+
+    ensureInitialized();
+
+    expect(mockInitializeReactGT).not.toHaveBeenCalled();
+    expect(isLocaleRoutingEnabled()).toBe(false);
   });
 
   it('reads locale routing from the initialized condition store', () => {
     expect(isLocaleRoutingEnabled()).toBe(false);
 
-    initializeGT({ defaultLocale: 'en', locales: ['en'], localeRouting: true });
+    pluginModule.config = {
+      defaultLocale: 'en',
+      locales: ['en'],
+      localeRouting: true,
+    };
+    ensureInitialized();
     expect(isLocaleRoutingEnabled()).toBe(true);
 
     mockConditionStore.isLocaleRoutingEnabled.mockReturnValue(false);

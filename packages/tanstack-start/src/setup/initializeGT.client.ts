@@ -21,7 +21,7 @@ export function getClientReload(): SharedGTProviderProps['_reload'] {
   return clientReload;
 }
 
-/** Whether the initialized config, manual or from the plugin, routes by locale. */
+/** Whether the plugin's config routes by locale. */
 export function isLocaleRoutingEnabled(): boolean {
   return localeRoutingEnabled;
 }
@@ -31,45 +31,31 @@ export function isLocaleRoutingEnabled(): boolean {
  * localeRouting) or the locale cookie.
  */
 function initialize(config: InitializeGTParams): void {
-  const browserConfig =
-    config.localeRouting && !config._reload
-      ? {
-          ...config,
-          _reload: ({ locale }: { locale: string }) => {
-            const pathname = getPathnameForLocale(
-              window.location.pathname,
-              locale
-            );
-            const destination = new URL(window.location.href);
-            destination.pathname = pathname;
-            window.location.assign(destination.href);
-          },
-        }
-      : config;
+  const reload: SharedGTProviderProps['_reload'] = config.localeRouting
+    ? ({ locale }) => {
+        const destination = new URL(window.location.href);
+        destination.pathname = getPathnameForLocale(
+          window.location.pathname,
+          locale
+        );
+        window.location.assign(destination.href);
+      }
+    : undefined;
 
   initializeReactGT(config);
   createOrUpdateBrowserConditionStore({
-    ...browserConfig,
+    ...config,
+    _reload: reload,
     locale: determineLocaleClient(config),
   });
-  clientReload = browserConfig._reload;
+  clientReload = reload;
   localeRoutingEnabled = config.localeRouting === true;
   initialized = true;
 }
 
 /**
- * @deprecated Add `gtTanstackStart()` from `gt-tanstack-start/plugin/vite` to
- * your Vite plugins and call `setupRouterGTIntegration({ router })` in
- * `getRouter()` instead. The plugin reads gt.config.json and takes the other
- * settings as options.
- */
-export function initializeGT(config: InitializeGTParams): void {
-  initialize(config);
-}
-
-/**
- * Initialize from the Vite plugin's config unless the app already called
- * initializeGT(). Without the plugin this is a no-op.
+ * Initialize once from the Vite plugin's config. Without the plugin this is a
+ * no-op.
  */
 export function ensureInitialized(): void {
   if (initialized || !pluginConfig) return;

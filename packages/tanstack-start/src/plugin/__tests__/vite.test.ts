@@ -585,7 +585,7 @@ describe.sequential('gtTanstackStart config module', () => {
     }
   );
 
-  it('adds initializeGT settings from the plugin options over gt.config.json', async () => {
+  it('adds runtime settings from the plugin options over gt.config.json', async () => {
     const { configPlugin, root } = createProject(
       {
         'gt.config.json': JSON.stringify({
