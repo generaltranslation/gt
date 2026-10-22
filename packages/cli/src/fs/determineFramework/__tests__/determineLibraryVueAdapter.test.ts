@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Libraries } from '../../../types/libraries.js';
-import { determineLibrary, determineLibraryForCLI } from '../index.js';
+import { determineLibraryForCLI } from '../index.js';
 
 const initialCwd = process.cwd();
 const temporaryDirectories: string[] = [];
@@ -15,7 +15,7 @@ afterEach(() => {
   }
 });
 
-describe('determineLibrary Vue adapter', () => {
+describe('determineLibraryForCLI Vue adapter', () => {
   it.each([
     ['Next', Libraries.GT_NEXT, Libraries.GT_NEXT],
     [
@@ -38,10 +38,6 @@ describe('determineLibrary Vue adapter', () => {
       });
       process.chdir(root);
 
-      expect(determineLibrary()).toEqual({
-        library: expected,
-        additionalModules: [],
-      });
       expect(determineLibraryForCLI()).toEqual({
         library: expected,
         additionalModules: [],
@@ -59,7 +55,7 @@ describe('determineLibrary Vue adapter', () => {
     });
     process.chdir(root);
 
-    expect(determineLibrary().library).toBe(Libraries.GT_FASTAPI);
+    expect(determineLibraryForCLI().library).toBe(Libraries.GT_FASTAPI);
   });
 
   it('selects gt-vue when it is the only direct supported runtime', () => {
@@ -70,10 +66,6 @@ describe('determineLibrary Vue adapter', () => {
     });
     process.chdir(root);
 
-    expect(determineLibrary()).toEqual({
-      library: Libraries.GT_VUE,
-      additionalModules: [],
-    });
     expect(determineLibraryForCLI()).toEqual({
       library: Libraries.GT_VUE,
       additionalModules: [],
@@ -115,11 +107,11 @@ describe('determineLibrary Vue adapter', () => {
     const root = createFixture(files);
     process.chdir(root);
 
-    expect(determineLibrary()).toEqual({
+    expect(determineLibraryForCLI()).toEqual({
       library: 'base',
       additionalModules: [],
+      directlyDeclaresVue: false,
     });
-    expect(determineLibraryForCLI().directlyDeclaresVue).toBe(false);
   });
 });
 

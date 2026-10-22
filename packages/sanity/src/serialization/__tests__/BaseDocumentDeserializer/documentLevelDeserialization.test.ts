@@ -4,7 +4,7 @@ import { documentLevelArticle } from '../BaseDocumentSerializer/utils';
 import { getDeserialized, toPlainText } from '../helpers';
 
 test('Global test of working doc-level functionality and snapshot match', () => {
-  const deserialized = getDeserialized(documentLevelArticle, 'document');
+  const deserialized = getDeserialized(documentLevelArticle);
   expect(deserialized).toMatchSnapshot();
 });
 
@@ -13,7 +13,7 @@ test('Global test of working doc-level functionality and snapshot match', () => 
  */
 
 test('String and text types get deserialized correctly at top-level -- document level', () => {
-  const deserialized = getDeserialized(documentLevelArticle, 'document');
+  const deserialized = getDeserialized(documentLevelArticle);
   expect(deserialized.title).toEqual(documentLevelArticle.title);
   expect(deserialized.snippet).toEqual(documentLevelArticle.snippet);
 });
@@ -22,7 +22,7 @@ test('String and text types get deserialized correctly at top-level -- document 
  * Presence and accuracy of fields in "vanilla" deserialization -- objects
  */
 test('Nested object contains accurate values -- document level', () => {
-  const deserialized = getDeserialized(documentLevelArticle, 'document');
+  const deserialized = getDeserialized(documentLevelArticle);
   const origTitle = documentLevelArticle.config.title;
   const deserializedTitle = deserialized.config.title;
   expect(origTitle).toEqual(deserializedTitle);
@@ -42,7 +42,7 @@ test('Nested object contains accurate values -- document level', () => {
 });
 
 test('Nested object in an object contains accurate values -- document level', () => {
-  const deserialized = getDeserialized(documentLevelArticle, 'document');
+  const deserialized = getDeserialized(documentLevelArticle);
   const origNestedObject = documentLevelArticle.config.objectAsField;
   const deserializedNestedObject = deserialized.config.objectAsField;
 
@@ -66,7 +66,7 @@ test('Nested object in an object contains accurate values -- document level', ()
  */
 
 test('Array contains all serializable blocks with keys, in order -- document level', () => {
-  const deserialized = getDeserialized(documentLevelArticle, 'document');
+  const deserialized = getDeserialized(documentLevelArticle);
   const origKeys = documentLevelArticle.content.map(
     (block: PortableTextBlock) => block._key
   );
@@ -77,14 +77,14 @@ test('Array contains all serializable blocks with keys, in order -- document lev
 });
 
 test('Array contains top-level block text -- document level', () => {
-  const deserialized = getDeserialized(documentLevelArticle, 'document');
+  const deserialized = getDeserialized(documentLevelArticle);
   expect(toPlainText(deserialized.content)).toEqual(
     toPlainText(documentLevelArticle.content)
   );
 });
 
 test('Object in array contains accurate values in nested object -- document level', () => {
-  const deserialized = getDeserialized(documentLevelArticle, 'document');
+  const deserialized = getDeserialized(documentLevelArticle);
   const origObject = documentLevelArticle.content.find(
     (block: Record<string, unknown>) => block._type === 'objectField'
   )!;

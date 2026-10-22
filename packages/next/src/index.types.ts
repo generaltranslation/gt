@@ -339,7 +339,7 @@ Plural._gtt = 'plural';
 /**
  * A dropdown component that allows users to select a locale.
  * @param {string[]} locales - An optional list of locales to use for the dropdown. If not provided, the list of locales from the `<GTProvider>` context is used.
- * @param {object} customNames - An optional object to map locales to custom names.
+ * @param {CustomMapping} [customMapping] - An optional object to map locales to custom display names, emojis, or other properties.
  * @returns {React.ReactElement | null} The rendered locale dropdown component or null to prevent rendering.
  */
 export const LocaleSelector: typeof _LocaleSelector = () => {
@@ -359,8 +359,7 @@ export const RegionSelector: typeof _RegionSelector = () => {
  * Read the active locale resolved by Next.js internationalized routing.
  *
  * @param context - The GetServerSideProps context for the request.
- * @returns The active Next.js locale, or the legacy request-detected locale
- * when Next.js does not provide one.
+ * @returns The active Next.js locale, or the default locale when Next.js does not provide one.
  */
 export function parseLocale<
   Params extends ParsedUrlQuery = ParsedUrlQuery,

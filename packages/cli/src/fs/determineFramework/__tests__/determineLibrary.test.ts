@@ -16,7 +16,7 @@ vi.mock('../../../console/logger.js', () => ({
 }));
 
 import fs from 'node:fs';
-import { determineLibrary } from '../index.js';
+import { determineLibraryForCLI } from '../index.js';
 import { logger } from '../../../console/logger.js';
 
 const mockExistsSync = vi.mocked(fs.existsSync);
@@ -28,7 +28,7 @@ beforeEach(() => {
   vi.spyOn(process, 'cwd').mockReturnValue('/test-project');
 });
 
-describe('determineLibrary', () => {
+describe('determineLibraryForCLI', () => {
   describe('JS detection (regression)', () => {
     it('detects gt-next from package.json dependencies', () => {
       mockExistsSync.mockReturnValue(true);
@@ -36,7 +36,7 @@ describe('determineLibrary', () => {
         JSON.stringify({ dependencies: { 'gt-next': '1.0.0' } })
       );
 
-      const result = determineLibrary();
+      const result = determineLibraryForCLI();
       expect(result.library).toBe(Libraries.GT_NEXT);
     });
 
@@ -46,7 +46,7 @@ describe('determineLibrary', () => {
         JSON.stringify({ dependencies: { 'gt-react': '1.0.0' } })
       );
 
-      const result = determineLibrary();
+      const result = determineLibraryForCLI();
       expect(result.library).toBe(Libraries.GT_REACT);
     });
 
@@ -56,7 +56,7 @@ describe('determineLibrary', () => {
         JSON.stringify({ dependencies: { 'gt-node': '1.0.0' } })
       );
 
-      const result = determineLibrary();
+      const result = determineLibraryForCLI();
       expect(result.library).toBe(Libraries.GT_NODE);
     });
 
@@ -69,14 +69,14 @@ describe('determineLibrary', () => {
         JSON.stringify({ dependencies: { express: '4.0.0' } })
       );
 
-      const result = determineLibrary();
+      const result = determineLibraryForCLI();
       expect(result.library).toBe('base');
     });
 
     it("returns 'base' without warning when no JS or Python project file exists", () => {
       mockExistsSync.mockReturnValue(false);
 
-      const result = determineLibrary();
+      const result = determineLibraryForCLI();
 
       expect(result.library).toBe('base');
       expect(mockWarn).not.toHaveBeenCalled();
@@ -90,7 +90,7 @@ describe('determineLibrary', () => {
         })
       );
 
-      const result = determineLibrary();
+      const result = determineLibraryForCLI();
       expect(result.additionalModules).toContain('i18next-icu');
     });
   });
@@ -108,7 +108,7 @@ dependencies = [
 ]
 `);
 
-      const result = determineLibrary();
+      const result = determineLibraryForCLI();
       expect(result.library).toBe(Libraries.GT_FLASK);
     });
 
@@ -119,7 +119,7 @@ dependencies = [
       });
       mockReadFileSync.mockReturnValue('flask\ngt-flask>=1.0.0\nrequests\n');
 
-      const result = determineLibrary();
+      const result = determineLibraryForCLI();
       expect(result.library).toBe(Libraries.GT_FLASK);
     });
 
@@ -136,7 +136,7 @@ setup(
 )
 `);
 
-      const result = determineLibrary();
+      const result = determineLibraryForCLI();
       expect(result.library).toBe(Libraries.GT_FASTAPI);
     });
 
@@ -152,7 +152,7 @@ setup(
         return '';
       });
 
-      const result = determineLibrary();
+      const result = determineLibraryForCLI();
       expect(result.library).toBe(Libraries.GT_REACT);
     });
 
@@ -173,7 +173,7 @@ setup(
         return '';
       });
 
-      const result = determineLibrary();
+      const result = determineLibraryForCLI();
       expect(result.library).toBe(Libraries.GT_FLASK);
     });
 
@@ -186,7 +186,7 @@ setup(
         '[project]\ndependencies = ["flask", "sqlalchemy"]'
       );
 
-      const result = determineLibrary();
+      const result = determineLibraryForCLI();
       expect(result.library).toBe('base');
     });
   });

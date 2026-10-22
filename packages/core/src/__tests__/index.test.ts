@@ -61,8 +61,7 @@ describe.sequential('GT Translation Methods', () => {
       const options = {
         targetLocale: 'fr',
         sourceLocale: 'en-US',
-        context: 'dashboard',
-        actionType: 'standard',
+        modelProvider: 'OPENAI',
       };
       const result =
         method === 'translate'
@@ -83,7 +82,7 @@ describe.sequential('GT Translation Methods', () => {
         requests: { greeting: entry },
         targetLocale: 'fr',
         sourceLocale: 'en-US',
-        metadata: options,
+        metadata: { modelProvider: 'OPENAI' },
       });
     });
 
@@ -144,14 +143,12 @@ describe.sequential('GT Translation Methods', () => {
     it('should handle GT configuration with all options', () => {
       const gt = new GT({
         apiKey: 'test-key',
-        devApiKey: 'dev-key',
         projectId: 'test-project',
         baseUrl: 'https://api.test.com',
         targetLocale: 'es',
       });
 
       expect(gt.apiKey).toBe('test-key');
-      expect(gt.devApiKey).toBe('dev-key');
       expect(gt.projectId).toBe('test-project');
       expect(gt.baseUrl).toBe('https://api.test.com');
       expect(gt.targetLocale).toBe('es');
@@ -362,7 +359,6 @@ describe('GT LocaleConfig delegation', () => {
   it('exposes core localeConfig and refreshes it from setConfig', () => {
     const gt = new GT({
       apiKey: 'test-api-key',
-      devApiKey: 'test-dev-key',
       projectId: 'test-project',
       sourceLocale: 'en-US',
       targetLocale: 'es-ES',
@@ -371,7 +367,6 @@ describe('GT LocaleConfig delegation', () => {
 
     expect(gt.localeConfig).toBeInstanceOf(LocaleConfig);
     expect('apiKey' in gt.localeConfig).toBe(false);
-    expect('devApiKey' in gt.localeConfig).toBe(false);
     expect('projectId' in gt.localeConfig).toBe(false);
 
     gt.setConfig({

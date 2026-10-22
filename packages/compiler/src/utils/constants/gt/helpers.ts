@@ -161,8 +161,6 @@ export function isGTImportSource(name: string): name is GT_IMPORT_SOURCES {
       GT_IMPORT_SOURCES.GT_NEXT,
       GT_IMPORT_SOURCES.GT_NEXT_SERVER,
       GT_IMPORT_SOURCES.GT_REACT,
-      GT_IMPORT_SOURCES.GT_REACT_CLIENT,
-      GT_IMPORT_SOURCES.GT_REACT_BROWSER,
       GT_IMPORT_SOURCES.GT_I18N,
     ] as string[]
   ).includes(name);
@@ -170,25 +168,8 @@ export function isGTImportSource(name: string): name is GT_IMPORT_SOURCES {
 
 export function isGTReactImportSource(
   name: string
-): name is
-  | GT_IMPORT_SOURCES.GT_REACT
-  | GT_IMPORT_SOURCES.GT_REACT_CLIENT
-  | GT_IMPORT_SOURCES.GT_REACT_BROWSER {
-  return (
-    [
-      GT_IMPORT_SOURCES.GT_REACT,
-      GT_IMPORT_SOURCES.GT_REACT_CLIENT,
-      GT_IMPORT_SOURCES.GT_REACT_BROWSER,
-    ] as string[]
-  ).includes(name);
-}
-
-export function getGtReactImportSource(
-  legacyGtReactImportSource: boolean
-): GT_IMPORT_SOURCES.GT_REACT | GT_IMPORT_SOURCES.GT_REACT_BROWSER {
-  return legacyGtReactImportSource
-    ? GT_IMPORT_SOURCES.GT_REACT_BROWSER
-    : GT_IMPORT_SOURCES.GT_REACT;
+): name is GT_IMPORT_SOURCES.GT_REACT {
+  return name === GT_IMPORT_SOURCES.GT_REACT;
 }
 
 /**

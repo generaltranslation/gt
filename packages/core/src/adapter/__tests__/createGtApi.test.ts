@@ -198,9 +198,7 @@ describe.sequential('createGtApiAdapter', () => {
 
   it('rethrows a createBranch conflict when the key cannot list branches', async () => {
     vi.mocked(createBranch).mockResolvedValue(failure(409) as never);
-    vi.mocked(listBranches).mockRejectedValue(
-      new ApiError('forbidden', 403, 'forbidden')
-    );
+    vi.mocked(listBranches).mockRejectedValue(new ApiError('forbidden', 403));
 
     await expect(
       configuredAdapter().createBranch({ name: 'feature' })

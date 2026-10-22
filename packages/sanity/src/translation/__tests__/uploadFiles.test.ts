@@ -79,7 +79,7 @@ describe('uploadFiles project default locale', () => {
       defaultLocale: 'fr',
     } as Awaited<ReturnType<typeof api.getProject>>);
     vi.mocked(api.updateProject).mockRejectedValueOnce(
-      new ApiError('Forbidden', 403, 'Forbidden')
+      new ApiError('Forbidden', 403)
     );
 
     await expect(uploadFiles([document], null)).resolves.toBe(result);
@@ -96,7 +96,7 @@ describe('uploadFiles project default locale', () => {
       defaultLocale: 'fr',
     } as Awaited<ReturnType<typeof api.getProject>>);
     vi.mocked(api.updateProject).mockRejectedValueOnce(
-      new ApiError('Server error', 500, 'Server error')
+      new ApiError('Server error', 500)
     );
 
     await expect(uploadFiles([document], null)).rejects.toThrow('Server error');
@@ -125,7 +125,7 @@ describe('uploadFiles ID limits', () => {
     // Like GT's request validation: one over-long file ID fails the request.
     vi.mocked(api.uploadSourceFiles).mockImplementation(async (files) => {
       if (files.some(({ source }) => source.fileId!.length > 64))
-        throw new ApiError('Bad request', 400, 'Bad request');
+        throw new ApiError('Bad request', 400);
       return {
         summary: { total: files.length, succeeded: files.length, failed: 0 },
         results: files.map(({ source }) => ({

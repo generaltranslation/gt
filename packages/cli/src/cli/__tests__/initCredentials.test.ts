@@ -523,7 +523,7 @@ describe('init development credentials', () => {
     vi.stubEnv('VITE_GT_PROJECT_ID', 'configured-project');
     const details = 'Project API keys cannot create other keys';
     vi.mocked(api.createProjectApiKey).mockRejectedValue(
-      new ApiError(details, 403, details)
+      new ApiError(details, 403)
     );
 
     const error = await runInit().catch((caught: unknown) => caught);
@@ -549,7 +549,7 @@ describe('init development credentials', () => {
       JSON.stringify({ projectId: 'configured-project', defaultLocale: 'en' })
     );
     vi.mocked(api.createProjectApiKey).mockRejectedValue(
-      new ApiError('Forbidden', 403, 'Forbidden')
+      new ApiError('Forbidden', 403)
     );
 
     const error = await runInit().catch((caught: unknown) => caught);
@@ -567,7 +567,7 @@ describe('init development credentials', () => {
     vi.stubEnv('GT_API_KEY', 'gtx-project-key');
     vi.mocked(api.listOrgs).mockResolvedValue([{ id: 'o1', name: 'Acme' }]);
     vi.mocked(api.createProject).mockRejectedValue(
-      new ApiError('Forbidden', 403, 'Forbidden')
+      new ApiError('Forbidden', 403)
     );
 
     const error = await runInit(

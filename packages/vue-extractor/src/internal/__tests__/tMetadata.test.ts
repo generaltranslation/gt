@@ -230,16 +230,6 @@ describe('Vue T metadata extraction', () => {
         dataFormat: 'JSX',
       }),
     });
-    expect(review?.metadata.hash).not.toBe(
-      hashSource({
-        source: 'Review metadata',
-        context: 'catalog',
-        id: 'legacy',
-        maxChars: 12,
-        requiresReview: true,
-        dataFormat: 'JSX',
-      })
-    );
 
     const zero = output.updates.find(
       ({ source }) => source === 'Zero metadata'

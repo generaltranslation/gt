@@ -325,9 +325,7 @@ async function sendTranslations(
       });
   }
   if (!uploads.length) return sent;
-  const { results } = await batch.gt.uploadTranslations(uploads, {
-    sourceLocale: batch.sourceLocale,
-  });
+  const { results } = await batch.gt.uploadTranslations(uploads);
   results.forEach((result, index) => {
     if (result.status === 'failed')
       uploaded[index].error =

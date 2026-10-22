@@ -511,11 +511,17 @@ type ReactTParams = Parameters<typeof prepareT>[0]['params'];
 
 function getReactLookupHash(
   sourceChildren: React.ReactNode,
-  params: ReactTParams = {}
+  params: Record<string, unknown> = {}
 ): string {
+  // gt-vue's `$` aliases take precedence and map to React's unprefixed T props.
+  const reactParams = Object.fromEntries(
+    Object.entries(params)
+      .sort(([a], [b]) => Number(a.startsWith('$')) - Number(b.startsWith('$')))
+      .map(([key, value]) => [key.replace(/^\$/, ''), value])
+  ) as ReactTParams;
   const prepared = prepareT({
     locale: 'fr',
-    params,
+    params: reactParams,
     sourceChildren,
   });
   return hashMessage(prepared.sourceJsxChildren, prepared.targetOptions);

@@ -122,8 +122,6 @@ type OutputCollector = {
   errors: string[];
   warnings: Set<string>;
   unwrappedExpressions: string[];
-  /** Deprecated $-prefixed <T> prop occurrences (file:line:column), warned once per scan */
-  sugarPropLocations?: string[];
 };
 
 // TODO: currently we cover VariableDeclaration and FunctionDeclaration nodes, but are there others we should cover as well?
@@ -721,7 +719,6 @@ function parseJSXElement({
     metadata,
     componentErrors,
     file: config.file,
-    sugarPropLocations: output.sugarPropLocations,
   });
 
   // Flag for if contains derivable content

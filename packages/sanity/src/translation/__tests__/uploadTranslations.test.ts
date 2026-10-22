@@ -27,7 +27,7 @@ describe('uploadTranslations ID limits', () => {
     // Like GT's request validation: one over-long file ID fails the request.
     vi.mocked(api.uploadTranslations).mockImplementation(async (files) => {
       if (files.some(({ source }) => source.fileId!.length > 64))
-        throw new ApiError('Bad request', 400, 'Bad request');
+        throw new ApiError('Bad request', 400);
       const results = files.flatMap(({ source, translations }) =>
         translations.map((translation) => ({
           branchId: 'branch-1',

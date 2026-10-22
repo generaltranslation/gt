@@ -45,7 +45,7 @@ describe('getPathsAndAliases - global t macro detection', () => {
 
   it('does NOT detect imported t as global', () => {
     const entries = getGlobalEntries(
-      "import { t } from 'gt-react/browser';\nconst x = t`hello`;"
+      "import { t } from 'gt-react';\nconst x = t`hello`;"
     );
     expect(entries).toHaveLength(0);
   });
@@ -70,13 +70,11 @@ describe('getPathsAndAliases - global t macro detection', () => {
   });
 });
 
-describe('getPathsAndAliases - gt-react entrypoints', () => {
-  for (const source of ['gt-react', 'gt-react/browser', 'gt-react/client']) {
-    it(`detects t imported from ${source}`, () => {
-      const entries = getInlineEntries(
-        `import { t } from '${source}';\nconst x = t\`hello\`;`
-      );
-      expect(entries).toHaveLength(1);
-    });
-  }
+describe('getPathsAndAliases - gt-react entrypoint', () => {
+  it('detects t imported from gt-react', () => {
+    const entries = getInlineEntries(
+      "import { t } from 'gt-react';\nconst x = t`hello`;"
+    );
+    expect(entries).toHaveLength(1);
+  });
 });

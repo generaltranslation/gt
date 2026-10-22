@@ -732,10 +732,9 @@ mod tests {
 
     #[test]
     fn handles_different_attribute_names() {
-      // Test with $maxChars
-      let attrs = vec![create_number_attr("$maxChars", 25.0)];
+      let attrs = vec![create_number_attr("limit", 25.0)];
       let element = create_jsx_element("div", attrs);
-      let result = extract_max_chars_from_jsx_attr(&element, "$maxChars");
+      let result = extract_max_chars_from_jsx_attr(&element, "limit");
       assert_eq!(result, Some(25));
     }
 

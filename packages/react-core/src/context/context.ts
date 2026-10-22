@@ -1,6 +1,6 @@
 import { Dictionary, Hash, Locale } from 'gt-i18n/internal/types';
 import { Translation } from 'gt-i18n/types';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { createGlobalSingleton } from 'gt-i18n/internal';
 import { createContext, useContext, type Context } from 'react';
 import { I18nStore } from '../i18n-store/I18nStore';

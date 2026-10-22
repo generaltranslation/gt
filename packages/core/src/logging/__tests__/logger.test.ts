@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   Logger,
   ConsoleLogHandler,
-  fetchLogger,
+  gtInstanceLogger,
   defaultLogger,
   LogHandler,
   LogEntry,
@@ -255,17 +255,17 @@ describe('Logger', () => {
   });
 
   describe('context-specific loggers', () => {
-    it('should create translation logger with proper context', () => {
+    it('should create the GT instance logger with proper context', () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       // Temporarily enable logging for this test by configuring the parent logger
       const originalConfig = defaultLogger.getConfig();
       defaultLogger.configure({ ...originalConfig, level: 'warn' });
 
-      fetchLogger.warn('Translation failed');
+      gtInstanceLogger.warn('Translation failed');
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[fetch]')
+        expect.stringContaining('[GT instance]')
       );
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('Translation failed')

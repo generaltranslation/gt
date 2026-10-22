@@ -79,7 +79,6 @@
     "@sanity/browserslist-config": "^1.0.5",
     "@sanity/icons": "^5.2.1",
     "@sanity/language-filter": "^5.0.16",
-    "@sanity/mutator": "^6.9.2",
     "@sanity/pkg-utils": "^10.4.13",
     "@sanity/plugin-kit": "^4.0.20",
     "@sanity/schema": "^6.9.2",
@@ -97,7 +96,6 @@
   },
   "peerDependencies": {
     "@sanity/icons": "^5.2.1",
-    "@sanity/mutator": "^6.9.2",
     "@sanity/schema": "^6.9.2",
     "@sanity/ui": "^4.0.1",
     "react": ">=19.2.0",

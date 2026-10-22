@@ -2,7 +2,7 @@
 
 export { parseLocale } from './functions/parseLocale';
 
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { CustomMapping } from 'generaltranslation/types';
 import {
   getGT,

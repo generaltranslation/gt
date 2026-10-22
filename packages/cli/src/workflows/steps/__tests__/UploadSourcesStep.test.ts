@@ -599,7 +599,7 @@ describe('UploadSourcesStep', () => {
         uploadResults([{ ...saved, status: 'succeeded' }])
       );
       mockGt.updateProject.mockRejectedValueOnce(
-        new ApiError('Forbidden', 403, 'Forbidden')
+        new ApiError('Forbidden', 403)
       );
 
       const result = await new UploadSourcesStep(mockGt, mockSettings).run({
@@ -626,7 +626,7 @@ describe('UploadSourcesStep', () => {
         uploadResults([{ ...saved, status: 'succeeded' }])
       );
       mockGt.updateProject.mockRejectedValueOnce(
-        new ApiError('Server error', 500, 'Server error')
+        new ApiError('Server error', 500)
       );
 
       await expect(

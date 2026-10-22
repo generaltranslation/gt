@@ -342,7 +342,6 @@ export const error = (
 ) => defaultLogger.error(message, context, metadata);
 
 // Create context-specific loggers for different parts of the system
-export const fetchLogger = /* @__PURE__ */ defaultLogger.child('fetch');
 export const gtInstanceLogger =
   /* @__PURE__ */ defaultLogger.child('GT instance');
 

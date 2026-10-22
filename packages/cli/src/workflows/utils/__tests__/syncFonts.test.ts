@@ -21,9 +21,7 @@ describe('syncFonts', () => {
 
   it('explains a denied font upload and records it in the warnings summary', async () => {
     const message = 'Target not found or access denied';
-    vi.spyOn(api, 'upsertAssets').mockRejectedValue(
-      new ApiError(message, 403, message)
-    );
+    vi.spyOn(api, 'upsertAssets').mockRejectedValue(new ApiError(message, 403));
     const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
 
     await syncFonts({} as Settings);

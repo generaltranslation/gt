@@ -255,7 +255,7 @@ export class FakeGt {
     // Like GT's request validation: one over-long file ID fails the request.
     if (files.some(({ source }) => source.fileId!.length > 64)) {
       const message = 'File ID cannot exceed 64 characters';
-      throw new ApiError(message, 400, message);
+      throw new ApiError(message, 400);
     }
     const results = files.map(({ source }) => {
       const fileId = source.fileId!;
@@ -307,7 +307,7 @@ export class FakeGt {
     if (this.usageLimitReached) {
       const message =
         'Translating 511 tokens would exceed your free usage limit for this month.';
-      throw new ApiError(message, 402, message);
+      throw new ApiError(message, 402);
     }
     const unsupported = (options.targetLocales ?? []).filter((l) =>
       this.unsupportedLocales.has(l)

@@ -363,10 +363,7 @@ async function executeTranslationBatch(
     requests: requestsObject,
     targetLocale: globalMetadata.targetLocale,
     sourceLocale: globalMetadata.sourceLocale,
-    metadata: {
-      ...globalMetadata,
-      modelProvider: globalMetadata.modelProvider,
-    },
+    metadata: { modelProvider: globalMetadata.modelProvider },
   } satisfies TranslateContentData['body'];
   const result = await translateContent({
     body,

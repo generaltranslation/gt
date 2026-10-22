@@ -8,7 +8,6 @@ export type GTParsingFlags = {
   autoderive?: boolean | { jsx?: boolean; strings?: boolean };
   includeSourceCodeContext?: boolean;
   enableAutoJsxInjection?: boolean;
-  legacyGtReactImportSource?: boolean;
   devHotReload?: boolean | { strings?: boolean; jsx?: boolean };
   /** Vite config used to resolve hash-affecting Vue compiler behavior. */
   viteConfigPath?: string;
@@ -24,8 +23,6 @@ export type GTOutputFileConfig = {
   output?: string;
   publish?: boolean;
   parsingFlags?: GTParsingFlags;
-  /** @deprecated Use `parsingFlags.includeSourceCodeContext` instead. */
-  includeSourceCodeContext?: boolean;
 };
 
 /**
@@ -53,8 +50,6 @@ export type GTConfig = {
   localeRouting?: boolean;
 
   projectId?: string;
-  /** @deprecated Pass the key as `apiKey`; there is one kind of API key. */
-  devApiKey?: string;
   apiKey?: string;
   _versionId?: string;
   _branchId?: string;

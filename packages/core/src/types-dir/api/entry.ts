@@ -32,7 +32,6 @@ export type EntryMetadata = {
 export type RuntimeTranslateManyOptions = {
   sourceLocale?: string;
   modelProvider?: string;
-  [key: string]: unknown;
 };
 
 export type TranslateOptions = RuntimeTranslateManyOptions & {

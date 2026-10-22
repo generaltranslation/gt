@@ -10,8 +10,6 @@ import {
 } from '../utils/batchResults';
 import { syncProjectDefaultLocale } from '../adapter/syncProjectDefaultLocale';
 
-// note: this function is used to create a new translation task
-// uploads files & calls the getTranslationTask function
 export async function uploadFiles(
   documents: {
     info: GTFile;

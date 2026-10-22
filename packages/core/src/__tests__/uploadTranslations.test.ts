@@ -30,7 +30,7 @@ describe('GT.uploadTranslations', () => {
     });
   });
 
-  it('canonicalizes upload locales and no longer sends sourceLocale', async () => {
+  it('canonicalizes upload locales and sends no sourceLocale', async () => {
     const gt = new GT({
       apiKey: 'test-api-key',
       projectId: 'test-project',
@@ -61,9 +61,7 @@ describe('GT.uploadTranslations', () => {
       },
     ];
 
-    const result = await gt.uploadTranslations(files, {
-      sourceLocale: 'brand-english',
-    });
+    const result = await gt.uploadTranslations(files);
 
     const { body } = vi.mocked(uploadTranslations).mock.calls[0][0];
     expect(body).not.toHaveProperty('sourceLocale');
@@ -72,5 +70,30 @@ describe('GT.uploadTranslations', () => {
       summary: { total: 1, succeeded: 1, failed: 0 },
       results: [{ fileId: 'file-id', locale: 'fr' }],
     });
+  });
+
+  it('uploads without a configured source locale', async () => {
+    const gt = new GT({ apiKey: 'test-api-key', projectId: 'test-project' });
+
+    await expect(
+      gt.uploadTranslations([
+        {
+          source: {
+            content: '',
+            fileName: 'messages.json',
+            fileFormat: 'JSON',
+            locale: 'en',
+          },
+          translations: [
+            {
+              content: '{}',
+              fileName: 'messages.json',
+              fileFormat: 'JSON',
+              locale: 'fr',
+            },
+          ],
+        },
+      ])
+    ).resolves.toMatchObject({ summary: { succeeded: 1 } });
   });
 });

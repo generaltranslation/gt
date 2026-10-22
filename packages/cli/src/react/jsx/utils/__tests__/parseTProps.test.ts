@@ -47,15 +47,14 @@ describe('parseTProps requiresReview', () => {
     expect(componentErrors).toHaveLength(0);
   });
 
-  it('treats a bare $requiresReview attribute as true', () => {
-    const { metadata, componentErrors } = runParse('<T $requiresReview>x</T>;');
-    expect(metadata.requiresReview).toBe(true);
-    expect(componentErrors).toHaveLength(0);
+  it('does not read a $requiresReview attribute', () => {
+    const { metadata } = runParse('<T $requiresReview>x</T>;');
+    expect(metadata.requiresReview).toBeUndefined();
   });
 
   it('accepts boolean literal true', () => {
     const { metadata, componentErrors } = runParse(
-      '<T $requiresReview={true}>x</T>;'
+      '<T requiresReview={true}>x</T>;'
     );
     expect(metadata.requiresReview).toBe(true);
     expect(componentErrors).toHaveLength(0);
@@ -80,7 +79,7 @@ describe('parseTProps requiresReview', () => {
 
   it('rejects string literal expression containers', () => {
     const { metadata, componentErrors } = runParse(
-      "<T $requiresReview={'true'}>x</T>;"
+      "<T requiresReview={'true'}>x</T>;"
     );
     expect(metadata.requiresReview).toBeUndefined();
     expect(componentErrors).toHaveLength(1);
@@ -88,7 +87,7 @@ describe('parseTProps requiresReview', () => {
 
   it('rejects dynamic expressions', () => {
     const { metadata, componentErrors } = runParse(
-      '<T $requiresReview={someVar}>x</T>;'
+      '<T requiresReview={someVar}>x</T>;'
     );
     expect(metadata.requiresReview).toBeUndefined();
     expect(componentErrors).toHaveLength(1);
@@ -104,7 +103,7 @@ describe('parseTProps requiresReview', () => {
 
   it('does not affect other attributes', () => {
     const { metadata, componentErrors } = runParse(
-      '<T id="greeting" $requiresReview={true} $context={"header"}>x</T>;'
+      '<T id="greeting" requiresReview={true} context={"header"}>x</T>;'
     );
     expect(metadata).toMatchObject({
       id: 'greeting',

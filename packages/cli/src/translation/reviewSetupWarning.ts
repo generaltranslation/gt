@@ -17,7 +17,7 @@ const PROJECT_INFO_TIMEOUT_MS = 10_000;
  * actually contains review-gated content):
  * - false: manual review is already the project workflow — no warning
  * - true: requiresReview config has no gating effect — warn
- * - unavailable (older API, dry runs without credentials): warn with
+ * - unavailable (request errors, dry runs without credentials): warn with
  *   conditional wording, since auto-approve is the platform default
  */
 export async function warnManualReviewSetup(

@@ -126,6 +126,28 @@ describe('I18nConfig', () => {
     ).toBe('fr');
   });
 
+  it('sends the dev API key as the runtime API key when no API key is set', () => {
+    expect(new I18nConfig({ devApiKey: 'dev-key' }).getGTClass().apiKey).toBe(
+      'dev-key'
+    );
+    expect(
+      new I18nConfig({ apiKey: 'key', devApiKey: 'dev-key' }).getGTClass()
+        .apiKey
+    ).toBe('key');
+  });
+
+  it('prefers the GT_API_KEY environment variable over the dev API key', () => {
+    vi.stubEnv('GT_API_KEY', 'env-key');
+
+    expect(new I18nConfig({ devApiKey: 'dev-key' }).getGTClass().apiKey).toBe(
+      'env-key'
+    );
+    expect(
+      new I18nConfig({ apiKey: 'key', devApiKey: 'dev-key' }).getGTClass()
+        .apiKey
+    ).toBe('key');
+  });
+
   it('enables dev hot reload with dev credentials, a project id, and development environment', () => {
     vi.stubEnv('NODE_ENV', 'development');
 

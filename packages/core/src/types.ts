@@ -46,30 +46,19 @@ export type {
   JsonValue,
 } from './types-dir/api/json';
 
-export type { CheckFileTranslationsOptions } from './types-dir/api/checkFileTranslations';
-export type { DownloadFileBatchOptions } from './types-dir/api/downloadFileBatch';
 export type { Updates } from './types-dir/api/enqueueFiles';
-export type { CreateBranchQuery } from './translate/createBranch';
 export type { FileToUpload } from './types-dir/api/file';
 export type { FileUpload } from './types-dir/api/uploadFiles';
 export type { FileReference } from './types-dir/api/file';
-export type {
-  PublishFileEntry,
-  PublishFilesResult,
-} from './translate/publishFiles';
-export type { DownloadFileOptions } from './types-dir/api/downloadFile';
+export type { PublishFileEntry } from './translate/publishFiles';
 export type { FileFormat } from './types-dir/api/file';
 export { isBinaryFileFormat, BINARY_FILE_FORMATS } from './types-dir/api/file';
 export type { TranslateManyResult } from './types-dir/api/translateMany';
 export type {
   TranslationResult,
   TranslationError,
-  TranslationResultReference,
 } from './types-dir/api/translate';
-export type {
-  MoveMapping,
-  ProcessMovesOptions,
-} from './translate/processFileMoves';
+export type { MoveMapping } from './translate/moveFiles';
 
 export type {
   Transformation,

@@ -270,7 +270,7 @@ describe('BranchStep', () => {
         branches: [],
         defaultBranch,
       });
-      const error = new ApiError('server failed', 500, 'server failed');
+      const error = new ApiError('server failed', 500);
       mockGt.createBranch.mockRejectedValue(error);
 
       const step = new BranchStep(mockGt, makeSettings());
@@ -289,7 +289,7 @@ describe('BranchStep', () => {
         defaultBranch,
       });
       mockGt.createBranch.mockRejectedValueOnce(
-        new ApiError('branching unavailable', 403, 'branching unavailable')
+        new ApiError('branching unavailable', 403)
       );
 
       const step = new BranchStep(mockGt, makeSettings());

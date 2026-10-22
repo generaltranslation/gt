@@ -175,7 +175,7 @@ describe('built Vue CLI', () => {
               )
             );
             assert.equal(options.includes('src'), true);
-            assert.equal(options.includes('jsconfig'), true);
+            assert.equal(options.includes('tsconfig'), true);
           }
           assert.match(
             routedProgram.commands
@@ -254,7 +254,7 @@ describe('built Vue CLI', () => {
             .find((command) => command.name() === 'translate')
             .options.map((option) => option.attributeName());
           assert.equal(translateOptions.includes('src'), false);
-          assert.equal(translateOptions.includes('jsconfig'), false);
+          assert.equal(translateOptions.includes('tsconfig'), false);
           assert.doesNotMatch(
             program.commands
               .find((command) => command.name() === 'init')
@@ -375,7 +375,7 @@ describe('built Vue CLI', () => {
 
         assert.equal(cli.calls.length, 1);
         assert.deepEqual(cli.calls[0].src, ['src/**/*.vue']);
-        assert.equal(cli.calls[0].jsconfig, 'tsconfig.app.json');
+        assert.equal(cli.calls[0].tsconfig, 'tsconfig.app.json');
         assert.equal(cli.calls[0].dryRun, true);
       `,
       projectRoot
@@ -1159,16 +1159,6 @@ import { T } from 'gt-vue';
     });
 
     expect(catalog).toEqual({ [expectedHash]: source });
-    expect(expectedHash).not.toBe(
-      hashSource({
-        context: 'card',
-        dataFormat: 'JSX',
-        id: 'editor-metadata',
-        maxChars: 24,
-        requiresReview: true,
-        source,
-      })
-    );
   });
 
   it('uses an explicit tsconfig for full and targeted Vue extraction', async () => {
@@ -1204,7 +1194,7 @@ import { LocalT } from '@gt';
         'generate',
         '--config',
         'gt.config.json',
-        '--jsconfig',
+        '--tsconfig',
         'config/tsconfig.app.json',
       ],
       projectRoot

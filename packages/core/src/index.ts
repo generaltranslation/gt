@@ -23,6 +23,7 @@ import {
   type MoveFilesResponse,
   type OverwriteTranslationsData,
   type OverwriteTranslationsResponse,
+  type PublishFilesResponse,
   type QueryFilesContentData,
   type QueryFilesContentResponse,
   type QueryFilesData,
@@ -41,29 +42,11 @@ import {
   type UpsertAssetsData,
   type UpsertAssetsResponse,
 } from '@generaltranslation/api';
-import {
-  CheckFileTranslationsOptions,
-  DownloadFileBatchOptions,
-  DownloadFileOptions,
-} from './types';
 import { libraryDefaultLocale } from './settings/settings';
 import { defaultBaseUrl } from './settings/settingsUrls';
-import { noSourceLocaleProvidedError } from './logging/errors';
-import { gtInstanceLogger } from './logging/logger';
-import type {
-  FileUpload,
-  UploadFilesOptions,
-} from './types-dir/api/uploadFiles';
-import type { UploadAssetsOptions } from './types-dir/api/uploadAssets';
-import type { GetProjectInfoOptions } from './translate/getProjectInfo';
-import type {
-  MoveMapping,
-  ProcessMovesOptions,
-} from './translate/processFileMoves';
-import type {
-  PublishFileEntry,
-  PublishFilesResult,
-} from './translate/publishFiles';
+import type { FileUpload } from './types-dir/api/uploadFiles';
+import type { MoveMapping } from './translate/moveFiles';
+import type { PublishFileEntry } from './translate/publishFiles';
 import { createGtApiAdapter, type GtApiAdapter } from './adapter/createGtApi';
 import { GTRuntime, type GTConstructorParams } from './runtime';
 import { validateAuth } from './translate/runtimeTranslate';
@@ -145,7 +128,7 @@ export class GT extends GTRuntime {
 
   private _getApiAdapter(): GtApiAdapter {
     this._apiAdapter ??= createGtApiAdapter({
-      apiKey: this.apiKey || this.devApiKey,
+      apiKey: this.apiKey,
       userTokenProvider: this.userTokenProvider,
       baseUrl: this.baseUrl || defaultBaseUrl,
       projectId: this.projectId,
@@ -172,7 +155,7 @@ export class GT extends GTRuntime {
    * Fetches the configured project: name, locales, review and CDN settings.
    */
   async getProject(
-    options: GetProjectInfoOptions = {}
+    options: { timeout?: number } = {}
   ): Promise<GetProjectResponse> {
     validateAuth('getProject', this._getTranslationConfig());
     return this.restoreProjectLocales(
@@ -187,7 +170,7 @@ export class GT extends GTRuntime {
    */
   async updateProject(
     body: UpdateProjectData['body'],
-    options: GetProjectInfoOptions = {}
+    options: { timeout?: number } = {}
   ): Promise<UpdateProjectResponse> {
     validateAuth('updateProject', this._getTranslationConfig());
     return this.restoreProjectLocales(
@@ -265,12 +248,12 @@ export class GT extends GTRuntime {
    * `summary.failed` and each result's `status`.
    *
    * @param {MoveMapping[]} moves - Old file ID to new file ID and name.
-   * @param {ProcessMovesOptions} options - Branch and timeout.
+   * @param options - Branch and timeout.
    * @returns The summary and one result per move, in request order.
    */
   async moveFiles(
     moves: MoveMapping[],
-    options: ProcessMovesOptions = {}
+    options: { branchId?: string; timeout?: number } = {}
   ): Promise<MoveFilesResponse> {
     validateAuth('moveFiles', this._getTranslationConfig());
     return await this._getApiAdapter().moveFiles(moves, options);
@@ -382,9 +365,9 @@ export class GT extends GTRuntime {
    * result's `status` and `translations`.
    *
    * @param {PublishFileEntry[]} files - File versions with publish flags; each branch, file, and version may appear once.
-   * @returns {Promise<PublishFilesResult>} The summary and one result per file version, in request order.
+   * @returns {Promise<PublishFilesResponse>} The summary and one result per file version, in request order.
    */
-  async publishFiles(files: PublishFileEntry[]): Promise<PublishFilesResult> {
+  async publishFiles(files: PublishFileEntry[]): Promise<PublishFilesResponse> {
     validateAuth('publishFiles', this._getTranslationConfig());
     const result = await this._getApiAdapter().publishFiles(files);
     return {
@@ -436,7 +419,7 @@ export class GT extends GTRuntime {
    */
   async queryFiles(
     files: QueryFilesData['body']['files'],
-    options: CheckFileTranslationsOptions = {}
+    options: { timeout?: number } = {}
   ): Promise<QueryFilesResponse> {
     validateAuth('queryFiles', this._getTranslationConfig());
     const { results } = await this._getApiAdapter().queryFiles(files, options);
@@ -465,7 +448,7 @@ export class GT extends GTRuntime {
   async getFileStatus(
     fileId: string,
     query: GetFileStatusData['query'] = {},
-    options: CheckFileTranslationsOptions = {}
+    options: { timeout?: number } = {}
   ): Promise<GetFileStatusResponse> {
     validateAuth('getFileStatus', this._getTranslationConfig());
     const result = await this._getApiAdapter().getFileStatus(
@@ -507,7 +490,7 @@ export class GT extends GTRuntime {
   async getFileContent(
     fileId: string,
     query: GetFileContentData['query'] = {},
-    options: DownloadFileOptions = {}
+    options: { timeout?: number } = {}
   ): Promise<GetFileContentResponse> {
     validateAuth('getFileContent', this._getTranslationConfig());
     const result = await this._getApiAdapter().getFileContent(
@@ -527,7 +510,7 @@ export class GT extends GTRuntime {
    */
   async queryFilesContent(
     files: QueryFilesContentData['body']['files'],
-    options: DownloadFileBatchOptions = {}
+    options: { timeout?: number } = {}
   ): Promise<QueryFilesContentResponse> {
     validateAuth('queryFilesContent', this._getTranslationConfig());
     return await this._getApiAdapter().queryFilesContent(files, options);
@@ -541,12 +524,12 @@ export class GT extends GTRuntime {
    * `summary.failed` and each result's `status`.
    *
    * @param {Array<{source: FileUpload}>} files - Array of objects containing source file data to upload
-   * @param {UploadFilesOptions} options - Configuration options including source locale and other upload settings.
+   * @param options - The source locale and timeout.
    * @returns {Promise<UploadSourceFilesResponse>} The summary and one result per file, in request order.
    */
   async uploadSourceFiles(
     files: { source: FileUpload }[],
-    options: UploadFilesOptions
+    options: { sourceLocale: string; timeout?: number }
   ): Promise<UploadSourceFilesResponse> {
     validateAuth('uploadSourceFiles', this._getTranslationConfig());
 
@@ -578,7 +561,7 @@ export class GT extends GTRuntime {
    */
   async upsertAssets(
     assets: UpsertAssetsData['body']['assets'],
-    options: UploadAssetsOptions = {}
+    options: { timeout?: number } = {}
   ): Promise<UpsertAssetsResponse> {
     validateAuth('upsertAssets', this._getTranslationConfig());
     return await this._getApiAdapter().upsertAssets(assets, options);
@@ -592,7 +575,6 @@ export class GT extends GTRuntime {
    * @param {Array<{source: FileUpload, translations: FileUpload[]}>} files - Array of file objects where:
    *   - `source`: Reference to the existing source file (contains IDs but no content).
    *   - `translations`: Array of translated files, each containing content, locale, and reference IDs
-   * @param {UploadFilesOptions} options - Configuration options including source locale and upload settings.
    * @returns {Promise<UploadTranslationsResponse>} The summary and one result per translation, in request order.
    */
   async uploadTranslations(
@@ -600,16 +582,9 @@ export class GT extends GTRuntime {
       source: FileUpload; // reference only (no content)
       translations: FileUpload[]; // each has content + ids + locale
     }[],
-    options: UploadFilesOptions
+    options: { timeout?: number } = {}
   ): Promise<UploadTranslationsResponse> {
     validateAuth('uploadTranslations', this._getTranslationConfig());
-
-    // Require source locale
-    if (!(options.sourceLocale ?? this.sourceLocale)) {
-      const error = noSourceLocaleProvidedError('uploadTranslations');
-      gtInstanceLogger.error(error);
-      throw new Error(error);
-    }
 
     return await this._getApiAdapter().uploadTranslations(
       files.map((f) => ({

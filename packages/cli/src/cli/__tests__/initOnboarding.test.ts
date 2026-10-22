@@ -996,7 +996,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             ? 'Missing required permission: org:projects:create'
             : 'Service unavailable';
         vi.mocked(api.createProject).mockRejectedValueOnce(
-          new ApiError(details, status, details)
+          new ApiError(details, status)
         );
 
         await expect(

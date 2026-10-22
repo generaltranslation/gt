@@ -213,10 +213,9 @@ describe.sequential('GT canonical API methods', () => {
       gt.uploadSourceFiles([{ source: file }], { sourceLocale: 'en' })
     ).resolves.toEqual(succeeded([{ ...uploaded, status: 'succeeded' }]));
     await expect(
-      gt.uploadTranslations(
-        [{ source: file, translations: [{ ...file, locale: 'es' }] }],
-        { sourceLocale: 'en' }
-      )
+      gt.uploadTranslations([
+        { source: file, translations: [{ ...file, locale: 'es' }] },
+      ])
     ).resolves.toEqual(
       succeeded([{ ...uploaded, locale: 'es', status: 'succeeded' }])
     );

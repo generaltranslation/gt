@@ -28,13 +28,15 @@ export type I18nConfigParams = Pick<
   | 'locales'
   | 'customMapping'
   | 'projectId'
-  | 'devApiKey'
   | 'apiKey'
   | 'cacheUrl'
   | 'runtimeUrl'
   | '_disableDevHotReload'
   | '_tagIds'
->;
+> & {
+  /** The development API key; it enables hot reload translation in development. */
+  devApiKey?: string;
+};
 
 type RuntimeConfig = Pick<
   I18nConfigParams,
@@ -163,7 +165,7 @@ export class I18nConfig extends LocaleConfig {
    * Create a GT instance without resolving the target locale first.
    */
   private getGTClassClean(locale?: string) {
-    return new GTRuntime({
+    const gt = new GTRuntime({
       sourceLocale: this.getDefaultLocale(),
       targetLocale: locale,
       locales: this.getLocales(),
@@ -171,8 +173,9 @@ export class I18nConfig extends LocaleConfig {
       projectId: this.runtimeConfig.projectId,
       baseUrl: this.runtimeConfig.runtimeUrl || undefined,
       apiKey: this.runtimeConfig.apiKey,
-      devApiKey: this.runtimeConfig.devApiKey,
     });
+    gt.apiKey ||= this.runtimeConfig.devApiKey;
+    return gt;
   }
 
   private getLocaleConfig(config?: I18nConfigParams): LocaleConfig {

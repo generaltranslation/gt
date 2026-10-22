@@ -68,7 +68,7 @@ describe.sequential('runtime translation requests', () => {
       requests: sources,
       targetLocale: 'es',
       sourceLocale: 'en',
-      metadata: options,
+      metadata: {},
     });
     expect(result).toEqual({ greeting: translated });
   });
@@ -304,12 +304,14 @@ describe.sequential('runtime translation requests', () => {
     );
   });
 
-  it('forwards supported model providers in request metadata', async () => {
-    const metadata = { ...options, modelProvider: 'OPENAI' };
+  it('sends only the model provider in request metadata', async () => {
+    await translateMany(
+      [],
+      { ...options, modelProvider: 'OPENAI' },
+      mockConfig
+    );
 
-    await translateMany([], metadata, mockConfig);
-
-    expect((await requestBody()).metadata).toEqual(metadata);
+    expect((await requestBody()).metadata).toEqual({ modelProvider: 'OPENAI' });
   });
 
   it('rejects unsupported model providers before making API requests', async () => {

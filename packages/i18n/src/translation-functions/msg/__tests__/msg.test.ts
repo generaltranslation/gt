@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { msg } from '../msg';
 import { decodeMsg } from '../decodeMsg';
 import { decodeOptions } from '../decodeOptions';
-import { derive, declareVar } from 'generaltranslation/internal';
+import { derive, declareVar } from 'generaltranslation';
 import type { RegisterableMessages } from '../../types/message';
 import { hashStringMessage } from '../../../utils/hashStringMessage';
 

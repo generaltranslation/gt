@@ -47,7 +47,6 @@ import { TranslateOptions } from './types-dir/api/entry';
  * Type representing the constructor parameters for the GT and GTRuntime classes.
  * @typedef {Object} GTConstructorParams
  * @property {string} [apiKey] - The API key for accessing the translation service
- * @property {string} [devApiKey] - Deprecated alias for apiKey
  * @property {string} [sourceLocale] - The default source locale for translations
  * @property {string} [targetLocale] - The default target locale for translations
  * @property {string[]} [locales] - Array of supported locales
@@ -57,8 +56,6 @@ import { TranslateOptions } from './types-dir/api/entry';
  */
 export type GTConstructorParams = {
   apiKey?: string;
-  /** @deprecated Pass the key as `apiKey`; there is one kind of API key. */
-  devApiKey?: string;
   sourceLocale?: string;
   targetLocale?: string;
   locales?: string[];
@@ -93,9 +90,6 @@ export class GTRuntime {
   /** API key for accessing the translation service */
   apiKey?: string;
 
-  /** @deprecated Pass the key as `apiKey`; there is one kind of API key. */
-  devApiKey?: string;
-
   /** User-token provider used when no API key is configured */
   userTokenProvider?: UserTokenProvider;
 
@@ -110,9 +104,6 @@ export class GTRuntime {
 
   /** Custom mapping for locale codes to their names */
   customMapping?: CustomMapping;
-
-  /** Lazily derived reverse custom mapping for alias locales */
-  reverseCustomMapping?: Record<string, string>;
 
   /** Lazily derived custom mapping for regions */
   customRegionMapping?: CustomRegionMapping;
@@ -144,8 +135,6 @@ export class GTRuntime {
     // Read environment
     if (typeof process !== 'undefined') {
       this.apiKey ||= process.env?.GT_API_KEY;
-      // Deprecated with devApiKey; frameworks resolve the hot-reload key themselves.
-      this.devApiKey ||= process.env?.GT_DEV_API_KEY;
       this.projectId ||= process.env?.GT_PROJECT_ID;
     }
     // Set up config
@@ -154,7 +143,6 @@ export class GTRuntime {
 
   setConfig({
     apiKey,
-    devApiKey,
     sourceLocale,
     targetLocale,
     locales,
@@ -167,7 +155,6 @@ export class GTRuntime {
 
     // ----- Environment properties ----- //
     if (apiKey) this.apiKey = apiKey;
-    if (devApiKey) this.devApiKey = devApiKey;
     if (projectId) this.projectId = projectId;
     if (userTokenProvider) this.userTokenProvider = userTokenProvider;
 
@@ -206,16 +193,7 @@ export class GTRuntime {
 
     // ----- Other properties ----- //
     if (baseUrl) this.baseUrl = baseUrl;
-    if (customMapping) {
-      this.customMapping = customMapping;
-      this.reverseCustomMapping = Object.fromEntries(
-        Object.entries(customMapping)
-          .filter(
-            ([, value]) => value && typeof value === 'object' && 'code' in value
-          )
-          .map(([key, value]) => [(value as { code: string }).code, key])
-      );
-    }
+    if (customMapping) this.customMapping = customMapping;
     this._localeConfig = new LocaleConfig({
       defaultLocale: this.sourceLocale,
       locales: this.locales ?? [],
@@ -254,7 +232,7 @@ export class GTRuntime {
   protected _getTranslationConfig(): TranslationRequestConfig {
     return {
       baseUrl: this.baseUrl,
-      apiKey: this.apiKey || this.devApiKey,
+      apiKey: this.apiKey,
       projectId: this.projectId || '',
       userTokenProvider: this.userTokenProvider,
     };
@@ -265,19 +243,21 @@ export class GTRuntime {
    * Routes through {@link translateMany} under the hood.
    *
    * @param {string} source - The source string to translate.
-   * @param {object} options - Translation options including targetLocale and optional entry metadata.
-   * @param {number} [timeout] - Timeout in milliseconds; 0 or omitted selects the runtime default.
+   * @param {object} options - Translation options including targetLocale.
+   * @param {number} [timeout] - Timeout in milliseconds; omitted selects the runtime default.
    * @returns {Promise<TranslationResult | TranslationError>} The translated content.
    *
    * @example
    * const result = await gt.translate('Hello, world!', { targetLocale: 'es' });
    *
    * @example
-   * const result = await gt.translate('Hello, world!', {
-   *   targetLocale: 'es',
-   *   dataFormat: 'ICU',
-   *   context: 'A formal greeting',
-   * });
+   * const result = await gt.translate(
+   *   {
+   *     source: 'Hello, world!',
+   *     metadata: { dataFormat: 'ICU', context: 'A formal greeting' },
+   *   },
+   *   'es'
+   * );
    */
   async translate(
     source: TranslateManyEntry,
@@ -290,7 +270,7 @@ export class GTRuntime {
       {
         ...this._getTranslationConfig(),
         customMapping: this.customMapping,
-        timeoutMs: timeout || undefined,
+        timeoutMs: timeout,
       },
       this
     );
@@ -302,7 +282,7 @@ export class GTRuntime {
    *
    * @param {TranslateManyEntry[] | Record<string, TranslateManyEntry>} sources - The source entries to translate. Can be an array or a record keyed by hash.
    * @param {object} options - Translation options including targetLocale.
-   * @param {number} [timeout] - Timeout in milliseconds; 0 or omitted selects the runtime default.
+   * @param {number} [timeout] - Timeout in milliseconds; omitted selects the runtime default.
    * @returns {Promise<TranslateManyResult | Record<string, TranslationResult>>} The translated contents. An array if sources was an array, a record if sources was a record.
    *
    * @example
@@ -313,7 +293,7 @@ export class GTRuntime {
    *
    * @example
    * const result = await gt.translateMany(
-   *   [{ source: 'Hello, world!', dataFormat: 'ICU' }],
+   *   [{ source: 'Hello, world!', metadata: { dataFormat: 'ICU' } }],
    *   { targetLocale: 'es' }
    * );
    *
@@ -344,7 +324,7 @@ export class GTRuntime {
       {
         ...this._getTranslationConfig(),
         customMapping: this.customMapping,
-        timeoutMs: timeout || undefined,
+        timeoutMs: timeout,
       },
       this
     );

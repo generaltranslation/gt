@@ -5,7 +5,6 @@ import generateModule from '@babel/generator';
 const generate = generateModule.default || generateModule;
 
 import { GT_ATTRIBUTES } from '../constants.js';
-import { mapAttributeName } from '../mapAttributeName.js';
 import { isStaticExpression } from '../../evaluateJsx.js';
 import {
   warnInvalidMaxCharsSync,
@@ -15,63 +14,38 @@ import {
 import { isNumberLiteral } from '../isNumberLiteral.js';
 import { containsDeriveCall } from '../stringParsing/derivation/containsDeriveCall.js';
 
-/**
- * $-prefixed sugar props on <T> that are deprecated in favor of the
- * unprefixed forms. Occurrences are collected into a single consolidated
- * warning at the end of the scan.
- */
-const DEPRECATED_T_SUGAR_PROPS = new Set([
-  '$context',
-  '$id',
-  '$maxChars',
-  '$requiresReview',
-]);
-
 // Parse the props of a <T> component
 export function parseTProps({
   openingElement,
   metadata,
   componentErrors,
   file,
-  sugarPropLocations,
 }: {
   openingElement: t.JSXOpeningElement;
   metadata: Metadata;
   componentErrors: string[];
   file: string;
-  /** Collector for deprecated $-prefixed prop occurrences (file:line:column) */
-  sugarPropLocations?: string[];
 }) {
   openingElement.attributes.forEach((attr) => {
     if (!t.isJSXAttribute(attr)) return;
     const attrName = attr.name.name;
     if (typeof attrName !== 'string') return;
 
-    if (sugarPropLocations && DEPRECATED_T_SUGAR_PROPS.has(attrName)) {
-      const loc = attr.loc?.start;
-      sugarPropLocations.push(
-        `${file}:${loc?.line ?? '?'}:${loc?.column ?? '?'} (${attrName})`
-      );
-    }
-
-    const isRequiresReviewAttr =
-      attrName === 'requiresReview' || attrName === '$requiresReview';
-
     // requiresReview is boolean-only and hash-changing, so it gets strict
     // handling before the generic attribute logic:
     // - bare attribute (<T requiresReview>) compiles to `requiresReview: true`,
     //   so it must mean true here too or CLI and compiler hashes disagree
     // - string values like requiresReview="false" are rejected, never coerced
-    if (isRequiresReviewAttr) {
+    if (attrName === 'requiresReview') {
       if (!attr.value) {
-        metadata[mapAttributeName(attrName)] = true;
+        metadata.requiresReview = true;
         return;
       }
       if (
         t.isJSXExpressionContainer(attr.value) &&
         t.isBooleanLiteral(attr.value.expression)
       ) {
-        metadata[mapAttributeName(attrName)] = attr.value.expression.value;
+        metadata.requiresReview = attr.value.expression.value;
         return;
       }
       const code = t.isJSXExpressionContainer(attr.value)
@@ -88,9 +62,9 @@ export function parseTProps({
     }
 
     if (attr.value) {
-      // If it's a plain string literal like id="hello" or $context="nav"
+      // If it's a plain string literal like id="hello" or context="nav"
       if (t.isStringLiteral(attr.value)) {
-        if (attrName === '$maxChars' || attrName === 'maxChars') {
+        if (attrName === 'maxChars') {
           // String-typed maxChars is rejected in the expression path
           // (maxChars={"10"}), so reject the bare string form too
           componentErrors.push(
@@ -101,9 +75,7 @@ export function parseTProps({
             )
           );
         } else {
-          // Map $-prefixed names ($context -> context, $id -> id, ...) so
-          // hashing and registration read them; other names pass through
-          metadata[mapAttributeName(attrName)] = attr.value.value;
+          metadata[attrName] = attr.value.value;
         }
       }
       // If it's an expression container like id={"hello"}, id={someVar}, etc.
@@ -118,7 +90,7 @@ export function parseTProps({
           const staticAnalysis = isStaticExpression(expr);
           if (!staticAnalysis.isStatic) {
             if (
-              mapAttributeName(attrName) === 'context' &&
+              attrName === 'context' &&
               t.isExpression(expr) &&
               containsDeriveCall(expr)
             ) {
@@ -137,7 +109,7 @@ export function parseTProps({
           // Use the derived value if available
           if (staticAnalysis.isStatic && staticAnalysis.value !== undefined) {
             // Check for invalid maxChars values
-            if (attrName === '$maxChars' || attrName === 'maxChars') {
+            if (attrName === 'maxChars') {
               if (
                 typeof staticAnalysis.value === 'string' &&
                 (isNaN(Number(staticAnalysis.value)) ||
@@ -153,13 +125,10 @@ export function parseTProps({
                 );
               } else {
                 // Add the maxChars value to the metadata
-                metadata[mapAttributeName(attrName)] = Math.abs(
-                  Number(staticAnalysis.value)
-                );
+                metadata.maxChars = Math.abs(Number(staticAnalysis.value));
               }
             } else {
-              // Add the $context or $id or other attributes value to the metadata
-              metadata[mapAttributeName(attrName)] = staticAnalysis.value;
+              metadata[attrName] = staticAnalysis.value;
             }
           } else {
             // Only store the code if we couldn't extract a derivable value

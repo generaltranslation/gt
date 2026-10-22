@@ -133,9 +133,8 @@ function getForbiddenReactNames(code: string): string[] {
   return [...found];
 }
 
-function walk(): { violations: Violation[]; reported: string[] } {
+function walk(): Violation[] {
   const violations: Violation[] = [];
-  const reported = new Set<string>();
   const parents = new Map<string, string | null>();
   const queue: string[] = [];
 
@@ -162,12 +161,6 @@ function walk(): { violations: Violation[]; reported: string[] } {
 
     // Intentional server-to-client boundary: do not traverse further.
     if (isClientBoundary(code)) continue;
-
-    // Deprecated modules are outside this check's scope: report, don't walk.
-    if (file.includes('/deprecated/')) {
-      reported.add(file);
-      continue;
-    }
 
     for (const name of getForbiddenReactNames(code)) {
       violations.push({
@@ -216,7 +209,7 @@ function walk(): { violations: Violation[]; reported: string[] } {
     }
   }
 
-  return { violations, reported: [...reported].sort() };
+  return violations;
 }
 
 function formatViolations(violations: Violation[]): string {
@@ -246,16 +239,7 @@ function buildPackage(): void {
 
 describe('gt-next RSC leak enforcement', () => {
   it('server/RSC import graph stays free of context and client modules', () => {
-    const { violations, reported } = walk();
-    if (reported.length > 0) {
-      // Deprecated modules reachable from the server graph. Not blocking, but
-      // surfaced so maintainers can decide whether to address them.
-      // eslint-disable-next-line no-console
-      console.warn(
-        `rscLeaks: skipped ${reported.length} deprecated module(s) reachable from the server graph:\n` +
-          reported.map((file) => `  ${file}`).join('\n')
-      );
-    }
+    const violations = walk();
     expect(violations, formatViolations(violations)).toEqual([]);
   });
 

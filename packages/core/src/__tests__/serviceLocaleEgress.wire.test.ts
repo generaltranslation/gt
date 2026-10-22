@@ -80,9 +80,7 @@ describe.sequential('GT service locale egress', () => {
         },
       ];
 
-      await gt.uploadTranslations(files, {
-        sourceLocale: gt.sourceLocale,
-      });
+      await gt.uploadTranslations(files);
 
       expect(requests).toEqual([
         expect.not.objectContaining({ sourceLocale: expect.anything() }),

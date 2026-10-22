@@ -3,7 +3,6 @@ import {
   exitSync,
   logErrorAndExit,
   warnApiKeyInConfig,
-  warnDeprecatedField,
 } from '../console/logging.js';
 import { loadConfig, withJsonExtension } from '../fs/config/loadConfig.js';
 import { FilesOptions, Settings } from '../types/index.js';
@@ -175,15 +174,6 @@ export async function generateSettings(
         );
       }
     }
-  }
-
-  // Warn on deprecated includeSourceCodeContext
-  const configuredFiles = gtConfig.files as FilesOptions | undefined;
-  if (configuredFiles?.gt?.includeSourceCodeContext != null) {
-    warnDeprecatedField(
-      'files.gt.includeSourceCodeContext',
-      'files.gt.parsingFlags.includeSourceCodeContext'
-    );
   }
 
   // merge options

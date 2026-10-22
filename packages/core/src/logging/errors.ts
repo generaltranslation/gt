@@ -10,15 +10,6 @@ export const translationTimeoutError = (timeout: number) =>
     fix: 'Try again, or increase the request timeout if the source content is large',
   });
 
-export const translationRequestFailedError = (error: string) =>
-  createDiagnosticMessage({
-    source: GT_SOURCE,
-    severity: 'Error',
-    whatHappened: 'Translation request could not be completed',
-    fix: 'Check your network connection and translation credentials, then try again',
-    details: error,
-  });
-
 export const noTargetLocaleProvidedError = (functionName: string) =>
   createDiagnosticMessage({
     source: GT_SOURCE,

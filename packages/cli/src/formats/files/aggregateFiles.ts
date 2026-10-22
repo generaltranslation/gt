@@ -33,7 +33,7 @@ import { validateYamlSchema } from '../yaml/utils.js';
 import { flattenJson } from '../json/flattenJson.js';
 import type { JSONObject } from '../../types/data/json.js';
 import YAML from 'yaml';
-import { determineLibrary } from '../../fs/determineFramework/index.js';
+import { determineLibraryForCLI } from '../../fs/determineFramework/index.js';
 import { hashStringSync, hashVersionId } from '../../utils/hash.js';
 import { api } from '../../utils/api.js';
 import { preprocessContent } from './preprocessContent.js';
@@ -112,7 +112,7 @@ export async function aggregateFiles(
 
   // Process JSON files
   if (filePaths.json) {
-    const { library, additionalModules } = determineLibrary();
+    const { library, additionalModules } = determineLibraryForCLI();
 
     // Determine dataFormat for JSONs
     let dataFormat: DataFormat;

@@ -1035,7 +1035,7 @@ describe('paginate', () => {
     });
 
     await expect(paginate(listProjects, { client }).next()).rejects.toEqual(
-      new ApiError('nope', 403, 'nope')
+      new ApiError('nope', 403)
     );
   });
 });

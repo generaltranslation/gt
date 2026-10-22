@@ -1,27 +1,6 @@
 import type { DataFormat } from '@generaltranslation/format/types';
 import { FileFormat, type FormatMetadata } from './file';
 
-/**
- * Metadata stored alongside GTJSON file entries.
- * Keys correspond to the entry id/hash in the GTJSON body.
- */
-export type GTJsonFormatMetadata = Record<
-  string,
-  {
-    context?: string;
-    id?: string;
-    domain?: string;
-    maxChars?: number;
-    dataFormat?: 'JSX' | 'ICU' | 'I18NEXT';
-    requestVersion?: number;
-    approved_at?: string | null;
-    approved_by?: string | null;
-    hash?: string;
-    staticId?: string;
-    filePaths?: string[];
-  }
->;
-
 export type FileUpload = {
   branchId?: string; // optional branch id. If not provided, will use the default branch.
   incomingBranchId?: string; // optional branch id to use for incoming translations
@@ -33,16 +12,7 @@ export type FileUpload = {
   transformFormat?: FileFormat;
   dataFormat?: DataFormat;
   locale: string;
-  formatMetadata?: GTJsonFormatMetadata | FormatMetadata;
+  formatMetadata?: FormatMetadata;
   versionId?: string; // Optional versionId. Only use this if you know what you are doing.
   fileId?: string; // Optional fileId. Only use this if you know what you are doing.
 };
-
-export type UploadFilesOptions = {
-  sourceLocale: string;
-  modelProvider?: string;
-  timeout?: number;
-};
-
-export type RequiredUploadFilesOptions = UploadFilesOptions &
-  Required<Pick<UploadFilesOptions, 'sourceLocale'>>;

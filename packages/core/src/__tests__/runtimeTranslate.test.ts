@@ -345,7 +345,7 @@ describe.sequential('runtime translate helpers', () => {
       }
     );
 
-    it('keeps the legacy class zero timeout selecting the default', async () => {
+    it('treats a class zero timeout as a literal zero', async () => {
       vi.useFakeTimers();
       vi.stubGlobal(
         'fetch',
@@ -358,11 +358,11 @@ describe.sequential('runtime translate helpers', () => {
         )
       );
 
-      const legacy = expect(
+      const zero = expect(
         new GTRuntime(config).translateMany(['Hello'], 'es', 0)
-      ).rejects.toThrow(`timed out after ${defaultTimeout}ms`);
-      await vi.advanceTimersByTimeAsync(defaultTimeout);
-      await legacy;
+      ).rejects.toThrow('timed out after 0ms');
+      await vi.advanceTimersByTimeAsync(0);
+      await zero;
     });
 
     it('does not retry translation even when the adapter configures management retries', async () => {

@@ -79,20 +79,6 @@
         "default": "./dist/index.server.mjs"
       },
       "default": "./dist/index.server.mjs"
-    },
-    "./server": {
-      "import": {
-        "types": "./dist/server.d.mts",
-        "default": "./dist/server.mjs"
-      },
-      "default": "./dist/server.mjs"
-    }
-  },
-  "typesVersions": {
-    "*": {
-      "server": [
-        "./dist/server.d.mts"
-      ]
     }
   },
   "keywords": [
