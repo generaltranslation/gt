@@ -122,6 +122,16 @@ function explainForbidden(diagnostic: (error: unknown) => string) {
   };
 }
 
+// Account-scoped requests reject project keys before sending anything.
+const projectKeyDiscoveryError = createDiagnosticMessage({
+  source: 'gt',
+  severity: 'Error',
+  whatHappened:
+    'The API key is a project API key, which cannot list or create projects',
+  fix: "Pass --project-id <id> or set GT_PROJECT_ID to the key's project",
+  wayOut: `remove GT_API_KEY from your shell and from ${envFiles.join(', ')} and sign in, or use an Organization API key, to list and create projects`,
+});
+
 const noProjectChosenError = createDiagnosticMessage({
   source: 'gt',
   severity: 'Error',
@@ -206,6 +216,9 @@ export async function resolveDevelopmentProject(
   cwd: string = process.cwd()
 ): Promise<DevelopmentProject | undefined> {
   if (settings.projectId) return { id: settings.projectId };
+  if (settings.apiKey?.startsWith('gtx-api-')) {
+    throw new OnboardingError(projectKeyDiscoveryError);
+  }
   if (options.createProject) {
     return resolveNewProject(session, settings, options, cwd);
   }

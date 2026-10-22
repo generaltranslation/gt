@@ -53,12 +53,14 @@ describe.sequential('GT service locale egress', () => {
 
       const gt = new GT({
         apiKey: 'test-api-key',
-        projectId: 'test-project',
         baseUrl,
-        sourceLocale: configuredSourceLocale,
-        customMapping: {
-          'brand-english': { code: 'en-us' },
-          'brand-french': { code: 'fr-fr' },
+        projectId: 'test-project',
+        localeConfig: {
+          defaultLocale: configuredSourceLocale,
+          customMapping: {
+            'brand-english': { code: 'en-us' },
+            'brand-french': { code: 'fr-fr' },
+          },
         },
       });
       const files = [
@@ -67,7 +69,7 @@ describe.sequential('GT service locale egress', () => {
             content: '{}',
             fileName: 'messages.json',
             fileFormat: 'JSON' as const,
-            locale: gt.sourceLocale,
+            locale: configuredSourceLocale,
           },
           translations: [
             {
@@ -147,13 +149,14 @@ describe.sequential('GT service locale egress', () => {
 
     const gt = new GT({
       apiKey: 'test-api-key',
-      projectId: 'test-project',
       baseUrl,
-      sourceLocale: 'en-us',
-      targetLocale: 'brand-french',
-      customMapping: {
-        'brand-english': { code: 'en-us' },
-        'brand-french': { code: 'fr-fr' },
+      projectId: 'test-project',
+      localeConfig: {
+        defaultLocale: 'en-us',
+        customMapping: {
+          'brand-english': { code: 'en-us' },
+          'brand-french': { code: 'fr-fr' },
+        },
       },
     });
     const ids = {

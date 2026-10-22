@@ -21,17 +21,47 @@ describe('syncFonts', () => {
 
   it('explains a denied font upload and records it in the warnings summary', async () => {
     const message = 'Target not found or access denied';
-    vi.spyOn(api, 'upsertAssets').mockRejectedValue(new ApiError(message, 403));
+    vi.spyOn(api, 'getProject').mockResolvedValue({
+      orgId: 'org-id',
+    } as Awaited<ReturnType<typeof api.getProject>>);
+    const upsertAssets = vi
+      .spyOn(api, 'upsertAssets')
+      .mockRejectedValue(new ApiError(message, 403));
     const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
 
     await syncFonts({} as Settings);
 
+    expect(upsertAssets).toHaveBeenCalledWith('org-id', [
+      { fileName: 'Inter.ttf' },
+    ]);
     const printed = String(warn.mock.calls[0][0]);
     expect(printed).toContain(message);
     expect(printed).toContain('org:assets:write');
     expect(printed).toContain('fallback fonts');
     expect(getWarnings()).toEqual([
       { category: 'failed_upload', fileName: 'Fonts', reason: message },
+    ]);
+  });
+
+  it('skips the font request for a project API key with the denied-sync warning', async () => {
+    const getProject = vi.spyOn(api, 'getProject');
+    const upsertAssets = vi.spyOn(api, 'upsertAssets');
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
+
+    await syncFonts({ apiKey: 'gtx-api-project-key' } as Settings);
+
+    expect(getProject).not.toHaveBeenCalled();
+    expect(upsertAssets).not.toHaveBeenCalled();
+    const printed = String(warn.mock.calls[0][0]);
+    expect(printed).toContain('Font sync was denied');
+    expect(printed).toContain('org:assets:write');
+    expect(printed).toContain('fallback fonts');
+    expect(getWarnings()).toEqual([
+      {
+        category: 'failed_upload',
+        fileName: 'Fonts',
+        reason: 'A project API key cannot upload organization fonts',
+      },
     ]);
   });
 });

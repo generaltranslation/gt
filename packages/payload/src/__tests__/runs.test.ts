@@ -26,6 +26,7 @@ import { createPage } from './support/fixtures';
 
 let payload: Payload;
 const gt = new FakeGt();
+const client = () => gt;
 
 beforeAll(async () => {
   payload = await createTestPayload([gtPlugin({ client: gt })]);
@@ -66,7 +67,7 @@ async function stepUntilDone(
 ): Promise<RunProgress> {
   let progress = await readRun(id);
   for (let i = 0; i < limit && progress.status !== 'done'; i += 1)
-    progress = (await stepRun({ payload, gt, id })).progress;
+    progress = (await stepRun({ payload, client, id })).progress;
   return progress;
 }
 
@@ -107,8 +108,8 @@ describe('runs', () => {
     const { run } = await startPage();
     const before = gt.calls.uploadSourceFiles;
     const steps = await Promise.all([
-      stepRun({ payload, gt, id: run.id }),
-      stepRun({ payload, gt, id: run.id }),
+      stepRun({ payload, client, id: run.id }),
+      stepRun({ payload, client, id: run.id }),
     ]);
 
     expect(steps.filter((step) => step.progressed)).toHaveLength(1);
@@ -178,7 +179,7 @@ describe('runs', () => {
 
   it('ends a run whose steps keep failing, counting what is left as failed', async () => {
     const { run } = await startPage();
-    await stepRun({ payload, gt, id: run.id });
+    await stepRun({ payload, client, id: run.id });
     gt.unreachable = true;
 
     expect(await stepUntilDone(run.id)).toMatchObject({
@@ -249,8 +250,8 @@ describe('runs', () => {
       targets: [target],
       locales: ['fr'],
     });
-    await stepRun({ payload, gt, id: es.id });
-    await stepRun({ payload, gt, id: fr.id });
+    await stepRun({ payload, client, id: es.id });
+    await stepRun({ payload, client, id: fr.id });
     await Promise.all([stepUntilDone(es.id), stepUntilDone(fr.id)]);
 
     expect((await readPage(page.id, 'es')).title).toBe('HOME');
@@ -259,14 +260,14 @@ describe('runs', () => {
 
   it('drops the progress of a step that lost its lock to another stepper', async () => {
     const { run } = await startPage();
-    await stepRun({ payload, gt, id: run.id });
+    await stepRun({ payload, client, id: run.id });
     vi.useFakeTimers({ toFake: ['Date'] });
     let takenOver: string | null = null;
     gt.duringTranslation = async () => {
       vi.setSystemTime(Date.now() + 10 * 60_000);
       takenOver = await acquireLock(payload, `run:${run.id}`, 60_000);
     };
-    await stepRun({ payload, gt, id: run.id });
+    await stepRun({ payload, client, id: run.id });
     gt.duringTranslation = null;
 
     expect(takenOver).toBeTruthy();
@@ -304,7 +305,8 @@ describe('runs', () => {
       targets: [target],
       locales: ['es'],
     });
-    for (let i = 0; i < 3; i += 1) await stepRun({ payload, gt, id: run.id });
+    for (let i = 0; i < 3; i += 1)
+      await stepRun({ payload, client, id: run.id });
     const esAlt = async () =>
       (
         await payload.findByID({
@@ -325,12 +327,12 @@ describe('runs', () => {
 
   it('keeps the progress of a step that ran past its lock when nobody took over', async () => {
     const { run } = await startPage();
-    await stepRun({ payload, gt, id: run.id });
+    await stepRun({ payload, client, id: run.id });
     vi.useFakeTimers({ toFake: ['Date'] });
     gt.duringTranslation = async () => {
       vi.setSystemTime(Date.now() + 10 * 60_000);
     };
-    await stepRun({ payload, gt, id: run.id });
+    await stepRun({ payload, client, id: run.id });
     gt.duringTranslation = null;
 
     expect(await readRun(run.id)).toMatchObject({ status: 'done', done: 1 });
@@ -338,7 +340,7 @@ describe('runs', () => {
 
   it('survives a failed lock renewal during a long step', async () => {
     const { run } = await startPage();
-    await stepRun({ payload, gt, id: run.id });
+    await stepRun({ payload, client, id: run.id });
     const rejections: unknown[] = [];
     const onRejection = (reason: unknown) => rejections.push(reason);
     process.on('unhandledRejection', onRejection);
@@ -349,7 +351,7 @@ describe('runs', () => {
     gt.duringTranslation = async () => {
       await vi.advanceTimersByTimeAsync(31_000);
     };
-    const step = await stepRun({ payload, gt, id: run.id });
+    const step = await stepRun({ payload, client, id: run.id });
     gt.duringTranslation = null;
     updateMany.mockRestore();
     await new Promise((resolve) => setImmediate(resolve));

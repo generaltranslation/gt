@@ -6,6 +6,8 @@ import { hashMessage } from '../../utils/hashMessage';
 import { LookupOptions } from '../../translation-functions/types/options';
 import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
 
+const runtimePrototype = GTRuntime.prototype;
+
 /**
  * Contract tests for the I18nCache PUBLIC boundary (lookup API).
  *
@@ -15,7 +17,7 @@ import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
  * plus the protected onTranslationsCacheMiss hook) and stable helpers
  * (hashMessage, initializeI18nConfig). Do not import from or mock internal
  * module paths; runtime translation is observed by spying on
- * GTRuntime.prototype.translateMany.
+ * the project handle's translateMany.
  */
 
 const message = 'Hello {name}!';
@@ -70,7 +72,7 @@ function createCache(overrides: Record<string, unknown> = {}) {
 
 function spyOnTranslateMany() {
   return vi
-    .spyOn(GTRuntime.prototype, 'translateMany')
+    .spyOn(runtimePrototype, 'translateMany')
     .mockResolvedValue({} as never);
 }
 

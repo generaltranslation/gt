@@ -415,7 +415,7 @@ describe('generateSettings - composite patterns', () => {
     );
   });
 
-  it('configures a lazy user token provider alongside any explicit API key', async () => {
+  it('configures the API client with the API key, or else a lazy user token provider', async () => {
     const userSettings = await generateSettings({}, '/test/cwd');
     const keySettings = await generateSettings(
       { apiKey: 'explicit-api-key' },
@@ -430,13 +430,18 @@ describe('generateSettings - composite patterns', () => {
       userSettings.userTokenProvider!.getAccessToken
     ).not.toHaveBeenCalled();
     expect(vi.mocked(configureApiClient).mock.calls[0][0]).toMatchObject({
-      apiKey: undefined,
       userTokenProvider: userSettings.userTokenProvider,
     });
+    expect(vi.mocked(configureApiClient).mock.calls[0][0]).not.toHaveProperty(
+      'apiKey'
+    );
     expect(keySettings.apiKey).toBe('explicit-api-key');
     expect(vi.mocked(configureApiClient).mock.calls[1][0]).toMatchObject({
       apiKey: 'explicit-api-key',
     });
+    expect(vi.mocked(configureApiClient).mock.calls[1][0]).not.toHaveProperty(
+      'userTokenProvider'
+    );
   });
 
   it('sends requests to GT_API_URL over the configured base URL', async () => {

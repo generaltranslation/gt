@@ -24,7 +24,6 @@ vi.mock('../../fs/clearLocaleDirs.js', () => ({
 vi.mock('../../utils/api.js', () => ({
   api: {
     queryFiles: vi.fn(),
-    resolveAliasLocale: vi.fn((locale: string) => locale),
   },
 }));
 

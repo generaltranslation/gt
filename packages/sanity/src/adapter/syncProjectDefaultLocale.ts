@@ -2,17 +2,18 @@ import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/diagnostics';
+import type { ProjectHandle } from 'generaltranslation';
 import { ApiError } from 'generaltranslation/errors';
-import { api } from './core';
 
 /** Source uploads do not update the project's default locale. */
 export async function syncProjectDefaultLocale(
+  project: ProjectHandle,
   sourceLocale: string
 ): Promise<void> {
-  const project = await api.getProject();
-  if (project.defaultLocale === sourceLocale) return;
+  const { defaultLocale } = await project.get();
+  if (defaultLocale === sourceLocale) return;
   try {
-    await api.updateProject({ defaultLocale: sourceLocale });
+    await project.update({ defaultLocale: sourceLocale });
   } catch (error) {
     // A key without project:write can still upload and translate documents.
     if (!(error instanceof ApiError) || error.code !== 403) throw error;

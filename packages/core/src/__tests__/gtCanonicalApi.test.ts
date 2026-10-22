@@ -130,16 +130,15 @@ vi.stubGlobal(
 
 const gt = new GT({
   apiKey: 'key',
-  projectId: 'p',
   baseUrl: 'https://api.example.com',
-  sourceLocale: 'en',
-  targetLocale: 'es',
+  projectId: 'p',
+  localeConfig: { defaultLocale: 'en' },
 });
 
 describe.sequential('GT canonical API methods', () => {
   it('return canonical shapes from canonical routes', async () => {
-    await expect(gt.getProject()).resolves.toEqual(project);
-    await expect(gt.updateProject({ cdnEnabled: true })).resolves.toEqual({
+    await expect(gt.get()).resolves.toEqual(project);
+    await expect(gt.update({ cdnEnabled: true })).resolves.toEqual({
       ...project,
       cdnEnabled: true,
     });
@@ -194,9 +193,11 @@ describe.sequential('GT canonical API methods', () => {
       results: [{ ...decodedContent, metadata: undefined, status: 'ready' }],
     });
     await expect(
-      gt.upsertAssets([
-        { assetType: 'FONT', content: 'x', fileName: 'font.woff2' },
-      ])
+      new GT({ apiKey: 'key', baseUrl: 'https://api.example.com' })
+        .org('org')
+        .upsertAssets([
+          { assetType: 'FONT', content: 'x', fileName: 'font.woff2' },
+        ])
     ).resolves.toEqual(succeeded([{ ...asset, status: 'succeeded' }]));
   });
 

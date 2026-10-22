@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from 'generaltranslation/errors';
 import type { PublishFileEntry } from 'generaltranslation/types';
 import { api, configureApiClient } from '../api.js';
@@ -28,86 +28,34 @@ describe('CLI API client', () => {
       apiKey: 'api-key',
       baseUrl: 'https://api.example.com',
       projectId: 'project-id',
-      fetch: fetchMock,
       ...overrides,
     });
 
   beforeEach(() => {
     fetchMock.mockReset();
+    vi.stubGlobal('fetch', fetchMock);
     configure();
   });
 
-  it('fails fast when used before configuration', async () => {
-    vi.resetModules();
-    const unconfiguredModule = await import('../api.js');
-
-    await expect(unconfiguredModule.api.listBranches()).rejects.toThrow(
-      'API client not configured — call configureApiClient first'
-    );
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
-  it('exposes runtime translation through the shared adapter with the configured transport', async () => {
-    configure({
-      customMapping: { 'brand-english': { code: 'en-US' } },
-      retryPolicy: 'exponential',
-    });
-    const bodies: Array<{ sourceLocale: string; targetLocale: string }> = [];
-    fetchMock.mockImplementation(async (request) => {
-      expect(new URL(request.url).pathname).toBe(
-        '/v2/projects/project-id/translate'
-      );
-      expect(request.headers.get('authorization')).toBe('Bearer api-key');
-      expect(request.headers.get('gt-project-id')).toBeNull();
-      const body = JSON.parse(await request.text()) as {
-        requests: Record<string, unknown>;
-        sourceLocale: string;
-        targetLocale: string;
-      };
-      bodies.push(body);
-      return Response.json({
-        translations: Object.fromEntries(
-          Object.keys(body.requests).map((hash) => [
-            hash,
-            {
-              success: true,
-              translation: 'Hola',
-              locale: 'es',
-              dataFormat: 'STRING',
-            },
-          ])
-        ),
-        generated: true,
-      });
-    });
-
-    await expect(
-      api.translateMany(['Hello'], {
-        targetLocale: 'es',
-        sourceLocale: 'brand-english',
-      })
-    ).resolves.toEqual([
-      {
-        success: true,
-        translation: 'Hola',
-        locale: 'es',
-        dataFormat: 'STRING',
-      },
-    ]);
-    await expect(api.translate('Hello', 'es', 10_000)).resolves.toMatchObject({
-      translation: 'Hola',
-    });
-    expect(bodies).toEqual([
-      expect.objectContaining({ sourceLocale: 'en-US', targetLocale: 'es' }),
-      expect.objectContaining({ sourceLocale: 'en', targetLocale: 'es' }),
-    ]);
-  });
-
-  it('maps canonical server locales back to configured aliases', () => {
+  it('resolves configured aliases and spellings to standardized canonical locales', () => {
     configure({
       customMapping: { 'brand-english': { code: 'en-US' } },
     });
 
-    expect(api.resolveAliasLocale('en-US')).toBe('brand-english');
+    expect(api.resolveCanonicalLocale('brand-english')).toBe('en-US');
+    expect(api.resolveCanonicalLocale('en-us')).toBe('en-US');
+  });
+
+  it('keeps resolving with the configured custom mapping after the caller mutates it', () => {
+    const customMapping = { 'brand-english': { code: 'en-US' } };
+    configure({ customMapping });
+    customMapping['brand-english'].code = 'fr';
+
+    expect(api.resolveCanonicalLocale('brand-english')).toBe('en-US');
   });
 
   it('maps query file locales between configured aliases and canonical locales', async () => {
@@ -274,12 +222,35 @@ describe('CLI API client', () => {
     );
   });
 
-  it('requires a project ID to fetch project information', async () => {
+  it('restores a project locale to the alias configured with that exact code', async () => {
+    configure({
+      customMapping: { en: { code: 'en-US' }, generic: { code: 'en' } },
+    });
+    fetchMock.mockResolvedValue(
+      Response.json({
+        id: 'project-id',
+        name: 'Project',
+        orgId: 'org-id',
+        defaultLocale: 'en-US',
+        currentLocales: ['en-US', 'en'],
+        autoApprove: false,
+        cdnEnabled: true,
+      })
+    );
+
+    await expect(api.getProject()).resolves.toMatchObject({
+      defaultLocale: 'en',
+      currentLocales: ['en', 'generic'],
+    });
+  });
+
+  it('requires a project ID for project operations', async () => {
     configure({ projectId: undefined });
 
     await expect(api.getProject({ timeout: 10_000 })).rejects.toThrow(
-      'Project ID is required to fetch project information'
+      'No project ID was found'
     );
+    await expect(api.listBranches()).rejects.toThrow('No project ID was found');
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

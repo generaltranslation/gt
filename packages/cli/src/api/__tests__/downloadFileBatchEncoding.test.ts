@@ -12,7 +12,6 @@ import type { FileStatusTracker } from '../../workflows/steps/PollJobsStep.js';
 vi.mock('../../utils/api.js', () => ({
   api: {
     queryFilesContent: vi.fn(),
-    resolveAliasLocale: vi.fn((locale: string) => locale),
     resolveCanonicalLocale: vi.fn((locale: string) => locale),
   },
 }));

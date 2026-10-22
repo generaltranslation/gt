@@ -1,4 +1,5 @@
 import type { FileFormat } from '../../types-dir/api/file';
+import { createDiagnosticMessage } from '../../logging/diagnostics';
 import { isSupportedFileFormatTransform } from '../../utils/isSupportedFileFormatTransform';
 
 export type FileFormatTransformInput = {
@@ -34,6 +35,15 @@ export function validateFileFormatTransforms(
 ): void {
   for (const file of files) {
     const error = getFileFormatTransformError(file);
-    if (error) throw new Error(error);
+    if (error) {
+      throw new Error(
+        createDiagnosticMessage({
+          source: 'generaltranslation',
+          severity: 'Error',
+          whatHappened: error,
+          fix: 'Set `fileFormat` to a format that supports the requested `transformFormat`',
+        })
+      );
+    }
   }
 }

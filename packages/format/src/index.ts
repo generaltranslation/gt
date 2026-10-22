@@ -1,7 +1,5 @@
-export {
-  LocaleConfig,
-  type LocaleConfigConstructorParams,
-} from './LocaleConfig';
+export { GTIntl } from './GTIntl';
+export type { LocaleConfig } from './localeConfig';
 
 export {
   determineLocale,

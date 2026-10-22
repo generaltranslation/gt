@@ -30,7 +30,7 @@ export function formatMessage(
         dataFormat,
       });
     }
-    return getI18nConfig().formatMessage(encodedMsg, undefined, {
+    return getI18nConfig().formatMessage(encodedMsg, {
       variables,
       locales,
       dataFormat,

@@ -1,7 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   API_VERSION,
-  ApiError,
   createBranch,
   createProject,
   createProjectApiKey,
@@ -19,7 +18,7 @@ import {
   uploadTranslations,
   upsertAssets,
 } from '@generaltranslation/api';
-import { createGtApiAdapter } from '../createGtApi';
+import { GT } from '../index';
 
 vi.mock('@generaltranslation/api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@generaltranslation/api')>()),
@@ -88,13 +87,18 @@ const project = {
 
 const branch = { id: 'branch-id', name: 'main', isDefault: true };
 
-function configuredAdapter(fetch?: typeof globalThis.fetch) {
-  return createGtApiAdapter({
+// The API client reads the global fetch when GT is constructed.
+function account(fetch?: typeof globalThis.fetch) {
+  if (fetch) vi.stubGlobal('fetch', fetch);
+  return new GT({
+    apiKey: 'key',
     baseUrl: 'https://api.example.com',
-    projectId: 'project-id',
-    customMapping,
-    fetch,
+    localeConfig: { customMapping },
   });
+}
+
+function configuredProject(fetch?: typeof globalThis.fetch) {
+  return account(fetch).project('project-id');
 }
 
 // queryJobs is called inside @generaltranslation/api, so it is served over fetch.
@@ -111,35 +115,16 @@ function jobsFetch(statusOf: (id: string) => Record<string, unknown>) {
   return { fetch, requests };
 }
 
-describe.sequential('createGtApiAdapter', () => {
+describe.sequential('GT project and organization operations', () => {
   beforeEach(() => {
     vi.resetAllMocks();
   });
 
-  it('fails before an adapter without defaults is configured', async () => {
-    const adapter = createGtApiAdapter();
-
-    await expect(adapter.createBranch({ name: 'main' })).rejects.toThrow(
-      'API client not configured'
-    );
-    await expect(adapter.translate('Hello', 'es')).rejects.toThrow(
-      'API client not configured'
-    );
-    await expect(adapter.translateMany(['Hello'], 'es')).rejects.toThrow(
-      'API client not configured'
-    );
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
-  it('resolves configured locales in both directions', () => {
-    const adapter = createGtApiAdapter();
-    adapter.configure({ baseUrl: 'https://api.example.com', customMapping });
-
-    expect(adapter.resolveCanonicalLocale('target')).toBe('es-ES');
-    expect(adapter.resolveCanonicalLocale('en-us')).toBe('en-US');
-    expect(adapter.resolveAliasLocale('es-ES')).toBe('target');
-  });
-
-  it('sends canonical project-scoped requests without gt-project-id and refreshes them on reconfiguration', async () => {
+  it('sends canonical requests to each project scope without gt-project-id', async () => {
     const { createBranch: realCreateBranch } = await vi.importActual<
       typeof import('@generaltranslation/api')
     >('@generaltranslation/api');
@@ -147,24 +132,20 @@ describe.sequential('createGtApiAdapter', () => {
     const fetchMock = vi.fn<typeof fetch>(async () =>
       Response.json({ branch }, { status: 201 })
     );
-    const adapter = createGtApiAdapter({
+    vi.stubGlobal('fetch', fetchMock);
+    await new GT({
       baseUrl: 'https://api.example.com',
       apiKey: 'old-key',
-      projectId: 'old-project',
-      customMapping,
-      fetch: fetchMock,
-    });
-    await adapter.createBranch({ name: 'main' });
-    expect(adapter.resolveAliasLocale('es-ES')).toBe('target');
+      localeConfig: { customMapping },
+    })
+      .project('old-project')
+      .createBranch({ name: 'main' });
 
-    adapter.configure({
+    await new GT({
       baseUrl: 'https://reconfigured.example.com',
       apiKey: 'new-key',
-      apiVersion: '2026-03-06.v1',
       projectId: 'new-project',
-      fetch: fetchMock,
-    });
-    await adapter.createBranch({ name: 'main' });
+    }).createBranch({ name: 'main' });
 
     const [first, second] = fetchMock.mock.calls.map(
       ([input, init]) => new Request(input, init)
@@ -179,40 +160,46 @@ describe.sequential('createGtApiAdapter', () => {
       '/v2/projects/new-project/branches'
     );
     expect(second.headers.get('authorization')).toBe('Bearer new-key');
-    // The per-call header keeps a configured version override in effect.
-    expect(second.headers.get('gt-api-version')).toBe('2026-03-06.v1');
+    expect(second.headers.get('gt-api-version')).toBe(API_VERSION);
     expect(second.headers.has('gt-project-id')).toBe(false);
-    expect(adapter.resolveAliasLocale('es-ES')).toBe('es-ES');
   });
 
-  it('rethrows a createBranch conflict when no branch has the name', async () => {
+  it('propagates a createBranch conflict without looking the branch up', async () => {
     vi.mocked(createBranch).mockResolvedValue(failure(409) as never);
-    vi.mocked(listBranches).mockResolvedValue(
-      result({ items: [], nextCursor: null })
-    );
 
     await expect(
-      configuredAdapter().createBranch({ name: 'feature', isDefault: true })
-    ).rejects.toMatchObject({ code: 409 });
-  });
-
-  it('rethrows a createBranch conflict when the key cannot list branches', async () => {
-    vi.mocked(createBranch).mockResolvedValue(failure(409) as never);
-    vi.mocked(listBranches).mockRejectedValue(new ApiError('forbidden', 403));
-
-    await expect(
-      configuredAdapter().createBranch({ name: 'feature' })
-    ).rejects.toMatchObject({ code: 409 });
+      configuredProject().createBranch({ name: 'feature', isDefault: true })
+    ).rejects.toEqual(expect.objectContaining({ name: 'ApiError', code: 409 }));
+    expect(listBranches).not.toHaveBeenCalled();
   });
 
   it('aliases the project locales from getProject', async () => {
     vi.mocked(getProject).mockResolvedValue(result(project));
-    const adapter = configuredAdapter();
+    const adapter = configuredProject();
 
-    await expect(adapter.getProject()).resolves.toEqual({
+    await expect(adapter.get()).resolves.toEqual({
       ...project,
       defaultLocale: 'source',
       currentLocales: ['target'],
+    });
+  });
+
+  it('restores a response locale to the identity configured with that exact code', async () => {
+    vi.mocked(getProject).mockResolvedValue(
+      result({ ...project, defaultLocale: 'en-US', currentLocales: ['en'] })
+    );
+    vi.stubGlobal('fetch', vi.fn());
+    const handle = new GT({
+      apiKey: 'key',
+      projectId: 'project-id',
+      localeConfig: {
+        customMapping: { en: { code: 'en-US' }, generic: { code: 'en' } },
+      },
+    });
+
+    await expect(handle.get()).resolves.toMatchObject({
+      defaultLocale: 'en',
+      currentLocales: ['generic'],
     });
   });
 
@@ -238,7 +225,7 @@ describe.sequential('createGtApiAdapter', () => {
           ])
         )
       );
-      const adapter = configuredAdapter();
+      const adapter = configuredProject();
 
       const response = await adapter.uploadTranslations(
         [
@@ -307,7 +294,7 @@ describe.sequential('createGtApiAdapter', () => {
       },
     });
 
-    const response = await configuredAdapter().uploadSourceFiles(
+    const response = await configuredProject().uploadSourceFiles(
       [source('saved.json'), source('failed.json')],
       { sourceLocale: 'source' }
     );
@@ -358,7 +345,7 @@ describe.sequential('createGtApiAdapter', () => {
         ],
       })
     );
-    const adapter = configuredAdapter();
+    const adapter = configuredProject();
     const file = (locale: string) => ({
       content: '{}',
       fileName: 'document.json',
@@ -396,7 +383,7 @@ describe.sequential('createGtApiAdapter', () => {
       'done-job': { status: 'completed' },
     };
     const { fetch, requests } = jobsFetch((id) => statuses[id]);
-    const adapter = configuredAdapter(fetch);
+    const adapter = configuredProject(fetch);
     const jobIds = ['failed-job', 'missing-job', 'done-job'];
     const jobs = jobIds.map((id) => ({ id, ...statuses[id] }));
 
@@ -428,7 +415,7 @@ describe.sequential('createGtApiAdapter', () => {
     };
     const aliased = { ...job, subject: { ...subject, locale: 'target' } };
     vi.mocked(translateFiles).mockResolvedValue(result({ jobs: [job] }));
-    const adapter = configuredAdapter(async (input, init) => {
+    const adapter = configuredProject(async (input, init) => {
       const request = new Request(input, init);
       return Response.json(request.method === 'GET' ? job : { results: [job] });
     });
@@ -450,7 +437,7 @@ describe.sequential('createGtApiAdapter', () => {
 
   it('sends a translateFiles transform selector unchanged', async () => {
     vi.mocked(translateFiles).mockResolvedValue(result({ jobs: [] }));
-    const adapter = configuredAdapter();
+    const adapter = configuredProject();
 
     await adapter.translateFiles([
       { fileId: 'file-id', versionId: 'version-id', transformFormat: 'HTML' },
@@ -469,7 +456,7 @@ describe.sequential('createGtApiAdapter', () => {
       publish: true,
     }));
     files[100] = { ...files[0], publish: false };
-    const adapter = configuredAdapter();
+    const adapter = configuredProject();
 
     await expect(adapter.publishFiles(files)).rejects.toThrow(
       'Each branch, file, and version may appear once in a publish list'
@@ -504,7 +491,7 @@ describe.sequential('createGtApiAdapter', () => {
         ])
       )
     );
-    const adapter = configuredAdapter();
+    const adapter = configuredProject();
 
     const published = await adapter.publishFiles([
       {
@@ -576,7 +563,7 @@ describe.sequential('createGtApiAdapter', () => {
     vi.mocked(queryFilesContent).mockResolvedValue(
       result({ results: [content, other] })
     );
-    const adapter = configuredAdapter();
+    const adapter = configuredProject();
     // The alias `target` and the canonical `es-es` both resolve to `es-ES`.
     const files = [
       { fileId: 'file-id', locale: 'target' },
@@ -607,76 +594,17 @@ describe.sequential('createGtApiAdapter', () => {
     ]);
   });
 
-  it('takes the font organization from config, else from the project once per configuration', async () => {
-    vi.mocked(getProject).mockResolvedValue(result(project));
+  it("uploads fonts to the scope's organization without a project lookup", async () => {
     vi.mocked(upsertAssets).mockResolvedValue(result(succeeded([])));
     const font = { assetType: 'FONT' as const, content: 'x', fileName: 'f' };
-    const adapter = configuredAdapter();
 
-    await adapter.upsertAssets([font]);
-    await adapter.upsertAssets([font]);
-    expect(getProject).toHaveBeenCalledTimes(1);
+    await account().org('org-id').upsertAssets([font]);
 
-    adapter.configure({
-      baseUrl: 'https://api.example.com',
-      projectId: 'project-id',
-      orgId: 'configured-org',
-    });
-    await adapter.upsertAssets([font]);
-    expect(getProject).toHaveBeenCalledTimes(1);
-
+    expect(getProject).not.toHaveBeenCalled();
     expect(
       vi.mocked(upsertAssets).mock.calls.map(([options]) => options.path)
-    ).toEqual([
-      { orgId: 'org-id' },
-      { orgId: 'org-id' },
-      { orgId: 'configured-org' },
-    ]);
+    ).toEqual([{ orgId: 'org-id' }]);
   });
-
-  it.each([
-    ['an explicit organization', 'org-B', 0],
-    ['no organization', undefined, 1],
-  ])(
-    'keeps a font upload on its own configuration when reconfigured with %s during the organization lookup',
-    async (_label, orgId, extraLookups) => {
-      let resolveLookup!: (value: unknown) => void;
-      vi.mocked(getProject)
-        .mockImplementationOnce(
-          () =>
-            new Promise((resolve) => {
-              resolveLookup = resolve;
-            }) as never
-        )
-        .mockResolvedValue(result({ ...project, orgId: 'org-B' }));
-      vi.mocked(upsertAssets).mockResolvedValue(result(succeeded([])));
-      const font = { assetType: 'FONT' as const, content: 'x', fileName: 'f' };
-      const adapter = configuredAdapter();
-
-      const pendingUpload = adapter.upsertAssets([font]);
-      adapter.configure({
-        baseUrl: 'https://reconfigured.example.com',
-        projectId: 'project-B',
-        orgId,
-      });
-      resolveLookup(result({ ...project, orgId: 'org-A' }));
-      await pendingUpload;
-      await adapter.upsertAssets([font]);
-
-      expect(getProject).toHaveBeenCalledTimes(1 + extraLookups);
-      expect(
-        vi
-          .mocked(upsertAssets)
-          .mock.calls.map(([options]) => [
-            options.client!.getConfig().baseUrl,
-            options.path.orgId,
-          ])
-      ).toEqual([
-        ['https://api.example.com', 'org-A'],
-        ['https://reconfigured.example.com', 'org-B'],
-      ]);
-    }
-  );
 
   it.each([
     ['moveFiles', 25],
@@ -707,15 +635,14 @@ describe.sequential('createGtApiAdapter', () => {
               }))
             )
           )) as never;
-      vi.mocked(getProject).mockResolvedValue(result(project));
       vi.mocked(moveFiles).mockImplementation(echo('moves', 'oldFileId'));
       vi.mocked(upsertAssets).mockImplementation(echo('assets', 'fileName'));
-      const adapter = configuredAdapter();
+      const adapter = account();
 
       const response =
         operation === 'moveFiles'
-          ? await adapter.moveFiles(items as never)
-          : await adapter.upsertAssets(items as never);
+          ? await adapter.project('project-id').moveFiles(items as never)
+          : await adapter.org('org-id').upsertAssets(items as never);
 
       const mock = operation === 'moveFiles' ? moveFiles : upsertAssets;
       expect(
@@ -761,7 +688,7 @@ describe.sequential('createGtApiAdapter', () => {
         move(lastOld, lastNew),
       ];
 
-      await expect(configuredAdapter().moveFiles(moves)).rejects.toThrow(
+      await expect(configuredProject().moveFiles(moves)).rejects.toThrow(
         'Each old and each new file ID may appear once in a move list'
       );
       expect(moveFiles).not.toHaveBeenCalled();
@@ -770,13 +697,12 @@ describe.sequential('createGtApiAdapter', () => {
 
   it('sends no request for an empty font list', async () => {
     const fetchMock = vi.fn<typeof fetch>();
-    const adapter = configuredAdapter(fetchMock);
+    const adapter = account(fetchMock);
 
-    await expect(adapter.upsertAssets([])).resolves.toEqual({
+    await expect(adapter.org('org-id').upsertAssets([])).resolves.toEqual({
       summary: { total: 0, succeeded: 0, failed: 0 },
       results: [],
     });
-    expect(getProject).not.toHaveBeenCalled();
     expect(upsertAssets).not.toHaveBeenCalled();
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -787,7 +713,7 @@ describe.sequential('createGtApiAdapter', () => {
     );
 
     await expect(
-      configuredAdapter(fetchMock).updateBranch('branch-id', {
+      configuredProject(fetchMock).updateBranch('branch-id', {
         name: 'main',
         isDefault: true,
       })
@@ -840,7 +766,7 @@ describe.sequential('createGtApiAdapter', () => {
     vi.mocked(uploadSourceFiles).mockResolvedValue(result(succeeded([])));
     vi.mocked(uploadTranslations).mockResolvedValue(result(succeeded([])));
     const { fetch, requests } = jobsFetch(() => ({ status: 'completed' }));
-    const adapter = configuredAdapter(fetch);
+    const adapter = configuredProject(fetch);
 
     await adapter.publishFiles(
       ids.map((id) => ({ ...file(id), publish: true }))
@@ -896,14 +822,20 @@ describe.sequential('createGtApiAdapter', () => {
         },
       })
     );
-    const adapter = createGtApiAdapter({
-      baseUrl: 'https://api.example.com',
-      customMapping,
-    });
+    const adapter = account();
 
-    await adapter.createProject('org-id', {
-      name: 'Project',
-      defaultLocale: 'source',
+    await expect(
+      adapter.org('org-id').createProject({
+        name: 'Project',
+        defaultLocale: 'source',
+      })
+    ).resolves.toEqual({
+      project: {
+        id: 'project-id',
+        name: 'Project',
+        orgId: 'org-id',
+        defaultLocale: 'source',
+      },
     });
 
     expect(createProject).toHaveBeenCalledWith(
@@ -913,6 +845,35 @@ describe.sequential('createGtApiAdapter', () => {
       })
     );
   });
+
+  it.each(['first', 'second'])(
+    'returns the requested alias %s when two aliases share a code',
+    async (alias) => {
+      vi.mocked(createProject).mockResolvedValue(
+        result({
+          project: {
+            id: 'project-id',
+            name: 'Project',
+            orgId: 'org-id',
+            defaultLocale: 'en-US',
+          },
+        })
+      );
+      const org = new GT({
+        apiKey: 'key',
+        localeConfig: {
+          customMapping: {
+            first: { code: 'en-US' },
+            second: { code: 'en-US' },
+          },
+        },
+      }).org('org-id');
+
+      await expect(
+        org.createProject({ name: 'Project', defaultLocale: alias })
+      ).resolves.toMatchObject({ project: { defaultLocale: alias } });
+    }
+  );
 
   it('lists projects across every cursor page', async () => {
     const listed = (id: string) => ({
@@ -931,9 +892,7 @@ describe.sequential('createGtApiAdapter', () => {
       .mockResolvedValueOnce(
         result({ items: [listed('p3')], nextCursor: null })
       );
-    const adapter = createGtApiAdapter({
-      baseUrl: 'https://api.example.com',
-    });
+    const adapter = account();
 
     const projects = await adapter.listProjects();
 
@@ -955,9 +914,7 @@ describe.sequential('createGtApiAdapter', () => {
       .mockResolvedValueOnce(
         result({ items: [{ id: 'o2', name: 'Org 2' }], nextCursor: null })
       );
-    const adapter = createGtApiAdapter({
-      baseUrl: 'https://api.example.com',
-    });
+    const adapter = account();
 
     const orgs = await adapter.listOrgs();
 
@@ -979,11 +936,9 @@ describe.sequential('createGtApiAdapter', () => {
         },
       })
     );
-    const adapter = createGtApiAdapter({
-      baseUrl: 'https://api.example.com',
-    });
+    const adapter = account();
 
-    const { apiKey } = await adapter.createProjectApiKey('project-id', {
+    const { apiKey } = await adapter.project('project-id').createApiKey({
       name: 'Dev',
       permissions: ['project:translations:generate'],
     });

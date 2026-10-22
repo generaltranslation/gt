@@ -13,13 +13,12 @@ vi.mock('../../adapter/core', async () => {
   return {
     ...actual,
     gt: {
-      sourceLocale: 'en',
+      defaultLocale: 'en',
     },
-    api: {
+    projectFor: () => ({
       queryFilesContent: (...args: unknown[]) => queryFilesContent(...args),
       uploadTranslations: (...args: unknown[]) => uploadTranslations(...args),
-    },
-    overrideConfig: vi.fn(),
+    }),
   };
 });
 

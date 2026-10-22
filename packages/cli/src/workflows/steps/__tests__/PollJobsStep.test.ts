@@ -79,7 +79,6 @@ describe('PollTranslationJobsStep inline catalog labels', () => {
     });
     const api = {
       awaitJobs,
-      resolveAliasLocale: (locale: string) => locale,
     } as unknown as ApiClient;
     const step = new PollTranslationJobsStep(api);
     const fileTracker: FileStatusTracker = {
@@ -131,7 +130,6 @@ describe('PollTranslationJobsStep inline catalog labels', () => {
         complete: false,
         jobs: jobIds.map((id) => ({ id, status: 'unknown' as const })),
       })),
-      resolveAliasLocale: (locale: string) => locale,
     } as unknown as ApiClient;
     const step = new PollTranslationJobsStep(api);
     const fileTracker: FileStatusTracker = {
@@ -206,7 +204,6 @@ describe('PollTranslationJobsStep inline catalog labels', () => {
           jobIds,
           options
         )) satisfies ApiClient['awaitJobs'],
-      resolveAliasLocale: (locale: string) => locale,
     } as unknown as ApiClient;
     const step = new PollTranslationJobsStep(api);
 

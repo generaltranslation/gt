@@ -1,4 +1,4 @@
-import type { createGtApiAdapter } from '../../adapter/createGtApi.js';
+import type { GTRuntime } from '../../index.js';
 import type {
   TranslateConfig,
   TranslateManyResult,
@@ -14,17 +14,25 @@ type Equal<Left, Right> =
     : false;
 type Expect<Value extends true> = Value;
 
-declare const adapter: ReturnType<typeof createGtApiAdapter>;
+declare const project: GTRuntime;
 
 // Array input infers an ordered array; record input infers a keyed record.
-const adapterArray = adapter.translateMany(['Hello'], { targetLocale: 'es' });
-const adapterRecord = adapter.translateMany({ key: 'Hello' }, 'es', false);
-type _AdapterArrayInference = Expect<
-  Equal<Awaited<typeof adapterArray>, TranslateManyResult>
+const projectArray = project.translateMany(['Hello'], { targetLocale: 'es' });
+const projectRecord = project.translateMany({ key: 'Hello' }, 'es');
+type _ProjectArrayInference = Expect<
+  Equal<Awaited<typeof projectArray>, TranslateManyResult>
 >;
-type _AdapterRecordInference = Expect<
-  Equal<Awaited<typeof adapterRecord>, Record<string, TranslationResult>>
+type _ProjectRecordInference = Expect<
+  Equal<Awaited<typeof projectRecord>, Record<string, TranslationResult>>
 >;
+
+// Configuration is read-only, and GTRuntime only translates.
+// @ts-expect-error the project ID cannot be reassigned.
+project.projectId = 'other';
+// @ts-expect-error GTRuntime has no project handle.
+void project.project;
+// @ts-expect-error formatting is on GTIntl.
+void project.formatNum;
 
 // timeoutMs is the single new spelling; `false` disables the runtime timer.
 const transport: TranslationRequestConfig = {

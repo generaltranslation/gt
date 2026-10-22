@@ -17,16 +17,16 @@ export type CreateTranslateMany = (locale: Locale) => TranslateMany;
 
 /**
  * Create a translate many function
- * @param locale - The locale
+ * @param getProject - Returns the project to translate with; called per request, so its errors reject the request
  * @returns The translate many function
  */
 export function createTranslateManyFactory(
-  gtInstance: TranslateManyClient,
+  getProject: () => TranslateManyClient,
   timeout?: number,
   metadata: RuntimeTranslateManyOptions = {}
 ): CreateTranslateMany {
-  return (locale) => (sources) =>
-    gtInstance.translateMany(
+  return (locale) => async (sources) =>
+    getProject().translateMany(
       sources,
       { ...metadata, targetLocale: locale },
       timeout

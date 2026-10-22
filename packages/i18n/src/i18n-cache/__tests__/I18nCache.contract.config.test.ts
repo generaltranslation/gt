@@ -6,7 +6,7 @@
  * validation/ directory and translations-loaders/ internals can be
  * restructured or inlined without breaking behavior. Do not import or mock
  * i18n-cache internals here; the only stubbed boundaries are global fetch,
- * console, env, and GTRuntime.prototype.translateMany.
+ * console, env, and the project handle's translateMany.
  */
 import {
   describe,
@@ -23,6 +23,8 @@ import { I18nCache } from '../I18nCache';
 import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
 import { hashMessage } from '../../utils/hashMessage';
 import type { LookupOptions } from '../../translation-functions/types/options';
+
+const runtimePrototype = GTRuntime.prototype;
 
 type TestGlobal = typeof globalThis & {
   __generaltranslation?: unknown;
@@ -58,7 +60,7 @@ function succeedTranslateMany(
   translate: (hash: string, source: unknown) => string
 ) {
   return vi
-    .spyOn(GTRuntime.prototype, 'translateMany')
+    .spyOn(runtimePrototype, 'translateMany')
     .mockImplementation(async (sources) =>
       Object.fromEntries(
         Object.entries(sources as Record<string, { source: unknown }>).map(
@@ -277,7 +279,8 @@ describe('I18nCache config contract', () => {
     $requiresReview: true,
   };
 
-  it('passes runtimeTranslation timeout and metadata through to GTRuntime.translateMany', async () => {
+  it('passes runtimeTranslation timeout and metadata through to the project handle translateMany', async () => {
+    initConfig({ projectId: 'test-project', apiKey: 'test-api-key' });
     const translateManySpy = succeedTranslateMany(() => 'Bonjour {name} !');
     const cache = new I18nCache({
       loadTranslations: async () => ({}),
@@ -319,6 +322,7 @@ describe('I18nCache config contract', () => {
   });
 
   it('defaults the runtime translation timeout to 12 seconds', async () => {
+    initConfig({ projectId: 'test-project', apiKey: 'test-api-key' });
     const translateManySpy = succeedTranslateMany(() => 'Bonjour !');
     const cache = new I18nCache({ loadTranslations: async () => ({}) });
 
@@ -333,6 +337,7 @@ describe('I18nCache config contract', () => {
   });
 
   it('resolves the requested locale before calling translateMany', async () => {
+    initConfig({ projectId: 'test-project', apiKey: 'test-api-key' });
     const translateManySpy = succeedTranslateMany(() => 'Bonjour !');
     const cache = new I18nCache({ loadTranslations: async () => ({}) });
 
@@ -346,6 +351,7 @@ describe('I18nCache config contract', () => {
   });
 
   it('batches concurrent cache misses into a single translateMany call', async () => {
+    initConfig({ projectId: 'test-project', apiKey: 'test-api-key' });
     const translateManySpy = succeedTranslateMany((hash) => `t-${hash}`);
     const cache = new I18nCache({
       loadTranslations: async () => ({}),
@@ -365,6 +371,7 @@ describe('I18nCache config contract', () => {
   });
 
   it('splits misses that exceed maxBatchSize into separate calls', async () => {
+    initConfig({ projectId: 'test-project', apiKey: 'test-api-key' });
     const translateManySpy = succeedTranslateMany((hash) => `t-${hash}`);
     const cache = new I18nCache({
       loadTranslations: async () => ({}),

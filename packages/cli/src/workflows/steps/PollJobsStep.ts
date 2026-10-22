@@ -86,10 +86,10 @@ export class PollTranslationJobsStep {
       string,
       (typeof jobData.jobData)[number] & { jobId: string }
     >();
+    // Job locales already come back under the configured aliases.
     Object.entries(jobData.jobData).forEach(([jobId, job]) => {
-      const jobLocale = this.api.resolveAliasLocale(job.targetLocale);
-      const key = `${job.branchId}:${job.fileId}:${job.versionId}:${jobLocale}`;
-      jobMap.set(key, { ...job, jobId, targetLocale: jobLocale });
+      const key = `${job.branchId}:${job.fileId}:${job.versionId}:${job.targetLocale}`;
+      jobMap.set(key, { ...job, jobId });
     });
 
     // Build a map of jobs for quick lookup:
@@ -104,12 +104,11 @@ export class PollTranslationJobsStep {
       }
     >();
     Object.entries(jobData.jobData).forEach(([jobId, job]) => {
-      const jobLocale = this.api.resolveAliasLocale(job.targetLocale);
       jobFileMap.set(jobId, {
         branchId: job.branchId,
         fileId: job.fileId,
         versionId: job.versionId,
-        locale: jobLocale,
+        locale: job.targetLocale,
       });
     });
 

@@ -1,17 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from 'generaltranslation/errors';
-import { api } from '../../adapter/core';
+import type { ProjectHandle } from 'generaltranslation';
 import type { GTFile } from '../../types';
 import { uploadFiles } from '../uploadFiles';
 
+const api = vi.hoisted(() => ({
+  uploadSourceFiles: vi.fn<ProjectHandle['uploadSourceFiles']>(),
+  get: vi.fn(),
+  update: vi.fn(),
+}));
+
 vi.mock('../../adapter/core', () => ({
-  api: {
-    uploadSourceFiles: vi.fn(),
-    getProject: vi.fn(),
-    updateProject: vi.fn(),
-  },
-  gt: { sourceLocale: 'en' },
-  overrideConfig: vi.fn(),
+  gt: { defaultLocale: 'en' },
+  projectFor: () => api,
 }));
 
 const document = {
@@ -36,7 +37,7 @@ function uploadResult(status: 'succeeded' | 'failed') {
         status,
       },
     ],
-  } as Awaited<ReturnType<typeof api.uploadSourceFiles>>;
+  } as Awaited<ReturnType<ProjectHandle['uploadSourceFiles']>>;
 }
 
 describe('uploadFiles project default locale', () => {
@@ -49,38 +50,36 @@ describe('uploadFiles project default locale', () => {
     vi.mocked(api.uploadSourceFiles).mockResolvedValue(
       uploadResult('succeeded')
     );
-    vi.mocked(api.getProject).mockResolvedValue({
+    vi.mocked(api.get).mockResolvedValue({
       defaultLocale: 'fr',
-    } as Awaited<ReturnType<typeof api.getProject>>);
+    } as Awaited<ReturnType<ProjectHandle['get']>>);
 
     await uploadFiles([document], null);
 
-    expect(api.updateProject).toHaveBeenCalledWith({ defaultLocale: 'en' });
+    expect(api.update).toHaveBeenCalledWith({ defaultLocale: 'en' });
   });
 
   it('leaves the project alone when its default locale already matches', async () => {
     vi.mocked(api.uploadSourceFiles).mockResolvedValue(
       uploadResult('succeeded')
     );
-    vi.mocked(api.getProject).mockResolvedValue({
+    vi.mocked(api.get).mockResolvedValue({
       defaultLocale: 'en',
-    } as Awaited<ReturnType<typeof api.getProject>>);
+    } as Awaited<ReturnType<ProjectHandle['get']>>);
 
     await uploadFiles([document], null);
 
-    expect(api.getProject).toHaveBeenCalledTimes(1);
-    expect(api.updateProject).not.toHaveBeenCalled();
+    expect(api.get).toHaveBeenCalledTimes(1);
+    expect(api.update).not.toHaveBeenCalled();
   });
 
   it('warns and keeps the upload when the key cannot update the project', async () => {
     const result = uploadResult('succeeded');
     vi.mocked(api.uploadSourceFiles).mockResolvedValue(result);
-    vi.mocked(api.getProject).mockResolvedValue({
+    vi.mocked(api.get).mockResolvedValue({
       defaultLocale: 'fr',
-    } as Awaited<ReturnType<typeof api.getProject>>);
-    vi.mocked(api.updateProject).mockRejectedValueOnce(
-      new ApiError('Forbidden', 403)
-    );
+    } as Awaited<ReturnType<ProjectHandle['get']>>);
+    vi.mocked(api.update).mockRejectedValueOnce(new ApiError('Forbidden', 403));
 
     await expect(uploadFiles([document], null)).resolves.toBe(result);
     expect(console.warn).toHaveBeenCalledWith(
@@ -92,10 +91,10 @@ describe('uploadFiles project default locale', () => {
     vi.mocked(api.uploadSourceFiles).mockResolvedValue(
       uploadResult('succeeded')
     );
-    vi.mocked(api.getProject).mockResolvedValue({
+    vi.mocked(api.get).mockResolvedValue({
       defaultLocale: 'fr',
-    } as Awaited<ReturnType<typeof api.getProject>>);
-    vi.mocked(api.updateProject).mockRejectedValueOnce(
+    } as Awaited<ReturnType<ProjectHandle['get']>>);
+    vi.mocked(api.update).mockRejectedValueOnce(
       new ApiError('Server error', 500)
     );
 
@@ -107,8 +106,8 @@ describe('uploadFiles project default locale', () => {
 
     await uploadFiles([document], null);
 
-    expect(api.getProject).not.toHaveBeenCalled();
-    expect(api.updateProject).not.toHaveBeenCalled();
+    expect(api.get).not.toHaveBeenCalled();
+    expect(api.update).not.toHaveBeenCalled();
   });
 });
 
@@ -116,9 +115,9 @@ describe('uploadFiles ID limits', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(console, 'warn').mockImplementation(() => {});
-    vi.mocked(api.getProject).mockResolvedValue({
+    vi.mocked(api.get).mockResolvedValue({
       defaultLocale: 'en',
-    } as Awaited<ReturnType<typeof api.getProject>>);
+    } as Awaited<ReturnType<ProjectHandle['get']>>);
   });
 
   it('fails a document whose ID is too long and uploads the others', async () => {

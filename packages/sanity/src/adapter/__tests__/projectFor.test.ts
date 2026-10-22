@@ -1,9 +1,10 @@
 // @vitest-environment node
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from 'generaltranslation/errors';
 
-import { api, configureApiClient } from '../api';
+import type { ProjectHandle } from 'generaltranslation';
+import { configureGt, projectFor } from '../core';
 
 const sourceFile = {
   branchId: 'branch-id',
@@ -38,20 +39,39 @@ const emptyBatch = {
   results: [],
 };
 
-describe('Sanity API adapter', () => {
+describe('projectFor', () => {
   const fetchMock = vi.fn<typeof fetch>();
+  let api: ProjectHandle;
 
   beforeEach(() => {
     vi.resetAllMocks();
-    configureApiClient({
-      baseUrl: 'https://api.example.com',
-      projectId: 'project-id',
-      fetch: fetchMock,
+    vi.stubGlobal('fetch', fetchMock);
+    configureGt({
       customMapping: {
         source: { code: 'en-US' },
         target: { code: 'es-ES' },
       },
     });
+    api = projectFor({
+      organization: 'org-id',
+      project: 'project-id',
+      secret: 'api-key',
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('requires the API key from the Studio secrets', () => {
+    for (const secrets of [
+      null,
+      { organization: 'org-id', project: 'project-id' },
+    ]) {
+      expect(() => projectFor(secrets)).toThrow(
+        'gt-sanity Error: Translation needs a General Translation API key. Add the API key to the plugin secrets in the Studio.'
+      );
+    }
   });
 
   it.each([
@@ -218,45 +238,24 @@ describe('Sanity API adapter', () => {
     );
   });
 
-  it('returns the existing main branch when createBranch conflicts by name', async () => {
-    fetchMock.mockImplementation(async (request) => {
-      const parsed = new Request(request);
-      const url = new URL(parsed.url);
-      expect(url.pathname).toBe('/v2/projects/project-id/branches');
-      if (parsed.method === 'POST') {
-        expect(JSON.parse(await parsed.text())).toEqual({
-          name: 'main',
-          isDefault: true,
-        });
-        return Response.json({ error: 'branch exists' }, { status: 409 });
-      }
-      expect(url.searchParams.getAll('name')).toEqual(['main']);
-      return Response.json({
-        items: [{ id: 'main-id', name: 'main', isDefault: true }],
-        nextCursor: null,
-      });
-    });
+  it('rejects a createBranch name conflict without looking the branch up', async () => {
+    fetchMock.mockResolvedValue(
+      Response.json({ error: 'branch exists' }, { status: 409 })
+    );
 
     await expect(
       api.createBranch({ name: 'main', isDefault: true })
-    ).resolves.toEqual({
-      branch: { id: 'main-id', name: 'main', isDefault: true },
-    });
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    ).rejects.toEqual(
+      expect.objectContaining<ApiError>({
+        name: 'ApiError',
+        code: 409,
+        message: 'branch exists',
+      })
+    );
+    expect(fetchMock).toHaveBeenCalledOnce();
   });
 
-  it('does not expose shared adapter configuration internals', () => {
-    expect(api).not.toHaveProperty('getClientConfig');
-  });
-
-  it('translates through the shared adapter with canonical configured locales', async () => {
-    configureApiClient({
-      baseUrl: 'https://api.example.com',
-      apiKey: 'api-key',
-      projectId: 'project-id',
-      fetch: fetchMock,
-      customMapping: { source: { code: 'en-US' }, target: { code: 'es-ES' } },
-    });
+  it('translates with canonical configured locales', async () => {
     fetchMock.mockImplementation(async (request) => {
       const parsed = new Request(request);
       expect(new URL(parsed.url).pathname).toBe(

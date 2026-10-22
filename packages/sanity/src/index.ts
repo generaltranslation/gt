@@ -1,13 +1,15 @@
 import type { PortableTextHtmlComponents } from '@portabletext/to-html';
 import { getLocaleProperties } from 'generaltranslation';
+import type { UserTokenProvider } from 'generaltranslation/api';
+import type { CustomMapping } from 'generaltranslation/types';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { formatLocalePropertiesLabel } from './utils/localeDisplay';
 import { definePlugin } from 'sanity';
 import { route } from 'sanity/router';
 import { translateAction } from './actions/translateAction';
 import {
+  configureGt,
   DEFAULT_TRANSLATION_PREFERENCES,
-  gt,
   pluginConfig,
 } from './adapter/core';
 import type {
@@ -85,10 +87,14 @@ export type {
 export type { GTSchemaFieldOptions } from './schema/schemaOptions';
 export type { FieldLevelTranslationMode };
 
-export type GTPluginConfig = Omit<
-  Parameters<typeof gt.setConfig>[0],
-  'locales'
-> & {
+export type GTPluginConfig = {
+  // Requests use the API key in the Studio secrets.
+  apiKey?: string;
+  userTokenProvider?: UserTokenProvider;
+  baseUrl?: string;
+  sourceLocale?: string;
+  targetLocale?: string;
+  customMapping?: CustomMapping;
   locales: string[];
   // Alias for sourceLocale — accepted so users can spread gt.config.json directly.
   defaultLocale?: string;
@@ -167,8 +173,6 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
     defaultLocale,
     locales,
     customMapping,
-    apiKey,
-    projectId,
     singletons,
     singletonMapping,
     ignoreFields,
@@ -240,12 +244,7 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
         preserveExistingTranslations,
       }
     );
-    gt.setConfig({
-      sourceLocale: resolvedSourceLocale,
-      customMapping: customMapping,
-      apiKey: apiKey,
-      projectId: projectId,
-    });
+    configureGt({ defaultLocale: resolvedSourceLocale, customMapping });
 
     // Document types localized in place via internationalized arrays must NOT
     // get @sanity/document-internationalization (language badges + per-locale

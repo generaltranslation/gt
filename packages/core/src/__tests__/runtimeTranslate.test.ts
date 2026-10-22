@@ -3,7 +3,6 @@ import { API_VERSION } from '@generaltranslation/api';
 import { GT } from '../index';
 import { GTRuntime } from '../runtime';
 import { translate, translateMany } from '../translate/runtimeTranslate';
-import { createGtApiAdapter } from '../adapter/createGtApi';
 import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
 import { defaultTimeout } from '../settings/settings';
 
@@ -58,7 +57,7 @@ describe.sequential('runtime translate helpers', () => {
       vi.stubGlobal('fetch', sharedFetch);
     });
 
-    it('sends the same wire payload from the class, shared helper and adapter', async () => {
+    it('sends the same wire payload from GTRuntime, GT and the shared helper', async () => {
       const sources = [{ source: 'Hello', metadata: { context: 'greeting' } }];
       const options = { targetLocale: 'es-es', sourceLocale: 'en-us' };
 
@@ -68,12 +67,8 @@ describe.sequential('runtime translate helpers', () => {
       );
       const fromGt = await new GT(config).translateMany(sources, options);
       const fromNamed = await translateMany(sources, options, config);
-      const fromAdapter = await createGtApiAdapter({
-        ...config,
-        fetch: sharedFetch,
-      }).translateMany(sources, options);
 
-      expect(requests).toHaveLength(4);
+      expect(requests).toHaveLength(3);
       const [first, ...rest] = requests;
       for (const request of rest) {
         expect(request.url.href).toBe(first.url.href);
@@ -91,19 +86,21 @@ describe.sequential('runtime translate helpers', () => {
       });
       expect(fromGt).toEqual(fromRuntime);
       expect(fromNamed).toEqual(fromRuntime);
-      expect(fromAdapter).toEqual(fromRuntime);
       expect(fromRuntime[0]).toMatchObject({ success: true, locale: 'es-ES' });
     });
 
-    it('shares configured locale defaults across single and batch translation', async () => {
-      const defaults = { sourceLocale: 'fr-fr', targetLocale: 'british' };
-      const mappedConfig = {
-        ...config,
-        customMapping: { british: { code: 'en-gb' } },
-      };
+    it('shares the configured source locale across single and batch translation', async () => {
+      const customMapping = { british: { code: 'en-gb' } };
+      const mappedConfig = { ...config, customMapping };
+      const defaults = { sourceLocale: 'fr-fr' };
       const sources = { greeting: 'Hello' };
-      const options = { targetLocale: '', sourceLocale: '' };
-      const single = await translate('Hello', '', mappedConfig, defaults);
+      const options = { targetLocale: 'british', sourceLocale: '' };
+      const single = await translate(
+        'Hello',
+        'british',
+        mappedConfig,
+        defaults
+      );
       const batch = await translateMany(
         sources,
         options,
@@ -111,11 +108,12 @@ describe.sequential('runtime translate helpers', () => {
         defaults
       );
 
-      for (const client of [
-        new GTRuntime({ ...mappedConfig, ...defaults }),
-        new GT({ ...mappedConfig, ...defaults }),
-      ]) {
-        expect(await client.translate('Hello', '')).toEqual(single);
+      const params = {
+        ...config,
+        localeConfig: { defaultLocale: 'fr-fr', customMapping },
+      };
+      for (const client of [new GTRuntime(params), new GT(params)]) {
+        expect(await client.translate('Hello', 'british')).toEqual(single);
         expect(await client.translateMany(sources, options)).toEqual(batch);
       }
       expect(requests).toHaveLength(6);
@@ -172,53 +170,34 @@ describe.sequential('runtime translate helpers', () => {
     beforeEach(() => {
       fetchSpy.mockReset();
       vi.stubGlobal('fetch', fetchSpy);
-      vi.stubEnv('GT_API_KEY', 'env-key');
-      vi.stubEnv('GT_PROJECT_ID', 'env-project');
-    });
-    afterEach(() => vi.unstubAllEnvs());
-
-    it('reports a missing key and project in class order and never reads the environment', async () => {
-      await expect(translate('Hello', 'es', {})).rejects.toThrow(
-        /API key[\s\S]*project ID/
-      );
-      await expect(
-        translateMany(['Hello'], 'es', { apiKey: 'key' })
-      ).rejects.toThrow('without a specified project ID');
-      await expect(
-        translateMany(['Hello'], 'es', { projectId: 'project' })
-      ).rejects.toThrow('without a specified API key');
-      expect(fetchSpy).not.toHaveBeenCalled();
     });
 
-    it('requires a target locale after auth validation', async () => {
+    it('requires a target locale', async () => {
       await expect(
         translateMany(['Hello'], { targetLocale: '' }, config)
-      ).rejects.toThrow('without a specified locale');
+      ).rejects.toThrow('without a target locale');
       await expect(
-        createGtApiAdapter({ ...config, fetch: fetchSpy }).translate(
-          'Hello',
-          ''
-        )
-      ).rejects.toThrow('without a specified locale');
+        new GTRuntime(config).translate('Hello', '')
+      ).rejects.toThrow('without a target locale');
       expect(fetchSpy).not.toHaveBeenCalled();
     });
 
     it('accepts a user token provider in place of an API key', async () => {
       const { fetch: capture, requests } = captureRequests();
+      vi.stubGlobal('fetch', capture);
       const provider = {
         getAccessToken: vi.fn(async () => 'user-token'),
         refreshAccessToken: vi.fn(async () => undefined),
       };
 
-      const adapter = createGtApiAdapter({
+      const project = new GTRuntime({
         baseUrl,
-        projectId: 'test-project',
         userTokenProvider: provider,
-        fetch: capture,
+        projectId: 'test-project',
       });
       expect(provider.getAccessToken).not.toHaveBeenCalled();
 
-      await adapter.translate('Hello', 'es');
+      await project.translate('Hello', 'es');
       expect(provider.getAccessToken).toHaveBeenCalledTimes(1);
       expect(requests[0].headers.get('authorization')).toBe(
         'Bearer user-token'
@@ -275,77 +254,58 @@ describe.sequential('runtime translate helpers', () => {
       expect(requests[0].headers.get('gt-api-version')).toBe('2026-03-06.v1');
     });
 
-    it('resolves timeout as per-call override, then configured, then default', async () => {
+    it('resolves timeout as per-call override, then default', async () => {
       vi.useFakeTimers();
       const fetchImplementation: typeof fetch = (input, init) =>
         new Promise((_resolve, reject) => {
           const { signal } = new Request(input, init);
           signal.addEventListener('abort', () => reject(signal.reason));
         });
-      const adapter = createGtApiAdapter({
-        ...config,
-        fetch: fetchImplementation,
-        timeoutMs: 5_000,
-      });
+      vi.stubGlobal('fetch', fetchImplementation);
+      const project = new GTRuntime(config);
 
       const perCall = expect(
-        adapter.translate('Hello', 'es', 1_000)
+        project.translate('Hello', 'es', 1_000)
       ).rejects.toThrow('timed out after 1000ms');
       await vi.advanceTimersByTimeAsync(1_000);
       await perCall;
 
-      const configured = expect(
-        adapter.translate('Hello', 'es')
-      ).rejects.toThrow('timed out after 5000ms');
-      await vi.advanceTimersByTimeAsync(5_000);
-      await configured;
-
       const runtimeDefault = expect(
-        translate('Hello', 'es', { ...config, fetch: fetchImplementation })
+        project.translate('Hello', 'es')
       ).rejects.toThrow(`timed out after ${defaultTimeout}ms`);
       await vi.advanceTimersByTimeAsync(defaultTimeout);
       await runtimeDefault;
     });
 
-    it.each(['helper', 'adapter'] as const)(
-      'treats 0 as a literal zero and false as no runtime timer through %s',
-      async (surface) => {
-        vi.useFakeTimers();
-        let resolveResponse: (() => void) | undefined;
-        const fetchImplementation: typeof fetch = (input, init) =>
-          new Promise((resolve, reject) => {
-            const { signal } = new Request(input, init);
-            signal.addEventListener('abort', () => reject(signal.reason));
-            resolveResponse = () =>
-              resolve(Response.json({ translations: {}, generated: false }));
-          });
+    it('treats 0 as a literal zero and false as no runtime timer', async () => {
+      vi.useFakeTimers();
+      let resolveResponse: (() => void) | undefined;
+      const fetchImplementation: typeof fetch = (input, init) =>
+        new Promise((resolve, reject) => {
+          const { signal } = new Request(input, init);
+          signal.addEventListener('abort', () => reject(signal.reason));
+          resolveResponse = () =>
+            resolve(Response.json({ translations: {}, generated: false }));
+        });
 
-        const adapter = createGtApiAdapter({
+      const run = (timeoutMs: number | false) =>
+        translate('Hello', 'es', {
           ...config,
           fetch: fetchImplementation,
-          timeoutMs: 5_000,
+          timeoutMs,
         });
-        const run = (timeoutMs: number | false) =>
-          surface === 'adapter'
-            ? adapter.translate('Hello', 'es', timeoutMs)
-            : translate('Hello', 'es', {
-                ...config,
-                fetch: fetchImplementation,
-                timeoutMs,
-              });
 
-        const zero = expect(run(0)).rejects.toThrow('timed out after 0ms');
-        await vi.advanceTimersByTimeAsync(0);
-        await zero;
+      const zero = expect(run(0)).rejects.toThrow('timed out after 0ms');
+      await vi.advanceTimersByTimeAsync(0);
+      await zero;
 
-        const disabled = run(false);
-        await vi.advanceTimersByTimeAsync(defaultTimeout * 10);
-        resolveResponse?.();
-        await expect(disabled).resolves.toMatchObject({ success: false });
-      }
-    );
+      const disabled = run(false);
+      await vi.advanceTimersByTimeAsync(defaultTimeout * 10);
+      resolveResponse?.();
+      await expect(disabled).resolves.toMatchObject({ success: false });
+    });
 
-    it('treats a class zero timeout as a literal zero', async () => {
+    it('treats a GTRuntime zero timeout as a literal zero', async () => {
       vi.useFakeTimers();
       vi.stubGlobal(
         'fetch',
@@ -365,42 +325,15 @@ describe.sequential('runtime translate helpers', () => {
       await zero;
     });
 
-    it('does not retry translation even when the adapter configures management retries', async () => {
+    it('does not retry translation', async () => {
       const fetchSpy = vi.fn<typeof fetch>(
         async () => new Response('unavailable', { status: 503 })
       );
-      const adapter = createGtApiAdapter({
-        ...config,
-        fetch: fetchSpy,
-        retryPolicy: 'exponential',
-      });
 
-      await expect(adapter.translate('Hello', 'es')).rejects.toThrow(
-        'unavailable'
-      );
+      await expect(
+        translate('Hello', 'es', { ...config, fetch: fetchSpy })
+      ).rejects.toThrow('unavailable');
       expect(fetchSpy).toHaveBeenCalledTimes(1);
-    });
-
-    it('reads the latest adapter configuration after reconfiguration', async () => {
-      const { fetch: capture, requests } = captureRequests();
-      const adapter = createGtApiAdapter({ ...config, fetch: capture });
-
-      adapter.configure({
-        baseUrl: 'https://reconfigured.test',
-        projectId: 'new-project',
-        apiKey: 'new-key',
-        fetch: capture,
-        customMapping: { brand: { code: 'de-de' } },
-      });
-      await adapter.translate('Hello', 'brand');
-
-      expect(requests[0].url.origin).toBe('https://reconfigured.test');
-      expect(requests[0].headers.get('authorization')).toBe('Bearer new-key');
-      expect(requests[0].url.pathname).toBe(
-        '/v2/projects/new-project/translate'
-      );
-      expect(requests[0].headers.has('gt-project-id')).toBe(false);
-      expect(requests[0].body.targetLocale).toBe('de-DE');
     });
   });
 });

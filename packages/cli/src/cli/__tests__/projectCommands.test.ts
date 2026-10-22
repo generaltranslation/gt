@@ -112,6 +112,31 @@ describe('project commands', () => {
     expect(api.createProject).not.toHaveBeenCalled();
   });
 
+  it('explains that a project API key cannot create projects before any request', async () => {
+    vi.mocked(generateSettings).mockResolvedValue({
+      apiKey: 'gtx-api-project-key',
+    } as Settings);
+
+    await expect(
+      createProgram().parseAsync(
+        [
+          'project',
+          'create',
+          '--org-id',
+          'org-id',
+          '--name',
+          'Project',
+          '--default-locale',
+          'en',
+        ],
+        { from: 'user' }
+      )
+    ).rejects.toThrow(
+      /project API key, which cannot create projects[\s\S]*Organization API key with org:projects:create[\s\S]*sign in/
+    );
+    expect(api.createProject).not.toHaveBeenCalled();
+  });
+
   it('formats project creation failures instead of leaking a rejection', async () => {
     // Organization keys create the project before a project ID exists.
     vi.mocked(generateSettings).mockResolvedValue({

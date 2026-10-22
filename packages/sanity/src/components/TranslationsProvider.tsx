@@ -17,7 +17,7 @@ import {
   TranslationLocale,
   TranslationFunctionContext,
 } from '../types';
-import { overrideConfig, pluginConfig } from '../adapter/core';
+import { pluginConfig, projectFor } from '../adapter/core';
 import { getDefaultBranchId } from '../adapter/getDefaultBranchId';
 import { getTranslationStrategy } from '../translation/strategy';
 import { uploadFiles } from '../translation/uploadFiles';
@@ -924,9 +924,8 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
 
   const handleGetBranchId = useCallback(
     async (secrets: Secrets) => {
-      overrideConfig(secrets);
       try {
-        setBranchId(await getDefaultBranchId());
+        setBranchId(await getDefaultBranchId(projectFor(secrets)));
       } catch (error) {
         console.error(
           'Could not resolve the default General Translation branch',

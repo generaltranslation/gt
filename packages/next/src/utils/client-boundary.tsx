@@ -177,7 +177,9 @@ function resolvePathLocale(
   }
 
   return (
-    i18nConfig.determineLocale([extractedLocale], locales) ?? defaultLocale
+    i18nConfig.determineLocale([extractedLocale], {
+      approvedLocales: locales,
+    }) ?? defaultLocale
   );
 }
 

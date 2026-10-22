@@ -147,8 +147,16 @@ class I18nCache<TranslationValue extends Translation = Translation> {
       },
     }) as SafeTranslationsLoader<TranslationValue>;
     const loadDictionary = params.loadDictionary ?? (() => Promise.resolve({}));
+    // Without a project ID or API key, each runtime translation request rejects.
+    const i18nConfig = getI18nConfig();
     this.createTranslateMany = createTranslateManyFactory(
-      getI18nConfig().getGTClass(),
+      () => {
+        if (!i18nConfig.getProjectId())
+          throw new Error(missingRuntimeProjectIdError);
+        const runtime = i18nConfig.getTranslationRuntime();
+        if (!runtime) throw new Error(missingRuntimeApiKeyError);
+        return runtime;
+      },
       this.config.runtimeTranslation?.timeout ?? DEFAULT_TRANSLATION_TIMEOUT,
       {
         ...(this.config.modelProvider && {
@@ -640,7 +648,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
   private _resolveCacheLocale(locale: string) {
     const resolvedLocale = this._resolveLocale(locale);
     const i18nConfig = getI18nConfig();
-    if (i18nConfig.requiresTranslation(resolvedLocale)) {
+    if (i18nConfig.requiresTranslation({ locale: resolvedLocale })) {
       return resolvedLocale;
     }
 
@@ -649,7 +657,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
     const aliasLocale = i18nConfig.resolveAliasLocale(
       i18nConfig.standardizeLocale(locale)
     );
-    if (i18nConfig.requiresTranslation(aliasLocale)) {
+    if (i18nConfig.requiresTranslation({ locale: aliasLocale })) {
       return aliasLocale;
     }
 
@@ -706,10 +714,25 @@ export { I18nCache };
 
 // ===== Helper Functions ===== //
 
+const missingRuntimeProjectIdError = createDiagnosticMessage({
+  source: 'gt-i18n',
+  severity: 'Error',
+  whatHappened: 'Runtime translation needs a projectId',
+  fix: "Set `projectId` in your framework's GT configuration, or disable runtime translation",
+});
+
+const missingRuntimeApiKeyError = createDiagnosticMessage({
+  source: 'gt-i18n',
+  severity: 'Error',
+  whatHappened: 'Runtime translation needs an API key',
+  fix: "Set `apiKey` (or `devApiKey` in development) in your framework's GT configuration or the GT_API_KEY environment variable, or disable runtime translation",
+});
+
 /**
  * Validate constructor params: log warnings for suspicious configs and throw
  * on hard misconfigurations.
  */
+
 function validateCacheParams(params: I18nCacheConstructorParams): void {
   // Runtime translation against a custom API URL still needs GT credentials
   if (params.runtimeUrl && params.runtimeUrl !== defaultRuntimeApiUrl) {

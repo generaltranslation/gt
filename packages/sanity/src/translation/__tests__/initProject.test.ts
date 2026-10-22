@@ -1,14 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { api, overrideConfig, pluginConfig } from '../../adapter/core';
+import type { ProjectHandle } from 'generaltranslation';
+import { pluginConfig, projectFor } from '../../adapter/core';
 import type { Secrets } from '../../types';
 import { initProject } from '../initProject';
 
+const api = vi.hoisted(() => ({
+  generateProjectContext: vi.fn(),
+  awaitJobs: vi.fn(),
+}));
+
 vi.mock('../../adapter/core', () => ({
-  api: {
-    generateProjectContext: vi.fn(),
-    awaitJobs: vi.fn(),
-  },
-  overrideConfig: vi.fn(),
+  projectFor: vi.fn(() => api),
   pluginConfig: {
     getLocales: vi.fn(),
   },
@@ -41,7 +43,7 @@ const setupJob = {
   status: 'queued',
   subject: { type: 'project_context', projectId: 'project-id' },
 } as unknown as NonNullable<
-  Awaited<ReturnType<typeof api.generateProjectContext>>['job']
+  Awaited<ReturnType<ProjectHandle['generateProjectContext']>>['job']
 >;
 
 const secrets: Secrets = {
@@ -52,7 +54,7 @@ const secrets: Secrets = {
 const consoleLog = vi.fn();
 
 async function runWithAwaitResult(
-  awaitResult: Awaited<ReturnType<typeof api.awaitJobs>>
+  awaitResult: Awaited<ReturnType<ProjectHandle['awaitJobs']>>
 ) {
   vi.mocked(api.generateProjectContext).mockResolvedValue({ job: setupJob });
   vi.mocked(api.awaitJobs).mockResolvedValue(awaitResult);
@@ -78,7 +80,7 @@ describe('initProject', () => {
     });
 
     expect(consoleLog).toHaveBeenCalledWith('Setup successfully completed');
-    expect(overrideConfig).toHaveBeenCalledWith(secrets);
+    expect(projectFor).toHaveBeenCalledWith(secrets);
     expect(api.awaitJobs).toHaveBeenCalledWith(['setup-job'], {
       pollingIntervalSeconds: 2,
       timeoutSeconds: 30,

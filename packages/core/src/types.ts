@@ -107,13 +107,10 @@ export type TranslationRequestConfig = Pick<
 
 /**
  * TranslateConfig is the explicit configuration the shared translation helpers
- * receive from the class and the tooling adapter. Nothing is read from the
- * environment; a missing API key/provider or project ID fails before any
- * request is sent.
+ * receive from a project handle. Nothing is read from the environment.
  *
  * @param customMapping - Custom locale mapping used to canonicalize request locales.
  */
-export type TranslateConfig = Omit<TranslationRequestConfig, 'projectId'> & {
-  projectId?: string;
+export type TranslateConfig = TranslationRequestConfig & {
   customMapping?: FormatCustomMapping;
 };

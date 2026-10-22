@@ -15,3 +15,4 @@ Remove the remaining backward compatibility:
 - gt-next: runtime translation requests no longer send `projectId`, `timeout`, `publish`, `fast`, or `sourceLocale` in request `metadata`.
 - gt-react-native: locale detection drops the fallbacks for unsupported runtimes (Android < 24 and Internet Explorer's `navigator.userLanguage`).
 - gt-tanstack-start: the `gt-tanstack-start/server` entry is removed; import from `gt-tanstack-start`. `parseLocale()` is removed; use `getLocale()` with `gtMiddleware`.
+- Runtime translation uses `generaltranslation` 10's `GTRuntime` (`new GTRuntime({ apiKey, projectId })`) with the configured `projectId`, and `<Num>`, `<Currency>`, `<DateTime>`, `<RelativeTime>`, `useLocaleDirection()`, `useLocaleProperties()`, and the region selector format with `GTIntl`; their output is unchanged.

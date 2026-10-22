@@ -23,7 +23,6 @@ import {
 vi.mock('../../utils/api.js', () => ({
   api: {
     queryFilesContent: vi.fn(),
-    resolveAliasLocale: vi.fn((locale) => locale), // Return locale as-is for testing
     resolveCanonicalLocale: vi.fn((locale) => locale),
   },
 }));

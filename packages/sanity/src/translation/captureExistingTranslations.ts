@@ -1,6 +1,5 @@
 import type { SanityDocument } from 'sanity';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
-import { api, gt, overrideConfig } from '../adapter/core';
+import { gt, projectFor } from '../adapter/core';
 import { getDocumentPublishedId } from '../utils/documentIds';
 import { collectExistingTranslations } from './collectExistingTranslations';
 import {
@@ -53,11 +52,11 @@ export async function captureExistingTranslations({
     return EMPTY_RESULT;
   }
 
-  overrideConfig(secrets);
-  const sourceLocale = gt.sourceLocale || libraryDefaultLocale;
+  const project = projectFor(secrets);
+  const sourceLocale = gt.defaultLocale;
 
   // No versionId: read the latest source version General Translation holds.
-  const { results: seedFiles } = await api.queryFilesContent(
+  const { results: seedFiles } = await project.queryFilesContent(
     documents.map((document) => ({
       fileId: getDocumentPublishedId(document),
       branchId,
@@ -111,7 +110,7 @@ export async function captureExistingTranslations({
     return EMPTY_RESULT;
   }
 
-  const uploadResult = await api.uploadTranslations(files);
+  const uploadResult = await project.uploadTranslations(files);
   if (uploadResult.summary.failed > 0) {
     console.warn(
       failedResultsDiagnostic(

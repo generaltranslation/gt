@@ -1,4 +1,4 @@
-import { api, overrideConfig } from '../adapter/core';
+import { projectFor } from '../adapter/core';
 import { FileProperties } from '../adapter/types';
 import type { Secrets } from '../types';
 
@@ -15,13 +15,12 @@ export async function downloadTranslations(
   maxRetries = 3,
   retryDelay = 1000
 ) {
-  overrideConfig(secrets);
   let retries = 0;
 
   while (retries <= maxRetries) {
     try {
       // Download the files
-      const { results } = await api.queryFilesContent(
+      const { results } = await projectFor(secrets).queryFilesContent(
         files.map((file) => ({
           fileId: file.fileId,
           branchId: file.branchId,

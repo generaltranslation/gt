@@ -1,6 +1,6 @@
 import type { GTFile, Secrets } from '../types';
-import { api, gt, overrideConfig } from '../adapter/core';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import type { ProjectHandle } from 'generaltranslation';
+import { gt, projectFor } from '../adapter/core';
 import type { SerializedDocument } from '../serialization/types';
 import { resolveFileName } from '../utils/fileNames';
 import {
@@ -16,24 +16,24 @@ export async function uploadFiles(
     serializedDocument: SerializedDocument;
   }[],
   secrets: Secrets | null
-): Promise<Awaited<ReturnType<typeof api.uploadSourceFiles>>> {
-  overrideConfig(secrets);
+): Promise<Awaited<ReturnType<ProjectHandle['uploadSourceFiles']>>> {
+  const project = projectFor(secrets);
   // A document GT cannot store would fail the whole request, so it fails alone.
   const rejected = documents.filter(({ info }) => uploadIdError(info));
   const accepted = documents.filter(({ info }) => !uploadIdError(info));
-  const sent = await api.uploadSourceFiles(
+  const sent = await project.uploadSourceFiles(
     accepted.map(({ info, serializedDocument }) => ({
       source: {
         content: serializedDocument.content,
         fileName: resolveFileName(info),
         fileId: info.documentId,
         fileFormat: 'HTML',
-        locale: gt.sourceLocale || libraryDefaultLocale,
+        locale: gt.defaultLocale,
         versionId: info.versionId || undefined,
       },
     })),
     {
-      sourceLocale: gt.sourceLocale || libraryDefaultLocale,
+      sourceLocale: gt.defaultLocale,
     }
   );
   const uploadResult = withRejectedResults(
@@ -58,7 +58,7 @@ export async function uploadFiles(
     );
   }
   if (uploadResult.summary.succeeded > 0) {
-    await syncProjectDefaultLocale(gt.sourceLocale || libraryDefaultLocale);
+    await syncProjectDefaultLocale(project, gt.defaultLocale);
   }
   return uploadResult;
 }

@@ -2,7 +2,6 @@
 // start (read, upload, enqueue), check (job statuses) and finish (download
 // and save into Payload). translateDocument and translateSite run all three.
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
-import { resolveCanonicalLocale } from 'generaltranslation';
 import { ApiError } from 'generaltranslation/errors';
 import type { Payload } from 'payload';
 import type { FileReference } from 'generaltranslation/types';
@@ -540,15 +539,6 @@ const failedLocales = (locales: string[], error: string): TranslateResult => ({
   ),
 });
 
-// The requested Payload locale GT reports under its own code, which differs
-// for a locale mapped with customMapping.
-const payloadLocale = (batch: Batch, code: string) =>
-  batch.locales.find(
-    (locale) =>
-      locale === code ||
-      resolveCanonicalLocale(locale, batch.gt.customMapping) === code
-  ) ?? code;
-
 // Reads and uploads the documents and puts them in GT's queue.
 export async function startTranslation({
   payload,
@@ -625,7 +615,7 @@ export async function startTranslation({
               fileId: subject.fileId,
               versionId: subject.versionId,
               branchId: subject.branchId,
-              locale: payloadLocale(batch, subject.locale),
+              locale: subject.locale,
             },
           ]
         : [];

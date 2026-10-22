@@ -434,6 +434,28 @@ describe('init development credentials', () => {
     expect(logger.endCommand).not.toHaveBeenCalled();
   });
 
+  it.each([[[]], [['--create-project', '--project-name', 'New App']]])(
+    'explains how to use a project API key without a project ID (%j)',
+    async (args) => {
+      vi.stubEnv('GT_API_KEY', 'gtx-api-project-key');
+
+      const error = await runInit(...args).catch((caught: unknown) => caught);
+
+      expect(error).toBeInstanceOf(Error);
+      const { message } = error as Error;
+      expect(message).toMatch(
+        /project API key, which cannot list or create projects/
+      );
+      expect(message).toMatch(/--project-id <id> or set GT_PROJECT_ID/);
+      expect(message).toMatch(/sign in, or use an Organization API key/);
+      expect(message).not.toContain('new GT()');
+      expect(api.listProjects).not.toHaveBeenCalled();
+      expect(api.listOrgs).not.toHaveBeenCalled();
+      expect(api.createProjectApiKey).not.toHaveBeenCalled();
+      expect(fs.existsSync(envPath())).toBe(false);
+    }
+  );
+
   it('does not mint a key when the project prompt is cancelled', async () => {
     vi.mocked(promptSelect).mockRejectedValueOnce(new Error('exit 0'));
 

@@ -1,13 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from 'generaltranslation/errors';
-import { api } from '../../adapter/core';
+import type { ProjectHandle } from 'generaltranslation';
 import type { GTFile } from '../../types';
 import { uploadTranslations } from '../uploadTranslations';
 
+const api = vi.hoisted(() => ({
+  uploadTranslations: vi.fn<ProjectHandle['uploadTranslations']>(),
+}));
+
 vi.mock('../../adapter/core', () => ({
-  api: { uploadTranslations: vi.fn() },
-  gt: { sourceLocale: 'en' },
-  overrideConfig: vi.fn(),
+  gt: { defaultLocale: 'en' },
+  projectFor: () => api,
 }));
 
 const document = (documentId: string) =>

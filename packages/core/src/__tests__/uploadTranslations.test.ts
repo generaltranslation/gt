@@ -34,11 +34,13 @@ describe('GT.uploadTranslations', () => {
     const gt = new GT({
       apiKey: 'test-api-key',
       projectId: 'test-project',
-      sourceLocale: 'brand-english',
-      customMapping: {
-        'brand-english': {
-          code: 'en-US',
-          name: 'Brand English',
+      localeConfig: {
+        defaultLocale: 'brand-english',
+        customMapping: {
+          'brand-english': {
+            code: 'en-US',
+            name: 'Brand English',
+          },
         },
       },
     });

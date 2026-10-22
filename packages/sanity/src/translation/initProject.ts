@@ -1,13 +1,14 @@
-import { api, overrideConfig, pluginConfig } from '../adapter/core';
+import type { ProjectHandle } from 'generaltranslation';
+import { pluginConfig, projectFor } from '../adapter/core';
 import type { Secrets } from '../types';
 import { succeededResults } from '../utils/batchResults';
 
 export async function initProject(
-  uploadResult: Awaited<ReturnType<typeof api.uploadSourceFiles>>,
+  uploadResult: Awaited<ReturnType<ProjectHandle['uploadSourceFiles']>>,
   options: { timeout?: number },
   secrets: Secrets
 ): Promise<boolean> {
-  overrideConfig(secrets);
+  const project = projectFor(secrets);
   // Calculate timeout once for setup fetching
   // Accept number or numeric string, default to 600s
   const timeoutVal =
@@ -15,13 +16,13 @@ export async function initProject(
   const setupTimeoutSeconds = Number.isFinite(timeoutVal) ? timeoutVal : 600;
 
   // A null job means the project context is already current.
-  const { job: setupJob } = await api.generateProjectContext(
+  const { job: setupJob } = await project.generateProjectContext(
     succeededResults(uploadResult),
     { locales: pluginConfig.getLocales() }
   );
 
   if (setupJob) {
-    const { complete, jobs } = await api.awaitJobs([setupJob.id], {
+    const { complete, jobs } = await project.awaitJobs([setupJob.id], {
       pollingIntervalSeconds: 2,
       timeoutSeconds: setupTimeoutSeconds,
     });

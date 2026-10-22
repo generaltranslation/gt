@@ -143,12 +143,7 @@ export class BranchStep {
                 current.currentBranchName,
                 branchData.defaultBranch
               )
-            : (
-                await this.gt.createBranch({
-                  name: current.currentBranchName,
-                  isDefault: false,
-                })
-              ).branch;
+            : await this.createBranch(current.currentBranchName, false);
         } catch (error) {
           if (!(error instanceof ApiError) || error.code !== 403) throw error;
 
@@ -217,9 +212,26 @@ export class BranchStep {
     if (defaultBranch) {
       return await this.gt.updateBranch(defaultBranch.id, { name });
     }
-    const { branch } = await this.gt.createBranch({ name, isDefault: true });
+    const {
+      items: [existing],
+    } = await this.gt.listBranches({ name: [name] });
+    const branch = existing ?? (await this.createBranch(name, true));
     return branch.isDefault
       ? branch
       : await this.gt.updateBranch(branch.id, { isDefault: true });
+  }
+
+  /** A concurrent run can create the branch after the lookup; a 409 reuses it. */
+  private async createBranch(name: string, isDefault: boolean) {
+    try {
+      return (await this.gt.createBranch({ name, isDefault })).branch;
+    } catch (error) {
+      if (!(error instanceof ApiError) || error.code !== 409) throw error;
+      const {
+        items: [existing],
+      } = await this.gt.listBranches({ name: [name] });
+      if (!existing) throw error;
+      return existing;
+    }
   }
 }

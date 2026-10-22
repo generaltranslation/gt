@@ -31,57 +31,25 @@ import type {
 } from '../types-dir/api/entry';
 import { libraryDefaultLocale } from '../settings/settings';
 import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
-import {
-  noApiKeyProvidedError,
-  noProjectIdProvidedError,
-  noTargetLocaleProvidedError,
-} from '../logging/errors';
+import { noTargetLocaleProvidedError } from '../logging/errors';
 import { gtInstanceLogger } from '../logging/logger';
 import { createDiagnosticMessage } from '../logging/diagnostics';
 import { hashSource } from '../id';
-import {
-  isModelProvider,
-  supportedModelProviders,
-} from '../adapter/modelProvider';
+import { isModelProvider, supportedModelProviders } from './modelProvider';
 import { fetchWithTimeout } from './utils/fetchWithTimeout';
 import { unwrapApiResult } from './utils/unwrapApiResult';
 
 type TranslateFunctionName = 'translate' | 'translateMany';
-type TranslateDefaults = Partial<
-  Pick<TranslateOptions, 'sourceLocale' | 'targetLocale'>
->;
-
-/**
- * @internal
- * Credential/provider errors are reported before the project error, and both
- * before any locale validation. GT/GTRuntime share this ordering.
- */
-export function validateAuth<
-  T extends Pick<TranslateConfig, 'apiKey' | 'userTokenProvider' | 'projectId'>,
->(
-  functionName: string,
-  config: T
-): asserts config is T & { projectId: string } {
-  const errors: string[] = [];
-  if (!config.apiKey && !config.userTokenProvider) {
-    errors.push(noApiKeyProvidedError(functionName));
-  }
-  if (!config.projectId) {
-    errors.push(noProjectIdProvidedError(functionName));
-  }
-  if (errors.length) {
-    throw new Error(errors.join('\n'));
-  }
-}
+type TranslateDefaults = Pick<TranslateOptions, 'sourceLocale'>;
 
 /**
  * @internal
  *
- * Shared preparation for every translation surface (classes and the tooling
- * facade): normalize the string shorthand, validate auth, require a target
- * locale, default the source locale and canonicalize both for the wire.
+ * Shared preparation for runtime translation: normalize the string shorthand,
+ * require a target locale, default the source locale and canonicalize both
+ * for the wire.
  *
- * @param defaults - Instance defaults supplied by GT/GTRuntime. Facade calls pass none.
+ * @param defaults - The source locale default from the GTRuntime.
  */
 function prepareTranslation(
   functionName: TranslateFunctionName,
@@ -96,9 +64,7 @@ function prepareTranslation(
     options = { targetLocale: options };
   }
 
-  validateAuth(functionName, config);
-
-  const targetLocale = options?.targetLocale || defaults.targetLocale;
+  const targetLocale = options?.targetLocale;
   if (!targetLocale) {
     const error = noTargetLocaleProvidedError(functionName);
     gtInstanceLogger.error(error);

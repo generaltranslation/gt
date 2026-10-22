@@ -20,6 +20,7 @@ vi.mock('../../console/logging.js', () => ({
 }));
 vi.mock('../../utils/api.js', () => ({
   api: {
+    getProject: vi.fn(async () => ({ orgId: 'org-id' })),
     upsertAssets: vi.fn(async () => ({
       summary: { total: 0, succeeded: 0, failed: 0 },
       results: [],
@@ -102,7 +103,7 @@ describe('runStageFilesWorkflow font sync', () => {
     const result = await runStageFilesWorkflow({ files, options, settings });
 
     expect(collectFonts).toHaveBeenCalledWith(settings);
-    expect(api.upsertAssets).toHaveBeenCalledWith(fonts);
+    expect(api.upsertAssets).toHaveBeenCalledWith('org-id', fonts);
     expect(result.enqueueResult).toEqual({ message: 'enqueued', jobData: {} });
   });
 

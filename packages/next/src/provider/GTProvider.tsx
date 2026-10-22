@@ -13,7 +13,7 @@ export async function GTProvider({ children }: GTProviderProps) {
   const locale = await getLocale();
   const region = await getRegion();
   const enableI18n = await getEnableI18n();
-  const translationRequired = i18nConfig.requiresTranslation(locale);
+  const translationRequired = i18nConfig.requiresTranslation({ locale });
 
   // ----- FETCH TRANSLATIONS FROM CACHE ----- //
 

@@ -16,8 +16,15 @@ import { collectFonts } from '../../formats/files/collectFonts.js';
 export async function syncFonts(settings: Settings): Promise<void> {
   const fonts = await collectFonts(settings);
   if (fonts.length === 0) return;
+  // The organization assets endpoint rejects project keys with a 403.
+  if (settings.apiKey?.startsWith('gtx-api-')) {
+    logger.warn(fontSyncDeniedWarning(projectKeyReason));
+    recordWarning('failed_upload', 'Fonts', projectKeyReason);
+    return;
+  }
   try {
-    const { summary, results } = await api.upsertAssets(fonts);
+    const { orgId } = await api.getProject();
+    const { summary, results } = await api.upsertAssets(orgId, fonts);
     if (summary.succeeded > 0) {
       logger.success(`Synced ${summary.succeeded} font(s)`);
     }
@@ -33,16 +40,21 @@ export async function syncFonts(settings: Settings): Promise<void> {
     const reason = error instanceof Error ? error.message : String(error);
     logger.warn(
       error instanceof ApiError && error.code === 403
-        ? createDiagnosticMessage({
-            source: 'gt',
-            severity: 'Warning',
-            whatHappened: 'Font sync was denied',
-            details: reason,
-            fix: 'To upload fonts, use an Organization API key with the `org:assets:write` permission',
-            reassurance: 'Translation continues with fallback fonts',
-          })
+        ? fontSyncDeniedWarning(reason)
         : `Font sync failed; continuing without provisioned fonts: ${reason}`
     );
     recordWarning('failed_upload', 'Fonts', reason);
   }
 }
+
+const projectKeyReason = 'A project API key cannot upload organization fonts';
+
+const fontSyncDeniedWarning = (reason: string) =>
+  createDiagnosticMessage({
+    source: 'gt',
+    severity: 'Warning',
+    whatHappened: 'Font sync was denied',
+    details: reason,
+    fix: 'To upload fonts, use an Organization API key with the `org:assets:write` permission',
+    reassurance: 'Translation continues with fallback fonts',
+  });

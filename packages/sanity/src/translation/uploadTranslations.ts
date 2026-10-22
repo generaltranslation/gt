@@ -1,6 +1,6 @@
 import type { GTFile, Secrets } from '../types';
-import { api, gt, overrideConfig } from '../adapter/core';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import type { ProjectHandle } from 'generaltranslation';
+import { gt, projectFor } from '../adapter/core';
 import type { SerializedDocument } from '../serialization/types';
 import type { ExistingTranslation } from './collectExistingTranslations';
 import { resolveFileName } from '../utils/fileNames';
@@ -26,7 +26,7 @@ export async function uploadTranslations(
     translations: ExistingTranslation[];
   }[],
   secrets: Secrets | null
-): Promise<Awaited<ReturnType<typeof api.uploadTranslations>> | null> {
+): Promise<Awaited<ReturnType<ProjectHandle['uploadTranslations']>> | null> {
   const withTranslations = documents.filter(
     (document) => document.translations.length > 0
   );
@@ -34,12 +34,12 @@ export async function uploadTranslations(
     return null;
   }
 
-  overrideConfig(secrets);
-  const sourceLocale = gt.sourceLocale || libraryDefaultLocale;
+  const project = projectFor(secrets);
+  const sourceLocale = gt.defaultLocale;
   // A document GT cannot store would fail the whole request, so it fails alone.
   const rejected = withTranslations.filter(({ info }) => uploadIdError(info));
   const accepted = withTranslations.filter(({ info }) => !uploadIdError(info));
-  const sent = await api.uploadTranslations(
+  const sent = await project.uploadTranslations(
     accepted.map(({ info, serializedDocument, translations }) => ({
       source: {
         content: serializedDocument.content,

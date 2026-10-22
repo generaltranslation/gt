@@ -210,7 +210,7 @@ export async function generateSettings(
 
   mergedOptions.baseUrl = resolveApiBaseUrl(mergedOptions.baseUrl);
 
-  // The API client prefers apiKey when both are set; the provider is lazy.
+  // The API client gets apiKey when set, otherwise this lazy provider.
   mergedOptions.apiKey = mergedOptions.apiKey || process.env.GT_API_KEY;
   mergedOptions.userTokenProvider = createUserTokenProvider({
     baseUrl: mergedOptions.baseUrl,
@@ -427,8 +427,9 @@ export async function generateSettings(
 
   configureApiClient({
     projectId: mergedOptions.projectId,
-    apiKey: mergedOptions.apiKey,
-    userTokenProvider: mergedOptions.userTokenProvider,
+    ...(mergedOptions.apiKey
+      ? { apiKey: mergedOptions.apiKey }
+      : { userTokenProvider: mergedOptions.userTokenProvider }),
     baseUrl: mergedOptions.baseUrl,
     customMapping: mergedOptions.customMapping,
   });

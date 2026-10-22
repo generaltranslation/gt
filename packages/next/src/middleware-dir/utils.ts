@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GTRuntime } from 'generaltranslation/runtime';
+import type { GTIntl } from '@generaltranslation/format';
 import { NextURL } from 'next/dist/server/web/next-url';
 import { parseAcceptLanguage } from 'gt-i18n/internal';
 import {
@@ -221,7 +221,7 @@ export function getLocaleFromRequest(
   referrerLocaleCookieName: string,
   localeCookieName: string,
   resetLocaleCookieName: string,
-  gt: GTRuntime,
+  gt: GTIntl,
   enableSmartRouting = true
 ): {
   userLocale: string;
@@ -242,10 +242,9 @@ export function getLocaleFromRequest(
       unstandardizedPathnameLocale &&
       gt.isValidLocale(unstandardizedPathnameLocale)
     ) {
-      pathnameLocale = gt.determineLocale(
-        unstandardizedPathnameLocale,
-        approvedLocales
-      );
+      pathnameLocale = gt.determineLocale(unstandardizedPathnameLocale, {
+        approvedLocales,
+      });
       if (pathnameLocale) candidates.push(pathnameLocale);
     }
   }
@@ -292,7 +291,7 @@ export function getLocaleFromRequest(
     (!preferDefaultLocale || cookieLocale?.value) // skip this condition when preferDefaultLocale is true and first request (no cookieLocale)
   ) {
     const referrerLocale = referrerLocaleCookie.value;
-    if (gt.determineLocale([referrerLocale], approvedLocales)) {
+    if (gt.determineLocale([referrerLocale], { approvedLocales })) {
       candidates.push(referrerLocale);
     }
   }
@@ -309,7 +308,7 @@ export function getLocaleFromRequest(
   const userLocale =
     gt.determineLocale(
       candidates.filter((locale) => gt.isValidLocale(locale)),
-      approvedLocales
+      { approvedLocales }
     ) || defaultLocale;
 
   return {

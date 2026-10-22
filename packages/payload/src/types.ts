@@ -1,11 +1,11 @@
-import type { GT } from 'generaltranslation';
+import type { ProjectHandle } from 'generaltranslation';
 
 // A Payload document or part of one, as the Local API returns it.
 export type Data = Record<string, unknown>;
 
-// The GT SDK calls the plugin makes.
+// The GT project calls the plugin makes.
 export type GtClient = Pick<
-  GT,
+  ProjectHandle,
   | 'uploadSourceFiles'
   | 'translateFiles'
   | 'awaitJobs'
@@ -13,7 +13,6 @@ export type GtClient = Pick<
   | 'uploadTranslations'
   | 'queryJobs'
   | 'translateMany'
-  | 'customMapping'
 >;
 
 export type TranslateTarget =

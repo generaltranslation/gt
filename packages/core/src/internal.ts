@@ -24,13 +24,11 @@ export {
 } from './utils/base64';
 export { isSupportedFileFormatTransform } from './utils/isSupportedFileFormatTransform';
 export { unwrapApiResult } from './translate/utils/unwrapApiResult';
-export { createGtApiAdapter } from './adapter/createGtApi';
-export type { GtApiAdapter, GtApiAdapterConfig } from './adapter/createGtApi';
 export {
   isModelProvider,
   supportedModelProviders,
-} from './adapter/modelProvider';
-export type { ModelProvider } from './adapter/modelProvider';
+} from './translate/modelProvider';
+export type { ModelProvider } from './translate/modelProvider';
 
 // derive
 export { indexVars } from './derive/indexVars';

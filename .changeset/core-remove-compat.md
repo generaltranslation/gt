@@ -4,7 +4,7 @@
 
 Remove the remaining backward compatibility:
 
-- `GT`/`GTRuntime` drop `devApiKey` and no longer read `GT_DEV_API_KEY`; pass `apiKey` (or set `GT_API_KEY`). `GTRuntime.reverseCustomMapping` is removed.
+- `GT`/`GTRuntime` drop `devApiKey` and no longer read `GT_DEV_API_KEY`; pass `apiKey`. `GTRuntime.reverseCustomMapping` is removed.
 - `translate()`/`translateMany()` treat `timeout: 0` as a zero timeout; omit `timeout` for the default.
 - `TranslateOptions` no longer accepts arbitrary extra keys; `sourceLocale`, `targetLocale` and `modelProvider` remain. Only `modelProvider` is sent in request metadata.
 - `uploadTranslations(files, options)` takes only `{ timeout }`: no `sourceLocale` and no missing-source-locale error. Upload options drop `modelProvider`.

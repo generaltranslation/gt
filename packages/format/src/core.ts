@@ -28,10 +28,8 @@ import { _resolveCanonicalLocale } from './locales/resolveCanonicalLocale';
 import type { CustomMapping, FormatVariables } from './types';
 import type { StringFormat } from './types-dir/jsx/content';
 
-export {
-  LocaleConfig,
-  type LocaleConfigConstructorParams,
-} from './LocaleConfig';
+export { GTIntl } from './GTIntl';
+export type { LocaleConfig } from './localeConfig';
 export {
   getRegionProperties,
   type CustomRegionMapping,

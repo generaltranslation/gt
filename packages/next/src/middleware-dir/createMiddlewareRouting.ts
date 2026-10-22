@@ -1,4 +1,4 @@
-import { GTRuntime } from 'generaltranslation/runtime';
+import { GTIntl } from '@generaltranslation/format';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import {
   defaultLocaleCookieName,
@@ -45,10 +45,7 @@ export function createMiddlewareRouting({
     process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS
   );
 
-  // gt instance
-  const gt = new GTRuntime({
-    customMapping: i18nConfig.customMapping,
-  });
+  const gt = new GTIntl({ customMapping: i18nConfig.customMapping });
 
   // Configured spellings are the identity used by routes, cookies and caches.
   const defaultLocale: string =
@@ -62,7 +59,8 @@ export function createMiddlewareRouting({
   const determineLocaleWithCache = (locale: string) => {
     const cached = resolvedConfigLocales.get(locale);
     if (cached !== undefined) return cached;
-    const resolved = gt.determineLocale(locale, locales) ?? locale;
+    const resolved =
+      gt.determineLocale(locale, { approvedLocales: locales }) ?? locale;
     resolvedConfigLocales.set(locale, resolved);
     return resolved;
   };

@@ -40,7 +40,7 @@ describe('useLocales', () => {
     expect(useLocale()).toBe('en-gb');
     expect(useLocales()).toEqual(['en-us', 'en-gb', 'fr-fr']);
     expect(conditionStore.getLocale()).toBe('en-gb');
-    expect(getI18nConfig().getLocales()).toBe(internalLocales);
+    expect(getI18nConfig().locales).toEqual(originalLocales);
     expect(internalLocales).toEqual(originalLocales);
     expect(getI18nConfig().determineLocale('en-gb')).toBe('en-gb');
   });

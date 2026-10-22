@@ -36,7 +36,6 @@ vi.mock('../../utils/api.js', () => ({
     queryFiles: vi.fn(),
     queryFilesContent: vi.fn(),
     overwriteTranslations: vi.fn(),
-    resolveAliasLocale: vi.fn((locale: string) => locale),
     resolveCanonicalLocale: vi.fn((locale: string) => locale),
   },
 }));

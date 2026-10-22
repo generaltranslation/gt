@@ -165,6 +165,17 @@ function createProjectCommandError(
   });
 }
 
+// Account-scoped requests reject project keys before sending anything.
+const projectKeyProjectCreationError = createDiagnosticMessage({
+  source: 'gt',
+  severity: 'Error',
+  whatHappened:
+    'The API key is a project API key, which cannot create projects',
+  fix: 'Use an Organization API key with org:projects:create',
+  wayOut:
+    'remove GT_API_KEY from your shell and your .env files and sign in with an account that has that permission',
+});
+
 const emptyApiKeyNameError = createDiagnosticMessage({
   whatHappened: 'The key name cannot be empty',
   fix: 'Pass a non-empty value with --name',
@@ -466,6 +477,9 @@ export class BaseCLI {
         const settings = await generateSettings(options);
         // Project creation happens before a project ID exists.
         if (!hasValidServiceLocales(settings)) return exitSync(1);
+        if (settings.apiKey?.startsWith('gtx-api-')) {
+          return logErrorAndExit(projectKeyProjectCreationError);
+        }
         const { project } = await api.createProject(options.orgId, {
           name: options.name,
           defaultLocale: options.defaultLocale,

@@ -2,26 +2,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { setTag } from '@generaltranslation/api';
 import { GT } from '../index';
 
-vi.mock('@generaltranslation/api', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@generaltranslation/api')>()),
-  setTag: vi.fn(),
-}));
+const clientConstructions = vi.hoisted(() => ({ count: 0 }));
 
-// Tests in this file run concurrently, so constructions are recorded per
-// projectId; each lifetime test owns a distinct project.
-const adapterConstructions = vi.hoisted(
-  () => new Map<string | undefined, Array<{ apiKey?: string }>>()
-);
-
-vi.mock('../adapter/createGtApi', async (importOriginal) => {
+vi.mock('@generaltranslation/api', async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import('../adapter/createGtApi')>();
-  const createGtApiAdapter: typeof actual.createGtApiAdapter = (config) => {
-    const configs = adapterConstructions.get(config?.projectId) ?? [];
-    adapterConstructions.set(config?.projectId, [...configs, config ?? {}]);
-    return actual.createGtApiAdapter(config);
+    await importOriginal<typeof import('@generaltranslation/api')>();
+  return {
+    ...actual,
+    setTag: vi.fn(),
+    createApiClient: ((config) => {
+      clientConstructions.count += 1;
+      return actual.createApiClient(config);
+    }) satisfies typeof actual.createApiClient,
   };
-  return { ...actual, createGtApiAdapter };
 });
 
 function result<T>(data: T) {
@@ -32,7 +25,7 @@ function result<T>(data: T) {
   };
 }
 
-describe('GT adapter lifetime', () => {
+describe('GT API client lifetime', () => {
   const tag = {
     id: 'id',
     tagId: 'release',
@@ -48,41 +41,12 @@ describe('GT adapter lifetime', () => {
     vi.mocked(setTag).mockResolvedValue(result({ created: true, tag }));
   });
 
-  it('constructs one adapter per instance across calls', async () => {
-    const projectId = 'lifetime-reuse';
-    const instance = new GT({ apiKey: 'api-key', projectId });
+  it('constructs one API client per project, reused across its calls', async () => {
+    const project = new GT({ apiKey: 'api-key', projectId: 'project-a' });
 
-    await instance.setTag('release', request);
-    await instance.setTag('release', request);
+    await project.setTag('release', request);
+    await project.setTag('release', request);
 
-    expect(adapterConstructions.get(projectId)).toHaveLength(1);
-  });
-
-  it('rebuilds the adapter after setConfig changes credentials', async () => {
-    const projectId = 'lifetime-reconfigure';
-    const instance = new GT({ apiKey: 'api-key', projectId });
-
-    await instance.setTag('release', request);
-    instance.setConfig({ apiKey: 'other-key' });
-    await instance.setTag('release', request);
-
-    expect(
-      adapterConstructions.get(projectId)?.map((config) => config.apiKey)
-    ).toEqual(['api-key', 'other-key']);
-  });
-
-  it('rebuilds the adapter when setConfig throws after writing credentials', async () => {
-    const projectId = 'lifetime-failed-reconfigure';
-    const instance = new GT({ apiKey: 'api-key', projectId });
-
-    await instance.setTag('release', request);
-    expect(() =>
-      instance.setConfig({ apiKey: 'other-key', sourceLocale: '!' })
-    ).toThrow();
-    await instance.setTag('release', request);
-
-    expect(
-      adapterConstructions.get(projectId)?.map((config) => config.apiKey)
-    ).toEqual(['api-key', 'other-key']);
+    expect(clientConstructions.count).toBe(1);
   });
 });

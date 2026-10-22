@@ -339,14 +339,15 @@ async function finishReady(
 
 export type StepResult = { progress: RunProgress; progressed: boolean };
 
-// Moves the run forward by one step if no one else is stepping it.
+// Moves the run forward by one step if no one else is stepping it. The
+// client is resolved inside the step, so a misconfigured one fails the step.
 export async function stepRun({
   payload,
-  gt,
+  client,
   id,
 }: {
   payload: Payload;
-  gt: GtClient;
+  client: () => GtClient;
   id: string | number;
 }): Promise<StepResult> {
   const lock = `run:${id}`;
@@ -372,7 +373,7 @@ export async function stepRun({
     LEASE_MS / 4
   );
   try {
-    return await stepHeld(payload, gt, id, { key: lock, token });
+    return await stepHeld(payload, client, id, { key: lock, token });
   } finally {
     clearInterval(renewal);
     await releaseLock(payload, lock, token);
@@ -382,7 +383,7 @@ export async function stepRun({
 // One step of a run this stepper holds the lock of.
 async function stepHeld(
   payload: Payload,
-  gt: GtClient,
+  client: () => GtClient,
   id: string | number,
   lock: { key: string; token: string }
 ): Promise<StepResult> {
@@ -392,6 +393,7 @@ async function stepHeld(
   let changes: Partial<Run> | null = null;
   let failed = false;
   try {
+    const gt = client();
     const user = await userOf(payload, run);
     changes = run.pending.length
       ? await startNext(payload, gt, run, user)
@@ -477,11 +479,14 @@ export function runTask(
     inputSchema: [{ name: 'runId', type: 'text', required: true }],
     handler: async ({ input, req }) => {
       const { payload } = req;
-      const gt = client(payload);
       const until = Date.now() + JOB_BUDGET_MS;
       let progress: RunProgress;
       do {
-        const step = await stepRun({ payload, gt, id: input.runId });
+        const step = await stepRun({
+          payload,
+          client: () => client(payload),
+          id: input.runId,
+        });
         progress = step.progress;
         if (progress.status === 'done') return { output: {} };
         if (!step.progressed) await wait(JOB_WAIT_MS);

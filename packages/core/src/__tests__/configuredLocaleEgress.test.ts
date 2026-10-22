@@ -23,14 +23,15 @@ function result<T>(data: T) {
 }
 
 const config = {
-  projectId: 'test-project',
   apiKey: 'test-key',
-  sourceLocale: 'en-us',
-  targetLocale: 'british',
-  locales: ['en-us', 'british', 'partner-uk'],
-  customMapping: {
-    british: { code: 'en-gb' },
-    'partner-uk': { code: 'en-gb' },
+  projectId: 'test-project',
+  localeConfig: {
+    defaultLocale: 'en-us',
+    locales: ['en-us', 'british', 'partner-uk'],
+    customMapping: {
+      british: { code: 'en-gb' },
+      'partner-uk': { code: 'en-gb' },
+    },
   },
 };
 
@@ -43,11 +44,10 @@ describe.sequential('configured locales at GT service boundaries', () => {
       Response.json({ translations: {}, generated: false })
     );
     vi.stubGlobal('fetch', fetchMock);
-    const gt = new GTRuntime(config);
-    expect(gt.sourceLocale).toBe('en-us');
-    expect(gt.locales).toEqual(['en-us', 'british', 'partner-uk']);
-    await gt.translateMany(['Hello'], { targetLocale: 'british' });
-    await gt.translate('Hello', {
+    const project = new GTRuntime(config);
+    expect(project.localeConfig).toEqual(config.localeConfig);
+    await project.translateMany(['Hello'], { targetLocale: 'british' });
+    await project.translate('Hello', {
       sourceLocale: 'en-us',
       targetLocale: 'en-gb',
     });
@@ -72,7 +72,7 @@ describe.sequential('configured locales at GT service boundaries', () => {
         cdnEnabled: false,
       })
     );
-    const result_ = await new GT(config).getProject();
+    const result_ = await new GT(config).get();
     expect(result_.defaultLocale).toBe('en-us');
     expect(result_.currentLocales).toEqual([
       'en-us',
