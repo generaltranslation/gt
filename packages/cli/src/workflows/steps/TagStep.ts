@@ -1,6 +1,6 @@
 import type { SetTagResponse } from 'generaltranslation/api';
 import { logger } from '../../console/logger.js';
-import type { ApiClient } from '../../utils/api.js';
+import type { ProjectHandle } from 'generaltranslation';
 import { Settings } from '../../types/index.js';
 import type { FileReference } from 'generaltranslation/types';
 import chalk from 'chalk';
@@ -9,7 +9,7 @@ export class TagStep {
   private spinner = logger.createSpinner('dots');
 
   constructor(
-    private api: ApiClient,
+    private api: ProjectHandle,
     private settings: Settings,
     private userProvided: boolean
   ) {}

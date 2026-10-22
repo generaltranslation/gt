@@ -7,7 +7,6 @@ import { resolveFiles } from '../../fs/config/parseFilesConfig';
 import { logger } from '../../console/logger.js';
 import { resolveConfig } from '../resolveConfig.js';
 import { createUserTokenProvider } from '../../auth/oauth.js';
-import { configureApiClient } from '../../utils/api.js';
 import { logErrorAndExit } from '../../console/logging.js';
 
 // Mock resolveFiles
@@ -59,7 +58,7 @@ vi.mock('../../fs/utils.js', () => ({
 }));
 
 vi.mock('../../utils/api.js', () => ({
-  configureApiClient: vi.fn(),
+  configureCustomMapping: vi.fn(),
 }));
 
 vi.mock('../../auth/oauth.js', () => ({
@@ -415,7 +414,7 @@ describe('generateSettings - composite patterns', () => {
     );
   });
 
-  it('configures the API client with the API key, or else a lazy user token provider', async () => {
+  it('keeps the API key, or else a lazy user token provider', async () => {
     const userSettings = await generateSettings({}, '/test/cwd');
     const keySettings = await generateSettings(
       { apiKey: 'explicit-api-key' },
@@ -429,19 +428,7 @@ describe('generateSettings - composite patterns', () => {
     expect(
       userSettings.userTokenProvider!.getAccessToken
     ).not.toHaveBeenCalled();
-    expect(vi.mocked(configureApiClient).mock.calls[0][0]).toMatchObject({
-      userTokenProvider: userSettings.userTokenProvider,
-    });
-    expect(vi.mocked(configureApiClient).mock.calls[0][0]).not.toHaveProperty(
-      'apiKey'
-    );
     expect(keySettings.apiKey).toBe('explicit-api-key');
-    expect(vi.mocked(configureApiClient).mock.calls[1][0]).toMatchObject({
-      apiKey: 'explicit-api-key',
-    });
-    expect(vi.mocked(configureApiClient).mock.calls[1][0]).not.toHaveProperty(
-      'userTokenProvider'
-    );
   });
 
   it('sends requests to GT_API_URL over the configured base URL', async () => {

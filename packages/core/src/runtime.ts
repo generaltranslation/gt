@@ -6,22 +6,14 @@
 import type { LocaleConfig } from '@generaltranslation/format';
 import { snapshotLocaleConfig } from '@generaltranslation/format/internal';
 import type { UserTokenProvider } from '@generaltranslation/api';
-import type {
-  TranslateConfig,
-  TranslateManyResult,
-  TranslationError,
-  TranslationResult,
-} from './types';
+import type { TranslateManyResult, TranslationResult } from './types';
 import type {
   TranslateManyEntry,
   TranslateOptions,
 } from './types-dir/api/entry';
 import type { GTProjectConfig } from './clientConfig';
 import { noScopeIdProvidedError } from './logging/errors';
-import {
-  translate as translateWithConfig,
-  translateMany as translateManyWithConfig,
-} from './translate/runtimeTranslate';
+import { translateEntries } from './translate/runtimeTranslate';
 
 export type { LocaleConfig } from '@generaltranslation/format';
 export type { GTCredentials, GTProjectConfig } from './clientConfig';
@@ -66,25 +58,13 @@ export class GTRuntime {
     if (new.target === GTRuntime) Object.freeze(this);
   }
 
-  private translateConfig(timeoutMs?: number): TranslateConfig {
-    return {
-      baseUrl: this.baseUrl,
-      apiKey: this.apiKey,
-      userTokenProvider: this.userTokenProvider,
-      customMapping: this.localeConfig.customMapping,
-      projectId: this.projectId,
-      timeoutMs,
-    };
-  }
-
   /**
    * Translates a single source string to the target locale.
-   * Routes through {@link translateMany} under the hood.
    *
    * @param {string} source - The source string to translate.
    * @param {object} options - The target locale, or options including targetLocale.
    * @param {number} [timeout] - Timeout in milliseconds; omitted selects the runtime default.
-   * @returns {Promise<TranslationResult | TranslationError>} The translated content.
+   * @returns {Promise<TranslationResult>} The translated content.
    *
    * @example
    * const result = await runtime.translate('Hello, world!', 'es');
@@ -102,10 +82,15 @@ export class GTRuntime {
     source: TranslateManyEntry,
     options: string | TranslateOptions,
     timeout?: number
-  ): Promise<TranslationResult | TranslationError> {
-    return translateWithConfig(source, options, this.translateConfig(timeout), {
-      sourceLocale: this.localeConfig.defaultLocale,
-    });
+  ): Promise<TranslationResult> {
+    const [result] = (await translateEntries(
+      this,
+      'translate',
+      [source],
+      options,
+      timeout
+    )) as TranslateManyResult;
+    return result;
   }
 
   /**
@@ -141,11 +126,6 @@ export class GTRuntime {
     options: string | TranslateOptions,
     timeout?: number
   ): Promise<TranslateManyResult | Record<string, TranslationResult>> {
-    return translateManyWithConfig(
-      sources,
-      options,
-      this.translateConfig(timeout),
-      { sourceLocale: this.localeConfig.defaultLocale }
-    );
+    return translateEntries(this, 'translateMany', sources, options, timeout);
   }
 }

@@ -13,7 +13,9 @@ vi.mock('../../console/logging.js', () => ({
     throw new Error(message);
   }),
 }));
-vi.mock('../../utils/api.js', () => ({ api: {} }));
+vi.mock('../../utils/api.js', () => ({
+  createClients: () => ({ project: {} }),
+}));
 vi.mock('../utils/syncFonts.js', () => ({ syncFonts: vi.fn() }));
 vi.mock('../steps/BranchStep.js', () => ({
   BranchStep: vi.fn(() => ({

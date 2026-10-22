@@ -6,7 +6,7 @@
  * validation/ directory and translations-loaders/ internals can be
  * restructured or inlined without breaking behavior. Do not import or mock
  * i18n-cache internals here; the only stubbed boundaries are global fetch,
- * console, env, and the project handle's translateMany.
+ * console, env, and GTRuntime.prototype.translateMany.
  */
 import {
   describe,
@@ -279,7 +279,7 @@ describe('I18nCache config contract', () => {
     $requiresReview: true,
   };
 
-  it('passes runtimeTranslation timeout and metadata through to the project handle translateMany', async () => {
+  it('passes runtimeTranslation timeout and metadata through to GTRuntime.translateMany', async () => {
     initConfig({ projectId: 'test-project', apiKey: 'test-api-key' });
     const translateManySpy = succeedTranslateMany(() => 'Bonjour {name} !');
     const cache = new I18nCache({

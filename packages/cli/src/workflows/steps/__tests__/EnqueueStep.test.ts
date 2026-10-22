@@ -35,7 +35,6 @@ describe('EnqueueStep', () => {
 
     expect(result).toEqual({
       jobData: {},
-      locales: ['es'],
       message: 'No files need to be enqueued',
     });
     expect(gt.translateFiles).not.toHaveBeenCalled();
@@ -69,11 +68,7 @@ describe('EnqueueStep', () => {
         fileFormat: 'JSON' as const,
       },
     ];
-    const step = new EnqueueStep(
-      gt,
-      { ...settings, projectId: 'project-id' },
-      true
-    );
+    const step = new EnqueueStep(gt, settings, true);
 
     const result = await step.run(files);
 
@@ -85,13 +80,10 @@ describe('EnqueueStep', () => {
     });
     expect(result.jobData).toEqual({
       'job-1': {
-        sourceFileId: 'file-id',
         fileId: 'file-id',
         versionId: 'version-id',
         branchId: 'branch-id',
         targetLocale: 'es',
-        projectId: 'project-id',
-        force: true,
       },
     });
     expect(result.message).toBe(

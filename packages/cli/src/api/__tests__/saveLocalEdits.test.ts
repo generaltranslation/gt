@@ -4,7 +4,6 @@ import * as path from 'node:path';
 import os from 'node:os';
 import { saveLocalEdits } from '../saveLocalEdits.js';
 import { createMockSettings } from '../__mocks__/settings.js';
-import { api } from '../../utils/api.js';
 import { logger } from '../../console/logger.js';
 import { aggregateFiles } from '../../formats/files/aggregateFiles.js';
 import { runPublishWorkflow } from '../../workflows/publish.js';
@@ -12,12 +11,14 @@ import { getGitUnifiedDiff } from '../../utils/gitDiff.js';
 import { hashStringSync } from '../../utils/hash.js';
 import { clearWarnings, getWarnings } from '../../state/translateWarnings.js';
 
+const api = vi.hoisted(() => ({
+  queryFiles: vi.fn(),
+  queryFilesContent: vi.fn(),
+  overwriteTranslations: vi.fn(),
+}));
 vi.mock('../../utils/api.js', () => ({
-  api: {
-    queryFiles: vi.fn(),
-    queryFilesContent: vi.fn(),
-    overwriteTranslations: vi.fn(),
-  },
+  createClients: () => ({ project: api }),
+  resolveCanonicalLocale: (locale: string) => locale,
 }));
 
 const mockSpinner = vi.hoisted(() => ({ start: vi.fn(), stop: vi.fn() }));

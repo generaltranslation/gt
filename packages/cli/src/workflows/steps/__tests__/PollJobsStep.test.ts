@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { awaitJobs, createApiClient } from 'generaltranslation/api';
 import { Libraries } from '../../../types/libraries.js';
-import type { ApiClient } from '../../../utils/api.js';
+import type { ProjectHandle } from 'generaltranslation';
 import { TEMPLATE_FILE_NAME } from '../../../utils/constants.js';
 import {
   PollTranslationJobsStep,
@@ -41,7 +41,7 @@ const templateFile = {
 
 function getStatusText(inlineLibrary?: 'gt-react' | 'gt-vue'): string {
   const step = new PollTranslationJobsStep(
-    {} as ApiClient,
+    {} as ProjectHandle,
     inlineLibrary
   ) as unknown as StatusFormatter;
   const tracker: FileStatusTracker = {
@@ -69,17 +69,22 @@ describe('PollTranslationJobsStep inline catalog labels', () => {
       ...templateFile,
       fileId: `${status}-file`,
     }));
-    const awaitJobs = vi.fn<ApiClient['awaitJobs']>(async (jobIds, options) => {
-      const jobs = jobIds.map((id) => ({
-        id,
-        status: id.replace('job-', '') as 'completed' | 'failed' | 'not_found',
-      }));
-      options?.onPoll?.(jobs);
-      return { complete: true, jobs };
-    });
+    const awaitJobs = vi.fn<ProjectHandle['awaitJobs']>(
+      async (jobIds, options) => {
+        const jobs = jobIds.map((id) => ({
+          id,
+          status: id.replace('job-', '') as
+            | 'completed'
+            | 'failed'
+            | 'not_found',
+        }));
+        options?.onPoll?.(jobs);
+        return { complete: true, jobs };
+      }
+    );
     const api = {
       awaitJobs,
-    } as unknown as ApiClient;
+    } as unknown as ProjectHandle;
     const step = new PollTranslationJobsStep(api);
     const fileTracker: FileStatusTracker = {
       completed: new Map(),
@@ -96,17 +101,13 @@ describe('PollTranslationJobsStep inline catalog labels', () => {
           files.map((file) => [
             `job-${file.fileId.replace('-file', '')}`,
             {
-              sourceFileId: 'source-1',
               fileId: file.fileId,
               versionId: file.versionId,
               branchId: file.branchId,
               targetLocale: file.locale,
-              projectId: 'project-1',
-              force: false,
             },
           ])
         ),
-        locales: [templateFile.locale],
         message: 'enqueued',
       },
       timeoutDuration: 1,
@@ -126,11 +127,11 @@ describe('PollTranslationJobsStep inline catalog labels', () => {
 
   it('keeps unobserved jobs in progress when polling times out', async () => {
     const api = {
-      awaitJobs: vi.fn<ApiClient['awaitJobs']>(async (jobIds) => ({
+      awaitJobs: vi.fn<ProjectHandle['awaitJobs']>(async (jobIds) => ({
         complete: false,
         jobs: jobIds.map((id) => ({ id, status: 'unknown' as const })),
       })),
-    } as unknown as ApiClient;
+    } as unknown as ProjectHandle;
     const step = new PollTranslationJobsStep(api);
     const fileTracker: FileStatusTracker = {
       completed: new Map(),
@@ -145,16 +146,12 @@ describe('PollTranslationJobsStep inline catalog labels', () => {
       jobData: {
         jobData: {
           'job-1': {
-            sourceFileId: 'source-1',
             fileId: templateFile.fileId,
             versionId: templateFile.versionId,
             branchId: templateFile.branchId,
             targetLocale: templateFile.locale,
-            projectId: 'project-1',
-            force: false,
           },
         },
-        locales: [templateFile.locale],
         message: 'enqueued',
       },
       timeoutDuration: 0,
@@ -203,8 +200,8 @@ describe('PollTranslationJobsStep inline catalog labels', () => {
           'project-1',
           jobIds,
           options
-        )) satisfies ApiClient['awaitJobs'],
-    } as unknown as ApiClient;
+        )) satisfies ProjectHandle['awaitJobs'],
+    } as unknown as ProjectHandle;
     const step = new PollTranslationJobsStep(api);
 
     const result = await step.run({
@@ -220,17 +217,13 @@ describe('PollTranslationJobsStep inline catalog labels', () => {
           files.map((file, index) => [
             `job-${index}`,
             {
-              sourceFileId: 'source-1',
               fileId: file.fileId,
               versionId: file.versionId,
               branchId: file.branchId,
               targetLocale: file.locale,
-              projectId: 'project-1',
-              force: false,
             },
           ])
         ),
-        locales: [templateFile.locale],
         message: 'enqueued',
       },
       timeoutDuration: 1,

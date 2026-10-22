@@ -1,7 +1,7 @@
 import type { CustomMapping } from '@generaltranslation/format/types';
 import type { UserTokenProvider } from 'generaltranslation/api';
 import type { ModelProvider } from 'generaltranslation/internal';
-import type { FileFormat } from 'generaltranslation/types';
+import type { FileFormat, Updates } from 'generaltranslation/types';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import {
   ParsingConfigOptions,
@@ -12,6 +12,8 @@ import {
 import { Libraries, InlineLibrary } from './libraries.js';
 
 export type { Updates } from 'generaltranslation/types';
+
+export type Metadata = Updates[number]['metadata'];
 
 export type Options = {
   config: string;

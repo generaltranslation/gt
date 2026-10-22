@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { BatchedFiles, downloadFileBatch } from '../downloadFileBatch.js';
-import { api } from '../../utils/api.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import nodePath from 'node:path';
@@ -20,11 +19,12 @@ import {
 } from '../../state/recentDownloads.js';
 
 // Mock dependencies
+const api = vi.hoisted(() => ({
+  queryFilesContent: vi.fn(),
+}));
 vi.mock('../../utils/api.js', () => ({
-  api: {
-    queryFilesContent: vi.fn(),
-    resolveCanonicalLocale: vi.fn((locale) => locale),
-  },
+  createClients: () => ({ project: api }),
+  resolveCanonicalLocale: (locale: string) => locale,
 }));
 
 vi.mock('fs', () => ({

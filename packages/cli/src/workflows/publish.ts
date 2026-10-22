@@ -1,6 +1,7 @@
 import { Settings } from '../types/index.js';
 import { PublishStep } from './steps/PublishStep.js';
-import { api } from '../utils/api.js';
+import { createClients } from '../utils/api.js';
+import { noProjectIdError } from '../console/index.js';
 import { hasPublishConfig } from '../utils/resolvePublish.js';
 import { logger } from '../console/logger.js';
 
@@ -28,7 +29,9 @@ export async function runPublishWorkflow(
         fileName: file.fileName,
       }));
     if (allFileRefs.length === 0) return true;
-    const publishStep = new PublishStep(api);
+    const { project } = createClients(settings);
+    if (!project) throw new Error(noProjectIdError);
+    const publishStep = new PublishStep(project);
     return await publishStep.run(allFileRefs);
   } catch (error) {
     logger.warn(

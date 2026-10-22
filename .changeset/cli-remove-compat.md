@@ -9,4 +9,5 @@ Remove the remaining backward compatibility:
 - `files.gt.parsingFlags.legacyGtReactImportSource` is removed.
 - `<T>` extraction no longer reads `$context`, `$id`, `$maxChars`, or `$requiresReview` and no longer warns about them; use the unprefixed props.
 - The `gt/types` export now resolves to the built types entry; the unused `gt/updates/*` and `gt/jsx/*` exports are removed.
+- `gt/utils/api` no longer exports `api`, `ApiClient`, or `configureApiClient`: `createClients(settings)` returns the project and account `GT` handles, call their methods instead, and `configureCustomMapping(customMapping)` sets the locale mapping.
 - Deep-import internals: `determineLibrary()` (use `determineLibraryForCLI()`), `updateVersions()`/`getStagedVersions()`, `warnDeprecatedField()`, and the deprecated `DictionaryMetadata` fields `context`, `maxChars`, and `variablesOptions` are removed.

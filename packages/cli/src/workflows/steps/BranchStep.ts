@@ -1,6 +1,6 @@
 import { logErrorAndExit } from '../../console/logging.js';
 import { logger } from '../../console/logger.js';
-import type { ApiClient } from '../../utils/api.js';
+import type { ProjectHandle } from 'generaltranslation';
 import type { Settings } from '../../types/index.js';
 import chalk from 'chalk';
 import {
@@ -9,10 +9,10 @@ import {
   getCheckedOutBranches,
 } from '../../git/branches.js';
 import { BranchData } from '../../types/branch.js';
-import { ApiError } from 'generaltranslation/errors';
+import { ApiError } from 'generaltranslation/api';
 
 type BranchStepClient = Pick<
-  ApiClient,
+  ProjectHandle,
   'listBranches' | 'createBranch' | 'updateBranch'
 >;
 type BranchStepSettings = Pick<Settings, 'branchOptions'>;

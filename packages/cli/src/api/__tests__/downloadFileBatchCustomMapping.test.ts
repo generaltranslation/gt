@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import os from 'node:os';
 import { downloadFileBatch } from '../downloadFileBatch.js';
 import { createMockSettings } from '../__mocks__/settings.js';
-import { configureApiClient } from '../../utils/api.js';
+import { configureCustomMapping } from '../../utils/api.js';
 import type { FileStatusTracker } from '../../workflows/steps/PollJobsStep.js';
 
 vi.mock('../../console/logger.js', () => ({
@@ -24,10 +24,11 @@ describe('downloadFileBatch - custom-mapped alias of a requested locale', () => 
 
   afterEach(() => {
     process.chdir(originalCwd);
+    vi.unstubAllGlobals();
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('writes both the canonical and the alias output through the real adapter', async () => {
+  it('writes both the canonical and the alias output through GT', async () => {
     const wireSelectors: unknown[][] = [];
     const fetch = vi.fn<typeof globalThis.fetch>(async (input, init) => {
       const { files } = (await new Request(input, init).json()) as {
@@ -43,13 +44,9 @@ describe('downloadFileBatch - custom-mapped alias of a requested locale', () => 
         })),
       });
     });
-    configureApiClient({
-      apiKey: 'api-key',
-      baseUrl: 'https://api.example.com',
-      projectId: 'project-id',
-      customMapping: { 'es-alt': { code: 'es' } },
-      fetch,
-    });
+    vi.stubGlobal('fetch', fetch);
+    const customMapping = { 'es-alt': { code: 'es' } };
+    configureCustomMapping(customMapping);
     const file = { branchId: 'branch', fileId: 'file', versionId: 'version' };
     const inputPath = path.join(tempDir, 'en.json');
     const requested = ['es', 'es-alt'].map((locale) => ({
@@ -78,6 +75,10 @@ describe('downloadFileBatch - custom-mapped alias of a requested locale', () => 
         config: path.join(tempDir, 'gt.config.json'),
         defaultLocale: 'en',
         locales: ['es', 'es-alt'],
+        apiKey: 'api-key',
+        baseUrl: 'https://api.example.com',
+        projectId: 'project-id',
+        customMapping,
       })
     );
 

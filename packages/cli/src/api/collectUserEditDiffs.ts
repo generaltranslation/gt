@@ -8,7 +8,8 @@ import {
 import { Settings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import { getGitUnifiedDiff } from '../utils/gitDiff.js';
-import { api } from '../utils/api.js';
+import { createClients } from '../utils/api.js';
+import { noProjectIdError } from '../console/index.js';
 import {
   FileReference,
   isBinaryFileFormat,
@@ -85,6 +86,8 @@ export async function collectAndSendUserEditDiffs(
   settings: Settings
 ): Promise<UserEditDiffResults> {
   if (!settings.files) return { saved: [], failed: [] };
+  const { project } = createClients(settings);
+  if (!project) throw new Error(noProjectIdError);
 
   const { resolvedPaths, placeholderPaths, transformPaths, transformFormats } =
     settings.files;
@@ -166,16 +169,12 @@ export async function collectAndSendUserEditDiffs(
   const collectedDiffs: UserEditDiff[] = [];
 
   if (candidates.length > 0) {
-    const fileQueryData = candidates.map((c) => ({
-      versionId: c.versionId,
-      locale: c.locale,
-      fileId: c.fileId,
-      branchId: c.branchId,
-    }));
-
-    const completedKeys = await queryCompletedTranslationKeys(api, candidates);
-    const translatedFiles = fileQueryData.filter((f) =>
-      completedKeys.has(getFileTranslationKey(f))
+    const completedKeys = await queryCompletedTranslationKeys(
+      project,
+      candidates
+    );
+    const translatedFiles = candidates.filter((c) =>
+      completedKeys.has(getFileTranslationKey(c))
     );
 
     // The server's copy of each candidate, keyed like the candidates
@@ -183,7 +182,7 @@ export async function collectAndSendUserEditDiffs(
     const serverPayloadByKey = new Map<string, ServerPayload>();
     try {
       const { results: contentResults } =
-        await api.queryFilesContent(translatedFiles);
+        await project.queryFilesContent(translatedFiles);
       contentResults.forEach((result, index) => {
         if (
           result.status !== 'ready' ||
@@ -349,7 +348,7 @@ export async function collectAndSendUserEditDiffs(
   if (collectedDiffs.length === 0) return saveResults;
 
   // Results follow request order; a failed edit is reported and skipped.
-  const { results } = await api.overwriteTranslations(collectedDiffs);
+  const { results } = await project.overwriteTranslations(collectedDiffs);
   results.forEach((result, index) => {
     const edit = collectedDiffs[index];
     if (result.status !== 'failed') {

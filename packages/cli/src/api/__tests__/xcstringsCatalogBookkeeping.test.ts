@@ -3,7 +3,6 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import os from 'node:os';
 import type { FileReference } from 'generaltranslation/types';
-import { api } from '../../utils/api.js';
 import { logger } from '../../console/logger.js';
 import { collectAndSendUserEditDiffs } from '../collectUserEditDiffs.js';
 import { downloadFileBatch, type BatchedFiles } from '../downloadFileBatch.js';
@@ -31,13 +30,14 @@ import { saveEveryDiff } from '../__mocks__/saveEveryDiff.js';
 import type { FileStatusTracker } from '../../workflows/steps/PollJobsStep.js';
 import type { Settings } from '../../types/index.js';
 
+const api = vi.hoisted(() => ({
+  queryFiles: vi.fn(),
+  queryFilesContent: vi.fn(),
+  overwriteTranslations: vi.fn(),
+}));
 vi.mock('../../utils/api.js', () => ({
-  api: {
-    queryFiles: vi.fn(),
-    queryFilesContent: vi.fn(),
-    overwriteTranslations: vi.fn(),
-    resolveCanonicalLocale: vi.fn((locale: string) => locale),
-  },
+  createClients: () => ({ project: api }),
+  resolveCanonicalLocale: (locale: string) => locale,
 }));
 
 const spinner = vi.hoisted(() => ({

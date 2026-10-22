@@ -15,9 +15,9 @@ export type { FileFormat };
  * the client decodes that to UTF-8 before upload and restores it on write, so
  * only the client ever handles their bytes.
  */
-export const BINARY_FILE_FORMATS: ReadonlySet<FileFormat> = new Set<FileFormat>(
-  ['LOTTIE']
-);
+const BINARY_FILE_FORMATS: ReadonlySet<FileFormat> = new Set<FileFormat>([
+  'LOTTIE',
+]);
 
 /**
  * Whether a file format's content is carried as base64 end-to-end rather than

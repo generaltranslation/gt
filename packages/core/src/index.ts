@@ -14,7 +14,11 @@ import { createGtApiClient } from './apiClient';
 import { OrgHandle } from './orgHandle';
 import { ProjectHandle } from './projectHandle';
 import { snapshotLocaleConfig } from '@generaltranslation/format/internal';
-import type { GTAccountConfig, GTProjectConfig } from './clientConfig';
+import {
+  credentialScope,
+  type GTAccountConfig,
+  type GTProjectConfig,
+} from './clientConfig';
 import {
   noScopeIdProvidedError,
   projectKeyWithoutProjectIdError,
@@ -31,32 +35,6 @@ export { declareVar } from './derive/declareVar';
 export { derive } from './derive/derive';
 
 export { GTIntl } from '@generaltranslation/format';
-
-export {
-  determineLocale,
-  formatCurrency,
-  formatCutoff,
-  formatDateTime,
-  formatList,
-  formatListToParts,
-  formatMessage,
-  formatNum,
-  formatRelativeTime,
-  formatRelativeTimeFromDate,
-  getLocaleDirection,
-  getLocaleEmoji,
-  getLocaleName,
-  getLocaleProperties,
-  getRegionProperties,
-  isSameDialect,
-  isSameLanguage,
-  isSupersetLocale,
-  isValidLocale,
-  requiresTranslation,
-  resolveAliasLocale,
-  resolveCanonicalLocale,
-  standardizeLocale,
-} from '@generaltranslation/format';
 
 /** Constructs `GT`: project-scoped with `projectId`, account-scoped without. */
 type GTConstructor = {
@@ -92,7 +70,7 @@ class GTAccount {
       // A constructor may return another object; this one is the project-scoped GT.
       return project as unknown as GTAccount;
     }
-    if (params.apiKey?.startsWith('gtx-api-')) {
+    if (credentialScope(params) === 'project') {
       throw new Error(projectKeyWithoutProjectIdError);
     }
     this.params = Object.freeze({

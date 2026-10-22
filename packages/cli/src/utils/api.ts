@@ -1,106 +1,51 @@
+import { GT, type ProjectHandle } from 'generaltranslation';
 import {
-  GT,
-  type GTAccountConfig,
-  type GTCredentials,
-  type OrgHandle,
-  type ProjectHandle,
-} from 'generaltranslation';
-import {
-  resolveCanonicalLocale,
+  resolveCanonicalLocale as resolveCanonicalCode,
   standardizeLocale,
 } from '@generaltranslation/format';
 import { snapshotLocaleConfig } from '@generaltranslation/format/internal';
-import { defaultBaseUrl } from 'generaltranslation/internal';
+import type { UserTokenProvider } from 'generaltranslation/api';
+import { credentialScope } from 'generaltranslation/internal';
 import type { CustomMapping } from 'generaltranslation/types';
-import { noProjectIdError } from '../console/index.js';
-import { createUserTokenProvider } from '../auth/oauth.js';
+import type { Settings } from '../types/index.js';
 
-type ApiClientConfig = GTCredentials & {
-  projectId?: string;
-  baseUrl?: string;
-  customMapping?: CustomMapping;
-};
+// Format modules resolve locales without settings, so the mapping is module state.
+let sharedCustomMapping: CustomMapping | undefined;
 
-let sharedConfig: ApiClientConfig | undefined;
+/** Sets the custom mapping that `resolveCanonicalLocale` applies. */
+export function configureCustomMapping(customMapping?: CustomMapping): void {
+  sharedCustomMapping = snapshotLocaleConfig({ customMapping }).customMapping;
+}
 
-export function configureApiClient(config: ApiClientConfig): void {
-  sharedConfig = {
-    ...config,
-    customMapping: snapshotLocaleConfig(config).customMapping,
+/** Standardized so configured spellings such as en-us match catalog keys. */
+export function resolveCanonicalLocale(locale: string): string {
+  return standardizeLocale(resolveCanonicalCode(locale, sharedCustomMapping));
+}
+
+/**
+ * The project-scoped client when a project ID resolves, and the
+ * account-scoped client unless the API key is a project key.
+ */
+export function createClients(
+  settings: Pick<
+    Settings,
+    'apiKey' | 'userTokenProvider' | 'projectId' | 'baseUrl' | 'customMapping'
+  >
+): { project?: ProjectHandle; account?: GT } {
+  const params = {
+    ...(settings.apiKey
+      ? { apiKey: settings.apiKey }
+      : {
+          // generateSettings always sets the provider.
+          userTokenProvider: settings.userTokenProvider as UserTokenProvider,
+        }),
+    baseUrl: settings.baseUrl,
+    localeConfig: { customMapping: settings.customMapping },
+  };
+  return {
+    project: settings.projectId
+      ? new GT({ ...params, projectId: settings.projectId })
+      : undefined,
+    account: credentialScope(params) === 'account' ? new GT(params) : undefined,
   };
 }
-
-// Reads the configuration at call time, so `api` keeps working after configureApiClient.
-function accountParams(): GTAccountConfig {
-  // Before configureApiClient, requests use the stored login, as without an API key.
-  const {
-    projectId: _projectId,
-    customMapping,
-    ...connection
-  } = sharedConfig ?? {
-    baseUrl: defaultBaseUrl,
-    userTokenProvider: createUserTokenProvider({ baseUrl: defaultBaseUrl }),
-  };
-  return { ...connection, localeConfig: { customMapping } };
-}
-
-function project(projectId = sharedConfig?.projectId): ProjectHandle {
-  if (!projectId) throw new Error(noProjectIdError);
-  return new GT({ ...accountParams(), projectId });
-}
-
-function onProject<Name extends keyof ProjectHandle>(
-  name: Name
-): ProjectHandle[Name] {
-  return (async (...args: unknown[]) => {
-    const handle = project();
-    return (handle[name] as (...args: unknown[]) => unknown).apply(
-      handle,
-      args
-    );
-  }) as ProjectHandle[Name];
-}
-
-export const api = {
-  // Standardized so configured spellings such as en-us match catalog keys.
-  resolveCanonicalLocale: (locale: string) =>
-    standardizeLocale(
-      resolveCanonicalLocale(locale, sharedConfig?.customMapping)
-    ),
-
-  getProject: onProject('get'),
-  updateProject: onProject('update'),
-  listBranches: onProject('listBranches'),
-  createBranch: onProject('createBranch'),
-  updateBranch: onProject('updateBranch'),
-  moveFiles: onProject('moveFiles'),
-  listBranchFiles: onProject('listBranchFiles'),
-  generateProjectContext: onProject('generateProjectContext'),
-  queryJobs: onProject('queryJobs'),
-  awaitJobs: onProject('awaitJobs'),
-  translateFiles: onProject('translateFiles'),
-  setTag: onProject('setTag'),
-  publishFiles: onProject('publishFiles'),
-  overwriteTranslations: onProject('overwriteTranslations'),
-  queryFiles: onProject('queryFiles'),
-  queryFilesContent: onProject('queryFilesContent'),
-  uploadSourceFiles: onProject('uploadSourceFiles'),
-  uploadTranslations: onProject('uploadTranslations'),
-  createProjectApiKey: async (
-    projectId: string,
-    ...args: Parameters<ProjectHandle['createApiKey']>
-  ) => project(projectId).createApiKey(...args),
-
-  upsertAssets: async (
-    orgId: string,
-    ...args: Parameters<OrgHandle['upsertAssets']>
-  ) => new GT(accountParams()).org(orgId).upsertAssets(...args),
-  createProject: async (
-    orgId: string,
-    ...args: Parameters<OrgHandle['createProject']>
-  ) => new GT(accountParams()).org(orgId).createProject(...args),
-  listProjects: async () => new GT(accountParams()).listProjects(),
-  listOrgs: async () => new GT(accountParams()).listOrgs(),
-};
-
-export type ApiClient = typeof api;

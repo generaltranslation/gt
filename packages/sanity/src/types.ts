@@ -4,7 +4,6 @@ import { SanityClient, Schema } from 'sanity';
 
 export type TranslationLocale = {
   localeId: string;
-  description: string;
   enabled?: boolean;
 };
 

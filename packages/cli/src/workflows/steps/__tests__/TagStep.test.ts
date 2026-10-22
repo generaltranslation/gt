@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { ApiClient } from '../../../utils/api.js';
+import type { ProjectHandle } from 'generaltranslation';
 import type { Settings } from '../../../types/index.js';
 import { TagStep } from '../TagStep.js';
 
@@ -21,7 +21,7 @@ describe('TagStep', () => {
     };
     const setTag = vi.fn(async () => response);
     const step = new TagStep(
-      { setTag } as unknown as ApiClient,
+      { setTag } as unknown as ProjectHandle,
       { tag: 'release', tagMessage: 'Release' } as Settings,
       true
     );

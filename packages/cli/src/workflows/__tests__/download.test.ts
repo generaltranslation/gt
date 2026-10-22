@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Settings } from '../../types/index.js';
 import { clearLocaleDirs } from '../../fs/clearLocaleDirs.js';
-import { api } from '../../utils/api.js';
 import { downloadFileBatch } from '../../api/downloadFileBatch.js';
 import { runDownloadWorkflow } from '../download.js';
 
@@ -21,10 +20,12 @@ vi.mock('../../fs/clearLocaleDirs.js', () => ({
   clearLocaleDirs: vi.fn(),
 }));
 
+const api = vi.hoisted(() => ({
+  queryFiles: vi.fn(),
+}));
 vi.mock('../../utils/api.js', () => ({
-  api: {
-    queryFiles: vi.fn(),
-  },
+  createClients: () => ({ project: api }),
+  resolveCanonicalLocale: (locale: string) => locale,
 }));
 
 vi.mock('../../api/downloadFileBatch.js', () => ({

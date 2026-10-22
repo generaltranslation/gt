@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ApiError } from 'generaltranslation/errors';
+import { ApiError } from 'generaltranslation/api';
 import { BranchStep } from '../BranchStep.js';
 
 // Mock git branch detection

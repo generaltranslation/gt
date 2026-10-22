@@ -2,7 +2,7 @@ import path from 'node:path';
 import chalk from 'chalk';
 import type { FileToUpload } from 'generaltranslation/types';
 import { logger } from '../console/logger.js';
-import { api } from '../utils/api.js';
+import { createClients } from '../utils/api.js';
 import { Settings } from '../types/index.js';
 
 const PROJECT_INFO_TIMEOUT_MS = 10_000;
@@ -43,8 +43,11 @@ export async function warnManualReviewSetup(
 
   let autoApprove: boolean | undefined;
   try {
-    autoApprove = (await api.getProject({ timeout: PROJECT_INFO_TIMEOUT_MS }))
-      .autoApprove;
+    autoApprove = (
+      await createClients(settings).project?.get({
+        timeout: PROJECT_INFO_TIMEOUT_MS,
+      })
+    )?.autoApprove;
   } catch {
     // Setting unavailable — fall through to the conditional wording
   }

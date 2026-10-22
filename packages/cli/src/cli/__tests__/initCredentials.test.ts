@@ -3,17 +3,18 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import { devNull, tmpdir } from 'node:os';
 import path from 'node:path';
-import { ApiError } from 'generaltranslation/errors';
+import { ApiError } from 'generaltranslation/api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../utils/api.js', () => ({
-  configureApiClient: vi.fn(),
-  api: {
-    createProject: vi.fn(),
-    createProjectApiKey: vi.fn(),
-    listOrgs: vi.fn(),
-    listProjects: vi.fn(),
-  },
+const api = vi.hoisted(() => ({
+  createProject: vi.fn(),
+  createProjectApiKey: vi.fn(),
+  listOrgs: vi.fn(),
+  listProjects: vi.fn(),
+}));
+vi.mock('generaltranslation', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('generaltranslation')>()),
+  GT: (await import('./forwardingGT.js')).forwardingGT(api),
 }));
 vi.mock('../../auth/oauth.js', () => ({
   createUserTokenProvider: vi.fn(() => ({})),
@@ -75,7 +76,6 @@ import {
   promptText,
 } from '../../console/logging.js';
 import { detectFramework } from '../../setup/detectFramework.js';
-import { api } from '../../utils/api.js';
 import { BaseCLI } from '../base.js';
 
 const projects = [

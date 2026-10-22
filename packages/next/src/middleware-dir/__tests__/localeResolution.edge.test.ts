@@ -51,11 +51,12 @@ function callGetLocaleFromRequest(
     defaultLocalePaths?: PathMatcher;
   } = {}
 ) {
-  const gt = new GTIntl();
+  const gt = new GTIntl({
+    locales: overrides.approvedLocales ?? APPROVED_LOCALES,
+  });
   return getLocaleFromRequest(
     req,
     overrides.defaultLocale ?? DEFAULT_LOCALE,
-    overrides.approvedLocales ?? APPROVED_LOCALES,
     overrides.localeRouting ?? true,
     overrides.prefixDefaultLocale ?? false,
     overrides.defaultLocalePaths ?? createPathMatcher([]),

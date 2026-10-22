@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { awaitJobs, pollJobs } from '../wrappers/awaitJobs';
+import { awaitJobs } from '../wrappers/awaitJobs';
 import { createBatches, processBatches } from '../wrappers/batch';
 import { API_VERSION, createApiClient } from '../wrappers/client';
 import { ApiError } from '../wrappers/errors';
@@ -14,14 +14,51 @@ afterEach(() => {
 });
 
 describe('createTimeoutFetch', () => {
-  it('aborts requests after the configured timeout', async () => {
+  it('aborts the signal handed to fetch after the configured timeout', async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn<typeof fetch>().mockImplementation(
+      async (_input, init) =>
+        new Promise<Response>((_, reject) => {
+          // Like fetch, reject with the signal's abort reason.
+          init?.signal?.addEventListener('abort', () => {
+            reject(init.signal?.reason);
+          });
+        })
+    );
+    const response = createTimeoutFetch({ fetch: fetchMock, timeoutMs: 10 })(
+      'https://example.com/test',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: '{"value":"preserved"}',
+      }
+    );
+
+    const expectation = expect(response).rejects.toThrow(
+      'Request timed out after 10ms'
+    );
+    await vi.advanceTimersByTimeAsync(10);
+
+    await expectation;
+    const [request, init] = fetchMock.mock.calls[0];
+    expect(init?.signal?.aborted).toBe(true);
+    expect(request).toBeInstanceOf(Request);
+    expect((request as Request).method).toBe('POST');
+    expect((request as Request).headers.get('content-type')).toBe(
+      'application/json'
+    );
+    await expect((request as Request).text()).resolves.toBe(
+      '{"value":"preserved"}'
+    );
+  });
+
+  it('aborts the request handed to fetch after the configured timeout', async () => {
     vi.useFakeTimers();
     const fetchMock = vi.fn<typeof fetch>().mockImplementation(
       async (input) =>
         new Promise<Response>((_, reject) => {
-          new Request(input).signal.addEventListener('abort', () => {
-            reject(new DOMException('Aborted', 'AbortError'));
-          });
+          const { signal } = input as Request;
+          signal.addEventListener('abort', () => reject(signal.reason));
         })
     );
     const response = createTimeoutFetch({ fetch: fetchMock, timeoutMs: 10 })(
@@ -36,11 +73,31 @@ describe('createTimeoutFetch', () => {
     await expectation;
   });
 
+  it("keeps a custom fetch's own cancellation error after the timeout", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn<typeof fetch>().mockImplementation(
+      async () =>
+        new Promise<Response>((_, reject) => {
+          setTimeout(() => reject(new Error('custom fetch cancelled')), 20);
+        })
+    );
+    const response = createTimeoutFetch({ fetch: fetchMock, timeoutMs: 10 })(
+      'https://example.com/test'
+    );
+
+    const expectation = expect(response).rejects.toThrow(
+      'custom fetch cancelled'
+    );
+    await vi.advanceTimersByTimeAsync(20);
+
+    await expectation;
+  });
+
   it('forwards caller aborts with their original reason', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockImplementation(
-      async (input) =>
+      async (_input, init) =>
         new Promise<Response>((_, reject) => {
-          const { signal } = new Request(input);
+          const signal = init!.signal!;
           signal.addEventListener('abort', () => reject(signal.reason));
         })
     );
@@ -510,10 +567,11 @@ describe('createApiClient', () => {
   it('times out requests after the configured timeoutMs', async () => {
     vi.useFakeTimers();
     const fetchMock = vi.fn<typeof fetch>().mockImplementation(
-      async (input) =>
+      async (_input, init) =>
         new Promise<Response>((_, reject) => {
-          new Request(input).signal.addEventListener('abort', () => {
-            reject(new DOMException('Aborted', 'AbortError'));
+          // Like fetch, reject with the signal's abort reason.
+          init?.signal?.addEventListener('abort', () => {
+            reject(init.signal?.reason);
           });
         })
     );
@@ -819,74 +877,35 @@ describe('awaitJobs', () => {
       'boom'
     );
   });
-});
 
-describe('pollJobs', () => {
-  it('polls pending jobs until they reach terminal states', async () => {
-    const getJobStatuses = vi
-      .fn()
-      .mockResolvedValueOnce([{ id: 'one', status: 'processing' }])
-      .mockResolvedValueOnce([{ id: 'one', status: 'completed' }]);
-
-    const result = await pollJobs(['one'], getJobStatuses, {
-      pollingIntervalSeconds: 0,
-    });
-
-    expect(result).toEqual({
-      complete: true,
-      jobs: [{ id: 'one', status: 'completed' }],
-    });
-    expect(getJobStatuses).toHaveBeenCalledTimes(2);
-  });
-
-  it('waits for each status load before starting the next poll', async () => {
-    let activeLoads = 0;
-    let maxActiveLoads = 0;
-    let pollCount = 0;
-    const getJobStatuses = vi.fn(async () => {
-      activeLoads += 1;
-      maxActiveLoads = Math.max(maxActiveLoads, activeLoads);
-      await Promise.resolve();
-      activeLoads -= 1;
-      pollCount += 1;
-      return [
-        {
-          id: 'one',
-          status:
-            pollCount === 1 ? ('processing' as const) : ('completed' as const),
-        },
-      ];
-    });
-
-    await pollJobs(['one'], getJobStatuses, { pollingIntervalSeconds: 0 });
-
-    expect(maxActiveLoads).toBe(1);
-    expect(getJobStatuses).toHaveBeenCalledTimes(2);
-  });
-
-  it('reports each successful poll through the hook', async () => {
-    const processing = [{ id: 'one', status: 'processing' as const }];
-    const completed = [{ id: 'one', status: 'completed' as const }];
-    const getJobStatuses = vi
-      .fn()
-      .mockResolvedValueOnce(processing)
-      .mockResolvedValueOnce(completed);
+  it('reports each poll through onPoll until every job is terminal', async () => {
+    const statuses = ['processing', 'completed'];
+    const { client, requests } = createJobsClient((ids) =>
+      ids.map((id) => ({ id, status: statuses[requests.length - 1] }))
+    );
     const onPoll = vi.fn();
 
-    await pollJobs(['one'], getJobStatuses, {
+    const result = await awaitJobs(client, 'project-id', ['one'], {
       onPoll,
       pollingIntervalSeconds: 0,
     });
 
-    expect(onPoll.mock.calls).toEqual([[processing], [completed]]);
+    expect(onPoll.mock.calls).toEqual([
+      [[{ id: 'one', status: 'processing' }]],
+      [[{ id: 'one', status: 'completed' }]],
+    ]);
+    expect(result).toEqual({
+      complete: true,
+      jobs: [{ id: 'one', status: 'completed' }],
+    });
   });
 
   it('treats not_found as terminal', async () => {
-    const getJobStatuses = vi
-      .fn()
-      .mockResolvedValue([{ id: 'one', status: 'not_found' }]);
+    const { client, requests } = createJobsClient((ids) =>
+      ids.map((id) => ({ id, status: 'not_found' }))
+    );
 
-    const result = await pollJobs(['one'], getJobStatuses, {
+    const result = await awaitJobs(client, 'project-id', ['one'], {
       pollingIntervalSeconds: 0,
     });
 
@@ -894,13 +913,13 @@ describe('pollJobs', () => {
       complete: true,
       jobs: [{ id: 'one', status: 'not_found' }],
     });
-    expect(getJobStatuses).toHaveBeenCalledOnce();
+    expect(requests).toHaveLength(1);
   });
 
   it('reports never-polled jobs as unknown when the deadline expires', async () => {
-    const getJobStatuses = vi.fn();
+    const { client, requests } = createJobsClient(() => []);
 
-    const result = await pollJobs(['one'], getJobStatuses, {
+    const result = await awaitJobs(client, 'project-id', ['one'], {
       timeoutSeconds: 0,
     });
 
@@ -908,18 +927,26 @@ describe('pollJobs', () => {
       complete: false,
       jobs: [{ id: 'one', status: 'unknown' }],
     });
-    expect(getJobStatuses).not.toHaveBeenCalled();
+    expect(requests).toHaveLength(0);
   });
 
-  it('ignores a status load that fulfills after the deadline', async () => {
-    const getJobStatuses = vi.fn(
-      () =>
-        new Promise<Array<{ id: string; status: 'completed' }>>((resolve) =>
-          setTimeout(() => resolve([{ id: 'one', status: 'completed' }]), 30)
-        )
-    );
+  it('ignores a response that arrives after the deadline', async () => {
+    const client = createApiClient({
+      baseUrl: 'https://example.com',
+      fetch: () =>
+        new Promise((resolve) =>
+          setTimeout(
+            () =>
+              resolve(
+                Response.json({ results: [{ id: 'one', status: 'completed' }] })
+              ),
+            30
+          )
+        ),
+      retryPolicy: 'none',
+    });
 
-    const result = await pollJobs(['one'], getJobStatuses, {
+    const result = await awaitJobs(client, 'project-id', ['one'], {
       timeoutSeconds: 0.01,
     });
 
@@ -930,29 +957,25 @@ describe('pollJobs', () => {
   });
 
   it('throws when the response has no result for a requested job', async () => {
-    const getJobStatuses = vi
-      .fn()
-      .mockResolvedValue([{ id: 'one', status: 'completed' }]);
+    const { client } = createJobsClient(() => [
+      { id: 'one', status: 'completed' },
+    ]);
 
     await expect(
-      pollJobs(['one', 'two'], getJobStatuses, { pollingIntervalSeconds: 0 })
+      awaitJobs(client, 'project-id', ['one', 'two'], {
+        pollingIntervalSeconds: 0,
+      })
     ).rejects.toThrow('Job status response has no result for job IDs: two');
   });
 
-  it('propagates status-loader errors before the deadline', async () => {
-    const getJobStatuses = vi.fn().mockRejectedValue(new Error('boom'));
+  it('completes without a request for an empty job list', async () => {
+    const { client, requests } = createJobsClient(() => []);
 
-    await expect(pollJobs(['one'], getJobStatuses)).rejects.toThrow('boom');
-  });
-
-  it('completes immediately for an empty job list', async () => {
-    const getJobStatuses = vi.fn();
-
-    await expect(pollJobs([], getJobStatuses)).resolves.toEqual({
+    await expect(awaitJobs(client, 'project-id', [])).resolves.toEqual({
       complete: true,
       jobs: [],
     });
-    expect(getJobStatuses).not.toHaveBeenCalled();
+    expect(requests).toHaveLength(0);
   });
 });
 

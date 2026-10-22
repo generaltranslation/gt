@@ -43,18 +43,18 @@ describe('filterFilesForEnqueue', () => {
     expect(result.filesToEnqueue).toEqual([]);
     expect(result.skippedFiles).toEqual([file]);
     expect(gt.queryFiles).toHaveBeenCalledWith([
-      {
+      expect.objectContaining({
         branchId: 'branch-1',
         fileId: 'file-1',
         versionId: 'version-1',
         locale: 'es',
-      },
-      {
+      }),
+      expect.objectContaining({
         branchId: 'branch-1',
         fileId: 'file-1',
         versionId: 'version-1',
         locale: 'fr',
-      },
+      }),
     ]);
   });
 

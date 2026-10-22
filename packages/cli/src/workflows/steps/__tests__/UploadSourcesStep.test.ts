@@ -11,15 +11,15 @@ import {
   getWarnings,
 } from '../../../state/translateWarnings.js';
 import { logger } from '../../../console/logger.js';
-import { ApiError } from 'generaltranslation/errors';
+import { ApiError } from 'generaltranslation/api';
 
 const mockGt = {
   queryFiles: vi.fn(),
   listBranchFiles: vi.fn(),
   moveFiles: vi.fn(),
   uploadSourceFiles: vi.fn(),
-  getProject: vi.fn(),
-  updateProject: vi.fn(),
+  get: vi.fn(),
+  update: vi.fn(),
 };
 
 // queryFiles answers one result per selector, in selector order
@@ -77,7 +77,7 @@ describe('UploadSourcesStep', () => {
     vi.clearAllMocks();
     clearWarnings();
     answerNotFound();
-    mockGt.getProject.mockResolvedValue({ defaultLocale: 'en' });
+    mockGt.get.mockResolvedValue({ defaultLocale: 'en' });
   });
 
   describe('move detection', () => {
@@ -550,7 +550,7 @@ describe('UploadSourcesStep', () => {
     });
 
     it('sets the project default locale when it differs from the source locale', async () => {
-      mockGt.getProject.mockResolvedValue({ defaultLocale: 'fr' });
+      mockGt.get.mockResolvedValue({ defaultLocale: 'fr' });
       mockGt.uploadSourceFiles.mockResolvedValue(
         uploadResults([{ ...saved, status: 'succeeded' }])
       );
@@ -560,7 +560,7 @@ describe('UploadSourcesStep', () => {
         branchData: mockBranchData,
       });
 
-      expect(mockGt.updateProject).toHaveBeenCalledWith({
+      expect(mockGt.update).toHaveBeenCalledWith({
         defaultLocale: 'en',
       });
     });
@@ -575,12 +575,12 @@ describe('UploadSourcesStep', () => {
         branchData: mockBranchData,
       });
 
-      expect(mockGt.getProject).toHaveBeenCalledTimes(1);
-      expect(mockGt.updateProject).not.toHaveBeenCalled();
+      expect(mockGt.get).toHaveBeenCalledTimes(1);
+      expect(mockGt.update).not.toHaveBeenCalled();
     });
 
     it('leaves the project alone when no source was saved', async () => {
-      mockGt.getProject.mockResolvedValue({ defaultLocale: 'fr' });
+      mockGt.get.mockResolvedValue({ defaultLocale: 'fr' });
       mockGt.uploadSourceFiles.mockResolvedValue(
         uploadResults([{ ...saved, status: 'failed', error: 'down' }])
       );
@@ -590,17 +590,15 @@ describe('UploadSourcesStep', () => {
         branchData: mockBranchData,
       });
 
-      expect(mockGt.updateProject).not.toHaveBeenCalled();
+      expect(mockGt.update).not.toHaveBeenCalled();
     });
 
     it('warns and keeps the uploaded files when the key cannot update the project', async () => {
-      mockGt.getProject.mockResolvedValue({ defaultLocale: 'fr' });
+      mockGt.get.mockResolvedValue({ defaultLocale: 'fr' });
       mockGt.uploadSourceFiles.mockResolvedValue(
         uploadResults([{ ...saved, status: 'succeeded' }])
       );
-      mockGt.updateProject.mockRejectedValueOnce(
-        new ApiError('Forbidden', 403)
-      );
+      mockGt.update.mockRejectedValueOnce(new ApiError('Forbidden', 403));
 
       const result = await new UploadSourcesStep(mockGt, mockSettings).run({
         files: [file],
@@ -621,13 +619,11 @@ describe('UploadSourcesStep', () => {
     });
 
     it('propagates other project update errors', async () => {
-      mockGt.getProject.mockResolvedValue({ defaultLocale: 'fr' });
+      mockGt.get.mockResolvedValue({ defaultLocale: 'fr' });
       mockGt.uploadSourceFiles.mockResolvedValue(
         uploadResults([{ ...saved, status: 'succeeded' }])
       );
-      mockGt.updateProject.mockRejectedValueOnce(
-        new ApiError('Server error', 500)
-      );
+      mockGt.update.mockRejectedValueOnce(new ApiError('Server error', 500));
 
       await expect(
         new UploadSourcesStep(mockGt, mockSettings).run({

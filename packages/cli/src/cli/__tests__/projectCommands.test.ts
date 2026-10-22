@@ -6,11 +6,13 @@ vi.mock('../../config/generateSettings.js', () => ({
   generateSettings: vi.fn(),
 }));
 
-vi.mock('../../utils/api.js', () => ({
-  api: {
-    queryJobs: vi.fn(),
-    createProject: vi.fn(),
-  },
+const api = vi.hoisted(() => ({
+  queryJobs: vi.fn(),
+  createProject: vi.fn(),
+}));
+vi.mock('generaltranslation', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('generaltranslation')>()),
+  GT: (await import('./forwardingGT.js')).forwardingGT(api),
 }));
 
 vi.mock('../../console/logging.js', () => ({
@@ -40,7 +42,6 @@ vi.mock('../../console/logger.js', () => ({
 
 import { BaseCLI } from '../base.js';
 import { generateSettings } from '../../config/generateSettings.js';
-import { api } from '../../utils/api.js';
 import { logger } from '../../console/logger.js';
 
 const settings = {

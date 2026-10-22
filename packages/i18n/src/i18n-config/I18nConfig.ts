@@ -1,6 +1,7 @@
 import { GTIntl, type LocaleConfig } from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import { GTRuntime } from 'generaltranslation/runtime';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import type { GTConfig } from '../config/types';
 import {
@@ -86,36 +87,31 @@ export class I18nConfig extends GTIntl {
 
   /**
    * The runtime for runtime translation, with the API key from `apiKey`, then
-   * the GT_API_KEY environment variable, then `devApiKey`. Undefined without
-   * a projectId or an API key.
+   * the GT_API_KEY environment variable, then `devApiKey`.
+   *
+   * @throws {Error} Without a projectId or an API key.
    */
-  getTranslationRuntime(): GTRuntime | undefined {
+  getTranslationRuntime(): GTRuntime {
     const { projectId, runtimeUrl } = this.runtimeConfig;
+    if (!projectId) throw new Error(missingRuntimeProjectIdError);
     const apiKey =
       this.runtimeConfig.apiKey ||
       (typeof process !== 'undefined' && process.env?.GT_API_KEY) ||
       this.runtimeConfig.devApiKey;
-    if (!projectId || !apiKey) return undefined;
+    if (!apiKey) throw new Error(missingRuntimeApiKeyError);
     return new GTRuntime({
       apiKey,
       projectId,
       baseUrl: runtimeUrl || undefined,
-      localeConfig: {
-        defaultLocale: this.defaultLocale,
-        locales: this.locales,
-        customMapping: this.customMapping,
-      },
+      localeConfig: this,
     });
   }
 
-  determineLocale(
-    locales: LocaleCandidates,
-    options?: { approvedLocales?: string[] }
-  ): string | undefined {
+  determineLocale(locales: LocaleCandidates): string | undefined {
     if (locales == null || (Array.isArray(locales) && locales.length === 0)) {
       return undefined;
     }
-    return super.determineLocale(locales, options);
+    return super.determineLocale(locales);
   }
 
   determineSupportedLocale(
@@ -245,3 +241,17 @@ function resolveGTServicesEnabled(config: I18nConfigParams): boolean {
     getTranslationApiType(config) === TranslationApiType.GT
   );
 }
+
+const missingRuntimeProjectIdError = createDiagnosticMessage({
+  source: 'gt-i18n',
+  severity: 'Error',
+  whatHappened: 'Runtime translation needs a projectId',
+  fix: "Set `projectId` in your framework's GT configuration, or disable runtime translation",
+});
+
+const missingRuntimeApiKeyError = createDiagnosticMessage({
+  source: 'gt-i18n',
+  severity: 'Error',
+  whatHappened: 'Runtime translation needs an API key',
+  fix: "Set `apiKey` (or `devApiKey` in development) in your framework's GT configuration or the GT_API_KEY environment variable, or disable runtime translation",
+});

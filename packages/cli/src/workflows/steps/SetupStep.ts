@@ -1,10 +1,10 @@
 import type { FileReference } from 'generaltranslation/types';
 import { logger } from '../../console/logger.js';
-import type { ApiClient } from '../../utils/api.js';
+import type { ProjectHandle } from 'generaltranslation';
 import type { Settings } from '../../types/index.js';
 import chalk from 'chalk';
 
-type SetupClient = Pick<ApiClient, 'generateProjectContext' | 'awaitJobs'>;
+type SetupClient = Pick<ProjectHandle, 'generateProjectContext' | 'awaitJobs'>;
 
 export class SetupStep {
   private spinner = logger.createSpinner('dots');

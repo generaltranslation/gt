@@ -1,21 +1,23 @@
-import type { FileToUpload } from 'generaltranslation/types';
+import type {
+  FileReference,
+  FileToUpload,
+  MoveMapping,
+} from 'generaltranslation/types';
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/diagnostics';
-import { ApiError } from 'generaltranslation/errors';
 import { logger } from '../../console/logger.js';
 import { recordWarning } from '../../state/translateWarnings.js';
 import {
   clearOrphanedFileNames,
   recordOrphanedFileNames,
 } from '../../state/orphanedFileNames.js';
-import type { ApiClient } from '../../utils/api.js';
+import type { ProjectHandle } from 'generaltranslation';
 import type { Settings } from '../../types/index.js';
 import chalk from 'chalk';
 import { BranchData } from '../../types/branch.js';
-import type { FileReference } from 'generaltranslation/types';
-import type { ListBranchFilesResponse } from 'generaltranslation/api';
+import { ApiError, type ListBranchFilesResponse } from 'generaltranslation/api';
 
 function createDefaultLocaleNotUpdatedWarning(
   defaultLocale: string,
@@ -34,20 +36,14 @@ function createDefaultLocaleNotUpdatedWarning(
 
 type OrphanedFile = ListBranchFilesResponse['items'][number];
 
-type MoveMapping = {
-  oldFileId: string;
-  newFileId: string;
-  newFileName: string;
-};
-
 type UploadSourcesClient = Pick<
-  ApiClient,
+  ProjectHandle,
   | 'queryFiles'
   | 'listBranchFiles'
   | 'moveFiles'
   | 'uploadSourceFiles'
-  | 'getProject'
-  | 'updateProject'
+  | 'get'
+  | 'update'
 >;
 type UploadSourcesSettings = Pick<Settings, 'defaultLocale'>;
 
@@ -267,10 +263,10 @@ export class UploadSourcesStep {
 
     // Source uploads do not update the project's default locale.
     if (result.length > 0) {
-      const project = await this.gt.getProject();
+      const project = await this.gt.get();
       if (project.defaultLocale !== this.settings.defaultLocale) {
         try {
-          await this.gt.updateProject({
+          await this.gt.update({
             defaultLocale: this.settings.defaultLocale,
           });
         } catch (error) {

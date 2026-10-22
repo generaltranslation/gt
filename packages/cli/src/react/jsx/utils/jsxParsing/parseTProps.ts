@@ -1,4 +1,4 @@
-import { Metadata } from 'generaltranslation/types';
+import type { Metadata } from '../../../../types/index.js';
 import * as t from '@babel/types';
 import generateModule from '@babel/generator';
 // Handle CommonJS/ESM interop

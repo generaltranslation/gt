@@ -6,7 +6,7 @@ import {
   downloadFileBatch,
   DownloadFileBatchResult,
 } from '../../api/downloadFileBatch.js';
-import type { ApiClient } from '../../utils/api.js';
+import type { ProjectHandle } from 'generaltranslation';
 import { Settings } from '../../types/index.js';
 import { recordWarning } from '../../state/translateWarnings.js';
 import { FileStatusTracker } from './PollJobsStep.js';
@@ -23,7 +23,7 @@ export class DownloadTranslationsStep {
   private spinner: ReturnType<typeof logger.createProgressBar> | null = null;
 
   constructor(
-    private api: ApiClient,
+    private api: ProjectHandle,
     private settings: Settings,
     private inlineLibrary?: InlineLibrary
   ) {}
@@ -55,14 +55,7 @@ export class DownloadTranslationsStep {
       }
 
       // Check for translations
-      const { results } = await this.api.queryFiles(
-        currentQueryData.map((item) => ({
-          fileId: item.fileId,
-          versionId: item.versionId,
-          branchId: item.branchId,
-          locale: item.locale,
-        }))
-      );
+      const { results } = await this.api.queryFiles(currentQueryData);
 
       // Filter for ready translations; results follow the selector order
       const isReady = (index: number) =>

@@ -369,19 +369,9 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     }
   }, [client, singleDocument]);
 
-  const fetchLocales = useCallback(async () => {
+  const fetchLocales = useCallback(() => {
     if (!secrets) return;
-    try {
-      const availableLocales = await getLocales(secrets);
-      setLocales(availableLocales);
-    } catch {
-      toast.push({
-        title:
-          'Locales could not be loaded. Check your General Translation credentials and try again.',
-        status: 'error',
-        closable: true,
-      });
-    }
+    setLocales(getLocales());
   }, [secrets]);
 
   const fetchExistingTranslations = useCallback(async () => {

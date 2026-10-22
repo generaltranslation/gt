@@ -12,10 +12,6 @@ const DEFAULT_TIMEOUT_SECONDS = 600;
 export type JobResult = QueryJobsResponse['results'][number];
 /** Client-side status for a job not polled before the deadline; the API never returns it. */
 export type UnpolledJobResult = { id: string; status: 'unknown' };
-export type GetJobStatuses = (
-  jobIds: string[],
-  signal: AbortSignal
-) => Promise<JobResult[]>;
 
 export type AwaitJobsOptions = {
   pollingIntervalSeconds?: number;
@@ -67,40 +63,6 @@ export async function awaitJobs(
   jobIds: readonly string[],
   options: AwaitJobsOptions = {}
 ): Promise<AwaitJobsResult> {
-  return pollJobBatches(
-    jobIds,
-    (pendingJobIds, signal) =>
-      createBatches(pendingJobIds).map((batch) =>
-        queryJobsBatch(client, projectId, batch, signal)
-      ),
-    options
-  );
-}
-
-// The polling loop with an injected status loader, so callers can supply
-// their own request/error normalization (and tests can drive it without a
-// client).
-export async function pollJobs(
-  jobIds: readonly string[],
-  getJobStatuses: GetJobStatuses,
-  options: AwaitJobsOptions = {}
-): Promise<AwaitJobsResult> {
-  return pollJobBatches(
-    jobIds,
-    (pendingJobIds, signal) => [getJobStatuses(pendingJobIds, signal)],
-    options
-  );
-}
-
-/** Batches that finish before the deadline retain their results even if another batch times out. */
-async function pollJobBatches(
-  jobIds: readonly string[],
-  loadStatusBatches: (
-    jobIds: string[],
-    signal: AbortSignal
-  ) => Array<Promise<JobResult[]>>,
-  options: AwaitJobsOptions
-): Promise<AwaitJobsResult> {
   if (jobIds.length === 0) return { complete: true, jobs: [] };
 
   const pollingInterval =
@@ -130,9 +92,9 @@ async function pollJobBatches(
       Math.min(deadline - Date.now(), MAX_POLL_TIMEOUT_MS)
     );
     const loads = await Promise.allSettled(
-      loadStatusBatches([...pendingJobIds], signal).map((load) =>
+      createBatches([...pendingJobIds]).map((batch) =>
         // A batch that settles after the deadline keeps its jobs' last known statuses; other errors throw.
-        load.then(
+        queryJobsBatch(client, projectId, batch, signal).then(
           (statuses) => (Date.now() >= deadline ? [] : statuses),
           (error: unknown) => {
             if (signal.aborted && Date.now() >= deadline) return [];

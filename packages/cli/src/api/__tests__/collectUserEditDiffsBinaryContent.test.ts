@@ -5,7 +5,6 @@ import os from 'node:os';
 import { collectAndSendUserEditDiffs } from '../collectUserEditDiffs.js';
 import { createMockSettings } from '../__mocks__/settings.js';
 import { saveEveryDiff } from '../__mocks__/saveEveryDiff.js';
-import { api } from '../../utils/api.js';
 import { logger } from '../../console/logger.js';
 import { clearWarnings, getWarnings } from '../../state/translateWarnings.js';
 import type { FileReference } from 'generaltranslation/types';
@@ -13,12 +12,14 @@ import type { DownloadedVersionsV1 } from '../../fs/config/downloadedVersions.js
 
 // Runs the real `git diff --no-index` rather than mocking it: the defect here is
 // what gets written to the comparison file, which a mocked differ cannot see.
+const api = vi.hoisted(() => ({
+  queryFiles: vi.fn(),
+  queryFilesContent: vi.fn(),
+  overwriteTranslations: vi.fn(),
+}));
 vi.mock('../../utils/api.js', () => ({
-  api: {
-    queryFiles: vi.fn(),
-    queryFilesContent: vi.fn(),
-    overwriteTranslations: vi.fn(),
-  },
+  createClients: () => ({ project: api }),
+  resolveCanonicalLocale: (locale: string) => locale,
 }));
 
 const SOURCE = 'Guardian/en.lproj/Localizable.strings';

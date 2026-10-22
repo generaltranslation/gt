@@ -74,11 +74,7 @@ import {
 import { createDiagnosticMessage } from './logging/diagnostics';
 import type { GTProjectConfig } from './clientConfig';
 import { GTRuntime } from './runtime';
-import { libraryDefaultLocale } from './settings/settings';
-import {
-  isModelProvider,
-  supportedModelProviders,
-} from './translate/modelProvider';
+import { validateModelProvider } from './translate/modelProvider';
 import type { MoveMapping } from './translate/moveFiles';
 import type { PublishFileEntry } from './translate/publishFiles';
 import { unwrapApiResult } from './translate/utils/unwrapApiResult';
@@ -514,16 +510,7 @@ export class ProjectHandle extends GTRuntime {
     } = {}
   ): Promise<TranslateFilesResponse> {
     const { modelProvider } = options;
-    if (modelProvider !== undefined && !isModelProvider(modelProvider)) {
-      throw new Error(
-        createDiagnosticMessage({
-          source: 'generaltranslation',
-          severity: 'Error',
-          whatHappened: `Unsupported model provider \`${modelProvider}\``,
-          fix: `Use one of: ${supportedModelProviders.join(', ')}`,
-        })
-      );
-    }
+    validateModelProvider(modelProvider);
     const jobs = await processBatches(files, async (batch) => {
       const response = unwrapApiResult(
         await translateFiles({
@@ -830,19 +817,16 @@ export class ProjectHandle extends GTRuntime {
    * in batches the server accepts. A file can fail on its own; check
    * `summary.failed` and each result's `status`.
    *
-   * @param {Array<{source: FileUpload}>} files - Array of objects containing source file data to upload
-   * @param options - The source locale and timeout.
-   * @returns {Promise<UploadSourceFilesResponse>} The summary and one result per file, in request order.
+   * @param files - The source files to upload.
+   * @param options - The source locale, which defaults to `localeConfig.defaultLocale` and then to the project's default locale, and timeout.
+   * @returns The summary and one result per file, in request order.
    */
   async uploadSourceFiles(
     files: { source: FileUpload }[],
-    options: { sourceLocale: string; timeout?: number }
+    options: { sourceLocale?: string; timeout?: number } = {}
   ): Promise<UploadSourceFilesResponse> {
-    const sourceLocale = this.resolveServiceLocale(
-      options.sourceLocale ??
-        this.localeConfig.defaultLocale ??
-        libraryDefaultLocale
-    );
+    const sourceLocale =
+      options.sourceLocale ?? this.localeConfig.defaultLocale;
     return writeInBatches(files, DEFAULT_BATCH_SIZE, async (batch) =>
       unwrapApiResult(
         await uploadSourceFiles({
@@ -855,7 +839,9 @@ export class ProjectHandle extends GTRuntime {
                 locale: this.resolveServiceLocale(source.locale),
               },
             })),
-            sourceLocale,
+            ...(sourceLocale !== undefined && {
+              sourceLocale: this.resolveServiceLocale(sourceLocale),
+            }),
           },
         })
       )
@@ -867,16 +853,11 @@ export class ProjectHandle extends GTRuntime {
    * in batches the server accepts. A translation can fail on its own; check
    * `summary.failed` and each result's `status`.
    *
-   * @param {Array<{source: FileUpload, translations: FileUpload[]}>} files - Array of file objects where:
-   *   - `source`: Reference to the existing source file (contains IDs but no content).
-   *   - `translations`: Array of translated files, each containing content, locale, and reference IDs
-   * @returns {Promise<UploadTranslationsResponse>} The summary and one result per translation, in request order.
+   * @param files - Each source file, with its content, and its translations.
+   * @returns The summary and one result per translation, in request order.
    */
   async uploadTranslations(
-    files: {
-      source: FileUpload; // reference only (no content)
-      translations: FileUpload[]; // each has content + ids + locale
-    }[],
+    files: { source: FileUpload; translations: FileUpload[] }[],
     options: { timeout?: number } = {}
   ): Promise<UploadTranslationsResponse> {
     validateFileFormatTransforms(files.map(({ source }) => source));

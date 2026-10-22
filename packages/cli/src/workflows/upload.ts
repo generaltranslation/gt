@@ -1,9 +1,13 @@
 import chalk from 'chalk';
-import { branchResolutionError, withOriginalError } from '../console/index.js';
+import {
+  branchResolutionError,
+  noProjectIdError,
+  withOriginalError,
+} from '../console/index.js';
 import { logger } from '../console/logger.js';
 import { logErrorAndExit } from '../console/logging.js';
 import { Settings } from '../types/index.js';
-import { api } from '../utils/api.js';
+import { createClients } from '../utils/api.js';
 import { syncFonts } from './utils/syncFonts.js';
 import { BranchStep } from './steps/BranchStep.js';
 import { UploadSourcesStep } from './steps/UploadSourcesStep.js';
@@ -45,10 +49,13 @@ export async function runUploadFilesWorkflow({
     // translating formats that need them.
     await syncFonts(options);
 
+    const { project } = createClients(options);
+    if (!project) throw new Error(noProjectIdError);
+
     // Create workflow steps
-    const branchStep = new BranchStep(api, options);
-    const uploadStep = new UploadSourcesStep(api, options);
-    const uploadTranslationsStep = new UploadTranslationsStep(api, options);
+    const branchStep = new BranchStep(project, options);
+    const uploadStep = new UploadSourcesStep(project, options);
+    const uploadTranslationsStep = new UploadTranslationsStep(project, options);
 
     // Step 1: Resolve branch information
     const branchData = await branchStep.run();

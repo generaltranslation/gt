@@ -1,9 +1,7 @@
 import type { PortableTextHtmlComponents } from '@portabletext/to-html';
-import { getLocaleProperties } from 'generaltranslation';
-import type { UserTokenProvider } from 'generaltranslation/api';
 import type { CustomMapping } from 'generaltranslation/types';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-import { formatLocalePropertiesLabel } from './utils/localeDisplay';
+import { formatLocaleLabel } from './utils/localeDisplay';
 import { definePlugin } from 'sanity';
 import { route } from 'sanity/router';
 import { translateAction } from './actions/translateAction';
@@ -88,12 +86,7 @@ export type { GTSchemaFieldOptions } from './schema/schemaOptions';
 export type { FieldLevelTranslationMode };
 
 export type GTPluginConfig = {
-  // Requests use the API key in the Studio secrets.
-  apiKey?: string;
-  userTokenProvider?: UserTokenProvider;
-  baseUrl?: string;
   sourceLocale?: string;
-  targetLocale?: string;
   customMapping?: CustomMapping;
   locales: string[];
   // Alias for sourceLocale — accepted so users can spread gt.config.json directly.
@@ -273,18 +266,9 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
       if (schemaTypes.length > 0) {
         const allLocales = [resolvedSourceLocale, ...targetLocales];
         const supportedLanguages = allLocales.map((locale) => {
-          const props = getLocaleProperties(
-            locale,
-            resolvedSourceLocale,
-            customMapping
-          );
           return {
             id: locale,
-            title: formatLocalePropertiesLabel(
-              locale,
-              props,
-              customMapping?.[locale]
-            ),
+            title: formatLocaleLabel(locale),
           };
         });
         plugins.push(

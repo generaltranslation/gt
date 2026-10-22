@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ApiError } from 'generaltranslation/errors';
+import { ApiError } from 'generaltranslation/api';
 import type { ProjectHandle } from 'generaltranslation';
 import type { GTFile } from '../../types';
 import { uploadTranslations } from '../uploadTranslations';

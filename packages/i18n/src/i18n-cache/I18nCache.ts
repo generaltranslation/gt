@@ -150,13 +150,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
     // Without a project ID or API key, each runtime translation request rejects.
     const i18nConfig = getI18nConfig();
     this.createTranslateMany = createTranslateManyFactory(
-      () => {
-        if (!i18nConfig.getProjectId())
-          throw new Error(missingRuntimeProjectIdError);
-        const runtime = i18nConfig.getTranslationRuntime();
-        if (!runtime) throw new Error(missingRuntimeApiKeyError);
-        return runtime;
-      },
+      () => i18nConfig.getTranslationRuntime(),
       this.config.runtimeTranslation?.timeout ?? DEFAULT_TRANSLATION_TIMEOUT,
       {
         ...(this.config.modelProvider && {
@@ -713,20 +707,6 @@ class I18nCache<TranslationValue extends Translation = Translation> {
 export { I18nCache };
 
 // ===== Helper Functions ===== //
-
-const missingRuntimeProjectIdError = createDiagnosticMessage({
-  source: 'gt-i18n',
-  severity: 'Error',
-  whatHappened: 'Runtime translation needs a projectId',
-  fix: "Set `projectId` in your framework's GT configuration, or disable runtime translation",
-});
-
-const missingRuntimeApiKeyError = createDiagnosticMessage({
-  source: 'gt-i18n',
-  severity: 'Error',
-  whatHappened: 'Runtime translation needs an API key',
-  fix: "Set `apiKey` (or `devApiKey` in development) in your framework's GT configuration or the GT_API_KEY environment variable, or disable runtime translation",
-});
 
 /**
  * Validate constructor params: log warnings for suspicious configs and throw

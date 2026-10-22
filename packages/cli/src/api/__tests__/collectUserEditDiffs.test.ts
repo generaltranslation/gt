@@ -5,7 +5,6 @@ import os from 'node:os';
 import { collectAndSendUserEditDiffs } from '../collectUserEditDiffs.js';
 import { createMockSettings } from '../__mocks__/settings.js';
 import { saveEveryDiff } from '../__mocks__/saveEveryDiff.js';
-import { api } from '../../utils/api.js';
 import { getGitUnifiedDiff } from '../../utils/gitDiff.js';
 import { hashStringSync } from '../../utils/hash.js';
 import {
@@ -21,13 +20,14 @@ import {
 } from '../../formats/xcstrings/parseXcstrings.js';
 import type { FileReference } from 'generaltranslation/types';
 
+const api = vi.hoisted(() => ({
+  queryFiles: vi.fn(),
+  queryFilesContent: vi.fn(),
+  overwriteTranslations: vi.fn(),
+}));
 vi.mock('../../utils/api.js', () => ({
-  api: {
-    queryFiles: vi.fn(),
-    queryFilesContent: vi.fn(),
-    overwriteTranslations: vi.fn(),
-    resolveCanonicalLocale: vi.fn((locale: string) => locale),
-  },
+  createClients: () => ({ project: api }),
+  resolveCanonicalLocale: (locale: string) => locale,
 }));
 
 vi.mock('../../utils/gitDiff.js', () => ({

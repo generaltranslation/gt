@@ -17,7 +17,7 @@ const runtimePrototype = GTRuntime.prototype;
  * plus the protected onTranslationsCacheMiss hook) and stable helpers
  * (hashMessage, initializeI18nConfig). Do not import from or mock internal
  * module paths; runtime translation is observed by spying on
- * the project handle's translateMany.
+ * GTRuntime.prototype.translateMany.
  */
 
 const message = 'Hello {name}!';

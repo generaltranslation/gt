@@ -6,6 +6,13 @@ export type GTCredentials =
   | { apiKey: string; userTokenProvider?: never }
   | { userTokenProvider: UserTokenProvider; apiKey?: never };
 
+/** `'project'` for a project API key, which works only with its project; otherwise `'account'`. */
+export function credentialScope(
+  credentials: GTCredentials
+): 'project' | 'account' {
+  return credentials.apiKey?.startsWith('gtx-api-') ? 'project' : 'account';
+}
+
 /**
  * Configuration for a project-scoped `GT` and for `GTRuntime`.
  *

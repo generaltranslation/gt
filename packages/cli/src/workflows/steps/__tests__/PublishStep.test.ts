@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ApiClient } from '../../../utils/api.js';
+import type { ProjectHandle } from 'generaltranslation';
 import { logger } from '../../../console/logger.js';
 import {
   clearWarnings,
@@ -25,8 +25,8 @@ const entry = (name: string) => ({
 });
 
 describe('PublishStep', () => {
-  const publishFiles = vi.fn<ApiClient['publishFiles']>();
-  const api = { publishFiles } as unknown as ApiClient;
+  const publishFiles = vi.fn<ProjectHandle['publishFiles']>();
+  const api = { publishFiles } as unknown as ProjectHandle;
 
   beforeEach(() => {
     vi.clearAllMocks();

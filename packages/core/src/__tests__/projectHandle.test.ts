@@ -203,6 +203,33 @@ describe.sequential('GT project and organization operations', () => {
     });
   });
 
+  it('restores configured identities without dialect fallback, the first alias winning a shared code', async () => {
+    vi.mocked(getProject).mockResolvedValue(
+      result({
+        ...project,
+        defaultLocale: 'en-US',
+        currentLocales: ['en-US', 'en-GB', 'fr-FR', 'en-AU'],
+      })
+    );
+    const handle = new GT({
+      apiKey: 'key',
+      projectId: 'project-id',
+      localeConfig: {
+        defaultLocale: 'en-us',
+        locales: ['en-us', 'british', 'partner-uk'],
+        customMapping: {
+          british: { code: 'en-gb' },
+          'partner-uk': { code: 'en-gb' },
+        },
+      },
+    });
+
+    await expect(handle.get()).resolves.toMatchObject({
+      defaultLocale: 'en-us',
+      currentLocales: ['en-us', 'british', 'fr-FR', 'en-AU'],
+    });
+  });
+
   it.each([
     ['source', 'target'],
     ['en-us', 'es-es'],
@@ -303,6 +330,41 @@ describe.sequential('GT project and organization operations', () => {
     expect(response.results[1]).toEqual(failed);
     expect(bodyOf(uploadSourceFiles).sourceLocale).toBe('en-US');
   });
+
+  it.each([
+    ['the option', { sourceLocale: 'target' }, 'source', 'es-ES'],
+    ['localeConfig.defaultLocale', {}, 'source', 'en-US'],
+    ["neither, leaving the project's default", {}, undefined, undefined],
+  ])(
+    'takes the source upload locale from %s',
+    async (_from, options, defaultLocale, sent) => {
+      vi.mocked(uploadSourceFiles).mockResolvedValue(result(succeeded([])));
+      const gt = new GT({
+        apiKey: 'key',
+        projectId: 'project-id',
+        localeConfig: { defaultLocale, customMapping },
+      });
+
+      await gt.uploadSourceFiles(
+        [
+          {
+            source: {
+              content: '{}',
+              fileName: 'file.json',
+              fileFormat: 'JSON',
+              locale: 'source',
+            },
+          },
+        ],
+        options
+      );
+
+      expect(bodyOf(uploadSourceFiles).sourceLocale).toBe(sent);
+      expect('sourceLocale' in bodyOf(uploadSourceFiles)).toBe(
+        sent !== undefined
+      );
+    }
+  );
 
   it('reports partial translation upload and publish failures without throwing', async () => {
     const ids = {

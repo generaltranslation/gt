@@ -1,10 +1,5 @@
 import type { GTRuntime } from '../../index.js';
-import type {
-  TranslateConfig,
-  TranslateManyResult,
-  TranslationRequestConfig,
-  TranslationResult,
-} from '../../types.js';
+import type { TranslateManyResult, TranslationResult } from '../../types.js';
 
 type Equal<Left, Right> =
   (<Value>() => Value extends Left ? 1 : 2) extends <
@@ -33,19 +28,3 @@ project.projectId = 'other';
 void project.project;
 // @ts-expect-error formatting is on GTIntl.
 void project.formatNum;
-
-// timeoutMs is the single new spelling; `false` disables the runtime timer.
-const transport: TranslationRequestConfig = {
-  projectId: 'project',
-  timeoutMs: false,
-  fetch: globalThis.fetch,
-  apiVersion: '2026-03-06.v1',
-};
-void transport;
-
-const invalidTimeoutSpelling: TranslateConfig = {
-  projectId: 'project',
-  // @ts-expect-error the new configuration contract uses timeoutMs.
-  timeout: 1_000,
-};
-void invalidTimeoutSpelling;

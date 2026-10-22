@@ -141,7 +141,7 @@ import {
   type SetupResult,
 } from '../setup/buildTools/index.js';
 import { manifestDirectlyDeclaresGTVue } from '@generaltranslation/vue-extractor/integration';
-import { api } from '../utils/api.js';
+import { createClients } from '../utils/api.js';
 import { handleApiCommand, type ApiCommandOptions } from './commands/api.js';
 
 const ID_COMPATIBILITY_WARNING_COMMANDS = new Set([
@@ -477,10 +477,9 @@ export class BaseCLI {
         const settings = await generateSettings(options);
         // Project creation happens before a project ID exists.
         if (!hasValidServiceLocales(settings)) return exitSync(1);
-        if (settings.apiKey?.startsWith('gtx-api-')) {
-          return logErrorAndExit(projectKeyProjectCreationError);
-        }
-        const { project } = await api.createProject(options.orgId, {
+        const { account } = createClients(settings);
+        if (!account) return logErrorAndExit(projectKeyProjectCreationError);
+        const { project } = await account.org(options.orgId).createProject({
           name: options.name,
           defaultLocale: options.defaultLocale,
           cdnEnabled: options.cdnEnabled,
@@ -504,7 +503,7 @@ export class BaseCLI {
         if (!hasValidCredentials(settings)) return exitSync(1);
         const {
           results: [job],
-        } = await api.queryJobs([jobId]);
+        } = await createClients(settings).project!.queryJobs([jobId]);
         logger.info(job.status);
       } catch (error) {
         return logErrorAndExit(
@@ -546,7 +545,9 @@ export class BaseCLI {
         try {
           const settings = await generateSettings(options);
           if (!hasValidCredentials(settings)) return exitSync(1);
-          const { apiKey } = await api.createProjectApiKey(settings.projectId, {
+          const { apiKey } = await createClients(
+            settings
+          ).project!.createApiKey({
             name: options.name,
             permissions: options.permission,
           });

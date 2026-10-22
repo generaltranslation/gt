@@ -2,7 +2,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { isBinaryFileFormat } from 'generaltranslation/types';
 import { logger } from '../console/logger.js';
-import { api } from '../utils/api.js';
+import { createClients } from '../utils/api.js';
+import { noProjectIdError } from '../console/index.js';
 import { Settings } from '../types/index.js';
 import { validateJsonSchema } from '../formats/json/utils.js';
 import { validateYamlSchema } from '../formats/yaml/utils.js';
@@ -240,15 +241,9 @@ export async function downloadFileBatch(
   );
 
   try {
-    // Download the files
-    const { results } = await api.queryFilesContent(
-      files.map((file) => ({
-        fileId: file.fileId,
-        branchId: file.branchId,
-        versionId: file.versionId,
-        locale: file.locale,
-      }))
-    );
+    const { project } = createClients(options);
+    if (!project) throw new Error(noProjectIdError);
+    const { results } = await project.queryFilesContent(files);
     // Pending and missing files are marked failed below
     const downloadedFiles = results.flatMap((file) =>
       file.status === 'ready' &&

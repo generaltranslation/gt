@@ -18,14 +18,19 @@ vi.mock('../../console/logging.js', () => ({
     throw new Error(message);
   }),
 }));
+const api = vi.hoisted(() => {
+  const upsertAssets = vi.fn(async () => ({
+    summary: { total: 0, succeeded: 0, failed: 0 },
+    results: [],
+  }));
+  return {
+    get: vi.fn(async () => ({ orgId: 'org-id' })),
+    org: vi.fn(() => ({ upsertAssets })),
+    upsertAssets,
+  };
+});
 vi.mock('../../utils/api.js', () => ({
-  api: {
-    getProject: vi.fn(async () => ({ orgId: 'org-id' })),
-    upsertAssets: vi.fn(async () => ({
-      summary: { total: 0, succeeded: 0, failed: 0 },
-      results: [],
-    })),
-  },
+  createClients: () => ({ project: api, account: api }),
 }));
 vi.mock('../../formats/files/collectFonts.js', () => ({
   collectFonts: vi.fn(async () => []),
@@ -67,7 +72,6 @@ vi.mock('../utils/filterFilesForEnqueue.js', () => ({
   })),
 }));
 
-import { api } from '../../utils/api.js';
 import { collectFonts } from '../../formats/files/collectFonts.js';
 import { logger } from '../../console/logger.js';
 import { clearWarnings, getWarnings } from '../../state/translateWarnings.js';
@@ -103,7 +107,8 @@ describe('runStageFilesWorkflow font sync', () => {
     const result = await runStageFilesWorkflow({ files, options, settings });
 
     expect(collectFonts).toHaveBeenCalledWith(settings);
-    expect(api.upsertAssets).toHaveBeenCalledWith('org-id', fonts);
+    expect(api.org).toHaveBeenCalledWith('org-id');
+    expect(api.upsertAssets).toHaveBeenCalledWith(fonts);
     expect(result.enqueueResult).toEqual({ message: 'enqueued', jobData: {} });
   });
 

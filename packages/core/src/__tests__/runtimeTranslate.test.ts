@@ -2,9 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { API_VERSION } from '@generaltranslation/api';
 import { GT } from '../index';
 import { GTRuntime } from '../runtime';
-import { translate, translateMany } from '../translate/runtimeTranslate';
 import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
-import { defaultTimeout } from '../settings/settings';
 
 const baseUrl = 'https://example.test';
 const config = { projectId: 'test-project', apiKey: 'test-api-key', baseUrl };
@@ -44,20 +42,20 @@ function captureRequests(): {
   return { fetch: fetchImplementation, requests };
 }
 
-describe.sequential('runtime translate helpers', () => {
+describe.sequential('runtime translation', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.useRealTimers();
   });
 
-  describe('behavioral parity across surfaces', () => {
+  describe('GTRuntime and GT', () => {
     const { fetch: sharedFetch, requests } = captureRequests();
     beforeEach(() => {
       requests.length = 0;
       vi.stubGlobal('fetch', sharedFetch);
     });
 
-    it('sends the same wire payload from GTRuntime, GT and the shared helper', async () => {
+    it('send the same wire payload', async () => {
       const sources = [{ source: 'Hello', metadata: { context: 'greeting' } }];
       const options = { targetLocale: 'es-es', sourceLocale: 'en-us' };
 
@@ -66,16 +64,15 @@ describe.sequential('runtime translate helpers', () => {
         options
       );
       const fromGt = await new GT(config).translateMany(sources, options);
-      const fromNamed = await translateMany(sources, options, config);
 
-      expect(requests).toHaveLength(3);
-      const [first, ...rest] = requests;
-      for (const request of rest) {
-        expect(request.url.href).toBe(first.url.href);
-        expect(request.body).toEqual(first.body);
-        expect(request.headers.get('authorization')).toBe(
-          first.headers.get('authorization')
-        );
+      expect(requests).toHaveLength(2);
+      const [first, second] = requests;
+      expect(second.url.href).toBe(first.url.href);
+      expect(second.body).toEqual(first.body);
+      expect(second.headers.get('authorization')).toBe(
+        first.headers.get('authorization')
+      );
+      for (const request of requests) {
         expect(request.headers.has('gt-project-id')).toBe(false);
         expect(request.headers.get('gt-api-version')).toBe(API_VERSION);
       }
@@ -85,38 +82,25 @@ describe.sequential('runtime translate helpers', () => {
         sourceLocale: 'en-US',
       });
       expect(fromGt).toEqual(fromRuntime);
-      expect(fromNamed).toEqual(fromRuntime);
       expect(fromRuntime[0]).toMatchObject({ success: true, locale: 'es-ES' });
     });
 
-    it('shares the configured source locale across single and batch translation', async () => {
-      const customMapping = { british: { code: 'en-gb' } };
-      const mappedConfig = { ...config, customMapping };
-      const defaults = { sourceLocale: 'fr-fr' };
-      const sources = { greeting: 'Hello' };
-      const options = { targetLocale: 'british', sourceLocale: '' };
-      const single = await translate(
-        'Hello',
-        'british',
-        mappedConfig,
-        defaults
-      );
-      const batch = await translateMany(
-        sources,
-        options,
-        mappedConfig,
-        defaults
-      );
-
+    it('use the configured source locale for single and batch translation', async () => {
       const params = {
         ...config,
-        localeConfig: { defaultLocale: 'fr-fr', customMapping },
+        localeConfig: {
+          defaultLocale: 'fr-fr',
+          customMapping: { british: { code: 'en-gb' } },
+        },
       };
+      const sources = { greeting: 'Hello' };
+      const options = { targetLocale: 'british', sourceLocale: '' };
+
       for (const client of [new GTRuntime(params), new GT(params)]) {
-        expect(await client.translate('Hello', 'british')).toEqual(single);
-        expect(await client.translateMany(sources, options)).toEqual(batch);
+        await client.translate('Hello', 'british');
+        await client.translateMany(sources, options);
       }
-      expect(requests).toHaveLength(6);
+      expect(requests).toHaveLength(4);
       for (const request of requests) {
         expect(request.body).toMatchObject({
           sourceLocale: 'fr-FR',
@@ -125,11 +109,11 @@ describe.sequential('runtime translate helpers', () => {
       }
     });
 
-    it('keeps record keys, array order and string shorthand in the shared helpers', async () => {
-      const record = await translateMany(
+    it('keep record keys and accept the string shorthand', async () => {
+      const runtime = new GTRuntime(config);
+      const record = await runtime.translateMany(
         { first: 'Hello', second: 'Goodbye' },
-        'fr',
-        config
+        'fr'
       );
       expect(Object.keys(record)).toEqual(['first', 'second']);
       expect(requests[0].body.requests).toEqual({
@@ -137,7 +121,7 @@ describe.sequential('runtime translate helpers', () => {
         second: { source: 'Goodbye' },
       });
 
-      const single = await translate('Hello', 'fr', config);
+      const single = await runtime.translate('Hello', 'fr');
       expect(single).toMatchObject({ success: true, locale: 'fr' });
       expect(requests[1].body).toMatchObject({
         targetLocale: 'fr',
@@ -145,21 +129,21 @@ describe.sequential('runtime translate helpers', () => {
       });
     });
 
-    it('canonicalizes aliases through custom mapping without restoring them in results', async () => {
-      const result = await translate('Hello', 'british', {
+    it('canonicalize aliases through custom mapping without restoring them in results', async () => {
+      const result = await new GTRuntime({
         ...config,
-        customMapping: { british: { code: 'en-gb' } },
-      });
+        localeConfig: { customMapping: { british: { code: 'en-gb' } } },
+      }).translate('Hello', 'british');
 
       expect(requests[0].body.targetLocale).toBe('en-GB');
       expect(result).toMatchObject({ locale: 'en-GB' });
     });
 
-    it('uses the runtime API URL when no base URL is configured', async () => {
-      await translate('Hello', 'es', {
+    it('use the runtime API URL when no base URL is configured', async () => {
+      await new GTRuntime({
         projectId: 'test-project',
         apiKey: 'test-api-key',
-      });
+      }).translate('Hello', 'es');
 
       expect(requests[0].url.origin).toBe(new URL(defaultRuntimeApiUrl).origin);
     });
@@ -173,12 +157,13 @@ describe.sequential('runtime translate helpers', () => {
     });
 
     it('requires a target locale', async () => {
+      const runtime = new GTRuntime(config);
       await expect(
-        translateMany(['Hello'], { targetLocale: '' }, config)
+        runtime.translateMany(['Hello'], { targetLocale: '' })
       ).rejects.toThrow('without a target locale');
-      await expect(
-        new GTRuntime(config).translate('Hello', '')
-      ).rejects.toThrow('without a target locale');
+      await expect(runtime.translate('Hello', '')).rejects.toThrow(
+        'without a target locale'
+      );
       expect(fetchSpy).not.toHaveBeenCalled();
     });
 
@@ -203,110 +188,10 @@ describe.sequential('runtime translate helpers', () => {
         'Bearer user-token'
       );
     });
-
-    it('prefers the API key and retries a 401 once with a refreshed token', async () => {
-      const provider = {
-        getAccessToken: vi.fn(async () => 'stale-token'),
-        refreshAccessToken: vi.fn(async () => 'fresh-token'),
-      };
-      const authorizations: (string | null)[] = [];
-      const fetchImplementation: typeof fetch = async (input, init) => {
-        const request = new Request(input, init);
-        authorizations.push(request.headers.get('authorization'));
-        return authorizations.length === 1
-          ? new Response('unauthorized', { status: 401 })
-          : Response.json({ translations: {}, generated: false });
-      };
-
-      await translateMany(['Hello'], 'es', {
-        projectId: 'test-project',
-        userTokenProvider: provider,
-        fetch: fetchImplementation,
-      });
-      expect(authorizations).toEqual([
-        'Bearer stale-token',
-        'Bearer fresh-token',
-      ]);
-
-      await translateMany(['Hello'], 'es', {
-        ...config,
-        userTokenProvider: provider,
-        fetch: fetchImplementation,
-      });
-      expect(authorizations[2]).toBe('Bearer test-api-key');
-      expect(provider.getAccessToken).toHaveBeenCalledTimes(1);
-    });
   });
 
-  describe('transport configuration', () => {
-    it('honors an injected fetch and API version', async () => {
-      const { fetch: capture, requests } = captureRequests();
-      const globalFetch = vi.fn<typeof fetch>();
-      vi.stubGlobal('fetch', globalFetch);
-
-      await translate('Hello', 'es', {
-        ...config,
-        fetch: capture,
-        apiVersion: '2026-03-06.v1',
-      });
-
-      expect(globalFetch).not.toHaveBeenCalled();
-      expect(requests[0].headers.get('gt-api-version')).toBe('2026-03-06.v1');
-    });
-
-    it('resolves timeout as per-call override, then default', async () => {
-      vi.useFakeTimers();
-      const fetchImplementation: typeof fetch = (input, init) =>
-        new Promise((_resolve, reject) => {
-          const { signal } = new Request(input, init);
-          signal.addEventListener('abort', () => reject(signal.reason));
-        });
-      vi.stubGlobal('fetch', fetchImplementation);
-      const project = new GTRuntime(config);
-
-      const perCall = expect(
-        project.translate('Hello', 'es', 1_000)
-      ).rejects.toThrow('timed out after 1000ms');
-      await vi.advanceTimersByTimeAsync(1_000);
-      await perCall;
-
-      const runtimeDefault = expect(
-        project.translate('Hello', 'es')
-      ).rejects.toThrow(`timed out after ${defaultTimeout}ms`);
-      await vi.advanceTimersByTimeAsync(defaultTimeout);
-      await runtimeDefault;
-    });
-
-    it('treats 0 as a literal zero and false as no runtime timer', async () => {
-      vi.useFakeTimers();
-      let resolveResponse: (() => void) | undefined;
-      const fetchImplementation: typeof fetch = (input, init) =>
-        new Promise((resolve, reject) => {
-          const { signal } = new Request(input, init);
-          signal.addEventListener('abort', () => reject(signal.reason));
-          resolveResponse = () =>
-            resolve(Response.json({ translations: {}, generated: false }));
-        });
-
-      const run = (timeoutMs: number | false) =>
-        translate('Hello', 'es', {
-          ...config,
-          fetch: fetchImplementation,
-          timeoutMs,
-        });
-
-      const zero = expect(run(0)).rejects.toThrow('timed out after 0ms');
-      await vi.advanceTimersByTimeAsync(0);
-      await zero;
-
-      const disabled = run(false);
-      await vi.advanceTimersByTimeAsync(defaultTimeout * 10);
-      resolveResponse?.();
-      await expect(disabled).resolves.toMatchObject({ success: false });
-    });
-
-    it('treats a GTRuntime zero timeout as a literal zero', async () => {
-      vi.useFakeTimers();
+  describe('transport', () => {
+    function stubHangingFetch() {
       vi.stubGlobal(
         'fetch',
         vi.fn<typeof fetch>(
@@ -317,10 +202,33 @@ describe.sequential('runtime translate helpers', () => {
             })
         )
       );
+    }
+
+    it('resolves timeout as per-call override, then the 60 second default', async () => {
+      vi.useFakeTimers();
+      stubHangingFetch();
+      const project = new GTRuntime(config);
+
+      const perCall = expect(
+        project.translate('Hello', 'es', 1_000)
+      ).rejects.toThrow('Request timed out after 1000ms');
+      await vi.advanceTimersByTimeAsync(1_000);
+      await perCall;
+
+      const runtimeDefault = expect(
+        project.translate('Hello', 'es')
+      ).rejects.toThrow('Request timed out after 60000ms');
+      await vi.advanceTimersByTimeAsync(60_000);
+      await runtimeDefault;
+    });
+
+    it('treats a zero timeout as a literal zero', async () => {
+      vi.useFakeTimers();
+      stubHangingFetch();
 
       const zero = expect(
         new GTRuntime(config).translateMany(['Hello'], 'es', 0)
-      ).rejects.toThrow('timed out after 0ms');
+      ).rejects.toThrow('Request timed out after 0ms');
       await vi.advanceTimersByTimeAsync(0);
       await zero;
     });
@@ -329,9 +237,10 @@ describe.sequential('runtime translate helpers', () => {
       const fetchSpy = vi.fn<typeof fetch>(
         async () => new Response('unavailable', { status: 503 })
       );
+      vi.stubGlobal('fetch', fetchSpy);
 
       await expect(
-        translate('Hello', 'es', { ...config, fetch: fetchSpy })
+        new GTRuntime(config).translate('Hello', 'es')
       ).rejects.toThrow('unavailable');
       expect(fetchSpy).toHaveBeenCalledTimes(1);
     });

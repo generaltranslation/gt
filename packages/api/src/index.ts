@@ -1,8 +1,7 @@
-export { awaitJobs, pollJobs, queryJobsInBatches } from './wrappers/awaitJobs';
+export { awaitJobs, queryJobsInBatches } from './wrappers/awaitJobs';
 export type {
   AwaitJobsOptions,
   AwaitJobsResult,
-  GetJobStatuses,
   JobResult,
   UnpolledJobResult,
 } from './wrappers/awaitJobs';

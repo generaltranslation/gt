@@ -35,7 +35,7 @@ import type { JSONObject } from '../../types/data/json.js';
 import YAML from 'yaml';
 import { determineLibraryForCLI } from '../../fs/determineFramework/index.js';
 import { hashStringSync, hashVersionId } from '../../utils/hash.js';
-import { api } from '../../utils/api.js';
+import { resolveCanonicalLocale } from '../../utils/api.js';
 import { preprocessContent } from './preprocessContent.js';
 import {
   parseKeyedMetadata,
@@ -487,8 +487,8 @@ export async function aggregateFiles(
         // rather than a skipped file. The configured locale may be a custom
         // alias, so canonical forms are compared.
         if (
-          api.resolveCanonicalLocale(catalog.sourceLanguage) !==
-          api.resolveCanonicalLocale(settings.defaultLocale)
+          resolveCanonicalLocale(catalog.sourceLanguage) !==
+          resolveCanonicalLocale(settings.defaultLocale)
         ) {
           sourceLanguageMismatches.push({
             file: relativePath,

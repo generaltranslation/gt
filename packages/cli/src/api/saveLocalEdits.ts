@@ -1,11 +1,11 @@
 import { Settings } from '../types/index.js';
 import { aggregateFiles } from '../formats/files/aggregateFiles.js';
 import { collectAndSendUserEditDiffs } from './collectUserEditDiffs.js';
-import { api } from '../utils/api.js';
+import { createClients } from '../utils/api.js';
 import { BranchStep } from '../workflows/steps/BranchStep.js';
 import { logErrorAndExit } from '../console/logging.js';
 import { logger } from '../console/logger.js';
-import { branchResolutionError } from '../console/index.js';
+import { branchResolutionError, noProjectIdError } from '../console/index.js';
 import type { FileReference } from 'generaltranslation/types';
 import chalk from 'chalk';
 import { runPublishWorkflow } from '../workflows/publish.js';
@@ -48,9 +48,9 @@ export async function saveLocalEdits(settings: Settings): Promise<boolean> {
   }
   if (!fileRefs.length) return true;
 
-  // run branch query to get branch id
-  // Run the branch step
-  const branchStep = new BranchStep(api, settings);
+  const { project } = createClients(settings);
+  if (!project) throw new Error(noProjectIdError);
+  const branchStep = new BranchStep(project, settings);
   const branchResult = await branchStep.run();
   if (!branchResult) {
     return logErrorAndExit(branchResolutionError);

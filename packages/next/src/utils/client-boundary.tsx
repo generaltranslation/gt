@@ -67,7 +67,6 @@ export function Client_GTProvider({
           defaultLocaleRoutingEnabledCookieName
         ) === 'true';
       const defaultLocale = i18nConfig.getDefaultLocale();
-      const locales = i18nConfig.getLocales();
       const currentPathname = globalThis.location.pathname;
       const localeRoutingApplies =
         localeRoutingEnabled &&
@@ -76,8 +75,7 @@ export function Client_GTProvider({
         const currentPathLocale = resolvePathLocale(
           currentPathname,
           i18nConfig,
-          defaultLocale,
-          locales
+          defaultLocale
         );
         if (currentPathLocale !== defaultLocale) {
           reloadBrowserPage();
@@ -133,8 +131,7 @@ function usePathCheck({
       const currentPathLocale = resolvePathLocale(
         pathname,
         i18nConfig,
-        defaultLocale,
-        locales
+        defaultLocale
       );
 
       // Both values are resolved to configured identities before comparison.
@@ -168,19 +165,14 @@ function usePathCheck({
 function resolvePathLocale(
   pathname: string,
   i18nConfig: I18nConfig,
-  defaultLocale: string,
-  locales: string[]
+  defaultLocale: string
 ): string {
   const extractedLocale = extractLocale(pathname);
   if (!extractedLocale) {
     return defaultLocale;
   }
 
-  return (
-    i18nConfig.determineLocale([extractedLocale], {
-      approvedLocales: locales,
-    }) ?? defaultLocale
-  );
+  return i18nConfig.determineLocale([extractedLocale]) ?? defaultLocale;
 }
 
 function extractLocale(pathname: string): string | null {

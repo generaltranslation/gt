@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import * as t from '@babel/types';
 import { parse } from '@babel/parser';
 import traverse from '@babel/traverse';
-import { Metadata } from 'generaltranslation/types';
+import type { Metadata } from '../../../../types/index.js';
 import { parseTProps } from '../jsxParsing/parseTProps.js';
 
 describe('parseTProps requiresReview', () => {

@@ -76,7 +76,7 @@ import { createFileMapping } from '../../../formats/files/fileMapping.js';
 import { logger } from '../../../console/logger.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { logErrorAndExit } from '../../../console/logging.js';
-import { configureApiClient } from '../../../utils/api.js';
+import { configureCustomMapping } from '../../../utils/api.js';
 
 function setMockFiles(files: Record<string, string>) {
   (vi as unknown).__mockFiles = files;
@@ -798,20 +798,14 @@ describe('upload - Apple .xcstrings catalogs', () => {
     vi.mocked(createFileMapping).mockReturnValue({
       french: { [CATALOG]: CATALOG },
     });
-    configureApiClient({
-      baseUrl: 'https://api.example.com',
-      customMapping: { french: { code: 'fr' } },
-    });
+    configureCustomMapping({ french: { code: 'fr' } });
     try {
       await uploadWithFiles(
         { xcstrings: [CATALOG] },
         makeSettings({ locales: ['french'], options: {} })
       );
     } finally {
-      configureApiClient({
-        baseUrl: 'https://api.example.com',
-        customMapping: {},
-      });
+      configureCustomMapping({});
     }
 
     expect(logErrorAndExit).not.toHaveBeenCalled();

@@ -21,7 +21,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import chalk from 'chalk';
 import { resolveConfig } from './resolveConfig.js';
-import { configureApiClient } from '../utils/api.js';
+import { configureCustomMapping } from '../utils/api.js';
 import { resolveApiBaseUrl } from '../utils/apiBaseUrl.js';
 import { generatePreset } from './optionPresets.js';
 import { GT_PARSING_FLAGS_DEFAULT } from './defaults.js';
@@ -210,7 +210,7 @@ export async function generateSettings(
 
   mergedOptions.baseUrl = resolveApiBaseUrl(mergedOptions.baseUrl);
 
-  // The API client gets apiKey when set, otherwise this lazy provider.
+  // API clients use apiKey when set, otherwise this lazy provider.
   mergedOptions.apiKey = mergedOptions.apiKey || process.env.GT_API_KEY;
   mergedOptions.userTokenProvider = createUserTokenProvider({
     baseUrl: mergedOptions.baseUrl,
@@ -425,14 +425,7 @@ export async function generateSettings(
 
   validateSettings(mergedOptions);
 
-  configureApiClient({
-    projectId: mergedOptions.projectId,
-    ...(mergedOptions.apiKey
-      ? { apiKey: mergedOptions.apiKey }
-      : { userTokenProvider: mergedOptions.userTokenProvider }),
-    baseUrl: mergedOptions.baseUrl,
-    customMapping: mergedOptions.customMapping,
-  });
+  configureCustomMapping(mergedOptions.customMapping);
 
   return mergedOptions;
 }

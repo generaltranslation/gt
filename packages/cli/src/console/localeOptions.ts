@@ -1,5 +1,5 @@
 import { listSupportedLocales } from '@generaltranslation/supported-locales';
-import { getLocaleProperties } from 'generaltranslation';
+import { getLocaleProperties } from '@generaltranslation/format';
 
 export type LocaleOption = {
   code: string;

@@ -8,4 +8,4 @@ Pick up the backward-compatibility removals from generaltranslation and gt-i18n:
 - `runtimeTranslation.metadata` accepts only `sourceLocale` and `modelProvider`.
 - `runtimeTranslation.timeout: 0` is a zero timeout; omit `timeout` for the default.
 - `RuntimeTranslationOptions` drops the deprecated `$_source`.
-- Runtime translation uses `generaltranslation` 10's `GTRuntime` (`new GTRuntime({ apiKey, projectId })`) with the configured `projectId` and API key; `initializeGT()` still reads `GT_PROJECT_ID` and `GT_API_KEY`.
+- `initializeGT()` still reads `GT_PROJECT_ID` and `GT_API_KEY`.

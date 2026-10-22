@@ -1,5 +1,5 @@
 import type { ProjectHandle } from 'generaltranslation';
-import { ApiError } from 'generaltranslation/errors';
+import { ApiError } from 'generaltranslation/api';
 
 /** The project's default branch, whatever its name; otherwise an existing `main`, and `main` is created only when the project has neither. */
 export async function getDefaultBranchId(

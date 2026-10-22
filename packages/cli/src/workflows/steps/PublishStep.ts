@@ -1,13 +1,13 @@
 import { logger } from '../../console/logger.js';
 import { recordWarning } from '../../state/translateWarnings.js';
 import type { PublishFileEntry } from 'generaltranslation/types';
-import type { ApiClient } from '../../utils/api.js';
+import type { ProjectHandle } from 'generaltranslation';
 import chalk from 'chalk';
 
 export class PublishStep {
   private spinner = logger.createSpinner('dots');
 
-  constructor(private api: ApiClient) {}
+  constructor(private api: ProjectHandle) {}
 
   /** Returns false when the publish request itself fails. */
   async run(

@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import type { JobResult, UnpolledJobResult } from 'generaltranslation/api';
 import { logger } from '../../console/logger.js';
-import type { ApiClient } from '../../utils/api.js';
+import type { ProjectHandle } from 'generaltranslation';
 import type { EnqueueFilesResult } from './EnqueueStep.js';
 import { TEMPLATE_FILE_NAME } from '../../utils/constants.js';
 import type { FileProperties } from '../../types/files.js';
@@ -39,7 +39,7 @@ export class PollTranslationJobsStep {
   private previousProgress = 0;
 
   constructor(
-    private api: ApiClient,
+    private api: ProjectHandle,
     private inlineLibrary?: InlineLibrary
   ) {}
 

@@ -1,6 +1,6 @@
 import { logger } from '../../console/logger.js';
 import { recordWarning } from '../../state/translateWarnings.js';
-import type { ApiClient } from '../../utils/api.js';
+import type { ProjectHandle } from 'generaltranslation';
 import { Settings } from '../../types/index.js';
 import chalk from 'chalk';
 import {
@@ -20,7 +20,7 @@ type UploadTranslationsInput = {
 };
 
 type UploadedTranslation = Awaited<
-  ReturnType<ApiClient['uploadTranslations']>
+  ReturnType<ProjectHandle['uploadTranslations']>
 >['results'][number];
 type ConfirmedTranslationReference = FileReference &
   Pick<UploadedTranslation, 'locale'>;
@@ -63,7 +63,7 @@ export class UploadTranslationsStep {
   private spinner = logger.createSpinner('dots');
 
   constructor(
-    private api: Pick<ApiClient, 'uploadTranslations'>,
+    private api: Pick<ProjectHandle, 'uploadTranslations'>,
     private settings: Settings
   ) {}
 

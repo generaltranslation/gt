@@ -1,9 +1,10 @@
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import { ApiError } from 'generaltranslation/errors';
+import { ApiError } from 'generaltranslation/api';
 import { logger } from '../../console/logger.js';
 import { recordWarning } from '../../state/translateWarnings.js';
 import { Settings } from '../../types/index.js';
-import { api } from '../../utils/api.js';
+import { createClients } from '../../utils/api.js';
+import { noProjectIdError } from '../../console/index.js';
 import { collectFonts } from '../../formats/files/collectFonts.js';
 
 /**
@@ -16,15 +17,17 @@ import { collectFonts } from '../../formats/files/collectFonts.js';
 export async function syncFonts(settings: Settings): Promise<void> {
   const fonts = await collectFonts(settings);
   if (fonts.length === 0) return;
-  // The organization assets endpoint rejects project keys with a 403.
-  if (settings.apiKey?.startsWith('gtx-api-')) {
+  const { project, account } = createClients(settings);
+  // Without an account-scoped client the credentials are a project key, which the organization assets endpoint rejects.
+  if (!account) {
     logger.warn(fontSyncDeniedWarning(projectKeyReason));
     recordWarning('failed_upload', 'Fonts', projectKeyReason);
     return;
   }
   try {
-    const { orgId } = await api.getProject();
-    const { summary, results } = await api.upsertAssets(orgId, fonts);
+    if (!project) throw new Error(noProjectIdError);
+    const { orgId } = await project.get();
+    const { summary, results } = await account.org(orgId).upsertAssets(fonts);
     if (summary.succeeded > 0) {
       logger.success(`Synced ${summary.succeeded} font(s)`);
     }

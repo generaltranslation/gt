@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ProjectHandle } from 'generaltranslation';
-import { ApiError } from 'generaltranslation/errors';
+import { ApiError } from 'generaltranslation/api';
 import { getDefaultBranchId } from '../getDefaultBranchId';
 
 const api = {

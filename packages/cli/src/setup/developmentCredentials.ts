@@ -1,15 +1,15 @@
 import path from 'node:path';
 import chalk from 'chalk';
-import { ProjectApiKeyPermission } from 'generaltranslation/api';
+import type { GT } from 'generaltranslation';
+import { ApiError, ProjectApiKeyPermission } from 'generaltranslation/api';
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/diagnostics';
-import { ApiError } from 'generaltranslation/errors';
 import { logger } from '../console/logger.js';
 import { promptConfirm, promptSelect, promptText } from '../console/logging.js';
 import type { Settings, SupportedFrameworks } from '../types/index.js';
-import { api } from '../utils/api.js';
+import { createClients } from '../utils/api.js';
 import { setCredentials } from '../utils/credentials.js';
 import { envFiles } from '../utils/loadEnv.js';
 import { createUserAuthError } from '../auth/errors.js';
@@ -42,7 +42,7 @@ export async function signInForSetup(
   logger.message('You are now signed in.');
 }
 
-type ProjectChoice = Awaited<ReturnType<typeof api.listProjects>>[number];
+type ProjectChoice = Awaited<ReturnType<GT['listProjects']>>[number];
 
 /** An existing project, or the inputs for creating one. */
 export type DevelopmentProject =
@@ -142,13 +142,14 @@ const noProjectChosenError = createDiagnosticMessage({
 
 async function resolveNewProject(
   session: OnboardingSession,
+  account: GT,
   settings: Settings,
   options: DevelopmentProjectOptions,
   cwd: string
 ): Promise<DevelopmentProject | undefined> {
   // Discovery lists accessible organizations, not creation permissions.
   // The API enforces creation permission when provisioning the project.
-  const orgs = await api.listOrgs();
+  const orgs = await account.listOrgs();
   if (orgs.length === 0) {
     throw new OnboardingError(noAccessibleOrgError(settings.dashboardUrl));
   }
@@ -216,13 +217,12 @@ export async function resolveDevelopmentProject(
   cwd: string = process.cwd()
 ): Promise<DevelopmentProject | undefined> {
   if (settings.projectId) return { id: settings.projectId };
-  if (settings.apiKey?.startsWith('gtx-api-')) {
-    throw new OnboardingError(projectKeyDiscoveryError);
-  }
+  const { account } = createClients(settings);
+  if (!account) throw new OnboardingError(projectKeyDiscoveryError);
   if (options.createProject) {
-    return resolveNewProject(session, settings, options, cwd);
+    return resolveNewProject(session, account, settings, options, cwd);
   }
-  const projects = await api.listProjects();
+  const projects = await account.listProjects();
   if (projects.length === 0) {
     // Creating a project is its own choice, separate from creating a key.
     const create = await session.answer('--project-id or --create-project', {
@@ -234,7 +234,7 @@ export async function resolveDevelopmentProject(
     });
     if (create === false) throw new OnboardingError(noProjectChosenError);
     return create
-      ? resolveNewProject(session, settings, options, cwd)
+      ? resolveNewProject(session, account, settings, options, cwd)
       : undefined;
   }
   const choice = await session.answer<ProjectChoice | null>(
@@ -257,7 +257,7 @@ export async function resolveDevelopmentProject(
   if (choice === undefined) return undefined;
   return choice
     ? { id: choice.id, name: choice.name }
-    : resolveNewProject(session, settings, options, cwd);
+    : resolveNewProject(session, account, settings, options, cwd);
 }
 
 /**
@@ -281,8 +281,11 @@ export async function provisionDevelopmentCredentials(
     projectName = project.name;
   } else {
     const { orgId, name } = project.create;
-    const { project: created } = await api
-      .createProject(orgId, { name, defaultLocale: settings.defaultLocale })
+    const { account } = createClients(settings);
+    if (!account) throw new OnboardingError(projectKeyDiscoveryError);
+    const { project: created } = await account
+      .org(orgId)
+      .createProject({ name, defaultLocale: settings.defaultLocale })
       .catch(
         explainForbidden((error) =>
           projectCreationDeniedError(orgId, usingApiKey, error)
@@ -293,8 +296,9 @@ export async function provisionDevelopmentCredentials(
     projectId = created.id;
     projectName = created.name;
   }
-  const { apiKey } = await api
-    .createProjectApiKey(projectId, {
+  // The project is set, so the project-scoped client exists.
+  const { apiKey } = await createClients({ ...settings, projectId })
+    .project!.createApiKey({
       name: DEVELOPMENT_KEY_NAME,
       permissions: [ProjectApiKeyPermission['PROJECT:TRANSLATIONS:GENERATE']],
     })

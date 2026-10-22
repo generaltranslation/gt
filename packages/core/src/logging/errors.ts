@@ -2,14 +2,6 @@ import { createDiagnosticMessage } from './diagnostics';
 
 const GT_SOURCE = 'GT';
 
-export const translationTimeoutError = (timeout: number) =>
-  createDiagnosticMessage({
-    source: GT_SOURCE,
-    severity: 'Error',
-    whatHappened: `Translation request timed out after ${timeout}ms`,
-    fix: 'Try again, or increase the request timeout if the source content is large',
-  });
-
 export const noTargetLocaleProvidedError = (functionName: string) =>
   createDiagnosticMessage({
     source: GT_SOURCE,

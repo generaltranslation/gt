@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { API_VERSION } from '@generaltranslation/api';
 import { GT } from '../index';
 
@@ -201,70 +201,6 @@ describe.sequential('GT canonical API methods', () => {
     ).resolves.toEqual(succeeded([{ ...asset, status: 'succeeded' }]));
   });
 
-  it('return canonical results from uploads and publishing', async () => {
-    const file = {
-      ...ids,
-      content: '{}',
-      fileName: 'f.json',
-      fileFormat: 'JSON' as const,
-      locale: 'en',
-    };
-
-    await expect(
-      gt.uploadSourceFiles([{ source: file }], { sourceLocale: 'en' })
-    ).resolves.toEqual(succeeded([{ ...uploaded, status: 'succeeded' }]));
-    await expect(
-      gt.uploadTranslations([
-        { source: file, translations: [{ ...file, locale: 'es' }] },
-      ])
-    ).resolves.toEqual(
-      succeeded([{ ...uploaded, locale: 'es', status: 'succeeded' }])
-    );
-    await expect(gt.publishFiles([{ ...ids, publish: true }])).resolves.toEqual(
-      succeeded([
-        {
-          ...ids,
-          status: 'succeeded',
-          translations: [{ locale: 'es', status: 'succeeded' }],
-        },
-      ])
-    );
-  });
-
-  it('queryFiles and queryFilesContent send selectors that normalize alike once and answer each with its requested locale', async () => {
-    const files = [
-      { fileId: 'f', locale: 'es' },
-      { fileId: 'f', locale: 'ES' },
-    ];
-
-    await expect(gt.queryFilesContent(files)).resolves.toEqual({
-      results: [
-        { ...decodedContent, metadata: undefined, status: 'ready' },
-        {
-          ...decodedContent,
-          metadata: undefined,
-          status: 'ready',
-          locale: 'ES',
-        },
-      ],
-    });
-    const contentQuery = requests.findLast((request) =>
-      request.url.endsWith('/files/content/query')
-    );
-    expect(await contentQuery!.json()).toEqual({
-      files: [{ fileId: 'f', locale: 'es' }],
-    });
-
-    const { results } = await gt.queryFiles(files);
-    expect(results).toHaveLength(2);
-    const fileQuery = requests.findLast((request) =>
-      request.url.endsWith('/files/query')
-    );
-    expect(await fileQuery!.json()).toEqual({
-      files: [{ fileId: 'f', locale: 'es' }],
-    });
-  });
-
   it('sends every request the pinned version without gt-project-id', () => {
     expect(requests.length).toBeGreaterThan(0);
     for (const request of requests) {
@@ -274,5 +210,154 @@ describe.sequential('GT canonical API methods', () => {
       expect(request.headers.get('gt-api-version')).toBe(API_VERSION);
       expect(request.headers.has('gt-project-id')).toBe(false);
     }
+  });
+});
+
+describe.sequential('GT requests over fetch', () => {
+  const customMapping = {
+    source: { code: 'en-US' },
+    target: { code: 'es-ES' },
+  };
+
+  // The API client reads the global fetch when GT is constructed.
+  function projectWith(fetch: typeof globalThis.fetch) {
+    vi.stubGlobal('fetch', fetch);
+    return new GT({
+      apiKey: 'key',
+      baseUrl: 'https://api.example.com',
+      projectId: 'p',
+      localeConfig: { customMapping },
+    });
+  }
+
+  function hangingFetch(): typeof globalThis.fetch {
+    return (input, init) =>
+      new Promise((_resolve, reject) => {
+        const { signal } = new Request(input, init);
+        if (signal.aborted) reject(signal.reason);
+        else signal.addEventListener('abort', () => reject(signal.reason));
+      });
+  }
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('honors an explicit zero timeout', async () => {
+    vi.useFakeTimers();
+    const pending = expect(
+      projectWith(hangingFetch()).get({ timeout: 0 })
+    ).rejects.toThrow('Request timed out after 0ms');
+    await vi.advanceTimersByTimeAsync(10_000);
+    await pending;
+  });
+
+  it('forwards an abort signal to in-flight queryJobs requests', async () => {
+    const fetch = vi.fn(hangingFetch());
+    const controller = new AbortController();
+    const pending = projectWith(fetch).queryJobs(['job'], {
+      signal: controller.signal,
+    });
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+
+    controller.abort(new Error('poll deadline exceeded'));
+
+    await expect(pending).rejects.toThrow('poll deadline exceeded');
+  });
+
+  it('passes network errors through unchanged', async () => {
+    const networkError = new Error('connection reset');
+    const project = projectWith(async () => {
+      throw networkError;
+    });
+
+    await expect(project.queryFiles([{ fileId: 'f' }])).rejects.toBe(
+      networkError
+    );
+  });
+
+  it('decodes text content and keeps binary content base64', async () => {
+    const project = projectWith(async () =>
+      Response.json({
+        results: [
+          { ...content, status: 'ready', fileId: 'text', locale: undefined },
+          {
+            ...content,
+            status: 'ready',
+            fileId: 'binary',
+            locale: undefined,
+            data: 'binary-base64',
+            fileFormat: 'LOTTIE',
+          },
+        ],
+      })
+    );
+
+    const { results } = await project.queryFilesContent([
+      { fileId: 'text' },
+      { fileId: 'binary' },
+    ]);
+
+    expect(results.map(({ data }) => data)).toEqual(['hello', 'binary-base64']);
+  });
+
+  it('sends no request for an empty content query', async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>();
+
+    await expect(projectWith(fetch).queryFilesContent([])).resolves.toEqual({
+      results: [],
+    });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('restores configured aliases in file status locales', async () => {
+    const project = projectWith(async () =>
+      Response.json({
+        ...fileStatus,
+        translations: [{ ...fileStatus.translations[0], locale: 'es-ES' }],
+        sourceFile: {
+          ...fileStatus.sourceFile,
+          sourceLocale: 'en-US',
+          locales: ['es-ES'],
+        },
+      })
+    );
+
+    const response = await project.getFileStatus('f');
+
+    expect(response.translations[0].locale).toBe('target');
+    expect(response.sourceFile).toMatchObject({
+      sourceLocale: 'source',
+      locales: ['target'],
+    });
+  });
+
+  it('canonicalizes source upload locales without changing the input', async () => {
+    const bodies: unknown[] = [];
+    const project = projectWith(async (input, init) => {
+      bodies.push(await new Request(input, init).json());
+      return Response.json(succeeded([]));
+    });
+    const files = [
+      {
+        source: {
+          content: '{}',
+          fileName: 'f.json',
+          fileFormat: 'JSON' as const,
+          locale: 'source',
+        },
+      },
+    ];
+
+    await project.uploadSourceFiles(files, { sourceLocale: 'source' });
+
+    expect(bodies).toEqual([
+      expect.objectContaining({
+        sourceLocale: 'en-US',
+        data: [{ source: expect.objectContaining({ locale: 'en-US' }) }],
+      }),
+    ]);
+    expect(files[0].source.locale).toBe('source');
   });
 });

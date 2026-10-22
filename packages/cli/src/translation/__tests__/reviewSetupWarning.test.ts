@@ -11,13 +11,13 @@ vi.mock('../../console/logger.js', () => ({
   },
 }));
 
-vi.mock('../../utils/api.js', () => ({
-  api: {
-    getProject: vi.fn(),
-  },
+const api = vi.hoisted(() => ({
+  get: vi.fn(),
 }));
-
-import { api } from '../../utils/api.js';
+vi.mock('../../utils/api.js', () => ({
+  createClients: () => ({ project: api }),
+  resolveCanonicalLocale: (locale: string) => locale,
+}));
 
 const makeSettings = (reviewPaths: string[] = []): Settings =>
   ({
@@ -57,7 +57,7 @@ describe('warnManualReviewSetup', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Default: setting unavailable (older API / no credentials)
-    vi.mocked(api.getProject).mockRejectedValue(new Error('unavailable'));
+    vi.mocked(api.get).mockRejectedValue(new Error('unavailable'));
   });
 
   it('does not warn when nothing requires review', async () => {
@@ -100,7 +100,7 @@ describe('warnManualReviewSetup', () => {
   });
 
   it('does not warn when the project has manual review enabled (autoApprove false)', async () => {
-    vi.mocked(api.getProject).mockResolvedValue({
+    vi.mocked(api.get).mockResolvedValue({
       autoApprove: false,
     });
     await warnManualReviewSetup(makeSettings(['a.json']), [
@@ -111,7 +111,7 @@ describe('warnManualReviewSetup', () => {
 
   it('does not fetch project info when nothing requires review', async () => {
     await warnManualReviewSetup(makeSettings(), [normalFile('a.json')]);
-    expect(api.getProject).not.toHaveBeenCalled();
+    expect(api.get).not.toHaveBeenCalled();
   });
 
   // Wrapping may break phrases across lines, so assert on unwrapped text
@@ -119,7 +119,7 @@ describe('warnManualReviewSetup', () => {
     (vi.mocked(logger.warn).mock.calls[0][0] as string).replace(/\n/g, ' ');
 
   it('warns definitively when the project auto-approves', async () => {
-    vi.mocked(api.getProject).mockResolvedValue({
+    vi.mocked(api.get).mockResolvedValue({
       autoApprove: true,
     });
     await warnManualReviewSetup(makeSettings(['a.json']), [
@@ -140,7 +140,7 @@ describe('warnManualReviewSetup', () => {
   });
 
   it('names the exact dashboard setting in the call to action', async () => {
-    vi.mocked(api.getProject).mockResolvedValue({
+    vi.mocked(api.get).mockResolvedValue({
       autoApprove: true,
     });
     await warnManualReviewSetup(makeSettings(['a.json']), [

@@ -4,16 +4,16 @@ import * as path from 'node:path';
 import os from 'node:os';
 import { downloadFileBatch } from '../downloadFileBatch.js';
 import { createMockSettings } from '../__mocks__/settings.js';
-import { api } from '../../utils/api.js';
 import type { FileStatusTracker } from '../../workflows/steps/PollJobsStep.js';
 
 // Writes to a real temporary directory rather than a mocked `fs`: the point of
 // this path is the bytes that land on disk, which a mocked writer cannot show.
+const api = vi.hoisted(() => ({
+  queryFilesContent: vi.fn(),
+}));
 vi.mock('../../utils/api.js', () => ({
-  api: {
-    queryFilesContent: vi.fn(),
-    resolveCanonicalLocale: vi.fn((locale: string) => locale),
-  },
+  createClients: () => ({ project: api }),
+  resolveCanonicalLocale: (locale: string) => locale,
 }));
 
 vi.mock('../../console/logger.js', () => ({

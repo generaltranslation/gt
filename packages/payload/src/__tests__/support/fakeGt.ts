@@ -1,6 +1,6 @@
 import { parse, parseFragment, serialize } from 'parse5';
 import type { DefaultTreeAdapterMap } from 'parse5';
-import { ApiError } from 'generaltranslation/errors';
+import { ApiError } from 'generaltranslation/api';
 import type { GtClient } from '../../types';
 
 type Element = DefaultTreeAdapterMap['element'];
