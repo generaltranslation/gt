@@ -9,7 +9,7 @@ import { createUpdates } from './parse.js';
 import { InlineLibrary } from '../types/libraries.js';
 
 /**
- * @param skippedPaths - Receives the paths the scan could not read.
+ * @param skippedPaths - Receives the paths the scan skipped.
  */
 export async function aggregateInlineTranslations(
   options: TranslateFlags,
