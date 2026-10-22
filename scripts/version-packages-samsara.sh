@@ -12,9 +12,9 @@ restore_config() {
 }
 trap restore_config EXIT
 
-# The Iris release branch needs its own comparison base, while the committed
+# The Samsara release branch needs its own comparison base, while the committed
 # Changesets configuration must continue to target main.
-jq '.baseBranch = "iris" | .changelog = "@changesets/cli/changelog"' "$config_file" > "$config_updated"
+jq '.baseBranch = "samsara" | .changelog = "@changesets/cli/changelog"' "$config_file" > "$config_updated"
 mv "$config_updated" "$config_file"
 
 pnpm run version-packages
