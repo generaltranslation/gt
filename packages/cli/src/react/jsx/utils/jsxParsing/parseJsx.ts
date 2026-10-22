@@ -1518,10 +1518,7 @@ function processDeriveExpression({
       state,
       output,
     });
-  } else if (
-    t.isMemberExpression(expressionNodePath.node) ||
-    t.isOptionalMemberExpression(expressionNodePath.node)
-  ) {
+  } else if (t.isMemberExpression(expressionNodePath.node)) {
     // ex: <Derive>{items[index].label}</Derive>
     const resolved = resolveDeriveStringExpression({
       node: expressionNodePath.node,

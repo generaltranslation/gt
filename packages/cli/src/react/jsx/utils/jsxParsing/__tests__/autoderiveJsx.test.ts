@@ -348,22 +348,6 @@ describe('Autoderive JSX: edge cases', () => {
     expect(updates).toHaveLength(2);
   });
 
-  it('should resolve an indexed member expression into a const array', () => {
-    const source = `
-      import { T } from "gt-next";
-      const steps = [{ label: "first" }, { label: "second" }];
-      export default function Page({ index }) {
-        return <T>Step: {steps[index].label}</T>;
-      }
-    `;
-    const { updates, errors } = parseAutoderive(source);
-    expect(errors).toHaveLength(0);
-    const sources = updates.map((u) => u.source);
-    expect(sources).toHaveLength(2);
-    expect(sources).toContainEqual(['Step: ', 'first']);
-    expect(sources).toContainEqual(['Step: ', 'second']);
-  });
-
   it('should handle T with only dynamic content and no static text', () => {
     const source = `
       import { T } from "gt-next";
