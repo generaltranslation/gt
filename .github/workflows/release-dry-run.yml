@@ -185,6 +185,14 @@ jobs:
         if: matrix.full && steps.changeset-state.outputs.has_changesets == 'true'
         run: pnpm --filter gt run build:bin:clean
 
+      # gtx-cli^... rebuilds gt, whose build:clean wipes binaries, so check
+      # each set right after it is built (release.yml publishes gt first).
+      - name: Assert gt binaries
+        if: matrix.full && steps.changeset-state.outputs.has_changesets == 'true'
+        run: |
+          ls -la packages/cli/binaries
+          ./packages/cli/binaries/gt-linux-x64 --version
+
       - name: Build gtx-cli binary dependencies
         if: matrix.full && steps.changeset-state.outputs.has_changesets == 'true'
         run: pnpm exec turbo run build:release --filter='gtx-cli^...'
@@ -193,10 +201,8 @@ jobs:
         if: matrix.full && steps.changeset-state.outputs.has_changesets == 'true'
         run: pnpm --filter gtx-cli run build:bin:clean
 
-      - name: Assert binaries
+      - name: Assert gtx-cli binaries
         if: matrix.full && steps.changeset-state.outputs.has_changesets == 'true'
         run: |
-          ls -la packages/cli/binaries packages/gtx-cli/binaries
-          test -n "$(ls -A packages/cli/binaries)"
-          test -n "$(ls -A packages/gtx-cli/binaries)"
-          ./packages/cli/binaries/gt-linux-x64 --version
+          ls -la packages/gtx-cli/binaries
+          ./packages/gtx-cli/binaries/gtx-cli-linux-x64 --version
