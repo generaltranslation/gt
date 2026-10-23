@@ -1,35 +1,30 @@
 import { getReadonlyConditionStore } from '@generaltranslation/react-core/pure';
-import {
-  getGTInternal,
-  getMessagesInternal,
-  getTranslationsInternal,
-} from 'gt-i18n/internal';
-import type {
-  GTFunctionType,
-  MFunctionType,
-  Message,
-  TFunctionType,
-} from 'gt-i18n/types';
+import { createRuntime } from './runtime';
 
-/** Return the locale associated with the current request or browser. */
-export const getLocale = (): string => getReadonlyConditionStore().getLocale();
+const runtime = createRuntime(getReadonlyConditionStore);
 
-/** Return whether internationalization is enabled for the current runtime. */
-export const getEnableI18n = (): boolean =>
-  getReadonlyConditionStore().getEnableI18n();
+/** Return the locale of the current request or browser. */
+export const getLocale = runtime.getLocale;
 
-/** Return a string translation function for the current runtime. */
-export const getGT = (messages?: Message[]): Promise<GTFunctionType> =>
-  getGTInternal({ locale: getLocale(), enableI18n: getEnableI18n() }, messages);
+/** Return whether internationalization is enabled for the current request or browser. */
+export const getEnableI18n = runtime.getEnableI18n;
 
-/** Return a registered-message translation function for the current runtime. */
-export const getMessages = (): Promise<MFunctionType> =>
-  getMessagesInternal({ locale: getLocale(), enableI18n: getEnableI18n() });
+/**
+ * Return a string translation function for the current locale. Use it in
+ * loaders, `head` data and server functions; in components, use `useGT()`.
+ */
+export const getGT = runtime.getGT;
 
-/** Return a dictionary translation function for the current runtime. */
-export const getTranslations = (rootId?: string): Promise<TFunctionType> =>
-  getTranslationsInternal({
-    locale: getLocale(),
-    enableI18n: getEnableI18n(),
-    rootId,
-  });
+/**
+ * Return a registered-message translation function for the current locale.
+ * Use it in loaders, `head` data and server functions; in components, use
+ * `useMessages()`.
+ */
+export const getMessages = runtime.getMessages;
+
+/**
+ * Return a dictionary translation function for the current locale. Use it in
+ * loaders, `head` data and server functions; in components, use
+ * `useTranslations()`.
+ */
+export const getTranslations = runtime.getTranslations;
