@@ -139,6 +139,25 @@ export default function Page() {
 }
 ```
 
+## Translating outside components
+
+In components, use `<T>` and hooks such as `useGT()`. In route loaders, `head` data and server functions, use `getGT()`, `getMessages()`, `getTranslations()` and `getLocale()`. Loaders run on the server for the first request and in the browser on client navigation, so these functions work on both sides:
+
+```tsx
+import { createFileRoute } from '@tanstack/react-router';
+import { getGT } from 'gt-tanstack-start';
+
+export const Route = createFileRoute('/pricing')({
+  loader: async () => {
+    const gt = await getGT();
+    return { title: gt('Pricing') };
+  },
+  head: ({ loaderData }) => ({ meta: [{ title: loaderData?.title }] }),
+});
+```
+
+They return promises, so don't call them while a component renders or in its effects; that delays translations past the first render.
+
 ## SPA mode
 
 With `tanstackStart({ spa: { enabled: true } })`, TanStack Start prerenders one shell at build time and serves it to every visitor. Since the shell can't know the visitor's locale, the integration loads the visitor's translations before hydrating.

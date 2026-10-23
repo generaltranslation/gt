@@ -10,7 +10,7 @@ The previous manual setup is removed. Switch to the Vite plugin and the router i
 
 - `initializeGT()` is removed. Pass its settings to `gtTanstackStart()` instead.
 - `gtMiddleware` is removed. Delete it from `requestMiddleware`.
-- The `gt-tanstack-start/server` entrypoint is removed. Import `getLocale`, `getGT` and the other server functions from `gt-tanstack-start`.
+- The `gt-tanstack-start/server` entrypoint is removed. Import `getLocale`, `getGT` and the other translation functions from `gt-tanstack-start`, which provides them on the server and in the browser.
 - The `GTProvider` and `getTranslationsSnapshot` exports are removed, and so is the root-route loader that used them. The router integration renders the provider.
 - `parseLocale()` is removed. Use `getLocale()`.
 - The `InitializeGTParams` type is removed.
