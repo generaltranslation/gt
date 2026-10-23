@@ -31,6 +31,14 @@ const LOG_LEVEL_RANK: Record<LogLevel, number> = {
 // still print, so the console never drops below this level.
 const QUIET_FLOOR_LEVEL: LogLevel = 'warn';
 
+// Without an explicit GT_LOG_FORMAT, CI and non-TTY output get plain agent
+// lines instead of Clack's interactive rendering.
+function getDefaultLogFormat(): LogFormat {
+  const ci = process.env.CI;
+  const isCI = !!ci && ci !== 'false' && ci !== '0';
+  return isCI || !process.stdout.isTTY ? 'agent' : 'default';
+}
+
 // Mock spinner that logs to console instead of updating terminal UI
 class MockSpinner implements SpinnerResult {
   private currentMessage: string = '';
@@ -100,7 +108,8 @@ class MockProgress implements ProgressResult {
 }
 
 /**
- * GT_LOG_FORMAT: default | json | agent.
+ * GT_LOG_FORMAT: default | json | agent. If unset, defaults to agent in CI
+ * or when stdout is not a TTY, and to default otherwise.
  * - If default, logs will be pretty-printed using @clack/prompts.
  * - If json, logs will be written in JSON format to the console.
  * - If agent, logs will be written as plain `[time] LEVEL: msg` lines.
@@ -127,7 +136,7 @@ class Logger {
   private constructor() {
     // Read configuration from environment variables
     const format = (
-      process.env.GT_LOG_FORMAT || 'default'
+      process.env.GT_LOG_FORMAT || getDefaultLogFormat()
     ).toLowerCase() as LogFormat;
     const logFile = process.env.GT_LOG_FILE;
     const logLevel = process.env.GT_LOG_LEVEL || 'info';

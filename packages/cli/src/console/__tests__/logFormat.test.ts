@@ -132,3 +132,54 @@ describe('agent log format', () => {
     expect(linesOn(writes, 1)).toEqual([expect.stringMatching(/on stdout$/)]);
   });
 });
+
+describe('default log format selection', () => {
+  let stdoutIsTTY: boolean | undefined;
+
+  beforeEach(() => {
+    vi.stubEnv('GT_LOG_FORMAT', '');
+    vi.stubEnv('CI', '');
+    stdoutIsTTY = process.stdout.isTTY;
+  });
+
+  afterEach(() => {
+    process.stdout.isTTY = stdoutIsTTY as boolean;
+  });
+
+  it('uses the interactive format in a terminal', async () => {
+    process.stdout.isTTY = true;
+    const { logger } = await import('../logger.js');
+    expect(logger.getLogFormat()).toBe('default');
+  });
+
+  it('uses the agent format when stdout is not a TTY', async () => {
+    process.stdout.isTTY = false;
+    const { logger } = await import('../logger.js');
+    expect(logger.getLogFormat()).toBe('agent');
+  });
+
+  it.each(['true', '1'])(
+    'uses the agent format in CI (CI=%s) even in a terminal',
+    async (ci) => {
+      vi.stubEnv('CI', ci);
+      process.stdout.isTTY = true;
+      const { logger } = await import('../logger.js');
+      expect(logger.getLogFormat()).toBe('agent');
+    }
+  );
+
+  it('ignores CI=false', async () => {
+    vi.stubEnv('CI', 'false');
+    process.stdout.isTTY = true;
+    const { logger } = await import('../logger.js');
+    expect(logger.getLogFormat()).toBe('default');
+  });
+
+  it('lets an explicit GT_LOG_FORMAT win', async () => {
+    vi.stubEnv('GT_LOG_FORMAT', 'default');
+    vi.stubEnv('CI', 'true');
+    process.stdout.isTTY = false;
+    const { logger } = await import('../logger.js');
+    expect(logger.getLogFormat()).toBe('default');
+  });
+});
