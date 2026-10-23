@@ -51,6 +51,36 @@ describe('patchI18nDoc', () => {
     });
   });
 
+  test('keeps the translation locale when languageField is custom', async () => {
+    vi.spyOn(pluginConfig, 'getIgnoreFields').mockReturnValue([]);
+    vi.spyOn(pluginConfig, 'getSkipFields').mockReturnValue([]);
+    vi.spyOn(pluginConfig, 'getDedupeFields').mockReturnValue([]);
+    vi.spyOn(pluginConfig, 'getLanguageField').mockReturnValue('locale');
+
+    const commit = vi.fn().mockResolvedValue({});
+    const patch = vi.fn().mockReturnValue({ commit });
+    const client = { patch } as unknown as SanityClient;
+
+    await patchI18nDoc(
+      'doc-1',
+      'drafts.doc-1-es',
+      { _id: 'doc-1', _type: 'article', locale: 'en', title: 'About' },
+      { _id: 'doc-1', _type: 'article', locale: 'en', title: 'Acerca de' },
+      { title: 'Acerca de' },
+      client,
+      {
+        _id: 'drafts.doc-1-es',
+        _type: 'article',
+        locale: 'es',
+        title: 'Acerca de',
+      }
+    );
+
+    const [, { set }] = patch.mock.calls[0];
+    expect(set).toMatchObject({ title: 'Acerca de' });
+    expect(set).not.toHaveProperty('locale');
+  });
+
   test('seeds a draft instead of writing to a published translation', async () => {
     vi.spyOn(pluginConfig, 'getIgnoreFields').mockReturnValue([]);
     vi.spyOn(pluginConfig, 'getSkipFields').mockReturnValue([]);
