@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.26.10
+
+### Patch Changes
+
+- [#2526](https://github.com/generaltranslation/gt/pull/2526) [`9e9b6d8`](https://github.com/generaltranslation/gt/commit/9e9b6d866cae109f7ec13f5b1d1182ccfb87d947) Thanks [@brian-lou](https://github.com/brian-lou)! - Add `GT_LOG_FORMAT=agent`, which prints plain `[time] LEVEL: msg` lines, and use it by default in CI or when stdout is not a TTY. Set `GT_LOG_FORMAT=default` to keep the interactive output. The ASCII banner no longer prints when `GT_LOG_FORMAT` is `json` or `agent`.
+
 ## 2.26.9
 
 ### Patch Changes
