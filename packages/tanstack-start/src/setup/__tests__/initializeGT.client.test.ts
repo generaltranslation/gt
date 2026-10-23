@@ -35,10 +35,11 @@ vi.mock('../../functions/localeRouting', () => ({
   getPathnameForLocale: mockGetPathnameForLocale,
 }));
 
-// Initialization runs once per module instance, so each case loads fresh
-// modules with its own plugin config.
+// Initialization runs once per global setup, so each case clears it and loads
+// fresh modules with its own plugin config.
 async function initializeWith(config: Record<string, unknown>) {
   pluginModule.config = config;
+  Reflect.deleteProperty(globalThis, '__generaltranslation');
   vi.resetModules();
   const setup = await import('../initializeGT.client');
   const { GTProvider } = await import('../../provider/GTProvider.client');
@@ -188,6 +189,7 @@ describe.sequential('client initialization', () => {
 
     mockInitializeReactGT.mockReset();
     pluginModule.config = undefined;
+    Reflect.deleteProperty(globalThis, '__generaltranslation');
     vi.resetModules();
     const { ensureInitialized } = await import('../initializeGT.client');
     ensureInitialized();

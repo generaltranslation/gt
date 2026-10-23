@@ -3,6 +3,8 @@ import {
   initializeGT as initializeReactGT,
 } from 'gt-react';
 import type { SharedGTProviderProps } from 'gt-react';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createGlobalSingleton } from 'gt-i18n/internal';
 import {
   config as pluginConfig,
   dictionary as pluginDictionary,
@@ -13,17 +15,32 @@ import { determineLocaleClient } from '../functions/parseLocale';
 import { getPathnameForLocale } from '../functions/localeRouting';
 import type { InitializeGTParams } from '../types/InitializeGTParams';
 
-let clientReload: SharedGTProviderProps['_reload'];
-let initialized = false;
-let localeRoutingEnabled = false;
+type ClientSetup = {
+  reload: SharedGTProviderProps['_reload'];
+  localeRouting: boolean;
+};
+
+const clientSetup = createGlobalSingleton<ClientSetup>({
+  namespace: 'tanstackStart',
+  key: 'clientSetup',
+  source: 'gt-tanstack-start',
+  notInitialized: () =>
+    createDiagnosticMessage({
+      source: 'gt-tanstack-start',
+      severity: 'Error',
+      whatHappened: 'Cannot read GT browser setup before initialization',
+      why: 'the gtTanstackStart() Vite plugin is not registered, so GT has no config',
+      fix: "Add gtTanstackStart() from 'gt-tanstack-start/plugin/vite' to the plugins in your Vite config",
+    }),
+});
 
 export function getClientReload(): SharedGTProviderProps['_reload'] {
-  return clientReload;
+  return clientSetup.isInitialized() ? clientSetup.get().reload : undefined;
 }
 
 /** Whether the plugin's config routes by locale. */
 export function isLocaleRoutingEnabled(): boolean {
-  return localeRoutingEnabled;
+  return clientSetup.isInitialized() && clientSetup.get().localeRouting;
 }
 
 /**
@@ -48,9 +65,7 @@ function initialize(config: InitializeGTParams): void {
     _reload: reload,
     locale: determineLocaleClient(config),
   });
-  clientReload = reload;
-  localeRoutingEnabled = config.localeRouting === true;
-  initialized = true;
+  clientSetup.set({ reload, localeRouting: config.localeRouting === true });
 }
 
 /**
@@ -58,7 +73,7 @@ function initialize(config: InitializeGTParams): void {
  * no-op.
  */
 export function ensureInitialized(): void {
-  if (initialized || !pluginConfig) return;
+  if (clientSetup.isInitialized() || !pluginConfig) return;
   initialize({
     ...pluginConfig,
     loadTranslations: pluginLoadTranslations,
