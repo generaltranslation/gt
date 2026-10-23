@@ -1064,6 +1064,112 @@ export function getRouter() {
     );
   });
 
+  describe('SPA mode', () => {
+    const spaVite = (spa: string) =>
+      templateVite.replace('tanstackStart()', `tanstackStart({ spa: ${spa} })`);
+    const withHeader = configuredRoot
+      .replace(
+        "from '@tanstack/react-router'\n",
+        "from '@tanstack/react-router'\nimport { Header } from '../components/Header'\n"
+      )
+      .replace('        {children}', '        <Header />\n        {children}');
+    const spaShellAction = {
+      whatHappened:
+        'SPA mode prerenders src/routes/__root.tsx into the shell every visitor gets, and it renders more than the document, so visitors see that UI before their translations load, and any translated text in it switches language after',
+      fix: 'Keep the root route to the <html> document, {children} and <Scripts />, and move the rest, such as navigation, into a pathless layout route like src/routes/_app.tsx with your pages under src/routes/_app/, so the shell stays blank until translations load (see https://generaltranslation.com/docs/react/tanstack-start/setup)',
+    };
+
+    it('asks to move UI out of the root route the shell prerenders', async () => {
+      write('vite.config.ts', spaVite('{ enabled: true }'));
+      write('src/routes/__root.tsx', withHeader);
+
+      const result = await tanstackStartSetup.apply(ctx());
+
+      expect(result.manualActions).toEqual([spaShellAction]);
+    });
+
+    it('treats a set spa option as enabled, as Start does', async () => {
+      write('vite.config.ts', spaVite('{}'));
+      write('src/routes/__root.tsx', withHeader);
+
+      const result = await tanstackStartSetup.apply(ctx());
+
+      expect(result.manualActions).toEqual([spaShellAction]);
+    });
+
+    it('counts text a local layout component renders as UI', async () => {
+      write('vite.config.ts', spaVite('{}'));
+      write(
+        'src/routes/__root.tsx',
+        `import { Outlet, createRootRoute } from '@tanstack/react-router'
+
+export const Route = createRootRoute({
+  component: RootLayout,
+})
+
+function RootLayout() {
+  return (
+    <>
+      Welcome
+      <Outlet />
+    </>
+  )
+}
+`
+      );
+
+      const result = await tanstackStartSetup.apply(ctx());
+
+      // The root has no <html> to set the lang on.
+      expect(result.manualActions).toEqual([rootLangAction, spaShellAction]);
+    });
+
+    it.each([
+      ['the document only', spaVite('{}'), configuredRoot],
+      ['no SPA mode', templateVite, withHeader],
+      ['SPA mode disabled', spaVite('{ enabled: false }'), withHeader],
+      [
+        'a component rendering the document around the outlet, with devtools',
+        spaVite('{}'),
+        `import { HeadContent, Outlet, Scripts, createRootRoute } from '@tanstack/react-router'
+import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
+import { useLocale } from 'gt-tanstack-start'
+
+export const Route = createRootRoute({
+  component: () => (
+    <RootDocument>
+      <Outlet />
+    </RootDocument>
+  ),
+})
+
+function RootDocument({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang={useLocale()}>
+      <head>
+        <title>App</title>
+        <HeadContent />
+      </head>
+      <body>
+        {children}
+        <TanStackRouterDevtools />
+        <Scripts />
+      </body>
+    </html>
+  )
+}
+`,
+      ],
+    ])('leaves %s alone', async (_case, vite, root) => {
+      write('vite.config.ts', vite);
+      write('src/routes/__root.tsx', root);
+
+      const result = await tanstackStartSetup.apply(ctx());
+
+      expect(result.manualActions).toEqual([]);
+    });
+  });
+
   describe('translation loaders', () => {
     it('refreshes a template loader for a new translations directory', async () => {
       write('src/loadTranslations.ts', templateLoader);
