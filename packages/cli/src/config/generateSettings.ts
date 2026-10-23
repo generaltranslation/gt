@@ -41,7 +41,19 @@ export const DEFAULT_NODE_SRC_PATTERNS = [
   '**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}',
 ];
 // The default gt-node scan skips these paths at any depth.
-export const DEFAULT_NODE_SRC_EXCLUDES = ['**/node_modules/**'];
+export const DEFAULT_NODE_SRC_EXCLUDES = [
+  '**/node_modules/**',
+  '**/dist/**',
+  '**/build/**',
+  '**/coverage/**',
+  '**/public/**',
+  '**/test/**',
+  '**/tests/**',
+  '**/__tests__/**',
+  '**/*.test.*',
+  '**/*.spec.*',
+  '**/*.d.{ts,mts,cts}',
+];
 
 export const DEFAULT_PYTHON_SRC_PATTERNS = ['**/*.py'];
 export const DEFAULT_PYTHON_SRC_EXCLUDES = [
