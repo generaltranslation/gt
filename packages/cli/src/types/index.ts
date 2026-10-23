@@ -122,6 +122,7 @@ export type Framework =
   | typeof Libraries.GT_NEXT
   | typeof Libraries.GT_REACT
   | typeof Libraries.GT_REACT_NATIVE
+  | typeof Libraries.GT_REACT_ROUTER
   | typeof Libraries.GT_TANSTACK_START;
 
 export const SUPPORTED_REACT_FRAMEWORKS = [
