@@ -15,6 +15,10 @@ import { useDefaultLocale } from './i18n-config';
 import { useShouldTranslate } from './utils';
 import { useTrackedDictionaryResolver } from './external-store/useTrackedDictionaryResolver';
 import { useTrackedDictionaryObjResolver } from './external-store/useTrackedDictionaryObjResolver';
+import {
+  useGetDictionaryEntryLookupCb,
+  useGetDictionaryObjectLookupCb,
+} from './lookup';
 
 // ===== Hook ===== //
 
@@ -23,7 +27,10 @@ export function useTranslations(rootId?: string): UseTranslationsFunction {
   const defaultLocale = useDefaultLocale();
   const shouldTranslate = useShouldTranslate();
   const gt = useGT();
-  const resolveDictionaryEntry = useTrackedDictionaryResolver();
+  const resolveDictionaryEntry =
+    process.env.NODE_ENV === 'production'
+      ? useGetDictionaryEntryLookupCb()
+      : useTrackedDictionaryResolver();
   const translateObject = useTranslationsObj(rootId);
 
   const translateEntry = useCallback(
@@ -78,7 +85,10 @@ function useTranslationsObj(rootId?: string): UseTranslationsObjFunction {
   const defaultLocale = useDefaultLocale();
   const shouldTranslate = useShouldTranslate();
   const gt = useGT();
-  const resolveDictionaryObject = useTrackedDictionaryObjResolver();
+  const resolveDictionaryObject =
+    process.env.NODE_ENV === 'production'
+      ? useGetDictionaryObjectLookupCb()
+      : useTrackedDictionaryObjResolver();
 
   return useCallback(
     (suffix: string) => {
