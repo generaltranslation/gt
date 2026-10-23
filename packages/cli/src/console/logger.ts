@@ -1,6 +1,8 @@
 import chalk from 'chalk';
 import { randomUUID } from 'node:crypto';
+import { stripVTControlCharacters } from 'node:util';
 import { pino, destination } from 'pino';
+import { build as pinoPretty } from 'pino-pretty';
 import {
   log as clackLog,
   spinner,
@@ -12,7 +14,7 @@ import type { Logger as PinoLogger } from 'pino';
 import type { SpinnerResult, ProgressResult } from '@clack/prompts';
 import type { Writable } from 'node:stream';
 
-export type LogFormat = 'default' | 'json';
+export type LogFormat = 'default' | 'json' | 'agent';
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 export type ConsoleOutput = 'stdout' | 'stderr';
 
@@ -98,9 +100,10 @@ class MockProgress implements ProgressResult {
 }
 
 /**
- * GT_LOG_FORMAT: default | json.
+ * GT_LOG_FORMAT: default | json | agent.
  * - If default, logs will be pretty-printed using @clack/prompts.
  * - If json, logs will be written in JSON format to the console.
+ * - If agent, logs will be written as plain `[time] LEVEL: msg` lines.
  * GT_LOG_FILE: If specified, logs will be written to the file.
  * GT_LOG_LEVEL: The level of logs to write. If not specified, defaults to 'info'.
  * - Valid levels: debug, info, warn, error.
@@ -129,7 +132,7 @@ class Logger {
     const logFile = process.env.GT_LOG_FILE;
     const logLevel = process.env.GT_LOG_LEVEL || 'info';
 
-    if (format !== 'default' && format !== 'json') {
+    if (format !== 'default' && format !== 'json' && format !== 'agent') {
       console.error('Invalid log format');
       process.exit(1);
     }
@@ -146,10 +149,10 @@ class Logger {
     this.logFormat = format;
     this.logLevel = logLevel as LogLevel;
 
-    // Console output (stdout) - only for JSON format
+    // Console output (stdout) - only for JSON and agent formats
     // For 'default' format, we use @clack/prompts directly
-    if (format === 'json') {
-      this.pinoLogger = this.createPinoLogger(process.stdout.fd, logLevel);
+    if (format !== 'default') {
+      this.pinoLogger = this.createConsoleLogger(process.stdout.fd, logLevel);
       this.consoleLoggers.stdout = this.pinoLogger;
     }
 
@@ -168,6 +171,26 @@ class Logger {
         }),
       },
       destination(dest)
+    );
+  }
+
+  private createConsoleLogger(fd: number, level: string): PinoLogger {
+    if (this.logFormat === 'json') {
+      return this.createPinoLogger(fd, level);
+    }
+    // Synchronous, in-thread pretty printing so lines are not lost when the
+    // CLI exits via process.exit().
+    return pino(
+      { level },
+      pinoPretty({
+        destination: fd,
+        sync: true,
+        colorize: false,
+        translateTime: 'SYS:yyyy-mm-dd HH:MM:ss',
+        ignore: 'pid,hostname',
+        messageFormat: (log, messageKey) =>
+          stripVTControlCharacters(String(log[messageKey])),
+      })
     );
   }
 
@@ -194,7 +217,7 @@ class Logger {
       this.pinoLogger.flush();
       const next =
         this.consoleLoggers[output] ??
-        this.createPinoLogger(process[output].fd, this.pinoLogger.level);
+        this.createConsoleLogger(process[output].fd, this.pinoLogger.level);
       next.level = this.pinoLogger.level;
       this.consoleLoggers[output] = next;
       this.pinoLogger = next;
@@ -233,6 +256,10 @@ class Logger {
 
   isQuiet(): boolean {
     return this.quiet;
+  }
+
+  getLogFormat(): LogFormat {
+    return this.logFormat;
   }
 
   // Standard logging methods
