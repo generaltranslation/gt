@@ -14,8 +14,8 @@ const missingRequestScopeError = createDiagnosticMessage({
   source: 'gt-tanstack-start',
   severity: 'Error',
   whatHappened: 'Cannot read GT request state outside a request scope',
-  why: 'this code is running outside a TanStack Start server request',
-  fix: 'Call GT server functions from route loaders, server functions, server routes, or components rendered during SSR.',
+  why: 'this code is running outside a TanStack Start server request, for example at module scope',
+  fix: 'Call getGT() and the other translation functions inside route loaders, head data, server functions or server routes, and use hooks such as useGT() in components',
 });
 
 /**
