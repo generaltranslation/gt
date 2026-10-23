@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import type { SanityClient } from 'sanity';
-import { pluginConfig } from '../../../adapter/core';
-import { patchI18nDoc } from './patchI18nDoc';
+import { pluginConfig } from '../../../../adapter/core';
+import { patchI18nDoc } from '../patchI18nDoc';
 
 describe('patchI18nDoc', () => {
   afterEach(() => {
