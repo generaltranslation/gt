@@ -13,6 +13,7 @@ import { useHandleMissingTranslation } from './utils/missing-translation';
 
 /**
  * @internal
+ *
  */
 export function useTranslate<T extends Translation>(
   lookup: TranslateLookup<T>
