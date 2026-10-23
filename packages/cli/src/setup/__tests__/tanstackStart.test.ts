@@ -1129,6 +1129,21 @@ function RootLayout() {
       ['no SPA mode', templateVite, withHeader],
       ['SPA mode disabled', spaVite('{ enabled: false }'), withHeader],
       [
+        'an enabled flag GT cannot read',
+        `const spaEnabled = false\n${spaVite('{ enabled: spaEnabled }')}`,
+        withHeader,
+      ],
+      [
+        'a spread in the spa options',
+        `const shared = { enabled: false }\n${spaVite('{ ...shared }')}`,
+        withHeader,
+      ],
+      [
+        'a spread after the spa option',
+        `const options = { spa: { enabled: false } }\n${templateVite.replace('tanstackStart()', 'tanstackStart({ spa: {}, ...options })')}`,
+        withHeader,
+      ],
+      [
         'a component rendering the document around the outlet, with devtools',
         spaVite('{}'),
         `import { HeadContent, Outlet, Scripts, createRootRoute } from '@tanstack/react-router'

@@ -66,17 +66,29 @@ export function registersVitePlugin(viteConfig: SourceFile): boolean {
   return findVitePluginCalls(viteConfig).length > 0;
 }
 
-/** The last property named `name`, which wins at runtime. */
-function findProperty(options: t.ObjectExpression, name: string) {
-  return options.properties
-    .filter((property) => getPropertyName(property) === name)
-    .at(-1);
+/**
+ * The value `name` gets at runtime: undefined when no property sets it, or
+ * null when a later spread or computed key might.
+ */
+function findPropertyValue(
+  object: t.ObjectExpression,
+  name: string
+): t.Node | null | undefined {
+  for (let i = object.properties.length - 1; i >= 0; i--) {
+    const property = object.properties[i];
+    const key = getPropertyName(property);
+    if (key === undefined) return null;
+    if (key === name) {
+      return property.type === 'ObjectProperty' ? property.value : null;
+    }
+  }
+  return undefined;
 }
 
 /**
  * Whether the exported config's tanstackStart() call enables SPA mode. Start
- * enables it once `spa` is set, unless `spa.enabled` is false. Options GT
- * cannot read count as not enabled, since most apps are not SPAs.
+ * enables it once `spa` is set, unless `spa.enabled` is false. Values or
+ * spreads GT cannot read count as not enabled, since most apps are not SPAs.
  */
 export function enablesSpaMode(viteConfig: SourceFile): boolean {
   const local = getLocalImport(viteConfig, START_PLUGIN, START_PLUGIN_SOURCE);
@@ -86,17 +98,11 @@ export function enablesSpaMode(viteConfig: SourceFile): boolean {
   return collectPluginCalls(plugins.elements, local).some((call) => {
     const [options] = call.arguments;
     if (options?.type !== 'ObjectExpression') return false;
-    const spa = findProperty(options, 'spa');
-    if (
-      spa?.type !== 'ObjectProperty' ||
-      spa.value.type !== 'ObjectExpression'
-    ) {
-      return false;
-    }
-    const enabled = findProperty(spa.value, 'enabled');
-    return !(
-      enabled?.type === 'ObjectProperty' &&
-      t.isBooleanLiteral(enabled.value, { value: false })
+    const spa = findPropertyValue(options, 'spa');
+    if (spa?.type !== 'ObjectExpression') return false;
+    const enabled = findPropertyValue(spa, 'enabled');
+    return (
+      enabled === undefined || t.isBooleanLiteral(enabled, { value: true })
     );
   });
 }
