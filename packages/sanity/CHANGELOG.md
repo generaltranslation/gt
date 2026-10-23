@@ -1,5 +1,11 @@
 # gt-sanity
 
+## 4.0.28
+
+### Patch Changes
+
+- [#2517](https://github.com/generaltranslation/gt/pull/2517) [`7c6547c`](https://github.com/generaltranslation/gt/commit/7c6547cc95f15ab5e5f0c5ac3635df945de378f9) Thanks [@ruymon](https://github.com/ruymon)! - Re-importing a translation no longer overwrites a custom `languageField` (for example `locale`) with the source document's value.
+
 ## 4.0.27
 
 ### Patch Changes
