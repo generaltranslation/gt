@@ -9,11 +9,12 @@
  * behaviors between client and server from gt-react.
  */
 
-export { LocaleSelector as Client_LocaleSelector } from 'gt-react';
-export { RegionSelector as Client_RegionSelector } from 'gt-react';
+export { LocaleSelector as Client_LocaleSelector } from 'gt-react/client-entry';
+export { RegionSelector as Client_RegionSelector } from 'gt-react/client-entry';
 
 import { getCookieValue, getI18nConfig, I18nConfig } from 'gt-i18n/internal';
-import { GTProvider, type SharedGTProviderProps } from 'gt-react';
+import type { SharedGTProviderProps } from 'gt-react';
+import { GTProvider } from 'gt-react/client-entry';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect } from 'react';
 import { initializeGTClient } from '../setup/initGT.client';
@@ -28,7 +29,7 @@ const pathRegex = compilePathRegex(process.env._GENERALTRANSLATION_PATH_REGEX);
 
 /**
  * Only need to initalize client. We know server was already
- * inialaized by index.rsc.ts. We do not know yet if client
+ * initialized by index.rsc.ts. We do not know yet if client
  * has been initialized by index.client.ts.
  */
 if (typeof window !== 'undefined') {
