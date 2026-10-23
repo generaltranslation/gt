@@ -1496,36 +1496,39 @@ function processDeriveExpression({
       }
 
       // Resolve via parseStringExpression (handles all derivable expression types)
-      const errorsBefore = output.errors.length;
-      const stringNode = parseStringExpression(
-        binding.path.node.init,
-        binding.path,
-        config.file,
-        config.parsingOptions,
-        output.warnings,
-        output.errors
-      );
-      if (stringNode) {
-        const strings = nodeToStrings(stringNode);
-        if (strings.length === 0) {
-          return null;
-        }
-        if (strings.length === 1) {
-          return strings[0];
-        }
-        return {
-          nodeType: 'multiplication' as const,
-          branches: strings.map((s) => s),
-        };
-      }
-      // parseStringExpression returned null — if it already pushed errors,
-      // avoid double-reporting by skipping the buildJSXTree fallthrough.
-      if (output.errors.length > errorsBefore) {
-        return null;
+      const resolved = resolveDeriveStringExpression({
+        node: binding.path.node.init,
+        nodePath: binding.path,
+        config,
+        output,
+      });
+      if (resolved !== undefined) {
+        return resolved;
       }
     }
 
     // Not resolvable — fall through to existing buildJSXTree behavior
+    return buildJSXTree({
+      node: expressionNodePath.node,
+      helperPath: expressionNodePath,
+      scopeNode,
+      insideT: true,
+      inDerive: true,
+      config,
+      state,
+      output,
+    });
+  } else if (t.isMemberExpression(expressionNodePath.node)) {
+    // ex: <Derive>{items[index].label}</Derive>
+    const resolved = resolveDeriveStringExpression({
+      node: expressionNodePath.node,
+      nodePath: expressionNodePath,
+      config,
+      output,
+    });
+    if (resolved !== undefined) {
+      return resolved;
+    }
     return buildJSXTree({
       node: expressionNodePath.node,
       helperPath: expressionNodePath,
@@ -1548,4 +1551,50 @@ function processDeriveExpression({
       output,
     });
   }
+}
+
+/**
+ * Resolve a <Derive> expression to its possible static strings.
+ * Returns undefined when it cannot be resolved and no error was reported,
+ * so the caller can fall back to buildJSXTree's unwrapped-expression error.
+ */
+function resolveDeriveStringExpression({
+  node,
+  nodePath,
+  config,
+  output,
+}: {
+  node: t.Expression;
+  nodePath: NodePath;
+  config: ConfigOptions;
+  output: OutputCollector;
+}): string | MultiplicationNode | null | undefined {
+  const errorsBefore = output.errors.length;
+  const stringNode = parseStringExpression(
+    node,
+    nodePath,
+    config.file,
+    config.parsingOptions,
+    output.warnings,
+    output.errors
+  );
+  if (stringNode) {
+    const strings = nodeToStrings(stringNode);
+    if (strings.length === 0) {
+      return null;
+    }
+    if (strings.length === 1) {
+      return strings[0];
+    }
+    return {
+      nodeType: 'multiplication' as const,
+      branches: strings,
+    };
+  }
+  // parseStringExpression returned null — if it already pushed errors,
+  // avoid double-reporting by skipping the buildJSXTree fallthrough.
+  if (output.errors.length > errorsBefore) {
+    return null;
+  }
+  return undefined;
 }
