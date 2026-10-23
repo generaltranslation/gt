@@ -1,5 +1,7 @@
 import { readFileSync } from 'node:fs';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { createServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 
 import { awaitJobs, pollJobs } from '../wrappers/awaitJobs';
 import { createBatches, processBatches } from '../wrappers/batch';
@@ -53,6 +55,30 @@ describe('createTimeoutFetch', () => {
     controller.abort(new Error('caller gave up'));
 
     await expect(response).rejects.toThrow('caller gave up');
+  });
+
+  it('cancels a pending body read when the caller aborts after the headers', async () => {
+    // Real fetch against a server that sends the headers and holds the body
+    const server = createServer((_request, response) => {
+      response.writeHead(200).flushHeaders();
+    });
+    onTestFinished(() => {
+      server.closeAllConnections();
+      server.close();
+    });
+    await new Promise<void>((resolve) =>
+      server.listen(0, '127.0.0.1', resolve)
+    );
+    const { port } = server.address() as AddressInfo;
+    const controller = new AbortController();
+
+    const response = await createTimeoutFetch()(`http://127.0.0.1:${port}`, {
+      signal: controller.signal,
+    });
+    controller.abort(new Error('caller gave up'));
+
+    // fetch may report the abort reason or a generic AbortError
+    await expect(response.text()).rejects.toThrow();
   });
 
   it('allows a custom fetch implementation to own request timeouts', async () => {
@@ -249,6 +275,27 @@ describe('createRetryingFetch', () => {
     );
 
     expect(response.status).toBe(429);
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it('stops waiting to retry when the caller aborts during the wait', async () => {
+    vi.useFakeTimers();
+    const controller = new AbortController();
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(new Response('rate limited', { status: 429 }));
+
+    const response = createRetryingFetch({ fetch: fetchMock })(
+      'https://example.com/test',
+      { method: 'POST', signal: controller.signal }
+    );
+    const expectation = expect(response).rejects.toThrow('caller gave up');
+    await vi.advanceTimersByTimeAsync(1000);
+    controller.abort(new Error('caller gave up'));
+
+    // The 60 second wait is cleared, so no timer keeps the process alive
+    expect(vi.getTimerCount()).toBe(0);
+    await expectation;
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 
