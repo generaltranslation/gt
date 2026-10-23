@@ -1,5 +1,17 @@
 # gtx-cli
 
+## 2.26.9
+
+### Patch Changes
+
+- [#2525](https://github.com/generaltranslation/gt/pull/2525) [`aee1350`](https://github.com/generaltranslation/gt/commit/aee135077ebef9d98378b68d5898df548d83f137) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Limit how many files postprocessing reads and writes at once so large docs projects no longer fail with `EMFILE: too many open files`
+
+- Updated dependencies []:
+  - generaltranslation@9.5.8
+  - @generaltranslation/python-extractor@0.2.63
+  - @generaltranslation/supported-locales@2.1.44
+  - @generaltranslation/vue-extractor@0.1.22
+
 ## 2.26.8
 
 ### Patch Changes
