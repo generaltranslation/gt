@@ -629,6 +629,7 @@ describe('downloadFileBatch', () => {
   it.each([
     ['gt-vue', '<Vue Elements>'],
     ['gt-react', '<React Elements>'],
+    ['gt-node', '<Strings>'],
   ] as const)(
     'labels review-withheld %s catalogs with their framework',
     async (inlineLibrary, expectedLabel) => {

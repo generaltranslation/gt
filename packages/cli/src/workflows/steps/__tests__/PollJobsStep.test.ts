@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { Libraries } from '../../../types/libraries.js';
+import { Libraries, type InlineLibrary } from '../../../types/libraries.js';
 import type { ApiClient } from '../../../utils/api.js';
 import { TEMPLATE_FILE_NAME } from '../../../utils/constants.js';
 import {
@@ -38,7 +38,7 @@ const templateFile = {
   versionId: 'version-1',
 };
 
-function getStatusText(inlineLibrary?: 'gt-react' | 'gt-vue'): string {
+function getStatusText(inlineLibrary?: InlineLibrary): string {
   const step = new PollTranslationJobsStep(
     {} as ApiClient,
     inlineLibrary
@@ -61,6 +61,11 @@ describe('PollTranslationJobsStep inline catalog labels', () => {
   it('preserves the historical React catalog label', () => {
     expect(getStatusText(Libraries.GT_REACT)).toContain('<React Elements>');
     expect(getStatusText()).toContain('<React Elements>');
+  });
+
+  it('labels gt-node and Python catalogs as strings', () => {
+    expect(getStatusText(Libraries.GT_NODE)).toContain('<Strings>');
+    expect(getStatusText(Libraries.GT_FLASK)).toContain('<Strings>');
   });
 
   it('moves files between tracker maps from awaited job statuses', async () => {
