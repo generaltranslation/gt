@@ -19,6 +19,8 @@ import {
 import { DOCS_URL, VITE_PLUGIN_SOURCE } from './source.js';
 
 const VITE_PLUGIN = 'gtTanstackStart';
+const START_PLUGIN = 'tanstackStart';
+const START_PLUGIN_SOURCE = '@tanstack/react-start/plugin/vite';
 // The plugin reads this config path, relative to the working directory, by default.
 const VITE_PLUGIN_DEFAULT_CONFIG = 'gt.config.json';
 
@@ -62,6 +64,41 @@ function findVitePluginCalls(viteConfig: SourceFile): t.CallExpression[] {
 
 export function registersVitePlugin(viteConfig: SourceFile): boolean {
   return findVitePluginCalls(viteConfig).length > 0;
+}
+
+/** The last property named `name`, which wins at runtime. */
+function findProperty(options: t.ObjectExpression, name: string) {
+  return options.properties
+    .filter((property) => getPropertyName(property) === name)
+    .at(-1);
+}
+
+/**
+ * Whether the exported config's tanstackStart() call enables SPA mode. Start
+ * enables it once `spa` is set, unless `spa.enabled` is false. Options GT
+ * cannot read count as not enabled, since most apps are not SPAs.
+ */
+export function enablesSpaMode(viteConfig: SourceFile): boolean {
+  const local = getLocalImport(viteConfig, START_PLUGIN, START_PLUGIN_SOURCE);
+  const plugins =
+    viteConfig.statements && findPluginsArray(viteConfig.statements);
+  if (local === undefined || plugins === undefined) return false;
+  return collectPluginCalls(plugins.elements, local).some((call) => {
+    const [options] = call.arguments;
+    if (options?.type !== 'ObjectExpression') return false;
+    const spa = findProperty(options, 'spa');
+    if (
+      spa?.type !== 'ObjectProperty' ||
+      spa.value.type !== 'ObjectExpression'
+    ) {
+      return false;
+    }
+    const enabled = findProperty(spa.value, 'enabled');
+    return !(
+      enabled?.type === 'ObjectProperty' &&
+      t.isBooleanLiteral(enabled.value, { value: false })
+    );
+  });
 }
 
 /**

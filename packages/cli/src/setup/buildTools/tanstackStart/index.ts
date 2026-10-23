@@ -20,7 +20,12 @@ import type {
 import { getLoaderUpdateActions } from '../shared/loader.js';
 import { readSourceFile } from '../shared/source.js';
 import { VITE_LOADER_FILE } from '../vite.js';
-import { configureRootLang, getRootLangAction } from './root.js';
+import {
+  configureRootLang,
+  getRootLangAction,
+  getSpaShellAction,
+  rendersRootUI,
+} from './root.js';
 import {
   callsRouterIntegration,
   configureRouter,
@@ -34,6 +39,7 @@ import {
 } from './source.js';
 import {
   configureViteConfig,
+  enablesSpaMode,
   getViteConfigAction,
   getVitePluginConfigAction,
   getVitePluginLoaderPath,
@@ -293,6 +299,12 @@ export const tanstackStartSetup: BuildToolSetup = {
       // Remind only while setup is first applied: a rerun could never tell
       // that it was fixed.
       manualActions.push(getRootLangAction(root.path));
+    }
+
+    // SPA mode serves one prerendered shell of the root route to every
+    // visitor, before GT knows their locale.
+    if (root && enablesSpaMode(viteConfig) && rendersRootUI(root)) {
+      manualActions.push(getSpaShellAction(root.path));
     }
 
     return { steps, manualActions };
