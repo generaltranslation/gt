@@ -1,5 +1,21 @@
 # gtx-cli
 
+## 2.26.8
+
+### Patch Changes
+
+- [#2522](https://github.com/generaltranslation/gt/pull/2522) [`a0ba4ab`](https://github.com/generaltranslation/gt/commit/a0ba4aba791a99026b2900991fa6608c3cf1bd93) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - `gt download` performs same postprocessing as `gt translate`
+
+## 2.26.7
+
+### Patch Changes
+
+- [#2516](https://github.com/generaltranslation/gt/pull/2516) [`4fee937`](https://github.com/generaltranslation/gt/commit/4fee937e7c8645f8c05a7d4ef82867e2776648da) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - `gt api` now ends a non-2xx response body with a newline so the HTTP error message on stderr starts on its own line.
+
+- [#2515](https://github.com/generaltranslation/gt/pull/2515) [`e5bc047`](https://github.com/generaltranslation/gt/commit/e5bc04712794f7c9d08e83ad7b0e22cd38a853ce) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - `gt upload` now skips unparsable JSON and YAML translation files with a warning, as it already does for source files, instead of sending them and losing the whole translation batch.
+
+- [#2514](https://github.com/generaltranslation/gt/pull/2514) [`e2aee57`](https://github.com/generaltranslation/gt/commit/e2aee57260df269e77b7082ae2b428c2ec9076bb) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - `gt upload` now uploads translations to the resolved branch (for example, `--branch <name>`) instead of the project's default branch.
+
 ## 2.26.6
 
 ### Patch Changes
