@@ -1,34 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
-  mockClientConditionStore,
   mockGetGTInternal,
   mockGetMessagesInternal,
   mockGetTranslationsInternal,
 } = vi.hoisted(() => ({
-  mockClientConditionStore: {
-    getLocale: vi.fn(() => 'es'),
-    getEnableI18n: vi.fn(() => true),
-  },
   mockGetGTInternal: vi.fn(async () => 'gt'),
   mockGetMessagesInternal: vi.fn(async () => 'messages'),
   mockGetTranslationsInternal: vi.fn(async () => 'translations'),
-}));
-
-vi.mock('@tanstack/react-start', () => ({
-  createIsomorphicFn: () => ({
-    server: (serverFn: (...args: never[]) => unknown) => ({
-      client: (clientFn: (...args: never[]) => unknown) =>
-        Object.assign(serverFn, { client: clientFn, server: serverFn }),
-    }),
-  }),
-}));
-
-vi.mock('@generaltranslation/react-core/pure', async (importOriginal) => ({
-  ...(await importOriginal<
-    typeof import('@generaltranslation/react-core/pure')
-  >()),
-  getReadonlyConditionStore: () => mockClientConditionStore,
 }));
 
 vi.mock('gt-i18n/internal', async (importOriginal) => ({
@@ -82,13 +61,11 @@ function resetSingletons() {
   }
 }
 
-describe.sequential('isomorphic translation functions', () => {
+describe.sequential('server translation functions', () => {
   beforeEach(() => {
     resetSingletons();
     initializeI18nConfig(config);
     setConditionStore(new AsyncLocalConditionStore(config));
-    mockClientConditionStore.getLocale.mockClear();
-    mockClientConditionStore.getEnableI18n.mockClear();
     mockGetGTInternal.mockClear();
     mockGetMessagesInternal.mockClear();
     mockGetTranslationsInternal.mockClear();
@@ -112,6 +89,8 @@ describe.sequential('isomorphic translation functions', () => {
       })
     );
 
+    expect(getLocale()).toBe('fr');
+    expect(getEnableI18n()).toBe(false);
     await expect(getGT(messages)).resolves.toBe('gt');
     await expect(getMessages()).resolves.toBe('messages');
     await expect(getTranslations('metadata')).resolves.toBe('translations');
@@ -130,17 +109,5 @@ describe.sequential('isomorphic translation functions', () => {
       enableI18n: false,
       rootId: 'metadata',
     });
-  });
-
-  it('reads browser conditions in the browser', () => {
-    const clientGetLocale = (
-      getLocale as unknown as { client: typeof getLocale }
-    ).client;
-    const clientGetEnableI18n = (
-      getEnableI18n as unknown as { client: typeof getEnableI18n }
-    ).client;
-
-    expect(clientGetLocale()).toBe('es');
-    expect(clientGetEnableI18n()).toBe(true);
   });
 });
