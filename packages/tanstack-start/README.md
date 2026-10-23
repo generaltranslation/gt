@@ -139,4 +139,26 @@ export default function Page() {
 }
 ```
 
+## SPA mode
+
+With `tanstackStart({ spa: { enabled: true } })`, TanStack Start prerenders one shell at build time and serves it to every visitor. Since the shell can't know the visitor's locale, the integration loads the visitor's translations before hydrating.
+
+The shell only renders the root route, so keep the root route to the document (like `RootDocument` above) and put all visible UI, including translated layout such as navigation, in a pathless layout route:
+
+```tsx
+// src/routes/_app.tsx; pages go in src/routes/_app/
+import { Outlet, createFileRoute } from '@tanstack/react-router';
+
+export const Route = createFileRoute('/_app')({
+  component: () => (
+    <>
+      <Nav />
+      <Outlet />
+    </>
+  ),
+});
+```
+
+Visitors then see a blank page until their translations load, then the app in their locale, as in a Vite SPA. Translated content in the root route is prerendered in the build-time locale and switches to the visitor's locale after load. Pending components also render in the shell: the `pendingComponent` of routes under the root, or the router's `defaultPendingComponent`. `npx gt init` reports a root route that renders more than the document in SPA mode.
+
 See the [full documentation](https://generaltranslation.com/docs/tanstack-start) for guides and API reference.
