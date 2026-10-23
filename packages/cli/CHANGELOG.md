@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.26.8
+
+### Patch Changes
+
+- [#2522](https://github.com/generaltranslation/gt/pull/2522) [`a0ba4ab`](https://github.com/generaltranslation/gt/commit/a0ba4aba791a99026b2900991fa6608c3cf1bd93) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - `gt download` performs same postprocessing as `gt translate`
+
 ## 2.26.7
 
 ### Patch Changes
