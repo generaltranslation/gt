@@ -1,19 +1,19 @@
-import type { GT } from 'generaltranslation';
+import type { ProjectHandle } from 'generaltranslation';
+import type { ErrorCode } from 'generaltranslation/api';
 
 // A Payload document or part of one, as the Local API returns it.
 export type Data = Record<string, unknown>;
 
-// The GT SDK calls the plugin makes.
+// The GT project calls the plugin makes.
 export type GtClient = Pick<
-  GT,
+  ProjectHandle,
   | 'uploadSourceFiles'
-  | 'enqueueFiles'
+  | 'translateFiles'
   | 'awaitJobs'
-  | 'downloadFileBatch'
+  | 'queryFilesContent'
   | 'uploadTranslations'
-  | 'checkJobStatus'
+  | 'queryJobs'
   | 'translateMany'
-  | 'customMapping'
 >;
 
 export type TranslateTarget =
@@ -42,10 +42,19 @@ export type LocaleResult =
     }
   | { status: 'failed'; error: string };
 
+// The codes GT refuses work with for billing, as HTTP 402.
+export type BillingCode = Extract<
+  ErrorCode,
+  | 'payment_required'
+  | 'usage_limit_reached'
+  | 'spend_limit_reached'
+  | 'credits_insufficient'
+>;
+
 export type TranslateResult = {
   // Absent when the document could not be read or uploaded.
   error?: string;
-  // GT refused the work because the plan's usage limit is reached.
-  usageLimitReached?: true;
+  // GT refused the work for billing, with this code.
+  billingCode?: BillingCode;
   locales: Record<string, LocaleResult>;
 };

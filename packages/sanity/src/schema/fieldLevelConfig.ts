@@ -1,4 +1,4 @@
-import { getLocaleProperties } from 'generaltranslation';
+import { GTIntl } from 'generaltranslation';
 import type { CustomMapping } from 'generaltranslation/types';
 import { formatLocalePropertiesLabel } from '../utils/localeDisplay';
 import type { PluginOptions } from 'sanity';
@@ -97,12 +97,13 @@ export function buildInternationalizedArrayPlugin(
   locales: string[],
   customMapping?: CustomMapping
 ): PluginOptions {
+  const intl = new GTIntl({ defaultLocale: sourceLocale, customMapping });
   const languageTitle = (locale: string) =>
     config.getLanguageTitle?.(locale) ??
     config.languageTitles?.[locale] ??
     formatLocalePropertiesLabel(
       locale,
-      getLocaleProperties(locale, sourceLocale, customMapping),
+      intl.getLocaleProperties(locale),
       customMapping?.[locale]
     );
 

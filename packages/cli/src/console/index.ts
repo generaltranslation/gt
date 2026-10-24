@@ -1,4 +1,3 @@
-import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { BRANCH_COMPONENT } from '../react/jsx/utils/constants.js';
 import {
   colorizeFilepath,
@@ -9,6 +8,8 @@ import {
   colorizeFunctionName,
 } from './colors.js';
 import { formatCodeClamp } from './formatting.js';
+import { ApiError, ErrorCode } from 'generaltranslation/api';
+import { GT_DASHBOARD_URL } from '../utils/constants.js';
 
 const withWillErrorInNextVersion = (message: string): string =>
   `${message} (This will become an error in the next major version of the CLI.)`;
@@ -19,7 +20,6 @@ const withDeriveComponentError = (message: string): string =>
 
 const withDeriveFunctionError = (message: string): string =>
   `derive() rules violation: ${message}`;
-// Synchronous wrappers for backward compatibility
 export const warnApiKeyInConfigSync = (optionsFilepath: string): string =>
   `${colorizeFilepath(
     optionsFilepath
@@ -135,22 +135,6 @@ export const warnInvalidMaxCharsSync = (
     `Found invalid maxChars value: ${colorizeContent(value)}. maxChars must be a numeric literal, e.g. maxChars={10}, to ensure this content is translated.`,
     location
   );
-
-export const warnDeprecatedTSugarPropsSync = (locations: string[]): string =>
-  createDiagnosticMessage({
-    whatHappened: `Found ${locations.length} deprecated ${colorizeIdString(
-      '$'
-    )}-prefixed prop${locations.length === 1 ? '' : 's'} on ${colorizeComponent(
-      '<T>'
-    )} components`,
-    fix: `Use the unprefixed forms instead (${colorizeIdString(
-      'context'
-    )}, ${colorizeIdString('id')}, ${colorizeIdString('maxChars')}, ${colorizeIdString(
-      'requiresReview'
-    )}); support for the ${colorizeIdString('$')}-prefixed forms will be removed in the next major version`,
-  }) +
-  '\n' +
-  locations.map((location) => `  ${colorizeLine(location)}`).join('\n');
 
 export const warnInvalidFormatSync = (
   file: string,
@@ -459,5 +443,52 @@ export const xcstringsSourceLanguageMismatchError = (
 export const fileEncodingSkipReason = (error: unknown): string =>
   `File could not be decoded: ${error instanceof Error ? error.message : String(error)}`;
 
-export const withOriginalError = (message: string, error: unknown): string =>
-  error != null ? `${message} Original error: ${String(error)}` : message;
+const dashboardHint = (task: string) =>
+  `Open the dashboard ${GT_DASHBOARD_URL} to ${task}.`;
+
+/** A short fix for an API failure whose code has one; the server message stays the detail. */
+export function describeApiError(error: unknown): string | undefined {
+  if (!(error instanceof ApiError)) return undefined;
+  switch (error.code) {
+    case ErrorCode.PAYMENT_REQUIRED:
+    case ErrorCode.USAGE_LIMIT_REACHED:
+    case ErrorCode.SPEND_LIMIT_REACHED:
+    case ErrorCode.CREDITS_INSUFFICIENT:
+      return dashboardHint('manage billing');
+    case ErrorCode.UNAUTHENTICATED:
+    case ErrorCode.API_KEY_INVALID:
+    case ErrorCode.TOKEN_INVALID:
+      return 'Check GT_API_KEY, or run `gt login` to sign in again.';
+    case ErrorCode.SCOPE_MISSING:
+      return 'Run `gt login` to sign in again with the required access.';
+    case ErrorCode.PERMISSION_MISSING:
+      return 'Use an API key or account with the permission named in the error.';
+    case ErrorCode.LOCALE_NOT_ALLOWED:
+    case ErrorCode.TARGET_LOCALES_MISSING:
+      return dashboardHint('enable the locales in your project settings');
+    case ErrorCode.PLAN_FEATURE_UNAVAILABLE:
+      return dashboardHint('upgrade your plan');
+    case ErrorCode.PROJECT_LIMIT_REACHED:
+      return dashboardHint('delete an unused project or upgrade your plan');
+    case ErrorCode.CDN_NOT_ENABLED:
+      return dashboardHint('enable the CDN for your project');
+    case ErrorCode.RATE_LIMITED:
+      return 'Wait a moment, then try again.';
+    default:
+      return undefined;
+  }
+}
+
+/** A failed workflow: what happened, the API error's fix or a generic one, and the original error. */
+export const workflowFailureMessage = (
+  whatHappened: string,
+  error: unknown
+): string => {
+  const fix =
+    describeApiError(error) ??
+    'Check the files, branch configuration, and API credentials, then try again.';
+  const message = `${whatHappened} ${fix}`;
+  return error != null
+    ? `${message} Original error: ${String(error)}`
+    : message;
+};

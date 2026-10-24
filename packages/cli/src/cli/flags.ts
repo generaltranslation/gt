@@ -19,12 +19,9 @@ export function attachSharedFlags(command: Command) {
 export function attachTranslateFlags(command: Command) {
   attachSharedFlags(command)
     .option('--version-id <id>', 'General Translation version ID')
+    .option('--default-locale <locale>', 'Default locale (e.g., en)')
     .option(
-      '--default-language, --default-locale <locale>',
-      'Default locale (e.g., en)'
-    )
-    .option(
-      '--new, --locales <locales...>',
+      '--locales <locales...>',
       'Space-separated list of locales (e.g., en fr es)'
     )
     .option(
@@ -139,7 +136,7 @@ function attachInlineContentParsingFlags(
 ) {
   return command
     .option(
-      '--tsconfig, --jsconfig <path>',
+      '--tsconfig <path>',
       'Path to custom jsconfig or tsconfig file',
       findFilepath(['./tsconfig.json', './jsconfig.json'])
     )
@@ -148,11 +145,6 @@ function attachInlineContentParsingFlags(
       '--src <paths...>',
       sourceHelp ??
         "Space-separated list of glob patterns containing the app's source code, by default 'src/**/*.{js,jsx,ts,tsx}' 'app/**/*.{js,jsx,ts,tsx}' 'pages/**/*.{js,jsx,ts,tsx}' 'components/**/*.{js,jsx,ts,tsx}'"
-    )
-    .option(
-      '--inline',
-      'Include inline content in translations (e.g., inline jsx translations, inline string translations, etc.)',
-      true
     );
 }
 

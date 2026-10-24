@@ -6,12 +6,18 @@ import {
   downloadFileBatch,
   DownloadFileBatchResult,
 } from '../../api/downloadFileBatch.js';
-import type { ApiClient } from '../../utils/api.js';
+import type { ProjectHandle } from 'generaltranslation';
 import { Settings } from '../../types/index.js';
 import { recordWarning } from '../../state/translateWarnings.js';
 import { FileStatusTracker } from './PollJobsStep.js';
 import { TEMPLATE_FILE_NAME } from '../../utils/constants.js';
 import type { InlineLibrary } from '../../types/libraries.js';
+import {
+  retryTransientRead,
+  TRANSIENT_READ_RETRIES,
+  transientReadDelay,
+  wait,
+} from '../utils/retryTransientRead.js';
 
 export type DownloadTranslationsInput = {
   fileTracker: FileStatusTracker;
@@ -23,7 +29,7 @@ export class DownloadTranslationsStep {
   private spinner: ReturnType<typeof logger.createProgressBar> | null = null;
 
   constructor(
-    private api: ApiClient,
+    private api: ProjectHandle,
     private settings: Settings,
     private inlineLibrary?: InlineLibrary
   ) {}
@@ -55,34 +61,22 @@ export class DownloadTranslationsStep {
       }
 
       // Check for translations
-      const responseData = await this.api.queryFileData({
-        translatedFiles: currentQueryData.map((item) => ({
-          fileId: item.fileId,
-          versionId: item.versionId,
-          branchId: item.branchId,
-          locale: item.locale,
-        })),
-      });
-      const translatedFiles = responseData.translatedFiles || [];
+      const { results } = await retryTransientRead(() =>
+        this.api.queryFiles(currentQueryData)
+      );
 
-      // Filter for ready translations
-      const readyTranslations = translatedFiles.filter(
-        (file) => file.completedAt !== null
+      // Filter for ready translations; results follow the selector order
+      const isReady = (index: number) =>
+        results[index]?.status === 'found' && !!results[index].completedAt;
+      const readyTranslations = currentQueryData.flatMap((item, index) =>
+        isReady(index)
+          ? [{ ...item, approvedAt: results[index].approvedAt }]
+          : []
       );
       let missingCount = 0;
 
       if (readyTranslations.length < currentQueryData.length) {
-        const readyKeys = new Set(
-          readyTranslations.map(
-            (t) => `${t.branchId}:${t.fileId}:${t.versionId}:${t.locale}`
-          )
-        );
-        const missing = currentQueryData.filter(
-          (item) =>
-            !readyKeys.has(
-              `${item.branchId}:${item.fileId}:${item.versionId}:${item.locale}`
-            )
-        );
+        const missing = currentQueryData.filter((_, index) => !isReady(index));
         missingCount = missing.length;
         logger.warn(
           `Failed to download ${missing.length} file(s):\n${missing.map((f) => `- ${f.fileName} (${f.locale})`).join('\n')}`
@@ -107,7 +101,7 @@ export class DownloadTranslationsStep {
       const reviewGatedKeys = new Set<string>();
       if (requiresReviewPaths.size > 0) {
         for (const translation of readyTranslations) {
-          if (translation.approvedAt !== null) continue;
+          if (translation.approvedAt) continue;
           const fileKey = `${translation.branchId}:${translation.fileId}:${translation.versionId}:${translation.locale}`;
           const fileProperties = fileTracker.completed.get(fileKey);
           if (!fileProperties) continue;
@@ -205,18 +199,17 @@ export class DownloadTranslationsStep {
     }
   }
 
+  /** Requests pending files and transient read failures again; failed files are final. */
   private async downloadFilesWithRetry(
     fileTracker: FileStatusTracker,
     files: BatchedFiles,
-    forceDownload?: boolean,
-    maxRetries: number = 3,
-    initialDelay: number = 1000
-  ): Promise<DownloadFileBatchResult> {
+    forceDownload?: boolean
+  ): Promise<Omit<DownloadFileBatchResult, 'retryable'>> {
+    const successful: BatchedFiles = [];
+    const skipped: BatchedFiles = [];
+    const failed: BatchedFiles = [];
     let remainingFiles = files;
-    let allSuccessful: BatchedFiles = [];
-    let retryCount = 0;
-    let allSkipped: BatchedFiles = [];
-    while (remainingFiles.length > 0 && retryCount <= maxRetries) {
+    for (let retry = 0; ; retry++) {
       const batchResult = await downloadFileBatch(
         fileTracker,
         remainingFiles,
@@ -224,44 +217,30 @@ export class DownloadTranslationsStep {
         forceDownload,
         this.inlineLibrary
       );
-
-      allSuccessful = [...allSuccessful, ...batchResult.successful];
-      allSkipped = [...allSkipped, ...batchResult.skipped];
+      successful.push(...batchResult.successful);
+      skipped.push(...batchResult.skipped);
+      failed.push(...batchResult.failed);
+      remainingFiles = batchResult.retryable;
 
       this.spinner?.advance(
         batchResult.successful.length +
           batchResult.skipped.length +
           batchResult.failed.length
       );
-
-      // If no failures or we've exhausted retries, we're done
-      if (batchResult.failed.length === 0 || retryCount === maxRetries) {
-        return {
-          successful: allSuccessful,
-          failed: batchResult.failed,
-          skipped: allSkipped,
-        };
+      if (remainingFiles.length === 0 || retry === TRANSIENT_READ_RETRIES) {
+        // Files still retryable after the last retry did not download
+        failed.push(...remainingFiles);
+        this.spinner?.advance(remainingFiles.length);
+        return { successful, failed, skipped };
       }
 
-      // Calculate exponential backoff delay
-      const delay = initialDelay * Math.pow(2, retryCount);
+      const delay = transientReadDelay(retry);
       logger.error(
         chalk.yellow(
-          `Retrying ${batchResult.failed.length} failed file(s) in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})...`
+          `Retrying ${remainingFiles.length} file(s) in ${delay}ms (attempt ${retry + 1}/${TRANSIENT_READ_RETRIES})...`
         )
       );
-
-      // Wait before retrying
-      await new Promise((resolve) => setTimeout(resolve, delay));
-
-      remainingFiles = batchResult.failed;
-      retryCount++;
+      await wait(delay);
     }
-
-    return {
-      successful: allSuccessful,
-      failed: remainingFiles,
-      skipped: allSkipped,
-    };
   }
 }

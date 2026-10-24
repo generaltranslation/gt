@@ -4,7 +4,7 @@ import { readFileSync } from 'fs';
 import path from 'path';
 import { logger } from '../../../console/logger.js';
 import { exitSync } from '../../../console/logging.js';
-import { configureApiClient } from '../../../utils/api.js';
+import { configureCustomMapping } from '../../../utils/api.js';
 
 vi.mock('../../../console/logger.js');
 vi.mock('../../../console/logging.js');
@@ -753,7 +753,7 @@ describe('extractJson', () => {
       const customMapping = {
         'fr-ca': { code: 'fr-CA' },
       };
-      configureApiClient({ baseUrl: 'https://api.example.com', customMapping });
+      configureCustomMapping(customMapping);
 
       const result = extractJson(
         localContent,
@@ -776,7 +776,7 @@ describe('extractJson', () => {
         'en'
       );
 
-      configureApiClient({ baseUrl: 'https://api.example.com' });
+      configureCustomMapping();
 
       expect(result).not.toBeNull();
       const parsed = JSON.parse(result!);

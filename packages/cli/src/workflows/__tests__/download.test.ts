@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Settings } from '../../types/index.js';
 import { clearLocaleDirs } from '../../fs/clearLocaleDirs.js';
-import { api } from '../../utils/api.js';
 import { downloadFileBatch } from '../../api/downloadFileBatch.js';
 import { runDownloadWorkflow } from '../download.js';
 
@@ -21,11 +20,12 @@ vi.mock('../../fs/clearLocaleDirs.js', () => ({
   clearLocaleDirs: vi.fn(),
 }));
 
+const api = vi.hoisted(() => ({
+  queryFiles: vi.fn(),
+}));
 vi.mock('../../utils/api.js', () => ({
-  api: {
-    queryFileData: vi.fn(),
-    resolveAliasLocale: vi.fn((locale: string) => locale),
-  },
+  createClients: () => ({ project: api }),
+  resolveCanonicalLocale: (locale: string) => locale,
 }));
 
 vi.mock('../../api/downloadFileBatch.js', () => ({
@@ -69,8 +69,8 @@ describe('runDownloadWorkflow', () => {
   });
 
   it('does not clear locale dirs when no translations are completed', async () => {
-    vi.mocked(api.queryFileData).mockResolvedValue({
-      translatedFiles: [],
+    vi.mocked(api.queryFiles).mockResolvedValue({
+      results: [{ status: 'pending', fileId: 'file-1', locale: 'es' }],
     });
 
     await runDownloadWorkflow({
@@ -88,9 +88,10 @@ describe('runDownloadWorkflow', () => {
   });
 
   it('clears locale dirs only after translations are confirmed completed', async () => {
-    vi.mocked(api.queryFileData).mockResolvedValue({
-      translatedFiles: [
+    vi.mocked(api.queryFiles).mockResolvedValue({
+      results: [
         {
+          status: 'found',
           branchId: 'branch-1',
           fileId: 'file-1',
           versionId: 'version-1',

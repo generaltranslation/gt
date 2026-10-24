@@ -94,7 +94,7 @@ export async function detectFramework(): Promise<
 /**
  * Detects if the current project is a Mintlify documentation project.
  *
- * Checks for the presence of docs.json (preferred) or mint.json (legacy) files.
+ * Checks for the presence of a docs.json file.
  * For docs.json, validates that the $schema field contains "mintlify.com/docs.json".
  * Rejects projects with Next.js config files to avoid misclassification.
  *
@@ -121,7 +121,7 @@ export function isMintlifyProject(
     }
   }
 
-  // Check for docs.json (preferred format)
+  // Check for docs.json
   const docsJsonPath = path.join(cwd, 'docs.json');
   if (fs.existsSync(docsJsonPath)) {
     try {

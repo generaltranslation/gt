@@ -330,6 +330,14 @@ export function testConfig(
         slug: 'media',
         fields: [{ name: 'alt', type: 'text', localized: true }],
       },
+      {
+        // Text IDs chosen by the editor, which can be too long for GT.
+        slug: 'snippets',
+        fields: [
+          { name: 'id', type: 'text', required: true },
+          { name: 'text', type: 'text', localized: true },
+        ],
+      },
     ],
     blocks: [
       {

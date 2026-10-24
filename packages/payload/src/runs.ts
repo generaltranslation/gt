@@ -18,7 +18,7 @@ import {
   type DocumentResult,
   type TranslationJob,
 } from './translation';
-import type { GtClient, TranslateTarget } from './types';
+import type { BillingCode, GtClient, TranslateTarget } from './types';
 
 export const RUNS_SLUG = 'gt-translation-runs';
 const RUN_TASK = 'gtTranslationRun';
@@ -36,8 +36,8 @@ export type RunProgress = {
   failedLocales: string[];
   // Documents that could not be read, sent or saved at all.
   failedDocuments: number;
-  // GT refused the work because the plan's usage limit is reached.
-  usageLimitReached: boolean;
+  // GT refused the work for billing, with this code.
+  billingCode: BillingCode | null;
   // Strings left as they were: their translation broke markup or was missing.
   skippedStrings: number;
 };
@@ -62,7 +62,8 @@ const FINISH_BATCH = 10;
 const LEASE_MS = 2 * 60 * 1000;
 // A running run nobody has stepped for this long is picked up by any admin.
 const STALE_MS = 30 * 1000;
-const FINISHED = new Set(['completed', 'failed']);
+// A not_found job is one GT does not have, so it never finishes.
+const FINISHED = new Set(['completed', 'failed', 'not_found']);
 // Steps in a row that may throw before the run gives up on what is left.
 const MAX_FAILURES = 5;
 // After this long, jobs GT has not finished are reported as failed.
@@ -100,7 +101,7 @@ export const runsCollection: CollectionConfig = {
     { name: 'done', type: 'number', required: true },
     { name: 'failedLocales', type: 'json', required: true },
     { name: 'failedDocuments', type: 'number', required: true },
-    { name: 'usageLimitReached', type: 'checkbox' },
+    { name: 'billingCode', type: 'text' },
     { name: 'skippedStrings', type: 'number', defaultValue: 0 },
     { name: 'startedBy', type: 'json' },
     { name: 'failures', type: 'number', defaultValue: 0 },
@@ -115,7 +116,7 @@ const progressOf = (run: Run): RunProgress => ({
   done: run.done,
   failedLocales: run.failedLocales,
   failedDocuments: run.failedDocuments,
-  usageLimitReached: Boolean(run.usageLimitReached),
+  billingCode: run.billingCode ?? null,
   skippedStrings: run.skippedStrings ?? 0,
 });
 
@@ -232,7 +233,6 @@ export async function startRun({
       done: 0,
       failedLocales: [],
       failedDocuments: 0,
-      usageLimitReached: false,
       skippedStrings: 0,
       startedBy: user ? { collection: user.collection, id: user.id } : null,
     } as unknown as Record<string, unknown>,
@@ -276,14 +276,16 @@ async function startNext(
     user,
   });
   const counts = tally(payload, run, started.documents);
-  // Past the usage limit GT refuses every batch, so the rest is not tried.
-  if (started.documents.some((d) => d.result.usageLimitReached))
+  // Once billing stops the work GT refuses every batch, so the rest is not tried.
+  const billingCode = started.documents.find((d) => d.result.billingCode)
+    ?.result.billingCode;
+  if (billingCode)
     return {
       pending: [],
       jobs: [...run.jobs, ...started.jobs],
       ...counts,
       done: counts.done + pending.length,
-      usageLimitReached: true,
+      billingCode,
     };
   return { pending, jobs: [...run.jobs, ...started.jobs], ...counts };
 }
@@ -338,14 +340,15 @@ async function finishReady(
 
 export type StepResult = { progress: RunProgress; progressed: boolean };
 
-// Moves the run forward by one step if no one else is stepping it.
+// Moves the run forward by one step if no one else is stepping it. The
+// client is resolved inside the step, so a misconfigured one fails the step.
 export async function stepRun({
   payload,
-  gt,
+  client,
   id,
 }: {
   payload: Payload;
-  gt: GtClient;
+  client: () => GtClient;
   id: string | number;
 }): Promise<StepResult> {
   const lock = `run:${id}`;
@@ -371,7 +374,7 @@ export async function stepRun({
     LEASE_MS / 4
   );
   try {
-    return await stepHeld(payload, gt, id, { key: lock, token });
+    return await stepHeld(payload, client, id, { key: lock, token });
   } finally {
     clearInterval(renewal);
     await releaseLock(payload, lock, token);
@@ -381,7 +384,7 @@ export async function stepRun({
 // One step of a run this stepper holds the lock of.
 async function stepHeld(
   payload: Payload,
-  gt: GtClient,
+  client: () => GtClient,
   id: string | number,
   lock: { key: string; token: string }
 ): Promise<StepResult> {
@@ -391,6 +394,7 @@ async function stepHeld(
   let changes: Partial<Run> | null = null;
   let failed = false;
   try {
+    const gt = client();
     const user = await userOf(payload, run);
     changes = run.pending.length
       ? await startNext(payload, gt, run, user)
@@ -476,11 +480,14 @@ export function runTask(
     inputSchema: [{ name: 'runId', type: 'text', required: true }],
     handler: async ({ input, req }) => {
       const { payload } = req;
-      const gt = client(payload);
       const until = Date.now() + JOB_BUDGET_MS;
       let progress: RunProgress;
       do {
-        const step = await stepRun({ payload, gt, id: input.runId });
+        const step = await stepRun({
+          payload,
+          client: () => client(payload),
+          id: input.runId,
+        });
         progress = step.progress;
         if (progress.status === 'done') return { output: {} };
         if (!step.progressed) await wait(JOB_WAIT_MS);

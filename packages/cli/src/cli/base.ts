@@ -21,7 +21,7 @@ import {
   promptGlobPatterns,
 } from '../console/logging.js';
 import { logger } from '../console/logger.js';
-import { lottieTranslateError } from '../console/index.js';
+import { describeApiError, lottieTranslateError } from '../console/index.js';
 import { parseGlobPatterns } from '../console/promptParsing.js';
 import path from 'node:path';
 import {
@@ -97,7 +97,7 @@ import {
   getNeedsPostprocessing,
   clearDownloaded,
 } from '../state/recentDownloads.js';
-import { clearWarnings } from '../state/translateWarnings.js';
+import { clearWarnings, getWarnings } from '../state/translateWarnings.js';
 import { displayTranslateSummary } from '../console/displayTranslateSummary.js';
 import updateConfig from '../fs/config/updateConfig.js';
 import {
@@ -141,7 +141,7 @@ import {
   type SetupResult,
 } from '../setup/buildTools/index.js';
 import { manifestDirectlyDeclaresGTVue } from '@generaltranslation/vue-extractor/integration';
-import { api } from '../utils/api.js';
+import { createClients } from '../utils/api.js';
 import { handleApiCommand, type ApiCommandOptions } from './commands/api.js';
 
 const ID_COMPATIBILITY_WARNING_COMMANDS = new Set([
@@ -161,9 +161,21 @@ function createProjectCommandError(
     source: 'gt',
     severity: 'Error',
     whatHappened,
+    fix: describeApiError(error),
     details: formatDiagnosticErrorDetails(error),
   });
 }
+
+// Account-scoped requests reject project keys before sending anything.
+const projectKeyProjectCreationError = createDiagnosticMessage({
+  source: 'gt',
+  severity: 'Error',
+  whatHappened:
+    'The API key is a project API key, which cannot create projects',
+  fix: 'Use an Organization API key with org:projects:create',
+  wayOut:
+    'remove GT_API_KEY from your shell and your .env files and sign in with an account that has that permission',
+});
 
 const emptyApiKeyNameError = createDiagnosticMessage({
   whatHappened: 'The key name cannot be empty',
@@ -400,8 +412,18 @@ export class BaseCLI {
         });
         if (!hasValidCredentials(settings) || !hasValidServiceLocales(settings))
           return exitSync(1);
-        await saveLocalEdits(settings);
-        logger.endCommand('Saved local edits');
+        const succeeded = await saveLocalEdits(settings);
+        const failed =
+          !succeeded ||
+          getWarnings().some((w) => w.category.startsWith('failed_'));
+        displayTranslateSummary();
+        clearWarnings();
+        logger.endCommand(
+          failed
+            ? 'Some local edits could not be saved or published. See the warnings above.'
+            : 'Saved local edits'
+        );
+        if (!succeeded) exitSync(1);
       });
   }
 
@@ -456,7 +478,9 @@ export class BaseCLI {
         const settings = await generateSettings(options);
         // Project creation happens before a project ID exists.
         if (!hasValidServiceLocales(settings)) return exitSync(1);
-        const { project } = await api.createProject(options.orgId, {
+        const { account } = createClients(settings);
+        if (!account) return logErrorAndExit(projectKeyProjectCreationError);
+        const { project } = await account.org(options.orgId).createProject({
           name: options.name,
           defaultLocale: options.defaultLocale,
           cdnEnabled: options.cdnEnabled,
@@ -478,8 +502,10 @@ export class BaseCLI {
       try {
         const settings = await generateSettings(options);
         if (!hasValidCredentials(settings)) return exitSync(1);
-        const [status] = await api.checkJobStatus([jobId]);
-        logger.info(status?.status ?? 'unknown');
+        const {
+          results: [job],
+        } = await createClients(settings).project!.queryJobs([jobId]);
+        logger.info(job.status);
       } catch (error) {
         return logErrorAndExit(
           createProjectCommandError(
@@ -520,7 +546,9 @@ export class BaseCLI {
         try {
           const settings = await generateSettings(options);
           if (!hasValidCredentials(settings)) return exitSync(1);
-          const { apiKey } = await api.createProjectApiKey(settings.projectId, {
+          const { apiKey } = await createClients(
+            settings
+          ).project!.createApiKey({
             name: options.name,
             permissions: options.permission,
           });
@@ -692,6 +720,8 @@ export class BaseCLI {
       });
     }
     await handleStage(initOptions, settings, this.library, true);
+    displayTranslateSummary();
+    clearWarnings();
   }
 
   /**
@@ -1032,6 +1062,8 @@ export class BaseCLI {
 
     // Process all file types at once with a single call
     await upload(settings);
+    displayTranslateSummary();
+    clearWarnings();
   }
 
   /** Describes installed runtimes without changing historical package lookup. */

@@ -1,15 +1,20 @@
 import path from 'node:path';
 import chalk from 'chalk';
-import { ProjectApiKeyPermission } from 'generaltranslation/api';
+import type { GT } from 'generaltranslation';
+import {
+  ApiError,
+  ErrorCode,
+  ProjectApiKeyPermission,
+} from 'generaltranslation/api';
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/diagnostics';
-import { ApiError } from 'generaltranslation/errors';
+import { describeApiError } from '../console/index.js';
 import { logger } from '../console/logger.js';
 import { promptConfirm, promptSelect, promptText } from '../console/logging.js';
 import type { Settings, SupportedFrameworks } from '../types/index.js';
-import { api } from '../utils/api.js';
+import { createClients } from '../utils/api.js';
 import { setCredentials } from '../utils/credentials.js';
 import { envFiles } from '../utils/loadEnv.js';
 import { createUserAuthError } from '../auth/errors.js';
@@ -42,7 +47,7 @@ export async function signInForSetup(
   logger.message('You are now signed in.');
 }
 
-type ProjectChoice = Awaited<ReturnType<typeof api.listProjects>>[number];
+type ProjectChoice = Awaited<ReturnType<GT['listProjects']>>[number];
 
 /** An existing project, or the inputs for creating one. */
 export type DevelopmentProject =
@@ -114,13 +119,42 @@ function keyCreationDeniedError(
   });
 }
 
-/** Replaces a 403 with setup guidance; other failures keep their own error. */
-function explainForbidden(diagnostic: (error: unknown) => string) {
+function projectLimitReachedError(error: ApiError): string {
+  return createDiagnosticMessage({
+    source: 'gt',
+    severity: 'Error',
+    whatHappened:
+      'The project was not created because the organization reached its project limit',
+    fix: describeApiError(error),
+    wayOut: 'rerun with --project-id <id> to use an existing project',
+    details: formatDiagnosticErrorDetails(error),
+  });
+}
+
+/** Replaces a permission denial or the project limit with setup guidance; other failures keep their own error. */
+function explainCreationFailure(diagnostic: (error: unknown) => string) {
   return (error: unknown): never => {
-    if (!(error instanceof ApiError) || error.code !== 403) throw error;
-    throw new OnboardingError(diagnostic(error));
+    if (!(error instanceof ApiError)) throw error;
+    if (
+      error.code === ErrorCode.PERMISSION_MISSING ||
+      error.code === ErrorCode.PERMISSION_NOT_GRANTABLE
+    )
+      throw new OnboardingError(diagnostic(error));
+    if (error.code === ErrorCode.PROJECT_LIMIT_REACHED)
+      throw new OnboardingError(projectLimitReachedError(error));
+    throw error;
   };
 }
+
+// Account-scoped requests reject project keys before sending anything.
+const projectKeyDiscoveryError = createDiagnosticMessage({
+  source: 'gt',
+  severity: 'Error',
+  whatHappened:
+    'The API key is a project API key, which cannot list or create projects',
+  fix: "Pass --project-id <id> or set GT_PROJECT_ID to the key's project",
+  wayOut: `remove GT_API_KEY from your shell and from ${envFiles.join(', ')} and sign in, or use an Organization API key, to list and create projects`,
+});
 
 const noProjectChosenError = createDiagnosticMessage({
   source: 'gt',
@@ -132,13 +166,14 @@ const noProjectChosenError = createDiagnosticMessage({
 
 async function resolveNewProject(
   session: OnboardingSession,
+  account: GT,
   settings: Settings,
   options: DevelopmentProjectOptions,
   cwd: string
 ): Promise<DevelopmentProject | undefined> {
   // Discovery lists accessible organizations, not creation permissions.
   // The API enforces creation permission when provisioning the project.
-  const orgs = await api.listOrgs();
+  const orgs = await account.listOrgs();
   if (orgs.length === 0) {
     throw new OnboardingError(noAccessibleOrgError(settings.dashboardUrl));
   }
@@ -206,10 +241,12 @@ export async function resolveDevelopmentProject(
   cwd: string = process.cwd()
 ): Promise<DevelopmentProject | undefined> {
   if (settings.projectId) return { id: settings.projectId };
+  const { account } = createClients(settings);
+  if (!account) throw new OnboardingError(projectKeyDiscoveryError);
   if (options.createProject) {
-    return resolveNewProject(session, settings, options, cwd);
+    return resolveNewProject(session, account, settings, options, cwd);
   }
-  const projects = await api.listProjects();
+  const projects = await account.listProjects();
   if (projects.length === 0) {
     // Creating a project is its own choice, separate from creating a key.
     const create = await session.answer('--project-id or --create-project', {
@@ -221,7 +258,7 @@ export async function resolveDevelopmentProject(
     });
     if (create === false) throw new OnboardingError(noProjectChosenError);
     return create
-      ? resolveNewProject(session, settings, options, cwd)
+      ? resolveNewProject(session, account, settings, options, cwd)
       : undefined;
   }
   const choice = await session.answer<ProjectChoice | null>(
@@ -244,7 +281,7 @@ export async function resolveDevelopmentProject(
   if (choice === undefined) return undefined;
   return choice
     ? { id: choice.id, name: choice.name }
-    : resolveNewProject(session, settings, options, cwd);
+    : resolveNewProject(session, account, settings, options, cwd);
 }
 
 /**
@@ -268,10 +305,13 @@ export async function provisionDevelopmentCredentials(
     projectName = project.name;
   } else {
     const { orgId, name } = project.create;
-    const { project: created } = await api
-      .createProject(orgId, { name, defaultLocale: settings.defaultLocale })
+    const { account } = createClients(settings);
+    if (!account) throw new OnboardingError(projectKeyDiscoveryError);
+    const { project: created } = await account
+      .org(orgId)
+      .createProject({ name, defaultLocale: settings.defaultLocale })
       .catch(
-        explainForbidden((error) =>
+        explainCreationFailure((error) =>
           projectCreationDeniedError(orgId, usingApiKey, error)
         )
       );
@@ -280,13 +320,14 @@ export async function provisionDevelopmentCredentials(
     projectId = created.id;
     projectName = created.name;
   }
-  const { apiKey } = await api
-    .createProjectApiKey(projectId, {
+  // The project is set, so the project-scoped client exists.
+  const { apiKey } = await createClients({ ...settings, projectId })
+    .project!.createApiKey({
       name: DEVELOPMENT_KEY_NAME,
       permissions: [ProjectApiKeyPermission['PROJECT:TRANSLATIONS:GENERATE']],
     })
     .catch(
-      explainForbidden((error) =>
+      explainCreationFailure((error) =>
         keyCreationDeniedError(projectId, usingApiKey, error)
       )
     );

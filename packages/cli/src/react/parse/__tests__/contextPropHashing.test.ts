@@ -1,13 +1,7 @@
 /**
- * <T> props written as plain string literals ($context="...", $id="...")
- * must be name-mapped into metadata so hashing and registration see them.
- *
- * Previously only the expression-container path ($context={"..."}) applied
- * mapAttributeName; the string-literal path stored metadata.$context, which
- * calculateHashes (reads metadata.context) never saw. Every
- * <T $context="..."> was therefore registered under a context-LESS hash,
- * while the runtime and the compiler both compute context-FUL hashes — so
- * translation lookups for context-carrying <T> components always missed.
+ * <T> props written as plain string literals (context="...", id="...") must
+ * reach metadata so hashing and registration see them, giving the same
+ * context-ful hash the runtime and the compiler compute.
  */
 import * as path from 'path';
 import { describe, test, expect, vi, beforeEach } from 'vitest';
@@ -49,7 +43,7 @@ beforeEach(() => {
 });
 
 describe('T component prop hashing (string-literal props)', () => {
-  test('$context="..." reaches metadata.context and the hash', async () => {
+  test('context="..." reaches metadata.context and the hash', async () => {
     const result = await parseFixture('page.tsx');
     expect(result.errors).toHaveLength(0);
 
@@ -77,24 +71,26 @@ describe('T component prop hashing (string-literal props)', () => {
     }
   });
 
-  test('unprefixed context="..." (the supported form) keeps working', async () => {
+  test('$context="..." is not read as the context', async () => {
     const result = await parseFixture('page.tsx');
-    const unprefixed = result.updates.find((u) =>
+    const prefixed = result.updates.find((u) =>
       JSON.stringify(u.source).includes('"Cover"')
     );
-    expect(unprefixed?.metadata.context).toEqual('an unprefixed context prop');
+    expect(prefixed?.metadata.context).toBeUndefined();
+    expect(prefixed?.metadata.hash).toEqual(
+      hashSource({ source: prefixed!.source, dataFormat: prefixed!.dataFormat })
+    );
   });
 
-  test('$id="..." maps to metadata.id', async () => {
+  test('id="..." reaches metadata.id', async () => {
     const result = await parseFixture('page.tsx');
     const withId = result.updates.find((u) =>
       JSON.stringify(u.source).includes('"Spine"')
     );
     expect(withId?.metadata.id).toEqual('book-id');
-    expect(withId?.metadata).not.toHaveProperty('$id');
   });
 
-  test('$maxChars="10" (string-typed) is rejected like maxChars={"10"}', async () => {
+  test('maxChars="10" (string-typed) is rejected like maxChars={"10"}', async () => {
     const result = await parseFixture('max-chars-string.tsx');
     expect(
       result.errors.some((e) => e.toLowerCase().includes('maxchars'))

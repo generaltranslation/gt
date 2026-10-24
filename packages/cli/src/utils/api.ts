@@ -1,33 +1,51 @@
-import type { CustomMapping } from '@generaltranslation/format/types';
-import type { ApiClientConfig } from 'generaltranslation/api';
-import { createGtApiAdapter } from 'generaltranslation/internal';
+import { GT, type ProjectHandle } from 'generaltranslation';
+import {
+  resolveCanonicalLocale as resolveCanonicalCode,
+  standardizeLocale,
+} from '@generaltranslation/format';
+import { snapshotLocaleConfig } from '@generaltranslation/format/internal';
+import type { UserTokenProvider } from 'generaltranslation/api';
+import { credentialScope } from 'generaltranslation/internal';
+import type { CustomMapping } from 'generaltranslation/types';
+import type { Settings } from '../types/index.js';
 
-const {
-  configure: configureSharedApi,
-  getClient: _getClient,
-  loadJobStatuses,
-  loadProjectInfo,
-  ...sharedApi
-} = createGtApiAdapter();
+// Format modules resolve locales without settings, so the mapping is module state.
+let sharedCustomMapping: CustomMapping | undefined;
 
-export function configureApiClient(
-  config: ApiClientConfig & { customMapping?: CustomMapping }
-): void {
-  configureSharedApi(config);
+/** Sets the custom mapping that `resolveCanonicalLocale` applies. */
+export function configureCustomMapping(customMapping?: CustomMapping): void {
+  sharedCustomMapping = snapshotLocaleConfig({ customMapping }).customMapping;
 }
 
-// CLI keeps the raw service views: unaliased project locales and nullable
-// job errors, plus per-request cancellation for polling.
-export const api = {
-  ...sharedApi,
+/** Standardized so configured spellings such as en-us match catalog keys. */
+export function resolveCanonicalLocale(locale: string): string {
+  return standardizeLocale(resolveCanonicalCode(locale, sharedCustomMapping));
+}
 
-  async checkJobStatus(jobIds: string[], signal?: AbortSignal) {
-    return loadJobStatuses(jobIds, { signal });
-  },
-
-  async getProjectInfo(timeoutMs: number) {
-    return loadProjectInfo(undefined, timeoutMs);
-  },
-};
-
-export type ApiClient = typeof api;
+/**
+ * The project-scoped client when a project ID resolves, and the
+ * account-scoped client unless the API key is a project key.
+ */
+export function createClients(
+  settings: Pick<
+    Settings,
+    'apiKey' | 'userTokenProvider' | 'projectId' | 'baseUrl' | 'customMapping'
+  >
+): { project?: ProjectHandle; account?: GT } {
+  const params = {
+    ...(settings.apiKey
+      ? { apiKey: settings.apiKey }
+      : {
+          // generateSettings always sets the provider.
+          userTokenProvider: settings.userTokenProvider as UserTokenProvider,
+        }),
+    baseUrl: settings.baseUrl,
+    localeConfig: { customMapping: settings.customMapping },
+  };
+  return {
+    project: settings.projectId
+      ? new GT({ ...params, projectId: settings.projectId })
+      : undefined,
+    account: credentialScope(params) === 'account' ? new GT(params) : undefined,
+  };
+}

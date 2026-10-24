@@ -1,9 +1,14 @@
 import type { GTFile, Secrets } from '../types';
-import { api, gt, overrideConfig } from '../adapter/core';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import type { ProjectHandle } from 'generaltranslation';
+import { gt, projectFor } from '../adapter/core';
 import type { SerializedDocument } from '../serialization/types';
 import type { ExistingTranslation } from './collectExistingTranslations';
 import { resolveFileName } from '../utils/fileNames';
+import {
+  failedResultsDiagnostic,
+  uploadIdError,
+  withRejectedResults,
+} from '../utils/batchResults';
 
 /**
  * Upload translations that already exist in Sanity for previously serialized
@@ -21,7 +26,7 @@ export async function uploadTranslations(
     translations: ExistingTranslation[];
   }[],
   secrets: Secrets | null
-): Promise<Awaited<ReturnType<typeof api.uploadTranslations>> | null> {
+): Promise<Awaited<ReturnType<ProjectHandle['uploadTranslations']>> | null> {
   const withTranslations = documents.filter(
     (document) => document.translations.length > 0
   );
@@ -29,10 +34,13 @@ export async function uploadTranslations(
     return null;
   }
 
-  overrideConfig(secrets);
-  const sourceLocale = gt.sourceLocale || libraryDefaultLocale;
-  return await api.uploadTranslations(
-    withTranslations.map(({ info, serializedDocument, translations }) => ({
+  const project = projectFor(secrets);
+  const sourceLocale = gt.defaultLocale;
+  // A document GT cannot store would fail the whole request, so it fails alone.
+  const rejected = withTranslations.filter(({ info }) => uploadIdError(info));
+  const accepted = withTranslations.filter(({ info }) => !uploadIdError(info));
+  const sent = await project.uploadTranslations(
+    accepted.map(({ info, serializedDocument, translations }) => ({
       source: {
         content: serializedDocument.content,
         fileName: resolveFileName(info),
@@ -49,7 +57,31 @@ export async function uploadTranslations(
         locale,
         versionId: info.versionId || undefined,
       })),
-    })),
-    { sourceLocale }
+    }))
   );
+  const uploadResult = withRejectedResults(
+    sent,
+    rejected.flatMap(({ info, translations }) =>
+      translations.map(({ locale }) => ({
+        branchId: '',
+        fileId: info.documentId,
+        versionId: info.versionId ?? '',
+        fileName: resolveFileName(info),
+        fileFormat: 'HTML' as const,
+        locale,
+        status: 'failed' as const,
+        error: uploadIdError(info),
+      }))
+    )
+  );
+  if (uploadResult.summary.failed > 0) {
+    console.warn(
+      failedResultsDiagnostic(
+        'Some existing translations could not be uploaded to General Translation',
+        uploadResult,
+        'Warning'
+      )
+    );
+  }
+  return uploadResult;
 }

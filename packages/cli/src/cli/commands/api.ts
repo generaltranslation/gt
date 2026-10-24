@@ -225,7 +225,7 @@ function specFragment(
 }
 
 // Accepts an operationId, a spec path, or a concrete path such as
-// /v2/project/info/abc so agents can look up the request they are about to make.
+// /v2/projects/abc so agents can look up the request they are about to make.
 function findOperations(
   endpoint: string
 ): Record<string, Record<string, SpecOperation>> {
@@ -381,13 +381,21 @@ export async function handleApiCommand(
     userTokenProvider: createUserTokenProvider({ baseUrl }),
     baseUrl,
     fetch: dependencies.fetch,
-    projectId: resolveApiProjectId(config, options.projectId, dependencies),
     retryPolicy: 'none',
   });
   const normalizedEndpoint = endpoint.startsWith('/')
     ? endpoint
     : `/${endpoint}`;
   const headers = parseHeaders(options.header ?? [], dependencies);
+  // Routes without a project in the path read it from this header.
+  const projectId = resolveApiProjectId(
+    config,
+    options.projectId,
+    dependencies
+  );
+  if (projectId && !headers.has('gt-project-id')) {
+    headers.set('gt-project-id', projectId);
+  }
   const body = options.input
     ? readInput(options.input, dependencies)
     : undefined;

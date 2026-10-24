@@ -10,7 +10,7 @@ import {
 } from '@clack/prompts';
 import type { Option } from '@clack/prompts';
 import chalk from 'chalk';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { getCLIVersion } from '../utils/packageJson.js';
 import { logger } from './logger.js';
 import { TEMPLATE_FILE_NAME } from '../utils/constants.js';
@@ -124,10 +124,6 @@ export function displayCreatedConfigFile(configFilepath: string) {
 
 export function displayUpdatedConfigFile(configFilepath: string) {
   logger.success(`Updated config file ${chalk.cyan(configFilepath)}`);
-}
-
-export function displayUpdatedVersionsFile(versionFilepath: string) {
-  logger.success(`Updated versions file ${chalk.cyan(versionFilepath)}`);
 }
 
 // Input prompts
@@ -392,16 +388,6 @@ export function warnTernary(file: string) {
   logger.warn(
     `Found ternary expression in ${chalk.cyan(file)}. ` +
       chalk.white('A Branch component may be more appropriate here.')
-  );
-}
-
-export function warnDeprecatedField(
-  deprecatedField: string,
-  replacement: string
-) {
-  logger.warn(
-    `${chalk.green(deprecatedField)} is deprecated. ` +
-      chalk.white(`Use ${chalk.green(replacement)} instead.`)
   );
 }
 

@@ -2,8 +2,7 @@
 // start (read, upload, enqueue), check (job statuses) and finish (download
 // and save into Payload). translateDocument and translateSite run all three.
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
-import { resolveCanonicalLocale } from 'generaltranslation';
-import { ApiError } from 'generaltranslation/errors';
+import { ApiError, ErrorCode } from 'generaltranslation/api';
 import type { Payload } from 'payload';
 import type { FileReference } from 'generaltranslation/types';
 import {
@@ -33,6 +32,7 @@ import {
   type ResolvedTarget,
 } from './documents';
 import type {
+  BillingCode,
   Data,
   GtClient,
   LocaleResult,
@@ -124,6 +124,20 @@ const JOB_TIMEOUT_SECONDS = 60 * 60;
 
 const errorMessage = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
+
+const billingCodes: BillingCode[] = [
+  ErrorCode.PAYMENT_REQUIRED,
+  ErrorCode.USAGE_LIMIT_REACHED,
+  ErrorCode.SPEND_LIMIT_REACHED,
+  ErrorCode.CREDITS_INSUFFICIENT,
+];
+
+// GT answers 402 only when billing stops the work; an unknown code reads as payment_required.
+const billingCodeOf = (error: unknown): BillingCode | undefined =>
+  error instanceof ApiError && error.status === 402
+    ? (billingCodes.find((code) => code === error.code) ??
+      ErrorCode.PAYMENT_REQUIRED)
+    : undefined;
 
 async function inPool<T>(
   items: T[],
@@ -221,9 +235,22 @@ const fileReference = (
   fileFormat: FILE_FORMAT,
 });
 
+// GT rejects a whole upload request that holds a longer file ID.
+const MAX_FILE_ID_LENGTH = 64;
+
 async function uploadSources(batch: Batch, docs: Prepared[]) {
-  const uploaded = await batch.gt.uploadSourceFiles(
-    docs.map((doc) => ({
+  const refs = new Map<string, FileReference>();
+  const failed = new Map<string, string>();
+  for (const doc of docs)
+    if (doc.fileId.length > MAX_FILE_ID_LENGTH)
+      failed.set(
+        doc.fileId,
+        `The file ID is longer than ${MAX_FILE_ID_LENGTH} characters.`
+      );
+  const sendable = docs.filter((doc) => !failed.has(doc.fileId));
+  if (!sendable.length) return { refs, failed };
+  const { results } = await batch.gt.uploadSourceFiles(
+    sendable.map((doc) => ({
       source: {
         content: sourceFile(doc.units),
         fileName: doc.fileName,
@@ -234,7 +261,17 @@ async function uploadSources(batch: Batch, docs: Prepared[]) {
     })),
     { sourceLocale: batch.sourceLocale }
   );
-  return new Map(uploaded.uploadedFiles.map((file) => [file.fileId, file]));
+  const uploads = new Map(results.map((result) => [result.fileId, result]));
+  for (const doc of sendable) {
+    const upload = uploads.get(doc.fileId);
+    if (upload?.status === 'succeeded') refs.set(doc.fileId, upload);
+    else
+      failed.set(
+        doc.fileId,
+        upload?.error ?? 'GT could not save the document.'
+      );
+  }
+  return { refs, failed };
 }
 
 // Each locale's current text in Payload for a document, as files.
@@ -261,9 +298,8 @@ async function targetFiles(batch: Batch, doc: Prepared) {
   return files;
 }
 
-// Per document and locale, whether anything was sent and how much text could
-// not be.
-type SentFiles = Map<string, Map<string, { sent: boolean; unsaved: number }>>;
+type SentFile = { sent: boolean; unsaved: number; error?: string };
+type SentFiles = Map<string, Map<string, SentFile>>;
 
 type TranslationUpload = Parameters<GtClient['uploadTranslations']>[0][number];
 
@@ -275,22 +311,23 @@ async function sendTranslations(
 ) {
   const sent: SentFiles = new Map();
   const uploads: TranslationUpload[] = [];
+  // Each uploaded translation's entry in sent, in the order GT reports them.
+  const uploaded: SentFile[] = [];
   for (const { doc, version, sourceContent } of docs) {
     const files = await targetFiles(batch, doc);
-    sent.set(
-      doc.fileId,
-      new Map(
-        [...files].map(([locale, file]) => [
-          locale,
-          { sent: file.content !== null, unsaved: file.unsaved },
-        ])
-      )
-    );
-    const translations = [...files].flatMap(([locale, file]) =>
-      file.content === null
-        ? []
-        : [{ ...version, locale, content: file.content }]
-    );
+    const outcomes = new Map<string, SentFile>();
+    sent.set(doc.fileId, outcomes);
+    const translations: TranslationUpload['translations'] = [];
+    for (const [locale, file] of files) {
+      const outcome: SentFile = {
+        sent: file.content !== null,
+        unsaved: file.unsaved,
+      };
+      outcomes.set(locale, outcome);
+      if (file.content === null) continue;
+      translations.push({ ...version, locale, content: file.content });
+      uploaded.push(outcome);
+    }
     if (translations.length)
       uploads.push({
         source: {
@@ -301,20 +338,27 @@ async function sendTranslations(
         translations,
       });
   }
-  if (uploads.length)
-    await batch.gt.uploadTranslations(uploads, {
-      sourceLocale: batch.sourceLocale,
-    });
+  if (!uploads.length) return sent;
+  const { results } = await batch.gt.uploadTranslations(uploads);
+  results.forEach((result, index) => {
+    if (result.status === 'failed')
+      uploaded[index].error =
+        result.error ?? 'GT could not save the translation.';
+  });
   return sent;
 }
 
 // The latest version GT holds of each document, with its source content.
 async function latestVersions(batch: Batch, docs: Prepared[]) {
-  const latest = await batch.gt.downloadFileBatch(
+  const { results } = await batch.gt.queryFilesContent(
     docs.map((doc) => ({ fileId: doc.fileId }))
   );
   return new Map(
-    latest.files.filter((f) => !f.locale).map((file) => [file.fileId, file])
+    results.flatMap(({ status, fileId, versionId, branchId, data }) =>
+      status === 'ready' && versionId && branchId && typeof data === 'string'
+        ? [[fileId, { versionId, branchId, data }] as const]
+        : []
+    )
   );
 }
 
@@ -332,25 +376,38 @@ async function saveToGt(
   const unknown = onlyKnown
     ? []
     : docs.filter((doc) => !latest.has(doc.fileId));
-  const sending = docs.filter(
-    (doc) => latest.has(doc.fileId) || unknown.includes(doc)
-  );
-  const uploaded = unknown.length
-    ? await uploadSources(batch, unknown)
-    : new Map<string, FileReference>();
-  return sendTranslations(
+  const { refs, failed } = await uploadSources(batch, unknown);
+  const sent = await sendTranslations(
     batch,
-    sending.map((doc) => {
+    docs.flatMap((doc) => {
       const held = latest.get(doc.fileId);
-      return held
-        ? { doc, version: fileReference(doc, held), sourceContent: held.data }
-        : {
-            doc,
-            version: fileReference(doc, uploaded.get(doc.fileId)!),
-            sourceContent: sourceFile(doc.units),
-          };
+      const ref = refs.get(doc.fileId);
+      if (held)
+        return [
+          { doc, version: fileReference(doc, held), sourceContent: held.data },
+        ];
+      return ref
+        ? [
+            {
+              doc,
+              version: fileReference(doc, ref),
+              sourceContent: sourceFile(doc.units),
+            },
+          ]
+        : [];
     })
   );
+  for (const [fileId, error] of failed)
+    sent.set(
+      fileId,
+      new Map(
+        batch.locales.map((locale) => [
+          locale,
+          { sent: false, unsaved: 0, error },
+        ])
+      )
+    );
+  return sent;
 }
 
 // Strings not written: broken markup, translations whose place is gone (named
@@ -497,15 +554,6 @@ const failedLocales = (locales: string[], error: string): TranslateResult => ({
   ),
 });
 
-// The requested Payload locale GT reports under its own code, which differs
-// for a locale mapped with customMapping.
-const payloadLocale = (batch: Batch, code: string) =>
-  batch.locales.find(
-    (locale) =>
-      locale === code ||
-      resolveCanonicalLocale(locale, batch.gt.customMapping) === code
-  ) ?? code;
-
 // Reads and uploads the documents and puts them in GT's queue.
 export async function startTranslation({
   payload,
@@ -547,31 +595,52 @@ export async function startTranslation({
   try {
     // Only documents GT has: an upload for a new one would count as its
     // complete translation and leave missing strings untranslated.
-    if (saveLocalEdits) await saveToGt(batch, prepared, { onlyKnown: true });
-    const refs = await uploadSources(batch, prepared);
-    const enqueued = await gt.enqueueFiles(
+    const edits = saveLocalEdits
+      ? await saveToGt(batch, prepared, { onlyKnown: true })
+      : (new Map() as SentFiles);
+    // A document whose edits GT did not save is not translated, so the
+    // translation cannot replace them. Nor is one GT did not upload.
+    const failed = new Map<string, string>();
+    for (const [fileId, files] of edits) {
+      const error = [...files.values()].find((file) => file.error)?.error;
+      if (error) failed.set(fileId, error);
+    }
+    const { refs, failed: notUploaded } = await uploadSources(
+      batch,
+      prepared.filter((doc) => !failed.has(doc.fileId))
+    );
+    for (const [fileId, error] of notUploaded) failed.set(fileId, error);
+    const { jobs } = await gt.translateFiles(
       [...refs.values()].map((ref) => ({
         fileId: ref.fileId,
         versionId: ref.versionId,
         branchId: ref.branchId,
         fileName: ref.fileName,
-        fileFormat: FILE_FORMAT,
       })),
       { sourceLocale: batch.sourceLocale, targetLocales: batch.locales }
     );
-    const queued = Object.entries(enqueued.jobData).map(([jobId, job]) => ({
-      jobId,
-      target: prepared.find((doc) => doc.fileId === job.fileId)!.target,
-      fileId: job.fileId,
-      versionId: job.versionId,
-      branchId: job.branchId,
-      locale: payloadLocale(batch, job.targetLocale),
-    }));
+    const queued = jobs.flatMap(({ id, subject }) => {
+      if (subject.type !== 'file_translation') return [];
+      const doc = prepared.find((d) => d.fileId === subject.fileId);
+      return doc
+        ? [
+            {
+              jobId: id,
+              target: doc.target,
+              fileId: subject.fileId,
+              versionId: subject.versionId,
+              branchId: subject.branchId,
+              locale: subject.locale,
+            },
+          ]
+        : [];
+    });
     const isQueued = new Set(
       queued.map((job) => `${job.fileId}|${job.locale}`)
     );
     const ready = prepared.flatMap((doc) => {
-      const ref = refs.get(doc.fileId)!;
+      const ref = refs.get(doc.fileId);
+      if (!ref) return [];
       return batch.locales
         .filter((locale) => !isQueued.has(`${doc.fileId}|${locale}`))
         .map((locale) => ({
@@ -582,11 +651,26 @@ export async function startTranslation({
           locale,
         }));
     });
-    return { jobs: [...queued, ...ready, ...clearing], documents: done };
+    return {
+      jobs: [...queued, ...ready, ...clearing],
+      documents: [
+        ...done,
+        ...prepared.flatMap((doc) => {
+          const error = failed.get(doc.fileId);
+          return error
+            ? [
+                {
+                  target: doc.target,
+                  result: failedLocales(batch.locales, error),
+                },
+              ]
+            : [];
+        }),
+      ],
+    };
   } catch (error) {
     const message = errorMessage(error);
-    // GT answers 402 only when billing stops the work.
-    const usageLimitReached = error instanceof ApiError && error.code === 402;
+    const billingCode = billingCodeOf(error);
     return {
       jobs: clearing,
       documents: [
@@ -595,7 +679,7 @@ export async function startTranslation({
           target: doc.target,
           result: {
             ...failedLocales(batch.locales, message),
-            ...(usageLimitReached && { usageLimitReached: true as const }),
+            ...(billingCode && { billingCode }),
           },
         })),
       ],
@@ -611,11 +695,11 @@ export async function checkTranslation({
   gt: GtClient;
   jobIds: string[];
 }): Promise<JobStatus[]> {
-  const statuses = await gt.checkJobStatus(jobIds);
-  return statuses.map((s) => ({
-    jobId: s.jobId,
-    status: s.status,
-    error: s.error?.message,
+  const { results } = await gt.queryJobs(jobIds);
+  return results.map((job) => ({
+    jobId: job.id,
+    status: job.status,
+    error: job.error ?? undefined,
   }));
 }
 
@@ -652,7 +736,7 @@ export async function finishTranslation({
     (job) => !job.clearOnly && statusOf(job)?.status === 'completed'
   );
   const downloads = completed.length
-    ? await gt.downloadFileBatch(
+    ? await gt.queryFilesContent(
         completed.map((job) => ({
           fileId: job.fileId,
           versionId: job.versionId,
@@ -660,9 +744,13 @@ export async function finishTranslation({
           locale: job.locale,
         }))
       )
-    : { files: [] };
+    : { results: [] };
   const contents = new Map(
-    downloads.files.map((file) => [`${file.fileId}|${file.locale}`, file.data])
+    downloads.results.flatMap((file) =>
+      file.status === 'ready' && typeof file.data === 'string'
+        ? [[`${file.fileId}|${file.locale}`, file.data] as const]
+        : []
+    )
   );
   const byFile = new Map<string, TranslationJob[]>();
   for (const job of jobs)
@@ -737,9 +825,9 @@ async function translateTargets(input: TargetsInput) {
     ? await input.gt.awaitJobs(jobIds, { timeoutSeconds: JOB_TIMEOUT_SECONDS })
     : { jobs: [] };
   const statuses = done.jobs.map((j) => ({
-    jobId: j.jobId,
+    jobId: j.id,
     status: j.status,
-    error: j.error?.message,
+    error: (j.status !== 'unknown' && j.error) || undefined,
   }));
   return [
     ...started.documents,
@@ -778,7 +866,8 @@ export async function translateSite(
 }
 
 // What saving one locale of one document did.
-function saveOutcome(file: { sent: boolean; unsaved: number } | undefined) {
+function saveOutcome(file: SentFile | undefined) {
+  if (file?.error) return { status: 'failed' as const, error: file.error };
   const unsaved = file?.unsaved ? { unsaved: file.unsaved } : {};
   return file?.sent
     ? { status: 'saved' as const, ...unsaved }

@@ -6,23 +6,21 @@ import {
   customBlockDeserializers,
 } from '../BaseSerializationConfig';
 import { PortableTextBlock, SanityDocument, TypedObject } from 'sanity';
-import { SerializedDocument, TranslationLevel } from '../types';
+import { SerializedDocument } from '../types';
 import schema from './__fixtures__/schema';
 import clone from 'just-clone';
 
 export const getSerialized = <TDocument extends SanityDocument>(
-  document: TDocument,
-  level: TranslationLevel
+  document: TDocument
 ): SerializedDocument => {
   const serializer = BaseDocumentSerializer(schema);
-  return serializer.serializeDocument(document, level);
+  return serializer.serializeDocument(document);
 };
 
 export const getDeserialized = <TDocument extends SanityDocument>(
-  document: TDocument,
-  level: TranslationLevel
+  document: TDocument
 ): TDocument => {
-  const serialized = getSerialized(document, level);
+  const serialized = getSerialized(document);
   const deserializer = BaseDocumentDeserializer;
   return deserializer.deserializeDocument(serialized.content) as TDocument;
 };

@@ -15,10 +15,9 @@ export type SerializedDocument = {
 };
 
 // 'document'  – translate the whole document (creates per-locale documents).
-// 'field'     – legacy object-keyed model (e.g. `title: { en, es_ES }`).
 // 'internationalizedArray' – sanity-plugin-internationalized-array shape:
 //               `title: [{ _key, _type, language, value }]`, localized in place.
-export type TranslationLevel = 'document' | 'field' | 'internationalizedArray';
+export type TranslationLevel = 'document' | 'internationalizedArray';
 
 export interface Deserializer {
   deserializeDocument: <
@@ -36,12 +35,6 @@ export interface Deserializer {
 }
 
 export interface Merger {
-  fieldLevelMerge: (
-    translatedFields: Record<string, unknown>,
-    baseDoc: SanityDocument,
-    localeId: string,
-    baseLang: string
-  ) => Record<string, unknown>;
   documentLevelMerge: <
     TTranslatedFields extends Record<string, unknown>,
     TBaseDoc extends SanityDocument,

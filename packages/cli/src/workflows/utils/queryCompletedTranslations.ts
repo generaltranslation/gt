@@ -1,7 +1,10 @@
 import type { FileProperties } from '../../types/files.js';
-import type { ApiClient } from '../../utils/api.js';
+import type { ProjectHandle } from 'generaltranslation';
 
-export type QueryCompletedTranslationsClient = Pick<ApiClient, 'queryFileData'>;
+export type QueryCompletedTranslationsClient = Pick<
+  ProjectHandle,
+  'queryFiles'
+>;
 
 export function getFileTranslationKey(
   file: Pick<FileProperties, 'branchId' | 'fileId' | 'versionId' | 'locale'>
@@ -17,18 +20,15 @@ export async function queryCompletedTranslationKeys(
     return new Set();
   }
 
-  const fileData = await api.queryFileData({
-    translatedFiles: fileQueryData.map((file) => ({
-      fileId: file.fileId,
-      versionId: file.versionId,
-      branchId: file.branchId,
-      locale: file.locale,
-    })),
-  });
+  const { results } = await api.queryFiles(fileQueryData);
 
+  // Results follow the selector order
   return new Set(
-    (fileData.translatedFiles || [])
-      .filter((file) => !!file.completedAt)
+    fileQueryData
+      .filter(
+        (_, index) =>
+          results[index]?.status === 'found' && !!results[index].completedAt
+      )
       .map(getFileTranslationKey)
   );
 }

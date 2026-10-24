@@ -3,7 +3,6 @@ import {
   exitSync,
   logErrorAndExit,
   warnApiKeyInConfig,
-  warnDeprecatedField,
 } from '../console/logging.js';
 import { loadConfig, withJsonExtension } from '../fs/config/loadConfig.js';
 import { FilesOptions, Settings } from '../types/index.js';
@@ -22,7 +21,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import chalk from 'chalk';
 import { resolveConfig } from './resolveConfig.js';
-import { configureApiClient } from '../utils/api.js';
+import { configureCustomMapping } from '../utils/api.js';
 import { resolveApiBaseUrl } from '../utils/apiBaseUrl.js';
 import { generatePreset } from './optionPresets.js';
 import { GT_PARSING_FLAGS_DEFAULT } from './defaults.js';
@@ -177,15 +176,6 @@ export async function generateSettings(
     }
   }
 
-  // Warn on deprecated includeSourceCodeContext
-  const configuredFiles = gtConfig.files as FilesOptions | undefined;
-  if (configuredFiles?.gt?.includeSourceCodeContext != null) {
-    warnDeprecatedField(
-      'files.gt.includeSourceCodeContext',
-      'files.gt.parsingFlags.includeSourceCodeContext'
-    );
-  }
-
   // merge options
   const mergedOptions: Settings = { ...gtConfig, ...flags } as Settings;
 
@@ -220,7 +210,7 @@ export async function generateSettings(
 
   mergedOptions.baseUrl = resolveApiBaseUrl(mergedOptions.baseUrl);
 
-  // The API client prefers apiKey when both are set; the provider is lazy.
+  // API clients use apiKey when set, otherwise this lazy provider.
   mergedOptions.apiKey = mergedOptions.apiKey || process.env.GT_API_KEY;
   mergedOptions.userTokenProvider = createUserTokenProvider({
     baseUrl: mergedOptions.baseUrl,
@@ -435,13 +425,7 @@ export async function generateSettings(
 
   validateSettings(mergedOptions);
 
-  configureApiClient({
-    projectId: mergedOptions.projectId,
-    apiKey: mergedOptions.apiKey,
-    userTokenProvider: mergedOptions.userTokenProvider,
-    baseUrl: mergedOptions.baseUrl,
-    customMapping: mergedOptions.customMapping,
-  });
+  configureCustomMapping(mergedOptions.customMapping);
 
   return mergedOptions;
 }

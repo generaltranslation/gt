@@ -1,13 +1,33 @@
 import { toast } from '@payloadcms/ui';
+import { ApiError, isTransientApiError } from 'generaltranslation/api';
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
 import { useState } from 'react';
 import { createGtPayloadDiagnostic } from '../diagnostics';
 import type { RunProgress } from '../runs';
+import type { BillingCode } from '../types';
 import { followRun, startRun, type Scope } from './api';
 import { localeNames, type LocaleOption } from './locales';
 
 const documents = (count: number) =>
   count === 1 ? 'one document' : `${count} documents`;
+
+// Each billing stop needs a different fix in the dashboard.
+const billingMessages: Record<BillingCode, string> = {
+  usage_limit_reached:
+    "You've reached your plan's translation limit. Upgrade your plan in the General Translation dashboard to keep translating.",
+  spend_limit_reached:
+    "You've reached your General Translation spend limit. Raise it in the dashboard to keep translating.",
+  credits_insufficient:
+    'Your General Translation credit balance is too low. Add credits in the dashboard to keep translating.',
+  payment_required:
+    'General Translation billing needs attention. Update your billing details in the dashboard to keep translating.',
+};
+
+// Only a failure that may clear, or one that never reached the plugin, is worth trying again.
+const retryAdvice = (error: unknown) =>
+  isTransientApiError(error) || !(error instanceof ApiError)
+    ? ' Try again.'
+    : ' Check the browser console for details.';
 
 // Starts and follows translation and save runs, and reports the outcome.
 export function useTranslate(options: LocaleOption[], onDone?: () => void) {
@@ -33,7 +53,7 @@ export function useTranslate(options: LocaleOption[], onDone?: () => void) {
           details: formatDiagnosticErrorDetails(error),
         })
       );
-      toast.error(failure);
+      toast.error(failure + retryAdvice(error));
     } finally {
       setProgress(null);
       onDone?.();
@@ -50,10 +70,7 @@ export function useTranslate(options: LocaleOption[], onDone?: () => void) {
       route,
       () => startRun(route, 'translate', scope, { locales, saveLocalEdits }),
       (done) => {
-        if (done.usageLimitReached)
-          toast.error(
-            "You've reached your plan's translation limit. Upgrade your plan in the General Translation dashboard to keep translating."
-          );
+        if (done.billingCode) toast.error(billingMessages[done.billingCode]);
         else if (done.failedLocales.length)
           toast.error(
             `Couldn't translate into ${localeNames(done.failedLocales, options)}. Try again.`
@@ -68,7 +85,7 @@ export function useTranslate(options: LocaleOption[], onDone?: () => void) {
           );
         else toast.success(`Translated into ${localeNames(locales, options)}.`);
       },
-      "Couldn't translate. Try again."
+      "Couldn't translate."
     );
 
   const save = (route: string, scope: Scope, locales: string[]) =>
@@ -84,7 +101,7 @@ export function useTranslate(options: LocaleOption[], onDone?: () => void) {
           );
         else toast.success('Your edits are saved.');
       },
-      "Couldn't save your edits. Try again."
+      "Couldn't save your edits."
     );
 
   return { progress, busy: progress !== null, run, save };
