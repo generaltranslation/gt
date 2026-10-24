@@ -582,29 +582,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
         name: 'tanstack-start',
         type: 'react',
       });
-      fs.mkdirSync(file('src/routes'), { recursive: true });
+      fs.mkdirSync(file('src'), { recursive: true });
       fs.writeFileSync(
-        file('src/router.tsx'),
-        "import { createRouter } from '@tanstack/react-router'\n\nexport function getRouter() {}\n"
+        file('vite.config.ts'),
+        "import { defineConfig } from 'vite'\n\nexport default defineConfig({\n  plugins: [],\n})\n"
       );
       fs.writeFileSync(
-        file('src/routes/__root.tsx'),
-        `import { createRootRoute } from '@tanstack/react-router'
-
-export const Route = createRootRoute({
-  shellComponent: RootDocument,
-})
-
-function RootDocument({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
-      <body>
-        {children}
-      </body>
-    </html>
-  )
-}
-`
+        file('src/router.tsx'),
+        "import { createRouter } from '@tanstack/react-router'\n\nexport function getRouter() {\n  const router = createRouter({ routeTree })\n  return router\n}\n"
       );
     });
 
@@ -631,24 +616,21 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       });
       expect(fs.existsSync(file('loadTranslations.js'))).toBe(false);
       expect(fs.readFileSync(file('src/router.tsx'), 'utf8')).toContain(
-        'initializeGT({ ...gtConfig, loadTranslations })'
+        '  setupRouterGTIntegration({ router })\n  return router'
       );
-      expect(fs.readFileSync(file('src/routes/__root.tsx'), 'utf8')).toContain(
-        '<GTProvider locale={locale} translations={translations}>'
+      expect(fs.readFileSync(file('vite.config.ts'), 'utf8')).toContain(
+        'plugins: [gtTanstackStart()]'
       );
-      expect(fs.readFileSync(file('src/start.ts'), 'utf8')).toContain(
-        'requestMiddleware: [csrfMiddleware, gtMiddleware]'
-      );
+      expect(fs.existsSync(file('src/loadTranslations.ts'))).toBe(false);
+      expect(fs.existsSync(file('src/start.ts'))).toBe(false);
       expect(fs.readFileSync(file('src/_gt/es.json'), 'utf8')).toBe('{}\n');
       expect(events().at(-1)).toMatchObject({
         outcome: 'success',
         completedSteps: [
           'installed gt-tanstack-start',
           'created gt.config.json',
-          'created src/loadTranslations.ts',
-          'created src/start.ts',
+          'configured vite.config.ts',
           'configured src/router.tsx',
-          'configured src/routes/__root.tsx',
           'installed gt',
         ],
       });
@@ -677,8 +659,89 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       expect(events().at(-1)).toMatchObject({ outcome: 'success' });
     });
 
-    it('stops before any change when the root route is missing', async () => {
-      fs.rmSync(file('src/routes/__root.tsx'));
+    // The Vite plugin loads translations with an existing loader over the CDN.
+    it('names a leftover loader after configure switches to the CDN', async () => {
+      await run(
+        'init',
+        '--json',
+        '--defaults',
+        '--locales',
+        'fr',
+        '--no-live-translations'
+      );
+      fs.writeFileSync(
+        file('src/loadTranslations.ts'),
+        'export default async () => ({});\n'
+      );
+      // installPackage is mocked, so record the runtime init installed.
+      const packageJson = JSON.parse(
+        fs.readFileSync(file('package.json'), 'utf8')
+      );
+      packageJson.dependencies['gt-tanstack-start'] = '*';
+      fs.writeFileSync(file('package.json'), JSON.stringify(packageJson));
+      stdoutEvents = [];
+
+      await run(
+        'configure',
+        '--json',
+        '--defaults',
+        '--no-dev-credentials',
+        '--storage',
+        'cdn'
+      );
+
+      expect(readConfig().files?.gt).toBeUndefined();
+      expect(events().at(-1)).toMatchObject({
+        outcome: 'needs_human_action',
+        actions: [
+          'Delete src/loadTranslations.ts so translations load from the CDN',
+        ],
+      });
+    });
+
+    it('names a leftover loader when configure keeps CDN storage', async () => {
+      await run(
+        'init',
+        '--json',
+        '--defaults',
+        '--locales',
+        'fr',
+        '--no-live-translations'
+      );
+      const packageJson = JSON.parse(
+        fs.readFileSync(file('package.json'), 'utf8')
+      );
+      packageJson.dependencies['gt-tanstack-start'] = '*';
+      fs.writeFileSync(file('package.json'), JSON.stringify(packageJson));
+      const configureCdn = [
+        'configure',
+        '--json',
+        '--defaults',
+        '--no-dev-credentials',
+        '--storage',
+        'cdn',
+      ];
+      await run(...configureCdn);
+      // gt.config.json no longer names a translations directory.
+      expect(readConfig().files?.gt).toBeUndefined();
+      fs.writeFileSync(
+        file('src/loadTranslations.ts'),
+        'export default async () => ({});\n'
+      );
+      stdoutEvents = [];
+
+      await run(...configureCdn);
+
+      expect(events().at(-1)).toMatchObject({
+        outcome: 'needs_human_action',
+        actions: [
+          'Delete src/loadTranslations.ts so translations load from the CDN',
+        ],
+      });
+    });
+
+    it('stops before any change when the Vite config is missing', async () => {
+      fs.rmSync(file('vite.config.ts'));
 
       await expect(
         run(
@@ -689,7 +752,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           'fr',
           '--no-live-translations'
         )
-      ).rejects.toThrow('src/routes/__root.tsx was not found');
+      ).rejects.toThrow('vite.config.ts was not found');
 
       expect(events().at(-1)).toMatchObject({
         outcome: 'failed',
@@ -697,7 +760,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       });
       expect(installPackage).not.toHaveBeenCalled();
       expect(fs.existsSync(file('gt.config.json'))).toBe(false);
-      expect(fs.existsSync(file('src/start.ts'))).toBe(false);
+      expect(fs.readFileSync(file('src/router.tsx'), 'utf8')).not.toContain(
+        'setupRouterGTIntegration'
+      );
     });
   });
 
