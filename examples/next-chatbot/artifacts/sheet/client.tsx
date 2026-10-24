@@ -79,8 +79,7 @@ export const sheetArtifact = new Artifact<'sheet'>({
       icon: <SparklesIcon />,
       onClick: ({ appendMessage }) => {
         appendMessage({
-          role: 'user',
-          content: 'Can you please format and clean the data?',
+          text: 'Can you please format and clean the data?',
         });
       },
     },
@@ -89,9 +88,7 @@ export const sheetArtifact = new Artifact<'sheet'>({
       icon: <LineChartIcon />,
       onClick: ({ appendMessage }) => {
         appendMessage({
-          role: 'user',
-          content:
-            'Can you please analyze and visualize the data by creating a new code artifact in python?',
+          text: 'Can you please analyze and visualize the data by creating a new code artifact in python?',
         });
       },
     },

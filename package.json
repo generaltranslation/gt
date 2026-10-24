@@ -4,14 +4,17 @@
   "workspaces": [
     "packages/*",
     "examples/*",
-    "tests/apps/**/*"
+    "tests/apps/**/*",
+    "tools/bundle-analysis/analysis-app",
+    "tools/bundle-analysis/examples/*"
   ],
   "scripts": {
     "build": "turbo run build --filter='./packages/*' --ui tui",
     "watch": "pnpm build:watch",
     "build:watch": "turbo watch build --filter='./packages/*' --ui tui",
+    "analyze:bundle": "pnpm --filter gt-bundle-analysis start",
     "test": "turbo run test --filter='./packages/*'",
-    "lint": "pnpm check:library-defaults && oxlint packages && pnpm --filter './examples/*' --filter './tests/apps/**/*' --if-present run lint && oxfmt --check .",
+    "lint": "pnpm check:library-defaults && pnpm check:test-locations && oxlint packages && pnpm --filter './examples/*' --filter './tests/apps/**/*' --if-present run lint && oxfmt --check .",
     "lint:fix": "oxlint packages --fix && pnpm --filter './examples/*' --filter './tests/apps/**/*' --if-present lint --fix && oxfmt .",
     "transpile": "turbo run transpile --filter='./packages/*'",
     "typecheck": "turbo run typecheck --filter='./packages/*' --filter='./examples/*' --filter='./tests/apps/**/*'",
@@ -22,7 +25,8 @@
     "build:release": "turbo run build:release --filter='./packages/*'",
     "bench": "turbo run bench",
     "size": "size-limit",
-    "check:library-defaults": "node scripts/check-library-defaults.mjs && vitest run scripts/check-library-defaults.test.mjs",
+    "check:library-defaults": "node scripts/check-library-defaults.mjs && vitest run scripts/__tests__/check-library-defaults.test.mjs",
+    "check:test-locations": "node scripts/check-test-locations.mjs && vitest run scripts/__tests__/check-test-locations.test.mjs",
     "check:release-versions": "node scripts/check-release-versions.mjs",
     "format": "oxfmt --check .",
     "format:fix": "oxfmt .",

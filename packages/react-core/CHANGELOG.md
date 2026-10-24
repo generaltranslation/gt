@@ -1,5 +1,55 @@
 # @generaltranslation/react-core
 
+## 11.4.16
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.5.8
+  - gt-i18n@1.0.39
+
+## 11.4.15
+
+## 11.4.14
+
+## 11.4.13
+
+## 11.4.12
+
+### Patch Changes
+
+- [#2455](https://github.com/generaltranslation/gt/pull/2455) [`c220f39`](https://github.com/generaltranslation/gt/commit/c220f39182a61be3d8139bfe18c5bced0f2956dc) Thanks [@eoinest](https://github.com/eoinest)! - Fix `<RelativeTime>` inside `<T>`: rename its variable transformation suffix from `relative-time` to `relativetime` so `_gtt` parsing reads it in full, letting it render formatted time and hash like the extractors.
+
+- Updated dependencies [[`c220f39`](https://github.com/generaltranslation/gt/commit/c220f39182a61be3d8139bfe18c5bced0f2956dc)]:
+  - generaltranslation@9.5.7
+  - gt-i18n@1.0.38
+
+## 11.4.11
+
+### Patch Changes
+
+- Updated dependencies [[`fe9f4b8`](https://github.com/generaltranslation/gt/commit/fe9f4b898548b94d7809be18f5e0dd9e80987428)]:
+  - generaltranslation@9.5.6
+  - gt-i18n@1.0.37
+
+## 11.4.10
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.5.5
+  - gt-i18n@1.0.36
+
+## 11.4.9
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.5.4
+  - gt-i18n@1.0.35
+
+## 11.4.8
+
 ## 11.4.7
 
 ### Patch Changes

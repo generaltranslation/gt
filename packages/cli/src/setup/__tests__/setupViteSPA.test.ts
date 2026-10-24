@@ -2,7 +2,11 @@ import fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { setupViteSPA } from '../setupViteSPA.js';
+import {
+  getViteLoaderExport,
+  setupViteSPA,
+  writeViteLoader,
+} from '../setupViteSPA.js';
 
 describe('setupViteSPA', () => {
   let appDirectory: string;
@@ -428,6 +432,27 @@ await initializeGTSPA(gtConfig);
     expect(result.manualAction).toContain('src/new');
   });
 
+  it('reports a missing index.html without writing', async () => {
+    fs.rmSync(path.join(appDirectory, 'index.html'));
+
+    await expect(
+      setupViteSPA({
+        appDirectory,
+        configFilepath: 'gt.config.json',
+        defaultLocale: 'en',
+        locales: ['fr'],
+        translationsDir: 'src/_gt',
+      })
+    ).rejects.toThrow('index.html was not found');
+    expect(fs.readdirSync(appDirectory).sort()).toEqual([
+      'gt.config.json',
+      'src',
+    ]);
+    expect(fs.readdirSync(path.join(appDirectory, 'src'))).toEqual([
+      'main.tsx',
+    ]);
+  });
+
   it('does not overwrite an existing non-GT bootstrap', async () => {
     fs.writeFileSync(
       path.join(appDirectory, 'src', 'gt-entry.ts'),
@@ -446,5 +471,111 @@ await initializeGTSPA(gtConfig);
     expect(
       fs.readFileSync(path.join(appDirectory, 'index.html'), 'utf8')
     ).toContain('src="/src/main.tsx"');
+  });
+});
+
+describe('writeViteLoader with a source directory', () => {
+  let appDirectory: string;
+  const appLoaderPath = () =>
+    path.join(appDirectory, 'app', 'loadTranslations.ts');
+  const options = {
+    defaultLocale: 'en',
+    locales: ['en', 'fr'],
+    sourceDirectory: 'app',
+  };
+
+  beforeEach(() => {
+    appDirectory = fs.mkdtempSync(path.join(tmpdir(), 'gt-vite-loader-'));
+    fs.mkdirSync(path.join(appDirectory, 'app'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(appDirectory, { recursive: true, force: true });
+  });
+
+  it('writes the loader in that directory, importing translations relative to it', async () => {
+    await expect(
+      writeViteLoader({
+        ...options,
+        appDirectory,
+        translationsDir: 'public/_gt',
+        create: true,
+      })
+    ).resolves.toBe('created');
+
+    expect(fs.readFileSync(appLoaderPath(), 'utf8')).toContain(
+      'import(`../public/_gt/${locale}.json`)'
+    );
+    expect(
+      fs.readFileSync(
+        path.join(appDirectory, 'public', '_gt', 'fr.json'),
+        'utf8'
+      )
+    ).toBe('{}\n');
+    expect(fs.existsSync(path.join(appDirectory, 'src'))).toBe(false);
+    await expect(
+      getViteLoaderExport(appDirectory, 'created', 'app')
+    ).resolves.toBe('default');
+  });
+
+  it('refreshes its own template when the translations directory moves', async () => {
+    await writeViteLoader({
+      ...options,
+      appDirectory,
+      translationsDir: 'public/_gt',
+      create: true,
+    });
+    const moved = {
+      ...options,
+      appDirectory,
+      translationsDir: 'app/_gt',
+      previousTranslationsDir: 'public/_gt',
+      create: false,
+    };
+
+    await expect(writeViteLoader(moved)).resolves.toBe('updated');
+    expect(fs.readFileSync(appLoaderPath(), 'utf8')).toContain(
+      'import(`./_gt/${locale}.json`)'
+    );
+    await expect(writeViteLoader(moved)).resolves.toBe('unchanged');
+  });
+
+  it('keeps a custom loader in that directory and reads its export from there', async () => {
+    const custom =
+      'export async function loadTranslations(locale: string) { return {}; }\n';
+    fs.writeFileSync(appLoaderPath(), custom);
+    // A src loader with another export shows the lookup stays in app/.
+    fs.mkdirSync(path.join(appDirectory, 'src'));
+    fs.writeFileSync(
+      path.join(appDirectory, 'src', 'loadTranslations.ts'),
+      'export default async function load() { return {}; }\n'
+    );
+
+    await expect(
+      writeViteLoader({
+        ...options,
+        appDirectory,
+        translationsDir: 'app/_gt',
+        create: true,
+      })
+    ).resolves.toBe('custom');
+
+    expect(fs.readFileSync(appLoaderPath(), 'utf8')).toBe(custom);
+    await expect(
+      getViteLoaderExport(appDirectory, 'custom', 'app')
+    ).resolves.toBe('loadTranslations');
+  });
+
+  it('reports a missing loader without writing anything when not creating', async () => {
+    await expect(
+      writeViteLoader({
+        ...options,
+        appDirectory,
+        translationsDir: 'app/_gt',
+        create: false,
+      })
+    ).resolves.toBe('missing');
+
+    expect(fs.readdirSync(path.join(appDirectory, 'app'))).toEqual([]);
   });
 });

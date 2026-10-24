@@ -1,7 +1,11 @@
 'use client';
 
 import React, { memo, useEffect, useMemo, useState } from 'react';
-import DataGrid, { textEditor, type CellClickArgs } from 'react-data-grid';
+import {
+  DataGrid,
+  renderTextEditor,
+  type CellMouseArgs,
+} from 'react-data-grid';
 import { parse, unparse } from 'papaparse';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
@@ -58,7 +62,7 @@ const PureSpreadsheetEditor = ({ content, saveContent }: SheetEditorProps) => {
     const dataColumns = Array.from({ length: MIN_COLS }, (_, i) => ({
       key: i.toString(),
       name: String.fromCharCode(65 + i),
-      renderEditCell: textEditor,
+      renderEditCell: renderTextEditor,
       width: 120,
       cellClass: cn(`border-t dark:bg-zinc-950 dark:text-zinc-50`, {
         'border-l': i !== 0,
@@ -114,9 +118,9 @@ const PureSpreadsheetEditor = ({ content, saveContent }: SheetEditorProps) => {
       rows={localRows}
       enableVirtualization
       onRowsChange={handleRowsChange}
-      onCellClick={(args: CellClickArgs<SheetRow>) => {
+      onCellClick={(args: CellMouseArgs<SheetRow>) => {
         if (args.column.key !== 'rowNumber') {
-          args.selectCell(true);
+          args.setActivePosition(true);
         }
       }}
       style={{ height: '100%' }}

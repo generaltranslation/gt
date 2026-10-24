@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import { devNull, tmpdir } from 'node:os';
 import path from 'node:path';
+import { ApiError } from 'generaltranslation/errors';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../utils/api.js', () => ({
@@ -64,6 +65,7 @@ vi.mock('../../console/logger.js', () => ({
   },
 }));
 
+import { UserAuthError } from '../../auth/errors.js';
 import { hasLogin, login } from '../../auth/oauth.js';
 import { logger } from '../../console/logger.js';
 import {
@@ -182,6 +184,91 @@ describe('init development credentials', () => {
     expect(logger.endCommand).toHaveBeenCalledWith(
       expect.stringContaining('Done!')
     );
+  });
+
+  // Pressing Enter at the credentials prompt accepts its default.
+  function pressEnterForCredentials(): void {
+    vi.mocked(promptConfirm).mockImplementation(
+      async ({ message, defaultValue }) =>
+        message.includes('hot-reload key') ? (defaultValue ?? false) : true
+    );
+  }
+
+  const obsoleteLogin = () =>
+    new UserAuthError(
+      'obsolete_credentials',
+      'This stored login is obsolete or invalid and cannot be used safely'
+    );
+
+  it('defaults the credentials prompt to Yes and says it signs in when signed out', async () => {
+    vi.mocked(hasLogin).mockResolvedValue(false);
+    pressEnterForCredentials();
+    vi.mocked(promptSelect).mockResolvedValueOnce(projects[1]);
+
+    await runInit();
+
+    expect(promptConfirm).toHaveBeenCalledWith({
+      message:
+        'Would you like to sign in to General Translation and set up a project ID and hot-reload key in .env.local?',
+      defaultValue: true,
+    });
+    expect(login).toHaveBeenCalledTimes(1);
+    expect(api.createProjectApiKey).toHaveBeenCalledTimes(1);
+  });
+
+  it('signs in again over an obsolete stored login', async () => {
+    vi.mocked(hasLogin).mockRejectedValue(obsoleteLogin());
+    pressEnterForCredentials();
+    vi.mocked(promptSelect).mockResolvedValueOnce(projects[1]);
+
+    await runInit();
+
+    expect(promptConfirm).toHaveBeenCalledWith({
+      message: expect.stringContaining('sign in to General Translation'),
+      defaultValue: true,
+    });
+    expect(login).toHaveBeenCalledTimes(1);
+    expect(api.createProjectApiKey).toHaveBeenCalledTimes(1);
+  });
+
+  it('lets a signed-out user decline credentials without signing in', async () => {
+    vi.mocked(hasLogin).mockRejectedValue(obsoleteLogin());
+    vi.mocked(promptConfirm).mockImplementation(
+      async ({ message }) => !message.includes('hot-reload key')
+    );
+
+    await runInit();
+
+    expect(login).not.toHaveBeenCalled();
+    expect(api.createProjectApiKey).not.toHaveBeenCalled();
+    expect(fs.existsSync(path.join(appDirectory, 'gt.config.json'))).toBe(true);
+    expect(fs.existsSync(envPath())).toBe(false);
+  });
+
+  it('defaults the credentials prompt to Yes when signed in', async () => {
+    pressEnterForCredentials();
+    vi.mocked(promptSelect).mockResolvedValueOnce(projects[1]);
+
+    await runInit();
+
+    expect(promptConfirm).toHaveBeenCalledWith({
+      message:
+        'Would you like to set up a project ID and hot-reload key in .env.local?',
+      defaultValue: true,
+    });
+    expect(login).not.toHaveBeenCalled();
+    expect(api.createProjectApiKey).toHaveBeenCalledTimes(1);
+  });
+
+  it('names the project and key it created without printing the key', async () => {
+    vi.mocked(promptSelect).mockResolvedValueOnce(projects[1]);
+
+    await runInit();
+
+    const success = vi.mocked(logger.success).mock.calls.flat().join('\n');
+    expect(success).toContain('App (p2)');
+    expect(success).toContain('Development key (gt init)');
+    expect(success).not.toContain('gtx-secret-development-key');
   });
 
   it('forwards --config/--src and the detected framework to config and env output', async () => {
@@ -335,11 +422,11 @@ describe('init development credentials', () => {
     vi.stubEnv('GT_API_KEY', 'gtx-project-key');
     vi.mocked(hasLogin).mockResolvedValue(false);
     vi.mocked(api.listProjects).mockRejectedValueOnce(
-      new Error('Missing required permission: project:files:read (403)')
+      new Error('Invalid API key (401)')
     );
 
     await expect(runInit()).rejects.toThrow(
-      /Failed to set up the development credentials[\s\S]*project:files:read/
+      /Failed to set up the development credentials[\s\S]*Invalid API key/
     );
     expect(login).not.toHaveBeenCalled();
     expect(api.createProjectApiKey).not.toHaveBeenCalled();
@@ -430,21 +517,75 @@ describe('init development credentials', () => {
     expect(loggedOutput()).not.toContain('gtx-secret-development-key');
   });
 
-  it('surfaces a failed mint through the tooling key without falling back to login', async () => {
+  it('explains a denied mint through the tooling key without falling back to login', async () => {
     setUpLocalVite(true);
     vi.stubEnv('GT_API_KEY', 'gtx-tooling-key');
     vi.stubEnv('VITE_GT_PROJECT_ID', 'configured-project');
+    const details = 'Project API keys cannot create other keys';
     vi.mocked(api.createProjectApiKey).mockRejectedValue(
-      new Error('insufficient permissions (403)')
+      new ApiError(details, 403, details)
     );
 
-    await expect(runInit()).rejects.toThrow(
-      /Failed to set up the development credentials[\s\S]*insufficient permissions/
+    const error = await runInit().catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(Error);
+    const { message } = error as Error;
+    expect(message).toMatch(
+      /Development key creation was denied for project configured-project because GT_API_KEY is set/
     );
+    expect(message).toMatch(
+      /Remove GT_API_KEY from your shell and from \.env, \.env\.local, \.env\.production/
+    );
+    expect(message).not.toContain('gt login');
     expect(login).not.toHaveBeenCalled();
     expect(api.createProjectApiKey).toHaveBeenCalledTimes(1);
     expect(fs.existsSync(envPath())).toBe(false);
     expect(logger.endCommand).not.toHaveBeenCalled();
+  });
+
+  it('explains a denied mint for a signed-in user without blaming an API key', async () => {
+    fs.writeFileSync(
+      path.join(appDirectory, 'gt.config.json'),
+      JSON.stringify({ projectId: 'configured-project', defaultLocale: 'en' })
+    );
+    vi.mocked(api.createProjectApiKey).mockRejectedValue(
+      new ApiError('Forbidden', 403, 'Forbidden')
+    );
+
+    const error = await runInit().catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(Error);
+    const { message } = error as Error;
+    expect(message).toMatch(
+      /Development key creation was denied for project configured-project[\s\S]*project:api_keys:write/
+    );
+    expect(message).not.toMatch(/GT_API_KEY|API key/);
+    expect(fs.existsSync(envPath())).toBe(false);
+  });
+
+  it('explains a denied project creation through GT_API_KEY', async () => {
+    vi.stubEnv('GT_API_KEY', 'gtx-project-key');
+    vi.mocked(api.listOrgs).mockResolvedValue([{ id: 'o1', name: 'Acme' }]);
+    vi.mocked(api.createProject).mockRejectedValue(
+      new ApiError('Forbidden', 403, 'Forbidden')
+    );
+
+    const error = await runInit(
+      '--create-project',
+      '--project-name',
+      'New App'
+    ).catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(Error);
+    const { message } = error as Error;
+    expect(message).toMatch(
+      /Project creation was denied for organization o1 because GT_API_KEY is set/
+    );
+    expect(message).toMatch(/organization key with org:projects:create/);
+    expect(message).not.toContain('Ask an organization admin');
+    expect(login).not.toHaveBeenCalled();
+    expect(api.createProjectApiKey).not.toHaveBeenCalled();
+    expect(fs.existsSync(envPath())).toBe(false);
   });
 
   it('stops before any change or key when .env.local cannot be edited safely', async () => {

@@ -1,5 +1,45 @@
 # gt-node
 
+## 1.0.40
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.5.8
+  - gt-i18n@1.0.39
+
+## 1.0.39
+
+### Patch Changes
+
+- Updated dependencies [[`c220f39`](https://github.com/generaltranslation/gt/commit/c220f39182a61be3d8139bfe18c5bced0f2956dc)]:
+  - generaltranslation@9.5.7
+  - gt-i18n@1.0.38
+
+## 1.0.38
+
+### Patch Changes
+
+- Updated dependencies [[`fe9f4b8`](https://github.com/generaltranslation/gt/commit/fe9f4b898548b94d7809be18f5e0dd9e80987428)]:
+  - generaltranslation@9.5.6
+  - gt-i18n@1.0.37
+
+## 1.0.37
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.5.5
+  - gt-i18n@1.0.36
+
+## 1.0.36
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.5.4
+  - gt-i18n@1.0.35
+
 ## 1.0.35
 
 ### Patch Changes

@@ -92,6 +92,8 @@ const FRAMEWORK_ENV_PREFIXES: Partial<
   gatsby: 'GATSBY_',
   react: 'REACT_APP_',
   redwood: 'REDWOOD_ENV_',
+  'tanstack-start': 'VITE_',
+  'react-router': 'VITE_',
 };
 
 /** Names of the runtime variables init writes for this framework. */

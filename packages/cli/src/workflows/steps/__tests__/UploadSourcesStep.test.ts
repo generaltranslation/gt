@@ -2,6 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { UploadSourcesStep } from '../UploadSourcesStep.js';
 import type { FileToUpload } from 'generaltranslation/types';
 import type { BranchData } from '../../../types/branch.js';
+import {
+  clearOrphanedFileNames,
+  getOrphanedFileNames,
+} from '../../../state/orphanedFileNames.js';
 
 // Mock the GT class
 const mockGt = {
@@ -348,6 +352,91 @@ describe('UploadSourcesStep', () => {
         ]),
         expect.any(Object)
       );
+    });
+  });
+  describe('orphaned file names', () => {
+    beforeEach(() => clearOrphanedFileNames());
+
+    it('records every orphan, including the old names of moved files', async () => {
+      const file = (fileName: string, versionId: string): FileToUpload => ({
+        content: versionId,
+        fileName,
+        fileFormat: 'MDX',
+        locale: 'en',
+        fileId: `id:${fileName}`,
+        versionId,
+      });
+      mockGt.queryFileData.mockResolvedValue({ sourceFiles: [] });
+      mockGt.getOrphanedFiles.mockResolvedValue({
+        orphanedFiles: [
+          {
+            fileId: 'id:docs/old.mdx',
+            versionId: 'v1',
+            fileName: 'docs/old.mdx',
+          },
+          {
+            fileId: 'id:docs/removed.mdx',
+            versionId: 'v2',
+            fileName: 'docs/removed.mdx',
+          },
+        ],
+      });
+      mockGt.processFileMoves.mockResolvedValue({
+        results: [
+          {
+            oldFileId: 'id:docs/old.mdx',
+            newFileId: 'id:docs/new.mdx',
+            success: true,
+          },
+        ],
+        summary: { total: 1, succeeded: 1, failed: 0 },
+      });
+      mockGt.uploadSourceFiles.mockResolvedValue({ uploadedFiles: [] });
+
+      const step = new UploadSourcesStep(
+        mockGt as never,
+        mockSettings as never
+      );
+      await step.run({
+        files: [file('docs/new.mdx', 'v1')],
+        branchData: mockBranchData,
+      });
+
+      expect(getOrphanedFileNames()).toEqual([
+        'docs/old.mdx',
+        'docs/removed.mdx',
+      ]);
+    });
+
+    it('clears names from an earlier run when there are no files', async () => {
+      const step = new UploadSourcesStep(
+        mockGt as never,
+        mockSettings as never
+      );
+      mockGt.queryFileData.mockResolvedValue({ sourceFiles: [] });
+      mockGt.getOrphanedFiles.mockResolvedValue({
+        orphanedFiles: [
+          { fileId: 'id:a', versionId: 'v', fileName: 'docs/a.mdx' },
+        ],
+      });
+      mockGt.uploadSourceFiles.mockResolvedValue({ uploadedFiles: [] });
+      await step.run({
+        files: [
+          {
+            content: 'b',
+            fileName: 'docs/b.mdx',
+            fileFormat: 'MDX',
+            locale: 'en',
+            fileId: 'id:b',
+            versionId: 'b',
+          },
+        ],
+        branchData: mockBranchData,
+      });
+
+      await step.run({ files: [], branchData: mockBranchData });
+
+      expect(getOrphanedFileNames()).toBeNull();
     });
   });
 });

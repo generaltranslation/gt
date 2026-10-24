@@ -1,0 +1,541 @@
+{
+  "7f042bab276bc277": {
+    "t": "p",
+    "i": 1,
+    "c": "Ferro est un produit fictif. Cette page est une application d’exemple pour mesurer la taille des bundles General Translation."
+  },
+  "bb8e4c176a4b1b87": "Thé vert",
+  "916cc39f9f695368": "Oolong",
+  "b50c3aa1f7442a73": "Café",
+  "6961664f9757aa21": "Préréglage par défaut",
+  "597be0dc6e41a5a2": "Paquets de filtres en papier",
+  "bc9bbaca608f5bb1": "Retirer un paquet",
+  "fe024f3c46fe85f1": "Ajouter un paquet",
+  "dba25d3fe774a633": "Ajouter Au Panier",
+  "c7a9185f5681092b": "Ajouté. Votre préréglage est enregistré dans la bouilloire au premier démarrage.",
+  "d0a14530e91df22b": "Chaque bouilloire est livrée avec une garantie de 2 ans.",
+  "2b530c2812a31b0d": {
+    "t": "Branch",
+    "i": 1,
+    "d": {
+      "b": {
+        "green": {
+          "t": "p",
+          "i": 2,
+          "c": "Chauffe à 80 °C et maintient la température 30 minutes. Infusez 2 minutes."
+        },
+        "oolong": {
+          "t": "p",
+          "i": 2,
+          "c": "Chauffe à 90 °C et maintient la température 30 minutes. Infusez 3 minutes."
+        },
+        "coffee": {
+          "t": "p",
+          "i": 2,
+          "c": "Chauffe à 96 °C et maintient la température 60 minutes. Laissez pré-infuser 30 secondes."
+        }
+      },
+      "t": "b"
+    },
+    "c": {
+      "t": "p",
+      "i": 2,
+      "c": "Chauffe à la température réglée."
+    }
+  },
+  "ae0eb0c9a5f33e40": {
+    "t": "p",
+    "i": 1,
+    "c": [
+      "Chaque paquet contient ",
+      {
+        "i": 2,
+        "k": "_gt_n_2",
+        "v": "n"
+      },
+      " filtres et coûte ",
+      {
+        "i": 3,
+        "k": "_gt_cost_3",
+        "v": "c"
+      },
+      "."
+    ]
+  },
+  "994b383e5eb01fba": {
+    "t": "p",
+    "i": 1,
+    "c": [
+      "Une bouilloire réglée sur ",
+      {
+        "i": 2,
+        "k": "_gt_value_2",
+        "v": "v"
+      },
+      ", ",
+      {
+        "t": "Plural",
+        "i": 3,
+        "d": {
+          "b": {
+            "zero": {
+              "t": "C4",
+              "i": 4,
+              "c": "sans filtres"
+            },
+            "one": {
+              "t": "C4",
+              "i": 4,
+              "c": "avec un paquet de filtres"
+            },
+            "other": {
+              "t": "C4",
+              "i": 4,
+              "c": [
+                "avec ",
+                {
+                  "i": 5,
+                  "k": "_gt_n_5",
+                  "v": "n"
+                },
+                " paquets de filtres"
+              ]
+            }
+          },
+          "t": "p"
+        }
+      },
+      "."
+    ]
+  },
+  "0cc5fb86efb38e0b": "Pages",
+  "c83fb5e64f34fb1a": "Présentation",
+  "5968bf00c195f99d": "Caractéristiques",
+  "af2b279c15ce6579": "États-Unis et Canada",
+  "eb23db54e0511897": "Union européenne et Royaume-Uni",
+  "6676370c937fb899": "Chine et Japon",
+  "0fe6516f4642ddc4": "Bouilloire col de cygne Ferro K1",
+  "dd8491480a68ec69": "Une bouilloire col de cygne qui maintient l’eau à 1 °C près de la cible pendant 60 minutes au plus.",
+  "18235e10c4140d21": "{days, plural, one {# jour ouvré} other {# jours ouvrés}}",
+  "ee570428ac4c8e78": {
+    "t": "p",
+    "i": 1,
+    "c": "Modèle K1, bouilloire pour café filtre"
+  },
+  "0734533760b3ebe4": {
+    "t": "h1",
+    "i": 1,
+    "c": [
+      "Une bouilloire qui maintient l’eau à ",
+      {
+        "i": 2,
+        "k": "_gt_n_2",
+        "v": "n"
+      },
+      " °C près de la cible."
+    ]
+  },
+  "821f5507875fe961": {
+    "t": "p",
+    "i": 1,
+    "c": [
+      "Ferro K1 chauffe ",
+      {
+        "i": 2,
+        "k": "_gt_n_2",
+        "v": "n"
+      },
+      " litre à ",
+      {
+        "i": 3,
+        "k": "_gt_n_3",
+        "v": "n"
+      },
+      " °C en moins de ",
+      {
+        "i": 4,
+        "k": "_gt_n_4",
+        "v": "n"
+      },
+      " minutes sur un socle de ",
+      {
+        "i": 5,
+        "k": "_gt_n_5",
+        "v": "n"
+      },
+      " watts. Le col de cygne verse ",
+      {
+        "i": 6,
+        "k": "_gt_n_6",
+        "v": "n"
+      },
+      " millilitres par seconde."
+    ]
+  },
+  "bd9635efdf443fd1": {
+    "t": "span",
+    "i": 1,
+    "c": [
+      "Prochain lot expédié le ",
+      {
+        "i": 2,
+        "k": "_gt_date_2",
+        "v": "d"
+      }
+    ]
+  },
+  "67dc59467536fe7a": "Configurer Votre Bouilloire",
+  "6acfc14a5f27359f": "Voir Les Caractéristiques",
+  "22d08f0e7c6ae5ad": {
+    "t": "div",
+    "i": 1,
+    "c": [
+      {
+        "t": "p",
+        "i": 2,
+        "c": [
+          {
+            "i": 3,
+            "k": "_gt_n_3",
+            "v": "n"
+          },
+          {
+            "t": "span",
+            "i": 4,
+            "c": " L"
+          }
+        ]
+      },
+      {
+        "t": "p",
+        "i": 5,
+        "c": "Capacité jusqu’au trait de remplissage"
+      }
+    ]
+  },
+  "3125644da0ce16d2": {
+    "t": "div",
+    "i": 1,
+    "c": [
+      {
+        "t": "p",
+        "i": 2,
+        "c": [
+          {
+            "i": 3,
+            "k": "_gt_n_3",
+            "v": "n"
+          },
+          {
+            "t": "span",
+            "i": 4,
+            "c": " °C"
+          }
+        ]
+      },
+      {
+        "t": "p",
+        "i": 5,
+        "c": "Précision du maintien, mesurée au bec"
+      }
+    ]
+  },
+  "3aff56753bba207c": {
+    "t": "div",
+    "i": 1,
+    "c": [
+      {
+        "t": "p",
+        "i": 2,
+        "c": [
+          {
+            "i": 3,
+            "k": "_gt_n_3",
+            "v": "n"
+          },
+          {
+            "t": "span",
+            "i": 4,
+            "c": " W"
+          }
+        ]
+      },
+      {
+        "t": "p",
+        "i": 5,
+        "c": "Élément chauffant, 120 V et 230 V"
+      }
+    ]
+  },
+  "6022a99416d9cbd2": {
+    "t": "div",
+    "i": 1,
+    "c": [
+      {
+        "t": "p",
+        "i": 2,
+        "c": [
+          {
+            "i": 3,
+            "k": "_gt_n_3",
+            "v": "n"
+          },
+          {
+            "t": "span",
+            "i": 4,
+            "c": " min"
+          }
+        ]
+      },
+      {
+        "t": "p",
+        "i": 5,
+        "c": "Maintien maximal avant arrêt automatique"
+      }
+    ]
+  },
+  "8f7169d6e58ce829": [
+    {
+      "t": "p",
+      "i": 1,
+      "c": "Commander"
+    },
+    {
+      "t": "h2",
+      "i": 2,
+      "c": "Choisissez un préréglage avant l’expédition."
+    },
+    {
+      "t": "p",
+      "i": 3,
+      "c": [
+        "La bouilloire démarre à cette température. Vous pourrez la modifier ensuite avec la molette, par pas de ",
+        {
+          "i": 4,
+          "k": "_gt_n_4",
+          "v": "n"
+        },
+        " °C, de ",
+        {
+          "i": 5,
+          "k": "_gt_n_5",
+          "v": "n"
+        },
+        " °C à ",
+        {
+          "i": 6,
+          "k": "_gt_n_6",
+          "v": "n"
+        },
+        " °C."
+      ]
+    }
+  ],
+  "47a2889833eca921": [
+    {
+      "t": "p",
+      "i": 1,
+      "c": "Livraison"
+    },
+    {
+      "t": "h2",
+      "i": 2,
+      "c": "Deux entrepôts, trois régions."
+    },
+    {
+      "t": "p",
+      "i": 3,
+      "c": [
+        "Les commandes passées avant ",
+        {
+          "i": 4,
+          "k": "_gt_value_4",
+          "v": "v"
+        },
+        " heure locale partent le jour même. Les droits de douane sont inclus dans le prix."
+      ]
+    }
+  ],
+  "1ce9b750635c4b74": [
+    {
+      "t": "blockquote",
+      "i": 1,
+      "c": "Elle atteint 96 °C avant que mon moulin ait fini. Le versement est assez régulier pour une infusion de 4 minutes."
+    },
+    {
+      "t": "figcaption",
+      "i": 2,
+      "c": [
+        {
+          "i": 3,
+          "k": "_gt_value_3",
+          "v": "v"
+        },
+        ", Copenhague, ",
+        {
+          "i": 4,
+          "k": "_gt_date_4",
+          "v": "d"
+        }
+      ]
+    }
+  ],
+  "e3746dfbf689c427": [
+    {
+      "t": "blockquote",
+      "i": 1,
+      "c": "Je la garde sur le préréglage 80 °C pour le thé vert. Grâce au maintien, je ne réchauffe plus l’eau."
+    },
+    {
+      "t": "figcaption",
+      "i": 2,
+      "c": [
+        {
+          "i": 3,
+          "k": "_gt_value_3",
+          "v": "v"
+        },
+        ", Hangzhou, ",
+        {
+          "i": 4,
+          "k": "_gt_date_4",
+          "v": "d"
+        }
+      ]
+    }
+  ],
+  "30a2345ec0556094": "Capacité",
+  "4f1d3ffa2da32c93": "Corps",
+  "377ad4d85264d855": "Socle chauffant",
+  "9890c9c64ce59b86": "Plage de température",
+  "51497bd401292062": "Maintien",
+  "99c7cc7c32021770": "Dimensions",
+  "7d9dd949431a2743": "Poids",
+  "b2643101eb031551": [
+    {
+      "i": 1,
+      "k": "_gt_n_1",
+      "v": "n"
+    },
+    " L jusqu’au trait de remplissage, ",
+    {
+      "i": 2,
+      "k": "_gt_n_2",
+      "v": "n"
+    },
+    " L minimum"
+  ],
+  "552ce484b187c288": [
+    "Acier inoxydable 304, paroi de ",
+    {
+      "i": 1,
+      "k": "_gt_n_1",
+      "v": "n"
+    },
+    " mm"
+  ],
+  "15e765f9d593c237": [
+    {
+      "i": 1,
+      "k": "_gt_n_1",
+      "v": "n"
+    },
+    " W en 120 V ou 230 V, câble de ",
+    {
+      "i": 2,
+      "k": "_gt_n_2",
+      "v": "n"
+    },
+    " m"
+  ],
+  "4782b8feaf7584e8": [
+    "De ",
+    {
+      "i": 1,
+      "k": "_gt_n_1",
+      "v": "n"
+    },
+    " °C à ",
+    {
+      "i": 2,
+      "k": "_gt_n_2",
+      "v": "n"
+    },
+    " °C par pas de ",
+    {
+      "i": 3,
+      "k": "_gt_n_3",
+      "v": "n"
+    },
+    " °C"
+  ],
+  "5c4ae576a12ae6d8": [
+    "Jusqu’à ",
+    {
+      "i": 1,
+      "k": "_gt_n_1",
+      "v": "n"
+    },
+    " minutes, puis le socle s’éteint"
+  ],
+  "22170bd5f434a4c2": [
+    {
+      "i": 1,
+      "k": "_gt_n_1",
+      "v": "n"
+    },
+    " × ",
+    {
+      "i": 2,
+      "k": "_gt_n_2",
+      "v": "n"
+    },
+    " × ",
+    {
+      "i": 3,
+      "k": "_gt_n_3",
+      "v": "n"
+    },
+    " mm"
+  ],
+  "de19e66dbc6cd09b": [
+    "Bouilloire ",
+    {
+      "i": 1,
+      "k": "_gt_n_1",
+      "v": "n"
+    },
+    " kg, socle ",
+    {
+      "i": 2,
+      "k": "_gt_n_2",
+      "v": "n"
+    },
+    " kg"
+  ],
+  "2c5e107eb7a597fe": [
+    {
+      "t": "p",
+      "i": 1,
+      "c": "Caractéristiques"
+    },
+    {
+      "t": "h1",
+      "i": 2,
+      "c": "Mesuré sur des unités de série."
+    },
+    {
+      "t": "p",
+      "i": 3,
+      "c": [
+        "Chaque valeur provient du dernier lot de ",
+        {
+          "i": 4,
+          "k": "_gt_n_4",
+          "v": "n"
+        },
+        " bouilloires. Cette page est rendue dans le navigateur."
+      ]
+    }
+  ]
+}

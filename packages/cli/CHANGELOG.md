@@ -1,5 +1,165 @@
 # gtx-cli
 
+## 2.26.10
+
+### Patch Changes
+
+- [#2526](https://github.com/generaltranslation/gt/pull/2526) [`9e9b6d8`](https://github.com/generaltranslation/gt/commit/9e9b6d866cae109f7ec13f5b1d1182ccfb87d947) Thanks [@brian-lou](https://github.com/brian-lou)! - Add `GT_LOG_FORMAT=agent`, which prints plain `[time] LEVEL: msg` lines, and use it by default in CI or when stdout is not a TTY. Set `GT_LOG_FORMAT=default` to keep the interactive output. The ASCII banner no longer prints when `GT_LOG_FORMAT` is `json` or `agent`.
+
+## 2.26.9
+
+### Patch Changes
+
+- [#2525](https://github.com/generaltranslation/gt/pull/2525) [`aee1350`](https://github.com/generaltranslation/gt/commit/aee135077ebef9d98378b68d5898df548d83f137) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Limit how many files postprocessing reads and writes at once so large docs projects no longer fail with `EMFILE: too many open files`
+
+- Updated dependencies []:
+  - generaltranslation@9.5.8
+  - @generaltranslation/python-extractor@0.2.63
+  - @generaltranslation/supported-locales@2.1.44
+  - @generaltranslation/vue-extractor@0.1.22
+
+## 2.26.8
+
+### Patch Changes
+
+- [#2522](https://github.com/generaltranslation/gt/pull/2522) [`a0ba4ab`](https://github.com/generaltranslation/gt/commit/a0ba4aba791a99026b2900991fa6608c3cf1bd93) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - `gt download` performs same postprocessing as `gt translate`
+
+## 2.26.7
+
+### Patch Changes
+
+- [#2516](https://github.com/generaltranslation/gt/pull/2516) [`4fee937`](https://github.com/generaltranslation/gt/commit/4fee937e7c8645f8c05a7d4ef82867e2776648da) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - `gt api` now ends a non-2xx response body with a newline so the HTTP error message on stderr starts on its own line.
+
+- [#2515](https://github.com/generaltranslation/gt/pull/2515) [`e5bc047`](https://github.com/generaltranslation/gt/commit/e5bc04712794f7c9d08e83ad7b0e22cd38a853ce) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - `gt upload` now skips unparsable JSON and YAML translation files with a warning, as it already does for source files, instead of sending them and losing the whole translation batch.
+
+- [#2514](https://github.com/generaltranslation/gt/pull/2514) [`e2aee57`](https://github.com/generaltranslation/gt/commit/e2aee57260df269e77b7082ae2b428c2ec9076bb) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - `gt upload` now uploads translations to the resolved branch (for example, `--branch <name>`) instead of the project's default branch.
+
+## 2.26.6
+
+### Patch Changes
+
+- [#2461](https://github.com/generaltranslation/gt/pull/2461) [`81cc726`](https://github.com/generaltranslation/gt/commit/81cc7269baa6a5acf476eeeaccf40bbecf0eeb61) Thanks [@kevinwu98](https://github.com/kevinwu98)! - `gt init` now links React Router and Shopify Hydrogen apps to the React Router quickstart instead of the generic React quickstart.
+
+## 2.26.5
+
+### Patch Changes
+
+- Updated dependencies [[`c220f39`](https://github.com/generaltranslation/gt/commit/c220f39182a61be3d8139bfe18c5bced0f2956dc)]:
+  - generaltranslation@9.5.7
+  - @generaltranslation/python-extractor@0.2.62
+  - @generaltranslation/supported-locales@2.1.43
+  - @generaltranslation/vue-extractor@0.1.21
+
+## 2.26.4
+
+### Patch Changes
+
+- [#2452](https://github.com/generaltranslation/gt/pull/2452) [`aafa001`](https://github.com/generaltranslation/gt/commit/aafa0010d06d13d0c2d4f33a5cd86907037396b8) Thanks [@eoinest](https://github.com/eoinest)! - Number JSX elements after `Branch`/`Plural` children the same way the React runtime does, so extracted and compile-time hashes match the rendered `<T>` content.
+
+## 2.26.3
+
+### Patch Changes
+
+- [#2443](https://github.com/generaltranslation/gt/pull/2443) [`77d1437`](https://github.com/generaltranslation/gt/commit/77d14376ca70fd00c11806d6a721add6481b48cb) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Accept a list for `options.docsUrlPattern`, such as `["/docs/[locale]", "/ai/docs/[locale]"]`, so static URL and Mintlify redirect localization cover docs served from several URL prefixes. Each URL is localized with the longest pattern it matches.
+
+## 2.26.2
+
+### Patch Changes
+
+- [#2437](https://github.com/generaltranslation/gt/pull/2437) [`d7943fe`](https://github.com/generaltranslation/gt/commit/d7943fee01740975387a6e1ff43a71c8ed78b886) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Stop `options.mintlify.localizeRedirects` from adding nested-locale redirects (such as `/docs/ja-jp/fr-ca/...`) when translated pages are orphaned.
+
+## 2.26.1
+
+### Patch Changes
+
+- [#2426](https://github.com/generaltranslation/gt/pull/2426) [`01f8a21`](https://github.com/generaltranslation/gt/commit/01f8a21cd2abdf1945e172e57344b0b98cec8311) Thanks [@brian-lou](https://github.com/brian-lou)! - `GT_API_URL` now sets the API that every command sends requests to, overriding `baseUrl` in gt.config.json, as it already did for `gt auth login`.
+
+## 2.26.0
+
+### Minor Changes
+
+- [#2409](https://github.com/generaltranslation/gt/pull/2409) [`fe2e16a`](https://github.com/generaltranslation/gt/commit/fe2e16a904e0e9287e19be9a212e628fc3fd77fc) Thanks [@kevinwu98](https://github.com/kevinwu98)! - `gt init` now sets up React Router framework apps, including Shopify Hydrogen, with `gt-react`: it writes `app/loadTranslations.ts` and configures an `app/root.tsx` shaped like the create-react-router or Hydrogen starters to load each visitor's locale and translations in the root loader. Other roots get manual steps. SPA mode, pre-rendering, RSC Framework Mode, an `appDirectory` other than `app`, or a `gt-react` older than 11.1.3 stop setup before any change.
+
+### Patch Changes
+
+- [#2404](https://github.com/generaltranslation/gt/pull/2404) [`94ee3b4`](https://github.com/generaltranslation/gt/commit/94ee3b4b895b86db6ae942ec78621a5927d1b2f3) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - `gt init` explains a denied development key instead of reporting a generic credentials failure. When `GT_API_KEY` is set, a denied key or project creation explains that setup used that key instead of your sign-in and how to remove it.
+
+- [#2423](https://github.com/generaltranslation/gt/pull/2423) [`98ef8cd`](https://github.com/generaltranslation/gt/commit/98ef8cd8e2fc2af495ecc45e1d126ae862fa4671) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Remove default JSON alphabetization
+
+- [#2411](https://github.com/generaltranslation/gt/pull/2411) [`1e4135b`](https://github.com/generaltranslation/gt/commit/1e4135b754c47c37ec9dcdd7d2cb815f6d9ba2eb) Thanks [@kevinwu98](https://github.com/kevinwu98)! - `gt init` no longer leaves a TanStack Start root route for manual setup when a comment or string mentions `getLocale` or `getTranslationsSnapshot`. Only code that binds or uses those names blocks the automatic edit.
+
+- Updated dependencies [[`fe9f4b8`](https://github.com/generaltranslation/gt/commit/fe9f4b898548b94d7809be18f5e0dd9e80987428)]:
+  - generaltranslation@9.5.6
+  - @generaltranslation/python-extractor@0.2.61
+  - @generaltranslation/supported-locales@2.1.42
+  - @generaltranslation/vue-extractor@0.1.20
+
+## 2.25.2
+
+### Patch Changes
+
+- [#2341](https://github.com/generaltranslation/gt/pull/2341) [`60deece`](https://github.com/generaltranslation/gt/commit/60deececd8d1339aef7ef642d0e0f0f0b1d189d7) Thanks [@Kevin-Liu-01](https://github.com/Kevin-Liu-01)! - Restyle the page `gt login` shows in the browser after the loopback callback to match the dashboard's auth plate, centered on the plain ground: the GT mark, a heading with a status glyph, a lede, and a note naming the signed-in account. Nothing loads from the network. A denied request and a failed exchange get their own pages, and both say to run `npx gt login` again, which copies the command when clicked and shows a copy icon beside it that turns into a check for a moment after a copy (the page's one script, allowed by its hash in the Content-Security-Policy); the page calls a request denied only when the exchange read a validated denial, so it agrees with the terminal.
+
+  `gt login` returns to the shell as soon as the browser's callback is answered: a repeated callback request no longer holds a keep-alive socket open for the five second timeout. A browser that abandoned its first navigation while the exchange ran gets the result page on its repeat: `gt login` waits up to five seconds for that repeat, and exits at once when the first page arrived. A caller's AbortSignal now cancels the browser flow's token exchange and account lookup, reported as a cancellation.
+
+- Updated dependencies [[`ebb6c9e`](https://github.com/generaltranslation/gt/commit/ebb6c9efa403b2b6b2ec84521398a05825eb1ff0)]:
+  - @generaltranslation/supported-locales@2.1.41
+  - generaltranslation@9.5.5
+  - @generaltranslation/python-extractor@0.2.60
+  - @generaltranslation/vue-extractor@0.1.19
+
+## 2.25.1
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.5.4
+  - @generaltranslation/python-extractor@0.2.59
+  - @generaltranslation/supported-locales@2.1.40
+  - @generaltranslation/vue-extractor@0.1.18
+
+## 2.25.0
+
+### Minor Changes
+
+- [#2378](https://github.com/generaltranslation/gt/pull/2378) [`df1e47a`](https://github.com/generaltranslation/gt/commit/df1e47a3c8767546f61608c25d6183af96a7da82) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Add `gt api --list` to print every API operation as `METHOD path operationId summary`, and accept an endpoint with `gt api --spec <endpoint>` to print only the matching operations with schema references resolved, plus the `components` (recursive schemas and security schemes) they still refer to. The endpoint can be an operation ID, a spec path, or a concrete request path such as `/v2/project/info/abc`.
+
+### Patch Changes
+
+- [#2382](https://github.com/generaltranslation/gt/pull/2382) [`64db558`](https://github.com/generaltranslation/gt/commit/64db558404e9124f9f6101262a69346e66e54dca) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add configurable attribute localization to `localizeStaticUrls`
+
+- [#2380](https://github.com/generaltranslation/gt/pull/2380) [`c725b79`](https://github.com/generaltranslation/gt/commit/c725b797bf00e75241306f15b2690a8b467e80b5) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Include GT JSONs in `save-local`
+
+## 2.24.0
+
+### Minor Changes
+
+- [#2350](https://github.com/generaltranslation/gt/pull/2350) [`2856ede`](https://github.com/generaltranslation/gt/commit/2856edeb435795d48ddfae914712ea852a1daf49) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - `gt init` now detects TanStack Start apps and sets them up with `gt-tanstack-start`: it installs the runtime, writes `src/loadTranslations.ts`, adds `gtMiddleware` in `src/start.ts`, calls `initializeGT` in `src/router.tsx`, and wraps the create-start root route in `GTProvider`. Root routes whose component renders a document component from the same file, such as the Fumadocs layout, are configured in that document. Files it does not recognize are left unchanged and reported as manual steps. Vite setup now reports a missing `index.html` instead of crashing, and `gt configure` on Vite apps no longer reports an unchanged `src/loadTranslations.ts` as updated.
+
+### Patch Changes
+
+- [#2376](https://github.com/generaltranslation/gt/pull/2376) [`64f5530`](https://github.com/generaltranslation/gt/commit/64f553012418753076aff2782c876e66ee7da97a) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - The argument parser now rejects credential flag pairs (`--[no-]dev-credentials` with `--[no-]live-translations`) before setup runs, including matching pairs like `--dev-credentials --live-translations`. Unknown `gt git merge-driver` names and invalid `--timeout` values now get the standard argument error and exit code 1 instead of a custom error or an uncaught exception.
+
+- [#2362](https://github.com/generaltranslation/gt/pull/2362) [`b7c2a15`](https://github.com/generaltranslation/gt/commit/b7c2a154b35ed7348a078d1319ee8b0e90b4669e) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - `gt` now bundles dictionary files with `esbuild-wasm` instead of native `esbuild`, so installing `gt` runs no dependency build scripts. With pnpm 11's default `strictDepBuilds`, installing `gt` and running `gt init` no longer fail because esbuild's build script was not approved.
+
+- [#2365](https://github.com/generaltranslation/gt/pull/2365) [`168665b`](https://github.com/generaltranslation/gt/commit/168665bb48f60ba1d68d32137b777e6355f61b64) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - `gt init` and `gt configure` reruns that change nothing no longer rewrite `gt.config.json` or the generated `loadTranslations.js`, and no longer list them as completed steps. When `gt.config.json` does change, it keeps its indentation and trailing newline, and the completed step says whether the file was created or updated. If `--defaults` leaves the development credentials question open, the error now asks for `--dev-credentials` or `--no-dev-credentials` and no longer suggests adding `--defaults`. Passing `--no-dev-credentials` with `--live-translations`, or `--dev-credentials` with `--no-live-translations`, now fails before any change instead of ignoring one of the flags.
+
+- [#2366](https://github.com/generaltranslation/gt/pull/2366) [`d7f8f92`](https://github.com/generaltranslation/gt/commit/d7f8f9284e3afcf530e5cc97d0f6dc1b93c380e4) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - When you're signed out, `gt init`'s "set up a project ID and hot-reload key" prompt now says it will sign you in to General Translation, and still defaults to Yes. A stored login that is obsolete or invalid is treated as signed out, so answering Yes signs you in again instead of failing. After creating a development key, setup names the key and the project (name and ID) it was created for; the key itself is never printed.
+
+- [#2361](https://github.com/generaltranslation/gt/pull/2361) [`aa64eb4`](https://github.com/generaltranslation/gt/commit/aa64eb4f5b8bbaac2d995dd76368ea7cad47f92f) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add `options.mintlify.localizeRedirects` to add localized copies of English redirects for pages that `gt translate` renamed or removed in the same run. Existing redirects are left untouched.
+
+- [#2363](https://github.com/generaltranslation/gt/pull/2363) [`cb8ff12`](https://github.com/generaltranslation/gt/commit/cb8ff122716f8878f5b0ef95c908aca7b7a02090) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - `gt init` now detects the package manager when run inside a workspace member (for example `apps/web` in a pnpm, npm, yarn or bun workspace) by reading the nearest lockfile, `packageManager` or `devEngines` field up to the git root, instead of asking you to pick one. Detection now uses `package-manager-detector`.
+
+- Updated dependencies [[`b7c2a15`](https://github.com/generaltranslation/gt/commit/b7c2a154b35ed7348a078d1319ee8b0e90b4669e)]:
+  - @generaltranslation/python-extractor@0.2.58
+
+## 2.23.2
+
+### Patch Changes
+
+- Updated dependencies [[`f9fc280`](https://github.com/generaltranslation/gt/commit/f9fc28057c4352c367406ff4418dd7b75b5111fd)]:
+  - @generaltranslation/supported-locales@2.1.39
+
 ## 2.23.1
 
 ### Patch Changes

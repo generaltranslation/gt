@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { awaitJobs, pollJobs } from '../wrappers/awaitJobs';
@@ -13,14 +14,51 @@ afterEach(() => {
 });
 
 describe('createTimeoutFetch', () => {
-  it('aborts requests after the configured timeout', async () => {
+  it('aborts the signal handed to fetch after the configured timeout', async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn<typeof fetch>().mockImplementation(
+      async (_input, init) =>
+        new Promise<Response>((_, reject) => {
+          // Like fetch, reject with the signal's abort reason.
+          init?.signal?.addEventListener('abort', () => {
+            reject(init.signal?.reason);
+          });
+        })
+    );
+    const response = createTimeoutFetch({ fetch: fetchMock, timeoutMs: 10 })(
+      'https://example.com/test',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: '{"value":"preserved"}',
+      }
+    );
+
+    const expectation = expect(response).rejects.toThrow(
+      'Request timed out after 10ms'
+    );
+    await vi.advanceTimersByTimeAsync(10);
+
+    await expectation;
+    const [request, init] = fetchMock.mock.calls[0];
+    expect(init?.signal?.aborted).toBe(true);
+    expect(request).toBeInstanceOf(Request);
+    expect((request as Request).method).toBe('POST');
+    expect((request as Request).headers.get('content-type')).toBe(
+      'application/json'
+    );
+    await expect((request as Request).text()).resolves.toBe(
+      '{"value":"preserved"}'
+    );
+  });
+
+  it('aborts the request handed to fetch after the configured timeout', async () => {
     vi.useFakeTimers();
     const fetchMock = vi.fn<typeof fetch>().mockImplementation(
       async (input) =>
         new Promise<Response>((_, reject) => {
-          new Request(input).signal.addEventListener('abort', () => {
-            reject(new DOMException('Aborted', 'AbortError'));
-          });
+          const { signal } = input as Request;
+          signal.addEventListener('abort', () => reject(signal.reason));
         })
     );
     const response = createTimeoutFetch({ fetch: fetchMock, timeoutMs: 10 })(
@@ -35,11 +73,31 @@ describe('createTimeoutFetch', () => {
     await expectation;
   });
 
+  it("keeps a custom fetch's own cancellation error after the timeout", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn<typeof fetch>().mockImplementation(
+      async () =>
+        new Promise<Response>((_, reject) => {
+          setTimeout(() => reject(new Error('custom fetch cancelled')), 20);
+        })
+    );
+    const response = createTimeoutFetch({ fetch: fetchMock, timeoutMs: 10 })(
+      'https://example.com/test'
+    );
+
+    const expectation = expect(response).rejects.toThrow(
+      'custom fetch cancelled'
+    );
+    await vi.advanceTimersByTimeAsync(20);
+
+    await expectation;
+  });
+
   it('forwards caller aborts with their original reason', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockImplementation(
-      async (input) =>
+      async (_input, init) =>
         new Promise<Response>((_, reject) => {
-          const { signal } = new Request(input);
+          const signal = init!.signal!;
           signal.addEventListener('abort', () => reject(signal.reason));
         })
     );
@@ -266,6 +324,22 @@ describe('createRetryingFetch', () => {
   });
 });
 
+describe('API_VERSION', () => {
+  const spec = JSON.parse(
+    readFileSync(new URL('../../spec/openapi.json', import.meta.url), 'utf8')
+  ) as { components: { schemas: { ApiVersion: { enum: string[] } } } };
+  const specVersions = spec.components.schemas.ApiVersion.enum;
+
+  it('relies on the bundled spec listing ApiVersion oldest to newest', () => {
+    // Date-prefixed versions sort lexically in release order.
+    expect(specVersions).toEqual([...specVersions].sort());
+  });
+
+  it('is the newest ApiVersion in the bundled spec', () => {
+    expect(API_VERSION).toBe(specVersions.at(-1));
+  });
+});
+
 describe('createApiClient', () => {
   it('configures the generated client URL and auth headers', async () => {
     let request: Request | undefined;
@@ -460,10 +534,11 @@ describe('createApiClient', () => {
   it('times out requests after the configured timeoutMs', async () => {
     vi.useFakeTimers();
     const fetchMock = vi.fn<typeof fetch>().mockImplementation(
-      async (input) =>
+      async (_input, init) =>
         new Promise<Response>((_, reject) => {
-          new Request(input).signal.addEventListener('abort', () => {
-            reject(new DOMException('Aborted', 'AbortError'));
+          // Like fetch, reject with the signal's abort reason.
+          init?.signal?.addEventListener('abort', () => {
+            reject(init.signal?.reason);
           });
         })
     );
@@ -512,6 +587,51 @@ describe('createApiClient errors', () => {
     await expect(
       emptyClient.get({ url: '/test', throwOnError: true })
     ).rejects.toMatchObject({ code: 503, message: 'Service Unavailable' });
+  });
+
+  it('falls back to the status text for an HTML error page', async () => {
+    const htmlClient = createApiClient({
+      baseUrl: 'https://example.com',
+      fetch: async () =>
+        new Response('<html><body>Bad Gateway</body></html>', {
+          status: 502,
+          statusText: 'Bad Gateway',
+          headers: { 'Content-Type': 'text/html; charset=utf-8' },
+        }),
+      retryPolicy: 'none',
+    });
+
+    await expect(
+      htmlClient.get({ url: '/test', throwOnError: true })
+    ).rejects.toMatchObject({ code: 502, message: 'Bad Gateway' });
+  });
+
+  it('falls back to the status code for an HTML error page without status text', async () => {
+    const htmlClient = createApiClient({
+      baseUrl: 'https://example.com',
+      fetch: async () =>
+        new Response('<html><body>Bad Gateway</body></html>', {
+          status: 502,
+          headers: { 'Content-Type': 'text/html; charset=utf-8' },
+        }),
+      retryPolicy: 'none',
+    });
+
+    await expect(
+      htmlClient.get({ url: '/test', throwOnError: true })
+    ).rejects.toMatchObject({ code: 502, message: 'HTTP 502' });
+  });
+
+  it('falls back to the status code for an empty error body without status text', async () => {
+    const emptyClient = createApiClient({
+      baseUrl: 'https://example.com',
+      fetch: async () => new Response(null, { status: 503 }),
+      retryPolicy: 'none',
+    });
+
+    await expect(
+      emptyClient.get({ url: '/test', throwOnError: true })
+    ).rejects.toMatchObject({ code: 503, message: 'HTTP 503' });
   });
 
   it('keeps the decoded body in non-throwing results', async () => {

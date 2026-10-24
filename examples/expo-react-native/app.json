@@ -6,7 +6,6 @@
     "orientation": "portrait",
     "scheme": "gtexpo",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.generaltranslation.gtexpo"

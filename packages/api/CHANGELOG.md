@@ -1,5 +1,31 @@
 # @generaltranslation/api
 
+## 0.5.5
+
+### Patch Changes
+
+- [#2520](https://github.com/generaltranslation/gt/pull/2520) [`4f31fef`](https://github.com/generaltranslation/gt/commit/4f31fef6e125a84243980ed2ea9d48bd3561c77d) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Abort timed-out requests reliably. `createTimeoutFetch` now passes its abort signal to `fetch` in the request init as well as on the copied `Request`, so the `timeoutMs` timeout fires in Node even if garbage collection runs while the request is pending, and custom `fetch` implementations that read only `request.signal` still see it. The timeout aborts with its own `Request timed out after <ms>ms` error, so a custom `fetch` that rejects with its own error after the timeout keeps that error.
+
+## 0.5.4
+
+### Patch Changes
+
+- [#2402](https://github.com/generaltranslation/gt/pull/2402) [`9764db8`](https://github.com/generaltranslation/gt/commit/9764db8ddb466d243bbb44c7c9fb031053d683fa) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - `ApiError` no longer uses an HTML error page as its message; it falls back to the response status text, or to the HTTP status code when there is none.
+
+- [#2417](https://github.com/generaltranslation/gt/pull/2417) [`bd632a8`](https://github.com/generaltranslation/gt/commit/bd632a888ce27257efeed8512eb6261a16987bb2) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Derive `API_VERSION` and the `ApiVersion` type from the spec's `ApiVersion` schema instead of a single endpoint's header type. The default version stays `2026-03-06.v1`.
+
+## 0.5.3
+
+### Patch Changes
+
+- [#2386](https://github.com/generaltranslation/gt/pull/2386) [`1425b43`](https://github.com/generaltranslation/gt/commit/1425b43f885c73bfa2e5377061fbacc9dfe9e460) Thanks [@internal-gt-public-api-sync](https://github.com/apps/internal-gt-public-api-sync)! - Sync the GT API OpenAPI contract and regenerate the SDK.
+
+## 0.5.2
+
+### Patch Changes
+
+- [#2359](https://github.com/generaltranslation/gt/pull/2359) [`7fa27b2`](https://github.com/generaltranslation/gt/commit/7fa27b2f2e8d33d244b30622b25dcd5d3e5d1cfa) Thanks [@internal-gt-public-api-sync](https://github.com/apps/internal-gt-public-api-sync)! - Sync the GT API OpenAPI contract and regenerate the SDK.
+
 ## 0.5.1
 
 ### Patch Changes

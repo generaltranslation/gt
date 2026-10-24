@@ -2,7 +2,9 @@
   "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
   "changelog": [
     "@changesets/changelog-github",
-    { "repo": "generaltranslation/gt" }
+    {
+      "repo": "generaltranslation/gt"
+    }
   ],
   "commit": false,
   "fixed": [
@@ -22,7 +24,6 @@
   "ignore": [
     "base",
     "general-cases",
-    "create-react-app",
     "ai-chatbot",
     "next-create-app",
     "next-starter",
@@ -54,6 +55,11 @@
     "gt-test-vite-react",
     "gt-test-vite-vue",
     "gt-test-webpack-react",
-    "cli-vue-binary-test"
+    "cli-vue-binary-test",
+    "gt-bundle-analysis",
+    "gt-bundle-example-next",
+    "gt-bundle-example-tanstack-start",
+    "gt-bundle-example-vite-react",
+    "gt-bundle-example-vite-vue"
   ]
 }

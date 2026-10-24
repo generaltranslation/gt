@@ -1,3 +1,4 @@
+import { isValidLocale } from 'generaltranslation';
 import { describe, expect, it } from 'vitest';
 import { getSupportedLocale, listSupportedLocales } from '../index';
 
@@ -17,9 +18,36 @@ describe('@generaltranslation/supported-locales', () => {
     expect(getSupportedLocale('ar-Arab-OM')).toBe('ar-OM');
   });
 
+  it.each(listSupportedLocales())(
+    'accepts listed locale %s and resolves it to a listed locale',
+    (locale) => {
+      expect(isValidLocale(locale)).toBe(true);
+      expect(listSupportedLocales()).toContain(getSupportedLocale(locale));
+    }
+  );
+
+  it('supports Greek (Greece)', () => {
+    expect(listSupportedLocales()).toContain('el-GR');
+    expect(getSupportedLocale('el-GR')).toBe('el-GR');
+  });
+
   it('supports Mexican English', () => {
     expect(listSupportedLocales()).toContain('en-MX');
     expect(getSupportedLocale('en-MX')).toBe('en-MX');
     expect(getSupportedLocale('en-Latn-MX')).toBe('en-MX');
+  });
+
+  it('supports Belarusian and Irish', () => {
+    expect(getSupportedLocale('be')).toBe('be');
+    expect(getSupportedLocale('be-BY')).toBe('be');
+    expect(getSupportedLocale('ga')).toBe('ga');
+    expect(getSupportedLocale('ga-IE')).toBe('ga');
+  });
+
+  it('keeps Latin-script Serbian distinct from Serbian', () => {
+    expect(getSupportedLocale('sr-Latn')).toBe('sr-Latn');
+    expect(getSupportedLocale('sr-Latn-RS')).toBe('sr-Latn');
+    expect(getSupportedLocale('sr')).toBe('sr');
+    expect(getSupportedLocale('sr-Cyrl')).toBe('sr');
   });
 });

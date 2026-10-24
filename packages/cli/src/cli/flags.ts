@@ -1,4 +1,4 @@
-import { Command } from 'commander';
+import { Command, InvalidArgumentError } from 'commander';
 import findFilepath from '../fs/findFilepath.js';
 import { DEFAULT_GIT_REMOTE_NAME } from '../utils/constants.js';
 
@@ -38,10 +38,12 @@ export function attachTranslateFlags(command: Command) {
       (value) => {
         const parsedValue = parseInt(value, 10);
         if (isNaN(parsedValue)) {
-          throw new Error('Invalid timeout: not a number.');
+          throw new InvalidArgumentError('Invalid timeout: not a number.');
         }
         if (parsedValue < 0) {
-          throw new Error('Invalid timeout: must be a positive number.');
+          throw new InvalidArgumentError(
+            'Invalid timeout: must be a positive number.'
+          );
         }
         return parsedValue;
       },

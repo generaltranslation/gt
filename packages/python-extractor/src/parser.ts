@@ -47,7 +47,7 @@ async function initParser(): Promise<Parser> {
   const parser = new Parser();
 
   const wasmPath = await resolveWasmPath(
-    'tree-sitter-python/tree-sitter-python.wasm'
+    '@generaltranslation/python-extractor/tree-sitter-python.wasm'
   );
   const Python = await Language.load(wasmPath);
   parser.setLanguage(Python);
@@ -63,9 +63,10 @@ async function resolveWasmPath(specifier: string): Promise<string> {
   switch (specifier) {
     case 'web-tree-sitter/web-tree-sitter.wasm':
       return (await import('web-tree-sitter/web-tree-sitter.wasm')).default;
-    case 'tree-sitter-python/tree-sitter-python.wasm':
-      return (await import('tree-sitter-python/tree-sitter-python.wasm'))
-        .default;
+    case '@generaltranslation/python-extractor/tree-sitter-python.wasm':
+      return (
+        await import('@generaltranslation/python-extractor/tree-sitter-python.wasm')
+      ).default;
     default:
       throw new Error(`Unknown WASM specifier for Bun: ${specifier}`);
   }

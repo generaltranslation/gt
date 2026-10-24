@@ -2,7 +2,8 @@ import fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { createOrUpdateConfig } from '../setupConfig.js';
+import { GT_CONFIG_SCHEMA_URL } from '../../../utils/constants.js';
+import { applySetupConfig, createOrUpdateConfig } from '../setupConfig.js';
 
 describe('createOrUpdateConfig', () => {
   let testDirectory: string;
@@ -71,6 +72,82 @@ describe('createOrUpdateConfig', () => {
     expect(JSON.parse(fs.readFileSync(configPath, 'utf8')).locales).toEqual([
       'ja',
     ]);
+  });
+
+  it('reports a new config as created and ends it with a newline', async () => {
+    testDirectory = fs.mkdtempSync(path.join(tmpdir(), 'gt-config-'));
+    const configPath = path.join(testDirectory, 'gt.config.json');
+
+    expect(await applySetupConfig(configPath, { locales: ['ja'] })).toBe(
+      'created'
+    );
+    expect(fs.readFileSync(configPath, 'utf8')).toMatch(/^\{\n  ".*\}\n$/s);
+  });
+
+  it('leaves a config that already has the update untouched', async () => {
+    testDirectory = fs.mkdtempSync(path.join(tmpdir(), 'gt-config-'));
+    const configPath = path.join(testDirectory, 'gt.config.json');
+    const content = `{\n    "locales": ["ja"],\n    "$schema": "${GT_CONFIG_SCHEMA_URL}"\n}`;
+    fs.writeFileSync(configPath, content);
+
+    expect(await applySetupConfig(configPath, { locales: ['ja'] })).toBe(
+      'unchanged'
+    );
+    expect(fs.readFileSync(configPath, 'utf8')).toBe(content);
+  });
+
+  it('keeps the top-level indentation when a nested key comes first', async () => {
+    testDirectory = fs.mkdtempSync(path.join(tmpdir(), 'gt-config-'));
+    const configPath = path.join(testDirectory, 'gt.config.json');
+    fs.writeFileSync(
+      configPath,
+      `{"$schema": "${GT_CONFIG_SCHEMA_URL}", "files": {\n    "gt": {"output": "a"}\n  },\n  "locales": ["fr"]\n}\n`
+    );
+
+    await applySetupConfig(configPath, { locales: ['ja'] });
+
+    expect(fs.readFileSync(configPath, 'utf8')).toBe(
+      `${JSON.stringify(
+        {
+          $schema: GT_CONFIG_SCHEMA_URL,
+          files: { gt: { output: 'a' } },
+          locales: ['ja'],
+        },
+        null,
+        2
+      )}\n`
+    );
+  });
+
+  it('keeps the indentation and trailing newline of an updated config', async () => {
+    testDirectory = fs.mkdtempSync(path.join(tmpdir(), 'gt-config-'));
+    const configPath = path.join(testDirectory, 'gt.config.json');
+    fs.writeFileSync(
+      configPath,
+      `${JSON.stringify({ $schema: GT_CONFIG_SCHEMA_URL, locales: ['fr'] }, null, 4)}\n`
+    );
+
+    expect(await applySetupConfig(configPath, { locales: ['ja'] })).toBe(
+      'updated'
+    );
+    expect(fs.readFileSync(configPath, 'utf8')).toBe(
+      `${JSON.stringify({ $schema: GT_CONFIG_SCHEMA_URL, locales: ['ja'] }, null, 4)}\n`
+    );
+  });
+
+  it('returns the config filepath whether it creates, updates, or keeps the config', async () => {
+    testDirectory = fs.mkdtempSync(path.join(tmpdir(), 'gt-config-'));
+    const configPath = path.join(testDirectory, 'gt.config.json');
+
+    expect(await createOrUpdateConfig(configPath, { locales: ['fr'] })).toBe(
+      configPath
+    );
+    expect(await createOrUpdateConfig(configPath, { locales: ['ja'] })).toBe(
+      configPath
+    );
+    expect(await createOrUpdateConfig(configPath, { locales: ['ja'] })).toBe(
+      configPath
+    );
   });
 
   it('fails instead of overwriting an unreadable config', async () => {

@@ -2,6 +2,8 @@ packages:
   - packages/*
   - tests/apps/**/*
   - examples/*
+  - tools/bundle-analysis/analysis-app
+  - tools/bundle-analysis/examples/*
 
 enableGlobalVirtualStore: true
 hoist: false
@@ -39,6 +41,18 @@ catalog:
   vitest: ^3.2.4
 
 packageExtensions:
+  '@payloadcms/drizzle@*':
+    dependencies:
+      drizzle-kit: 0.31.7
+  drizzle-kit@*:
+    peerDependencies:
+      drizzle-orm: '*'
+  '@payloadcms/ui@*':
+    peerDependencies:
+      '@types/react': '*'
+  '@payloadcms/next@*':
+    peerDependencies:
+      '@types/react': '*'
   eslint-config-next@*:
     peerDependencies:
       next: '*'

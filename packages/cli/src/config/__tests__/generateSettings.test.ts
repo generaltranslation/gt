@@ -8,6 +8,7 @@ import { logger } from '../../console/logger.js';
 import { resolveConfig } from '../resolveConfig.js';
 import { createUserTokenProvider } from '../../auth/oauth.js';
 import { configureApiClient } from '../../utils/api.js';
+import { logErrorAndExit } from '../../console/logging.js';
 
 // Mock resolveFiles
 vi.mock('../../fs/config/parseFilesConfig', () => ({
@@ -284,6 +285,26 @@ describe('generateSettings - composite patterns', () => {
     );
   });
 
+  it('rejects a docsUrlPattern list entry without [locale]', async () => {
+    await generateSettings(
+      { options: { docsUrlPattern: ['/docs/[locale]', '/ai/docs'] } },
+      '/test/cwd'
+    );
+
+    expect(vi.mocked(logErrorAndExit)).toHaveBeenCalledWith(
+      expect.stringContaining('missing "[locale]"')
+    );
+  });
+
+  it('accepts a docsUrlPattern list', async () => {
+    await generateSettings(
+      { options: { docsUrlPattern: ['/docs/[locale]', '/ai/docs/[locale]'] } },
+      '/test/cwd'
+    );
+
+    expect(vi.mocked(logErrorAndExit)).not.toHaveBeenCalled();
+  });
+
   describe('options.saveLocal', () => {
     it('defaults to false when neither flag nor config sets it', async () => {
       const settings = await generateSettings({}, '/test/cwd');
@@ -416,6 +437,27 @@ describe('generateSettings - composite patterns', () => {
     expect(vi.mocked(configureApiClient).mock.calls[1][0]).toMatchObject({
       apiKey: 'explicit-api-key',
     });
+  });
+
+  it('sends requests to GT_API_URL over the configured base URL', async () => {
+    mockResolveConfig.mockReturnValue({
+      config: { baseUrl: 'https://configured.example' },
+      path: '/test/gt.config.json',
+    });
+    expect((await generateSettings({}, '/test/cwd')).baseUrl).toBe(
+      'https://configured.example'
+    );
+
+    vi.stubEnv('GT_API_URL', 'https://staging.example');
+    try {
+      const settings = await generateSettings({}, '/test/cwd');
+      expect(settings.baseUrl).toBe('https://staging.example');
+      expect(vi.mocked(createUserTokenProvider)).toHaveBeenLastCalledWith({
+        baseUrl: 'https://staging.example',
+      });
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it('should not call resolveFiles when files are not provided', async () => {
