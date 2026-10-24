@@ -7,17 +7,8 @@
  * These tests run through the real unplugin transform (index.ts) because
  * that is where the gating lives.
  */
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import type {
-  TransformResult,
-  UnpluginBuildContext,
-  UnpluginContext,
-} from 'unplugin';
-import gtUnplugin from '../index';
-import type { GTUnpluginOptions } from '../index';
+import { describe, expect, it } from 'vitest';
+import { transformWithPlugin } from './transformWithPlugin';
 
 const T_COMPONENT_CODE = `
   import { jsx } from 'react/jsx-runtime';
@@ -37,70 +28,7 @@ const TAGGED_TEMPLATE_CODE = `
   const message = t\`Hello world\`;
 `;
 
-const tempDirs: string[] = [];
-
-function createTempDir(): string {
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-compiler-'));
-  tempDirs.push(tempDir);
-  return tempDir;
-}
-
-function createTestContext(): UnpluginBuildContext & UnpluginContext {
-  return {
-    addWatchFile() {},
-    emitFile() {},
-    getWatchFiles() {
-      return [];
-    },
-    parse() {
-      throw new Error('parse is not implemented in this test context');
-    },
-    warn() {},
-    error(message: unknown) {
-      throw new Error(String(message));
-    },
-  } as UnpluginBuildContext & UnpluginContext;
-}
-
-async function transformWithPlugin(
-  options: GTUnpluginOptions | undefined,
-  code: string
-): Promise<string | null> {
-  const cwd = createTempDir();
-  const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-  const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(cwd);
-  const plugin = (() => {
-    try {
-      return gtUnplugin.raw(options, { framework: 'vite' });
-    } finally {
-      cwdSpy.mockRestore();
-      warnSpy.mockRestore();
-    }
-  })();
-
-  const transform = plugin.transform;
-  if (typeof transform !== 'function') {
-    throw new Error('Expected transform hook to be a function');
-  }
-
-  const result: TransformResult = await transform.call(
-    createTestContext(),
-    code,
-    path.join(cwd, 'App.tsx')
-  );
-  if (!result) {
-    return null;
-  }
-  return typeof result === 'string' ? result : result.code;
-}
-
 describe('compileTimeHash plugin option', () => {
-  afterEach(() => {
-    for (const tempDir of tempDirs.splice(0)) {
-      fs.rmSync(tempDir, { force: true, recursive: true });
-    }
-  });
-
   it('injects _hash into <T> by default', async () => {
     const output = await transformWithPlugin(undefined, T_COMPONENT_CODE);
     expect(output).not.toBeNull();
