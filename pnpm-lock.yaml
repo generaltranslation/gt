@@ -1684,6 +1684,9 @@ importers:
       '@generaltranslation/react-core':
         specifier: workspace:*
         version: link:../react-core
+      '@tanstack/react-start':
+        specifier: '>=1.159.0'
+        version: 1.169.3(esbuild@0.28.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(rolldown@1.2.12)(rollup@4.63.5)(vite@8.3.1(@types/node@22.13.10)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.19))
       generaltranslation:
         specifier: workspace:*
         version: link:../core
@@ -1700,9 +1703,6 @@ importers:
         specifier: '>=16.8.0'
         version: 19.2.3(react@19.2.3)
     devDependencies:
-      '@tanstack/react-start':
-        specifier: ^1.168.60
-        version: 1.169.3(esbuild@0.28.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(rolldown@1.2.12)(rollup@4.63.5)(vite@8.3.1(@types/node@22.13.10)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.19))
       '@types/node':
         specifier: 'catalog:'
         version: 22.13.10
