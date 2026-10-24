@@ -55,26 +55,41 @@ function getCalleeName(callee: TSESTree.Expression): string | undefined {
 // Names as eslint-plugin-react-hooks reads them.
 const isHookName = (name: string) => /^use[A-Z0-9]/.test(name);
 
-/** Whether the function is a callback a hook calls, like useEffect's. */
-function isHookCallback(fn: FunctionNode): boolean {
-  const { parent } = fn;
+/** Whether the node is passed to a function with one of these names. */
+function isArgumentOf(node: TSESTree.Node, names: (name: string) => boolean) {
+  const { parent } = node;
   if (parent?.type !== AST_NODE_TYPES.CallExpression) return false;
+  if (parent.callee === node) return false;
   const name = getCalleeName(parent.callee);
-  return name !== undefined && isHookName(name);
+  return name !== undefined && names(name);
 }
 
 /**
+ * Whether the function runs as part of the scope around it: called right
+ * where it's defined, like `(() => …)()`, or by a hook during render or in an
+ * effect. useCallback stores its callback for later, like an event handler.
+ */
+function runsWithEnclosingScope(fn: FunctionNode): boolean {
+  return (
+    (fn.parent?.type === AST_NODE_TYPES.CallExpression &&
+      fn.parent.callee === fn) ||
+    isArgumentOf(fn, (name) => isHookName(name) && name !== 'useCallback')
+  );
+}
+
+const isComponentWrapper = (name: string) =>
+  name === 'memo' || name === 'forwardRef';
+
+/**
  * The name a function is declared or assigned under, looking through memo()
- * and forwardRef().
+ * and forwardRef(). A function expression's own name, as in
+ * `component: function render() {}`, is only a fallback.
  */
 function getFunctionName(fn: FunctionNode): string | undefined {
-  if (fn.id) return fn.id.name;
+  if (fn.type === AST_NODE_TYPES.FunctionDeclaration) return fn.id?.name;
   let node: TSESTree.Node = fn;
-  while (
-    node.parent?.type === AST_NODE_TYPES.CallExpression &&
-    ['memo', 'forwardRef'].includes(getCalleeName(node.parent.callee) ?? '')
-  ) {
-    node = node.parent;
+  while (isArgumentOf(node, isComponentWrapper)) {
+    node = node.parent as TSESTree.Node;
   }
   const { parent } = node;
   if (
@@ -89,7 +104,7 @@ function getFunctionName(fn: FunctionNode): string | undefined {
   ) {
     return parent.key.name;
   }
-  return undefined;
+  return fn.id?.name;
 }
 
 /**
@@ -135,6 +150,19 @@ function returnsJsx(fn: FunctionNode): boolean {
     );
   };
   return visit(fn.body.body);
+}
+
+/**
+ * Whether the function renders: memo() and forwardRef() take components
+ * whatever their names.
+ */
+function isComponentOrHook(fn: FunctionNode): boolean {
+  if (isArgumentOf(fn, isComponentWrapper)) return true;
+  const name = getFunctionName(fn);
+  return (
+    (name !== undefined && rendersDuringRender(name)) ||
+    isAnonymousDefaultComponent(fn)
+  );
 }
 
 /** An unnamed `export default` function that renders, such as a page. */
@@ -195,17 +223,12 @@ export const translationFunctionPlacement = createRule({
         if (!name) return;
 
         let fn = getEnclosingFunction(node);
+        while (fn && runsWithEnclosingScope(fn)) fn = getEnclosingFunction(fn);
         if (!fn) {
           context.report({ node, messageId: 'moduleScope', data: { name } });
           return;
         }
-        // A hook's callback runs as part of the component that calls it.
-        while (fn && isHookCallback(fn)) fn = getEnclosingFunction(fn);
-        const fnName = fn && getFunctionName(fn);
-        if (
-          (fnName && rendersDuringRender(fnName)) ||
-          (fn && isAnonymousDefaultComponent(fn))
-        ) {
+        if (isComponentOrHook(fn)) {
           context.report({
             node,
             messageId: 'inComponent',
