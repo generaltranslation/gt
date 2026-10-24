@@ -41,6 +41,12 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
       const save = useCallback(async () => toast((await getGT())('Saved')), []);
       return <button onClick={save} />;
     }`,
+    `import * as i18n from 'gt-tanstack-start';
+    export const Route = createFileRoute('/')({
+      loader: async () => (await i18n.getGT())('Title'),
+    });`,
+    `import * as server from 'gt-next/server';
+    const gt = await server.getGT();`,
     // Same names from other libraries, or not imported at all
     `import { getGT } from 'gt-next/server';
     const gt = await getGT();`,
@@ -52,6 +58,53 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
     }`,
   ],
   invalid: [
+    {
+      code: `import * as i18n from 'gt-tanstack-start';
+      export const locale = i18n.getLocale();`,
+      errors: [{ messageId: 'moduleScope', data: { name: 'getLocale' } }],
+    },
+    {
+      code: `import * as i18n from 'gt-tanstack-start';
+      function Page() {
+        return <p>{i18n.getLocale()}</p>;
+      }`,
+      errors: [
+        {
+          messageId: 'inComponent',
+          data: { name: 'getLocale', hook: 'useLocale' },
+        },
+      ],
+    },
+    {
+      code: `${imports}export default (() => <p>{getLocale()}</p>) satisfies React.FC;`,
+      errors: [
+        {
+          messageId: 'inComponent',
+          data: { name: 'getLocale', hook: 'useLocale' },
+        },
+      ],
+    },
+    {
+      code: `${imports}const Page = (() => <p>{getLocale()}</p>) as React.FC;`,
+      errors: [
+        {
+          messageId: 'inComponent',
+          data: { name: 'getLocale', hook: 'useLocale' },
+        },
+      ],
+    },
+    {
+      code: `${imports}
+      export default function () {
+        return (<p>{getLocale()}</p>) as React.ReactNode;
+      }`,
+      errors: [
+        {
+          messageId: 'inComponent',
+          data: { name: 'getLocale', hook: 'useLocale' },
+        },
+      ],
+    },
     {
       code: `${imports}export const locale = (() => getLocale())();`,
       errors: [{ messageId: 'moduleScope', data: { name: 'getLocale' } }],
