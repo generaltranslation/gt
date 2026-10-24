@@ -55,6 +55,36 @@ describe('BrowserGTProvider', () => {
     document.body.innerHTML = '';
   });
 
+  it('leaves the conditions cookies alone until it may sync them', async () => {
+    const { BrowserGTProvider } = await import('../BrowserGTProvider');
+    const element = document.createElement('div');
+    document.body.append(element);
+    const root = createRoot(element);
+    const render = (locale: string, syncConditions: boolean) =>
+      root.render(
+        <BrowserGTProvider
+          locale={locale}
+          translations={{}}
+          dictionaries={{}}
+          _syncConditions={syncConditions}
+        />
+      );
+
+    // A prerendered shell's build-time locale is not the visitor's choice.
+    await act(async () => render('en', false));
+    expect(mockSetCookieValue).not.toHaveBeenCalled();
+
+    await act(async () => render('fr', true));
+    expect(mockSetCookieValue).toHaveBeenCalledWith({
+      cookieName: 'generaltranslation.locale',
+      value: 'fr',
+    });
+    expect(mockSetCookieValue).not.toHaveBeenCalledWith(
+      expect.objectContaining({ value: 'en' })
+    );
+    await act(async () => root.unmount());
+  });
+
   it('keeps server props authoritative until a reload supplies new props', async () => {
     const { BrowserGTProvider } = await import('../BrowserGTProvider');
     const reload = vi.fn();

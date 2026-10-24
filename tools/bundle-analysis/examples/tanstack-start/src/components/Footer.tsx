@@ -1,4 +1,4 @@
-import { T } from 'gt-react';
+import { T } from 'gt-tanstack-start';
 import { Crosses } from './Crosses';
 
 export function Footer() {

@@ -22,6 +22,13 @@ describe.sequential('locale routing', () => {
     expect(getLocaleFromPath('/app/about', '/app')).toBeUndefined();
   });
 
+  it('matches the basepath case-insensitively, as TanStack Router does', () => {
+    expect(getLocaleFromPath('/APP/fr/about', '/app')).toBe('fr');
+    expect(getPathnameForLocale('/APP/fr/about', 'ar', '/app')).toBe(
+      '/APP/ar/about'
+    );
+  });
+
   it('replaces existing locale prefixes', () => {
     expect(getPathnameForLocale('/fr/about', 'ar')).toBe('/ar/about');
     expect(getPathnameForLocale('/fr', 'ar')).toBe('/ar');

@@ -22,14 +22,13 @@ const noLocaleCandidatesWarning = createDiagnosticMessage({
 
 export function resolveRequestConditions(
   request: Request,
-  localeConfig?: InitializeGTParams,
-  pathname = new URL(request.url).pathname
+  localeConfig: InitializeGTParams
 ): RequestConditions {
   const i18nConfig = getI18nConfig();
   const cookieHeader = request.headers.get('cookie');
   const localeCandidates: string[] = [];
-  if (localeConfig?.localeRouting) {
-    const pathLocale = getLocaleFromPath(pathname);
+  if (localeConfig.localeRouting) {
+    const pathLocale = getLocaleFromPath(new URL(request.url).pathname);
     if (pathLocale) localeCandidates.push(pathLocale);
   }
   const cookieLocale = getCookieValue(
@@ -47,11 +46,7 @@ export function resolveRequestConditions(
 
   const locale = i18nConfig.resolveSupportedLocale(
     localeCandidates,
-    localeConfig ?? {
-      defaultLocale: i18nConfig.getDefaultLocale(),
-      locales: i18nConfig.getLocales(),
-      customMapping: i18nConfig.getCustomMapping(),
-    }
+    localeConfig
   );
 
   setCookie(i18nConfig.getLocaleCookieName(), locale, localeCookieOptions);

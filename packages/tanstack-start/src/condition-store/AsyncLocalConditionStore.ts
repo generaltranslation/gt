@@ -1,4 +1,3 @@
-import { AsyncLocalStorage } from 'node:async_hooks';
 import { getRequest } from '@tanstack/react-start/server';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
@@ -15,15 +14,15 @@ const missingRequestScopeError = createDiagnosticMessage({
   source: 'gt-tanstack-start',
   severity: 'Error',
   whatHappened: 'Cannot read GT request state outside a request scope',
-  why: 'this code is running outside a TanStack Start server request',
-  fix: 'Call GT server functions from route loaders, server functions, server routes, or components rendered during SSR.',
+  why: 'this code is running outside a TanStack Start server request, for example at module scope',
+  fix: 'Call getGT() and the other translation functions inside route loaders, head data, server functions or server routes, and use hooks such as useGT() in components',
 });
 
 /**
- * Read-only ConditionStore backed by request-scoped AsyncLocalStorage.
+ * Read-only ConditionStore that resolves each TanStack Start request's
+ * conditions once, from Start's own request context.
  */
 export class AsyncLocalConditionStore implements ReadonlyConditionStoreInterface {
-  private readonly storage = new AsyncLocalStorage<RequestConditions>();
   private readonly requestConditions = new WeakMap<
     Request,
     RequestConditions
@@ -31,9 +30,8 @@ export class AsyncLocalConditionStore implements ReadonlyConditionStoreInterface
 
   constructor(private readonly config: InitializeGTParams) {}
 
-  run<T>(request: Request, callback: () => T, pathname?: string): T {
-    const conditions = resolveRequestConditions(request, this.config, pathname);
-    return this.storage.run(conditions, callback);
+  isLocaleRoutingEnabled(): boolean {
+    return this.config.localeRouting === true;
   }
 
   getLocale = (): string => this.getConditions().locale;
@@ -49,13 +47,9 @@ export class AsyncLocalConditionStore implements ReadonlyConditionStoreInterface
   setEnableI18n = (_enableI18n: boolean): void => {};
 
   private getConditions(): RequestConditions {
-    const scoped = this.storage.getStore();
-    if (scoped) return scoped;
-
-    // Without gtMiddleware, fall back to Start's own request context and
-    // resolve once per request. Resolving writes the locale cookie, which only
-    // reaches the browser if this first read happens before Start sends the
-    // response headers (for example in a route loader, not in streamed content).
+    // Resolving writes the locale cookie, which only reaches the browser if
+    // this first read happens before Start sends the response headers (for
+    // example in a route loader, not in streamed content).
     let request: Request;
     try {
       request = getRequest();
