@@ -156,7 +156,7 @@ export const Route = createFileRoute('/pricing')({
 });
 ```
 
-They return promises, so don't call them while a component renders or in its effects; that delays translations past the first render.
+They return promises, so don't call them while a component renders or in its effects; that delays translations past the first render. Don't call them at module scope either: on the server, a module that loads during a request would keep that visitor's locale for every later request. The `translation-function-placement` rule in [`@generaltranslation/react-core-linter`](https://www.npmjs.com/package/@generaltranslation/react-core-linter) reports both.
 
 ## SPA mode
 
