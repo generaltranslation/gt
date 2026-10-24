@@ -6,26 +6,58 @@ import {
   clearOrphanedFileNames,
   getOrphanedFileNames,
 } from '../../../state/orphanedFileNames.js';
+import {
+  clearWarnings,
+  getWarnings,
+} from '../../../state/translateWarnings.js';
+import { logger } from '../../../console/logger.js';
+import { ApiError } from 'generaltranslation/api';
 
-// Mock the GT class
 const mockGt = {
-  queryFileData: vi.fn(),
-  getOrphanedFiles: vi.fn(),
-  processFileMoves: vi.fn(),
+  queryFiles: vi.fn(),
+  listBranchFiles: vi.fn(),
+  moveFiles: vi.fn(),
   uploadSourceFiles: vi.fn(),
+  get: vi.fn(),
+  update: vi.fn(),
 };
 
+// queryFiles answers one result per selector, in selector order
+function answerNotFound() {
+  mockGt.queryFiles.mockImplementation(
+    async (files: Array<{ fileId: string }>) => ({
+      results: files.map((file) => ({ ...file, status: 'not_found' })),
+    })
+  );
+}
+
+function uploadResults(
+  results: Array<Record<string, unknown> & { status: string }>
+) {
+  const failed = results.filter((r) => r.status === 'failed').length;
+  return {
+    summary: {
+      total: results.length,
+      succeeded: results.length - failed,
+      failed,
+    },
+    results,
+  };
+}
+
+const mockSpinner = vi.hoisted(() => ({
+  start: vi.fn(),
+  stop: vi.fn(),
+  message: vi.fn(),
+}));
+
 // Mock the logger
-vi.mock('../../console/logger.js', () => ({
+vi.mock('../../../console/logger.js', () => ({
   logger: {
     info: vi.fn(),
     debug: vi.fn(),
     warn: vi.fn(),
-    createSpinner: () => ({
-      start: vi.fn(),
-      stop: vi.fn(),
-      message: vi.fn(),
-    }),
+    createSpinner: () => mockSpinner,
   },
 }));
 
@@ -43,6 +75,9 @@ describe('UploadSourcesStep', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    clearWarnings();
+    answerNotFound();
+    mockGt.get.mockResolvedValue({ defaultLocale: 'en' });
   });
 
   describe('move detection', () => {
@@ -59,25 +94,23 @@ describe('UploadSourcesStep', () => {
       ];
 
       // Server has the file at old path
-      mockGt.queryFileData.mockResolvedValue({
-        sourceFiles: [],
-      });
-      mockGt.getOrphanedFiles.mockResolvedValue({
-        orphanedFiles: [
+      mockGt.listBranchFiles.mockResolvedValue({
+        items: [
           {
             fileId: 'old-file-id-hash', // Old hash (from old path)
             versionId: 'same-content-hash', // Same content
             fileName: 'src/i18n/en.json', // Old path
           },
         ],
+        nextCursor: null,
       });
 
-      mockGt.processFileMoves.mockResolvedValue({
+      mockGt.moveFiles.mockResolvedValue({
         results: [
           {
             oldFileId: 'old-file-id-hash',
             newFileId: 'new-file-id-hash',
-            success: true,
+            status: 'succeeded',
             newSourceFileId: 'new-source-id',
             clonedTranslationsCount: 2,
           },
@@ -85,16 +118,13 @@ describe('UploadSourcesStep', () => {
         summary: { total: 1, succeeded: 1, failed: 0 },
       });
 
-      mockGt.uploadSourceFiles.mockResolvedValue({
-        uploadedFiles: [],
-        count: 0,
-      });
+      mockGt.uploadSourceFiles.mockResolvedValue(uploadResults([]));
 
       const step = new UploadSourcesStep(mockGt, mockSettings);
       await step.run({ files: localFiles, branchData: mockBranchData });
 
       // Verify move was detected and processed
-      expect(mockGt.processFileMoves).toHaveBeenCalledWith(
+      expect(mockGt.moveFiles).toHaveBeenCalledWith(
         [
           {
             oldFileId: 'old-file-id-hash',
@@ -118,29 +148,26 @@ describe('UploadSourcesStep', () => {
         },
       ];
 
-      mockGt.queryFileData.mockResolvedValue({
-        sourceFiles: [],
-      });
-      mockGt.getOrphanedFiles.mockResolvedValue({
-        orphanedFiles: [
+      mockGt.listBranchFiles.mockResolvedValue({
+        items: [
           {
             fileId: 'old-file-id-hash',
             versionId: 'old-content-hash', // Different content
             fileName: 'src/i18n/en.json',
           },
         ],
+        nextCursor: null,
       });
 
-      mockGt.uploadSourceFiles.mockResolvedValue({
-        uploadedFiles: [{ fileId: 'new-file-id-hash' }],
-        count: 1,
-      });
+      mockGt.uploadSourceFiles.mockResolvedValue(
+        uploadResults([{ fileId: 'new-file-id-hash', status: 'succeeded' }])
+      );
 
       const step = new UploadSourcesStep(mockGt, mockSettings);
       await step.run({ files: localFiles, branchData: mockBranchData });
 
       // No move should be processed - it's a new file
-      expect(mockGt.processFileMoves).not.toHaveBeenCalled();
+      expect(mockGt.moveFiles).not.toHaveBeenCalled();
     });
 
     it('should not detect move when fileId is the same', async () => {
@@ -155,29 +182,28 @@ describe('UploadSourcesStep', () => {
         },
       ];
 
-      mockGt.queryFileData.mockResolvedValue({
-        sourceFiles: [
+      mockGt.queryFiles.mockResolvedValue({
+        results: [
           {
+            status: 'found',
             branchId: 'branch-123',
             fileId: 'same-file-id-hash',
             versionId: 'same-content-hash',
           },
         ],
       });
-      mockGt.getOrphanedFiles.mockResolvedValue({
-        orphanedFiles: [],
+      mockGt.listBranchFiles.mockResolvedValue({
+        items: [],
+        nextCursor: null,
       });
 
-      mockGt.uploadSourceFiles.mockResolvedValue({
-        uploadedFiles: [],
-        count: 0,
-      });
+      mockGt.uploadSourceFiles.mockResolvedValue(uploadResults([]));
 
       const step = new UploadSourcesStep(mockGt, mockSettings);
       await step.run({ files: localFiles, branchData: mockBranchData });
 
       // No move, file already exists at same path
-      expect(mockGt.processFileMoves).not.toHaveBeenCalled();
+      expect(mockGt.moveFiles).not.toHaveBeenCalled();
     });
 
     it('should detect multiple moves in a batch', async () => {
@@ -200,11 +226,8 @@ describe('UploadSourcesStep', () => {
         },
       ];
 
-      mockGt.queryFileData.mockResolvedValue({
-        sourceFiles: [],
-      });
-      mockGt.getOrphanedFiles.mockResolvedValue({
-        orphanedFiles: [
+      mockGt.listBranchFiles.mockResolvedValue({
+        items: [
           {
             fileId: 'old-id-1',
             versionId: 'version-1',
@@ -216,25 +239,23 @@ describe('UploadSourcesStep', () => {
             fileName: 'old/es.json',
           },
         ],
+        nextCursor: null,
       });
 
-      mockGt.processFileMoves.mockResolvedValue({
+      mockGt.moveFiles.mockResolvedValue({
         results: [
-          { oldFileId: 'old-id-1', newFileId: 'new-id-1', success: true },
-          { oldFileId: 'old-id-2', newFileId: 'new-id-2', success: true },
+          { oldFileId: 'old-id-1', newFileId: 'new-id-1', status: 'succeeded' },
+          { oldFileId: 'old-id-2', newFileId: 'new-id-2', status: 'succeeded' },
         ],
         summary: { total: 2, succeeded: 2, failed: 0 },
       });
 
-      mockGt.uploadSourceFiles.mockResolvedValue({
-        uploadedFiles: [],
-        count: 0,
-      });
+      mockGt.uploadSourceFiles.mockResolvedValue(uploadResults([]));
 
       const step = new UploadSourcesStep(mockGt, mockSettings);
       await step.run({ files: localFiles, branchData: mockBranchData });
 
-      expect(mockGt.processFileMoves).toHaveBeenCalledWith(
+      expect(mockGt.moveFiles).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({
             oldFileId: 'old-id-1',
@@ -261,30 +282,29 @@ describe('UploadSourcesStep', () => {
         },
       ];
 
-      mockGt.queryFileData.mockResolvedValue({
-        sourceFiles: [],
-      });
-      mockGt.getOrphanedFiles.mockResolvedValue({
-        orphanedFiles: [
+      mockGt.listBranchFiles.mockResolvedValue({
+        items: [
           {
             fileId: 'old-file-id',
             versionId: 'content-hash',
             fileName: 'old.json',
           },
         ],
+        nextCursor: null,
       });
 
-      mockGt.processFileMoves.mockResolvedValue({
+      mockGt.moveFiles.mockResolvedValue({
         results: [
-          { oldFileId: 'old-file-id', newFileId: 'new-file-id', success: true },
+          {
+            oldFileId: 'old-file-id',
+            newFileId: 'new-file-id',
+            status: 'succeeded',
+          },
         ],
         summary: { total: 1, succeeded: 1, failed: 0 },
       });
 
-      mockGt.uploadSourceFiles.mockResolvedValue({
-        uploadedFiles: [],
-        count: 0,
-      });
+      mockGt.uploadSourceFiles.mockResolvedValue(uploadResults([]));
 
       const step = new UploadSourcesStep(mockGt, mockSettings);
       const result = await step.run({
@@ -312,8 +332,8 @@ describe('UploadSourcesStep', () => {
       });
 
       expect(result).toEqual([]);
-      expect(mockGt.queryFileData).not.toHaveBeenCalled();
-      expect(mockGt.processFileMoves).not.toHaveBeenCalled();
+      expect(mockGt.queryFiles).not.toHaveBeenCalled();
+      expect(mockGt.moveFiles).not.toHaveBeenCalled();
     });
 
     it('should handle no orphaned files', async () => {
@@ -328,22 +348,19 @@ describe('UploadSourcesStep', () => {
         },
       ];
 
-      mockGt.queryFileData.mockResolvedValue({
-        sourceFiles: [],
-      });
-      mockGt.getOrphanedFiles.mockResolvedValue({
-        orphanedFiles: [], // No orphaned files
+      mockGt.listBranchFiles.mockResolvedValue({
+        items: [],
+        nextCursor: null,
       });
 
-      mockGt.uploadSourceFiles.mockResolvedValue({
-        uploadedFiles: [{ fileId: 'brand-new-id' }],
-        count: 1,
-      });
+      mockGt.uploadSourceFiles.mockResolvedValue(
+        uploadResults([{ fileId: 'brand-new-id', status: 'succeeded' }])
+      );
 
       const step = new UploadSourcesStep(mockGt, mockSettings);
       await step.run({ files: localFiles, branchData: mockBranchData });
 
-      expect(mockGt.processFileMoves).not.toHaveBeenCalled();
+      expect(mockGt.moveFiles).not.toHaveBeenCalled();
       expect(mockGt.uploadSourceFiles).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({
@@ -354,6 +371,328 @@ describe('UploadSourcesStep', () => {
       );
     });
   });
+  describe('canonical operations and partial failures', () => {
+    const file = (name: string, versionId = `v:${name}`): FileToUpload => ({
+      content: name,
+      fileName: name,
+      fileFormat: 'JSON',
+      locale: 'en',
+      fileId: `id:${name}`,
+      versionId,
+    });
+
+    beforeEach(() => clearOrphanedFileNames());
+
+    it('pages through the branch files and treats non-local ones as orphans', async () => {
+      mockGt.listBranchFiles
+        .mockResolvedValueOnce({
+          items: [
+            { fileId: 'id:a.json', versionId: 'v:a.json', fileName: 'a.json' },
+            { fileId: 'id:old.json', versionId: 'v:x', fileName: 'old.json' },
+          ],
+          nextCursor: 'page-2',
+        })
+        .mockResolvedValueOnce({
+          items: [
+            { fileId: 'id:gone.json', versionId: 'v:y', fileName: 'gone.json' },
+          ],
+          nextCursor: null,
+        });
+      mockGt.uploadSourceFiles.mockResolvedValue(uploadResults([]));
+
+      const step = new UploadSourcesStep(mockGt, mockSettings);
+      await step.run({ files: [file('a.json')], branchData: mockBranchData });
+
+      expect(mockGt.listBranchFiles).toHaveBeenNthCalledWith(1, 'branch-123', {
+        cursor: undefined,
+      });
+      expect(mockGt.listBranchFiles).toHaveBeenNthCalledWith(2, 'branch-123', {
+        cursor: 'page-2',
+      });
+      expect(getOrphanedFileNames()).toEqual(['old.json', 'gone.json']);
+    });
+
+    it('skips files whose version the platform already has', async () => {
+      mockGt.listBranchFiles.mockResolvedValue({ items: [], nextCursor: null });
+      mockGt.queryFiles.mockResolvedValue({
+        results: [
+          { status: 'found', fileId: 'id:a.json', branchId: 'branch-123' },
+          { status: 'not_found', fileId: 'id:b.json' },
+        ],
+      });
+      mockGt.uploadSourceFiles.mockResolvedValue(uploadResults([]));
+
+      const step = new UploadSourcesStep(mockGt, mockSettings);
+      await step.run({
+        files: [file('a.json'), file('b.json')],
+        branchData: mockBranchData,
+      });
+
+      expect(mockGt.uploadSourceFiles).toHaveBeenCalledWith(
+        [
+          expect.objectContaining({
+            source: expect.objectContaining({ fileId: 'id:b.json' }),
+          }),
+        ],
+        expect.any(Object)
+      );
+    });
+
+    it('records failed moves and uploads the moved file instead', async () => {
+      mockGt.listBranchFiles.mockResolvedValue({
+        items: [
+          { fileId: 'id:old.json', versionId: 'v1', fileName: 'old.json' },
+        ],
+        nextCursor: null,
+      });
+      mockGt.moveFiles.mockResolvedValue({
+        summary: { total: 1, succeeded: 0, failed: 1 },
+        results: [
+          {
+            oldFileId: 'id:old.json',
+            newFileId: 'id:new.json',
+            status: 'failed',
+            error: 'source missing',
+          },
+        ],
+      });
+      mockGt.uploadSourceFiles.mockResolvedValue(uploadResults([]));
+
+      const step = new UploadSourcesStep(mockGt, mockSettings);
+      await step.run({
+        files: [file('new.json', 'v1')],
+        branchData: mockBranchData,
+      });
+
+      expect(logger.warn).toHaveBeenCalledWith(
+        'Failed to migrate moved file new.json: source missing'
+      );
+      expect(getWarnings()).toEqual([
+        {
+          category: 'failed_move',
+          fileName: 'new.json',
+          reason: 'source missing',
+        },
+      ]);
+      expect(mockGt.uploadSourceFiles).toHaveBeenCalledWith(
+        [
+          expect.objectContaining({
+            source: expect.objectContaining({ fileId: 'id:new.json' }),
+          }),
+        ],
+        expect.any(Object)
+      );
+    });
+
+    it('returns only saved files and records each failed upload', async () => {
+      mockGt.listBranchFiles.mockResolvedValue({ items: [], nextCursor: null });
+      mockGt.uploadSourceFiles.mockResolvedValue(
+        uploadResults([
+          {
+            branchId: 'branch-123',
+            fileId: 'id:a.json',
+            versionId: 'v:a.json',
+            fileName: 'a.json',
+            fileFormat: 'JSON',
+            status: 'succeeded',
+          },
+          {
+            branchId: 'branch-123',
+            fileId: 'id:b.json',
+            versionId: 'v:b.json',
+            fileName: 'b.json',
+            fileFormat: 'JSON',
+            status: 'failed',
+            error: 'storage unavailable',
+          },
+        ])
+      );
+
+      const step = new UploadSourcesStep(mockGt, mockSettings);
+      const result = await step.run({
+        files: [file('a.json'), file('b.json')],
+        branchData: mockBranchData,
+      });
+
+      expect(result.map((f) => f.fileId)).toEqual(['id:a.json']);
+      expect(logger.warn).toHaveBeenCalledWith(
+        'Failed to upload b.json: storage unavailable'
+      );
+      expect(getWarnings()).toEqual([
+        {
+          category: 'failed_upload',
+          fileName: 'b.json',
+          reason: 'storage unavailable',
+        },
+      ]);
+    });
+  });
+
+  describe('project default locale', () => {
+    const file: FileToUpload = {
+      content: 'a',
+      fileName: 'a.json',
+      fileFormat: 'JSON',
+      locale: 'en',
+      fileId: 'id:a.json',
+      versionId: 'v:a.json',
+    };
+    const saved = {
+      branchId: 'branch-123',
+      fileId: 'id:a.json',
+      versionId: 'v:a.json',
+      fileName: 'a.json',
+      fileFormat: 'JSON',
+    };
+
+    beforeEach(() => {
+      mockGt.listBranchFiles.mockResolvedValue({ items: [], nextCursor: null });
+    });
+
+    it('sets the project default locale when it differs from the source locale', async () => {
+      mockGt.get.mockResolvedValue({ defaultLocale: 'fr' });
+      mockGt.uploadSourceFiles.mockResolvedValue(
+        uploadResults([{ ...saved, status: 'succeeded' }])
+      );
+
+      await new UploadSourcesStep(mockGt, mockSettings).run({
+        files: [file],
+        branchData: mockBranchData,
+      });
+
+      expect(mockGt.update).toHaveBeenCalledWith({
+        defaultLocale: 'en',
+      });
+    });
+
+    it('leaves the project alone when its default locale already matches', async () => {
+      mockGt.uploadSourceFiles.mockResolvedValue(
+        uploadResults([{ ...saved, status: 'succeeded' }])
+      );
+
+      await new UploadSourcesStep(mockGt, mockSettings).run({
+        files: [file],
+        branchData: mockBranchData,
+      });
+
+      expect(mockGt.get).toHaveBeenCalledTimes(1);
+      expect(mockGt.update).not.toHaveBeenCalled();
+    });
+
+    it('leaves the project alone when no source was saved', async () => {
+      mockGt.get.mockResolvedValue({ defaultLocale: 'fr' });
+      mockGt.uploadSourceFiles.mockResolvedValue(
+        uploadResults([{ ...saved, status: 'failed', error: 'down' }])
+      );
+
+      await new UploadSourcesStep(mockGt, mockSettings).run({
+        files: [file],
+        branchData: mockBranchData,
+      });
+
+      expect(mockGt.update).not.toHaveBeenCalled();
+    });
+
+    it('warns and keeps the uploaded files when the key cannot update the project', async () => {
+      mockGt.get.mockResolvedValue({ defaultLocale: 'fr' });
+      mockGt.uploadSourceFiles.mockResolvedValue(
+        uploadResults([{ ...saved, status: 'succeeded' }])
+      );
+      mockGt.update.mockRejectedValueOnce(new ApiError('Forbidden', 403));
+
+      const result = await new UploadSourcesStep(mockGt, mockSettings).run({
+        files: [file],
+        branchData: mockBranchData,
+      });
+
+      expect(result.map(({ fileId }) => fileId)).toEqual(['id:a.json']);
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining("project's default locale was not updated")
+      );
+      expect(getWarnings()).toEqual([
+        {
+          category: 'failed_project_update',
+          fileName: 'Default locale',
+          reason: 'The API key lacks project:write, so it stays fr',
+        },
+      ]);
+    });
+
+    it('propagates other project update errors', async () => {
+      mockGt.get.mockResolvedValue({ defaultLocale: 'fr' });
+      mockGt.uploadSourceFiles.mockResolvedValue(
+        uploadResults([{ ...saved, status: 'succeeded' }])
+      );
+      mockGt.update.mockRejectedValueOnce(new ApiError('Server error', 500));
+
+      await expect(
+        new UploadSourcesStep(mockGt, mockSettings).run({
+          files: [file],
+          branchData: mockBranchData,
+        })
+      ).rejects.toThrow('Server error');
+      expect(getWarnings()).toEqual([]);
+    });
+  });
+
+  describe('completion message', () => {
+    it('counts only succeeded moves and reports failed ones', async () => {
+      const file = (fileName: string): FileToUpload => ({
+        content: fileName,
+        fileName,
+        fileFormat: 'JSON',
+        locale: 'en',
+        fileId: `id:${fileName}`,
+        versionId: `v:${fileName}`,
+      });
+      mockGt.listBranchFiles.mockResolvedValue({
+        items: ['a.json', 'b.json'].map((name) => ({
+          fileId: `id:old-${name}`,
+          versionId: `v:${name}`,
+          fileName: `old-${name}`,
+        })),
+        nextCursor: null,
+      });
+      mockGt.moveFiles.mockResolvedValue({
+        summary: { total: 2, succeeded: 1, failed: 1 },
+        results: [
+          {
+            oldFileId: 'id:old-a.json',
+            newFileId: 'id:a.json',
+            status: 'succeeded',
+          },
+          {
+            oldFileId: 'id:old-b.json',
+            newFileId: 'id:b.json',
+            status: 'failed',
+            error: 'source missing',
+          },
+        ],
+      });
+      mockGt.uploadSourceFiles.mockResolvedValue(
+        uploadResults([
+          {
+            branchId: 'branch-123',
+            fileId: 'id:b.json',
+            versionId: 'v:b.json',
+            fileName: 'b.json',
+            fileFormat: 'JSON',
+            status: 'succeeded',
+          },
+        ])
+      );
+
+      await new UploadSourcesStep(mockGt, mockSettings).run({
+        files: [file('a.json'), file('b.json')],
+        branchData: mockBranchData,
+      });
+
+      const [completion] = mockSpinner.stop.mock.calls.at(-1)!;
+      expect(completion).toContain('(1 moved, 1 move failed)');
+      expect(completion).not.toContain('Files uploaded successfully');
+    });
+  });
+
   describe('orphaned file names', () => {
     beforeEach(() => clearOrphanedFileNames());
 
@@ -366,9 +705,8 @@ describe('UploadSourcesStep', () => {
         fileId: `id:${fileName}`,
         versionId,
       });
-      mockGt.queryFileData.mockResolvedValue({ sourceFiles: [] });
-      mockGt.getOrphanedFiles.mockResolvedValue({
-        orphanedFiles: [
+      mockGt.listBranchFiles.mockResolvedValue({
+        items: [
           {
             fileId: 'id:docs/old.mdx',
             versionId: 'v1',
@@ -380,18 +718,19 @@ describe('UploadSourcesStep', () => {
             fileName: 'docs/removed.mdx',
           },
         ],
+        nextCursor: null,
       });
-      mockGt.processFileMoves.mockResolvedValue({
+      mockGt.moveFiles.mockResolvedValue({
         results: [
           {
             oldFileId: 'id:docs/old.mdx',
             newFileId: 'id:docs/new.mdx',
-            success: true,
+            status: 'succeeded',
           },
         ],
         summary: { total: 1, succeeded: 1, failed: 0 },
       });
-      mockGt.uploadSourceFiles.mockResolvedValue({ uploadedFiles: [] });
+      mockGt.uploadSourceFiles.mockResolvedValue(uploadResults([]));
 
       const step = new UploadSourcesStep(
         mockGt as never,
@@ -413,13 +752,11 @@ describe('UploadSourcesStep', () => {
         mockGt as never,
         mockSettings as never
       );
-      mockGt.queryFileData.mockResolvedValue({ sourceFiles: [] });
-      mockGt.getOrphanedFiles.mockResolvedValue({
-        orphanedFiles: [
-          { fileId: 'id:a', versionId: 'v', fileName: 'docs/a.mdx' },
-        ],
+      mockGt.listBranchFiles.mockResolvedValue({
+        items: [{ fileId: 'id:a', versionId: 'v', fileName: 'docs/a.mdx' }],
+        nextCursor: null,
       });
-      mockGt.uploadSourceFiles.mockResolvedValue({ uploadedFiles: [] });
+      mockGt.uploadSourceFiles.mockResolvedValue(uploadResults([]));
       await step.run({
         files: [
           {

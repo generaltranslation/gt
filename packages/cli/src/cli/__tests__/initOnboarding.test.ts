@@ -2,17 +2,18 @@ import { Command } from 'commander';
 import fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { ApiError } from 'generaltranslation/errors';
+import { ApiError } from 'generaltranslation/api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../utils/api.js', () => ({
-  configureApiClient: vi.fn(),
-  api: {
-    createProject: vi.fn(),
-    createProjectApiKey: vi.fn(),
-    listOrgs: vi.fn(),
-    listProjects: vi.fn(),
-  },
+const api = vi.hoisted(() => ({
+  createProject: vi.fn(),
+  createProjectApiKey: vi.fn(),
+  listOrgs: vi.fn(),
+  listProjects: vi.fn(),
+}));
+vi.mock('generaltranslation', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('generaltranslation')>()),
+  GT: (await import('./forwardingGT.js')).forwardingGT(api),
 }));
 vi.mock('../../auth/oauth.js', () => ({
   createUserTokenProvider: vi.fn(() => ({})),
@@ -73,7 +74,6 @@ import { detectFramework } from '../../setup/detectFramework.js';
 import { resolveDevelopmentProject } from '../../setup/developmentCredentials.js';
 import { OnboardingSession } from '../../setup/onboarding.js';
 import type { Settings } from '../../types/index.js';
-import { api } from '../../utils/api.js';
 import { installPackage } from '../../utils/installPackage.js';
 import { BaseCLI } from '../base.js';
 
@@ -996,7 +996,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             ? 'Missing required permission: org:projects:create'
             : 'Service unavailable';
         vi.mocked(api.createProject).mockRejectedValueOnce(
-          new ApiError(details, status, details)
+          new ApiError(details, status)
         );
 
         await expect(

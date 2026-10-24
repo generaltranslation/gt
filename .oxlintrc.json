@@ -135,8 +135,12 @@
               {
                 "name": "generaltranslation/api",
                 "allowTypeImports": true,
-                "allowImportNames": ["FileFormat", "ProjectApiKeyPermission"],
-                "message": "CLI and Sanity must not issue generated API requests directly. Add the request to createGtApiAdapter in packages/core/src/adapter/createGtApi.ts and call it through the shared adapter."
+                "allowImportNames": [
+                  "ApiError",
+                  "FileFormat",
+                  "ProjectApiKeyPermission"
+                ],
+                "message": "CLI and Sanity must not issue generated API requests directly. Call them through `GT` from generaltranslation."
               }
             ]
           }

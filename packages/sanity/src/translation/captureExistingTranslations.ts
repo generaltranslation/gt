@@ -1,8 +1,11 @@
 import type { SanityDocument } from 'sanity';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
-import { api, gt, overrideConfig } from '../adapter/core';
+import { gt, projectFor } from '../adapter/core';
 import { getDocumentPublishedId } from '../utils/documentIds';
 import { collectExistingTranslations } from './collectExistingTranslations';
+import {
+  failedResultsDiagnostic,
+  succeededResults,
+} from '../utils/batchResults';
 
 import type { Secrets, TranslationFunctionContext } from '../types';
 
@@ -19,11 +22,14 @@ export type CaptureExistingTranslationsResult = {
   capturedCount: number;
   /** Number of documents that had at least one translation uploaded. */
   documentCount: number;
+  /** Number of (document, locale) translations General Translation did not save. */
+  failedCount: number;
 };
 
 const EMPTY_RESULT: CaptureExistingTranslationsResult = {
   capturedCount: 0,
   documentCount: 0,
+  failedCount: 0,
 };
 
 /**
@@ -46,17 +52,22 @@ export async function captureExistingTranslations({
     return EMPTY_RESULT;
   }
 
-  overrideConfig(secrets);
-  const sourceLocale = gt.sourceLocale || libraryDefaultLocale;
+  const project = projectFor(secrets);
+  const sourceLocale = gt.defaultLocale;
 
-  const seedFiles = await api.downloadFileBatch(
+  // No versionId: read the latest source version General Translation holds.
+  const { results: seedFiles } = await project.queryFilesContent(
     documents.map((document) => ({
       fileId: getDocumentPublishedId(document),
       branchId,
     }))
   );
   const seedByFileId = new Map(
-    (seedFiles.files ?? []).map((file) => [file.fileId, file])
+    seedFiles.flatMap((file) =>
+      file.status === 'ready' && typeof file.data === 'string'
+        ? [[file.fileId, { ...file, data: file.data }] as const]
+        : []
+    )
   );
 
   const existing = await collectExistingTranslations(
@@ -99,13 +110,21 @@ export async function captureExistingTranslations({
     return EMPTY_RESULT;
   }
 
-  await api.uploadTranslations(files, { sourceLocale });
+  const uploadResult = await project.uploadTranslations(files);
+  if (uploadResult.summary.failed > 0) {
+    console.warn(
+      failedResultsDiagnostic(
+        'Some existing translations could not be preserved',
+        uploadResult,
+        'Warning'
+      )
+    );
+  }
 
+  const captured = succeededResults(uploadResult);
   return {
-    capturedCount: files.reduce(
-      (total, file) => total + file.translations.length,
-      0
-    ),
-    documentCount: files.length,
+    capturedCount: captured.length,
+    documentCount: new Set(captured.map(({ fileId }) => fileId)).size,
+    failedCount: uploadResult.summary.failed,
   };
 }

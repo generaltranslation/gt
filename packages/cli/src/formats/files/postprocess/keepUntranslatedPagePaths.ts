@@ -19,7 +19,7 @@ import {
   applyStructuralTransforms,
   unapplyStructuralTransforms,
 } from '../../json/transformJson.js';
-import { api } from '../../../utils/api.js';
+import { resolveCanonicalLocale } from '../../../utils/api.js';
 import {
   findMatchingItemArray,
   findMatchingItemObject,
@@ -75,7 +75,7 @@ export function keepUntranslatedPagePaths(
     }
     const localeKey = (locale: string) =>
       options.experimentalCanonicalLocaleKeys
-        ? api.resolveCanonicalLocale(locale)
+        ? resolveCanonicalLocale(locale)
         : locale;
     let changed = false;
     const sourceObjects = generateSourceObjectPointers(schema.composite, json);

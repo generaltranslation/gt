@@ -1,4 +1,3 @@
-import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { BRANCH_COMPONENT } from '../react/jsx/utils/constants.js';
 import {
   colorizeFilepath,
@@ -19,7 +18,6 @@ const withDeriveComponentError = (message: string): string =>
 
 const withDeriveFunctionError = (message: string): string =>
   `derive() rules violation: ${message}`;
-// Synchronous wrappers for backward compatibility
 export const warnApiKeyInConfigSync = (optionsFilepath: string): string =>
   `${colorizeFilepath(
     optionsFilepath
@@ -135,22 +133,6 @@ export const warnInvalidMaxCharsSync = (
     `Found invalid maxChars value: ${colorizeContent(value)}. maxChars must be a numeric literal, e.g. maxChars={10}, to ensure this content is translated.`,
     location
   );
-
-export const warnDeprecatedTSugarPropsSync = (locations: string[]): string =>
-  createDiagnosticMessage({
-    whatHappened: `Found ${locations.length} deprecated ${colorizeIdString(
-      '$'
-    )}-prefixed prop${locations.length === 1 ? '' : 's'} on ${colorizeComponent(
-      '<T>'
-    )} components`,
-    fix: `Use the unprefixed forms instead (${colorizeIdString(
-      'context'
-    )}, ${colorizeIdString('id')}, ${colorizeIdString('maxChars')}, ${colorizeIdString(
-      'requiresReview'
-    )}); support for the ${colorizeIdString('$')}-prefixed forms will be removed in the next major version`,
-  }) +
-  '\n' +
-  locations.map((location) => `  ${colorizeLine(location)}`).join('\n');
 
 export const warnInvalidFormatSync = (
   file: string,

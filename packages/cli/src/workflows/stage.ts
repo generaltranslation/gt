@@ -1,12 +1,16 @@
 import { logCollectedFiles, logErrorAndExit } from '../console/logging.js';
-import { branchResolutionError, withOriginalError } from '../console/index.js';
+import {
+  branchResolutionError,
+  noProjectIdError,
+  withOriginalError,
+} from '../console/index.js';
 import { logger } from '../console/logger.js';
 import { Settings, TranslateFlags } from '../types/index.js';
-import { api } from '../utils/api.js';
-import { EnqueueFilesResult, FileToUpload } from 'generaltranslation/types';
+import { createClients } from '../utils/api.js';
+import { FileReference, FileToUpload } from 'generaltranslation/types';
 import { UploadSourcesStep } from './steps/UploadSourcesStep.js';
 import { SetupStep } from './steps/SetupStep.js';
-import { EnqueueStep } from './steps/EnqueueStep.js';
+import { EnqueueStep, type EnqueueFilesResult } from './steps/EnqueueStep.js';
 import { BranchStep } from './steps/BranchStep.js';
 import { TagStep } from './steps/TagStep.js';
 import { UserEditDiffsStep } from './steps/UserEditDiffsStep.js';
@@ -36,6 +40,7 @@ export async function runStageFilesWorkflow({
 }): Promise<{
   branchData: BranchData;
   enqueueResult: EnqueueFilesResult;
+  uploadedFiles: FileReference[];
 }> {
   try {
     // Log files to be translated
@@ -48,12 +53,15 @@ export async function runStageFilesWorkflow({
     // Calculate timeout for setup step
     const timeoutMs = calculateTimeoutMs(options.timeout);
 
+    const { project } = createClients(settings);
+    if (!project) throw new Error(noProjectIdError);
+
     // Create workflow with steps
-    const branchStep = new BranchStep(api, settings);
-    const uploadStep = new UploadSourcesStep(api, settings);
+    const branchStep = new BranchStep(project, settings);
+    const uploadStep = new UploadSourcesStep(project, settings);
     const userEditDiffsStep = new UserEditDiffsStep(settings);
-    const setupStep = new SetupStep(api, settings, timeoutMs);
-    const enqueueStep = new EnqueueStep(api, settings, options.force);
+    const setupStep = new SetupStep(project, settings, timeoutMs);
+    const enqueueStep = new EnqueueStep(project, settings, options.force);
 
     // first run the branch step
     const branchData = await branchStep.run();
@@ -73,7 +81,7 @@ export async function runStageFilesWorkflow({
     if (settings.tag) {
       try {
         const userProvidedTag = !!options.tag;
-        const tagStep = new TagStep(api, settings, userProvidedTag);
+        const tagStep = new TagStep(project, settings, userProvidedTag);
         await tagStep.run(uploadedFiles);
       } catch {
         logger.warn('Failed to create translation tag. Continuing...');
@@ -85,7 +93,7 @@ export async function runStageFilesWorkflow({
 
     // then run the enqueue step
     const { filesToEnqueue, skippedFiles } = await filterFilesForEnqueue({
-      gt: api,
+      gt: project,
       files: uploadedFiles,
       locales: settings.locales,
       force: options.force,
@@ -98,7 +106,7 @@ export async function runStageFilesWorkflow({
 
     const enqueueResult = await enqueueStep.run(filesToEnqueue);
 
-    return { branchData, enqueueResult };
+    return { branchData, enqueueResult, uploadedFiles };
   } catch (error) {
     return logErrorAndExit(
       withOriginalError(

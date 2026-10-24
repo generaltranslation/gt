@@ -42,7 +42,8 @@ export type GtPluginOptions = {
   // Maps Payload locale codes GT does not know to ones it does, as in
   // gt.config.json: { cn: { code: 'zh' } }.
   customMapping?: CustomMapping;
-  // A client to use instead of one built from the options above.
+  // A project to use instead of one built from the options above, such as
+  // new GT({ apiKey, projectId, localeConfig: { customMapping } }).
   client?: GtClient;
 };
 
@@ -57,6 +58,11 @@ type StepBody = { id?: string | number };
 type CoverageBody = { page?: number; limit?: number };
 
 const DOCUMENT_CONTROLS = 'gt-payload/client#GtDocumentControls';
+const missingApiKeyDiagnostic = createGtPayloadDiagnostic({
+  severity: 'Error',
+  whatHappened: 'Translation needs a General Translation API key',
+  fix: 'Pass `apiKey` to gtPlugin() or set the GT_API_KEY environment variable',
+});
 const NAV_LINK = 'gt-payload/client#GtNavLink';
 const RUNS_PROVIDER = 'gt-payload/client#GtRunsProvider';
 const TRANSLATIONS_VIEW = 'gt-payload/rsc#GtTranslationsView';
@@ -204,7 +210,7 @@ function endpoints(
           );
         return stepRun({
           payload: req.payload,
-          gt: client(req.payload),
+          client: () => client(req.payload),
           id: body.id,
         });
       }),
@@ -291,15 +297,21 @@ export const gtPlugin =
   (config: Config): Config => {
     if (!config.localization) return config;
     let built: GtClient | undefined = options.client;
-    const client = (payload: Payload) =>
-      (built ??= new GT({
-        projectId: options.projectId ?? process.env.GT_PROJECT_ID,
-        apiKey: options.apiKey ?? process.env.GT_API_KEY,
-        sourceLocale: payload.config.localization
-          ? payload.config.localization.defaultLocale
-          : undefined,
-        customMapping: options.customMapping,
+    const client = (payload: Payload) => {
+      if (built) return built;
+      const apiKey = options.apiKey ?? process.env.GT_API_KEY;
+      if (!apiKey) throw new Error(missingApiKeyDiagnostic);
+      return (built = new GT({
+        apiKey,
+        projectId: options.projectId ?? process.env.GT_PROJECT_ID ?? '',
+        localeConfig: {
+          defaultLocale: payload.config.localization
+            ? payload.config.localization.defaultLocale
+            : undefined,
+          customMapping: options.customMapping,
+        },
       }));
+    };
     const settings: AdminSettings = { customMapping: options.customMapping };
     return {
       ...config,

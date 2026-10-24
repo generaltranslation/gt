@@ -1,6 +1,5 @@
-import { api, overrideConfig } from '../adapter/core';
+import { projectFor } from '../adapter/core';
 import { FileProperties } from '../adapter/types';
-import { DownloadedFile } from 'generaltranslation/types';
 import type { Secrets } from '../types';
 
 /**
@@ -15,14 +14,13 @@ export async function downloadTranslations(
   secrets: Secrets,
   maxRetries = 3,
   retryDelay = 1000
-): Promise<DownloadedFile[]> {
-  overrideConfig(secrets);
+) {
   let retries = 0;
 
   while (retries <= maxRetries) {
     try {
       // Download the files
-      const responseData = await api.downloadFileBatch(
+      const { results } = await projectFor(secrets).queryFilesContent(
         files.map((file) => ({
           fileId: file.fileId,
           branchId: file.branchId,
@@ -30,8 +28,12 @@ export async function downloadTranslations(
           locale: file.locale,
         }))
       );
-      const downloadedFiles = responseData.files || [];
-      return downloadedFiles;
+      // Pending and not-found files are not downloaded yet.
+      return results.flatMap((result) =>
+        result.status === 'ready' && typeof result.data === 'string'
+          ? [{ ...result, data: result.data }]
+          : []
+      );
     } catch {
       // Increment retry counter and wait before next attempt
       retries++;

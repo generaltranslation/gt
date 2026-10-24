@@ -1,5 +1,5 @@
 import type { Secrets } from '../types';
-import { api, overrideConfig } from '../adapter/core';
+import { projectFor } from '../adapter/core';
 import { FileProperties } from '../adapter/types';
 import {
   createStableTranslationKey,
@@ -15,7 +15,6 @@ export async function checkTranslationStatus(
   },
   secrets: Secrets
 ) {
-  overrideConfig(secrets);
   try {
     // Only query for files that haven't been downloaded yet
     const currentQueryData = fileQueryData.filter((item) => {
@@ -45,16 +44,13 @@ export async function checkTranslationStatus(
       return true;
     }
     // Check for translations
-    const responseData = await api.queryFileData({
-      translatedFiles: currentQueryData,
+    const { results } = await projectFor(secrets).queryFiles(currentQueryData);
+
+    // Results follow the selector order; keep the completed translations.
+    const readyTranslations = currentQueryData.filter((_, index) => {
+      const result = results[index];
+      return result.status === 'found' && result.completedAt;
     });
-
-    const translations = responseData.translatedFiles || [];
-
-    // Filter for ready translations
-    const readyTranslations = translations.filter(
-      (translation) => translation.completedAt
-    );
 
     return readyTranslations;
   } catch (error) {

@@ -6,11 +6,13 @@ vi.mock('../../config/generateSettings.js', () => ({
   generateSettings: vi.fn(),
 }));
 
-vi.mock('../../utils/api.js', () => ({
-  api: {
-    checkJobStatus: vi.fn(),
-    createProject: vi.fn(),
-  },
+const api = vi.hoisted(() => ({
+  queryJobs: vi.fn(),
+  createProject: vi.fn(),
+}));
+vi.mock('generaltranslation', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('generaltranslation')>()),
+  GT: (await import('./forwardingGT.js')).forwardingGT(api),
 }));
 
 vi.mock('../../console/logging.js', () => ({
@@ -40,7 +42,6 @@ vi.mock('../../console/logger.js', () => ({
 
 import { BaseCLI } from '../base.js';
 import { generateSettings } from '../../config/generateSettings.js';
-import { api } from '../../utils/api.js';
 import { logger } from '../../console/logger.js';
 
 const settings = {
@@ -112,6 +113,31 @@ describe('project commands', () => {
     expect(api.createProject).not.toHaveBeenCalled();
   });
 
+  it('explains that a project API key cannot create projects before any request', async () => {
+    vi.mocked(generateSettings).mockResolvedValue({
+      apiKey: 'gtx-api-project-key',
+    } as Settings);
+
+    await expect(
+      createProgram().parseAsync(
+        [
+          'project',
+          'create',
+          '--org-id',
+          'org-id',
+          '--name',
+          'Project',
+          '--default-locale',
+          'en',
+        ],
+        { from: 'user' }
+      )
+    ).rejects.toThrow(
+      /project API key, which cannot create projects[\s\S]*Organization API key with org:projects:create[\s\S]*sign in/
+    );
+    expect(api.createProject).not.toHaveBeenCalled();
+  });
+
   it('formats project creation failures instead of leaking a rejection', async () => {
     // Organization keys create the project before a project ID exists.
     vi.mocked(generateSettings).mockResolvedValue({
@@ -138,10 +164,24 @@ describe('project commands', () => {
     ).rejects.toThrow(/Failed to create the project[\s\S]*upstream denied/);
   });
 
+  it.each(['processing', 'not_found'] as const)(
+    'prints the %s status of a project setup job',
+    async (status) => {
+      vi.mocked(api.queryJobs).mockResolvedValue({
+        results: [{ id: 'job-id', status }],
+      });
+
+      await createProgram().parseAsync(['project', 'status', 'job-id'], {
+        from: 'user',
+      });
+
+      expect(api.queryJobs).toHaveBeenCalledWith(['job-id']);
+      expect(logger.info).toHaveBeenCalledWith(status);
+    }
+  );
+
   it('formats project status failures instead of leaking a rejection', async () => {
-    vi.mocked(api.checkJobStatus).mockRejectedValue(
-      new Error('status unavailable')
-    );
+    vi.mocked(api.queryJobs).mockRejectedValue(new Error('status unavailable'));
 
     await expect(
       createProgram().parseAsync(['project', 'status', 'job-id'], {

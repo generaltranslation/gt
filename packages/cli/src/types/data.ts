@@ -3,12 +3,6 @@ export type DictionaryMetadata = {
   $context?: string;
   $maxChars?: number;
   $_hash?: string;
-  /** @deprecated use $context instead */
-  context?: string;
-  /** @deprecated use $maxChars instead */
-  maxChars?: number;
-  /** @deprecated */
-  variablesOptions?: Record<string, unknown>;
   [key: string]: unknown;
 };
 export type DictionaryEntry = Entry | [Entry] | [Entry, DictionaryMetadata];
