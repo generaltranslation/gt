@@ -4,6 +4,7 @@ export const GT_LIBRARIES = [
   'gt-react',
   'gt-next',
   'gt-react-native',
+  'gt-tanstack-start',
   'gt-i18n',
   '@generaltranslation/react-core/components',
   '@generaltranslation/react-core/components-rsc',
