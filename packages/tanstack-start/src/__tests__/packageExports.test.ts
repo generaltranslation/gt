@@ -129,6 +129,19 @@ describe.sequential('gt-tanstack-start package exports', () => {
     }
   });
 
+  it('leaves locale routing to the config module in the browser entrypoint', () => {
+    // The plugin's config module exports localeRouting.enabled only when
+    // localeRouting is on, so other apps don't bundle it in the browser.
+    const client = readDistFile('index.client.mjs');
+
+    expect(client).not.toMatch(
+      /function (?:getRouterLocaleRewrite|splitLocaleSegment|getPathnameForLocale|getLocaleFromPath)\b/
+    );
+    expect(readDistFile('internal/localeRouting.enabled.mjs')).toMatch(
+      /export \{[^}]*getRouterLocaleRewrite/
+    );
+  });
+
   it('keeps Node.js builtins out of the browser entrypoint', () => {
     // Browser bundlers cannot resolve Node.js builtins.
     const builtins = new Set(builtinModules);

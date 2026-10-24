@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import type { Plugin, ResolvedConfig } from 'vite';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -307,6 +308,18 @@ async function withConfigModule(
     logLevel: 'silent',
     appType: 'custom',
     plugins: [configPlugin],
+    // The temp project has no gt-tanstack-start install to resolve the
+    // locale routing modules the config module exports from.
+    resolve: {
+      alias: Object.fromEntries(
+        ['enabled', 'disabled'].map((state) => [
+          `gt-tanstack-start/internal/localeRouting.${state}`,
+          fileURLToPath(
+            new URL(`../../internal/localeRouting.${state}.ts`, import.meta.url)
+          ),
+        ])
+      ),
+    },
     server: { middlewareMode: true, hmr: false, watch: null },
     optimizeDeps: { noDiscovery: true },
   });
@@ -339,6 +352,35 @@ describe.sequential('gtTanstackStart config module', () => {
     // SSR keeps its first GT config, so reloading only this module would
     // give the browser a config the server does not use.
     expect(watchFiles).toEqual([]);
+  });
+
+  it('imports the locale routing code only when localeRouting is on', async () => {
+    const routed = createProject({
+      'gt.config.json': JSON.stringify({
+        ...JSON.parse(gtConfig()),
+        localeRouting: true,
+      }),
+    });
+    const unrouted = createProject({ 'gt.config.json': gtConfig() });
+
+    const { code: routedCode } = await loadConfigModuleCode(
+      routed.configPlugin,
+      routed.root,
+      'build'
+    );
+    const { code: unroutedCode } = await loadConfigModuleCode(
+      unrouted.configPlugin,
+      unrouted.root,
+      'build'
+    );
+
+    expect(routedCode).toContain(
+      'export * from "gt-tanstack-start/internal/localeRouting.enabled";'
+    );
+    expect(unroutedCode).toContain(
+      'export * from "gt-tanstack-start/internal/localeRouting.disabled";'
+    );
+    expect(unroutedCode).not.toContain('localeRouting.enabled');
   });
 
   it('leaves API keys out of the config module and warns', async () => {

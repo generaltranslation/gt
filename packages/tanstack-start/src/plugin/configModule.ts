@@ -10,6 +10,10 @@ import type { ConfigModuleOptions } from './types';
 
 export const CONFIG_MODULE_ID = 'gt-tanstack-start/internal/_config';
 export const RESOLVED_CONFIG_MODULE_ID = '\0gt-tanstack-start:config';
+const LOCALE_ROUTING_MODULE_IDS = {
+  enabled: 'gt-tanstack-start/internal/localeRouting.enabled',
+  disabled: 'gt-tanstack-start/internal/localeRouting.disabled',
+};
 const CUSTOM_LOADER_FILES = [
   'src/loadTranslations.ts',
   'src/loadTranslations.tsx',
@@ -101,6 +105,8 @@ export function createConfigModule(
   );
   const lines = [
     `export const config = ${JSON.stringify({ ...publicConfig, ...definedRuntimeOptions })};`,
+    // Only apps that enable locale routing bundle its browser code.
+    `export * from ${JSON.stringify(LOCALE_ROUTING_MODULE_IDS[config.localeRouting === true ? 'enabled' : 'disabled'])};`,
   ];
 
   const dictionaryFile = findModuleFile(

@@ -7,9 +7,9 @@ const {
   mockCreateOrUpdateBrowserConditionStore,
   mockEnsureInitialized,
   mockGetTranslationsSnapshot,
-  mockIsLocaleRouting,
   mockLoadDictionary,
   mockProvider,
+  pluginModule,
 } = vi.hoisted(() => ({
   mockLoadDictionary: vi.fn(async (locale: string) => ({ greeting: locale })),
   mockConditionStore: {
@@ -22,8 +22,8 @@ const {
   mockGetTranslationsSnapshot: vi.fn(
     async (): Promise<Record<string, string>> => ({})
   ),
-  mockIsLocaleRouting: vi.fn(() => true),
   mockProvider: vi.fn((props: { locale: string }) => props.locale),
+  pluginModule: { localeRoutingEnabled: true },
 }));
 
 vi.mock('gt-react', () => ({
@@ -45,8 +45,26 @@ vi.mock('../../provider/GTProvider.client', () => ({
 
 vi.mock('../../setup/initializeGT.client', () => ({
   ensureInitialized: mockEnsureInitialized,
-  isLocaleRoutingEnabled: mockIsLocaleRouting,
 }));
+
+// As the plugin does, export the enabled or disabled locale routing module.
+vi.mock('gt-tanstack-start/internal/_config', async () => {
+  const enabled = await vi.importActual<
+    typeof import('../../internal/localeRouting.enabled')
+  >('../../internal/localeRouting.enabled');
+  const disabled = await vi.importActual<
+    typeof import('../../internal/localeRouting.disabled')
+  >('../../internal/localeRouting.disabled');
+  return {
+    getRouterLocaleRewrite: (
+      ...args: Parameters<typeof enabled.getRouterLocaleRewrite>
+    ) =>
+      (pluginModule.localeRoutingEnabled
+        ? enabled
+        : disabled
+      ).getRouterLocaleRewrite(...args),
+  };
+});
 
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 import { setupRouterGTIntegration } from '../setupRouterGTIntegration.client';
@@ -99,7 +117,7 @@ describe.sequential('setupRouterGTIntegration client', () => {
     mockCreateOrUpdateBrowserConditionStore.mockReset();
     mockEnsureInitialized.mockClear();
     mockGetTranslationsSnapshot.mockClear();
-    mockIsLocaleRouting.mockReturnValue(true);
+    pluginModule.localeRoutingEnabled = true;
   });
 
   it('installs the locale rewrite at setup, before hydration', () => {
@@ -158,7 +176,7 @@ describe.sequential('setupRouterGTIntegration client', () => {
   });
 
   it('leaves the app rewrite alone when locale routing is off', () => {
-    mockIsLocaleRouting.mockReturnValue(false);
+    pluginModule.localeRoutingEnabled = false;
     const router = createRouter();
 
     setupRouterGTIntegration({ router });
