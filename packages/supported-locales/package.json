@@ -50,7 +50,7 @@
     }
   },
   "dependencies": {
-    "generaltranslation": "workspace:*"
+    "@generaltranslation/format": "workspace:*"
   },
   "devDependencies": {
     "tsdown": "catalog:",

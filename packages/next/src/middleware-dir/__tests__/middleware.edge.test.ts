@@ -1,7 +1,7 @@
 // @vitest-environment edge-runtime
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest, type NextResponse } from 'next/server';
-import { GT } from 'generaltranslation';
+import { GTIntl } from 'generaltranslation/internal';
 import {
   defaultLocaleCookieName as LOCALE_COOKIE,
   defaultResetLocaleCookieName as RESET_COOKIE,
@@ -331,7 +331,7 @@ describe('response properties', () => {
 });
 
 describe('getLocaleFromRequest', () => {
-  const gt = new GT();
+  const gt = new GTIntl({ locales: ['en', 'fr', 'es', 'de'] });
 
   function resolveLocale(
     req: NextRequest,
@@ -340,7 +340,6 @@ describe('getLocaleFromRequest', () => {
     return getLocaleFromRequest(
       req,
       'en',
-      ['en', 'fr', 'es', 'de'],
       true,
       false,
       defaultLocalePaths,

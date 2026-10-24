@@ -302,9 +302,11 @@ describe('validateTranslationComponentArgs requiresReview', () => {
   it.each<[prop: string, expected: Record<string, unknown>]>([
     // A bare JSX attribute compiles to `requiresReview: true`
     ['requiresReview: true', { errors: [], requiresReview: true }],
-    ['$requiresReview: false', { errors: [], requiresReview: false }],
+    ['requiresReview: false', { errors: [], requiresReview: false }],
+    // The $-prefixed alias is not read
+    ['$requiresReview: true', { errors: [] }],
     ['requiresReview: "true"', { errors: [REQUIRES_REVIEW_ERROR] }],
-    ['$requiresReview: !flag', { errors: [REQUIRES_REVIEW_ERROR] }],
+    ['requiresReview: !flag', { errors: [REQUIRES_REVIEW_ERROR] }],
   ])('<T %s>', (prop, expected) => {
     const { callPath, state } = setup(
       `jsx(T, { children: "some text", ${prop} })`

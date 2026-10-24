@@ -1,4 +1,4 @@
-import type { GTRuntime } from 'generaltranslation/runtime';
+import type { GTIntl } from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import type { HeadersAndCookies } from '../config-dir/props/withGTConfigProps';
 import type { PathConfig, PathMatcher } from './createPathMatcher';
@@ -44,7 +44,7 @@ export type MiddlewareI18nConfig = {
 /** Locale, cookie, and path state pre-processed once per middleware instance. */
 export type MiddlewareRouting = {
   pathRegex: RegExp | undefined;
-  gt: GTRuntime;
+  gt: GTIntl;
   defaultLocale: string;
   locales: string[];
   localeRoutingEnabledCookieName: string;

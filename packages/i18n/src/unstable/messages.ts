@@ -83,7 +83,7 @@ function formatSource(
 ): string {
   // Code paths without i18n may never initialize the config.
   const formatted = isI18nConfigInitialized()
-    ? getI18nConfig().formatMessageTree(tree, undefined, {
+    ? getI18nConfig().formatMessageTree(tree, {
         locales: libraryDefaultLocale,
         values,
         formats,

@@ -33,7 +33,7 @@ vi.mock('gt-react', () => ({
   GTProvider: () => null,
 }));
 
-vi.mock('../../functions/parseLocale', () => ({
+vi.mock('../../functions/determineLocaleClient', () => ({
   determineLocaleClient: mockDetermineLocaleClient,
 }));
 

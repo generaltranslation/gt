@@ -65,7 +65,6 @@ export function createNextMiddleware(options: MiddlewareConfig = {}) {
     pathRegex,
     gt,
     defaultLocale,
-    locales,
     localeRoutingEnabledCookieName,
     referrerLocaleCookieName,
     localeCookieName,
@@ -114,7 +113,6 @@ export function createNextMiddleware(options: MiddlewareConfig = {}) {
     } = getLocaleFromRequest(
       req,
       defaultLocale,
-      locales,
       localeRouting,
       prefixDefaultLocale,
       defaultLocalePaths,

@@ -43,21 +43,21 @@ describe('I18nConfig', () => {
     expect(config.timeZone).toBe(
       new Intl.DateTimeFormat().resolvedOptions().timeZone
     );
-    expect(config.formatDateTime(date, 'en-US', { timeStyle: 'short' })).toBe(
+    expect(
+      config.formatDateTime(date, { locale: 'en-US', timeStyle: 'short' })
+    ).toBe(
       new Intl.DateTimeFormat('en-US', { timeStyle: 'short' }).format(date)
     );
   });
 
-  it('gives its time zone to the GT class', () => {
+  it('formats dates and times in its configured time zone', () => {
     const config = new I18nConfig({
       defaultLocale: 'en-US',
       timeZone: 'Asia/Tokyo',
     });
     const date = new Date('2020-05-06T14:03:02Z');
 
-    expect(
-      config.getGTClass().formatDateTime(date, { timeStyle: 'short' })
-    ).toBe(
+    expect(config.formatDateTime(date, { timeStyle: 'short' })).toBe(
       new Intl.DateTimeFormat('en-US', {
         timeStyle: 'short',
         timeZone: 'Asia/Tokyo',
@@ -164,6 +164,52 @@ describe('I18nConfig', () => {
         locales: ['ja'],
       })
     ).toBe('en');
+  });
+
+  it('sends the dev API key as the runtime API key when no API key is set', () => {
+    vi.stubEnv('GT_API_KEY', '');
+    const runtime = (params: { apiKey?: string; devApiKey?: string }) =>
+      new I18nConfig({
+        projectId: 'project',
+        ...params,
+      }).getTranslationRuntime();
+
+    expect(runtime({ devApiKey: 'dev-key' }).apiKey).toBe('dev-key');
+    expect(runtime({ apiKey: 'key', devApiKey: 'dev-key' }).apiKey).toBe('key');
+  });
+
+  it('prefers the GT_API_KEY environment variable over the dev API key', () => {
+    vi.stubEnv('GT_API_KEY', 'env-key');
+    const runtime = (params: { apiKey?: string; devApiKey?: string }) =>
+      new I18nConfig({
+        projectId: 'project',
+        ...params,
+      }).getTranslationRuntime();
+
+    expect(runtime({ devApiKey: 'dev-key' }).apiKey).toBe('env-key');
+    expect(runtime({ apiKey: 'key', devApiKey: 'dev-key' }).apiKey).toBe('key');
+  });
+
+  it('builds a translation runtime only with a projectId and an API key', () => {
+    vi.stubEnv('GT_API_KEY', '');
+
+    expect(() =>
+      new I18nConfig({ projectId: 'project' }).getTranslationRuntime()
+    ).toThrow('Runtime translation needs an API key');
+    expect(() =>
+      new I18nConfig({ apiKey: 'key' }).getTranslationRuntime()
+    ).toThrow('Runtime translation needs a projectId');
+    expect(
+      new I18nConfig({
+        projectId: 'project',
+        apiKey: 'key',
+        defaultLocale: 'en',
+        locales: ['es'],
+      }).getTranslationRuntime()
+    ).toMatchObject({
+      projectId: 'project',
+      localeConfig: { defaultLocale: 'en', locales: ['en', 'es'] },
+    });
   });
 
   it('enables dev hot reload with dev credentials, a project id, and development environment', () => {

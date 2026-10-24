@@ -1,4 +1,4 @@
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { createGlobalSingleton } from '../globals/createGlobalSingleton';
 import { I18nConfig, type I18nConfigParams } from './I18nConfig';
 
