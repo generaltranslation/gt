@@ -10,14 +10,14 @@ import {
   dictionary as pluginDictionary,
   loadDictionary as pluginLoadDictionary,
   loadTranslations as pluginLoadTranslations,
+  createLocaleReload,
+  getPathLocale,
 } from 'gt-tanstack-start/internal/_config';
 import { determineLocaleClient } from '../functions/parseLocale';
-import { getPathnameForLocale } from '../functions/localeRouting';
 import type { InitializeGTParams } from '../types/InitializeGTParams';
 
 type ClientSetup = {
   reload: SharedGTProviderProps['_reload'];
-  localeRouting: boolean;
 };
 
 const clientSetup = createGlobalSingleton<ClientSetup>({
@@ -38,34 +38,20 @@ export function getClientReload(): SharedGTProviderProps['_reload'] {
   return clientSetup.isInitialized() ? clientSetup.get().reload : undefined;
 }
 
-/** Whether the plugin's config routes by locale. */
-export function isLocaleRoutingEnabled(): boolean {
-  return clientSetup.isInitialized() && clientSetup.get().localeRouting;
-}
-
 /**
  * Initialize GT and its browser condition store from the pathname locale (with
  * localeRouting) or the locale cookie.
  */
 function initialize(config: InitializeGTParams): void {
-  const reload: SharedGTProviderProps['_reload'] = config.localeRouting
-    ? ({ locale }) => {
-        const destination = new URL(window.location.href);
-        destination.pathname = getPathnameForLocale(
-          window.location.pathname,
-          locale
-        );
-        window.location.assign(destination.href);
-      }
-    : undefined;
+  const reload = createLocaleReload();
 
   initializeReactGT(config);
   createOrUpdateBrowserConditionStore({
     ...config,
     _reload: reload,
-    locale: determineLocaleClient(config),
+    locale: determineLocaleClient(config, getPathLocale()),
   });
-  clientSetup.set({ reload, localeRouting: config.localeRouting === true });
+  clientSetup.set({ reload });
 }
 
 /**

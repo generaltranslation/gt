@@ -29,6 +29,8 @@ const entries: Record<string, string> = {
   'index.server': 'src/index.server.ts',
   'plugin/vite': 'src/plugin/vite.ts',
   'internal/_config': 'src/internal/_config.ts',
+  'internal/localeRouting.enabled': 'src/internal/localeRouting.enabled.ts',
+  'internal/localeRouting.disabled': 'src/internal/localeRouting.disabled.ts',
 };
 
 export default defineConfig(
