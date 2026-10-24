@@ -16,9 +16,10 @@ import ts from 'typescript';
 import { expect, it } from 'vitest';
 
 const packageRoot = fileURLToPath(new URL('../..', import.meta.url));
-const adapterMarker = 'call configureApiClient first';
-const projectPath = '/v2/project/info/{projectId}';
-const config = `{ projectId: 'project', apiKey: 'key', baseUrl: 'https://example.test' }`;
+const adapterMarker =
+  'Each branch, file, and version may appear once in a publish list';
+const projectPath = '/v2/projects/{projectId}/files/query';
+const config = `{ apiKey: 'key', baseUrl: 'https://example.test', projectId: 'project' }`;
 
 // Parse imports rather than grep one entry: cover re-exports, require and dynamic
 // imports too. A computed dependency is not an auditable isolated artifact.
@@ -123,19 +124,17 @@ it('loads packed ESM/CJS, typechecks NodeNext declarations and keeps the publish
       globalThis.fetch = async (input, init) => {
         const request = new Request(input, init);
         const body = await request.json();
-        assert.equal(new URL(request.url).pathname, '/v2/translate');
-        assert.equal(request.headers.get('gt-project-id'), 'project');
+        assert.equal(new URL(request.url).pathname, '/v2/projects/project/translate');
+        assert.equal(request.headers.has('gt-project-id'), false);
         assert.equal(request.headers.get('authorization'), 'Bearer key');
-        return Response.json(Object.fromEntries(Object.keys(body.requests).map(key => [key,
-          { success: true, translation: 'Hola', locale: 'es', dataFormat: 'STRING' }])));
+        return Response.json({ generated: true, translations: Object.fromEntries(Object.keys(body.requests).map(key => [key,
+          { success: true, translation: 'Hola', locale: 'es', dataFormat: 'STRING' }])) });
       };
       const runtime = LOAD('generaltranslation/runtime');
       const { GT } = LOAD('generaltranslation');
-      const { createGtApiAdapter } = LOAD('generaltranslation/internal');
       for (const result of [
         (await new runtime.GTRuntime(config).translateMany(['Hello'], 'es'))[0],
         await new GT(config).translate('Hello', 'es'),
-        await createGtApiAdapter(config).translate('Hello', 'es'),
       ]) assert.equal(result.translation, 'Hola');
     `;
     for (const esm of [true, false]) {
@@ -150,22 +149,23 @@ it('loads packed ESM/CJS, typechecks NodeNext declarations and keeps the publish
     }
 
     const types = `
-      import { GT } from 'generaltranslation';
-      import { GTRuntime } from 'generaltranslation/runtime';
-      import { createGtApiAdapter } from 'generaltranslation/internal';
+      import { GT, GTIntl, type OrgHandle, type ProjectHandle } from 'generaltranslation';
+      import { GTRuntime, type LocaleConfig } from 'generaltranslation/runtime';
       import type { TranslateManyResult, TranslateOptions, TranslationResult } from 'generaltranslation/types';
-      import { API_VERSION, type ApiClientConfig } from 'generaltranslation/api';
-      const config = { projectId: 'project', apiKey: 'key', baseUrl: 'https://example.test', timeoutMs: false, fetch, apiVersion: API_VERSION } satisfies ApiClientConfig;
       const options = { targetLocale: 'es' } satisfies TranslateOptions;
-      const adapter = createGtApiAdapter(config);
-      const array: Promise<TranslateManyResult> = adapter.translateMany(['Hello'], options);
-      const record: Promise<Record<string, TranslationResult>> = adapter.translateMany({ hello: 'Hello' }, 'es', false);
-      adapter.translate('Hello', 'es', 0);
-      new GT().translate('Hello', 'es', 0);
-      new GTRuntime().translateMany(['Hello'], 'es', 0);
-      // @ts-expect-error the adapter timeout is a number or false, not an options object.
-      adapter.translate('Hello', 'es', { timeout: 10 });
-      void [array, record];
+      const localeConfig: LocaleConfig = { defaultLocale: 'en', locales: ['en', 'es'] };
+      const account: GT = new GT({ apiKey: 'key' });
+      const project: ProjectHandle = new GT({ apiKey: 'key', projectId: 'project', localeConfig });
+      const org: OrgHandle = account.org('org');
+      const runtimeProject = new GTRuntime({ apiKey: 'key', projectId: 'project', localeConfig });
+      const asRuntimeProject: GTRuntime = account.project('project');
+      const formatted: string = new GTIntl(localeConfig, { locale: 'es' }).formatNum(1, { locale: 'fr' });
+      const array: Promise<TranslateManyResult> = runtimeProject.translateMany(['Hello'], options);
+      const record: Promise<Record<string, TranslationResult>> = project.translateMany({ hello: 'Hello' }, 'es', 0);
+      project.translate('Hello', 'es', 0);
+      // @ts-expect-error the handle timeout is a number, not an options object.
+      project.translate('Hello', 'es', { timeout: 10 });
+      void [array, record, org, asRuntimeProject, formatted];
     `;
     for (const extension of ['mts', 'cts']) {
       writeFileSync(join(fixture, `consumer.${extension}`), types);

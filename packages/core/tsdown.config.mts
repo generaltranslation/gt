@@ -9,7 +9,6 @@ const [cjsConfig, esmConfig] = createTsdownConfig(
     'src/id.ts',
     'src/internal.ts',
     'src/diagnostics.ts',
-    'src/errors.ts',
     'src/types.ts',
   ],
   { alwaysBundle: [/^@noble\/hashes/] }

@@ -6,14 +6,6 @@ import {
 } from '@generaltranslation/format/types';
 
 /**
- * TranslationResultReference is used to store the reference for a translation result.
- */
-export type TranslationResultReference = {
-  id?: string;
-  hash: string;
-};
-
-/**
  * TypedResult is a union type that represents the different types of translations that can be returned.
  */
 export type TypedResult =
