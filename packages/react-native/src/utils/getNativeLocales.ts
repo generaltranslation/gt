@@ -6,7 +6,7 @@ import { GtReactNative } from '../NativeGtReactNative';
  * Returns an empty array if detection fails or is not supported
  *
  * iOS: Returns current locale first, followed by preferred languages
- * Android: Returns user's preferred language list (LocaleList on API 24+, single locale on older versions)
+ * Android: Returns user's preferred language list (LocaleList)
  * Web: Returns browser language preferences from navigator
  */
 export function getNativeLocales(): string[] {
@@ -41,14 +41,6 @@ function getWebLocales(): string[] {
     } else if (navigator.language) {
       // Fallback to single language
       locales.push(navigator.language);
-    } else {
-      // IE fallback
-      const legacyNavigator = navigator as Navigator & {
-        userLanguage?: string;
-      };
-      if (legacyNavigator.userLanguage) {
-        locales.push(legacyNavigator.userLanguage);
-      }
     }
 
     return locales;

@@ -404,32 +404,16 @@ describe('runtimeTranslatePass', () => {
       );
     });
 
-    it('injects import from gt-react/browser with legacy flag', () => {
-      const { imports } = transform(
-        `
-        ${USEGT_SETUP}
-        const msg = t("Hello");
-      `,
-        { legacyGtReactImportSource: true }
-      );
-
-      const specifiers = getImportSpecifiers(imports, 'gt-react/browser');
-      expect(specifiers).toContain(
-        GT_OTHER_FUNCTIONS.GtInternalRuntimeTranslateString
-      );
-    });
-
     it('does not duplicate import if GtInternalRuntimeTranslateString already imported', () => {
       const { imports } = transform(`
         import { useGT } from 'gt-react';
-        import { GtInternalRuntimeTranslateString } from 'gt-react/browser';
+        import { GtInternalRuntimeTranslateString } from 'gt-react';
         const t = useGT();
         const msg = t("Hello");
       `);
 
-      // Count how many imports from gt-react/browser have GtInternalRuntimeTranslateString
       const allSpecifiers = imports
-        .filter((i) => i.source.value === 'gt-react/browser')
+        .filter((i) => i.source.value === 'gt-react')
         .flatMap((i) =>
           i.specifiers
             .filter((s): s is t.ImportSpecifier => t.isImportSpecifier(s))
@@ -477,43 +461,6 @@ describe('runtimeTranslatePass', () => {
         strings: true,
         jsx: false,
       });
-    });
-
-    it('respects legacyGtReactImportSource from gtConfig', () => {
-      const state = initializeState(
-        {
-          gtConfig: {
-            files: {
-              gt: {
-                parsingFlags: {
-                  legacyGtReactImportSource: true,
-                },
-              },
-            },
-          },
-        },
-        'test.tsx'
-      );
-      expect(state.settings.legacyGtReactImportSource).toBe(true);
-    });
-
-    it('direct legacyGtReactImportSource option overrides gtConfig', () => {
-      const state = initializeState(
-        {
-          legacyGtReactImportSource: false,
-          gtConfig: {
-            files: {
-              gt: {
-                parsingFlags: {
-                  legacyGtReactImportSource: true,
-                },
-              },
-            },
-          },
-        },
-        'test.tsx'
-      );
-      expect(state.settings.legacyGtReactImportSource).toBe(false);
     });
 
     it('direct option overrides gtConfig', () => {
@@ -660,7 +607,7 @@ describe('runtimeTranslatePass', () => {
     // → GtInternalRuntimeTranslateString("Hello", { $_hash: "..." })
     it('extracts tagged template with interpolation via macro expansion', () => {
       const { runtimeCalls } = transformWithMacro(`
-        import { t } from 'gt-react/browser';
+        import { t } from 'gt-react';
         const x = t\`Hello \${name}\`;
       `);
 
@@ -675,7 +622,7 @@ describe('runtimeTranslatePass', () => {
     // → GtInternalRuntimeTranslateString("Hello", { $_hash: "..." })
     it('extracts simple tagged template via macro expansion', () => {
       const { runtimeCalls } = transformWithMacro(`
-        import { t } from 'gt-react/browser';
+        import { t } from 'gt-react';
         const x = t\`Hello\`;
       `);
 

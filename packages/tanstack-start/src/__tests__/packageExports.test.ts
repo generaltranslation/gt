@@ -51,15 +51,11 @@ describe('gt-tanstack-start package exports', () => {
       readdirSync(join(packageRoot, 'dist'))
         .filter((file) => /\.(cjs|mjs)$/.test(file))
         .sort()
-    ).toEqual(['index.client.mjs', 'index.server.mjs', 'server.mjs']);
+    ).toEqual(['index.client.mjs', 'index.server.mjs']);
   });
 
   it('references only declared dependencies from public declarations', () => {
-    for (const file of [
-      'index.client.d.mts',
-      'index.server.d.mts',
-      'server.d.mts',
-    ]) {
+    for (const file of ['index.client.d.mts', 'index.server.d.mts']) {
       const declaration = readFileSync(join(packageRoot, 'dist', file), 'utf8');
 
       expect(declaration).not.toMatch(
@@ -74,16 +70,12 @@ describe('gt-tanstack-start package exports', () => {
       '-e',
       `
         import assert from 'node:assert/strict';
-        import { GTProvider, getGT, getLocale, gtMiddleware, parseLocale } from 'gt-tanstack-start';
-        import { getGT as legacyGetGT, gtMiddleware as legacyGtMiddleware } from 'gt-tanstack-start/server';
+        import { GTProvider, getGT, getLocale, gtMiddleware } from 'gt-tanstack-start';
 
         assert.equal(typeof GTProvider, 'function');
-        assert.equal(typeof parseLocale, 'function');
         assert.equal(typeof getGT, 'function');
         assert.equal(typeof getLocale, 'function');
         assert.equal(typeof gtMiddleware, 'object');
-        assert.equal(typeof legacyGetGT, 'function');
-        assert.equal(typeof legacyGtMiddleware, 'object');
       `,
     ]);
   });

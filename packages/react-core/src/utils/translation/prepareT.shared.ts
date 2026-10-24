@@ -1,7 +1,7 @@
 import { addGTIdentifier } from '../internal/addGTIdentifier';
 import { removeInjectedT } from '../internal/removeInjectedT';
 import { writeChildrenAsObjects } from '../internal/writeChildrenAsObjects';
-import type { JsxTranslationOptions as JsxTranslationOptionsWithSugar } from 'gt-i18n/types';
+import type { JsxTranslationOptions as JsxLookupOptions } from 'gt-i18n/types';
 import type { JsxChildren } from 'generaltranslation/types';
 import type { ReactNode } from 'react';
 import type { RenderPreparedTParams } from '../rendering/renderPreparedT.shared';
@@ -16,13 +16,12 @@ type StripDollarPrefix<T> = {
   [K in keyof T as K extends `$${infer Rest}` ? Rest : K]: T[K];
 };
 
-type JsxTranslationOptions = StripDollarPrefix<JsxTranslationOptionsWithSugar> &
-  JsxTranslationOptionsWithSugar;
+type JsxTranslationOptions = StripDollarPrefix<JsxLookupOptions>;
 
 type PreparedT = {
   taggedSourceChildren: TaggedChildren;
   sourceJsxChildren: JsxChildren;
-  targetOptions: JsxTranslationOptionsWithSugar & {
+  targetOptions: JsxLookupOptions & {
     $format: 'JSX';
     $locale: string;
   };
@@ -82,9 +81,9 @@ function prepareTargetOptions({
   options,
   locale,
 }: {
-  options: JsxTranslationOptionsWithSugar & { $format: 'JSX' };
+  options: JsxLookupOptions & { $format: 'JSX' };
   locale: string;
-}): JsxTranslationOptionsWithSugar & {
+}): JsxLookupOptions & {
   $format: 'JSX';
   $locale: string;
 } {
@@ -92,20 +91,16 @@ function prepareTargetOptions({
 }
 
 function normalizeParameters(
-  parameters: {
-    context?: string;
-    id?: string;
-    _hash?: string;
-  } & JsxTranslationOptions
-): JsxTranslationOptionsWithSugar & { $format: 'JSX' } {
+  parameters: JsxTranslationOptions
+): JsxLookupOptions & { $format: 'JSX' } {
   return {
     ...parameters,
     $format: 'JSX',
-    $context: parameters.$context ?? parameters.context,
-    $id: parameters.$id ?? parameters.id,
-    $_hash: parameters.$_hash ?? parameters._hash,
-    $maxChars: parameters.$maxChars ?? parameters.maxChars,
-    $requiresReview: parameters.$requiresReview ?? parameters.requiresReview,
+    $context: parameters.context,
+    $id: parameters.id,
+    $_hash: parameters._hash,
+    $maxChars: parameters.maxChars,
+    $requiresReview: parameters.requiresReview,
   };
 }
 

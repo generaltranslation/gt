@@ -109,7 +109,7 @@ describe('flattenExpressionToParts', () => {
   });
 
   it('recognizes derive() as a derive part', () => {
-    const code = `import { derive } from 'gt-react/browser';\nderive(fn())`;
+    const code = `import { derive } from 'gt-react';\nderive(fn())`;
     const ast = parser.parse(code, {
       sourceType: 'module',
       plugins: ['typescript'],

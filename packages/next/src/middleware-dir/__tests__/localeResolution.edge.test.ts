@@ -1,7 +1,7 @@
 // @vitest-environment edge-runtime
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
-import { GT } from 'generaltranslation';
+import { GTIntl } from '@generaltranslation/format';
 import {
   createPathMatcher,
   getLocaleFromRequest,
@@ -51,11 +51,12 @@ function callGetLocaleFromRequest(
     defaultLocalePaths?: PathMatcher;
   } = {}
 ) {
-  const gt = new GT();
+  const gt = new GTIntl({
+    locales: overrides.approvedLocales ?? APPROVED_LOCALES,
+  });
   return getLocaleFromRequest(
     req,
     overrides.defaultLocale ?? DEFAULT_LOCALE,
-    overrides.approvedLocales ?? APPROVED_LOCALES,
     overrides.localeRouting ?? true,
     overrides.prefixDefaultLocale ?? false,
     overrides.defaultLocalePaths ?? createPathMatcher([]),

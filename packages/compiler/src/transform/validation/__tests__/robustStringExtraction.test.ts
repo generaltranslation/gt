@@ -43,7 +43,6 @@ function createState(overrides?: Partial<PluginSettings>): TransformState {
     enableMacroImportInjection: true,
     enableAutoJsxInjection: false,
     autoderive: { jsx: false, strings: false },
-    legacyGtReactImportSource: false,
     _debugHashManifest: false,
     devHotReload: { strings: false, jsx: false },
     ...overrides,

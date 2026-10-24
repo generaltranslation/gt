@@ -1665,9 +1665,9 @@ importers:
 
   packages/supported-locales:
     dependencies:
-      generaltranslation:
+      '@generaltranslation/format':
         specifier: workspace:*
-        version: link:../core
+        version: link:../format
     devDependencies:
       tsdown:
         specifier: 'catalog:'
