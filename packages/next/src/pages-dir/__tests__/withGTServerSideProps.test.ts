@@ -114,8 +114,9 @@ describe('withGTServerSideProps', () => {
     expect(mockGetTranslationsSnapshot).toHaveBeenCalledWith('fr');
   });
 
-  it('uses legacy request detection when context.locale is unavailable', async () => {
+  it('uses the default locale when context.locale is unavailable', async () => {
     const getServerSideProps = withGTServerSideProps();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     await expect(
       getServerSideProps({
@@ -126,12 +127,13 @@ describe('withGTServerSideProps', () => {
       } as GetServerSidePropsContext)
     ).resolves.toMatchObject({
       props: {
-        locale: 'es',
-        translations: { es: { hash: 'es translation' } },
+        locale: 'en',
+        translations: { en: { hash: 'en translation' } },
       },
     });
 
-    expect(mockGetTranslationsSnapshot).toHaveBeenCalledWith('es');
+    expect(mockGetTranslationsSnapshot).toHaveBeenCalledWith('en');
+    warn.mockRestore();
   });
 
   it('preserves redirects without loading translations', async () => {

@@ -1,7 +1,5 @@
-import {
-  createDiagnosticMessage,
-  libraryDefaultLocale,
-} from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { translateString } from '../messages/translation';
 import type { GTFunction, GTPlugin, InitializeGTSPAOptions } from '../types';
 import { createGTRuntime, type GTRuntime } from './state';

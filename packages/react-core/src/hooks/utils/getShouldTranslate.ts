@@ -14,5 +14,5 @@ export function getShouldTranslate(): boolean {
 
   const enableI18n = conditionStore.getEnableI18n();
   const locale = conditionStore.getLocale();
-  return enableI18n && i18nConfig.requiresTranslation(locale);
+  return enableI18n && i18nConfig.requiresTranslation({ locale });
 }

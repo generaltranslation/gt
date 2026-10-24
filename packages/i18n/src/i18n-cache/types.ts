@@ -35,6 +35,7 @@ export type I18nCacheConstructorParams = DictionaryConfig &
      * disables expiry, and a number sets an explicit TTL.
      */
     cacheExpiryTime?: number | null;
+    devApiKey?: string;
     loadTranslations?: TranslationsLoader;
     batchConfig?: TranslationBatchConfig;
     runtimeTranslation?: RuntimeTranslationConfig;

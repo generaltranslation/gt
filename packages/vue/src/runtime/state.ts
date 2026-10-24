@@ -3,8 +3,8 @@ import { defaultLocaleCookieName } from 'gt-i18n/internal/cookies';
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
-  libraryDefaultLocale,
-} from 'generaltranslation/internal';
+} from 'generaltranslation/diagnostics';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 import type {
   CreateGTOptions,
   GTPlugin,

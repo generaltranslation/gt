@@ -3,7 +3,7 @@ import {
   initializeGT as initializeReactGT,
 } from 'gt-react';
 import type { SharedGTProviderProps } from 'gt-react';
-import { determineLocaleClient } from '../functions/parseLocale';
+import { determineLocaleClient } from '../functions/determineLocaleClient';
 import { getPathnameForLocale } from '../functions/localeRouting';
 import type { InitializeGTParams } from '../types/InitializeGTParams';
 

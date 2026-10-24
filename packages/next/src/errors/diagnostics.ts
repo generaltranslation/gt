@@ -2,7 +2,7 @@ import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
   type DiagnosticMessageInput,
-} from 'generaltranslation/internal';
+} from 'generaltranslation/diagnostics';
 
 type GtNextDiagnosticInput = Omit<DiagnosticMessageInput, 'source'>;
 

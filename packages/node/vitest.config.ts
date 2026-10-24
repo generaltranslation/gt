@@ -25,10 +25,6 @@ export default defineConfig({
     environment: 'node',
     // Globals for easier test writing
     globals: true,
-    // Suppress GT logger output during tests for cleaner output
-    env: {
-      _GT_LOG_LEVEL: 'off',
-    },
     reporters: [
       [
         'default',

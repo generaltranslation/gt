@@ -35,16 +35,6 @@ function createRequest({
 }
 
 describe('AsyncLocalConditionStore', () => {
-  it('reports whether the current execution has a request scope', () => {
-    const conditionStore = new AsyncLocalConditionStore(config);
-
-    expect(conditionStore.hasActiveScope()).toBe(false);
-    conditionStore.run(createRequest({ locale: 'fr', enableI18n: true }), () =>
-      expect(conditionStore.hasActiveScope()).toBe(true)
-    );
-    expect(conditionStore.hasActiveScope()).toBe(false);
-  });
-
   it('isolates conditions between concurrent requests', async () => {
     const conditionStore = new AsyncLocalConditionStore(config);
     let releaseFirstRequest!: () => void;

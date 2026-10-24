@@ -3,7 +3,7 @@ import { Translation } from 'gt-i18n/types';
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
-} from 'generaltranslation/internal';
+} from 'generaltranslation/diagnostics';
 import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 
 /**

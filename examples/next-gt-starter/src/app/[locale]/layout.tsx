@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
-import { getLocale } from 'gt-next/server';
-import { getLocaleDirection } from 'generaltranslation';
+import { getLocale, getLocaleDirection } from 'gt-next/server';
 import { GTProvider } from 'gt-next';
 
 const geistSans = Geist({

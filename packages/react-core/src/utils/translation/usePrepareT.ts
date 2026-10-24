@@ -31,7 +31,7 @@ function usePrepareT({
   const locale = _locale ?? contextLocale;
   const enableI18n = _enableI18n ?? contextEnableI18n;
   const shouldTranslate =
-    enableI18n && getI18nConfig().requiresTranslation(locale);
+    enableI18n && getI18nConfig().requiresTranslation({ locale });
   const prepared = useMemo(
     () =>
       prepareT({

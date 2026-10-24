@@ -10,7 +10,7 @@ import {
   getTranslationsSnapshot,
   GTProvider,
   LocaleSelector,
-  parseLocale,
+  getLocale,
 } from 'gt-tanstack-start';
 import '../styles.css';
 
@@ -29,7 +29,7 @@ export const Route = createRootRoute({
   }),
   component: RootComponent,
   loader: async () => {
-    const locale = parseLocale();
+    const locale = getLocale();
     return {
       locale,
       translations: await getTranslationsSnapshot(locale),

@@ -1,9 +1,7 @@
-import {
-  LocaleConfig,
-  type LocaleConfigConstructorParams,
-} from '@generaltranslation/format';
+import { GTIntl, type LocaleConfig } from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import { GTRuntime } from 'generaltranslation/runtime';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import type { GTConfig } from '../config/types';
 import {
@@ -28,13 +26,15 @@ export type I18nConfigParams = Pick<
   | 'locales'
   | 'customMapping'
   | 'projectId'
-  | 'devApiKey'
   | 'apiKey'
   | 'cacheUrl'
   | 'runtimeUrl'
   | '_disableDevHotReload'
   | '_tagIds'
->;
+> & {
+  /** The development API key; it enables hot reload translation in development. */
+  devApiKey?: string;
+};
 
 type RuntimeConfig = Pick<
   I18nConfigParams,
@@ -48,7 +48,7 @@ type RuntimeConfig = Pick<
 
 export type LocaleCandidates = string | string[] | undefined;
 
-export class I18nConfig extends LocaleConfig {
+export class I18nConfig extends GTIntl {
   protected runtimeConfig: RuntimeConfig;
   private gtServicesEnabled: boolean;
   private logLevel: GeneralTranslationLogLevel;
@@ -73,7 +73,8 @@ export class I18nConfig extends LocaleConfig {
   }
 
   getLocales(): string[] {
-    return this.locales;
+    // A mutable copy of the frozen configured locales.
+    return [...this.locales];
   }
 
   getCustomMapping(): CustomMapping {
@@ -85,25 +86,32 @@ export class I18nConfig extends LocaleConfig {
   }
 
   /**
-   * Get a GT instance bound to the resolved target locale. When omitted, the
-   * instance is locale agnostic.
+   * The runtime for runtime translation, with the API key from `apiKey`, then
+   * the GT_API_KEY environment variable, then `devApiKey`.
    *
-   * TODO: keep a cache to avoid creating new instances unnecessarily.
+   * @throws {Error} Without a projectId or an API key.
    */
-  getGTClass(locale?: string): GTRuntime {
-    return this.getGTClassClean(
-      locale ? this.resolveLocale(locale) : undefined
-    );
+  getTranslationRuntime(): GTRuntime {
+    const { projectId, runtimeUrl } = this.runtimeConfig;
+    if (!projectId) throw new Error(missingRuntimeProjectIdError);
+    const apiKey =
+      this.runtimeConfig.apiKey ||
+      (typeof process !== 'undefined' && process.env?.GT_API_KEY) ||
+      this.runtimeConfig.devApiKey;
+    if (!apiKey) throw new Error(missingRuntimeApiKeyError);
+    return new GTRuntime({
+      apiKey,
+      projectId,
+      baseUrl: runtimeUrl || undefined,
+      localeConfig: this,
+    });
   }
 
-  determineLocale(
-    locales: LocaleCandidates,
-    approvedLocales: string[] = this.locales
-  ): string | undefined {
+  determineLocale(locales: LocaleCandidates): string | undefined {
     if (locales == null || (Array.isArray(locales) && locales.length === 0)) {
       return undefined;
     }
-    return super.determineLocale(locales, approvedLocales);
+    return super.determineLocale(locales);
   }
 
   determineSupportedLocale(
@@ -159,32 +167,16 @@ export class I18nConfig extends LocaleConfig {
     return isDebugLogLevel(this.logLevel);
   }
 
-  /**
-   * Create a GT instance without resolving the target locale first.
-   */
-  private getGTClassClean(locale?: string) {
-    return new GTRuntime({
-      sourceLocale: this.getDefaultLocale(),
-      targetLocale: locale,
-      locales: this.getLocales(),
-      customMapping: this.getCustomMapping(),
-      projectId: this.runtimeConfig.projectId,
-      baseUrl: this.runtimeConfig.runtimeUrl || undefined,
-      apiKey: this.runtimeConfig.apiKey,
-      devApiKey: this.runtimeConfig.devApiKey,
-    });
-  }
-
-  private getLocaleConfig(config?: I18nConfigParams): LocaleConfig {
+  private getLocaleConfig(config?: I18nConfigParams): GTIntl {
     if (!config || !hasI18nConfigParams(config)) {
       return this;
     }
-    return new LocaleConfig(getLocaleResolverConfigParams(config));
+    return new GTIntl(getLocaleResolverConfigParams(config));
   }
 
   private determineSupportedLocaleWithConfig(
     candidates: LocaleCandidates,
-    localeConfig: LocaleConfig
+    localeConfig: GTIntl
   ): string | undefined {
     if (
       candidates == null ||
@@ -199,7 +191,7 @@ export class I18nConfig extends LocaleConfig {
 function getLocaleConfigParams(
   params: I18nConfigParams,
   gtServicesEnabled: boolean
-): LocaleConfigConstructorParams {
+): LocaleConfig {
   const {
     defaultLocale = libraryDefaultLocale,
     locales = [],
@@ -227,7 +219,7 @@ function getLocaleResolverConfigParams({
   defaultLocale = libraryDefaultLocale,
   locales = [],
   customMapping,
-}: I18nConfigParams = {}): LocaleConfigConstructorParams {
+}: I18nConfigParams = {}): LocaleConfig {
   return {
     defaultLocale,
     locales: locales?.length ? locales : [defaultLocale],
@@ -249,3 +241,17 @@ function resolveGTServicesEnabled(config: I18nConfigParams): boolean {
     getTranslationApiType(config) === TranslationApiType.GT
   );
 }
+
+const missingRuntimeProjectIdError = createDiagnosticMessage({
+  source: 'gt-i18n',
+  severity: 'Error',
+  whatHappened: 'Runtime translation needs a projectId',
+  fix: "Set `projectId` in your framework's GT configuration, or disable runtime translation",
+});
+
+const missingRuntimeApiKeyError = createDiagnosticMessage({
+  source: 'gt-i18n',
+  severity: 'Error',
+  whatHappened: 'Runtime translation needs an API key',
+  fix: "Set `apiKey` (or `devApiKey` in development) in your framework's GT configuration or the GT_API_KEY environment variable, or disable runtime translation",
+});

@@ -92,69 +92,28 @@ describe('parseLocale', () => {
     expect(parseLocale(context)).toBe('brand-french');
   });
 
-  it('falls back to the legacy header detector when context.locale is missing', () => {
+  it('uses defaultLocale instead of request headers when context.locale is missing', () => {
     const context = createContext({
       defaultLocale: 'es',
       headers: {
         'x-generaltranslation-locale': 'brand-french',
-        'accept-language': 'es',
+        'accept-language': 'fr',
       },
       cookies: {
-        'generaltranslation.locale': 'es',
+        'generaltranslation.locale': 'fr',
       },
     });
 
-    expect(parseLocale(context)).toBe('brand-french');
-    expect(consoleWarnSpy).not.toHaveBeenCalled();
+    expect(parseLocale(context)).toBe('es');
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('The locale "es" will be used')
+    );
   });
 
-  it('falls back through the legacy cookie and Accept-Language detector', () => {
-    expect(
-      parseLocale(
-        createContext({
-          headers: { 'accept-language': 'fr,en;q=0.8' },
-          cookies: { 'generaltranslation.locale': 'es' },
-        })
-      )
-    ).toBe('es');
-    expect(
-      parseLocale(
-        createContext({
-          headers: { 'accept-language': 'fr,en;q=0.8' },
-        })
-      )
-    ).toBe('fr');
-  });
-
-  it('retains configured legacy header and cookie names in the fallback', () => {
-    resetGTGlobals();
-    initializeI18nConfig({
-      ...localeConfig,
-      localeCookieName: 'custom-locale',
-    });
-    process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS = JSON.stringify({
-      headersAndCookies: {
-        localeHeaderName: 'x-custom-locale',
-      },
-    });
-
-    expect(
-      parseLocale(
-        createContext({
-          headers: {
-            'x-custom-locale': 'es',
-            'accept-language': 'fr,en;q=0.8',
-          },
-          cookies: { 'custom-locale': 'brand-french' },
-        })
-      )
-    ).toBe('es');
-  });
-
-  it('falls back to the GT default when legacy detection has no candidates', () => {
+  it('falls back to the GT default when Next.js provides no locale', () => {
     expect(parseLocale(createContext({}))).toBe('en');
     expect(consoleWarnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('No locale could be determined')
+      expect.stringContaining('The locale "en" will be used')
     );
   });
 
