@@ -35,6 +35,12 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
     function SaveButton() {
       return <button onClick={async () => toast((await getGT())('Saved'))} />;
     }`,
+    // useCallback stores its callback for later, like an event handler
+    `${imports}
+    function SaveButton() {
+      const save = useCallback(async () => toast((await getGT())('Saved')), []);
+      return <button onClick={save} />;
+    }`,
     // Same names from other libraries, or not imported at all
     `import { getGT } from 'gt-next/server';
     const gt = await getGT();`,
@@ -46,6 +52,58 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
     }`,
   ],
   invalid: [
+    {
+      code: `${imports}export const locale = (() => getLocale())();`,
+      errors: [{ messageId: 'moduleScope', data: { name: 'getLocale' } }],
+    },
+    {
+      code: `${imports}const gt = await (async () => getGT())();`,
+      errors: [{ messageId: 'moduleScope', data: { name: 'getGT' } }],
+    },
+    {
+      code: `${imports}
+      const Card = memo(function render() {
+        return <p>{getLocale()}</p>;
+      });`,
+      errors: [
+        {
+          messageId: 'inComponent',
+          data: { name: 'getLocale', hook: 'useLocale' },
+        },
+      ],
+    },
+    {
+      code: `${imports}
+      const Input = forwardRef(function render(props, ref) {
+        return <input ref={ref} placeholder={getLocale()} />;
+      });`,
+      errors: [
+        {
+          messageId: 'inComponent',
+          data: { name: 'getLocale', hook: 'useLocale' },
+        },
+      ],
+    },
+    {
+      code: `${imports}
+      export const Route = createFileRoute('/')({
+        component: function render() {
+          return <p>{getLocale()}</p>;
+        },
+      });`,
+      errors: [
+        {
+          messageId: 'inComponent',
+          data: { name: 'getLocale', hook: 'useLocale' },
+        },
+      ],
+    },
+    {
+      code: `${imports}export default memo(() => use(getGT())('Card'));`,
+      errors: [
+        { messageId: 'inComponent', data: { name: 'getGT', hook: 'useGT' } },
+      ],
+    },
     {
       code: `${imports}export default () => <p>{getLocale()}</p>;`,
       errors: [
