@@ -7,7 +7,7 @@ This package contains runtime-safe helpers for:
 - Locale normalization, validation, alias resolution, and matching
 - ICU/string message formatting
 - Cutoff formatting
-- `LocaleConfig`, a small wrapper around locale and formatting helpers
+- `GTIntl`, the locale and formatting helpers for a `LocaleConfig` (`defaultLocale`, `locales`, `customMapping`) and a target `locale`
 
 It does not include project credentials, network translation APIs, file APIs, or
 the `GT` service client. Those remain in `generaltranslation`.

@@ -1,14 +1,5 @@
 import { ApiError } from '@generaltranslation/api';
 
-export function isErrorResult(error: unknown): error is { error: string } {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'error' in error &&
-    typeof error.error === 'string'
-  );
-}
-
 /**
  * Unwraps a `@generaltranslation/api` SDK result, returning its data or
  * throwing an `ApiError` built from the failed response.

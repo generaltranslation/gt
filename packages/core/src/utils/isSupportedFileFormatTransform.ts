@@ -22,6 +22,9 @@ const SUPPORTED_TRANSFORMATIONS = {
   SRT: ['SRT'],
   RESX: ['RESX'],
   XCSTRINGS: ['XCSTRINGS'],
+  PNG: ['PNG'],
+  JPEG: ['JPEG'],
+  MP4: ['MP4'],
 } as const satisfies Record<FileFormat, FileFormat[]>;
 
 /**
