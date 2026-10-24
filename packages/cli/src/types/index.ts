@@ -1,7 +1,7 @@
 import type { CustomMapping } from '@generaltranslation/format/types';
 import type { UserTokenProvider } from 'generaltranslation/api';
 import type { ModelProvider } from 'generaltranslation/internal';
-import type { FileFormat } from 'generaltranslation/types';
+import type { FileFormat, Updates } from 'generaltranslation/types';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import {
   ParsingConfigOptions,
@@ -13,18 +13,19 @@ import { Libraries, InlineLibrary } from './libraries.js';
 
 export type { Updates } from 'generaltranslation/types';
 
+export type Metadata = Updates[number]['metadata'];
+
 export type Options = {
   config: string;
   apiKey?: string;
   projectId?: string;
   versionId?: string;
-  jsconfig?: string;
+  tsconfig?: string;
   dictionary?: string;
   src?: string[];
   defaultLocale?: string;
   locales?: string[];
   baseUrl: string;
-  inline?: boolean;
   ignoreErrors: boolean;
   suppressWarnings: boolean;
   dryRun: boolean;
@@ -62,7 +63,7 @@ export type SharedFlags = {
 
 export type TranslateFlags = SharedFlags & {
   versionId?: string;
-  jsconfig?: string;
+  tsconfig?: string;
   dictionary?: string;
   defaultLocale?: string;
   locales?: string[];
@@ -112,8 +113,7 @@ export type GenerateSourceOptions = {
   config: string;
   defaultLocale: string;
   dictionary?: string;
-  jsconfig?: string;
-  inline?: boolean;
+  tsconfig?: string;
   ignoreErrors: boolean;
   suppressWarnings: boolean;
 };
@@ -230,11 +230,6 @@ export type FilesOptions = {
     output: string; // Output glob: /path/[locale].json
     publish?: boolean; // if true, publish gtjson translations to the CDN
     parsingFlags?: Partial<GTParsingFlags>; // Flags for parsing inline content
-    /**
-     * @deprecated
-     * use `files.gt.parsingFlags.includeSourceCodeContext` instead
-     */
-    includeSourceCodeContext?: boolean; // Include surrounding source code lines as context for translations (default: false)
   };
 };
 
@@ -267,11 +262,6 @@ export type Settings = {
     gtJson: {
       publish?: boolean; // if true, publish gtjson translations to the CDN
       parsingFlags: GTParsingFlags; // Flags for parsing inline content
-      /**
-       * @deprecated
-       * use {@link files.gt.GTParsingFlags.parsingFlags.includeSourceCodeContext} instead
-       */
-      includeSourceCodeContext?: boolean; // Include surrounding source code lines as context for translations (default: false)
     };
   };
   stageTranslations: boolean; // if true, always stage the project during translate command

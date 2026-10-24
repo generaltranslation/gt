@@ -30,7 +30,7 @@ import {
   sliceTranslationCatalog,
   type XcstringsCatalog,
 } from '../../formats/xcstrings/parseXcstrings.js';
-import { api } from '../../utils/api.js';
+import { resolveCanonicalLocale } from '../../utils/api.js';
 
 /**
  * Sends multiple files to the API for translation
@@ -145,7 +145,7 @@ export async function upload(
         // Catalog keys are canonical tags; the configured locale may be an alias.
         const slice = sliceTranslationCatalog(
           xcstringsCatalog,
-          api.resolveCanonicalLocale(locale)
+          resolveCanonicalLocale(locale)
         );
         // A locale the catalog does not carry has nothing to upload
         if (!slice) continue;
@@ -229,14 +229,16 @@ export async function upload(
 
   try {
     // Send all files in a single API call
-    const { branchData } = await runUploadFilesWorkflow({
+    const { branchData, uploadedFiles } = await runUploadFilesWorkflow({
       files: uploadData,
       options: settings,
     });
 
-    // Publish files to CDN if publish config exists
+    // Publish files to CDN if publish config exists; files whose upload
+    // failed are skipped
+    const uploadedFileIds = new Set(uploadedFiles.map((file) => file.fileId));
     await runPublishWorkflow(
-      allFiles,
+      allFiles.filter((file) => uploadedFileIds.has(file.fileId)),
       publishMap,
       branchData.currentBranch.id,
       settings

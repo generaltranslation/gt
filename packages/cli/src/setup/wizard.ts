@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { detectFormatter, formatFiles } from '../hooks/postProcess.js';
 import type { Formatter } from '../hooks/postProcess.js';
 import { exitSync, promptConfirm, promptSelect } from '../console/logging.js';

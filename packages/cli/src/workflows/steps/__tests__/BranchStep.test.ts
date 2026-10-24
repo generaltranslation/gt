@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ApiError } from 'generaltranslation/errors';
+import { ApiError } from 'generaltranslation/api';
 import { BranchStep } from '../BranchStep.js';
 
 // Mock git branch detection
@@ -42,12 +42,34 @@ const mockGetIncomingBranches = vi.mocked(getIncomingBranches);
 const mockGetCheckedOutBranches = vi.mocked(getCheckedOutBranches);
 
 const mockGt = {
-  queryBranchData: vi.fn(),
+  listBranches: vi.fn(),
   createBranch: vi.fn(),
+  updateBranch: vi.fn(),
 };
 
-const defaultBranch = { id: 'default-id', name: 'main' };
-const featureBranch = { id: 'feature-id', name: 'feature-x' };
+const defaultBranch = { id: 'default-id', name: 'main', isDefault: true };
+const featureBranch = { id: 'feature-id', name: 'feature-x', isDefault: false };
+
+// Answers the default-branch query and the name query like the API would.
+function mockBranchLists({
+  branches,
+  defaultBranch,
+}: {
+  branches: (typeof featureBranch)[];
+  defaultBranch: typeof featureBranch | null;
+}) {
+  mockGt.listBranches.mockImplementation(
+    async (query: { isDefault?: string; name?: string[] }) => ({
+      items:
+        query.isDefault === 'true'
+          ? defaultBranch
+            ? [defaultBranch]
+            : []
+          : branches.filter((b) => query.name?.includes(b.name)),
+      nextCursor: null,
+    })
+  );
+}
 
 function makeSettings(
   overrides: {
@@ -89,7 +111,7 @@ describe('BranchStep', () => {
         defaultBranch: false,
         defaultBranchName: 'main',
       });
-      mockGt.queryBranchData.mockResolvedValue({
+      mockBranchLists({
         branches: [featureBranch],
         defaultBranch,
       });
@@ -99,13 +121,15 @@ describe('BranchStep', () => {
 
       expect(result?.currentBranch).toEqual(featureBranch);
       expect(logger.warn).not.toHaveBeenCalled();
+      expect(mockGt.listBranches).toHaveBeenCalledWith({ name: ['feature-x'] });
+      expect(mockGt.listBranches).toHaveBeenCalledWith({ isDefault: 'true' });
     });
   });
 
   describe('git detection fails, no VERCEL_GIT_COMMIT_REF, no --branch', () => {
     it('should warn and fall back to default branch', async () => {
       mockGetCurrentBranch.mockResolvedValue(null);
-      mockGt.queryBranchData.mockResolvedValue({
+      mockBranchLists({
         branches: [],
         defaultBranch,
       });
@@ -124,7 +148,7 @@ describe('BranchStep', () => {
     it('should use the Vercel env var branch', async () => {
       process.env.VERCEL_GIT_COMMIT_REF = 'feature-x';
       mockGetCurrentBranch.mockResolvedValue(null);
-      mockGt.queryBranchData.mockResolvedValue({
+      mockBranchLists({
         branches: [featureBranch],
         defaultBranch,
       });
@@ -138,7 +162,7 @@ describe('BranchStep', () => {
     it('should set checkedOutBranch to default for non-default Vercel branch', async () => {
       process.env.VERCEL_GIT_COMMIT_REF = 'feature-x';
       mockGetCurrentBranch.mockResolvedValue(null);
-      mockGt.queryBranchData.mockResolvedValue({
+      mockBranchLists({
         branches: [featureBranch],
         defaultBranch,
       });
@@ -153,7 +177,7 @@ describe('BranchStep', () => {
   describe('git detection fails, --branch specified', () => {
     it('should use the manual branch', async () => {
       mockGetCurrentBranch.mockResolvedValue(null);
-      mockGt.queryBranchData.mockResolvedValue({
+      mockBranchLists({
         branches: [featureBranch],
         defaultBranch,
       });
@@ -169,7 +193,7 @@ describe('BranchStep', () => {
 
     it('should set checkedOutBranch to default', async () => {
       mockGetCurrentBranch.mockResolvedValue(null);
-      mockGt.queryBranchData.mockResolvedValue({
+      mockBranchLists({
         branches: [featureBranch],
         defaultBranch,
       });
@@ -186,7 +210,7 @@ describe('BranchStep', () => {
 
   describe('auto-detect disabled, --branch specified', () => {
     it('should use the manual branch and set checkedOutBranch to default', async () => {
-      mockGt.queryBranchData.mockResolvedValue({
+      mockBranchLists({
         branches: [featureBranch],
         defaultBranch,
       });
@@ -205,7 +229,7 @@ describe('BranchStep', () => {
 
   describe('branching disabled', () => {
     it('should fall back to default branch', async () => {
-      mockGt.queryBranchData.mockResolvedValue({
+      mockBranchLists({
         branches: [],
         defaultBranch,
       });
@@ -215,6 +239,23 @@ describe('BranchStep', () => {
 
       expect(result?.currentBranch).toEqual(defaultBranch);
       expect(mockGetCurrentBranch).not.toHaveBeenCalled();
+      // No names to look up, so no unfiltered listing of every branch
+      expect(mockGt.listBranches).toHaveBeenCalledTimes(1);
+      expect(mockGt.listBranches).toHaveBeenCalledWith({ isDefault: 'true' });
+    });
+
+    it('creates the default branch by name when none exists', async () => {
+      mockBranchLists({ branches: [], defaultBranch: null });
+      mockGt.createBranch.mockResolvedValue({ branch: defaultBranch });
+
+      const step = new BranchStep(mockGt, makeSettings({ enabled: false }));
+      const result = await step.run();
+
+      expect(mockGt.createBranch).toHaveBeenCalledWith({
+        name: 'main',
+        isDefault: true,
+      });
+      expect(result?.currentBranch).toEqual(defaultBranch);
     });
   });
 
@@ -225,11 +266,11 @@ describe('BranchStep', () => {
         defaultBranch: false,
         defaultBranchName: 'main',
       });
-      mockGt.queryBranchData.mockResolvedValue({
+      mockBranchLists({
         branches: [],
         defaultBranch,
       });
-      const error = new ApiError('server failed', 500, 'server failed');
+      const error = new ApiError('server failed', 500);
       mockGt.createBranch.mockRejectedValue(error);
 
       const step = new BranchStep(mockGt, makeSettings());
@@ -243,12 +284,12 @@ describe('BranchStep', () => {
         defaultBranch: false,
         defaultBranchName: 'main',
       });
-      mockGt.queryBranchData.mockResolvedValue({
+      mockBranchLists({
         branches: [],
         defaultBranch,
       });
       mockGt.createBranch.mockRejectedValueOnce(
-        new ApiError('branching unavailable', 403, 'branching unavailable')
+        new ApiError('branching unavailable', 403)
       );
 
       const step = new BranchStep(mockGt, makeSettings());
@@ -264,7 +305,7 @@ describe('BranchStep', () => {
         defaultBranch: false,
         defaultBranchName: 'main',
       });
-      mockGt.queryBranchData.mockResolvedValue({
+      mockBranchLists({
         branches: [],
         defaultBranch,
       });
@@ -276,13 +317,149 @@ describe('BranchStep', () => {
       const result = await step.run();
 
       expect(mockGt.createBranch).toHaveBeenCalledWith({
-        branchName: 'new-branch',
-        defaultBranch: false,
+        name: 'new-branch',
+        isDefault: false,
       });
       expect(result?.currentBranch).toEqual({
         id: 'new-id',
         name: 'new-branch',
       });
     });
+  });
+
+  describe('concurrent branch creation', () => {
+    const conflict = new ApiError(
+      'A branch with the requested name already exists.',
+      409
+    );
+
+    // The first name lookup is empty; another run creates `created` before ours.
+    function mockConcurrentCreation(
+      created: typeof featureBranch | null,
+      defaultBranch: typeof featureBranch | null
+    ) {
+      let nameLookups = 0;
+      mockGt.listBranches.mockImplementation(
+        async (query: { isDefault?: string; name?: string[] }) => ({
+          items:
+            query.isDefault === 'true'
+              ? defaultBranch
+                ? [defaultBranch]
+                : []
+              : nameLookups++ > 0 && created
+                ? [created]
+                : [],
+          nextCursor: null,
+        })
+      );
+      mockGt.createBranch.mockRejectedValue(conflict);
+    }
+
+    it('reuses a branch another run created after the lookup', async () => {
+      mockGetCurrentBranch.mockResolvedValue({
+        currentBranchName: 'feature-x',
+        defaultBranch: false,
+        defaultBranchName: 'main',
+      });
+      mockConcurrentCreation(featureBranch, defaultBranch);
+
+      const result = await new BranchStep(mockGt, makeSettings()).run();
+
+      expect(mockGt.createBranch).toHaveBeenCalledWith({
+        name: 'feature-x',
+        isDefault: false,
+      });
+      expect(result?.currentBranch).toEqual(featureBranch);
+    });
+
+    it('reuses and promotes a default branch another run created after the lookup', async () => {
+      const created = { id: 'main-id', name: 'main', isDefault: false };
+      mockConcurrentCreation(created, null);
+      const promoted = { ...created, isDefault: true };
+      mockGt.updateBranch.mockResolvedValue(promoted);
+
+      const result = await new BranchStep(
+        mockGt,
+        makeSettings({ enabled: false })
+      ).run();
+
+      expect(mockGt.createBranch).toHaveBeenCalledWith({
+        name: 'main',
+        isDefault: true,
+      });
+      expect(mockGt.updateBranch).toHaveBeenCalledWith('main-id', {
+        isDefault: true,
+      });
+      expect(result?.currentBranch).toEqual(promoted);
+    });
+
+    it('rethrows the conflict when the branch is still missing', async () => {
+      mockGetCurrentBranch.mockResolvedValue({
+        currentBranchName: 'feature-x',
+        defaultBranch: false,
+        defaultBranchName: 'main',
+      });
+      mockConcurrentCreation(null, defaultBranch);
+
+      await expect(new BranchStep(mockGt, makeSettings()).run()).rejects.toBe(
+        conflict
+      );
+    });
+  });
+
+  describe('git default branch missing from the project', () => {
+    beforeEach(() => {
+      mockGetCurrentBranch.mockResolvedValue({
+        currentBranchName: 'master',
+        defaultBranch: true,
+        defaultBranchName: 'master',
+      });
+    });
+
+    it('renames the default branch when it exists under another name', async () => {
+      mockBranchLists({ branches: [], defaultBranch });
+      const renamed = { ...defaultBranch, name: 'master' };
+      mockGt.updateBranch.mockResolvedValue(renamed);
+
+      const result = await new BranchStep(mockGt, makeSettings()).run();
+
+      expect(mockGt.updateBranch).toHaveBeenCalledWith('default-id', {
+        name: 'master',
+      });
+      expect(mockGt.createBranch).not.toHaveBeenCalled();
+      expect(result?.currentBranch).toEqual(renamed);
+    });
+
+    it('creates the branch as the default when the project has no branches', async () => {
+      mockBranchLists({ branches: [], defaultBranch: null });
+      const created = { id: 'master-id', name: 'master', isDefault: true };
+      mockGt.createBranch.mockResolvedValue({ branch: created });
+
+      const result = await new BranchStep(mockGt, makeSettings()).run();
+
+      expect(mockGt.createBranch).toHaveBeenCalledWith({
+        name: 'master',
+        isDefault: true,
+      });
+      expect(mockGt.updateBranch).not.toHaveBeenCalled();
+      expect(result?.currentBranch).toEqual(created);
+    });
+  });
+
+  it('promotes an existing branch by that name when the project has no default', async () => {
+    const existing = { id: 'main-id', name: 'main', isDefault: false };
+    mockBranchLists({ branches: [existing], defaultBranch: null });
+    const promoted = { ...existing, isDefault: true };
+    mockGt.updateBranch.mockResolvedValue(promoted);
+
+    const step = new BranchStep(mockGt, makeSettings({ enabled: false }));
+    const result = await step.run();
+
+    expect(mockGt.listBranches).toHaveBeenCalledWith({ name: ['main'] });
+    expect(mockGt.createBranch).not.toHaveBeenCalled();
+    expect(mockGt.updateBranch).toHaveBeenCalledWith('main-id', {
+      isDefault: true,
+    });
+    expect(result?.currentBranch).toEqual(promoted);
   });
 });

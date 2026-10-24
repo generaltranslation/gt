@@ -1,11 +1,6 @@
 // Payload's locales as languages to translate into, shared by the plugin's
 // endpoints and the admin panel.
-import {
-  getLocaleEmoji,
-  getLocaleName,
-  isValidLocale,
-} from 'generaltranslation';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import { GTIntl } from 'generaltranslation';
 import type { CustomMapping } from 'generaltranslation/types';
 import { labelText } from './labels';
 
@@ -44,19 +39,17 @@ export function targetLocaleOptions(
   customMapping?: CustomMapping
 ): LocaleOption[] {
   if (!localization) return [];
+  // Names are in the library default locale.
+  const intl = new GTIntl({ customMapping });
   return localization.locales.flatMap((locale) => {
     const code = typeof locale === 'string' ? locale : locale.code;
     if (code === localization.defaultLocale) return [];
-    const supported = isValidLocale(code, customMapping);
+    const supported = intl.isValidLocale(code);
     return [
       {
         code,
-        name:
-          labelOf(locale) ??
-          (supported
-            ? getLocaleName(code, libraryDefaultLocale, customMapping)
-            : code),
-        emoji: supported ? getLocaleEmoji(code, customMapping) : '',
+        name: labelOf(locale) ?? (supported ? intl.getLocaleName(code) : code),
+        emoji: supported ? intl.getLocaleEmoji(code) : '',
         supported,
       },
     ];

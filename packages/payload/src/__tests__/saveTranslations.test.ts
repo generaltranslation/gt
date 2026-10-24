@@ -86,7 +86,7 @@ describe('saveTranslations: a document GT has translated', () => {
       ...readKeyedHtml(gt.uploadedTranslations[0].content).values(),
     ]).toContain('Página principal');
     expect(gt.calls.uploadSourceFiles).toBe(uploads);
-    expect(gt.calls.enqueueFiles).toBe(1);
+    expect(gt.calls.translateFiles).toBe(1);
     expect(await versionCount(page.id)).toBe(versions);
   });
 
@@ -116,7 +116,7 @@ describe('saveTranslations: a document GT has never seen', () => {
 
     expect(result.locales.es).toEqual({ status: 'saved' });
     expect(gt.calls.uploadSourceFiles).toBe(1);
-    expect(gt.calls.enqueueFiles).toBe(0);
+    expect(gt.calls.translateFiles).toBe(0);
     expect(gt.uploadedTranslations[0].versionId).toBe(`${gt.fileIds()[0]}@1`);
     expect([
       ...readKeyedHtml(gt.uploadedTranslations[0].content).values(),
@@ -193,6 +193,78 @@ describe('saveTranslations: nothing to save, and failures', () => {
     });
 
     expect(result.error).toBeTruthy();
+  });
+
+  it('reports a locale GT did not save and saves the others', async () => {
+    const page = await pageWithHandMadeSpanish();
+    await payload.update({
+      collection: 'pages',
+      id: page.id,
+      locale: 'fr',
+      draft: true,
+      data: { title: 'Accueil' },
+    });
+    const gt = new FakeGt();
+    gt.failTranslationUploads.add('es');
+    const result = await saveTranslations({
+      payload,
+      gt,
+      target: { collection: 'pages', id: page.id },
+      locales: ['es', 'fr'],
+    });
+
+    expect(result.locales.es).toEqual({
+      status: 'failed',
+      error: 'translation upload failed',
+    });
+    expect(result.locales.fr).toEqual({ status: 'saved' });
+  });
+
+  it('reports a document whose source GT did not save', async () => {
+    const page = await pageWithHandMadeSpanish();
+    const gt = new FakeGt();
+    gt.failSourceUploads.add(`pages/${page.id}`);
+    const result = await saveTranslations({
+      payload,
+      gt,
+      target: { collection: 'pages', id: page.id },
+      locales: ['es'],
+    });
+
+    expect(result.locales.es).toEqual({
+      status: 'failed',
+      error: 'source upload failed',
+    });
+    expect(gt.calls.uploadTranslations).toBe(0);
+  });
+});
+
+describe('translateDocument with saveLocalEdits: an edit GT did not save', () => {
+  it('fails the document instead of translating over the edit', async () => {
+    const page = await createPage(payload);
+    const gt = new FakeGt();
+    const target = { collection: 'pages', id: page.id };
+    await translateDocument({ payload, gt, target, locales: ['es'] });
+    await editSpanish(page.id, { title: 'Página principal' });
+    await payload.update({
+      collection: 'pages',
+      id: page.id,
+      locale: 'en',
+      draft: true,
+      data: { title: 'Home page' },
+    });
+    gt.failTranslationUploads.add('es');
+    const result = await translateDocument({
+      payload,
+      gt,
+      target,
+      locales: ['es'],
+      saveLocalEdits: true,
+    });
+
+    expect(result.error).toBe('translation upload failed');
+    expect(result.locales.es).toMatchObject({ status: 'failed' });
+    expect((await read(page.id, 'es')).title).toBe('Página principal');
   });
 });
 

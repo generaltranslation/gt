@@ -1,4 +1,4 @@
-import { getLocaleProperties } from 'generaltranslation';
+import { GTIntl } from 'generaltranslation';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import type {
   ListItemBuilder,
@@ -47,11 +47,9 @@ function documentLevelTypes(): string[] {
 }
 
 function localeLabel(locale: string): string {
-  const sourceLocale = pluginConfig.getSourceLocale();
-  return formatLocalePropertiesLabel(
-    locale,
-    getLocaleProperties(locale, sourceLocale)
-  );
+  // Without customMapping, as structure titles have always been.
+  const intl = new GTIntl({ defaultLocale: pluginConfig.getSourceLocale() });
+  return formatLocalePropertiesLabel(locale, intl.getLocaleProperties(locale));
 }
 
 function typeTitle(type: string, context?: StructureResolverContext): string {

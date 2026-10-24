@@ -64,21 +64,3 @@ export const BaseTranslationWrapper: React.FC<BaseTranslationWrapperProps> = ({
     </ThemeProvider>
   );
 };
-
-export interface UseTranslationSecretsResult {
-  loadingSecrets: boolean;
-  secrets: Secrets | null;
-}
-
-export const useTranslationSecrets = (
-  secretsNamespace?: string
-): UseTranslationSecretsResult => {
-  const { loading: loadingSecrets, secrets } = useSecrets<Secrets>(
-    secretsNamespace || 'translationService.secrets'
-  );
-
-  return {
-    loadingSecrets,
-    secrets,
-  };
-};

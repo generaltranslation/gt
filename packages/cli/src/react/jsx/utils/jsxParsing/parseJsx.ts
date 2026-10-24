@@ -1,4 +1,4 @@
-import { Updates } from '../../../../types/index.js';
+import type { Metadata, Updates } from '../../../../types/index.js';
 import { randomUUID } from 'node:crypto';
 import generateModule from '@babel/generator';
 // Handle CommonJS/ESM interop
@@ -34,7 +34,6 @@ import {
   HTML_CONTENT_PROPS,
   type JsxChildren,
 } from '@generaltranslation/format/types';
-import type { Metadata } from 'generaltranslation/types';
 import { NodePath } from '@babel/traverse';
 import { ParsingConfigOptions } from '../../../../types/parsing.js';
 import { resolveImportPath } from '../resolveImportPath.js';
@@ -122,8 +121,6 @@ type OutputCollector = {
   errors: string[];
   warnings: Set<string>;
   unwrappedExpressions: string[];
-  /** Deprecated $-prefixed <T> prop occurrences (file:line:column), warned once per scan */
-  sugarPropLocations?: string[];
 };
 
 // TODO: currently we cover VariableDeclaration and FunctionDeclaration nodes, but are there others we should cover as well?
@@ -721,7 +718,6 @@ function parseJSXElement({
     metadata,
     componentErrors,
     file: config.file,
-    sugarPropLocations: output.sugarPropLocations,
   });
 
   // Flag for if contains derivable content

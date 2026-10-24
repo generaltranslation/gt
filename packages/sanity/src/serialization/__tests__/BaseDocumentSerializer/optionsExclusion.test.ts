@@ -211,10 +211,7 @@ describe('isFieldExcludedByOptions', () => {
 });
 
 describe('serialization honors schema options exclusion', () => {
-  const serialized = BaseDocumentSerializer(schema).serializeDocument(
-    doc,
-    'document'
-  );
+  const serialized = BaseDocumentSerializer(schema).serializeDocument(doc);
   const docTree = getHTMLNode(serialized).body.children[0];
 
   test('keeps translatable fields', () => {

@@ -1,28 +1,50 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { api, overrideConfig, pluginConfig } from '../../adapter/core';
+import type { ProjectHandle } from 'generaltranslation';
+import { pluginConfig, projectFor } from '../../adapter/core';
 import type { Secrets } from '../../types';
 import { initProject } from '../initProject';
 
+const api = vi.hoisted(() => ({
+  generateProjectContext: vi.fn(),
+  awaitJobs: vi.fn(),
+}));
+
 vi.mock('../../adapter/core', () => ({
-  api: {
-    setupProject: vi.fn(),
-    awaitJobs: vi.fn(),
-  },
-  overrideConfig: vi.fn(),
+  projectFor: vi.fn(() => api),
   pluginConfig: {
     getLocales: vi.fn(),
   },
 }));
 
+const uploadedFile = {
+  branchId: 'branch-id',
+  fileId: 'file-id',
+  versionId: 'version-id',
+  fileName: 'sanity/file-id',
+  fileFormat: 'HTML',
+  status: 'succeeded',
+} as const;
+
 const uploadResult = {
-  uploadedFiles: [
+  summary: { total: 2, succeeded: 1, failed: 1 },
+  results: [
+    uploadedFile,
     {
-      branchId: 'branch-id',
-      fileId: 'file-id',
-      versionId: 'version-id',
+      ...uploadedFile,
+      fileId: 'failed-file-id',
+      status: 'failed',
+      error: 'not saved',
     },
   ],
 } as Parameters<typeof initProject>[0];
+
+const setupJob = {
+  id: 'setup-job',
+  status: 'queued',
+  subject: { type: 'project_context', projectId: 'project-id' },
+} as unknown as NonNullable<
+  Awaited<ReturnType<ProjectHandle['generateProjectContext']>>['job']
+>;
 
 const secrets: Secrets = {
   organization: 'organization-id',
@@ -32,12 +54,9 @@ const secrets: Secrets = {
 const consoleLog = vi.fn();
 
 async function runWithAwaitResult(
-  awaitResult: Awaited<ReturnType<typeof api.awaitJobs>>
+  awaitResult: Awaited<ReturnType<ProjectHandle['awaitJobs']>>
 ) {
-  vi.mocked(api.setupProject).mockResolvedValue({
-    status: 'queued',
-    setupJobId: 'setup-job',
-  });
+  vi.mocked(api.generateProjectContext).mockResolvedValue({ job: setupJob });
   vi.mocked(api.awaitJobs).mockResolvedValue(awaitResult);
 
   return initProject(uploadResult, { timeout: 30 }, secrets);
@@ -57,15 +76,35 @@ describe('initProject', () => {
   it('reports completed setup jobs', async () => {
     await runWithAwaitResult({
       complete: true,
-      jobs: [{ jobId: 'setup-job', status: 'completed' }],
+      jobs: [{ id: 'setup-job', status: 'completed' }],
     });
 
     expect(consoleLog).toHaveBeenCalledWith('Setup successfully completed');
-    expect(overrideConfig).toHaveBeenCalledWith(secrets);
+    expect(projectFor).toHaveBeenCalledWith(secrets);
     expect(api.awaitJobs).toHaveBeenCalledWith(['setup-job'], {
       pollingIntervalSeconds: 2,
       timeoutSeconds: 30,
     });
+  });
+
+  it('generates context for uploaded files only', async () => {
+    await runWithAwaitResult({
+      complete: true,
+      jobs: [{ id: 'setup-job', status: 'completed' }],
+    });
+
+    expect(api.generateProjectContext).toHaveBeenCalledWith([uploadedFile], {
+      locales: ['es'],
+    });
+  });
+
+  it('does not poll when the project context is already current', async () => {
+    vi.mocked(api.generateProjectContext).mockResolvedValue({ job: null });
+
+    await expect(initProject(uploadResult, {}, secrets)).resolves.toBe(true);
+
+    expect(api.awaitJobs).not.toHaveBeenCalled();
+    expect(consoleLog).not.toHaveBeenCalled();
   });
 
   it('reports failed setup jobs', async () => {
@@ -73,9 +112,9 @@ describe('initProject', () => {
       complete: true,
       jobs: [
         {
-          jobId: 'setup-job',
+          id: 'setup-job',
           status: 'failed',
-          error: { message: 'Setup failed' },
+          error: 'Setup failed',
         },
       ],
     });
@@ -85,10 +124,10 @@ describe('initProject', () => {
     );
   });
 
-  it('reports unknown setup jobs without calling them failed', async () => {
+  it('reports missing setup jobs without calling them failed', async () => {
     await runWithAwaitResult({
       complete: true,
-      jobs: [{ jobId: 'setup-job', status: 'unknown' }],
+      jobs: [{ id: 'setup-job', status: 'not_found' }],
     });
 
     expect(consoleLog).toHaveBeenCalledWith(
@@ -99,7 +138,7 @@ describe('initProject', () => {
   it('reports setup polling timeouts', async () => {
     await runWithAwaitResult({
       complete: false,
-      jobs: [{ jobId: 'setup-job', status: 'processing' }],
+      jobs: [{ id: 'setup-job', status: 'processing' }],
     });
 
     expect(consoleLog).toHaveBeenCalledWith(

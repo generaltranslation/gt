@@ -1,5 +1,6 @@
 import { logger } from '../../console/logger.js';
-import type { ApiClient } from '../../utils/api.js';
+import { recordWarning } from '../../state/translateWarnings.js';
+import type { ProjectHandle } from 'generaltranslation';
 import { Settings } from '../../types/index.js';
 import chalk from 'chalk';
 import {
@@ -19,8 +20,8 @@ type UploadTranslationsInput = {
 };
 
 type UploadedTranslation = Awaited<
-  ReturnType<ApiClient['uploadTranslations']>
->['uploadedFiles'][number];
+  ReturnType<ProjectHandle['uploadTranslations']>
+>['results'][number];
 type ConfirmedTranslationReference = FileReference &
   Pick<UploadedTranslation, 'locale'>;
 
@@ -62,7 +63,7 @@ export class UploadTranslationsStep {
   private spinner = logger.createSpinner('dots');
 
   constructor(
-    private api: Pick<ApiClient, 'uploadTranslations'>,
+    private api: Pick<ProjectHandle, 'uploadTranslations'>,
     private settings: Settings
   ) {}
 
@@ -106,36 +107,27 @@ export class UploadTranslationsStep {
       `Uploading ${totalTranslations} translation file${totalTranslations !== 1 ? 's' : ''} to the General Translation API...`
     );
 
-    const response = await this.api.uploadTranslations(filesToUpload, {
-      sourceLocale: this.settings.defaultLocale,
-    });
+    const response = await this.api.uploadTranslations(filesToUpload);
 
-    const localFiles = new Map<
-      string,
-      { source: FileToUpload; translation: FileToUpload }
-    >();
-    for (const { source, translations } of filesToUpload) {
+    const localFiles = new Map<string, FileToUpload>();
+    for (const { translations } of filesToUpload) {
       for (const translation of translations) {
-        localFiles.set(`${translation.fileId}:${translation.versionId}`, {
-          source,
-          translation,
-        });
+        localFiles.set(
+          `${translation.fileId}:${translation.versionId}`,
+          translation
+        );
       }
     }
-    const result: ConfirmedTranslationReference[] = response.uploadedFiles.map(
-      (uploadedFile) => {
+    const result: ConfirmedTranslationReference[] = response.results
+      .filter((r) => r.status === 'succeeded')
+      .map((uploadedFile) => {
         const localFile = localFiles.get(
           `${uploadedFile.fileId}:${uploadedFile.versionId}`
         );
-        const branchId =
-          uploadedFile.branchId ??
-          localFile?.translation.branchId ??
-          localFile?.source.branchId ??
-          lockfile.data.branchId;
-        const dataFormat = localFile?.translation.dataFormat;
-        const transformFormat = localFile?.translation.transformFormat;
+        const dataFormat = localFile?.dataFormat;
+        const transformFormat = localFile?.transformFormat;
         return {
-          branchId,
+          branchId: uploadedFile.branchId,
           fileId: uploadedFile.fileId,
           versionId: uploadedFile.versionId,
           fileName: uploadedFile.fileName,
@@ -144,23 +136,25 @@ export class UploadTranslationsStep {
           ...(transformFormat && { transformFormat }),
           locale: uploadedFile.locale,
         };
-      }
-    );
-    // Report the server-confirmed count, not the attempted count — the
-    // endpoint drops files it failed to persist without erroring
+      });
     const uploadedCount = result.length;
     this.spinner.stop(
       chalk.green(
         `Uploaded ${uploadedCount} translation file${uploadedCount !== 1 ? 's' : ''}${skippedCount > 0 ? `, skipped ${skippedCount} unchanged` : ''}`
       )
     );
-    if (uploadedCount < totalTranslations) {
-      const missingCount = totalTranslations - uploadedCount;
+    const failedUploads = response.results.filter((r) => r.status === 'failed');
+    if (failedUploads.length > 0) {
       logger.warn(
         chalk.yellow(
-          `${missingCount} translation file${missingCount !== 1 ? 's were' : ' was'} not persisted by the server`
+          `Failed to upload ${failedUploads.length} translation file${failedUploads.length !== 1 ? 's' : ''}`
         )
       );
+      for (const r of failedUploads) {
+        const reason = `Translation for locale ${r.locale}: ${r.error ?? 'Unknown error'}`;
+        logger.warn(`Failed to upload ${r.fileName}: ${reason}`);
+        recordWarning('failed_upload', r.fileName, reason);
+      }
     }
 
     this.recordUploadedHashes(lockfile, filesToUpload, result);

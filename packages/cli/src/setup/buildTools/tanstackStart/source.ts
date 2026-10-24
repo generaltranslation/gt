@@ -1,5 +1,5 @@
 // Reads the Start entries setup configures.
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { readSourceFile } from '../shared/source.js';
 
 export const DOCS_URL =

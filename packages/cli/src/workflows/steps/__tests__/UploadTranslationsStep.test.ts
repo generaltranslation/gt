@@ -14,12 +14,32 @@ import { hashStringSync } from '../../../utils/hash.js';
 import type { GT } from 'generaltranslation';
 import type { Settings } from '../../../types/index.js';
 import type { FileToUpload } from 'generaltranslation/types';
+import {
+  clearWarnings,
+  getWarnings,
+} from '../../../state/translateWarnings.js';
 
-// Mock the GT class
 const mockGt = {
-  queryFileData: vi.fn(),
+  queryFiles: vi.fn(),
   uploadTranslations: vi.fn(),
 };
+
+// One result per translation, in request order
+function uploadResults(
+  results: Array<
+    ReturnType<typeof confirmedUpload> & { status?: string; error?: string }
+  >
+) {
+  const items = results.map((result) => ({
+    status: 'succeeded',
+    ...result,
+  }));
+  const failed = items.filter((r) => r.status === 'failed').length;
+  return {
+    summary: { total: items.length, succeeded: items.length - failed, failed },
+    results: items,
+  };
+}
 
 const mockSpinner = vi.hoisted(() => ({
   start: vi.fn(),
@@ -111,6 +131,7 @@ function mockLockfile(entries: DownloadedVersionEntry[]): void {
 describe('UploadTranslationsStep', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearWarnings();
     mockLockfile([]);
   });
 
@@ -125,31 +146,14 @@ describe('UploadTranslationsStep', () => {
       },
     ];
 
-    // Simulate the platform already having both translations for this
-    // (fileId, versionId, locale). Local files are the source of truth, so
-    // they must still be uploaded (the endpoint is an upsert).
-    mockGt.queryFileData.mockResolvedValue({
-      translatedFiles: [
-        {
-          branchId: 'branch-123',
-          fileId: 'file-1',
-          versionId: 'version-file-1',
-          locale: 'es',
-        },
-        {
-          branchId: 'branch-123',
-          fileId: 'file-1',
-          versionId: 'version-file-1',
-          locale: 'fr',
-        },
-      ],
-    });
-    mockGt.uploadTranslations.mockResolvedValue({
-      uploadedFiles: [
+    // Local files are the source of truth, so they are uploaded even when
+    // the platform already has them (the endpoint is an upsert).
+    mockGt.uploadTranslations.mockResolvedValue(
+      uploadResults([
         confirmedUpload('file-1', 'es'),
         confirmedUpload('file-1', 'fr'),
-      ],
-    });
+      ])
+    );
 
     const step = new UploadTranslationsStep(
       mockGt as unknown as GT,
@@ -158,11 +162,9 @@ describe('UploadTranslationsStep', () => {
     const result = await step.run({ files });
 
     // No existence check: everything local is sent
-    expect(mockGt.queryFileData).not.toHaveBeenCalled();
+    expect(mockGt.queryFiles).not.toHaveBeenCalled();
     expect(mockGt.uploadTranslations).toHaveBeenCalledTimes(1);
-    expect(mockGt.uploadTranslations).toHaveBeenCalledWith(files, {
-      sourceLocale: 'en',
-    });
+    expect(mockGt.uploadTranslations).toHaveBeenCalledWith(files);
     expect(result).toEqual([
       confirmedUpload('file-1', 'es'),
       confirmedUpload('file-1', 'fr'),
@@ -179,9 +181,9 @@ describe('UploadTranslationsStep', () => {
       translations: [],
     };
 
-    mockGt.uploadTranslations.mockResolvedValue({
-      uploadedFiles: [confirmedUpload('file-1', 'es')],
-    });
+    mockGt.uploadTranslations.mockResolvedValue(
+      uploadResults([confirmedUpload('file-1', 'es')])
+    );
 
     const step = new UploadTranslationsStep(
       mockGt as unknown as GT,
@@ -189,10 +191,7 @@ describe('UploadTranslationsStep', () => {
     );
     await step.run({ files: [withTranslations, withoutTranslations] });
 
-    expect(mockGt.uploadTranslations).toHaveBeenCalledWith(
-      [withTranslations],
-      expect.any(Object)
-    );
+    expect(mockGt.uploadTranslations).toHaveBeenCalledWith([withTranslations]);
   });
 
   it('skips the upload entirely when no files have translations', async () => {
@@ -205,7 +204,7 @@ describe('UploadTranslationsStep', () => {
     });
 
     expect(result).toEqual([]);
-    expect(mockGt.queryFileData).not.toHaveBeenCalled();
+    expect(mockGt.queryFiles).not.toHaveBeenCalled();
     expect(mockGt.uploadTranslations).not.toHaveBeenCalled();
   });
 
@@ -222,9 +221,9 @@ describe('UploadTranslationsStep', () => {
         },
       },
     ]);
-    mockGt.uploadTranslations.mockResolvedValue({
-      uploadedFiles: [confirmedUpload('file-1', 'fr')],
-    });
+    mockGt.uploadTranslations.mockResolvedValue(
+      uploadResults([confirmedUpload('file-1', 'fr')])
+    );
 
     const step = new UploadTranslationsStep(
       mockGt as unknown as GT,
@@ -236,10 +235,9 @@ describe('UploadTranslationsStep', () => {
       ],
     });
 
-    expect(mockGt.uploadTranslations).toHaveBeenCalledWith(
-      [{ source: makeSource('file-1'), translations: [edited] }],
-      expect.any(Object)
-    );
+    expect(mockGt.uploadTranslations).toHaveBeenCalledWith([
+      { source: makeSource('file-1'), translations: [edited] },
+    ]);
     expect(mockSpinner.stop).toHaveBeenCalledWith(
       expect.stringContaining('skipped 1 unchanged')
     );
@@ -256,9 +254,9 @@ describe('UploadTranslationsStep', () => {
         },
       },
     ]);
-    mockGt.uploadTranslations.mockResolvedValue({
-      uploadedFiles: [confirmedUpload('file-1', 'es')],
-    });
+    mockGt.uploadTranslations.mockResolvedValue(
+      uploadResults([confirmedUpload('file-1', 'es')])
+    );
 
     const step = new UploadTranslationsStep(
       mockGt as unknown as GT,
@@ -301,10 +299,12 @@ describe('UploadTranslationsStep', () => {
   it('records content hashes for server-confirmed uploads in the lockfile', async () => {
     const es = makeTranslation('file-1', 'es');
     const fr = makeTranslation('file-1', 'fr');
-    // Server confirms es but silently drops fr
-    mockGt.uploadTranslations.mockResolvedValue({
-      uploadedFiles: [confirmedUpload('file-1', 'es')],
-    });
+    mockGt.uploadTranslations.mockResolvedValue(
+      uploadResults([
+        confirmedUpload('file-1', 'es'),
+        { ...confirmedUpload('file-1', 'fr'), status: 'failed', error: 'x' },
+      ])
+    );
 
     const step = new UploadTranslationsStep(
       mockGt as unknown as GT,
@@ -340,13 +340,13 @@ describe('UploadTranslationsStep', () => {
       },
     ];
 
-    mockGt.uploadTranslations.mockResolvedValue({
-      uploadedFiles: [
+    mockGt.uploadTranslations.mockResolvedValue(
+      uploadResults([
         confirmedUpload('file-1', 'es'),
         confirmedUpload('file-1', 'fr'),
         confirmedUpload('file-2', 'es'),
-      ],
-    });
+      ])
+    );
 
     const step = new UploadTranslationsStep(
       mockGt as unknown as GT,
@@ -360,7 +360,7 @@ describe('UploadTranslationsStep', () => {
     expect(logger.warn).not.toHaveBeenCalled();
   });
 
-  it('warns when the server persists fewer files than were uploaded', async () => {
+  it('warns about and records each translation the server failed to save', async () => {
     const files = [
       {
         source: makeSource('file-1'),
@@ -375,14 +375,18 @@ describe('UploadTranslationsStep', () => {
       },
     ];
 
-    // The endpoint silently drops files it failed to persist (no error,
-    // just a smaller uploadedFiles array)
-    mockGt.uploadTranslations.mockResolvedValue({
-      uploadedFiles: [
+    // A 200 can carry per-item failures
+    mockGt.uploadTranslations.mockResolvedValue(
+      uploadResults([
         confirmedUpload('file-1', 'es'),
+        {
+          ...confirmedUpload('file-1', 'fr'),
+          status: 'failed',
+          error: 'invalid JSON',
+        },
         confirmedUpload('file-2', 'es'),
-      ],
-    });
+      ])
+    );
 
     const step = new UploadTranslationsStep(
       mockGt as unknown as GT,
@@ -395,8 +399,18 @@ describe('UploadTranslationsStep', () => {
       expect.stringContaining('Uploaded 2 translation files')
     );
     expect(logger.warn).toHaveBeenCalledWith(
-      expect.stringContaining('1 translation file was not persisted')
+      expect.stringContaining('Failed to upload 1 translation file')
     );
+    expect(logger.warn).toHaveBeenCalledWith(
+      'Failed to upload fr/file-1.json: Translation for locale fr: invalid JSON'
+    );
+    expect(getWarnings()).toEqual([
+      {
+        category: 'failed_upload',
+        fileName: 'fr/file-1.json',
+        reason: 'Translation for locale fr: invalid JSON',
+      },
+    ]);
   });
 });
 

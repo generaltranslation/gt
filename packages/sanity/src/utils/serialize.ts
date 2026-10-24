@@ -61,19 +61,15 @@ export function serializeDocument(
   // The internationalized-array model collapses each localized field down to
   // its source-locale value, then serializes through the standard document
   // path so the existing HTML format and deserializer are reused as-is.
-  let innerLevel: TranslationLevel = level;
   if (level === 'internationalizedArray') {
     docToSerialize = collapseToSourceLocale(
       docToSerialize,
       baseLanguage
     ) as SanityDocument;
-    innerLevel = 'document';
   }
 
   const serialized = BaseDocumentSerializer(schema).serializeDocument(
     docToSerialize,
-    innerLevel,
-    baseLanguage,
     stopTypes,
     serializers
   );

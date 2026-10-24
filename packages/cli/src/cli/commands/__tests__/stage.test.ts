@@ -97,6 +97,7 @@ describe('handleStage config ids', () => {
         locales: ['es'],
         message: 'No files need to be enqueued',
       },
+      uploadedFiles: [{ ...templateFile, branchId: 'branch-1' }],
     });
   });
 
@@ -107,6 +108,31 @@ describe('handleStage config ids', () => {
       _versionId: 'version-1',
       _branchId: 'branch-1',
     });
+  });
+
+  it('downloads and publishes only the files the upload saved', async () => {
+    const failedFile = {
+      ...templateFile,
+      fileName: 'messages.json',
+      fileFormat: 'JSON',
+      fileId: 'failed-file',
+    } satisfies FileToUpload;
+    vi.mocked(collectFiles).mockResolvedValue({
+      files: [templateFile, failedFile],
+      reactComponents: 1,
+      publishMap: new Map(),
+    });
+    vi.mocked(runStageFilesWorkflow).mockResolvedValue({
+      branchData,
+      enqueueResult: { jobData: {}, locales: ['es'], message: 'enqueued' },
+      uploadedFiles: [{ ...templateFile, branchId: 'branch-1' }],
+    });
+
+    const result = await handleStage(options, settings(), 'gt-react', false);
+
+    expect(Object.keys(result?.fileVersionData ?? {})).toEqual([
+      TEMPLATE_FILE_ID,
+    ]);
   });
 
   it('returns the collected inline runtime for downstream status labels', async () => {
@@ -184,6 +210,44 @@ describe('handleStage config ids', () => {
     ).rejects.toThrow('network error');
 
     expect(updateConfig).not.toHaveBeenCalled();
+  });
+
+  describe('when the template upload failed', () => {
+    const otherFile = {
+      ...templateFile,
+      fileName: 'messages.json',
+      fileFormat: 'JSON',
+      fileId: 'other-file',
+    } satisfies FileToUpload;
+
+    beforeEach(() => {
+      vi.mocked(collectFiles).mockResolvedValue({
+        files: [templateFile, otherFile],
+        reactComponents: 1,
+        publishMap: new Map(),
+      });
+    });
+
+    it.each([
+      ['another file was saved', [{ ...otherFile, branchId: 'branch-1' }]],
+      ['no file was saved', []],
+    ])('keeps the pinned config ids when %s', async (_case, uploadedFiles) => {
+      vi.mocked(runStageFilesWorkflow).mockResolvedValue({
+        branchData,
+        enqueueResult: { jobData: {}, locales: ['es'], message: 'enqueued' },
+        uploadedFiles,
+      });
+
+      await handleStage(options, settings(), 'gt-react', false);
+      await handleStage(
+        options,
+        settings({ omitConfigIds: true, _versionId: 'old-version' }),
+        'gt-react',
+        false
+      );
+
+      expect(updateConfig).not.toHaveBeenCalled();
+    });
   });
 
   it('does not touch the config during a dry run when ids are omitted', async () => {

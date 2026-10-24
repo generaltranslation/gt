@@ -1,5 +1,5 @@
 // Fitting translated plain text into field character limits.
-import { formatCutoff } from 'generaltranslation';
+import { GTIntl } from 'generaltranslation';
 import type { LengthLimit } from './content/fields';
 import type { GtClient } from './types';
 
@@ -10,12 +10,13 @@ export type OverLimit = {
   limit: LengthLimit;
 };
 
+const intl = new GTIntl();
+
 // The locale's cutoff ending, such as "…", taken from formatCutoff.
 function cutoffEnding(locale: string): string {
-  return formatCutoff('xxxxxxxxxx', { locales: locale, maxChars: 5 }).replace(
-    /^x+/,
-    ''
-  );
+  return intl
+    .formatCutoff('xxxxxxxxxx', { locales: locale, maxChars: 5 })
+    .replace(/^x+/, '');
 }
 
 // Cuts text after the last whole word that fits maxChars with the locale's

@@ -1,13 +1,9 @@
-import type { Adapter, Secrets } from '../types';
-import { gt, pluginConfig } from './core';
+import type { TranslationLocale } from '../types';
+import { pluginConfig } from './core';
 
-// note: this function is used to get the available locales for a project
-export const getLocales: Adapter['getLocales'] = async (
-  _secrets: Secrets | null
-) => {
-  return pluginConfig.getLocales().map((locale: string) => ({
+/** The plugin's target locales, all enabled. */
+export const getLocales = (): TranslationLocale[] =>
+  pluginConfig.getLocales().map((locale: string) => ({
     localeId: locale,
-    description: gt.getLocaleProperties(locale).name,
     enabled: true,
   }));
-};

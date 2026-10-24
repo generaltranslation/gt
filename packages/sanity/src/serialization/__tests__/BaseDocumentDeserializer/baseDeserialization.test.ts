@@ -73,19 +73,19 @@ beforeEach(() => {
 });
 
 test('Contains id of original document', () => {
-  const deserialized = getDeserialized(documentLevelArticle, 'document');
+  const deserialized = getDeserialized(documentLevelArticle);
   const id = deserialized._id;
   expect(id).toEqual(documentLevelArticle._id);
 });
 
 test('Contains rev of original document', () => {
-  const deserialized = getDeserialized(documentLevelArticle, 'document');
+  const deserialized = getDeserialized(documentLevelArticle);
   const rev = deserialized._rev;
   expect(rev).toEqual(documentLevelArticle._rev);
 });
 
 test('Contains type of original document', () => {
-  const deserialized = getDeserialized(documentLevelArticle, 'document');
+  const deserialized = getDeserialized(documentLevelArticle);
   const type = deserialized._type;
   expect(type).toEqual(documentLevelArticle._type);
 });
@@ -97,8 +97,6 @@ test('Contains type of original document', () => {
 test('Custom deserialization should manifest at all levels', () => {
   const serialized = BaseDocumentSerializer(schema).serializeDocument(
     documentLevelArticle,
-    'document',
-    'en',
     defaultStopTypes,
     addedCustomSerializers
   );
@@ -128,10 +126,8 @@ test('Content with custom styles deserializes correctly and maintains style', ()
     ...customStyles,
   };
 
-  const serialized = BaseDocumentSerializer(schema).serializeDocument(
-    customStyledDocument,
-    'document'
-  );
+  const serialized =
+    BaseDocumentSerializer(schema).serializeDocument(customStyledDocument);
 
   const deserialized = BaseDocumentDeserializer.deserializeDocument<
     typeof customStyledDocument
@@ -169,8 +165,6 @@ test('Handled inline objects should be accurately deserialized', () => {
 
   const serialized = BaseDocumentSerializer(schema).serializeDocument(
     inlineDocument,
-    'document',
-    'en',
     defaultStopTypes,
     addedCustomSerializers
   );
@@ -229,8 +223,6 @@ test('Handled annotations should be accurately deserialized', () => {
 
   const serialized = BaseDocumentSerializer(schema).serializeDocument(
     inlineDocument,
-    'document',
-    'en',
     defaultStopTypes,
     addedCustomSerializers
   );
@@ -269,7 +261,7 @@ test('Handled annotations should be accurately deserialized', () => {
  * STYLE TAGS
  */
 test('Deserialized content should preserve style tags', () => {
-  const deserialized = getDeserialized(documentLevelArticle, 'document');
+  const deserialized = getDeserialized(documentLevelArticle);
   const origH1 = documentLevelArticle.content.find(
     (block: PortableTextBlock) => block.style === 'h1'
   )!;
@@ -294,7 +286,7 @@ test('Deserialized content should preserve style tags', () => {
  * LIST ITEMS
  */
 test('Deserialized list items should preserve level, style and tag', () => {
-  const deserialized = getDeserialized(documentLevelArticle, 'document');
+  const deserialized = getDeserialized(documentLevelArticle);
   const origListItem = documentLevelArticle.content.find(
     (block: PortableTextBlock) =>
       block.listItem === 'bullet' && block.style === 'h2'
@@ -354,8 +346,7 @@ test('Content with anonymous inline objects deserializes all fields, at any dept
   vi.spyOn(console, 'debug').mockImplementation(() => {});
 
   const serialized = BaseDocumentSerializer(inlineSchema).serializeDocument(
-    inlineDocumentLevelArticle,
-    'document'
+    inlineDocumentLevelArticle
   );
 
   const deserialized = BaseDocumentDeserializer.deserializeDocument<

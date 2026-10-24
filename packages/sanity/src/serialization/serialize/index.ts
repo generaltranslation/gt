@@ -5,19 +5,16 @@ import {
   customSerializers,
 } from '../BaseSerializationConfig';
 import { ObjectField, SanityDocument, TypedObject, Schema } from 'sanity';
-import { TranslationLevel } from '../types';
 import {
   fieldFilter,
   isFieldExcludedFromTranslation,
   isTypeExcludedByOptions,
-  languageObjectFieldFilter,
 } from './fieldFilters';
 import {
   PortableTextHtmlComponents,
   PortableTextTypeComponent,
   toHTML,
 } from '@portabletext/to-html';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { serializeString } from '../helpers';
 
 const META_FIELDS = ['_key', '_type', '_id', '_weak'];
@@ -352,29 +349,16 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
    */
   const serializeDocument = (
     doc: SanityDocument,
-    translationLevel: TranslationLevel = 'document',
-    baseLang: string = libraryDefaultLocale,
     stopTypes = defaultStopTypes,
     serializers = customSerializers
   ) => {
     const schema = getSchema(doc._type);
-    let filteredObj: Record<string, unknown> = {};
-
-    //field level translations explicitly send over any fields that
-    //match the base language, regardless of depth
-    if (translationLevel === 'field') {
-      filteredObj = languageObjectFieldFilter(doc, baseLang);
-    }
-    //otherwise, we can refer to the schema and a list of stop types
-    //to determine what should not be sent
-    else {
-      filteredObj = fieldFilter(
-        doc,
-        schema?.fields ?? [],
-        stopTypes,
-        getSchema
-      );
-    }
+    const filteredObj = fieldFilter(
+      doc,
+      schema?.fields ?? [],
+      stopTypes,
+      getSchema
+    );
 
     //create a valid HTML file
     const rawHTMLBody = document.createElement('body');
@@ -414,7 +398,6 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
   return {
     serializeDocument,
     fieldFilter,
-    languageObjectFieldFilter,
     serializeArray,
     serializeObject,
   };
