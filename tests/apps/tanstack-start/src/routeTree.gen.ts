@@ -9,19 +9,14 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SsrRouteImport } from './routes/ssr'
-import { Route as SpaRouteImport } from './routes/spa'
-import { Route as DataOnlyRouteImport } from './routes/data-only'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DataOnlyRouteImport } from './routes/data-only'
+import { Route as SpaRouteImport } from './routes/spa'
+import { Route as SsrRouteImport } from './routes/ssr'
 
-const SsrRoute = SsrRouteImport.update({
-  id: '/ssr',
-  path: '/ssr',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SpaRoute = SpaRouteImport.update({
-  id: '/spa',
-  path: '/spa',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DataOnlyRoute = DataOnlyRouteImport.update({
@@ -29,9 +24,14 @@ const DataOnlyRoute = DataOnlyRouteImport.update({
   path: '/data-only',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const SpaRoute = SpaRouteImport.update({
+  id: '/spa',
+  path: '/spa',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SsrRoute = SsrRouteImport.update({
+  id: '/ssr',
+  path: '/ssr',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -71,18 +71,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/ssr': {
-      id: '/ssr'
-      path: '/ssr'
-      fullPath: '/ssr'
-      preLoaderRoute: typeof SsrRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/spa': {
-      id: '/spa'
-      path: '/spa'
-      fullPath: '/spa'
-      preLoaderRoute: typeof SpaRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/data-only': {
@@ -92,11 +85,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DataOnlyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/spa': {
+      id: '/spa'
+      path: '/spa'
+      fullPath: '/spa'
+      preLoaderRoute: typeof SpaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ssr': {
+      id: '/ssr'
+      path: '/ssr'
+      fullPath: '/ssr'
+      preLoaderRoute: typeof SsrRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
