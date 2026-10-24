@@ -7,6 +7,8 @@ const { mockInitializeReactGT, pluginModule } = vi.hoisted(() => ({
     loadTranslations: async () => ({}),
     dictionary: { greeting: 'Hello' },
     loadDictionary: async () => ({}),
+    createLocaleReload: () => undefined,
+    getPathLocale: () => undefined,
   },
 }));
 

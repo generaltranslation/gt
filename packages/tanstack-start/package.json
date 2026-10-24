@@ -96,6 +96,20 @@
         "default": "./dist/internal/_config.mjs"
       },
       "default": "./dist/internal/_config.mjs"
+    },
+    "./internal/localeRouting.enabled": {
+      "import": {
+        "types": "./dist/internal/localeRouting.enabled.d.mts",
+        "default": "./dist/internal/localeRouting.enabled.mjs"
+      },
+      "default": "./dist/internal/localeRouting.enabled.mjs"
+    },
+    "./internal/localeRouting.disabled": {
+      "import": {
+        "types": "./dist/internal/localeRouting.disabled.d.mts",
+        "default": "./dist/internal/localeRouting.disabled.mjs"
+      },
+      "default": "./dist/internal/localeRouting.disabled.mjs"
     }
   },
   "typesVersions": {

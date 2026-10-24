@@ -7,6 +7,7 @@ vi.mock('@tanstack/react-start/server', () => ({
 }));
 
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
+import { getLocaleFromPath } from '../localeRouting';
 import { determineLocaleClient } from '../parseLocale';
 import { resolveRequestConditions } from '../requestConditions';
 
@@ -184,10 +185,8 @@ describe.sequential('locale resolution', () => {
       configurable: true,
       value: { cookie: 'generaltranslation.locale=es' },
     });
-    vi.stubGlobal('window', { location: { pathname: '/fr/about' } });
-
     expect(
-      determineLocaleClient({ ...localeConfig, localeRouting: true })
+      determineLocaleClient(localeConfig, getLocaleFromPath('/fr/about'))
     ).toBe('brand-french');
     expect(determineLocaleClient(localeConfig)).toBe('es');
   });
@@ -197,10 +196,8 @@ describe.sequential('locale resolution', () => {
       configurable: true,
       value: { cookie: 'generaltranslation.locale=es' },
     });
-    vi.stubGlobal('window', { location: { pathname: '/about' } });
-
     expect(
-      determineLocaleClient({ ...localeConfig, localeRouting: true })
+      determineLocaleClient(localeConfig, getLocaleFromPath('/about'))
     ).toBe('es');
   });
 });

@@ -1,12 +1,9 @@
 import { createOrUpdateBrowserConditionStore } from 'gt-react';
 import { getReadonlyConditionStore } from '@generaltranslation/react-core/pure';
 import { GTProvider } from '../provider/GTProvider.client';
-import {
-  ensureInitialized,
-  isLocaleRoutingEnabled,
-} from '../setup/initializeGT.client';
+import { getRouterLocaleRewrite } from 'gt-tanstack-start/internal/_config';
+import { ensureInitialized } from '../setup/initializeGT.client';
 import { createGTRouterWrap, readGTRouterState } from './createGTRouterWrap';
-import { getRouterLocaleRewrite } from './localeRewrite';
 import type {
   GTDehydratedRouterData,
   GTIntegrableRouter,
@@ -59,10 +56,12 @@ export function setupRouterGTIntegration({
   };
   // Installed now rather than in hydrate: Router parses the initial location
   // through the rewrite before hydrating.
-  if (localeRewrite !== false && isLocaleRoutingEnabled()) {
-    options.rewrite = getRouterLocaleRewrite(router, () =>
-      getReadonlyConditionStore().getLocale()
-    );
-  }
+  const rewrite =
+    localeRewrite === false
+      ? undefined
+      : getRouterLocaleRewrite(router, () =>
+          getReadonlyConditionStore().getLocale()
+        );
+  if (rewrite) options.rewrite = rewrite;
   router.update(options);
 }
