@@ -1101,7 +1101,7 @@ describe('I18nCache', () => {
     expect(result).toBe('Message inconnu');
     expect(mockTranslateMany).toHaveBeenCalled();
     expect(createTranslateManyFactory).toHaveBeenCalledWith(
-      expect.any(Object),
+      expect.any(Function),
       4321,
       {
         sourceLocale: 'en',
@@ -1115,7 +1115,7 @@ describe('I18nCache', () => {
     createCache({ modelProvider: 'anthropic' });
 
     expect(createTranslateManyFactory).toHaveBeenCalledWith(
-      expect.any(Object),
+      expect.any(Function),
       expect.any(Number),
       { modelProvider: 'anthropic' }
     );
@@ -1130,7 +1130,7 @@ describe('I18nCache', () => {
     });
 
     expect(createTranslateManyFactory).toHaveBeenCalledWith(
-      expect.any(Object),
+      expect.any(Function),
       expect.any(Number),
       { modelProvider: 'openai' }
     );

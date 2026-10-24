@@ -1,7 +1,9 @@
 import * as t from '@babel/types';
 import { NodePath } from '@babel/traverse';
-import { GT_OTHER_FUNCTIONS } from '../../utils/constants/gt/constants';
-import { getGtReactImportSource } from '../../utils/constants/gt/helpers';
+import {
+  GT_IMPORT_SOURCES,
+  GT_OTHER_FUNCTIONS,
+} from '../../utils/constants/gt/constants';
 
 /**
  * Inject runtime translate import with only the specifiers needed.
@@ -12,11 +14,9 @@ export function injectRuntimeTranslateImport(
   {
     needsString,
     needsJsx,
-    legacyGtReactImportSource,
   }: {
     needsString: boolean;
     needsJsx: boolean;
-    legacyGtReactImportSource: boolean;
   }
 ): NodePath<t.ImportDeclaration> | null {
   const specifiers: t.ImportSpecifier[] = [];
@@ -35,7 +35,7 @@ export function injectRuntimeTranslateImport(
 
   const importDecl = t.importDeclaration(
     specifiers,
-    t.stringLiteral(getGtReactImportSource(legacyGtReactImportSource))
+    t.stringLiteral(GT_IMPORT_SOURCES.GT_REACT)
   );
 
   const [inserted] = path.unshiftContainer('body', importDecl);

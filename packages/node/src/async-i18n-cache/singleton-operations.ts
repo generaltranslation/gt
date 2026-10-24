@@ -1,4 +1,4 @@
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { createConditionStoreSingleton } from 'gt-i18n/internal';
 import type { AsyncConditionStore } from './AsyncConditionStore';
 

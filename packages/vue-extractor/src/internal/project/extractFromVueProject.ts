@@ -6,7 +6,7 @@ import { hashSource } from 'generaltranslation/id';
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
-} from 'generaltranslation/internal';
+} from 'generaltranslation/diagnostics';
 import { extractFromVueSource } from '../extractFromVueSource.js';
 import {
   resolveVueCompilerOptions,

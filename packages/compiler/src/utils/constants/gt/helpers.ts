@@ -161,8 +161,6 @@ export function isGTImportSource(name: string): name is GT_IMPORT_SOURCES {
       GT_IMPORT_SOURCES.GT_NEXT,
       GT_IMPORT_SOURCES.GT_NEXT_SERVER,
       GT_IMPORT_SOURCES.GT_REACT,
-      GT_IMPORT_SOURCES.GT_REACT_CLIENT,
-      GT_IMPORT_SOURCES.GT_REACT_BROWSER,
       GT_IMPORT_SOURCES.GT_I18N,
       GT_IMPORT_SOURCES.GT_TANSTACK_START,
     ] as string[]
@@ -175,27 +173,13 @@ export function isGTImportSource(name: string): name is GT_IMPORT_SOURCES {
  */
 export function isGTReactImportSource(
   name: string
-): name is
-  | GT_IMPORT_SOURCES.GT_REACT
-  | GT_IMPORT_SOURCES.GT_REACT_CLIENT
-  | GT_IMPORT_SOURCES.GT_REACT_BROWSER
-  | GT_IMPORT_SOURCES.GT_TANSTACK_START {
+): name is GT_IMPORT_SOURCES.GT_REACT | GT_IMPORT_SOURCES.GT_TANSTACK_START {
   return (
     [
       GT_IMPORT_SOURCES.GT_REACT,
-      GT_IMPORT_SOURCES.GT_REACT_CLIENT,
-      GT_IMPORT_SOURCES.GT_REACT_BROWSER,
       GT_IMPORT_SOURCES.GT_TANSTACK_START,
     ] as string[]
   ).includes(name);
-}
-
-export function getGtReactImportSource(
-  legacyGtReactImportSource: boolean
-): GT_IMPORT_SOURCES.GT_REACT | GT_IMPORT_SOURCES.GT_REACT_BROWSER {
-  return legacyGtReactImportSource
-    ? GT_IMPORT_SOURCES.GT_REACT_BROWSER
-    : GT_IMPORT_SOURCES.GT_REACT;
 }
 
 /**

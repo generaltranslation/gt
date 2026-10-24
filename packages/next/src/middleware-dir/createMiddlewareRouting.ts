@@ -1,4 +1,4 @@
-import { GTRuntime } from 'generaltranslation/runtime';
+import { GTIntl } from '@generaltranslation/format';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import {
   defaultLocaleCookieName,
@@ -45,24 +45,20 @@ export function createMiddlewareRouting({
     process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS
   );
 
-  // gt instance
-  const gt = new GTRuntime({
-    customMapping: i18nConfig.customMapping,
-  });
-
   // Configured spellings are the identity used by routes, cookies and caches.
   const defaultLocale: string =
     i18nConfig.defaultLocale || libraryDefaultLocale;
   const locales = Array.from(
     new Set([defaultLocale, ...(i18nConfig.locales || [])])
   );
+  const gt = new GTIntl({ locales, customMapping: i18nConfig.customMapping });
   // Route entries repeat locale keys. Resolve each key once per factory instead
   // of rebuilding the full locale-resolution index for every route/locale pair.
   const resolvedConfigLocales = new Map<string, string>();
   const determineLocaleWithCache = (locale: string) => {
     const cached = resolvedConfigLocales.get(locale);
     if (cached !== undefined) return cached;
-    const resolved = gt.determineLocale(locale, locales) ?? locale;
+    const resolved = gt.determineLocale(locale) ?? locale;
     resolvedConfigLocales.set(locale, resolved);
     return resolved;
   };

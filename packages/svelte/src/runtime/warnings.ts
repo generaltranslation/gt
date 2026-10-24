@@ -1,7 +1,7 @@
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
-} from 'generaltranslation/internal';
+} from 'generaltranslation/diagnostics';
 
 const missingPreprocessorWarning = createDiagnosticMessage({
   source: 'gt-svelte',

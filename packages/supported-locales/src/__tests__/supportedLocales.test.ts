@@ -1,4 +1,4 @@
-import { isValidLocale } from 'generaltranslation';
+import { isValidLocale } from '@generaltranslation/format';
 import { describe, expect, it } from 'vitest';
 import { getSupportedLocale, listSupportedLocales } from '../index';
 

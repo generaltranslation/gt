@@ -8,11 +8,7 @@ type TProps = {
   id?: string;
   context?: string;
   _hash?: string;
-  $id?: string;
-  $context?: string;
-  $maxChars?: number;
   requiresReview?: boolean;
-  $requiresReview?: boolean;
   [key: string]: ReactNode;
 };
 

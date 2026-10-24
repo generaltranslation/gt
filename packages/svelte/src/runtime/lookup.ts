@@ -14,7 +14,7 @@ export type TranslationProps = {
 
 /** Whether content in this locale is translated rather than shown as source. */
 export function requiresTranslation(locale: string): boolean {
-  return getI18nConfig().requiresTranslation(locale);
+  return getI18nConfig().requiresTranslation({ locale });
 }
 
 /** Looks up a `<T>` translation by its precomputed hash. */

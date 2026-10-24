@@ -28,9 +28,6 @@ export default defineConfig({
     isolate: true,
     environment: 'node',
     globals: true,
-    env: {
-      _GT_LOG_LEVEL: 'off',
-    },
     reporters: [
       [
         'default',

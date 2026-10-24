@@ -75,7 +75,7 @@ export function resolveLocale(candidates?: string | string[]): string {
  * ```
  */
 export function getLocaleDirection(locale: string): 'ltr' | 'rtl' {
-  return getI18nConfig().getGTClass().getLocaleDirection(locale);
+  return getI18nConfig().getLocaleDirection(locale);
 }
 
 /**

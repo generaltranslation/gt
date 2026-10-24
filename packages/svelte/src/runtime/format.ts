@@ -11,12 +11,12 @@ export function getFormatLocales(
 ): string[] {
   const config = getI18nConfig();
   const defaultLocale = config.getDefaultLocale();
-  return config.requiresTranslation(locale)
+  return config.requiresTranslation({ locale })
     ? [...localesProp, locale, defaultLocale]
     : [defaultLocale];
 }
 
-/** The locale-agnostic GT instance used for formatting. */
+/** The GTIntl instance used for formatting. */
 export function getFormatter() {
-  return getI18nConfig().getGTClass();
+  return getI18nConfig();
 }

@@ -34,7 +34,6 @@ describe('validateTranslationFunctionCallback', () => {
       enableMacroImportInjection: true,
       enableAutoJsxInjection: false,
       autoderive: { jsx: false, strings: false },
-      legacyGtReactImportSource: false,
       _debugHashManifest: false,
       devHotReload: { strings: false, jsx: false },
     };
@@ -988,7 +987,6 @@ describe('validateTranslationFunctionCallback', () => {
         enableMacroImportInjection: true,
         enableAutoJsxInjection: false,
         autoderive: { jsx: true, strings: true },
-        legacyGtReactImportSource: false,
         _debugHashManifest: false,
         devHotReload: { strings: false, jsx: false },
       };
@@ -1313,7 +1311,6 @@ describe('validateTranslationFunctionCallback', () => {
         enableMacroImportInjection: true,
         enableAutoJsxInjection: false,
         autoderive: { jsx: true, strings: false },
-        legacyGtReactImportSource: false,
         _debugHashManifest: false,
         devHotReload: { strings: false, jsx: false },
       };
@@ -1395,7 +1392,6 @@ describe('validateTranslationFunctionCallback', () => {
         enableMacroImportInjection: true,
         enableAutoJsxInjection: false,
         autoderive: { jsx: false, strings: true },
-        legacyGtReactImportSource: false,
         _debugHashManifest: false,
         devHotReload: { strings: false, jsx: false },
       };
