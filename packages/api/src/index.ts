@@ -1,14 +1,14 @@
-export { awaitJobs, pollJobs } from './wrappers/awaitJobs';
+export { awaitJobs, queryJobsInBatches } from './wrappers/awaitJobs';
 export type {
   AwaitJobsOptions,
   AwaitJobsResult,
-  GetJobStatuses,
   JobResult,
+  UnpolledJobResult,
 } from './wrappers/awaitJobs';
 export { DEFAULT_BATCH_SIZE, processBatches } from './wrappers/batch';
 export type { BatchOptions } from './wrappers/batch';
 export { API_VERSION, createApiClient } from './wrappers/client';
-export { ApiError } from './wrappers/errors';
+export { ApiError, isTransientApiError } from './wrappers/errors';
 export { paginate } from './wrappers/paginate';
 export type {
   ApiClientConfig,
