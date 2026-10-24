@@ -7,9 +7,9 @@
  * compile-time _hash pins the runtime lookup to a hash that matches none of
  * the variants, so the rendered translation gets stuck on one variant.
  *
- * The same applies to <T $context={derive(...)}>: collection intentionally
+ * The same applies to <T context={derive(...)}>: collection intentionally
  * produces an empty hash (CLI resolution), and injecting _hash: "" breaks the
- * runtime lookup because $_hash is read with ?? (empty string wins).
+ * runtime lookup because the injected empty _hash is used as the lookup hash.
  */
 import { describe, it, expect } from 'vitest';
 import * as parser from '@babel/parser';
@@ -99,12 +99,12 @@ describe('T component hash injection with Derive children', () => {
     expect(result.code).not.toContain('_hash');
   });
 
-  it('<T $context={derive(...)}> does not get an empty _hash injected', () => {
-    // SOURCE: <T $context={derive(getMeaning())}>Book</T>
+  it('<T context={derive(...)}> does not get an empty _hash injected', () => {
+    // SOURCE: <T context={derive(getMeaning())}>Book</T>
     const code = `
       import { jsx } from 'react/jsx-runtime';
       import { T, derive } from 'gt-react';
-      jsx(T, { children: "Book", $context: derive(getMeaning()) });
+      jsx(T, { children: "Book", context: derive(getMeaning()) });
     `;
     const result = transform(code);
     expect(result.errors).toHaveLength(0);

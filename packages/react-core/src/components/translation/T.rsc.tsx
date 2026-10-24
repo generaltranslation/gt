@@ -24,7 +24,7 @@ async function RscT({
   const enableI18n = _enableI18n;
   const defaultLocale = getI18nConfig().getDefaultLocale();
   const shouldTranslate =
-    enableI18n && getI18nConfig().requiresTranslation(locale);
+    enableI18n && getI18nConfig().requiresTranslation({ locale });
   const prepared = prepareT({
     sourceChildren,
     params,

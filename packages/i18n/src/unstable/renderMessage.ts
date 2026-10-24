@@ -8,7 +8,7 @@ import {
   hashSource,
   type MessageTreeHashMetadata,
 } from 'generaltranslation/id';
-import { formatDiagnosticErrorDetails } from 'generaltranslation/internal';
+import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
 import { createGtI18nDiagnostic } from '../logs/diagnostics';
 import logger from '../logs/logger';

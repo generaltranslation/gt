@@ -13,7 +13,7 @@ import {
 import { StringContent, StringFormat } from 'generaltranslation/types';
 import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 import { getShouldTranslate } from '../../hooks/utils/getShouldTranslate';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 
 /**
  * Translate a message

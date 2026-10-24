@@ -37,7 +37,7 @@ describe('useTranslationConditions', () => {
     expect(getLocale).toHaveBeenCalledTimes(1);
     expect(getEnableI18n).toHaveBeenCalledTimes(1);
     expect(requiresTranslation).toHaveBeenCalledOnce();
-    expect(requiresTranslation).toHaveBeenCalledWith('fr');
+    expect(requiresTranslation).toHaveBeenCalledWith({ locale: 'fr' });
   });
 
   it('skips the translation check when i18n is disabled', () => {

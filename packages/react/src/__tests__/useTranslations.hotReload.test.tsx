@@ -2,7 +2,7 @@
 import { act, useMemo } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { defaultRuntimeApiUrl } from 'generaltranslation/internal';
+import { GTRuntime } from 'generaltranslation/runtime';
 import { GTProvider, initializeGT, useTranslations } from '../index.client';
 
 type TestGlobal = typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean };
@@ -28,33 +28,22 @@ describe('useTranslations dev hot reload', () => {
 
   it('updates memoized dictionary objects when a translation arrives', async () => {
     vi.stubEnv('NODE_ENV', 'development');
-    vi.stubGlobal(
-      'fetch',
-      async (input: RequestInfo | URL, init?: RequestInit) => {
-        const url = input instanceof Request ? input.url : String(input);
-        if (!url.startsWith(defaultRuntimeApiUrl)) {
-          return Response.json({});
-        }
-        const body =
-          input instanceof Request ? await input.text() : String(init?.body);
-        const { requests } = JSON.parse(body) as {
-          requests: Record<string, unknown>;
-        };
-        return Response.json(
-          Object.fromEntries(
-            Object.keys(requests).map((hash) => [
-              hash,
-              {
-                success: true,
-                translation: 'Bonjour',
-                locale: 'fr',
-                dataFormat: 'ICU',
-              },
-            ])
-          )
-        );
-      }
-    );
+    // jsdom's AbortSignal cannot reach Node's Request, so stub the runtime
+    // rather than fetch.
+    vi.spyOn(GTRuntime.prototype, 'translateMany').mockImplementation((async (
+      requests: Record<string, unknown>
+    ) =>
+      Object.fromEntries(
+        Object.keys(requests).map((hash) => [
+          hash,
+          {
+            success: true,
+            translation: 'Bonjour',
+            locale: 'fr',
+            dataFormat: 'ICU',
+          },
+        ])
+      )) as never);
     initializeGT({
       defaultLocale: 'en',
       locales: ['en', 'fr'],

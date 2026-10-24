@@ -1,5 +1,5 @@
 import { getContext, setContext } from 'svelte';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { getI18nCache, getI18nConfig } from 'gt-i18n/internal';
 import type { Content } from '@generaltranslation/format/types';
 import { resolveLocale } from './config';

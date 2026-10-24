@@ -6,6 +6,8 @@ import { hashMessage } from '../../utils/hashMessage';
 import { LookupOptions } from '../../translation-functions/types/options';
 import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
 
+const runtimePrototype = GTRuntime.prototype;
+
 /**
  * Contract tests for the I18nCache PUBLIC boundary (lookup API).
  *
@@ -70,7 +72,7 @@ function createCache(overrides: Record<string, unknown> = {}) {
 
 function spyOnTranslateMany() {
   return vi
-    .spyOn(GTRuntime.prototype, 'translateMany')
+    .spyOn(runtimePrototype, 'translateMany')
     .mockResolvedValue({} as never);
 }
 

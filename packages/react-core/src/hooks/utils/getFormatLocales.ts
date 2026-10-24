@@ -17,7 +17,7 @@ export function getFormatLocales({
 }): string[] {
   const defaultLocale = getI18nConfig().getDefaultLocale();
   const shouldTranslate =
-    enableI18n && getI18nConfig().requiresTranslation(locale);
+    enableI18n && getI18nConfig().requiresTranslation({ locale });
   return shouldTranslate
     ? [...localesProp, locale, defaultLocale]
     : [defaultLocale];

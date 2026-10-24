@@ -48,16 +48,13 @@ impl<'a> JsxTraversal<'a> {
     // Build sanitized children directly from JSX children
     if let Some(sanitized_children) = self.build_sanitized_children(&element.children) {
       // Get the context from the element
-      let context = extract_attribute_from_jsx_attr(element, "context")
-        .or_else(|| extract_attribute_from_jsx_attr(element, "$context"));
+      let context = extract_attribute_from_jsx_attr(element, "context");
 
       // Get the max chars from the element
-      let max_chars = extract_max_chars_from_jsx_attr(element, "maxChars")
-        .or_else(|| extract_max_chars_from_jsx_attr(element, "$maxChars"));
+      let max_chars = extract_max_chars_from_jsx_attr(element, "maxChars");
 
       // Check if sanitized children contain static components or context contains derive - if so, return empty hash
-      let has_derive_in_context = jsx_attr_contains_derive_call(element, "context")
-        || jsx_attr_contains_derive_call(element, "$context");
+      let has_derive_in_context = jsx_attr_contains_derive_call(element, "context");
       let has_static = JsxHasher::contains_static(&sanitized_children) || has_derive_in_context;
       
       // Create the full SanitizedData structure to match TypeScript compiler inputs
@@ -1229,6 +1226,21 @@ mod tests {
           }),
         }),
       }
+    }
+
+    #[test]
+    fn context_prop_hash_matches_typescript_hash_source() {
+      let visitor = create_test_visitor();
+      let mut traversal = JsxTraversal::new(&visitor);
+      let mut with_context = create_jsx_element_with_children("T", vec![create_jsx_text_child("Book")]);
+      with_context.opening.attrs = vec![create_string_attr("context", "A noun")];
+      let mut with_prefixed_context = create_jsx_element_with_children("T", vec![create_jsx_text_child("Book")]);
+      with_prefixed_context.opening.attrs = vec![create_string_attr("$context", "A noun")];
+
+      // hashSource({ source: 'Book', context: 'A noun', dataFormat: 'JSX' }) from generaltranslation/id
+      assert_eq!(traversal.calculate_element_hash(&with_context).0, "e1642f3069257bf7");
+      // hashSource({ source: 'Book', dataFormat: 'JSX' }): `$context` is not read
+      assert_eq!(traversal.calculate_element_hash(&with_prefixed_context).0, "0706372c13931291");
     }
 
     #[test]

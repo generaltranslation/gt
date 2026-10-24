@@ -10,7 +10,7 @@ import type * as t from '@babel/types';
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
-} from 'generaltranslation/internal';
+} from 'generaltranslation/diagnostics';
 import type { VueCompilerOptions } from '../../types.js';
 import {
   NUXT_CONFIG_FILES,

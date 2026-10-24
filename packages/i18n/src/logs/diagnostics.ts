@@ -1,7 +1,7 @@
 import {
   createDiagnosticMessage,
   type DiagnosticMessageInput,
-} from 'generaltranslation/internal';
+} from 'generaltranslation/diagnostics';
 
 type GtI18nDiagnosticInput = Omit<DiagnosticMessageInput, 'source'>;
 

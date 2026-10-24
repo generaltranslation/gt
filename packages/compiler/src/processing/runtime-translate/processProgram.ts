@@ -54,7 +54,6 @@ export function processProgram({
         const injectedPath = injectRuntimeTranslateImport(path, {
           needsString,
           needsJsx,
-          legacyGtReactImportSource: state.settings.legacyGtReactImportSource,
         });
         if (injectedPath) {
           importAnchor.path = injectedPath;

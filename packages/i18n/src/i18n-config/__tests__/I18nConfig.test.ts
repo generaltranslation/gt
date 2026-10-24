@@ -138,6 +138,52 @@ describe('I18nConfig', () => {
     ).toBe('en');
   });
 
+  it('sends the dev API key as the runtime API key when no API key is set', () => {
+    vi.stubEnv('GT_API_KEY', '');
+    const runtime = (params: { apiKey?: string; devApiKey?: string }) =>
+      new I18nConfig({
+        projectId: 'project',
+        ...params,
+      }).getTranslationRuntime();
+
+    expect(runtime({ devApiKey: 'dev-key' }).apiKey).toBe('dev-key');
+    expect(runtime({ apiKey: 'key', devApiKey: 'dev-key' }).apiKey).toBe('key');
+  });
+
+  it('prefers the GT_API_KEY environment variable over the dev API key', () => {
+    vi.stubEnv('GT_API_KEY', 'env-key');
+    const runtime = (params: { apiKey?: string; devApiKey?: string }) =>
+      new I18nConfig({
+        projectId: 'project',
+        ...params,
+      }).getTranslationRuntime();
+
+    expect(runtime({ devApiKey: 'dev-key' }).apiKey).toBe('env-key');
+    expect(runtime({ apiKey: 'key', devApiKey: 'dev-key' }).apiKey).toBe('key');
+  });
+
+  it('builds a translation runtime only with a projectId and an API key', () => {
+    vi.stubEnv('GT_API_KEY', '');
+
+    expect(() =>
+      new I18nConfig({ projectId: 'project' }).getTranslationRuntime()
+    ).toThrow('Runtime translation needs an API key');
+    expect(() =>
+      new I18nConfig({ apiKey: 'key' }).getTranslationRuntime()
+    ).toThrow('Runtime translation needs a projectId');
+    expect(
+      new I18nConfig({
+        projectId: 'project',
+        apiKey: 'key',
+        defaultLocale: 'en',
+        locales: ['es'],
+      }).getTranslationRuntime()
+    ).toMatchObject({
+      projectId: 'project',
+      localeConfig: { defaultLocale: 'en', locales: ['en', 'es'] },
+    });
+  });
+
   it('enables dev hot reload with dev credentials, a project id, and development environment', () => {
     vi.stubEnv('NODE_ENV', 'development');
 

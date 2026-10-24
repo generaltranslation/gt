@@ -21,8 +21,6 @@ export type TranslationMetadata = {
   $requiresReview?: boolean;
   /** @internal Used to carry the original source when rendering a translation */
   $_fallback?: string;
-  /** @deprecated use {@link EncodedTranslationOptions} instead */
-  $_source?: string;
   $maxChars?: number;
 };
 

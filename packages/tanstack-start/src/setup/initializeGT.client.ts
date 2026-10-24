@@ -3,7 +3,7 @@ import {
   initializeGT as initializeReactGT,
 } from 'gt-react';
 import type { SharedGTProviderProps } from 'gt-react';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { createGlobalSingleton } from 'gt-i18n/internal';
 import {
   config as pluginConfig,
@@ -15,7 +15,7 @@ import {
   createLocaleReload,
   getPathLocale,
 } from 'gt-tanstack-start/internal/localeRouting';
-import { determineLocaleClient } from '../functions/parseLocale';
+import { determineLocaleClient } from '../functions/determineLocaleClient';
 import type { InitializeGTParams } from '../types/InitializeGTParams';
 
 type ClientSetup = {
