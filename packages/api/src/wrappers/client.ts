@@ -1,14 +1,17 @@
 import { createClient as createGeneratedClient } from '../generated/client';
 import type { Client } from '../generated/client';
-import { ApiVersion } from '../generated/types.gen';
+import type { ApiVersion } from '../generated/types.gen';
 import { ApiError } from './errors';
-import { createRetryingFetch, createTimeoutFetch } from './transport';
+import {
+  callerSignal,
+  createRetryingFetch,
+  createTimeoutFetch,
+} from './transport';
 import type { RetryPolicy } from './transport';
 
 export type { ApiVersion };
 
-// Not `.at(-1)`: this runs at import, and JavaScriptCore before iOS 15.4 lacks it.
-export const API_VERSION: ApiVersion = Object.values(ApiVersion).pop()!;
+export const API_VERSION = '2026-10-08.v1' satisfies ApiVersion;
 
 export type UserTokenProvider = {
   getAccessToken: () => Promise<string>;
@@ -17,10 +20,10 @@ export type UserTokenProvider = {
 
 export type ApiClientConfig = {
   apiKey?: string;
+  /** Default gt-api-version header; per-call headers override it. */
   apiVersion?: ApiVersion;
   baseUrl: string;
   fetch?: typeof fetch;
-  projectId?: string;
   retryPolicy?: RetryPolicy;
   /** Set to false when a custom fetch implementation owns request timeouts. */
   timeoutMs?: number | false;
@@ -34,21 +37,22 @@ function createUserTokenFetch(
 ): typeof fetch {
   return async (input, init) => {
     const request = new Request(input, init);
+    const signal = callerSignal(input, init) ?? request.signal;
     if (request.headers.has('Authorization'))
-      return fetchImplementation(request);
+      return fetchImplementation(request, { signal });
     request.headers.set(
       'Authorization',
       `Bearer ${await provider.getAccessToken()}`
     );
 
-    const response = await fetchImplementation(request.clone());
+    const response = await fetchImplementation(request.clone(), { signal });
     if (response.status !== 401) return response;
 
     const refreshedAccessToken = await provider.refreshAccessToken();
     if (!refreshedAccessToken) return response;
     await response.body?.cancel();
     request.headers.set('Authorization', `Bearer ${refreshedAccessToken}`);
-    return fetchImplementation(request);
+    return fetchImplementation(request, { signal });
   };
 }
 
@@ -57,7 +61,6 @@ export function createApiClient(config: ApiClientConfig): Client {
     'gt-api-version': config.apiVersion ?? API_VERSION,
   });
   if (config.apiKey) headers.set('Authorization', `Bearer ${config.apiKey}`);
-  if (config.projectId) headers.set('gt-project-id', config.projectId);
 
   const transportFetch = createRetryingFetch({
     // Timeout applies per attempt, inside the retry loop.
