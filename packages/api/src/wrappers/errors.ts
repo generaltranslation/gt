@@ -1,12 +1,19 @@
-export class ApiError extends Error {
-  public code: number;
-  public message: string;
+import { ErrorCode } from '../generated/types.gen';
 
-  constructor(error: string, code: number, message: string) {
-    super(error);
+export class ApiError extends Error {
+  public status: number;
+  /**
+   * The API's machine-readable cause. Absent when the body has none, such as a
+   * gateway error page. New codes may appear: fall back to `status` for codes
+   * you do not recognize.
+   */
+  public code?: ErrorCode | (string & {});
+
+  constructor(message: string, status: number, code?: string) {
+    super(message);
     this.name = 'ApiError';
+    this.status = status;
     this.code = code;
-    this.message = message;
   }
 
   /** Builds the error for a failed response from its decoded body. */
@@ -17,11 +24,35 @@ export class ApiError extends Error {
       messageOf(body, response) ||
       response.statusText ||
       `HTTP ${response.status}`;
-    return new ApiError(message, response.status, message);
+    return new ApiError(message, response.status, codeOf(body));
   }
 }
 
-// API errors are `{ error }`; gateways and proxies can answer in plain text.
+const knownCodes = new Set<string>(Object.values(ErrorCode));
+const transientCodes = new Set<string>([
+  ErrorCode.INTERNAL_ERROR,
+  ErrorCode.UPSTREAM_ERROR,
+  ErrorCode.UNAVAILABLE,
+  ErrorCode.RATE_LIMITED,
+  ErrorCode.LOCKED,
+  ErrorCode.NOT_READY,
+  ErrorCode.TRANSLATION_NOT_READY,
+]);
+const transientStatuses = new Set([408, 423, 425, 429, 500, 502, 503, 504]);
+
+/**
+ * Whether an API failure may clear if the same read is tried again later.
+ * It does not mean the request is safe to replay: never retry a write on this alone.
+ */
+export function isTransientApiError(error: unknown): boolean {
+  if (!(error instanceof ApiError)) return false;
+  if (error.code !== undefined && knownCodes.has(error.code)) {
+    return transientCodes.has(error.code);
+  }
+  return transientStatuses.has(error.status);
+}
+
+// API errors are `{ error, code }`; gateways and proxies can answer in plain text.
 // An HTML body is an error page, not a message.
 function messageOf(body: unknown, response: Response): string | undefined {
   if (typeof body === 'string') {
@@ -30,6 +61,13 @@ function messageOf(body: unknown, response: Response): string | undefined {
   }
   if (typeof body === 'object' && body !== null && 'error' in body) {
     return typeof body.error === 'string' ? body.error : undefined;
+  }
+  return undefined;
+}
+
+function codeOf(body: unknown): string | undefined {
+  if (typeof body === 'object' && body !== null && 'code' in body) {
+    return typeof body.code === 'string' ? body.code : undefined;
   }
   return undefined;
 }
