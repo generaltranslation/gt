@@ -40,10 +40,18 @@ export function normalizeRepositoryPath(relativePath) {
 
 export const defaultGroups = [
   {
-    // The API package owns the pinned gt-api-version contract value; core
-    // re-exports it from @generaltranslation/api.
+    // The API package derives the gt-api-version it sends from the newest
+    // generated ApiVersion enum value; core re-exports it from
+    // @generaltranslation/api. Generated files are not scanned, so this group
+    // has no hand-written declaration.
     name: 'API_VERSION',
-    declarations: ['packages/api/src/wrappers/client.ts'],
+    declarations: [],
+    readValue: (repositoryRoot) =>
+      readNewestEnumValue(
+        repositoryRoot,
+        'packages/api/src/generated/types.gen.ts',
+        'ApiVersion'
+      ),
     exceptions: [],
   },
   {
@@ -232,6 +240,43 @@ function readDefaultValue(repositoryRoot, relativePath, name) {
   return value;
 }
 
+/** Reads the last value of a generated `const Name = { ... } as const` enum. */
+function readNewestEnumValue(repositoryRoot, relativePath, name) {
+  const sourceFile = parseSource(repositoryRoot, relativePath);
+
+  for (const statement of sourceFile.statements) {
+    if (!ts.isVariableStatement(statement)) continue;
+    for (const declaration of statement.declarationList.declarations) {
+      if (
+        !ts.isIdentifier(declaration.name) ||
+        declaration.name.text !== name ||
+        !declaration.initializer
+      ) {
+        continue;
+      }
+      let initializer = declaration.initializer;
+      while (ts.isAsExpression(initializer)) {
+        initializer = initializer.expression;
+      }
+      const newest = ts.isObjectLiteralExpression(initializer)
+        ? initializer.properties.at(-1)
+        : undefined;
+      const literal =
+        newest && ts.isPropertyAssignment(newest)
+          ? unwrapLiteral(newest.initializer)
+          : undefined;
+      if (!literal) {
+        throw new Error(
+          `${relativePath}: ${name} must be an object literal whose last value is a literal`
+        );
+      }
+      return ts.isStringLiteral(literal) ? literal.text : Number(literal.text);
+    }
+  }
+
+  throw new Error(`${relativePath}: missing generated enum ${name}`);
+}
+
 function collectSourceFiles(repositoryRoot, directory, files = []) {
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
     if (entry.name === '__tests__' || entry.name === '__mocks__') continue;
@@ -288,6 +333,9 @@ export function validateRepository({
   groups = defaultGroups,
 } = {}) {
   const resolvedDefaults = groups.map((group) => {
+    if (group.readValue) {
+      return { ...group, value: group.readValue(repositoryRoot) };
+    }
     const values = group.declarations.map((declaration) =>
       readDefaultValue(repositoryRoot, declaration, group.name)
     );

@@ -1,5 +1,52 @@
 # gt-sanity
 
+## 4.0.29
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.5.8
+
+## 4.0.28
+
+### Patch Changes
+
+- [#2517](https://github.com/generaltranslation/gt/pull/2517) [`7c6547c`](https://github.com/generaltranslation/gt/commit/7c6547cc95f15ab5e5f0c5ac3635df945de378f9) Thanks [@ruymon](https://github.com/ruymon)! - Re-importing a translation no longer overwrites a custom `languageField` (for example `locale`) with the source document's value.
+
+## 4.0.27
+
+### Patch Changes
+
+- Updated dependencies [[`c220f39`](https://github.com/generaltranslation/gt/commit/c220f39182a61be3d8139bfe18c5bced0f2956dc)]:
+  - generaltranslation@9.5.7
+
+## 4.0.26
+
+### Patch Changes
+
+- [#2424](https://github.com/generaltranslation/gt/pull/2424) [`4e5c3e5`](https://github.com/generaltranslation/gt/commit/4e5c3e52b7b7a8a727671df722f9b5a7a6d4e93f) Thanks [@eoinest](https://github.com/eoinest)! - Fix content lost or changed when translations are imported:
+  - Line breaks, tabs, and leading or repeated spaces in `text` and markdown fields are kept. Before, they were collapsed into single spaces.
+  - String fields that contain tag-like text, such as `<br>` in markdown or `<b>` in a title, are translated. Before, they kept the source-language value. `null` entries in nested arrays no longer stop the export.
+  - In Portable Text, inline objects such as references are kept in place with their `_key`, and the text after them is no longer lost or split into a separate block.
+  - Links and other annotations keep all of their fields and their `_key`.
+  - A marked span that is only a space, such as a bold space between two words, no longer disappears and glues the words together.
+  - The `sup`, `sub`, `underline`, and custom decorators are kept.
+
+  The HTML that documents are exported as has changed. Nothing is re-sent automatically: documents that are already translated keep their current translations until they are sent for translation again.
+
+  If you customize serialization:
+  - Inline objects without a custom serializer are exported as a `<span>` that carries the object, instead of an empty `<div>`. Custom annotations without a serializer are exported with their markDef instead of `<span class="unknown__pt__mark__…">`. Block rules that matched the old elements no longer match newly exported HTML; the plugin now restores these itself.
+  - Wrapping a `link` serializer in `attachGTData` is no longer needed to keep a link's fields; the default link serializer does it.
+  - A custom serializer for a document type itself receives the document's raw field values. Before, arrays and objects arrived already serialized as HTML.
+  - `serializeObject` escapes string values, so HTML passed to it as a string is exported as text.
+
+## 4.0.25
+
+### Patch Changes
+
+- Updated dependencies [[`fe9f4b8`](https://github.com/generaltranslation/gt/commit/fe9f4b898548b94d7809be18f5e0dd9e80987428)]:
+  - generaltranslation@9.5.6
+
 ## 4.0.24
 
 ### Patch Changes

@@ -517,6 +517,10 @@ describe('areCredentialsSet', () => {
       projectId: 'VITE_GT_PROJECT_ID',
       devApiKey: 'VITE_GT_DEV_API_KEY',
     });
+    expect(getDevelopmentEnvNames('react-router')).toEqual({
+      projectId: 'VITE_GT_PROJECT_ID',
+      devApiKey: 'VITE_GT_DEV_API_KEY',
+    });
     expect(getDevelopmentEnvNames(undefined)).toEqual({
       projectId: 'GT_PROJECT_ID',
       devApiKey: 'GT_DEV_API_KEY',
@@ -557,6 +561,7 @@ describe('areCredentialsSet', () => {
     'react',
     'redwood',
     'tanstack-start',
+    'react-router',
   ] as const)(
     'treats the tooling key as no browser runtime key for %s',
     (framework) => {

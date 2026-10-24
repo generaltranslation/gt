@@ -132,6 +132,7 @@ export const SUPPORTED_REACT_FRAMEWORKS = [
   'react',
   'redwood',
   'tanstack-start',
+  'react-router',
 ] as const;
 
 export type FrameworkObject =
@@ -331,7 +332,7 @@ export type AdditionalOptions = {
   };
   // Optional Mintlify-specific options container
   mintlify?: MintlifyOptions;
-  docsUrlPattern?: string; // eg /docs/[locale] or /[locale] for localizing static urls in markdown files
+  docsUrlPattern?: string | string[]; // eg /docs/[locale] or /[locale] for localizing static urls in markdown files; a list localizes several URL prefixes
   docsImportPattern?: string; // eg /docs/[locale]/foo.md or /[locale]/foo.md for localizing static imports in markdown files
   excludeStaticUrls?: string[]; // A list of file globs to include for static url localization
   excludeStaticImports?: string[]; // A list of file globs to include for static import localization

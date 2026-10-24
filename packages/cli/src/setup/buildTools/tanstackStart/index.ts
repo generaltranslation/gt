@@ -2,6 +2,7 @@
 // src/routes/__root.tsx in dependency order, or reports manual steps.
 import fs from 'node:fs';
 import path from 'node:path';
+import { Libraries } from '../../../types/libraries.js';
 import { DEFAULT_VITE_TRANSLATIONS_DIR } from '../../../utils/constants.js';
 import {
   getViteLoaderExport,
@@ -17,7 +18,9 @@ import type {
 } from '../index.js';
 import { VITE_LOADER_FILE, viteSetup } from '../vite.js';
 import { applyEdits, getCodeStyle, getImportEdit } from '../shared/edits.js';
+import { findInitializeCall, passesLoader } from '../shared/initializeGT.js';
 import { rendersElement } from '../shared/jsx.js';
+import { getCustomLoaderAction } from '../shared/loader.js';
 import { readSourceFile, type SourceFile } from '../shared/source.js';
 import {
   getMiddlewareAction,
@@ -25,12 +28,7 @@ import {
   START_CONTENT,
 } from './middleware.js';
 import { configureRootRoute, findRootComponent, getRootFix } from './root.js';
-import {
-  findInitializeCall,
-  getRouterLines,
-  getStorageAction,
-  passesLoader,
-} from './router.js';
+import { getRouterLines, getStorageAction } from './router.js';
 import { DOCS_URL, inspectTanStackStart } from './source.js';
 
 async function writeLoader(
@@ -52,13 +50,23 @@ export const tanstackStartSetup: BuildToolSetup = {
   async preflight(appDirectory) {
     await inspectTanStackStart(appDirectory);
   },
+  async getCDNStorageAction(ctx) {
+    const router = await readSourceFile(ctx.appDirectory, 'src/router');
+    const initializeCall =
+      router && findInitializeCall(router, Libraries.GT_TANSTACK_START);
+    if (!router || !initializeCall) return undefined;
+    const loaderPassed = passesLoader(router, initializeCall.arguments[0], ctx);
+    if (loaderPassed === undefined) return undefined;
+    return loaderPassed ? getStorageAction(router, ctx, undefined, true) : null;
+  },
   // The loader is the same file Vite generates, but a router that loads from
   // the CDN also needs the loader passed to initializeGT.
   async syncLoader(ctx) {
     const result = await viteSetup.syncLoader(ctx);
     if (ctx.keepAppSource) return result;
     const router = await readSourceFile(ctx.appDirectory, 'src/router');
-    const initializeCall = router && findInitializeCall(router);
+    const initializeCall =
+      router && findInitializeCall(router, Libraries.GT_TANSTACK_START);
     if (
       !initializeCall ||
       passesLoader(router, initializeCall.arguments[0], ctx) !== false
@@ -96,15 +104,7 @@ export const tanstackStartSetup: BuildToolSetup = {
       loaderExport = await getViteLoaderExport(appDirectory, loader);
       if (loader === 'custom') {
         manualActions.push(
-          loaderExport
-            ? {
-                whatHappened: `Your custom ${VITE_LOADER_FILE} was preserved`,
-                fix: `Verify ${VITE_LOADER_FILE} loads translations from ${translationsDir}`,
-              }
-            : {
-                whatHappened: `Your custom ${VITE_LOADER_FILE} has no runtime loadTranslations export`,
-                fix: `Export a default or named loadTranslations function from ${VITE_LOADER_FILE} that loads translations from ${translationsDir}, then rerun gt init`,
-              }
+          getCustomLoaderAction(VITE_LOADER_FILE, translationsDir, loaderExport)
         );
       }
     }
@@ -115,7 +115,10 @@ export const tanstackStartSetup: BuildToolSetup = {
         ? content
         : undefined;
 
-    const initializeCall = findInitializeCall(router);
+    const initializeCall = findInitializeCall(
+      router,
+      Libraries.GT_TANSTACK_START
+    );
     let routerReady = initializeCall !== undefined;
     let configuredRouter: string | undefined;
     // Storage chosen on a rerun must match how the router loads translations.

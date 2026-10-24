@@ -2,6 +2,12 @@
 import * as t from '@babel/types';
 import { Libraries } from '../../../types/libraries.js';
 import {
+  findHtmlDocument,
+  getLangEdit,
+  getWrapEdit,
+  LOADER_TRANSLATIONS,
+} from '../shared/document.js';
+import {
   applyEdits,
   getCodeStyle,
   getImportEdit,
@@ -13,34 +19,25 @@ import {
   isJsxElementNamed,
   rendersElement,
 } from '../shared/jsx.js';
-import { getPropertyName, type SourceFile } from '../shared/source.js';
+import {
+  findDeclaredFunction,
+  getPropertyName,
+  usesName,
+  type DeclaredFunction,
+  type SourceFile,
+} from '../shared/source.js';
 import { DOCS_URL } from './source.js';
 
-function findLocalFunction(statements: t.Statement[], name: string) {
-  for (const statement of statements) {
-    const declaration =
-      statement.type === 'ExportNamedDeclaration'
-        ? statement.declaration
-        : statement;
-    if (
-      declaration?.type === 'FunctionDeclaration' &&
-      declaration.id?.name === name
-    ) {
-      return declaration;
-    }
-    if (declaration?.type !== 'VariableDeclaration') continue;
-    if (declaration.kind !== 'const') continue;
-    for (const declarator of declaration.declarations) {
-      if (
-        t.isIdentifier(declarator.id, { name }) &&
-        (declarator.init?.type === 'ArrowFunctionExpression' ||
-          declarator.init?.type === 'FunctionExpression')
-      ) {
-        return declarator.init;
-      }
-    }
-  }
-  return undefined;
+/** The provider the document is wrapped in, reading the root loader's data. */
+const PROVIDER_TAG = '<GTProvider locale={locale} translations={translations}>';
+
+type LocalFunction = DeclaredFunction['fn'];
+
+function findLocalFunction(
+  statements: t.Statement[],
+  name: string
+): LocalFunction | undefined {
+  return findDeclaredFunction(statements, name)?.fn;
 }
 
 function findRootRoute(statements: t.Statement[]) {
@@ -73,8 +70,6 @@ function findRootRoute(statements: t.Statement[]) {
   }
   return undefined;
 }
-
-type LocalFunction = NonNullable<ReturnType<typeof findLocalFunction>>;
 
 /**
  * The local function that renders the document: the route component itself
@@ -166,7 +161,7 @@ export function configureRootRoute({
 }: SourceFile): string | undefined {
   if (!statements) return undefined;
   // Generated bindings must not shadow or collide with the app's own.
-  if (/\b(?:getLocale|getTranslationsSnapshot)\b/.test(content)) {
+  if (usesName(statements, ['getLocale', 'getTranslationsSnapshot'])) {
     return undefined;
   }
   const found = findRootComponent(statements);
@@ -193,6 +188,9 @@ export function configureRootRoute({
     componentProperty?.type !== 'ObjectProperty' ||
     !component ||
     document?.body.type !== 'BlockStatement' ||
+    // Deliberately text, not usesName: a component taking a locale or
+    // translations prop has its own plumbing, and a JSX attribute name is not
+    // an identifier.
     [component, document].some((fn) =>
       /\b(?:locale|translations)\b/.test(content.slice(fn.start!, fn.end!))
     )
@@ -201,71 +199,15 @@ export function configureRootRoute({
   }
   // A followed document receives the route's slot as its children.
   const slotIsChildren = isShell || document !== component;
-  const htmlElements: t.JSXElement[] = [];
-  t.traverseFast(document.body, (node) => {
-    if (isJsxElementNamed(node, 'html')) htmlElements.push(node);
-  });
-  if (htmlElements.length !== 1) return undefined;
-  const [html] = htmlElements;
-  const bodies = html.children.filter((child) =>
-    isJsxElementNamed(child, 'body')
+  const htmlDocument = findHtmlDocument(document.body, (node) =>
+    slotIsChildren ? isChildrenSlot(node) : isJsxElementNamed(node, 'Outlet')
   );
-  if (bodies.length !== 1) return undefined;
-  // Headers, footers and app providers around the slot render GT too, so the
-  // provider wraps everything the body renders before <Scripts />.
-  const bodyContent = bodies[0].children.filter(
-    (child) => child.type !== 'JSXText' || child.value.trim() !== ''
-  );
-  const scriptsIndex = bodyContent.findIndex((child) =>
-    isJsxElementNamed(child, 'Scripts')
-  );
-  const wrapped =
-    scriptsIndex === -1 ? bodyContent : bodyContent.slice(0, scriptsIndex);
-  let slots = 0;
-  let multilineLiteral = false;
-  for (const child of wrapped) {
-    t.traverseFast(child, (node) => {
-      if (
-        slotIsChildren
-          ? isChildrenSlot(node)
-          : isJsxElementNamed(node, 'Outlet')
-      ) {
-        slots++;
-      }
-      if (
-        (node.type === 'TemplateLiteral' || node.type === 'StringLiteral') &&
-        node.loc!.start.line !== node.loc!.end.line
-      ) {
-        multilineLiteral = true;
-      }
-    });
-  }
-  if (slots !== 1) return undefined;
-  const { attributes } = html.openingElement;
-  if (attributes.some((attribute) => attribute.type === 'JSXSpreadAttribute')) {
-    return undefined;
-  }
-  const lang = attributes.find(
-    (attribute): attribute is t.JSXAttribute =>
-      attribute.type === 'JSXAttribute' &&
-      t.isJSXIdentifier(attribute.name, { name: 'lang' })
-  );
-  // A computed lang is the app's own locale logic.
-  if (lang && lang.value?.type !== 'StringLiteral') return undefined;
+  if (!htmlDocument) return undefined;
   const propertyIndent = getOwnLineIndent(content, componentProperty.start!);
   if (propertyIndent === undefined) return undefined;
 
-  const { quote, semi, eol, indent } = getCodeStyle(content, statements);
-  const first = wrapped[0];
-  const last = wrapped.at(-1)!;
-  const wrappedText = content.slice(first.start!, last.end!);
-  const wrappedIndent = getOwnLineIndent(content, first.start!);
-  // Reindenting would change the value of a literal that spans lines, such
-  // as a template, a backslash-continued string or a JSX attribute string.
-  const nestedText = multilineLiteral
-    ? wrappedText
-    : wrappedText.replace(/\n(?=[ \t]*\S)/g, `\n${indent}`);
-  const provider = '<GTProvider locale={locale} translations={translations}>';
+  const style = getCodeStyle(content, statements);
+  const { quote, semi, eol, indent } = style;
   const firstStatement = document.body.body[0];
   const statementIndent =
     (firstStatement && getOwnLineIndent(content, firstStatement.start!)) ??
@@ -283,7 +225,7 @@ export function configureRootRoute({
       text: [
         'loader: async () => {',
         `${propertyIndent}${indent}const locale = getLocale()${semi}`,
-        `${propertyIndent}${indent}return { locale, translations: await getTranslationsSnapshot(locale) }${semi}`,
+        `${propertyIndent}${indent}return { locale, ${LOADER_TRANSLATIONS} }${semi}`,
         `${propertyIndent}},`,
         propertyIndent,
       ].join(eol),
@@ -292,24 +234,16 @@ export function configureRootRoute({
       start: document.body.start! + 1,
       text: `${eol}${statementIndent}const { locale, translations } = ${rootRoute.routeName}.useLoaderData()${semi}`,
     },
-    lang
-      ? { start: lang.start!, end: lang.end!, text: 'lang={locale}' }
-      : { start: html.openingElement.name.end!, text: ' lang={locale}' },
-    {
-      start: first.start!,
-      end: last.end!,
-      text:
-        wrappedIndent === undefined
-          ? `${provider}${wrappedText}</GTProvider>`
-          : [
-              provider,
-              `${wrappedIndent}${indent}${nestedText}`,
-              `${wrappedIndent}</GTProvider>`,
-            ].join(eol),
-    },
+    getLangEdit(htmlDocument),
+    getWrapEdit(
+      content,
+      htmlDocument,
+      { open: PROVIDER_TAG, close: '</GTProvider>' },
+      style
+    ),
   ]);
 }
 
 export function getRootFix(rootPath: string): string {
-  return `In ${rootPath}, add loader: async () => { const locale = getLocale(); return { locale, translations: await getTranslationsSnapshot(locale) }; } to the root route options, read const { locale, translations } = Route.useLoaderData() in the document, set <html lang={locale}>, and wrap everything its <body> renders before <Scripts /> in <GTProvider locale={locale} translations={translations}>, importing GTProvider, getLocale and getTranslationsSnapshot from '${Libraries.GT_TANSTACK_START}' (see ${DOCS_URL})`;
+  return `In ${rootPath}, add loader: async () => { const locale = getLocale(); return { locale, ${LOADER_TRANSLATIONS} }; } to the root route options, read const { locale, translations } = Route.useLoaderData() in the document, set <html lang={locale}>, and wrap everything its <body> renders before <Scripts /> in ${PROVIDER_TAG}, importing GTProvider, getLocale and getTranslationsSnapshot from '${Libraries.GT_TANSTACK_START}' (see ${DOCS_URL})`;
 }

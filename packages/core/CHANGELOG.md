@@ -1,5 +1,27 @@
 # generaltranslation
 
+## 9.5.8
+
+### Patch Changes
+
+- Updated dependencies [[`4f31fef`](https://github.com/generaltranslation/gt/commit/4f31fef6e125a84243980ed2ea9d48bd3561c77d)]:
+  - @generaltranslation/api@0.5.5
+
+## 9.5.7
+
+### Patch Changes
+
+- [#2455](https://github.com/generaltranslation/gt/pull/2455) [`c220f39`](https://github.com/generaltranslation/gt/commit/c220f39182a61be3d8139bfe18c5bced0f2956dc) Thanks [@eoinest](https://github.com/eoinest)! - Fix `<RelativeTime>` inside `<T>`: rename its variable transformation suffix from `relative-time` to `relativetime` so `_gtt` parsing reads it in full, letting it render formatted time and hash like the extractors.
+
+## 9.5.6
+
+### Patch Changes
+
+- [#2403](https://github.com/generaltranslation/gt/pull/2403) [`fe9f4b8`](https://github.com/generaltranslation/gt/commit/fe9f4b898548b94d7809be18f5e0dd9e80987428) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Runtime translation errors with an empty or non-standard body now report the response status text, or the HTTP status code when there is none, instead of "Unknown error".
+
+- Updated dependencies [[`9764db8`](https://github.com/generaltranslation/gt/commit/9764db8ddb466d243bbb44c7c9fb031053d683fa), [`bd632a8`](https://github.com/generaltranslation/gt/commit/bd632a888ce27257efeed8512eb6261a16987bb2)]:
+  - @generaltranslation/api@0.5.4
+
 ## 9.5.5
 
 ### Patch Changes

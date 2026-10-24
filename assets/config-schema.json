@@ -94,7 +94,8 @@
         "gatsby",
         "react",
         "redwood",
-        "tanstack-start"
+        "tanstack-start",
+        "react-router"
       ]
     },
     "version": {
@@ -740,9 +741,20 @@
           "additionalProperties": false
         },
         "docsUrlPattern": {
-          "type": "string",
-          "description": "Pattern for localizing static URLs in markdown files (e.g., '/docs/[locale]' or '/[locale]')",
-          "examples": ["/docs/[locale]", "/[locale]"]
+          "oneOf": [
+            { "type": "string" },
+            {
+              "type": "array",
+              "items": { "type": "string" },
+              "minItems": 1
+            }
+          ],
+          "description": "Pattern for localizing static URLs in markdown files (e.g., '/docs/[locale]' or '/[locale]'). Use a list to localize several URL prefixes; each URL uses the longest pattern it matches.",
+          "examples": [
+            "/docs/[locale]",
+            "/[locale]",
+            ["/docs/[locale]", "/ai/docs/[locale]"]
+          ]
         },
         "docsImportPattern": {
           "type": "string",

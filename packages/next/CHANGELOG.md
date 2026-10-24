@@ -1,5 +1,77 @@
 # gt-next
 
+## 11.4.16
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.5.8
+  - @generaltranslation/compiler@1.3.65
+  - gt-i18n@1.0.39
+  - gt-react@11.4.16
+  - @generaltranslation/react-core@11.4.16
+
+## 11.4.15
+
+### Patch Changes
+
+- [#2507](https://github.com/generaltranslation/gt/pull/2507) [`438c78c`](https://github.com/generaltranslation/gt/commit/438c78cfb25a2baca996aead1a68dc0ee50e3b70) Thanks [@eoinest](https://github.com/eoinest)! - Fix `withGTConfig` failing with "The installed Next.js version could not be resolved ... require is not defined" when `gt-next/config` is imported from an ESM Next config (`next.config.mjs`, `next.config.mts`, or `next.config.js` with `"type": "module"`).
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.4.15
+  - gt-react@11.4.15
+
+## 11.4.14
+
+### Patch Changes
+
+- [#2489](https://github.com/generaltranslation/gt/pull/2489) [`6afc901`](https://github.com/generaltranslation/gt/commit/6afc90177e2a597c5c557bf167307121bb529e3a) Thanks [@ruymon](https://github.com/ruymon)! - `gt-next/link`, `useLocalizeHref()` and `getLocalizeHref()` now log a warning once in development when an href already starts with a configured locale and is prefixed again, for example `/de/about` rendering as `/fr/de/about`. The href output is unchanged.
+
+- [#2488](https://github.com/generaltranslation/gt/pull/2488) [`b7e53f8`](https://github.com/generaltranslation/gt/commit/b7e53f864ca5448d2b06c8c51817652bb2cb6259) Thanks [@ruymon](https://github.com/ruymon)! - `gt-next/link`, `useLocalizeHref()` and `getLocalizeHref()` no longer prefix paths that don't match the `pathRegex` passed to `withGTConfig()`. The middleware leaves those paths unlocalized, so a prefixed link to them, such as `/fr/api/export`, would not resolve.
+
+  A `pathRegex` that matches only locale-prefixed paths, such as `^/(?:en|fr)(?:/|$)`, now produces unprefixed links. Write `pathRegex` for paths without the locale prefix.
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.4.14
+  - gt-react@11.4.14
+
+## 11.4.13
+
+### Patch Changes
+
+- [#2480](https://github.com/generaltranslation/gt/pull/2480) [`76f4a34`](https://github.com/generaltranslation/gt/commit/76f4a34c3b2cb9b0a23416430bb7a23939ffd994) Thanks [@eoinest](https://github.com/eoinest)! - Improve `gt-next/link` locale prefixing and share routing options with the middleware:
+  - `withGTConfig()` now accepts the `createNextMiddleware()` routing options (`localeRouting`, `prefixDefaultLocale`, `enableSmartRouting`, `ignoreSourceMaps`, `pathConfig`, `routeOverrides`, `localeRoutes`). Options passed directly to `createNextMiddleware()` still take precedence.
+  - `gt-next/link` no longer prefixes default-locale links when `prefixDefaultLocale` is `false`, avoiding a middleware redirect. Explicit `locale` props for the default locale stay prefixed unless `enableSmartRouting` is `false`. Set these options in `withGTConfig()` so Link can read them; `createNextMiddleware()` warns in development when its values differ.
+  - Add `useLocalizeHref()` to `gt-next/link`. It returns a function that localizes path strings the same way `<Link>` does, for navigation that doesn't render a link, such as `router.push()`. It is also exported from `gt-next`, where Server Components get a server version, and `getLocalizeHref()` is exported from `gt-next/server`.
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.4.13
+  - gt-react@11.4.13
+
+## 11.4.12
+
+### Patch Changes
+
+- [#2457](https://github.com/generaltranslation/gt/pull/2457) [`2aa8259`](https://github.com/generaltranslation/gt/commit/2aa825947b5d443f1b05db683571f15794d6ea13) Thanks [@eoinest](https://github.com/eoinest)! - Install `@generaltranslation/compiler` as a regular dependency of `gt-next` instead of an optional peer dependency, so the experimental babel compiler works without a separate install and `gt-next` is released alongside every compiler update.
+
+- Updated dependencies [[`c220f39`](https://github.com/generaltranslation/gt/commit/c220f39182a61be3d8139bfe18c5bced0f2956dc)]:
+  - generaltranslation@9.5.7
+  - @generaltranslation/react-core@11.4.12
+  - @generaltranslation/compiler@1.3.64
+  - gt-i18n@1.0.38
+  - gt-react@11.4.12
+
+## 11.4.11
+
+### Patch Changes
+
+- Updated dependencies [[`fe9f4b8`](https://github.com/generaltranslation/gt/commit/fe9f4b898548b94d7809be18f5e0dd9e80987428)]:
+  - generaltranslation@9.5.6
+  - @generaltranslation/compiler@1.3.62
+  - gt-i18n@1.0.37
+  - gt-react@11.4.11
+  - @generaltranslation/react-core@11.4.11
+
 ## 11.4.10
 
 ### Patch Changes

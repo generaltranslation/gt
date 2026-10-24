@@ -22,7 +22,6 @@ import {
 } from '../fs/config/downloadedVersions.js';
 import { recordDownloaded, recordRemerged } from '../state/recentDownloads.js';
 import { recordWarning } from '../state/translateWarnings.js';
-import stringify from 'fast-json-stable-stringify';
 import type { FileStatusTracker } from '../workflows/steps/PollJobsStep.js';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import { hasNonIdentityFileFormatTransformForType } from '../formats/files/transformFormat.js';
@@ -85,8 +84,16 @@ function countGtJsonEntries(content: string): number | undefined {
 }
 
 function sortJsonString(data: string): string {
-  const sortedData = stringify(JSON.parse(data));
-  return JSON.stringify(JSON.parse(sortedData), null, 2);
+  return JSON.stringify(JSON.parse(data), sortKeys, 2);
+}
+
+function sortKeys(_key: string, value: unknown): unknown {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+  );
 }
 
 /**
@@ -390,16 +397,8 @@ export async function downloadFileBatch(
                 inputPath,
                 options
               );
-              let remergedData = remerged;
-              if (outputPath.endsWith('.json')) {
-                try {
-                  remergedData = sortJsonString(remergedData);
-                } catch {
-                  // Fall through with unsorted content
-                }
-              }
-              if (remergedData !== existingContent) {
-                await fs.promises.writeFile(outputPath, remergedData);
+              if (remerged !== existingContent) {
+                await fs.promises.writeFile(outputPath, remerged);
               }
               // Track for postprocessing (e.g. openapi path localization)
               // even when the API download was skipped
@@ -435,8 +434,8 @@ export async function downloadFileBatch(
         } else {
           data = mergeWithSource(file.data, locale, inputPath, options);
 
-          // Stable sort JSON keys for deterministic output
-          if (file.fileFormat === 'GTJSON' || outputPath.endsWith('.json')) {
+          // Sort GTJSON keys for stable diffs
+          if (file.fileFormat === 'GTJSON') {
             try {
               data = sortJsonString(data);
             } catch (error) {

@@ -716,6 +716,7 @@ export class BaseCLI {
       requireConfig: true,
     });
     await handleDownload(initOptions, settings, this.library);
+    await this.finalizeDownloadedTranslations(settings);
   }
 
   protected async handleTranslate(initOptions: TranslateFlags): Promise<void> {
@@ -754,6 +755,17 @@ export class BaseCLI {
     } else {
       await handleDownload(initOptions, settings, this.library);
     }
+    await this.finalizeDownloadedTranslations(settings);
+  }
+
+  /**
+   * Postprocesses the translations downloaded in this run and reports the
+   * summary. Shared by translate and download so both write the same output.
+   * @param settings - The settings for the command
+   */
+  protected async finalizeDownloadedTranslations(
+    settings: Settings
+  ): Promise<void> {
     // Only postprocess files downloaded in this run
     const include = getNeedsPostprocessing();
     if (include.size > 0) {
@@ -1556,10 +1568,15 @@ See https://www.npmjs.com/package/gt-vue`);
     ) {
       // Only the application setup rewrites the initializer; a loader passed
       // to it takes precedence over CDN loading.
-      reportManualAction({
-        whatHappened: `Translations now load from the CDN, but ${buildTool.initializer} may still receive the local loader for ${configuredTranslationsDir}`,
-        fix: `Remove the loadTranslations option and its import from the ${buildTool.initializer}() call so translations load from the CDN`,
-      });
+      const action = await buildTool.getCDNStorageAction?.(buildToolContext);
+      if (action !== null) {
+        reportManualAction(
+          action ?? {
+            whatHappened: `Translations now load from the CDN, but ${buildTool.initializer} may still receive the local loader for ${configuredTranslationsDir}`,
+            fix: `Remove the loadTranslations option and its import from the ${buildTool.initializer}() call so translations load from the CDN`,
+          }
+        );
+      }
     } else if (
       storage === 'cdn' &&
       !buildTool &&
