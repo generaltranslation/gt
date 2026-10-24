@@ -53,15 +53,8 @@ export function getParams(): {
     },
     // runtime translation config
     runtimeTranslation: {
-      // TODO: reduce redundancy in this config
       timeout,
-      metadata: {
-        sourceLocale: clientConfig.defaultLocale,
-        timeout,
-        projectId,
-        publish: true,
-        fast: true,
-      },
+      metadata: { sourceLocale: clientConfig.defaultLocale },
     },
     // loader
     loadTranslations: createLoadTranslations(),

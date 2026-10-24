@@ -26,8 +26,6 @@ export interface PluginConfig extends GTCompilerOptions {
   autoJsxImportSource?: string;
   /** Automatically treat interpolated/concatenated values as derive() calls */
   autoderive?: boolean | { jsx?: boolean; strings?: boolean };
-  /** Emit compiler-injected gt-react imports from gt-react/browser */
-  legacyGtReactImportSource?: boolean;
   /** Debug: write a hash → jsxChildren manifest file on build */
   _debugHashManifest?: boolean;
   /** Dev hot reload: inject runtime translate calls and enable Suspense-based <T> */
@@ -54,8 +52,6 @@ export interface PluginSettings {
   autoJsxImportSource?: string;
   /** Automatically treat interpolated/concatenated values as derive() calls */
   autoderive: { jsx: boolean; strings: boolean };
-  /** Emit compiler-injected gt-react imports from gt-react/browser */
-  legacyGtReactImportSource: boolean;
   /** Debug: write a hash → jsxChildren manifest file on build */
   _debugHashManifest: boolean;
   /** Dev hot reload: inject runtime translate calls and enable Suspense-based <T> */

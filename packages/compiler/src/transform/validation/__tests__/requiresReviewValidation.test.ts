@@ -177,11 +177,11 @@ describe('requiresReview validation — <T> component args', () => {
     expect(result.requiresReview).toBe(true);
   });
 
-  it('accepts $requiresReview: false', () => {
+  it('accepts requiresReview: false', () => {
     const result = validateTranslationComponentArgs(
       makeTComponentCall([
         t.objectProperty(
-          t.identifier('$requiresReview'),
+          t.identifier('requiresReview'),
           t.booleanLiteral(false)
         ),
       ]),
@@ -190,6 +190,21 @@ describe('requiresReview validation — <T> component args', () => {
     );
     expect(result.errors).toHaveLength(0);
     expect(result.requiresReview).toBe(false);
+  });
+
+  it('does not read $requiresReview', () => {
+    const result = validateTranslationComponentArgs(
+      makeTComponentCall([
+        t.objectProperty(
+          t.identifier('$requiresReview'),
+          t.booleanLiteral(true)
+        ),
+      ]),
+      GT_COMPONENT_TYPES.T,
+      state
+    );
+    expect(result.errors).toHaveLength(0);
+    expect(result.requiresReview).toBeUndefined();
   });
 
   it('rejects string values', () => {
@@ -212,7 +227,7 @@ describe('requiresReview validation — <T> component args', () => {
     const result = validateTranslationComponentArgs(
       makeTComponentCall([
         t.objectProperty(
-          t.identifier('$requiresReview'),
+          t.identifier('requiresReview'),
           t.unaryExpression('!', t.identifier('flag'))
         ),
       ]),

@@ -494,18 +494,6 @@ describe('jsxInsertionPass', () => {
     expect(names).toContain('GtInternalVar');
   });
 
-  it('injects import from gt-react/browser with legacy flag', () => {
-    const code = `
-      import { jsx } from 'react/jsx-runtime';
-      jsx("div", { children: "Hello" });
-    `;
-    const { imports } = transform(code, {
-      legacyGtReactImportSource: true,
-    });
-    const gtImport = imports.find((i) => i.source.value === 'gt-react/browser');
-    expect(gtImport).toBeDefined();
-  });
-
   it('does NOT inject import when no insertions', () => {
     const code = `
       import { jsx } from 'react/jsx-runtime';

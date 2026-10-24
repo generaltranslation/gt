@@ -442,7 +442,7 @@ The pass only operates on JSX children, not on string-valued props/attributes. P
 When the pass inserts at least one \_T, it automatically adds:
 
 ```javascript
-import { GtInternalTranslateJsx, GtInternalVar } from 'gt-react/browser';
+import { GtInternalTranslateJsx, GtInternalVar } from 'gt-react';
 ```
 
 If `GtInternalTranslateJsx` is already imported from a GT source, no duplicate import is added.

@@ -5,6 +5,8 @@ import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
 import { hashMessage } from '../../utils/hashMessage';
 import type { LookupOptions } from '../../translation-functions/types/options';
 
+const runtimePrototype = GTRuntime.prototype;
+
 /**
  * Contract tests for I18nCache error semantics.
  *
@@ -201,7 +203,14 @@ describe('I18nCache error contract', () => {
     'runtime translateMany rejection resolves undefined in production, rejects in development ($name)',
     async ({ env }) => {
       if (env) vi.stubEnv('NODE_ENV', env);
-      vi.spyOn(GTRuntime.prototype, 'translateMany').mockRejectedValue(
+      resetGTGlobals();
+      initializeI18nConfig({
+        defaultLocale: 'en',
+        locales: ['en', 'fr', 'es'],
+        projectId: 'test-project',
+        apiKey: 'test-api-key',
+      });
+      vi.spyOn(runtimePrototype, 'translateMany').mockRejectedValue(
         new Error('API down')
       );
       const cache = createCache({
@@ -225,8 +234,64 @@ describe('I18nCache error contract', () => {
     }
   );
 
+  it('runtime translation without a projectId rejects each request with framework guidance', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    const fetchMock = vi.fn<typeof fetch>();
+    vi.stubGlobal('fetch', fetchMock);
+    resetGTGlobals();
+    initializeI18nConfig({
+      defaultLocale: 'en',
+      locales: ['en', 'fr', 'es'],
+      apiKey: 'test-api-key',
+    });
+    const cache = createCache({
+      loadTranslations: vi.fn().mockResolvedValue({}),
+      runtimeTranslation: {},
+    });
+
+    await expect(
+      cache.lookupTranslationWithFallback('fr', message, lookupOptions)
+    ).rejects.toThrow(
+      "gt-i18n Error: Runtime translation needs a projectId. Set `projectId` in your framework's GT configuration, or disable runtime translation."
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it('runtime translation without an API key rejects each request with framework guidance', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('GT_API_KEY', '');
+    const fetchMock = vi.fn<typeof fetch>();
+    vi.stubGlobal('fetch', fetchMock);
+    resetGTGlobals();
+    initializeI18nConfig({
+      defaultLocale: 'en',
+      locales: ['en', 'fr', 'es'],
+      projectId: 'test-project',
+    });
+    const cache = createCache({
+      loadTranslations: vi.fn().mockResolvedValue({}),
+      runtimeTranslation: {},
+    });
+
+    await expect(
+      cache.lookupTranslationWithFallback('fr', message, lookupOptions)
+    ).rejects.toThrow(
+      "gt-i18n Error: Runtime translation needs an API key. Set `apiKey` (or `devApiKey` in development) in your framework's GT configuration or the GT_API_KEY environment variable, or disable runtime translation."
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
   it('runtime translateMany success:false entry resolves undefined in production', async () => {
-    vi.spyOn(GTRuntime.prototype, 'translateMany').mockResolvedValue({
+    resetGTGlobals();
+    initializeI18nConfig({
+      defaultLocale: 'en',
+      locales: ['en', 'fr', 'es'],
+      projectId: 'test-project',
+      apiKey: 'test-api-key',
+    });
+    vi.spyOn(runtimePrototype, 'translateMany').mockResolvedValue({
       [expectedHash]: {
         success: false,
         error: new Error('nope'),

@@ -1,4 +1,4 @@
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { createGlobalSingleton } from 'gt-i18n/internal';
 import { I18nStore } from './I18nStore';
 import { getI18nConfig } from '../setup/i18nConfig';

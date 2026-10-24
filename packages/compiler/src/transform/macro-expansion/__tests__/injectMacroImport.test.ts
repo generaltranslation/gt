@@ -23,7 +23,7 @@ function parseAndGetProgramPath(code: string) {
 describe('injectMacroImport', () => {
   it('adds import { t } from gt-react', () => {
     const { programPath } = parseAndGetProgramPath('const x = 1;');
-    injectMacroImport(programPath, false);
+    injectMacroImport(programPath);
     const firstStmt = programPath.node.body[0];
     expect(t.isImportDeclaration(firstStmt)).toBe(true);
     expect((firstStmt as t.ImportDeclaration).source.value).toBe(
@@ -34,21 +34,11 @@ describe('injectMacroImport', () => {
     expect((specifier as t.ImportSpecifier).local.name).toBe('t');
   });
 
-  it('adds import { t } from gt-react/browser with legacy flag', () => {
-    const { programPath } = parseAndGetProgramPath('const x = 1;');
-    injectMacroImport(programPath, true);
-    const firstStmt = programPath.node.body[0];
-    expect(t.isImportDeclaration(firstStmt)).toBe(true);
-    expect((firstStmt as t.ImportDeclaration).source.value).toBe(
-      GT_IMPORT_SOURCES.GT_REACT_BROWSER
-    );
-  });
-
   it('adds import as the first statement in the program body', () => {
     const { programPath } = parseAndGetProgramPath(
       "import React from 'react';\nconst x = 1;"
     );
-    injectMacroImport(programPath, false);
+    injectMacroImport(programPath);
     const firstStmt = programPath.node.body[0];
     expect(t.isImportDeclaration(firstStmt)).toBe(true);
     expect((firstStmt as t.ImportDeclaration).source.value).toBe(

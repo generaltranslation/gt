@@ -22,7 +22,6 @@ export default defineConfig({
             '__tests__/**/*.server.test.ts',
             '__tests__/**/*.unit.test.ts',
           ],
-          env: { _GT_LOG_LEVEL: 'off' },
         },
       },
       {
@@ -35,7 +34,6 @@ export default defineConfig({
           // createServerRenderer() starts and compiles a Vite SSR server in
           // beforeAll, which takes about 7s in CI and can exceed the 10s default.
           hookTimeout: 60_000,
-          env: { _GT_LOG_LEVEL: 'off' },
         },
       },
     ],

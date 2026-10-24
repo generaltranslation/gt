@@ -5,6 +5,8 @@ import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
 import { hashMessage } from '../../utils/hashMessage';
 import type { LookupOptions } from '../../translation-functions/types/options';
 
+const runtimePrototype = GTRuntime.prototype;
+
 /**
  * Contract tests for I18nCache locale-cache expiry semantics.
  *
@@ -243,8 +245,15 @@ describe('I18nCache expiry contract', () => {
     const unknownMessage = 'Unknown message';
     const unknownOptions: LookupOptions = { $format: 'ICU' };
     const unknownHash = hashMessage(unknownMessage, unknownOptions);
+    resetGTGlobals();
+    initializeI18nConfig({
+      defaultLocale: 'en',
+      locales: ['en', 'fr', 'es'],
+      projectId: 'test-project',
+      apiKey: 'test-api-key',
+    });
     const translateManySpy = vi
-      .spyOn(GTRuntime.prototype, 'translateMany')
+      .spyOn(runtimePrototype, 'translateMany')
       .mockResolvedValue({
         [unknownHash]: {
           success: true,
