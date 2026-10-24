@@ -1,12 +1,10 @@
 export class ApiError extends Error {
   public code: number;
-  public message: string;
 
-  constructor(error: string, code: number, message: string) {
-    super(error);
+  constructor(message: string, code: number) {
+    super(message);
     this.name = 'ApiError';
     this.code = code;
-    this.message = message;
   }
 
   /** Builds the error for a failed response from its decoded body. */
@@ -17,7 +15,7 @@ export class ApiError extends Error {
       messageOf(body, response) ||
       response.statusText ||
       `HTTP ${response.status}`;
-    return new ApiError(message, response.status, message);
+    return new ApiError(message, response.status);
   }
 }
 
