@@ -1,4 +1,5 @@
 import {
+  ASTUtils,
   AST_NODE_TYPES,
   ESLintUtils,
   TSESTree,
@@ -55,11 +56,31 @@ function getCalleeName(callee: TSESTree.Expression): string | undefined {
 // Names as eslint-plugin-react-hooks reads them.
 const isHookName = (name: string) => /^use[A-Z0-9]/.test(name);
 
+type TypeWrapper =
+  | TSESTree.TSAsExpression
+  | TSESTree.TSSatisfiesExpression
+  | TSESTree.TSNonNullExpression
+  | TSESTree.TSTypeAssertion;
+
+const TYPE_WRAPPERS = new Set<string>([
+  AST_NODE_TYPES.TSAsExpression,
+  AST_NODE_TYPES.TSSatisfiesExpression,
+  AST_NODE_TYPES.TSNonNullExpression,
+  AST_NODE_TYPES.TSTypeAssertion,
+]);
+
+/** The node with any `as`, `satisfies` or `!` around it, which don't run. */
+function withTypeWrappers(node: TSESTree.Node): TSESTree.Node {
+  while (node.parent && TYPE_WRAPPERS.has(node.parent.type)) node = node.parent;
+  return node;
+}
+
 /** Whether the node is passed to a function with one of these names. */
 function isArgumentOf(node: TSESTree.Node, names: (name: string) => boolean) {
-  const { parent } = node;
+  const outer = withTypeWrappers(node);
+  const { parent } = outer;
   if (parent?.type !== AST_NODE_TYPES.CallExpression) return false;
-  if (parent.callee === node) return false;
+  if (parent.callee === outer) return false;
   const name = getCalleeName(parent.callee);
   return name !== undefined && names(name);
 }
@@ -70,9 +91,10 @@ function isArgumentOf(node: TSESTree.Node, names: (name: string) => boolean) {
  * effect. useCallback stores its callback for later, like an event handler.
  */
 function runsWithEnclosingScope(fn: FunctionNode): boolean {
+  const outer = withTypeWrappers(fn);
   return (
-    (fn.parent?.type === AST_NODE_TYPES.CallExpression &&
-      fn.parent.callee === fn) ||
+    (outer.parent?.type === AST_NODE_TYPES.CallExpression &&
+      outer.parent.callee === outer) ||
     isArgumentOf(fn, (name) => isHookName(name) && name !== 'useCallback')
   );
 }
@@ -87,9 +109,9 @@ const isComponentWrapper = (name: string) =>
  */
 function getFunctionName(fn: FunctionNode): string | undefined {
   if (fn.type === AST_NODE_TYPES.FunctionDeclaration) return fn.id?.name;
-  let node: TSESTree.Node = fn;
+  let node = withTypeWrappers(fn);
   while (isArgumentOf(node, isComponentWrapper)) {
-    node = node.parent as TSESTree.Node;
+    node = withTypeWrappers(node.parent as TSESTree.Node);
   }
   const { parent } = node;
   if (
@@ -122,6 +144,8 @@ function rendersDuringRender(name: string): boolean {
 
 function isJsx(node: TSESTree.Node | null | undefined): boolean {
   if (!node) return false;
+  if (TYPE_WRAPPERS.has(node.type))
+    return isJsx((node as TypeWrapper).expression);
   if (node.type === AST_NODE_TYPES.ConditionalExpression) {
     return isJsx(node.consequent) || isJsx(node.alternate);
   }
@@ -169,7 +193,8 @@ function isComponentOrHook(fn: FunctionNode): boolean {
 function isAnonymousDefaultComponent(fn: FunctionNode): boolean {
   return (
     !fn.id &&
-    fn.parent?.type === AST_NODE_TYPES.ExportDefaultDeclaration &&
+    withTypeWrappers(fn).parent?.type ===
+      AST_NODE_TYPES.ExportDefaultDeclaration &&
     returnsJsx(fn)
   );
 }
@@ -209,18 +234,43 @@ export const translationFunctionPlacement = createRule({
   create(context, [options]) {
     const { libs = DEFAULT_LIBS } = options;
 
+    /**
+     * The function a namespace import call names, like `i18n.getLocale()`
+     * after `import * as i18n from 'gt-tanstack-start'`.
+     */
+    function getNamespaceCallName(
+      callee: TSESTree.Expression
+    ): string | undefined {
+      if (
+        callee.type !== AST_NODE_TYPES.MemberExpression ||
+        callee.computed ||
+        callee.object.type !== AST_NODE_TYPES.Identifier ||
+        callee.property.type !== AST_NODE_TYPES.Identifier
+      ) {
+        return undefined;
+      }
+      const [def] =
+        ASTUtils.findVariable(
+          context.sourceCode.getScope(callee),
+          callee.object.name
+        )?.defs ?? [];
+      return def?.type === 'ImportBinding' &&
+        def.node.type === AST_NODE_TYPES.ImportNamespaceSpecifier &&
+        def.parent.type === AST_NODE_TYPES.ImportDeclaration &&
+        libs.includes(def.parent.source.value as GTLibrary)
+        ? callee.property.name
+        : undefined;
+    }
+
     return {
       CallExpression(node: TSESTree.CallExpression) {
-        if (node.callee.type !== AST_NODE_TYPES.Identifier) return;
-        const name = Object.keys(HOOKS).find((targetName) =>
-          isGTFunction({
-            context,
-            node,
-            libs,
-            targetName,
-          })
-        );
-        if (!name) return;
+        const name =
+          node.callee.type === AST_NODE_TYPES.Identifier
+            ? Object.keys(HOOKS).find((targetName) =>
+                isGTFunction({ context, node, libs, targetName })
+              )
+            : getNamespaceCallName(node.callee);
+        if (!name || !Object.keys(HOOKS).includes(name)) return;
 
         let fn = getEnclosingFunction(node);
         while (fn && runsWithEnclosingScope(fn)) fn = getEnclosingFunction(fn);
