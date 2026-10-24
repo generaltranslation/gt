@@ -24,24 +24,49 @@ import { _getLocaleDirection } from './locales/getLocaleDirection';
 import { libraryDefaultLocale } from './settings/settings';
 import { _isSameDialect } from './locales/isSameDialect';
 import { _isSupersetLocale } from './locales/isSupersetLocale';
-import type { CustomMapping, FormatVariables } from './types';
+import type { FormatVariables } from './types';
+import { snapshotLocaleConfig, type LocaleConfig } from './localeConfig';
+import {
+  getRegionProperties,
+  type CustomRegionMapping,
+} from './locales/getRegionProperties';
 import { _resolveAliasLocale } from './locales/resolveAliasLocale';
 import { _resolveCanonicalLocale } from './locales/resolveCanonicalLocale';
-import { getCustomLocaleCode } from './locales/customLocaleMapping';
 import type { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
 import type { StringFormat } from './types-dir/jsx/content';
 
-export type LocaleConfigConstructorParams = {
-  defaultLocale?: string;
-  locales?: string[];
-  customMapping?: CustomMapping;
+/** `locale` overrides the instance locale for one call. */
+export type LocaleOption = {
+  locale?: string;
 };
 
-type LocalesOption = {
-  locales?: string | string[];
-};
+/** `locales` replaces the whole formatting fallback list for one call. */
+type WithLocales<T = object> = T &
+  LocaleOption & {
+    locales?: string | string[];
+  };
 
-type WithLocales<T = object> = T & LocalesOption;
+function getCustomRegionMapping(
+  customMapping: NonNullable<LocaleConfig['customMapping']>
+): CustomRegionMapping {
+  const customRegionMapping: CustomRegionMapping = {};
+  for (const [locale, lp] of Object.entries(customMapping)) {
+    if (
+      lp &&
+      typeof lp === 'object' &&
+      lp.regionCode &&
+      !customRegionMapping[lp.regionCode]
+    ) {
+      const { regionName: name, emoji } = lp;
+      customRegionMapping[lp.regionCode] = {
+        locale,
+        ...(name && { name }),
+        ...(emoji && { emoji }),
+      };
+    }
+  }
+  return customRegionMapping;
+}
 
 /**
  * Approved-locales work that requiresTranslation and determineLocale would
@@ -55,34 +80,51 @@ type LocaleResolutionScope = {
     canonicalLocale: string;
     standardizedLocale: string;
   }[];
-  canonicalMappingCodes: (string | undefined)[];
   approved: ApprovedLocales;
 };
 
 /**
- * LocaleConfig contains the locale and formatting primitives exposed through
- * the core entrypoint.
+ * Formatting and locale helpers for a {@link LocaleConfig}, without
+ * credentials. Every method takes the values it acts on positionally and an
+ * optional options object last; `options.locale` overrides the instance
+ * `locale` for one call, and the default locale is the fallback. The locale
+ * description helpers (`getLocaleName`, `getLocaleProperties`,
+ * `getLocaleEmoji`, `getLocaleDirection`) describe that target locale when
+ * called without one, and name locales and regions in it. The configuration
+ * is copied and frozen at construction.
  *
- * It intentionally does not store project IDs, API keys, runtime URLs, or any
- * translation credentials. It only stores locale metadata needed to resolve
- * aliases, choose formatting fallbacks, and format values with Intl.
+ * @example
+ * const intl = new GTIntl({ defaultLocale: 'en', locales: ['en', 'es'] }, { locale: 'es' });
+ * intl.formatNum(1234); // in es
+ * intl.formatNum(1234, { locale: 'fr' }); // in fr
  */
-export class LocaleConfig {
+export class GTIntl {
   readonly defaultLocale: string;
-  readonly locales: string[];
-  readonly customMapping?: CustomMapping;
+  readonly locales: readonly string[];
+  readonly customMapping?: LocaleConfig['customMapping'];
+  readonly locale?: string;
+  // Omitted locales mean no approved-locales restriction; an explicit empty
+  // list approves none.
+  private readonly approvedLocales?: readonly string[];
   // Built lazily so construction stays cheap for instances that never resolve
-  // locales. The snapshot is refreshed if callers mutate the public locale or
-  // custom-mapping collections retained by this instance.
+  // locales.
   private resolutionScope?: LocaleResolutionScope;
+  private customRegionMapping?: ReturnType<typeof getCustomRegionMapping>;
+
+  private getCustomRegionMapping() {
+    if (!this.customMapping) return undefined;
+    if (this.customRegionMapping) return this.customRegionMapping;
+    const customRegionMapping = getCustomRegionMapping(this.customMapping);
+    Object.defineProperty(this, 'customRegionMapping', {
+      configurable: true,
+      value: customRegionMapping,
+      writable: true,
+    });
+    return customRegionMapping;
+  }
 
   private getResolutionScope(): LocaleResolutionScope {
-    if (
-      this.resolutionScope &&
-      this.isResolutionScopeCurrent(this.resolutionScope)
-    ) {
-      return this.resolutionScope;
-    }
+    if (this.resolutionScope) return this.resolutionScope;
     const resolutionScope = this.buildResolutionScope(this.locales);
     Object.defineProperty(this, 'resolutionScope', {
       configurable: true,
@@ -92,25 +134,8 @@ export class LocaleConfig {
     return resolutionScope;
   }
 
-  private isResolutionScopeCurrent(scope: LocaleResolutionScope): boolean {
-    if (scope.approvedLocalePairs.length !== this.locales.length) return false;
-    for (let index = 0; index < this.locales.length; index++) {
-      const locale = this.locales[index];
-      const pair = scope.approvedLocalePairs[index];
-      if (
-        pair.locale !== locale ||
-        pair.canonicalLocale !== this.resolveCanonicalLocale(locale) ||
-        scope.canonicalMappingCodes[index] !==
-          getCustomLocaleCode(this.customMapping, pair.canonicalLocale)
-      ) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   private buildResolutionScope(
-    approvedLocales: string[]
+    approvedLocales: readonly string[]
   ): LocaleResolutionScope {
     const approvedLocalePairs = approvedLocales.map((locale) => {
       const canonicalLocale = this.resolveCanonicalLocale(locale);
@@ -142,30 +167,31 @@ export class LocaleConfig {
           .map(({ locale }) => locale)
       ),
       approvedLocalePairs,
-      canonicalMappingCodes: approvedLocalePairs.map(({ canonicalLocale }) =>
-        getCustomLocaleCode(this.customMapping, canonicalLocale)
-      ),
       approved,
     };
   }
 
-  constructor({
-    defaultLocale = libraryDefaultLocale,
-    locales = [],
-    customMapping,
-  }: LocaleConfigConstructorParams = {}) {
-    this.defaultLocale = defaultLocale;
-    this.locales = locales;
+  constructor(localeConfig: LocaleConfig = {}, { locale }: LocaleOption = {}) {
+    const { defaultLocale, locales, customMapping } =
+      snapshotLocaleConfig(localeConfig);
+    this.defaultLocale = defaultLocale ?? libraryDefaultLocale;
+    this.locales = locales ?? Object.freeze([]);
+    this.approvedLocales = locales;
     this.customMapping = customMapping;
+    this.locale = locale;
+  }
+
+  private getTargetLocale(options: LocaleOption): string {
+    return options.locale || this.locale || this.defaultLocale;
   }
 
   private getFormattingLocales(
-    targetLocale?: string,
-    locales?: string | string[]
+    locale: string | undefined,
+    locales: string | string[] | undefined
   ) {
     return (
       locales === undefined
-        ? [targetLocale, this.defaultLocale, libraryDefaultLocale]
+        ? [locale || this.locale, this.defaultLocale, libraryDefaultLocale]
         : Array.isArray(locales)
           ? locales
           : [locales]
@@ -176,26 +202,24 @@ export class LocaleConfig {
 
   formatNum(
     value: number,
-    targetLocale?: string,
     options: WithLocales<Intl.NumberFormatOptions> = {}
   ) {
-    const { locales, ...intlOptions } = options;
+    const { locale, locales, ...intlOptions } = options;
     return _formatNum({
       value,
-      locales: this.getFormattingLocales(targetLocale, locales),
+      locales: this.getFormattingLocales(locale, locales),
       options: intlOptions,
     });
   }
 
   formatDateTime(
     value: Date,
-    targetLocale?: string,
     options: WithLocales<Intl.DateTimeFormatOptions> = {}
   ) {
-    const { locales, ...intlOptions } = options;
+    const { locale, locales, ...intlOptions } = options;
     return _formatDateTime({
       value,
-      locales: this.getFormattingLocales(targetLocale, locales),
+      locales: this.getFormattingLocales(locale, locales),
       options: intlOptions,
     });
   }
@@ -203,14 +227,13 @@ export class LocaleConfig {
   formatCurrency(
     value: number,
     currency: string,
-    targetLocale?: string,
     options: WithLocales<Intl.NumberFormatOptions> = {}
   ) {
-    const { locales, ...intlOptions } = options;
+    const { locale, locales, ...intlOptions } = options;
     return _formatCurrency({
       value,
       currency,
-      locales: this.getFormattingLocales(targetLocale, locales),
+      locales: this.getFormattingLocales(locale, locales),
       options: intlOptions,
     });
   }
@@ -218,26 +241,24 @@ export class LocaleConfig {
   formatRelativeTime(
     value: number,
     unit: Intl.RelativeTimeFormatUnit,
-    targetLocale?: string,
     options: WithLocales<Intl.RelativeTimeFormatOptions> = {}
   ) {
-    const { locales, ...intlOptions } = options;
+    const { locale, locales, ...intlOptions } = options;
     return _formatRelativeTime({
       value,
       unit,
-      locales: this.getFormattingLocales(targetLocale, locales),
+      locales: this.getFormattingLocales(locale, locales),
       options: intlOptions,
     });
   }
 
   formatRelativeTimeFromDate(
     date: Date,
-    targetLocale?: string,
     options: WithLocales<
       Intl.RelativeTimeFormatOptions & { baseDate?: Date }
     > = {}
   ) {
-    const { locales, baseDate, ...intlOptions } = options;
+    const { locale, locales, baseDate, ...intlOptions } = options;
     const { value, unit } = _selectRelativeTimeUnit(
       date,
       baseDate ?? new Date()
@@ -245,21 +266,17 @@ export class LocaleConfig {
     return _formatRelativeTime({
       value,
       unit,
-      locales: this.getFormattingLocales(targetLocale, locales),
+      locales: this.getFormattingLocales(locale, locales),
       options: intlOptions,
     });
   }
 
-  formatCutoff(
-    value: string,
-    targetLocale?: string,
-    options: WithLocales<CutoffFormatOptions> = {}
-  ) {
-    const { locales, ...formatOptions } = options;
+  formatCutoff(value: string, options: WithLocales<CutoffFormatOptions> = {}) {
+    const { locale, locales, ...formatOptions } = options;
     return intlCache
       .get(
         'CutoffFormat',
-        this.getFormattingLocales(targetLocale, locales),
+        this.getFormattingLocales(locale, locales),
         formatOptions
       )
       .format(value);
@@ -267,69 +284,106 @@ export class LocaleConfig {
 
   formatMessage(
     message: string,
-    targetLocale?: string,
     options: WithLocales<{
       variables?: FormatVariables;
       dataFormat?: StringFormat;
     }> = {}
   ) {
-    const { locales, variables, dataFormat } = options;
+    const { locale, locales, variables, dataFormat } = options;
     if (dataFormat === 'STRING') return message;
     return _formatMessageICU(
       message,
-      this.getFormattingLocales(targetLocale, locales),
+      this.getFormattingLocales(locale, locales),
       variables
     );
   }
 
   formatList(
     array: Array<string | number>,
-    targetLocale?: string,
     options: WithLocales<Intl.ListFormatOptions> = {}
   ) {
-    const { locales, ...intlOptions } = options;
+    const { locale, locales, ...intlOptions } = options;
     return _formatList({
       value: array,
-      locales: this.getFormattingLocales(targetLocale, locales),
+      locales: this.getFormattingLocales(locale, locales),
       options: intlOptions,
     });
   }
 
   formatListToParts<T>(
     array: Array<T>,
-    targetLocale?: string,
     options: WithLocales<Intl.ListFormatOptions> = {}
   ) {
-    const { locales, ...intlOptions } = options;
+    const { locale, locales, ...intlOptions } = options;
     return _formatListToParts<T>({
       value: array,
-      locales: this.getFormattingLocales(targetLocale, locales),
+      locales: this.getFormattingLocales(locale, locales),
       options: intlOptions,
     });
   }
 
-  getLocaleName(locale: string) {
-    return _getLocaleName(locale, this.defaultLocale, this.customMapping);
+  /** The name of `locale` (default: the target locale), in the target locale. */
+  getLocaleName(locale?: string, options: LocaleOption = {}) {
+    const targetLocale = this.getTargetLocale(options);
+    return _getLocaleName(
+      locale || targetLocale,
+      this.resolveCanonicalLocale(targetLocale),
+      this.customMapping
+    );
   }
 
-  getLocaleEmoji(locale: string) {
-    return _getLocaleEmoji(locale, this.customMapping);
+  /** The emoji of `locale` (default: the target locale). */
+  getLocaleEmoji(locale?: string, options: LocaleOption = {}) {
+    return _getLocaleEmoji(
+      locale || this.getTargetLocale(options),
+      this.customMapping
+    );
   }
 
-  getLocaleProperties(locale: string) {
-    return _getLocaleProperties(locale, this.defaultLocale, this.customMapping);
+  /**
+   * The properties of `locale` (default: the target locale), with names in
+   * the target locale.
+   */
+  getLocaleProperties(locale?: string, options: LocaleOption = {}) {
+    const targetLocale = this.getTargetLocale(options);
+    return _getLocaleProperties(
+      locale || targetLocale,
+      this.resolveCanonicalLocale(targetLocale),
+      this.customMapping
+    );
   }
 
+  /**
+   * Region code, name and emoji, with the name in the target locale. Names and
+   * emojis from the `regionCode` entries of `customMapping` (the first locale
+   * per region) take precedence.
+   */
+  getRegionProperties(region: string, options: LocaleOption = {}) {
+    return getRegionProperties(
+      region,
+      this.resolveCanonicalLocale(this.getTargetLocale(options)),
+      this.getCustomRegionMapping()
+    );
+  }
+
+  /**
+   * Whether content in `sourceLocale` (default: the default locale) needs
+   * translating for the target locale, within `approvedLocales` (default: the
+   * configured locales). Omitted locales mean no restriction; an empty list
+   * approves no locale.
+   */
   requiresTranslation(
-    targetLocale: string,
-    sourceLocale: string = this.defaultLocale,
-    approvedLocales: string[] | undefined = this.locales.length
-      ? this.locales
-      : undefined
+    options: LocaleOption & {
+      sourceLocale?: string;
+      approvedLocales?: readonly string[];
+    } = {}
   ) {
+    const {
+      sourceLocale = this.defaultLocale,
+      approvedLocales = this.approvedLocales,
+    } = options;
     // The default scope (this.locales) is prepared once per instance; a
-    // caller-provided list is prepared for that call only. No configured
-    // locales means no approved-locales restriction.
+    // caller-provided list is prepared for that call only.
     const approvedScope = approvedLocales
       ? approvedLocales === this.locales
         ? this.getResolutionScope().approved
@@ -342,19 +396,22 @@ export class LocaleConfig {
       : undefined;
     return _requiresTranslationWithScope(
       this.resolveCanonicalLocale(sourceLocale),
-      this.resolveCanonicalLocale(targetLocale),
+      this.resolveCanonicalLocale(this.getTargetLocale(options)),
       approvedScope,
       this.customMapping
     );
   }
 
   /**
-   * NOTE: consider moving LocaleCandidates type to this package, and
-   * determineLocale could accept that as a parameter.
+   * The best match for `locales` (in preference order) among
+   * `approvedLocales` (default: the configured locales), under its approved
+   * spelling.
    */
   determineLocale(
     locales: string | string[],
-    approvedLocales: string[] = this.locales
+    {
+      approvedLocales = this.locales,
+    }: { approvedLocales?: readonly string[] } = {}
   ) {
     const { configuredLocales, approvedLocalePairs, approved } =
       approvedLocales === this.locales
@@ -382,8 +439,11 @@ export class LocaleConfig {
     return undefined;
   }
 
-  getLocaleDirection(locale: string) {
-    return _getLocaleDirection(this.resolveCanonicalLocale(locale));
+  /** The text direction of `locale` (default: the target locale). */
+  getLocaleDirection(locale?: string, options: LocaleOption = {}) {
+    return _getLocaleDirection(
+      this.resolveCanonicalLocale(locale || this.getTargetLocale(options))
+    );
   }
 
   isValidLocale(locale: string) {
@@ -398,6 +458,7 @@ export class LocaleConfig {
     return _resolveAliasLocale(locale, this.customMapping);
   }
 
+  /** Normalizes the spelling of `locale`; it does not resolve `customMapping` aliases. */
   standardizeLocale(locale: string) {
     return _standardizeLocale(locale);
   }

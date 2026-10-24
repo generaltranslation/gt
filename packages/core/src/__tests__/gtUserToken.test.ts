@@ -1,29 +1,38 @@
-import { describe, expect, it, vi } from 'vitest';
-import { createGtApiAdapter } from '../adapter/createGtApi';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { GT } from '../index';
 
-vi.mock('../adapter/createGtApi', () => ({
-  createGtApiAdapter: vi.fn(() => ({
-    createTag: vi.fn().mockResolvedValue({ tag: { tagId: 'release' } }),
-  })),
-}));
-
 describe('GT user-token authentication', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it('accepts a user token provider in place of an API key', async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () =>
+      Response.json({
+        created: true,
+        tag: {
+          id: 'id',
+          tagId: 'release',
+          message: null,
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+        },
+      })
+    );
+    vi.stubGlobal('fetch', fetchMock);
     const userTokenProvider = {
       getAccessToken: async () => 'user-token',
       refreshAccessToken: async () => undefined,
     };
     const gt = new GT({
       baseUrl: 'https://api.example.com',
-      projectId: 'project-id',
       userTokenProvider,
+      projectId: 'project-id',
     });
 
-    await gt.createTag({ tagId: 'release', files: [] });
+    await gt.setTag('release', { files: [] });
 
-    expect(createGtApiAdapter).toHaveBeenCalledWith(
-      expect.objectContaining({ apiKey: undefined, userTokenProvider })
-    );
+    const request = new Request(...fetchMock.mock.calls[0]);
+    expect(request.headers.get('authorization')).toBe('Bearer user-token');
   });
 });

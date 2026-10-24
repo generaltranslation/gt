@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { extractVars } from '../extractVars';
-import { GT } from 'generaltranslation';
+import { GTIntl } from 'generaltranslation';
 
 describe('static extractVars', () => {
   describe('basic functionality', () => {
@@ -222,7 +222,7 @@ describe('static extractVars', () => {
 
   describe('integration with formatMessage', () => {
     it('should extract variables from source and use them in target formatting', () => {
-      const gt = new GT();
+      const intl = new GTIntl();
 
       // Source message with unindexed variables
       const source =
@@ -235,7 +235,7 @@ describe('static extractVars', () => {
       const declaredVars = extractVars(source);
 
       // Format the target message with extracted variables
-      const result = gt.formatMessage(target, {
+      const result = intl.formatMessage(target, {
         locales: ['fr'],
         variables: {
           ...declaredVars,
@@ -253,7 +253,7 @@ describe('static extractVars', () => {
     });
 
     it('should handle more complex source-to-target translation with multiple variables', () => {
-      const gt = new GT();
+      const intl = new GTIntl();
 
       const source =
         'Welcome {_gt_, select, other {John}}! You have {_gt_, select, other {5 messages}} in your {_gt_, select, other {inbox}}';
@@ -261,7 +261,7 @@ describe('static extractVars', () => {
 
       const declaredVars = extractVars(source);
 
-      const result = gt.formatMessage(target, {
+      const result = intl.formatMessage(target, {
         locales: ['fr'],
         variables: {
           ...declaredVars,
@@ -279,7 +279,7 @@ describe('static extractVars', () => {
     });
 
     it('should handle empty other fields in source correctly', () => {
-      const gt = new GT();
+      const intl = new GTIntl();
 
       const source =
         'Hello {_gt_, select, other {}} world {_gt_, select, other {test}}';
@@ -287,7 +287,7 @@ describe('static extractVars', () => {
 
       const declaredVars = extractVars(source);
 
-      const result = gt.formatMessage(target, {
+      const result = intl.formatMessage(target, {
         locales: ['fr'],
         variables: {
           ...declaredVars,
