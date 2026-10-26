@@ -8,6 +8,7 @@ import path from 'node:path';
 import { processTaggedTemplateCall } from '../index.js';
 import { ParsingConfig, ParsingOutput } from '../../types.js';
 import { Updates } from '../../../../../../types/index.js';
+import { calculateHashes } from '../../../../../../extraction/postProcess.js';
 
 // Handle CommonJS/ESM interop
 const traverse = (traverseModule as unknown).default || traverseModule;
@@ -210,6 +211,33 @@ describe('processTaggedTemplateCall', () => {
       );
       expect(entry?.before).toContain('return "girl"');
     }
+  });
+
+  it('should register derive variants with the ICU hashes the runtime looks up', async () => {
+    const output = runProcessTaggedTemplateCall(
+      `
+        import { derive } from 'gt-react';
+        t\`Hello \${derive('John')}\`;
+        t\`Don't stop, \${derive('John')}\`;
+      `
+    );
+    await calculateHashes(output.updates);
+
+    // Pinned in react-core t.test.ts runtime lookup
+    expect(
+      output.updates.map(({ source, dataFormat, metadata }) => ({
+        source,
+        dataFormat,
+        hash: metadata.hash,
+      }))
+    ).toEqual([
+      { source: 'Hello John', dataFormat: 'ICU', hash: '9030b4f4c41221cc' },
+      {
+        source: "Don't stop, John",
+        dataFormat: 'ICU',
+        hash: '4651b752888ee7cb',
+      },
+    ]);
   });
 
   it('should still extract when ignoreTaggedTemplates is true (gating is done by caller)', () => {

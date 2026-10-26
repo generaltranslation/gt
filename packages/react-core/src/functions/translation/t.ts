@@ -102,17 +102,27 @@ function handleTaggedTemplateLiteralTranslation(
   const locale = getLocale();
   // for tagged template literals, there has been no compiler transformation
   // (1) lookup interpolated template (aka derived message)
+  // The CLI registers derive() variants as ICU, so look up and format as ICU
   const interpolatedTemplate = interpolateTemplateLiteral(
     messageOrStrings,
     values
   );
-  const i18nCache = getReactI18nCache();
-  const translatedInterpolatedTemplate = i18nCache.lookupTranslation(
+  // Runtime values are not ICU-escaped, so never ICU-format the source itself
+  if (!getShouldTranslate()) return interpolatedTemplate;
+  const lookupOptions = createLookupOptions(locale, {}, 'ICU');
+  const translatedInterpolatedTemplate = getReactI18nCache().lookupTranslation(
     locale,
     interpolatedTemplate,
-    { $format: 'STRING' }
+    lookupOptions
   );
-  if (translatedInterpolatedTemplate) return translatedInterpolatedTemplate;
+  if (translatedInterpolatedTemplate != null) {
+    return interpolateMessage({
+      source: interpolatedTemplate,
+      target: translatedInterpolatedTemplate,
+      options: lookupOptions,
+      sourceLocale: getI18nConfig().getDefaultLocale(),
+    });
+  }
 
   // (2) resolve uninterpolated message
   const { message, variables } = extractInterpolatableValues(
