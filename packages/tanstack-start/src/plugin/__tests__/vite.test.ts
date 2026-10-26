@@ -217,6 +217,7 @@ describe('gtTanstackStart', () => {
 });
 
 const CONFIG_MODULE_ID = 'gt-tanstack-start/internal/_config';
+const LOCALE_ROUTING_MODULE_ID = 'gt-tanstack-start/internal/localeRouting';
 
 type ConfigModuleExports = {
   config: unknown;
@@ -295,6 +296,30 @@ async function loadConfigModuleCode(
   return { code, watchFiles, warnOnce };
 }
 
+const IMPORTER = '/node_modules/gt-tanstack-start/dist/index.client.mjs';
+
+/** The module the plugin resolves the locale routing import to. */
+async function resolveLocaleRouting(
+  configPlugin: Plugin,
+  root: string,
+  command: ResolvedConfig['command'] = 'serve'
+): Promise<unknown> {
+  resolveConfig(configPlugin, root, [configPlugin], command);
+  const resolveId = configPlugin.resolveId;
+  if (typeof resolveId !== 'function') throw new Error('Expected resolveId');
+  return resolveId.call(
+    {
+      resolve: async (id: string, importer: string | undefined) => ({
+        id,
+        importer,
+      }),
+    } as unknown as ThisParameterType<typeof resolveId>,
+    LOCALE_ROUTING_MODULE_ID,
+    IMPORTER,
+    { isEntry: false } as Parameters<typeof resolveId>[2]
+  );
+}
+
 /** Evaluates the config module through a real Vite server. */
 async function withConfigModule(
   configPlugin: Plugin,
@@ -339,6 +364,46 @@ describe.sequential('gtTanstackStart config module', () => {
     // SSR keeps its first GT config, so reloading only this module would
     // give the browser a config the server does not use.
     expect(watchFiles).toEqual([]);
+  });
+
+  it('resolves locale routing to the enabled module only when localeRouting is on', async () => {
+    const routed = createProject({
+      'gt.config.json': JSON.stringify({
+        ...JSON.parse(gtConfig()),
+        localeRouting: true,
+      }),
+    });
+    const unrouted = createProject({ 'gt.config.json': gtConfig() });
+
+    expect(
+      await resolveLocaleRouting(routed.configPlugin, routed.root, 'build')
+    ).toEqual({
+      id: `${LOCALE_ROUTING_MODULE_ID}.enabled`,
+      importer: IMPORTER,
+    });
+    expect(
+      await resolveLocaleRouting(unrouted.configPlugin, unrouted.root, 'build')
+    ).toEqual({
+      id: `${LOCALE_ROUTING_MODULE_ID}.disabled`,
+      importer: IMPORTER,
+    });
+  });
+
+  it('resolves locale routing from the config the config module serves', async () => {
+    const { configPlugin, root } = createProject({
+      'gt.config.json': gtConfig(),
+    });
+    await loadConfigModuleCode(configPlugin, root);
+    fs.writeFileSync(
+      path.join(root, 'gt.config.json'),
+      JSON.stringify({ ...JSON.parse(gtConfig()), localeRouting: true })
+    );
+
+    // SSR keeps the first config, so the browser must not start routing.
+    expect(await resolveLocaleRouting(configPlugin, root)).toEqual({
+      id: `${LOCALE_ROUTING_MODULE_ID}.disabled`,
+      importer: IMPORTER,
+    });
   });
 
   it('leaves API keys out of the config module and warns', async () => {

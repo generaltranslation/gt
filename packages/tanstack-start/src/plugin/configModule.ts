@@ -10,6 +10,8 @@ import type { ConfigModuleOptions } from './types';
 
 export const CONFIG_MODULE_ID = 'gt-tanstack-start/internal/_config';
 export const RESOLVED_CONFIG_MODULE_ID = '\0gt-tanstack-start:config';
+export const LOCALE_ROUTING_MODULE_ID =
+  'gt-tanstack-start/internal/localeRouting';
 const CUSTOM_LOADER_FILES = [
   'src/loadTranslations.ts',
   'src/loadTranslations.tsx',
@@ -91,7 +93,7 @@ export function createConfigModule(
     loadTranslationsPath,
     ...runtimeOptions
   }: ConfigModuleOptions
-): { code: string; omittedApiKeys: boolean } {
+): { code: string; localeRouting: boolean; omittedApiKeys: boolean } {
   const config = readConfigFile(configFile);
   // The browser imports this module too, so credentials must never be in it.
   const { apiKey, devApiKey, ...publicConfig } = config;
@@ -184,6 +186,7 @@ export function createConfigModule(
 
   return {
     code: lines.join('\n'),
+    localeRouting: config.localeRouting === true,
     omittedApiKeys: apiKey !== undefined || devApiKey !== undefined,
   };
 }
