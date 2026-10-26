@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.26.11
+
+### Patch Changes
+
+- [#2532](https://github.com/generaltranslation/gt/pull/2532) [`de29049`](https://github.com/generaltranslation/gt/commit/de29049fa16e7c4f60c4cf2baf1a83def5168479) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Keep the trailing newline of JSON files the CLI rewrites in place, such as `redirects.json`, `docs.json`, `gt.config.json`, and `package.json`, and end JSON files the CLI generates, such as `gt-lock.json`, with a newline
+
 ## 2.26.10
 
 ### Patch Changes
