@@ -1,5 +1,26 @@
 # gt-next
 
+## 11.4.16
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.5.8
+  - @generaltranslation/compiler@1.3.65
+  - gt-i18n@1.0.39
+  - gt-react@11.4.16
+  - @generaltranslation/react-core@11.4.16
+
+## 11.4.15
+
+### Patch Changes
+
+- [#2507](https://github.com/generaltranslation/gt/pull/2507) [`438c78c`](https://github.com/generaltranslation/gt/commit/438c78cfb25a2baca996aead1a68dc0ee50e3b70) Thanks [@eoinest](https://github.com/eoinest)! - Fix `withGTConfig` failing with "The installed Next.js version could not be resolved ... require is not defined" when `gt-next/config` is imported from an ESM Next config (`next.config.mjs`, `next.config.mts`, or `next.config.js` with `"type": "module"`).
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.4.15
+  - gt-react@11.4.15
+
 ## 11.4.15-samsara.0
 
 ### Patch Changes

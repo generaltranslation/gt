@@ -434,9 +434,13 @@ export async function handleApiCommand(
   }
 
   if (options.include) writeResponseMetadata(rawResponse, writeStdout);
-  writeStdout(Buffer.from(await rawResponse.arrayBuffer()));
+  const responseBody = Buffer.from(await rawResponse.arrayBuffer());
+  writeStdout(responseBody);
 
   if (!rawResponse.ok) {
+    if (responseBody.length > 0 && responseBody.at(-1) !== 0x0a) {
+      writeStdout('\n');
+    }
     writeStderr(
       `${method} ${normalizedEndpoint} returned HTTP ${rawResponse.status}${rawResponse.statusText ? ` ${rawResponse.statusText}` : ''}\n`
     );

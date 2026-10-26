@@ -1,5 +1,12 @@
 # gt-i18n
 
+## 1.0.39
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.5.8
+
 ## 1.0.39-samsara.0
 
 ### Patch Changes
