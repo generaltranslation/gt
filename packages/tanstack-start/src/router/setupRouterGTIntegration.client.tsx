@@ -37,14 +37,6 @@ export function setupRouterGTIntegration({
     // The visitor's state, for client-only roots (ssr: false) and SPA shells.
     loadState: () => readGTRouterState(getReadonlyConditionStore()),
   });
-  // Installed now rather than in hydrate: Router parses the initial location
-  // through the rewrite before hydrating.
-  const rewrite =
-    localeRewrite === false
-      ? undefined
-      : getRouterLocaleRewrite(router, () =>
-          getReadonlyConditionStore().getLocale()
-        );
   const options: Partial<GTRouterOptions> = {
     // Apply the server's locale first, so the app's hydrate callback and the
     // links it builds see it.
@@ -55,7 +47,8 @@ export function setupRouterGTIntegration({
         // before hydration, so the provider never commits the shell's locale
         // to the locale cookie. A load failure is thrown from Wrap.
         gt.hydrateShell(state);
-        // Router reads the URL again after hydrate.
+        // A static host can't redirect to the visitor's locale like the
+        // server does.
         if (rewrite) {
           replaceWithLocaleURL(router, getReadonlyConditionStore().getLocale());
         }
@@ -69,6 +62,14 @@ export function setupRouterGTIntegration({
     },
     Wrap: gt.Wrap,
   };
+  // Installed now rather than in hydrate: Router parses the initial location
+  // through the rewrite before hydrating.
+  const rewrite =
+    localeRewrite === false
+      ? undefined
+      : getRouterLocaleRewrite(router, () =>
+          getReadonlyConditionStore().getLocale()
+        );
   if (rewrite) options.rewrite = rewrite;
   router.update(options);
 }

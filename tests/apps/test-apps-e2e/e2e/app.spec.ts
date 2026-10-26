@@ -1,6 +1,6 @@
 import type { APIRequestContext, Browser, Page } from '@playwright/test';
 import { getApp } from '../apps.mjs';
-import { expect, test } from './fixtures';
+import { expect, test, watchBrowserErrors } from './fixtures';
 
 const appName = process.env.GT_TEST_APP;
 const app = getApp(appName);
@@ -370,10 +370,13 @@ async function testTanStackSpaShell(page: Page, browser: Browser) {
   });
   try {
     const firstPage = await firstVisit.newPage();
+    const errors = watchBrowserErrors(firstPage);
     await firstPage.goto('/spa');
     await expect(firstPage).toHaveURL(new URL('/fr/spa', app.baseURL).href);
+    await expect(firstPage.getByTestId('context-href')).toHaveText('/fr/spa');
     await expect(firstPage.locator('html')).toHaveAttribute('lang', 'fr');
     await expectTanStackLocale(firstPage, 'fr');
+    expect(errors, 'first-visit browser errors').toEqual([]);
   } finally {
     await firstVisit.close();
   }

@@ -40,6 +40,11 @@ export function replaceWithLocaleURL(
     `${localePathname}${search}${hash}`,
     router.history.location.state
   );
+  // Router hands the location it parsed before hydrating to the first
+  // matches' context(). A new rewrite object makes update() parse the
+  // replaced URL and store it.
+  const { rewrite } = router.options;
+  if (rewrite) router.update({ rewrite: { ...rewrite } });
 }
 
 /** Switches locale by navigating to its URL instead of reloading this one. */

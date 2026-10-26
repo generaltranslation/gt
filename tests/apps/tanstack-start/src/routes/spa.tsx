@@ -3,8 +3,12 @@ import { ModePanel } from '../components/ModePanel';
 
 export const Route = createFileRoute('/spa')({
   ssr: false,
-  loader: () => ({
+  // The URL Router gives route context while hydrating, which must match the
+  // address bar after GT moves an SPA visitor onto their locale's URL.
+  context: ({ location }) => ({ hydratedHref: location.publicHref }),
+  loader: ({ context }) => ({
     value: `SPA loader ran at ${new Date().toISOString()}`,
+    contextHref: context.hydratedHref,
   }),
   head: () => ({
     meta: [
@@ -23,11 +27,14 @@ function SpaRoute() {
   const data = Route.useLoaderData();
 
   return (
-    <ModePanel
-      mode='SPA'
-      ssrValue='false'
-      loaderValue={data.value}
-      description='SPA island: the route loader and route component both run on the client for the initial request.'
-    />
+    <>
+      <ModePanel
+        mode='SPA'
+        ssrValue='false'
+        loaderValue={data.value}
+        description='SPA island: the route loader and route component both run on the client for the initial request.'
+      />
+      <p data-testid='context-href'>{data.contextHref}</p>
+    </>
   );
 }

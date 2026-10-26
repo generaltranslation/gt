@@ -12,6 +12,7 @@ vi.mock('../../functions/localeRouting', async (importOriginal) => ({
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 import * as disabled from '../localeRouting.disabled';
 import * as enabled from '../localeRouting.enabled';
+import type { GTRouterOptions } from '../../router/types';
 
 function stubLocation(href: string) {
   const assign = vi.fn();
@@ -22,10 +23,10 @@ function stubLocation(href: string) {
   return assign;
 }
 
-function createRouter() {
+function createRouter(options: GTRouterOptions = {}) {
   return {
-    options: {},
-    update: vi.fn(),
+    options,
+    update: vi.fn<(options: Partial<GTRouterOptions>) => void>(),
     history: { location: { state: { key: 'entry' } }, replace: vi.fn() },
   };
 }
@@ -62,7 +63,8 @@ describe.sequential('browser locale routing', () => {
 
   it("moves the visitor onto their locale's URL", () => {
     stubLocation('https://example.com/about?view=full#bio');
-    const router = createRouter();
+    const rewrite = { input: vi.fn(), output: vi.fn() };
+    const router = createRouter({ rewrite });
 
     enabled.replaceWithLocaleURL(router, 'fr');
 
@@ -71,6 +73,10 @@ describe.sequential('browser locale routing', () => {
       '/fr/about?view=full#bio',
       { key: 'entry' }
     );
+    // A new rewrite object makes Router parse and store the replaced URL.
+    const [[{ rewrite: updated }]] = router.update.mock.calls;
+    expect(updated).toEqual(rewrite);
+    expect(updated).not.toBe(rewrite);
   });
 
   it("leaves the URL alone when it is already the locale's", () => {
