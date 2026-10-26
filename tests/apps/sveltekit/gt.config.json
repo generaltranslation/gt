@@ -1,0 +1,10 @@
+{
+  "defaultLocale": "en",
+  "locales": ["fr"],
+  "src": ["src/**/*.{ts,svelte}"],
+  "files": {
+    "gt": {
+      "output": "src/_gt/[locale].json"
+    }
+  }
+}

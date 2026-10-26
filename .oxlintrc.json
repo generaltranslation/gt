@@ -18,6 +18,7 @@
   "ignorePatterns": [
     "dist/",
     "node_modules/",
+    ".svelte-kit/",
     "coverage/",
     "**/*.d.ts",
     "**/rollup.config.*",
@@ -43,6 +44,21 @@
     "typescript/no-explicit-any": "warn"
   },
   "overrides": [
+    {
+      "files": ["**/*.svelte", "**/*.svelte.ts"],
+      "globals": {
+        "$bindable": "readonly",
+        "$derived": "readonly",
+        "$effect": "readonly",
+        "$host": "readonly",
+        "$inspect": "readonly",
+        "$props": "readonly",
+        "$state": "readonly"
+      },
+      "rules": {
+        "prefer-const": "off"
+      }
+    },
     {
       "files": ["**/*.test.{js,ts,tsx}", "**/*.spec.{js,ts,tsx}"],
       "env": {

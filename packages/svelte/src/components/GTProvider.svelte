@@ -1,0 +1,85 @@
+<!--
+  @component
+  Provides the active locale to `<T>`, `useGT()`, and the variable
+  components below it. Pass the result of `loadTranslations()` so the first
+  render, on the server and in the browser, is already translated. Without
+  `translations`, the provider renders the default locale until the browser
+  has loaded `locale`.
+
+  ```svelte
+  <GTProvider locale={data.gt.locale} translations={data.gt.translations}>
+    {@render children()}
+  </GTProvider>
+  ```
+-->
+<script lang="ts">
+  import type { Content } from '@generaltranslation/format/types';
+  import type { Snippet } from 'svelte';
+  import { onMount, untrack } from 'svelte';
+  import { getI18nConfig } from 'gt-i18n/internal';
+  import { resolveLocale } from '../runtime/config';
+  import { requiresTranslation } from '../runtime/lookup';
+  import { GTState, setGTState } from '../runtime/state.svelte';
+  import {
+    warnLocaleLoadFailed,
+    warnMissingProviderTranslations,
+  } from '../runtime/warnings';
+
+  let {
+    locale,
+    translations,
+    children,
+  }: {
+    /** The locale to render. Defaults to the configured default locale. */
+    locale?: string;
+    /** Preloaded translations for `locale`, from `loadTranslations()`. */
+    translations?: Record<string, Content>;
+    children?: Snippet;
+  } = $props();
+
+  // Initialize synchronously so server rendering and hydration see the
+  // translations on the first render. Without translations, both render the
+  // default locale, whatever the shared cache holds, and the browser loads
+  // the requested locale once mounted.
+  const requestedLocale = untrack(() => resolveLocale(locale));
+  const state = untrack(() => {
+    if (translations) {
+      const initialState = new GTState(requestedLocale);
+      initialState.hydrate(requestedLocale, translations);
+      return initialState;
+    }
+    if (!requiresTranslation(requestedLocale)) {
+      return new GTState(requestedLocale);
+    }
+    warnMissingProviderTranslations(requestedLocale);
+    return new GTState(getI18nConfig().getDefaultLocale());
+  });
+  setGTState(state);
+
+  function load(nextLocale: string): void {
+    state
+      .setLocale(nextLocale)
+      .catch((error: unknown) => warnLocaleLoadFailed(nextLocale, error));
+  }
+
+  onMount(() => {
+    if (state.locale !== requestedLocale) load(requestedLocale);
+  });
+
+  // Follow later prop changes, such as a navigation that reran `load`.
+  let previous = untrack(() => ({ locale, translations }));
+  $effect.pre(() => {
+    if (locale === previous.locale && translations === previous.translations) {
+      return;
+    }
+    previous = { locale, translations };
+    const nextLocale = resolveLocale(locale);
+    if (translations) state.hydrate(nextLocale, translations);
+    untrack(() => {
+      if (translations) state.showLocale(nextLocale);
+      else load(nextLocale);
+    });
+  });
+</script>
+
+{@render children?.()}

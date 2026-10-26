@@ -91,6 +91,14 @@ export const apps = Object.freeze({
     command: 'pnpm --filter gt-test-vite-vue test:e2e:serve',
     readyPath: '/',
   },
+  sveltekit: {
+    packageName: 'gt-test-sveltekit',
+    entryPackage: 'gt-svelte',
+    kind: 'sveltekit',
+    baseURL: 'http://127.0.0.1:5181',
+    command: 'pnpm --filter gt-test-sveltekit test:e2e:serve',
+    readyPath: '/',
+  },
   'webpack-react': {
     packageName: 'gt-test-webpack-react',
     entryPackage: 'gt-react',
