@@ -3,6 +3,7 @@ import {
   type InlineExtractionOutput,
   type PrimaryInlineExtractor,
 } from '@generaltranslation/vue-extractor/integration';
+import { planSvelteExtraction } from '@generaltranslation/svelte-extractor/integration';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import type { InlineLibrary } from '../types/libraries.js';
 import type { GTParsingFlags, ParsingConfigOptions } from '../types/parsing.js';
@@ -31,6 +32,15 @@ export function extractInlineFromProject(
   extractPrimary?: PrimaryInlineExtractor,
   tsconfigPath?: string
 ): Promise<InlineExtractionOutput> {
+  const sveltePlan = planSvelteExtraction({
+    library,
+    projectRoot: process.cwd(),
+    filePatterns,
+  });
+  if (sveltePlan.handled) {
+    return sveltePlan.run({ extractPrimary });
+  }
+
   const plan = planVueExtraction({
     library,
     projectRoot: process.cwd(),

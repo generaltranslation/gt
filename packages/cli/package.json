@@ -129,6 +129,7 @@
     "@generaltranslation/icu": "workspace:*",
     "@generaltranslation/python-extractor": "workspace:*",
     "@generaltranslation/supported-locales": "workspace:*",
+    "@generaltranslation/svelte-extractor": "workspace:*",
     "@generaltranslation/vue-extractor": "workspace:*",
     "chalk": "^5.4.1",
     "commander": "^12.1.0",
