@@ -18,6 +18,9 @@ test(`${appName} renders local translations and switches locales`, async ({
     case 'vue-spa':
       await testVueSpa(page);
       break;
+    case 'sveltekit':
+      await testSvelteKitApp(page, request);
+      break;
     case 'next':
       await testNextApp(page);
       break;
@@ -120,6 +123,60 @@ async function testVueSpa(page: Page) {
     ({ name }) => name === 'generaltranslation.locale'
   );
   expect(localeCookie?.value).toBe('en');
+}
+
+async function testSvelteKitApp(page: Page, request: APIRequestContext) {
+  // Server rendering is translated before any client code runs.
+  const frenchHtml = await (
+    await request.get('/', {
+      headers: { cookie: 'generaltranslation.locale=fr' },
+    })
+  ).text();
+  expect(frenchHtml).toContain('Une chaîne traduite à l’aide de useGT.');
+  expect(frenchHtml).toContain('title="Documentation (FR)"');
+
+  const hydrationWarnings: string[] = [];
+  page.on('console', (message) => {
+    if (message.text().includes('hydration')) {
+      hydrationWarnings.push(message.text());
+    }
+  });
+
+  await page.context().clearCookies();
+  await page.goto('/');
+  await expect(page.getByText('Locale: en')).toBeVisible();
+  await expect(page.getByTestId('greeting')).toHaveText(
+    'Hello, Ada! Read the docs.'
+  );
+  await expect(page.getByTestId('plural')).toHaveText('You have one message');
+
+  // The client loads French and reorders the link and name.
+  await selectLocale(page, 'fr');
+  await expect(page.getByText('Locale: fr')).toBeVisible();
+  await expect(page.getByTestId('greeting')).toHaveText(
+    'Lisez la documentation, Ada !'
+  );
+  await expect(
+    page.getByRole('link', { name: 'documentation' })
+  ).toHaveAttribute('title', 'Documentation (FR)');
+
+  // Plural branches follow reactive state inside the translation.
+  await page.getByRole('button', { name: 'Ajouter un message' }).click();
+  await expect(page.getByTestId('plural')).toHaveText('Vous avez 2 messages');
+
+  // A reload server-renders French from the cookie and hydrates cleanly.
+  await page.reload();
+  await expect(page.getByText('Locale: fr')).toBeVisible();
+  await expect(page.getByTestId('string')).toHaveText(
+    'Une chaîne traduite à l’aide de useGT.'
+  );
+  await page.getByRole('button', { name: 'Ajouter un message' }).click();
+  await expect(page.getByTestId('plural')).toHaveText('Vous avez 2 messages');
+  expect(hydrationWarnings).toEqual([]);
+
+  await selectLocale(page, 'en');
+  await expect(page.getByText('Locale: en')).toBeVisible();
+  await expect(page.getByTestId('plural')).toHaveText('You have 2 messages');
 }
 
 async function testNextApp(page: Page) {

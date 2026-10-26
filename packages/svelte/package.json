@@ -1,0 +1,73 @@
+{
+  "name": "gt-svelte",
+  "version": "0.0.0",
+  "description": "Svelte 5 internationalization library for General Translation.",
+  "type": "module",
+  "svelte": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "svelte": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./preprocess": {
+      "types": "./dist/preprocess.d.ts",
+      "default": "./dist/preprocess.js"
+    }
+  },
+  "scripts": {
+    "build": "svelte-package -i src -o dist",
+    "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
+    "build:release": "pnpm run build:clean",
+    "release": "pnpm run build:clean && pnpm publish",
+    "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",
+    "release:beta": "pnpm run build:clean && pnpm publish --tag beta",
+    "release:latest": "pnpm run build:clean && pnpm publish --tag latest",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "svelte-check --tsconfig ./tsconfig.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/generaltranslation/gt.git"
+  },
+  "author": "General Translation, Inc.",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/generaltranslation/gt/issues"
+  },
+  "homepage": "https://generaltranslation.com/",
+  "peerDependencies": {
+    "svelte": "^5.0.0"
+  },
+  "keywords": [
+    "svelte",
+    "translation",
+    "internationalization",
+    "localization",
+    "i18n"
+  ],
+  "dependencies": {
+    "@generaltranslation/format": "workspace:*",
+    "@generaltranslation/svelte-extractor": "workspace:*",
+    "generaltranslation": "workspace:*",
+    "gt-i18n": "workspace:*"
+  },
+  "devDependencies": {
+    "@sveltejs/package": "^3.0.1",
+    "@sveltejs/vite-plugin-svelte": "^6.2.4",
+    "@types/node": "catalog:",
+    "jsdom": "^26.1.0",
+    "svelte": "^5.57.2",
+    "svelte-check": "^4.7.7",
+    "typescript": "catalog:",
+    "vite": "^7.3.1",
+    "vitest": "catalog:"
+  }
+}

@@ -1,0 +1,45 @@
+<!--
+  @component
+  Renders translated JSX children by calling the snippets the preprocessor
+  generated from the source `<T>` children. Internal to gt-svelte.
+-->
+<script lang="ts">
+  import type { JsxChildren } from '@generaltranslation/format/types';
+  import GtNodes from './GtNodes.svelte';
+  import {
+    selectBranch,
+    toRenderItems,
+    type RenderContext,
+  } from '../runtime/nodes';
+
+  let {
+    nodes,
+    scopes,
+    context,
+  }: {
+    nodes: JsxChildren | undefined;
+    scopes: string[];
+    context: RenderContext;
+  } = $props();
+
+  const items = $derived(toRenderItems(nodes, scopes, context));
+</script>
+
+{#each items as item (item.key)}
+  {#if item.kind === 'text'}
+    {item.text}
+  {:else if item.kind === 'variable'}
+    {@render item.snippet()}
+  {:else if item.kind === 'element'}
+    {#snippet kids()}
+      <GtNodes nodes={item.node.c} {scopes} {context} />
+    {/snippet}
+    {@render item.snippet(kids, item.node.d)}
+  {:else}
+    {#snippet pick(value: unknown)}
+      {@const branch = selectBranch(item, value, context)}
+      <GtNodes nodes={branch.nodes} scopes={branch.scopes} {context} />
+    {/snippet}
+    {@render item.snippet(pick)}
+  {/if}
+{/each}
