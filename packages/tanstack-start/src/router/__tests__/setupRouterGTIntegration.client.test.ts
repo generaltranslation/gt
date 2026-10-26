@@ -9,6 +9,7 @@ const {
   mockGetTranslationsSnapshot,
   mockLoadDictionary,
   mockProvider,
+  mockReplaceWithLocaleURL,
   pluginModule,
 } = vi.hoisted(() => ({
   mockLoadDictionary: vi.fn(async (locale: string) => ({ greeting: locale })),
@@ -23,6 +24,7 @@ const {
     async (): Promise<Record<string, string>> => ({})
   ),
   mockProvider: vi.fn((props: { locale: string }) => props.locale),
+  mockReplaceWithLocaleURL: vi.fn(),
   pluginModule: { localeRoutingEnabled: true },
 }));
 
@@ -63,6 +65,12 @@ vi.mock('gt-tanstack-start/internal/localeRouting', async () => {
         ? enabled
         : disabled
       ).getRouterLocaleRewrite(...args),
+    replaceWithLocaleURL: (
+      ...args: Parameters<typeof enabled.replaceWithLocaleURL>
+    ) =>
+      pluginModule.localeRoutingEnabled
+        ? mockReplaceWithLocaleURL(...args)
+        : disabled.replaceWithLocaleURL(...args),
   };
 });
 
@@ -76,6 +84,7 @@ function createRouter(options: GTRouterOptions = {}) {
     update: vi.fn((next: Partial<GTRouterOptions>) => {
       router.options = { ...router.options, ...next };
     }),
+    history: { location: { state: {} }, replace: vi.fn() },
   };
   return router;
 }
@@ -117,6 +126,7 @@ describe.sequential('setupRouterGTIntegration client', () => {
     mockCreateOrUpdateBrowserConditionStore.mockReset();
     mockEnsureInitialized.mockClear();
     mockGetTranslationsSnapshot.mockClear();
+    mockReplaceWithLocaleURL.mockClear();
     pluginModule.localeRoutingEnabled = true;
   });
 
@@ -275,6 +285,38 @@ describe.sequential('setupRouterGTIntegration client', () => {
       expect.objectContaining({ locale: 'en', _syncConditions: false }),
       undefined
     );
+  });
+
+  it("moves an SPA shell visitor onto their locale's URL", async () => {
+    const router = createRouter();
+    setupRouterGTIntegration({ router });
+
+    await router.options.hydrate?.({
+      gt: { ...gtState, locale: 'en', shell: true },
+    });
+
+    // The visitor's locale, not the shell's.
+    expect(mockReplaceWithLocaleURL).toHaveBeenCalledWith(router, 'fr');
+  });
+
+  it.each([
+    {
+      name: 'server-rendered state, which the server already redirected',
+      options: {},
+      dehydrated: { gt: gtState },
+    },
+    {
+      name: 'an app that opted out of the rewrite',
+      options: { localeRewrite: false as const },
+      dehydrated: { gt: { ...gtState, shell: true } },
+    },
+  ])('leaves the URL alone for $name', async ({ options, dehydrated }) => {
+    const router = createRouter();
+    setupRouterGTIntegration({ router, ...options });
+
+    await router.options.hydrate?.(dehydrated);
+
+    expect(mockReplaceWithLocaleURL).not.toHaveBeenCalled();
   });
 
   it('integrates a router only once', async () => {

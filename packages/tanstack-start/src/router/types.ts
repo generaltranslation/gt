@@ -45,6 +45,10 @@ export type GTIntegrableRouter = {
   // Method syntax keeps the parameter bivariant, so the app's fully typed
   // router.update() is accepted.
   update(options: Partial<GTRouterOptions>): void;
+  history: {
+    location: { state: unknown };
+    replace(path: string, state?: unknown): void;
+  };
   /** True while Start renders a prerendered SPA shell (Router >= 1.159). */
   isShell?: () => boolean;
 };

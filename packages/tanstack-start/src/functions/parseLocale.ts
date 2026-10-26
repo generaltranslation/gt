@@ -3,7 +3,8 @@ import { getCookieValue } from 'gt-i18n/internal';
 import type { LocaleResolverConfig } from 'gt-i18n/internal/types';
 
 /**
- * Read the server-synchronized locale cookie during client initialization.
+ * Read the locale cookie during client initialization, then the browser's
+ * languages for visitors without one, such as a static SPA's first visit.
  * With localeRouting, the pathname locale wins: SPA roots and visits with a
  * stale cookie have no server state to correct it.
  */
@@ -19,6 +20,7 @@ export function determineLocaleClient(
 
   const cookie = getCookieValue(document.cookie, localeCookieName);
   if (cookie) candidates.push(cookie);
+  candidates.push(...navigator.languages);
 
   if (candidates.length === 0) {
     console.warn(

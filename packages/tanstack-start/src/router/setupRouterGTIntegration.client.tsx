@@ -1,7 +1,10 @@
 import { createOrUpdateBrowserConditionStore } from 'gt-react';
 import { getReadonlyConditionStore } from '@generaltranslation/react-core/pure';
 import { GTProvider } from '../provider/GTProvider.client';
-import { getRouterLocaleRewrite } from 'gt-tanstack-start/internal/localeRouting';
+import {
+  getRouterLocaleRewrite,
+  replaceWithLocaleURL,
+} from 'gt-tanstack-start/internal/localeRouting';
 import { ensureInitialized } from '../setup/initializeGT.client';
 import { createGTRouterWrap, readGTRouterState } from './createGTRouterWrap';
 import type {
@@ -44,6 +47,11 @@ export function setupRouterGTIntegration({
         // before hydration, so the provider never commits the shell's locale
         // to the locale cookie. A load failure is thrown from Wrap.
         gt.hydrateShell(state);
+        // A static host can't redirect to the visitor's locale like the
+        // server does.
+        if (rewrite) {
+          replaceWithLocaleURL(router, getReadonlyConditionStore().getLocale());
+        }
         await gt.load().catch(() => undefined);
       } else if (dehydrated?.gt) {
         const { locale, region, enableI18n } = dehydrated.gt;
