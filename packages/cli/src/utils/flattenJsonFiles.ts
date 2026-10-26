@@ -1,5 +1,6 @@
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import fs from 'node:fs';
+import { stringifyJson } from '../fs/stringifyJson.js';
 import { Settings } from '../types/index.js';
 import { batchProcess, FILE_IO_CONCURRENCY } from './batchProcess.js';
 
@@ -35,14 +36,15 @@ export default async function flattenJsonFiles(
       targetFiles,
       async (file) => {
         // Read each json file
-        const json = JSON.parse(fs.readFileSync(file, 'utf8'));
+        const content = fs.readFileSync(file, 'utf8');
+        const json = JSON.parse(content);
         // Flatten the json
         const flattenedJson = flattenJson(json);
 
         // Write the flattened json to the target file
         await fs.promises.writeFile(
           file,
-          JSON.stringify(flattenedJson, null, 2)
+          stringifyJson(flattenedJson, content)
         );
         return flattenedJson;
       },
