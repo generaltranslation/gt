@@ -205,7 +205,7 @@ export const translationFunctionPlacement = createRule({
     type: 'problem',
     docs: {
       description:
-        'Call getGT() and the other request-scoped translation functions from route loaders, head data and server functions, not at module scope or in components.',
+        'In gt-tanstack-start apps, call getGT() and the other request-scoped translation functions from route loaders, head data and server functions, not at module scope or in components.',
     },
     schema: [
       {
