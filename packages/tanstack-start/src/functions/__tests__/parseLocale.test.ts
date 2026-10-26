@@ -171,11 +171,33 @@ describe.sequential('locale resolution', () => {
     expect(determineLocaleClient(localeConfig)).toBe('brand-french');
   });
 
+  it('falls back to the browser languages without a cookie', () => {
+    // A static SPA has no server to set the cookie on a first visit.
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      value: { cookie: '' },
+    });
+    vi.stubGlobal('navigator', { languages: ['de', 'es'] });
+
+    expect(determineLocaleClient(localeConfig)).toBe('es');
+  });
+
+  it('prefers the cookie over the browser languages', () => {
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      value: { cookie: 'generaltranslation.locale=es' },
+    });
+    vi.stubGlobal('navigator', { languages: ['fr'] });
+
+    expect(determineLocaleClient(localeConfig)).toBe('es');
+  });
+
   it('falls back to the default locale during client initialization', () => {
     Object.defineProperty(globalThis, 'document', {
       configurable: true,
       value: { cookie: '' },
     });
+    vi.stubGlobal('navigator', { languages: [] });
 
     expect(determineLocaleClient(localeConfig)).toBe('en');
   });
