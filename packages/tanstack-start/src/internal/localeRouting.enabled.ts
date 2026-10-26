@@ -24,6 +24,24 @@ export function getPathLocale(): string | undefined {
   return getLocaleFromPath(window.location.pathname);
 }
 
+/**
+ * Moves the visitor onto their locale's URL before Router reads it, as the
+ * server redirects them. A static SPA host can't redirect.
+ */
+export function replaceWithLocaleURL(
+  router: GTIntegrableRouter,
+  locale: string
+): void {
+  const { pathname, search, hash } = window.location;
+  const localePathname = getPathnameForLocale(pathname, locale);
+  // A protocol-relative path would point the history entry at another origin.
+  if (localePathname === pathname || localePathname.startsWith('//')) return;
+  router.history.replace(
+    `${localePathname}${search}${hash}`,
+    router.history.location.state
+  );
+}
+
 /** Switches locale by navigating to its URL instead of reloading this one. */
 export function createLocaleReload(): SharedGTProviderProps['_reload'] {
   return ({ locale }) => {

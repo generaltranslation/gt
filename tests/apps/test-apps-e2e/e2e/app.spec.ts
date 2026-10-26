@@ -40,7 +40,7 @@ test(`${appName} renders local translations and switches locales`, async ({
       await testTanStackRoutingApp(page, request);
       break;
     case 'tanstack-spa':
-      await testTanStackSpaShell(page);
+      await testTanStackSpaShell(page, browser);
       break;
     case 'node':
       await testNodeApp(browser, request);
@@ -310,8 +310,9 @@ async function testTanStackApp(page: Page) {
 // The app uses locale routing, so the shell's links must take the visitor's
 // locale prefix too.
 // /spa's loader runs in the browser; a static host cannot answer the server
-// functions other routes call.
-async function testTanStackSpaShell(page: Page) {
+// functions other routes call. The static host cannot redirect either, so the
+// client moves the visitor onto their locale's URL, as the server would.
+async function testTanStackSpaShell(page: Page, browser: Browser) {
   const localeCookie = 'generaltranslation.locale';
   await page.context().clearCookies();
   await page
@@ -338,6 +339,7 @@ async function testTanStackSpaShell(page: Page) {
 
   await page.goto('/spa');
   await page.waitForLoadState('networkidle');
+  await expect(page).toHaveURL(new URL('/fr/spa', app.baseURL).href);
   await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
   await expectTanStackLocale(page, 'fr');
   await expect(
@@ -360,6 +362,21 @@ async function testTanStackSpaShell(page: Page) {
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh');
   await expectTanStackLocale(page, 'zh');
   await expect(page.getByText('来自根级 Provider 的问候。')).toBeVisible();
+
+  // A first visit has no cookie, so the browser's languages pick the locale.
+  const firstVisit = await browser.newContext({
+    baseURL: app.baseURL,
+    locale: 'fr-FR',
+  });
+  try {
+    const firstPage = await firstVisit.newPage();
+    await firstPage.goto('/spa');
+    await expect(firstPage).toHaveURL(new URL('/fr/spa', app.baseURL).href);
+    await expect(firstPage.locator('html')).toHaveAttribute('lang', 'fr');
+    await expectTanStackLocale(firstPage, 'fr');
+  } finally {
+    await firstVisit.close();
+  }
 }
 
 async function testTanStackRoutingApp(page: Page, request: APIRequestContext) {
