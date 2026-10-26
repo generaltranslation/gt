@@ -6,6 +6,7 @@ const {
   mockInitializeReactGT,
   mockReload,
   pluginModule,
+  localeRoutingModule,
 } = vi.hoisted(() => ({
   mockCreateOrUpdateBrowserConditionStore: vi.fn(),
   mockDetermineLocaleClient: vi.fn(() => 'fr'),
@@ -16,12 +17,15 @@ const {
     loadTranslations: undefined,
     dictionary: undefined,
     loadDictionary: undefined,
+  },
+  localeRoutingModule: {
     createLocaleReload: vi.fn(),
     getPathLocale: vi.fn(),
   },
 }));
 
 vi.mock('gt-tanstack-start/internal/_config', () => pluginModule);
+vi.mock('gt-tanstack-start/internal/localeRouting', () => localeRoutingModule);
 
 vi.mock('gt-react', () => ({
   createOrUpdateBrowserConditionStore: mockCreateOrUpdateBrowserConditionStore,
@@ -51,13 +55,13 @@ describe.sequential('client initialization', () => {
     mockDetermineLocaleClient.mockClear();
     mockInitializeReactGT.mockReset();
     // Locale routing off, as localeRouting.disabled exports it.
-    pluginModule.createLocaleReload.mockReset();
-    pluginModule.getPathLocale.mockReset();
+    localeRoutingModule.createLocaleReload.mockReset();
+    localeRoutingModule.getPathLocale.mockReset();
   });
 
-  it('uses the locale routing reload and pathname locale from the config module', async () => {
-    pluginModule.createLocaleReload.mockReturnValue(mockReload);
-    pluginModule.getPathLocale.mockReturnValue('ar');
+  it('uses the locale routing reload and pathname locale', async () => {
+    localeRoutingModule.createLocaleReload.mockReturnValue(mockReload);
+    localeRoutingModule.getPathLocale.mockReturnValue('ar');
     const config = { defaultLocale: 'en', locales: ['en', 'fr', 'ar'] };
 
     const { GTProvider, getClientReload } = await initializeWith(config);

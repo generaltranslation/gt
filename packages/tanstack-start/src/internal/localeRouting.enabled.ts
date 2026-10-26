@@ -6,9 +6,10 @@ import {
 import { getRouterLocaleRewrite as getLocaleRewrite } from '../router/localeRewrite';
 import type { GTIntegrableRouter, GTLocationRewrite } from '../router/types';
 
-// The browser's locale routing. The plugin's generated config module exports
-// this file when gt.config.json enables localeRouting, and
-// localeRouting.disabled otherwise, so other apps don't ship this code.
+// The browser's locale routing. The plugin resolves
+// gt-tanstack-start/internal/localeRouting to this file when gt.config.json
+// enables localeRouting, and to localeRouting.disabled otherwise, so other
+// apps don't ship this code.
 
 /** The rewrite that keeps routes and links locale-free. */
 export function getRouterLocaleRewrite(

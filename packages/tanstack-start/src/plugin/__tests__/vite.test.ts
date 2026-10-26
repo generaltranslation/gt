@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import type { Plugin, ResolvedConfig } from 'vite';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -218,6 +217,7 @@ describe('gtTanstackStart', () => {
 });
 
 const CONFIG_MODULE_ID = 'gt-tanstack-start/internal/_config';
+const LOCALE_ROUTING_MODULE_ID = 'gt-tanstack-start/internal/localeRouting';
 
 type ConfigModuleExports = {
   config: unknown;
@@ -296,6 +296,30 @@ async function loadConfigModuleCode(
   return { code, watchFiles, warnOnce };
 }
 
+const IMPORTER = '/node_modules/gt-tanstack-start/dist/index.client.mjs';
+
+/** The module the plugin resolves the locale routing import to. */
+async function resolveLocaleRouting(
+  configPlugin: Plugin,
+  root: string,
+  command: ResolvedConfig['command'] = 'serve'
+): Promise<unknown> {
+  resolveConfig(configPlugin, root, [configPlugin], command);
+  const resolveId = configPlugin.resolveId;
+  if (typeof resolveId !== 'function') throw new Error('Expected resolveId');
+  return resolveId.call(
+    {
+      resolve: async (id: string, importer: string | undefined) => ({
+        id,
+        importer,
+      }),
+    } as unknown as ThisParameterType<typeof resolveId>,
+    LOCALE_ROUTING_MODULE_ID,
+    IMPORTER,
+    { isEntry: false } as Parameters<typeof resolveId>[2]
+  );
+}
+
 /** Evaluates the config module through a real Vite server. */
 async function withConfigModule(
   configPlugin: Plugin,
@@ -308,18 +332,6 @@ async function withConfigModule(
     logLevel: 'silent',
     appType: 'custom',
     plugins: [configPlugin],
-    // The temp project has no gt-tanstack-start install to resolve the
-    // locale routing modules the config module exports from.
-    resolve: {
-      alias: Object.fromEntries(
-        ['enabled', 'disabled'].map((state) => [
-          `gt-tanstack-start/internal/localeRouting.${state}`,
-          fileURLToPath(
-            new URL(`../../internal/localeRouting.${state}.ts`, import.meta.url)
-          ),
-        ])
-      ),
-    },
     server: { middlewareMode: true, hmr: false, watch: null },
     optimizeDeps: { noDiscovery: true },
   });
@@ -354,7 +366,7 @@ describe.sequential('gtTanstackStart config module', () => {
     expect(watchFiles).toEqual([]);
   });
 
-  it('imports the locale routing code only when localeRouting is on', async () => {
+  it('resolves locale routing to the enabled module only when localeRouting is on', async () => {
     const routed = createProject({
       'gt.config.json': JSON.stringify({
         ...JSON.parse(gtConfig()),
@@ -363,24 +375,35 @@ describe.sequential('gtTanstackStart config module', () => {
     });
     const unrouted = createProject({ 'gt.config.json': gtConfig() });
 
-    const { code: routedCode } = await loadConfigModuleCode(
-      routed.configPlugin,
-      routed.root,
-      'build'
-    );
-    const { code: unroutedCode } = await loadConfigModuleCode(
-      unrouted.configPlugin,
-      unrouted.root,
-      'build'
+    expect(
+      await resolveLocaleRouting(routed.configPlugin, routed.root, 'build')
+    ).toEqual({
+      id: `${LOCALE_ROUTING_MODULE_ID}.enabled`,
+      importer: IMPORTER,
+    });
+    expect(
+      await resolveLocaleRouting(unrouted.configPlugin, unrouted.root, 'build')
+    ).toEqual({
+      id: `${LOCALE_ROUTING_MODULE_ID}.disabled`,
+      importer: IMPORTER,
+    });
+  });
+
+  it('resolves locale routing from the config the config module serves', async () => {
+    const { configPlugin, root } = createProject({
+      'gt.config.json': gtConfig(),
+    });
+    await loadConfigModuleCode(configPlugin, root);
+    fs.writeFileSync(
+      path.join(root, 'gt.config.json'),
+      JSON.stringify({ ...JSON.parse(gtConfig()), localeRouting: true })
     );
 
-    expect(routedCode).toContain(
-      'export * from "gt-tanstack-start/internal/localeRouting.enabled";'
-    );
-    expect(unroutedCode).toContain(
-      'export * from "gt-tanstack-start/internal/localeRouting.disabled";'
-    );
-    expect(unroutedCode).not.toContain('localeRouting.enabled');
+    // SSR keeps the first config, so the browser must not start routing.
+    expect(await resolveLocaleRouting(configPlugin, root)).toEqual({
+      id: `${LOCALE_ROUTING_MODULE_ID}.disabled`,
+      importer: IMPORTER,
+    });
   });
 
   it('leaves API keys out of the config module and warns', async () => {

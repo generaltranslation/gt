@@ -10,9 +10,11 @@ import {
   dictionary as pluginDictionary,
   loadDictionary as pluginLoadDictionary,
   loadTranslations as pluginLoadTranslations,
+} from 'gt-tanstack-start/internal/_config';
+import {
   createLocaleReload,
   getPathLocale,
-} from 'gt-tanstack-start/internal/_config';
+} from 'gt-tanstack-start/internal/localeRouting';
 import { determineLocaleClient } from '../functions/parseLocale';
 import type { InitializeGTParams } from '../types/InitializeGTParams';
 

@@ -12,7 +12,3 @@ export const loadTranslations: InitializeGTParams['loadTranslations'] =
 export const dictionary: InitializeGTParams['dictionary'] = undefined;
 
 export const loadDictionary: InitializeGTParams['loadDictionary'] = undefined;
-
-// The plugin exports localeRouting.enabled instead when gt.config.json
-// enables localeRouting.
-export * from './localeRouting.disabled';

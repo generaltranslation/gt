@@ -47,8 +47,8 @@ vi.mock('../../setup/initializeGT.client', () => ({
   ensureInitialized: mockEnsureInitialized,
 }));
 
-// As the plugin does, export the enabled or disabled locale routing module.
-vi.mock('gt-tanstack-start/internal/_config', async () => {
+// As the plugin does, resolve to the enabled or disabled locale routing module.
+vi.mock('gt-tanstack-start/internal/localeRouting', async () => {
   const enabled = await vi.importActual<
     typeof import('../../internal/localeRouting.enabled')
   >('../../internal/localeRouting.enabled');

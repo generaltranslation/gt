@@ -1,7 +1,7 @@
 import { createOrUpdateBrowserConditionStore } from 'gt-react';
 import { getReadonlyConditionStore } from '@generaltranslation/react-core/pure';
 import { GTProvider } from '../provider/GTProvider.client';
-import { getRouterLocaleRewrite } from 'gt-tanstack-start/internal/_config';
+import { getRouterLocaleRewrite } from 'gt-tanstack-start/internal/localeRouting';
 import { ensureInitialized } from '../setup/initializeGT.client';
 import { createGTRouterWrap, readGTRouterState } from './createGTRouterWrap';
 import type {

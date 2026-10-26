@@ -129,11 +129,14 @@ describe.sequential('gt-tanstack-start package exports', () => {
     }
   });
 
-  it('leaves locale routing to the config module in the browser entrypoint', () => {
-    // The plugin's config module exports localeRouting.enabled only when
+  it('leaves locale routing to the plugin in the browser entrypoint', () => {
+    // The plugin resolves this import to localeRouting.enabled only when
     // localeRouting is on, so other apps don't bundle it in the browser.
     const client = readDistFile('index.client.mjs');
 
+    expect(getImportSpecifiers(client)).toContain(
+      'gt-tanstack-start/internal/localeRouting'
+    );
     expect(client).not.toMatch(
       /function (?:getRouterLocaleRewrite|splitLocaleSegment|getPathnameForLocale|getLocaleFromPath)\b/
     );

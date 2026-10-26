@@ -3,6 +3,7 @@ import type { Logger, Plugin } from 'vite';
 import { createCompilerPlugin } from './compiler';
 import {
   CONFIG_MODULE_ID,
+  LOCALE_ROUTING_MODULE_ID,
   RESOLVED_CONFIG_MODULE_ID,
   createConfigModule,
 } from './configModule';
@@ -29,7 +30,7 @@ const configModules = ((
   globalThis as {
     __gtTanstackStartConfigModules?: Map<
       string,
-      { code: string; options: string }
+      { code: string; localeRouting: boolean; options: string }
     >;
   }
 ).__gtTanstackStartConfigModules ??= new Map());
@@ -66,6 +67,35 @@ export function gtTanstackStart(
   let logger: Logger | undefined;
   let isServe = false;
 
+  // The config module and the locale routing redirect read the same snapshot,
+  // so the browser never gets routing code SSR isn't using.
+  function getConfigModule() {
+    const key = JSON.stringify([root, cwd, configFile]);
+    const cached = isServe ? configModules.get(key) : undefined;
+    if (cached) {
+      if (cached.options !== moduleOptions) {
+        logger?.warnOnce(
+          createConfigChangedWarning('The gtTanstackStart() options')
+        );
+      }
+      return cached;
+    }
+    const { code, localeRouting, omittedApiKeys } = createConfigModule(
+      root,
+      cwd,
+      configFile,
+      configModuleOptions
+    );
+    if (omittedApiKeys) {
+      logger?.warnOnce(
+        createApiKeysOmittedWarning(path.relative(cwd, configFile))
+      );
+    }
+    const configModule = { code, localeRouting, options: moduleOptions };
+    if (isServe) configModules.set(key, configModule);
+    return configModule;
+  }
+
   const configPlugin: Plugin = {
     name: 'gt-tanstack-start',
     enforce: 'pre',
@@ -96,39 +126,18 @@ export function gtTanstackStart(
         }
       });
     },
-    resolveId(id) {
+    resolveId(id, importer) {
       if (id === CONFIG_MODULE_ID) return RESOLVED_CONFIG_MODULE_ID;
-    },
-    load(id) {
-      if (id !== RESOLVED_CONFIG_MODULE_ID) return;
-      const key = JSON.stringify([root, cwd, configFile]);
-      const cached = isServe ? configModules.get(key) : undefined;
-      if (cached) {
-        if (cached.options !== moduleOptions) {
-          logger?.warnOnce(
-            createConfigChangedWarning('The gtTanstackStart() options')
-          );
-        }
-        return cached.code;
-      }
-      const configModule = createConfigModule(
-        root,
-        cwd,
-        configFile,
-        configModuleOptions
-      );
-      if (isServe) {
-        configModules.set(key, {
-          code: configModule.code,
-          options: moduleOptions,
+      if (id === LOCALE_ROUTING_MODULE_ID) {
+        // Only apps that enable locale routing bundle its browser code.
+        const state = getConfigModule().localeRouting ? 'enabled' : 'disabled';
+        return this.resolve(`${LOCALE_ROUTING_MODULE_ID}.${state}`, importer, {
+          skipSelf: true,
         });
       }
-      if (configModule.omittedApiKeys) {
-        logger?.warnOnce(
-          createApiKeysOmittedWarning(path.relative(cwd, configFile))
-        );
-      }
-      return configModule.code;
+    },
+    load(id) {
+      if (id === RESOLVED_CONFIG_MODULE_ID) return getConfigModule().code;
     },
   };
 
