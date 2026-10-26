@@ -1,14 +1,3 @@
-export { parseLocale } from './functions/parseLocale';
-export { gtMiddleware } from './middleware/gtMiddleware';
-export type { InitializeGTParams } from './types/InitializeGTParams';
-export {
-  getLocale,
-  getEnableI18n,
-  getGT,
-  getMessages,
-  getTranslations,
-} from './functions/runtime';
-
 export {
   // ===== Components ===== //
   Branch,
@@ -46,6 +35,5 @@ export {
   decodeVars,
   mFallback,
   gtFallback,
-  getTranslationsSnapshot,
   t,
 } from 'gt-react';

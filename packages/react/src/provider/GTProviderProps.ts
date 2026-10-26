@@ -18,4 +18,11 @@ export type SharedGTProviderProps = Omit<
 > &
   Omit<BrowserConditionStoreParams, 'locale'> & {
     locale: string;
+    /**
+     * @internal Whether to save the locale, region and enableI18n to their
+     * cookies. Integrations turn it off while rendering state the visitor did
+     * not choose, such as a prerendered shell during hydration.
+     * @default true
+     */
+    _syncConditions?: boolean;
   };

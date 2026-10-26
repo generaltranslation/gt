@@ -39,46 +39,16 @@ function createRequest({
 }
 
 describe('AsyncLocalConditionStore', () => {
-  it('isolates conditions between concurrent requests', async () => {
-    const conditionStore = new AsyncLocalConditionStore(config);
-    let releaseFirstRequest!: () => void;
-    const firstRequestPending = new Promise<void>((resolve) => {
-      releaseFirstRequest = resolve;
-    });
-
-    const firstRequest = conditionStore.run(
-      createRequest({ locale: 'fr', region: 'FR', enableI18n: true }),
-      async () => {
-        await firstRequestPending;
-        return {
-          locale: conditionStore.getLocale(),
-          region: conditionStore.getRegion(),
-          enableI18n: conditionStore.getEnableI18n(),
-        };
-      }
+  it('reports whether its config enables locale routing', () => {
+    expect(
+      new AsyncLocalConditionStore({
+        ...config,
+        localeRouting: true,
+      }).isLocaleRoutingEnabled()
+    ).toBe(true);
+    expect(new AsyncLocalConditionStore(config).isLocaleRoutingEnabled()).toBe(
+      false
     );
-
-    const secondRequest = conditionStore.run(
-      createRequest({ locale: 'es', region: 'MX', enableI18n: false }),
-      async () => ({
-        locale: conditionStore.getLocale(),
-        region: conditionStore.getRegion(),
-        enableI18n: conditionStore.getEnableI18n(),
-      })
-    );
-
-    await expect(secondRequest).resolves.toEqual({
-      locale: 'es',
-      region: 'MX',
-      enableI18n: false,
-    });
-
-    releaseFirstRequest();
-    await expect(firstRequest).resolves.toEqual({
-      locale: 'fr',
-      region: 'FR',
-      enableI18n: true,
-    });
   });
 
   it('prioritizes a path locale when locale routing is enabled', () => {
@@ -86,32 +56,23 @@ describe('AsyncLocalConditionStore', () => {
       ...config,
       localeRouting: true,
     });
-
-    conditionStore.run(
-      createRequest({
-        locale: 'es',
-        enableI18n: true,
-        pathname: '/ignored',
-      }),
-      () => expect(conditionStore.getLocale()).toBe('fr'),
-      '/fr/about'
+    vi.mocked(getRequest).mockReturnValueOnce(
+      createRequest({ locale: 'es', enableI18n: true, pathname: '/fr/about' })
     );
+
+    expect(conditionStore.getLocale()).toBe('fr');
   });
 
   it('ignores path locales when locale routing is disabled', () => {
     const conditionStore = new AsyncLocalConditionStore(config);
-
-    conditionStore.run(
-      createRequest({
-        locale: 'es',
-        enableI18n: true,
-        pathname: '/fr/about',
-      }),
-      () => expect(conditionStore.getLocale()).toBe('es')
+    vi.mocked(getRequest).mockReturnValueOnce(
+      createRequest({ locale: 'es', enableI18n: true, pathname: '/fr/about' })
     );
+
+    expect(conditionStore.getLocale()).toBe('es');
   });
 
-  it('resolves conditions once from the Start request without middleware', () => {
+  it('resolves conditions once per Start request', () => {
     const conditionStore = new AsyncLocalConditionStore(config);
     const request = createRequest({
       locale: 'fr',
@@ -129,7 +90,7 @@ describe('AsyncLocalConditionStore', () => {
     vi.mocked(getRequest).mockReset();
   });
 
-  it('resolves each Start request to its own conditions without middleware', () => {
+  it('resolves each Start request to its own conditions', () => {
     const conditionStore = new AsyncLocalConditionStore(config);
     const frenchRequest = createRequest({ locale: 'fr', enableI18n: true });
     const spanishRequest = createRequest({ locale: 'es', enableI18n: false });

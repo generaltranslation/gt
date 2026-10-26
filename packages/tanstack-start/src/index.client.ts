@@ -1,3 +1,9 @@
 export * from './index.shared';
-export { initializeGT } from './setup/initializeGT.client';
-export { GTProvider } from './provider/GTProvider.client';
+export {
+  getLocale,
+  getEnableI18n,
+  getGT,
+  getMessages,
+  getTranslations,
+} from './functions/runtime.client';
+export { setupRouterGTIntegration } from './router/setupRouterGTIntegration.client';

@@ -5,18 +5,7 @@ export function getLocaleFromPath(
   pathname: string,
   basepath = getRouterBasepath()
 ): string | undefined {
-  const { pathname: routePathname } = splitBasepath(pathname, basepath);
-  const match = routePathname.match(/^\/([^/]+)(?:\/|$)/);
-  if (!match) return undefined;
-
-  let segment: string;
-  try {
-    segment = decodeURIComponent(match[1]);
-  } catch {
-    return undefined;
-  }
-
-  return getI18nConfig().determineSupportedLocale(segment);
+  return splitLocaleSegment(splitBasepath(pathname, basepath).pathname).locale;
 }
 
 /** Replace the pathname locale, leaving the default locale unprefixed. */
@@ -25,23 +14,52 @@ export function getPathnameForLocale(
   locale: string,
   basepath = getRouterBasepath()
 ): string {
-  const i18nConfig = getI18nConfig();
   const { basepath: routeBasepath, pathname: routePathname } = splitBasepath(
     pathname,
     basepath
   );
-  const pathLocale = getLocaleFromPath(routePathname, '/');
-  const unlocalizedPath = pathLocale
-    ? routePathname.replace(/^\/[^/]+/, '') || '/'
-    : routePathname;
-  const resolvedLocale = i18nConfig.resolveSupportedLocale(locale);
+  return `${routeBasepath}${prefixLocaleSegment(
+    splitLocaleSegment(routePathname).pathname,
+    locale
+  )}`;
+}
 
-  if (resolvedLocale === i18nConfig.getDefaultLocale()) {
-    return `${routeBasepath}${unlocalizedPath}`;
+/**
+ * Remove a supported locale from the first segment of a basepath-free
+ * pathname. The rest of the pathname keeps its original encoding.
+ */
+export function splitLocaleSegment(pathname: string): {
+  locale?: string;
+  pathname: string;
+} {
+  const match = pathname.match(/^\/([^/]+)(?=\/|$)/);
+  if (!match) return { pathname };
+
+  let segment: string;
+  try {
+    segment = decodeURIComponent(match[1]);
+  } catch {
+    return { pathname };
   }
 
-  return `${routeBasepath}/${encodeURIComponent(resolvedLocale)}${
-    unlocalizedPath === '/' ? '' : unlocalizedPath
+  const locale = getI18nConfig().determineSupportedLocale(segment);
+  if (!locale) return { pathname };
+  return { locale, pathname: pathname.slice(match[0].length) || '/' };
+}
+
+/**
+ * Prefix a basepath-free, locale-free pathname with a non-default locale.
+ * The pathname is not checked for an existing locale segment, so a route that
+ * starts with a locale-shaped segment keeps it.
+ */
+export function prefixLocaleSegment(pathname: string, locale: string): string {
+  const i18nConfig = getI18nConfig();
+  const resolvedLocale = i18nConfig.resolveSupportedLocale(locale);
+
+  if (resolvedLocale === i18nConfig.getDefaultLocale()) return pathname;
+
+  return `/${encodeURIComponent(resolvedLocale)}${
+    pathname === '/' ? '' : pathname
   }`;
 }
 
@@ -49,20 +67,21 @@ function getRouterBasepath(): string {
   return process.env.TSS_ROUTER_BASEPATH || '/';
 }
 
+// Case-insensitive, as TanStack Router matches its basepath by default. The
+// returned basepath keeps the URL's own spelling.
 function splitBasepath(
   pathname: string,
   basepath: string
 ): { basepath: string; pathname: string } {
   const normalizedBasepath = `/${basepath.replace(/^\/+|\/+$/g, '')}`;
-  if (normalizedBasepath === '/' || pathname === normalizedBasepath) {
+  if (normalizedBasepath === '/') return { basepath: '', pathname };
+  const lowerPathname = pathname.toLowerCase();
+  const lowerBasepath = normalizedBasepath.toLowerCase();
+  if (lowerPathname === lowerBasepath)
+    return { basepath: pathname, pathname: '/' };
+  if (lowerPathname.startsWith(`${lowerBasepath}/`)) {
     return {
-      basepath: normalizedBasepath === '/' ? '' : normalizedBasepath,
-      pathname: pathname === normalizedBasepath ? '/' : pathname,
-    };
-  }
-  if (pathname.startsWith(`${normalizedBasepath}/`)) {
-    return {
-      basepath: normalizedBasepath,
+      basepath: pathname.slice(0, normalizedBasepath.length),
       pathname: pathname.slice(normalizedBasepath.length),
     };
   }
