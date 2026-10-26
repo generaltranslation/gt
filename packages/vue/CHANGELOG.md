@@ -1,5 +1,13 @@
 # gt-vue
 
+## 0.1.23
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.5.8
+  - gt-i18n@1.0.39
+
 ## 0.1.23-samsara.0
 
 ### Patch Changes

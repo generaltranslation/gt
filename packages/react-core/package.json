@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/react-core",
-  "version": "11.4.15-samsara.0",
+  "version": "11.4.16",
   "description": "A pure React library for internationalization",
   "files": [
     "dist",

@@ -1,5 +1,15 @@
 # @generaltranslation/react-core
 
+## 11.4.16
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.5.8
+  - gt-i18n@1.0.39
+
+## 11.4.15
+
 ## 11.4.15-samsara.0
 
 ### Patch Changes
