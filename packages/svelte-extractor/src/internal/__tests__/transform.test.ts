@@ -321,6 +321,31 @@ describe('errors', () => {
     ).toEqual(['{#snippet lots()} is not a plural form']);
   });
 
+  it('rejects spread props on Plural and Branch', () => {
+    expect(
+      errorsFor('<T><Plural n={1} {...forms} /></T>', 'let forms;')
+    ).toEqual([
+      'Spread props are not supported on <Plural> because its branches must be known at build time',
+    ]);
+    expect(
+      errorsFor(
+        '<T><Branch branch={s} {...branches}>Fallback</Branch></T>',
+        'let s, branches;'
+      )
+    ).toEqual([
+      'Spread props are not supported on <Branch> because its branches must be known at build time',
+    ]);
+    expect(
+      analyzeSvelteSource(
+        `<script>import { T, Branch as Choice } from 'gt-svelte'; let s, b;</script>
+<T><Choice branch={s} {...b}>x</Choice></T>`,
+        { parse }
+      ).errors.map((error) => error.whatHappened)
+    ).toEqual([
+      'Spread props are not supported on <Choice> because its branches must be known at build time',
+    ]);
+  });
+
   it('rejects reserved identifiers', () => {
     expect(errorsFor('<T>a</T>', 'let __gt_x;')).toEqual([
       'Identifiers starting with "__gt_" are reserved for the gt-svelte preprocessor',

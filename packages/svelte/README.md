@@ -151,6 +151,8 @@ The rules inside `<T>`:
   `aria-describedby` are translated when they are static strings.
 - Plural and branch values are static string props or snippets that take no
   parameters. Branch names that use snippets must be valid identifiers.
+- `<T>`, `<Plural>`, and `<Branch>` do not accept spread props
+  (`{...props}`).
 
 The preprocessor reports a build error, with a file location, when one of
 these rules is broken.

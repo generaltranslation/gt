@@ -507,6 +507,13 @@ class TranslationBuilder {
 
     // Attribute branches: static strings, like React string props.
     for (const attribute of node.attributes) {
+      if (attribute.type === 'SpreadAttribute') {
+        this.problem(
+          attribute.start,
+          `Spread props are not supported on <${node.name}> because its branches must be known at build time`
+        );
+        continue;
+      }
       if (attribute.type !== 'Attribute') continue;
       const { name } = attribute as SvelteAttribute;
       if (!isBranchName(kind, name)) continue;
