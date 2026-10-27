@@ -154,6 +154,25 @@ describe('I18nConfig', () => {
     ).toBe('en-GB');
   });
 
+  it('applies a one-off localeMatcher override on its own to the configured locales', () => {
+    const bestFit = new I18nConfig({ defaultLocale: 'fr', locales: ['en-GB'] });
+    expect(
+      bestFit.determineSupportedLocale('en', { localeMatcher: 'lookup' })
+    ).toBeUndefined();
+    expect(
+      bestFit.resolveSupportedLocale('en', { localeMatcher: 'lookup' })
+    ).toBe('fr');
+
+    const lookup = new I18nConfig({
+      defaultLocale: 'fr',
+      locales: ['en-GB'],
+      localeMatcher: 'lookup',
+    });
+    expect(
+      lookup.determineSupportedLocale('en', { localeMatcher: 'best fit' })
+    ).toBe('en-GB');
+  });
+
   it.each([false, true])(
     'rejects an invalid localeMatcher with services=%s',
     (services) => {

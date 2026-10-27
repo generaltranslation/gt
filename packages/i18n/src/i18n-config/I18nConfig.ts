@@ -170,7 +170,16 @@ export class I18nConfig extends GTIntl {
 
   private getLocaleConfig(config?: I18nConfigParams): GTIntl {
     if (!config || !hasI18nConfigParams(config)) {
-      return this;
+      // A matcher-only override keeps this instance's locales.
+      return config?.localeMatcher === undefined ||
+        config.localeMatcher === this.localeMatcher
+        ? this
+        : new GTIntl({
+            defaultLocale: this.defaultLocale,
+            locales: [...this.locales],
+            customMapping: this.customMapping,
+            localeMatcher: config.localeMatcher,
+          });
     }
     return new GTIntl(
       getLocaleResolverConfigParams({

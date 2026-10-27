@@ -27,6 +27,12 @@
       "description": "The default locale for your project. This is the locale that your source content is written in and serves as the fallback locale.",
       "examples": ["en", "en-US", "fr", "es"]
     },
+    "localeMatcher": {
+      "type": "string",
+      "description": "How requested locales are matched to your locales. \"best fit\" (default) runs RFC 4647 Lookup within each requested language, then accepts a locale of the same language and script. \"lookup\" is strict RFC 4647 Lookup.",
+      "enum": ["lookup", "best fit"],
+      "default": "best fit"
+    },
     "locales": {
       "type": "array",
       "description": "An array of locales for your project. These are the locales that you want to translate your project into.",

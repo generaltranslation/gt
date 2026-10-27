@@ -88,6 +88,17 @@ describe('Locale Resolution (Category 1)', () => {
     }
   });
 
+  it('prefers a same-script match over the default locale in the same language', () => {
+    process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES = 'false';
+    const req = createRequest('/', { acceptLanguage: 'zh-Hant' });
+    const result = callGetLocaleFromRequest(req, {
+      defaultLocale: 'zh-CN',
+      approvedLocales: ['zh-CN', 'zh-TW'],
+    });
+
+    expect(result.userLocale).toBe('zh-TW');
+  });
+
   it('1.1: pathname locale /fr/about → userLocale=fr, pathnameLocale=fr', () => {
     const req = createRequest('/fr/about');
     const result = callGetLocaleFromRequest(req);
