@@ -14,18 +14,25 @@ import {
   type ApprovedLocales,
 } from './locales/approvedLocales';
 import { _requiresTranslationWithScope } from './locales/requiresTranslation';
-import { _determineLocaleWithIndex } from './locales/determineLocale';
+import { _determineLocale, type MatchLocale } from './locales/determineLocale';
 import { _isSameLanguage } from './locales/isSameLanguage';
 import { _getLocaleProperties } from './locales/getLocaleProperties';
 import { _getLocaleEmoji } from './locales/getLocaleEmoji';
 import { _isValidLocale, _standardizeLocale } from './locales/isValidLocale';
 import { _getLocaleName } from './locales/getLocaleName';
 import { _getLocaleDirection } from './locales/getLocaleDirection';
-import { libraryDefaultLocale } from './settings/settings';
+import {
+  defaultLocaleMatcher,
+  libraryDefaultLocale,
+} from './settings/settings';
 import { _isSameDialect } from './locales/isSameDialect';
 import { _isSupersetLocale } from './locales/isSupersetLocale';
 import type { FormatVariables } from './types';
-import { snapshotLocaleConfig, type LocaleConfig } from './localeConfig';
+import {
+  snapshotLocaleConfig,
+  type LocaleConfig,
+  type LocaleMatcher,
+} from './localeConfig';
 import {
   getRegionProperties,
   type CustomRegionMapping,
@@ -68,18 +75,25 @@ function getCustomRegionMapping(
   return customRegionMapping;
 }
 
+function getMatchLocale(tag: string): MatchLocale {
+  const locale = new Intl.Locale(tag);
+  return {
+    tag,
+    language: locale.language,
+    script: locale.maximize().script ?? '',
+  };
+}
+
 /**
  * Approved-locales work that requiresTranslation and determineLocale would
- * otherwise redo on every call: canonical codes plus the validated and
- * indexed scope built from them.
+ * otherwise redo on every call: the valid approved locales prepared for
+ * matching, in approved order, plus the validated and indexed scope.
  */
 type LocaleResolutionScope = {
-  configuredLocales: Set<string>;
-  approvedLocalePairs: {
+  configuredLocales: (MatchLocale & {
     locale: string;
     canonicalLocale: string;
-    standardizedLocale: string;
-  }[];
+  })[];
   approved: ApprovedLocales;
 };
 
@@ -102,6 +116,7 @@ export class GTIntl {
   readonly defaultLocale: string;
   readonly locales: readonly string[];
   readonly customMapping?: LocaleConfig['customMapping'];
+  readonly localeMatcher: LocaleMatcher;
   readonly locale?: string;
   // Omitted locales mean no approved-locales restriction; an explicit empty
   // list approves none.
@@ -159,25 +174,25 @@ export class GTIntl {
       )
     );
     return {
-      configuredLocales: new Set(
-        approvedLocalePairs
-          .filter(({ standardizedLocale }) =>
-            validCodes.has(standardizedLocale)
-          )
-          .map(({ locale }) => locale)
-      ),
-      approvedLocalePairs,
+      configuredLocales: approvedLocalePairs
+        .filter(({ standardizedLocale }) => validCodes.has(standardizedLocale))
+        .map(({ locale, canonicalLocale, standardizedLocale }) => ({
+          locale,
+          canonicalLocale,
+          ...getMatchLocale(standardizedLocale),
+        })),
       approved,
     };
   }
 
   constructor(localeConfig: LocaleConfig = {}, { locale }: LocaleOption = {}) {
-    const { defaultLocale, locales, customMapping } =
+    const { defaultLocale, locales, customMapping, localeMatcher } =
       snapshotLocaleConfig(localeConfig);
     this.defaultLocale = defaultLocale ?? libraryDefaultLocale;
     this.locales = locales ?? Object.freeze([]);
     this.approvedLocales = locales;
     this.customMapping = customMapping;
+    this.localeMatcher = localeMatcher ?? defaultLocaleMatcher;
     this.locale = locale;
   }
 
@@ -405,7 +420,7 @@ export class GTIntl {
   /**
    * The best match for `locales` (in preference order) among
    * `approvedLocales` (default: the configured locales), under its approved
-   * spelling.
+   * spelling, using the configured `localeMatcher`.
    */
   determineLocale(
     locales: string | string[],
@@ -413,30 +428,49 @@ export class GTIntl {
       approvedLocales = this.locales,
     }: { approvedLocales?: readonly string[] } = {}
   ) {
-    const { configuredLocales, approvedLocalePairs, approved } =
+    const { configuredLocales } =
       approvedLocales === this.locales
         ? this.getResolutionScope()
         : this.buildResolutionScope(approvedLocales);
-    for (const candidate of Array.isArray(locales) ? locales : [locales]) {
-      // Distinct configured aliases may share a canonical language. Preserve
-      // an exact requested identity before negotiating equivalent spellings.
-      if (configuredLocales.has(candidate)) return candidate;
-      const resolvedLocale = _determineLocaleWithIndex(
-        this.resolveCanonicalLocale(candidate),
-        approved,
-        this.customMapping
-      );
-      if (!resolvedLocale) continue;
-      const approvedLocale =
-        approvedLocalePairs.find(
-          ({ canonicalLocale }) => canonicalLocale === resolvedLocale
-        ) ??
-        approvedLocalePairs.find(
-          ({ standardizedLocale }) => standardizedLocale === resolvedLocale
-        );
-      return approvedLocale?.locale ?? this.resolveAliasLocale(resolvedLocale);
-    }
-    return undefined;
+    const requestedLocales = (Array.isArray(locales) ? locales : [locales])
+      .map((locale) => ({
+        locale,
+        canonicalLocale: this.resolveCanonicalLocale(locale),
+      }))
+      .filter(({ canonicalLocale }) => {
+        try {
+          // RFC 4647 §4.1: Lookup ignores extension and private-use subtags,
+          // so only the base tag has to be valid.
+          return _isValidLocale(
+            new Intl.Locale(canonicalLocale).baseName,
+            this.customMapping
+          );
+        } catch {
+          return false;
+        }
+      })
+      .map(({ locale, canonicalLocale }) => ({
+        locale,
+        ...getMatchLocale(_standardizeLocale(canonicalLocale)),
+      }));
+    const match = _determineLocale(
+      requestedLocales,
+      configuredLocales,
+      this.localeMatcher
+    );
+    if (!match) return undefined;
+    const { requested, available } = match;
+    if (requested.tag !== available.tag) return available.locale;
+    // Distinct configured aliases may share a canonical tag. For an exact
+    // match, preserve the requested identity, then an exact mapped code,
+    // before equivalent spellings.
+    return (
+      configuredLocales.find(({ locale }) => locale === requested.locale) ??
+      configuredLocales.find(
+        ({ canonicalLocale }) => canonicalLocale === available.tag
+      ) ??
+      available
+    ).locale;
   }
 
   /** The text direction of `locale` (default: the target locale). */

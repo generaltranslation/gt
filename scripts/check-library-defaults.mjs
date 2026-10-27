@@ -166,6 +166,11 @@ export const defaultGroups = [
     declarations: ['packages/next/src/utils/headers.ts'],
     exceptions: [],
   },
+  {
+    name: 'defaultLocaleMatcher',
+    declarations: ['packages/format/src/settings/settings.ts'],
+    exceptions: [],
+  },
 ];
 
 function parseSource(repositoryRoot, relativePath) {

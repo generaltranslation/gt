@@ -8,6 +8,7 @@ function setConfigEnv() {
     JSON.stringify({
       defaultLocale: 'en',
       locales: ['en', 'fr'],
+      localeMatcher: 'lookup',
       runtimeUrl: 'https://runtime.example.com',
       cacheUrl: 'https://cache.example.com',
       renderSettings: { timeout: 123 },
@@ -52,6 +53,7 @@ describe('getParams', () => {
     const { i18nConfigParams, nextI18nCacheParams } = getParams();
 
     expect(i18nConfigParams).toMatchObject({
+      localeMatcher: 'lookup',
       projectId: 'project-id',
       apiKey: 'api-key',
       devApiKey: 'dev-key',
