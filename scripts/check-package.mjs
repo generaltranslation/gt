@@ -23,6 +23,8 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { problemAffectsResolutionKind } from '@arethetypeswrong/core/problems';
+import { allResolutionKinds } from '@arethetypeswrong/core/utils';
 
 // Resolution kinds each attw profile ignores (same as attw and tsdown).
 export const ignoredResolutionKinds = {
@@ -69,12 +71,20 @@ export function getCheckOptions(packageName) {
   return { profile: 'node16', ...packageCheckOptions[packageName] };
 }
 
-export function filterAttwProblems(problems, { profile, ignoreProblems = [] }) {
-  const ignoredKinds = ignoredResolutionKinds[profile];
-  return problems.filter(
+// Keeps problems that affect at least one resolution kind the profile checks.
+// Uses attw's own visibility data: not every problem has a resolutionKind
+// (InternalResolutionError has a resolutionOption, others have neither).
+export function filterAttwProblems(analysis, { profile, ignoreProblems = [] }) {
+  const checkedKinds = allResolutionKinds.filter(
+    (resolutionKind) =>
+      !ignoredResolutionKinds[profile].includes(resolutionKind)
+  );
+  return analysis.problems.filter(
     (problem) =>
       !ignoreProblems.includes(problem.kind) &&
-      !ignoredKinds.includes(problem.resolutionKind)
+      checkedKinds.some((resolutionKind) =>
+        problemAffectsResolutionKind(problem, resolutionKind, analysis)
+      )
   );
 }
 
@@ -165,14 +175,14 @@ function packTarball(packageDir) {
   }
 }
 
-export async function run(packageDir = process.cwd()) {
+export async function run(packageDir = process.cwd(), checkOptions) {
   const { publint } = await import('publint');
   const { formatMessage } = await import('publint/utils');
   const attw = await import('@arethetypeswrong/core');
   const pkg = JSON.parse(
     readFileSync(path.join(packageDir, 'package.json'), 'utf8')
   );
-  const options = getCheckOptions(pkg.name);
+  const options = checkOptions ?? getCheckOptions(pkg.name);
   const tarball = packTarball(packageDir);
   let failed = false;
 
@@ -214,7 +224,7 @@ export async function run(packageDir = process.cwd()) {
     console.error(`[attw] ${pkg.name}: package has no types`);
     failed = true;
   } else {
-    const problems = filterAttwProblems(result.problems, options);
+    const problems = filterAttwProblems(result, options);
     for (const problem of problems) {
       console.error(`[attw] ${pkg.name}: ${formatAttwProblem(problem)}`);
     }

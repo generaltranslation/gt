@@ -22,8 +22,9 @@ afterEach(async () => {
 });
 
 // A CommonJS package whose ./utils/* subpaths are only reachable through a
-// wildcard export.
-async function createPackage(files) {
+// wildcard export. `files` replaces or adds files; `manifest` extends
+// package.json.
+async function createPackage(files, manifest = {}) {
   const packageDir = await mkdtemp(path.join(tmpdir(), 'check-package-'));
   temporaryRoots.push(packageDir);
   const allFiles = {
@@ -38,6 +39,7 @@ async function createPackage(files) {
           default: './dist/utils/*.js',
         },
       },
+      ...manifest,
     }),
     'dist/index.js': 'exports.a = 1;\n',
     'dist/index.d.ts': 'export declare const a: number;\n',
@@ -61,7 +63,13 @@ function silenceOutput() {
 }
 
 const problems = [
-  { kind: 'NoResolution', resolutionKind: 'node10', entrypoint: '.' },
+  // An internal resolution error has a resolutionOption, not a resolutionKind.
+  {
+    kind: 'InternalResolutionError',
+    resolutionOption: 'node10',
+    fileName: '/node_modules/p/dist/index.d.ts',
+    moduleSpecifier: 'p/sub',
+  },
   { kind: 'CJSResolvesToESM', resolutionKind: 'node16-cjs', entrypoint: '.' },
   { kind: 'NoResolution', resolutionKind: 'bundler', entrypoint: './types' },
   {
@@ -71,6 +79,21 @@ const problems = [
   },
 ];
 
+// attw records which problems are visible under each resolution kind.
+const analysis = {
+  problems,
+  entrypoints: {
+    '.': {
+      resolutions: {
+        node10: { visibleProblems: [0] },
+        'node16-cjs': { visibleProblems: [1, 3] },
+        'node16-esm': { visibleProblems: [3] },
+        bundler: { visibleProblems: [2, 3] },
+      },
+    },
+  },
+};
+
 describe('check-package', () => {
   test('defaults unlisted packages to the node16 profile', () => {
     expect(getCheckOptions('generaltranslation')).toEqual({
@@ -78,21 +101,21 @@ describe('check-package', () => {
     });
   });
 
-  test('node16 ignores only node10 problems', () => {
-    expect(filterAttwProblems(problems, { profile: 'node16' })).toEqual(
+  test('node16 ignores only problems visible under node10', () => {
+    expect(filterAttwProblems(analysis, { profile: 'node16' })).toEqual(
       problems.slice(1)
     );
   });
 
-  test('esm-only also ignores node16-cjs problems', () => {
-    expect(filterAttwProblems(problems, { profile: 'esm-only' })).toEqual(
+  test('esm-only also ignores problems visible only under node16-cjs', () => {
+    expect(filterAttwProblems(analysis, { profile: 'esm-only' })).toEqual(
       problems.slice(2)
     );
   });
 
   test('ignores listed problem kinds in every resolution mode', () => {
     expect(
-      filterAttwProblems(problems, {
+      filterAttwProblems(analysis, {
         profile: 'node16',
         ignoreProblems: ['FalseCJS'],
       })
@@ -158,5 +181,45 @@ describe('check-package', () => {
     expect(console.error).toHaveBeenCalledWith(
       expect.stringContaining('InternalResolutionError')
     );
+  });
+
+  test('node16 passes a self-reference that only node10 cannot resolve', async () => {
+    silenceOutput();
+    // node10 reads the top-level types field but not exports, so the
+    // self-referenced subpath fails only there (InternalResolutionError).
+    const packageDir = await createPackage(
+      {
+        'dist/index.js':
+          "exports.a = 1;\nexports.b = require('./utils/b.js').b;\n",
+        'dist/index.d.ts':
+          "export declare const a: number;\nexport * from 'check-package-fixture/utils/b';\n",
+      },
+      { main: './dist/index.js', types: './dist/index.d.ts' }
+    );
+    expect(await run(packageDir)).toBe(0);
+  });
+
+  test('esm-only passes a problem visible only under node16-cjs', async () => {
+    silenceOutput();
+    const packageDir = await createPackage(
+      {
+        'dist/index.mjs': 'export const a = 1;\n',
+        'dist/index.d.mts': 'export declare const a: number;\n',
+        'dist/index.d.ts': "export * from './missing';\n",
+      },
+      {
+        exports: {
+          '.': {
+            import: {
+              types: './dist/index.d.mts',
+              default: './dist/index.mjs',
+            },
+            require: { types: './dist/index.d.ts', default: './dist/index.js' },
+          },
+        },
+      }
+    );
+    expect(await run(packageDir, { profile: 'esm-only' })).toBe(0);
+    expect(await run(packageDir, { profile: 'node16' })).toBe(1);
   });
 });
