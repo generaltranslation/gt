@@ -419,6 +419,12 @@ jobs:
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
+      - name: Check published packages
+        if: steps.changeset-state.outputs.has_changesets == 'false'
+        # Runs the package scripts directly, not the turbo task, which would
+        # rebuild over the build:release output that is about to be published.
+        run: pnpm -r --filter './packages/*' --if-present run check:package
+
       # Samsara publishes npm prereleases only. Stable CLI binary aliases, R2
       # uploads, and PyPI releases remain exclusive to the main release job.
       - name: Create Samsara release pull request or publish to npm
