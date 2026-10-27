@@ -2,12 +2,18 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "module": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "sourceMap": true,
     "declarationMap": true,
     "jsx": "react-jsx",
     "outDir": "./dist",
-    "rootDir": "./src"
+    "rootDir": "./src",
+    // Next aliases replace these self-referenced entries at build time;
+    // typecheck them against their source fallbacks.
+    "paths": {
+      "gt-next/internal/_getLocale": ["./src/internal/_getLocale.ts"],
+      "gt-next/internal/_getRegion": ["./src/internal/_getRegion.ts"]
+    }
   },
   "include": ["src/**/*", "src/.ts"],
   "exclude": ["**/__tests__/**/*", "**/__mocks__/**/*"],
