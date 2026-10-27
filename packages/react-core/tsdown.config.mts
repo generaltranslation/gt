@@ -18,10 +18,10 @@ const esm = createTsdownUnbundleConfig({
   format: 'esm',
   entry: entries,
   clean: false,
-  outExtensions: () => ({ js: '.mjs', dts: '.d.ts' }),
+  outExtensions: () => ({ js: '.mjs', dts: '.d.mts' }),
 });
 
 export default defineConfig([
   { ...cjs, minify: true, dts: true },
-  { ...esm, minify: true },
+  { ...esm, minify: true, dts: true },
 ]);

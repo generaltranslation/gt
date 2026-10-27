@@ -47,24 +47,44 @@
   },
   "exports": {
     "./pure": {
-      "types": "./dist/pure.d.ts",
-      "require": "./dist/pure.cjs",
-      "import": "./dist/pure.mjs"
+      "import": {
+        "types": "./dist/pure.d.mts",
+        "default": "./dist/pure.mjs"
+      },
+      "require": {
+        "types": "./dist/pure.d.ts",
+        "default": "./dist/pure.cjs"
+      }
     },
     "./hooks": {
-      "types": "./dist/hooks.d.ts",
-      "require": "./dist/hooks.cjs",
-      "import": "./dist/hooks.mjs"
+      "import": {
+        "types": "./dist/hooks.d.mts",
+        "default": "./dist/hooks.mjs"
+      },
+      "require": {
+        "types": "./dist/hooks.d.ts",
+        "default": "./dist/hooks.cjs"
+      }
     },
     "./components": {
-      "types": "./dist/components.d.ts",
-      "require": "./dist/components.cjs",
-      "import": "./dist/components.mjs"
+      "import": {
+        "types": "./dist/components.d.mts",
+        "default": "./dist/components.mjs"
+      },
+      "require": {
+        "types": "./dist/components.d.ts",
+        "default": "./dist/components.cjs"
+      }
     },
     "./components-rsc": {
-      "types": "./dist/components-rsc.d.ts",
-      "require": "./dist/components-rsc.cjs",
-      "import": "./dist/components-rsc.mjs"
+      "import": {
+        "types": "./dist/components-rsc.d.mts",
+        "default": "./dist/components-rsc.mjs"
+      },
+      "require": {
+        "types": "./dist/components-rsc.d.ts",
+        "default": "./dist/components-rsc.cjs"
+      }
     }
   },
   "typesVersions": {
