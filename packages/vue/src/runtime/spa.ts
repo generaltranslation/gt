@@ -94,13 +94,17 @@ async function createSPARuntime(
   options: InitializeGTSPAOptions
 ): Promise<GTRuntime> {
   const { customMapping, locales, ...createOptions } = options;
-  const { determineLocale, resolveCanonicalLocale } =
-    await import('@generaltranslation/format');
+  const {
+    determineLocale,
+    isValidLocale,
+    resolveCanonicalLocale,
+    standardizeLocale,
+  } = await import('@generaltranslation/format');
   const resolveFormattingLocale = (locale: string): string => {
     const canonicalLocale = resolveCanonicalLocale(locale, customMapping);
-    return (
-      determineLocale(canonicalLocale, [canonicalLocale]) ?? canonicalLocale
-    );
+    return isValidLocale(canonicalLocale)
+      ? standardizeLocale(canonicalLocale)
+      : canonicalLocale;
   };
   const runtime = createGTRuntime(createOptions, {
     pinLocale: true,

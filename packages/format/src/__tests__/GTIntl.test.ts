@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { GTIntl } from '../GTIntl';
+import { determineLocale } from '../core';
 import type { CustomMapping } from '../types';
 
 describe('GTIntl', () => {
@@ -137,6 +138,83 @@ describe('determineLocale approved spelling', () => {
       customMapping: { brand: { code: 'en-gb' }, canonical: { code: 'en-GB' } },
     });
     expect(config.determineLocale('en-GB')).toBe('canonical');
+  });
+
+  it('returns the first equivalent approved spelling for a same-script match', () => {
+    expect(
+      new GTIntl({ locales: ['EN-gb', 'en-GB'] }).determineLocale('en-AU')
+    ).toBe('EN-gb');
+  });
+
+  it('returns the first equivalent approved alias for a same-script match', () => {
+    expect(
+      determineLocale('en-AU', ['brand', 'canonical'], {
+        brand: { code: 'en-gb' },
+        canonical: { code: 'en-GB' },
+      })
+    ).toBe('brand');
+  });
+
+  it.each(['lookup', 'best fit'] as const)(
+    'keeps approved order when a truncation outranks an exact alias with localeMatcher=%s',
+    (localeMatcher) => {
+      const config = new GTIntl({
+        locales: ['brand', 'partner'],
+        customMapping: { brand: { code: 'en' }, partner: { code: 'en' } },
+        localeMatcher,
+      });
+      expect(config.determineLocale(['en-US', 'partner'])).toBe('brand');
+    }
+  );
+});
+
+describe('determineLocale locale matching', () => {
+  const brandMapping: CustomMapping = { 'brand-fr': { code: 'fr-FR' } };
+
+  it.each<[string | string[], string[], string | undefined, CustomMapping?]>([
+    ['en', ['en-GB', 'fr-FR'], 'en-GB'],
+    [['en', 'fr'], ['en-GB', 'fr-FR'], 'en-GB'],
+    ['en-AU', ['en-GB'], 'en-GB'],
+    [['en-AU', 'en-GB'], ['en-US', 'en-GB'], 'en-GB'],
+    [['fr-CA', 'fr', 'en-US', 'en'], ['en-US', 'fr-FR'], 'fr-FR'],
+    [['fr-CA', 'en-GB'], ['fr-FR', 'en-GB'], 'fr-FR'],
+    [['de-AT', 'en'], ['en', 'de-DE'], 'de-DE'],
+    ['fr-CA', ['fr-FR'], 'fr-FR'],
+    ['es-MX', ['es-ES', 'es-419'], 'es-ES'],
+    ['en', ['en-GB', 'en-US'], 'en-GB'],
+    ['zh-HK', ['zh-CN', 'zh-TW'], 'zh-TW'],
+    ['zh-TW', ['zh-CN', 'en'], undefined],
+    ['zh-TW', ['zh', 'en'], 'zh'],
+    ['sr-Latn', ['sr-Cyrl'], undefined],
+    ['pa-PK', ['pa-IN', 'en'], undefined],
+    ['uz-Cyrl', ['uz', 'en'], 'uz'],
+    ['en-US', ['en'], 'en'],
+    ['ja', ['en', 'fr'], undefined],
+    ['iw', ['he'], 'he'],
+    ['brand-fr', ['en-US', 'brand-fr'], 'brand-fr', brandMapping],
+    ['fr-FR', ['en-US', 'brand-fr'], 'brand-fr', brandMapping],
+    ['fr-CA', ['en-US', 'brand-fr'], 'brand-fr', brandMapping],
+    ['en-gb', ['en-gb'], 'en-gb'],
+    ['zh-Hant-CN-x-private1-private2', ['zh-Hant', 'zh'], 'zh-Hant'],
+  ])(
+    'best fit resolves %j against %j to %s',
+    (requested, locales, expected, customMapping) => {
+      expect(
+        new GTIntl({ locales, customMapping }).determineLocale(requested)
+      ).toBe(expected);
+      expect(determineLocale(requested, locales, customMapping)).toBe(expected);
+    }
+  );
+
+  it.each<[string | string[], string[], string | undefined]>([
+    ['en', ['en-GB'], undefined],
+    ['fr-CA', ['fr-FR'], undefined],
+    [['en-AU', 'en-GB'], ['en-US', 'en-GB'], 'en-GB'],
+    ['en-US', ['en'], 'en'],
+    [['*', 'fr'], ['en', 'fr'], 'fr'],
+  ])('lookup resolves %j against %j to %s', (requested, locales, expected) => {
+    const config = new GTIntl({ locales, localeMatcher: 'lookup' });
+    expect(config.determineLocale(requested)).toBe(expected);
   });
 });
 
