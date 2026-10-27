@@ -2,8 +2,8 @@
 import { useAuth, useConfig } from '@payloadcms/ui';
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
 import React, { useEffect } from 'react';
-import { createGtPayloadDiagnostic } from '../diagnostics';
-import { apiRoute, followRun, staleRuns } from './api';
+import { createGtPayloadDiagnostic } from '../diagnostics.js';
+import { apiRoute, followRun, staleRuns } from './api.js';
 
 // How often an open admin page looks for runs nobody is stepping.
 const CHECK_MS = 30_000;

@@ -1,11 +1,11 @@
 'use client';
 import { Button, CheckboxInput, useConfig } from '@payloadcms/ui';
 import React from 'react';
-import { apiRoute, progressLabel, type Scope } from './api';
-import { LocalePicker } from './LocalePicker';
-import { useLocaleOptions } from './locales';
-import { isBoolean, isStringList, useRemembered } from './preferences';
-import { useTranslate } from './useTranslate';
+import { apiRoute, progressLabel, type Scope } from './api.js';
+import { LocalePicker } from './LocalePicker.js';
+import { useLocaleOptions } from './locales.js';
+import { isBoolean, isStringList, useRemembered } from './preferences.js';
+import { useTranslate } from './useTranslate.js';
 
 // Pick languages, translate, and save local edits, for one document or the
 // whole site. With a blocked message, translating waits on the user.

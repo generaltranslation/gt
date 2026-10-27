@@ -1,1 +1,1 @@
-export { GtTranslationsView } from './GtTranslationsView';
+export { GtTranslationsView } from './GtTranslationsView.js';

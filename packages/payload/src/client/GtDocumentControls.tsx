@@ -10,8 +10,8 @@ import {
 } from '@payloadcms/ui';
 import { useRouter } from 'next/navigation';
 import React from 'react';
-import type { TranslateTarget } from '../types';
-import { TranslatePanel } from './TranslatePanel';
+import type { TranslateTarget } from '../types.js';
+import { TranslatePanel } from './TranslatePanel.js';
 
 // A Translate button on a document's edit view, opening the translate panel
 // in a drawer.

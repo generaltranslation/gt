@@ -14,15 +14,15 @@ import type {
 } from 'payload';
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
 import { APIError } from 'payload';
-import { siteCoverage } from './coverage';
-import { createGtPayloadDiagnostic } from './diagnostics';
-import { canUpdate } from './documents';
-import { locksCollection } from './locks';
+import { siteCoverage } from './coverage.js';
+import { createGtPayloadDiagnostic } from './diagnostics.js';
+import { canUpdate } from './documents.js';
+import { locksCollection } from './locks.js';
 import {
   ADMIN_CUSTOM_KEY,
   targetLocaleOptions,
   type AdminSettings,
-} from './locales';
+} from './locales.js';
 import {
   runsCollection,
   runTask,
@@ -30,9 +30,9 @@ import {
   startRun,
   stepRun,
   type RunKind,
-} from './runs';
-import { targetKey } from './targets';
-import type { GtClient, TranslateTarget } from './types';
+} from './runs.js';
+import { targetKey } from './targets.js';
+import type { GtClient, TranslateTarget } from './types.js';
 
 export type GtPluginOptions = {
   // Defaults to the GT_PROJECT_ID environment variable.

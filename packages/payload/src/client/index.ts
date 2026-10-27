@@ -1,5 +1,5 @@
 'use client';
-export { GtDocumentControls } from './GtDocumentControls';
-export { GtNavLink } from './GtNavLink';
-export { GtRunsProvider } from './GtRunsProvider';
-export { GtTranslationsClient } from './GtTranslationsClient';
+export { GtDocumentControls } from './GtDocumentControls.js';
+export { GtNavLink } from './GtNavLink.js';
+export { GtRunsProvider } from './GtRunsProvider.js';
+export { GtTranslationsClient } from './GtTranslationsClient.js';

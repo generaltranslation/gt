@@ -3,15 +3,15 @@
 import { createHash } from 'node:crypto';
 import { parse, serialize } from 'parse5';
 import type { FlattenedField } from 'payload';
-import { walkFields, type FieldContext } from './fields';
+import { walkFields, type FieldContext } from './fields.js';
 import {
   escapeAttribute,
   encodePlainText,
   isElement,
   type HtmlParent,
-} from './html';
-import type { Data } from '../types';
-import { encodeElement, hasInlineText } from './inline';
+} from './html.js';
+import type { Data } from '../types.js';
+import { encodeElement, hasInlineText } from './inline.js';
 
 export type Unit = {
   key: string;

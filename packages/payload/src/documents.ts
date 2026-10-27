@@ -1,11 +1,11 @@
 // Reading and writing documents through Payload's Local API.
 import { createLocalReq, docAccessOperationGlobal } from 'payload';
 import type { FlattenedField, Payload, TypedUser } from 'payload';
-import { hasTranslatableFields, type FieldContext } from './content/fields';
-import { createGtPayloadDiagnostic } from './diagnostics';
-import { labelText } from './labels';
-import { targetKey } from './targets';
-import type { Data, TranslateTarget } from './types';
+import { hasTranslatableFields, type FieldContext } from './content/fields.js';
+import { createGtPayloadDiagnostic } from './diagnostics.js';
+import { labelText } from './labels.js';
+import { targetKey } from './targets.js';
+import type { Data, TranslateTarget } from './types.js';
 
 // A signed-in user whose access rules the reads and writes follow. Without
 // one, Payload's Local API skips access rules, as for server code.

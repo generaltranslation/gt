@@ -1,8 +1,8 @@
 // Calls to the plugin's endpoints from the admin panel.
 import type { ClientConfig } from 'payload';
-import type { CoveragePage } from '../coverage';
-import type { RunKind, RunProgress, StepResult } from '../runs';
-import type { TranslateTarget } from '../types';
+import type { CoveragePage } from '../coverage.js';
+import type { RunKind, RunProgress, StepResult } from '../runs.js';
+import type { TranslateTarget } from '../types.js';
 
 export type Scope = { targets: TranslateTarget[] } | { site: true };
 
