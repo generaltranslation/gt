@@ -39,6 +39,7 @@ export type {
 } from './types-dir/api/entry';
 export type { RuntimeFileFormat } from '@generaltranslation/api';
 export type { HashMetadata } from './id/types';
+export type { PluralType } from './settings/plurals';
 export type {
   GTCompilerOptions,
   GTConfig,
