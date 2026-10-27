@@ -260,8 +260,8 @@ function planTranslations(
   const components = findTranslationComponents(root.fragment, bindings);
   if (components.length === 0) return { plans, errors };
 
-  const reservedIndex = source.indexOf(RESERVED_PREFIX);
-  if (reservedIndex !== -1) {
+  const reservedIndex = findReservedIdentifier(root);
+  if (reservedIndex !== undefined) {
     errors.push({
       whatHappened: `Identifiers starting with "${RESERVED_PREFIX}" are reserved for the gt-svelte preprocessor`,
       fix: 'Rename the identifier',
@@ -293,6 +293,49 @@ function planTranslations(
 }
 
 /** Finds `<T>` components, without descending into them. */
+/**
+ * Returns the offset of the first identifier that could collide with the
+ * names the preprocessor generates. Text, strings, comments, member
+ * properties, and object keys never resolve to those names.
+ */
+function findReservedIdentifier(root: SvelteRoot): number | undefined {
+  let found: number | undefined;
+  const visit = (value: unknown, parent?: SvelteNode, key?: string): void => {
+    if (found !== undefined || !value || typeof value !== 'object') return;
+    if (Array.isArray(value)) {
+      for (const item of value) visit(item, parent, key);
+      return;
+    }
+    const node = value as SvelteNode;
+    if (
+      node.type === 'Identifier' &&
+      (node.name as string).startsWith(RESERVED_PREFIX) &&
+      !isPropertyName(parent, key)
+    ) {
+      found = node.start;
+      return;
+    }
+    for (const childKey in node) {
+      if (childKey === 'metadata' || childKey === 'loc') continue;
+      visit(node[childKey], node, childKey);
+    }
+  };
+  visit(root);
+  return found;
+}
+
+/** Whether a node in `parent[key]` is a property name rather than a reference. */
+function isPropertyName(
+  parent: SvelteNode | undefined,
+  key: string | undefined
+) {
+  if (!parent || parent.computed) return false;
+  return (
+    (parent.type === 'MemberExpression' && key === 'property') ||
+    (parent.type === 'Property' && key === 'key' && !parent.shorthand)
+  );
+}
+
 function findTranslationComponents(
   value: unknown,
   bindings: GTBindings,

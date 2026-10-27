@@ -371,9 +371,25 @@ describe('errors', () => {
   });
 
   it('rejects reserved identifiers', () => {
-    expect(errorsFor('<T>a</T>', 'let __gt_x;')).toEqual([
-      'Identifiers starting with "__gt_" are reserved for the gt-svelte preprocessor',
+    const reserved =
+      'Identifiers starting with "__gt_" are reserved for the gt-svelte preprocessor';
+    expect(errorsFor('<T>a</T>', 'let __gt_x;')).toEqual([reserved]);
+    expect(errorsFor('<T>a {__gt_x}</T>')).toEqual([reserved]);
+    expect(errorsFor('{#snippet __gt_s()}x{/snippet}<T>a</T>')).toEqual([
+      reserved,
     ]);
+    expect(
+      errorsFor('<T>a</T>', 'let o = { __gt_key: 1 }; o.__gt_key;')
+    ).toEqual([]);
+  });
+
+  it('allows the reserved prefix in text, strings, and comments', () => {
+    expect(
+      errorsFor(
+        `<T>Rename __gt_old</T><!-- __gt_note --><p title="__gt_">x</p>`,
+        "const label = '__gt_label'; // __gt_comment"
+      )
+    ).toEqual([]);
   });
 
   it('rejects variable children that cannot become the value', () => {
