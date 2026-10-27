@@ -49,16 +49,6 @@ export const packageCheckOptions = {
   'gt-sanity': { profile: 'esm-only' },
   '@generaltranslation/vue-extractor': { profile: 'esm-only' },
   'gt-tanstack-start': { profile: 'esm-only' },
-  'gt-next': {
-    profile: 'node16',
-    // Pre-existing: tsc emits CJS-scoped .d.ts that also serve the .mjs build,
-    // so node16/nodenext ESM consumers get CJS types. For default exports
-    // (gt-next/link) that means CJS-namespace interop types. Next apps
-    // resolve with bundler, so the practical impact is low. attw cannot
-    // ignore a problem per entrypoint and every gt-next export has it, so
-    // this stays package-wide until the ESM build emits .d.mts (follow-up).
-    ignoreProblems: ['FalseCJS'],
-  },
   'gt-react-native': {
     profile: 'node16',
     // dist/module holds ESM syntax in .js files without "type": "module".
