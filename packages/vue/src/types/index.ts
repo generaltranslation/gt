@@ -1,3 +1,4 @@
+import type { LocaleMatcher } from '@generaltranslation/format/types';
 import type { CustomMapping, JsxChildren } from 'generaltranslation/types';
 import type { App, Ref } from 'vue';
 
@@ -93,6 +94,11 @@ export type InitializeGTSPAOptions = CreateGTOptions & {
    * Unsupported persisted or requested locales fall back to `defaultLocale`.
    */
   locales?: readonly string[];
+  /**
+   * How requested locales match `locales`: `'best fit'` (default) or
+   * RFC 4647 `'lookup'`.
+   */
+  localeMatcher?: LocaleMatcher;
 };
 
 /**
