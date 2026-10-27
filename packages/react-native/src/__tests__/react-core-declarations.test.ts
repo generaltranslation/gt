@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import {
   existsSync,
   mkdirSync,
@@ -13,9 +13,11 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
 import ts from 'typescript';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 
+const run = promisify(execFile);
 const packagesRoot = fileURLToPath(new URL('../../..', import.meta.url));
 // gt-react-native and the workspace packages its declarations import.
 const packedPackages = [
@@ -41,29 +43,40 @@ setReactI18nCache(getReactI18nCache());
 
 let fixture: string;
 
-// Packing 8 packages blocks for ~45s on CI runners (~3s locally).
+// Packing takes ~45s on CI runners (~3s locally). It runs asynchronously so
+// the vitest worker can keep reporting progress while it waits.
 const PACK_TIMEOUT = 120_000;
 const TYPECHECK_TIMEOUT = 60_000;
 
-beforeAll(() => {
+beforeAll(async () => {
   fixture = mkdtempSync(join(tmpdir(), 'gt-react-native-declarations-'));
   const nodeModules = join(fixture, 'node_modules');
   const packed = new Set<string>();
   const external = new Map<string, string>();
+  await Promise.all(
+    packedPackages.map(async (directory) => {
+      const pack = join(fixture, 'packs', directory);
+      mkdirSync(pack, { recursive: true });
+      // pnpm is a .cmd shim on Windows and needs a shell (see check-package.mjs).
+      const shell = process.platform === 'win32';
+      await run(
+        'pnpm',
+        ['pack', '--pack-destination', shell ? `"${pack}"` : pack],
+        {
+          cwd: join(packagesRoot, directory),
+          shell,
+        }
+      );
+      const archive = readdirSync(pack).find((name) => name.endsWith('.tgz'))!;
+      await run('tar', ['-xzf', join(pack, archive), '-C', pack]);
+    })
+  );
   for (const directory of packedPackages) {
     const root = join(packagesRoot, directory);
     const manifest = JSON.parse(
       readFileSync(join(root, 'package.json'), 'utf8')
     );
     const pack = join(fixture, 'packs', directory);
-    mkdirSync(pack, { recursive: true });
-    execFileSync('pnpm', ['pack', '--pack-destination', pack], {
-      cwd: root,
-      shell: process.platform === 'win32',
-      stdio: 'pipe',
-    });
-    const archive = readdirSync(pack).find((name) => name.endsWith('.tgz'))!;
-    execFileSync('tar', ['-xzf', join(pack, archive), '-C', pack]);
     const link = join(nodeModules, manifest.name);
     mkdirSync(dirname(link), { recursive: true });
     symlinkSync(join(pack, 'package'), link, 'junction');
