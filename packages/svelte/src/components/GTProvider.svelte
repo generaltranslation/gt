@@ -37,10 +37,10 @@
     children?: Snippet;
   } = $props();
 
-  // Initialize synchronously so server rendering and hydration see the
-  // translations on the first render. Without translations, both render the
-  // default locale, whatever the shared cache holds, and the browser loads
-  // the requested locale once mounted.
+  // The first render has to match on the server and during hydration, so it
+  // only trusts the `translations` prop, which both sides receive. Without
+  // it, a locale that needs translating starts in the default locale (not
+  // whatever the shared cache holds) and loads after mount in the browser.
   const requestedLocale = untrack(() => resolveLocale(locale));
   const state = untrack(() => {
     if (translations) {
