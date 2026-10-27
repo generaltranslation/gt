@@ -1,10 +1,64 @@
-import { describe, expect, test } from 'vitest';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import {
   expandWildcardExports,
   filterAttwProblems,
   formatAttwProblem,
   getCheckOptions,
+  run,
 } from '../check-package.mjs';
+
+const temporaryRoots = [];
+
+afterEach(async () => {
+  vi.restoreAllMocks();
+  await Promise.all(
+    temporaryRoots
+      .splice(0)
+      .map((root) => rm(root, { recursive: true, force: true }))
+  );
+});
+
+// A CommonJS package whose ./utils/* subpaths are only reachable through a
+// wildcard export.
+async function createPackage(files) {
+  const packageDir = await mkdtemp(path.join(tmpdir(), 'check-package-'));
+  temporaryRoots.push(packageDir);
+  const allFiles = {
+    'package.json': JSON.stringify({
+      name: 'check-package-fixture',
+      version: '1.0.0',
+      files: ['dist'],
+      exports: {
+        '.': { types: './dist/index.d.ts', default: './dist/index.js' },
+        './utils/*': {
+          types: './dist/utils/*.d.ts',
+          default: './dist/utils/*.js',
+        },
+      },
+    }),
+    'dist/index.js': 'exports.a = 1;\n',
+    'dist/index.d.ts': 'export declare const a: number;\n',
+    'dist/utils/b.js': 'exports.b = 1;\n',
+    'dist/utils/b.d.ts': 'export declare const b: number;\n',
+    ...files,
+  };
+  for (const [file, content] of Object.entries(allFiles)) {
+    await mkdir(path.dirname(path.join(packageDir, file)), {
+      recursive: true,
+    });
+    await writeFile(path.join(packageDir, file), content);
+  }
+  return packageDir;
+}
+
+function silenceOutput() {
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  vi.spyOn(console, 'warn').mockImplementation(() => {});
+  vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+}
 
 const problems = [
   { kind: 'NoResolution', resolutionKind: 'node10', entrypoint: '.' },
@@ -87,5 +141,22 @@ describe('check-package', () => {
       entrypoints: [],
       unmatched: [],
     });
+  });
+
+  test('run passes a valid packed package', async () => {
+    silenceOutput();
+    expect(await run(await createPackage({}))).toBe(0);
+  });
+
+  test('run fails on broken types reachable only through a wildcard export', async () => {
+    silenceOutput();
+    const packageDir = await createPackage({
+      'dist/utils/b.d.ts':
+        "export declare const b: number;\nexport * from './missing';\n",
+    });
+    expect(await run(packageDir)).toBe(1);
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringContaining('InternalResolutionError')
+    );
   });
 });

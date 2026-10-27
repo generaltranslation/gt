@@ -131,7 +131,7 @@ export function expandWildcardExports(exportsField, files) {
           continue;
         }
         const match = file.slice(prefix.length, file.length - suffix.length);
-        entrypoints.add(subpath.replace('*', match));
+        entrypoints.add(subpath.replaceAll('*', match));
         matched = true;
       }
     }
