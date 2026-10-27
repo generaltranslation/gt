@@ -7,7 +7,7 @@ const alias = {
   'gt-svelte': fileURLToPath(new URL('./src/index.ts', import.meta.url)),
 };
 
-const plugins = [svelte({ preprocess: [gtPreprocess({ dev: true })] })];
+const plugins = [svelte({ preprocess: [gtPreprocess()] })];
 
 export default defineConfig({
   test: {

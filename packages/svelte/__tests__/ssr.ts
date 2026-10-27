@@ -31,7 +31,7 @@ export async function createServerRenderer(): Promise<ServerRenderer> {
   const server: ViteDevServer = await createServer({
     configFile: false,
     logLevel: 'silent',
-    plugins: [svelte({ preprocess: [gtPreprocess({ dev: true })] })],
+    plugins: [svelte({ preprocess: [gtPreprocess()] })],
     resolve: {
       alias: { 'gt-svelte': join(process.cwd(), 'src/index.ts') },
     },

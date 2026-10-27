@@ -333,7 +333,3 @@ those snippets. Elements and variables are keyed by id, so when a translation
 changes the order of content, existing DOM nodes are moved rather than
 recreated. When there is no valid translation, `<T>` renders its original
 children.
-
-In development, the preprocessor also passes the serialized children so that
-missing translations can be requested at runtime when a development API key
-is configured.

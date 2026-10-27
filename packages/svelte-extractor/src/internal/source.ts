@@ -36,13 +36,7 @@ export type AnalyzeSvelteSourceOptions = {
   surroundingLineCount?: number;
 };
 
-export type TransformSvelteSourceOptions = AnalyzeSvelteSourceOptions & {
-  /**
-   * Emit each `<T>`'s source children as `_source` so development builds can
-   * request missing translations at runtime.
-   */
-  dev?: boolean;
-};
+export type TransformSvelteSourceOptions = AnalyzeSvelteSourceOptions;
 
 export type TransformSvelteSourceResult = {
   code: string;
@@ -167,7 +161,7 @@ export function transformSvelteSource(
     magic.overwrite(edit.start, edit.end, edit.text);
   }
   for (const plan of plans) {
-    applyPlan(parsed.source, magic, plan, options.dev === true);
+    applyPlan(parsed.source, magic, plan);
   }
 
   return {
@@ -329,17 +323,13 @@ function findTranslationComponents(
 function applyPlan(
   source: string,
   magic: MagicString,
-  plan: TranslationPlan,
-  dev: boolean
+  plan: TranslationPlan
 ): void {
   const { node } = plan;
   const nameEnd = node.start + 1 + node.name.length;
   let props = ` _hash=${JSON.stringify(plan.hash)}`;
   if (plan.runtimeMetadata.v || plan.runtimeMetadata.b) {
     props += ` _gtm={${JSON.stringify(plan.runtimeMetadata)}}`;
-  }
-  if (dev) {
-    props += ` _source={${JSON.stringify(plan.source)}}`;
   }
   magic.appendLeft(nameEnd, props);
 

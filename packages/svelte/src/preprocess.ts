@@ -9,14 +9,6 @@ import {
   type PreprocessLocation,
 } from './preprocessLocations.js';
 
-export type GTPreprocessOptions = {
-  /**
-   * Emit `<T>` source content so missing translations can be requested at
-   * runtime. Defaults to `process.env.NODE_ENV !== 'production'`.
-   */
-  dev?: boolean;
-};
-
 /**
  * Prepares `<T>` components for translation. Add it last in `preprocess` so
  * it sees the final Svelte markup.
@@ -32,17 +24,13 @@ export type GTPreprocessOptions = {
  * };
  * ```
  */
-export function gtPreprocess(
-  options: GTPreprocessOptions = {}
-): PreprocessorGroup {
-  const dev = options.dev ?? process.env.NODE_ENV !== 'production';
+export function gtPreprocess(): PreprocessorGroup {
   return {
     name: 'gt-svelte',
     markup({ content, filename }) {
       const result = transformSvelteSource(content, {
         parse,
         filename,
-        dev,
       });
       if (!result) return;
       if (result.errors.length > 0) {

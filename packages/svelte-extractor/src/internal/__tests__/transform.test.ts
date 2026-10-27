@@ -3,12 +3,8 @@ import { compile, parse } from 'svelte/compiler';
 import { describe, expect, it } from 'vitest';
 import { analyzeSvelteSource, transformSvelteSource } from '../../index.js';
 
-function transform(source: string, dev = false) {
-  return transformSvelteSource(source, {
-    parse,
-    filename: 'Fixture.svelte',
-    dev,
-  });
+function transform(source: string) {
+  return transformSvelteSource(source, { parse, filename: 'Fixture.svelte' });
 }
 
 const BASIC = `<script>
@@ -44,13 +40,6 @@ describe('transformSvelteSource', () => {
     expect(() =>
       compile(result!.code, { filename: 'Fixture.svelte' })
     ).not.toThrow();
-  });
-
-  it('emits _source only in development', () => {
-    expect(transform(BASIC, false)?.code).not.toContain('_source=');
-    expect(transform(BASIC, true)?.code).toContain(
-      `_source={["Hello ",{"t":"b","i":1,"c":["dear ",{"i":2,"k":"_gt_value_2","v":"v"}],"d":{"ti":"Bold"}},"!"]}`
-    );
   });
 
   it('keeps snippets declared inside child components', () => {

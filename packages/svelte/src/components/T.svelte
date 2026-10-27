@@ -9,7 +9,6 @@
   ```
 -->
 <script lang="ts">
-  import type { JsxChildren } from '@generaltranslation/format/types';
   import { getI18nConfig } from 'gt-i18n/internal';
   import { untrack, type Snippet } from 'svelte';
   import GtNodes from './GtNodes.svelte';
@@ -31,8 +30,6 @@
     requiresReview?: boolean;
     /** @internal Precomputed translation hash. */
     _hash?: string;
-    /** @internal Source children, emitted in development only. */
-    _source?: JsxChildren;
     /** @internal Variable keys and branch metadata. */
     _gtm?: GTRuntimeMetadata;
     [snippet: string]: unknown;
@@ -45,7 +42,6 @@
     maxChars,
     requiresReview,
     _hash,
-    _source,
     _gtm,
     ...snippets
   }: Props = $props();
@@ -59,7 +55,6 @@
       ? undefined
       : lookupJsxTranslation(state, {
           _hash,
-          _source,
           context,
           id,
           maxChars,

@@ -23,7 +23,7 @@ const SOURCE = `<script>
 `;
 
 function preprocess(content: string) {
-  const result = gtPreprocess({ dev: false }).markup!({
+  const result = gtPreprocess().markup!({
     content,
     filename: 'Fixture.svelte',
   });
@@ -120,7 +120,7 @@ describe('gtPreprocess error locations after other preprocessors', () => {
 `;
     const { error, filename } = await preprocessError(source, [
       vitePreprocess({ script: true }),
-      gtPreprocess({ dev: false }),
+      gtPreprocess(),
     ]);
     const { line, column } = locationOf(source, '{name}</T>');
     expect(error.message).toContain(`${filename}:${line}:${column + 1}`);
@@ -165,7 +165,7 @@ describe('gtPreprocess error locations after other preprocessors', () => {
     };
     const { error, filename } = await preprocessError(source, [
       inlineCssImports,
-      gtPreprocess({ dev: false }),
+      gtPreprocess(),
     ]);
     expect(error.message).toContain(`${filename}:12:11`);
     expect(error.start).toMatchObject({ line: 12, column: 10 });
@@ -187,7 +187,7 @@ describe('gtPreprocess error locations after other preprocessors', () => {
     };
     const { error, filename } = await preprocessError(source, [
       removeComments,
-      gtPreprocess({ dev: false }),
+      gtPreprocess(),
     ]);
     expect(error.message).toContain(`${filename}:5:4`);
   });

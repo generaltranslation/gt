@@ -16,7 +16,6 @@ import type {
   StringFormat,
 } from '@generaltranslation/format/types';
 import { getLocaleDirection } from './config';
-import { isDevHotReloadEnabled, requestTranslation } from './lookup';
 import { getGTState, type GTState } from './state.svelte';
 
 /**
@@ -206,11 +205,6 @@ function createGT(state: GTState): GTFunctionType {
       translation = cache.lookupTranslation(locale, message, lookupOptions) as
         | string
         | undefined;
-      if (translation == null && isDevHotReloadEnabled()) {
-        requestTranslation(state, () =>
-          cache.lookupTranslationWithFallback(locale, message, lookupOptions)
-        );
-      }
     }
 
     return interpolateMessage({
