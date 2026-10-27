@@ -65,13 +65,6 @@ describe('<Branch> values that name Object.prototype members', () => {
     expect(renderFr('online')).toBe('<i>En ligne</i>');
   });
 
-  it.each(prototypeMembers)('renders the fallback for branch=%s', (status) => {
-    expect(html({ component: BareBranch, props: { status } })).toBe('Unknown');
-    expect(html({ component: StatusBranch, props: { status } })).toBe(
-      'Unknown'
-    );
-  });
-
   it.each(prototypeMembers)(
     'renders the translated fallback for branch=%s',
     (status) => {

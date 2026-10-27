@@ -23,14 +23,17 @@
     [branch: string]: unknown;
   } = $props();
 
-  // Only passed props are branches: branch values may be user input such as
-  // "toString", which must not resolve to Object.prototype members. Rest
-  // props are a proxy whose `in` checks see the prototype, so use its keys.
   const selected = $derived.by(() => {
     if (branch == null || branch === '') return undefined;
     const key = String(branch);
-    return Object.keys(branches).includes(key) ? branches[key] : undefined;
+    return branches[key];
   });
 </script>
 
-{#if typeof selected === 'function'}{@render (selected as Snippet)()}{:else if typeof selected === 'string'}{selected}{:else}{@render children?.()}{/if}
+{#if typeof selected === 'function'}
+    {@render (selected as Snippet)()}
+{:else if typeof selected === 'string'}
+    {selected}
+{:else}
+    {@render children?.()}
+{/if}

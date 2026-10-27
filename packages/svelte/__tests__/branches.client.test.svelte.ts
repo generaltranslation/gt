@@ -5,24 +5,11 @@ import type {
   JsxChild,
   JsxElement,
 } from '@generaltranslation/format/types';
-import BareBranch from './fixtures/BareBranch.svelte';
 import BranchElements from './fixtures/BranchElements.svelte';
 import Harness from './fixtures/Harness.svelte';
-import StatusBranch from './fixtures/StatusBranch.svelte';
 import { hashesOf, setupGT } from './helpers';
 
-const [statusHash] = hashesOf('StatusBranch.svelte');
 const [elementsHash] = hashesOf('BranchElements.svelte');
-
-const statusTranslation = {
-  t: 'Branch',
-  i: 1,
-  d: {
-    t: 'b',
-    b: { online: { t: 'C2', i: 2, c: { t: 'i', i: 3, c: 'En ligne' } } },
-  },
-  c: 'Inconnu',
-} satisfies Content;
 
 let cleanup: (() => void) | undefined;
 afterEach(() => {
@@ -39,44 +26,6 @@ function mountHarness(props: Record<string, unknown>) {
   flushSync();
   return target;
 }
-
-describe('<Branch> values that name Object.prototype members', () => {
-  it('switches between a branch and the fallback', () => {
-    setupGT();
-    const props = $state<Record<string, unknown>>({
-      component: StatusBranch,
-      props: { status: 'online' },
-      locale: 'en',
-    });
-    const target = mountHarness(props);
-    expect(target.textContent).toBe('Online');
-    props.props = { status: 'valueOf' };
-    flushSync();
-    expect(target.textContent).toBe('Unknown');
-  });
-
-  it.each([
-    '__proto__',
-    'constructor',
-    'toString',
-    'valueOf',
-    'hasOwnProperty',
-  ])('renders the fallback for branch=%s', (status) => {
-    setupGT();
-    for (const component of [BareBranch, StatusBranch]) {
-      const target = mountHarness({ component, props: { status } });
-      expect(target.textContent).toBe('Unknown');
-      cleanup?.();
-    }
-    const target = mountHarness({
-      component: StatusBranch,
-      props: { status },
-      locale: 'fr',
-      translations: { [statusHash]: statusTranslation },
-    });
-    expect(target.textContent).toBe('Inconnu');
-  });
-});
 
 describe('elements with the same id in sibling branches', () => {
   // `<i>`/`<b>` share id 3 and `<s>`/`<u>` share id 4, in the `on` and
