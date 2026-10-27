@@ -14,11 +14,8 @@
   import { untrack, type Snippet } from 'svelte';
   import GtNodes from './GtNodes.svelte';
   import { lookupJsxTranslation } from '../runtime/lookup';
-  import {
-    validateTarget,
-    type GTRuntimeMetadata,
-    type RenderContext,
-  } from '../runtime/nodes';
+  import type { GTRuntimeMetadata } from '@generaltranslation/svelte-extractor';
+  import { validateTarget, type RenderContext } from '../runtime/nodes';
   import { getGTState } from '../runtime/state.svelte';
   import { warnInvalidTranslation, warnMissingPreprocessor } from '../runtime/warnings';
 

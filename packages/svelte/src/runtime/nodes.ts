@@ -9,20 +9,8 @@ import {
   isAcceptedPluralForm,
   isVariable,
 } from 'generaltranslation/internal';
+import type { GTRuntimeMetadata } from '@generaltranslation/svelte-extractor';
 import type { Snippet } from 'svelte';
-
-/** Runtime metadata emitted by the gt-svelte preprocessor as `_gtm`. */
-export type GTRuntimeMetadata = {
-  /** Per scope: variable key -> variable id. */
-  v?: Record<string, Record<string, number>>;
-  /**
-   * Per parent (scoped element id, or `''` for `<T>`): variable key ->
-   * variable id, for keys used more than once in a scope.
-   */
-  s?: Record<string, Record<string, number>>;
-  /** Per scoped element id: Branch/Plural kind and source branch names. */
-  b?: Record<string, { t: 'p' | 'b'; b: string[] }>;
-};
 
 /** Everything `GtNodes` needs to resolve target nodes to source snippets. */
 export type RenderContext = {
