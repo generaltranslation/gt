@@ -10,16 +10,16 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
 
+  // the `value` prop is intentionally not included, its a legacy part of the GT API
   let {
     children,
-    value,
   }: {
     children?: Snippet;
-    /** Rendered when there are no children. */
-    value?: unknown;
     /** Variable key used in translations. Must be a static string. */
     name?: string;
   } = $props();
 </script>
 
-{#if children}{@render children()}{:else if value != null}{String(value)}{/if}
+{#if children}
+    {@render children()}
+{/if}
