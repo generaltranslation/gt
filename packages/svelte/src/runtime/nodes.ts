@@ -135,12 +135,18 @@ export function selectBranch(
   let targetBranch: string | undefined;
   if (info.t === 'p') {
     if (typeof value !== 'number') return fallback;
-    sourceBranch = pickPluralForm(value, info.b, context.locales);
     targetBranch = pickPluralForm(
       value,
       Object.keys(targetBranches),
       context.locales
     );
+    // Pair the form with its same-named source form, as validateTarget()
+    // does, and only fall back to the source form for `n` when the source
+    // has no such form.
+    sourceBranch =
+      targetBranch !== undefined && info.b.includes(targetBranch)
+        ? targetBranch
+        : pickPluralForm(value, info.b, context.locales);
   } else {
     const key = value == null || value === '' ? undefined : String(value);
     sourceBranch = key && info.b.includes(key) ? key : undefined;
@@ -157,8 +163,8 @@ export function selectBranch(
 
 /**
  * Checks that every element and variable in a translation resolves to a
- * generated snippet. Branch content is checked against every source branch
- * it could be paired with.
+ * generated snippet. Branch content is checked in the scopes of every
+ * source branch selectBranch() can pair it with.
  */
 export function validateTarget(
   nodes: JsxChildren | undefined,
@@ -179,18 +185,20 @@ export function validateTarget(
     if (info) {
       const branches = getBranches(node);
       if (branches === null) return false;
-      // Check each branch in the scopes it renders with, so content in a
-      // same-named source branch takes precedence over its siblings.
       for (const [name, branch] of Object.entries(branches ?? {})) {
-        const branchScopes = getBranchScopes(
-          resolved.scope,
-          node,
-          info.b,
-          info.b.includes(name) ? name : undefined,
-          scopes
-        );
-        if (!validateTarget(branch, branchScopes, context, resolved.scopedId)) {
-          return false;
+        for (const pairing of getPairedSourceBranches(info, name)) {
+          const branchScopes = getBranchScopes(
+            resolved.scope,
+            node,
+            info.b,
+            pairing,
+            scopes
+          );
+          if (
+            !validateTarget(branch, branchScopes, context, resolved.scopedId)
+          ) {
+            return false;
+          }
         }
       }
     }
@@ -217,6 +225,19 @@ function getBranches(
   if (branches == null) return undefined;
   if (typeof branches !== 'object' || Array.isArray(branches)) return null;
   return branches as Record<string, JsxChildren>;
+}
+
+/**
+ * Returns the source branches selectBranch() can pair a translated branch
+ * with: its same-named source branch, or for a plural form the source does
+ * not have, any source form `n` can select. `undefined` pairs with none.
+ */
+function getPairedSourceBranches(
+  info: { t: 'p' | 'b'; b: string[] },
+  name: string
+): (string | undefined)[] {
+  if (info.b.includes(name)) return [name];
+  return info.t === 'p' ? [...info.b, undefined] : [undefined];
 }
 
 /**
