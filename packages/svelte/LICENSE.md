@@ -1,6 +1,6 @@
 MIT License
 
-Copyright 2025 General Translation, Inc.
+Copyright 2026 General Translation, Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
