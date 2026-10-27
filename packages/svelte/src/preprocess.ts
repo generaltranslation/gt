@@ -7,7 +7,7 @@ import {
   getCodeFrame,
   getOriginalSource,
   type PreprocessLocation,
-} from './preprocessLocations.js';
+} from './preprocess/locations.js';
 
 /**
  * Prepares `<T>` components for translation. Add it last in `preprocess` so
