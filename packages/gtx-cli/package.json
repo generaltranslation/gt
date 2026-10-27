@@ -41,9 +41,73 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./*": {
-      "types": "./dist/*.d.ts",
-      "import": "./dist/*.js"
+    "./bin/bin-entry": {
+      "types": "./dist/bin/bin-entry.d.ts",
+      "import": "./dist/bin/bin-entry.js"
+    },
+    "./bin/bin-main": {
+      "types": "./dist/bin/bin-main.d.ts",
+      "import": "./dist/bin/bin-main.js"
+    },
+    "./config/generateSettings": {
+      "types": "./dist/config/generateSettings.d.ts",
+      "import": "./dist/config/generateSettings.js"
+    },
+    "./config/resolveConfig": {
+      "types": "./dist/config/resolveConfig.d.ts",
+      "import": "./dist/config/resolveConfig.js"
+    },
+    "./fs/config/setupConfig": {
+      "types": "./dist/fs/config/setupConfig.d.ts",
+      "import": "./dist/fs/config/setupConfig.js"
+    },
+    "./fs/matchFiles": {
+      "types": "./dist/fs/matchFiles.d.ts",
+      "import": "./dist/fs/matchFiles.js"
+    },
+    "./functions": {
+      "types": "./dist/functions.d.ts",
+      "import": "./dist/functions.js"
+    },
+    "./index": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./main": {
+      "types": "./dist/main.d.ts",
+      "import": "./dist/main.js"
+    },
+    "./next/parse/handleInitGT": {
+      "types": "./dist/next/parse/handleInitGT.d.ts",
+      "import": "./dist/next/parse/handleInitGT.js"
+    },
+    "./next/parse/wrapContent": {
+      "types": "./dist/next/parse/wrapContent.d.ts",
+      "import": "./dist/next/parse/wrapContent.js"
+    },
+    "./react/parse/wrapContent": {
+      "types": "./dist/react/parse/wrapContent.d.ts",
+      "import": "./dist/react/parse/wrapContent.js"
+    },
+    "./types/index": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/types/index.js"
+    },
+    "./utils/installPackage": {
+      "types": "./dist/utils/installPackage.d.ts",
+      "import": "./dist/utils/installPackage.js"
+    },
+    "./utils/packageInfo": {
+      "types": "./dist/utils/packageInfo.d.ts",
+      "import": "./dist/utils/packageInfo.js"
+    },
+    "./utils/packageJson": {
+      "types": "./dist/utils/packageJson.d.ts",
+      "import": "./dist/utils/packageJson.js"
+    },
+    "./utils/packageManager": {
+      "types": "./dist/utils/packageManager.d.ts",
+      "import": "./dist/utils/packageManager.js"
     }
   },
   "repository": {
