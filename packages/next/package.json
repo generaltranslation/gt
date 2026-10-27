@@ -113,22 +113,27 @@
       "default": "./dist/link.js"
     },
     "./internal/_dictionary": {
+      "types": "./dist/internal/_dictionary.d.ts",
       "import": "./dist/internal/_dictionary.mjs",
       "default": "./dist/internal/_dictionary.js"
     },
     "./internal/_load-translations": {
+      "types": "./dist/internal/_load-translations.d.ts",
       "import": "./dist/internal/_load-translations.mjs",
       "default": "./dist/internal/_load-translations.js"
     },
     "./internal/_load-dictionary": {
+      "types": "./dist/internal/_load-dictionary.d.ts",
       "import": "./dist/internal/_load-dictionary.mjs",
       "default": "./dist/internal/_load-dictionary.js"
     },
     "./internal/_getLocale": {
+      "types": "./dist/internal/_getLocale.d.ts",
       "import": "./dist/internal/_getLocale.mjs",
       "default": "./dist/internal/_getLocale.js"
     },
     "./internal/_getRegion": {
+      "types": "./dist/internal/_getRegion.d.ts",
       "import": "./dist/internal/_getRegion.mjs",
       "default": "./dist/internal/_getRegion.js"
     }
