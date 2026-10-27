@@ -12,8 +12,7 @@
   "type": "module",
   "scripts": {
     "generate-version": "node scripts/generate-version.js",
-    "emit-types": "sh ../../scripts/emit-types.sh",
-    "transpile": "pnpm run generate-version && tsdown && pnpm run emit-types",
+    "transpile": "pnpm run generate-version && tsdown",
     "check:package": "node ../../scripts/check-package.mjs",
     "copy-instructions": "rm -rf dist/setup/instructions && cp -r src/setup/instructions dist/setup/instructions",
     "build": "pnpm run transpile && pnpm run copy-instructions",
