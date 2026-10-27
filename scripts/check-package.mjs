@@ -35,9 +35,12 @@ export const packageCheckOptions = {
   '@generaltranslation/vue-extractor': { profile: 'esm-only' },
   'gt-next': {
     profile: 'node16',
-    // Pre-existing: tsc emits CJS-scoped .d.ts that also serve the .mjs build.
-    // The API is named exports only and Next apps resolve with bundler, so
-    // the CJS/ESM mismatch does not change the types consumers see.
+    // Pre-existing: tsc emits CJS-scoped .d.ts that also serve the .mjs build,
+    // so node16/nodenext ESM consumers get CJS types. For default exports
+    // (gt-next/link) that means CJS-namespace interop types. Next apps
+    // resolve with bundler, so the practical impact is low. attw cannot
+    // ignore a problem per entrypoint and every gt-next export has it, so
+    // this stays package-wide until the ESM build emits .d.mts (follow-up).
     ignoreProblems: ['FalseCJS'],
   },
   'gt-react-native': {
@@ -87,15 +90,18 @@ export function formatAttwProblem(problem) {
 function packTarball(packageDir) {
   const destination = mkdtempSync(path.join(tmpdir(), 'gt-check-package-'));
   try {
+    // pnpm is a .cmd shim on Windows, which needs a shell. Windows paths
+    // cannot contain double quotes, so quoting the path is safe there.
+    const shell = process.platform === 'win32';
     execFileSync(
       'pnpm',
       [
         'pack',
         '--pack-destination',
-        destination,
+        shell ? `"${destination}"` : destination,
         '--config.ignore-scripts=true',
       ],
-      { cwd: packageDir, stdio: ['ignore', 'ignore', 'inherit'] }
+      { cwd: packageDir, shell, stdio: ['ignore', 'ignore', 'inherit'] }
     );
     const tarball = readdirSync(destination).find((file) =>
       file.endsWith('.tgz')
