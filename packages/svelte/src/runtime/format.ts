@@ -1,19 +1,18 @@
 import { getI18nConfig } from 'gt-i18n/internal';
-import type { GTState } from './state.svelte';
 
 /**
- * Locales used to format variables: explicit `locales`, then the active
- * locale, then the default locale. Source content formats in the default
- * locale only.
+ * Locales used to format variables in content that renders in `locale`:
+ * explicit `locales`, then `locale`, then the default locale. Source content
+ * formats in the default locale only.
  */
 export function getFormatLocales(
-  state: GTState,
+  locale: string,
   localesProp: string[] = []
 ): string[] {
   const config = getI18nConfig();
   const defaultLocale = config.getDefaultLocale();
-  return config.requiresTranslation(state.locale)
-    ? [...localesProp, state.locale, defaultLocale]
+  return config.requiresTranslation(locale)
+    ? [...localesProp, locale, defaultLocale]
     : [defaultLocale];
 }
 

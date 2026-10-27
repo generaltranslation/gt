@@ -15,6 +15,7 @@
   import { lookupJsxTranslation } from '../runtime/lookup';
   import type { GTRuntimeMetadata } from '@generaltranslation/svelte-extractor';
   import { validateTarget, type RenderContext } from '../runtime/nodes';
+  import { setSourceContent } from '../runtime/source';
   import { getGTState } from '../runtime/state.svelte';
   import { warnInvalidTranslation, warnMissingPreprocessor } from '../runtime/warnings';
 
@@ -73,6 +74,13 @@
     if (validateTarget(target, [''], renderContext)) return true;
     warnInvalidTranslation(_hash);
     return false;
+  });
+
+  // Untranslated children render as source content, in the default locale.
+  setSourceContent({
+    get current() {
+      return !valid;
+    },
   });
 </script>
 

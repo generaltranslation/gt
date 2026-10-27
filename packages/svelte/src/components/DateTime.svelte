@@ -10,7 +10,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { getFormatLocales, getFormatter } from '../runtime/format';
-  import { getGTState } from '../runtime/state.svelte';
+  import { useContentLocale } from '../runtime/source';
 
   let {
     value,
@@ -30,13 +30,13 @@
     name?: string;
   } = $props();
 
-  const state = getGTState();
+  const contentLocale = useContentLocale();
   const formatted = $derived(
     value == null
       ? null
       : getFormatter()
           .formatDateTime(value, {
-            locales: getFormatLocales(state, locales),
+            locales: getFormatLocales(contentLocale.current, locales),
             ...options,
           })
           .replace(/[\u200F\u202B\u202E]/g, '')

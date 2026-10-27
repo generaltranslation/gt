@@ -11,7 +11,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { getFormatLocales, getFormatter } from '../runtime/format';
-  import { getGTState } from '../runtime/state.svelte';
+  import { useContentLocale } from '../runtime/source';
 
   let {
     value,
@@ -34,14 +34,14 @@
     name?: string;
   } = $props();
 
-  const state = getGTState();
+  const contentLocale = useContentLocale();
   const formatted = $derived(
     value == null
       ? null
       : getFormatter().formatCurrency(
           typeof value === 'string' ? parseFloat(value) : value,
           currency,
-          { locales: getFormatLocales(state, locales), ...options }
+          { locales: getFormatLocales(contentLocale.current, locales), ...options }
         )
   );
 </script>

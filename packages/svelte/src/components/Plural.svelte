@@ -14,7 +14,7 @@
   import type { PluralType } from 'generaltranslation/types';
   import { getI18nConfig } from 'gt-i18n/internal';
   import type { Snippet } from 'svelte';
-  import { getGTState } from '../runtime/state.svelte';
+  import { useContentLocale } from '../runtime/source';
 
   let {
     n,
@@ -25,14 +25,14 @@
     children?: Snippet;
   } & Partial<Record<PluralType, string | Snippet>> = $props();
 
-  const state = getGTState();
+  const contentLocale = useContentLocale();
   const selected = $derived.by(() => {
     if (typeof n !== 'number') return undefined;
     // Untyped callers can still pass other props; getPluralForm ignores
     // names that are not plural forms.
     const available = Object.keys(forms) as PluralType[];
     const form = getPluralForm(n, available, [
-      state.locale,
+      contentLocale.current,
       getI18nConfig().getDefaultLocale(),
     ]);
     return form ? forms[form] : undefined;
