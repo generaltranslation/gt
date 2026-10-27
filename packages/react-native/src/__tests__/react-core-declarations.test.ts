@@ -41,6 +41,10 @@ setReactI18nCache(getReactI18nCache());
 
 let fixture: string;
 
+// Packing 8 packages blocks for ~45s on CI runners (~3s locally).
+const PACK_TIMEOUT = 120_000;
+const TYPECHECK_TIMEOUT = 60_000;
+
 beforeAll(() => {
   fixture = mkdtempSync(join(tmpdir(), 'gt-react-native-declarations-'));
   const nodeModules = join(fixture, 'node_modules');
@@ -81,7 +85,7 @@ beforeAll(() => {
     symlinkSync(source, link, 'junction');
   }
   writeFileSync(join(fixture, 'consumer.mts'), consumer);
-});
+}, PACK_TIMEOUT);
 
 afterAll(() => {
   rmSync(fixture, { recursive: true, force: true });
@@ -120,5 +124,6 @@ it.each([true, false])(
         ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')
       );
     expect(diagnostics).toEqual([]);
-  }
+  },
+  TYPECHECK_TIMEOUT
 );
