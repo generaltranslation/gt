@@ -2,11 +2,11 @@
 import { Pagination, Pill, useConfig } from '@payloadcms/ui';
 import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
-import type { CoveragePage, LocaleCoverage } from '../coverage.js';
-import { targetKey } from '../targets.js';
-import type { TranslateTarget } from '../types.js';
-import { apiRoute, coverage } from './api.js';
-import { useLocaleOptions } from './locales.js';
+import type { CoveragePage, LocaleCoverage } from '../coverage';
+import { targetKey } from '../targets';
+import type { TranslateTarget } from '../types';
+import { apiRoute, coverage } from './api';
+import { useLocaleOptions } from './locales';
 
 const PAGE_LIMIT = 25;
 

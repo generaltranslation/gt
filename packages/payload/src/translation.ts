@@ -13,17 +13,13 @@ import {
   sourceFile,
   targetFile,
   type Unit,
-} from './content/file.js';
-import { walkFields } from './content/fields.js';
-import { readPlainText } from './content/html.js';
-import {
-  decodeElement,
-  encodeElement,
-  hasInlineText,
-} from './content/inline.js';
-import { createGtPayloadDiagnostic } from './diagnostics.js';
-import { fitToLimits, type OverLimit } from './limits.js';
-import { targetKey } from './targets.js';
+} from './content/file';
+import { walkFields } from './content/fields';
+import { readPlainText } from './content/html';
+import { decodeElement, encodeElement, hasInlineText } from './content/inline';
+import { createGtPayloadDiagnostic } from './diagnostics';
+import { fitToLimits, type OverLimit } from './limits';
+import { targetKey } from './targets';
 import {
   canUpdate,
   fieldContext,
@@ -35,7 +31,7 @@ import {
   writeDocument,
   type Access,
   type ResolvedTarget,
-} from './documents.js';
+} from './documents';
 import type {
   Data,
   GtClient,
@@ -43,7 +39,7 @@ import type {
   SkippedString,
   TranslateResult,
   TranslateTarget,
-} from './types.js';
+} from './types';
 
 export type TranslateDocumentInput = {
   payload: Payload;

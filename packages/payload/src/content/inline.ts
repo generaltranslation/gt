@@ -10,7 +10,7 @@ import {
   isText,
   parseHtml,
   type HtmlParent,
-} from './html.js';
+} from './html';
 
 export type LexicalNode = {
   type: string;

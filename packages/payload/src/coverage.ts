@@ -1,6 +1,6 @@
 // Which languages hold text for each document, read from Payload alone.
 import type { Payload } from 'payload';
-import { collectUnits } from './content/file.js';
+import { collectUnits } from './content/file';
 import {
   fieldContext,
   labelOf,
@@ -10,9 +10,9 @@ import {
   sourceLocaleOf,
   titleOf,
   type Access,
-} from './documents.js';
-import { targetKey } from './targets.js';
-import type { TranslateTarget } from './types.js';
+} from './documents';
+import { targetKey } from './targets';
+import type { TranslateTarget } from './types';
 
 // Every string has text in the language, some do, or none do.
 export type LocaleCoverage = 'complete' | 'partial' | 'empty';

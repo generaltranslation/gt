@@ -4,7 +4,7 @@ import {
   targetLocaleOptions,
   type AdminSettings,
   type LocaleOption,
-} from '../locales.js';
+} from '../locales';
 
 export type { LocaleOption };
 

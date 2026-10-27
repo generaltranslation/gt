@@ -12,14 +12,14 @@ import type {
   FlattenedField,
   RichTextField,
 } from 'payload';
-import type { Data } from '../types.js';
-import { isAddress } from './address.js';
+import type { Data } from '../types';
+import { isAddress } from './address';
 import {
   encodeElement,
   isInlineNode,
   type EncodedElement,
   type LexicalNode,
-} from './inline.js';
+} from './inline';
 
 type Row = Data & { id?: string; blockType?: string };
 

@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
-import { CoverageTable } from './CoverageTable.js';
-import { TranslatePanel } from './TranslatePanel.js';
+import { CoverageTable } from './CoverageTable';
+import { TranslatePanel } from './TranslatePanel';
 
 // The Translations page: translate the whole site, and see which languages
 // each document has text in.

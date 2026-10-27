@@ -7,7 +7,7 @@ import {
 } from 'generaltranslation';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import type { CustomMapping } from 'generaltranslation/types';
-import { labelText } from './labels.js';
+import { labelText } from './labels';
 
 // Where the plugin puts its settings in the admin panel's config.
 export const ADMIN_CUSTOM_KEY = 'gtPayload';

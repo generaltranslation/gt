@@ -1,10 +1,10 @@
 import { toast } from '@payloadcms/ui';
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
 import { useState } from 'react';
-import { createGtPayloadDiagnostic } from '../diagnostics.js';
-import type { RunProgress } from '../runs.js';
-import { followRun, startRun, type Scope } from './api.js';
-import { localeNames, type LocaleOption } from './locales.js';
+import { createGtPayloadDiagnostic } from '../diagnostics';
+import type { RunProgress } from '../runs';
+import { followRun, startRun, type Scope } from './api';
+import { localeNames, type LocaleOption } from './locales';
 
 const documents = (count: number) =>
   count === 1 ? 'one document' : `${count} documents`;

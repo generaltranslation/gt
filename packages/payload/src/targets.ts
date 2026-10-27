@@ -1,4 +1,4 @@
-import type { TranslateTarget } from './types.js';
+import type { TranslateTarget } from './types';
 
 // A string naming one document, for maps and comparisons.
 export const targetKey = (target: TranslateTarget): string =>

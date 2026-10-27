@@ -2,7 +2,7 @@ import { DefaultTemplate } from '@payloadcms/next/templates';
 import { Gutter } from '@payloadcms/ui';
 import type { AdminViewServerProps } from 'payload';
 import React from 'react';
-import { GtTranslationsClient } from '../client/GtTranslationsClient.js';
+import { GtTranslationsClient } from '../client/GtTranslationsClient';
 
 // The Translations page, inside Payload's admin layout.
 export function GtTranslationsView({
