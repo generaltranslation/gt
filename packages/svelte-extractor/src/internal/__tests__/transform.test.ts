@@ -367,12 +367,6 @@ describe('errors', () => {
         fix: 'Remove the "value" prop or the children',
       },
     ]);
-    expect(errorsFor('<Var value={x}>shown</Var>')).toEqual([
-      expect.objectContaining({
-        whatHappened:
-          '<Var> has both a "value" prop and children, so the value would be ignored',
-      }),
-    ]);
   });
 
   it('reports variable children errors in the preprocessor output', () => {

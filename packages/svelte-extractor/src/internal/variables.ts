@@ -36,7 +36,7 @@ export function planVariables(
 ): VariablePlan {
   const plan: VariablePlan = { edits: [], problems: [] };
   for (const node of findVariableComponents(fragment, bindings)) {
-    planVariable(source, node, bindings, plan);
+    planVariable(source, node, plan);
   }
   plan.edits.sort((a, b) => a.start - b.start);
   return plan;
@@ -45,7 +45,6 @@ export function planVariables(
 function planVariable(
   source: string,
   node: SvelteElementNode,
-  bindings: GTBindings,
   plan: VariablePlan
 ): void {
   const children = node.fragment.nodes.filter(
@@ -54,20 +53,15 @@ function planVariable(
       !(child.type === 'Text' && !(child.data as string).trim())
   );
   if (children.length === 0) return;
-  const kind = resolveComponent(bindings, node.name);
   const valueAttribute = findAttribute(node, 'value');
   if (valueAttribute) {
     plan.problems.push({
       offset: valueAttribute.start,
-      whatHappened:
-        kind === 'Var'
-          ? `<${node.name}> has both a "value" prop and children, so the value would be ignored`
-          : `<${node.name}> has both a "value" prop and children, so the children would be ignored`,
+      whatHappened: `<${node.name}> has both a "value" prop and children, so the children would be ignored`,
       fix: 'Remove the "value" prop or the children',
     });
     return;
   }
-  if (!kind || !VALUE_VARIABLES.has(kind)) return;
   const [child] = children;
   if (children.length > 1 || child.type !== 'ExpressionTag') {
     plan.problems.push({
@@ -87,7 +81,7 @@ function planVariable(
   });
 }
 
-/** Finds variable components, including ones nested in other variables. */
+/** Finds value variable components, including ones nested in other variables. */
 function findVariableComponents(
   value: unknown,
   bindings: GTBindings,
@@ -101,7 +95,7 @@ function findVariableComponents(
   const node = value as SvelteNode;
   if (node.type === 'Component') {
     const kind = resolveComponent(bindings, node.name as string);
-    if (kind === 'Var' || (kind && VALUE_VARIABLES.has(kind))) {
+    if (kind && VALUE_VARIABLES.has(kind)) {
       found.push(node as SvelteElementNode);
     }
   }
