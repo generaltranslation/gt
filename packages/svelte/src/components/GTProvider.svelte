@@ -14,9 +14,9 @@
 -->
 <script lang="ts">
   import type { Content } from '@generaltranslation/format/types';
+  import { getI18nConfig } from 'gt-i18n/internal';
   import type { Snippet } from 'svelte';
   import { onMount, untrack } from 'svelte';
-  import { getI18nConfig } from 'gt-i18n/internal';
   import { resolveLocale } from '../runtime/config';
   import { requiresTranslation } from '../runtime/lookup';
   import { GTState, setGTState } from '../runtime/state.svelte';
