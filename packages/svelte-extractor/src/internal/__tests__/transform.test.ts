@@ -533,6 +533,61 @@ ${markup}`,
     );
   });
 
+  it('hashes strings with the $format they select', () => {
+    const { strings, errors } = analyzeStrings(
+      `const a = gt('Literal {braces}', { $format: 'STRING' });
+  const b = msg('Hi {{name}}', { $format: 'I18NEXT', $context: 'greeting' });
+  const c = gt('Hello {name}', { name: 'Ada', $format: 'ICU' });
+  const d = gt('Bye');`
+    );
+    expect(errors).toEqual([]);
+    expect(
+      strings.map(({ source, dataFormat, hash }) => ({
+        source,
+        dataFormat,
+        hash,
+      }))
+    ).toEqual([
+      {
+        source: 'Literal {braces}',
+        dataFormat: 'STRING',
+        hash: hashSource({ source: 'Literal {braces}', dataFormat: 'STRING' }),
+      },
+      {
+        source: 'Hi {{name}}',
+        dataFormat: 'I18NEXT',
+        hash: hashSource({
+          source: 'Hi {{name}}',
+          context: 'greeting',
+          dataFormat: 'I18NEXT',
+        }),
+      },
+      {
+        source: 'Hello {name}',
+        dataFormat: 'ICU',
+        hash: hashSource({ source: 'Hello {name}', dataFormat: 'ICU' }),
+      },
+      {
+        source: 'Bye',
+        dataFormat: 'ICU',
+        hash: hashSource({ source: 'Bye', dataFormat: 'ICU' }),
+      },
+    ]);
+  });
+
+  it('rejects a $format that is not a static, supported format', () => {
+    const { strings, errors } = analyzeStrings(
+      `let format = 'STRING';
+  gt('A', { $format: format });
+  gt('B', { $format: 'JSX' });`
+    );
+    expect(strings).toEqual([]);
+    expect(errors.map((error) => error.whatHappened)).toEqual([
+      'The "$format" option must be one of "ICU", "I18NEXT", "STRING"',
+      'The "$format" option must be one of "ICU", "I18NEXT", "STRING"',
+    ]);
+  });
+
   it('rejects maxChars that is not an integer', () => {
     const { translations, strings, errors } = analyzeStrings(
       '',

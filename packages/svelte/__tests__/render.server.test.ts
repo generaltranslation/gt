@@ -230,6 +230,7 @@ describe('strings and formatting', () => {
       'Second item',
       'Hello world',
       'Short',
+      'Literal {braces}',
     ]);
     setupGT({
       fr: Object.fromEntries(
@@ -238,7 +239,7 @@ describe('strings and formatting', () => {
     });
     const gt = await loadTranslations('fr');
     expect(html({ component: ExtractedStrings, ...gt })).toBe(
-      '<p class="concat">«Hello world»</p> <p class="max">«Short»</p> <p class="item">«First item»</p><p class="item">«Second item»</p>'
+      '<p class="concat">«Hello world»</p> <p class="max">«Short»</p> <p class="string">«Literal {braces}»</p> <p class="item">«First item»</p><p class="item">«Second item»</p>'
     );
   });
 

@@ -169,6 +169,27 @@ describe('planSvelteExtraction', () => {
     expect(output.updates).toEqual([]);
   });
 
+  it('reports the $format of each string as its data format', async () => {
+    const projectRoot = createProject({
+      'src/A.svelte': `<script>
+  import { useGT } from 'gt-svelte';
+  const gt = useGT();
+</script>
+<p>{gt('Literal {braces}', { $format: 'STRING' })}</p>
+<p>{gt('Hello')}</p>`,
+    });
+    const plan = planSvelteExtraction({ library: 'gt-svelte', projectRoot });
+    if (!plan.handled) throw new Error('expected a plan');
+    const output = await plan.run();
+    expect(output.errors).toEqual([]);
+    expect(
+      output.updates.map(({ source, dataFormat }) => ({ source, dataFormat }))
+    ).toEqual([
+      { source: 'Literal {braces}', dataFormat: 'STRING' },
+      { source: 'Hello', dataFormat: 'ICU' },
+    ]);
+  });
+
   it('includes source code context when asked', async () => {
     const page = `<script>
   import { T } from 'gt-svelte';

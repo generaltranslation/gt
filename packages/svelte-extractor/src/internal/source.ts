@@ -112,6 +112,7 @@ export function analyzeSvelteSource(
     analysis.strings.push({
       source: call.source,
       hash: call.hash,
+      dataFormat: call.dataFormat,
       metadata: call.metadata,
       location: toLocation(parsed, call.offset),
       ...(surroundingLineCount !== undefined && {

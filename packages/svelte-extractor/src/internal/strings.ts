@@ -1,5 +1,6 @@
 import { parse as parseIcu } from '@generaltranslation/icu';
 import { hashSource } from 'generaltranslation/id';
+import type { StringFormat } from '@generaltranslation/format/types';
 import type { GTBindings } from './imports.js';
 import { getStaticExpressionValue } from './translation.js';
 import type { SvelteNode, TranslationMetadata } from './types.js';
@@ -7,6 +8,8 @@ import type { SvelteNode, TranslationMetadata } from './types.js';
 export type StringCall = {
   source: string;
   hash: string;
+  /** The `$format` option, which the runtime hashes with. */
+  dataFormat: StringFormat;
   metadata: TranslationMetadata;
   offset: number;
   end: number;
@@ -63,7 +66,8 @@ export function collectStringCalls(
     const [message, options] = node.arguments as SvelteNode[];
     const metadata = readStringOptions(options, problems);
     if (metadata === null) return;
-    const validateIcu = !hasNonIcuFormat(options);
+    const dataFormat = readStringFormat(options, problems);
+    if (dataFormat === null) return;
 
     // msg() also registers an array of messages, each with an indexed id.
     const messages: { node: SvelteNode | undefined; index?: number }[] =
@@ -83,7 +87,7 @@ export function collectStringCalls(
         });
         continue;
       }
-      if (validateIcu) {
+      if (dataFormat === 'ICU') {
         const icuError = getIcuError(source);
         if (icuError) {
           warnings.push({
@@ -101,6 +105,7 @@ export function collectStringCalls(
       calls.push({
         source,
         metadata: siteMetadata,
+        dataFormat,
         offset: node.start,
         end: node.end,
         hash: hashSource({
@@ -108,7 +113,7 @@ export function collectStringCalls(
           ...(metadata.context && { context: metadata.context }),
           ...(metadata.maxChars != null && { maxChars: metadata.maxChars }),
           ...(metadata.requiresReview === true && { requiresReview: true }),
-          dataFormat: 'ICU',
+          dataFormat,
         }),
       });
     }
@@ -154,16 +159,33 @@ function getIcuError(source: string): string | undefined {
   }
 }
 
-/** Whether the options select a `$format` other than ICU. */
-function hasNonIcuFormat(options: SvelteNode | undefined): boolean {
-  if (!options || options.type !== 'ObjectExpression') return false;
-  return (options.properties as SvelteNode[]).some((property) => {
-    if (property.type !== 'Property' || property.computed) return false;
+const STRING_FORMATS: readonly StringFormat[] = ['ICU', 'I18NEXT', 'STRING'];
+
+/**
+ * Reads the `$format` option, which defaults to ICU like `useGT()` and
+ * `msg()`. Returns `null` and reports a problem when it is not static.
+ */
+function readStringFormat(
+  options: SvelteNode | undefined,
+  problems: StringProblem[]
+): StringFormat | null {
+  if (!options || options.type !== 'ObjectExpression') return 'ICU';
+  for (const property of options.properties as SvelteNode[]) {
+    if (property.type !== 'Property' || property.computed) continue;
     const key = property.key as SvelteNode & { name?: string; value?: unknown };
     const name = key.type === 'Identifier' ? key.name : key.value;
-    if (name !== '$format') return false;
-    return getStaticExpressionValue(property.value as SvelteNode) !== 'ICU';
-  });
+    if (name !== '$format') continue;
+    const value = getStaticExpressionValue(property.value as SvelteNode);
+    if (!STRING_FORMATS.includes(value as StringFormat)) {
+      problems.push({
+        offset: property.start,
+        whatHappened: `The "$format" option must be one of ${STRING_FORMATS.map((format) => `"${format}"`).join(', ')}`,
+      });
+      return null;
+    }
+    return value as StringFormat;
+  }
+  return 'ICU';
 }
 
 function readStringOptions(

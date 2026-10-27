@@ -137,7 +137,7 @@ export async function extractFromSvelteProject(
     }
     const sites = [
       ...analysis.translations.map((site) => ({ ...site, dataFormat: 'JSX' })),
-      ...analysis.strings.map((site) => ({ ...site, dataFormat: 'ICU' })),
+      ...analysis.strings,
     ];
     for (const site of sites) {
       output.updates.push({

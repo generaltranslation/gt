@@ -1,4 +1,7 @@
-import type { JsxChildren } from '@generaltranslation/format/types';
+import type {
+  JsxChildren,
+  StringFormat,
+} from '@generaltranslation/format/types';
 
 /**
  * Minimal structural view of the Svelte 5 modern AST. Only the fields the
@@ -107,6 +110,8 @@ export type TranslationSite = {
 export type StringSite = {
   source: string;
   hash: string;
+  /** The `$format` option: `ICU` unless the call selects another format. */
+  dataFormat: StringFormat;
   metadata: TranslationMetadata;
   location: SourceLocation;
   /** Present when `surroundingLineCount` is set. */

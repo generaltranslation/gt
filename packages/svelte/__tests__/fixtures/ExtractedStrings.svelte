@@ -7,4 +7,5 @@
 
 <p class="concat">{gt('Hello ' + 'world')}</p>
 <p class="max">{gt('Short', { $maxChars: -12 })}</p>
+<p class="string">{gt('Literal {braces}', { $format: 'STRING' })}</p>
 {#each items as item}<p class="item">{m(item)}</p>{/each}
