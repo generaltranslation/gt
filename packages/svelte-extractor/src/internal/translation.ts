@@ -128,6 +128,12 @@ class TranslationBuilder {
   private edits: TextEdit[] = [];
   private runtimeMetadata: GTRuntimeMetadata = {};
   private variables: VariableSite[] = [];
+  /**
+   * Per enclosing element or branch body, the snippets declared directly in
+   * it, by name. Generated snippets are declared directly under `<T>`, so
+   * they redeclare these to keep the names their content uses in scope.
+   */
+  private localSnippets: Map<string, string>[] = [];
 
   constructor(
     private readonly source: string,
@@ -408,15 +414,18 @@ class TranslationBuilder {
 
     const element: JsxElement = { t: getTagName(node), i: id };
     const d = getContentProps(node);
-    const children = this.convertChildren(node.fragment.nodes, scope, counter, {
-      kind: 'element',
-      id: `${scope}${id}`,
-    });
+    const enclosing = this.enclosingSnippets();
+    const children = this.withLocalSnippets(node.fragment.nodes, () =>
+      this.convertChildren(node.fragment.nodes, scope, counter, {
+        kind: 'element',
+        id: `${scope}${id}`,
+      })
+    );
     if (children !== undefined) element.c = children;
     if (d) element.d = d;
 
     this.snippets.push(
-      `{#snippet ${RESERVED_PREFIX}e_${scope}${id}(${RESERVED_PREFIX}kids, ${RESERVED_PREFIX}d)}${this.renderElementTemplate(node)}{/snippet}`
+      `{#snippet ${RESERVED_PREFIX}e_${scope}${id}(${RESERVED_PREFIX}kids, ${RESERVED_PREFIX}d)}${enclosing}${this.renderElementTemplate(node)}{/snippet}`
     );
     return element;
   }
@@ -489,7 +498,7 @@ class TranslationBuilder {
 
     this.variables.push({ scope, parent: parent.id, key, id });
     this.snippets.push(
-      `{#snippet ${RESERVED_PREFIX}v_${scope}${id}()}${this.slice(node.start, node.end)}{/snippet}`
+      `{#snippet ${RESERVED_PREFIX}v_${scope}${id}()}${this.enclosingSnippets()}${this.slice(node.start, node.end)}{/snippet}`
     );
     return { i: id, k: key, v: minifyVariableType(variableType) };
   }
@@ -563,11 +572,11 @@ class TranslationBuilder {
       const branchCounter = { index: id };
       const fragmentId = ++branchCounter.index;
       const body = child.body as { nodes: SvelteNode[] };
-      const content = this.convertChildren(
-        body.nodes,
-        branchScope,
-        branchCounter,
-        { kind: 'branch', id: `${branchScope}${fragmentId}` }
+      const content = this.withLocalSnippets(body.nodes, () =>
+        this.convertChildren(body.nodes, branchScope, branchCounter, {
+          kind: 'branch',
+          id: `${branchScope}${fragmentId}`,
+        })
       );
       const fragment: JsxElement = { t: `C${fragmentId}`, i: fragmentId };
       if (content !== undefined) fragment.c = content;
@@ -602,7 +611,7 @@ class TranslationBuilder {
       b: branchNames,
     };
     this.snippets.push(
-      `{#snippet ${snippetName}(${RESERVED_PREFIX}pick)}{@render ${RESERVED_PREFIX}pick(${
+      `{#snippet ${snippetName}(${RESERVED_PREFIX}pick)}${this.enclosingSnippets()}{@render ${RESERVED_PREFIX}pick(${
         selector ? attributeValueExpression(this.source, selector) : 'undefined'
       })}{/snippet}`
     );
@@ -628,6 +637,39 @@ class TranslationBuilder {
       }
     }
     this.runtimeMetadata = { ...metadata, ...this.runtimeMetadata };
+  }
+
+  /** Converts `nodes` with the snippets declared among them in scope. */
+  private withLocalSnippets<Result>(
+    nodes: SvelteNode[],
+    convert: () => Result
+  ): Result {
+    const declared = new Map<string, string>();
+    for (const node of nodes) {
+      const name = node.type === 'SnippetBlock' && getSnippetName(node);
+      if (name) declared.set(name, this.slice(node.start, node.end));
+    }
+    this.localSnippets.push(declared);
+    try {
+      return convert();
+    } finally {
+      this.localSnippets.pop();
+    }
+  }
+
+  /**
+   * The snippet declarations in scope where the current node is converted.
+   * An inner declaration shadows an outer one with the same name.
+   */
+  private enclosingSnippets(): string {
+    const inScope = new Map<string, string>();
+    for (const declared of this.localSnippets) {
+      for (const [name, text] of declared) {
+        inScope.delete(name);
+        inScope.set(name, text);
+      }
+    }
+    return [...inScope.values()].join('');
   }
 
   /** Copies source markup with the variable rewrites inside it applied. */

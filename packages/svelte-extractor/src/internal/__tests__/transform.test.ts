@@ -42,6 +42,28 @@ describe('transformSvelteSource', () => {
     ).not.toThrow();
   });
 
+  it('redeclares enclosing snippets in the snippets generated for nested content', () => {
+    const result = transform(`<script>
+  import { T, Branch } from 'gt-svelte';
+  import W from './W.svelte';
+  let s;
+</script>
+<T><div>{#snippet a()}outer{/snippet}<span>{#snippet a()}inner{/snippet}<W content={a} /></span></div><Branch branch={s}>{#snippet on()}{#snippet tip()}Hint{/snippet}<W content={tip} />{/snippet}Off</Branch></T>`);
+    expect(result?.errors).toEqual([]);
+    const code = result!.code;
+    // The inner declaration shadows the outer one, as in the source.
+    expect(code).toContain(
+      '{#snippet __gt_e_3(__gt_kids, __gt_d)}{#snippet a()}inner{/snippet}<W content={a} />{/snippet}'
+    );
+    // Snippets declared in a branch body stay in scope for its content.
+    expect(code).toContain(
+      '{#snippet tip()}Hint{/snippet}<W content={tip} />{/snippet}'
+    );
+    expect(() =>
+      compile(code, { filename: 'Fixture.svelte', generate: 'server' })
+    ).not.toThrow();
+  });
+
   it('keeps snippets declared inside child components', () => {
     const result = transform(`<script>
   import { T } from 'gt-svelte';
