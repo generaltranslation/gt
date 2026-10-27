@@ -4,6 +4,7 @@ import { createTsdownUnbundleConfig } from '../../tsdown.preset.mts';
 export default defineConfig(
   createTsdownUnbundleConfig({
     format: 'esm',
+    dts: true,
     // Ship the grammar WASM so installs skip tree-sitter-python's native build script.
     copy: [
       {
