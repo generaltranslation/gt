@@ -1,7 +1,7 @@
 import { defineConfig } from 'tsdown';
 import {
   createTsdownUnbundleConfig,
-  packageChecks,
+  getPackageChecks,
 } from '../../tsdown.preset.mts';
 
 const entries = [
@@ -24,7 +24,9 @@ const esm = createTsdownUnbundleConfig({
   outExtensions: () => ({ js: '.mjs', dts: '.d.mts' }),
 });
 
+const checks = getPackageChecks('node16');
+
 export default defineConfig([
-  { ...cjs, minify: true, dts: true, ...packageChecks.node16 },
-  { ...esm, minify: true, dts: true, ...packageChecks.node16 },
+  { ...cjs, minify: true, dts: true, ...checks },
+  { ...esm, minify: true, dts: true, ...checks },
 ]);

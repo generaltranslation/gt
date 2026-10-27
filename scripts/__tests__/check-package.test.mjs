@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import {
+  expandWildcardExports,
   filterAttwProblems,
   formatAttwProblem,
   getCheckOptions,
@@ -51,5 +52,40 @@ describe('check-package', () => {
     expect(formatAttwProblem(problems[3])).toBe(
       'FalseCJS types a.d.ts implementation a.mjs'
     );
+  });
+
+  test('expands wildcard exports against packed files', () => {
+    const files = [
+      'package.json',
+      'dist/index.js',
+      'dist/index.d.ts',
+      'dist/fs/copy.js',
+      'dist/fs/copy.d.ts',
+      'dist/fs/copy.js.map',
+      'dist/fs/deep/read.js',
+    ];
+    expect(
+      expandWildcardExports(
+        {
+          '.': { types: './dist/index.d.ts', import: './dist/index.js' },
+          './fs/*': { types: './dist/fs/*.d.ts', import: './dist/fs/*.js' },
+          './jsx/*': { types: './dist/jsx/*.d.ts', import: './dist/jsx/*.js' },
+        },
+        files
+      )
+    ).toEqual({
+      entrypoints: ['./fs/copy', './fs/deep/read'],
+      unmatched: ['./jsx/*'],
+    });
+  });
+
+  test('ignores exports without subpath wildcards', () => {
+    expect(expandWildcardExports('./dist/index.js', ['dist/index.js'])).toEqual(
+      { entrypoints: [], unmatched: [] }
+    );
+    expect(expandWildcardExports(undefined, [])).toEqual({
+      entrypoints: [],
+      unmatched: [],
+    });
   });
 });

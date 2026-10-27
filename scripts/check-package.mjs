@@ -87,6 +87,45 @@ export function formatAttwProblem(problem) {
     .join(' ');
 }
 
+function collectTargets(target) {
+  if (typeof target === 'string') return [target];
+  if (target === null || typeof target !== 'object') return [];
+  return Object.values(target).flatMap(collectTargets);
+}
+
+// attw skips wildcard exports, so expand each one against the packed files
+// and check the concrete subpaths. Wildcards that match no file are returned
+// separately so the caller can report them.
+export function expandWildcardExports(exportsField, files) {
+  const entrypoints = new Set();
+  const unmatched = [];
+  const subpaths =
+    exportsField && typeof exportsField === 'object'
+      ? Object.entries(exportsField).filter(([key]) => key.includes('*'))
+      : [];
+  for (const [subpath, target] of subpaths) {
+    let matched = false;
+    for (const pattern of collectTargets(target)) {
+      if (!pattern.includes('*')) continue;
+      const [prefix, suffix] = pattern.replace(/^\.\//, '').split('*');
+      for (const file of files) {
+        if (
+          file.length < prefix.length + suffix.length ||
+          !file.startsWith(prefix) ||
+          !file.endsWith(suffix)
+        ) {
+          continue;
+        }
+        const match = file.slice(prefix.length, file.length - suffix.length);
+        entrypoints.add(subpath.replace('*', match));
+        matched = true;
+      }
+    }
+    if (!matched) unmatched.push(subpath);
+  }
+  return { entrypoints: [...entrypoints].sort(), unmatched };
+}
+
 function packTarball(packageDir) {
   const destination = mkdtempSync(path.join(tmpdir(), 'gt-check-package-'));
   try {
@@ -142,10 +181,21 @@ export async function run(packageDir = process.cwd()) {
     process.stdout.write(`[publint] ${pkg.name}: no issues\n`);
   }
 
-  const result = await attw.checkPackage(
-    attw.createPackageFromTarballData(new Uint8Array(tarball)),
-    { excludeEntrypoints: options.excludeEntrypoints }
+  const attwPackage = attw.createPackageFromTarballData(
+    new Uint8Array(tarball)
   );
+  const packageRoot = `/node_modules/${attwPackage.packageName}/`;
+  const wildcards = expandWildcardExports(
+    pkg.exports,
+    attwPackage.listFiles().map((file) => file.slice(packageRoot.length))
+  );
+  for (const subpath of wildcards.unmatched) {
+    console.warn(`[attw] ${pkg.name}: exports["${subpath}"] matches no files`);
+  }
+  const result = await attw.checkPackage(attwPackage, {
+    includeEntrypoints: wildcards.entrypoints,
+    excludeEntrypoints: options.excludeEntrypoints,
+  });
   if (!result.types) {
     console.error(`[attw] ${pkg.name}: package has no types`);
     failed = true;
@@ -157,7 +207,7 @@ export async function run(packageDir = process.cwd()) {
     if (problems.length > 0) failed = true;
     else {
       process.stdout.write(
-        `[attw] ${pkg.name}: no problems (profile ${options.profile})\n`
+        `[attw] ${pkg.name}: no problems in ${Object.keys(result.entrypoints).length} entrypoints (profile ${options.profile})\n`
       );
     }
   }
