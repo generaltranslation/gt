@@ -13,7 +13,10 @@ import {
 import { StringContent, StringFormat } from 'generaltranslation/types';
 import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 import { getShouldTranslate } from '../../hooks/utils/getShouldTranslate';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import {
+  createDiagnosticMessage,
+  VAR_IDENTIFIER,
+} from 'generaltranslation/internal';
 
 /**
  * Translate a message
@@ -110,11 +113,17 @@ function handleTaggedTemplateLiteralTranslation(
   // Runtime values are not ICU-escaped, so never ICU-format the source itself
   if (!getShouldTranslate()) return interpolatedTemplate;
   const lookupOptions = createLookupOptions(locale, {}, 'ICU');
-  const translatedInterpolatedTemplate = getReactI18nCache().lookupTranslation(
-    locale,
-    interpolatedTemplate,
-    lookupOptions
-  );
+  // Text with ICU arguments needs variables only (2) supplies, and _gt_ text
+  // is ICU-parsed while hashing, so runtime text could throw
+  const translatedInterpolatedTemplate =
+    interpolatedTemplate.includes('{') ||
+    interpolatedTemplate.includes(VAR_IDENTIFIER)
+      ? undefined
+      : getReactI18nCache().lookupTranslation(
+          locale,
+          interpolatedTemplate,
+          lookupOptions
+        );
   if (translatedInterpolatedTemplate != null) {
     return interpolateMessage({
       source: interpolatedTemplate,

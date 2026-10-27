@@ -84,4 +84,30 @@ describe('t', () => {
     expect(t`Hello ${derive('John')}`).toBe('Bonjour John');
     expect(t`Don't stop, ${derive('John')}`).toBe("N'arrête pas, John");
   });
+
+  describe('falls back to the placeholder lookup for ICU-looking runtime values', () => {
+    beforeEach(() => {
+      resetGTGlobals();
+      setup('fr');
+      const translations: Record<string, string> = {
+        [hashMessage('Hello {0}', { $format: 'ICU' })]: "L''ami {0}",
+        [hashMessage('File: {0}', { $format: 'ICU' })]: 'Fichier : {0}',
+        [hashMessage('Tag: {0}', { $format: 'ICU' })]: 'Balise : {0}',
+      };
+      lookupTranslation.mockImplementation(
+        (_locale: string, message: string, options: LookupOptions) =>
+          translations[hashMessage(message, options)]
+      );
+    });
+
+    it('supplies placeholder variables for runtime ICU arguments', () => {
+      expect(t`Hello ${'{0}'}`).toBe("L'ami {0}");
+    });
+
+    // hashMessage ICU-parses _gt_ text, so malformed runtime text would throw
+    it('does not hash malformed runtime _gt_ text as ICU', () => {
+      expect(t`File: ${'report_gt_{draft'}`).toBe('Fichier : report_gt_{draft');
+      expect(t`Tag: ${'x_gt_ <b'}`).toBe('Balise : x_gt_ <b');
+    });
+  });
 });
