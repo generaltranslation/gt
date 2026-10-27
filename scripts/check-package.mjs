@@ -5,7 +5,7 @@
 //
 // - Run it from a package directory after the build, as each package's
 //   `check:package` script. The turbo `check:package` task depends on `build`
-//   so declarations from emit-types or other builders exist first.
+//   so the built JavaScript and declarations exist first.
 // - It checks the packed tarball (`pnpm pack`), not the working directory, so
 //   `files`, `exports` and missing build outputs are checked as published.
 // - publint errors fail the check; warnings and suggestions are printed.
