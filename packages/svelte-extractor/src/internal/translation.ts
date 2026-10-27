@@ -397,6 +397,15 @@ class TranslationBuilder {
           'animate: directives are not supported inside <T>'
         );
       }
+      if (attribute.type === 'LetDirective') {
+        // Translated content renders from snippets declared directly under
+        // <T>, where the slot props a let: directive binds do not exist.
+        this.problem(
+          attribute.start,
+          'let: directives are not supported inside <T>',
+          'Move <T> inside the component that provides the slot props'
+        );
+      }
     }
     if (
       node.type === 'Component' &&

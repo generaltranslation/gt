@@ -370,6 +370,15 @@ describe('errors', () => {
     ]);
   });
 
+  it('rejects let: directives', () => {
+    expect(
+      errorsFor(
+        '<T><List let:item>Item <Var>{item}</Var></List></T>',
+        "import List from './List.svelte';"
+      )
+    ).toEqual(['let: directives are not supported inside <T>']);
+  });
+
   it('rejects reserved identifiers', () => {
     const reserved =
       'Identifiers starting with "__gt_" are reserved for the gt-svelte preprocessor';
