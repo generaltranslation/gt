@@ -31,8 +31,7 @@
   },
   "scripts": {
     "patch": "pnpm version patch",
-    "emit-types": "sh ../../scripts/emit-types.sh",
-    "transpile": "tsdown && pnpm run emit-types",
+    "transpile": "tsdown",
     "check:package": "node ../../scripts/check-package.mjs",
     "build": "pnpm run transpile && pnpm run build:swc-plugin",
     "build:clean": "rm -rf ./swc-plugin/target && sh ../../scripts/clean.sh && pnpm run build",
@@ -73,9 +72,14 @@
   "exports": {
     ".": {
       "react-server": {
-        "types": "./dist/index.rsc.d.ts",
-        "import": "./dist/index.rsc.mjs",
-        "default": "./dist/index.rsc.js"
+        "import": {
+          "types": "./dist/index.rsc.d.mts",
+          "default": "./dist/index.rsc.mjs"
+        },
+        "default": {
+          "types": "./dist/index.rsc.d.ts",
+          "default": "./dist/index.rsc.js"
+        }
       },
       "workerd": {
         "import": "./dist/index.server.mjs",
@@ -89,54 +93,104 @@
         "import": "./dist/index.client.mjs",
         "default": "./dist/index.client.js"
       },
-      "types": "./dist/index.types.d.ts",
-      "import": "./dist/index.server.mjs",
-      "default": "./dist/index.server.js"
+      "import": {
+        "types": "./dist/index.types.d.mts",
+        "default": "./dist/index.server.mjs"
+      },
+      "default": {
+        "types": "./dist/index.types.d.ts",
+        "default": "./dist/index.server.js"
+      }
     },
     "./config": {
-      "types": "./dist/config.d.ts",
-      "import": "./dist/config.mjs",
-      "default": "./dist/config.js"
+      "import": {
+        "types": "./dist/config.d.mts",
+        "default": "./dist/config.mjs"
+      },
+      "default": {
+        "types": "./dist/config.d.ts",
+        "default": "./dist/config.js"
+      }
     },
     "./server": {
-      "types": "./dist/server.d.ts",
-      "import": "./dist/server.mjs",
-      "default": "./dist/server.js"
+      "import": {
+        "types": "./dist/server.d.mts",
+        "default": "./dist/server.mjs"
+      },
+      "default": {
+        "types": "./dist/server.d.ts",
+        "default": "./dist/server.js"
+      }
     },
     "./middleware": {
-      "types": "./dist/middleware.d.ts",
-      "import": "./dist/middleware.mjs",
-      "default": "./dist/middleware.js"
+      "import": {
+        "types": "./dist/middleware.d.mts",
+        "default": "./dist/middleware.mjs"
+      },
+      "default": {
+        "types": "./dist/middleware.d.ts",
+        "default": "./dist/middleware.js"
+      }
     },
     "./link": {
-      "types": "./dist/link.d.ts",
-      "import": "./dist/link.mjs",
-      "default": "./dist/link.js"
+      "import": {
+        "types": "./dist/link.d.mts",
+        "default": "./dist/link.mjs"
+      },
+      "default": {
+        "types": "./dist/link.d.ts",
+        "default": "./dist/link.js"
+      }
     },
     "./internal/_dictionary": {
-      "types": "./dist/internal/_dictionary.d.ts",
-      "import": "./dist/internal/_dictionary.mjs",
-      "default": "./dist/internal/_dictionary.js"
+      "import": {
+        "types": "./dist/internal/_dictionary.d.mts",
+        "default": "./dist/internal/_dictionary.mjs"
+      },
+      "default": {
+        "types": "./dist/internal/_dictionary.d.ts",
+        "default": "./dist/internal/_dictionary.js"
+      }
     },
     "./internal/_load-translations": {
-      "types": "./dist/internal/_load-translations.d.ts",
-      "import": "./dist/internal/_load-translations.mjs",
-      "default": "./dist/internal/_load-translations.js"
+      "import": {
+        "types": "./dist/internal/_load-translations.d.mts",
+        "default": "./dist/internal/_load-translations.mjs"
+      },
+      "default": {
+        "types": "./dist/internal/_load-translations.d.ts",
+        "default": "./dist/internal/_load-translations.js"
+      }
     },
     "./internal/_load-dictionary": {
-      "types": "./dist/internal/_load-dictionary.d.ts",
-      "import": "./dist/internal/_load-dictionary.mjs",
-      "default": "./dist/internal/_load-dictionary.js"
+      "import": {
+        "types": "./dist/internal/_load-dictionary.d.mts",
+        "default": "./dist/internal/_load-dictionary.mjs"
+      },
+      "default": {
+        "types": "./dist/internal/_load-dictionary.d.ts",
+        "default": "./dist/internal/_load-dictionary.js"
+      }
     },
     "./internal/_getLocale": {
-      "types": "./dist/internal/_getLocale.d.ts",
-      "import": "./dist/internal/_getLocale.mjs",
-      "default": "./dist/internal/_getLocale.js"
+      "import": {
+        "types": "./dist/internal/_getLocale.d.mts",
+        "default": "./dist/internal/_getLocale.mjs"
+      },
+      "default": {
+        "types": "./dist/internal/_getLocale.d.ts",
+        "default": "./dist/internal/_getLocale.js"
+      }
     },
     "./internal/_getRegion": {
-      "types": "./dist/internal/_getRegion.d.ts",
-      "import": "./dist/internal/_getRegion.mjs",
-      "default": "./dist/internal/_getRegion.js"
+      "import": {
+        "types": "./dist/internal/_getRegion.d.mts",
+        "default": "./dist/internal/_getRegion.mjs"
+      },
+      "default": {
+        "types": "./dist/internal/_getRegion.d.ts",
+        "default": "./dist/internal/_getRegion.js"
+      }
     }
   },
   "keywords": [
