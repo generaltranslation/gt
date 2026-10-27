@@ -9,9 +9,8 @@
     "rootDir": "./src",
     "declarationMap": false,
     "sourceMap": true,
-    // Stays on bundler because next has no exports map for NodeNext. tsc emits
-    // per-file ESM .d.ts, so relative imports need explicit .js extensions;
-    // the attw check in the build fails if one is missing.
+    // Stays on bundler because next has no exports map for NodeNext. tsdown
+    // emits the declarations and adds .js to relative specifiers.
     "moduleResolution": "bundler"
   },
   "include": ["src/**/*"],
