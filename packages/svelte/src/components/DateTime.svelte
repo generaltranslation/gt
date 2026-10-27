@@ -39,7 +39,7 @@
             locales: getFormatLocales(state, locales),
             ...options,
           })
-          .replace(/[‏‫‮]/g, '')
+          .replace(/[\u200F\u202B\u202E]/g, '')
   );
 </script>
 
