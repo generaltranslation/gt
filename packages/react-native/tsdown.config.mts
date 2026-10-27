@@ -33,6 +33,7 @@ export default defineConfig([
     format: 'esm',
     outDir: 'dist/module',
     clean: false,
+    dts: true,
     deps,
   }),
 ]);
