@@ -1,9 +1,9 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "module": "Node16",
+    "module": "ESNext",
     "target": "ES6",
-    "moduleResolution": "node16",
+    "moduleResolution": "bundler",
     "sourceMap": true,
     "declarationMap": true,
     "jsx": "react-jsx",
