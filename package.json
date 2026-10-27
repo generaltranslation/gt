@@ -52,6 +52,7 @@
     "l10n"
   ],
   "devDependencies": {
+    "@arethetypeswrong/core": "^0.18.5",
     "@changesets/changelog-github": "^0.5.1",
     "@changesets/cli": "^2.27.9",
     "@babel/core": "catalog:",
@@ -62,6 +63,7 @@
     "oxlint": "catalog:",
     "pkg-pr-new": "0.0.88",
     "postcss": "^8.5.19",
+    "publint": "^0.3.25",
     "size-limit": "^12.1.0",
     "turbo": "^2.5.3",
     "tslib": "catalog:",

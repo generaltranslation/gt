@@ -4,6 +4,7 @@
     "tsdown.preset.mts",
     "tsconfig.base.json",
     "scripts/emit-types.sh",
+    "scripts/check-package.mjs",
     "scripts/clean.sh"
   ],
   "tasks": {

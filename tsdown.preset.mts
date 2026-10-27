@@ -12,7 +12,24 @@ type UseClientBoundaryPluginOptions = {
   root?: string;
 };
 
-export function createTsdownConfig(entry: string[], deps?: UserConfig['deps']) {
+type PackageChecks = Pick<UserConfig, 'publint' | 'attw'>;
+
+// publint and attw run on the packed package after every config of a
+// package.json finishes. tsdown runs attw once only when all of those configs
+// share the same options object, so spread these constants instead of writing
+// new literals. tsdown imports both tools as optional peers, which pnpm
+// resolves from the root devDependencies.
+export const packageChecks = {
+  node16: { publint: true, attw: { profile: 'node16', level: 'error' } },
+  // ESM-only packages have no CommonJS entry for node16 require to check.
+  esmOnly: { publint: true, attw: { profile: 'esm-only', level: 'error' } },
+} satisfies Record<string, PackageChecks>;
+
+export function createTsdownConfig(
+  entry: string[],
+  deps?: UserConfig['deps'],
+  checks: PackageChecks = packageChecks.node16
+) {
   return [
     {
       entry,
@@ -21,8 +38,9 @@ export function createTsdownConfig(entry: string[], deps?: UserConfig['deps']) {
       sourcemap: true,
       clean: true,
       deps: { onlyBundle: false, ...deps },
+      ...checks,
     },
-    { entry, format: ['esm'] as const, sourcemap: true },
+    { entry, format: ['esm'] as const, sourcemap: true, ...checks },
   ];
 }
 

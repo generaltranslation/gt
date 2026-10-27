@@ -1,5 +1,5 @@
 import { defineConfig } from 'tsdown';
-import { createTsdownConfig } from '../../tsdown.preset.mts';
+import { createTsdownConfig, packageChecks } from '../../tsdown.preset.mts';
 
 const deps = {
   neverBundle: [
@@ -36,7 +36,11 @@ const entries: Record<string, string> = {
 
 export default defineConfig(
   Object.entries(entries).map(([name, entry], index) => {
-    const [, esmConfig] = createTsdownConfig([entry], deps);
+    const [, esmConfig] = createTsdownConfig(
+      [entry],
+      deps,
+      packageChecks.esmOnly
+    );
     return {
       ...esmConfig,
       entry: { [name]: entry },
