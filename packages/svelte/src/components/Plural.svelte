@@ -10,7 +10,8 @@
   ```
 -->
 <script lang="ts">
-  import { getPluralForm, isAcceptedPluralForm } from 'generaltranslation/internal';
+  import { getPluralForm } from 'generaltranslation/internal';
+  import type { PluralType } from 'generaltranslation/types';
   import { getI18nConfig } from 'gt-i18n/internal';
   import type { Snippet } from 'svelte';
   import { getGTState } from '../runtime/state.svelte';
@@ -22,13 +23,14 @@
   }: {
     n?: number | null;
     children?: Snippet;
-    [form: string]: unknown;
-  } = $props();
+  } & Partial<Record<PluralType, string | Snippet>> = $props();
 
   const state = getGTState();
   const selected = $derived.by(() => {
     if (typeof n !== 'number') return undefined;
-    const available = Object.keys(forms).filter(isAcceptedPluralForm);
+    // Untyped callers can still pass other props; getPluralForm ignores
+    // names that are not plural forms.
+    const available = Object.keys(forms) as PluralType[];
     const form = getPluralForm(n, available, [
       state.locale,
       getI18nConfig().getDefaultLocale(),
