@@ -26,16 +26,16 @@
   },
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     },
     "./types": {
-      "import": "./dist/types.js",
-      "types": "./dist/types.d.ts"
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.js"
     },
     "./constants": {
-      "import": "./dist/constants.js",
-      "types": "./dist/constants.d.ts"
+      "types": "./dist/constants.d.ts",
+      "import": "./dist/constants.js"
     },
     "./tree-sitter-python.wasm": "./dist/tree-sitter-python.wasm"
   },

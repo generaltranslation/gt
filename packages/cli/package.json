@@ -40,52 +40,52 @@
   },
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     },
     "./types": {
-      "import": "./dist/types.js",
-      "types": "./dist/types.d.ts"
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/types/index.js"
     },
     "./functions": {
-      "import": "./dist/functions.js",
-      "types": "./dist/functions.d.ts"
+      "types": "./dist/functions.d.ts",
+      "import": "./dist/functions.js"
     },
     "./updates/*": {
-      "import": "./dist/updates/*.js",
-      "types": "./dist/updates/*.d.ts"
+      "types": "./dist/updates/*.d.ts",
+      "import": "./dist/updates/*.js"
     },
     "./jsx/*": {
-      "import": "./dist/jsx/*.js",
-      "types": "./dist/jsx/*.d.ts"
+      "types": "./dist/jsx/*.d.ts",
+      "import": "./dist/jsx/*.js"
     },
     "./fs/*": {
-      "import": "./dist/fs/*.js",
-      "types": "./dist/fs/*.d.ts"
+      "types": "./dist/fs/*.d.ts",
+      "import": "./dist/fs/*.js"
     },
     "./console/*": {
-      "import": "./dist/console/*.js",
-      "types": "./dist/console/*.d.ts"
+      "types": "./dist/console/*.d.ts",
+      "import": "./dist/console/*.js"
     },
     "./config/*": {
-      "import": "./dist/config/*.js",
-      "types": "./dist/config/*.d.ts"
+      "types": "./dist/config/*.d.ts",
+      "import": "./dist/config/*.js"
     },
     "./api/*": {
-      "import": "./dist/api/*.js",
-      "types": "./dist/api/*.d.ts"
+      "types": "./dist/api/*.d.ts",
+      "import": "./dist/api/*.js"
     },
     "./setup/*": {
-      "import": "./dist/setup/*.js",
-      "types": "./dist/setup/*.d.ts"
+      "types": "./dist/setup/*.d.ts",
+      "import": "./dist/setup/*.js"
     },
     "./*": {
-      "import": "./dist/*.js",
-      "types": "./dist/*.d.ts"
+      "types": "./dist/*.d.ts",
+      "import": "./dist/*.js"
     },
     "./utils/*": {
-      "import": "./dist/utils/*.js",
-      "types": "./dist/utils/*.d.ts"
+      "types": "./dist/utils/*.d.ts",
+      "import": "./dist/utils/*.js"
     }
   },
   "repository": {
