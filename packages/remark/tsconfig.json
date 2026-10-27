@@ -2,13 +2,13 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "target": "ES2019",
-    "module": "Node16",
+    "module": "ESNext",
     "lib": ["ES2019"],
     "outDir": "./dist",
     "rootDir": "./src",
     "declarationMap": false,
     "sourceMap": true,
-    "moduleResolution": "node16"
+    "moduleResolution": "bundler"
   },
   "include": ["src/**/*"],
   "exclude": ["**/*.test.ts"]
