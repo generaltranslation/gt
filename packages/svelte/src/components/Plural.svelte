@@ -37,4 +37,10 @@
   });
 </script>
 
-{#if typeof selected === 'function'}{@render (selected as Snippet)()}{:else if typeof selected === 'string'}{selected}{:else}{@render children?.()}{/if}
+{#if typeof selected === 'function'}
+    {@render (selected as Snippet)()}
+{:else if typeof selected === 'string'}
+    {selected}
+{:else}
+    {@render children?.()}
+{/if}
