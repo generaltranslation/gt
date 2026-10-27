@@ -1,8 +1,9 @@
 import type { LocaleProperties } from './locales/getLocaleProperties';
-import type { defaultLocaleMatcher } from './settings/settings';
+import { defaultLocaleMatcher } from './settings/settings';
 
-/** The ECMA-402 locale matching algorithm `determineLocale` uses. */
-export type LocaleMatcher = 'lookup' | typeof defaultLocaleMatcher;
+/** The ECMA-402 locale matching algorithms `determineLocale` supports. */
+export const localeMatchers = ['lookup', defaultLocaleMatcher] as const;
+export type LocaleMatcher = (typeof localeMatchers)[number];
 
 /** The locales an app supports; plain data shared by GTIntl, GTRuntime and GT. */
 export type LocaleConfig = {

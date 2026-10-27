@@ -1,5 +1,8 @@
 import { isValidLocale } from '@generaltranslation/format';
-import { defaultLocaleMatcher } from '@generaltranslation/format/internal';
+import {
+  defaultLocaleMatcher,
+  localeMatchers,
+} from '@generaltranslation/format/internal';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import logger from '../logs/logger';
 import type { I18nConfigParams } from './I18nConfig';
@@ -40,8 +43,6 @@ export function validateI18nConfigParams(
   }
 }
 
-const localeMatchers: readonly unknown[] = ['lookup', defaultLocaleMatcher];
-
 function validateLocaleMatcher({ localeMatcher }: I18nConfigParams): void {
   if (localeMatcher === undefined || localeMatchers.includes(localeMatcher)) {
     return;
@@ -52,7 +53,7 @@ function validateLocaleMatcher({ localeMatcher }: I18nConfigParams): void {
       severity: 'Error',
       whatHappened: 'Invalid I18nConfig localeMatcher',
       details: `localeMatcher: ${JSON.stringify(localeMatcher)}`,
-      fix: `Set localeMatcher to "lookup" or "${defaultLocaleMatcher}" (the default)`,
+      fix: `Set localeMatcher to one of ${localeMatchers.map((matcher) => JSON.stringify(matcher)).join(', ')}, or omit it to use "${defaultLocaleMatcher}"`,
     })
   );
 }

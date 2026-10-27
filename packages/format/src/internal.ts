@@ -6,5 +6,5 @@ export function getCachedPluralRules(
   return intlCache.get('PluralRules', locales);
 }
 
-export { snapshotLocaleConfig } from './localeConfig';
+export { localeMatchers, snapshotLocaleConfig } from './localeConfig';
 export { defaultLocaleMatcher } from './settings/settings';
