@@ -87,22 +87,6 @@
       }
     }
   },
-  "typesVersions": {
-    "*": {
-      "pure": [
-        "./dist/pure.d.ts"
-      ],
-      "hooks": [
-        "./dist/hooks.d.ts"
-      ],
-      "components": [
-        "./dist/components.d.ts"
-      ],
-      "components-rsc": [
-        "./dist/components-rsc.d.ts"
-      ]
-    }
-  },
   "keywords": [
     "react",
     "translation",

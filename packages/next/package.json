@@ -139,37 +139,6 @@
       "default": "./dist/internal/_getRegion.js"
     }
   },
-  "typesVersions": {
-    "*": {
-      "config": [
-        "./dist/config.d.ts"
-      ],
-      "server": [
-        "./dist/server.d.ts"
-      ],
-      "middleware": [
-        "./dist/middleware.d.ts"
-      ],
-      "link": [
-        "./dist/link.d.ts"
-      ],
-      "internal/_dictionary": [
-        "./dist/internal/_dictionary.d.ts"
-      ],
-      "internal/_load-translations": [
-        "./dist/internal/_load-translations.d.ts"
-      ],
-      "internal/_load-dictionary": [
-        "./dist/internal/_load-dictionary.d.ts"
-      ],
-      "internal/_getLocale": [
-        "./dist/internal/_getLocale.d.ts"
-      ],
-      "internal/_getRegion": [
-        "./dist/internal/_getRegion.d.ts"
-      ]
-    }
-  },
   "keywords": [
     "react",
     "translation",
