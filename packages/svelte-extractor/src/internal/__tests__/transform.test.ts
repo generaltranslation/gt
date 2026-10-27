@@ -213,6 +213,19 @@ describe('components with preprocessed styles', () => {
   .x { #{$prop}: $accent; }
 </style>`;
 
+  it('ignores <style> inside a script string', () => {
+    const source = `<script>
+  import { T } from 'gt-svelte';
+  const open = '<style>';
+</script>
+<T>Hello <b>x</b></T>
+${SCSS}`;
+    const result = transform(source);
+    expect(result?.errors).toEqual([]);
+    expect(result?.code).toContain("const open = '<style>';");
+    expect(result?.code).toContain('<T _hash=');
+  });
+
   it('transforms <T> without parsing the style', () => {
     const source = `<script>
   import { T } from 'gt-svelte';

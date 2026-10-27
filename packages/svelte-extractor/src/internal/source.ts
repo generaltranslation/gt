@@ -214,8 +214,9 @@ function parseWithoutStyles(
 ): SvelteRoot {
   const options = { modern: true as const, ...(filename && { filename }) };
   const styles: Range[] = [];
-  for (const { content } of findSvelteTags(source, ['style'])) {
-    if (content) styles.push(content);
+  // Scan scripts too, so `<style>` inside a script string is skipped.
+  for (const { name, content } of findSvelteTags(source, ['script', 'style'])) {
+    if (name === 'style' && content) styles.push(content);
   }
   if (styles.length === 0) return parse(source, options) as SvelteRoot;
 
