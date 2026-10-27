@@ -15,8 +15,7 @@
   "author": "General Translation, Inc.",
   "license": "MIT",
   "scripts": {
-    "emit-types": "sh ../../scripts/emit-types.sh",
-    "transpile": "tsdown && pnpm run emit-types",
+    "transpile": "tsdown",
     "check:package": "node ../../scripts/check-package.mjs",
     "build": "pnpm run transpile",
     "build:watch": "tsdown --watch",
