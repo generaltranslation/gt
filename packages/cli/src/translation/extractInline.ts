@@ -36,6 +36,7 @@ export function extractInlineFromProject(
     library,
     projectRoot: process.cwd(),
     filePatterns,
+    includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
   });
   if (sveltePlan.handled) {
     return sveltePlan.run({ extractPrimary });
