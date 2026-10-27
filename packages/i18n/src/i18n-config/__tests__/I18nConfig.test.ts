@@ -138,6 +138,37 @@ describe('I18nConfig', () => {
     ).toBe('en');
   });
 
+  it('resolves locales with the configured localeMatcher, including one-off overrides', () => {
+    const config = new I18nConfig({
+      defaultLocale: 'en-GB',
+      localeMatcher: 'lookup',
+    });
+
+    expect(config.localeMatcher).toBe('lookup');
+    expect(config.determineSupportedLocale('en')).toBeUndefined();
+    expect(
+      config.determineSupportedLocale('fr', { locales: ['fr-FR'] })
+    ).toBeUndefined();
+    expect(
+      new I18nConfig({ defaultLocale: 'en-GB' }).determineLocale('en')
+    ).toBe('en-GB');
+  });
+
+  it.each([false, true])(
+    'rejects an invalid localeMatcher with services=%s',
+    (services) => {
+      expect(
+        () =>
+          new I18nConfig({
+            localeMatcher: 'fuzzy' as never,
+            ...(services
+              ? { projectId: 'test-project' }
+              : { cacheUrl: null, runtimeUrl: null }),
+          })
+      ).toThrow('Invalid I18nConfig localeMatcher');
+    }
+  );
+
   it('sends the dev API key as the runtime API key when no API key is set', () => {
     vi.stubEnv('GT_API_KEY', '');
     const runtime = (params: { apiKey?: string; devApiKey?: string }) =>
