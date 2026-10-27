@@ -1,12 +1,17 @@
 import { defineConfig } from 'tsdown';
-import { createTsdownUnbundleConfig } from '../../tsdown.preset.mts';
+import {
+  createTsdownUnbundleConfig,
+  withPackageChecks,
+} from '../../tsdown.preset.mts';
 
 export default defineConfig(
-  createTsdownUnbundleConfig({
-    format: 'cjs',
-    dts: true,
-    outputOptions: {
-      exports: 'named',
-    },
-  })
+  withPackageChecks(
+    createTsdownUnbundleConfig({
+      format: 'cjs',
+      dts: true,
+      outputOptions: {
+        exports: 'named',
+      },
+    })
+  )
 );

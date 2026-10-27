@@ -54,8 +54,7 @@
     "release:alpha": "pnpm publish --access public --tag alpha",
     "release:beta": "pnpm publish --access public --tag beta",
     "release:latest": "pnpm publish --access public --tag latest",
-    "build": "plugin-kit verify-package --silent && pkg-utils build --strict --check --clean",
-    "check:package": "node ../../scripts/check-package.mjs",
+    "build": "plugin-kit verify-package --silent && pkg-utils build --strict --check --clean && publint && attw --pack . --profile esm-only",
     "build:release": "pnpm run typecheck && pnpm run build",
     "format": "oxfmt .",
     "link-watch": "plugin-kit link-watch",
@@ -76,6 +75,7 @@
     "sanity-plugin-internationalized-array": "^5.1.27"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
     "@portabletext/types": "^2.0.15",
     "@sanity/browserslist-config": "^1.0.5",
     "@sanity/icons": "^5.2.1",
@@ -90,6 +90,7 @@
     "groq-js": "^1.29.0",
     "jsdom": "^26.1.0",
     "just-clone": "^6.2.0",
+    "publint": "^0.3.25",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "sanity": "^6.9.2",

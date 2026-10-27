@@ -1,5 +1,8 @@
 import { defineConfig, type Rolldown } from 'tsdown';
-import { createTsdownUnbundleConfig } from '../../tsdown.preset.mts';
+import {
+  createTsdownUnbundleConfig,
+  withPackageChecks,
+} from '../../tsdown.preset.mts';
 
 const entries = [
   'src/pure.ts',
@@ -43,7 +46,9 @@ const esm = createTsdownUnbundleConfig({
   plugins: [esmDeclarationStubs],
 });
 
-export default defineConfig([
-  { ...cjs, minify: true, dts: true },
-  { ...esm, minify: true },
-]);
+export default defineConfig(
+  withPackageChecks([
+    { ...cjs, minify: true, dts: true },
+    { ...esm, minify: true },
+  ])
+);

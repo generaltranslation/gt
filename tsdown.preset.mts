@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { basename, dirname, extname, relative, resolve } from 'node:path';
 import { rm } from 'node:fs/promises';
 
-import type { UserConfig } from 'tsdown';
+import type { AttwOptions, UserConfig } from 'tsdown';
 
 type UseClientBoundaryPluginOptions = {
   emittedSourceFiles?: string[] | 'all';
@@ -11,6 +11,34 @@ type UseClientBoundaryPluginOptions = {
   outputExtension: string;
   root?: string;
 };
+
+type PackageCheckOptions = Pick<
+  AttwOptions,
+  'profile' | 'ignoreRules' | 'excludeEntrypoints'
+>;
+
+/**
+ * Runs publint and arethetypeswrong on the packed tarball in CI and fails the
+ * build on errors. tsdown checks a package once however many configs it has,
+ * so the checks go on the first config.
+ *
+ * The default profile is node16 because no package supports node10
+ * resolution. ESM-only packages use the esm-only profile.
+ */
+export function withPackageChecks(
+  configs: UserConfig | UserConfig[],
+  { profile = 'node16', ...attw }: PackageCheckOptions = {}
+): UserConfig[] {
+  const [first, ...rest] = [configs].flat();
+  return [
+    {
+      ...first,
+      publint: 'ci-only',
+      attw: { enabled: 'ci-only', level: 'error', profile, ...attw },
+    },
+    ...rest,
+  ];
+}
 
 export function createTsdownConfig(entry: string[], deps?: UserConfig['deps']) {
   return [

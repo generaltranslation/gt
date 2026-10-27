@@ -91,9 +91,6 @@ jobs:
       - name: Typecheck
         run: pnpm exec turbo typecheck --filter="...[$CHANGE_BASE]" --filter='!gt-next-middleware-e2e' --filter='!./examples/*'
 
-      - name: Check published packages
-        run: pnpm exec turbo check:package --filter="...[$CHANGE_BASE]" --filter='!gt-next-middleware-e2e' --filter='!./examples/*'
-
       - name: Run tests
         run: pnpm exec turbo test --filter="...[$CHANGE_BASE]" --filter='!gt-next-middleware-e2e' --filter='!./examples/*'
 

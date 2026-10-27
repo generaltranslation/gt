@@ -25,7 +25,6 @@
   },
   "scripts": {
     "build": "tsdown",
-    "check:package": "node ../../scripts/check-package.mjs",
     "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
     "build:release": "pnpm run build:clean",
     "release": "pnpm run build:clean && pnpm publish",

@@ -1,5 +1,5 @@
 import { defineConfig } from 'tsdown';
-import { createTsdownConfig } from '../../tsdown.preset.mts';
+import { createTsdownConfig, withPackageChecks } from '../../tsdown.preset.mts';
 
 const deps = {
   neverBundle: [
@@ -26,4 +26,4 @@ const configs = createTsdownConfig(['src/index.ts'], deps).map((config) => ({
   },
 }));
 
-export default defineConfig(configs);
+export default defineConfig(withPackageChecks(configs));

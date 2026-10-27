@@ -3,7 +3,6 @@
   "globalDependencies": [
     "tsdown.preset.mts",
     "tsconfig.base.json",
-    "scripts/check-package.mjs",
     "scripts/clean.sh"
   ],
   "tasks": {
@@ -31,10 +30,6 @@
     "test": {
       "dependsOn": ["build", "^build"],
       "cache": false
-    },
-    "check:package": {
-      "dependsOn": ["build"],
-      "outputs": []
     },
     "test:watch": {
       "cache": false,

@@ -57,7 +57,7 @@ beforeAll(async () => {
     packedPackages.map(async (directory) => {
       const pack = join(fixture, 'packs', directory);
       mkdirSync(pack, { recursive: true });
-      // pnpm is a .cmd shim on Windows and needs a shell (see check-package.mjs).
+      // pnpm is a .cmd shim on Windows, which needs a shell.
       const shell = process.platform === 'win32';
       await run(
         'pnpm',
