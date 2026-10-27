@@ -13,10 +13,8 @@ import {
 import { StringContent, StringFormat } from 'generaltranslation/types';
 import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 import { getShouldTranslate } from '../../hooks/utils/getShouldTranslate';
-import {
-  createDiagnosticMessage,
-  VAR_IDENTIFIER,
-} from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { formatMessage } from '@generaltranslation/format';
 
 /**
  * Translate a message
@@ -113,17 +111,13 @@ function handleTaggedTemplateLiteralTranslation(
   // Runtime values are not ICU-escaped, so never ICU-format the source itself
   if (!getShouldTranslate()) return interpolatedTemplate;
   const lookupOptions = createLookupOptions(locale, {}, 'ICU');
-  // Text with ICU arguments needs variables only (2) supplies, and _gt_ text
-  // is ICU-parsed while hashing, so runtime text could throw
-  const translatedInterpolatedTemplate =
-    interpolatedTemplate.includes('{') ||
-    interpolatedTemplate.includes(VAR_IDENTIFIER)
-      ? undefined
-      : getReactI18nCache().lookupTranslation(
-          locale,
-          interpolatedTemplate,
-          lookupOptions
-        );
+  const translatedInterpolatedTemplate = isBindingFreeIcu(interpolatedTemplate)
+    ? getReactI18nCache().lookupTranslation(
+        locale,
+        interpolatedTemplate,
+        lookupOptions
+      )
+    : undefined;
   if (translatedInterpolatedTemplate != null) {
     return interpolateMessage({
       source: interpolatedTemplate,
@@ -177,6 +171,22 @@ function extractInterpolatableValues(
     message: parts.join(''),
     variables,
   };
+}
+
+/**
+ * Whether text is valid ICU that formats without variables. Text with ICU
+ * elements needs variables only the placeholder lookup supplies, and invalid
+ * ICU would throw while hashing.
+ */
+function isBindingFreeIcu(text: string): boolean {
+  try {
+    // Every element that needs a binding throws when its variable is missing;
+    // a null-prototype record keeps names like {toString} missing
+    formatMessage(text, { variables: Object.create(null) });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**

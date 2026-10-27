@@ -75,6 +75,8 @@ describe('t', () => {
     const cliTranslations: Record<string, string> = {
       '9030b4f4c41221cc': 'Bonjour John',
       '4651b752888ee7cb': "N''arrête pas, John",
+      '7ac4062cd2c62378': 'Fichier : report_gt_final',
+      fa71f1836c559d3b: "Bonjour '{team}' John",
     };
     lookupTranslation.mockImplementation(
       (_locale: string, message: string, options: LookupOptions) =>
@@ -83,6 +85,10 @@ describe('t', () => {
 
     expect(t`Hello ${derive('John')}`).toBe('Bonjour John');
     expect(t`Don't stop, ${derive('John')}`).toBe("N'arrête pas, John");
+    expect(t`File: ${derive('report_gt_final')}`).toBe(
+      'Fichier : report_gt_final'
+    );
+    expect(t`Hello '{team}' ${derive('John')}`).toBe('Bonjour {team} John');
   });
 
   describe('falls back to the placeholder lookup for ICU-looking runtime values', () => {

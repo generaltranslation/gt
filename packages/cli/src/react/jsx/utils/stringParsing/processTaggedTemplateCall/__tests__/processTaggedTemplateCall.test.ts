@@ -219,6 +219,8 @@ describe('processTaggedTemplateCall', () => {
         import { derive } from 'gt-react';
         t\`Hello \${derive('John')}\`;
         t\`Don't stop, \${derive('John')}\`;
+        t\`File: \${derive('report_gt_final')}\`;
+        t\`Hello '{team}' \${derive('John')}\`;
       `
     );
     await calculateHashes(output.updates);
@@ -236,6 +238,16 @@ describe('processTaggedTemplateCall', () => {
         source: "Don't stop, John",
         dataFormat: 'ICU',
         hash: '4651b752888ee7cb',
+      },
+      {
+        source: 'File: report_gt_final',
+        dataFormat: 'ICU',
+        hash: '7ac4062cd2c62378',
+      },
+      {
+        source: "Hello '{team}' John",
+        dataFormat: 'ICU',
+        hash: 'fa71f1836c559d3b',
       },
     ]);
   });
