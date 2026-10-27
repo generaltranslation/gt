@@ -4,6 +4,7 @@
     "tsdown.preset.mts",
     "tsconfig.base.json",
     "scripts/emit-types.sh",
+    "scripts/check-package.mjs",
     "scripts/clean.sh"
   ],
   "tasks": {
@@ -34,7 +35,6 @@
     },
     "check:package": {
       "dependsOn": ["build"],
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/scripts/check-package.mjs"],
       "outputs": []
     },
     "test:watch": {
