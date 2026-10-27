@@ -14,6 +14,7 @@
     "build:watch": "turbo watch build --filter='./packages/*' --ui tui",
     "analyze:bundle": "pnpm --filter gt-bundle-analysis start",
     "test": "turbo run test --filter='./packages/*'",
+    "check:package": "turbo run check:package --filter='./packages/*'",
     "lint": "pnpm check:library-defaults && pnpm check:test-locations && pnpm test:check-package && oxlint packages && pnpm --filter './examples/*' --filter './tests/apps/**/*' --if-present run lint && oxfmt --check .",
     "lint:fix": "oxlint packages --fix && pnpm --filter './examples/*' --filter './tests/apps/**/*' --if-present lint --fix && oxfmt .",
     "transpile": "turbo run transpile --filter='./packages/*'",

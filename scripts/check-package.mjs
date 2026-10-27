@@ -1,9 +1,22 @@
 #!/usr/bin/env node
 
-// Runs the publint and attw checks that tsdown runs for packages built with
-// packageChecks in tsdown.preset.mts, for packages whose declarations are
-// written after tsdown (emit-types) or that are not built with tsdown.
-// Run it from a package directory after the package is built.
+// The package check for every published package: publint and
+// arethetypeswrong (attw) on the package as npm would publish it.
+//
+// - Run it from a package directory after the build, as each package's
+//   `check:package` script. The turbo `check:package` task depends on `build`
+//   so declarations from emit-types or other builders exist first.
+// - It checks the packed tarball (`pnpm pack`), not the working directory, so
+//   `files`, `exports` and missing build outputs are checked as published.
+// - publint errors fail the check; warnings and suggestions are printed.
+// - attw runs at error level with the node16 profile (bundler, node16 ESM
+//   and node16 CJS; node10 is not supported). ESM-only packages use the
+//   esm-only profile, which also skips node16 CJS.
+// - attw skips wildcard `exports`, so each wildcard is expanded against the
+//   packed files and the concrete subpaths are checked. Wildcards that match
+//   no file are reported.
+// - Profiles and exceptions are set per package in packageCheckOptions below.
+//   Every exception needs a comment that gives the reason.
 
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
@@ -33,6 +46,7 @@ export const packageCheckOptions = {
   'gt-remark': { profile: 'esm-only' },
   'gt-sanity': { profile: 'esm-only' },
   '@generaltranslation/vue-extractor': { profile: 'esm-only' },
+  'gt-tanstack-start': { profile: 'esm-only' },
   'gt-next': {
     profile: 'node16',
     // Pre-existing: tsc emits CJS-scoped .d.ts that also serve the .mjs build,

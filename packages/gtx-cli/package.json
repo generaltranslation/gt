@@ -13,7 +13,7 @@
   "type": "module",
   "scripts": {
     "emit-types": "sh ../../scripts/emit-types.sh",
-    "transpile": "tsdown && pnpm run emit-types && pnpm run check:package",
+    "transpile": "tsdown && pnpm run emit-types",
     "check:package": "node ../../scripts/check-package.mjs",
     "build": "pnpm run transpile",
     "build:clean": "sh ../../scripts/clean.sh && pnpm bin:restore && rm -rf binaries && pnpm run build",

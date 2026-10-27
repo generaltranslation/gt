@@ -12,45 +12,7 @@ type UseClientBoundaryPluginOptions = {
   root?: string;
 };
 
-type PackageChecks = Pick<UserConfig, 'publint' | 'attw'>;
-
-// publint and attw run on the packed package after every config of a
-// package.json finishes. tsdown runs attw once only when all of those configs
-// share the same options object, so these objects are shared constants.
-// tsdown imports both tools as optional peers, which pnpm resolves from the
-// root devDependencies.
-const packageChecks = {
-  node16: { publint: true, attw: { profile: 'node16', level: 'error' } },
-  // ESM-only packages have no CommonJS entry for node16 require to check.
-  esmOnly: { publint: true, attw: { profile: 'esm-only', level: 'error' } },
-} satisfies Record<string, PackageChecks>;
-
-type PackageChecksProfile = keyof typeof packageChecks;
-
-export function getPackageChecks(profile: PackageChecksProfile) {
-  // attw skips wildcard exports, and tsdown takes attw options before the
-  // build, so they cannot list the built files a wildcard matches.
-  // scripts/check-package.mjs expands wildcards against the packed files.
-  const { name, exports } = JSON.parse(
-    readFileSync(resolve(process.cwd(), 'package.json'), 'utf8')
-  );
-  const wildcards = Object.keys(exports ?? {}).filter((key) =>
-    key.includes('*')
-  );
-  if (wildcards.length > 0) {
-    throw new Error(
-      `${name} has wildcard exports (${wildcards.join(', ')}) that tsdown's attw check skips. Run scripts/check-package.mjs after the build instead.`
-    );
-  }
-  return packageChecks[profile];
-}
-
-export function createTsdownConfig(
-  entry: string[],
-  deps?: UserConfig['deps'],
-  checksProfile: PackageChecksProfile = 'node16'
-) {
-  const checks = getPackageChecks(checksProfile);
+export function createTsdownConfig(entry: string[], deps?: UserConfig['deps']) {
   return [
     {
       entry,
@@ -59,9 +21,8 @@ export function createTsdownConfig(
       sourcemap: true,
       clean: true,
       deps: { onlyBundle: false, ...deps },
-      ...checks,
     },
-    { entry, format: ['esm'] as const, sourcemap: true, ...checks },
+    { entry, format: ['esm'] as const, sourcemap: true },
   ];
 }
 

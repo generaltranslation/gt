@@ -36,7 +36,7 @@ const entries: Record<string, string> = {
 
 export default defineConfig(
   Object.entries(entries).map(([name, entry], index) => {
-    const [, esmConfig] = createTsdownConfig([entry], deps, 'esmOnly');
+    const [, esmConfig] = createTsdownConfig([entry], deps);
     return {
       ...esmConfig,
       entry: { [name]: entry },

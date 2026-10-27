@@ -14,6 +14,7 @@
     "build:release": "pnpm run build:clean",
     "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
     "build": "tsdown",
+    "check:package": "node ../../scripts/check-package.mjs",
     "test": "vitest run --config=./vitest.config.ts",
     "test:watch": "vitest --config=./vitest.config.ts",
     "release": "pnpm run build:clean && pnpm publish",
