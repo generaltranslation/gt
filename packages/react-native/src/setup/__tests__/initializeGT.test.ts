@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { getTranslationsSnapshot } from '@generaltranslation/react-core/pure';
-import { initializeGT } from '../initializeGT';
+import {
+  getTranslationsSnapshot,
+  internalInitializeGTSRA as initializeGT,
+} from '@generaltranslation/react-core/pure';
 
 describe('initializeGT', () => {
   afterEach(() => {

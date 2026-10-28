@@ -16,7 +16,6 @@ export {
   getLocaleEmoji,
   getLocaleName,
   getLocaleProperties,
-  getRegionProperties,
   isSameDialect,
   isSameLanguage,
   isSupersetLocale,
@@ -27,17 +26,20 @@ export {
   standardizeLocale,
 } from './core';
 
-export { HTML_CONTENT_PROPS } from './types';
+export { getRegionProperties } from './locales/getRegionProperties';
 
+export { HTML_CONTENT_PROPS } from './types-dir/jsx/content';
+
+export type { LocaleProperties } from './locales/getLocaleProperties';
+export type { CustomRegionMapping } from './locales/getRegionProperties';
+export type { CustomMapping } from './locales/customLocaleMapping';
+export type { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
+export type { Variable, VariableType } from './types-dir/jsx/variables';
 export type {
   Content,
   ContentByFormat,
   ContentFor,
-  CustomMapping,
-  CustomRegionMapping,
   DataFormat,
-  CutoffFormatOptions,
-  FormatVariables,
   GTProp,
   HtmlContentPropKeysRecord,
   HtmlContentPropValuesRecord,
@@ -46,10 +48,8 @@ export type {
   JsxChild,
   JsxChildren,
   JsxElement,
-  LocaleProperties,
   StringContent,
   StringFormat,
   StringMessage,
-  Variable,
-  VariableType,
-} from './types';
+} from './types-dir/jsx/content';
+export type { FormatVariables } from './types';

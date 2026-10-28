@@ -2,7 +2,7 @@ import { Argument, Command, InvalidArgumentError, Option } from 'commander';
 import {
   OrgApiKeyPermission,
   ProjectApiKeyPermission,
-} from 'generaltranslation/api';
+} from '@generaltranslation/api';
 import { DEFAULT_TRANSLATIONS_DIR } from '../utils/constants.js';
 import {
   applySetupConfig,

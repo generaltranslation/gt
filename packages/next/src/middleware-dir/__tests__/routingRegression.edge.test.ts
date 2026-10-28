@@ -2,7 +2,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 import { createNextMiddleware } from '../createNextMiddleware';
-import { createPathToSharedPathMap, getSharedPath } from '../utils';
+import { createPathToSharedPathMap } from '../createPathMatcher';
+import { getSharedPath } from '../matchPath';
 import { getDynamicSegmentType } from '../createPathMatcher';
 
 beforeEach(() => {

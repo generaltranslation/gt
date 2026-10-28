@@ -1,9 +1,9 @@
 // @vitest-environment edge-runtime
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
-import { defaultLocaleCookieName } from '@generaltranslation/react-core/pure';
+import { defaultLocaleCookieName } from 'gt-i18n/internal/cookies';
 import { createNextMiddleware, type RouteOverrides } from '../../middleware';
-import type { PathConfig } from '../utils';
+import type { PathConfig } from '../createPathMatcher';
 import { defaultLocaleHeaderName } from '../../utils/headers';
 
 const origin = 'http://localhost:3000';

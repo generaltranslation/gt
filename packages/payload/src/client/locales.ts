@@ -6,8 +6,6 @@ import {
   type LocaleOption,
 } from '../locales';
 
-export type { LocaleOption };
-
 // The languages to offer, from Payload's locales and the plugin's settings.
 export function useLocaleOptions(): LocaleOption[] {
   const { config } = useConfig();

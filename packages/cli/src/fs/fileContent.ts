@@ -1,5 +1,6 @@
 import fs from 'node:fs';
-import { isBinaryFileFormat, type FileFormat } from 'generaltranslation/types';
+import { isBinaryFileFormat } from 'generaltranslation/types';
+import type { FileFormat } from '@generaltranslation/api';
 
 /**
  * How file content crosses the disk boundary.

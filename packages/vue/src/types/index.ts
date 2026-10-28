@@ -1,5 +1,5 @@
 import type { LocaleConfig } from '@generaltranslation/format';
-import type { JsxChildren } from 'generaltranslation/types';
+import type { JsxChildren } from '@generaltranslation/format/types';
 import type { App, Ref } from 'vue';
 
 /**

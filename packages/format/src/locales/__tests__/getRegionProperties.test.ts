@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { getRegionProperties } from '../../core';
-import type { CustomRegionMapping } from '../../types';
+import {
+  getRegionProperties,
+  type CustomRegionMapping,
+} from '../getRegionProperties';
 
 describe('getRegionProperties', () => {
   it('returns localized properties for ISO alpha-2 regions', () => {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { extractVars } from '../extractVars';
-import { GTIntl } from 'generaltranslation';
+import { GTIntl } from '@generaltranslation/format';
 
 describe('static extractVars', () => {
   describe('basic functionality', () => {

@@ -25,7 +25,8 @@ import {
   projectKeyWithoutProjectIdError,
 } from './logging/errors';
 
-export { GTRuntime, type LocaleConfig } from './runtime';
+export { GTRuntime } from './runtime';
+export type { LocaleConfig } from '@generaltranslation/format';
 export type {
   GTAccountConfig,
   GTCredentials,

@@ -1,5 +1,5 @@
 import type { ProjectHandle } from 'generaltranslation';
-import type { ErrorCode } from 'generaltranslation/api';
+import type { ErrorCode } from '@generaltranslation/api';
 
 // A Payload document or part of one, as the Local API returns it.
 export type Data = Record<string, unknown>;

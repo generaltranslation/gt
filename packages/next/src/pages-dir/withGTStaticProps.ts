@@ -1,7 +1,9 @@
 import type { GetStaticProps, GetStaticPropsContext, PreviewData } from 'next';
 import type { ParsedUrlQuery } from 'querystring';
-import { getI18nConfig } from '@generaltranslation/react-core/pure';
-import { getTranslationsSnapshot } from 'gt-react';
+import {
+  getI18nConfig,
+  getTranslationsSnapshot,
+} from '@generaltranslation/react-core/pure';
 import { withGTStaticPropsLocaleRoutingError } from '../errors/ssg';
 import { resolvePagesRouterLocale } from './parseLocale';
 

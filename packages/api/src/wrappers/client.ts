@@ -9,8 +9,6 @@ import {
 } from './transport';
 import type { RetryPolicy } from './transport';
 
-export type { ApiVersion };
-
 export const API_VERSION = '2026-10-08.v1' satisfies ApiVersion;
 
 export type UserTokenProvider = {

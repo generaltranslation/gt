@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { awaitJobs, createApiClient } from 'generaltranslation/api';
+import { awaitJobs, createApiClient } from '@generaltranslation/api';
 import { Libraries } from '../../../types/libraries.js';
 import type { ProjectHandle } from 'generaltranslation';
 import { TEMPLATE_FILE_NAME } from '../../../utils/constants.js';

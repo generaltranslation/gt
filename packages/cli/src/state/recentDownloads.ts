@@ -1,4 +1,4 @@
-import type { FileFormat } from 'generaltranslation/types';
+import type { FileFormat } from '@generaltranslation/api';
 
 export type DownloadMeta = {
   branchId: string;

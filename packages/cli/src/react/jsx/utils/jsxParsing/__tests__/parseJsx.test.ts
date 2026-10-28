@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import { parseTranslationComponent } from '../parseJsx.js';
 import { resolveImportPath } from '../../resolveImportPath.js';
 import { ParsingConfigOptions } from '../../../../../types/parsing.js';
-import { Updates } from '../../../../../types/index.js';
+import { Updates } from 'generaltranslation/types';
 import { hashSource } from 'generaltranslation/id';
 import type {
   JsxChild,

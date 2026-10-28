@@ -3,7 +3,10 @@ import { DateTime } from '../../variables/DateTime';
 import { Num } from '../../variables/Num';
 import { RelativeTime } from '../../variables/RelativeTime';
 import { Var } from '../../variables/Var';
-import { createRenderPipeline, type RenderPreparedT } from 'gt-react';
+import {
+  createRenderPipeline,
+  type RenderPreparedT,
+} from '@generaltranslation/react-core/pure';
 
 const renderPipeline = createRenderPipeline({
   Currency,

@@ -4,7 +4,7 @@ import {
   dedupeUpdates,
   linkDeriveUpdates,
 } from '../postProcess.js';
-import type { Updates } from '../../types/index.js';
+import type { Updates } from 'generaltranslation/types';
 import { hashSource } from 'generaltranslation/id';
 
 describe('calculateHashes', () => {

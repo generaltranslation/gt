@@ -16,8 +16,8 @@ import {
   createVueScriptAnalysis,
   exposeVueScriptImportsToTemplate,
   parseVueScript,
-  type VueScriptAnalysis,
-} from './script.js';
+} from './script/analyze.js';
+import type { VueScriptAnalysis } from './script/model.js';
 import { parseScriptAst } from './script/parser.js';
 import {
   shiftCompilerAstLocations,
