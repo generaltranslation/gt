@@ -11,6 +11,7 @@ _test_cli
 _testing
 dist/
 .next/
+.svelte-kit/
 .output/
 .turbo
 .claude/settings.local.json
@@ -31,6 +32,8 @@ examples/expo-react-native/android/
 examples/expo-react-native/ios/
 *.env.*
 lib/
+# SvelteKit's $lib alias requires src/lib
+!tests/apps/sveltekit/src/lib/
 *.hmap
 *.ipa
 *.xcuserstate
