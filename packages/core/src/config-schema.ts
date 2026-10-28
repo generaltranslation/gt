@@ -1,5 +1,6 @@
 export {
   GTConfigSchema,
   GTOutputFileConfigSchema,
-  createConfigIssuesDiagnostic,
+  describeConfigIssues,
+  describeConfigParseError,
 } from './config/schema';

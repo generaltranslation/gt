@@ -330,6 +330,27 @@ describe('gtUnplugin config loading', () => {
       warnSpy.mockRestore();
     }
   });
+
+  it('warns with the invalid keys when gt.config.json does not match the schema', async () => {
+    const cwd = createTempDir();
+    writeGTConfig(cwd, {
+      files: { gt: { parsingFlags: { enableAutoJsxInjection: 'yes' } } },
+    });
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    try {
+      await transformWithPlugin(undefined, cwd);
+
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      const warning = warnSpy.mock.calls[0]?.[0];
+      expect(warning).toContain('Failed to load gt.config.json');
+      expect(warning).toContain(
+        'files.gt.parsingFlags.enableAutoJsxInjection: Invalid type'
+      );
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
 });
 
 describe('bundler adapters', () => {
