@@ -36,7 +36,7 @@ export { minifyVariableType } from './utils/minify';
 export { decode, encode } from './utils/base64';
 export { isSupportedFileFormatTransform } from './utils/isSupportedFileFormatTransform';
 export { supportedModelProviders } from './translate/modelProvider';
-export type { ModelProvider } from './translate/modelProvider';
+export type { ModelProvider } from '@generaltranslation/api';
 
 // derive
 export { indexVars } from './derive/indexVars';

@@ -1,4 +1,4 @@
-import type { SetTagResponse } from 'generaltranslation/api';
+import type { SetTagResponse } from '@generaltranslation/api';
 import { logger } from '../../console/logger.js';
 import type { ProjectHandle } from 'generaltranslation';
 import { Settings } from '../../types/index.js';

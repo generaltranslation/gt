@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { hashSource } from 'generaltranslation/id';
-import type { JsxChildren } from 'generaltranslation/types';
+import type { JsxChildren } from '@generaltranslation/format/types';
 import {
   DiagnosticCategory,
   JsxEmit,

@@ -10,7 +10,3 @@ import type {
  * @param {object} params.loadTranslations - The custom translation loader to use
  */
 export type InitializeGTParams = I18nConfigParams & I18nCacheConstructorParams;
-
-// Other Reexports
-export type { GTConfig } from 'generaltranslation/types';
-export type { TranslationsLoader } from 'gt-i18n/internal/types';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ApiError, ErrorCode } from 'generaltranslation/api';
+import { ApiError, ErrorCode } from '@generaltranslation/api';
 import { apiErrorCause } from '../apiErrorCause';
 
 describe('apiErrorCause', () => {

@@ -5,7 +5,7 @@ import {
   ApiError,
   ErrorCode,
   ProjectApiKeyPermission,
-} from 'generaltranslation/api';
+} from '@generaltranslation/api';
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,

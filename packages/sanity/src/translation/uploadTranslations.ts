@@ -1,5 +1,5 @@
 import type { GTFile, Secrets } from '../types';
-import type { UploadTranslationsResponse } from 'generaltranslation/api';
+import type { UploadTranslationsResponse } from '@generaltranslation/api';
 import { gt, projectFor } from '../adapter/core';
 import type { SerializedDocument } from '../serialization/types';
 import type { ExistingTranslation } from './collectExistingTranslations';

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { intlCache } from '../../cache/IntlCache';
-import { getLocaleName, getRegionProperties } from '../../core';
+import { getLocaleName } from '../../core';
 import { defaultDefaultLocale } from '../../settings/settings';
 import type { CustomMapping } from '../customLocaleMapping';
 import { _determineLocale, type MatchLocale } from '../determineLocale';
@@ -15,6 +15,7 @@ import {
   _getLocaleProperties,
   createCustomLocaleProperties,
 } from '../getLocaleProperties';
+import { getRegionProperties } from '../getRegionProperties';
 import { _isValidLocale, _standardizeLocale } from '../isValidLocale';
 import { _resolveAliasLocale } from '../resolveAliasLocale';
 

@@ -14,8 +14,8 @@ import {
 } from '../../fs/findFilepath.js';
 import { readFileContent } from '../../fs/fileContent.js';
 import { Settings } from '../../types/index.js';
-import type { FileToUpload } from '../../types/data.js';
-import type { FileDataFormat } from 'generaltranslation/api';
+import type { FileDataFormat } from '@generaltranslation/api';
+import type { FileToUpload } from 'generaltranslation/types';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
 import { parseJson } from '../json/parseJson.js';
 import {

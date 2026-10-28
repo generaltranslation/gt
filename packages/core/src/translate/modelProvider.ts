@@ -1,8 +1,6 @@
 import { ModelProvider } from '@generaltranslation/api';
 import { createDiagnosticMessage } from '../logging/diagnostics';
 
-export type { ModelProvider };
-
 export const supportedModelProviders =
   /* @__PURE__ */ Object.values(ModelProvider);
 

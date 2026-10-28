@@ -4,17 +4,17 @@ import { NextRequest } from 'next/server';
 import {
   defaultLocaleCookieName,
   defaultResetLocaleCookieName,
-} from '@generaltranslation/react-core/pure';
+} from 'gt-i18n/internal/cookies';
 import { defaultLocaleHeaderName } from '../../utils/headers';
 // The public entry point, as apps import it.
 import { createNextMiddleware, type RouteOverrides } from '../../middleware';
-import { getDynamicSegmentType } from '../createPathMatcher';
 import {
   createPathMatcher,
   createPathToSharedPathMap,
-  getSharedPath,
+  getDynamicSegmentType,
   type PathConfig,
-} from '../utils';
+} from '../createPathMatcher';
+import { getSharedPath } from '../matchPath';
 import {
   expectRoutedResponse,
   stubRoutingEnv,

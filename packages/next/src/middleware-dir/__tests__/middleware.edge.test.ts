@@ -5,25 +5,22 @@ import { GTIntl } from 'generaltranslation/internal';
 import {
   defaultLocaleCookieName as LOCALE_COOKIE,
   defaultResetLocaleCookieName as RESET_COOKIE,
-} from '@generaltranslation/react-core/pure';
+} from 'gt-i18n/internal/cookies';
 import {
   defaultLocaleRoutingEnabledCookieName as ROUTING_COOKIE,
   defaultReferrerLocaleCookieName as REFERRER_COOKIE,
 } from '../../utils/cookies';
 import { defaultLocaleHeaderName as LOCALE_HEADER } from '../../utils/headers';
-import {
-  createNextMiddleware,
-  type RouteOverrides,
-} from '../createNextMiddleware';
+import { createNextMiddleware } from '../createNextMiddleware';
 import { splitMiddlewareConfig } from '../defaultMiddlewareConfig';
 import { resolveMiddlewareConfig } from '../resolveMiddlewareConfig';
-import type { MiddlewareConfig } from '../types';
+import type { MiddlewareConfig, RouteOverrides } from '../types';
 import {
   createPathMatcher,
-  getLocaleFromRequest,
   type PathConfig,
   type PathMatcher,
-} from '../utils';
+} from '../createPathMatcher';
+import { getLocaleFromRequest } from '../utils';
 import { stubRoutingEnv, useRoutingEnv } from './routingTestUtils';
 
 const origin = 'https://example.com';

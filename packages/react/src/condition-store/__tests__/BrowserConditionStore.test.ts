@@ -1,8 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  defaultResetLocaleCookieName,
-  initializeI18nConfig,
-} from '@generaltranslation/react-core/pure';
+import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
+import { defaultResetLocaleCookieName } from 'gt-i18n/internal/cookies';
 import { BrowserConditionStore } from '../BrowserConditionStore';
 import { createOrUpdateBrowserConditionStore } from '../createBrowserConditionStore';
 

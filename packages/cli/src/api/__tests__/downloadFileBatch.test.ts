@@ -4,9 +4,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import nodePath from 'node:path';
 import { logger } from '../../console/logger.js';
-import type { FileFormat } from 'generaltranslation/types';
+import type { FileFormat } from '@generaltranslation/api';
 import { createMockSettings } from '../__mocks__/settings.js';
-import { ApiError, ErrorCode } from 'generaltranslation/api';
+import { ApiError, ErrorCode } from '@generaltranslation/api';
 import {
   findOrCreateEntry,
   readLockfile,

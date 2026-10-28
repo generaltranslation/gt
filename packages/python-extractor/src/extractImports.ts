@@ -1,4 +1,4 @@
-import type { SyntaxNode } from './parser.js';
+import type { Node as SyntaxNode } from 'web-tree-sitter';
 import {
   PYTHON_GT_PACKAGES,
   PYTHON_TRANSLATION_FUNCTIONS,

@@ -54,21 +54,22 @@ export {
 export {
   decodeMsg,
   decodeOptions,
-  decodeVars,
-  declareVar,
-  derive,
   getDefaultLocale,
   getLocaleProperties,
   getLocales,
   resolveCanonicalLocale,
-  getTranslationsSnapshot,
   getVersionId,
   gtFallback,
   mFallback,
   msg,
-} from 'gt-react';
+} from 'gt-i18n';
+export { decodeVars, declareVar, derive } from 'generaltranslation';
+export { getTranslationsSnapshot } from '@generaltranslation/react-core/pure';
 export { useLocalizeHref } from './link/useLocalizeHref';
 export { isLocaleSupported } from './request/localeValidation';
 
 // ===== Types ===== //
-export type { GTTranslationOptions, RuntimeTranslationOptions } from 'gt-react';
+export type {
+  GTTranslationOptions,
+  RuntimeTranslationOptions,
+} from 'gt-i18n/types';

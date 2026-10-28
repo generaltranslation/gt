@@ -1,5 +1,5 @@
 import { hashSource } from 'generaltranslation/id';
-import type { JsxChildren } from 'generaltranslation/types';
+import type { JsxChildren } from '@generaltranslation/format/types';
 import { createRenderer, createSSRApp, type Component } from 'vue';
 import { renderToString } from 'vue/server-renderer';
 import { vi } from 'vitest';

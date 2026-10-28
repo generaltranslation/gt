@@ -7,3 +7,5 @@ export type { RuntimeTranslationOptions } from 'gt-i18n/types';
 
 // Setup types
 export * from './setup/types';
+export type { GTConfig } from 'generaltranslation/types';
+export type { TranslationsLoader } from 'gt-i18n/internal/types';

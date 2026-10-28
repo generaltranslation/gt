@@ -1,5 +1,5 @@
 import type { GTFile, Secrets } from '../types';
-import type { UploadSourceFilesResponse } from 'generaltranslation/api';
+import type { UploadSourceFilesResponse } from '@generaltranslation/api';
 import { gt, projectFor } from '../adapter/core';
 import type { SerializedDocument } from '../serialization/types';
 import { resolveFileName } from '../utils/fileNames';
