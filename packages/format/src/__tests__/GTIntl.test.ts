@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { GTIntl } from '../GTIntl';
 import { determineLocale } from '../core';
+import { intlCache } from '../cache/IntlCache';
 import type { CustomMapping } from '../types';
 
 describe('GTIntl', () => {
@@ -215,6 +216,26 @@ describe('determineLocale locale matching', () => {
   ])('lookup resolves %j against %j to %s', (requested, locales, expected) => {
     const config = new GTIntl({ locales, localeMatcher: 'lookup' });
     expect(config.determineLocale(requested)).toBe(expected);
+  });
+});
+
+describe('requested locale caching', () => {
+  it('does not grow the Intl cache with distinct requested tags', () => {
+    const intl = new GTIntl({ locales: ['en', 'fr'] });
+    const cacheSize = () =>
+      Object.values(intlCache['cache']).reduce(
+        (size, entries) => size + Object.keys(entries ?? {}).length,
+        0
+      );
+    // Warm the fixed language and region DisplayNames entries.
+    intl.determineLocale('en-US');
+    const sizeBefore = cacheSize();
+    for (let i = 0; i < 100; i++) {
+      const requested = `en-${String(i).padStart(3, '0')}`;
+      intl.isValidLocale(requested);
+      intl.determineLocale(requested);
+    }
+    expect(cacheSize()).toBe(sizeBefore);
   });
 });
 
