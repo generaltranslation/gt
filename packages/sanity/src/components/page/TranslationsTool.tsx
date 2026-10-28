@@ -36,10 +36,7 @@ import {
   createTranslationStatusKey,
   getDocumentPublishedId,
 } from '../../utils/documentIds';
-import {
-  getLocaleRestriction,
-  getSelectedLocaleIds,
-} from '../../utils/locales';
+import { getSelectedLocaleIds } from '../../utils/locales';
 
 const TranslationsToolContent: React.FC = () => {
   const [isTranslateAllDialogOpen, setIsTranslateAllDialogOpen] =
@@ -303,7 +300,7 @@ const TranslationsToolContent: React.FC = () => {
                     onClick={() => {
                       setCurrentOperation('Publish Translations');
                       handlePublishAllTranslations({
-                        localeIds: getLocaleRestriction(locales),
+                        localeIds: selectedLocaleIds,
                       });
                     }}
                     text='Publish Translations'

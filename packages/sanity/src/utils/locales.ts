@@ -31,14 +31,17 @@ export function getSelectedLocaleIds(locales: TranslationLocale[]): string[] {
 }
 
 /**
- * The locales a bulk action should be limited to, or `null` when every locale
- * is selected. `null` means "no restriction" rather than "these locales", so
- * an all-locales run still covers entries for locales no longer in the config.
+ * Locales whose translation status should be polled: the selected ones, plus
+ * any still pending. Deselecting a locale mid-run must not stop it being
+ * polled, or its pending marker never clears.
  */
-export function getLocaleRestriction(
-  locales: TranslationLocale[]
-): string[] | null {
-  return locales.every(isLocaleSelected) ? null : getSelectedLocaleIds(locales);
+export function getLocaleIdsToPoll(
+  locales: TranslationLocale[],
+  isPending: (localeId: string) => boolean
+): string[] {
+  return locales
+    .filter((locale) => isLocaleSelected(locale) || isPending(locale.localeId))
+    .map((locale) => locale.localeId);
 }
 
 export function setLocaleSelected(

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import {
-  getLocaleRestriction,
+  getLocaleIdsToPoll,
   getSelectedLocaleIds,
   resolveTargetLocales,
   setLocaleSelected,
@@ -70,25 +70,25 @@ describe('getSelectedLocaleIds', () => {
   });
 });
 
-describe('getLocaleRestriction', () => {
-  test('is null when every locale is selected', () => {
+describe('getLocaleIdsToPoll', () => {
+  test('polls the selected locales', () => {
     expect(
-      getLocaleRestriction([locale('en-GB'), locale('fr-FR', true)])
-    ).toBeNull();
-  });
-
-  test('lists the selected locales when some are deselected', () => {
-    expect(
-      getLocaleRestriction([
-        locale('en-GB', true),
-        locale('fr-FR', false),
-        locale('de-DE', false),
-      ])
+      getLocaleIdsToPoll(
+        [locale('en-GB', true), locale('fr-FR', false)],
+        () => false
+      )
     ).toEqual(['en-GB']);
   });
 
-  test('is an empty list when nothing is selected', () => {
-    expect(getLocaleRestriction([locale('en-GB', false)])).toEqual([]);
+  test('keeps polling a deselected locale while it is pending', () => {
+    // Translate All ran for en-GB and fr-FR, then fr-FR was deselected before
+    // it finished. Dropping it from the poll would leave it pending forever.
+    expect(
+      getLocaleIdsToPoll(
+        [locale('en-GB', true), locale('fr-FR', false), locale('de-DE', false)],
+        (localeId) => localeId === 'fr-FR'
+      )
+    ).toEqual(['en-GB', 'fr-FR']);
   });
 });
 

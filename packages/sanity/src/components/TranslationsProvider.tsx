@@ -41,7 +41,7 @@ import {
   TRANSLATION_DOCS_FOR_PUBLISH_QUERY,
 } from '../sanity-api/publishDocuments';
 import { getLocales } from '../adapter/getLocales';
-import { getSelectedLocaleIds } from '../utils/locales';
+import { getLocaleIdsToPoll, getSelectedLocaleIds } from '../utils/locales';
 import type {
   FileProperties,
   TranslationPreferences,
@@ -256,6 +256,11 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     Set<string>
   >(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const pendingTranslationsRef = useRef(pendingTranslations);
+  // Changing the locale selection starts a new refresh while an older one may
+  // still be in flight. Only the latest request may write statuses, or a slow
+  // response for the previous selection would overwrite the current one.
+  const latestRefreshRef = useRef(0);
 
   const client = useClient();
   const { projectId, dataset } = client.config();
@@ -319,6 +324,10 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   useEffect(() => {
     downloadStatusRef.current = downloadStatus;
   }, [downloadStatus]);
+
+  useEffect(() => {
+    pendingTranslationsRef.current = pendingTranslations;
+  }, [pendingTranslations]);
 
   const getVersionId = useCallback(
     (document: SanityDocument) =>
@@ -931,16 +940,36 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   const handleRefreshAll = useCallback(
     async ({ silent = false }: { silent?: boolean } = {}) => {
       if (!secrets || documents.length === 0 || !branchId) return;
+      const refreshId = ++latestRefreshRef.current;
       setIsRefreshing(true);
 
       try {
-        const availableLocaleIds = locales
-          .filter((locale) => locale.enabled !== false)
-          .map((locale) => locale.localeId);
+        // Selected locales, plus any still translating. A locale deselected
+        // mid-run keeps being polled until it reports ready, or its pending
+        // marker would never clear and Translate All would stay disabled.
+        const localeIdsByDocument = new Map(
+          documents.map((doc) => {
+            const documentId = getDocumentPublishedId(doc);
+            const versionId = getVersionId(doc);
+            return [
+              doc,
+              getLocaleIdsToPoll(locales, (localeId) =>
+                pendingTranslationsRef.current.has(
+                  createTranslationStatusKey(
+                    branchId,
+                    documentId,
+                    versionId,
+                    localeId
+                  )
+                )
+              ),
+            ] as const;
+          })
+        );
 
         const fileQueryData: FileProperties[] = [];
         for (const doc of documents) {
-          for (const localeId of availableLocaleIds) {
+          for (const localeId of localeIdsByDocument.get(doc) ?? []) {
             const documentId = getDocumentPublishedId(doc);
             fileQueryData.push({
               versionId: getVersionId(doc),
@@ -957,13 +986,15 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
           secrets
         );
 
+        if (refreshId !== latestRefreshRef.current) return;
+
         // Built here rather than inside an updater: it derives from the
         // response, not from previous state, and a state updater has to stay
         // pure — React may run it more than once.
         const newStatuses = new Map<string, TranslationStatus>();
 
         for (const doc of documents) {
-          for (const localeId of availableLocaleIds) {
+          for (const localeId of localeIdsByDocument.get(doc) ?? []) {
             const documentId = getDocumentPublishedId(doc);
             const versionId = getVersionId(doc);
             const key = createTranslationStatusKey(
@@ -1025,7 +1056,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
           closable: true,
         });
       } finally {
-        setIsRefreshing(false);
+        if (refreshId === latestRefreshRef.current) setIsRefreshing(false);
       }
     },
     [secrets, documents, locales, branchId, getVersionId]
