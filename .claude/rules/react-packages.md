@@ -21,6 +21,8 @@ paths:
 
 `gt-react` and `gt-react-native` are fixed-version siblings (see `.changeset/config.json`). Both re-export most of their API from `@generaltranslation/react-core`, with platform-specific wrappers (e.g., GTProvider, locale detection, storage). Names that `gt-i18n` or `generaltranslation` own are re-exported straight from that owner, because `react-core` does not re-export them. Plumbing that only sibling packages use (render pipeline, React i18n cache, format-locale helpers) is not re-exported; siblings import it from `@generaltranslation/react-core/pure`.
 
+These re-exports follow "Imports and re-exports" in `AGENTS.md`, which `pnpm check:reexports` enforces.
+
 **When reviewing or implementing changes:**
 
 - If a new component, hook, or function is added to `gt-react`, check whether an equivalent should be added to `gt-react-native` (and vice versa). Most exports from `react-core` should be re-exported from both packages.
