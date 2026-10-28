@@ -21,17 +21,19 @@ function metadata(id: string, entries: MetadataEntry[]) {
  * Runs the real publish query the provider sends, via Sanity's own GROQ engine.
  *
  * `sourceDocumentIds` defaults to the published set, matching the common case
- * where every source under management is already published.
+ * where every source under management is already published. `localeIds`
+ * defaults to `null`, meaning every locale is selected.
  */
 async function selectTranslationDocIds(
   dataset: unknown[],
   publishedDocumentIds: string[],
-  sourceDocumentIds: string[] = publishedDocumentIds
+  sourceDocumentIds: string[] = publishedDocumentIds,
+  localeIds: string[] | null = null
 ): Promise<string[]> {
   const tree = parse(TRANSLATION_DOCS_FOR_PUBLISH_QUERY);
   const value = await evaluate(tree, {
     dataset,
-    params: { publishedDocumentIds, sourceDocumentIds },
+    params: { publishedDocumentIds, sourceDocumentIds, localeIds },
   });
   const result = (await value.get()) as {
     translationDocs?: { docId?: string }[];
@@ -168,5 +170,50 @@ describe('TRANSLATION_DOCS_FOR_PUBLISH_QUERY', () => {
     expect(await selectTranslationDocIds(dataset, ['page-a'])).toEqual([
       'page-a-de',
     ]);
+  });
+
+  test('returns only the selected locales when restricted', async () => {
+    const dataset = [
+      metadata('page-a', [
+        { language: 'en-US', ref: 'page-a' },
+        { language: 'en-GB', ref: 'page-a-gb' },
+        { language: 'fr-FR', ref: 'page-a-fr' },
+      ]),
+      metadata('page-b', [
+        { language: 'en-US', ref: 'page-b' },
+        { language: 'en-GB', ref: 'page-b-gb' },
+        { language: 'de-DE', ref: 'page-b-de' },
+      ]),
+    ];
+
+    expect(
+      await selectTranslationDocIds(
+        dataset,
+        ['page-a', 'page-b'],
+        ['page-a', 'page-b'],
+        ['en-GB']
+      )
+    ).toEqual(['page-a-gb', 'page-b-gb']);
+  });
+
+  test('never returns a source labelled with a selected locale', async () => {
+    // A restriction only narrows translations. A stale entry that labels
+    // another source with the selected locale must still be excluded.
+    const dataset = [
+      metadata('page-a', [
+        { language: 'en-US', ref: 'page-a' },
+        { language: 'en-GB', ref: 'page-b' },
+        { language: 'en-GB', ref: 'page-a-gb' },
+      ]),
+    ];
+
+    expect(
+      await selectTranslationDocIds(
+        dataset,
+        ['page-a'],
+        ['page-a', 'page-b'],
+        ['en-GB']
+      )
+    ).toEqual(['page-a-gb']);
   });
 });
