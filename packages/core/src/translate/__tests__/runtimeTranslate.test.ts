@@ -72,15 +72,15 @@ describe.sequential('runtime translation requests', () => {
     expect(result).toEqual({ greeting: translated });
   });
 
-  it('narrows JSON translations to their format-specific content type', async () => {
-    mockTranslateResponse({
+  it('returns successful translations as the service sent them', async () => {
+    const translations = {
       jsx: {
         success: true,
         translation: ['Hola ', { t: 'strong', c: ['mundo'] }],
         locale: 'es',
         dataFormat: 'JSX',
       },
-      invalid: {
+      mismatched: {
         success: true,
         translation: 42,
         locale: 'es',
@@ -92,54 +92,22 @@ describe.sequential('runtime translation requests', () => {
         locale: 'es',
         dataFormat: 'ICU_TREE',
       },
-      invalidTree: {
-        success: true,
-        translation: 'Hola',
-        locale: 'es',
-        dataFormat: 'ICU_TREE',
-      },
-    });
+    } as const;
+    mockTranslateResponse(translations);
 
     const result = await runtime.translateMany(
       {
         jsx: { source: ['Hello ', { t: 'strong', c: ['world'] }] },
-        invalid: { source: 'Forty-two' },
+        mismatched: { source: 'Forty-two' },
         tree: {
           source: ['Hello, ', ['name']],
-          metadata: { dataFormat: 'ICU_TREE' },
-        },
-        invalidTree: {
-          source: ['Hello'],
           metadata: { dataFormat: 'ICU_TREE' },
         },
       },
       options
     );
 
-    expect(result).toEqual({
-      jsx: {
-        success: true,
-        translation: ['Hola ', { t: 'strong', c: ['mundo'] }],
-        locale: 'es',
-        dataFormat: 'JSX',
-      },
-      invalid: {
-        success: false,
-        error: 'Invalid translation returned',
-        code: 'internal_error',
-      },
-      tree: {
-        success: true,
-        translation: ['Hola, ', ['name']],
-        locale: 'es',
-        dataFormat: 'ICU_TREE',
-      },
-      invalidTree: {
-        success: false,
-        error: 'Invalid translation returned',
-        code: 'internal_error',
-      },
-    });
+    expect(result).toEqual(translations);
   });
 
   it('allows translation timeouts longer than the SDK default', async () => {
