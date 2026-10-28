@@ -35,7 +35,7 @@ class IntlCache {
    * Generates a consistent cache key from locales and options.
    * Handles all LocalesArgument types (string, Locale, array, undefined).
    */
-  private generateKey(locales: Intl.LocalesArgument, options = {}) {
+  private generateKey(locales: Intl.LocalesArgument, options: object) {
     // Normalize locales to string representation
     const localeKey = !locales
       ? 'undefined'
@@ -44,9 +44,7 @@ class IntlCache {
         : String(locales);
 
     // Sort option keys to ensure consistent key generation regardless of property order
-    const sortedOptions = options
-      ? JSON.stringify(options, Object.keys(options).sort())
-      : '{}';
+    const sortedOptions = JSON.stringify(options, Object.keys(options).sort());
     return `${localeKey}:${sortedOptions}`;
   }
 
