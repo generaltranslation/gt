@@ -139,9 +139,7 @@ export class I18nConfig extends GTIntl {
   resolveLocale(locale: string): string {
     const resolvedLocale = this.determineSupportedLocale(locale);
     if (!this.isValidLocale(locale) || !resolvedLocale) {
-      throw new Error(
-        `Locale "${locale}" is not valid. Use a valid BCP 47 locale code or add a custom mapping.`
-      );
+      throw new Error(createInvalidLocaleError(locale));
     }
     return resolvedLocale;
   }
@@ -252,6 +250,14 @@ function resolveGTServicesEnabled(config: I18nConfigParams): boolean {
     getTranslationApiType(config) === TranslationApiType.GT
   );
 }
+
+const createInvalidLocaleError = (locale: string) =>
+  createDiagnosticMessage({
+    source: 'gt-i18n',
+    severity: 'Error',
+    whatHappened: `Locale "${locale}" is not valid`,
+    fix: 'Use a valid BCP 47 locale code or add a custom mapping',
+  });
 
 const missingRuntimeProjectIdError = createDiagnosticMessage({
   source: 'gt-i18n',

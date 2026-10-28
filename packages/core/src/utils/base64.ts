@@ -27,7 +27,8 @@ export function decode(base64: string): string {
   for (let i = 0; i < binary.length; i++) {
     bytes[i] = binary.charCodeAt(i);
   }
-  return new TextDecoder().decode(bytes);
+  // Keep a leading BOM: it is file content, and Buffer keeps it too.
+  return new TextDecoder('utf-8', { ignoreBOM: true }).decode(bytes);
 }
 
 export function encodeFileContent(

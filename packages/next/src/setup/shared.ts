@@ -1,6 +1,8 @@
 import { type I18nConfigParams } from '@generaltranslation/react-core/pure';
 import { type NextI18nCacheParams } from '../i18n-cache/NextI18nCache';
+import type { BaseWithGTConfigProps } from '../config-dir/props/withGTConfigProps';
 import { resolveTranslationLoader } from '../resolvers/resolveTranslationLoader';
+import { parseEnvConfig } from '../utils/parseEnvConfig';
 import { getRuntimeCredentials } from './runtimeCredentials';
 
 export type NextSetupI18nConfigParams = I18nConfigParams & {
@@ -14,8 +16,11 @@ export function getParams(): {
   nextI18nCacheParams: NextI18nCacheParams;
 } {
   // Read from build output
-  const clientConfig = JSON.parse(
-    process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS || '{}'
+  const clientConfig = parseEnvConfig<
+    BaseWithGTConfigProps & NextSetupI18nConfigParams & NextI18nCacheParams
+  >(
+    'NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS',
+    process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS
   );
   const { projectId, devApiKey, apiKey } = getRuntimeCredentials();
 

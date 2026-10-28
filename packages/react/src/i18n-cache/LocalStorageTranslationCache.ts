@@ -96,7 +96,7 @@ export class LocalStorageTranslationCache {
     const result: Record<string, Translation> = {};
 
     for (const [key, entry] of Object.entries(cache)) {
-      if (entry.exp > now) {
+      if (entry?.exp > now) {
         result[key] = entry.t;
       }
     }
@@ -246,7 +246,11 @@ export class LocalStorageTranslationCache {
         return {};
       }
       this._estimatedSize = raw.length;
-      return JSON.parse(raw) as Record<string, CachedEntry>;
+      const parsed: unknown = JSON.parse(raw);
+      // localStorage is user-editable; anything but a plain object is discarded.
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+        ? (parsed as Record<string, CachedEntry>)
+        : {};
     } catch {
       this._estimatedSize = 0;
       return {};
@@ -289,13 +293,15 @@ export class LocalStorageTranslationCache {
 
 /**
  * Helper function deletes expired entries from a cache in place.
+ * Entries whose `exp` is missing or does not compare as a number (edited
+ * storage) count as expired.
  */
 function deleteExpiredEntries(
   cache: Record<string, CachedEntry>,
   now: number = Date.now()
 ): void {
   for (const key of Object.keys(cache)) {
-    if (cache[key].exp <= now) {
+    if (!(cache[key]?.exp > now)) {
       delete cache[key];
     }
   }

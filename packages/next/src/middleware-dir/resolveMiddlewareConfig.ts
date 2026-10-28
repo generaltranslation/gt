@@ -1,25 +1,9 @@
-import { createInvalidMiddlewareEnvConfigError } from '../errors/middleware';
+import { parseEnvConfig } from '../utils/parseEnvConfig';
 import {
   defaultMiddlewareConfig,
   splitMiddlewareConfig,
 } from './defaultMiddlewareConfig';
 import type { MiddlewareConfig, ResolvedMiddlewareConfig } from './types';
-
-/** Parses a JSON env var written by `withGTConfig()`. */
-export function parseEnvConfig<T extends object>(
-  envName: string,
-  value: string | undefined
-): Partial<T> {
-  if (!value) return {};
-  try {
-    const parsed: unknown = JSON.parse(value);
-    // Valid JSON that isn't an object (e.g. `null`) is treated as unset.
-    return parsed && typeof parsed === 'object' ? (parsed as Partial<T>) : {};
-  } catch (error) {
-    console.error(createInvalidMiddlewareEnvConfigError(envName, error));
-    return {};
-  }
-}
 
 /**
  * Resolves middleware options with precedence:

@@ -187,5 +187,15 @@ Last line`;
         expect(decoded).toBe(str);
       });
     });
+
+    it('preserves a leading BOM with and without Buffer', () => {
+      const withBom = '\uFEFFhello';
+      expect(decode(encode(withBom))).toBe(withBom);
+      expect(
+        decodeFileContent(encodeFileContent(withBom, 'JSON'), 'JSON')
+      ).toBe(withBom);
+      bufferGlobal.Buffer = undefined;
+      expect(decode(encode(withBom))).toBe(withBom);
+    });
   });
 });

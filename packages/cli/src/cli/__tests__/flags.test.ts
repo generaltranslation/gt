@@ -25,15 +25,25 @@ describe('attachTranslateFlags', () => {
     expect(parseTranslateFlags(['--no-save-local']).saveLocal).toBe(false);
   });
 
-  it('rejects a non-numeric timeout as an invalid argument', () => {
-    vi.spyOn(process.stderr, 'write').mockReturnValue(true);
-
-    expect(() => parseTranslateFlags(['--timeout', 'nope'])).toThrow(
-      expect.objectContaining({
-        code: 'commander.invalidArgument',
-        exitCode: 1,
-        message: expect.stringContaining('Invalid timeout: not a number.'),
-      })
-    );
+  it('parses a whole-number timeout', () => {
+    expect(parseTranslateFlags(['--timeout', '0']).timeout).toBe(0);
+    expect(parseTranslateFlags(['--timeout', '120']).timeout).toBe(120);
   });
+
+  it.each(['nope', '12s', '1.5', '-1', ''])(
+    'rejects timeout %j as an invalid argument',
+    (value) => {
+      vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+
+      expect(() => parseTranslateFlags(['--timeout', value])).toThrow(
+        expect.objectContaining({
+          code: 'commander.invalidArgument',
+          exitCode: 1,
+          message: expect.stringContaining(
+            'Timeout must be a non-negative whole number of seconds.'
+          ),
+        })
+      );
+    }
+  );
 });
