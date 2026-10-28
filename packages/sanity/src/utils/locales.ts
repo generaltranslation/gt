@@ -1,3 +1,5 @@
+import type { TranslationLocale } from '../types';
+
 /**
  * `locales` is the list of translation *targets*, but configs often repeat the
  * source locale there — spreading `gt.config.json`, which pairs `defaultLocale`
@@ -16,5 +18,53 @@ export function resolveTargetLocales(
 ): string[] {
   return Array.from(new Set(locales)).filter(
     (locale) => locale !== sourceLocale
+  );
+}
+
+/** A locale is selected unless it has been explicitly switched off. */
+export function isLocaleSelected(locale: TranslationLocale): boolean {
+  return locale.enabled !== false;
+}
+
+export function getSelectedLocaleIds(locales: TranslationLocale[]): string[] {
+  return locales.filter(isLocaleSelected).map((locale) => locale.localeId);
+}
+
+/**
+ * The locales a bulk action should be limited to, or `null` when every locale
+ * is selected. `null` means "no restriction" rather than "these locales", so
+ * an all-locales run still covers entries for locales no longer in the config.
+ */
+export function getLocaleRestriction(
+  locales: TranslationLocale[]
+): string[] | null {
+  return locales.every(isLocaleSelected) ? null : getSelectedLocaleIds(locales);
+}
+
+export function setLocaleSelected(
+  locales: TranslationLocale[],
+  localeId: string,
+  selected: boolean
+): TranslationLocale[] {
+  return locales.map((locale) =>
+    locale.localeId === localeId ? { ...locale, enabled: selected } : locale
+  );
+}
+
+/**
+ * Selects every target locale, or clears them all when every one is already
+ * selected. The source locale is never a target, so it is left untouched.
+ */
+export function toggleAllLocales(
+  locales: TranslationLocale[],
+  sourceLocale: string
+): TranslationLocale[] {
+  const allSelected = locales
+    .filter((locale) => locale.localeId !== sourceLocale)
+    .every(isLocaleSelected);
+  return locales.map((locale) =>
+    locale.localeId === sourceLocale
+      ? locale
+      : { ...locale, enabled: !allSelected }
   );
 }

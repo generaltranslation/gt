@@ -41,6 +41,7 @@ import {
   TRANSLATION_DOCS_FOR_PUBLISH_QUERY,
 } from '../sanity-api/publishDocuments';
 import { getLocales } from '../adapter/getLocales';
+import { getSelectedLocaleIds } from '../utils/locales';
 import type {
   FileProperties,
   TranslationPreferences,
@@ -89,6 +90,14 @@ export type TranslateAllOptions = {
    * asking for.
    */
   force?: boolean;
+};
+
+export type PublishTranslationsOptions = {
+  /**
+   * Publish only translations in these locales. Omitted or `null` publishes
+   * every translation of the source documents, whatever its locale.
+   */
+  localeIds?: string[] | null;
 };
 
 interface TranslationsContextType {
@@ -147,7 +156,9 @@ interface TranslationsContextType {
     localeId: string
   ) => Promise<void>;
   handlePatchDocumentReferences: () => Promise<number>;
-  handlePublishAllTranslations: () => Promise<number>;
+  handlePublishAllTranslations: (
+    options?: PublishTranslationsOptions
+  ) => Promise<number>;
 }
 
 const TranslationsContext = createContext<TranslationsContextType | null>(null);
@@ -669,8 +680,14 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     setIsBusy(true);
 
     try {
+      // Statuses are refreshed for the selected locales only, but a refresh
+      // started by changing the selection may not have landed yet.
+      const selectedLocaleIds = new Set(getSelectedLocaleIds(locales));
+
       const readyFiles = await getReadyFilesForImport(translationStatuses, {
         onSelectedKeys: (keys) => setImportingTranslations(new Set(keys)),
+        filterReadyFiles: (_key, status) =>
+          selectedLocaleIds.has(status.fileData.locale),
       });
 
       if (readyFiles.length === 0) {
@@ -739,6 +756,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   }, [
     secrets,
     documents,
+    locales,
     translationStatuses,
     downloadStatus,
     translationContext,
@@ -811,6 +829,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       const readyFiles = await getReadyFilesForImport(translationStatuses, {
         onSelectedKeys: (keys) => setImportingTranslations(new Set(keys)),
         filterReadyFiles: (_key, status) =>
+          availableLocaleIds.includes(status.fileData.locale) &&
           !existingTranslations.has(
             createStableTranslationKey(
               branchId,
@@ -1219,80 +1238,84 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     }
   }, [secrets, documents, locales, client, branchId]);
 
-  const handlePublishAllTranslations = useCallback(async () => {
-    if (!secrets || documents.length === 0) return 0;
+  const handlePublishAllTranslations = useCallback(
+    async ({ localeIds = null }: PublishTranslationsOptions = {}) => {
+      if (!secrets || documents.length === 0) return 0;
 
-    setIsBusy(true);
+      setIsBusy(true);
 
-    try {
-      const sourceDocumentIds = documents.map(getDocumentPublishedId);
-      const publishedDocumentIds = await client.fetch(
-        `*[_id in $sourceDocumentIds]._id`,
-        { sourceDocumentIds }
-      );
+      try {
+        const sourceDocumentIds = documents.map(getDocumentPublishedId);
+        const publishedDocumentIds = await client.fetch(
+          `*[_id in $sourceDocumentIds]._id`,
+          { sourceDocumentIds }
+        );
 
-      if (publishedDocumentIds.length === 0) {
+        if (publishedDocumentIds.length === 0) {
+          toast.push({
+            title:
+              'No published source documents found to publish translations for',
+            status: 'warning',
+            closable: true,
+          });
+          return 0;
+        }
+
+        const translationMetadata = await client.fetch<
+          TranslationDocumentMetadata[]
+        >(TRANSLATION_DOCS_FOR_PUBLISH_QUERY, {
+          publishedDocumentIds,
+          sourceDocumentIds,
+          localeIds,
+        });
+
+        const translationDocIds = new Set<string>();
+        translationMetadata.forEach((metadata) => {
+          metadata.translationDocs?.forEach((translation) => {
+            if (translation.docId) {
+              translationDocIds.add(translation.docId);
+            }
+          });
+        });
+
+        const publishableIds = Array.from(translationDocIds);
+
+        if (publishableIds.length === 0) {
+          toast.push({
+            title: 'No translation documents found to publish',
+            status: 'warning',
+            closable: true,
+          });
+          return 0;
+        }
+
+        const translatedDocumentIds = await publishTranslations(
+          publishableIds,
+          client
+        );
+
+        toast.push({
+          title: `Published ${translatedDocumentIds.length} translation documents`,
+          status: 'success',
+          closable: true,
+        });
+
+        return translatedDocumentIds.length;
+      } catch (error) {
+        console.error('Error publishing translations:', error);
         toast.push({
           title:
-            'No published source documents found to publish translations for',
-          status: 'warning',
+            'Translations could not be published. No unpublished source documents were changed.',
+          status: 'error',
           closable: true,
         });
         return 0;
+      } finally {
+        setIsBusy(false);
       }
-
-      const translationMetadata = await client.fetch<
-        TranslationDocumentMetadata[]
-      >(TRANSLATION_DOCS_FOR_PUBLISH_QUERY, {
-        publishedDocumentIds,
-        sourceDocumentIds,
-      });
-
-      const translationDocIds = new Set<string>();
-      translationMetadata.forEach((metadata) => {
-        metadata.translationDocs?.forEach((translation) => {
-          if (translation.docId) {
-            translationDocIds.add(translation.docId);
-          }
-        });
-      });
-
-      const publishableIds = Array.from(translationDocIds);
-
-      if (publishableIds.length === 0) {
-        toast.push({
-          title: 'No translation documents found to publish',
-          status: 'warning',
-          closable: true,
-        });
-        return 0;
-      }
-
-      const translatedDocumentIds = await publishTranslations(
-        publishableIds,
-        client
-      );
-
-      toast.push({
-        title: `Published ${translatedDocumentIds.length} translation documents`,
-        status: 'success',
-        closable: true,
-      });
-
-      return translatedDocumentIds.length;
-    } catch (error) {
-      console.error('Error publishing translations:', error);
-      toast.push({
-        title:
-          'Translations could not be published. No unpublished source documents were changed.',
-        status: 'error',
-        closable: true,
-      });
-      return 0;
-    } finally {
-      setIsBusy(false);
-    }
-  }, [secrets, documents, client, branchId]);
+    },
+    [secrets, documents, client, branchId]
+  );
 
   useEffect(() => {
     fetchDocuments();
