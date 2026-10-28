@@ -3,7 +3,6 @@
   "globalDependencies": [
     "tsdown.preset.mts",
     "tsconfig.base.json",
-    "scripts/emit-types.sh",
     "scripts/clean.sh"
   ],
   "tasks": {

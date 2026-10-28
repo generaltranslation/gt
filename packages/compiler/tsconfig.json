@@ -1,9 +1,9 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "module": "CommonJS",
+    "module": "Node16",
     "target": "ES6",
-    "moduleResolution": "node",
+    "moduleResolution": "node16",
     "sourceMap": true,
     "declarationMap": true,
     "jsx": "react-jsx",

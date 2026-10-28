@@ -1,1 +1,1 @@
-export * from 'gt/types/index';
+export * from 'gt/types';

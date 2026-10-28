@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "module": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "target": "ES2018",
     "composite": true,
     "stripInternal": true,

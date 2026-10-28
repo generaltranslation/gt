@@ -84,15 +84,5 @@
         "default": "./dist/internal.mjs"
       }
     }
-  },
-  "typesVersions": {
-    "*": {
-      "types": [
-        "./dist/types.d.cts"
-      ],
-      "internal": [
-        "./dist/internal.d.cts"
-      ]
-    }
   }
 }

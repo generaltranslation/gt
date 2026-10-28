@@ -119,16 +119,6 @@
       "default": "./dist/internal/localeRouting.disabled.mjs"
     }
   },
-  "typesVersions": {
-    "*": {
-      "server": [
-        "./dist/server.d.mts"
-      ],
-      "plugin/vite": [
-        "./dist/plugin/vite.d.mts"
-      ]
-    }
-  },
   "keywords": [
     "tanstack",
     "start",

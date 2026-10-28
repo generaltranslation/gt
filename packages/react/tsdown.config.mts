@@ -3,6 +3,7 @@ import {
   createRemoveRuntimeArtifactsHook,
   createTsdownConfig,
   createUseClientBoundaryPlugin,
+  withPackageChecks,
 } from '../../tsdown.preset.mts';
 
 const deps = {
@@ -39,51 +40,53 @@ const entries = [
 const typesOnlyEntry = 'src/index.types.ts';
 
 export default defineConfig(
-  entries.flatMap((entry, index) => {
-    const entryDeps = entry.startsWith('src/index.') ? contextDeps : deps;
-    const [cjsConfig, esmConfig] = createTsdownConfig([entry], entryDeps);
+  withPackageChecks(
+    entries.flatMap((entry, index) => {
+      const entryDeps = entry.startsWith('src/index.') ? contextDeps : deps;
+      const [cjsConfig, esmConfig] = createTsdownConfig([entry], entryDeps);
 
-    return [
-      {
-        ...cjsConfig,
-        clean: index === 0,
-        define: {
-          'import.meta.env': '{}',
-        },
-        plugins: [
-          createUseClientBoundaryPlugin({
-            emittedSourceFiles: entries,
-            name: 'gt-react:use-client-boundaries',
-            outputExtension: '.cjs',
+      return [
+        {
+          ...cjsConfig,
+          clean: index === 0,
+          define: {
+            'import.meta.env': '{}',
+          },
+          plugins: [
+            createUseClientBoundaryPlugin({
+              emittedSourceFiles: entries,
+              name: 'gt-react:use-client-boundaries',
+              outputExtension: '.cjs',
+            }),
+          ],
+          ...(entry === typesOnlyEntry && {
+            onSuccess: createRemoveRuntimeArtifactsHook(process.cwd(), 'dist', [
+              'index.types.cjs',
+              'index.types.cjs.map',
+            ]),
           }),
-        ],
-        ...(entry === typesOnlyEntry && {
-          onSuccess: createRemoveRuntimeArtifactsHook(process.cwd(), 'dist', [
-            'index.types.cjs',
-            'index.types.cjs.map',
-          ]),
-        }),
-      },
-      {
-        ...esmConfig,
-        deps: {
-          onlyBundle: false,
-          ...entryDeps,
         },
-        plugins: [
-          createUseClientBoundaryPlugin({
-            emittedSourceFiles: entries,
-            name: 'gt-react:use-client-boundaries',
-            outputExtension: '.mjs',
+        {
+          ...esmConfig,
+          deps: {
+            onlyBundle: false,
+            ...entryDeps,
+          },
+          plugins: [
+            createUseClientBoundaryPlugin({
+              emittedSourceFiles: entries,
+              name: 'gt-react:use-client-boundaries',
+              outputExtension: '.mjs',
+            }),
+          ],
+          ...(entry === typesOnlyEntry && {
+            onSuccess: createRemoveRuntimeArtifactsHook(process.cwd(), 'dist', [
+              'index.types.mjs',
+              'index.types.mjs.map',
+            ]),
           }),
-        ],
-        ...(entry === typesOnlyEntry && {
-          onSuccess: createRemoveRuntimeArtifactsHook(process.cwd(), 'dist', [
-            'index.types.mjs',
-            'index.types.mjs.map',
-          ]),
-        }),
-      },
-    ];
-  })
+        },
+      ];
+    })
+  )
 );

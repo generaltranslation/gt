@@ -1,5 +1,9 @@
 import { defineConfig } from 'tsdown';
-import { createTsdownUnbundleConfig } from '../../tsdown.preset.mts';
+import {
+  createEsmDeclarationStubsPlugin,
+  createTsdownUnbundleConfig,
+  withPackageChecks,
+} from '../../tsdown.preset.mts';
 
 const entries = [
   'src/pure.ts',
@@ -19,9 +23,16 @@ const esm = createTsdownUnbundleConfig({
   entry: entries,
   clean: false,
   outExtensions: () => ({ js: '.mjs', dts: '.d.ts' }),
+  plugins: [
+    createEsmDeclarationStubsPlugin(
+      entries.map((entry) => entry.replace(/^src\/|\.ts$/g, ''))
+    ),
+  ],
 });
 
-export default defineConfig([
-  { ...cjs, minify: true, dts: true },
-  { ...esm, minify: true },
-]);
+export default defineConfig(
+  withPackageChecks([
+    { ...cjs, minify: true, dts: true },
+    { ...esm, minify: true },
+  ])
+);

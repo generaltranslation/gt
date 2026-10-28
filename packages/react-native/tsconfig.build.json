@@ -1,9 +1,0 @@
-{
-  "extends": "./tsconfig",
-  "compilerOptions": {
-    "noEmit": false,
-    "composite": false,
-    "verbatimModuleSyntax": false
-  },
-  "exclude": ["dist", "**/*.test.ts"]
-}

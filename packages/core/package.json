@@ -138,30 +138,5 @@
         "default": "./dist/diagnostics.mjs"
       }
     }
-  },
-  "typesVersions": {
-    "*": {
-      "internal": [
-        "./dist/internal.d.cts"
-      ],
-      "api": [
-        "./dist/api.d.cts"
-      ],
-      "id": [
-        "./dist/id.d.cts"
-      ],
-      "types": [
-        "./dist/types.d.cts"
-      ],
-      "errors": [
-        "./dist/errors.d.cts"
-      ],
-      "diagnostics": [
-        "./dist/diagnostics.d.cts"
-      ],
-      "runtime": [
-        "./dist/runtime.d.cts"
-      ]
-    }
   }
 }

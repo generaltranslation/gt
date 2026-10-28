@@ -170,30 +170,6 @@
       "rules": {
         "no-restricted-imports": "off"
       }
-    },
-    {
-      "files": ["packages/locadex/**/*.{ts,tsx}"],
-      "rules": {
-        "no-console": [
-          "error",
-          {
-            "allow": ["error"]
-          }
-        ]
-      }
-    },
-    {
-      "files": ["packages/locadex/**/*.{ts,tsx}"],
-      "plugins": ["import"],
-      "rules": {
-        "import/extensions": [
-          "error",
-          "ignorePackages",
-          {
-            "js": "always"
-          }
-        ]
-      }
     }
   ]
 }
