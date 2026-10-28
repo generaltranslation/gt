@@ -1,5 +1,11 @@
 # gt-sanity
 
+## 4.0.30
+
+### Patch Changes
+
+- [#2567](https://github.com/generaltranslation/gt/pull/2567) [`40b3939`](https://github.com/generaltranslation/gt/commit/40b3939e8e25f42e6c82d08678b060627a206d16) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add a locale selector to the Translations page. Translate All, Import All, Import Missing, Save Local Edits, Patch References, and Publish Translations now act only on the selected locales, and each confirm dialog lists them.
+
 ## 4.0.29
 
 ### Patch Changes
