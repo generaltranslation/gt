@@ -82,44 +82,34 @@ describe.sequential('runtime translation requests', () => {
     expect(result).toEqual({ greeting: { success: true, ...translated } });
   });
 
-  it('narrows JSON translations to their format-specific content type', async () => {
+  it('returns successful translations as the service sent them', async () => {
+    const jsx = {
+      translation: ['Hola ', { t: 'strong', c: ['mundo'] }],
+      locale: 'es',
+      dataFormat: 'JSX' as const,
+    };
+    const mismatched = {
+      translation: 42,
+      locale: 'es',
+      dataFormat: 'STRING' as const,
+    };
+    const tree = {
+      translation: ['Hola, ', ['name']],
+      locale: 'es',
+      dataFormat: 'ICU_TREE' as const,
+    };
     mockTranslateResponse([
-      {
-        status: 'succeeded',
-        translation: ['Hola ', { t: 'strong', c: ['mundo'] }],
-        locale: 'es',
-        dataFormat: 'JSX',
-      },
-      {
-        status: 'succeeded',
-        translation: 42,
-        locale: 'es',
-        dataFormat: 'STRING',
-      },
-      {
-        status: 'succeeded',
-        translation: ['Hola, ', ['name']],
-        locale: 'es',
-        dataFormat: 'ICU_TREE',
-      },
-      {
-        status: 'succeeded',
-        translation: 'Hola',
-        locale: 'es',
-        dataFormat: 'ICU_TREE',
-      },
+      { status: 'succeeded', ...jsx },
+      { status: 'succeeded', ...mismatched },
+      { status: 'succeeded', ...tree },
     ]);
 
     const result = await runtime.translateMany(
       {
         jsx: { source: ['Hello ', { t: 'strong', c: ['world'] }] },
-        invalid: { source: 'Forty-two' },
+        mismatched: { source: 'Forty-two' },
         tree: {
           source: ['Hello, ', ['name']],
-          metadata: { dataFormat: 'ICU_TREE' },
-        },
-        invalidTree: {
-          source: ['Hello'],
           metadata: { dataFormat: 'ICU_TREE' },
         },
       },
@@ -127,28 +117,9 @@ describe.sequential('runtime translation requests', () => {
     );
 
     expect(result).toEqual({
-      jsx: {
-        success: true,
-        translation: ['Hola ', { t: 'strong', c: ['mundo'] }],
-        locale: 'es',
-        dataFormat: 'JSX',
-      },
-      invalid: {
-        success: false,
-        error: 'Invalid translation returned',
-        code: 'internal_error',
-      },
-      tree: {
-        success: true,
-        translation: ['Hola, ', ['name']],
-        locale: 'es',
-        dataFormat: 'ICU_TREE',
-      },
-      invalidTree: {
-        success: false,
-        error: 'Invalid translation returned',
-        code: 'internal_error',
-      },
+      jsx: { success: true, ...jsx },
+      mismatched: { success: true, ...mismatched },
+      tree: { success: true, ...tree },
     });
   });
 

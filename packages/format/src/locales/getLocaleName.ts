@@ -14,7 +14,7 @@ import { _resolveCanonicalLocale } from './resolveCanonicalLocale';
  */
 export function _getLocaleName(
   locale: string,
-  defaultLocale: string = libraryDefaultLocale,
+  defaultLocale?: string,
   customMapping?: CustomMapping
 ): string {
   // Check for canonical locale

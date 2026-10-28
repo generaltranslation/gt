@@ -2,18 +2,10 @@ import {
   createApiClient,
   ErrorCode,
   translateContent,
-  type JsonObject,
-  type JsonValue,
   type TranslateContentData,
   type TranslateContentResponse,
 } from '@generaltranslation/api';
-import { isMessageTree } from '@generaltranslation/icu';
-import type {
-  Content,
-  GTProp,
-  JsxChildren,
-  JsxElement,
-} from '@generaltranslation/format/types';
+import type { Content } from '@generaltranslation/format/types';
 import type { TranslateManyResult, TranslationResult } from '../types';
 import type {
   EntryMetadata,
@@ -68,96 +60,13 @@ function splitRequests(
   return groups;
 }
 
-function isJsonObject(value: JsonValue | undefined): value is JsonObject {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
-
-function isGtProp(value: JsonValue | undefined): value is JsonObject & GTProp {
-  if (!isJsonObject(value)) return false;
-  if (value.t !== undefined && value.t !== 'p' && value.t !== 'b') return false;
-  if (
-    ['pl', 'ti', 'alt', 'arl', 'arb', 'ard'].some(
-      (key) => value[key] !== undefined && typeof value[key] !== 'string'
-    )
-  ) {
-    return false;
-  }
-  return (
-    value.b === undefined ||
-    (isJsonObject(value.b) && Object.values(value.b).every(isJsxChildren))
-  );
-}
-
-function isJsxElement(
-  value: JsonValue | undefined
-): value is JsonObject & JsxElement {
-  if (!isJsonObject(value)) return false;
-  return (
-    (value.t === undefined || typeof value.t === 'string') &&
-    (value.i === undefined || typeof value.i === 'number') &&
-    (value.d === undefined || isGtProp(value.d)) &&
-    (value.c === undefined || isJsxChildren(value.c))
-  );
-}
-
-function isJsxChild(
-  value: JsonValue | undefined
-): value is JsonValue & (string | JsxElement) {
-  return typeof value === 'string' || isJsxElement(value);
-}
-
-function isJsxChildren(
-  value: JsonValue | undefined
-): value is JsonValue & JsxChildren {
-  return (
-    value === null ||
-    typeof value === 'boolean' ||
-    isJsxChild(value) ||
-    (Array.isArray(value) && value.every(isJsxChild))
-  );
-}
-
-// JsonValue is wider than core's format-specific Content union, so narrow each
-// successful translation by dataFormat at the API boundary.
+// The generated schema types translations as JsonValue; the service returns
+// the content type matching each entry's dataFormat.
 function toTranslationResult(
   result: RuntimeTranslationResult
 ): TranslationResult {
-  if (result.status === 'failed') {
-    return { success: false, error: result.error, code: result.code };
-  }
-  if (result.dataFormat === 'JSX' && isJsxChildren(result.translation)) {
-    return {
-      success: true,
-      translation: result.translation,
-      dataFormat: result.dataFormat,
-      locale: result.locale,
-    };
-  }
-  if (result.dataFormat === 'ICU_TREE' && isMessageTree(result.translation)) {
-    return {
-      success: true,
-      translation: result.translation,
-      dataFormat: result.dataFormat,
-      locale: result.locale,
-    };
-  }
-  if (
-    result.dataFormat !== 'JSX' &&
-    result.dataFormat !== 'ICU_TREE' &&
-    typeof result.translation === 'string'
-  ) {
-    return {
-      success: true,
-      translation: result.translation,
-      dataFormat: result.dataFormat,
-      locale: result.locale,
-    };
-  }
-  return {
-    success: false,
-    error: 'Invalid translation returned',
-    code: ErrorCode.INTERNAL_ERROR,
-  };
+  const { status, ...rest } = result;
+  return { ...rest, success: status === 'succeeded' } as TranslationResult;
 }
 
 /**

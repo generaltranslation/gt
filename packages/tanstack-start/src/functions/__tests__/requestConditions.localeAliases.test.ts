@@ -67,6 +67,18 @@ describe('request locale aliases', () => {
     expect(readLocale(store, request)).toBe('en-us');
   });
 
+  it('resolves against the initialized config, which includes the default locale', () => {
+    Reflect.deleteProperty(globalThis, '__generaltranslation');
+    const defaultOutsideLocales = { defaultLocale: 'en', locales: ['fr'] };
+    initializeI18nConfig(defaultOutsideLocales);
+    const store = new AsyncLocalConditionStore(defaultOutsideLocales);
+    const request = new Request('https://example.com', {
+      headers: { 'accept-language': 'en, fr' },
+    });
+
+    expect(readLocale(store, request)).toBe('en');
+  });
+
   it('preserves canonical codes without a mapping', () => {
     Reflect.deleteProperty(globalThis, '__generaltranslation');
     const unmappedConfig = {
