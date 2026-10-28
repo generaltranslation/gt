@@ -68,6 +68,16 @@ Turbo tasks: `build`, `test`, `lint`, `lint:fix`, `format`, `format:fix`, `trans
 - Do not use default exports.
 - Avoid `useEffect` in React code. Prefer derived state, event handlers, refs, or framework data-loading patterns; only use `useEffect` when synchronizing with an external system.
 
+### Imports and re-exports
+
+- Import a symbol from where it is defined: inside a package, from the defining file; across packages, from the owner package's public entry. Do not import through another package's re-export.
+- Only a package's entry files (the files its `package.json` `exports` and tsdown entries point to) re-export, and only the package's own modules. Do not add internal barrels or pass-through modules.
+- Only facade packages re-export other packages, for end users and from the owner directly: `generaltranslation` (over `@generaltranslation/format` and `@generaltranslation/api`), `gt-i18n` and `gt-node`, the React frameworks (`gt-react`, `gt-react-native`, `gt-next`, `gt-tanstack-start`), `gt-svelte`, `gt-sanity` (its bundled plugins), and `gtx-cli` (over `gt`). `@generaltranslation/react-core` does not re-export `gt-i18n` or `generaltranslation`.
+- `gt-next` and `gt-tanstack-start` import React components and hooks from `gt-react`, whose entries own the `'use client'` directives and the `react-server` export conditions; they import non-component plumbing (render pipeline, caches, snapshot helpers) from `@generaltranslation/react-core/pure`.
+- First-party packages import symbols that `@generaltranslation/format` or `@generaltranslation/api` own from that package, declared as a direct `workspace:*` dependency, not from the `generaltranslation` facade.
+- Each symbol is exported from exactly one subpath, and types are exported from the same entry as their values. Do not add types-only subpaths.
+- `pnpm check:reexports` (part of `pnpm lint`) enforces the re-export rules; its allowed facades and its two named exceptions live in `scripts/check-reexports.mjs`.
+
 ## Canonical Library Defaults
 
 - Never repeat a library fallback as a literal in production source. Import the canonical constant so a default change propagates across every package. Before adding a fallback, search the owning package's settings and constants modules for an existing default.
