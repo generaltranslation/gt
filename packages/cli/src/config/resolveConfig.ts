@@ -1,31 +1,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { gtConfigFilePaths } from 'generaltranslation/config-schema';
 import { type GTConfigFile, loadConfig } from '../fs/config/loadConfig.js';
 
 export function resolveConfig(cwd: string): {
   path: string;
   config: GTConfigFile;
 } | null {
-  const configFilepath = 'gt.config.json';
-  if (fs.existsSync(path.join(cwd, configFilepath))) {
-    return {
-      path: path.join(cwd, configFilepath),
-      config: loadConfig(path.join(cwd, configFilepath)),
-    };
-  }
-  // Support config under .gt for parity with .locadex
-  if (fs.existsSync(path.join(cwd, '.gt/gt.config.json'))) {
-    return {
-      path: path.join(cwd, '.gt/gt.config.json'),
-      config: loadConfig(path.join(cwd, '.gt/gt.config.json')),
-    };
-  }
-  // Backward compatibility: support legacy .locadex directory
-  if (fs.existsSync(path.join(cwd, '.locadex/gt.config.json'))) {
-    return {
-      path: path.join(cwd, '.locadex/gt.config.json'),
-      config: loadConfig(path.join(cwd, '.locadex/gt.config.json')),
-    };
+  for (const configFilepath of gtConfigFilePaths) {
+    const resolvedPath = path.join(cwd, configFilepath);
+    if (fs.existsSync(resolvedPath)) {
+      return { path: resolvedPath, config: loadConfig(resolvedPath) };
+    }
   }
   return null;
 }

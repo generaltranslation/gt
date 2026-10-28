@@ -1,3 +1,5 @@
+import type { GTConfig } from 'generaltranslation/types';
+
 export const POLYFILLS = [
   '@formatjs/intl-getcanonicallocales/polyfill',
   '@formatjs/intl-locale/polyfill',
@@ -36,10 +38,8 @@ export interface PluginOptions {
   /* List of locales to polyfill */
   locales?: string[];
   /* Gt config object */
-  config?: { defaultLocale: string; locales: string[] } & Record<
-    string,
-    unknown
-  >;
+  config?: Required<Pick<GTConfig, 'defaultLocale' | 'locales'>> &
+    Record<string, unknown>;
   /* Path to the gt config file */
   configFilePath?: string;
   /* Resolved from package.json */

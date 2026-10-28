@@ -6,7 +6,10 @@ import {
 import { planSvelteExtraction } from '@generaltranslation/svelte-extractor/integration';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import type { InlineLibrary } from '../types/libraries.js';
-import type { GTParsingFlags, ParsingConfigOptions } from '../types/parsing.js';
+import type {
+  ParsingConfigOptions,
+  ResolvedGTParsingFlags,
+} from '../types/parsing.js';
 
 export type { PrimaryInlineExtractor } from '@generaltranslation/vue-extractor/integration';
 
@@ -27,7 +30,7 @@ const missingVueExtractorDiagnostic = createDiagnosticMessage({
 export function extractInlineFromProject(
   library: InlineLibrary,
   filePatterns: string[] | undefined,
-  parsingFlags: GTParsingFlags,
+  parsingFlags: ResolvedGTParsingFlags,
   parsingOptions: ParsingConfigOptions,
   extractPrimary?: PrimaryInlineExtractor,
   tsconfigPath?: string
