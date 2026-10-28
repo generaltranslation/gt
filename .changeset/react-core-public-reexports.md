@@ -8,8 +8,8 @@
 - `derive`, `declareVar`, `decodeVars`: import from `generaltranslation` (or `gt-i18n`).
 - `ReadonlyConditionStore`: import from `gt-i18n/internal`.
 - `defaultLocaleCookieName`, `defaultRegionCookieName`, `defaultEnableI18nCookieName`, `defaultResetLocaleCookieName`: import from `gt-i18n/internal/cookies`.
-- Types `GTTranslationOptions`, `GTFunctionType`, `MFunctionType`, `RuntimeTranslationOptions`: import from `gt-i18n/types`.
-- Type `GTProp`: import from `@generaltranslation/format/types`.
+- Types `GTTranslationOptions`, `GTFunctionType`, `MFunctionType`, `RuntimeTranslationOptions`: import from `gt-i18n`.
+- Type `GTProp`: import from `@generaltranslation/format`.
 
 `@generaltranslation/react-core/unstable` now exports only `t`, `useGT`, and `useMessages`. Import the message helpers (`msg`, `mFallback`, `derive`, `plural`, `select`, `selectordinal`, `part`, `number`, `n`, `date`) and their types from `gt-i18n/unstable`.
 

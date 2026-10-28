@@ -1,4 +1,4 @@
-import { FileToUpload } from 'generaltranslation/types';
+import { FileToUpload } from 'generaltranslation';
 import { FileTranslationData } from '../../workflows/download.js';
 
 /**

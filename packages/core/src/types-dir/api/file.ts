@@ -1,5 +1,5 @@
 import type { FileFormat, JsonObject } from '@generaltranslation/api';
-import type { DataFormat } from '@generaltranslation/format/types';
+import type { DataFormat } from '@generaltranslation/format';
 import { Updates } from './enqueueFiles';
 
 /**

@@ -1,7 +1,4 @@
-import type {
-  DataFormat,
-  StringFormat,
-} from '@generaltranslation/format/types';
+import type { DataFormat, StringFormat } from '@generaltranslation/format';
 
 /**
  * Values that get interpolated

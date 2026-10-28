@@ -1,5 +1,4 @@
-import type { ProjectHandle } from 'generaltranslation';
-import type { FileReference } from 'generaltranslation/types';
+import type { ProjectHandle, FileReference } from 'generaltranslation';
 import type { FileProperties } from '../../types/files.js';
 import {
   getFileTranslationKey,

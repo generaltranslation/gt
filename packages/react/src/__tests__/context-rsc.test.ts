@@ -3,8 +3,8 @@ import {
   createConditionStoreSingleton,
   getI18nConfig,
   initializeI18nConfig,
+  type ReadonlyConditionStoreInterface,
 } from 'gt-i18n/internal';
-import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
 
 describe('gt-react react-server surface', () => {
   it('exposes configured locale spellings without changing the internal list', async () => {

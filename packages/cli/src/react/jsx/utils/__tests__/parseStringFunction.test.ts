@@ -3,7 +3,7 @@ import * as t from '@babel/types';
 import { parse } from '@babel/parser';
 import traverse from '@babel/traverse';
 import { parseStrings } from '../parseStringFunction.js';
-import { Updates } from 'generaltranslation/types';
+import { Updates } from 'generaltranslation';
 
 describe('parseStrings', () => {
   const parseCode = (code: string) => {

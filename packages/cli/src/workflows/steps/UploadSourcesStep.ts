@@ -2,7 +2,8 @@ import type {
   FileReference,
   FileToUpload,
   MoveMapping,
-} from 'generaltranslation/types';
+  ProjectHandle,
+} from 'generaltranslation';
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
@@ -13,7 +14,6 @@ import {
   clearOrphanedFileNames,
   recordOrphanedFileNames,
 } from '../../state/orphanedFileNames.js';
-import type { ProjectHandle } from 'generaltranslation';
 import type { Settings } from '../../types/index.js';
 import chalk from 'chalk';
 import { BranchData } from '../../types/branch.js';

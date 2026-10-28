@@ -111,7 +111,4 @@ export {
   GtInternalRuntimeTranslateJsx,
   GtInternalRuntimeTranslateString,
 } from 'gt-i18n/internal';
-export type {
-  GTTranslationOptions,
-  RuntimeTranslationOptions,
-} from 'gt-i18n/types';
+export type { GTTranslationOptions, RuntimeTranslationOptions } from 'gt-i18n';

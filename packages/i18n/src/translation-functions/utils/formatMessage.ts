@@ -1,11 +1,13 @@
-import type { StringFormat } from '@generaltranslation/format/types';
+import {
+  formatMessage as formatUnconfiguredMessage,
+  type StringFormat,
+} from '@generaltranslation/format';
 import logger from '../../logs/logger';
 import { createInterpolationFailureMessage } from './messages';
 import {
   getI18nConfig,
   isI18nConfigInitialized,
 } from '../../i18n-config/singleton-operations';
-import { formatMessage as formatUnconfiguredMessage } from '@generaltranslation/format';
 
 /**
  * Given an encoded message and variables, formats the message.

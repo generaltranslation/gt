@@ -1,5 +1,5 @@
 import type { Metadata } from '../../../../types/index.js';
-import type { Updates } from 'generaltranslation/types';
+import type { Updates } from 'generaltranslation';
 import { randomUUID } from 'node:crypto';
 import generateModule from '@babel/generator';
 // Handle CommonJS/ESM interop
@@ -34,7 +34,7 @@ import {
 import {
   HTML_CONTENT_PROPS,
   type JsxChildren,
-} from '@generaltranslation/format/types';
+} from '@generaltranslation/format';
 import { NodePath } from '@babel/traverse';
 import { ParsingConfigOptions } from '../../../../types/parsing.js';
 import { resolveImportPath } from '../resolveImportPath.js';

@@ -13,7 +13,7 @@ import {
 import {
   HTML_CONTENT_PROPS,
   HtmlContentPropValuesRecord,
-} from '@generaltranslation/format/types';
+} from '@generaltranslation/format';
 
 /**
  * Check if a name is a GT function

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { FileToUpload } from 'generaltranslation/types';
+import type { FileToUpload } from 'generaltranslation';
 import type { Settings } from '../../types/index.js';
 import { logger } from '../../console/logger.js';
 import { clearWarnings, recordWarning } from '../../state/translateWarnings.js';

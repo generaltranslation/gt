@@ -5,16 +5,6 @@ import { extractCalls } from './extractCalls.js';
 
 export type { ExtractionResult, ExtractionMetadata } from './types.js';
 export type { ImportAlias } from './extractImports.js';
-export {
-  PYTHON_GT_PACKAGES,
-  PYTHON_GT_DEPENDENCIES,
-  PYTHON_T_FUNCTION,
-  PYTHON_MSG_FUNCTION,
-  PYTHON_DERIVE,
-  PYTHON_DECLARE_VAR,
-  PYTHON_TRANSLATION_FUNCTIONS,
-  PYTHON_METADATA_KWARGS,
-} from './constants.js';
 
 export async function extractFromPythonSource(
   sourceCode: string,

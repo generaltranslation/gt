@@ -1,4 +1,4 @@
-import type { Content } from 'generaltranslation/types';
+import type { Content } from '@generaltranslation/format';
 
 // TODO: Add purge key/locks to prevent concurrent purges across tabs
 // TODO: Add cache key/locks for non-atomic read-modify-write operations across tabs

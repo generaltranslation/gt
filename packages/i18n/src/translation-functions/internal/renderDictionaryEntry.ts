@@ -6,7 +6,7 @@ import type {
   TranslationVariables,
 } from '../types/options';
 import type { DictionaryEntry } from '../../i18n-cache/translations-manager/utils/types/dictionary';
-import type { StringFormat } from '@generaltranslation/format/types';
+import type { StringFormat } from '@generaltranslation/format';
 
 export function renderDictionaryEntry({
   sourceLocale,

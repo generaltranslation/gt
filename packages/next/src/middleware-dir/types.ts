@@ -1,5 +1,5 @@
 import type { GTIntl } from '@generaltranslation/format';
-import type { GTConfig } from 'generaltranslation/types';
+import type { GTConfig } from 'generaltranslation';
 import type { BaseWithGTConfigProps } from '../config-dir/props/withGTConfigProps';
 import type { PathConfig, PathMatcher } from './createPathMatcher';
 

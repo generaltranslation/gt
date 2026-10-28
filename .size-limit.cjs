@@ -93,7 +93,6 @@ module.exports = [
     'packages/core/dist/diagnostics.mjs',
     '1 kB'
   ),
-  core('generaltranslation/types', 'types'),
   // Node-only: loads valibot to validate gt.config.json.
   nodeEntry(
     'generaltranslation/config-schema',
@@ -102,15 +101,12 @@ module.exports = [
   ),
 
   format('@generaltranslation/format', 'index'),
-  format('@generaltranslation/format/types', 'types'),
   format('@generaltranslation/format/internal', 'internal'),
 
   i18n('gt-i18n', 'index'),
-  i18n('gt-i18n/types', 'types'),
   i18n('gt-i18n/internal', 'internal'),
   i18n('gt-i18n/internal/cookies', 'internal-cookies'),
   i18n('gt-i18n/internal/string', 'internal-string'),
-  i18n('gt-i18n/internal/types', 'internal-types'),
 
   reactCore('@generaltranslation/react-core/pure', 'pure'),
   reactCore('@generaltranslation/react-core/hooks', 'hooks'),
@@ -146,7 +142,6 @@ module.exports = [
   nextNode('gt-next/internal/_getRegion', 'internal/_getRegion'),
 
   node('gt-node', 'index', '40 kB'),
-  node('gt-node/types', 'types'),
   node('gt-node/internal', 'internal'),
 
   tanstack('gt-tanstack-start (client)', 'index.client'),

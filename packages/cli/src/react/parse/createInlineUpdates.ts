@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { Updates } from 'generaltranslation/types';
+import { Updates } from 'generaltranslation';
 
 import { parse } from '@babel/parser';
 import { parseTranslationComponent } from '../jsx/utils/jsxParsing/parseJsx.js';

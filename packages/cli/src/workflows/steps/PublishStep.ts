@@ -1,7 +1,6 @@
 import { logger } from '../../console/logger.js';
 import { recordWarning } from '../../state/translateWarnings.js';
-import type { PublishFileEntry } from 'generaltranslation/types';
-import type { ProjectHandle } from 'generaltranslation';
+import type { PublishFileEntry, ProjectHandle } from 'generaltranslation';
 import chalk from 'chalk';
 
 export class PublishStep {

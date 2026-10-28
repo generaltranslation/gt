@@ -5,7 +5,7 @@ import { createTranslateManyFactory } from '../translations-manager/utils/create
 import { hashMessage } from '../../utils/hashMessage';
 import { LookupOptions } from '../../translation-functions/types/options';
 import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
-import type { CustomMapping } from '@generaltranslation/format/types';
+import type { CustomMapping } from '@generaltranslation/format';
 
 // Mock createTranslateManyFactory to inject a controlled translateMany
 const mockTranslateMany = vi.fn();

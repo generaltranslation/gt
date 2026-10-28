@@ -1,6 +1,6 @@
 import type { GT, M } from 'gt-i18n/unstable';
 import { getGT, getMessages } from 'gt-i18n/unstable/internal';
-import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
+import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal';
 
 /** Binds the tagged getGT() to where an entry reads the locale, like createRuntime. */
 export function createUnstableGetGT(

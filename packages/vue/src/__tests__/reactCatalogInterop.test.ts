@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { hashSource } from 'generaltranslation/id';
-import type { JsxChildren } from '@generaltranslation/format/types';
+import type { JsxChildren } from '@generaltranslation/format';
 import { createSSRApp, h, type VNode, type VNodeChild } from 'vue';
 import { renderToString } from 'vue/server-renderer';
 import { describe, expect, it } from 'vitest';

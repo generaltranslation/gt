@@ -1,4 +1,4 @@
-import { Updates } from 'generaltranslation/types';
+import { Updates } from 'generaltranslation';
 import { TranslateFlags } from '../types/index.js';
 import fs from 'fs';
 import { logger } from '../console/logger.js';

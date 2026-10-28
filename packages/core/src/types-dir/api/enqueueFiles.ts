@@ -1,4 +1,4 @@
-import type { ContentFor, DataFormat } from '@generaltranslation/format/types';
+import type { ContentFor, DataFormat } from '@generaltranslation/format';
 
 type UpdateMetadata = {
   id?: string;

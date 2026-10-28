@@ -69,10 +69,6 @@
       "types": "./dist/functions.d.ts",
       "import": "./dist/functions.js"
     },
-    "./index": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    },
     "./main": {
       "types": "./dist/main.d.ts",
       "import": "./dist/main.js"
@@ -88,10 +84,6 @@
     "./react/parse/wrapContent": {
       "types": "./dist/react/parse/wrapContent.d.ts",
       "import": "./dist/react/parse/wrapContent.js"
-    },
-    "./types/index": {
-      "types": "./dist/types/index.d.ts",
-      "import": "./dist/types/index.js"
     },
     "./utils/installPackage": {
       "types": "./dist/utils/installPackage.d.ts",

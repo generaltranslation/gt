@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { TranslationsCache } from '../TranslationsCache';
 import { hashMessage } from '../../../utils/hashMessage';
 import { LookupOptions } from '../../../translation-functions/types/options';
-import type { Content } from '@generaltranslation/format/types';
+import type { Content } from '@generaltranslation/format';
 
 // Helper to build a key and hash for test messages
 function makeKey<T extends Content>(
