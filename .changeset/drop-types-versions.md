@@ -11,4 +11,4 @@
 'gt-tanstack-start': major
 ---
 
-Remove `typesVersions`. Types now resolve only through `exports`, so TypeScript projects need `moduleResolution` `bundler`, `node16` or `nodenext` to import subpaths such as `gt-next/server`.
+Remove `typesVersions`. Subpath types such as `gt-next/server` now resolve only through `exports`, which needs `moduleResolution` `bundler` (TypeScript 5.0+) or `node16`/`nodenext` (TypeScript 4.7+). `moduleResolution` `node` (node10) is no longer supported, including its implicit use with `module: commonjs` in TypeScript 5.9 and earlier and in create-next-app projects from Next.js 13.4.10 and earlier.
