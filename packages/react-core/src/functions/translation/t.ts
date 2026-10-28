@@ -63,15 +63,15 @@ export function resolveStringContent(
 ): StringContent {
   const i18nCache = getReactI18nCache();
   const defaultLocale = getI18nConfig().getDefaultLocale();
+  const lookupOptions = createLookupOptions(locale, options, 'ICU');
   if (!getShouldTranslate()) {
     return interpolateMessage({
-      options,
+      options: lookupOptions,
       source: content,
       sourceLocale: defaultLocale,
     });
   }
 
-  const lookupOptions = createLookupOptions(locale, options, 'ICU');
   const translation = i18nCache.lookupTranslation(
     lookupOptions.$locale,
     content,
@@ -108,16 +108,15 @@ function handleTaggedTemplateLiteralTranslation(
     messageOrStrings,
     values
   );
-  // Runtime values are not ICU-escaped, so never ICU-format the source itself
-  if (!getShouldTranslate()) return interpolatedTemplate;
   const lookupOptions = createLookupOptions(locale, {}, 'ICU');
-  const translatedInterpolatedTemplate = isBindingFreeIcu(interpolatedTemplate)
-    ? getReactI18nCache().lookupTranslation(
-        locale,
-        interpolatedTemplate,
-        lookupOptions
-      )
-    : undefined;
+  const translatedInterpolatedTemplate =
+    getShouldTranslate() && isBindingFreeIcu(interpolatedTemplate)
+      ? getReactI18nCache().lookupTranslation(
+          locale,
+          interpolatedTemplate,
+          lookupOptions
+        )
+      : undefined;
   if (translatedInterpolatedTemplate != null) {
     return interpolateMessage({
       source: interpolatedTemplate,
@@ -127,7 +126,8 @@ function handleTaggedTemplateLiteralTranslation(
     });
   }
 
-  // (2) resolve uninterpolated message
+  // (2) resolve uninterpolated message; runtime values stay variables, so
+  // only the template's own text is ICU-formatted
   const { message, variables } = extractInterpolatableValues(
     messageOrStrings,
     values

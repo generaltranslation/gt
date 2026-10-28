@@ -50,8 +50,10 @@ describe('t', () => {
     expect(t('hello, {name}', { name: 'brian' })).toBe('hello, brian');
   });
 
-  it('returns tagged template literals unformatted when translation is not required', () => {
+  it('formats only the template text when translation is not required', () => {
     expect(t`hello, ${'{brian}'}`).toBe('hello, {brian}');
+    // Same output as the translated path, which ICU-formats the template
+    expect(t`Hello '{team}' ${'John'}`).toBe('Hello {team} John');
     expect(lookupTranslation).not.toHaveBeenCalled();
   });
 
