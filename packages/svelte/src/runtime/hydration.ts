@@ -11,7 +11,10 @@ type CachedEntry = {
   locale: string;
   /** The locale's version when the translations were cached. */
   version: number;
-  /** One of the translations and its cached value. */
+  /**
+   * One of the translations whose cached value is an object, and that value.
+   * A reload caches new objects, so a reloaded locale no longer matches it.
+   */
   hash: string;
   value: unknown;
 };
@@ -26,11 +29,12 @@ export function rememberCachedTranslations(
   locale: string,
   translations: Translations
 ): void {
-  const hash = firstKey(translations);
+  // Strings compare by value, so they cannot tell a reload apart.
+  const hash = firstObjectKey(translations);
   if (hash === undefined) return;
   const cache = getI18nCache();
   const value = lookup(cache, locale, hash);
-  if (value == null) return;
+  if (typeof value !== 'object' || value === null) return;
   cachedTranslations.set(translations, {
     cache,
     locale,
@@ -75,7 +79,10 @@ function lookup(cache: Cache, locale: string, hash: string): unknown {
   } as LookupOptions);
 }
 
-function firstKey(translations: Translations): string | undefined {
-  for (const key in translations) return key;
+function firstObjectKey(translations: Translations): string | undefined {
+  for (const key in translations) {
+    const value = translations[key];
+    if (typeof value === 'object' && value !== null) return key;
+  }
   return undefined;
 }

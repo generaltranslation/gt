@@ -100,6 +100,27 @@ describe('<GTProvider> translations on the server', () => {
     );
   });
 
+  it('renders translations it was given after the cache reloaded them', async () => {
+    // The first entry is a string that the reload does not change.
+    const translations = { fr: { a: 'Texte', ...catalog(100) } };
+    setupGT({}, async (locale) => translations[locale as 'fr']);
+    const now = Date.now();
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(now);
+    const first = await loadTranslations('fr');
+    // Another request reloads the locale after it expired.
+    translations.fr = {
+      a: 'Texte',
+      ...catalog(100),
+      [greetingHash]: greeting('Salut'),
+    };
+    clock.mockReturnValue(now + 10 * 60_000);
+    expect(html(await loadTranslations('fr'))).toBe(
+      'Salut <b class="x" title="Bold">Ada</b>'
+    );
+    // The first request renders, and sends the browser, what it loaded.
+    expect(html(first)).toBe('Bonjour <b class="x" title="Bold">Ada</b>');
+  });
+
   it('adds translations again after other translations replaced them', () => {
     setupGT();
     const first = {
