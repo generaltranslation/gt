@@ -78,10 +78,6 @@
       "types": "./dist/react/parse/wrapContent.d.ts",
       "import": "./dist/react/parse/wrapContent.js"
     },
-    "./utils/constants": {
-      "types": "./dist/utils/constants.d.ts",
-      "import": "./dist/utils/constants.js"
-    },
     "./utils/installPackage": {
       "types": "./dist/utils/installPackage.d.ts",
       "import": "./dist/utils/installPackage.js"
