@@ -66,8 +66,8 @@ export function toRenderItems(
 ): RenderItem[] {
   const items: RenderItem[] = [];
   const occurrences = new Map<string, number>();
-  // Scoped ids are made of numeric ids, `b`, `$` and snippet branch names,
-  // which are identifiers, so they never contain `#`.
+  // Scoped ids are made of numeric ids, `b`, `_`, and `$`, so they never
+  // contain `#`.
   const uniqueKey = (base: string) => {
     const count = occurrences.get(base) ?? 0;
     occurrences.set(base, count + 1);
@@ -252,11 +252,16 @@ function getBranchScopes(
   sourceBranch: string | undefined,
   scopes: string[]
 ): string[] {
-  const ordered = sourceBranch
-    ? [sourceBranch, ...sourceBranches.filter((name) => name !== sourceBranch)]
-    : sourceBranches;
+  // Branch scopes are named after the branch's position in the source,
+  // as the preprocessor names them.
+  const indexes = sourceBranches.map((_, index) => index);
+  const paired = sourceBranch ? sourceBranches.indexOf(sourceBranch) : -1;
+  const ordered =
+    paired === -1
+      ? indexes
+      : [paired, ...indexes.filter((index) => index !== paired)];
   return [
-    ...ordered.map((name) => `${ownerScope}b${node.i}$${name}$`),
+    ...ordered.map((index) => `${ownerScope}b${node.i}_${index}$`),
     ...scopes,
   ];
 }

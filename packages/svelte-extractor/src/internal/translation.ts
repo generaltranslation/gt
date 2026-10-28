@@ -529,6 +529,10 @@ class TranslationBuilder {
     const id = ++counter.index;
     // No inherited keys, so names like "constructor" are ordinary branches.
     const branches: Record<string, JsxChildren> = Object.create(null);
+    // Branch names in declaration order. A branch's scope is named after its
+    // position here, because joining raw names, which may contain `$`, could
+    // give two different branches the same scope.
+    const branchNames: string[] = [];
 
     // Attribute branches: static strings, like React string props.
     for (const attribute of node.attributes) {
@@ -555,6 +559,7 @@ class TranslationBuilder {
         continue;
       }
       branches[name] = value;
+      branchNames.push(name);
     }
 
     // Snippet branches: each body is a fragment numbered from the branch id.
@@ -592,7 +597,8 @@ class TranslationBuilder {
         );
         continue;
       }
-      const branchScope = `${scope}b${id}$${name}$`;
+      const branchScope = `${scope}b${id}_${branchNames.length}$`;
+      branchNames.push(name);
       const branchCounter = { index: id };
       const fragmentId = ++branchCounter.index;
       const body = child.body as { nodes: SvelteNode[] };
@@ -612,7 +618,6 @@ class TranslationBuilder {
 
     const element: JsxElement = { t: getTagName(node), i: id };
     let d = getContentProps(node);
-    const branchNames = Object.keys(branches);
     if (branchNames.length > 0) {
       d = {
         ...d,

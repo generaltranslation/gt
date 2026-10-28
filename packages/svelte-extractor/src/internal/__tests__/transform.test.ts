@@ -86,16 +86,16 @@ describe('transformSvelteSource', () => {
     expect(result?.errors).toEqual([]);
     const code = result!.code;
     expect(code).toContain(
-      '_gtm={{"v":{"b1$other$":{"_gt_n_3":3}},"b":{"1":{"t":"p","b":["one","other"]}}}}'
+      '_gtm={{"v":{"b1_1$":{"_gt_n_3":3}},"b":{"1":{"t":"p","b":["one","other"]}}}}'
     );
     expect(code).toContain(
-      '{#snippet __gt_e_b1$one$2(__gt_kids)}{@render __gt_kids()}{/snippet}'
+      '{#snippet __gt_e_b1_0$2(__gt_kids)}{@render __gt_kids()}{/snippet}'
     );
     expect(code).toContain(
-      '{#snippet __gt_e_b1$one$3(__gt_kids, __gt_d)}<b>{@render __gt_kids()}</b>{/snippet}'
+      '{#snippet __gt_e_b1_0$3(__gt_kids, __gt_d)}<b>{@render __gt_kids()}</b>{/snippet}'
     );
     expect(code).toContain(
-      '{#snippet __gt_v_b1$other$3()}<Num value={count} />{/snippet}'
+      '{#snippet __gt_v_b1_1$3()}<Num value={count} />{/snippet}'
     );
     expect(code).toContain(
       '{#snippet __gt_e_1(__gt_pick)}{@render __gt_pick((count))}{/snippet}'
@@ -185,6 +185,18 @@ let items = [1];</script>
     ).not.toThrow();
   });
 
+  it('gives branches whose names contain $ distinct snippet names', () => {
+    const result = transform(`<script>
+  import { T, Branch } from 'gt-svelte';
+  let s, t;
+</script>
+<T><Branch branch={s}>{#snippet a()}<Branch branch={t}>{#snippet e()}Nested{/snippet}</Branch>{/snippet}{#snippet a$b3$e()}<u>First</u><i>Second</i>{/snippet}</Branch></T>`);
+    expect(result?.errors).toEqual([]);
+    expect(() =>
+      compile(result!.code, { filename: 'Fixture.svelte', generate: 'server' })
+    ).not.toThrow();
+  });
+
   it('passes variable children as the value in branch snippets', () => {
     const result = transform(`<script>
   import { T, Num, Plural } from 'gt-svelte';
@@ -196,7 +208,7 @@ let items = [1];</script>
       '{#snippet other()}<Num value={count}></Num> items{/snippet}'
     );
     expect(result?.code).toContain(
-      '{#snippet __gt_v_b1$other$3()}<Num value={count}></Num>{/snippet}'
+      '{#snippet __gt_v_b1_0$3()}<Num value={count}></Num>{/snippet}'
     );
   });
 
