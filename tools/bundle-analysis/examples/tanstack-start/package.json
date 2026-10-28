@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@tanstack/react-router": "^1.170.15",
+    "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
     "gt-tanstack-start": "workspace:*",
     "react": "^19.2.4",
