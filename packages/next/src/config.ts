@@ -1,6 +1,13 @@
 import path from 'path';
 import fs from 'fs';
 import type { NextConfig } from 'next';
+import { safeParse } from 'valibot';
+import {
+  GTConfigSchema,
+  describeConfigIssues,
+  describeConfigParseError,
+} from 'generaltranslation/config-schema';
+import type { GTConfig } from 'generaltranslation/types';
 import {
   defaultWithGTConfigProps,
   defaultCacheExpiryTime,
@@ -29,7 +36,6 @@ import {
   isValidLocale,
   standardizeLocale,
 } from '@generaltranslation/format';
-import type { CustomMapping } from '@generaltranslation/format/types';
 import {
   localeRefreshSupported,
   rootParamStability,
@@ -50,19 +56,7 @@ import {
 import { getRuntimeCredentials } from './setup/runtimeCredentials';
 import { nextLocaleCookieName } from './utils/cookies';
 import { splitMiddlewareConfig } from './middleware-dir/defaultMiddlewareConfig';
-
-type AutoderiveConfig = boolean | { jsx?: boolean; strings?: boolean };
-
-type ConfigFileShape = {
-  customMapping?: CustomMapping;
-  files?: {
-    gt?: {
-      parsingFlags?: {
-        autoderive?: AutoderiveConfig;
-      };
-    };
-  };
-};
+import { createGtNextPluginDiagnostic } from './errors/diagnostics';
 
 type RuntimeCredentialProps = {
   apiKey?: string;
@@ -72,7 +66,7 @@ type RuntimeCredentialProps = {
 
 type InternalGTConfigProps = BaseWithGTConfigProps &
   RuntimeCredentialProps &
-  ConfigFileShape & {
+  Pick<GTConfig, 'customMapping' | 'files'> & {
     loadDictionaryEnabled?: boolean;
     loadTranslationsType?: 'remote' | 'custom' | 'disabled';
     _dictionaryFileType?: string;
@@ -100,6 +94,18 @@ function isThenable(value: unknown): value is PromiseLike<NextConfig> {
     value !== null &&
     'then' in value &&
     typeof value.then === 'function'
+  );
+}
+
+/** Validates the keys gt.config.json shares with withGTConfig() props. */
+function parseGTConfig(config: unknown, configName: string) {
+  const result = safeParse(GTConfigSchema, config);
+  if (result.success) return result.output;
+  throw new Error(
+    createGtNextPluginDiagnostic({
+      severity: 'Error',
+      ...describeConfigIssues(result.issues, configName),
+    })
   );
 }
 
@@ -226,26 +232,34 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   // ---------- LOAD GT CONFIG FILE ---------- //
 
   let loadedConfig: Partial<InternalGTConfigProps> = {};
-  try {
-    let configPath: string | undefined;
-    if (props.config) {
-      configPath = props.config;
-    } else if (fs.existsSync(defaultWithGTConfigProps.config)) {
-      configPath = defaultWithGTConfigProps.config;
-    } else if (fs.existsSync('./.gt/gt.config.json')) {
-      // Support config under .gt for parity with .locadex
-      configPath = './.gt/gt.config.json';
-    } else if (fs.existsSync('./.locadex/gt.config.json')) {
-      // Backward compatibility: support legacy .locadex directory
-      configPath = './.locadex/gt.config.json';
-    }
-    if (typeof configPath === 'string' && fs.existsSync(configPath)) {
-      const fileContent = fs.readFileSync(configPath, 'utf-8');
-      loadedConfig = JSON.parse(fileContent);
-    }
-  } catch (error) {
-    console.error('Error reading GT config file:', error);
+  let configPath: string | undefined;
+  if (props.config) {
+    configPath = props.config;
+  } else if (fs.existsSync(defaultWithGTConfigProps.config)) {
+    configPath = defaultWithGTConfigProps.config;
+  } else if (fs.existsSync('./.gt/gt.config.json')) {
+    // Support config under .gt for parity with .locadex
+    configPath = './.gt/gt.config.json';
+  } else if (fs.existsSync('./.locadex/gt.config.json')) {
+    // Backward compatibility: support legacy .locadex directory
+    configPath = './.locadex/gt.config.json';
   }
+  if (configPath && fs.existsSync(configPath)) {
+    let fileContent: unknown;
+    try {
+      fileContent = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    } catch (error) {
+      throw new Error(
+        createGtNextPluginDiagnostic({
+          severity: 'Error',
+          ...describeConfigParseError(error, configPath),
+        })
+      );
+    }
+    loadedConfig = parseGTConfig(fileContent, configPath);
+  }
+  // next.config.js is often plain JavaScript, so props are not type-checked.
+  parseGTConfig(props, 'The withGTConfig() configuration');
 
   // This warning intentionally compares Next.js i18n against explicit values
   // from the GT config file. Inline props use the conflict and merge paths below.
@@ -685,8 +699,8 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     mergedConfig.experimentalCompilerOptions || {};
 
   // Read autoderive from parsingFlags (single source of truth shared with CLI)
-  const rawAutoderive: boolean | { jsx?: boolean; strings?: boolean } =
-    loadedConfig?.files?.gt?.parsingFlags?.autoderive ?? false;
+  const rawAutoderive =
+    loadedConfig.files?.gt?.parsingFlags?.autoderive ?? false;
   const autoderiveJsx =
     typeof rawAutoderive === 'boolean'
       ? rawAutoderive

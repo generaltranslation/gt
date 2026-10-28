@@ -43,7 +43,8 @@
     "@babel/types": "^7.23.0",
     "@generaltranslation/format": "workspace:*",
     "generaltranslation": "workspace:*",
-    "unplugin": "^2.3.10"
+    "unplugin": "^2.3.10",
+    "valibot": "^1.5.0"
   },
   "devDependencies": {
     "@types/babel__core": "^7.20.0",

@@ -1,37 +1,25 @@
 import { isValidLocale, isSupersetLocale } from '@generaltranslation/format';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import {
-  isModelProvider,
-  supportedModelProviders,
-} from 'generaltranslation/internal';
 import type { Settings } from '../types/index.js';
 import { logErrorAndExit } from '../console/logging.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
-export function validateSettings(
-  settings: Omit<Settings, 'modelProvider'> & { modelProvider?: unknown }
-): asserts settings is Settings {
-  if (
-    settings.modelProvider !== undefined &&
-    !isModelProvider(settings.modelProvider)
-  ) {
-    return logErrorAndExit(
-      createDiagnosticMessage({
-        source: 'gt',
-        severity: 'Error',
-        whatHappened: 'The configured model provider is not supported',
-        details: String(settings.modelProvider),
-        fix: `Use one of: ${supportedModelProviders.join(', ')}`,
-      })
-    );
-  }
+const invalidLocaleFix =
+  'Use a valid BCP 47 locale code or add a custom mapping in gt.config.json';
 
+export function validateSettings(settings: Settings): void {
   // Validate locales
   for (const locale of settings.locales) {
     if (!isValidLocale(locale, settings.customMapping)) {
       return logErrorAndExit(
-        `Locale "${locale}" is not valid in the provided locales: "${settings?.locales?.join()}". Use a valid BCP 47 locale code or add a custom mapping in gt.config.json.`
+        createDiagnosticMessage({
+          source: 'gt',
+          severity: 'Error',
+          whatHappened: `Locale "${locale}" is not valid`,
+          details: `locales: ${settings.locales.join(', ')}`,
+          fix: invalidLocaleFix,
+        })
       );
     }
   }
@@ -40,7 +28,12 @@ export function validateSettings(
     !isValidLocale(settings.defaultLocale, settings.customMapping)
   ) {
     return logErrorAndExit(
-      `defaultLocale "${settings.defaultLocale}" is not valid. Use a valid BCP 47 locale code or add a custom mapping in gt.config.json.`
+      createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Error',
+        whatHappened: `defaultLocale "${settings.defaultLocale}" is not valid`,
+        fix: invalidLocaleFix,
+      })
     );
   }
 
@@ -57,7 +50,12 @@ export function validateSettings(
       isSupersetLocale(settings.defaultLocale, locale)
     );
     return logErrorAndExit(
-      `defaultLocale "${settings.defaultLocale}" is broader than configured locale "${locale}". Change defaultLocale to a more specific locale.`
+      createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Error',
+        whatHappened: `defaultLocale "${settings.defaultLocale}" is broader than configured locale "${locale}"`,
+        fix: 'Change defaultLocale to a more specific locale',
+      })
     );
   }
 }

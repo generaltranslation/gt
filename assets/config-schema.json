@@ -491,6 +491,11 @@
       "description": "Do not write _versionId or _branchId to gt.config.json",
       "default": false
     },
+    "skipVersionCheck": {
+      "type": "boolean",
+      "description": "Skip the monorepo GT package version consistency check",
+      "default": false
+    },
     "src": {
       "type": "array",
       "items": {

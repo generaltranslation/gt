@@ -27,7 +27,8 @@
     "@generaltranslation/react-core": "workspace:*",
     "generaltranslation": "workspace:*",
     "gt-react": "workspace:*",
-    "gt-i18n": "workspace:*"
+    "gt-i18n": "workspace:*",
+    "valibot": "^1.5.0"
   },
   "scripts": {
     "patch": "pnpm version patch",

@@ -27,8 +27,8 @@ import {
 import { libraryDefaultLocale } from '../settings/settings';
 import { supportedModelProviders } from '../translate/modelProvider';
 import {
-  createDiagnosticMessage,
   type DiagnosticMessageInput,
+  formatDiagnosticErrorDetails,
 } from '../logging/diagnostics';
 
 // Defaults are documentation only: a parse-time default would make every
@@ -375,22 +375,57 @@ export const GTConfigSchema = looseObject({
 // Issue values for these keys are secrets and never appear in messages.
 const secretConfigKeys = new Set(['apiKey', 'devApiKey']);
 
-/** Formats gt.config.json validation issues as one diagnostic message. */
-export function createConfigIssuesDiagnostic(
+type ConfigDiagnosticFields = Pick<
+  DiagnosticMessageInput,
+  'whatHappened' | 'fix' | 'details'
+>;
+
+/** Diagnostic fields describing config validation issues. */
+export function describeConfigIssues(
   issues: readonly BaseIssue<unknown>[],
-  { source, severity }: Pick<DiagnosticMessageInput, 'source' | 'severity'>
-): string {
-  return createDiagnosticMessage({
-    source,
-    severity,
-    whatHappened: 'gt.config.json is invalid',
+  configName: string
+): ConfigDiagnosticFields {
+  return {
+    whatHappened: `${configName} is invalid`,
     fix: 'Correct the listed keys',
-    details: issues.map((issue) => {
-      const path = getDotPath(issue) ?? '(root)';
-      const isSecret = issue.path?.some((item) =>
-        secretConfigKeys.has(String(item.key))
-      );
-      return `${path}: ${isSecret ? `expected ${issue.expected}` : issue.message}`;
-    }),
-  });
+    details: issues.flatMap((issue) => describeIssue(issue, getDotPath(issue))),
+  };
+}
+
+function describeIssue(
+  issue: BaseIssue<unknown>,
+  path: string | null
+): string[] {
+  // A union reports its options' issues; those inside an option name the key.
+  const nestedIssues = issue.issues?.filter((nested) => nested.path);
+  if (nestedIssues?.length) {
+    return nestedIssues.flatMap((nested) =>
+      describeIssue(
+        nested,
+        [path, getDotPath(nested)].filter(Boolean).join('.')
+      )
+    );
+  }
+  const revealsSecret =
+    issue.message.includes(issue.received) &&
+    path?.split('.').some((key) => secretConfigKeys.has(key));
+  return [
+    `${path ?? '(root)'}: ${revealsSecret ? `expected ${issue.expected}` : issue.message}`,
+  ];
+}
+
+/** Diagnostic fields for a config file that is not valid JSON. */
+export function describeConfigParseError(
+  error: unknown,
+  configName: string
+): ConfigDiagnosticFields {
+  return {
+    whatHappened: `${configName} could not be read as JSON`,
+    fix: 'Fix the file so it contains a valid JSON object',
+    // V8 quotes part of the input after the reason, which can hold secrets.
+    details:
+      error instanceof SyntaxError
+        ? error.message.replace(/,?\s*(\.\.\.)?"[\s\S]*$/, '')
+        : formatDiagnosticErrorDetails(error),
+  };
 }

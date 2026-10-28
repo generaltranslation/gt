@@ -4,6 +4,13 @@ import path from 'node:path';
 import * as parser from '@babel/parser';
 import generate from '@babel/generator';
 import traverse from '@babel/traverse';
+import { safeParse } from 'valibot';
+import {
+  GTConfigSchema,
+  describeConfigIssues,
+  describeConfigParseError,
+} from 'generaltranslation/config-schema';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 
 // Core modules
 import { GTConfig, PluginConfig } from './config';
@@ -99,16 +106,27 @@ function loadGTConfigFromCwd(): GTConfigLoadResult {
     return { status: 'missing' };
   }
 
+  let config: unknown;
   try {
-    return {
-      gtConfig: JSON.parse(fs.readFileSync(configPath, 'utf-8')) as NonNullable<
-        PluginConfig['gtConfig']
-      >,
-      status: 'loaded',
-    };
+    config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
   } catch (error) {
-    return { configPath, error, status: 'invalid' };
+    return {
+      configPath,
+      error: createDiagnosticMessage(
+        describeConfigParseError(error, 'gt.config.json')
+      ),
+      status: 'invalid',
+    };
   }
+  const result = safeParse(GTConfigSchema, config);
+  if (result.success) return { gtConfig: result.output, status: 'loaded' };
+  return {
+    configPath,
+    error: createDiagnosticMessage(
+      describeConfigIssues(result.issues, 'gt.config.json')
+    ),
+    status: 'invalid',
+  };
 }
 
 function hasInlineGTConfig(options: GTUnpluginOptions): boolean {

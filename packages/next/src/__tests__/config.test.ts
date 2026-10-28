@@ -415,25 +415,60 @@ describe('withGTConfig', () => {
       expect(params.defaultLocale).toBe('ko');
     });
 
-    it('handles invalid JSON in config file gracefully', async () => {
+    it('throws a diagnostic naming the file for invalid JSON', async () => {
       const withGTConfig = await getWithGTConfig();
-      const consoleSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
-
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === './gt.config.json') return true;
-        return false;
-      });
+      vi.mocked(fs.existsSync).mockImplementation(
+        (p) => p === './gt.config.json'
+      );
       vi.mocked(fs.readFileSync).mockReturnValue('not valid json!!!');
 
-      // Should not throw, just use defaults
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
+      expect(() => withGTConfig()).toThrow(
+        /gt-next \(plugin\) Error: \.\/gt\.config\.json could not be read as JSON.*Details: Unexpected token/
+      );
+    });
 
-      expect(params.defaultLocale).toBe('en');
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+    it.each([
+      ['null file content', 'null', '(root): Invalid type'],
+      ['a null pathRegex', '{ "pathRegex": null }', 'pathRegex: Invalid type'],
+      ['string locales', '{ "locales": "fr" }', 'locales: Invalid type'],
+      [
+        'a null customMapping entry',
+        '{ "customMapping": { "cn": null } }',
+        'customMapping.cn: Invalid type',
+      ],
+      [
+        'a string ignoreBrowserLocales',
+        '{ "ignoreBrowserLocales": "false" }',
+        'ignoreBrowserLocales: Invalid type',
+      ],
+    ])('rejects %s in the config file', async (_case, content, issue) => {
+      const withGTConfig = await getWithGTConfig();
+      vi.mocked(fs.existsSync).mockImplementation(
+        (p) => p === './gt.config.json'
+      );
+      vi.mocked(fs.readFileSync).mockReturnValue(content);
+
+      expect(() => withGTConfig()).toThrow(
+        'gt-next (plugin) Error: ./gt.config.json is invalid'
+      );
+      expect(() => withGTConfig()).toThrow(issue);
+    });
+
+    it.each([
+      [
+        'a NaN render timeout',
+        { renderSettings: { method: 'default', timeout: NaN } },
+        'renderSettings.timeout: Invalid type',
+      ],
+      ['string locales', { locales: 'fr' }, 'locales: Invalid type'],
+      ['a null pathRegex', { pathRegex: null }, 'pathRegex: Invalid type'],
+    ])('rejects %s in withGTConfig() props', async (_case, props, issue) => {
+      const withGTConfig = await getWithGTConfig();
+
+      expect(() => withGTConfig({}, props as never)).toThrow(
+        'gt-next (plugin) Error: The withGTConfig() configuration is invalid'
+      );
+      expect(() => withGTConfig({}, props as never)).toThrow(issue);
     });
 
     it('config file values merge into output correctly', async () => {

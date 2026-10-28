@@ -863,10 +863,7 @@ export class BaseCLI {
               ? loadConfig(withJsonExtension(options.config))
               : resolveConfig(process.cwd())?.config
           )?.baseUrl;
-          await loginInteractively(
-            typeof baseUrl === 'string' ? baseUrl : undefined,
-            options.browser
-          );
+          await loginInteractively(baseUrl, options.browser);
           logger.endCommand('You are now signed in.');
         } catch (error) {
           logErrorAndExit(createUserAuthError('Sign in failed', error));
