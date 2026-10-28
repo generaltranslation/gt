@@ -1,7 +1,5 @@
-import {
-  createGtNextDiagnostic,
-  formatDiagnosticErrorDetails,
-} from './diagnostics';
+import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
+import { createGtNextDiagnostic } from './diagnostics';
 
 export const createInvalidPathRegexError = (
   pathRegex: string,

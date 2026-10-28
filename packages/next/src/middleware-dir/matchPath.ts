@@ -1,7 +1,7 @@
+import { normalizePathname } from './pathname';
 import {
   getDynamicSegmentType,
   getPathSegments,
-  normalizePathname,
   type PathMatch,
   type PathMatcher,
   type PathMatcherNode,

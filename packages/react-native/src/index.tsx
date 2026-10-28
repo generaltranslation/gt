@@ -35,35 +35,37 @@ export { useLocaleSelector, useRegionSelector } from './hooks/selectors';
 // ===== Functions ===== //
 export {
   createRenderPipeline,
+  getFormatLocales,
+  getReactI18nCache,
+  getTranslationsSnapshot,
+  setReactI18nCache,
+} from '@generaltranslation/react-core/pure';
+export {
   decodeMsg,
   decodeOptions,
-  decodeVars,
-  declareVar,
-  derive,
   getDefaultLocale,
-  getFormatLocales,
   getLocaleProperties,
   getLocales,
   resolveCanonicalLocale,
-  getReactI18nCache,
-  getTranslationsSnapshot,
   getVersionId,
   gtFallback,
   mFallback,
   msg,
-  setReactI18nCache,
-} from '@generaltranslation/react-core/pure';
+} from 'gt-i18n';
+export { decodeVars, declareVar, derive } from 'generaltranslation';
 export { getLocaleFromNativeStore } from './utils/nativeStore';
 export { getLocale } from './utils/getLocale';
-export { initializeGT } from './setup/initializeGT';
+export { internalInitializeGTSRA as initializeGT } from '@generaltranslation/react-core/pure';
 
 // ===== Types ===== //
 export type {
   GTTranslationOptions,
   RuntimeTranslationOptions,
+} from 'gt-i18n/types';
+export type {
   RenderPipeline,
   RenderPreparedT,
 } from '@generaltranslation/react-core/pure';
 export type { GTProviderProps } from './provider/GTProvider';
 export type { GetLocaleParams } from './utils/getLocale';
-export type { InitializeGTParams } from './setup/initializeGT';
+export type { ReactInitializeGTParams as InitializeGTParams } from '@generaltranslation/react-core/pure';

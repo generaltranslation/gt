@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { _test_dedupeUpdates as dedupeUpdates } from '../createInlineUpdates.js';
-import type { Updates } from '../../../types/index.js';
+import { dedupeUpdates } from '../../../extraction/postProcess.js';
+import type { Updates } from 'generaltranslation/types';
 
 describe('dedupeUpdates', () => {
   it('coalesces filePaths for identical hashes', () => {

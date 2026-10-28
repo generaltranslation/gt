@@ -1,4 +1,4 @@
-import type { FileFormat } from '../../types-dir/api/file';
+import type { FileFormat } from '@generaltranslation/api';
 import { createDiagnosticMessage } from '../../logging/diagnostics';
 import { isSupportedFileFormatTransform } from '../../utils/isSupportedFileFormatTransform';
 

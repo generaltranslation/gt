@@ -1,5 +1,5 @@
 // The admin panel's calls to the plugin's endpoints.
-import { ApiError, isTransientApiError } from 'generaltranslation/api';
+import { ApiError, isTransientApiError } from '@generaltranslation/api';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { startRun } from '../client/api';
 

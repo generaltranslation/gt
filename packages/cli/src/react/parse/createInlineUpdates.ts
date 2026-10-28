@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { Updates } from '../../types/index.js';
+import { Updates } from 'generaltranslation/types';
 
 import { parse } from '@babel/parser';
 import { parseTranslationComponent } from '../jsx/utils/jsxParsing/parseJsx.js';
@@ -200,5 +200,3 @@ export async function createInlineUpdates(
 function getUpstreamPackages(pkg: GTLibrary): GTLibrary[] {
   return GT_LIBRARIES_UPSTREAM[pkg];
 }
-
-export { dedupeUpdates as _test_dedupeUpdates };

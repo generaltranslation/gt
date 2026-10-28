@@ -54,8 +54,3 @@ function createRenderPipeline(components: VariableComponents): RenderPipeline {
 
 export { createRenderPipeline };
 export type { RenderPipeline };
-export type {
-  RenderDefaultChildrenArgs,
-  RenderPreparedTParams,
-  RenderTranslatedChildrenArgs,
-};

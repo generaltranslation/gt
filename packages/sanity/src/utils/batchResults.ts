@@ -1,7 +1,7 @@
 import type {
   UploadSourceFilesResponse,
   UploadTranslationsResponse,
-} from 'generaltranslation/api';
+} from '@generaltranslation/api';
 import {
   createDiagnosticMessage,
   type DiagnosticSeverity,

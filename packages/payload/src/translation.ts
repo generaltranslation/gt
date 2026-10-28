@@ -2,7 +2,7 @@
 // start (read, upload, enqueue), check (job statuses) and finish (download
 // and save into Payload). translateDocument and translateSite run all three.
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
-import { ApiError, ErrorCode } from 'generaltranslation/api';
+import { ApiError, ErrorCode } from '@generaltranslation/api';
 import type { Payload } from 'payload';
 import type { FileReference } from 'generaltranslation/types';
 import {

@@ -5,7 +5,7 @@ import { parse } from '@babel/parser';
 import traverseModule from '@babel/traverse';
 import { parseStrings, clearParsingCaches } from '../parseStringFunction.js';
 import { resolveImportPath } from '../resolveImportPath.js';
-import { Updates } from '../../../../types/index.js';
+import { Updates } from 'generaltranslation/types';
 
 const traverse = (traverseModule as unknown).default || traverseModule;
 

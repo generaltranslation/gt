@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { isSupportedFileFormatTransform } from '../isSupportedFileFormatTransform';
-import type { FileFormat } from '../../types-dir/api/file';
+import type { FileFormat } from '@generaltranslation/api';
 
 describe('isSupportedFileFormatTransform', () => {
   const fileFormats: FileFormat[] = [

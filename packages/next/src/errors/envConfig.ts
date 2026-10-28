@@ -1,7 +1,5 @@
-import {
-  createGtNextDiagnostic,
-  formatDiagnosticErrorDetails,
-} from './diagnostics';
+import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
+import { createGtNextDiagnostic } from './diagnostics';
 
 export const createInvalidEnvConfigError = (envName: string, error: unknown) =>
   createGtNextDiagnostic({

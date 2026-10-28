@@ -18,7 +18,7 @@ export {
   isModelProvider,
   supportedModelProviders,
 } from './translate/modelProvider';
-export type { ModelProvider } from './translate/modelProvider';
+export type { ModelProvider } from '@generaltranslation/api';
 
 // derive
 export { indexVars } from './derive/indexVars';

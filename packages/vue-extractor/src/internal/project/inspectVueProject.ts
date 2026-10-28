@@ -15,8 +15,6 @@ import {
 } from './workspaces.js';
 import { classifyVueSource } from './vueSourceClassification.js';
 
-export { isVueSfcSource } from './vueSourceClassification.js';
-
 const discoveryByInspection = new WeakMap<
   VueProjectInspection,
   VueProjectDiscovery

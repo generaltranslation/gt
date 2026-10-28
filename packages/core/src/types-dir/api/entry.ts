@@ -2,7 +2,7 @@ import type {
   RuntimeFileFormat,
   TranslateContentData,
 } from '@generaltranslation/api';
-import type { Content, DataFormat } from '../../types';
+import type { Content, DataFormat } from '@generaltranslation/format/types';
 
 export type ActionType = NonNullable<
   NonNullable<

@@ -1,4 +1,4 @@
-import type { JsxChildren } from 'generaltranslation/types';
+import type { JsxChildren } from '@generaltranslation/format/types';
 import { hashSource } from 'generaltranslation/id';
 import * as Vue from 'vue';
 import {

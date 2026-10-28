@@ -1,6 +1,6 @@
 import type { RenderDefaultChildrenArgs } from './renderDefaultChildren.shared';
 import type { RenderTranslatedChildrenArgs } from './renderTranslatedChildren.shared';
-import type { JsxChildren } from 'generaltranslation/types';
+import type { JsxChildren } from '@generaltranslation/format/types';
 import {
   cloneElement,
   createElement,

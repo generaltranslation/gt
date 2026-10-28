@@ -17,7 +17,6 @@ vi.mock('../cookies', () => ({
 }));
 
 vi.mock('@generaltranslation/react-core/pure', () => ({
-  defaultResetLocaleCookieName: 'generaltranslation.locale-reset',
   getI18nConfig: () => ({
     resolveSupportedLocale: (locale?: string | string[]) => {
       const resolved = Array.isArray(locale) ? locale[0] : locale;

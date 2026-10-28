@@ -1,5 +1,5 @@
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import { ApiError, ErrorCode } from 'generaltranslation/api';
+import { ApiError, ErrorCode } from '@generaltranslation/api';
 import { logger } from '../../console/logger.js';
 import { recordWarning } from '../../state/translateWarnings.js';
 import { Settings } from '../../types/index.js';

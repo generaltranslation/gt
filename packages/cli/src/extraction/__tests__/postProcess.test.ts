@@ -4,7 +4,7 @@ import {
   dedupeUpdates,
   linkDeriveUpdates,
 } from '../postProcess.js';
-import type { Updates } from '../../types/index.js';
+import type { Updates } from 'generaltranslation/types';
 
 describe('calculateHashes', () => {
   it('generates consistent hashes for same input', async () => {

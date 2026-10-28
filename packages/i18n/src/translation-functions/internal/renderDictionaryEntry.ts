@@ -5,7 +5,7 @@ import type {
   DictionaryLookupOptions,
   TranslationVariables,
 } from '../types/options';
-import type { DictionaryEntry } from '../../i18n-cache/translations-manager/DictionaryCache';
+import type { DictionaryEntry } from '../../i18n-cache/translations-manager/utils/types/dictionary';
 import type { StringFormat } from '@generaltranslation/format/types';
 
 export function renderDictionaryEntry({

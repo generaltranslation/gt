@@ -35,18 +35,16 @@ export { getTranslationsSnapshot } from './functions/helpers/getTranslationsSnap
 export { t } from './functions/translation/t';
 
 // ===== Helpers ===== //
-export { getFormatLocales } from './pure';
+export { getFormatLocales } from './hooks/utils/getFormatLocales';
 export { getPluralBranch } from './utils/plurals/getPluralBranch';
 export { getShouldTranslate } from './hooks/utils/getShouldTranslate';
 export { prepareT } from './utils/translation/prepareT.shared';
 export { createRenderVariable } from './utils/rendering/createRenderVariable';
 export { createRenderPipeline } from './utils/rendering/createRenderPipeline';
-export type {
-  RenderDefaultChildrenArgs,
-  RenderPipeline,
-  RenderPreparedTParams,
-  RenderTranslatedChildrenArgs,
-} from './utils/rendering/createRenderPipeline';
+export type { RenderPipeline } from './utils/rendering/createRenderPipeline';
+export type { RenderDefaultChildrenArgs } from './utils/rendering/renderDefaultChildren.shared';
+export type { RenderPreparedTParams } from './utils/rendering/renderPreparedT.shared';
+export type { RenderTranslatedChildrenArgs } from './utils/rendering/renderTranslatedChildren.shared';
 // Pre-instantiated RSC render pipeline: bound to the RSC renderVariable, so
 // consumers never thread a variable renderer through rendering calls.
 export {

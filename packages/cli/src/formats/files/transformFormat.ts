@@ -1,10 +1,12 @@
-import type { FileFormat } from '../../types/data.js';
 import type {
   FilesOptions,
   Settings,
   SupportedFileExtension,
 } from '../../types/index.js';
-import { FileFormat as FILE_FORMATS } from 'generaltranslation/api';
+import {
+  FileFormat as FILE_FORMATS,
+  type FileFormat,
+} from '@generaltranslation/api';
 import { isSupportedFileFormatTransform } from 'generaltranslation/internal';
 
 const fileFormatValues = new Set<string>(Object.values(FILE_FORMATS));

@@ -6,7 +6,10 @@ import {
 } from 'gt-i18n/internal';
 import type { Locale } from 'gt-i18n/internal/types';
 import type { Dictionary, Translation } from 'gt-i18n/types';
-import { ReactI18nCache, type ReactI18nCacheParams } from 'gt-react';
+import {
+  ReactI18nCache,
+  type ReactI18nCacheParams,
+} from '@generaltranslation/react-core/pure';
 import { getDictionary } from '../dictionary/getDictionary';
 import { resolveDictionaryLoader } from '../resolvers/resolveDictionaryLoader';
 

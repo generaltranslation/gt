@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { setDictionaryValueAtPath } from '../utils/dictionary-helpers';
-import type { Dictionary } from '../DictionaryCache';
+import type { Dictionary } from '../utils/types/dictionary';
 
 describe('dictionary helpers', () => {
   it.each(['__proto__', 'constructor', 'prototype'])(

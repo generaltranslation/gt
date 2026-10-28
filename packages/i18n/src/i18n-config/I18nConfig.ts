@@ -3,7 +3,7 @@ import type { CustomMapping } from '@generaltranslation/format/types';
 import { GTRuntime } from 'generaltranslation/runtime';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-import type { GTConfig } from '../config/types';
+import type { GTConfig } from 'generaltranslation/types';
 import {
   getLoadTranslationsType,
   LoadTranslationsType,

@@ -3,7 +3,7 @@
 export { parseLocale } from './functions/parseLocale';
 
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import { CustomMapping } from 'generaltranslation/types';
+import type { CustomMapping } from '@generaltranslation/format/types';
 import {
   getGT,
   getI18nConfig,
@@ -107,9 +107,6 @@ export {
 export {
   decodeMsg,
   decodeOptions,
-  decodeVars,
-  declareVar,
-  derive,
   gtFallback,
   mFallback,
   msg,
@@ -118,7 +115,8 @@ export {
   getLocales,
   resolveCanonicalLocale,
   getVersionId,
-} from '@generaltranslation/react-core/pure';
+} from 'gt-i18n';
+export { decodeVars, declareVar, derive } from 'generaltranslation';
 
 // ===== Setup ===== //
 export { internalInitializeGTSRA as initializeGT } from '@generaltranslation/react-core/pure';

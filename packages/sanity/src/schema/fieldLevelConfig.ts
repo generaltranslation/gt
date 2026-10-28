@@ -1,5 +1,5 @@
-import { GTIntl } from 'generaltranslation';
-import type { CustomMapping } from 'generaltranslation/types';
+import { GTIntl } from '@generaltranslation/format';
+import type { CustomMapping } from '@generaltranslation/format/types';
 import { formatLocalePropertiesLabel } from '../utils/localeDisplay';
 import type { PluginOptions } from 'sanity';
 import { internationalizedArray } from 'sanity-plugin-internationalized-array';

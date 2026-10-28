@@ -17,7 +17,7 @@ import { parse } from '@babel/parser';
 import traverseModule, { NodePath } from '@babel/traverse';
 import { parseTranslationComponent } from '../parseJsx.js';
 import { ParsingConfigOptions } from '../../../../../types/parsing.js';
-import { Updates } from '../../../../../types/index.js';
+import { Updates } from 'generaltranslation/types';
 import { Libraries } from '../../../../../types/libraries.js';
 import type { JsxChild } from '@generaltranslation/format/types';
 import { getPathsAndAliases } from '../../getPathsAndAliases.js';

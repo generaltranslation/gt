@@ -21,7 +21,7 @@ import {
   ApiError,
   ErrorCode,
   type ListBranchFilesResponse,
-} from 'generaltranslation/api';
+} from '@generaltranslation/api';
 
 function createDefaultLocaleNotUpdatedWarning(
   defaultLocale: string,

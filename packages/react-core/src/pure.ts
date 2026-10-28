@@ -2,16 +2,8 @@
 // entrypoints. Do not export modules from here that import React context,
 // hooks, or component implementations.
 
-export {
-  msg,
-  decodeMsg,
-  decodeOptions,
-  derive,
-  declareVar,
-  decodeVars,
-  mFallback,
-  gtFallback,
-} from 'gt-i18n';
+export { msg, decodeMsg, decodeOptions, mFallback, gtFallback } from 'gt-i18n';
+export { derive, declareVar, decodeVars } from 'generaltranslation';
 
 export { getFormatLocales } from './hooks/utils/getFormatLocales';
 export { getTranslationsSnapshot } from './functions/helpers/getTranslationsSnapshot';
@@ -28,15 +20,17 @@ export {
   defaultLocaleCookieName,
   defaultRegionCookieName,
   defaultResetLocaleCookieName,
-} from './setup/cookieNames';
+} from 'gt-i18n/internal/cookies';
 export { getDefaultRenderSettings } from './utils/rendering/getDefaultRenderSettings';
 
 export type {
   GTTranslationOptions,
   GTFunctionType,
-  GTProp,
   MFunctionType,
   RuntimeTranslationOptions,
+} from 'gt-i18n/types';
+export type { GTProp } from '@generaltranslation/format/types';
+export type {
   VariableProps,
   RelativeTimeFormatOptions,
   RenderMethod,

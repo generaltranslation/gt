@@ -25,7 +25,7 @@ vi.mock('gt-i18n/internal', () => ({
   I18nCache: class {},
 }));
 
-vi.mock('gt-react', () => ({
+vi.mock('@generaltranslation/react-core/pure', () => ({
   ReactI18nCache: class {
     constructor(params: unknown) {
       mockReactI18nCacheConstructor(params);

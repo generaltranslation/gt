@@ -1,5 +1,6 @@
 import type { DataFormat } from '@generaltranslation/format/types';
-import { FileFormat, type FormatMetadata } from './file';
+import type { FileFormat } from '@generaltranslation/api';
+import type { FormatMetadata } from './file';
 
 export type FileUpload = {
   branchId?: string; // optional branch id. If not provided, will use the default branch.

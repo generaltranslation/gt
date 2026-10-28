@@ -107,8 +107,12 @@
           {
             "paths": [
               {
-                "name": "@generaltranslation/react-core/context",
-                "message": "RSC-safe modules must not import the broad context barrel; import from @generaltranslation/react-core/components-rsc or pure helpers instead."
+                "name": "@generaltranslation/react-core/components",
+                "message": "RSC-safe modules must not import the context-backed component entry; import from @generaltranslation/react-core/components-rsc or pure helpers instead."
+              },
+              {
+                "name": "@generaltranslation/react-core/hooks",
+                "message": "RSC-safe modules must not import the hooks entry; import from @generaltranslation/react-core/components-rsc or pure helpers instead."
               },
               {
                 "name": "react",
@@ -149,7 +153,7 @@
           {
             "paths": [
               {
-                "name": "generaltranslation/api",
+                "name": "@generaltranslation/api",
                 "allowTypeImports": true,
                 "allowImportNames": [
                   "ApiError",
@@ -159,6 +163,10 @@
                   "ProjectApiKeyPermission"
                 ],
                 "message": "CLI and Sanity must not issue generated API requests directly. Call them through `GT` from generaltranslation."
+              },
+              {
+                "name": "generaltranslation/api",
+                "message": "Import API symbols from their owner, @generaltranslation/api, not the generaltranslation facade."
               }
             ]
           }

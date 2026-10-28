@@ -6,13 +6,13 @@ import {
   withJsonExtension,
 } from '../fs/config/loadConfig.js';
 import { FilesOptions, Settings } from '../types/index.js';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import {
+  defaultDashboardUrl,
+  libraryDefaultLocale,
+} from 'generaltranslation/internal';
 import { resolveFiles } from '../fs/config/parseFilesConfig.js';
 import { validateSettings } from './validateSettings.js';
-import {
-  DEFAULT_GIT_REMOTE_NAME,
-  GT_DASHBOARD_URL,
-} from '../utils/constants.js';
+import { DEFAULT_GIT_REMOTE_NAME } from '../utils/constants.js';
 import { resolveProjectId } from '../fs/utils.js';
 import { createUserTokenProvider } from '../auth/oauth.js';
 import crypto from 'node:crypto';
@@ -226,7 +226,8 @@ export async function generateSettings(
   });
 
   // Add dashboardUrl if not provided
-  mergedOptions.dashboardUrl = mergedOptions.dashboardUrl || GT_DASHBOARD_URL;
+  mergedOptions.dashboardUrl =
+    mergedOptions.dashboardUrl || defaultDashboardUrl;
 
   // Add locales if not provided
   mergedOptions.locales = mergedOptions.locales || [];

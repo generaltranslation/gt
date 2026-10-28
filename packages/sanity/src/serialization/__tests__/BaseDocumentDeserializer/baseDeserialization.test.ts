@@ -19,9 +19,9 @@ import {
   annotationAndInlineBlocks,
   documentLevelArticle,
   inlineDocumentLevelArticle,
-  inlineSchema,
-  schema,
 } from '../BaseDocumentSerializer/utils';
+import inlineSchema from '../__fixtures__/inlineSchema';
+import schema from '../__fixtures__/schema';
 import {
   addedBlockDeserializers,
   addedCustomDeserializers,

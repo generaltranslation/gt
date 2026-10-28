@@ -1,9 +1,8 @@
-import { applyTrailingSlash } from './pathname';
+import { applyTrailingSlash, normalizePathname } from './pathname';
+import { getSharedPath } from './matchPath';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import {
-  normalizePathname,
-  getSharedPath,
   replaceDynamicSegments,
   getLocalizedPath,
   getLocaleFromRequest,
@@ -15,8 +14,6 @@ import { createMiddlewareRouting } from './createMiddlewareRouting';
 import { resolveMiddlewareConfig } from './resolveMiddlewareConfig';
 import type { MiddlewareConfig } from './types';
 import { createLinkRoutingConfigMismatchWarning } from '../errors/middleware';
-
-export type { RouteOverrides, LocaleRoutes } from './types';
 
 const NEXT_JS_SOURCE_MAP_PATH = '/__nextjs_source-map';
 

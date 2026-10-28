@@ -4,7 +4,10 @@ import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 
 const mockGetTranslationsSnapshot = vi.hoisted(() => vi.fn());
 
-vi.mock('gt-react', () => ({
+vi.mock('@generaltranslation/react-core/pure', async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import('@generaltranslation/react-core/pure')
+  >()),
   getTranslationsSnapshot: (...args: unknown[]) =>
     mockGetTranslationsSnapshot(...args),
 }));

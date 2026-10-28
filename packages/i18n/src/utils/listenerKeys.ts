@@ -1,5 +1,5 @@
 import type { LookupOptions } from '../translation-functions/types/options';
-import type { Translation } from '../types';
+import type { Translation } from '../i18n-cache/translations-manager/utils/types/translation-data';
 import { hashMessage } from './hashMessage';
 
 export type TranslateListenerLookup<T extends Translation = Translation> =
