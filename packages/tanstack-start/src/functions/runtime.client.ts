@@ -1,5 +1,7 @@
 import { getReadonlyConditionStore } from '@generaltranslation/react-core/pure';
 import { createRuntime } from './runtime';
+// shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
+import { createGetTranslations } from '../compat/runtime';
 
 const runtime = createRuntime(getReadonlyConditionStore);
 
@@ -27,4 +29,6 @@ export const getMessages = runtime.getMessages;
  * loaders, `head` data and server functions; in components, use
  * `useTranslations()`.
  */
-export const getTranslations = runtime.getTranslations;
+export const getTranslations = /* @__PURE__ */ createGetTranslations(
+  getReadonlyConditionStore
+);

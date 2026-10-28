@@ -1,16 +1,21 @@
 import { describe, expect, it, vi } from 'vitest';
 
-const { mockInitializeReactGT, pluginModule } = vi.hoisted(() => ({
-  mockInitializeReactGT: vi.fn(),
-  pluginModule: {
-    config: { defaultLocale: 'en', locales: ['fr'], localeCookieName: 'lc' },
-    loadTranslations: async () => ({}),
-    dictionary: { greeting: 'Hello' },
-    loadDictionary: async () => ({}),
-  },
-}));
+const { mockInitializeReactGT, pluginModule, compatPluginModule } = vi.hoisted(
+  () => ({
+    mockInitializeReactGT: vi.fn(),
+    pluginModule: {
+      config: { defaultLocale: 'en', locales: ['fr'], localeCookieName: 'lc' },
+      loadTranslations: async () => ({}),
+    },
+    compatPluginModule: {
+      dictionary: { greeting: 'Hello' },
+      loadDictionary: async () => ({}),
+    },
+  })
+);
 
 vi.mock('gt-tanstack-start/internal/_config', () => pluginModule);
+vi.mock('gt-tanstack-start/internal/_compat-config', () => compatPluginModule);
 
 vi.mock('gt-react', () => ({
   createOrUpdateBrowserConditionStore: vi.fn(),
@@ -44,8 +49,8 @@ describe.sequential('ensureInitialized', () => {
       expect(mockInitializeReactGT).toHaveBeenCalledWith({
         ...pluginModule.config,
         loadTranslations: pluginModule.loadTranslations,
-        dictionary: pluginModule.dictionary,
-        loadDictionary: pluginModule.loadDictionary,
+        dictionary: compatPluginModule.dictionary,
+        loadDictionary: compatPluginModule.loadDictionary,
       });
     }
   );

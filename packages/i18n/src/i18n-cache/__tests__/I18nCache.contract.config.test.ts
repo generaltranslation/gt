@@ -93,32 +93,6 @@ describe('I18nCache config contract', () => {
 
   // ===== Constructor validation ===== //
 
-  it('throws and logs an error when loadDictionary is provided without a source dictionary', () => {
-    expect(
-      () =>
-        new I18nCache({
-          loadDictionary: async () => ({}),
-        })
-    ).toThrow('Validation errors occurred');
-
-    const errors = callsContaining(errorSpy, 'I18nCache:');
-    expect(errors.length).toBe(1);
-    expect(String(errors[0][0])).toContain(
-      'loadDictionary needs a source dictionary'
-    );
-  });
-
-  it('accepts loadDictionary when a source dictionary is provided', () => {
-    expect(
-      () =>
-        new I18nCache({
-          dictionary: { greeting: 'Hello' },
-          loadDictionary: async () => ({}),
-        })
-    ).not.toThrow();
-    expect(callsContaining(errorSpy, 'I18nCache:').length).toBe(0);
-  });
-
   it('warns but does not throw when a custom runtimeUrl has no projectId or api keys', () => {
     expect(
       () =>
@@ -399,28 +373,5 @@ describe('I18nCache config contract', () => {
         .map((source) => hashMessage(source, { $format: 'ICU' }))
         .sort()
     );
-  });
-
-  // ===== Dictionary loader plumbing ===== //
-
-  it('loads the dictionary lazily and deduplicates concurrent loads', async () => {
-    const loadDictionary = vi.fn().mockResolvedValue({ greeting: 'Bonjour' });
-    const cache = new I18nCache({
-      loadTranslations: async () => ({}),
-      dictionary: { greeting: 'Hello' },
-      loadDictionary,
-    });
-
-    expect(loadDictionary).not.toHaveBeenCalled();
-
-    const [first, second] = await Promise.all([
-      cache.loadDictionary('fr'),
-      cache.loadDictionary('fr'),
-    ]);
-
-    expect(loadDictionary).toHaveBeenCalledTimes(1);
-    expect(loadDictionary).toHaveBeenCalledWith('fr');
-    expect(first).toEqual({ greeting: 'Bonjour' });
-    expect(second).toEqual({ greeting: 'Bonjour' });
   });
 });

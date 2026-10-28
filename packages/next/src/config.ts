@@ -856,10 +856,13 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
             // bundler that inlines this file elsewhere would otherwise widen
             // the rule to every .mjs under its output dir. The compiled
             // config always sits beside its ESM twin and the internal
-            // modules these aliases target.
+            // modules these aliases target. The sentinel is the native
+            // translation loader stub, which every gt-next build ships.
             if (
               fs.existsSync(path.join(__dirname, 'config.mjs')) &&
-              fs.existsSync(path.join(__dirname, 'internal', '_dictionary.mjs'))
+              fs.existsSync(
+                path.join(__dirname, 'internal', '_load-translations.mjs')
+              )
             ) {
               gtNextDistDirs.push(__dirname + path.sep);
             }

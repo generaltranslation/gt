@@ -12,7 +12,7 @@ const deps = {
     /^vite$/,
     /^@generaltranslation\/compiler$/,
     // Kept as bare imports so the Vite plugin can replace them.
-    /^gt-tanstack-start\/internal\/(?:_config|localeRouting)$/,
+    /^gt-tanstack-start\/internal\/(?:_config|_compat-config|localeRouting)$/,
     /^@generaltranslation\/react-core$/,
     /^@generaltranslation\/react-core\//,
     /^gt-react$/,
@@ -29,6 +29,7 @@ const entries: Record<string, string> = {
   'index.server': 'src/index.server.ts',
   'plugin/vite': 'src/plugin/vite.ts',
   'internal/_config': 'src/internal/_config.ts',
+  'internal/_compat-config': 'src/internal/_compat-config.ts',
   'internal/localeRouting': 'src/internal/localeRouting.ts',
   'internal/localeRouting.enabled': 'src/internal/localeRouting.enabled.ts',
   'internal/localeRouting.disabled': 'src/internal/localeRouting.disabled.ts',

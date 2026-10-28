@@ -20,31 +20,33 @@ export { getVersionId } from './helpers/versionId';
 
 // Translation functions
 export type {
-  DictionaryObjectTranslation,
   SyncResolutionFunction,
   SyncResolutionFunctionWithFallback,
   GTFunctionType,
   MFunctionType,
-  TFunctionType,
 } from './translation-functions/types/functions';
 export type { RegisterableMessages } from './translation-functions/types/message';
 export type { Message } from './translation-functions/internal/getGT';
 export type {
   TranslationVariables,
   GTTranslationOptions,
-  DictionaryEntryOptions,
   EncodedTranslationOptions,
   JsxTranslationOptions,
   LookupOptionsFor,
   RuntimeTranslationOptions,
 } from './translation-functions/types/options';
 export type { Translation } from './i18n-cache/translations-manager/utils/types/translation-data';
+
+// ===== Compat: dictionary (key-based) API types ===== //
 export type {
   Dictionary,
   DictionaryEntry,
+  DictionaryEntryOptions,
   DictionaryLeaf,
   DictionaryObject,
+  DictionaryObjectTranslation,
   DictionaryValue,
   DictionaryPath,
   DictionaryKey,
-} from './i18n-cache/translations-manager/utils/types/dictionary';
+  TFunctionType,
+} from './compat/types';

@@ -1,10 +1,4 @@
-import { GTTranslationOptions, TranslationVariables } from './options';
-
-export type DictionaryObjectTranslation =
-  | string
-  | {
-      [key: string]: DictionaryObjectTranslation;
-    };
+import { GTTranslationOptions } from './options';
 
 /**
  * Synchronous resolution function type
@@ -57,17 +51,3 @@ export type MFunctionType = <T extends string | null | undefined>(
   encodedMsg: T,
   options?: GTTranslationOptions
 ) => T extends string ? string : T;
-
-/**
- * Type for the t() function
- * @param {string} id - The id of the translation to translate.
- * @param {TranslationVariables} options - The variables for interpolation.
- * @returns {string} The translated message.
- * TODO: next major version, remove the "...type" suffix, it's redundant
- */
-export type TFunctionType = ((
-  id: string,
-  options?: TranslationVariables
-) => string) & {
-  obj: (id: string) => DictionaryObjectTranslation;
-};

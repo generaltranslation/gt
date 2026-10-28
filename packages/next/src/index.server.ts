@@ -47,8 +47,9 @@ export {
   useMessages,
   useRegion,
   useSetLocale,
-  useTranslations,
 } from 'gt-react';
+// shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
+export { useTranslations } from 'gt-react';
 
 // ===== Functions ===== //
 export {

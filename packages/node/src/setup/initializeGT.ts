@@ -2,6 +2,7 @@ import { setAsyncConditionStore } from '../async-i18n-cache/singleton-operations
 import type { InitializeGTParams } from './types';
 import {
   I18nCache,
+  initializeDictionaryManager,
   initializeI18nConfig,
   setI18nCache,
 } from 'gt-i18n/internal';
@@ -13,7 +14,11 @@ import { addRuntimeCredentials } from './runtimeCredentials';
  * @param {InitializeGTParams} config - The configuration for the GT instance
  * TODO: auto detect if can find gt.config.json files
  */
-export function initializeGT(params: InitializeGTParams): void {
+export function initializeGT({
+  dictionary,
+  loadDictionary,
+  ...params
+}: InitializeGTParams): void {
   const config = addRuntimeCredentials(params);
 
   initializeI18nConfig(config);
@@ -23,4 +28,11 @@ export function initializeGT(params: InitializeGTParams): void {
 
   setI18nCache(i18nCache);
   setAsyncConditionStore(conditionStore);
+
+  // shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
+  initializeDictionaryManager({
+    dictionary,
+    loadDictionary,
+    cacheExpiryTime: config.cacheExpiryTime,
+  });
 }

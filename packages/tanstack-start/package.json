@@ -97,6 +97,13 @@
       },
       "default": "./dist/internal/_config.mjs"
     },
+    "./internal/_compat-config": {
+      "import": {
+        "types": "./dist/internal/_compat-config.d.mts",
+        "default": "./dist/internal/_compat-config.mjs"
+      },
+      "default": "./dist/internal/_compat-config.mjs"
+    },
     "./internal/localeRouting": {
       "import": {
         "types": "./dist/internal/localeRouting.d.mts",

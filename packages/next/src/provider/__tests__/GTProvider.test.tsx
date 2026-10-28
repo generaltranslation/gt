@@ -37,9 +37,12 @@ vi.mock('../../request/getRegion', () => ({
 
 vi.mock('../../i18n-cache/NextI18nCache', () => ({
   getNextI18nCache: () => ({
-    loadDictionaries: mockLoadDictionaries,
     loadTranslations: mockLoadTranslations,
   }),
+}));
+
+vi.mock('../../compat/dictionaries', () => ({
+  loadDictionaries: mockLoadDictionaries,
 }));
 
 vi.mock('../../utils/client-boundary', () => ({

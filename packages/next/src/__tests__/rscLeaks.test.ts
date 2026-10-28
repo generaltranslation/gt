@@ -1,8 +1,9 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { getRuntimeImports, resolveRelative } from './utils/importGraph';
 
 // Transitive RSC import-graph check. Starting from the RSC-safe entrypoints
 // and the gt-next server wrappers, walks every static runtime import and
@@ -88,29 +89,6 @@ function listSourceFiles(dir: string): string[] {
   });
 }
 
-function getRuntimeImports(code: string): string[] {
-  const pattern =
-    /(?:^|\n)\s*(?:import|export)\s+(type\s+)?[^'";]*?from\s*['"]([^'"]+)['"]|(?:^|\n)\s*import\s*['"]([^'"]+)['"]/g;
-  const specifiers: string[] = [];
-  for (const match of code.matchAll(pattern)) {
-    const isTypeOnly = Boolean(match[1]);
-    const specifier = match[2] ?? match[3];
-    if (!isTypeOnly && specifier) specifiers.push(specifier);
-  }
-  return specifiers;
-}
-
-function resolveRelative(specifier: string, fromFile: string): string | null {
-  const base = resolve(repoRoot, dirname(fromFile), specifier);
-  for (const suffix of ['', '.ts', '.tsx', '/index.ts', '/index.tsx']) {
-    const candidate = base + suffix;
-    if (existsSync(candidate) && statSync(candidate).isFile()) {
-      return relative(repoRoot, candidate);
-    }
-  }
-  return null;
-}
-
 function isClientBoundary(code: string): boolean {
   return /^\s*['"]use client['"]/.test(code);
 }
@@ -179,7 +157,7 @@ function walk(): Violation[] {
       }
 
       const resolved = specifier.startsWith('.')
-        ? resolveRelative(specifier, file)
+        ? resolveRelative(repoRoot, specifier, file)
         : (workspaceSourceMap[specifier] ?? null);
       if (!resolved) continue; // external module (react, gt-i18n, next/headers, ...)
 
