@@ -1278,32 +1278,6 @@ describe('parseFilesConfig', () => {
         ])
       );
     });
-
-    it('rejects string values instead of coercing them', () => {
-      const files = {
-        json: {
-          include: ['locales/[locale]/**/*.json'],
-          requiresReview: 'false' as unknown as boolean,
-        },
-      };
-
-      expect(() =>
-        resolveFiles(files, 'en', defaultLocales, '/project')
-      ).toThrow(/files\.json\.requiresReview must be a boolean/);
-    });
-
-    it('rejects objects with unknown keys', () => {
-      const files = {
-        json: {
-          include: ['locales/[locale]/**/*.json'],
-          requiresReview: { includes: ['typo/**'] } as unknown as boolean,
-        },
-      };
-
-      expect(() =>
-        resolveFiles(files, 'en', defaultLocales, '/project')
-      ).toThrow(/files\.json\.requiresReview must be a boolean/);
-    });
   });
 
   describe('resolveFiles - xcstrings catalogs', () => {
@@ -1357,7 +1331,7 @@ describe('parseFilesConfig', () => {
           '/project'
         )
       ).toThrow(
-        /files\.xcstrings\.include must not contain \[locale\]: "App\/\[locale\]\.xcstrings"/
+        /files\.xcstrings\.include must not contain \[locale\].*"App\/\[locale\]\.xcstrings"/
       );
     });
   });

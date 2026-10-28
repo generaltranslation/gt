@@ -1,10 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { loadConfig } from '../fs/config/loadConfig.js';
+import { type GTConfigFile, loadConfig } from '../fs/config/loadConfig.js';
 
 export function resolveConfig(cwd: string): {
   path: string;
-  config: Record<string, unknown>;
+  config: GTConfigFile;
 } | null {
   const configFilepath = 'gt.config.json';
   if (fs.existsSync(path.join(cwd, configFilepath))) {

@@ -12,7 +12,7 @@ import findFilepath from '../fs/findFilepath.js';
 import { handleInitGT } from '../next/parse/handleInitGT.js';
 import { getPackageJson, isPackageInstalled } from '../utils/packageJson.js';
 import { wrapContentNext } from '../next/parse/wrapContent.js';
-import { loadConfig } from '../fs/config/loadConfig.js';
+import loadJSON from '../fs/loadJSON.js';
 import {
   getFrameworkDisplayName,
   getReactFrameworkLibrary,
@@ -195,7 +195,7 @@ export async function executeReactSetup(
     warnings,
     filesUpdated,
     plan.packageJson,
-    tsconfigPath ? loadConfig(tsconfigPath) : undefined
+    (tsconfigPath && loadJSON(tsconfigPath)) || undefined
   );
 
   if (warnings.length > 0) {
