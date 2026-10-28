@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { FileReference } from 'generaltranslation/types';
+import type { FileReference } from 'generaltranslation';
 import type { Settings } from '../../../types/index.js';
 import { SetupStep } from '../SetupStep.js';
 

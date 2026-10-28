@@ -3,7 +3,7 @@ import { collectFiles } from '../collectFiles.js';
 import { hashStringSync } from '../../../utils/hash.js';
 import { TEMPLATE_FILE_ID } from '../../../utils/constants.js';
 import type { Settings, TranslateFlags } from '../../../types/index.js';
-import type { Updates } from 'generaltranslation/types';
+import type { Updates } from 'generaltranslation';
 
 vi.mock('../aggregateFiles.js', () => ({
   aggregateFiles: vi.fn(async () => ({

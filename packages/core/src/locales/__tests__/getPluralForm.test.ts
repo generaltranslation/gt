@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { _getPluralForm } from '../getPluralForm';
+import { getPluralForm } from '../getPluralForm';
 import type { PluralType } from '../../settings/plurals';
 
 const form = (n: number, forms: PluralType[], locale: string) =>
-  _getPluralForm(n, forms, [locale]);
+  getPluralForm(n, forms, [locale]);
 
-describe('_getPluralForm fallbacks', () => {
+describe('getPluralForm fallbacks', () => {
   it.each([
     ['lv', 0, 'zero'],
     ['ar', 0, 'zero'],

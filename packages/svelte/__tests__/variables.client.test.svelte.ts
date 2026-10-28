@@ -8,7 +8,7 @@ import {
   it,
   vi,
 } from 'vitest';
-import type { Variable } from '@generaltranslation/format/types';
+import type { Variable } from '@generaltranslation/format';
 import Harness from './fixtures/Harness.svelte';
 import VariableKeys from './fixtures/VariableKeys.svelte';
 import { hashesOf, setupGT } from './helpers';

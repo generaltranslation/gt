@@ -2,7 +2,7 @@ import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/diagnostics';
-import { getTranslateListenerKey } from 'gt-i18n/internal';
+import { getTranslateListenerKey, Hash, Locale } from 'gt-i18n/internal';
 import type {
   DictionaryEntrySnapshot,
   DictionaryLookup,
@@ -13,9 +13,8 @@ import type {
   TranslateSnapshot,
   Unsubscribe,
 } from './storeTypes';
-import type { Dictionary, Translation } from 'gt-i18n/types';
+import type { Dictionary, Translation } from 'gt-i18n';
 import { subscribeToSet } from './utils/subscriptions';
-import { Hash, Locale } from 'gt-i18n/internal/types';
 import { getReactI18nCache } from '../i18n-cache/singleton-operations';
 import { lookupTranslation } from './utils/translations';
 import {

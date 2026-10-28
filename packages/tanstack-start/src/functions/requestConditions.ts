@@ -1,7 +1,8 @@
 import { setCookie } from '@tanstack/react-start/server';
 import { getI18nConfig } from '@generaltranslation/react-core/pure';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import { getCookieValue, parseAcceptLanguage } from 'gt-i18n/internal';
+import { getCookieValue } from 'gt-i18n/internal/cookies';
+import { parseAcceptLanguage } from 'gt-i18n/internal';
 import type { RequestConditions } from '../condition-store/AsyncLocalConditionStore';
 import type { InitializeGTParams } from '../types/InitializeGTParams';
 import { getLocaleFromPath } from './localeRouting';

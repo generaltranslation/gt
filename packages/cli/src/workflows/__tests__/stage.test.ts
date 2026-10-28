@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { FileToUpload } from 'generaltranslation/types';
+import type { FileToUpload } from 'generaltranslation';
 import type { Settings, TranslateFlags } from '../../types/index.js';
 import { runStageFilesWorkflow } from '../stage.js';
 

@@ -2,7 +2,7 @@ import { transformSync } from '@babel/core';
 import presetReact from '@babel/preset-react';
 import React from 'react';
 import { hashSource } from 'generaltranslation/id';
-import type { JsxChildren } from '@generaltranslation/format/types';
+import type { JsxChildren } from '@generaltranslation/format';
 import * as ReactComponents from '../../../../react-core/src/components';
 import { addGTIdentifier } from '../../../../react-core/src/utils/internal/addGTIdentifier';
 import { writeChildrenAsObjects } from '../../../../react-core/src/utils/internal/writeChildrenAsObjects';

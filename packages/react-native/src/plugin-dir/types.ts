@@ -1,4 +1,4 @@
-import type { GTConfig } from 'generaltranslation/types';
+import type { GTConfig } from 'generaltranslation';
 
 export const POLYFILLS = [
   '@formatjs/intl-getcanonicallocales/polyfill',

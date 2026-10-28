@@ -14,7 +14,7 @@ import {
   type GTProp,
   type JsxChild,
   type JsxChildren,
-} from '@generaltranslation/format/types';
+} from '@generaltranslation/format';
 import { isAcceptedPluralForm } from 'generaltranslation/internal';
 import { ElementTypes, NodeTypes } from './compilerAst.js';
 import { processVueStringCall } from './stringCalls.js';

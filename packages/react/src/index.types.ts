@@ -80,22 +80,21 @@ export type {
   NumProps,
   PluralProps,
   PreparedT,
-  RelativeTimeFormatOptions,
   RelativeTimeProps,
-  RenderVariable,
   ResolvedCurrencyProps,
   ResolvedDateTimeProps,
   ResolvedNumProps,
   ResolvedPluralProps,
   ResolvedRelativeTimeProps,
 } from '@generaltranslation/react-core/components-rsc';
+export type {
+  RelativeTimeFormatOptions,
+  RenderVariable,
+} from '@generaltranslation/react-core/pure';
 
 export type { SharedGTProviderProps } from './provider/GTProviderProps';
 export {
   GtInternalRuntimeTranslateJsx,
   GtInternalRuntimeTranslateString,
 } from 'gt-i18n/internal';
-export type {
-  GTTranslationOptions,
-  RuntimeTranslationOptions,
-} from 'gt-i18n/types';
+export type { GTTranslationOptions, RuntimeTranslationOptions } from 'gt-i18n';

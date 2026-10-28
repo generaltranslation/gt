@@ -1,6 +1,6 @@
 import { parse as parseIcu } from '@generaltranslation/icu';
 import { hashSource } from 'generaltranslation/id';
-import type { StringFormat } from '@generaltranslation/format/types';
+import type { StringFormat } from '@generaltranslation/format';
 import type { GTBindings } from './imports.js';
 import { getStaticExpressionValue } from './translation.js';
 import type { SvelteNode, TranslationMetadata } from './types.js';

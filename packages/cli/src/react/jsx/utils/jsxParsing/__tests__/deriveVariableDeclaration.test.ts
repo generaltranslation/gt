@@ -4,7 +4,7 @@ import { parse } from '@babel/parser';
 import traverse from '@babel/traverse';
 import { parseTranslationComponent } from '../parseJsx.js';
 import { ParsingConfigOptions } from '../../../../../types/parsing.js';
-import { Updates } from 'generaltranslation/types';
+import { Updates } from 'generaltranslation';
 import { Libraries } from '../../../../../types/libraries.js';
 
 // Mock fs and resolveImportPath (required by parseJsx internals)

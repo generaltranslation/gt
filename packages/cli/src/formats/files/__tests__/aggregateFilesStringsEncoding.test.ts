@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { isBinaryFileFormat } from 'generaltranslation/types';
+import { isBinaryFileFormat } from 'generaltranslation';
 import { aggregateFiles } from '../aggregateFiles.js';
 import { encodeFileContent } from '../../../fs/fileContent.js';
 import type { Settings } from '../../../types/index.js';

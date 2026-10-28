@@ -1,6 +1,6 @@
 import { TransformState } from '../../../state/types';
 import hashSource from '../../../utils/calculateHash';
-import type { DataFormat } from '@generaltranslation/format/types';
+import type { DataFormat } from '@generaltranslation/format';
 
 /**
  * Track gt() function invocations

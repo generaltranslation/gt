@@ -1,6 +1,8 @@
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import { createConditionStoreSingleton } from 'gt-i18n/internal';
-import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
+import {
+  createConditionStoreSingleton,
+  type ReadonlyConditionStoreInterface,
+} from 'gt-i18n/internal';
 
 const conditionStoreNotInitializedError = createDiagnosticMessage({
   source: '@generaltranslation/react-core',

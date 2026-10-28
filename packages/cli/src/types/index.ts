@@ -1,11 +1,11 @@
-import type { CustomMapping } from '@generaltranslation/format/types';
+import type { CustomMapping } from '@generaltranslation/format';
 import type { InferInput } from 'valibot';
 import type {
   FileFormat,
   ModelProvider,
   UserTokenProvider,
 } from '@generaltranslation/api';
-import type { Updates } from 'generaltranslation/types';
+import type { Updates } from 'generaltranslation';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import {
   ParsingConfigOptions,
@@ -27,8 +27,6 @@ import type {
   TransformOptionsSchema,
   YamlSchemaSchema,
 } from '../config/schema.js';
-
-export type { Updates } from 'generaltranslation/types';
 
 export type Metadata = Updates[number]['metadata'];
 

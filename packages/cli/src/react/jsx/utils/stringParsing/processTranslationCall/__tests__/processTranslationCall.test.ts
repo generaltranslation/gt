@@ -4,7 +4,7 @@ import traverse, { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import { processTranslationCall } from '../index.js';
 import { ParsingConfig, ParsingOutput } from '../../types.js';
-import { Updates } from 'generaltranslation/types';
+import { Updates } from 'generaltranslation';
 
 const FILE_PATH = 'test.tsx';
 

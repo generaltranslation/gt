@@ -13,7 +13,7 @@ import { validateJsonSchema } from '../../formats/json/utils.js';
 import { runUploadFilesWorkflow } from '../../workflows/upload.js';
 import { existsSync } from 'node:fs';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
-import type { FileToUpload } from 'generaltranslation/types';
+import type { FileToUpload } from 'generaltranslation';
 import {
   hasValidCredentials,
   hasValidServiceLocales,

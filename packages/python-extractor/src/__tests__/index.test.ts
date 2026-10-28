@@ -3,15 +3,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { disposeParser } from '../parser.js';
+import { extractFromPythonSource } from '../index.js';
 import {
-  extractFromPythonSource,
   PYTHON_GT_PACKAGES,
   PYTHON_GT_DEPENDENCIES,
   PYTHON_T_FUNCTION,
   PYTHON_DERIVE,
   PYTHON_DECLARE_VAR,
   PYTHON_METADATA_KWARGS,
-} from '../index.js';
+} from '../constants.js';
 import type { ExtractionResult, ExtractionMetadata } from '../types.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

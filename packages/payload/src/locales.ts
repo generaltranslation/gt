@@ -1,7 +1,6 @@
 // Payload's locales as languages to translate into, shared by the plugin's
 // endpoints and the admin panel.
-import { GTIntl } from '@generaltranslation/format';
-import type { CustomMapping } from '@generaltranslation/format/types';
+import { GTIntl, type CustomMapping } from '@generaltranslation/format';
 import { labelText } from './labels';
 
 // Where the plugin puts its settings in the admin panel's config.

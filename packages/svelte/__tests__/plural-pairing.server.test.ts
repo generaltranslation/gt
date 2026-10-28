@@ -4,7 +4,7 @@ import { analyzeSvelteSource } from '@generaltranslation/svelte-extractor';
 import { parse } from 'svelte/compiler';
 import { render } from 'svelte/server';
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { Content, JsxElement } from '@generaltranslation/format/types';
+import type { Content, JsxElement } from '@generaltranslation/format';
 import Harness from './fixtures/Harness.svelte';
 import NestedPluralForms from './fixtures/NestedPluralForms.svelte';
 import { setupGT, withoutComments } from './helpers';

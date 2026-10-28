@@ -1,5 +1,4 @@
-import { getRuntimeEnvironment } from 'gt-i18n/internal';
-import type { I18nConfigParams } from 'gt-i18n/internal/types';
+import { getRuntimeEnvironment, type I18nConfigParams } from 'gt-i18n/internal';
 
 type RuntimeCredentials = Pick<I18nConfigParams, 'projectId' | 'devApiKey'>;
 type RuntimeEnv = {

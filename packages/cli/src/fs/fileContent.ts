@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { isBinaryFileFormat } from 'generaltranslation/types';
+import { isBinaryFileFormat } from 'generaltranslation';
 import type { FileFormat } from '@generaltranslation/api';
 
 /**

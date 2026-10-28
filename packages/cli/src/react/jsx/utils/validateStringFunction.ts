@@ -1,5 +1,5 @@
 import { NodePath } from '@babel/traverse';
-import { Updates } from 'generaltranslation/types';
+import { Updates } from 'generaltranslation';
 import { warnAsyncUseGT, warnSyncGetGT } from '../../../console/index.js';
 import {
   INLINE_TRANSLATION_HOOK,

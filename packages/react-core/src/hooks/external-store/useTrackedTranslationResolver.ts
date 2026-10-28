@@ -3,13 +3,13 @@ import {
   createLookupOptions,
   getI18nConfig,
   getTranslateListenerKey,
+  type TranslationMetadata,
 } from 'gt-i18n/internal';
-import type { Translation } from 'gt-i18n/types';
+import type { Translation } from 'gt-i18n';
 import type {
   TranslateLookup,
   TranslateSnapshot,
 } from '../../i18n-store/storeTypes';
-import type { TranslationMetadata } from 'gt-i18n/internal/types';
 import type { StringFormat } from '@generaltranslation/format';
 import {
   useI18nStore,

@@ -1,12 +1,12 @@
-import { AsyncReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
-import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import { cookies, headers } from 'next/headers';
-import { noLocalesCouldBeDeterminedWarning } from '../errors/ssg';
 import {
+  AsyncReadonlyConditionStoreInterface,
   createConditionStoreSingleton,
   getI18nConfig,
   parseAcceptLanguage,
 } from 'gt-i18n/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
+import { cookies, headers } from 'next/headers';
+import { noLocalesCouldBeDeterminedWarning } from '../errors/ssg';
 import {
   defaultLocaleCookieName,
   defaultRegionCookieName,

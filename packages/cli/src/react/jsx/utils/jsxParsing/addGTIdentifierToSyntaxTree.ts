@@ -4,7 +4,7 @@ import {
   HTML_CONTENT_PROPS,
   JsxChild,
   JsxChildren,
-} from '@generaltranslation/format/types';
+} from '@generaltranslation/format';
 import {
   defaultVariableNames,
   getVariableName,

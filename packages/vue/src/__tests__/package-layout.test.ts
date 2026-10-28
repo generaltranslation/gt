@@ -177,7 +177,7 @@ describe('gt-vue package layout', () => {
     }
   }, 30_000);
 
-  it('publishes server-safe SPA guards and tree-shakes non-SPA consumers', () => {
+  it('publishes server-safe SPA guards and lets bundlers tree-shake non-SPA consumers', () => {
     const packageRoot = fileURLToPath(new URL('../..', import.meta.url));
     const fixtureDirectory = mkdtempSync(
       join(packageRoot, '.gt-vue-tree-shaking-')
@@ -305,7 +305,14 @@ describe('gt-vue package layout', () => {
         join(unpackDirectory, 'package', 'dist', 'index.mjs'),
         'utf8'
       );
-      expect(esmPackageSource).not.toMatch(
+      // The only static format import is HTML_CONTENT_PROPS, which bundlers
+      // tree-shake down to the constant; locale matching stays lazy.
+      expect(
+        esmPackageSource.replace(
+          'import { HTML_CONTENT_PROPS } from "@generaltranslation/format";',
+          ''
+        )
+      ).not.toMatch(
         /(?:^|\n)import\s+[^;]*["']@generaltranslation\/format["']/
       );
       expect(esmPackageSource).toMatch(
@@ -315,9 +322,9 @@ describe('gt-vue package layout', () => {
         join(unpackDirectory, 'package', 'dist', 'index.cjs'),
         'utf8'
       );
-      expect(commonJSPackageSource).not.toMatch(
-        /(?:^|\n)(?:const|let|var)\s+[^;]*require\(["']@generaltranslation\/format["']\)/
-      );
+      expect(
+        new Set(commonJSPackageSource.match(/_generaltranslation_format\.\w+/g))
+      ).toEqual(new Set(['_generaltranslation_format.HTML_CONTENT_PROPS']));
       expect(commonJSPackageSource).toMatch(
         /import\(["']@generaltranslation\/format["']\)/
       );
@@ -369,9 +376,11 @@ describe('gt-vue package layout', () => {
         );
         expect(bundledSource).not.toMatch(/["']gt-i18n\/internal["']/);
         expect(bundledSource).not.toContain('spaRuntime');
-        expect(bundledSource).not.toMatch(
-          /["']@generaltranslation\/format["']/
-        );
+        // External-only consumers keep the tree-shaken HTML_CONTENT_PROPS
+        // import as a bare side-effect import; nothing else may reach format.
+        expect(
+          bundledSource.replace('import "@generaltranslation/format";', '')
+        ).not.toMatch(/["']@generaltranslation\/format["']/);
         expect(bundledSource).not.toContain(
           'The browser SPA runtime is not initialized'
         );

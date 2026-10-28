@@ -1,7 +1,7 @@
 import { getConfiguredLocaleProperties } from '../utils.js';
 import { exitSync } from '../../console/logging.js';
 import { logger } from '../../console/logger.js';
-import type { LocaleProperties } from '@generaltranslation/format/types';
+import type { LocaleProperties } from '@generaltranslation/format';
 import {
   AdditionalOptions,
   JsonSchema,

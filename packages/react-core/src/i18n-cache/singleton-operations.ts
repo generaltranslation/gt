@@ -1,6 +1,5 @@
-import { getI18nCache, setI18nCache } from 'gt-i18n/internal';
-import type { I18nCache } from 'gt-i18n/internal';
-import type { Translation } from 'gt-i18n/types';
+import { getI18nCache, setI18nCache, type I18nCache } from 'gt-i18n/internal';
+import type { Translation } from 'gt-i18n';
 import type { ReactI18nCache } from './ReactI18nCache';
 
 // ===== I18n Cache ===== //

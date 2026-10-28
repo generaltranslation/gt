@@ -8,8 +8,14 @@ export { libraryDefaultLocale } from './settings/settings';
 export type { RuntimeTranslateManyOptions } from './types-dir/api/entry';
 export { credentialScope } from './clientConfig';
 export { isAcceptedPluralForm } from './settings/plurals';
+export type {
+  InjectionType,
+  Transformation,
+  TransformationPrefix,
+  VariableTransformationSuffix,
+} from './types-dir/transformations';
 
-export { _getPluralForm as getPluralForm } from './locales/getPluralForm';
+export { getPluralForm } from './locales/getPluralForm';
 export { isVariable } from './utils/isVariable';
 export { minifyVariableType } from './utils/minify';
 export { decode, encode } from './utils/base64';
@@ -18,7 +24,6 @@ export {
   isModelProvider,
   supportedModelProviders,
 } from './translate/modelProvider';
-export type { ModelProvider } from '@generaltranslation/api';
 
 // derive
 export { indexVars } from './derive/indexVars';

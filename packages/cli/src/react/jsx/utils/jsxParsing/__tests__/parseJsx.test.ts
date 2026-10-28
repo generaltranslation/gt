@@ -6,14 +6,14 @@ import fs from 'node:fs';
 import { parseTranslationComponent } from '../parseJsx.js';
 import { resolveImportPath } from '../../resolveImportPath.js';
 import { ParsingConfigOptions } from '../../../../../types/parsing.js';
-import { Updates } from 'generaltranslation/types';
+import { Updates } from 'generaltranslation';
 import { hashSource } from 'generaltranslation/id';
 import type {
   JsxChild,
   JsxChildren,
   JsxElement,
   Variable,
-} from '@generaltranslation/format/types';
+} from '@generaltranslation/format';
 import { Libraries } from '../../../../../types/libraries.js';
 
 // Mock fs and resolveImportPath

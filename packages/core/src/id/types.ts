@@ -1,4 +1,4 @@
-import type { DataFormat } from '@generaltranslation/format/types';
+import type { DataFormat } from '@generaltranslation/format';
 import type { RuntimeFileFormat } from '@generaltranslation/api';
 
 export type HashMetadata = {

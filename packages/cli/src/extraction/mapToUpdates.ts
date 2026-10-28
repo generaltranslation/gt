@@ -1,5 +1,5 @@
 import type { ExtractionResult } from '@generaltranslation/python-extractor';
-import type { Updates } from 'generaltranslation/types';
+import type { Updates } from 'generaltranslation';
 
 /**
  * Maps ExtractionResult[] to Updates[] format used by the CLI pipeline

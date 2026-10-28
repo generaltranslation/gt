@@ -1,4 +1,4 @@
-import type { LocaleProperties } from '@generaltranslation/format/types';
+import type { LocaleProperties } from '@generaltranslation/format';
 import { useMemo } from 'react';
 import { useEnableI18n, useLocale } from './condition-store';
 import { getFormatLocales } from './utils/getFormatLocales';

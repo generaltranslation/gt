@@ -21,25 +21,16 @@ vi.mock('@generaltranslation/react-core/pure', () => ({
     getRegionCookieName: () => 'generaltranslation.region',
     getEnableI18nCookieName: () => 'generaltranslation.enable-i18n',
   }),
+  I18nStore: class {
+    updateTranslations() {}
+    updateDictionaries() {}
+  },
 }));
 
 vi.mock('../../condition-store/cookies', () => ({
   getCookieValue: mockGetCookieValue,
   setCookieValue: mockSetCookieValue,
 }));
-
-vi.mock(
-  '@generaltranslation/react-core/components',
-  async (importOriginal) => ({
-    ...(await importOriginal<
-      typeof import('@generaltranslation/react-core/components')
-    >()),
-    I18nStore: class {
-      updateTranslations() {}
-      updateDictionaries() {}
-    },
-  })
-);
 
 describe('BrowserGTProvider', () => {
   beforeEach(() => {

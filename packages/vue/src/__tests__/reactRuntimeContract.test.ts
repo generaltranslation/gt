@@ -1,4 +1,4 @@
-import type { JsxChildren } from '@generaltranslation/format/types';
+import type { JsxChildren } from '@generaltranslation/format';
 import { hashSource } from 'generaltranslation/id';
 import {
   Branch as ReactBranch,

@@ -2,7 +2,7 @@ import React from 'react';
 import type {
   CustomMapping,
   LocaleProperties,
-} from '@generaltranslation/format/types';
+} from '@generaltranslation/format';
 
 /**
  * Capitalizes the first letter of a string if applicable.

@@ -4,8 +4,8 @@ import type {
   JsxChildren,
   JsxElement,
   Variable,
-} from '@generaltranslation/format/types';
-import { HTML_CONTENT_PROPS } from '@generaltranslation/format/types';
+} from '@generaltranslation/format';
+import { HTML_CONTENT_PROPS } from '@generaltranslation/format';
 import {
   isAcceptedPluralForm,
   minifyVariableType,

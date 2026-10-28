@@ -1,6 +1,6 @@
 import { flushSync, mount, unmount } from 'svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { Content } from '@generaltranslation/format/types';
+import type { Content } from '@generaltranslation/format';
 import Harness from './fixtures/Harness.svelte';
 import LocaleButtons from './fixtures/LocaleButtons.svelte';
 import { hashesOf, setupGT } from './helpers';

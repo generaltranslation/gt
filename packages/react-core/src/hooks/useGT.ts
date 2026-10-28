@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
 import { createLookupOptions, interpolateMessage } from 'gt-i18n/internal';
 import { useTranslationConditions } from './utils';
-import type { GTFunctionType, GTTranslationOptions } from 'gt-i18n/types';
-import type { StringFormat } from '@generaltranslation/format/types';
+import type { GTFunctionType, GTTranslationOptions } from 'gt-i18n';
+import type { StringFormat } from '@generaltranslation/format';
 import { useDefaultLocale } from './i18n-config';
 import {
   type Message,

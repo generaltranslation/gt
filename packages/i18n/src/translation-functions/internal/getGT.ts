@@ -4,7 +4,7 @@ import { GTTranslationOptions, TranslationMetadata } from '../types/options';
 import { GTFunctionType } from '../types/functions';
 import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
 import { createLookupOptions } from './helpers';
-import type { StringFormat } from '@generaltranslation/format/types';
+import type { StringFormat } from '@generaltranslation/format';
 import { getWritableConditionStore } from '../../condition-store/singleton-operations';
 
 export type Message = TranslationMetadata & {

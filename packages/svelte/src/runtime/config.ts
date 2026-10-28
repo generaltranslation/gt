@@ -8,8 +8,8 @@ import {
 import type {
   I18nCacheConstructorParams,
   I18nConfigParams,
-} from 'gt-i18n/internal/types';
-import type { Content } from '@generaltranslation/format/types';
+} from 'gt-i18n/internal';
+import type { Content } from '@generaltranslation/format';
 import { rememberCachedTranslations } from './hydration';
 
 /** Configuration for {@link initializeGT}. */

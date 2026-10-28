@@ -1,9 +1,5 @@
-import type {
-  GTProp,
-  JsxElement,
-  Variable,
-} from '@generaltranslation/format/types';
-import type { GTParsingFlags } from 'generaltranslation/types';
+import type { GTProp, JsxElement, Variable } from '@generaltranslation/format';
+import type { GTParsingFlags } from 'generaltranslation';
 
 /** A direct Branch or Plural source value preserved by the GT wire format. */
 export type VueBranchSource = VueJsxChildren;

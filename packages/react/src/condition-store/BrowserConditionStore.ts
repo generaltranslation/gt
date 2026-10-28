@@ -1,13 +1,13 @@
 import { getI18nConfig } from '@generaltranslation/react-core/pure';
 import { defaultResetLocaleCookieName } from 'gt-i18n/internal/cookies';
-import type { WritableConditionStoreParams } from 'gt-i18n/internal';
-import { getCookieValue, setCookieValue } from './cookies';
-import { readBrowserLocale } from './readBrowserLocale';
-import { GetEnableI18n, GetLocale, GetRegion } from '../i18n-cache/types';
 import {
   LocaleCandidates,
   WritableConditionStoreInterface,
-} from 'gt-i18n/internal/types';
+  type WritableConditionStoreParams,
+} from 'gt-i18n/internal';
+import { getCookieValue, setCookieValue } from './cookies';
+import { readBrowserLocale } from './readBrowserLocale';
+import { GetEnableI18n, GetLocale, GetRegion } from '../i18n-cache/types';
 
 type SerializedBrowserConditionStoreState = {
   locale: string;

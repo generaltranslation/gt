@@ -7,7 +7,7 @@ import {
 import { logger } from '../console/logger.js';
 import { Settings, TranslateFlags } from '../types/index.js';
 import { createClients } from '../utils/api.js';
-import { FileReference, FileToUpload } from 'generaltranslation/types';
+import { FileReference, FileToUpload } from 'generaltranslation';
 import { UploadSourcesStep } from './steps/UploadSourcesStep.js';
 import { SetupStep } from './steps/SetupStep.js';
 import { EnqueueStep, type EnqueueFilesResult } from './steps/EnqueueStep.js';

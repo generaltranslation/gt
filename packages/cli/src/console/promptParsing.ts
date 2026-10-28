@@ -1,5 +1,4 @@
-import { isValidLocale } from '@generaltranslation/format';
-import type { CustomMapping } from '@generaltranslation/format/types';
+import { isValidLocale, type CustomMapping } from '@generaltranslation/format';
 
 export function validateLocale(value: string, customMapping?: CustomMapping) {
   const locale = value.trim();

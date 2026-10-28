@@ -12,7 +12,7 @@ import {
   it,
   vi,
 } from 'vitest';
-import type { Content } from '@generaltranslation/format/types';
+import type { Content } from '@generaltranslation/format';
 import Harness from './fixtures/Harness.svelte';
 import Whitespace from './fixtures/Whitespace.svelte';
 import { setupGT, withoutComments } from './helpers';

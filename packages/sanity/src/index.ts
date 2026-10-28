@@ -1,5 +1,5 @@
 import type { PortableTextHtmlComponents } from '@portabletext/to-html';
-import type { GTConfig } from 'generaltranslation/types';
+import type { GTConfig } from 'generaltranslation';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { formatLocaleLabel } from './utils/localeDisplay';
 import { definePlugin } from 'sanity';

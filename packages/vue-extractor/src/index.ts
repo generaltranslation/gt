@@ -1,12 +1,4 @@
 export { extractFromVueSource } from './internal/extractFromVueSource.js';
-export { planVueExtraction } from './integration.js';
-export type { InlineExtractionOutput } from './internal/project/mergeVueProjectExtraction.js';
-export type {
-  PrimaryInlineExtractor,
-  VueExtractionPlan,
-  VueExtractionPlannerOptions,
-  VueExtractionRunOptions,
-} from './integration.js';
 export type {
   VueCompilerOptions,
   VueCompiler,
@@ -19,9 +11,5 @@ export type {
   VueJsxChild,
   VueJsxChildren,
   VueJsxElement,
-  VueProjectExtractionOptions,
-  VueProjectExtractionOutput,
-  VueProjectExtractionResult,
-  VueProjectInspection,
   VueSourceCode,
 } from './types.js';

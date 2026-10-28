@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Component } from 'svelte';
   import { GTProvider } from 'gt-svelte';
-  import type { Content } from '@generaltranslation/format/types';
+  import type { Content } from '@generaltranslation/format';
 
   let {
     component: Child,

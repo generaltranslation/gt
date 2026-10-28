@@ -1,6 +1,6 @@
-import type { JsxChildren } from '@generaltranslation/format/types';
+import type { JsxChildren } from '@generaltranslation/format';
 import { getI18nCache, getI18nConfig } from 'gt-i18n/internal';
-import type { LookupOptions } from 'gt-i18n/internal/types';
+import type { LookupOptions } from 'gt-i18n/internal';
 import type { GTState } from './state.svelte';
 
 /** Static `<T>` props forwarded to translation lookups. */

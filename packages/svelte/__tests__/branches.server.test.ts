@@ -1,6 +1,6 @@
 import { render } from 'svelte/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Content } from '@generaltranslation/format/types';
+import type { Content } from '@generaltranslation/format';
 import BareBranch from './fixtures/BareBranch.svelte';
 import Harness from './fixtures/Harness.svelte';
 import NestedBranches from './fixtures/NestedBranches.svelte';

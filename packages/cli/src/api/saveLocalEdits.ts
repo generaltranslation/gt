@@ -6,7 +6,7 @@ import { BranchStep } from '../workflows/steps/BranchStep.js';
 import { logErrorAndExit } from '../console/logging.js';
 import { logger } from '../console/logger.js';
 import { branchResolutionError, noProjectIdError } from '../console/index.js';
-import type { FileReference } from 'generaltranslation/types';
+import type { FileReference } from 'generaltranslation';
 import chalk from 'chalk';
 import { runPublishWorkflow } from '../workflows/publish.js';
 import { readLockfile } from '../fs/config/downloadedVersions.js';

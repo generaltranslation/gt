@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { Translation } from 'gt-i18n/types';
+import type { Translation } from 'gt-i18n';
 import type {
   TranslateLookup,
   TranslateSnapshot,

@@ -1,5 +1,6 @@
 import { getI18nConfig } from '@generaltranslation/react-core/pure';
-import { getCookieValue, parseAcceptLanguage } from 'gt-i18n/internal';
+import { getCookieValue } from 'gt-i18n/internal/cookies';
+import { parseAcceptLanguage } from 'gt-i18n/internal';
 
 type RequestWithHeaders = Pick<Request, 'headers'>;
 

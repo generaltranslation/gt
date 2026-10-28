@@ -1,4 +1,4 @@
-import type { GTCompilerOptions, GTConfig } from 'generaltranslation/types';
+import type { GTCompilerOptions, GTConfig } from 'generaltranslation';
 import type { MiddlewareConfig } from '../../middleware-dir/types';
 
 export type HeadersAndCookies = {

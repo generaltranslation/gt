@@ -28,10 +28,6 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./types": {
-      "types": "./dist/types.d.ts",
-      "import": "./dist/types.js"
-    },
     "./constants": {
       "types": "./dist/constants.d.ts",
       "import": "./dist/constants.js"

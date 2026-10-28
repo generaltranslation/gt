@@ -3,17 +3,13 @@ import {
   getRuntimeEnvironment,
   interpolateMessage,
 } from 'gt-i18n/internal';
-import type { GTTranslationOptions } from 'gt-i18n/types';
-import type { LookupOptionsFor } from 'gt-i18n/internal/types';
+import type { GTTranslationOptions, LookupOptionsFor } from 'gt-i18n';
 import { getI18nConfig } from '../../setup/i18nConfig';
 import {
   getReadonlyConditionStore,
   isReadonlyConditionStoreInitialized,
 } from '../../condition-store/singleton-operations';
-import type {
-  StringContent,
-  StringFormat,
-} from '@generaltranslation/format/types';
+import type { StringContent, StringFormat } from '@generaltranslation/format';
 import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 import { getShouldTranslate } from '../../hooks/utils/getShouldTranslate';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';

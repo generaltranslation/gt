@@ -16,7 +16,6 @@ import type { GTProjectConfig } from './clientConfig';
 import { noScopeIdProvidedError } from './logging/errors';
 import { translateEntries } from './translate/runtimeTranslate';
 
-export type { LocaleConfig } from '@generaltranslation/format';
 export type { GTCredentials, GTProjectConfig } from './clientConfig';
 
 // ============================================================ //
