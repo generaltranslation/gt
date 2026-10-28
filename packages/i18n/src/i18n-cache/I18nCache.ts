@@ -535,7 +535,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
               asyncBoundaryLocale,
               (entryLocale) =>
                 this._resolveCacheLocale(entryLocale) ??
-                this._resolveLocale(entryLocale)
+                getI18nConfig().resolveLocale(entryLocale)
             );
             if (resolvedPrefetchEntries.length !== prefetchEntries.length) {
               logger.warn(
@@ -624,24 +624,13 @@ class I18nCache<TranslationValue extends Translation = Translation> {
     }
   }
 
-  private _resolveLocale(locale: string) {
-    const i18nConfig = getI18nConfig();
-    const resolvedLocale = i18nConfig.determineLocale(locale);
-    if (!i18nConfig.isValidLocale(locale) || !resolvedLocale) {
-      throw new Error(
-        `Locale "${locale}" is not valid. Use a valid BCP 47 locale code or add a custom mapping.`
-      );
-    }
-    return resolvedLocale;
-  }
-
   /**
    * Resolve the locale key used to load/read locale caches.
    * Returns undefined when the requested locale can use source content.
    */
   private _resolveCacheLocale(locale: string) {
-    const resolvedLocale = this._resolveLocale(locale);
     const i18nConfig = getI18nConfig();
+    const resolvedLocale = i18nConfig.resolveLocale(locale);
     if (i18nConfig.requiresTranslation({ locale: resolvedLocale })) {
       return resolvedLocale;
     }
@@ -680,7 +669,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
       $locale:
         translationLocale ??
         this._resolveCacheLocale(options.$locale) ??
-        this._resolveLocale(options.$locale),
+        getI18nConfig().resolveLocale(options.$locale),
     };
   }
 

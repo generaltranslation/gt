@@ -44,10 +44,7 @@ export function resolveRequestConditions(
     console.warn(noLocaleCandidatesWarning);
   }
 
-  const locale = i18nConfig.resolveSupportedLocale(
-    localeCandidates,
-    localeConfig
-  );
+  const locale = i18nConfig.resolveSupportedLocale(localeCandidates);
 
   setCookie(i18nConfig.getLocaleCookieName(), locale, localeCookieOptions);
 

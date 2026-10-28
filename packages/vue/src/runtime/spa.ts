@@ -1,4 +1,5 @@
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
+import type { GTIntl } from '@generaltranslation/format';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { translateString } from '../messages/translation';
 import type { GTFunction, GTPlugin, InitializeGTSPAOptions } from '../types';
@@ -102,9 +103,6 @@ async function createSPARuntime(
       ? standardizeLocale(canonicalLocale)
       : canonicalLocale;
   };
-  const intl = new GTIntl({ localeMatcher });
-  const determineLocale = (locale: string, approvedLocales: string[]) =>
-    intl.determineLocale(locale, { approvedLocales });
   const runtime = createGTRuntime(createOptions, {
     pinLocale: true,
     reloadDocument: () => window.location.reload(),
@@ -112,7 +110,8 @@ async function createSPARuntime(
     resolveLocale: createSupportedLocaleResolver(
       createOptions.defaultLocale ?? libraryDefaultLocale,
       locales,
-      determineLocale,
+      (supportedLocales) =>
+        new GTIntl({ localeMatcher, locales: supportedLocales }),
       resolveFormattingLocale
     ),
   });
@@ -125,10 +124,7 @@ async function createSPARuntime(
 function createSupportedLocaleResolver(
   defaultLocale: string,
   locales: readonly string[] | undefined,
-  determineLocale: (
-    locale: string,
-    supportedLocales: string[]
-  ) => string | undefined,
+  createIntl: (supportedLocales: string[]) => GTIntl,
   canonicalizeLocale: (locale: string) => string
 ): (locale: string) => string {
   if (locales === undefined) {
@@ -142,6 +138,7 @@ function createSupportedLocaleResolver(
 
   const configuredLocales = Array.from(new Set([defaultLocale, ...locales]));
   const canonicalLocales = configuredLocales.map(canonicalizeLocale);
+  const intl = createIntl(canonicalLocales);
 
   return (locale) => {
     // File and directory placeholders use the spelling from gt.config.json.
@@ -153,7 +150,7 @@ function createSupportedLocaleResolver(
     if (exactIndex !== -1) return configuredLocales[exactIndex];
 
     const canonicalLocale = canonicalizeLocale(locale);
-    const matchedLocale = determineLocale(canonicalLocale, canonicalLocales);
+    const matchedLocale = intl.determineLocale(canonicalLocale);
     if (matchedLocale === undefined) return defaultLocale;
 
     const matchedIndex = canonicalLocales.indexOf(matchedLocale);
