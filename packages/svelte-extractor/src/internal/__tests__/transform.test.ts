@@ -1,6 +1,7 @@
 import { hashSource } from 'generaltranslation/id';
 import { compile, parse } from 'svelte/compiler';
 import { describe, expect, it } from 'vitest';
+import type { JsxElement } from '@generaltranslation/format/types';
 import { analyzeSvelteSource, transformSvelteSource } from '../../index.js';
 
 function transform(source: string) {
@@ -377,6 +378,48 @@ describe('errors', () => {
         "import List from './List.svelte';"
       )
     ).toEqual(['let: directives are not supported inside <T>']);
+  });
+
+  it('accepts names that Object.prototype also has', () => {
+    const { translations, errors } = analyzeSvelteSource(
+      `<script>import { T, Branch } from 'gt-svelte'; let s;</script>
+<T><Branch branch={s}>{#snippet constructor()}C{/snippet}{#snippet toString()}S{/snippet}Other</Branch></T>`,
+      { parse }
+    );
+    expect(errors).toEqual([]);
+    expect(Object.keys((translations[0].source as JsxElement).d!.b!)).toEqual([
+      'constructor',
+      'toString',
+    ]);
+  });
+
+  it('rejects branches named __proto__', () => {
+    const problem = '"__proto__" cannot be used as a branch name';
+    expect(
+      errorsFor('<T><Branch branch={s} __proto__="P">x</Branch></T>', 'let s;')
+    ).toEqual([problem]);
+    expect(
+      errorsFor(
+        '<T><Branch branch={s}>{#snippet __proto__()}P{/snippet}x</Branch></T>',
+        'let s;'
+      )
+    ).toEqual([problem]);
+  });
+
+  it('keeps a variable named __proto__ in the runtime metadata', () => {
+    const result = transformSvelteSource(
+      `<script>import { T, Var } from 'gt-svelte'; let a;</script>
+<T>Hi <Var name="__proto__">{a}</Var></T>`,
+      { parse, filename: 'Fixture.svelte' }
+    );
+    const literal = result!.code.match(
+      /_gtm=\{JSON\.parse\(("(?:[^"\\]|\\.)*")\)\}/
+    )![1];
+    const meta = JSON.parse(JSON.parse(literal)) as {
+      v: Record<string, Record<string, number>>;
+    };
+    expect(Object.hasOwn(meta.v[''], '__proto__')).toBe(true);
+    expect(meta.v[''].__proto__).toBe(1);
   });
 
   it('rejects reserved identifiers', () => {

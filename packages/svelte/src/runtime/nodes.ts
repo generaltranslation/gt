@@ -294,7 +294,7 @@ function resolveVariable(
 ): { snippet: VariableSnippet; scopedId: string } | undefined {
   // A key used more than once in a scope resolves among the parent's source
   // children first, like gt-react. Scopes end in `$`, ids are digits.
-  const siblingId = context.meta.s?.[parent]?.[node.k];
+  const siblingId = getOwn(context.meta.s?.[parent], node.k);
   if (siblingId !== undefined) {
     const scopedId = `${parent.replace(/\d+$/, '')}${siblingId}`;
     const snippet = context.snippets[`${VARIABLE_PREFIX}${scopedId}`];
@@ -303,7 +303,7 @@ function resolveVariable(
     }
   }
   for (const scope of scopes) {
-    const id = context.meta.v?.[scope]?.[node.k];
+    const id = getOwn(context.meta.v?.[scope], node.k);
     if (id === undefined) continue;
     const scopedId = `${scope}${id}`;
     const snippet = context.snippets[`${VARIABLE_PREFIX}${scopedId}`];
@@ -312,6 +312,14 @@ function resolveVariable(
     }
   }
   return undefined;
+}
+
+/** Reads a variable id, ignoring keys such as "toString" that are inherited. */
+function getOwn(
+  ids: Record<string, number> | undefined,
+  key: string
+): number | undefined {
+  return ids && Object.hasOwn(ids, key) ? ids[key] : undefined;
 }
 
 function toArray(nodes: JsxChildren | undefined): JsxChild[] {

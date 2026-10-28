@@ -96,6 +96,12 @@ export type TranslationAnalysis =
   | { ok: true; plan: TranslationPlan | null }
   | { ok: false; problems: TranslationProblem[] };
 
+/**
+ * Svelte passes component props as an object literal, where a `__proto__`
+ * key sets the prototype, so `<Branch>` never receives such a branch.
+ */
+const PROTO_BRANCH_PROBLEM = '"__proto__" cannot be used as a branch name';
+
 type Counter = { index: number };
 
 /** Where converted children live: what contains them, and its scoped id. */
@@ -521,7 +527,8 @@ class TranslationBuilder {
     counter: Counter
   ): JsxElement | undefined {
     const id = ++counter.index;
-    const branches: Record<string, JsxChildren> = {};
+    // No inherited keys, so names like "constructor" are ordinary branches.
+    const branches: Record<string, JsxChildren> = Object.create(null);
 
     // Attribute branches: static strings, like React string props.
     for (const attribute of node.attributes) {
@@ -535,6 +542,10 @@ class TranslationBuilder {
       if (attribute.type !== 'Attribute') continue;
       const { name } = attribute as SvelteAttribute;
       if (!isBranchName(kind, name)) continue;
+      if (name === '__proto__') {
+        this.problem(attribute.start, PROTO_BRANCH_PROBLEM);
+        continue;
+      }
       const value = getStaticString(attribute as SvelteAttribute);
       if (value === undefined) {
         this.problem(
@@ -570,7 +581,11 @@ class TranslationBuilder {
         );
         continue;
       }
-      if (name in branches) {
+      if (name === '__proto__') {
+        this.problem(child.start, PROTO_BRANCH_PROBLEM);
+        continue;
+      }
+      if (Object.hasOwn(branches, name)) {
         this.problem(
           child.start,
           `The "${name}" branch of <${node.name}> is declared twice`
@@ -640,9 +655,10 @@ class TranslationBuilder {
     }
     const metadata: GTRuntimeMetadata = {};
     for (const { scope, parent, key, id } of this.variables) {
-      ((metadata.v ??= {})[scope] ??= {})[key] = id;
+      // Variable names are keys, so the maps have no inherited properties.
+      ((metadata.v ??= {})[scope] ??= Object.create(null))[key] = id;
       if ((counts.get(JSON.stringify([scope, key])) ?? 0) > 1) {
-        ((metadata.s ??= {})[parent] ??= {})[key] = id;
+        ((metadata.s ??= {})[parent] ??= Object.create(null))[key] = id;
       }
     }
     this.runtimeMetadata = { ...metadata, ...this.runtimeMetadata };

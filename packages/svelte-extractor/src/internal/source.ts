@@ -373,7 +373,13 @@ function applyPlan(
   const nameEnd = node.start + 1 + node.name.length;
   let props = ` _hash=${JSON.stringify(plan.hash)}`;
   if (plan.runtimeMetadata.v || plan.runtimeMetadata.b) {
-    props += ` _gtm={${JSON.stringify(plan.runtimeMetadata)}}`;
+    const json = JSON.stringify(plan.runtimeMetadata);
+    // A "__proto__" key in an object literal sets the prototype instead, so
+    // metadata naming a variable "__proto__" is parsed from JSON.
+    const value = json.includes('"__proto__"')
+      ? `JSON.parse(${JSON.stringify(json)})`
+      : json;
+    props += ` _gtm={${value}}`;
   }
   magic.appendLeft(nameEnd, props);
 
