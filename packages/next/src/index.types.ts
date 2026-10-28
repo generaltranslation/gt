@@ -428,6 +428,7 @@ export const useGT: (
   throw new Error(typesFileError);
 };
 
+// shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
 /**
  * Returns the dictionary access function `t`.
  *

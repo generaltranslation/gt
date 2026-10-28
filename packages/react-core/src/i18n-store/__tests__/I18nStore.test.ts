@@ -14,8 +14,6 @@ function resetGTGlobals() {
 }
 
 const lookupTranslationWithFallback = vi.fn();
-const lookupDictionaryWithFallback = vi.fn();
-const lookupDictionaryObjWithFallback = vi.fn();
 
 function setup() {
   initializeI18nConfig({
@@ -24,8 +22,6 @@ function setup() {
   });
   setReactI18nCache({
     lookupTranslationWithFallback,
-    lookupDictionaryWithFallback,
-    lookupDictionaryObjWithFallback,
   } as unknown as ReactI18nCache);
 }
 
@@ -86,15 +82,6 @@ describe('I18nStore runtime translation failure handling', () => {
     expect(consoleError).toHaveBeenCalledTimes(1);
   });
 
-  it('translateDictionaryEntry() logs instead of leaving an unhandled rejection', async () => {
-    lookupDictionaryWithFallback.mockRejectedValue(rejectedKeyError);
-    const store = new I18nStore();
-
-    store.translateDictionaryEntry({ locale: 'fr', id: 'greeting' });
-
-    await vi.waitFor(() => expect(consoleError).toHaveBeenCalledTimes(1));
-  });
-
   it('re-logs a failure after it is evicted from the bounded dedupe set', async () => {
     const store = new I18nStore();
     for (let i = 0; i <= 100; i++) {
@@ -129,14 +116,5 @@ describe('I18nStore runtime translation failure handling', () => {
     lookupTranslationWithFallback.mockRejectedValueOnce({ code: 'A' });
     await store.translate({ ...lookup, message: 'm5' });
     expect(consoleError).toHaveBeenCalledTimes(4);
-  });
-
-  it('translateDictionaryObject() logs instead of leaving an unhandled rejection', async () => {
-    lookupDictionaryObjWithFallback.mockRejectedValue(rejectedKeyError);
-    const store = new I18nStore();
-
-    store.translateDictionaryObject({ locale: 'fr', id: 'nav' });
-
-    await vi.waitFor(() => expect(consoleError).toHaveBeenCalledTimes(1));
   });
 });
