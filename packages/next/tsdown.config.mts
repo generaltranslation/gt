@@ -1,5 +1,6 @@
-import { defineConfig, type Rolldown } from 'tsdown';
+import { defineConfig } from 'tsdown';
 import {
+  createEsmDeclarationStubsPlugin,
   createRemoveRuntimeArtifactsHook,
   createTsdownUnbundleConfig,
   createUseClientBoundaryPlugin,
@@ -11,34 +12,27 @@ const neverBundle = [
   /^gt-next\/internal\/_get(Locale|Region)$/,
 ];
 
-// The import condition of each typed export gets a .d.mts stub that re-exports
-// the CJS-scoped .d.ts instead of a second set of declarations (same as
-// @generaltranslation/react-core): node16 ESM consumers get ESM-scoped entry
-// types and one declaration graph.
-const esmDeclarationStubs: Record<string, string> = {
-  'index.types': "export * from './index.types.js';\n",
-  'index.rsc': "export * from './index.rsc.js';\n",
-  config: "export * from './config.js';\n",
-  server: "export * from './server.js';\n",
-  middleware: "export * from './middleware.js';\n",
-  // `export *` skips default, and re-exporting the CJS module's default would
-  // type it as the CJS namespace, so re-export the Link binding itself.
-  link: "export * from './link.js';\nexport { Link as default } from './link/Link.js';\n",
-  'internal/_dictionary': "export * from './_dictionary.js';\n",
-  'internal/_load-translations': "export * from './_load-translations.js';\n",
-  'internal/_load-dictionary': "export * from './_load-dictionary.js';\n",
-  'internal/_getLocale': "export * from './_getLocale.js';\n",
-  'internal/_getRegion': "export * from './_getRegion.js';\n",
-};
-
-const esmDeclarationStubsPlugin: Rolldown.Plugin = {
-  name: 'gt-next:esm-declaration-stubs',
-  generateBundle() {
-    for (const [name, source] of Object.entries(esmDeclarationStubs)) {
-      this.emitFile({ type: 'asset', fileName: `${name}.d.mts`, source });
-    }
-  },
-};
+// The import condition of each typed export gets a .d.mts stub.
+const esmDeclarationStubsPlugin = createEsmDeclarationStubsPlugin(
+  [
+    'index.types',
+    'index.rsc',
+    'config',
+    'server',
+    'middleware',
+    'link',
+    'internal/_dictionary',
+    'internal/_load-translations',
+    'internal/_load-dictionary',
+    'internal/_getLocale',
+    'internal/_getRegion',
+  ],
+  {
+    // `export *` skips default, and re-exporting the CJS module's default would
+    // type it as the CJS namespace, so re-export the Link binding itself.
+    link: "export * from './link.js';\nexport { Link as default } from './link/Link.js';\n",
+  }
+);
 
 export default defineConfig(
   withPackageChecks([

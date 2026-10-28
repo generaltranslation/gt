@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { basename, dirname, extname, relative, resolve } from 'node:path';
 import { rm } from 'node:fs/promises';
 
-import type { AttwOptions, UserConfig } from 'tsdown';
+import type { AttwOptions, Rolldown, UserConfig } from 'tsdown';
 
 type UseClientBoundaryPluginOptions = {
   emittedSourceFiles?: string[] | 'all';
@@ -38,6 +38,39 @@ export function withPackageChecks(
     },
     ...rest,
   ];
+}
+
+/**
+ * Emits a .d.mts stub for each ESM entry that re-exports the entry's
+ * CJS-scoped .d.ts, instead of a second set of declarations. With two sets, an
+ * ESM consumer that reaches the package both directly and through a
+ * dependent's CJS-scoped declarations (gt-react-native reaching react-core)
+ * sees two incompatible copies of each class.
+ *
+ * tsdown's dts.cjsReexport stubs the other direction (.d.cts re-exporting
+ * .d.mts). TypeScript rejects that under node16 (TS1479) because CommonJS
+ * cannot require ESM there.
+ *
+ * @param entries Output paths without extension, relative to the out dir.
+ * @param overrides Stub source for entries that `export *` cannot cover.
+ */
+export function createEsmDeclarationStubsPlugin(
+  entries: string[],
+  overrides: Record<string, string> = {}
+): Rolldown.Plugin {
+  return {
+    name: 'gt:esm-declaration-stubs',
+    generateBundle() {
+      for (const entry of entries) {
+        this.emitFile({
+          type: 'asset',
+          fileName: `${entry}.d.mts`,
+          source:
+            overrides[entry] ?? `export * from './${basename(entry)}.js';\n`,
+        });
+      }
+    },
+  };
 }
 
 export function createTsdownConfig(entry: string[], deps?: UserConfig['deps']) {
