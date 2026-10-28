@@ -9,26 +9,13 @@ const { mockComponents, mockGetRequestConditions } = vi.hoisted(() => ({
     })),
     Currency: vi.fn(),
     DateTime: vi.fn(),
-    decodeMsg: vi.fn(),
-    decodeOptions: vi.fn(),
-    decodeVars: vi.fn(),
-    declareVar: vi.fn(),
     Derive: vi.fn(),
-    derive: vi.fn(),
-    gtFallback: vi.fn(),
-    getDefaultLocale: vi.fn(),
-    getLocaleProperties: vi.fn(),
-    getLocales: vi.fn(),
-    getVersionId: vi.fn(),
     GtInternalVar: vi.fn(),
     LocaleSelector: vi.fn(),
-    mFallback: vi.fn(),
-    msg: vi.fn(),
     Num: vi.fn(),
     Plural: vi.fn(),
     ReactI18nCache: class {},
     RelativeTime: vi.fn(),
-    resolveCanonicalLocale: vi.fn(),
     RscT: vi.fn(),
     useDefaultLocale: vi.fn(),
     useLocaleProperties: vi.fn(),
@@ -116,6 +103,8 @@ describe('rsc component wrappers', () => {
 
   it('exports the package root RSC surface', async () => {
     const module = await import('../index.rsc');
+    const gtI18n = await import('gt-i18n');
+    const core = await import('generaltranslation');
 
     expect(module.GTProvider).toBeTypeOf('function');
     expect(module.T).toBeTypeOf('function');
@@ -134,14 +123,14 @@ describe('rsc component wrappers', () => {
     expect(module.Plural).toBeTypeOf('function');
     expect(module.LocaleSelector).toBe(mockComponents.LocaleSelector);
     expect(module.Derive).toBe(mockComponents.Derive);
-    expect(module.msg).toBe(mockComponents.msg);
-    expect(module.decodeMsg).toBe(mockComponents.decodeMsg);
-    expect(module.decodeOptions).toBe(mockComponents.decodeOptions);
-    expect(module.declareVar).toBe(mockComponents.declareVar);
-    expect(module.decodeVars).toBe(mockComponents.decodeVars);
-    expect(module.derive).toBe(mockComponents.derive);
-    expect(module.mFallback).toBe(mockComponents.mFallback);
-    expect(module.gtFallback).toBe(mockComponents.gtFallback);
+    expect(module.msg).toBe(gtI18n.msg);
+    expect(module.decodeMsg).toBe(gtI18n.decodeMsg);
+    expect(module.decodeOptions).toBe(gtI18n.decodeOptions);
+    expect(module.declareVar).toBe(core.declareVar);
+    expect(module.decodeVars).toBe(core.decodeVars);
+    expect(module.derive).toBe(core.derive);
+    expect(module.mFallback).toBe(gtI18n.mFallback);
+    expect(module.gtFallback).toBe(gtI18n.gtFallback);
     expect(module.useGT).toBeTypeOf('function');
     expect(module.useTranslations).toBeTypeOf('function');
     expect(module.useMessages).toBeTypeOf('function');
@@ -150,9 +139,7 @@ describe('rsc component wrappers', () => {
     expect(module.useLocaleProperties).toBeTypeOf('function');
     expect(module.useLocales).toBeTypeOf('function');
     expect(module.useDefaultLocale).toBeTypeOf('function');
-    expect(module.resolveCanonicalLocale).toBe(
-      mockComponents.resolveCanonicalLocale
-    );
+    expect(module.resolveCanonicalLocale).toBe(gtI18n.resolveCanonicalLocale);
   });
 
   it('initializes GT from the server entrypoint', async () => {

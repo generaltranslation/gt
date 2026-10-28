@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { GTIntl } from '../GTIntl';
 import { determineLocale } from '../core';
 import { intlCache } from '../cache/IntlCache';
-import type { CustomMapping } from '../types';
+import type { CustomMapping } from '../locales/customLocaleMapping';
 
 describe('GTIntl', () => {
   it('ignores later changes to the locale configuration it was given', () => {

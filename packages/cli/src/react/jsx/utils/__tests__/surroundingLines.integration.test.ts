@@ -7,7 +7,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { parseStrings } from '../parseStringFunction.js';
 import { parseTranslationComponent } from '../jsxParsing/parseJsx.js';
-import { Updates } from '../../../../types/index.js';
+import { Updates } from 'generaltranslation/types';
 
 describe('sourceCode metadata integration', () => {
   const tempFiles: string[] = [];

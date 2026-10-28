@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { createPathMatcher, getSharedPath } from '../utils';
+import { createPathMatcher } from '../createPathMatcher';
+import { getSharedPath } from '../matchPath';
 
 const NAMESPACE_COUNT = 32;
 

@@ -26,4 +26,4 @@ export type {
   DictionaryValue,
   DictionaryPath,
   DictionaryKey,
-} from './i18n-cache/translations-manager/DictionaryCache';
+} from './i18n-cache/translations-manager/utils/types/dictionary';

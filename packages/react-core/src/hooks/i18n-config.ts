@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { getI18nConfig } from 'gt-i18n/internal';
-import type { CustomMapping } from 'generaltranslation/types';
+import type { CustomMapping } from '@generaltranslation/format/types';
 
 export function useCustomMapping(): CustomMapping {
   return useMemo(() => getI18nConfig().getCustomMapping(), []);

@@ -3,7 +3,6 @@ export {
   Branch,
   Plural,
   Derive,
-  LocaleSelector,
   T,
   Currency,
   DateTime,
@@ -13,6 +12,9 @@ export {
   // Imported by the compiler's auto JSX injection
   GtInternalTranslateJsx,
   GtInternalVar,
+} from '@generaltranslation/react-core/components';
+export { LocaleSelector, useLocaleSelector } from 'gt-react';
+export {
   // ===== Hooks ===== //
   useLocale,
   useSetLocale,
@@ -21,19 +23,12 @@ export {
   useEnableI18n,
   useSetEnableI18n,
   useLocales,
-  useLocaleSelector,
   useFormatLocales,
   useGT,
   useMessages,
   useTranslations,
-  // ===== Functions ===== //
-  msg,
-  decodeMsg,
-  decodeOptions,
-  derive,
-  declareVar,
-  decodeVars,
-  mFallback,
-  gtFallback,
-  t,
-} from 'gt-react';
+} from '@generaltranslation/react-core/hooks';
+// ===== Functions ===== //
+export { msg, decodeMsg, decodeOptions, mFallback, gtFallback } from 'gt-i18n';
+export { derive, declareVar, decodeVars } from 'generaltranslation';
+export { t } from '@generaltranslation/react-core/pure';

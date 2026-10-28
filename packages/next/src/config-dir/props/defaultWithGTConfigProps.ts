@@ -7,6 +7,8 @@ import {
   defaultLocaleCookieName,
   defaultEnableI18nCookieName,
   defaultResetLocaleCookieName,
+} from 'gt-i18n/internal/cookies';
+import {
   getDefaultRenderSettings,
   type RenderMethod,
 } from '@generaltranslation/react-core/pure';

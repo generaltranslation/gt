@@ -15,7 +15,6 @@ const mockSetCookieValue = vi.hoisted(() => vi.fn());
 const mockGetCookieValue = vi.hoisted(() => vi.fn());
 
 vi.mock('@generaltranslation/react-core/pure', () => ({
-  defaultResetLocaleCookieName: 'generaltranslation.locale-reset',
   getI18nConfig: () => ({
     resolveSupportedLocale: (locale: string) => locale,
     getLocaleCookieName: () => 'generaltranslation.locale',

@@ -3,23 +3,12 @@ import type { GTIntl } from '@generaltranslation/format';
 import { NextURL } from 'next/dist/server/web/next-url';
 import { parseAcceptLanguage } from 'gt-i18n/internal';
 import {
-  createPathMatcher,
-  createPathToSharedPathMap,
   getDynamicSegmentType,
-  normalizePathname,
   type PathConfig,
   type PathMatcher,
 } from './createPathMatcher';
 import { getSharedPath } from './matchPath';
 import { applyTrailingSlash, stripTrailingSlashes } from './pathname';
-
-export {
-  createPathMatcher,
-  createPathToSharedPathMap,
-  getSharedPath,
-  normalizePathname,
-};
-export type { PathConfig, PathMatcher };
 
 export type ResponseConfig = {
   type: 'next' | 'rewrite' | 'redirect';

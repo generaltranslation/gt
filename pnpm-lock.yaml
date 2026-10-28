@@ -1232,6 +1232,12 @@ importers:
 
   packages/payload:
     dependencies:
+      '@generaltranslation/api':
+        specifier: workspace:*
+        version: link:../api
+      '@generaltranslation/format':
+        specifier: workspace:*
+        version: link:../format
       generaltranslation:
         specifier: workspace:*
         version: link:../core
@@ -1309,6 +1315,9 @@ importers:
 
   packages/react:
     dependencies:
+      '@generaltranslation/format':
+        specifier: workspace:*
+        version: link:../format
       '@generaltranslation/react-core':
         specifier: workspace:*
         version: link:../react-core
@@ -1588,6 +1597,12 @@ importers:
 
   packages/sanity:
     dependencies:
+      '@generaltranslation/api':
+        specifier: workspace:*
+        version: link:../api
+      '@generaltranslation/format':
+        specifier: workspace:*
+        version: link:../format
       '@portabletext/block-tools':
         specifier: ^5.1.1
         version: 5.1.1(@types/react@19.2.7)

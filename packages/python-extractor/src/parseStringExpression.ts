@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import type { SyntaxNode } from './parser.js';
+import type { Node as SyntaxNode } from 'web-tree-sitter';
 import { getParser } from './parser.js';
 import type { StringNode } from './stringNode.js';
 import type { ImportAlias } from './extractImports.js';

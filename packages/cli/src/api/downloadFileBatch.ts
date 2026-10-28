@@ -4,7 +4,7 @@ import { isBinaryFileFormat } from 'generaltranslation/types';
 import {
   isTransientApiError,
   type QueryFilesContentResponse,
-} from 'generaltranslation/api';
+} from '@generaltranslation/api';
 import { logger } from '../console/logger.js';
 import { createClients } from '../utils/api.js';
 import { noProjectIdError } from '../console/index.js';

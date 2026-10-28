@@ -1,4 +1,4 @@
-import { GTIntl } from 'generaltranslation';
+import { GTIntl } from '@generaltranslation/format';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import type {
   ListItemBuilder,

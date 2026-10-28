@@ -1,9 +1,6 @@
-import type { FileFormat } from '@generaltranslation/api';
+import type { FileFormat, JsonObject } from '@generaltranslation/api';
 import type { DataFormat } from '@generaltranslation/format/types';
 import { Updates } from './enqueueFiles';
-import type { JsonObject } from './json';
-
-export type { FileFormat };
 
 /**
  * File formats whose content travels through the pipeline already

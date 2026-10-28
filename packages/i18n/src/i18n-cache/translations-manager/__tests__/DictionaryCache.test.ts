@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { DictionaryCache, Dictionary } from '../DictionaryCache';
+import { DictionaryCache } from '../DictionaryCache';
+import type { Dictionary } from '../utils/types/dictionary';
 
 describe('DictionaryCache', () => {
   let mockTranslateMany: ReturnType<typeof vi.fn>;

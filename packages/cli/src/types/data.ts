@@ -21,9 +21,6 @@ export type FlattenedJSONDictionary = {
   [key: string]: string;
 };
 
-export type { DataFormat } from '@generaltranslation/format/types';
-export type { FileFormat, FileToUpload } from 'generaltranslation/types';
-
 export type JsxChildren = string | string[] | unknown;
 
 export type Translations = {

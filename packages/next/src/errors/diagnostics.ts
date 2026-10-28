@@ -1,6 +1,5 @@
 import {
   createDiagnosticMessage,
-  formatDiagnosticErrorDetails,
   type DiagnosticMessageInput,
 } from 'generaltranslation/diagnostics';
 
@@ -21,5 +20,3 @@ export function createGtNextPluginDiagnostic(
     ...input,
   });
 }
-
-export { formatDiagnosticErrorDetails };

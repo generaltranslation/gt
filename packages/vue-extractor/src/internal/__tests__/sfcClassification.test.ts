@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isVueSfcSource } from '../project/inspectVueProject.js';
+import { isVueSfcSource } from '../project/vueSourceClassification.js';
 
 describe('isVueSfcSource', () => {
   it.each([
