@@ -1,5 +1,5 @@
 import { GT } from 'generaltranslation';
-import type { CustomMapping } from 'generaltranslation/types';
+import type { CustomMapping, GTConfig } from 'generaltranslation/types';
 import type {
   Block,
   CollectionConfig,
@@ -35,14 +35,12 @@ import {
 import { targetKey } from './targets';
 import type { GtClient, TranslateTarget } from './types';
 
-export type GtPluginOptions = {
+// customMapping maps Payload locale codes GT does not know to ones it does.
+export type GtPluginOptions = Pick<GTConfig, 'customMapping'> & {
   // Defaults to the GT_PROJECT_ID environment variable.
   projectId?: string;
   // Defaults to the GT_API_KEY environment variable.
   apiKey?: string;
-  // Maps Payload locale codes GT does not know to ones it does, as in
-  // gt.config.json: { cn: { code: 'zh' } }.
-  customMapping?: CustomMapping;
   // A project to use instead of one built from the options above, such as
   // new GT({ apiKey, projectId, localeConfig: { customMapping } }).
   client?: GtClient;

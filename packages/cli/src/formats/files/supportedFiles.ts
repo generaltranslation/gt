@@ -47,4 +47,4 @@ export const FILE_EXT_TO_EXT_LABEL = {
   xcstrings: '.xcstrings',
   srt: 'SubRip subtitles (.srt)',
   resx: '.NET resources (.resx)',
-};
+} satisfies Record<(typeof SUPPORTED_FILE_EXTENSIONS)[number], string>;

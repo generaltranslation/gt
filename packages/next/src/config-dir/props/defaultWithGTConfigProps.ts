@@ -8,16 +8,16 @@ import {
   defaultEnableI18nCookieName,
   defaultResetLocaleCookieName,
   getDefaultRenderSettings,
+  type RenderMethod,
 } from '@generaltranslation/react-core/pure';
 import { defaultLocaleHeaderName } from '../../utils/headers';
 import {
   defaultLocaleRoutingEnabledCookieName,
   defaultReferrerLocaleCookieName,
 } from '../../utils/cookies';
-import type { CompilerOptions, RenderMethod } from './withGTConfigProps';
+import type { CompilerOptions } from './withGTConfigProps';
 
 type DefaultGTConfigProps = {
-  config: string;
   runtimeUrl: string;
   cacheUrl: string;
   defaultLocale: string;
@@ -45,7 +45,6 @@ type DefaultGTConfigProps = {
 };
 
 export const defaultWithGTConfigProps: DefaultGTConfigProps = {
-  config: './gt.config.json',
   runtimeUrl: defaultRuntimeApiUrl,
   cacheUrl: defaultCacheUrl,
   defaultLocale: libraryDefaultLocale,
@@ -65,14 +64,8 @@ export const defaultWithGTConfigProps: DefaultGTConfigProps = {
     localeRoutingEnabledCookieName: defaultLocaleRoutingEnabledCookieName,
     resetLocaleCookieName: defaultResetLocaleCookieName,
   },
-  experimentalCompilerOptions: {
-    type: 'none',
-    logLevel: 'warn',
-    compileTimeHash: true,
-    disableBuildChecks: false,
-  },
+  // The compilers default every other option; the SWC plugin's own
+  // compileTimeHash default is false.
+  experimentalCompilerOptions: { type: 'none', compileTimeHash: true },
   disableInvalidLocaleWarning: false,
 } as const;
-
-// exported separately because it's only used in production
-export const defaultCacheExpiryTime = 60000;

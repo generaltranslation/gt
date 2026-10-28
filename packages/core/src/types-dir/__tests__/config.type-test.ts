@@ -76,7 +76,18 @@ const invalidModelProvider: GTConfig = {
   modelProvider: 'openai',
 };
 
+// customMapping objects are locale properties, as in the format package.
+const validCustomMapping = {
+  customMapping: { cn: { code: 'zh', name: undefined } },
+} satisfies GTConfig;
+const invalidCustomMapping: GTConfig = {
+  // @ts-expect-error `cdoe` is not a locale property.
+  customMapping: { cn: { cdoe: 'zh' } },
+};
+
 void validConfig;
+void validCustomMapping;
+void invalidCustomMapping;
 void validModelProvider;
 void invalidModelProvider;
 void invalidWhitespace;

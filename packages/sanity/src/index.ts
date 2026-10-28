@@ -1,5 +1,5 @@
 import type { PortableTextHtmlComponents } from '@portabletext/to-html';
-import type { CustomMapping } from 'generaltranslation/types';
+import type { GTConfig } from 'generaltranslation/types';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { formatLocaleLabel } from './utils/localeDisplay';
 import { definePlugin } from 'sanity';
@@ -85,66 +85,65 @@ export type {
 export type { GTSchemaFieldOptions } from './schema/schemaOptions';
 export type { FieldLevelTranslationMode };
 
-export type GTPluginConfig = {
-  sourceLocale?: string;
-  customMapping?: CustomMapping;
-  locales: string[];
-  // Alias for sourceLocale — accepted so users can spread gt.config.json directly.
-  defaultLocale?: string;
-  singletons?: string[];
-  // Optional mapping function to map source document ids to translated singleton document ids
-  // By default, the translated singleton document is is `${sourceDocumentId}-${locale}`
-  singletonMapping?: (sourceDocumentId: string, locale: string) => string;
-  ignoreFields?: IgnoreFields[];
-  dedupeFields?: DedupeFields[];
-  skipFields?: SkipFields[];
-  languageField?: string;
-  translateDocuments?: TranslateDocumentFilter[] | string[];
-  secretsNamespace?: string;
-  additionalStopTypes?: string[];
-  additionalSerializers?: Partial<PortableTextHtmlComponents>;
-  additionalDeserializers?: CustomDeserializers;
-  additionalBlockDeserializers?: unknown[];
-  // When true (default), automatically adds the @sanity/document-internationalization plugin
-  // with language badges, translation menu, and per-language templates.
-  // Requires translateDocuments to specify which document types to enable translations for.
-  showDocumentInternationalization?: boolean;
-  // Field-level (internationalized-array) localization. When enabled,
-  // auto-configures sanity-plugin-internationalized-array (the reference
-  // plugin, which owns the schema types and Studio UI) from this plugin's
-  // locales. Leave disabled if you register that plugin yourself.
-  fieldLevelLocalization?: GTFieldLevelLocalizationConfig;
-  // How matched documents are translated. Independent from schema setup:
-  // enabling `fieldLevelLocalization` only adds editable fields; routing
-  // translation through the array path requires opting in here. Default 'document'.
-  translationLevel?: FieldLevelTranslationMode;
-  // In 'mixed' mode, the document types that use the internationalized-array
-  // strategy; everything else stays document-level.
-  fieldLevelDocuments?: TranslateDocumentFilter[] | string[];
-  // Sets the initial state of the "Local translations win" toggle. When on,
-  // the translations currently in Sanity are uploaded to General Translation
-  // before a translation run, so they become the baseline the next translation
-  // reuses. Local content overwrites whatever General Translation holds for
-  // that source version, including a completed translation that has not been
-  // imported yet. Off by default; the toggle can be flipped per session.
-  preserveExistingTranslations?: boolean;
-  // Starting state of the automatic actions in the translations UI. These are
-  // defaults, not locks: a change the user makes in the Studio is remembered in
-  // localStorage (per project and dataset) and preferred on their next visit.
-  // Defaults to true.
-  autoRefresh?: boolean;
-  // Import a translation as soon as it completes. Defaults to true.
-  autoImport?: boolean;
-  // Repoint references to their translated counterparts after import. Defaults
-  // to FALSE — when a translated document has already been published and has no
-  // draft, the rewrite is applied to a draft seeded from it, so this edits
-  // documents you may consider finished.
-  autoPatchReferences?: boolean;
-  // Publish translated documents after import. Defaults to FALSE — publishing
-  // is the one automatic action that puts content in front of readers and
-  // cannot be undone by turning the switch back off.
-  autoPublish?: boolean;
-};
+// The gt.config.json keys are accepted so users can spread the file directly;
+// defaultLocale is an alias for sourceLocale.
+export type GTPluginConfig = Pick<GTConfig, 'customMapping' | 'defaultLocale'> &
+  Required<Pick<GTConfig, 'locales'>> & {
+    sourceLocale?: string;
+    singletons?: string[];
+    // Optional mapping function to map source document ids to translated singleton document ids
+    // By default, the translated singleton document is is `${sourceDocumentId}-${locale}`
+    singletonMapping?: (sourceDocumentId: string, locale: string) => string;
+    ignoreFields?: IgnoreFields[];
+    dedupeFields?: DedupeFields[];
+    skipFields?: SkipFields[];
+    languageField?: string;
+    translateDocuments?: TranslateDocumentFilter[] | string[];
+    secretsNamespace?: string;
+    additionalStopTypes?: string[];
+    additionalSerializers?: Partial<PortableTextHtmlComponents>;
+    additionalDeserializers?: CustomDeserializers;
+    additionalBlockDeserializers?: unknown[];
+    // When true (default), automatically adds the @sanity/document-internationalization plugin
+    // with language badges, translation menu, and per-language templates.
+    // Requires translateDocuments to specify which document types to enable translations for.
+    showDocumentInternationalization?: boolean;
+    // Field-level (internationalized-array) localization. When enabled,
+    // auto-configures sanity-plugin-internationalized-array (the reference
+    // plugin, which owns the schema types and Studio UI) from this plugin's
+    // locales. Leave disabled if you register that plugin yourself.
+    fieldLevelLocalization?: GTFieldLevelLocalizationConfig;
+    // How matched documents are translated. Independent from schema setup:
+    // enabling `fieldLevelLocalization` only adds editable fields; routing
+    // translation through the array path requires opting in here. Default 'document'.
+    translationLevel?: FieldLevelTranslationMode;
+    // In 'mixed' mode, the document types that use the internationalized-array
+    // strategy; everything else stays document-level.
+    fieldLevelDocuments?: TranslateDocumentFilter[] | string[];
+    // Sets the initial state of the "Local translations win" toggle. When on,
+    // the translations currently in Sanity are uploaded to General Translation
+    // before a translation run, so they become the baseline the next translation
+    // reuses. Local content overwrites whatever General Translation holds for
+    // that source version, including a completed translation that has not been
+    // imported yet. Off by default; the toggle can be flipped per session.
+    preserveExistingTranslations?: boolean;
+    // Starting state of the automatic actions in the translations UI. These are
+    // defaults, not locks: a change the user makes in the Studio is remembered in
+    // localStorage (per project and dataset) and preferred on their next visit.
+    // Defaults to true.
+    autoRefresh?: boolean;
+    // Import a translation as soon as it completes. Defaults to true.
+    autoImport?: boolean;
+    // Repoint references to their translated counterparts after import. Defaults
+    // to FALSE — when a translated document has already been published and has no
+    // draft, the rewrite is applied to a draft seeded from it, so this edits
+    // documents you may consider finished.
+    autoPatchReferences?: boolean;
+    // Publish translated documents after import. Defaults to FALSE — publishing
+    // is the one automatic action that puts content in front of readers and
+    // cannot be undone by turning the switch back off.
+    autoPublish?: boolean;
+  };
 
 /**
  * Usage in `sanity.config.ts` (or .js)
