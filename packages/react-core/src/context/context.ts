@@ -1,15 +1,10 @@
-import { Dictionary } from 'gt-i18n';
 import { Hash, Locale, createGlobalSingleton } from 'gt-i18n/internal';
 import type { Content } from '@generaltranslation/format';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { createContext, useContext, type Context } from 'react';
 import { I18nStore } from '../i18n-store/I18nStore';
 import { getI18nConfig } from '../setup/i18nConfig';
-import type {
-  OnMissingTranslation,
-  OnMissingDictionaryEntry,
-  OnMissingDictionaryObj,
-} from '../hooks/utils/missing-translation';
+import type { OnMissingTranslation } from '../hooks/utils/missing-translation';
 
 export type GTContextType = {
   /**
@@ -18,7 +13,6 @@ export type GTContextType = {
    * can be accessed via useSyncExternalStore() directly
    */
   translationsSnapshot: Record<Locale, Record<Hash, Content>>;
-  dictionariesSnapshot: Record<Locale, Dictionary>;
   /**
    * I18nStore allows us to sync state updates in ConditionStore and I18nCache
    * with renders
@@ -35,8 +29,6 @@ export type GTContextType = {
    * Used for server triggering tx hmr b/c no access to useEffect
    */
   onMissingTranslation?: OnMissingTranslation;
-  onMissingDictionaryEntry?: OnMissingDictionaryEntry;
-  onMissingDictionaryObj?: OnMissingDictionaryObj;
 };
 
 const gtContextSingleton = createGlobalSingleton<

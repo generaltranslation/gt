@@ -155,6 +155,15 @@ describe.sequential('gt-tanstack-start package exports', () => {
     );
   });
 
+  it('keeps the dictionary out of the config virtual module', () => {
+    // The plugin serves the dictionary from its own module so only compat code
+    // bundles it.
+    expect(readDistFile('internal/_config.mjs')).not.toMatch(/dictionary/i);
+    expect(readDistFile('internal/_compat-config.mjs')).toMatch(
+      /export \{[^}]*dictionary/
+    );
+  });
+
   it.each(['index.client.mjs', 'unstable.client.mjs'])(
     'keeps Node.js builtins out of the browser entrypoint %s',
     (file) => {

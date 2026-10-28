@@ -26,8 +26,9 @@ export {
   useFormatLocales,
   useGT,
   useMessages,
-  useTranslations,
 } from '@generaltranslation/react-core/hooks';
+// shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
+export { useTranslations } from '@generaltranslation/react-core/hooks';
 // ===== Functions ===== //
 export { msg, decodeMsg, decodeOptions, mFallback, gtFallback } from 'gt-i18n';
 export { derive, declareVar, decodeVars } from 'generaltranslation';
