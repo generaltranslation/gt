@@ -1,5 +1,5 @@
 import { defineConfig } from 'tsdown';
-import { createTsdownConfig } from '../../tsdown.preset.mts';
+import { createTsdownConfig, withPackageChecks } from '../../tsdown.preset.mts';
 
 const [cjsConfig, esmConfig] = createTsdownConfig(
   [
@@ -15,10 +15,12 @@ const [cjsConfig, esmConfig] = createTsdownConfig(
   { alwaysBundle: [/^@noble\/hashes/] }
 );
 
-export default defineConfig([
-  cjsConfig,
-  {
-    ...esmConfig,
-    copy: [{ from: '../api/spec/openapi.json', to: 'dist' }],
-  },
-]);
+export default defineConfig(
+  withPackageChecks([
+    cjsConfig,
+    {
+      ...esmConfig,
+      copy: [{ from: '../api/spec/openapi.json', to: 'dist' }],
+    },
+  ])
+);

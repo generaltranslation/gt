@@ -15,8 +15,7 @@
   "author": "General Translation, Inc.",
   "license": "MIT",
   "scripts": {
-    "emit-types": "sh ../../scripts/emit-types.sh",
-    "transpile": "tsdown && pnpm run emit-types",
+    "transpile": "tsdown",
     "build": "pnpm run transpile",
     "build:watch": "tsdown --watch",
     "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
@@ -33,32 +32,32 @@
   },
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     },
     "./config": {
-      "import": "./dist/config.js",
-      "types": "./dist/config.d.ts"
+      "types": "./dist/config.d.ts",
+      "import": "./dist/config.js"
     },
     "./detect": {
-      "import": "./dist/detect.js",
-      "types": "./dist/detect.d.ts"
+      "types": "./dist/detect.d.ts",
+      "import": "./dist/detect.js"
     },
     "./inspect": {
-      "import": "./dist/inspect.js",
-      "types": "./dist/inspect.d.ts"
+      "types": "./dist/inspect.d.ts",
+      "import": "./dist/inspect.js"
     },
     "./integration": {
-      "import": "./dist/integration.js",
-      "types": "./dist/integration.d.ts"
+      "types": "./dist/integration.d.ts",
+      "import": "./dist/integration.js"
     },
     "./project": {
-      "import": "./dist/project.js",
-      "types": "./dist/project.d.ts"
+      "types": "./dist/project.d.ts",
+      "import": "./dist/project.js"
     },
     "./types": {
-      "import": "./dist/types.js",
-      "types": "./dist/types.d.ts"
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.js"
     }
   },
   "files": [

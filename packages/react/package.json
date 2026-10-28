@@ -120,13 +120,6 @@
       }
     }
   },
-  "typesVersions": {
-    "*": {
-      "macros": [
-        "./dist/macros.d.cts"
-      ]
-    }
-  },
   "keywords": [
     "react",
     "translation",

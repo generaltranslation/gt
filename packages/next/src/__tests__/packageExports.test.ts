@@ -40,25 +40,27 @@ function collectStaticModuleGraph(entryPath: string): Set<string> {
   );
 }
 
+type TypedTargets = Record<'import' | 'default', { types: string }>;
+
 describe('gt-next package exports', () => {
   it('uses RSC-specific declarations for the react-server condition', () => {
     const packageJson = JSON.parse(
       readFileSync(join(packageRoot, 'package.json'), 'utf8')
     ) as {
       exports: {
-        '.': {
-          'react-server': {
-            types?: string;
-          };
-          types: string;
-        };
+        '.': TypedTargets & { 'react-server': TypedTargets };
       };
     };
+    const rootExport = packageJson.exports['.'];
 
-    expect(packageJson.exports['.']['react-server'].types).toBe(
+    expect(rootExport['react-server'].import.types).toBe(
+      './dist/index.rsc.d.mts'
+    );
+    expect(rootExport['react-server'].default.types).toBe(
       './dist/index.rsc.d.ts'
     );
-    expect(packageJson.exports['.'].types).toBe('./dist/index.types.d.ts');
+    expect(rootExport.import.types).toBe('./dist/index.types.d.mts');
+    expect(rootExport.default.types).toBe('./dist/index.types.d.ts');
   });
 
   it.each(['workerd', 'worker'])(

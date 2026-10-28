@@ -116,24 +116,5 @@
         "default": "./dist/internal-types.mjs"
       }
     }
-  },
-  "typesVersions": {
-    "*": {
-      "types": [
-        "./dist/types.d.cts"
-      ],
-      "internal": [
-        "./dist/internal.d.cts"
-      ],
-      "internal/cookies": [
-        "./dist/internal-cookies.d.cts"
-      ],
-      "internal/string": [
-        "./dist/internal-string.d.cts"
-      ],
-      "internal/types": [
-        "./dist/internal-types.d.cts"
-      ]
-    }
   }
 }

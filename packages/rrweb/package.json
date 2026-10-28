@@ -95,16 +95,6 @@
       }
     }
   },
-  "typesVersions": {
-    "*": {
-      "harvest": [
-        "./dist/harvest.d.cts"
-      ],
-      "replay": [
-        "./dist/replay.d.cts"
-      ]
-    }
-  },
   "keywords": [
     "rrweb",
     "replay",

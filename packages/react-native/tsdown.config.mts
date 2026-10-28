@@ -1,5 +1,8 @@
 import { defineConfig } from 'tsdown';
-import { createTsdownUnbundleConfig } from '../../tsdown.preset.mts';
+import {
+  createTsdownUnbundleConfig,
+  withPackageChecks,
+} from '../../tsdown.preset.mts';
 
 const deps = {
   neverBundle: [
@@ -19,20 +22,30 @@ const deps = {
   ],
 };
 
-export default defineConfig([
-  createTsdownUnbundleConfig({
-    format: 'cjs',
-    outDir: 'dist/commonjs',
-    dts: false,
-    deps,
-    outputOptions: {
-      exports: 'named',
-    },
-  }),
-  createTsdownUnbundleConfig({
-    format: 'esm',
-    outDir: 'dist/module',
-    clean: false,
-    deps,
-  }),
-]);
+export default defineConfig(
+  withPackageChecks(
+    [
+      createTsdownUnbundleConfig({
+        format: 'cjs',
+        outDir: 'dist/commonjs',
+        dts: false,
+        deps,
+        outputOptions: {
+          exports: 'named',
+        },
+      }),
+      createTsdownUnbundleConfig({
+        format: 'esm',
+        outDir: 'dist/module',
+        clean: false,
+        dts: true,
+        deps,
+      }),
+    ],
+    {
+      // dist/module holds ESM syntax in .js files without "type": "module".
+      // Metro and other bundlers read it as ESM; Node does not load it.
+      ignoreRules: ['unexpected-module-syntax'],
+    }
+  )
+);

@@ -8,12 +8,13 @@ import { beforeAll, describe, expect, it } from 'vitest';
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const runtimeEntryNames = ['components', 'components-rsc', 'hooks', 'pure'];
 // Each public entrypoint is emitted as a thin re-export barrel in both module
-// formats, plus its type declaration.
+// formats, plus a type declaration for each format.
 const entryArtifacts = runtimeEntryNames
   .flatMap((entryName) => [
     `${entryName}.cjs`,
     `${entryName}.mjs`,
     `${entryName}.d.ts`,
+    `${entryName}.d.mts`,
   ])
   .map((artifact) => join(packageRoot, 'dist', artifact));
 

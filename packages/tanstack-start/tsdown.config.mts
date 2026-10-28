@@ -1,5 +1,5 @@
 import { defineConfig } from 'tsdown';
-import { createTsdownConfig } from '../../tsdown.preset.mts';
+import { createTsdownConfig, withPackageChecks } from '../../tsdown.preset.mts';
 
 const deps = {
   neverBundle: [
@@ -35,17 +35,20 @@ const entries: Record<string, string> = {
 };
 
 export default defineConfig(
-  Object.entries(entries).map(([name, entry], index) => {
-    const [, esmConfig] = createTsdownConfig([entry], deps);
-    return {
-      ...esmConfig,
-      entry: { [name]: entry },
-      clean: index === 0,
-      dts: true,
-      deps: {
-        onlyBundle: false,
-        ...deps,
-      },
-    };
-  })
+  withPackageChecks(
+    Object.entries(entries).map(([name, entry], index) => {
+      const [, esmConfig] = createTsdownConfig([entry], deps);
+      return {
+        ...esmConfig,
+        entry: { [name]: entry },
+        clean: index === 0,
+        dts: true,
+        deps: {
+          onlyBundle: false,
+          ...deps,
+        },
+      };
+    }),
+    { profile: 'esm-only' }
+  )
 );

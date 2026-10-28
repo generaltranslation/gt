@@ -1,6 +1,8 @@
 import { defineConfig } from 'tsdown';
-import { createTsdownConfig } from '../../tsdown.preset.mts';
+import { createTsdownConfig, withPackageChecks } from '../../tsdown.preset.mts';
 
 export default defineConfig(
-  createTsdownConfig(['src/index.ts', 'src/types.ts', 'src/internal.ts'])
+  withPackageChecks(
+    createTsdownConfig(['src/index.ts', 'src/types.ts', 'src/internal.ts'])
+  )
 );
