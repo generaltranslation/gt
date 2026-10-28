@@ -53,7 +53,6 @@ Turbo tasks: `build`, `test`, `lint`, `lint:fix`, `format`, `format:fix`, `trans
 | `@generaltranslation/compiler`          | `packages/compiler`          | Build plugin (webpack, Vite, Rollup, esbuild) via unplugin        |
 | `gt`                                    | `packages/cli`               | Main CLI tool (`npx gt`)                                          |
 | `gtx-cli`                               | `packages/gtx-cli`           | Wrapper CLI for gt (backward compatibility)                       |
-| `locadex`                               | `packages/locadex`           | AI agent for i18n with MCP support                                |
 | `@generaltranslation/react-core-linter` | `packages/react-core-linter` | ESLint plugin for react-core                                      |
 | `gt-remark`                             | `packages/remark`            | Remark plugin for MDX escaping                                    |
 | `@generaltranslation/python-extractor`  | `packages/python-extractor`  | Python source extraction (tree-sitter)                            |
