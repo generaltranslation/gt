@@ -1,5 +1,5 @@
 export type RefreshTicket = {
-  /** False once the selection this refresh was started for has changed. */
+  /** False once the scope this refresh was started for has changed. */
   isCurrent: () => boolean;
   /**
    * Marks this refresh done. Safe to call more than once. Returns whether
@@ -17,27 +17,28 @@ export type RefreshTracker = {
 /**
  * Coordinates overlapping translation status refreshes.
  *
- * A response may only write statuses while the selection it was requested for
- * is still current: a slow response for the previous selection would otherwise
- * replace the statuses of the current one. Responses for an unchanged
- * selection are always accepted, so refreshes slower than the polling interval
- * still land instead of being superseded forever.
+ * A response may only write statuses while the scope it was requested for is
+ * still current: a slow response for a previous scope (another locale
+ * selection, document revision, or branch) would otherwise replace the
+ * statuses of the current one. Responses for an unchanged scope are always
+ * accepted, so refreshes slower than the polling interval still land instead
+ * of being superseded forever.
  *
- * `getSelection` must return a new value whenever the selection changes; it is
+ * `getScope` must return a new value whenever the scope changes; it is
  * compared by identity.
  */
-export function createRefreshTracker<T>(getSelection: () => T): RefreshTracker {
+export function createRefreshTracker<T>(getScope: () => T): RefreshTracker {
   let inFlight = 0;
 
   return {
     isRefreshing: () => inFlight > 0,
     begin: () => {
-      const selection = getSelection();
+      const scope = getScope();
       let finished = false;
       inFlight += 1;
 
       return {
-        isCurrent: () => getSelection() === selection,
+        isCurrent: () => getScope() === scope,
         finish: () => {
           if (!finished) {
             finished = true;

@@ -258,12 +258,14 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   >(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const pendingTranslationsRef = useRef(pendingTranslations);
-  // Changing the locale selection starts a new refresh while an older one may
-  // still be in flight. The tracker drops responses for a selection that is no
-  // longer current, so they can't overwrite the statuses of the current one.
-  const localesRef = useRef(locales);
+  // Changing what a refresh asks for (locales, documents, their uploaded
+  // versions, the branch) starts a new refresh while an older one may still be
+  // in flight. The tracker drops responses whose scope is no longer current, so
+  // they can't overwrite the statuses of the current one. Replaced with a new
+  // object on every change and compared by identity.
+  const refreshScopeRef = useRef({});
   const [refreshTracker] = useState(() =>
-    createRefreshTracker(() => localesRef.current)
+    createRefreshTracker(() => refreshScopeRef.current)
   );
 
   const client = useClient();
@@ -333,17 +335,17 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     pendingTranslationsRef.current = pendingTranslations;
   }, [pendingTranslations]);
 
-  // Declared before the effects that refresh on a locale change, so a refresh
-  // started by that change already sees the new selection.
-  useEffect(() => {
-    localesRef.current = locales;
-  }, [locales]);
-
   const getVersionId = useCallback(
     (document: SanityDocument) =>
       uploadedVersions.get(getDocumentPublishedId(document)) ?? document._rev,
     [uploadedVersions]
   );
+
+  // Declared before the effects that refresh on these changes, so a refresh
+  // started by one already runs under the new scope.
+  useEffect(() => {
+    refreshScopeRef.current = {};
+  }, [locales, documents, branchId, getVersionId]);
 
   const fetchDocuments = useCallback(async () => {
     setLoadingDocuments(true);
