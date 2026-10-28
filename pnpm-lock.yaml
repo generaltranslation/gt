@@ -1666,6 +1666,9 @@ importers:
         specifier: workspace:*
         version: link:../i18n
     devDependencies:
+      '@arethetypeswrong/cli':
+        specifier: ^0.18.5
+        version: 0.18.5
       '@sveltejs/package':
         specifier: ^3.0.1
         version: 3.0.1(svelte@5.57.2(@typescript-eslint/types@8.53.0))(typescript@5.9.3)
@@ -1678,6 +1681,9 @@ importers:
       jsdom:
         specifier: ^26.1.0
         version: 26.1.0(bufferutil@4.0.9)
+      publint:
+        specifier: ^0.3.25
+        version: 0.3.25
       svelte:
         specifier: ^5.57.2
         version: 5.57.2(@typescript-eslint/types@8.53.0)

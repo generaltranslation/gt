@@ -22,7 +22,7 @@
     }
   },
   "scripts": {
-    "build": "svelte-package -i src -o dist",
+    "build": "svelte-package -i src -o dist && publint && attw --pack . --profile esm-only --exclude-entrypoints . && attw --pack . --profile esm-only --entrypoints . --ignore-rules internal-resolution-error",
     "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
     "build:release": "pnpm run build:clean",
     "release": "pnpm run build:clean && pnpm publish",
@@ -60,10 +60,12 @@
     "gt-i18n": "workspace:*"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
     "@sveltejs/package": "^3.0.1",
     "@sveltejs/vite-plugin-svelte": "^6.2.4",
     "@types/node": "catalog:",
     "jsdom": "^26.1.0",
+    "publint": "^0.3.25",
     "svelte": "^5.57.2",
     "svelte-check": "^4.7.7",
     "typescript": "catalog:",
