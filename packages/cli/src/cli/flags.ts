@@ -1,8 +1,15 @@
 import { Command, InvalidArgumentError } from 'commander';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import findFilepath from '../fs/findFilepath.js';
-import { DEFAULT_GIT_REMOTE_NAME } from '../utils/constants.js';
+import {
+  DEFAULT_GIT_REMOTE_NAME,
+  DEFAULT_TIMEOUT_SECONDS,
+} from '../utils/constants.js';
 
-const DEFAULT_TIMEOUT = 900;
+// Body-only: commander prefixes the error and names the flag and value.
+const invalidTimeoutError = createDiagnosticMessage({
+  whatHappened: 'Timeout must be a non-negative whole number of seconds',
+});
 
 export function attachSharedFlags(command: Command) {
   command
@@ -33,18 +40,12 @@ export function attachTranslateFlags(command: Command) {
       '--timeout <seconds>',
       'Translation wait timeout in seconds',
       (value) => {
-        const parsedValue = parseInt(value, 10);
-        if (isNaN(parsedValue)) {
-          throw new InvalidArgumentError('Invalid timeout: not a number.');
+        if (!/^\d+$/.test(value)) {
+          throw new InvalidArgumentError(invalidTimeoutError);
         }
-        if (parsedValue < 0) {
-          throw new InvalidArgumentError(
-            'Invalid timeout: must be a positive number.'
-          );
-        }
-        return parsedValue;
+        return Number(value);
       },
-      DEFAULT_TIMEOUT
+      DEFAULT_TIMEOUT_SECONDS
     )
     .option(
       '--save-local',
