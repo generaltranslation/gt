@@ -69,7 +69,16 @@ const invalidDelimiters: GTConfig = {
   },
 };
 
+// Model providers are the API's values; a JSON import needs `satisfies GTConfig`.
+const validModelProvider = { modelProvider: 'OPENAI' } satisfies GTConfig;
+const invalidModelProvider: GTConfig = {
+  // @ts-expect-error Lowercase providers are not API values.
+  modelProvider: 'openai',
+};
+
 void validConfig;
+void validModelProvider;
+void invalidModelProvider;
 void invalidWhitespace;
 void invalidViteConfigPath;
 void invalidDelimiters;

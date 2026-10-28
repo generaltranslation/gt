@@ -1,5 +1,4 @@
-import type { GTCompilerOptions } from 'generaltranslation/types';
-import type { LocaleMatcher } from '@generaltranslation/format/types';
+import type { GTCompilerOptions, GTConfig } from 'generaltranslation/types';
 import type { MiddlewareConfig } from '../../middleware-dir/types';
 
 export type HeadersAndCookies = {
@@ -19,7 +18,7 @@ export type CompilerOptions = GTCompilerOptions & {
   type: 'babel' | 'swc' | 'none';
 };
 
-export type RenderMethod = 'skeleton' | 'replace' | 'default';
+export type RenderMethod = NonNullable<GTConfig['renderSettings']>['method'];
 
 export const REQUEST_FUNCTION_TO_CONFIG_KEY = {
   getLocale: 'getLocalePath',
@@ -27,57 +26,44 @@ export const REQUEST_FUNCTION_TO_CONFIG_KEY = {
 } as const;
 
 // Middleware options are defaults for createNextMiddleware(), passed via env.
-export type BaseWithGTConfigProps = MiddlewareConfig & {
-  // Additional top-level keys are forwarded as runtime translation metadata.
-  [key: string]: unknown;
-  // Request scoped filepath
-  dictionary?: string;
-  config?: string;
-  loadTranslationsPath?: string;
-  loadDictionaryPath?: string;
-  // Cloud integration. Credentials are read from environment variables.
-  runtimeUrl?: string | null;
-  cacheUrl?: string | null;
-  cacheExpiryTime?: number;
-  // Locale info
-  locales?: string[];
-  defaultLocale?: string;
-  localeMatcher?: LocaleMatcher;
-  ignoreBrowserLocales?: boolean;
-  disableInvalidLocaleWarning?: boolean;
-  /** Regular expression source that limits i18n middleware routing by pathname, written for paths without the locale prefix. `<Link>`, `useLocalizeHref()` and `getLocalizeHref()` leave non-matching paths unprefixed. */
-  pathRegex?: string;
-  // Rendering
-  renderSettings?: {
-    method: RenderMethod;
-    timeout?: number;
+// Keys gt.config.json can also set come from GTConfig, which documents them.
+export type BaseWithGTConfigProps = MiddlewareConfig &
+  Pick<
+    GTConfig,
+    | 'loadTranslationsPath'
+    | 'loadDictionaryPath'
+    | 'getLocalePath'
+    | 'getRegionPath'
+    | 'runtimeUrl'
+    | 'cacheUrl'
+    | 'cacheExpiryTime'
+    | 'locales'
+    | 'defaultLocale'
+    | 'localeMatcher'
+    | 'ignoreBrowserLocales'
+    | 'disableInvalidLocaleWarning'
+    | 'pathRegex'
+    | 'renderSettings'
+    | 'maxConcurrentRequests'
+    | 'maxBatchSize'
+    | 'batchInterval'
+    | 'description'
+    | '_tagIds'
+  > & {
+    // Additional top-level keys are forwarded as runtime translation metadata.
+    [key: string]: unknown;
+    config?: string;
+    // GTConfig omits the file's dictionary path; see its definition.
+    dictionary?: string;
+    // ESLint integration
+    eslint?: boolean; // Enable/disable ESLint config generation (default: true)
+    eslintSeverity?: 'error' | 'warn'; // Severity level for ESLint rules (default: 'warn')
+    overwriteESLintConfig?: boolean; // Allow overwriting existing eslint.config.mjs (default: false)
+    // Other
+    experimentalCompilerOptions?: CompilerOptions;
+    headersAndCookies?: HeadersAndCookies;
+    _usingPlugin?: boolean;
   };
-  // Batching config
-  maxConcurrentRequests?: number;
-  maxBatchSize?: number;
-  batchInterval?: number; // ms
-  // Translation assistance
-  description?: string;
-  // ESLint integration
-  eslint?: boolean; // Enable/disable ESLint config generation (default: true)
-  eslintSeverity?: 'error' | 'warn'; // Severity level for ESLint rules (default: 'warn')
-  overwriteESLintConfig?: boolean; // Allow overwriting existing eslint.config.mjs (default: false)
-  // Other
-  experimentalCompilerOptions?: CompilerOptions;
-  headersAndCookies?: HeadersAndCookies;
-  _usingPlugin?: boolean;
-  /**
-   * Opt-in id-tagging (off by default): exposes each `<T>`'s translation hash as
-   * a `data-_gt-hash` attribute for tooling (localized replay, in-context QA).
-   * Must be the literal `true` to enable — see `isIdTaggingEnabled`. ⚠️ Enabling
-   * injects a `display:contents` `<span>` around any `<T>` that renders bare text
-   * or a fragment (elements are annotated in place, no wrapper).
-   */
-  _tagIds?: boolean;
-  // Request function paths
-  getLocalePath?: string;
-  getRegionPath?: string;
-};
 
 export type withGTConfigProps = BaseWithGTConfigProps & {
   /** Use GT_API_KEY instead. */

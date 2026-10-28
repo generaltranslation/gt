@@ -1,4 +1,5 @@
 import type { CustomMapping } from '@generaltranslation/format/types';
+import type { InferInput } from 'valibot';
 import type { UserTokenProvider } from 'generaltranslation/api';
 import type { ModelProvider } from 'generaltranslation/internal';
 import type { FileFormat, Updates } from 'generaltranslation/types';
@@ -6,10 +7,23 @@ import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import {
   ParsingConfigOptions,
   GTParsingFlags,
-  BaseParsingFlags,
   ParseFlagsByFileType,
 } from './parsing.js';
 import { Libraries, InlineLibrary } from './libraries.js';
+import type {
+  AdditionalOptionsSchema,
+  FilesOptionsSchema,
+  FontsConfigSchema,
+  IncludePatternSchema,
+  JsonSchemaSchema,
+  MintlifyOptionsSchema,
+  RequiresReviewConfigSchema,
+  SharedStaticAssetsConfigSchema,
+  SourceObjectOptionsSchema,
+  TransformOptionSchema,
+  TransformOptionsSchema,
+  YamlSchemaSchema,
+} from '../config/schema.js';
 
 export type { Updates } from 'generaltranslation/types';
 
@@ -44,16 +58,9 @@ export type Options = {
   }>;
 };
 
-export type OpenApiConfig = {
-  files: string[];
-  translateFields?: string[];
-};
+export type MintlifyOptions = InferInput<typeof MintlifyOptionsSchema>;
 
-export type MintlifyOptions = {
-  openapi?: OpenApiConfig;
-  inferTitleFromFilename?: boolean;
-  localizeRedirects?: boolean; // add localized redirects for pages renamed or removed in a translate run
-};
+export type OpenApiConfig = NonNullable<MintlifyOptions['openapi']>;
 
 export type SharedFlags = {
   config?: string;
@@ -135,9 +142,17 @@ export const SUPPORTED_REACT_FRAMEWORKS = [
   'react-router',
 ] as const;
 
+export const SUPPORTED_FRAMEWORKS = [
+  ...SUPPORTED_REACT_FRAMEWORKS,
+  'mintlify',
+] as const;
+
 export type FrameworkObject =
   | {
-      name: 'mintlify';
+      name: Exclude<
+        (typeof SUPPORTED_FRAMEWORKS)[number],
+        (typeof SUPPORTED_REACT_FRAMEWORKS)[number]
+      >;
       type?: undefined;
     }
   | {
@@ -184,15 +199,7 @@ export type ResolvedFiles = {
   gt?: string; // Output glob: /path/[locale].json
 };
 
-export type TransformOption = {
-  match?: string; // regex to match strings, supports capture groups
-  replace: string; // string or regex pattern to replace the match with
-  // Special placeholders:
-  // -> if used in the match string, they will be replaced with the corresponding default locale property value
-  // -> if used in the replace string, they will be replaced with the corresponding target locale property value
-  // {locale} -> will be replaced with the locale code
-  // And any other property from getLocaleProperties()
-};
+export type TransformOption = InferInput<typeof TransformOptionSchema>;
 
 export type TransformFiles = {
   [K in SupportedFileExtension]?: TransformOption | string | TransformOption[]; // if a string, only transform the file name
@@ -202,43 +209,17 @@ export type TransformFormats = {
   [K in SupportedFileExtension]?: FileFormat;
 };
 
-// Include patterns can be plain strings or objects with a publish flag
-export type IncludePattern = string | { pattern: string; publish?: boolean };
+export type IncludePattern = InferInput<typeof IncludePatternSchema>;
 
-// Review requirement for matched files: a boolean applies to all files of the
-// type; the object form opts path groups in/out with globs. exclude wins over
-// include; files matching neither inherit the top-level requiresReview default.
-export type RequiresReviewConfig =
-  | boolean
-  | {
-      include?: string[];
-      exclude?: string[];
-    };
+export type RequiresReviewConfig = InferInput<
+  typeof RequiresReviewConfigSchema
+>;
 
-// Update FilesOptions to fix the error
-export type FilesOptions = {
-  [K in SupportedFileExtension]?: {
-    include: IncludePattern[];
-    exclude?: string[];
-    transform?: string | TransformOption | TransformOption[];
-    transformationFormat?: FileFormat;
-    parsingFlags?: BaseParsingFlags; // Flags for parsing inline content
-    requiresReview?: RequiresReviewConfig; // Whether translated versions of matched files require approval before use
-  };
-} & {
-  gt?: {
-    output: string; // Output glob: /path/[locale].json
-    publish?: boolean; // if true, publish gtjson translations to the CDN
-    parsingFlags?: Partial<GTParsingFlags>; // Flags for parsing inline content
-  };
-};
+export type FilesOptions = InferInput<typeof FilesOptionsSchema>;
+
+export type FontsConfig = InferInput<typeof FontsConfigSchema>;
 
 // Shared settings between all API-related commands
-export type FontsConfig = {
-  include: string[]; // globs of .ttf/.otf files
-  exclude?: string[];
-};
-
 export type Settings = {
   config: string;
   configDirectory: string;
@@ -305,140 +286,20 @@ export type BranchOptions = {
   enabled: boolean; // if true, branching is enabled for the project
 };
 
-export type AdditionalOptions = {
-  // Optional schema to follow while translating JSON files
-  jsonSchema?: {
-    [fileGlob: string]: JsonSchema;
-  };
-  // Optional schema to follow while translating YAML files
-  yamlSchema?: {
-    [fileGlob: string]: YamlSchema;
-  };
-  // Skip pre-parse validation checks for specific file types
-  skipFileValidation?: {
-    json?: boolean;
-    yaml?: boolean;
-    mdx?: boolean;
-  };
-  // Optional Mintlify-specific options container
-  mintlify?: MintlifyOptions;
-  docsUrlPattern?: string | string[]; // eg /docs/[locale] or /[locale] for localizing static urls in markdown files; a list localizes several URL prefixes
-  docsImportPattern?: string; // eg /docs/[locale]/foo.md or /[locale]/foo.md for localizing static imports in markdown files
-  excludeStaticUrls?: string[]; // A list of file globs to include for static url localization
-  excludeStaticImports?: string[]; // A list of file globs to include for static import localization
-  docsHideDefaultLocaleImport?: boolean; // if true, hide the default locale in the import path
-  copyFiles?: string[]; // array of files to copy to the target locale
-  experimentalClearLocaleDirs?: boolean; // if true, clear locale directories before writing translations (default: false)
-  clearLocaleDirsExclude?: string[]; // array of glob patterns with [locale] or [locales] placeholder to exclude from clearing (e.g., "./snippets/[locale]/preserved/**" or "./[locales]/static/**")
-  experimentalLocalizeStaticImports?: boolean; // Inserts locale in static import paths in md/mdx files
-  // Inserts locale in static url paths in md/mdx files and adds anchor IDs to
-  // preserve navigation. The object form enables it with extra behavior.
-  experimentalLocalizeStaticUrls?:
-    | boolean
-    | {
-        // Keep links to source pages that have no translation
-        skipUntranslatedPages?: boolean;
-        // Extra JSX attribute names or globs to localize
-        attributes?: string[];
-      };
-  experimentalLocalizeRelativeAssets?: boolean; // Rewrites relative asset URLs in translated md/mdx files to valid paths
-  experimentalAddHeaderAnchorIds?: 'mintlify' | 'default'; // Format for anchor IDs: 'mintlify' for Mintlify's native {#id} on every heading, 'default' or undefined for escaped inline \{#id\}. Can run independently of static url localization
-  experimentalHideDefaultLocale?: boolean; // Hides the default locale in the import path
-  experimentalFlattenJsonFiles?: boolean; // Flattens JSON files into a single file
-  baseDomain?: string; // The base http:// url where the project is hosted
-  docsImportRewrites?: Array<{
-    match: string; // prefix to match, e.g. '@site/docs'
-    replace: string; // replacement prefix, can include [locale] or [defaultLocale]
-  }>;
-  experimentalCanonicalLocaleKeys?: boolean; // For composite JSON schemas with locale keys, force canonical locale even when alias provided
-  saveLocal?: boolean; // if true, detect and save local edits to translated output before enqueuing translations (default: false)
-};
+export type AdditionalOptions = InferInput<typeof AdditionalOptionsSchema>;
 
-export type SharedStaticAssetsConfig = {
-  include: string | string[];
-  outDir?: string;
-  publicPath?: string;
-  mirrorToLocales?: boolean;
-};
+export type SharedStaticAssetsConfig = InferInput<
+  typeof SharedStaticAssetsConfigSchema
+>;
 
-export type StructuralTransform = {
-  sourcePointer: string; // e.g., "/msg"
-  destinationPointer: string; // e.g., "/translations/en"
-};
+export type StructuralTransform = NonNullable<
+  JsonSchema['structuralTransform']
+>[number];
 
-export type JsonSchema = {
-  preset?: 'mintlify' | 'mintlify-hide-default' | 'openapi';
-  structuralTransform?: StructuralTransform[];
+export type JsonSchema = InferInput<typeof JsonSchemaSchema>;
 
-  // when true, resolve $ref entries in this file before processing
-  resolveRefs?: boolean;
+export type YamlSchema = InferInput<typeof YamlSchemaSchema>;
 
-  // exactly 1 of include or composite must be provided; not both
+export type SourceObjectOptions = InferInput<typeof SourceObjectOptionsSchema>;
 
-  // specify include if file is not composite
-  // multiple target JSONs will be created for each locale,
-  // with the only differing content being the specified JSONPath values
-  include?: string[]; // array of JSONPaths to include
-
-  // specify composite if no new JSONs should be created
-  composite?: {
-    // The sourceObjectPath is a JSONPath to the array or object containing
-    // content in the source and target locales
-    // This value is denoted as the "sourceObject"
-    // Array elements or object sub-elements are denoted as "sourceItem"
-    [sourceObjectPath: string]: SourceObjectOptions;
-  };
-};
-
-export type YamlSchema = {
-  preset?: 'mintlify' | 'openapi';
-  include?: string[];
-  transform?: TransformOptions;
-};
-
-export type SourceObjectOptions = {
-  type: 'array' | 'object'; // type of the sourceObject;
-  // array if the sourceObject is an array
-  // -> We will simply add duplicated sourceItems for each locale
-  // object if the sourceObject is an object
-  // -> We will duplicate the sourceItem for each locale and set the corresponding
-  // key with the locale property
-  // In both cases, we search the sourceObject for the key that matches the source locale
-
-  // Below, relative JSONPaths are relative to the sourceItem root, NOT the sourceObject
-
-  include: string[]; // array of relative JSONPaths to include in the translated JSON
-
-  // if type is array, there must be a key property in the array element
-  // corresponding value should be a locale code
-  key?: string; // relative jsonPath to the key to use to distinguish between source and target locales
-  // if type is object, the key is simply the JSON key for the sourceItem - this is unnecessary in this case
-
-  localeProperty?: string; // specific locale property to use for the key for target locales, default 'code'
-  // ex: code, name, nativeName, languageCode, languageName, etc. (values returned by getLocaleProperties)
-
-  // optional config for transforming specific fields in the sourceItem
-  // for example, helpful for handling urls with locale-specific paths
-  transform?: TransformOptions;
-
-  // optional list of top-level properties to remove from generated
-  // non-default-locale entries (e.g. Mintlify's `default: true` flag on the
-  // default language entry, which must not be cloned into other locales)
-  omitProperties?: string[];
-
-  // optional sorting behavior for array sourceObjects. When set to 'locale',
-  // the array will be ordered to match the locales array provided to mergeJson
-  // When set to 'localesAlphabetical', the default locale will be placed first
-  // and the remaining locales will be ordered alphabetically by locale code
-  experimentalSort?: 'locales' | 'localesAlphabetical';
-
-  // when true, non-default keyed entries in this composite array are extracted
-  // into separate files (using the key value as the directory name) and replaced
-  // with $ref pointers. Keeps the source file compact.
-  splitEntries?: boolean;
-};
-
-export type TransformOptions = {
-  // relative jsonPath to content to mutate
-  [transformPath: string]: TransformOption;
-};
+export type TransformOptions = InferInput<typeof TransformOptionsSchema>;

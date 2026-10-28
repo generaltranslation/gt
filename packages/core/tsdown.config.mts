@@ -14,6 +14,12 @@ const [cjsConfig, esmConfig] = createTsdownConfig(
   { alwaysBundle: [/^@noble\/hashes/] }
 );
 
+// Built on its own so the schema's imports never become chunks shared with,
+// and so change, the browser entries.
+const configSchemaConfigs = createTsdownConfig(['src/config-schema.ts']).map(
+  (config) => ({ ...config, clean: false })
+);
+
 export default defineConfig(
   withPackageChecks([
     cjsConfig,
@@ -21,5 +27,6 @@ export default defineConfig(
       ...esmConfig,
       copy: [{ from: '../api/spec/openapi.json', to: 'dist' }],
     },
+    ...configSchemaConfigs,
   ])
 );

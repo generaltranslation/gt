@@ -1,25 +1,22 @@
+import type { InferInput, ObjectEntries, ObjectSchema } from 'valibot';
 import type {
-  CustomMapping,
-  LocaleMatcher,
-} from '@generaltranslation/format/types';
+  GTConfigSchema,
+  GTFilesConfigSchema,
+  GTOutputFileConfigSchema,
+  GTParsingFlagsSchema,
+} from '../config/schema';
+
+// The loose schemas accept unknown keys, but their types list only known keys:
+// an index signature would make Omit and Pick drop every known key.
+type KnownKeys<TSchema extends { entries: ObjectEntries }> = InferInput<
+  ObjectSchema<TSchema['entries'], undefined>
+>;
 
 /**
  * Options shared by the CLI, compiler, and runtimes under
  * `files.gt.parsingFlags` in gt.config.json.
  */
-export type GTParsingFlags = {
-  autoderive?: boolean | { jsx?: boolean; strings?: boolean };
-  includeSourceCodeContext?: boolean;
-  enableAutoJsxInjection?: boolean;
-  devHotReload?: boolean | { strings?: boolean; jsx?: boolean };
-  /** Vite config used to resolve hash-affecting Vue compiler behavior. */
-  viteConfigPath?: string;
-  /** Hash-affecting Vue template compiler options. */
-  vueCompilerOptions?: {
-    whitespace?: 'condense' | 'preserve';
-    delimiters?: [string, string];
-  };
-};
+export type GTParsingFlags = KnownKeys<typeof GTParsingFlagsSchema>;
 
 /**
  * Options that framework integrations, such as gt-next and gt-tanstack-start,
@@ -52,63 +49,17 @@ export type GTCompilerOptions = {
 };
 
 /** Configuration for generated GT translation files. */
-export type GTOutputFileConfig = {
-  output?: string;
-  publish?: boolean;
-  parsingFlags?: GTParsingFlags;
-};
+export type GTOutputFileConfig = InferInput<typeof GTOutputFileConfigSchema>;
 
 /**
  * File configuration is primarily consumed by the CLI. Other packages only
  * inspect `files.gt`, but must still accept the complete gt.config.json shape.
  */
-export type GTFilesConfig = {
-  gt?: GTOutputFileConfig;
-  [fileType: string]: unknown;
-};
+export type GTFilesConfig = InferInput<typeof GTFilesConfigSchema>;
 
 /**
- * The configuration stored in gt.config.json.
- *
- * All settings are optional. Runtimes default `defaultLocale` to
- * `libraryDefaultLocale` and `locales` to an empty list before resolving the
- * effective locale set.
+ * The configuration stored in gt.config.json. All settings are optional.
+ * `dictionary` is left out: the file holds a path, but runtime params hold the
+ * loaded dictionary, and a GTConfig must still pass to initializeGT().
  */
-export type GTConfig = {
-  defaultLocale?: string;
-  locales?: string[];
-  customMapping?: CustomMapping;
-  /** How `determineLocale` matches requested locales; defaults to `'best fit'`. */
-  localeMatcher?: LocaleMatcher;
-  enableI18n?: boolean;
-  /** Enable framework-provided locale path routing when supported. */
-  localeRouting?: boolean;
-
-  projectId?: string;
-  apiKey?: string;
-  _versionId?: string;
-  _branchId?: string;
-
-  cacheUrl?: string | null;
-  cacheExpiryTime?: number;
-  runtimeUrl?: string | null;
-  modelProvider?: string;
-  _disableDevHotReload?: boolean;
-  /**
-   * Opt-in id-tagging — **off by default**. When true, each `<T>`'s translation
-   * hash is exposed on the DOM as a `data-_gt-hash` attribute so tooling
-   * (localized replay, in-context QA) can map a rendered node back to its
-   * published translation. No effect on `gt()` string translations; DOM-only
-   * (skipped on React Native).
-   *
-   * ⚠️ Read before enabling — this injects markup. To carry the attribute, GT
-   * puts it directly on the element a `<T>` renders when there is one, but a `<T>`
-   * that renders bare text or a fragment has no element to hold it, so its output
-   * is wrapped in a layout-neutral `display:contents` `<span>`. Enabling this
-   * therefore adds `<span>`s around text/fragment `<T>`s — which is why it is not
-   * on by default. It is never enabled implicitly.
-   */
-  _tagIds?: boolean;
-
-  files?: GTFilesConfig;
-};
+export type GTConfig = Omit<KnownKeys<typeof GTConfigSchema>, 'dictionary'>;
