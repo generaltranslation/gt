@@ -70,14 +70,13 @@ describe('@generaltranslation/react-core package exports', () => {
           const componentsRsc = require('@generaltranslation/react-core/components-rsc');
           const unstable = require('@generaltranslation/react-core/unstable');
 
-          assert.equal(typeof pure.msg, 'function');
+          assert.equal(typeof pure.t, 'function');
           assert.equal(typeof components.T, 'function');
           assert.equal(typeof hooks.useGT, 'function');
           assert.equal(typeof componentsRsc.Branch, 'function');
           assert.equal(typeof unstable.useGT, 'function');
           assert.equal(typeof unstable.t, 'function');
           assert.equal(typeof unstable.useMessages, 'function');
-          assert.equal(typeof unstable.msg, 'function');
         `,
     ]);
   });
@@ -88,23 +87,21 @@ describe('@generaltranslation/react-core package exports', () => {
       '-e',
       `
           import assert from 'node:assert/strict';
-          import { msg } from '@generaltranslation/react-core/pure';
+          import { t } from '@generaltranslation/react-core/pure';
           import { T } from '@generaltranslation/react-core/components';
           import { useGT } from '@generaltranslation/react-core/hooks';
           import { Branch } from '@generaltranslation/react-core/components-rsc';
           import * as unstable from '@generaltranslation/react-core/unstable';
 
-          assert.equal(typeof msg, 'function');
+          assert.equal(typeof t, 'function');
           assert.equal(typeof T, 'function');
           assert.equal(typeof useGT, 'function');
           assert.equal(typeof Branch, 'function');
           assert.equal(typeof unstable.t, 'function');
           assert.equal(typeof unstable.useGT, 'function');
-          assert.equal(typeof unstable.plural, 'function');
-          assert.equal(typeof unstable.derive, 'function');
           assert.equal(typeof unstable.useMessages, 'function');
-          assert.equal(typeof unstable.msg, 'function');
-          assert.equal(typeof unstable.mFallback, 'function');
+          // gt-i18n owns the message helpers; react-core does not re-export them.
+          assert.equal('msg' in unstable, false);
         `,
     ]);
   });

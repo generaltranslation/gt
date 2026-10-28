@@ -39,7 +39,7 @@ describe('static-string rule', () => {
         {
           code: `
             import { useGT } from '@generaltranslation/react-core/hooks';
-            import { derive } from '@generaltranslation/react-core/pure';
+            import { derive } from 'generaltranslation';
             function Component() {
               const gt = useGT();
               return gt("Hello " + derive("world"));
@@ -49,7 +49,7 @@ describe('static-string rule', () => {
             {
               libs: [
                 '@generaltranslation/react-core/hooks',
-                '@generaltranslation/react-core/pure',
+                'generaltranslation',
               ],
             },
           ],
@@ -147,7 +147,7 @@ describe('static-string rule', () => {
         {
           code: `
             import { useGT } from '@generaltranslation/react-core/hooks';
-            import { derive } from '@generaltranslation/react-core/pure';
+            import { derive } from 'generaltranslation';
             function Component() {
               const gt = useGT();
               return gt("Hello " + derive("world"));
@@ -157,7 +157,7 @@ describe('static-string rule', () => {
             {
               libs: [
                 '@generaltranslation/react-core/hooks',
-                '@generaltranslation/react-core/pure',
+                'generaltranslation',
               ],
             },
           ],
@@ -189,4 +189,22 @@ describe('static-string rule', () => {
       ],
     });
   });
+});
+
+// At module level: RuleTester registers its own describe/it, which vitest
+// does not collect from inside a running test.
+ruleTester.run('static-string with the default libs', staticString, {
+  valid: [
+    {
+      code: `
+        import { useGT } from '@generaltranslation/react-core/hooks';
+        import { derive } from 'generaltranslation';
+        function Component() {
+          const gt = useGT();
+          return gt("Hello " + derive("world"));
+        }
+      `,
+    },
+  ],
+  invalid: [],
 });

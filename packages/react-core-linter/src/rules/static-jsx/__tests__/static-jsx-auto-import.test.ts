@@ -161,3 +161,32 @@ describe('static-jsx auto-fix should respect aliased Var import', () => {
     ],
   });
 });
+
+describe('static-jsx auto-fix skips the core package import', () => {
+  ruleTester.run(
+    'adds Var to the React import after a core import',
+    staticJsx,
+    {
+      valid: [],
+      invalid: [
+        {
+          code: `
+          import { derive } from 'generaltranslation';
+          import { T } from 'gt-react';
+          function Component({ name }) {
+            return <T>{name}</T>;
+          }
+        `,
+          errors: [{ messageId: 'dynamicContent' }],
+          output: `
+          import { derive } from 'generaltranslation';
+          import { T, Var } from 'gt-react';
+          function Component({ name }) {
+            return <T><Var>{name}</Var></T>;
+          }
+        `,
+        },
+      ],
+    }
+  );
+});
