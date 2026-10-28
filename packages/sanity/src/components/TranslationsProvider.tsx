@@ -42,6 +42,7 @@ import {
 } from '../sanity-api/publishDocuments';
 import { getLocales } from '../adapter/getLocales';
 import { getLocaleIdsToPoll, getSelectedLocaleIds } from '../utils/locales';
+import { createRefreshTracker } from '../utils/refreshTracker';
 import type {
   FileProperties,
   TranslationPreferences,
@@ -258,9 +259,12 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const pendingTranslationsRef = useRef(pendingTranslations);
   // Changing the locale selection starts a new refresh while an older one may
-  // still be in flight. Only the latest request may write statuses, or a slow
-  // response for the previous selection would overwrite the current one.
-  const latestRefreshRef = useRef(0);
+  // still be in flight. The tracker drops responses for a selection that is no
+  // longer current, so they can't overwrite the statuses of the current one.
+  const localesRef = useRef(locales);
+  const [refreshTracker] = useState(() =>
+    createRefreshTracker(() => localesRef.current)
+  );
 
   const client = useClient();
   const { projectId, dataset } = client.config();
@@ -328,6 +332,12 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   useEffect(() => {
     pendingTranslationsRef.current = pendingTranslations;
   }, [pendingTranslations]);
+
+  // Declared before the effects that refresh on a locale change, so a refresh
+  // started by that change already sees the new selection.
+  useEffect(() => {
+    localesRef.current = locales;
+  }, [locales]);
 
   const getVersionId = useCallback(
     (document: SanityDocument) =>
@@ -940,7 +950,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   const handleRefreshAll = useCallback(
     async ({ silent = false }: { silent?: boolean } = {}) => {
       if (!secrets || documents.length === 0 || !branchId) return;
-      const refreshId = ++latestRefreshRef.current;
+      const refresh = refreshTracker.begin();
       setIsRefreshing(true);
 
       try {
@@ -986,7 +996,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
           secrets
         );
 
-        if (refreshId !== latestRefreshRef.current) return;
+        if (!refresh.isCurrent()) return;
 
         // Built here rather than inside an updater: it derives from the
         // response, not from previous state, and a state updater has to stay
@@ -1056,10 +1066,10 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
           closable: true,
         });
       } finally {
-        if (refreshId === latestRefreshRef.current) setIsRefreshing(false);
+        setIsRefreshing(refresh.finish());
       }
     },
-    [secrets, documents, locales, branchId, getVersionId]
+    [secrets, documents, locales, branchId, getVersionId, refreshTracker]
   );
 
   const handleImportDocument = useCallback(
@@ -1387,11 +1397,20 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     if (!autoRefresh || documents.length === 0 || !secrets) return;
 
     const interval = setInterval(async () => {
+      // A poll slower than the interval is still in flight; let it land
+      // rather than stacking another request behind it.
+      if (refreshTracker.isRefreshing()) return;
       await handleRefreshAll({ silent: true });
     }, 10000);
 
     return () => clearInterval(interval);
-  }, [autoRefresh, documents.length, secrets, handleRefreshAll]);
+  }, [
+    autoRefresh,
+    documents.length,
+    secrets,
+    handleRefreshAll,
+    refreshTracker,
+  ]);
 
   useEffect(() => {
     setImportedTranslations(new Set(downloadStatus.downloaded));
