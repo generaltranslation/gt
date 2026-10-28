@@ -6,7 +6,7 @@ import {
 import { useShouldTranslate } from '../utils';
 import { useI18nStore } from '../../i18n-store/useI18nStore';
 import { DictionaryLookup, TranslateLookup } from '../../i18n-store/storeTypes';
-import { type RefObject, useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { Translation } from 'gt-i18n/types';
 import { useGTContext } from '../../context/context';
 
@@ -150,86 +150,40 @@ function useDevHotReloadQueue(shouldTranslate: boolean) {
     getI18nConfig().isDevHotReloadEnabled();
   const i18nStore = useI18nStore();
 
-  // The enqueue callback must keep a stable identity: an unstable callback
-  // would change the identity of every translation function built on top of
-  // it (e.g. gt() from useGT()), re-running user effects that depend on it
-  // after every render. It reaches the queue of the render in progress through
-  // a ref, which is null outside of render.
-  const renderLookupsRef = useRef<Map<string, PendingLookup> | null>(null);
-  // Lookups made while rendering. Renders in the same synchronous pass share a
-  // queue, since strict mode's second render reuses memoized values (and so
-  // skips lookups) from the first. A render that never commits (e.g. a
-  // suspended transition) takes its queue with it.
-  const renderLookups =
-    renderLookupsRef.current ?? startRenderLookups(renderLookupsRef);
-
-  // Outside of render (effects, event handlers) side effects are allowed, so
-  // lookups are requested right away using the last committed conditions.
-  const requestOutsideRenderRef = useRef<
-    ((pendingLookup: PendingLookup) => void) | null
-  >(null);
+  // Persist the queue across renders so the enqueue callback keeps a stable
+  // identity. An unstable callback would change the identity of every
+  // translation function built on top of it (e.g. gt() from useGT()), which
+  // re-runs user effects that depend on it after every render.
+  const pendingLookupsRef = useRef<Map<string, PendingLookup> | null>(null);
+  if (pendingLookupsRef.current == null) {
+    pendingLookupsRef.current = new Map();
+  }
 
   // Pure react: effects run after render
-  // No dependency array: flush this render's lookups after every commit
+  // No dependency array: flush whatever was enqueued after every commit
   useEffect(() => {
-    renderLookupsRef.current = null;
-    const enabled = devHotReloadEnabled && shouldTranslate;
-    requestOutsideRenderRef.current = enabled
-      ? (pendingLookup) => requestLookup(i18nStore, pendingLookup)
-      : null;
-    if (enabled) {
-      renderLookups.forEach((pendingLookup) =>
-        requestLookup(i18nStore, pendingLookup)
-      );
-    }
-    // Strict mode re-runs effects; don't request the same lookups twice
-    renderLookups.clear();
+    const pendingLookups = pendingLookupsRef.current!;
+    if (pendingLookups.size === 0) return;
+    const lookups = Array.from(pendingLookups.values());
+    pendingLookups.clear();
+    if (!devHotReloadEnabled || !shouldTranslate) return;
+
+    lookups.forEach(({ type, lookup }) => {
+      switch (type) {
+        case 'translation':
+          i18nStore.translate(lookup);
+          break;
+        case 'dictionaryEntry':
+          i18nStore.translateDictionaryEntry(lookup);
+          break;
+        case 'dictionaryObject':
+          i18nStore.translateDictionaryObject(lookup);
+          break;
+      }
+    });
   });
 
   return useCallback((key: string, pendingLookup: PendingLookup) => {
-    const currentRenderLookups = renderLookupsRef.current;
-    if (currentRenderLookups) {
-      currentRenderLookups.set(key, pendingLookup);
-    } else {
-      requestOutsideRenderRef.current?.(pendingLookup);
-    }
+    pendingLookupsRef.current!.set(key, pendingLookup);
   }, []);
-}
-
-/**
- * Starts a render's lookup queue. React renders a component synchronously, so
- * the queue stays reachable only until the current task's microtasks run.
- * Later calls (effects, event handlers) are outside of render, even when the
- * render never committed. A child that renders after React yields and calls a
- * parent's translation function is also treated as outside of render, which at
- * worst requests a translation for a render that never commits.
- */
-function startRenderLookups(
-  renderLookupsRef: RefObject<Map<string, PendingLookup> | null>
-): Map<string, PendingLookup> {
-  const renderLookups = new Map<string, PendingLookup>();
-  renderLookupsRef.current = renderLookups;
-  void Promise.resolve().then(() => {
-    if (renderLookupsRef.current === renderLookups) {
-      renderLookupsRef.current = null;
-    }
-  });
-  return renderLookups;
-}
-
-function requestLookup(
-  i18nStore: ReturnType<typeof useI18nStore>,
-  { type, lookup }: PendingLookup
-) {
-  switch (type) {
-    case 'translation':
-      i18nStore.translate(lookup);
-      break;
-    case 'dictionaryEntry':
-      i18nStore.translateDictionaryEntry(lookup);
-      break;
-    case 'dictionaryObject':
-      i18nStore.translateDictionaryObject(lookup);
-      break;
-  }
 }

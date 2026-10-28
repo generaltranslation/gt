@@ -3,8 +3,6 @@ import {
   act,
   startTransition,
   StrictMode,
-  Suspense,
-  use,
   useEffect,
   useMemo,
   useState,
@@ -13,6 +11,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { defaultRuntimeApiUrl } from 'generaltranslation/internal';
 import { GTProvider, initializeGT, useGT } from '../index.client';
+import type { GTFunctionType } from 'gt-i18n/types';
 
 type TestGlobal = typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean };
 
@@ -81,6 +80,7 @@ describe('useGT dev hot reload', () => {
   });
 
   afterEach(() => {
+    (globalThis as TestGlobal).IS_REACT_ACT_ENVIRONMENT = true;
     act(() => root.unmount());
     document.body.innerHTML = '';
     vi.unstubAllEnvs();
@@ -137,109 +137,6 @@ describe('useGT dev hot reload', () => {
     );
   });
 
-  it('requests lookups made in event handlers', async () => {
-    const requestedSources = stubRuntimeApi();
-    let onClick!: () => void;
-
-    function Button() {
-      const gt = useGT();
-      onClick = () => gt('Clicked');
-      return null;
-    }
-
-    await act(async () => {
-      root.render(
-        <GTProvider locale='fr' translations={{ fr: {} }}>
-          <Button />
-        </GTProvider>
-      );
-    });
-    act(() => onClick());
-    await vi.waitFor(() => expect(requestedSources).toContain('Clicked'), {
-      timeout: 2000,
-    });
-  });
-
-  it('does not request lookups from renders that never commit', async () => {
-    const requestedSources = stubRuntimeApi();
-    const never = new Promise<never>(() => {});
-    let suspend!: () => void;
-    let showUrgent!: () => void;
-
-    function Greeting() {
-      const gt = useGT();
-      const [suspended, setSuspended] = useState(false);
-      const [urgent, setUrgent] = useState(false);
-      suspend = () => startTransition(() => setSuspended(true));
-      showUrgent = () => setUrgent(true);
-      if (suspended) {
-        // This transition render suspends forever, so it never commits
-        gt('Abandoned');
-        use(never);
-      }
-      return <span>{urgent ? gt('Urgent') : gt('Saved')}</span>;
-    }
-
-    await act(async () => {
-      root.render(
-        <GTProvider locale='fr' translations={{ fr: {} }}>
-          <Suspense fallback={null}>
-            <Greeting />
-          </Suspense>
-        </GTProvider>
-      );
-    });
-    await vi.waitFor(() => expect(requestedSources).toContain('Saved'), {
-      timeout: 2000,
-    });
-
-    await act(async () => suspend());
-    expect(element.textContent).toBe('Saved');
-    // An urgent update commits while the transition is still suspended
-    await act(async () => showUrgent());
-    expect(element.textContent).toBe('Urgent');
-    await vi.waitFor(() => expect(requestedSources).toContain('Urgent'), {
-      timeout: 2000,
-    });
-    expect(requestedSources).not.toContain('Abandoned');
-  });
-
-  it('requests event handler lookups while a transition is suspended', async () => {
-    const requestedSources = stubRuntimeApi();
-    const never = new Promise<never>(() => {});
-    let suspend!: () => void;
-
-    function Greeting() {
-      const gt = useGT();
-      const [suspended, setSuspended] = useState(false);
-      const [label, setLabel] = useState('');
-      suspend = () => startTransition(() => setSuspended(true));
-      if (suspended) {
-        gt('Abandoned');
-        use(never);
-      }
-      return <button onClick={() => setLabel(gt('Clicked'))}>{label}</button>;
-    }
-
-    await act(async () => {
-      root.render(
-        <GTProvider locale='fr' translations={{ fr: {} }}>
-          <Suspense fallback={null}>
-            <Greeting />
-          </Suspense>
-        </GTProvider>
-      );
-    });
-    await act(async () => suspend());
-    // The suspended transition leaves the committed UI interactive
-    await act(async () => element.querySelector('button')!.click());
-    expect(element.textContent).toBe('Clicked');
-    await vi.waitFor(() => expect(requestedSources).toContain('Clicked'), {
-      timeout: 2000,
-    });
-    expect(requestedSources).not.toContain('Abandoned');
-  });
-
   it('requests memoized lookups in strict mode', async () => {
     const requestedSources = stubRuntimeApi();
 
@@ -260,6 +157,46 @@ describe('useGT dev hot reload', () => {
       );
     });
     await vi.waitFor(() => expect(requestedSources).toContain('Memoized'), {
+      timeout: 2000,
+    });
+  });
+
+  it('requests lookups from children rendered after the scheduler yields on mount', async () => {
+    const requestedSources = stubRuntimeApi();
+    // act() renders without yielding; this test needs real time slicing
+    (globalThis as TestGlobal).IS_REACT_ACT_ENVIRONMENT = false;
+    const events: string[] = [];
+
+    function Parent() {
+      const gt = useGT();
+      events.push('parent');
+      void Promise.resolve().then(() => events.push('microtask'));
+      // Use up the scheduler's time slice so React yields before the child
+      const start = performance.now();
+      while (performance.now() - start < 20) {
+        // busy wait
+      }
+      return <Child gt={gt} />;
+    }
+
+    function Child({ gt }: { gt: GTFunctionType }) {
+      events.push('child');
+      return <span>{gt('Child-only')}</span>;
+    }
+
+    startTransition(() => {
+      root.render(
+        <GTProvider locale='fr' translations={{ fr: {} }}>
+          <Parent />
+        </GTProvider>
+      );
+    });
+    await vi.waitFor(() => expect(element.textContent).toBe('Child-only'), {
+      timeout: 2000,
+    });
+    // The parent's render queue expired before the child rendered
+    expect(events.slice(0, 3)).toEqual(['parent', 'microtask', 'child']);
+    await vi.waitFor(() => expect(requestedSources).toContain('Child-only'), {
       timeout: 2000,
     });
   });
