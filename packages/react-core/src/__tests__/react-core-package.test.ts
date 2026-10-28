@@ -63,7 +63,7 @@ describe('@generaltranslation/react-core package exports', () => {
           const hooks = require('@generaltranslation/react-core/hooks');
           const componentsRsc = require('@generaltranslation/react-core/components-rsc');
 
-          assert.equal(typeof pure.msg, 'function');
+          assert.equal(typeof pure.t, 'function');
           assert.equal(typeof components.T, 'function');
           assert.equal(typeof hooks.useGT, 'function');
           assert.equal(typeof componentsRsc.Branch, 'function');
@@ -77,12 +77,12 @@ describe('@generaltranslation/react-core package exports', () => {
       '-e',
       `
           import assert from 'node:assert/strict';
-          import { msg } from '@generaltranslation/react-core/pure';
+          import { t } from '@generaltranslation/react-core/pure';
           import { T } from '@generaltranslation/react-core/components';
           import { useGT } from '@generaltranslation/react-core/hooks';
           import { Branch } from '@generaltranslation/react-core/components-rsc';
 
-          assert.equal(typeof msg, 'function');
+          assert.equal(typeof t, 'function');
           assert.equal(typeof T, 'function');
           assert.equal(typeof useGT, 'function');
           assert.equal(typeof Branch, 'function');
