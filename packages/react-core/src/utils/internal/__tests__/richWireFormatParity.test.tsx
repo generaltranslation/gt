@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import type { ReactNode } from 'react';
-import type { JsxChildren } from '@generaltranslation/format/types';
+import type { JsxChildren } from '@generaltranslation/format';
 import { hashSource } from 'generaltranslation/id';
 import { describe, expect, it } from 'vitest';
 import { Branch } from '../../../components/branches/Branch';

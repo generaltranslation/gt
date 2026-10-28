@@ -1,5 +1,5 @@
 import { ParsingConfigOptions } from '../../../../types/parsing.js';
-import { Updates } from 'generaltranslation/types';
+import { Updates } from 'generaltranslation';
 
 /**
  * Immutable configuration options for string parsing.

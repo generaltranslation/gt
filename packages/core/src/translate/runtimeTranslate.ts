@@ -5,7 +5,7 @@ import {
   type TranslateContentData,
   type TranslateContentResponse,
 } from '@generaltranslation/api';
-import type { Content } from '@generaltranslation/format/types';
+import type { Content } from '@generaltranslation/format';
 import type { TranslateManyResult } from '../types-dir/api/translateMany';
 import type { TranslationResult } from '../types-dir/api/translate';
 import type {

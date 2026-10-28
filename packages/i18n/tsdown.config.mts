@@ -7,11 +7,19 @@ export default defineConfig(
       'src/index.ts',
       'src/internal-cookies.ts',
       'src/internal-string.ts',
-      'src/types.ts',
       'src/internal.ts',
-      'src/internal-types.ts',
       'src/unstable.ts',
       'src/unstable-internal.ts',
-    ])
+    ]).map((config) => ({
+      ...config,
+      // Keep decodeOptions out of the shared runtime chunk so importing it from the root stays small (gt-vue).
+      outputOptions: {
+        codeSplitting: {
+          groups: [
+            { name: 'decodeOptions', test: /msg[\\/]decodeOptions\.ts$/ },
+          ],
+        },
+      },
+    }))
   )
 );

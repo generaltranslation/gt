@@ -2,14 +2,14 @@ import {
   getGTInternal,
   getMessagesInternal,
   getTranslationsInternal,
+  type ReadonlyConditionStoreInterface,
 } from 'gt-i18n/internal';
-import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
 import type {
   GTFunctionType,
   MFunctionType,
   Message,
   TFunctionType,
-} from 'gt-i18n/types';
+} from 'gt-i18n';
 
 /**
  * The translation functions, bound to where an entry reads the locale: the

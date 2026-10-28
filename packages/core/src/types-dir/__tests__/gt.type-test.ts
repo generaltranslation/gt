@@ -2,13 +2,15 @@ import {
   GeneralTranslation,
   GTAccount,
   GTIntl,
-  GTRuntime,
   ProjectHandle,
   type GTAccountConfig,
-  type GTCredentials,
-  type GTProjectConfig,
   type OrgHandle,
 } from '../../index.js';
+import {
+  GTRuntime,
+  type GTCredentials,
+  type GTProjectConfig,
+} from '../../runtime.js';
 import type { UserTokenProvider } from '@generaltranslation/api';
 
 declare const userTokenProvider: UserTokenProvider;

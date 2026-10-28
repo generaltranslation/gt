@@ -1,7 +1,4 @@
-import type {
-  FormatVariables,
-  StringFormat,
-} from '@generaltranslation/format/types';
+import type { FormatVariables, StringFormat } from '@generaltranslation/format';
 import { txInternal } from 'gt-i18n/internal';
 import { getRequestConditions } from '../../request/getRequestConditions';
 

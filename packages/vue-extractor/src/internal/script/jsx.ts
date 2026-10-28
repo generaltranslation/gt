@@ -5,7 +5,7 @@ import {
   type GTProp,
   type JsxChild,
   type JsxChildren,
-} from '@generaltranslation/format/types';
+} from '@generaltranslation/format';
 import { isHTMLTag, isSVGTag } from '@vue/shared';
 import { isAcceptedPluralForm } from 'generaltranslation/internal';
 import type {

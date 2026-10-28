@@ -16,7 +16,7 @@
 <svelte:options preserveWhitespace={false} />
 
 <script lang="ts">
-  import type { Content } from '@generaltranslation/format/types';
+  import type { Content } from '@generaltranslation/format';
   import { getI18nConfig } from 'gt-i18n/internal';
   import type { Snippet } from 'svelte';
   import { onMount, untrack } from 'svelte';

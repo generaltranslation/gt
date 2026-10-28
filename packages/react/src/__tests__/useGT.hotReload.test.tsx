@@ -11,7 +11,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GTRuntime } from 'generaltranslation/runtime';
 import { GTProvider, initializeGT, useGT } from '../index.client';
-import type { GTFunctionType } from 'gt-i18n/types';
+import type { GTFunctionType } from 'gt-i18n';
 
 type TestGlobal = typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean };
 

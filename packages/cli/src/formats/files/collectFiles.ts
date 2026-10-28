@@ -7,7 +7,7 @@ import {
 import { invalidConfigurationError } from '../../console/index.js';
 import { aggregateFiles } from './aggregateFiles.js';
 import { aggregateInlineTranslations } from '../../translation/stage.js';
-import type { FileToUpload, Updates } from 'generaltranslation/types';
+import type { FileToUpload, Updates } from 'generaltranslation';
 import { hashStringSync } from '../../utils/hash.js';
 import { TEMPLATE_FILE_NAME, TEMPLATE_FILE_ID } from '../../utils/constants.js';
 import {

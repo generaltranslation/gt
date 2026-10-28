@@ -1,9 +1,12 @@
-import { GTIntl, type LocaleConfig } from '@generaltranslation/format';
-import type { CustomMapping } from '@generaltranslation/format/types';
+import {
+  GTIntl,
+  type LocaleConfig,
+  type CustomMapping,
+} from '@generaltranslation/format';
 import { GTRuntime } from 'generaltranslation/runtime';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-import type { GTConfig } from 'generaltranslation/types';
+import type { GTConfig } from 'generaltranslation';
 import {
   getLoadTranslationsType,
   LoadTranslationsType,

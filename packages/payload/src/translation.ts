@@ -4,7 +4,7 @@
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
 import { ApiError, ErrorCode } from '@generaltranslation/api';
 import type { Payload } from 'payload';
-import type { FileReference } from 'generaltranslation/types';
+import type { FileReference } from 'generaltranslation';
 import {
   collectUnits,
   fileKey,

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { I18nCache } from '../I18nCache';
-import type { Content } from '@generaltranslation/format/types';
+import type { Content } from '@generaltranslation/format';
 
 type TestGlobal = typeof globalThis & {
   __generaltranslation?: {

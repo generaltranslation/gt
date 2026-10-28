@@ -1,8 +1,4 @@
-import type {
-  GTProp,
-  JsxChild,
-  JsxChildren,
-} from '@generaltranslation/format/types';
+import type { GTProp, JsxChild, JsxChildren } from '@generaltranslation/format';
 
 /**
  * Given a JsxChildren object, strips the t field from all children in place

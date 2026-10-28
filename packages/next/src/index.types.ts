@@ -39,11 +39,6 @@ import {
 } from 'gt-react';
 import { GTProvider as _GTProvider } from 'gt-react';
 import { getTranslationsSnapshot } from '@generaltranslation/react-core/pure';
-import type {
-  GTTranslationOptions,
-  RuntimeTranslationOptions,
-} from 'gt-i18n/types';
-import type { StringFormat } from '@generaltranslation/format/types';
 import {
   msg,
   decodeMsg,
@@ -55,7 +50,10 @@ import {
   getLocales,
   resolveCanonicalLocale,
   getVersionId,
+  type GTTranslationOptions,
+  type RuntimeTranslationOptions,
 } from 'gt-i18n';
+import type { StringFormat } from '@generaltranslation/format';
 import { derive, declareVar, decodeVars } from 'generaltranslation';
 
 type Message = {

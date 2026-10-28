@@ -21,14 +21,16 @@ describe('@generaltranslation/react-core/components-rsc', () => {
     expect(mod.T).toBeTypeOf('function');
     expect(mod.Var).toBeTypeOf('function');
     expect(mod.GtInternalVar).toBeTypeOf('function');
-    expect(mod.getFormatLocales).toBeTypeOf('function');
     expect(mod.getPluralBranch).toBeTypeOf('function');
     expect(mod.prepareT).toBeTypeOf('function');
     expect(mod.createRenderVariable).toBeTypeOf('function');
-    expect(mod.createRenderPipeline).toBeTypeOf('function');
     expect(mod.renderDefaultChildren).toBeTypeOf('function');
     expect(mod.renderTranslatedChildren).toBeTypeOf('function');
     expect(mod.renderVariable).toBeTypeOf('function');
     expect(mod.renderPreparedT).toBeTypeOf('function');
+    // Shared RSC-safe helpers are owned by ./pure.
+    expect(mod.getFormatLocales).toBeUndefined();
+    expect(mod.createRenderPipeline).toBeUndefined();
+    expect(mod.t).toBeUndefined();
   });
 });

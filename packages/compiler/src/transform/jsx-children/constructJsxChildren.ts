@@ -6,7 +6,7 @@ import {
   JsxElement,
   Variable,
   VariableType as GTVariableType,
-} from '@generaltranslation/format/types';
+} from '@generaltranslation/format';
 import { TransformState } from '../../state/types';
 import * as t from '@babel/types';
 import type { NodePath } from '@babel/traverse';

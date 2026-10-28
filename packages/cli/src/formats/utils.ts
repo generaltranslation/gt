@@ -1,5 +1,7 @@
-import { getLocaleProperties } from '@generaltranslation/format';
-import type { LocaleProperties } from '@generaltranslation/format/types';
+import {
+  getLocaleProperties,
+  type LocaleProperties,
+} from '@generaltranslation/format';
 
 /**
  * Locale properties for a locale as it is written in the user's `locales` config.

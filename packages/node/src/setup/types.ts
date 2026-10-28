@@ -1,7 +1,7 @@
 import type {
   I18nCacheConstructorParams,
   I18nConfigParams,
-} from 'gt-i18n/internal/types';
+} from 'gt-i18n/internal';
 
 /**
  * Parameters for the initializing GT

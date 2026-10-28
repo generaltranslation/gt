@@ -1,7 +1,6 @@
 import { logger } from '../../console/logger.js';
-import type { ProjectHandle } from 'generaltranslation';
+import type { ProjectHandle, FileReference } from 'generaltranslation';
 import type { Settings } from '../../types/index.js';
-import type { FileReference } from 'generaltranslation/types';
 import chalk from 'chalk';
 
 type EnqueueClient = Pick<ProjectHandle, 'translateFiles'>;

@@ -1,6 +1,6 @@
 import path from 'node:path';
 import chalk from 'chalk';
-import type { FileToUpload } from 'generaltranslation/types';
+import type { FileToUpload } from 'generaltranslation';
 import { logger } from '../console/logger.js';
 import { createClients } from '../utils/api.js';
 import { Settings } from '../types/index.js';

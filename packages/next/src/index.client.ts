@@ -94,8 +94,5 @@ export { useLocalizeHref } from './link/useLocalizeHref';
 export { isLocaleSupported } from './request/localeValidation';
 
 // ===== Types ===== //
-export type {
-  GTTranslationOptions,
-  RuntimeTranslationOptions,
-} from 'gt-i18n/types';
+export type { GTTranslationOptions, RuntimeTranslationOptions } from 'gt-i18n';
 export type { WithGTServerSideProps, WithGTStaticProps };

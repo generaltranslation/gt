@@ -4,17 +4,17 @@ import {
   getI18nCache,
   getI18nConfig,
   interpolateMessage,
-  isEncodedTranslationOptions,
 } from 'gt-i18n/internal';
+import { isEncodedTranslationOptions } from 'gt-i18n/internal/string';
 import type {
   GTFunctionType,
   GTTranslationOptions,
   MFunctionType,
-} from 'gt-i18n/types';
+} from 'gt-i18n';
 import type {
   LocaleProperties,
   StringFormat,
-} from '@generaltranslation/format/types';
+} from '@generaltranslation/format';
 import { getLocaleDirection } from './config';
 import { getGTState, type GTState } from './state.svelte';
 

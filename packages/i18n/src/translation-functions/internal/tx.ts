@@ -1,5 +1,5 @@
 import { RuntimeTranslationOptions } from '../types/options';
-import type { StringFormat } from '@generaltranslation/format/types';
+import type { StringFormat } from '@generaltranslation/format';
 import {
   prefetchStringContentWithRuntimeFallback,
   resolveStringContentWithRuntimeFallback,

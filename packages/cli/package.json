@@ -44,10 +44,6 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./types": {
-      "types": "./dist/types/index.d.ts",
-      "import": "./dist/types/index.js"
-    },
     "./functions": {
       "types": "./dist/functions.d.ts",
       "import": "./dist/functions.js"

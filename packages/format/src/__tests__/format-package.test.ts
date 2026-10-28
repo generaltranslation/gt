@@ -5,13 +5,12 @@ import { fileURLToPath } from 'node:url';
 
 import { beforeAll, describe, it } from 'vitest';
 
-import type { CustomMapping } from '@generaltranslation/format/types';
+import type { CustomMapping } from '@generaltranslation/format';
 
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const builtArtifacts = [
   'dist/index.cjs',
   'dist/index.mjs',
-  'dist/types.mjs',
   'dist/internal.mjs',
 ].map((artifact) => join(packageRoot, artifact));
 
@@ -131,7 +130,7 @@ describe('@generaltranslation/format package export', () => {
     );
   });
 
-  it('resolves exported types from @generaltranslation/format/types', () => {
+  it('resolves exported types and HTML_CONTENT_PROPS from @generaltranslation/format', () => {
     const customMapping: CustomMapping = {
       pirate: {
         code: 'en-US',
@@ -146,7 +145,7 @@ describe('@generaltranslation/format package export', () => {
         '-e',
         `
           import assert from 'node:assert/strict';
-          import { HTML_CONTENT_PROPS } from '@generaltranslation/format/types';
+          import { HTML_CONTENT_PROPS } from '@generaltranslation/format';
 
           assert.equal(HTML_CONTENT_PROPS.pl, 'placeholder');
         `,
