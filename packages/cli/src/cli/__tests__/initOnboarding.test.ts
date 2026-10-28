@@ -919,7 +919,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     expect(open).not.toHaveBeenCalled();
     const [handoff, result] = events();
     expect(handoff).toMatchObject({ type: 'handoff', reason: 'locadex' });
-    expect(handoff.url).toContain('/api/integrations/github/start');
+    expect(handoff.url).toMatch(/\/api\/integrations\/github\/start$/);
     expect(result).toEqual({
       type: 'result',
       command: 'init',

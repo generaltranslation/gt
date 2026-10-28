@@ -51,7 +51,7 @@ Run the setup wizard:
 npx gt@latest
 ```
 
-Or use [Locadex](https://generaltranslation.com/dashboard/api/integrations/github/start?returnTo=%2Fproject%2Flocadex) to set your project up for you.
+Or use [Locadex](https://generaltranslation.com/dashboard/api/integrations/github/start) to set your project up for you.
 
 ## Community
 
