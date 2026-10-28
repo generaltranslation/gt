@@ -6,6 +6,7 @@
 import { TSESTree } from '@typescript-eslint/utils';
 import type { RuleFixer } from '@typescript-eslint/utils/ts-eslint';
 import type { SourceCode } from '@typescript-eslint/utils/ts-eslint';
+import { CORE_LIBRARY } from './constants.js';
 
 /**
  * Collects all import declarations whose source matches one of the
@@ -62,8 +63,11 @@ export function addComponentImport(
 ): string {
   const spec = findImportedSpecifier(gtImportDecls, componentName);
   if (spec) return spec.local.name;
-  if (gtImportDecls.length > 0) {
-    const namedSpecs = gtImportDecls[0].specifiers.filter(
+  const target = gtImportDecls.find(
+    (decl) => decl.source.value !== CORE_LIBRARY
+  );
+  if (target) {
+    const namedSpecs = target.specifiers.filter(
       (s): s is TSESTree.ImportSpecifier =>
         s.type === TSESTree.AST_NODE_TYPES.ImportSpecifier
     );

@@ -51,7 +51,7 @@ describe('gt-react react-server surface', () => {
     expect(mod.GtInternalTranslateJsx).toBeTypeOf('function');
     expect(mod.Var).toBeTypeOf('function');
     expect(mod.GtInternalVar).toBeTypeOf('function');
-    expect(mod.getFormatLocales).toBeTypeOf('function');
+    expect('getFormatLocales' in mod).toBe(false);
     expect('getPluralBranch' in mod).toBe(false);
     expect('renderVariable' in mod).toBe(false);
     expect(mod.GTProvider).toBeTypeOf('function');
