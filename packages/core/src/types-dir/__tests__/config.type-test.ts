@@ -69,7 +69,20 @@ const invalidDelimiters: GTConfig = {
   },
 };
 
+// Model providers are the API's values. `satisfies` narrows an object literal,
+// but not a JSON import, whose values are already widened to string.
+const validModelProvider = { modelProvider: 'OPENAI' } satisfies GTConfig;
+const fromJson: { modelProvider: string } = { modelProvider: 'OPENAI' };
+// @ts-expect-error A JSON import's string is not a ModelProvider.
+void (fromJson satisfies GTConfig);
+const invalidModelProvider: GTConfig = {
+  // @ts-expect-error Lowercase providers are not API values.
+  modelProvider: 'openai',
+};
+
 void validConfig;
+void validModelProvider;
+void invalidModelProvider;
 void invalidWhitespace;
 void invalidViteConfigPath;
 void invalidDelimiters;
