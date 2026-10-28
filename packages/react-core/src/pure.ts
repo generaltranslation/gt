@@ -39,6 +39,7 @@ export type {
   RuntimeTranslationOptions,
   VariableProps,
   RelativeTimeFormatOptions,
+  RenderMethod,
   RenderVariable,
 } from './utils/types';
 

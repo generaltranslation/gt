@@ -1,5 +1,5 @@
-import type { LocaleMatcher } from '@generaltranslation/format/types';
-import type { CustomMapping, JsxChildren } from 'generaltranslation/types';
+import type { LocaleConfig } from '@generaltranslation/format';
+import type { JsxChildren } from 'generaltranslation/types';
 import type { App, Ref } from 'vue';
 
 /**
@@ -54,18 +54,18 @@ export type MessagesFunction = <T extends string | null | undefined>(
   options?: GTStringOptions
 ) => T extends string ? string : T;
 
-/** Options used to create an isolated gt-vue plugin instance. */
-export type CreateGTOptions = {
-  /**
-   * Custom locale aliases used for locale-sensitive formatting and plural
-   * selection. Catalog loading and persisted locale values keep the alias.
-   */
-  customMapping?: CustomMapping;
-  /**
-   * Source and fallback locale. Defaults to GT's library default locale.
-   * Its source text is the catalog, so the loader is never called for it.
-   */
-  defaultLocale?: string;
+/**
+ * Options used to create an isolated gt-vue plugin instance.
+ *
+ * `defaultLocale` is the source and fallback locale, so the loader is never
+ * called for it. `customMapping` aliases apply to locale-sensitive formatting
+ * and plural selection; catalog loading and persisted locale values keep the
+ * alias.
+ */
+export type CreateGTOptions = Pick<
+  LocaleConfig,
+  'customMapping' | 'defaultLocale'
+> & {
   /** Async loader called once for each uncached locale. */
   loadTranslations?: LoadTranslations;
   /**
@@ -75,8 +75,8 @@ export type CreateGTOptions = {
    */
   locale?: string;
   /**
-   * Browser cookie used to persist the active locale. Defaults to
-   * `generaltranslation.locale`.
+   * Browser cookie used to persist the active locale. Defaults to gt-i18n's
+   * `defaultLocaleCookieName`.
    */
   localeCookieName?: string;
 };
@@ -86,20 +86,11 @@ export type CreateGTOptions = {
  *
  * `locales` and `customMapping` are accepted so a `gt.config.json` object can
  * be passed directly. Catalog availability is still determined by
- * {@link loadTranslations}.
+ * {@link loadTranslations}. Unsupported persisted or requested locales fall
+ * back to `defaultLocale`.
  */
-export type InitializeGTSPAOptions = CreateGTOptions & {
-  /**
-   * Target locales declared by the application's GT configuration.
-   * Unsupported persisted or requested locales fall back to `defaultLocale`.
-   */
-  locales?: readonly string[];
-  /**
-   * How requested locales match `locales`: `'best fit'` (default) or
-   * RFC 4647 `'lookup'`.
-   */
-  localeMatcher?: LocaleMatcher;
-};
+export type InitializeGTSPAOptions = CreateGTOptions &
+  Pick<LocaleConfig, 'locales' | 'localeMatcher'>;
 
 /**
  * Vue plugin returned by {@link createGT} or `initializeGTSPA()`.

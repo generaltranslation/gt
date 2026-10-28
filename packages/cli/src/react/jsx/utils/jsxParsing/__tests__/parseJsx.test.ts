@@ -3,7 +3,6 @@ import fs from 'node:fs';
 import nodePath from 'node:path';
 import { hashSource } from 'generaltranslation/id';
 import { resolveImportPath } from '../../resolveImportPath.js';
-import { resolveAutoderive } from '../../../../../types/parsing.js';
 import {
   extractUserT,
   mockFiles,
@@ -903,21 +902,5 @@ describe('autoderive: <T> implicitly acts as <Derive>', () => {
     expect(derivedUpdates[1].metadata.staticId).toBe(
       derivedUpdates[0].metadata.staticId
     );
-  });
-});
-
-describe('resolveAutoderive', () => {
-  it.each([
-    [true, { jsx: true, strings: true }],
-    [false, { jsx: false, strings: false }],
-    [{}, { jsx: false, strings: false }],
-    [{ jsx: true }, { jsx: true, strings: false }],
-    [{ strings: true }, { jsx: false, strings: true }],
-    [
-      { jsx: false, strings: true },
-      { jsx: false, strings: true },
-    ],
-  ])('%j resolves to %j', (input, expected) => {
-    expect(resolveAutoderive(input)).toEqual(expected);
   });
 });

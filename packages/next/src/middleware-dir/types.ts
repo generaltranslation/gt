@@ -1,11 +1,7 @@
 import type { GTIntl } from '@generaltranslation/format';
 import type { GTConfig } from 'generaltranslation/types';
+import type { BaseWithGTConfigProps } from '../config-dir/props/withGTConfigProps';
 import type { GTNextOptions } from '../config-dir/schema';
-import type {
-  CustomMapping,
-  LocaleMatcher,
-} from '@generaltranslation/format/types';
-import type { HeadersAndCookies } from '../config-dir/props/withGTConfigProps';
 import type { PathConfig, PathMatcher } from './createPathMatcher';
 
 export type RouteOverrides = Record<string, readonly string[]>;
@@ -33,13 +29,14 @@ export type MiddlewareConfig = Pick<GTConfig, 'localeRouting'> &
 export type ResolvedMiddlewareConfig = Required<MiddlewareConfig>;
 
 /** The subset of the i18n config params read by the middleware. */
-export type MiddlewareI18nConfig = {
-  customMapping?: CustomMapping;
-  defaultLocale?: string;
-  locales?: string[];
-  localeMatcher?: LocaleMatcher;
-  headersAndCookies?: HeadersAndCookies;
-};
+export type MiddlewareI18nConfig = Pick<
+  BaseWithGTConfigProps,
+  | 'customMapping'
+  | 'defaultLocale'
+  | 'locales'
+  | 'localeMatcher'
+  | 'headersAndCookies'
+>;
 
 /** Locale, cookie, and path state pre-processed once per middleware instance. */
 export type MiddlewareRouting = {

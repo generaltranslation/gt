@@ -188,14 +188,6 @@ describe('withGTConfig', () => {
         maxConcurrentRequests: 100,
         maxBatchSize: 25,
         batchInterval: 50,
-        // Remote translations without a dev API key are cached for a minute.
-        cacheExpiryTime: 60000,
-        experimentalCompilerOptions: {
-          type: 'none',
-          logLevel: 'warn',
-          compileTimeHash: true,
-          disableBuildChecks: false,
-        },
         renderSettings: { method: 'default', timeout: 8000 },
         headersAndCookies: {
           localeHeaderName: 'x-generaltranslation-locale',
@@ -206,6 +198,11 @@ describe('withGTConfig', () => {
             'generaltranslation.locale-routing-enabled',
           resetLocaleCookieName: 'generaltranslation.locale-reset',
         },
+      });
+      // The compilers default the other options.
+      expect(buildParams().experimentalCompilerOptions).toEqual({
+        type: 'none',
+        compileTimeHash: true,
       });
     });
 
@@ -452,6 +449,15 @@ describe('withGTConfig', () => {
       expect(() => withGTConfig()).toThrow(
         /gt-next \(plugin\) Error: \.\/gt\.config\.json could not be read as JSON.*Details: Unexpected token/
       );
+    });
+
+    it('accepts a typed customMapping with undefined properties', () => {
+      expect(() =>
+        withGTConfig(
+          {},
+          { customMapping: { cn: { code: 'zh', name: undefined } } }
+        )
+      ).not.toThrow();
     });
 
     it.each([
@@ -843,9 +849,7 @@ describe('withGTConfig', () => {
   });
 
   describe('cache expiry', () => {
-    it('is not defaulted with a development API key', () => {
-      stubCredentials({ GT_API_KEY: 'gt-dev-abc' });
-
+    it('leaves cacheExpiryTime unset so gt-i18n applies its default', () => {
       expect(buildParams().cacheExpiryTime).toBeUndefined();
     });
 
@@ -853,14 +857,6 @@ describe('withGTConfig', () => {
       expect(buildParams({ cacheExpiryTime: 30000 }).cacheExpiryTime).toBe(
         30000
       );
-    });
-
-    it('is not defaulted with a custom loadTranslations', () => {
-      mockExistingFiles(LOAD_TRANSLATIONS);
-
-      expect(
-        buildParams({ loadTranslationsPath: LOAD_TRANSLATIONS }).cacheExpiryTime
-      ).toBeUndefined();
     });
   });
 
@@ -1063,6 +1059,21 @@ describe('withGTConfig', () => {
           enableAutoJsxInjection: true,
           autoJsxImportSource: 'gt-next',
         })
+      );
+    });
+
+    it('leaves automatic JSX injection to gt.config.json when unset', () => {
+      const compiler = require('@generaltranslation/compiler');
+      const compilerWebpack = vi.spyOn(compiler, 'webpack').mockReturnValue({});
+
+      runWebpack(
+        withGTConfig({}, { experimentalCompilerOptions: { type: 'babel' } })
+      );
+
+      // A present key, even undefined, would override the compiler's
+      // files.gt.parsingFlags.enableAutoJsxInjection.
+      expect(compilerWebpack.mock.calls[0][0]).not.toHaveProperty(
+        'enableAutoJsxInjection'
       );
     });
 

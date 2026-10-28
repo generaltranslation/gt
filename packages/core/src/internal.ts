@@ -1,6 +1,7 @@
 export {
   defaultBaseUrl,
   defaultCacheUrl,
+  defaultDashboardUrl,
   defaultRuntimeApiUrl,
 } from './settings/settingsUrls';
 export { defaultDefaultLocale } from './settings/settings';
