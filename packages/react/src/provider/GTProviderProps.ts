@@ -2,9 +2,11 @@ import type { InternalGTProviderProps } from '@generaltranslation/react-core/com
 import { BrowserConditionStoreParams } from '../condition-store/BrowserConditionStore';
 
 /**
- * We force the user to pass translations so they can be synchronously accessed
+ * Pass the server's translations snapshot so it can be synchronously accessed.
+ * With locale twins (`files.gt.splitting: 'locale-twins'`) omit it: the server
+ * loads whole locales and the client reads its twins.
  *
- * - {@link InternalGTProviderProps} - requires translations and dictionaries
+ * - {@link InternalGTProviderProps} - translations and dictionaries
  * - {@link BrowserConditionStoreParams} - requires locale
  */
 export type SharedGTProviderProps = Omit<

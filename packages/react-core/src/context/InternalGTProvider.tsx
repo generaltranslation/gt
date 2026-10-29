@@ -11,8 +11,11 @@ import type {
 
 export type InternalGTProviderProps = {
   children?: ReactNode;
-  // For streaming translations to server
-  translations: Record<Locale, Record<Hash, Translation>>;
+  /**
+   * Translations snapshot streamed from the server. Optional with locale
+   * twins, where the server loads whole locales and the client reads its twins.
+   */
+  translations?: Record<Locale, Record<Hash, Translation>>;
   dictionaries?: Record<Locale, Dictionary>;
   locale: string;
   region: string | undefined;
@@ -28,18 +31,19 @@ export type InternalGTProviderProps = {
 };
 
 // ===== Component ===== //
+const NO_TRANSLATIONS: Record<Locale, Record<Hash, Translation>> = {};
 const GTContext = getGTContext();
 /**
  * - Shared provider logic btwn client and server providers
  * - This is not userfacing, it should be wrapped in a userfacing provider with runtime-specific logic
- * - Locale and translations (and dictionaries if applicable) are required
+ * - Locale is required; translations are required unless using locale twins
  *
  * TODO: selectively filter to only pass new translations to client for dev hot reload
  * TODO: rename parent directory to "/provider" (separate PR)
  */
 export function InternalGTProvider({
   children,
-  translations,
+  translations = NO_TRANSLATIONS,
   dictionaries,
   locale,
   region,

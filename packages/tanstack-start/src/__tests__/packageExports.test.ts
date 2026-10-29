@@ -267,6 +267,30 @@ describe.sequential('gt-tanstack-start package exports', () => {
     }
   );
 
+  it.each([
+    ['default', 'function'],
+    ['worker', 'function'],
+    ['workerd', 'function'],
+    ['browser', 'undefined'],
+  ])(
+    'exports createLocaleTwinAssets from server entrypoints only (%s condition)',
+    (condition, expectedType) => {
+      node([
+        ...(condition === 'default' ? [] : [`--conditions=${condition}`]),
+        '--input-type=module',
+        '-e',
+        `
+          import assert from 'node:assert/strict';
+          import * as gt from 'gt-tanstack-start';
+
+          assert.equal(typeof gt.createLocaleTwinAssets, '${expectedType}');
+          // Loading the entrypoint under worker conditions leaves open handles.
+          process.exit(0);
+        `,
+      ]);
+    }
+  );
+
   it.each(['workerd', 'worker'])(
     'resolves the server ESM entrypoint when %s and browser conditions are active',
     (workerCondition) => {

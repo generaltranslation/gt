@@ -14,6 +14,11 @@ type GTConditionSource = Pick<
   'getLocale' | 'getRegion' | 'getEnableI18n'
 >;
 
+/** Whether the app builds locale twins (`files.gt.splitting`). */
+export function usesLocaleTwins(): boolean {
+  return getI18nConfig().getTranslationSplitting() === 'locale-twins';
+}
+
 export async function readGTRouterState(
   conditionStore: GTConditionSource
 ): Promise<GTRouterState> {
@@ -33,7 +38,9 @@ export async function readGTRouterState(
     locale,
     region: conditionStore.getRegion(),
     enableI18n: conditionStore.getEnableI18n(),
-    translations,
+    // Locale twins carry translations in the client build, so the server
+    // only loads them (above) and the page gets no snapshot.
+    ...(usesLocaleTwins() ? {} : { translations }),
     dictionaries,
   };
 }

@@ -20,19 +20,24 @@ const noLocaleCandidatesWarning = createDiagnosticMessage({
   why: 'neither the locale cookie nor the Accept-Language header supplied a supported locale candidate',
 });
 
-export function resolveRequestConditions(
+/**
+ * Resolve the locale for a request without side effects: the path locale (with
+ * `localeRouting`), then the locale cookie, then `Accept-Language`, else the
+ * default locale. Shared by the request condition store and the locale twin
+ * asset transform.
+ */
+export function resolveRequestLocale(
   request: Request,
   localeConfig: InitializeGTParams
-): RequestConditions {
+): string {
   const i18nConfig = getI18nConfig();
-  const cookieHeader = request.headers.get('cookie');
   const localeCandidates: string[] = [];
   if (localeConfig.localeRouting) {
     const pathLocale = getLocaleFromPath(new URL(request.url).pathname);
     if (pathLocale) localeCandidates.push(pathLocale);
   }
   const cookieLocale = getCookieValue(
-    cookieHeader,
+    request.headers.get('cookie'),
     i18nConfig.getLocaleCookieName()
   );
   if (cookieLocale) localeCandidates.push(cookieLocale);
@@ -44,10 +49,17 @@ export function resolveRequestConditions(
     console.warn(noLocaleCandidatesWarning);
   }
 
-  const locale = i18nConfig.resolveSupportedLocale(
-    localeCandidates,
-    localeConfig
-  );
+  return i18nConfig.resolveSupportedLocale(localeCandidates, localeConfig);
+}
+
+/** Resolve the request conditions and synchronize the locale cookie. */
+export function resolveRequestConditions(
+  request: Request,
+  localeConfig: InitializeGTParams
+): RequestConditions {
+  const i18nConfig = getI18nConfig();
+  const cookieHeader = request.headers.get('cookie');
+  const locale = resolveRequestLocale(request, localeConfig);
 
   setCookie(i18nConfig.getLocaleCookieName(), locale, localeCookieOptions);
 
