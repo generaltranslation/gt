@@ -12,7 +12,9 @@ import {
   warnDeriveFunctionNoResultsSync,
   warnDeriveFunctionNotWrappedSync,
   warnAutoderiveNoResultsSync,
+  warnUnstableHelperInLegacyMessageSync,
 } from '../../../../../console/index.js';
+import { isUnstableGTImportSource } from '../../../../../types/libraries.js';
 
 import traverseModule from '@babel/traverse';
 import generateModule from '@babel/generator';
@@ -110,16 +112,7 @@ export function handleDerivation({
     if (runtimeInterpolationState) {
       return { type: 'text', text: `{${runtimeInterpolationState.index++}}` };
     }
-    const calleeName = t.isIdentifier(expr.callee)
-      ? expr.callee.name
-      : generate(expr.callee).code;
-    errors.push(
-      warnDeriveFunctionNotWrappedSync(
-        file,
-        calleeName,
-        `${expr.callee.loc?.start?.line}:${expr.callee.loc?.start?.column}`
-      )
-    );
+    errors.push(warnUnwrappedCall(file, expr, tPath));
     return null;
   }
 
@@ -326,16 +319,7 @@ function getDeriveVariants<T extends t.CallExpression = t.CallExpression>({
 
   // Must be a derive(...) call or an alias of it
   if (!isDeriveCall({ expr: call, tPath })) {
-    const calleeName = t.isIdentifier(call.callee)
-      ? call.callee.name
-      : generate(call.callee).code;
-    errors.push(
-      warnDeriveFunctionNotWrappedSync(
-        file,
-        calleeName,
-        `${call.callee.loc?.start?.line}:${call.callee.loc?.start?.column}`
-      )
-    );
+    errors.push(warnUnwrappedCall(file, call, tPath));
     return null;
   }
 
@@ -383,6 +367,34 @@ function getDeriveVariants<T extends t.CallExpression = t.CallExpression>({
     return nodeToStrings(node);
   }
   return null;
+}
+
+/** Unstable helpers only work in tagged messages, so asking to wrap them in derive() would mislead. */
+function warnUnwrappedCall(
+  file: string,
+  call: t.CallExpression,
+  tPath: NodePath
+): string {
+  const location = `${call.callee.loc?.start?.line}:${call.callee.loc?.start?.column}`;
+  const binding = t.isIdentifier(call.callee)
+    ? tPath.scope.getBinding(call.callee.name)
+    : undefined;
+  if (
+    binding?.path.isImportSpecifier() &&
+    binding.path.parentPath.isImportDeclaration() &&
+    isUnstableGTImportSource(binding.path.parentPath.node.source.value)
+  ) {
+    const { imported } = binding.path.node;
+    return warnUnstableHelperInLegacyMessageSync(
+      file,
+      t.isIdentifier(imported) ? imported.name : imported.value,
+      location
+    );
+  }
+  const calleeName = t.isIdentifier(call.callee)
+    ? call.callee.name
+    : generate(call.callee).code;
+  return warnDeriveFunctionNotWrappedSync(file, calleeName, location);
 }
 
 function resolveCallStringVariants(

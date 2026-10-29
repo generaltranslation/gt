@@ -152,6 +152,98 @@ export const warnDeprecatedTSugarPropsSync = (locations: string[]): string =>
   '\n' +
   locations.map((location) => `  ${colorizeLine(location)}`).join('\n');
 
+export const warnNonStaticMessageTreeSync = (
+  file: string,
+  reason: string,
+  location?: string,
+  details?: string,
+  fix = 'Use static text, ${{ name }} variables, unstable helpers with literal arguments, and literal gt({ ... }) options so the message can be extracted and translated'
+): string =>
+  withLocation(
+    file,
+    createDiagnosticMessage({
+      whatHappened: 'Skipped a tagged-template message',
+      why: reason,
+      details,
+      fix,
+    }),
+    location
+  );
+
+export const warnConflictingMessageVariableFormatsSync = (
+  file: string,
+  name: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    createDiagnosticMessage({
+      whatHappened: 'Skipped a tagged-template message',
+      why: `the variable "${name}" is formatted two different ways, and one translatable message can format a variable only one way`,
+      fix: 'Use a different variable name for each format',
+    }),
+    location
+  );
+
+export const warnUntrackedMessageTagSync = (
+  file: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    createDiagnosticMessage({
+      whatHappened:
+        'Could not follow this use of an unstable t or gt translation function',
+      why: 'it is passed, exported, reassigned, or accessed as an object, so the messages it translates cannot be found statically',
+      fix: 'Call it directly as a tagged template, or alias it with const',
+    }),
+    location
+  );
+
+export const warnUnfollowedUnstableImportSync = (
+  file: string,
+  source: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    createDiagnosticMessage({
+      whatHappened: `Could not extract tagged-template messages that use ${source} through require(), import(), a namespace import, or a re-export`,
+      why: 'only named imports of unstable entry points are followed',
+      fix: `Use import { t, useGT, getGT } from '${source}' in each file that translates`,
+    }),
+    location
+  );
+
+export const warnUnstableHelperInLegacyMessageSync = (
+  file: string,
+  helper: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    createDiagnosticMessage({
+      whatHappened: `Could not resolve ${helper}() in this message`,
+      why: `${helper}() is imported from an unstable entry, which only works inside tagged gt\`...\` messages`,
+      fix: `Import ${helper}() from the same entry as the translation function, or write the message as an unstable tagged gt\`...\``,
+    }),
+    location
+  );
+
+export const warnIgnoredProtoPropertySync = (
+  file: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    createDiagnosticMessage({
+      whatHappened: 'Ignored a __proto__ property in a tagged-template message',
+      why: 'a non-computed __proto__ key sets the object prototype instead of adding a branch or option',
+      fix: "Use a computed ['__proto__'] key to add a branch with that name, or remove the property",
+    }),
+    location
+  );
+
 export const warnInvalidFormatSync = (
   file: string,
   value: string,
