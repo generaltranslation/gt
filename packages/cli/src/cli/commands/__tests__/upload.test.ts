@@ -612,6 +612,43 @@ describe('upload - composite JSON', () => {
   });
 });
 
+describe('upload - unparsable translation files', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(createFileMapping).mockReturnValue({});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('skips an unparsable JSON translation with a warning and uploads the rest', async () => {
+    const translatedContent = JSON.stringify({ title: 'Hola' });
+    setMockFiles({ 'source.json': JSON.stringify({ title: 'Hello' }) });
+    vi.mocked(createFileMapping).mockReturnValue({
+      es: { 'source.json': 'es/source.json' },
+      fr: { 'source.json': 'fr/source.json' },
+    });
+    vi.mocked(existsSync).mockReturnValue(true);
+    vi.mocked(readFileSync).mockImplementation((filePath) =>
+      filePath === 'fr/source.json' ? '{"title": ' : translatedContent
+    );
+
+    await uploadWithFiles(
+      { json: ['source.json'] },
+      makeSettings({ locales: ['es', 'fr'], options: {} })
+    );
+
+    expect(logger.warn).toHaveBeenCalledWith(
+      'Skipping fr/source.json: JSON file is not parsable'
+    );
+    const call = vi.mocked(runUploadFilesWorkflow).mock.calls[0][0];
+    expect(call.files[0].translations).toEqual([
+      expect.objectContaining({ locale: 'es', content: translatedContent }),
+    ]);
+  });
+});
+
 describe('upload - Apple .strings translations that cannot be decoded', () => {
   const SOURCE = 'Guardian/en.lproj/Localizable.strings';
   const TRANSLATION = 'Guardian/es.lproj/Localizable.strings';
