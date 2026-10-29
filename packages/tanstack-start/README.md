@@ -203,6 +203,8 @@ const fetch = createStartHandler({
 export default createServerEntry({ fetch });
 ```
 
+A custom `_reload` that navigates (for example to a locale-prefixed URL) should be wrapped in `markNavigatingReload()` from `gt-tanstack-start`; otherwise GT reloads the page after it so only the new locale's files load.
+
 See the [locale twins guide](https://generaltranslation.com/docs/react/guides/locale-twins) for the full setup, hosting and limitations.
 
 See the [full documentation](https://generaltranslation.com/docs/tanstack-start) for guides and API reference.

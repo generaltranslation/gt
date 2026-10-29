@@ -152,6 +152,24 @@ describe('gt-react package exports', () => {
     }
   );
 
+  it.each(['default', 'browser', 'worker', 'react-server'])(
+    'exports markNavigatingReload (%s condition)',
+    (condition) => {
+      node([
+        ...(condition === 'default' ? [] : [`--conditions=${condition}`]),
+        '--input-type=module',
+        '-e',
+        `
+          import assert from 'node:assert/strict';
+          import { markNavigatingReload } from 'gt-react';
+
+          const reload = () => {};
+          assert.equal(markNavigatingReload(reload), reload);
+        `,
+      ]);
+    }
+  );
+
   it('exports the condition-store factory from the browser entrypoint', () => {
     node([
       '--conditions=browser',

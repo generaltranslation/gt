@@ -56,6 +56,10 @@ const twinDocument = createLocaleTwinDocument({ html: builtIndexHtml });
 const response = twinDocument.respond(request);
 ```
 
+`respond()` keeps headers you pass in `init` (`Cache-Control`, `Content-Type`) and merges `Vary`.
+
+Switching locales reloads the page, so only the new locale's files load. If you pass your own `_reload` that navigates (for example to a locale-prefixed URL), wrap it in `markNavigatingReload()` from `gt-react` so GT does not reload the page after it. Locale twins are web-only; `gt-react-native` has no equivalent.
+
 See the [locale twins guide](https://generaltranslation.com/docs/react/guides/locale-twins) for setup, hosting and limitations.
 
 See the [full documentation](https://generaltranslation.com/docs/react) for guides and API reference.

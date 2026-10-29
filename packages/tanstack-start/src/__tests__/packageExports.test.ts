@@ -267,6 +267,25 @@ describe.sequential('gt-tanstack-start package exports', () => {
     }
   );
 
+  it.each(['default', 'browser'])(
+    'exports markNavigatingReload (%s condition)',
+    (condition) => {
+      node([
+        ...(condition === 'default' ? [] : [`--conditions=${condition}`]),
+        '--input-type=module',
+        '-e',
+        `
+          import assert from 'node:assert/strict';
+          import { markNavigatingReload } from 'gt-tanstack-start';
+
+          const reload = () => {};
+          assert.equal(markNavigatingReload(reload), reload);
+          process.exit(0);
+        `,
+      ]);
+    }
+  );
+
   it.each([
     ['default', 'function'],
     ['worker', 'function'],
