@@ -13,6 +13,10 @@ vi.mock('gt-react', () => ({
   useDefaultLocale: () => 'en',
 }));
 
+vi.mock('gt-i18n/internal', () => ({
+  getI18nConfig: () => ({ getLocales: () => ['en', 'fr', 'de'] }),
+}));
+
 vi.mock('next/link', async () => {
   const React = await import('react');
 
@@ -77,6 +81,27 @@ describe('Link', () => {
     expect(mockNextLink.mock.calls[0][0]).not.toHaveProperty('locale');
   });
 
+  it('leaves paths outside pathRegex unprefixed', async () => {
+    vi.stubEnv('_GENERALTRANSLATION_PATH_REGEX', '^/(?!api(?:/|$)).*');
+    const Link = await importLink();
+
+    renderToStaticMarkup(
+      <>
+        <Link href='/api/export'>Export</Link>
+        <Link href={{ pathname: '/api/export', query: { format: 'csv' } }}>
+          Export CSV
+        </Link>
+        <Link href='/home'>Home</Link>
+      </>
+    );
+
+    expect(mockNextLink.mock.calls.map(([props]) => props.href)).toEqual([
+      '/api/export',
+      { pathname: '/api/export', query: { format: 'csv' } },
+      '/fr/home',
+    ]);
+  });
+
   describe('default locale', () => {
     beforeEach(() => mockUseLocale.mockReturnValue('en'));
 
@@ -130,6 +155,64 @@ describe('Link', () => {
       );
 
       expect(renderedHref()).toBe('/fr/home');
+    });
+  });
+
+  describe('locale-prefixed hrefs', () => {
+    beforeEach(() => vi.stubEnv('NODE_ENV', 'development'));
+
+    it('warns once in development without changing the href', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const Link = await importLink();
+
+      renderToStaticMarkup(
+        <>
+          <Link href='/de/about'>About</Link>
+          <Link href='/de'>Home</Link>
+        </>
+      );
+
+      expect(mockNextLink.mock.calls.map(([props]) => props.href)).toEqual([
+        '/fr/de/about',
+        '/fr/de',
+      ]);
+      expect(warn).toHaveBeenCalledOnce();
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('"/de/about"'));
+      warn.mockRestore();
+    });
+
+    it('does not warn for other paths, locale=false, or production', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const Link = await importLink();
+
+      renderToStaticMarkup(
+        <>
+          <Link href='/design'>Design</Link>
+          <Link href='/de/about' locale={false}>
+            About
+          </Link>
+        </>
+      );
+      vi.stubEnv('NODE_ENV', 'production');
+      const ProductionLink = await importLink();
+      renderToStaticMarkup(
+        <ProductionLink href='/de/about'>About</ProductionLink>
+      );
+
+      expect(warn).not.toHaveBeenCalled();
+      warn.mockRestore();
+    });
+
+    it('does not warn for paths outside pathRegex', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      vi.stubEnv('_GENERALTRANSLATION_PATH_REGEX', '^/(?!de(?:/|$)).*');
+      const Link = await importLink();
+
+      renderToStaticMarkup(<Link href='/de/about'>About</Link>);
+
+      expect(mockNextLink.mock.calls[0][0].href).toBe('/de/about');
+      expect(warn).not.toHaveBeenCalled();
+      warn.mockRestore();
     });
   });
 });
