@@ -6,7 +6,9 @@
  *   environment of a build (never over the user's own chunking).
  * - `buildEnd`: records the module graph for the vendor chunk.
  * - `writeBundle` (post): in the client environment of a build, generates the
- *   twins and writes them, the manifest and the build report into the outDir.
+ *   twins and writes them, the manifest and the build report into the outDir,
+ *   and rewrites HTML documents (SPA `index.html`) to load their locale's
+ *   entry twin.
  * - `resolveId`/`load`: `virtual:gt-locale-twins-manifest` in any environment.
  * - `configureServer`: the dev-mode notice.
  *
@@ -29,7 +31,11 @@ import {
   LOCALE_TWINS_WITHOUT_COMPILE_TIME_HASH,
 } from '../buildDiagnostics';
 import type { LocaleTwinInputFile } from '../generateLocaleTwins';
-import { writeLocaleTwinReport, writeLocaleTwins } from '../writeLocaleTwins';
+import {
+  writeLocaleTwinReport,
+  writeLocaleTwinSpaDocuments,
+  writeLocaleTwins,
+} from '../writeLocaleTwins';
 import {
   LOCALE_TWIN_MANIFEST_MODULE_ID,
   loadManifestModule,
@@ -212,8 +218,20 @@ export function createLocaleTwinsViteHooks(
           vendorChunk: options.localeTwins.vendorChunk,
           warn,
         });
-        // Seam for later post-build steps (SPA document rewrite): they run
-        // here, with the manifest, and may add to the report.
+        // Post-build steps that need the manifest run here and may add to
+        // the report before it is written.
+        const spa = writeLocaleTwinSpaDocuments({
+          outDir,
+          documents: Object.fromEntries(
+            Object.entries(output.assets).filter(([fileName]) =>
+              fileName.endsWith('.html')
+            )
+          ),
+          manifest,
+          bootstrap: options.localeTwins.spaBootstrap,
+          localeCookieName: options.localeTwins.localeCookieName,
+        });
+        if (spa) report.spa = spa;
         const reportPath = writeLocaleTwinReport(outDir, report);
         info(
           `[${COMPILER_DIAGNOSTIC_SOURCE}] Locale twins: ${report.twinned.length} twinned and ${report.shared.length} shared JS files, ${manifest.locales.length} locales, JS output x${report.outputMultiplier.toFixed(2)}. Report: ${path.relative(config.root, reportPath)}`

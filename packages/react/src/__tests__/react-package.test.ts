@@ -15,6 +15,8 @@ const runtimeArtifactNames = [
   'index.server.mjs',
   'macros.cjs',
   'macros.mjs',
+  'locale-twins.cjs',
+  'locale-twins.mjs',
 ].sort();
 const builtArtifacts = runtimeArtifactNames.map((artifact) =>
   join(packageRoot, 'dist', artifact)
@@ -211,6 +213,65 @@ describe('gt-react package exports', () => {
           );
         `,
     ]);
+  });
+
+  it.each([
+    [
+      'ESM',
+      ['--input-type=module', '-e'],
+      'import assert from "node:assert/strict"; import * as twins from "gt-react/locale-twins";',
+    ],
+    [
+      'CJS',
+      ['-e'],
+      'const assert = require("node:assert/strict"); const twins = require("gt-react/locale-twins");',
+    ],
+  ])(
+    'serves locale twin documents from gt-react/locale-twins (%s)',
+    (_format, flags, load) => {
+      node([
+        ...flags,
+        `
+          ${load}
+          const html =
+            '<!doctype html><html lang="en"><head>' +
+            '<script type="application/json" id="gt-locale-twins-data">' +
+            JSON.stringify({
+              version: 1,
+              defaultLocale: 'en',
+              locales: ['en', 'fr'],
+              localeCookieName: 'generaltranslation.locale',
+              tags: [{ tag: 'script', attributes: { type: 'module' }, urls: { en: '/a.en.js', fr: '/a.fr.js' } }],
+            }) +
+            '</script><script data-gt-locale-twins-bootstrap src="/b.js"></script></head></html>';
+          const document = twins.createLocaleTwinDocument({ html });
+          const response = document.respond(
+            new Request('https://example.com/', { headers: { 'accept-language': 'fr' } })
+          );
+          assert.equal(response.headers.get('vary'), 'Cookie, Accept-Language');
+          response.text().then((body) => {
+            assert.equal(
+              body,
+              '<!doctype html><html lang="fr"><head><script type="module" src="/a.fr.js"></script></head></html>'
+            );
+          });
+          assert.equal(
+            twins.resolveLocaleTwinLocale({ cookie: 'generaltranslation.locale=fr' }, { defaultLocale: 'en', locales: ['en', 'fr'] }),
+            'fr'
+          );
+          assert.equal(typeof twins.getLocaleTwinAssetHeaders, 'function');
+          assert.equal(typeof twins.getLocaleTwinDocumentHeaders, 'function');
+        `,
+      ]);
+    }
+  );
+
+  it('keeps gt-react/locale-twins free of React and Node built-ins (edge-safe)', () => {
+    for (const file of ['dist/locale-twins.cjs', 'dist/locale-twins.mjs']) {
+      const code = readFileSync(join(packageRoot, file), 'utf8');
+      expect(code).not.toMatch(/["']node:/);
+      expect(code).not.toMatch(/["']react(?:-dom)?(?:\/[^"']*)?["']/);
+    }
   });
 
   it('loads side-effect entrypoints without default-export interop', () => {

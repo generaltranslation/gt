@@ -96,6 +96,16 @@
         "default": "./dist/internal-cookies.mjs"
       }
     },
+    "./internal/locale-twins": {
+      "require": {
+        "types": "./dist/internal-locale-twins.d.cts",
+        "default": "./dist/internal-locale-twins.cjs"
+      },
+      "import": {
+        "types": "./dist/internal-locale-twins.d.mts",
+        "default": "./dist/internal-locale-twins.mjs"
+      }
+    },
     "./internal/string": {
       "require": {
         "types": "./dist/internal-string.d.cts",

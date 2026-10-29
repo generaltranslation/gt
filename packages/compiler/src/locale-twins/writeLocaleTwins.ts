@@ -1,5 +1,7 @@
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { LOCALE_TWIN_BOOTSTRAP_SCRIPT } from 'gt-i18n/internal/locale-twins';
 import {
   findLocaleTwinPlaceholders,
   LOCALE_TWIN_MANIFEST_FILE,
@@ -13,6 +15,7 @@ import {
   type LocaleTwinReport,
 } from './generateLocaleTwins';
 import { createMissingTranslationsDiagnostic } from './diagnostics';
+import { rewriteLocaleTwinDocument } from './spaDocument';
 import {
   createInvalidTranslationFileDiagnostic,
   createLargeOutputMultiplierDiagnostic,
@@ -24,16 +27,32 @@ import {
 /** Build report file written next to the twin manifest. */
 export const LOCALE_TWIN_REPORT_FILE = 'gt-locale-twins-report.json';
 
+/** External bootstrap: `<prefix>.<content hash>.js`, next to the entry chunk. */
+export const LOCALE_TWIN_BOOTSTRAP_FILE_PREFIX = 'gt-locale-twins-bootstrap';
+
 /**
  * Share of the JS output in twinned files above which the build warns that
  * the output multiplier is large (most of the JS is copied per locale).
  */
 export const LARGE_TWINNED_SHARE = 0.5;
 
+/** How the built SPA documents select their locale's twins. */
+export type LocaleTwinSpaReport = {
+  bootstrap: 'inline' | 'external';
+  /** outDir-relative HTML files that were rewritten. */
+  documents: string[];
+  /** CSP source for the inline bootstrap (`script-src 'sha256-…'`). */
+  cspHash?: string;
+  /** outDir-relative external bootstrap file. */
+  bootstrapFile?: string;
+};
+
 /** Contents of {@link LOCALE_TWIN_REPORT_FILE}. */
 export type LocaleTwinBuildReport = LocaleTwinReport & {
   defaultLocale: string;
   locales: string[];
+  /** Present when the build has an HTML document that loads twins. */
+  spa?: LocaleTwinSpaReport;
 };
 
 export type WriteLocaleTwinsInput = {
@@ -139,6 +158,69 @@ export function writeLocaleTwinReport(
   const reportPath = path.join(outDir, LOCALE_TWIN_REPORT_FILE);
   fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`);
   return reportPath;
+}
+
+export type WriteLocaleTwinSpaDocumentsInput = {
+  /** Absolute client output directory. */
+  outDir: string;
+  /** Emitted HTML documents (outDir-relative name → text). */
+  documents: Record<string, string>;
+  manifest: LocaleTwinManifest;
+  bootstrap: 'inline' | 'external';
+  localeCookieName: string;
+};
+
+/**
+ * Rewrites every built HTML document that loads twinned files so the browser
+ * picks its locale's twins (see {@link rewriteLocaleTwinDocument}), writes
+ * the external bootstrap when requested, and returns the report section.
+ * Returns `undefined` when no document loads twinned files.
+ */
+export function writeLocaleTwinSpaDocuments(
+  input: WriteLocaleTwinSpaDocumentsInput
+): LocaleTwinSpaReport | undefined {
+  const external = input.bootstrap === 'external';
+  const bootstrapHash = createHash('sha256').update(
+    LOCALE_TWIN_BOOTSTRAP_SCRIPT
+  );
+  const externalBootstrap = external
+    ? {
+        fileName: `${LOCALE_TWIN_BOOTSTRAP_FILE_PREFIX}.${bootstrapHash.copy().digest('hex').slice(0, 8)}.js`,
+      }
+    : undefined;
+
+  const documents: string[] = [];
+  const bootstrapFiles = new Set<string>();
+  for (const [fileName, html] of Object.entries(input.documents).sort()) {
+    const result = rewriteLocaleTwinDocument({
+      html,
+      manifest: input.manifest,
+      localeCookieName: input.localeCookieName,
+      externalBootstrap,
+    });
+    if (!result) continue;
+    fs.writeFileSync(path.join(input.outDir, fileName), result.html);
+    documents.push(fileName);
+    if (result.bootstrapFile) bootstrapFiles.add(result.bootstrapFile);
+  }
+  if (documents.length === 0) return undefined;
+
+  for (const fileName of bootstrapFiles) {
+    const filePath = path.join(input.outDir, fileName);
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, LOCALE_TWIN_BOOTSTRAP_SCRIPT);
+  }
+  return external
+    ? {
+        bootstrap: 'external',
+        documents,
+        bootstrapFile: [...bootstrapFiles][0],
+      }
+    : {
+        bootstrap: 'inline',
+        documents,
+        cspHash: `sha256-${bootstrapHash.digest('base64')}`,
+      };
 }
 
 /**

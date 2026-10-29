@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { defaultLocaleCookieName } from 'gt-i18n/internal/cookies';
 import { resolveLocaleTwinsSettings } from '../config';
 import gtUnplugin from '../index';
 import { initializeState } from '../state/utils/initializeState';
@@ -13,6 +14,7 @@ describe('resolveLocaleTwinsSettings', () => {
         missingTranslations: 'warn',
         spaBootstrap: 'inline',
         vendorChunk: true,
+        localeCookieName: defaultLocaleCookieName,
       },
     });
   });
@@ -45,6 +47,7 @@ describe('resolveLocaleTwinsSettings', () => {
       missingTranslations: 'error',
       spaBootstrap: 'inline',
       vendorChunk: false,
+      localeCookieName: defaultLocaleCookieName,
     });
   });
 
@@ -87,6 +90,7 @@ describe('initializeState locale twins settings', () => {
       missingTranslations: 'warn',
       spaBootstrap: 'external',
       vendorChunk: true,
+      localeCookieName: defaultLocaleCookieName,
     });
   });
 

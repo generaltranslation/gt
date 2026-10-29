@@ -2,6 +2,7 @@
  * Real `vite build`s of a small app with the `'locale-twins'` translation
  * splitting strategy, on Vite 8 (Rolldown) and Vite 7 (Rollup).
  */
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -13,6 +14,12 @@ import {
   LOCALE_TWIN_MANIFEST_FILE,
   parseLocaleTwinManifest,
 } from 'generaltranslation/internal';
+import { defaultLocaleCookieName } from 'gt-i18n/internal/cookies';
+import {
+  createLocaleTwinDocument,
+  LOCALE_TWIN_BOOTSTRAP_SCRIPT,
+  parseLocaleTwinDocument,
+} from 'gt-i18n/internal/locale-twins';
 import {
   buildFixture,
   buildFixtureApp,
@@ -370,6 +377,180 @@ describe.each(VITE_VERSIONS)('$name client build', ({ load }) => {
         ),
       ])
     );
+  });
+});
+
+/** Every module script `src` and modulepreload `href` in a document. */
+function moduleUrls(html: string): string[] {
+  return [
+    ...html.matchAll(
+      /<script\b[^>]*type="module"[^>]*\bsrc="([^"]+)"|<link\b[^>]*rel="modulepreload"[^>]*\bhref="([^"]+)"/g
+    ),
+  ].map((match) => match[1] ?? match[2]);
+}
+
+function inlineBootstrap(html: string): string | undefined {
+  return /<script data-gt-locale-twins-bootstrap>([\s\S]*?)<\/script>/.exec(
+    html
+  )?.[1];
+}
+
+describe.each(VITE_VERSIONS)('$name SPA document', ({ load }) => {
+  it('selects the entry twin in the browser with an inline bootstrap', async () => {
+    const vite = await load();
+    const app = newApp();
+    await buildFixture(vite, app);
+
+    const html = app.read('index.html');
+    const manifest = parseLocaleTwinManifest(
+      app.read(LOCALE_TWIN_MANIFEST_FILE)
+    );
+    const [entry] = manifest.entries;
+    const twinned = new Set(manifest.twinned.map((name) => `/${name}`));
+
+    // Only shared files are still referenced statically
+    expect(moduleUrls(html).length).toBeGreaterThan(0);
+    for (const url of moduleUrls(html)) expect(twinned.has(url)).toBe(false);
+    expect(html).not.toContain(path.posix.basename(entry));
+    // The data block names each locale's entry twin
+    const { data } = parseLocaleTwinDocument(html);
+    expect(data).toMatchObject({
+      defaultLocale: 'en',
+      locales: ['en', 'fr', 'es'],
+      localeCookieName: defaultLocaleCookieName,
+    });
+    const script = data.tags.find((tag) => tag.tag === 'script');
+    expect(script?.attributes).toEqual({ type: 'module', crossorigin: '' });
+    for (const locale of manifest.locales) {
+      expect(script?.urls[locale]).toBe(`/${manifest.twins[locale][entry]}`);
+      for (const tag of data.tags) {
+        expect(app.exists(tag.urls[locale].slice(1))).toBe(true);
+      }
+    }
+
+    // The inline bootstrap and its CSP hash
+    const bootstrap = inlineBootstrap(html);
+    expect(bootstrap).toBe(LOCALE_TWIN_BOOTSTRAP_SCRIPT);
+    const report = JSON.parse(app.read('gt-locale-twins-report.json'));
+    expect(report.spa).toEqual({
+      bootstrap: 'inline',
+      documents: ['index.html'],
+      cspHash: `sha256-${createHash('sha256').update(bootstrap!).digest('base64')}`,
+    });
+  });
+
+  it('modulepreloads the twins of twinned static imports per locale', async () => {
+    const vite = await load();
+    const app = newApp();
+    // Without the vendor chunk the library and the app share twinned chunks
+    await buildFixture(
+      vite,
+      app,
+      { localeTwins: { vendorChunk: false } },
+      {
+        build: {
+          rollupOptions: {
+            output: {
+              manualChunks: (id: string) =>
+                id.includes('footer') ? 'footer' : undefined,
+            },
+          },
+        },
+      }
+    );
+
+    const manifest = parseLocaleTwinManifest(
+      app.read(LOCALE_TWIN_MANIFEST_FILE)
+    );
+    const footer = manifest.twinned.find((name) =>
+      path.posix.basename(name).startsWith('footer-')
+    );
+    expect(footer).toBeDefined();
+    const { data } = parseLocaleTwinDocument(app.read('index.html'));
+    const preload = data.tags.find((tag) => tag.tag === 'link');
+    expect(preload?.attributes).toEqual({
+      rel: 'modulepreload',
+      crossorigin: '',
+    });
+    expect(preload?.urls.fr).toBe(`/${manifest.twins.fr[footer!]}`);
+    expect(moduleUrls(app.read('index.html'))).not.toContain(`/${footer}`);
+  });
+
+  it('can be served per request locale by the server helper', async () => {
+    const vite = await load();
+    const app = newApp();
+    await buildFixture(vite, app);
+
+    const manifest = parseLocaleTwinManifest(
+      app.read(LOCALE_TWIN_MANIFEST_FILE)
+    );
+    const [entry] = manifest.entries;
+    const document = createLocaleTwinDocument({ html: app.read('index.html') });
+    const html = await document
+      .respond(
+        new Request('https://example.com/', {
+          headers: { cookie: `${defaultLocaleCookieName}=es` },
+        })
+      )
+      .text();
+
+    expect(html).toContain('<html lang="es">');
+    expect(html).toContain(
+      `<script type="module" crossorigin src="/${manifest.twins.es[entry]}"></script>`
+    );
+    expect(html).not.toContain('gt-locale-twins');
+  });
+
+  it('loads an external bootstrap with spaBootstrap: external', async () => {
+    const vite = await load();
+    const app = newApp();
+    await buildFixture(vite, app, {
+      localeTwins: { spaBootstrap: 'external', localeCookieName: 'app-locale' },
+    });
+
+    const html = app.read('index.html');
+    expect(inlineBootstrap(html)).toBeUndefined();
+    const src =
+      /<script data-gt-locale-twins-bootstrap src="([^"]+)"><\/script>/.exec(
+        html
+      )?.[1];
+    expect(src).toMatch(
+      /^\/assets\/gt-locale-twins-bootstrap\.[0-9a-f]{8}\.js$/
+    );
+    expect(app.read(src!.slice(1))).toBe(LOCALE_TWIN_BOOTSTRAP_SCRIPT);
+    expect(parseLocaleTwinDocument(html).data.localeCookieName).toBe(
+      'app-locale'
+    );
+    const report = JSON.parse(app.read('gt-locale-twins-report.json'));
+    expect(report.spa).toEqual({
+      bootstrap: 'external',
+      documents: ['index.html'],
+      bootstrapFile: src!.slice(1),
+    });
+  });
+
+  it.each(['/app/', './'])(
+    'keeps the base path (%s) in twin URLs',
+    async (base) => {
+      const vite = await load();
+      const app = newApp();
+      await buildFixture(vite, app, {}, { base });
+
+      const manifest = parseLocaleTwinManifest(
+        app.read(LOCALE_TWIN_MANIFEST_FILE)
+      );
+      const [entry] = manifest.entries;
+      const { data } = parseLocaleTwinDocument(app.read('index.html'));
+      expect(data.tags[0].urls.fr).toBe(`${base}${manifest.twins.fr[entry]}`);
+    }
+  );
+
+  it("leaves the document alone with the 'locale' strategy", async () => {
+    const vite = await load();
+    const app = newApp();
+    await buildFixture(vite, app, { splitting: 'locale' });
+
+    expect(app.read('index.html')).not.toContain('gt-locale-twins');
   });
 });
 

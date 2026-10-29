@@ -118,6 +118,16 @@
         "types": "./dist/macros.d.mts",
         "default": "./dist/macros.mjs"
       }
+    },
+    "./locale-twins": {
+      "require": {
+        "types": "./dist/locale-twins.d.cts",
+        "default": "./dist/locale-twins.cjs"
+      },
+      "import": {
+        "types": "./dist/locale-twins.d.mts",
+        "default": "./dist/locale-twins.mjs"
+      }
     }
   },
   "keywords": [

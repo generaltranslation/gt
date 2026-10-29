@@ -1000,6 +1000,9 @@ importers:
       generaltranslation:
         specifier: workspace:*
         version: link:../core
+      gt-i18n:
+        specifier: workspace:*
+        version: link:../i18n
       magic-string:
         specifier: ^0.30.21
         version: 0.30.21
