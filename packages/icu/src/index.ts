@@ -1,7 +1,5 @@
-export { formatMessage } from './formatter';
-export { parse } from './parser';
-export { printAST } from './printer';
-export { SKELETON_TYPE, TYPE } from './types';
+export { formatAst } from './formatter/formatAst';
+export { SKELETON_TYPE, TYPE } from './types-dir/ast';
 export type {
   ArgumentElement,
   BaseElement,
@@ -25,4 +23,4 @@ export type {
   Skeleton,
   TagElement,
   TimeElement,
-} from './types';
+} from './types-dir/ast';

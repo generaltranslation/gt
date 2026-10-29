@@ -6,7 +6,8 @@
 
 import { performance } from 'node:perf_hooks';
 import { describe, expect, it } from 'vitest';
-import { parse, SKELETON_TYPE, TYPE, type Location } from '../index';
+import { SKELETON_TYPE, TYPE, type Location } from '../index';
+import { parse } from '../parser';
 
 describe('parse', () => {
   it('parses literals, arguments, and exact source locations', () => {

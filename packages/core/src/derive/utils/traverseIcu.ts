@@ -1,9 +1,5 @@
-import {
-  parse,
-  TYPE,
-  type MessageFormatElement,
-  type ParserOptions,
-} from '@generaltranslation/icu';
+import { TYPE, type MessageFormatElement } from '@generaltranslation/icu';
+import { parse, type ParserOptions } from '@generaltranslation/icu/parser';
 
 type TraverseIcuOptions = ParserOptions & {
   recurseIntoVisited?: boolean;

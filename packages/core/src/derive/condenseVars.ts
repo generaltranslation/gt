@@ -1,4 +1,5 @@
-import { printAST, TYPE, type ArgumentElement } from '@generaltranslation/icu';
+import { TYPE, type ArgumentElement } from '@generaltranslation/icu';
+import { printAST } from '@generaltranslation/icu/parser';
 import { traverseIcu } from './utils/traverseIcu';
 import { VAR_IDENTIFIER } from './utils/constants';
 import { GTIndexedSelectElement } from './utils/types';
