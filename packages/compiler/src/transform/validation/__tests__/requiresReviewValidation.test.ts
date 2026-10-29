@@ -48,6 +48,7 @@ function createState(overrides?: Partial<PluginSettings>): TransformState {
       macroExpansionsCount: 0,
       jsxInsertionsCount: 0,
       runtimeTranslateCount: 0,
+      unstableHashInjectionsCount: 0,
     },
   };
 }

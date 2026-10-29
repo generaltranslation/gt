@@ -102,6 +102,14 @@ describe('gt-i18n/unstable rendering', () => {
     expect(gt`Save`).toBe('Save');
   });
 
+  it('looks up a compiler-injected $_hash without rehashing', async () => {
+    const gt = await setup({ fr: { injected: [literal('Enregistrer')] } });
+    // Not in public GTOptions: only emitted JS from the compiler passes it.
+    const compiled = { locale: 'fr', $_hash: 'injected' };
+    expect(gt(compiled)`Save`).toBe('Enregistrer');
+    expect(t(compiled)`Save`).toBe('Enregistrer');
+  });
+
   it('honors the locale option', async () => {
     const fr = { [keyOf()`Save`]: [literal('Enregistrer')] };
     const gt = await setup({ locale: 'en', fr });

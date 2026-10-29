@@ -89,6 +89,7 @@ export function initializeState(
       macroExpansionsCount: 0,
       jsxInsertionsCount: 0,
       runtimeTranslateCount: 0,
+      unstableHashInjectionsCount: 0,
     },
   };
 }
