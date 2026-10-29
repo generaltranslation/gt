@@ -4,7 +4,11 @@ import {
 } from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import { GTRuntime } from 'generaltranslation/runtime';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import {
+  libraryDefaultLocale,
+  resolveTranslationSplitting,
+} from 'generaltranslation/internal';
+import type { TranslationSplittingStrategy } from 'generaltranslation/types';
 import type { GTConfig } from '../config/types';
 import {
   getLoadTranslationsType,
@@ -34,6 +38,7 @@ export type I18nConfigParams = Pick<
   | 'runtimeUrl'
   | '_disableDevHotReload'
   | '_tagIds'
+  | 'files'
 >;
 
 type RuntimeConfig = Pick<
@@ -52,6 +57,7 @@ export class I18nConfig extends LocaleConfig {
   protected runtimeConfig: RuntimeConfig;
   private gtServicesEnabled: boolean;
   private logLevel: GeneralTranslationLogLevel;
+  private translationSplitting: TranslationSplittingStrategy;
 
   constructor(params: I18nConfigParams = {}) {
     const gtServicesEnabled = resolveGTServicesEnabled(params);
@@ -66,6 +72,7 @@ export class I18nConfig extends LocaleConfig {
     };
     this.gtServicesEnabled = gtServicesEnabled;
     this.logLevel = getGeneralTranslationLogLevel();
+    this.translationSplitting = resolveTranslationSplitting(params);
   }
 
   getDefaultLocale(): string {
@@ -149,6 +156,14 @@ export class I18nConfig extends LocaleConfig {
       this.runtimeConfig.runtimeUrl !== '' &&
       getRuntimeEnvironment() === 'development'
     );
+  }
+
+  /**
+   * The translation splitting strategy from `files.gt.splitting`
+   * (`'locale'` unless the app opted into `'locale-twins'`).
+   */
+  getTranslationSplitting(): TranslationSplittingStrategy {
+    return this.translationSplitting;
   }
 
   isGTServicesEnabled(): boolean {

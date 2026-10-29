@@ -29,6 +29,8 @@ type LocaleTwinRegistry = {
   locale?: string;
   /** Registered tables, kept by reference. */
   tables: LocaleTwinTable[];
+  /** Runtime diagnostics already reported on this page (each logs once). */
+  reported?: Set<string>;
 };
 
 type GlobalWithLocaleTwins = {
@@ -37,7 +39,8 @@ type GlobalWithLocaleTwins = {
   };
 };
 
-function getRegistry(): LocaleTwinRegistry {
+/** @internal Shared registry bag; not exported from the package. */
+export function getLocaleTwinRegistry(): LocaleTwinRegistry {
   const globalObj = globalThis as unknown as GlobalWithLocaleTwins;
   globalObj.__generaltranslation ??= {};
   globalObj.__generaltranslation.localeTwins ??= { tables: [] };
@@ -67,7 +70,7 @@ export function registerLocaleTwin(value: string): boolean {
     logger.error(createInvalidLocaleTwinMessage(error));
     return false;
   }
-  const registry = getRegistry();
+  const registry = getLocaleTwinRegistry();
   registry.locale ??= table.l;
   registry.tables.push(table);
   return true;
@@ -75,7 +78,7 @@ export function registerLocaleTwin(value: string): boolean {
 
 /** Returns the registered content for `hash`, if any twin provided it. */
 export function getLocaleTwinEntry(hash: string): Content | undefined {
-  for (const table of getRegistry().tables) {
+  for (const table of getLocaleTwinRegistry().tables) {
     if (Object.hasOwn(table.e, hash)) return table.e[hash];
   }
   return undefined;
@@ -83,10 +86,10 @@ export function getLocaleTwinEntry(hash: string): Content | undefined {
 
 /** Returns the locale of the registered twins, if any were registered. */
 export function getLocaleTwinLocale(): string | undefined {
-  return getRegistry().locale;
+  return getLocaleTwinRegistry().locale;
 }
 
 /** Whether at least one locale twin table has been registered. */
 export function hasLocaleTwins(): boolean {
-  return getRegistry().tables.length > 0;
+  return getLocaleTwinRegistry().tables.length > 0;
 }

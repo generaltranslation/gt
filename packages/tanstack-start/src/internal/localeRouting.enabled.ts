@@ -1,4 +1,5 @@
 import type { SharedGTProviderProps } from 'gt-react';
+import { markNavigatingReload } from 'gt-i18n/internal';
 import {
   getLocaleFromPath,
   getPathnameForLocale,
@@ -47,14 +48,17 @@ export function replaceWithLocaleURL(
   if (rewrite) router.update({ rewrite: { ...rewrite } });
 }
 
-/** Switches locale by navigating to its URL instead of reloading this one. */
+/**
+ * Switches locale by navigating to its URL instead of reloading this one. A
+ * document navigation, so locale twins keep it as the reload.
+ */
 export function createLocaleReload(): SharedGTProviderProps['_reload'] {
-  return ({ locale }) => {
+  return markNavigatingReload(({ locale }: { locale: string }) => {
     const destination = new URL(window.location.href);
     destination.pathname = getPathnameForLocale(
       window.location.pathname,
       locale
     );
     window.location.assign(destination.href);
-  };
+  });
 }

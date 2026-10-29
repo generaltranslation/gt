@@ -1,5 +1,9 @@
 import { useCallback } from 'react';
-import { createLookupOptions, interpolateMessage } from 'gt-i18n/internal';
+import {
+  createLookupOptions,
+  interpolateMessage,
+  lookupLocaleTwinEntry,
+} from 'gt-i18n/internal';
 import { useTranslationConditions } from './utils';
 import type { GTFunctionType, GTTranslationOptions } from 'gt-i18n/types';
 import type { StringFormat } from '@generaltranslation/format/types';
@@ -30,6 +34,20 @@ export function useGT(_messages?: Message[]): GTFunctionType {
         options,
         'ICU'
       );
+
+      // Locale twins: stripped code is resolved by hash, source locale included
+      const twinEntry = lookupLocaleTwinEntry<string>(
+        lookupOptions.$locale,
+        lookupOptions
+      );
+      if (twinEntry !== undefined) {
+        return interpolateMessage({
+          source: message,
+          target: twinEntry,
+          options: lookupOptions,
+          sourceLocale: defaultLocale,
+        });
+      }
 
       if (!shouldTranslate) {
         return interpolateMessage({

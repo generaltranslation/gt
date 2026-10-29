@@ -135,7 +135,9 @@ function createRenderTranslatedChildren({
     }
 
     // other
-    if (sourceProps?.children && targetElement?.c) {
+    // Locale twin client builds blank source text, so a child of "" still
+    // takes the translated content.
+    if (sourceProps?.children != null && targetElement?.c) {
       return React.cloneElement(sourceElement, {
         ...sourceProps,
         ...translatedProps,
@@ -146,6 +148,15 @@ function createRenderTranslatedChildren({
           locales,
           enableI18n,
         }) as TaggedChildren,
+      });
+    }
+
+    // childless element with translated html content props (e.g. placeholder)
+    if (sourceProps?.children == null && Object.keys(translatedProps).length) {
+      return React.cloneElement(sourceElement, {
+        ...sourceProps,
+        ...translatedProps,
+        'data-_gt': undefined,
       });
     }
 

@@ -2,6 +2,7 @@ import {
   createLookupOptions,
   getRuntimeEnvironment,
   interpolateMessage,
+  lookupLocaleTwinEntry,
 } from 'gt-i18n/internal';
 import type { GTTranslationOptions } from 'gt-i18n/types';
 import type { LookupOptionsFor } from 'gt-i18n/internal/types';
@@ -62,6 +63,19 @@ export function resolveStringContent(
 ): StringContent {
   const i18nCache = getReactI18nCache();
   const defaultLocale = getI18nConfig().getDefaultLocale();
+
+  // Locale twins: stripped code is resolved by hash, source locale included
+  const twinEntry = lookupLocaleTwinEntry<StringContent>(locale, options);
+  if (twinEntry !== undefined) {
+    const lookupOptions = createLookupOptions(locale, options, 'ICU');
+    return interpolateMessage({
+      source: content,
+      target: twinEntry,
+      options: lookupOptions,
+      sourceLocale: defaultLocale,
+    });
+  }
+
   if (!getShouldTranslate()) {
     return interpolateMessage({
       options,

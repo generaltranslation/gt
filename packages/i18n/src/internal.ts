@@ -62,3 +62,11 @@ export {
   getLocaleTwinLocale,
   hasLocaleTwins,
 } from './locale-twins/registry';
+export {
+  isLocaleTwinsClient,
+  lookupLocaleTwinEntry,
+} from './locale-twins/runtime';
+export {
+  markNavigatingReload,
+  reloadForLocaleSwitch,
+} from './locale-twins/reload';

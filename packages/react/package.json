@@ -46,6 +46,7 @@
   },
   "homepage": "https://generaltranslation.com/",
   "devDependencies": {
+    "@generaltranslation/compiler": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": ">=18.0.0 <20.0.0",
     "@types/react-dom": ">=18.0.0 <20.0.0",

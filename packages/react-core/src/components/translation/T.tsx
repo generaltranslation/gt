@@ -1,5 +1,5 @@
 import { useTranslate } from '../../hooks/external-store';
-import { getI18nConfig } from 'gt-i18n/internal';
+import { getI18nConfig, lookupLocaleTwinEntry } from 'gt-i18n/internal';
 import { useRef, type ReactNode } from 'react';
 import { renderPreparedT } from '../../utils/rendering/renderPipeline';
 import type { TProps } from '../../utils/translation/prepareT.shared';
@@ -70,13 +70,18 @@ function useComputeT({
     return prev.current;
   }
 
+  // Locale twins: stripped source children render through the registered
+  // twin's JSX, source locale included
+  const fromLocaleTwin =
+    lookupLocaleTwinEntry(locale, targetOptions) !== undefined;
+
   const result = _renderPreparedT({
     taggedSourceChildren,
     targetJsxChildren,
     locale,
     defaultLocale,
     enableI18n,
-    shouldTranslate,
+    shouldTranslate: shouldTranslate || fromLocaleTwin,
     hash: targetOptions.$_hash,
   });
 
