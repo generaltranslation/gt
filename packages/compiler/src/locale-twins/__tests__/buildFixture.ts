@@ -115,6 +115,7 @@ export function fixtureConfig(
       alias: {
         'gt-react': path.join(app.dir, 'stubs', 'gt-react.js'),
         '@app/routes': path.join(app.dir, 'src', 'routes.js'),
+        '@app/main': path.join(app.dir, 'src', 'main.js'),
       },
     },
     plugins: [plugin as vite8.PluginOption],
@@ -133,22 +134,40 @@ export async function buildFixture(
   await vite.build(vite.mergeConfig(fixtureConfig(app, plugin), config));
 }
 
+const FIXTURE_CONFIG_FACTORY = '__gtLocaleTwinsFixtureConfig';
+
 /**
  * Builds the client environment, then the server (`ssr`) environment with
- * `src/server.js` as its entry, like TanStack Start. Pass `only: 'ssr'` to
- * skip the client build.
+ * `src/server.js` as its entry, like TanStack Start's `vite build`: Vite loads
+ * the config file once more per environment, so each load creates another
+ * compiler plugin, and the build runs the first one
+ * (`builder.sharedPlugins`). Pass `only: 'ssr'` to skip the client build, and
+ * `clientEntry: 'fake-start'` to start the client from a library module that
+ * imports the app (TanStack Start's client entry) instead of `index.html`.
  */
 export async function buildFixtureApp(
   vite: ViteApi,
   app: FixtureApp,
   options: GTUnpluginOptions = {},
-  { only }: { only?: 'ssr' } = {}
+  { only, clientEntry }: { only?: 'ssr'; clientEntry?: 'fake-start' } = {}
 ): Promise<void> {
-  const plugin = createPlugin(app, options);
-  const builder = await vite.createBuilder(
-    vite.mergeConfig(fixtureConfig(app, plugin), {
+  const clientInput = clientEntry
+    ? path.join(app.dir, 'node_modules', clientEntry, 'client.js')
+    : undefined;
+  const createConfig = (): vite8.InlineConfig => {
+    const { configFile: _, ...config } = fixtureConfig(
+      app,
+      createPlugin(app, options)
+    );
+    return vite.mergeConfig(config, {
+      builder: { sharedPlugins: true },
       environments: {
-        client: { build: { outDir: 'dist/client' } },
+        client: {
+          build: {
+            outDir: 'dist/client',
+            ...(clientInput && { rollupOptions: { input: clientInput } }),
+          },
+        },
         ssr: {
           resolve: { noExternal: true },
           build: {
@@ -157,10 +176,22 @@ export async function buildFixtureApp(
           },
         },
       },
-    } satisfies vite8.InlineConfig)
+    } satisfies vite8.InlineConfig);
+  };
+  const configFile = path.join(app.dir, 'vite.config.mjs');
+  fs.writeFileSync(
+    configFile,
+    `export default globalThis.${FIXTURE_CONFIG_FACTORY}();\n`
   );
-  if (only !== 'ssr') await builder.build(builder.environments.client);
-  await builder.build(builder.environments.ssr);
+  const globals = globalThis as Record<string, unknown>;
+  globals[FIXTURE_CONFIG_FACTORY] = createConfig;
+  try {
+    const builder = await vite.createBuilder({ root: app.dir, configFile });
+    if (only !== 'ssr') await builder.build(builder.environments.client);
+    await builder.build(builder.environments.ssr);
+  } finally {
+    delete globals[FIXTURE_CONFIG_FACTORY];
+  }
 }
 
 export function warnings(app: FixtureApp): string[] {

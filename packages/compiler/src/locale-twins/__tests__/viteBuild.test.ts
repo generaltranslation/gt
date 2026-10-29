@@ -589,6 +589,29 @@ describe.each(VITE_VERSIONS)('$name client and server builds', ({ load }) => {
     expect(server.render().manifest).toEqual(manifest);
   });
 
+  it('keeps library code shared when the client entry is a library module that imports the app', async () => {
+    const vite = await load();
+    const app = newApp();
+    await buildFixtureApp(vite, app, {}, { clientEntry: 'fake-start' });
+
+    const manifest = parseLocaleTwinManifest(
+      app.read(`client/${LOCALE_TWIN_MANIFEST_FILE}`)
+    );
+    const libraryChunks = app
+      .jsFiles()
+      .filter((name) => name.startsWith('client/') && !isTwin(name))
+      .filter((name) => app.read(name).includes('fake-lib library code'));
+    expect(libraryChunks).toHaveLength(1);
+    const vendor = libraryChunks[0];
+    expect(path.posix.basename(vendor)).toMatch(/^vendor-/);
+    expect(manifest.twinned).not.toContain(vendor.replace(/^client\//, ''));
+    // The entry and the library modules that import the app stay with it
+    const vendorCode = app.read(vendor);
+    expect(vendorCode).not.toContain('fake-start client entry');
+    expect(vendorCode).not.toContain('fake-framework imports app code');
+    expect(warnings(app).join('\n')).not.toContain('multiply the JS output');
+  });
+
   it('fails a server build that runs before the client build', async () => {
     const vite = await load();
     const app = newApp();

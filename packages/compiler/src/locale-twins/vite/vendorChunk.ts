@@ -7,7 +7,9 @@
  * A library module that imports app code (for example a framework's client
  * entry importing the router) must stay out of the vendor chunk: both Rolldown
  * groups and Rollup manual chunks pull the dependencies of captured modules
- * into the chunk, which would move translated app modules into it.
+ * into the chunk, which would move translated app modules into it. When that
+ * module is the build's entry (TanStack Start's client entry), the entry and
+ * the whole app would move along, leaving no separate vendor chunk at all.
  */
 import path from 'node:path';
 
@@ -78,19 +80,21 @@ export function findAppImporters(
 
 /**
  * Decides vendor chunk membership for one client build. Call `record` from
- * `buildEnd` (the graph is complete, chunking has not started).
+ * `buildEnd` (the graph is complete, chunking has not started) on the plugin
+ * instance that builds. Until then nothing is vendor: without the graph, a
+ * library module that imports the app cannot be told apart.
  */
 export class VendorChunkSelector {
-  private appImporters = new Set<string>();
+  private graph: { root: string; appImporters: Set<string> } | undefined;
 
-  constructor(private readonly getRoot: () => string) {}
-
-  record(graph: ModuleGraph): void {
-    this.appImporters = findAppImporters(graph, this.getRoot());
+  record(graph: ModuleGraph, root: string): void {
+    this.graph = { root, appImporters: findAppImporters(graph, root) };
   }
 
   isVendor = (id: string): boolean =>
-    moduleKind(id, this.getRoot()) === 'library' && !this.appImporters.has(id);
+    this.graph !== undefined &&
+    moduleKind(id, this.graph.root) === 'library' &&
+    !this.graph.appImporters.has(id);
 }
 
 const CHUNKING_OPTIONS = [
@@ -127,34 +131,26 @@ export function findUserChunking(build: BuildOptionsLike): string | undefined {
 }
 
 /**
- * The environment config that adds the vendor chunk: a Rolldown code
- * splitting group on Vite 8, `manualChunks` on Vite 7 (Rollup).
+ * The output options that add the vendor chunk: a Rolldown code splitting
+ * group on Vite 8, `manualChunks` on Vite 7 (Rollup). They are added in the
+ * `outputOptions` hook, not to the environment config, because the config can
+ * be resolved by other plugin instances than the one that builds (TanStack
+ * Start resolves it once more per environment and builds with the first
+ * instances), and only the building instance sees the module graph.
  */
-export function createVendorChunkConfig(
+export function createVendorChunkOutputOptions(
   isVendor: (id: string) => boolean,
   rolldown: boolean
 ): Record<string, unknown> {
   if (rolldown) {
     return {
-      build: {
-        rolldownOptions: {
-          output: {
-            codeSplitting: {
-              groups: [{ name: VENDOR_CHUNK_NAME, test: isVendor }],
-            },
-          },
-        },
+      codeSplitting: {
+        groups: [{ name: VENDOR_CHUNK_NAME, test: isVendor }],
       },
     };
   }
   return {
-    build: {
-      rollupOptions: {
-        output: {
-          manualChunks: (id: string) =>
-            isVendor(id) ? VENDOR_CHUNK_NAME : undefined,
-        },
-      },
-    },
+    manualChunks: (id: string) =>
+      isVendor(id) ? VENDOR_CHUNK_NAME : undefined,
   };
 }

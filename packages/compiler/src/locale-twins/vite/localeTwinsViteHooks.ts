@@ -2,9 +2,9 @@
  * Vite hooks for the `'locale-twins'` translation splitting strategy. They go
  * in the unplugin `vite:` override, which unplugin merges into the plugin.
  *
- * - `configEnvironment`: adds the default vendor chunk to the client
- *   environment of a build (never over the user's own chunking).
  * - `buildEnd`: records the module graph for the vendor chunk.
+ * - `outputOptions`: adds the default vendor chunk to the client environment
+ *   of a build (never over the user's own chunking).
  * - `writeBundle` (post): in the client environment of a build, generates the
  *   twins and writes them, the manifest and the build report into the outDir,
  *   and rewrites HTML documents (SPA `index.html`) to load their locale's
@@ -42,7 +42,7 @@ import {
   RESOLVED_LOCALE_TWIN_MANIFEST_MODULE_ID,
 } from './manifestModule';
 import {
-  createVendorChunkConfig,
+  createVendorChunkOutputOptions,
   findUserChunking,
   VendorChunkSelector,
   type ModuleGraph,
@@ -99,6 +99,15 @@ export function createLocaleTwinsViteHooks(
   let resolvedConfig: ConfigLike | undefined;
   const pendingWarnings: string[] = [];
   const vendorSelectors = new Map<string, VendorChunkSelector>();
+  /** One selector per environment, shared by `buildEnd` and `outputOptions`. */
+  const vendorSelector = (name: string): VendorChunkSelector => {
+    let selector = vendorSelectors.get(name);
+    if (!selector) {
+      selector = new VendorChunkSelector();
+      vendorSelectors.set(name, selector);
+    }
+    return selector;
+  };
 
   const logger = () => resolvedConfig?.logger ?? console;
   const warn = (message: string): void => {
@@ -124,34 +133,14 @@ export function createLocaleTwinsViteHooks(
     };
   }
 
-  const hooks = {
-    configEnvironment(
-      this: { meta?: object } | undefined,
-      name: string,
-      config: {
-        consumer?: Consumer;
-        build?: Parameters<typeof findUserChunking>[0];
-      },
-      env: { command: 'build' | 'serve' }
-    ) {
-      if (!enabled || !options.localeTwins.vendorChunk) return;
-      if (env.command !== 'build') return;
-      const consumer =
-        config.consumer ?? (name === 'client' ? 'client' : 'server');
-      if (consumer !== 'client') return;
-      const userChunking = findUserChunking(config.build);
-      if (userChunking) {
-        warn(createVendorChunkSkippedDiagnostic(userChunking));
-        return;
-      }
-      const selector = new VendorChunkSelector(
-        () => resolvedConfig?.root ?? process.cwd()
-      );
-      vendorSelectors.set(name, selector);
-      const rolldown = Boolean(this?.meta && 'rolldownVersion' in this.meta);
-      return createVendorChunkConfig(selector.isVendor, rolldown);
-    },
+  /** Whether this hook runs in the client environment of a vendor-chunked build. */
+  function addsVendorChunk(context: HookContext | undefined): boolean {
+    if (!enabled || !options.localeTwins.vendorChunk) return false;
+    const { consumer, config } = describeEnvironment(context);
+    return consumer === 'client' && config.command === 'build';
+  }
 
+  const hooks = {
     configResolved(config: ConfigLike) {
       options.onConfigResolved?.(config);
       resolvedConfig = config;
@@ -164,9 +153,33 @@ export function createLocaleTwinsViteHooks(
 
     buildEnd(this: HookContext & ModuleGraph, error?: Error) {
       options.onBuildEnd?.(this);
-      if (!enabled || error) return;
-      const { name } = describeEnvironment(this);
-      vendorSelectors.get(name)?.record(this);
+      if (!addsVendorChunk(this)) return;
+      if (error) return;
+      const { name, config } = describeEnvironment(this);
+      vendorSelector(name).record(this, config.root);
+    },
+
+    outputOptions(
+      this: (HookContext & { meta?: object }) | undefined,
+      outputOptions: Record<string, unknown>
+    ) {
+      if (!addsVendorChunk(this)) return null;
+      const { name, config } = describeEnvironment(this);
+      const userChunking = findUserChunking(
+        config.build as Parameters<typeof findUserChunking>[0]
+      );
+      if (userChunking) {
+        warn(createVendorChunkSkippedDiagnostic(userChunking));
+        return null;
+      }
+      const rolldown = Boolean(this?.meta && 'rolldownVersion' in this.meta);
+      return {
+        ...outputOptions,
+        ...createVendorChunkOutputOptions(
+          vendorSelector(name).isVendor,
+          rolldown
+        ),
+      };
     },
 
     resolveId(id: string) {
