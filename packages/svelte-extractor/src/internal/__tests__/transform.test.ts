@@ -382,7 +382,7 @@ describe('errors', () => {
     ]);
   });
 
-  it('rejects <style>', () => {
+  it('rejects <style> and <script>', () => {
     expect(errorsFor('<T>Hi <style>.a { color: red; }</style></T>')).toEqual([
       '<style> is not supported inside <T>',
     ]);
@@ -391,6 +391,9 @@ describe('errors', () => {
         '<T>Hi <b><svelte:element this="style">a</svelte:element></b></T>'
       )
     ).toEqual(['<style> is not supported inside <T>']);
+    expect(errorsFor('<T>Hi <script>let a = { b: 1 };</script></T>')).toEqual([
+      '<script> is not supported inside <T>',
+    ]);
   });
 
   it('allows blocks wrapped in <Var>', () => {

@@ -46,6 +46,9 @@ const DEFAULT_VARIABLE_NAMES = {
   relativetime: 'time',
 } as const;
 
+/** Elements whose contents are code rather than text. */
+const RAW_TEXT_ELEMENTS = new Set(['script', 'style']);
+
 /** Svelte nodes that would execute logic the translation cannot represent. */
 const BLOCK_NODE_TYPES = new Set([
   'IfBlock',
@@ -418,11 +421,12 @@ class TranslationBuilder {
     counter: Counter,
     whitespace: FragmentWhitespace
   ): JsxElement | undefined {
-    if (node.type !== 'Component' && getTagName(node) === 'style') {
-      // Its contents are CSS, not translatable text.
+    const tagName = getTagName(node);
+    if (node.type !== 'Component' && RAW_TEXT_ELEMENTS.has(tagName)) {
+      // Their contents are code, not translatable text.
       this.problem(
         node.start,
-        '<style> is not supported inside <T>',
+        `<${tagName}> is not supported inside <T>`,
         'Move it outside <T>'
       );
       return undefined;
@@ -459,7 +463,7 @@ class TranslationBuilder {
       );
     }
 
-    const element: JsxElement = { t: getTagName(node), i: id };
+    const element: JsxElement = { t: tagName, i: id };
     const d = getContentProps(node);
     const enclosing = this.enclosingSnippets();
     const children = this.withLocalSnippets(node.fragment.nodes, () =>
