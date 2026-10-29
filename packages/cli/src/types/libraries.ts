@@ -57,8 +57,10 @@ export function isInlineLibrary(lib: string): lib is InlineLibrary {
 /** Returns the framework-specific label for the shared inline GTJSON file. */
 export function getInlineElementsLabel(
   inlineLibrary?: InlineLibrary
-): 'Vue Elements' | 'React Elements' {
-  return inlineLibrary === Libraries.GT_VUE ? 'Vue Elements' : 'React Elements';
+): 'Vue Elements' | 'Svelte Elements' | 'React Elements' {
+  if (inlineLibrary === Libraries.GT_VUE) return 'Vue Elements';
+  if (inlineLibrary === Libraries.GT_SVELTE) return 'Svelte Elements';
+  return 'React Elements';
 }
 
 /**
