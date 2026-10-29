@@ -4,6 +4,15 @@ on:
   pull_request:
     paths:
       - '.github/workflows/test-apps-e2e-cron.yml'
+      # Locale twins: pull requests that touch the build or runtime run the
+      # twin apps only (see GT_TEST_APPS below); the full matrix stays on cron.
+      - 'packages/compiler/**'
+      - 'packages/core/src/locale-twins/**'
+      - 'packages/i18n/**'
+      - 'packages/react/**'
+      - 'packages/react-core/**'
+      - 'tests/apps/*twins*/**'
+      - 'tests/apps/test-apps-e2e/**'
   schedule:
     # Run daily at 06:00 UTC.
     - cron: '0 6 * * *'
@@ -59,8 +68,21 @@ jobs:
       - name: Install Chromium
         run: pnpm --filter gt-test-apps-e2e test:e2e:install
 
-      - name: Test development apps in Chromium
+      - name: Test apps in Chromium
         run: pnpm --filter gt-test-apps-e2e test:e2e
+        env:
+          # Pull requests run the locale twin apps; schedule and manual runs
+          # run every app.
+          GT_TEST_APPS: ${{ github.event_name == 'pull_request' && 'vite-react-twins,vite-react-twins-server,vite7-react-twins' || '' }}
+
+      - name: Upload locale twins report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: gt-locale-twins-report-${{ github.run_id }}
+          path: .turbo/playwright/locale-twins-report/
+          retention-days: 30
+          if-no-files-found: ignore
 
       - name: Upload Playwright artifacts
         if: failure()

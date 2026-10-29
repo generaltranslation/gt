@@ -28,3 +28,27 @@ The full matrix runs daily at 06:00 UTC through
 Failures upload the Playwright artifacts and notify the libraries pager in
 Slack. Pull requests run the matrix only when this workflow file changes, so
 the scheduled workflow can be tested without adding time to normal CI.
+
+## Locale twins (production builds)
+
+Apps whose `apps.mjs` entry has a `twins` field (`vite-react-twins`,
+`vite-react-twins-server`, `vite7-react-twins`) are production builds with
+`files.gt.splitting: 'locale-twins'`. Their command runs `vite build` and then
+`servers/locale-twins-spa-server.mjs`, which serves `dist/` either as a static
+host (`--mode static`: the browser bootstrap in `index.html` picks the twins)
+or through `gt-react/locale-twins` (`--mode server-helper`). Assets are sent
+as immutable so locale switches can be checked against the HTTP cache.
+
+`e2e/twins.spec.ts` covers spec §9.1–9.4, 9.6, 9.8 and writes the §9.10 report
+(translation bytes per page vs. whole-locale loading, output multiplier) to
+`.turbo/playwright/locale-twins-report/<app>.json`. Expected strings come from
+the app's translation files and build output (`locale-twins/twinOutput.ts`),
+so the spec applies to any twin app that renders a `Locale: <code>` marker, a
+`LocaleSelector`, and a link to its lazy route (`twins.lazyRoute`).
+
+Each twin app also has node-level build tests (`pnpm --filter <app> test`,
+shared suite in `locale-twins/buildSuite.ts`), which run in the normal CI test
+job: placeholders filled, twin sets closed, per-locale isolation at file level,
+and §9.7 (retranslating one string changes only that locale's twin URLs).
+Pull requests that touch the compiler or the React/i18n runtimes run only the
+twin apps in Chromium.
