@@ -16,6 +16,7 @@ import { handleErrors, InvalidLibraryUsageError } from './passes/handleErrors';
 import { initializeState } from './state/utils/initializeState';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
+import { localeTwinsPass } from './passes/localeTwinsPass';
 import { shouldTransformModuleId } from './utils/moduleId';
 
 /**
@@ -270,6 +271,12 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             traverse(ast, injectionPass(state));
           }
 
+          // Pass 4b: Locale twins registration (placeholder + msg $_hash),
+          // gated on the 'locale-twins' splitting strategy and compileTimeHash
+          if (injectionRan && state.settings.splitting === 'locale-twins') {
+            traverse(ast, localeTwinsPass(state));
+          }
+
           // Pass 5: Runtime translate (dev hot reload)
           const devHotReloadActive =
             state.settings.devHotReload.strings ||
@@ -283,7 +290,8 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             !injectionRan &&
             state.statistics.macroExpansionsCount === 0 &&
             state.statistics.jsxInsertionsCount === 0 &&
-            state.statistics.runtimeTranslateCount === 0
+            state.statistics.runtimeTranslateCount === 0 &&
+            state.statistics.localeTwinRegistrationsCount === 0
           ) {
             return null;
           }

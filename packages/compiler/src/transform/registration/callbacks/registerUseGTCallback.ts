@@ -5,6 +5,7 @@ import type { DataFormat } from '@generaltranslation/format/types';
 /**
  * Track gt() function invocations
  * - Adds the translation content to the string collector
+ * - Returns the entry hash
  */
 export function registerUseGTCallback({
   identifier,
@@ -26,7 +27,7 @@ export function registerUseGTCallback({
   requiresReview?: boolean;
   hash?: string;
   format?: string;
-}): void {
+}): string {
   // Calculate hash for the call expression (skip when the call site already carries one)
   hash ??= hashSource({
     source: content,
@@ -35,6 +36,9 @@ export function registerUseGTCallback({
     requiresReview,
     dataFormat: (format || 'ICU') as DataFormat,
   });
+
+  // Debug: record hash → message mapping
+  state.debugManifest?.set(hash, content);
 
   // Add the translation content to the string collector (under identifier mapping to useGT call)
   state.stringCollector.pushTranslationContent(identifier, {
@@ -54,4 +58,5 @@ export function registerUseGTCallback({
   state.stringCollector.setTranslationHash(counterId, {
     hash,
   });
+  return hash;
 }

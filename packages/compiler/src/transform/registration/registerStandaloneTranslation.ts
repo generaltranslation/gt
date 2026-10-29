@@ -4,6 +4,7 @@ import type { DataFormat } from '@generaltranslation/format/types';
 
 /**
  * Track standalone string translation invocations such as t() and msg().
+ * Returns the entry hash.
  */
 export function registerStandaloneTranslation({
   state,
@@ -25,7 +26,7 @@ export function registerStandaloneTranslation({
   hash?: string;
   format?: string;
   injectHash?: boolean;
-}): void {
+}): string {
   hash ??= hashSource({
     source: content,
     ...(context && { context }),
@@ -33,6 +34,9 @@ export function registerStandaloneTranslation({
     ...(requiresReview === true && { requiresReview: true }),
     dataFormat: (format || 'ICU') as DataFormat,
   });
+
+  // Debug: record hash → message mapping
+  state.debugManifest?.set(hash, content);
 
   state.stringCollector.pushRuntimeOnlyContent({
     message: content,
@@ -47,11 +51,12 @@ export function registerStandaloneTranslation({
   // Runtime-only entries, including msg() and t`...`, stop here. Only
   // standalone t() sets injectHash so the injection pass sees a matching slot.
   if (!injectHash) {
-    return;
+    return hash;
   }
 
   const counterId = state.stringCollector.incrementCounter();
   state.stringCollector.setTranslationHash(counterId, {
     hash,
   });
+  return hash;
 }

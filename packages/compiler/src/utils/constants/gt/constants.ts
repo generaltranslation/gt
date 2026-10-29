@@ -41,6 +41,7 @@ export enum GT_OTHER_FUNCTIONS {
   derive = 'derive',
   GtInternalRuntimeTranslateString = 'GtInternalRuntimeTranslateString',
   GtInternalRuntimeTranslateJsx = 'GtInternalRuntimeTranslateJsx',
+  GtInternalRegisterLocaleTwin = 'GtInternalRegisterLocaleTwin',
 }
 
 /**

@@ -190,6 +190,19 @@ export function isGTReactImportSource(
   ).includes(name);
 }
 
+/**
+ * The import source for the locale twins registration call, given a GT import
+ * source the module already uses. gt-i18n exposes it from `gt-i18n/internal`.
+ * Returns undefined for sources without the export (gt-next).
+ */
+export function getLocaleTwinRegistrationImportSource(
+  importSource: string
+): string | undefined {
+  if (isGTReactImportSource(importSource)) return importSource;
+  if (importSource === GT_IMPORT_SOURCES.GT_I18N) return 'gt-i18n/internal';
+  return undefined;
+}
+
 export function getGtReactImportSource(
   legacyGtReactImportSource: boolean
 ): GT_IMPORT_SOURCES.GT_REACT | GT_IMPORT_SOURCES.GT_REACT_BROWSER {

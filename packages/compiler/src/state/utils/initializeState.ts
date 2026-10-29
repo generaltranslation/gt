@@ -9,6 +9,7 @@ import {
 } from '../../config';
 import { DEFAULT_TRANSLATION_SPLITTING } from 'generaltranslation/internal';
 import { StringCollector } from '../StringCollector';
+import { LocaleTwinCollector } from '../LocaleTwinCollector';
 import { ScopeTracker } from '../ScopeTracker';
 import { Logger } from '../Logger';
 import { ErrorTracker } from '../ErrorTracker';
@@ -88,6 +89,7 @@ export function initializeState(
   return {
     settings,
     stringCollector: new StringCollector(),
+    localeTwins: new LocaleTwinCollector(),
     scopeTracker: new ScopeTracker(),
     logger: new Logger(settings.logLevel),
     errorTracker: new ErrorTracker(),
@@ -97,6 +99,7 @@ export function initializeState(
       macroExpansionsCount: 0,
       jsxInsertionsCount: 0,
       runtimeTranslateCount: 0,
+      localeTwinRegistrationsCount: 0,
     },
   };
 }

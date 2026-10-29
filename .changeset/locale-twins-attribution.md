@@ -1,0 +1,7 @@
+---
+'@generaltranslation/compiler': minor
+---
+
+feat: attribute translation entries to modules for locale twins
+
+With `splitting: 'locale-twins'`, the compiler inserts one `GtInternalRegisterLocaleTwin("<placeholder>")` call into each module with attributed entries (`<T>`, `gt()`/`useGT`, `t()`, `msg()`). The placeholder carries the module's sorted, de-duplicated hashes and their source-locale content. The function is imported from the GT import source the module already uses (`gt-i18n` maps to `gt-i18n/internal`), and `msg()` calls get an injected `$_hash`. The default `'locale'` strategy is unchanged. The debug hash manifest now also records string entries.

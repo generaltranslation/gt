@@ -151,7 +151,7 @@ function handleUseGTCallback(
   }
 
   // Track the function call
-  registerUseGTCallback({
+  const hash = registerUseGTCallback({
     identifier,
     state,
     content: useGTCallbackParams.content,
@@ -161,6 +161,12 @@ function handleUseGTCallback(
     requiresReview: useGTCallbackParams.requiresReview,
     hash: useGTCallbackParams.hash,
     format: useGTCallbackParams.format,
+  });
+  state.localeTwins.add({
+    api: 'gt',
+    hash,
+    source: useGTCallbackParams.content,
+    node: callExprPath.node,
   });
 }
 
@@ -290,6 +296,14 @@ function handleReactInvocation(
     context,
     requiresReview,
   });
+  if (children !== undefined) {
+    state.localeTwins.add({
+      api: 'T',
+      hash,
+      source: children,
+      node: callExpr,
+    });
+  }
 }
 
 /**
@@ -313,7 +327,7 @@ function handleStandaloneTranslation(
     return;
   }
 
-  registerStandaloneTranslation({
+  const hash = registerStandaloneTranslation({
     state,
     content: params.content,
     hash: params.hash,
@@ -323,5 +337,11 @@ function handleStandaloneTranslation(
     requiresReview: params.requiresReview,
     format: params.format,
     injectHash,
+  });
+  state.localeTwins.add({
+    api: injectHash ? 't' : 'msg',
+    hash,
+    source: params.content,
+    node: callExprPath.node,
   });
 }
