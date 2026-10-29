@@ -991,9 +991,18 @@ importers:
       '@generaltranslation/format':
         specifier: workspace:*
         version: link:../format
+      '@jridgewell/gen-mapping':
+        specifier: ^0.3.13
+        version: 0.3.13
+      '@jridgewell/trace-mapping':
+        specifier: ^0.3.31
+        version: 0.3.31
       generaltranslation:
         specifier: workspace:*
         version: link:../core
+      magic-string:
+        specifier: ^0.30.21
+        version: 0.30.21
       unplugin:
         specifier: ^2.3.10
         version: 2.3.10

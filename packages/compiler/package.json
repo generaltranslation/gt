@@ -42,7 +42,10 @@
     "@babel/traverse": "^7.23.0",
     "@babel/types": "^7.23.0",
     "@generaltranslation/format": "workspace:*",
+    "@jridgewell/gen-mapping": "^0.3.13",
+    "@jridgewell/trace-mapping": "^0.3.31",
     "generaltranslation": "workspace:*",
+    "magic-string": "^0.30.21",
     "unplugin": "^2.3.10"
   },
   "devDependencies": {
