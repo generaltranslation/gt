@@ -21,6 +21,7 @@ const PACKED_WORKSPACE_DEPENDENCIES = [
   ['@generaltranslation/api', 'packages/api'],
   ['@generaltranslation/compiler', 'packages/compiler'],
   ['@generaltranslation/format', 'packages/format'],
+  ['@generaltranslation/icu', 'packages/icu'],
   ['generaltranslation', 'packages/core'],
   ['@generaltranslation/supported-locales', 'packages/supported-locales'],
   ['gt-react', 'packages/react'],
