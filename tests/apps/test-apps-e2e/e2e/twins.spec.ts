@@ -1,8 +1,9 @@
 /**
  * Locale twins acceptance (spec §9) against a production build served the
- * way users host it. Expected strings come from the app's translation files
- * and the build output, never from this file, so the checks apply to any
- * locale twin SPA registered in apps.mjs with a `twins` field.
+ * way users host it (static SPA, SPA server helper, or TanStack Start server
+ * rendering). Expected strings come from the app's translation files and the
+ * build output, never from this file, so the checks apply to any locale twin
+ * app registered in apps.mjs with a `twins` field.
  */
 import type { Browser, Page } from '@playwright/test';
 import { getApp } from '../apps.mjs';
@@ -83,15 +84,19 @@ type PageVisit = {
   locale: string;
   firstPage: CapturedResponse[];
   lazyRoute: CapturedResponse[];
+  /** Empty when the app has no client-only route. */
+  clientOnlyRoute: CapturedResponse[];
   requests: { url: string; resourceType: string }[];
   firstPageText: string;
   lazyRouteText: string;
+  clientOnlyRouteText: string;
   errors: string[];
 };
 
 /**
  * Opens the first page in a new context, then navigates client-side to the
- * lazy route, capturing every response of each phase.
+ * lazy route (and the client-only route, if any), capturing every response of
+ * each phase.
  */
 async function visitPages(
   browser: Browser,
@@ -146,14 +151,46 @@ async function visitPages(
     )
     .toEqual([]);
   const lazyRouteText = await page.locator('body').innerText();
+
+  // Then the client-only route, if any, so every route's strings arrive.
+  let clientOnlyRoute: CapturedResponse[] = [];
+  let clientOnlyRouteText = '';
+  if (twins!.clientOnlyRoute) {
+    const lazyMark = await capture.mark();
+    await page.locator(`a[href="${twins!.clientOnlyRoute}"]`).first().click();
+    await expect(page).toHaveURL(new RegExp(`${twins!.clientOnlyRoute}$`));
+    await expect
+      .poll(async () => {
+        await capture.settle();
+        const received = capture.responses.slice(lazyMark.responses);
+        return tableHashes(received, locale).hashes.size;
+      })
+      .toBeGreaterThan(0);
+    await page.waitForLoadState('networkidle');
+    await capture.settle();
+    clientOnlyRoute = capture.responses.slice(lazyMark.responses);
+    const hashes = tableHashes(clientOnlyRoute, locale).hashes;
+    await expect
+      .poll(async () =>
+        missingRenderedText(
+          await page.locator('body').innerText(),
+          locale,
+          hashes
+        )
+      )
+      .toEqual([]);
+    clientOnlyRouteText = await page.locator('body').innerText();
+  }
   await context.close();
   return {
     locale,
     firstPage,
     lazyRoute,
+    clientOnlyRoute,
     requests: capture.requests,
     firstPageText,
     lazyRouteText,
+    clientOnlyRouteText,
     errors,
   };
 }
@@ -217,8 +254,9 @@ test('§9.1 selects the locale from the cookie, then Accept-Language / navigator
     }
 
     const html = (await documentResponse!.text()) ?? '';
-    if (twins!.serving === 'server-helper') {
-      // The server picked the locale: static tags, no bootstrap.
+    if (twins!.serving !== 'static') {
+      // The server picked the locale (gt-react/locale-twins, or TanStack
+      // Start's asset transform): static tags, no bootstrap.
       expect(html).toMatch(new RegExp(`<html[^>]*\\blang="${expected}"`));
       expect(html).not.toContain('gt-locale-twins-data');
       const headers = documentResponse!.headers();
@@ -244,15 +282,17 @@ test('§9.2/§9.3/§9.6/§9.8 each locale receives only its strings, per page, w
       browserLocale: 'de-DE',
       cookieLocale: locale,
     });
-    const all = [...visit.firstPage, ...visit.lazyRoute];
+    const all = [
+      ...visit.firstPage,
+      ...visit.lazyRoute,
+      ...visit.clientOnlyRoute,
+    ];
     const first = tableHashes(visit.firstPage, locale);
     const lazy = tableHashes(visit.lazyRoute, locale);
-    expect(first.foreignTables, `${locale}: tables of other locales`).toEqual(
-      []
-    );
-    expect(lazy.foreignTables, `${locale}: tables of other locales`).toEqual(
-      []
-    );
+    expect(
+      tableHashes(all, locale).foreignTables,
+      `${locale}: tables of other locales`
+    ).toEqual([]);
 
     // §9.2 both directions, over every byte received: the locale's strings
     // are there; every other locale's, the source locale included, are not.
@@ -261,12 +301,13 @@ test('§9.2/§9.3/§9.6/§9.8 each locale receives only its strings, per page, w
     ]);
     expect(isolation.missing, `${locale}: own strings`).toEqual([]);
     expect(isolation.foreign, `${locale}: other locales' strings`).toEqual([]);
+    const renderedText = [
+      visit.firstPageText,
+      visit.lazyRouteText,
+      visit.clientOnlyRouteText,
+    ].join('\n');
     expect(
-      checkIsolation(
-        `${visit.firstPageText}\n${visit.lazyRouteText}`,
-        locale,
-        build.segments
-      ).foreign,
+      checkIsolation(renderedText, locale, build.segments).foreign,
       `${locale}: rendered text`
     ).toEqual([]);
 
@@ -302,10 +343,26 @@ test('§9.2/§9.3/§9.6/§9.8 each locale receives only its strings, per page, w
       (response) => response.resourceType === 'document'
     );
     expect(documents).toHaveLength(1);
-    expect(
-      checkIsolation(documents[0].text, '', build.segments).foreign,
-      `${locale}: strings in the document`
-    ).toEqual([]);
+    if (twins!.serving === 'tanstack') {
+      // Server-rendered: the document shows the page in its locale, and holds
+      // no other entry (a snapshot would carry the whole locale).
+      expect(
+        checkIsolation(documents[0].text, locale, build.segments).foreign,
+        `${locale}: other locales' strings in the document`
+      ).toEqual([]);
+      const offPage = [...build.attributed]
+        .filter((hash) => !first.hashes.has(hash))
+        .flatMap((hash) => build.segments[locale][hash])
+        .filter((segment) => documents[0].text.includes(segment));
+      expect(offPage, `${locale}: off-page strings in the document`).toEqual(
+        []
+      );
+    } else {
+      expect(
+        checkIsolation(documents[0].text, '', build.segments).foreign,
+        `${locale}: strings in the document`
+      ).toEqual([]);
+    }
     const origin = new URL(baseURL!).origin;
     const translationRequests = visit.requests
       .map(({ url }) => url)
@@ -323,12 +380,13 @@ test('§9.2/§9.3/§9.6/§9.8 each locale receives only its strings, per page, w
     expect(unfilled, `${locale}: unfilled placeholders`).toEqual([]);
 
     // Unattributed control: rendered from the source text it keeps in code.
-    const rendered = `${visit.firstPageText}\n${visit.lazyRouteText}`;
     for (const hash of build.unattributed) {
       for (const segment of textSegments(
         build.translations[defaultLocale][hash]
       )) {
-        expect(rendered, `${locale}: unattributed ${hash}`).toContain(segment);
+        expect(renderedText, `${locale}: unattributed ${hash}`).toContain(
+          segment
+        );
       }
     }
     expect(visit.errors, locale).toEqual([]);
@@ -388,6 +446,148 @@ test('§9.4 switching reloads into the new locale’s twins; shared files come f
   const rendered = await page.locator('body').innerText();
   expect(checkIsolation(rendered, to, build.segments).foreign).toEqual([]);
   await cache.session.detach();
+});
+
+/** Waits until TanStack Start has hydrated the server-rendered document. */
+async function waitForHydration(page: Page) {
+  await page.waitForFunction(
+    () =>
+      !('$_TSR' in globalThis) ||
+      (globalThis as { $_TSR?: { hydrated?: boolean } }).$_TSR?.hydrated ===
+        true
+  );
+}
+
+/** The page's text as the server rendered it (no JavaScript runs). */
+async function serverRenderedText(
+  browser: Browser,
+  baseURL: string,
+  path: string,
+  options: ContextOptions
+): Promise<{ text: string; lang: string | null }> {
+  const context = await newLocaleContext(browser, build, baseURL, options, {
+    javaScriptEnabled: false,
+  });
+  const page = await context.newPage();
+  await page.goto(path);
+  const result = {
+    text: await page.locator('body').innerText(),
+    lang: await page.locator('html').getAttribute('lang'),
+  };
+  await context.close();
+  return result;
+}
+
+test('§9.5 the server renders each locale and the page hydrates from its twins without errors', async ({
+  browser,
+  baseURL,
+}) => {
+  test.skip(twins!.serving !== 'tanstack', 'no server rendering');
+  for (const locale of build.manifest.locales) {
+    const options = { browserLocale: 'de-DE', cookieLocale: locale };
+    const server = await serverRenderedText(browser, baseURL!, '/', options);
+    expect(server.lang, locale).toBe(locale);
+
+    const context = await newLocaleContext(browser, build, baseURL!, options);
+    const page = await context.newPage();
+    const errors = collectErrors(page);
+    const capture = new ResponseCapture(page);
+    await page.goto('/');
+    await waitForHydration(page);
+    await page.waitForLoadState('networkidle');
+    await capture.settle();
+    const hydrated = await page.locator('body').innerText();
+
+    // The server HTML is already localized: it shows every entry of the
+    // page's twins, in this locale, and the browser renders the same text.
+    const pageHashes = tableHashes(capture.responses, locale).hashes;
+    expect(pageHashes.size, locale).toBeGreaterThan(0);
+    expect(
+      missingRenderedText(server.text, locale, pageHashes),
+      `${locale}: server-rendered text`
+    ).toEqual([]);
+    expect(
+      checkIsolation(server.text, locale, build.segments).foreign,
+      `${locale}: other locales in the server-rendered text`
+    ).toEqual([]);
+    expect(hydrated, `${locale}: hydrated text`).toBe(server.text);
+    expect(errors, `${locale}: hydration errors`).toEqual([]);
+    await context.close();
+  }
+});
+
+test('§9.5 control: twins of another locale fail hydration', async ({
+  browser,
+  baseURL,
+}) => {
+  test.skip(!twins!.mismatchControlParam, 'the app has no mismatch control');
+  const [rendered, served] = build.manifest.locales.filter(
+    (locale) => locale !== build.manifest.defaultLocale
+  );
+  const context = await newLocaleContext(browser, build, baseURL!, {
+    browserLocale: 'de-DE',
+    cookieLocale: rendered,
+  });
+  const page = await context.newPage();
+  const errors = collectErrors(page);
+  const capture = new ResponseCapture(page);
+  await page.goto(`/?${twins!.mismatchControlParam}=${served}`);
+  await expect(localeMarker(page, rendered)).toBeVisible();
+  await page.waitForLoadState('networkidle');
+  await capture.settle();
+
+  // The control works as intended: the server rendered one locale while
+  // the browser loaded the other locale's twins.
+  expect(unexpectedScripts(build, served, capture.responses)).toEqual([]);
+  await expect
+    .poll(() => errors.filter((error) => /#418|hydrat/i.test(error)))
+    .not.toEqual([]);
+  await context.close();
+});
+
+test('§9.5 a route the server does not render renders from its twins in the browser', async ({
+  browser,
+  baseURL,
+}) => {
+  const route = twins!.clientOnlyRoute;
+  test.skip(!route, 'the app has no client-only route');
+  for (const locale of build.manifest.locales) {
+    const options = { browserLocale: 'de-DE', cookieLocale: locale };
+    const server = await serverRenderedText(browser, baseURL!, route!, options);
+
+    const context = await newLocaleContext(browser, build, baseURL!, options);
+    const page = await context.newPage();
+    const errors = collectErrors(page);
+    const capture = new ResponseCapture(page);
+    await page.goto(route!);
+    await expect(localeMarker(page, locale)).toBeVisible();
+    await page.waitForLoadState('networkidle');
+    await capture.settle();
+    const hashes = tableHashes(capture.responses, locale).hashes;
+    await expect
+      .poll(async () =>
+        missingRenderedText(
+          await page.locator('body').innerText(),
+          locale,
+          hashes
+        )
+      )
+      .toEqual([]);
+
+    // The route's own entries are absent from the server HTML and rendered
+    // by the browser from this locale's twins.
+    const clientRendered = [...hashes].filter((hash) => {
+      const segments = build.segments[locale][hash];
+      return (
+        segments.length > 0 &&
+        segments.every((segment) => !server.text.includes(segment))
+      );
+    });
+    expect(clientRendered.length, locale).toBeGreaterThan(0);
+    expect(unexpectedScripts(build, locale, capture.responses)).toEqual([]);
+    expect(errors, locale).toEqual([]);
+    await context.close();
+  }
 });
 
 test('§9.10 report: translation bytes per page vs whole-locale loading', async ({

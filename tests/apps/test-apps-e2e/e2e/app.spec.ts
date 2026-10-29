@@ -11,7 +11,10 @@ test(`${appName} renders local translations and switches locales`, async ({
   request,
   browser,
 }) => {
-  test.skip(app.kind === 'react-twins', 'covered by twins.spec.ts');
+  test.skip(
+    app.kind === 'react-twins' || app.kind === 'tanstack-twins',
+    'covered by twins.spec.ts'
+  );
   switch (app.kind) {
     case 'react':
       await testReactApp(page);

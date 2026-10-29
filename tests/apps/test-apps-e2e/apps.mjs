@@ -142,7 +142,8 @@ export const apps = Object.freeze({
     readyPath: '/',
   },
   // Locale twins (files.gt.splitting: 'locale-twins'): production builds,
-  // tested by e2e/twins.spec.ts. See servers/locale-twins-spa-server.mjs.
+  // tested by e2e/twins.spec.ts. See servers/locale-twins-spa-server.mjs and
+  // servers/locale-twins-tanstack-server.mjs.
   'vite-react-twins': {
     packageName: 'gt-test-vite-react-twins',
     entryPackage: 'gt-react',
@@ -189,6 +190,24 @@ export const apps = Object.freeze({
       translationsDir: 'src/_gt',
       serving: 'static',
       lazyRoute: '/harbor-guide',
+    },
+  },
+  'tanstack-start-twins': {
+    packageName: 'gt-test-tanstack-start-twins',
+    entryPackage: 'gt-tanstack-start',
+    kind: 'tanstack-twins',
+    baseURL: 'http://127.0.0.1:4183',
+    command:
+      'pnpm --filter gt-test-tanstack-start-twins build && node tests/apps/test-apps-e2e/servers/locale-twins-tanstack-server.mjs --app tests/apps/tanstack-start-twins --port 4183 --mismatch-control',
+    readyPath: '/',
+    twins: {
+      appDir: 'tests/apps/tanstack-start-twins',
+      clientDir: 'dist/client',
+      translationsDir: 'src/_gt',
+      serving: 'tanstack',
+      lazyRoute: '/harbor-guide',
+      clientOnlyRoute: '/signal-log',
+      mismatchControlParam: '__gt_twin_locale',
     },
   },
   'gt-node-express': {

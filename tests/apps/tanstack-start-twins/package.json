@@ -1,0 +1,33 @@
+{
+  "name": "gt-test-tanstack-start-twins",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev --port 5183 --strictPort",
+    "build": "vite build",
+    "preview": "vite preview --port 4183 --strictPort",
+    "generate": "gt --skip-version-check generate --config gt.config.json && oxfmt src/_gt",
+    "test": "vitest run",
+    "lint": "oxlint --config ../../../examples/.oxlintrc.react.json .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tanstack/react-router": "^1.170.15",
+    "@tanstack/react-start": "^1.168.25",
+    "gt-tanstack-start": "workspace:*",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@generaltranslation/compiler": "workspace:*",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.0.2",
+    "gt": "workspace:*",
+    "typescript": "^5",
+    "vite": "^8.0.16",
+    "vitest": "catalog:"
+  }
+}

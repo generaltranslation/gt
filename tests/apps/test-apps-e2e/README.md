@@ -39,6 +39,15 @@ host (`--mode static`: the browser bootstrap in `index.html` picks the twins)
 or through `gt-react/locale-twins` (`--mode server-helper`). Assets are sent
 as immutable so locale switches can be checked against the HTTP cache.
 
+`tanstack-start-twins` is the TanStack Start twin app. Its command builds the
+app and starts `servers/locale-twins-tanstack-server.mjs`, which serves
+`dist/client` (immutable `/assets/*`) and sends every other request to the
+built server entry (`createLocaleTwinAssets`, `gtMiddleware`). It adds the
+§9.5 checks: localized server HTML that hydrates without errors, a mismatch
+control (`--mismatch-control` enables `?__gt_twin_locale=<locale>`, which
+serves another locale's twins and must fail hydration), and an `ssr: false`
+route rendered from its twins (`twins.clientOnlyRoute`).
+
 `e2e/twins.spec.ts` covers spec §9.1–9.4, 9.6, 9.8 and writes the §9.10 report
 (translation bytes per page vs. whole-locale loading, output multiplier) to
 `.turbo/playwright/locale-twins-report/<app>.json`. Expected strings come from

@@ -1,0 +1,11 @@
+{
+  "defaultLocale": "en",
+  "locales": ["fr", "es", "zh", "ja"],
+  "files": {
+    "gt": {
+      "output": "src/_gt/[locale].json",
+      "splitting": "locale-twins"
+    }
+  },
+  "src": ["src/**/*.tsx"]
+}

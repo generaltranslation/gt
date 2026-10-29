@@ -11,6 +11,7 @@ on:
       - 'packages/i18n/**'
       - 'packages/react/**'
       - 'packages/react-core/**'
+      - 'packages/tanstack-start/**'
       - 'tests/apps/*twins*/**'
       - 'tests/apps/test-apps-e2e/**'
   schedule:
@@ -73,7 +74,7 @@ jobs:
         env:
           # Pull requests run the locale twin apps; schedule and manual runs
           # run every app.
-          GT_TEST_APPS: ${{ github.event_name == 'pull_request' && 'vite-react-twins,vite-react-twins-server,vite7-react-twins' || '' }}
+          GT_TEST_APPS: ${{ github.event_name == 'pull_request' && 'vite-react-twins,vite-react-twins-server,vite7-react-twins,tanstack-start-twins' || '' }}
 
       - name: Upload locale twins report
         if: always()

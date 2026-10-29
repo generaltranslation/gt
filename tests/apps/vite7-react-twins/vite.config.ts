@@ -3,14 +3,7 @@ import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
 import { vite as gtCompiler } from '@generaltranslation/compiler';
 import { defineConfig } from 'vite';
-import gtConfigJson from './gt.config.json' with { type: 'json' };
-
-// JSON imports widen `files.gt.splitting` to `string`; cast until the SDK
-// types accept an imported gt.config.json as is (ticket T15).
-type GtConfig = NonNullable<Parameters<typeof gtCompiler>[0]>['gtConfig'] & {
-  files: { gt: { output: string } };
-};
-const gtConfig = gtConfigJson as GtConfig;
+import gtConfig from './gt.config.json' with { type: 'json' };
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 

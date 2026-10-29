@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { defaultLocaleCookieName } from 'gt-i18n/internal/cookies';
 import type {
   Browser,
   BrowserContext,
@@ -32,10 +33,20 @@ export type TwinAppConfig = {
   clientDir: string;
   /** Directory with `[locale].json`, relative to the app. */
   translationsDir: string;
-  /** How documents are served. */
-  serving: 'static' | 'server-helper';
+  /**
+   * How documents are served: a static document with the browser bootstrap,
+   * `gt-react/locale-twins` on a server, or TanStack Start server rendering.
+   */
+  serving: 'static' | 'server-helper' | 'tanstack';
   /** A client-side route whose component is lazy (its own chunk). */
   lazyRoute: string;
+  /** A route the server never renders (TanStack Start `ssr: false`). */
+  clientOnlyRoute?: string;
+  /**
+   * Query parameter of the app's test-only hydration mismatch control: it
+   * serves that locale's twins while the server renders the request locale.
+   */
+  mismatchControlParam?: string;
 };
 
 /** What the tests know about a build, read from its output on disk. */
@@ -50,7 +61,7 @@ export type TwinBuild = {
   unattributed: string[];
   /** Per locale and hash: segments that identify that locale. */
   segments: Record<string, Record<string, string[]>>;
-  /** Locale cookie name the build wrote into the document. */
+  /** Locale cookie name the app reads. */
   localeCookieName: string;
 };
 
@@ -63,9 +74,6 @@ export function readTwinBuild(config: TwinAppConfig): TwinBuild {
     manifest.locales
   );
   const attributed = attributedHashes(clientDir, manifest);
-  const html = fs.readFileSync(path.join(clientDir, 'index.html'), 'utf8');
-  const cookie = /"localeCookieName":"([^"]+)"/.exec(html);
-  if (!cookie) throw new Error('The built document names no locale cookie');
   return {
     clientDir,
     manifest,
@@ -76,8 +84,21 @@ export function readTwinBuild(config: TwinAppConfig): TwinBuild {
       (hash) => !attributed.has(hash)
     ),
     segments: distinctiveSegments(translations, attributed),
-    localeCookieName: cookie[1],
+    localeCookieName: readLocaleCookieName(clientDir),
   };
+}
+
+/**
+ * The cookie name a static SPA document carries (the build writes it into the
+ * bootstrap data); server-rendered apps use GT's canonical cookie name.
+ */
+function readLocaleCookieName(clientDir: string): string {
+  const document = path.join(clientDir, 'index.html');
+  if (!fs.existsSync(document)) return defaultLocaleCookieName;
+  const html = fs.readFileSync(document, 'utf8');
+  const cookie = /"localeCookieName":"([^"]+)"/.exec(html);
+  if (!cookie) throw new Error('The built document names no locale cookie');
+  return cookie[1];
 }
 
 /** Twin and shared file names (outDir-relative) and helpers to classify URLs. */
@@ -200,9 +221,14 @@ export async function newLocaleContext(
   browser: Browser,
   build: TwinBuild,
   baseURL: string,
-  { browserLocale, cookieLocale }: ContextOptions
+  { browserLocale, cookieLocale }: ContextOptions,
+  { javaScriptEnabled = true }: { javaScriptEnabled?: boolean } = {}
 ): Promise<BrowserContext> {
-  const context = await browser.newContext({ baseURL, locale: browserLocale });
+  const context = await browser.newContext({
+    baseURL,
+    locale: browserLocale,
+    javaScriptEnabled,
+  });
   if (cookieLocale) {
     await context.addCookies([
       { name: build.localeCookieName, value: cookieLocale, url: baseURL },
