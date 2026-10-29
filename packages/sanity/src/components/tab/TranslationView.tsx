@@ -5,7 +5,7 @@
  */
 
 import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
-import { Stack, Text, Card, Button, Grid, Flex, Switch } from '@sanity/ui';
+import { Stack, Text, Card, Button, Flex, Switch } from '@sanity/ui';
 import { Tooltip } from '@sanity/ui/tooltip';
 import { useToast } from '@sanity/ui/toast';
 import { pluginConfig } from '../../adapter/core';
@@ -15,7 +15,7 @@ import { version as PACKAGE_VERSION } from '../../../package.json';
 import { useTranslations } from '../TranslationsProvider';
 import { LanguageStatus } from '../shared/LanguageStatus';
 import { resolveLanguageStatusState } from '../../utils/languageStatusState';
-import { LocaleCheckbox } from '../shared/LocaleCheckbox';
+import { LocaleSelector } from '../shared/LocaleSelector';
 import { DownloadIcon } from '@sanity/icons/Download';
 import { LinkIcon } from '@sanity/icons/Link';
 import { PublishIcon } from '@sanity/icons/Publish';
@@ -42,7 +42,6 @@ export const TranslationView = () => {
     handleRefreshAll,
     isRefreshing,
     importedTranslations,
-    setLocales,
     handlePatchDocumentReferences,
     handlePublishAllTranslations,
     autoRefresh,
@@ -223,36 +222,6 @@ export const TranslationView = () => {
     handleImportTranslations({ autoOnly: true });
   }, [handleImportTranslations]);
 
-  // Locale toggle functionality
-  const toggleLocale = useCallback(
-    (localeId: string, shouldEnable: boolean) => {
-      const updatedLocales = locales.map((locale) =>
-        locale.localeId === localeId
-          ? { ...locale, enabled: shouldEnable }
-          : locale
-      );
-      setLocales(updatedLocales);
-    },
-    [locales, setLocales]
-  );
-
-  const toggleAllLocales = useCallback(() => {
-    const sourceLocale = pluginConfig.getSourceLocale();
-    const nonSourceLocales = locales.filter(
-      (locale) => locale.localeId !== sourceLocale
-    );
-    const allEnabled = nonSourceLocales.every(
-      (locale) => locale.enabled === true || locale.enabled === undefined
-    );
-
-    const updatedLocales = locales.map((locale) =>
-      locale.localeId === sourceLocale
-        ? locale // Don't change source locale
-        : { ...locale, enabled: !allEnabled }
-    );
-    setLocales(updatedLocales);
-  }, [locales, setLocales]);
-
   // Show message if we're not on a source language document
   if (!shouldShowTranslationComponents) {
     return (
@@ -273,40 +242,7 @@ export const TranslationView = () => {
           Translate
         </Text>
 
-        {/* Locale Selection */}
-        <Stack gap={3}>
-          <Flex align='center' justify='space-between'>
-            <Text weight='semibold' size={1}>
-              {availableLocales.length === 1
-                ? 'Select locale'
-                : 'Select locales'}
-            </Text>
-            <Button
-              fontSize={1}
-              padding={2}
-              mode='ghost'
-              text='Toggle All'
-              onClick={toggleAllLocales}
-            />
-          </Flex>
-
-          <Grid gridTemplateColumns={[1, 1, 2, 3]} gap={1}>
-            {locales
-              .filter(
-                (locale) => locale.localeId !== pluginConfig.getSourceLocale()
-              )
-              .map((locale) => (
-                <LocaleCheckbox
-                  key={locale.localeId}
-                  locale={locale}
-                  toggle={toggleLocale}
-                  checked={
-                    locale.enabled === true || locale.enabled === undefined
-                  }
-                />
-              ))}
-          </Grid>
-        </Stack>
+        <LocaleSelector />
 
         <Button
           onClick={() => {
