@@ -44,13 +44,13 @@ as immutable so locale switches can be checked against the HTTP cache.
 `tanstack-start-twins` is the TanStack Start twin app. Its command builds the
 app and starts `servers/locale-twins-tanstack-server.mjs`, which serves
 `dist/client` (immutable `/assets/*`) and sends every other request to the
-built server entry (`createLocaleTwinAssets`, `gtMiddleware`). It adds the
+built server entry (`createLocaleTwinAssets`). It adds the
 §9.5 checks: localized server HTML that hydrates without errors, a mismatch
 control (`--mismatch-control` enables `?__gt_twin_locale=<locale>`, which
 serves another locale's twins and must fail hydration), and an `ssr: false`
 route rendered from its twins (`twins.clientOnlyRoute`).
 
-`e2e/twins.spec.ts` covers spec §9.1–9.4, 9.6, 9.8 and writes the §9.10 report
+`e2e/twins.spec.ts` covers spec §9.1–9.6 and 9.8 and writes the §9.10 report
 (translation bytes per page vs. whole-locale loading, output multiplier) to
 `.turbo/playwright/locale-twins-report/<app>.json`. Expected strings come from
 the app's translation files and build output (`locale-twins/twinOutput.ts`),
@@ -68,6 +68,6 @@ Run the twin apps locally after building the packages they use (each command
 runs `vite build` first, so the build must succeed):
 
 ```bash
-pnpm turbo run build --filter='gt-test-vite-react-twins^...' --filter='gt-test-vite7-react-twins^...'
-GT_TEST_APPS=vite-react-twins,vite-react-twins-server,vite7-react-twins pnpm --filter gt-test-apps-e2e test:e2e
+pnpm turbo run build --filter='gt-test-vite-react-twins^...' --filter='gt-test-vite7-react-twins^...' --filter='gt-test-tanstack-start-twins^...'
+GT_TEST_APPS=vite-react-twins,vite-react-twins-server,vite7-react-twins,tanstack-start-twins pnpm --filter gt-test-apps-e2e test:e2e
 ```
