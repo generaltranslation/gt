@@ -1356,6 +1356,9 @@ importers:
       '@typescript-eslint/utils':
         specifier: ^8.50.1
         version: 8.50.1(eslint@9.36.0(jiti@2.7.0))(typescript@5.9.3)
+      generaltranslation:
+        specifier: workspace:*
+        version: link:../core
     devDependencies:
       '@types/eslint':
         specifier: ^8.56.0
