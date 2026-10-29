@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type * as vite8 from 'vite';
 import {
   encodeLocaleTwinPlaceholder,
@@ -24,7 +24,9 @@ import {
   type FixtureApp,
 } from './buildFixture';
 
-/** Hash of the fixture's `msg('Routes label')` (absent from es.json). */
+/** Hashes of the fixture's msg() entries (es.json has no "Routes label"). */
+const WELCOME_HOME_HASH = 'eb5953dcba9ac3b5';
+const ABOUT_US_HASH = '9564e3123aec3de1';
 const ROUTES_LABEL_HASH = '482c32cc679e95bd';
 
 const apps: FixtureApp[] = [];
@@ -55,6 +57,20 @@ function chunkContaining(app: FixtureApp, text: string): string {
   return matches[0];
 }
 
+/** The original chunk whose placeholder carries `hash` (source text is stripped). */
+function chunkWithEntry(app: FixtureApp, hash: string): string {
+  const matches = app
+    .jsFiles()
+    .filter((name) => !isTwin(name))
+    .filter((name) =>
+      findLocaleTwinPlaceholders(app.read(name)).some((match) =>
+        match.hashes.includes(hash)
+      )
+    );
+  expect(matches, `exactly one chunk registers ${hash}`).toHaveLength(1);
+  return matches[0];
+}
+
 describe.each(VITE_VERSIONS)('$name client build', ({ load }) => {
   it('writes a twin per locale for every twinned chunk and the manifest at the outDir root', async () => {
     const vite = await load();
@@ -67,8 +83,8 @@ describe.each(VITE_VERSIONS)('$name client build', ({ load }) => {
     expect(manifest.defaultLocale).toBe('en');
     expect(manifest.locales).toEqual(['en', 'fr', 'es']);
 
-    const entry = chunkContaining(app, 'Welcome home');
-    const about = chunkContaining(app, 'About us');
+    const entry = chunkWithEntry(app, WELCOME_HOME_HASH);
+    const about = chunkWithEntry(app, ABOUT_US_HASH);
     expect(manifest.entries).toEqual([entry]);
     expect(manifest.twinned).toEqual(expect.arrayContaining([entry, about]));
 
@@ -86,6 +102,9 @@ describe.each(VITE_VERSIONS)('$name client build', ({ load }) => {
     expect(app.read(manifest.twins.fr[about])).toContain('À propos de nous');
     expect(app.read(manifest.twins.es[about])).toContain('Sobre nosotros');
     expect(app.read(manifest.twins.en[about])).toContain('About us');
+    // Client code carries source text only in the source-locale twin
+    expect(app.read(about)).not.toContain('About us');
+    expect(app.read(manifest.twins.fr[about])).not.toContain('About us');
   });
 
   it('keeps library code in a shared vendor chunk, except library modules that import the app', async () => {
@@ -222,9 +241,9 @@ describe.each(VITE_VERSIONS)('$name client build', ({ load }) => {
     const manifest = parseLocaleTwinManifest(
       app.read(LOCALE_TWIN_MANIFEST_FILE)
     );
-    const about = chunkContaining(app, 'About us');
+    const about = chunkWithEntry(app, ABOUT_US_HASH);
     expect(app.read(manifest.twins.es[about])).toContain(
-      '{\\"l\\":\\"es\\",\\"e\\":{\\"9564e3123aec3de1\\":\\"About us\\"}}'
+      `{\\"l\\":\\"es\\",\\"e\\":{\\"${ABOUT_US_HASH}\\":\\"About us\\"}}`
     );
     expect(warnings(app)).toEqual(
       expect.arrayContaining([
@@ -256,6 +275,24 @@ describe.each(VITE_VERSIONS)('$name client build', ({ load }) => {
     await expect(
       buildFixture(vite, app, {}, { plugins: [leak] })
     ).rejects.toThrow(/unfilled locale twin placeholders[\s\S]*leak\.json/);
+  });
+
+  it('reports unattributed entries once per client build', async () => {
+    const vite = await load();
+    const app = newApp();
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      await buildFixture(vite, app);
+      const unattributed = consoleWarn.mock.calls
+        .map(([message]) => String(message))
+        .filter((message) => message.includes('footer.js'));
+      expect(unattributed).toHaveLength(1);
+      expect(unattributed[0]).toContain(
+        'msg(): has a custom hash that is not a compile-time hash'
+      );
+    } finally {
+      consoleWarn.mockRestore();
+    }
   });
 
   it('warns that nothing is attributed when compileTimeHash is off', async () => {
