@@ -16,6 +16,7 @@ import { handleErrors, InvalidLibraryUsageError } from './passes/handleErrors';
 import { initializeState } from './state/utils/initializeState';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
+import { shouldTransformModuleId } from './utils/moduleId';
 
 /**
  * Architecture:
@@ -215,13 +216,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
     return {
       name: '@generaltranslation/GT_PLUGIN',
       transformInclude(id: string) {
-        // Only transform TSX and JSX files
-        return (
-          id.endsWith('.tsx') ||
-          id.endsWith('.jsx') ||
-          id.endsWith('.ts') ||
-          id.endsWith('.js')
-        );
+        return shouldTransformModuleId(id);
       },
       transform(code: string, id: string) {
         // Initialize processing state
