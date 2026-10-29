@@ -13,6 +13,7 @@ import type { MdxJsxFlowElement, MdxJsxTextElement } from 'mdast-util-mdx-jsx';
 import { escapeHtmlInTextNodes, normalizeCJKCharacters } from 'gt-remark';
 import { parse as parseBabel } from '@babel/parser';
 import { parseMdxForRoundTrip, restoreAnchorIds } from './mdxAnchorSyntax.js';
+import { batchProcess, FILE_IO_CONCURRENCY } from './batchProcess.js';
 
 const { isMatch } = micromatch;
 
@@ -247,9 +248,6 @@ export default async function localizeStaticUrls(
     settings.defaultLocale
   );
 
-  // Process all file types at once with a single call
-  const processPromises = [];
-
   // First, process default locale files (from source files)
   // This is needed because they might not be in the fileMapping if they're not being translated
   // Only process default locale if it's in the target locales filter
@@ -269,8 +267,9 @@ export default async function localizeStaticUrls(
     }
 
     if (defaultLocaleFiles.length > 0) {
-      const defaultPromise = Promise.all(
-        defaultLocaleFiles.map(async (filePath: string) => {
+      await batchProcess(
+        defaultLocaleFiles,
+        async (filePath) => {
           // Check if file exists before processing
           if (!fs.existsSync(filePath)) {
             return;
@@ -293,54 +292,55 @@ export default async function localizeStaticUrls(
           if (result.hasChanges) {
             await fs.promises.writeFile(filePath, result.content);
           }
-        })
+        },
+        FILE_IO_CONCURRENCY
       );
-      processPromises.push(defaultPromise);
     }
   }
 
-  // Then process all other locales from fileMapping
-  const mappingPromises = Object.entries(fileMapping)
-    .filter(([locale]) => locales.includes(locale)) // Filter by target locales
-    .map(async ([locale, filesMap]) => {
-      // Get all files that are md or mdx
-      const targetFiles = Object.values(filesMap).filter(
-        (p) =>
-          PAGE_EXTENSIONS.some((ext) => p.endsWith(ext)) &&
-          (!includeFiles || includeFiles.has(p))
-      );
+  // Then process all other locales from fileMapping, one locale at a time so
+  // the concurrency bound covers the whole pass
+  const targetMappings = Object.entries(fileMapping).filter(([locale]) =>
+    locales.includes(locale)
+  );
+  for (const [locale, filesMap] of targetMappings) {
+    // Get all files that are md or mdx
+    const targetFiles = Object.values(filesMap).filter(
+      (p) =>
+        PAGE_EXTENSIONS.some((ext) => p.endsWith(ext)) &&
+        (!includeFiles || includeFiles.has(p))
+    );
 
-      // Replace the placeholder path with the target path
-      await Promise.all(
-        targetFiles.map(async (filePath) => {
-          // Check if file exists before processing
-          if (!fs.existsSync(filePath)) {
-            return;
-          }
-          // Get file content
-          const fileContent = await fs.promises.readFile(filePath, 'utf8');
-          // Localize the file (handles both URLs and hrefs in single AST pass)
-          const result = localizeStaticUrlsForFile(
-            fileContent,
-            settings.defaultLocale,
-            locale,
-            settings.options?.experimentalHideDefaultLocale || false,
-            settings.options?.docsUrlPattern,
-            settings.options?.excludeStaticUrls,
-            settings.options?.baseDomain,
-            skipUntranslatedPages ? filesMap : undefined,
-            urlAttributes
-          );
-          // Only write the file if there were changes
-          if (result.hasChanges) {
-            await fs.promises.writeFile(filePath, result.content);
-          }
-        })
-      );
-    });
-  processPromises.push(...mappingPromises);
-
-  await Promise.all(processPromises);
+    // Replace the placeholder path with the target path
+    await batchProcess(
+      targetFiles,
+      async (filePath) => {
+        // Check if file exists before processing
+        if (!fs.existsSync(filePath)) {
+          return;
+        }
+        // Get file content
+        const fileContent = await fs.promises.readFile(filePath, 'utf8');
+        // Localize the file (handles both URLs and hrefs in single AST pass)
+        const result = localizeStaticUrlsForFile(
+          fileContent,
+          settings.defaultLocale,
+          locale,
+          settings.options?.experimentalHideDefaultLocale || false,
+          settings.options?.docsUrlPattern,
+          settings.options?.excludeStaticUrls,
+          settings.options?.baseDomain,
+          skipUntranslatedPages ? filesMap : undefined,
+          urlAttributes
+        );
+        // Only write the file if there were changes
+        if (result.hasChanges) {
+          await fs.promises.writeFile(filePath, result.content);
+        }
+      },
+      FILE_IO_CONCURRENCY
+    );
+  }
 }
 
 interface UrlTransformResult {
