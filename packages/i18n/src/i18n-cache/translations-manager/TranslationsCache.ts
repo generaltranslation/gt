@@ -1,6 +1,6 @@
 import { LookupOptions } from '../../translation-functions/types/options';
 import { Translation } from './utils/types/translation-data';
-import { hashMessage } from '../../utils/hashMessage';
+import { assertContent, hashMessage } from '../../utils/hashMessage';
 import { dedupePending } from './utils/dedupePending';
 import type { Content } from '@generaltranslation/format/types';
 import type {
@@ -86,9 +86,9 @@ export type TranslationsCacheMissCallback<
 /**
  * A queue entry for batching, used to also handle reject and resolve
  */
-type QueueEntry<TranslationValue extends Translation> = {
+type QueueEntry = {
   key: Hash;
-  source: TranslationValue;
+  source: Content;
   metadata: EntryMetadata;
   resolve: (value: Translation) => void;
   reject: (reason?: unknown) => void;
@@ -112,7 +112,7 @@ export type TranslateMany = (
 export class TranslationsCache<TranslationValue extends Translation> {
   private cache: Record<Hash, TranslationValue>;
   private pendingTranslations = new Map<Hash, Promise<TranslationValue>>();
-  private queue: Array<QueueEntry<TranslationValue>> = [];
+  private queue: Array<QueueEntry> = [];
   private batchTimer: ReturnType<typeof setTimeout> | null = null;
   private activeRequests = 0;
   private batchConfig: Required<TranslationBatchConfig>;
@@ -152,6 +152,14 @@ export class TranslationsCache<TranslationValue extends Translation> {
   ): T | undefined {
     const cacheKey = this.getCacheKey(key);
     return this.cache[cacheKey] as T | undefined;
+  }
+
+  /**
+   * Read an entry by its precomputed hash key, without hashing a message.
+   * @internal
+   */
+  public getByKey(key: Hash): unknown {
+    return this.cache[key];
   }
 
   /**
@@ -232,7 +240,8 @@ export class TranslationsCache<TranslationValue extends Translation> {
     key: TranslationKey<TranslationValue>
   ): Promise<TranslationValue> {
     const hash = this.getCacheKey(key);
-    const options = key.options;
+    const { message, options } = key;
+    assertContent(message);
     const metadataOptions = options as {
       $context?: string;
       $id?: string;
@@ -242,7 +251,7 @@ export class TranslationsCache<TranslationValue extends Translation> {
     return new Promise<TranslationValue>((resolve, reject) => {
       this.queue.push({
         key: hash,
-        source: key.message,
+        source: message,
         metadata: {
           hash,
           ...(metadataOptions.$context && {
@@ -265,9 +274,7 @@ export class TranslationsCache<TranslationValue extends Translation> {
     });
   }
 
-  private async sendBatchRequest(
-    batch: QueueEntry<TranslationValue>[]
-  ): Promise<void> {
+  private async sendBatchRequest(batch: QueueEntry[]): Promise<void> {
     this.activeRequests++;
 
     const requests = convertBatchToTranslateManyParams(batch);
@@ -283,7 +290,7 @@ export class TranslationsCache<TranslationValue extends Translation> {
   }
 
   private async sendBatchRequestWithErrorHandling(
-    batch: QueueEntry<TranslationValue>[],
+    batch: QueueEntry[],
     requests: Record<Hash, TranslateManyEntry>
   ): Promise<ReturnType<TranslateMany> | undefined> {
     try {
@@ -297,7 +304,7 @@ export class TranslationsCache<TranslationValue extends Translation> {
   }
 
   private handleTranslationResponse(
-    batch: QueueEntry<TranslationValue>[],
+    batch: QueueEntry[],
     response: Awaited<ReturnType<TranslateMany>>
   ): void {
     for (const entry of batch) {
@@ -317,12 +324,12 @@ export class TranslationsCache<TranslationValue extends Translation> {
 /**
  * Convert a TranslationKey to a TranslateManyEntry
  */
-function convertBatchToTranslateManyParams<
-  TranslationValue extends Translation,
->(batch: QueueEntry<TranslationValue>[]): Record<Hash, TranslateManyEntry> {
+function convertBatchToTranslateManyParams(
+  batch: QueueEntry[]
+): Record<Hash, TranslateManyEntry> {
   return batch.reduce<Record<Hash, TranslateManyEntry>>((acc, entry) => {
     acc[entry.key] = {
-      source: entry.source as Content,
+      source: entry.source,
       metadata: entry.metadata,
     };
     return acc;

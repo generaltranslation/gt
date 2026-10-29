@@ -9,7 +9,7 @@ import type {
   I18nCacheConstructorParams,
   I18nConfigParams,
 } from 'gt-i18n/internal/types';
-import type { Content } from '@generaltranslation/format/types';
+import type { Translation } from 'gt-i18n/types';
 import { rememberCachedTranslations } from './hydration';
 
 /** Configuration for {@link initializeGT}. */
@@ -18,7 +18,7 @@ export type GTSvelteConfig = I18nConfigParams & I18nCacheConstructorParams;
 /** Serializable translations for one locale, as returned by {@link loadTranslations}. */
 export type GTTranslationsData = {
   locale: string;
-  translations: Record<string, Content>;
+  translations: Record<string, Translation>;
 };
 
 /**
@@ -41,7 +41,7 @@ export type GTTranslationsData = {
 export function initializeGT(config: GTSvelteConfig = {}): void {
   initializeI18nConfig(config);
   setI18nCache(
-    new I18nCache<Content>({
+    new I18nCache({
       ...config,
       // In the browser, translations usually arrive once, from a load
       // function that client-side navigation does not rerun, so nothing

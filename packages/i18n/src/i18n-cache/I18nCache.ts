@@ -475,6 +475,63 @@ class I18nCache<TranslationValue extends Translation = Translation> {
   }
 
   /**
+   * Synchronously read a loaded locale's entry by its hash key. Returns
+   * undefined for locales that use source content. The value is unvalidated
+   * CDN data.
+   */
+  lookupTranslationByHash(locale: string, hash: Hash): unknown {
+    return this.guard<unknown>(undefined, () => {
+      const translationLocale = this._resolveCacheLocale(locale);
+      if (!translationLocale) return undefined;
+      return this.translations.get(translationLocale)?.getByKey(hash);
+    });
+  }
+
+  /**
+   * Whether a locale's translations are loaded and unexpired, so synchronous
+   * lookups read them. Returns false for locales that use source content.
+   */
+  hasTranslations(locale: string): boolean {
+    return this.guard(false, () => {
+      const translationLocale = this._resolveCacheLocale(locale);
+      return (
+        translationLocale !== undefined &&
+        this.translations.get(translationLocale) !== undefined
+      );
+    });
+  }
+
+  /**
+   * Loads a locale and returns a hash-keyed resolver that keeps that locale's
+   * loaded entries regardless of cache expiry, like getLookupTranslation.
+   * Other locales are read from the cache as in lookupTranslationByHash.
+   * @internal
+   */
+  async getLookupTranslationByHash(
+    locale: string
+  ): Promise<(locale: string, hash: Hash) => unknown> {
+    return this.guardAsync<(locale: string, hash: Hash) => unknown>(
+      () => undefined,
+      async () => {
+        const boundLocale = this._resolveCacheLocale(locale);
+        const boundTxCache = boundLocale
+          ? await this.translations.getOrLoad(boundLocale)
+          : undefined;
+        return (requestedLocale, hash) =>
+          this.guard<unknown>(undefined, () => {
+            const translationLocale = this._resolveCacheLocale(requestedLocale);
+            if (!translationLocale) return undefined;
+            const txCache =
+              translationLocale === boundLocale
+                ? boundTxCache
+                : this.translations.get(translationLocale);
+            return txCache?.getByKey(hash);
+          });
+      }
+    );
+  }
+
+  /**
    * Look up a translation
    * If it's not found, use the fallback (runtime translate)
    */

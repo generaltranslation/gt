@@ -1,7 +1,7 @@
 import { getContext, setContext } from 'svelte';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { getI18nCache, getI18nConfig } from 'gt-i18n/internal';
-import type { Content } from '@generaltranslation/format/types';
+import type { Translation } from 'gt-i18n/types';
 import { resolveLocale } from './config';
 import { hasCachedTranslations, rememberAddedTranslations } from './hydration';
 
@@ -66,12 +66,12 @@ export class GTState {
    * holds, such as `loadTranslations()` results rendered on the server, are
    * skipped: copying a large catalog on every request is slow.
    */
-  hydrate(locale: string, translations: Record<string, Content>): void {
+  hydrate(locale: string, translations: Record<string, Translation>): void {
     if (hasCachedTranslations(locale, translations)) return;
     // Snapshot in case the translations are reactive state: the cache
     // clones them, and proxies cannot be cloned.
     getI18nCache().updateTranslations({
-      [locale]: $state.snapshot(translations) as Record<string, Content>,
+      [locale]: $state.snapshot(translations) as Record<string, Translation>,
     });
     rememberAddedTranslations(locale, translations);
   }

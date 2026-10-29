@@ -92,6 +92,22 @@ describe('I18nCache expiry contract', () => {
     );
   });
 
+  it('reports whether a locale has loaded, unexpired translations', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+    const cache = createCache();
+
+    expect(cache.hasTranslations('fr')).toBe(false);
+    await cache.loadTranslations('fr');
+    expect(cache.hasTranslations('fr')).toBe(true);
+    expect(cache.hasTranslations('fr-FR')).toBe(true);
+    // Source-content locales have nothing to load.
+    expect(cache.hasTranslations('en')).toBe(false);
+
+    vi.advanceTimersByTime(DEFAULT_TTL + 1);
+    expect(cache.hasTranslations('fr')).toBe(false);
+  });
+
   it('cacheExpiryTime: null never expires translations or dictionaries', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
