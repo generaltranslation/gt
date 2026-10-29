@@ -15,15 +15,20 @@ export type FragmentWhitespace = {
   element?: string;
 };
 
-/** The text of a text node, as Svelte writes it and as the DOM holds it. */
+/** The rendered text of a text node, and how to write it in the source. */
 export type RenderedText = {
-  /** The text Svelte writes into the HTML. */
-  markup: string;
   /**
-   * The text the DOM holds once the browser parses that HTML, which is also
-   * what translations render.
+   * The text the DOM holds, which is also what translations render: Svelte's
+   * text after the HTML parser turns carriage returns into line feeds and
+   * drops a line feed that opens a `<pre>`.
    */
   text: string;
+  /**
+   * Source text that renders `text` whether Svelte inserts it by parsing
+   * HTML or by setting it directly, as it does for text next to an
+   * expression or alone in a component.
+   */
+  markup: string;
 };
 
 const STARTS_WITH_WHITESPACE = /^[ \t\r\n]+/;
@@ -101,9 +106,6 @@ export function getChildWhitespace(
  * - A lone space is dropped inside SVG and table-like elements.
  *
  * Comments are removed first, so text on both sides of one is adjacent.
- *
- * The HTML parser then turns carriage returns into line feeds and drops a
- * line feed that opens a `<pre>`.
  */
 export function getRenderedText(
   nodes: SvelteNode[],
@@ -117,12 +119,19 @@ export function getRenderedText(
     : getCleanedMarkup(regular, whitespace);
 
   const rendered = new Map<SvelteNode, RenderedText>();
-  for (const [node, text] of markup) {
-    let parsed = text.replace(/\r\n?/g, '\n');
+  for (const [node, svelteText] of markup) {
+    const text = svelteText.replace(/\r\n?/g, '\n');
     if (whitespace.element === 'pre' && node === regular[0]) {
-      parsed = parsed.replace(/^\n/, '');
+      // Without its opening line feed, the text renders the same either way,
+      // unless the text after it starts with another line feed.
+      const parsed = text.replace(/^\n/, '');
+      rendered.set(node, {
+        text: parsed,
+        markup: parsed.startsWith('\n') ? text : parsed,
+      });
+    } else {
+      rendered.set(node, { text, markup: text });
     }
-    rendered.set(node, { markup: text, text: parsed });
   }
   return rendered;
 }

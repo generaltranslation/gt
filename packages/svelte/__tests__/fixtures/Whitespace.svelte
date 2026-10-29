@@ -53,3 +53,6 @@ second</pre></T></div>
 <div><T><span>a&#13;b</span></T></div>
 <div><T><svg><text>a</text>
 <text>b</text></svg></T></div>
+<div><T><pre>
+first{'second'}</pre></T></div>
+<div><T>a&#13;b</T></div>

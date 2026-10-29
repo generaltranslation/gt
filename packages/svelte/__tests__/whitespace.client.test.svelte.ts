@@ -119,7 +119,7 @@ describe('<T> whitespace with the preserveWhitespace compiler option', () => {
     const source = caseTexts(
       parseHtml(await preserving.render('Whitespace.svelte', { locale: 'en' }))
     );
-    expect(source).toHaveLength(26);
+    expect(source).toHaveLength(28);
     const translated = caseTexts(
       parseHtml(
         await preserving.render('Whitespace.svelte', {
@@ -140,7 +140,7 @@ describe('<T> whitespace in the DOM', () => {
         await renderOnServer({ locale: 'en' }, 'WhitespacePlain.svelte')
       )
     );
-    expect(expected).toHaveLength(26);
+    expect(expected).toHaveLength(28);
     for (const props of [
       { locale: 'en' },
       { locale: 'fr', translations: identityCatalog() },

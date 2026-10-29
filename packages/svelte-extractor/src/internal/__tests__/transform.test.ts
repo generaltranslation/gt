@@ -222,7 +222,11 @@ describe('transformSvelteSource', () => {
     expect(body('<b>x</b>\n  <!-- c -->\n  <i>y</i>')).toBe(
       '<b>x</b> <!-- c --><i>y</i>'
     );
-    expect(body('<pre>\n  a\n</pre>')).toBe('<pre>\n  a\n</pre>');
+    // The source renders the same text whether Svelte parses it as HTML
+    // or sets it directly, which skips the parser's line feed handling.
+    expect(body("<pre>\n  a{'b'}\n</pre>")).toBe("<pre>  a{'b'}\n</pre>");
+    expect(body('<pre>\n\na</pre>')).toBe('<pre>\n\na</pre>');
+    expect(body('a&#13;b\r\nc')).toBe('a\nb\nc');
     // Whitespace written as entities is written out.
     expect(body('&#32;Hello&#32;')).toBe('Hello');
     expect(body('a&#13;<b>b</b>')).toBe('a <b>b</b>');

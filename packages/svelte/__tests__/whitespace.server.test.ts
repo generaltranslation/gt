@@ -52,7 +52,15 @@ const expected = [
   '<pre>\nfirst\nsecond</pre>',
   '<span>a\nb</span>',
   '<svg><text>a</text><text>b</text></svg>',
+  '<pre>\nfirstsecond</pre>',
+  'a\nb',
 ];
+
+/**
+ * Drops the line feed that opens a `<pre>`, as the browser's HTML parser
+ * does. `<T>` writes its source without it.
+ */
+const parsed = (html: string) => html.replace(/<pre>\n/g, '<pre>');
 
 describe('<T> whitespace', () => {
   beforeEach(() => setupGT());
@@ -67,6 +75,8 @@ describe('<T> whitespace', () => {
   });
 
   it('renders source text with the whitespace Svelte renders', () => {
-    expect(cases(Whitespace, { locale: 'en' })).toEqual(expected);
+    expect(cases(Whitespace, { locale: 'en' }).map(parsed)).toEqual(
+      expected.map(parsed)
+    );
   });
 });

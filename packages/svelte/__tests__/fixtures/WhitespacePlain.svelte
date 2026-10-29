@@ -54,3 +54,6 @@ second</pre></Passthrough></div>
 <div><Passthrough><span>a&#13;b</span></Passthrough></div>
 <div><Passthrough><svg><text>a</text>
 <text>b</text></svg></Passthrough></div>
+<div><Passthrough><pre>
+first{'second'}</pre></Passthrough></div>
+<div><Passthrough>a&#13;b</Passthrough></div>
