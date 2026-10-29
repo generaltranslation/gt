@@ -15,7 +15,16 @@ describe('XOR hashing proposal prototype', () => {
         hash = Math.imul(hash ^ byte, 0x01000193);
       return hash >>> 0;
     };
-    for (const input of ['é', '–…', '日本語', '😀 ok', 'a\u07ffb\uffffc']) {
+    for (const input of [
+      'é',
+      '–…',
+      '日本語',
+      '😀 ok',
+      'a\u07ffb\uffffc',
+      'lone \ud800 high',
+      'lone \udc00 low',
+      'end \ud83d',
+    ]) {
       expect(fnv1a32(input)).toBe(viaBuffer(input));
     }
   });
@@ -39,7 +48,7 @@ describe('XOR hashing proposal prototype', () => {
 
   // The final SHA-256 sees only the top-level object's encoding, which in
   // fnv32 mode is the 32-bit XOR, so distinct messages collide at birthday
-  // rates for 32 bits (about one in 77k messages).
+  // rates for 32 bits (a 50% chance of a collision by about 77k messages).
   it('reduces every message to 32 bits in fnv32 mode', () => {
     expect(
       encodeForHash({ source: 'Cancelled', dataFormat: 'ICU' }, 'fnv32')

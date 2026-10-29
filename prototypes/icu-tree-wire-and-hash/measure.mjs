@@ -14,7 +14,11 @@ const { entries } = loadCorpus(lib, corpusPath);
 const nodeSha = (s) =>
   createHash('sha256').update(s).digest('hex').slice(0, 16);
 const sources = entries.map((e) => ({ source: e.icu, dataFormat: 'ICU' }));
-const catalog = (pick) => JSON.stringify(entries.map(pick));
+// The CDN shape: { [hash]: value }.
+const catalog = (pick) =>
+  JSON.stringify(
+    Object.fromEntries(entries.map((e) => [lib.hashString(e.icu), pick(e)]))
+  );
 const obj = (keys, len) =>
   Object.fromEntries(
     Array.from({ length: keys }, (_, i) => [`key_${i}`, 'x'.repeat(len)])
@@ -37,24 +41,20 @@ const synthetic = {
 
 // [function, items, repetitions per timed run]
 const once = (fn) => [fn, [0], 200];
+const parseCase = (pick, after = () => {}) => {
+  const json = catalog(pick);
+  return once(() => after(JSON.parse(json)));
+};
 const cases = {
-  'parse:icu': once(
-    (
-      (json) => () =>
-        JSON.parse(json)
-    )(catalog((e) => e.icu))
-  ),
-  'parse:ast': once(
-    (
-      (json) => () =>
-        JSON.parse(json)
-    )(catalog((e) => e.ast))
-  ),
-  'parse:compact': once(
-    (
-      (json) => () =>
-        JSON.parse(json)
-    )(catalog((e) => e.compact))
+  'parse:icu': parseCase((e) => e.icu),
+  'parse:ast': parseCase((e) => e.ast),
+  'parse:compact': parseCase((e) => e.compact),
+  // Decode on load: parse compact, then convert every value to the AST once.
+  'parse:compact-decode': parseCase(
+    (e) => e.compact,
+    (parsed) => {
+      for (const key in parsed) parsed[key] = lib.fromCompact(parsed[key]);
+    }
   ),
   'format:icu': [
     (e) => lib.formatMessage(e.icu, 'en', e.variables),

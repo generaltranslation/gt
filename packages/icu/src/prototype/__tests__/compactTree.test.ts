@@ -78,6 +78,18 @@ describe('compact message tree prototype', () => {
     ]);
   });
 
+  it('keeps a __proto__ branch as an own branch', () => {
+    const ast = parse('{key, select, __proto__ {P} other {O}}');
+    const compact = toCompact(ast);
+    expect(
+      Object.keys((compact[0] as readonly unknown[])[2] as object)
+    ).toEqual(['__proto__', 'other']);
+    expect(formatCompact(compact, 'en', { key: '__proto__' })).toBe('P');
+    expect(formatAst(fromCompact(compact), 'en', { key: '__proto__' })).toBe(
+      'P'
+    );
+  });
+
   it('reports a missing branch like formatAst', () => {
     // The parser requires other, but an untrusted tree may omit it.
     const compact = [['role', 'select', { admin: 'A', user: 'U' }] as const];

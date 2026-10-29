@@ -28,6 +28,8 @@ export function fnv1a32(input: string, hash = 0x811c9dc5): number {
         i++;
       }
     }
+    // A lone surrogate is not valid UTF-8; encode U+FFFD like TextEncoder.
+    if (code >= 0xd800 && code < 0xe000) code = 0xfffd;
     // UTF-8 bytes, applied in place so the loop never allocates.
     const prime = 0x01000193;
     if (code < 0x800) {

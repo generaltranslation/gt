@@ -107,13 +107,14 @@ export function toCompact(elements: MessageFormatElement[]): CompactTree {
 function toBranches(
   options: Record<string, { value: MessageFormatElement[] }>
 ): CompactBranches {
-  const branches: CompactBranches = {};
+  // Null prototype so a `__proto__` key stays an own branch, as in buildMessageTree.
+  const branches: CompactBranches = Object.create(null);
   for (const key of Object.keys(options)) {
     const value = toCompact(options[key].value);
     branches[key] =
       value.length === 1 && typeof value[0] === 'string' ? value[0] : value;
   }
-  return branches;
+  return Object.setPrototypeOf(branches, Object.prototype);
 }
 
 /**
@@ -192,12 +193,13 @@ export function fromCompact(tree: CompactTree): MessageFormatElement[] {
 function fromBranches(
   branches: CompactBranches
 ): Record<string, { value: MessageFormatElement[] }> {
-  const options: Record<string, { value: MessageFormatElement[] }> = {};
+  const options: Record<string, { value: MessageFormatElement[] }> =
+    Object.create(null);
   for (const key of Object.keys(branches)) {
     const branch = branches[key];
     options[key] = {
       value: fromCompact(typeof branch === 'string' ? [branch] : branch),
     };
   }
-  return options;
+  return Object.setPrototypeOf(options, Object.prototype);
 }

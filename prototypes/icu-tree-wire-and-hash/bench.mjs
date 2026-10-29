@@ -130,11 +130,15 @@ table(
 log('## 2. Client cost');
 log();
 table(
-  ['JSON.parse of the whole catalog', 'time'],
+  ['JSON.parse of the `{ [hash]: value }` catalog', 'time'],
   [
     ['ICU string', us(run('parse:icu'))],
     ['AST tree (current)', us(run('parse:ast'))],
     ['compact tree', us(run('parse:compact'))],
+    [
+      'compact tree, decoded to the AST on load',
+      us(run('parse:compact-decode')),
+    ],
   ]
 );
 table(
@@ -144,7 +148,7 @@ table(
     ['AST tree: formatAst', us(run('format:ast'))],
     ['compact tree: formatCompact', us(run('format:compact'))],
     [
-      'compact tree: formatAst(fromCompact()) (decode each call)',
+      'compact tree: formatAst(fromCompact()) (decodes on every render)',
       us(run('format:decode')),
     ],
   ]
