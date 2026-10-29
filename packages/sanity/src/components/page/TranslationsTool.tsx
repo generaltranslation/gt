@@ -21,6 +21,7 @@ import { TranslateIcon } from '@sanity/icons/Translate';
 import { UploadIcon } from '@sanity/icons/Upload';
 import { Link } from 'sanity/router';
 import { BaseTranslationWrapper } from '../shared/BaseTranslationWrapper';
+import { LocaleDropdown } from '../shared/LocaleDropdown';
 import { TranslationsProvider, useTranslations } from '../TranslationsProvider';
 import { TranslationsTable } from './TranslationsTable';
 import { TranslateAllDialog } from './TranslateAllDialog';
@@ -31,6 +32,11 @@ import { SaveLocalTranslationsDialog } from './SaveLocalTranslationsDialog';
 import { DebugInfoDialog } from './DebugInfoDialog';
 import { BatchProgress } from './BatchProgress';
 import { version as PACKAGE_VERSION } from '../../../package.json';
+import {
+  createTranslationStatusKey,
+  getDocumentPublishedId,
+} from '../../utils/documentIds';
+import { getSelectedLocaleIds } from '../../utils/locales';
 
 const TranslationsToolContent: React.FC = () => {
   const [isTranslateAllDialogOpen, setIsTranslateAllDialogOpen] =
@@ -51,6 +57,7 @@ const TranslationsToolContent: React.FC = () => {
     loadingDocuments,
     importProgress,
     importedTranslations,
+    downloadStatus,
     pendingTranslations,
     isRefreshing,
     setAutoRefresh,
@@ -59,6 +66,8 @@ const TranslationsToolContent: React.FC = () => {
     handleRefreshAll,
     handlePatchDocumentReferences,
     handlePublishAllTranslations,
+    branchId,
+    getVersionId,
   } = useTranslations();
 
   // Track which specific operation is running
@@ -94,9 +103,33 @@ const TranslationsToolContent: React.FC = () => {
   // button honest and guards against enqueueing the same run twice.
   const isWaitingOnTranslations = pendingTranslations.size > 0;
 
-  const enabledLocaleCount = locales.filter((l) => l.enabled !== false).length;
-  const totalTranslations = documents.length * enabledLocaleCount;
-  const actionsDisabled = isBusy || loadingDocuments || documents.length === 0;
+  const selectedLocaleIds = getSelectedLocaleIds(locales);
+  const totalTranslations = documents.length * selectedLocaleIds.length;
+  // Counted the same way the table marks a row imported, and only over the
+  // selected locales, so deselecting one can't push the count past the total.
+  const importedCount = documents.reduce((count, doc) => {
+    const publishedId = getDocumentPublishedId(doc);
+    const versionId = getVersionId(doc);
+    return (
+      count +
+      selectedLocaleIds.filter((localeId) => {
+        const key = createTranslationStatusKey(
+          branchId,
+          publishedId,
+          versionId,
+          localeId
+        );
+        return (
+          importedTranslations.has(key) || downloadStatus.downloaded.has(key)
+        );
+      }).length
+    );
+  }, 0);
+  const actionsDisabled =
+    isBusy ||
+    loadingDocuments ||
+    documents.length === 0 ||
+    selectedLocaleIds.length === 0;
 
   return (
     <Container width={2}>
@@ -113,19 +146,24 @@ const TranslationsToolContent: React.FC = () => {
               </Text>
             </Stack>
 
-            <Button
-              icon={TranslateIcon}
-              text={isWaitingOnTranslations ? 'Translating…' : 'Translate All'}
-              loading={
-                (isBusy && currentOperation === 'Translate All') ||
-                isWaitingOnTranslations
-              }
-              onClick={() => {
-                setCurrentOperation('Translate All');
-                setIsTranslateAllDialogOpen(true);
-              }}
-              disabled={actionsDisabled || isWaitingOnTranslations}
-            />
+            <Flex align='center' gap={2}>
+              <LocaleDropdown />
+              <Button
+                icon={TranslateIcon}
+                text={
+                  isWaitingOnTranslations ? 'Translating…' : 'Translate All'
+                }
+                loading={
+                  (isBusy && currentOperation === 'Translate All') ||
+                  isWaitingOnTranslations
+                }
+                onClick={() => {
+                  setCurrentOperation('Translate All');
+                  setIsTranslateAllDialogOpen(true);
+                }}
+                disabled={actionsDisabled || isWaitingOnTranslations}
+              />
+            </Flex>
           </Flex>
 
           <Stack gap={3}>
@@ -186,7 +224,7 @@ const TranslationsToolContent: React.FC = () => {
               <Flex gap={2} align='center' wrap='wrap'>
                 <Tooltip
                   placement='top'
-                  content='Imports and overrides all translations'
+                  content='Imports and overrides translations for the selected locales'
                 >
                   <Button
                     mode='ghost'
@@ -254,14 +292,16 @@ const TranslationsToolContent: React.FC = () => {
                 </Tooltip>
                 <Tooltip
                   placement='top'
-                  content='Publishes all translations whose source document is published'
+                  content='Publishes translations in the selected locales whose source document is published'
                 >
                   <Button
                     mode='ghost'
                     fontSize={1}
                     onClick={() => {
                       setCurrentOperation('Publish Translations');
-                      handlePublishAllTranslations();
+                      handlePublishAllTranslations({
+                        localeIds: selectedLocaleIds,
+                      });
                     }}
                     text='Publish Translations'
                     loading={
@@ -273,21 +313,19 @@ const TranslationsToolContent: React.FC = () => {
                 </Tooltip>
               </Flex>
 
-              {totalTranslations > 0 &&
-                importedTranslations.size === totalTranslations && (
-                  <Badge tone='positive' fontSize={0} radius={2}>
-                    <Flex align='center' gap={1}>
-                      <CheckmarkCircleIcon />
-                      <Box>All translations imported</Box>
-                    </Flex>
-                  </Badge>
-                )}
-              {importedTranslations.size > 0 &&
-                importedTranslations.size < totalTranslations && (
-                  <Text size={1} muted>
-                    {importedTranslations.size}/{totalTranslations} imported
-                  </Text>
-                )}
+              {totalTranslations > 0 && importedCount === totalTranslations && (
+                <Badge tone='positive' fontSize={0} radius={2}>
+                  <Flex align='center' gap={1}>
+                    <CheckmarkCircleIcon />
+                    <Box>All translations imported</Box>
+                  </Flex>
+                </Badge>
+              )}
+              {importedCount > 0 && importedCount < totalTranslations && (
+                <Text size={1} muted>
+                  {importedCount}/{totalTranslations} imported
+                </Text>
+              )}
             </Flex>
 
             <BatchProgress
