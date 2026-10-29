@@ -181,7 +181,9 @@ function interpolateTemplateLiteral(
  * Module-level t() only works for SPA.
  * We have to error or fallback in SSR.
  */
-function enforceSSRRules(messageOrStrings: string | TemplateStringsArray) {
+export function enforceSSRRules(
+  messageOrStrings: string | TemplateStringsArray
+) {
   const ssrEnabled = getI18nConfig().getRenderStrategy() === 'server-render';
   const moduleLevel = !isReadonlyConditionStoreInitialized();
   if (!ssrEnabled || !moduleLevel) return;
