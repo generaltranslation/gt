@@ -1,5 +1,18 @@
 export { formatAst } from './formatter/formatAst';
+export { buildMessageTree } from './tree/buildMessageTree';
+export type {
+  BuiltMessageTree,
+  MessageTreeBranch,
+  MessageTreeFragment,
+  MessageTreeHole,
+} from './tree/buildMessageTree';
 export { SKELETON_TYPE, TYPE } from './types-dir/ast';
+export { isMessageTree, validateMessageTree } from './tree/validateMessageTree';
+export type {
+  MessageTree,
+  MessageTreeValidationError,
+  MessageTreeValidationOptions,
+} from './tree/validateMessageTree';
 export type {
   ArgumentElement,
   BaseElement,
