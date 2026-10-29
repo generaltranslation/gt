@@ -119,16 +119,19 @@ function injectUseGTParameters(
   // Inject the parameters into the call expression
   expression.arguments = [
     t.arrayExpression(
-      translationContent.map((content) =>
-        t.objectExpression([
+      translationContent.map((content) => {
+        const message = t.objectProperty(
+          t.identifier('message'),
+          t.stringLiteral(content.message)
+        );
+        // Locale twins: client builds strip the message once attributed
+        state.localeTwins.recordPrefetchMessage(content.hash, message);
+        return t.objectExpression([
           t.objectProperty(
             t.identifier('$_hash'),
             t.stringLiteral(content.hash)
           ),
-          t.objectProperty(
-            t.identifier('message'),
-            t.stringLiteral(content.message)
-          ),
+          message,
           ...(content.id
             ? [
                 t.objectProperty(
@@ -161,8 +164,8 @@ function injectUseGTParameters(
                 ),
               ]
             : []),
-        ])
-      )
+        ]);
+      })
     ),
   ];
 }

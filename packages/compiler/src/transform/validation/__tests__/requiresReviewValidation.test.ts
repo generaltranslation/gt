@@ -7,6 +7,7 @@ import { StringCollector } from '../../../state/StringCollector';
 import { Logger } from '../../../state/Logger';
 import { ErrorTracker } from '../../../state/ErrorTracker';
 import { ScopeTracker } from '../../../state/ScopeTracker';
+import { LocaleTwinCollector } from '../../../state/LocaleTwinCollector';
 import { PluginSettings } from '../../../config';
 import {
   GT_COMPONENT_TYPES,
@@ -39,6 +40,7 @@ function createState(overrides?: Partial<PluginSettings>): TransformState {
   return {
     settings,
     stringCollector,
+    localeTwins: new LocaleTwinCollector(),
     scopeTracker,
     logger,
     errorTracker,

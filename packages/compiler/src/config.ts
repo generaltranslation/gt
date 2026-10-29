@@ -94,6 +94,12 @@ export interface PluginSettings {
   splitting: TranslationSplittingStrategy;
   /** Resolved locale twins build options */
   localeTwins: ResolvedLocaleTwinsOptions;
+  /**
+   * Remove attributed source-locale text from the module (locale twins mode,
+   * client production builds only). Set per transform from the bundler
+   * environment, never from user options.
+   */
+  stripSourceText: boolean;
 }
 
 /**

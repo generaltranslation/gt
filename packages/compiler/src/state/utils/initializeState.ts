@@ -35,6 +35,7 @@ const DEFAULT_SETTINGS: PluginSettings = {
   devHotReload: { strings: false, jsx: false },
   splitting: DEFAULT_TRANSLATION_SPLITTING,
   localeTwins: DEFAULT_LOCALE_TWINS_OPTIONS,
+  stripSourceText: false,
 };
 
 /**
@@ -42,7 +43,8 @@ const DEFAULT_SETTINGS: PluginSettings = {
  */
 export function initializeState(
   options: GTUnpluginOptions,
-  filename: string
+  filename: string,
+  { stripSourceText = false }: { stripSourceText?: boolean } = {}
 ): TransformState {
   // Pull enableAutoJsxInjection from gtConfig if provided
   const gtConfig = options.gtConfig;
@@ -84,6 +86,7 @@ export function initializeState(
     ...resolveLocaleTwinsSettings(options),
     ...restOptions,
     filename,
+    stripSourceText,
   };
 
   return {

@@ -5,6 +5,7 @@ import { TransformState } from '../../state/types';
 import { getLocaleTwinRegistrationImportSource } from '../../utils/constants/gt/helpers';
 import { injectLocaleTwinRegistration } from '../../transform/locale-twins/injectLocaleTwinRegistration';
 import { injectMsgHashes } from '../../transform/locale-twins/injectMsgHashes';
+import { stripSourceText } from '../../transform/locale-twins/stripSourceText';
 
 /**
  * Process program for the locale twins pass:
@@ -12,6 +13,7 @@ import { injectMsgHashes } from '../../transform/locale-twins/injectMsgHashes';
  *   that exports the registration function
  * - Injects `$_hash` into attributed msg() calls
  * - Inserts the registration call carrying the module's placeholder
+ * - In client production builds, strips the attributed source text
  */
 export function processProgram(
   state: TransformState
@@ -30,6 +32,7 @@ export function processProgram(
       encodeLocaleTwinPlaceholder(sources)
     );
     state.statistics.localeTwinRegistrationsCount += 1;
+    if (state.settings.stripSourceText) stripSourceText(state);
     path.stop();
   };
 }

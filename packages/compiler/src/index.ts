@@ -24,6 +24,14 @@ import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
 import { localeTwinsPass } from './passes/localeTwinsPass';
 import { shouldTransformModuleId } from './utils/moduleId';
 import { createLocaleTwinsViteHooks } from './locale-twins/vite/localeTwinsViteHooks';
+import {
+  getBundlerEnvironment,
+  isClientProductionBuild,
+} from './utils/bundlerEnvironment';
+import {
+  createUnattributedEntriesWarning,
+  formatUnattributedEntry,
+} from './utils/locale-twins/unattributedEntries';
 
 /**
  * Architecture:
@@ -240,14 +248,54 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
     // gt.config.json and files.gt.output are relative to the working directory
     const configDir = process.cwd();
 
+    // Vite command, for bundler contexts without per-environment info
+    let viteCommand: string | undefined;
+
+    // Locale twins: module id → entries that keep their source text in client
+    // code (formatted), reported once per client build in buildEnd
+    const unattributedByModule = new Map<string, string[]>();
+
+    /** End of a build (any bundler; Vite calls it from its buildEnd override). */
+    const finishBuild = (context: unknown): void => {
+      // Locale twins: list entries that kept their source text in the
+      // client build (the server environment never records any)
+      if (
+        unattributedByModule.size > 0 &&
+        getBundlerEnvironment(context)?.config?.consumer !== 'server'
+      ) {
+        const details = [...unattributedByModule.values()].flat();
+        unattributedByModule.clear();
+        if (shouldWarn(options.logLevel)) {
+          console.warn(createUnattributedEntriesWarning(details));
+        }
+      }
+      writeDebugManifest();
+    };
+
     return {
       name: '@generaltranslation/GT_PLUGIN',
       transformInclude(id: string) {
         return shouldTransformModuleId(id);
       },
-      transform(code: string, id: string) {
+      transform(
+        code: string,
+        id: string,
+        transformOptions?: { ssr?: boolean }
+      ) {
+        // Locale twins: client production builds ship source text only in
+        // the placeholder, so the attributed text is stripped from code
+        const stripSourceText =
+          resolvedOptions.splitting === 'locale-twins' &&
+          isClientProductionBuild({
+            environment: getBundlerEnvironment(this),
+            ssr: transformOptions?.ssr,
+            command: viteCommand,
+          });
+
+        if (stripSourceText) unattributedByModule.delete(id);
+
         // Initialize processing state
-        const state = initializeState(resolvedOptions, id);
+        const state = initializeState(resolvedOptions, id, { stripSourceText });
         if (debugManifest) state.debugManifest = debugManifest;
         try {
           // Skip transformation if not needed
@@ -294,17 +342,39 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             traverse(ast, injectionPass(state));
           }
 
-          // Pass 4b: Locale twins registration (placeholder + msg $_hash),
-          // gated on the 'locale-twins' splitting strategy and compileTimeHash
+          // Pass 4b: Locale twins registration (placeholder + msg $_hash, and
+          // client source stripping), gated on the 'locale-twins' splitting
+          // strategy and compileTimeHash
           if (injectionRan && state.settings.splitting === 'locale-twins') {
             traverse(ast, localeTwinsPass(state));
+            if (stripSourceText) {
+              const unattributed = state.localeTwins.getUnattributed(
+                state.statistics.localeTwinRegistrationsCount > 0
+              );
+              if (unattributed.length > 0) {
+                unattributedByModule.set(
+                  id,
+                  unattributed.map((entry) =>
+                    formatUnattributedEntry(id, entry)
+                  )
+                );
+              }
+            }
           }
 
-          // Pass 5: Runtime translate (dev hot reload)
+          // Pass 5: Runtime translate (dev hot reload). Skipped when source
+          // text was stripped: its calls would put the text back in the code
           const devHotReloadActive =
             state.settings.devHotReload.strings ||
             state.settings.devHotReload.jsx;
-          if (devHotReloadActive && hasCollectionContent) {
+          const sourceTextStripped =
+            state.settings.stripSourceText &&
+            state.statistics.localeTwinRegistrationsCount > 0;
+          if (
+            devHotReloadActive &&
+            hasCollectionContent &&
+            !sourceTextStripped
+          ) {
             traverse(ast, runtimeTranslatePass(state));
           }
 
@@ -335,7 +405,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         }
       },
       buildEnd() {
-        writeDebugManifest();
+        finishBuild(this);
       },
       // Vite-only hooks for locale twins. unplugin merges this object into
       // the Vite plugin, so its buildEnd replaces the generic one above.
@@ -346,7 +416,10 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         compileTimeHash: resolvedOptions.compileTimeHash !== false,
         configDir,
         logLevel: options.logLevel,
-        onBuildEnd: writeDebugManifest,
+        onConfigResolved: (config) => {
+          viteCommand = config.command;
+        },
+        onBuildEnd: finishBuild,
       }),
     };
   }

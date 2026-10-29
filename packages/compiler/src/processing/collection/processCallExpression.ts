@@ -147,6 +147,11 @@ function handleUseGTCallback(
     useGTCallbackParams.hasDeriveContext
   ) {
     state.stringCollector.incrementCounter();
+    state.localeTwins.addUnattributed({
+      api: 'gt',
+      reason: 'derive',
+      node: callExprPath.node,
+    });
     return;
   }
 
@@ -248,18 +253,24 @@ function handleReactInvocation(
     return;
   }
 
-  // Validate the arguments
+  // Validate the arguments, recording where the children's source text sits
+  // (for client source stripping in locale twins mode)
   const {
-    errors,
-    _hash,
-    id,
-    context,
-    children,
-    maxChars,
-    requiresReview,
-    hasDeriveContext,
-    hasDeriveChildren,
-  } = validateTranslationComponentArgs(callExprPath, canonicalName, state);
+    result: {
+      errors,
+      _hash,
+      id,
+      context,
+      children,
+      maxChars,
+      requiresReview,
+      hasDeriveContext,
+      hasDeriveChildren,
+    },
+    textSites,
+  } = state.localeTwins.captureTextSites(() =>
+    validateTranslationComponentArgs(callExprPath, canonicalName, state)
+  );
 
   if (errors.length > 0) {
     state.errorTracker.addErrors(errors);
@@ -296,12 +307,19 @@ function handleReactInvocation(
     context,
     requiresReview,
   });
-  if (children !== undefined) {
+  if (!hash) {
+    state.localeTwins.addUnattributed({
+      api: 'T',
+      reason: 'derive',
+      node: callExpr,
+    });
+  } else if (children !== undefined) {
     state.localeTwins.add({
       api: 'T',
       hash,
       source: children,
       node: callExpr,
+      textSites,
     });
   }
 }
@@ -318,12 +336,17 @@ function handleStandaloneTranslation(
   // Reuse the same validation as useGT_callback (identical argument structure)
   const params = validateTranslationFunction(callExprPath, state);
   state.errorTracker.addErrors(params.errors);
-  if (params.errors.length > 0 || params.content === undefined) {
+  if (params.errors.length > 0) {
     return;
   }
 
-  // Skip derive content
-  if (params.hasDeriveContext) {
+  // Skip derive content (autoderive content resolves to undefined)
+  if (params.content === undefined || params.hasDeriveContext) {
+    state.localeTwins.addUnattributed({
+      api: injectHash ? 't' : 'msg',
+      reason: 'derive',
+      node: callExprPath.node,
+    });
     return;
   }
 

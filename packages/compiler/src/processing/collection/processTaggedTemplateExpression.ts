@@ -36,14 +36,25 @@ export function processTaggedTemplateExpression(
     // If message is a TemplateLiteral, it contains derive() — skip
     // TODO: remove this check once derive is supported
     if (!t.isStringLiteral(message)) {
+      state.localeTwins.addUnattributed({
+        api: 't',
+        reason: 'derive',
+        node: path.node,
+      });
       return;
     }
 
-    // Register as runtime-only content; tagged templates are not hash-injected.
+    // Register as runtime-only content; tagged templates are not hash-injected,
+    // so they can't be looked up by hash once stripped (unattributed).
     registerStandaloneTranslation({
       state,
       content: message.value,
       injectHash: false,
+    });
+    state.localeTwins.addUnattributed({
+      api: 't',
+      reason: 'taggedTemplate',
+      node: path.node,
     });
   };
 }

@@ -50,8 +50,13 @@ export type LocaleTwinsViteHooksOptions = {
   /** Directory that `files.gt.output` is relative to (where gt.config.json is read). */
   configDir: string;
   logLevel: LogLevel | undefined;
-  /** Runs first in `buildEnd`: this override replaces the generic `buildEnd` hook. */
-  onBuildEnd?: () => void;
+  /** Runs first in `configResolved` (this override replaces any generic one). */
+  onConfigResolved?: (config: { command: string }) => void;
+  /**
+   * Runs first in `buildEnd` with the hook context: this override replaces
+   * the generic `buildEnd` hook.
+   */
+  onBuildEnd?: (context: unknown) => void;
 };
 
 type Consumer = 'client' | 'server';
@@ -142,6 +147,7 @@ export function createLocaleTwinsViteHooks(
     },
 
     configResolved(config: ConfigLike) {
+      options.onConfigResolved?.(config);
       resolvedConfig = config;
       for (const message of pendingWarnings.splice(0)) warn(message);
     },
@@ -151,7 +157,7 @@ export function createLocaleTwinsViteHooks(
     },
 
     buildEnd(this: HookContext & ModuleGraph, error?: Error) {
-      options.onBuildEnd?.();
+      options.onBuildEnd?.(this);
       if (!enabled || error) return;
       const { name } = describeEnvironment(this);
       vendorSelectors.get(name)?.record(this);
