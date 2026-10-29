@@ -1,5 +1,20 @@
 # gt-i18n
 
+## 2.0.0-samsara.0
+
+### Major Changes
+
+- bb107a8: Remove `typesVersions`. Subpath types such as `gt-next/server` now resolve only through `exports`, which needs `moduleResolution` `bundler` (TypeScript 5.0+) or `node16`/`nodenext` (TypeScript 4.7+). `moduleResolution` `node` (node10) is no longer supported, including its implicit use with `module: commonjs` in TypeScript 5.9 and earlier and in create-next-app projects from Next.js 13.4.10 and earlier.
+
+### Patch Changes
+
+- 85eab51: `resolveSupportedLocale()` and `determineSupportedLocale()` now always accept the default locale when given a one-off locale config, as `I18nConfig` already does. In gt-tanstack-start, a visitor whose browser prefers another locale can now switch to the default locale.
+- Updated dependencies [da7af80]
+- Updated dependencies [bb107a8]
+- Updated dependencies [002f579]
+  - generaltranslation@10.0.0-samsara.0
+  - @generaltranslation/format@1.0.0-samsara.1
+
 ## 1.0.39
 
 ### Patch Changes

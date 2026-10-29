@@ -1,5 +1,17 @@
 # gt-vue
 
+## 0.1.24-samsara.0
+
+### Patch Changes
+
+- Updated dependencies [da7af80]
+- Updated dependencies [bb107a8]
+- Updated dependencies [85eab51]
+- Updated dependencies [002f579]
+  - generaltranslation@10.0.0-samsara.0
+  - @generaltranslation/format@1.0.0-samsara.1
+  - gt-i18n@2.0.0-samsara.0
+
 ## 0.1.23
 
 ### Patch Changes

@@ -1,5 +1,16 @@
 # @generaltranslation/vue-extractor
 
+## 0.1.23-samsara.0
+
+### Patch Changes
+
+- bb107a8: Fix published type declarations that failed to resolve, or resolved to CommonJS types, under `moduleResolution` `node16` or `nodenext`.
+- Updated dependencies [da7af80]
+- Updated dependencies [bb107a8]
+- Updated dependencies [002f579]
+  - generaltranslation@10.0.0-samsara.0
+  - @generaltranslation/format@1.0.0-samsara.1
+
 ## 0.1.22
 
 ### Patch Changes

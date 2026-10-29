@@ -1,5 +1,28 @@
 # gt-next
 
+## 12.0.0-samsara.0
+
+### Major Changes
+
+- bb107a8: Remove `typesVersions`. Subpath types such as `gt-next/server` now resolve only through `exports`, which needs `moduleResolution` `bundler` (TypeScript 5.0+) or `node16`/`nodenext` (TypeScript 4.7+). `moduleResolution` `node` (node10) is no longer supported, including its implicit use with `module: commonjs` in TypeScript 5.9 and earlier and in create-next-app projects from Next.js 13.4.10 and earlier.
+
+### Patch Changes
+
+- bb107a8: Fix published type declarations that failed to resolve, or resolved to CommonJS types, under `moduleResolution` `node16` or `nodenext`.
+- 002f579: Export `GTCompilerOptions` from `generaltranslation/types`, the compiler options that framework integrations pass to `@generaltranslation/compiler`. The compiler's `PluginConfig`, gt-next's `experimentalCompilerOptions` and gt-tanstack-start's `experimentalCompilerOptions` now share it instead of repeating its fields.
+- Updated dependencies [85eab51]
+- Updated dependencies [da7af80]
+- Updated dependencies [bb107a8]
+- Updated dependencies [bb107a8]
+- Updated dependencies [85eab51]
+- Updated dependencies [002f579]
+  - @generaltranslation/compiler@1.3.66-samsara.0
+  - generaltranslation@10.0.0-samsara.0
+  - @generaltranslation/format@1.0.0-samsara.1
+  - gt-i18n@2.0.0-samsara.0
+  - gt-react@12.0.0-samsara.0
+  - @generaltranslation/react-core@12.0.0-samsara.0
+
 ## 11.4.16
 
 ### Patch Changes

@@ -1,5 +1,18 @@
 # gtx-cli
 
+## 3.0.0-samsara.0
+
+### Patch Changes
+
+- bb107a8: Fix published type declarations that failed to resolve, or resolved to CommonJS types, under `moduleResolution` `node16` or `nodenext`.
+- Updated dependencies [bb107a8]
+- Updated dependencies [469b2e2]
+- Updated dependencies [00227d1]
+- Updated dependencies [bb107a8]
+- Updated dependencies [de29049]
+- Updated dependencies [e6dac30]
+  - gt@3.0.0-samsara.0
+
 ## 2.26.10
 
 ### Patch Changes
