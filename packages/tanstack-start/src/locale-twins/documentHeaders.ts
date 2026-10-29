@@ -2,10 +2,13 @@ import {
   getResponseHeader,
   setResponseHeader,
 } from '@tanstack/react-start/server';
-import { getLocaleTwinDocumentHeaders } from 'gt-i18n/internal/locale-twins';
+import { applyLocaleTwinDocumentHeaders } from 'gt-i18n/internal/locale-twins';
 
 /** The response headers a matched route sets with its `headers()` option. */
 export type RouteHeaders = Record<string, string> | undefined;
+
+/** Locale twin document headers this sets; Start already sets Content-Type. */
+const DOCUMENT_HEADERS = ['vary', 'cache-control'];
 
 /**
  * The document's script URLs and text depend on the locale cookie and
@@ -18,41 +21,22 @@ export type RouteHeaders = Record<string, string> | undefined;
 export function setLocaleTwinDocumentHeaders(
   routeHeaders: readonly RouteHeaders[]
 ): void {
-  const current = new Headers();
-  for (const headers of routeHeaders) {
-    for (const [name, value] of Object.entries(headers ?? {})) {
-      current.set(name, value);
+  const headers = new Headers();
+  for (const route of routeHeaders) {
+    for (const [name, value] of Object.entries(route ?? {})) {
+      headers.set(name, value);
     }
   }
-  for (const name of ['vary', 'cache-control']) {
+  for (const name of DOCUMENT_HEADERS) {
     const value = getResponseHeader(name);
-    if (value !== undefined) current.set(name, value);
+    if (value !== undefined) headers.set(name, value);
   }
-
-  const documentHeaders = new Headers(getLocaleTwinDocumentHeaders());
-  setResponseHeader(
-    'vary',
-    mergeVary(current.get('vary'), documentHeaders.get('vary') ?? '')
-  );
-  if (!current.has('cache-control')) {
-    setResponseHeader(
-      'cache-control',
-      documentHeaders.get('cache-control') ?? ''
-    );
-  }
-}
-
-function mergeVary(current: string | null, added: string): string {
-  const values = (current ?? '')
-    .split(',')
-    .map((value) => value.trim())
-    .filter(Boolean);
-  const lowerCased = new Set(values.map((value) => value.toLowerCase()));
-  for (const value of added.split(',').map((item) => item.trim())) {
-    if (value && !lowerCased.has(value.toLowerCase())) {
-      values.push(value);
-      lowerCased.add(value.toLowerCase());
+  const before = new Headers(headers);
+  applyLocaleTwinDocumentHeaders(headers);
+  for (const name of DOCUMENT_HEADERS) {
+    const value = headers.get(name);
+    if (value !== null && value !== before.get(name)) {
+      setResponseHeader(name, value);
     }
   }
-  return values.join(', ');
 }

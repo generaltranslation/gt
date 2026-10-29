@@ -202,6 +202,25 @@ describe('createLocaleTwinDocument', () => {
     expect(body).toContain('index-A.es-33333333.js');
   });
 
+  it('keeps headers the caller passed and merges Vary', () => {
+    const document = createLocaleTwinDocument({ html: builtHtml() });
+    const response = document.respond(request({}), {
+      headers: {
+        'Cache-Control': 'private, max-age=60',
+        'Content-Type': 'text/html',
+        Vary: 'Origin, cookie',
+        'X-App': 'kept',
+      },
+    });
+
+    expect(response.headers.get('cache-control')).toBe('private, max-age=60');
+    expect(response.headers.get('content-type')).toBe('text/html');
+    expect(response.headers.get('vary')).toBe(
+      'Origin, cookie, Accept-Language'
+    );
+    expect(response.headers.get('x-app')).toBe('kept');
+  });
+
   it("uses the build's cookie name unless one is passed", () => {
     const html = builtHtml({ ...DATA, localeCookieName: 'build-locale' });
     expect(

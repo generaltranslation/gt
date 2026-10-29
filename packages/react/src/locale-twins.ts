@@ -12,6 +12,7 @@
  * return document.respond(request);
  */
 export {
+  applyLocaleTwinDocumentHeaders,
   createLocaleTwinDocument,
   getLocaleTwinAssetHeaders,
   getLocaleTwinDocumentHeaders,

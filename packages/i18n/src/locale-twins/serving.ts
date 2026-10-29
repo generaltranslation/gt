@@ -116,7 +116,11 @@ export type LocaleTwinDocument = {
    * twin and modulepreloads.
    */
   render(locale: string): string;
-  /** A `200` HTML response for the request's locale, with document headers. */
+  /**
+   * A `200` HTML response for the request's locale. Document headers are
+   * added without overriding `init.headers` (see
+   * {@link applyLocaleTwinDocumentHeaders}).
+   */
   respond(request: Request, init?: ResponseInit): Response;
 };
 
@@ -163,11 +167,7 @@ export function createLocaleTwinDocument({
     render,
     respond(request, init) {
       const headers = new Headers(init?.headers);
-      for (const [name, value] of Object.entries(
-        getLocaleTwinDocumentHeaders()
-      )) {
-        headers.set(name, value);
-      }
+      applyLocaleTwinDocumentHeaders(headers);
       return new Response(render(resolveLocale(request)), {
         status: 200,
         ...init,
@@ -213,6 +213,34 @@ export function getLocaleTwinDocumentHeaders(): Record<string, string> {
     Vary: 'Cookie, Accept-Language',
     'Cache-Control': 'private, no-cache',
   };
+}
+
+/**
+ * Adds {@link getLocaleTwinDocumentHeaders} to a document response's headers
+ * without overriding the app's own: `Vary` is merged (case-insensitive), and
+ * `Cache-Control` and `Content-Type` are set only when absent.
+ */
+export function applyLocaleTwinDocumentHeaders(headers: Headers): void {
+  const documentHeaders = new Headers(getLocaleTwinDocumentHeaders());
+  for (const [name, value] of documentHeaders) {
+    if (name === 'vary') headers.set(name, mergeVary(headers.get(name), value));
+    else if (!headers.has(name)) headers.set(name, value);
+  }
+}
+
+function mergeVary(current: string | null, added: string): string {
+  const values = (current ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const present = new Set(values.map((value) => value.toLowerCase()));
+  for (const value of added.split(',').map((item) => item.trim())) {
+    if (value && !present.has(value.toLowerCase())) {
+      values.push(value);
+      present.add(value.toLowerCase());
+    }
+  }
+  return values.join(', ');
 }
 
 /**

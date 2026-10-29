@@ -16,6 +16,7 @@ export type {
   ParsedLocaleTwinDocument,
 } from './locale-twins/document';
 export {
+  applyLocaleTwinDocumentHeaders,
   createLocaleTwinDocument,
   getLocaleTwinAssetHeaders,
   getLocaleTwinDocumentHeaders,
