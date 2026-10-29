@@ -1,0 +1,64 @@
+Save
+Cancel
+Delete
+Edit profile
+Sign in
+Sign out
+Create account
+Forgot your password?
+Settings
+Billing
+Team members
+Invite teammates
+Search projects
+No results found
+Something went wrong. Please try again.
+Your changes have been saved.
+Are you sure you want to delete this project?
+This action cannot be undone.
+Upload a file
+Drag and drop files here, or click to browse
+Copy to clipboard
+Copied!
+Last updated
+Read the docs
+Contact support
+Upgrade plan
+Your trial ends soon
+Manage API keys
+Create a new API key
+Keys are shown only once. Store yours somewhere safe.
+Language
+Theme
+Dark
+Light
+System
+Notifications
+Email notifications
+Mark all as read
+View all
+Back
+Next
+Previous
+Close
+Done
+Loading…
+Welcome back, {name}!
+Signed in as {email}
+Hi {firstName}, you have new activity.
+{count} selected
+Showing {start}–{end} of {total}
+{user} invited you to {team}
+Last edited by {name} on {date, date, medium}
+Total: {amount, number, ::currency/USD}
+{ratio, number, percent} complete
+Updated {when, time, short}
+{count, plural, one {# project} other {# projects}}
+{count, plural, =0 {No new messages} one {# new message} other {# new messages}}
+{count, plural, one {# member} other {# members}} in {team}
+{days, plural, one {Your trial ends tomorrow} other {Your trial ends in # days}}
+{role, select, owner {Owner} admin {Admin} other {Member}}
+{gender, select, female {She replied} male {He replied} other {They replied}}
+{place, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} place
+{count, plural, one {{name} and # other liked this} other {{name} and # others liked this}}
+By continuing you agree to the <terms>Terms of Service</terms>.

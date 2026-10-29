@@ -6,6 +6,7 @@ import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 import { isVariable } from '../utils/isVariable';
 import { HashMetadata } from './types';
+import { encodeForHash, type HashMode } from './prototype/xorEncoding';
 
 // ----- FUNCTIONS ----- //
 /**
@@ -31,6 +32,7 @@ export function hashString(string: string): string {
  * @param {string} [dataFormat] - The data format of the sources.
  * @param {string} [fileFormat] - The file format when the source is a whole document.
  * @param {function} [hashFunction] - Custom hash function.
+ * @param {HashMode} [hashMode] - PROTOTYPE: the XOR hashing proposal's modes.
  * @returns {string} - The unique hash of the children.
  */
 export function hashSource(
@@ -45,7 +47,8 @@ export function hashSource(
   }: {
     source: JsxChildren | string;
   } & HashMetadata,
-  hashFunction: (string: string) => string = hashString
+  hashFunction: (string: string) => string = hashString,
+  hashMode: HashMode = 'default'
 ): string {
   let sanitizedSource: SanitizedChildren | string;
   if (dataFormat === 'JSX') {
@@ -66,7 +69,10 @@ export function hashSource(
     ...(dataFormat && { dataFormat }),
     ...(fileFormat && { fileFormat }),
   };
-  const stringifiedData = stringify(sanitizedData);
+  const stringifiedData =
+    hashMode === 'default'
+      ? stringify(sanitizedData)
+      : encodeForHash(sanitizedData, hashMode);
   return hashFunction(stringifiedData);
 }
 

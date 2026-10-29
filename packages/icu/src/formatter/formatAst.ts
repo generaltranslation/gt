@@ -13,13 +13,13 @@ import {
   type MessageVariables,
 } from '../types-dir/ast';
 
-const NUMBER_STYLES: Record<string, Intl.NumberFormatOptions> = {
+export const NUMBER_STYLES: Record<string, Intl.NumberFormatOptions> = {
   integer: { maximumFractionDigits: 0 },
   currency: { style: 'currency' },
   percent: { style: 'percent' },
 };
 
-const DATE_STYLES: Record<string, Intl.DateTimeFormatOptions> = {
+export const DATE_STYLES: Record<string, Intl.DateTimeFormatOptions> = {
   short: { month: 'numeric', day: 'numeric', year: '2-digit' },
   medium: { month: 'short', day: 'numeric', year: 'numeric' },
   long: { month: 'long', day: 'numeric', year: 'numeric' },
@@ -38,17 +38,17 @@ const LONG_TIME_STYLE: Intl.DateTimeFormatOptions = {
   timeZoneName: 'short',
 };
 
-const TIME_STYLES: Record<string, Intl.DateTimeFormatOptions> = {
+export const TIME_STYLES: Record<string, Intl.DateTimeFormatOptions> = {
   short: { hour: 'numeric', minute: 'numeric' },
   medium: { hour: 'numeric', minute: 'numeric', second: 'numeric' },
   long: LONG_TIME_STYLE,
   full: LONG_TIME_STYLE,
 };
 
-type PluralValue = number | bigint;
-type TagFormatter = (parts: unknown[]) => unknown;
+export type PluralValue = number | bigint;
+export type TagFormatter = (parts: unknown[]) => unknown;
 
-type FormatContext = {
+export type FormatContext = {
   message: string;
   locales: string | string[];
   variables: MessageVariables;
@@ -205,7 +205,10 @@ function formatElements(
   return result;
 }
 
-function requireVariable(variables: MessageVariables, name: string): unknown {
+export function requireVariable(
+  variables: MessageVariables,
+  name: string
+): unknown {
   // intl-messageformat intentionally used `name in values`, so inherited and
   // proxy-backed records are observable through the public formatting API.
   // Selector option lookup remains own-property-only to avoid prototype
@@ -216,7 +219,7 @@ function requireVariable(variables: MessageVariables, name: string): unknown {
   return variables[name];
 }
 
-function applyScale(value: unknown, scale?: number): unknown {
+export function applyScale(value: unknown, scale?: number): unknown {
   // intl-messageformat treated scale/0 as an absent scale. Preserve that
   // observable behavior for existing messages even though multiplying by zero
   // would follow the ICU skeleton definition more literally.
@@ -232,7 +235,7 @@ function applyScale(value: unknown, scale?: number): unknown {
   return Number(value) * scale;
 }
 
-function getNumberFormat(
+export function getNumberFormat(
   context: FormatContext,
   options: Intl.NumberFormatOptions = {}
 ): Intl.NumberFormat {
@@ -243,7 +246,7 @@ function getNumberFormat(
   });
 }
 
-function getDateTimeFormat(
+export function getDateTimeFormat(
   context: FormatContext,
   options?: Intl.DateTimeFormatOptions
 ): Intl.DateTimeFormat {
@@ -254,7 +257,7 @@ function getDateTimeFormat(
   });
 }
 
-function getPluralRules(
+export function getPluralRules(
   context: FormatContext,
   type: Intl.PluralRuleType
 ): Intl.PluralRules {
@@ -285,7 +288,7 @@ function getCachedFormatter<Key, Value>(
   return formatter;
 }
 
-function toPluralRulesNumber(value: PluralValue): number {
+export function toPluralRulesNumber(value: PluralValue): number {
   const numberValue = Number(value);
   if (typeof value === 'bigint' && Math.abs(numberValue) > 0x1fffffffffffff) {
     throw new RangeError(
@@ -295,19 +298,24 @@ function toPluralRulesNumber(value: PluralValue): number {
   return numberValue;
 }
 
-function hasPluralCategoryOption(options: Record<string, unknown>): boolean {
+export function hasPluralCategoryOption(
+  options: Record<string, unknown>
+): boolean {
   return Object.keys(options).some(
     (selector) => selector !== 'other' && selector[0] !== '='
   );
 }
 
-function ownOption<T>(options: Record<string, T>, key: string): T | undefined {
+export function ownOption<T>(
+  options: Record<string, T>,
+  key: string
+): T | undefined {
   return Object.prototype.hasOwnProperty.call(options, key)
     ? options[key]
     : undefined;
 }
 
-function invalidSelection(
+export function invalidSelection(
   name: string,
   value: unknown,
   options: Record<string, unknown>
