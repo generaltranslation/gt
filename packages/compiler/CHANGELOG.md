@@ -1,5 +1,17 @@
 # @generaltranslation/compiler
 
+## 1.3.66-samsara.0
+
+### Patch Changes
+
+- 85eab51: The compiler now handles `<T>`, `useGT`, `t`, and other GT imports from `gt-tanstack-start` the same way it handles imports from `gt-react`.
+- 002f579: Export `GTCompilerOptions` from `generaltranslation/types`, the compiler options that framework integrations pass to `@generaltranslation/compiler`. The compiler's `PluginConfig`, gt-next's `experimentalCompilerOptions` and gt-tanstack-start's `experimentalCompilerOptions` now share it instead of repeating its fields.
+- Updated dependencies [da7af80]
+- Updated dependencies [bb107a8]
+- Updated dependencies [002f579]
+  - generaltranslation@10.0.0-samsara.0
+  - @generaltranslation/format@1.0.0-samsara.1
+
 ## 1.3.65
 
 ### Patch Changes

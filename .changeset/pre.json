@@ -63,7 +63,29 @@
     "gt-bundle-example-next": "0.0.0",
     "gt-bundle-example-tanstack-start": "0.0.0",
     "gt-bundle-example-vite-react": "0.0.0",
-    "gt-bundle-example-vite-vue": "0.0.0"
+    "gt-bundle-example-vite-vue": "0.0.0",
+    "gt-svelte": "0.0.0",
+    "@generaltranslation/svelte-extractor": "0.0.0",
+    "gt-test-sveltekit": "0.0.0"
   },
-  "changesets": ["samsara-seed-prerelease"]
+  "changesets": [
+    "cli-explicit-exports",
+    "cli-svelte",
+    "cli-tanstack-start-setup",
+    "compiler-tanstack-start-imports",
+    "core-plural-type",
+    "drop-types-versions",
+    "fix-published-types",
+    "i18n-default-locale-override",
+    "keep-json-trailing-newline",
+    "locadex-handoff-url",
+    "react-core-linter-translation-function-placement",
+    "samsara-seed-prerelease",
+    "shared-compiler-options-type",
+    "svelte-sdk",
+    "tanstack-start-basepath-case",
+    "tanstack-start-locale-routing-treeshake",
+    "tanstack-start-optional-middleware",
+    "tanstack-start-router-integration"
+  ]
 }

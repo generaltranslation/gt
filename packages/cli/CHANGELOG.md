@@ -1,5 +1,33 @@
 # gtx-cli
 
+## 3.0.0-samsara.0
+
+### Major Changes
+
+- bb107a8: Replace wildcard `exports` with an explicit list. Undocumented deep imports such as `gt/console/logging`, available through gt 2.x, are no longer importable.
+
+### Minor Changes
+
+- 469b2e2: feat: detect gt-svelte projects and extract `<T>` and string calls from `.svelte` files
+- 00227d1: `gt init` sets up TanStack Start apps with the `gtTanstackStart()` Vite plugin and `setupRouterGTIntegration({ router })` instead of editing `src/start.ts`, adding a root route loader and `<GTProvider>`, and generating a `loadTranslations` file. It sets the root route's `<html lang>` to `useLocale()`. In SPA mode, it asks you to move UI out of the root route so the prerendered shell stays blank until the visitor's translations load. The new setup requires gt-tanstack-start 12; with an older version installed, `gt init` leaves the app's source unchanged and asks you to upgrade.
+
+### Patch Changes
+
+- bb107a8: Fix published type declarations that failed to resolve, or resolved to CommonJS types, under `moduleResolution` `node16` or `nodenext`.
+- de29049: Keep the trailing newline of JSON files the CLI rewrites in place, such as `redirects.json`, `docs.json`, `gt.config.json`, and `package.json`, and end JSON files the CLI generates, such as `gt-lock.json`, with a newline
+- e6dac30: `gt init --locadex` now returns you to the dashboard after you connect GitHub, instead of a page that doesn't exist.
+- Updated dependencies [da7af80]
+- Updated dependencies [bb107a8]
+- Updated dependencies [bb107a8]
+- Updated dependencies [002f579]
+- Updated dependencies [8673283]
+  - generaltranslation@10.0.0-samsara.0
+  - @generaltranslation/format@1.0.0-samsara.1
+  - @generaltranslation/python-extractor@0.2.64-samsara.0
+  - @generaltranslation/vue-extractor@0.1.23-samsara.0
+  - @generaltranslation/svelte-extractor@0.1.0-samsara.0
+  - @generaltranslation/supported-locales@2.1.45-samsara.0
+
 ## 2.26.10
 
 ### Patch Changes

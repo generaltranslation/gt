@@ -1,5 +1,14 @@
 # @generaltranslation/supported-locales
 
+## 2.1.45-samsara.0
+
+### Patch Changes
+
+- Updated dependencies [da7af80]
+- Updated dependencies [bb107a8]
+- Updated dependencies [002f579]
+  - generaltranslation@10.0.0-samsara.0
+
 ## 2.1.44
 
 ### Patch Changes
