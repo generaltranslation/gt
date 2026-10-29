@@ -1,5 +1,12 @@
 # gtx-cli
 
+## 3.0.0-samsara.1
+
+### Patch Changes
+
+- Updated dependencies [12666a6]
+  - @generaltranslation/svelte-extractor@0.1.0-samsara.1
+
 ## 3.0.0-samsara.0
 
 ### Major Changes

@@ -1,6 +1,6 @@
 {
   "name": "gt-svelte",
-  "version": "0.1.0-samsara.0",
+  "version": "0.1.0-samsara.1",
   "description": "Svelte 5 internationalization library for General Translation.",
   "type": "module",
   "svelte": "./dist/index.js",
