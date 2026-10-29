@@ -15,7 +15,12 @@ import { version as PACKAGE_VERSION } from '../../../package.json';
 import { useTranslations } from '../TranslationsProvider';
 import { LanguageStatus } from '../shared/LanguageStatus';
 import { resolveLanguageStatusState } from '../../utils/languageStatusState';
-import { describeUntranslatableRole } from '../../utils/translationSource';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
+import {
+  describeUntranslatableRole,
+  getDocumentLanguage,
+} from '../../utils/translationSource';
+import { UNVERIFIED_ROLE_MESSAGE } from '../../utils/documentRoleState';
 import { LocaleSelector } from '../shared/LocaleSelector';
 import { DownloadIcon } from '@sanity/icons/Download';
 import { LinkIcon } from '@sanity/icons/Link';
@@ -70,21 +75,18 @@ export const TranslationView = () => {
   // Get the single document (first document in single document mode)
   const document = documents[0];
 
-  // Extract the current document's language from the language field
-  const currentDocumentLanguage = useMemo(() => {
-    if (!document) return null;
-
-    // Get the language from the document's language field
-    const languageField = pluginConfig.getLanguageField();
-    const documentLanguage = document[languageField];
-
-    // If no language field is set, assume it's the source language
-    return documentLanguage || pluginConfig.getSourceLocale();
-  }, [document]);
+  // The document's language; untagged documents are in the source locale.
+  const currentDocumentLanguage = document
+    ? getDocumentLanguage(document)
+    : null;
 
   // The locale this document is translated from, never a target.
   const sourceLocale =
     currentDocumentLanguage ?? pluginConfig.getSourceLocale();
+  // Local edits are only collected for groups whose original is in the
+  // configured source locale. The saved preference is left as it is, since
+  // it still applies to those documents.
+  const canPreserveLocalEdits = sourceLocale === pluginConfig.getSourceLocale();
 
   // Get available locales (excluding source locale)
   const availableLocales = useMemo(() => {
@@ -232,20 +234,24 @@ export const TranslationView = () => {
       </Card>
     );
   }
-  if (!documentRole) {
+  if (!documentRole || documentRole.status === 'resolving') {
     return (
       <Flex align='center' justify='center' padding={4}>
         <Spinner />
       </Flex>
     );
   }
-  if (documentRole.kind !== 'original') {
-    const { whatHappened, why, fix } = describeUntranslatableRole(documentRole);
+  const unavailableMessage =
+    documentRole.status === 'unverified'
+      ? UNVERIFIED_ROLE_MESSAGE
+      : documentRole.role.kind !== 'original'
+        ? createDiagnosticMessage(describeUntranslatableRole(documentRole.role))
+        : null;
+  if (unavailableMessage) {
     return (
       <Card padding={4} tone='neutral' border>
         <Text size={1} muted>
-          {whatHappened}
-          {why ? ` because ${why}` : ''}. {fix}.
+          {unavailableMessage}
         </Text>
       </Card>
     );
@@ -363,11 +369,7 @@ export const TranslationView = () => {
                   }
                 }}
                 disabled={
-                  isBusy ||
-                  !availableLocales.length ||
-                  // Local edits are only collected for groups whose original
-                  // is in the configured source locale.
-                  sourceLocale !== pluginConfig.getSourceLocale()
+                  isBusy || !availableLocales.length || !canPreserveLocalEdits
                 }
                 icon={UploadIcon}
                 text='Save Local Edits'
@@ -376,8 +378,12 @@ export const TranslationView = () => {
               />
               <Flex gap={2} align='center'>
                 <Switch
-                  checked={preserveExistingTranslations}
+                  checked={
+                    canPreserveLocalEdits && preserveExistingTranslations
+                  }
+                  disabled={!canPreserveLocalEdits}
                   onChange={() => {
+                    if (!canPreserveLocalEdits) return;
                     // Turning it on changes what wins on a conflict, so explain
                     // before enabling; turning it off is safe.
                     if (preserveExistingTranslations) {
@@ -390,6 +396,14 @@ export const TranslationView = () => {
                 <Text size={1}>Save local edits before translating</Text>
               </Flex>
             </Flex>
+            {!canPreserveLocalEdits && (
+              <Text size={1} muted>
+                Local edits can only be saved for translations of{' '}
+                {pluginConfig.getSourceLocale()} documents. Edits to
+                translations of this {sourceLocale} document are replaced when
+                they are imported.
+              </Text>
+            )}
             <Flex gap={3} align='center' justify='space-between'>
               <Flex gap={2} align='center'>
                 <Button

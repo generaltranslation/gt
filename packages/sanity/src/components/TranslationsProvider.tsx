@@ -7,10 +7,11 @@ import React, {
   useRef,
   ReactNode,
 } from 'react';
-import { SanityDocument, useSchema, type SanityClient } from 'sanity';
+import { SanityDocument, useDocumentStore, useSchema } from 'sanity';
 import { useToast } from '@sanity/ui/toast';
 import { useClient } from '../hooks/useClient';
 import { useSecrets } from '../hooks/useSecrets';
+import { useDocumentRole } from '../hooks/useDocumentRole';
 import {
   GTFile,
   Secrets,
@@ -50,9 +51,11 @@ import {
   EXISTING_TRANSLATIONS_BY_ORIGINAL_QUERY,
   getDocumentLanguage,
   isNonDefaultSourceLanguage,
-  resolveDocumentRole,
-  type TranslationRole,
 } from '../utils/translationSource';
+import {
+  checkTranslatableOriginal,
+  type DocumentRoleState,
+} from '../utils/documentRoleState';
 import { selectBulkSourceDocuments } from '../translation/bulkSources';
 import { createRefreshTracker } from '../utils/refreshTracker';
 import type {
@@ -164,10 +167,16 @@ interface TranslationsContextType {
    */
   excludedLocale: string;
   /**
-   * The open document's role in its translation group. `null` while
-   * resolving and on the Translations page.
+   * The open document's role in its translation group. `null` on the
+   * Translations page.
    */
-  documentRole: TranslationRole | null;
+  documentRole: DocumentRoleState | null;
+  /**
+   * Originals in scope written outside the configured source locale, which
+   * Translate All leaves out; each is translated from the Translate dialog on
+   * that document.
+   */
+  skippedOriginalCount: number;
 
   // Actions
   setLocales: (locales: TranslationLocale[]) => void;
@@ -235,26 +244,6 @@ function writeUploadedVersions(
   }
 }
 
-/**
- * The open document's role in its translation group. If the group cannot be
- * looked up, falls back to translating only source-locale documents.
- */
-async function resolveOpenDocumentRole(
-  document: SanityDocument,
-  client: SanityClient
-): Promise<TranslationRole> {
-  try {
-    return (await resolveDocumentRole(document, client)).role;
-  } catch (error) {
-    console.error('Error resolving translation group', document._id, error);
-    const language = getDocumentLanguage(document);
-    const sourceLocale = pluginConfig.getSourceLocale();
-    return language === sourceLocale
-      ? { kind: 'original', language }
-      : { kind: 'translation', language, originalLanguage: sourceLocale };
-  }
-}
-
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -278,12 +267,6 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
 }) => {
   const [isBusy, setIsBusy] = useState(false);
   const [documents, setDocuments] = useState<SanityDocument[]>([]);
-  const [documentRole, setDocumentRole] = useState<TranslationRole | null>(
-    null
-  );
-  // The open document's id and language its role was resolved for, so edits
-  // that keep both don't look the role up again.
-  const documentRoleKeyRef = useRef<string | null>(null);
   // Originals outside the source locale that Translate All leaves out; each is
   // translated from the Translate dialog on that document.
   const [skippedOriginalCount, setSkippedOriginalCount] = useState(0);
@@ -413,6 +396,15 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   const singleDocumentLanguage = singleDocument
     ? getDocumentLanguage(singleDocument)
     : undefined;
+  const documentStore = useDocumentStore();
+  // Looked up apart from loading documents, so it never holds up the first
+  // status refresh.
+  const documentRole = useDocumentRole({
+    documentId: singleDocument?._id,
+    language: singleDocumentLanguage,
+    client,
+    documentStore,
+  });
   const excludedLocale =
     singleDocumentLanguage ?? pluginConfig.getSourceLocale();
   // Only the document open in the Translate dialog can be an original outside the
@@ -432,14 +424,6 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     try {
       if (singleDocument) {
         setDocuments([singleDocument]);
-        const roleKey = `${getDocumentPublishedId(singleDocument)}:${getDocumentLanguage(singleDocument)}`;
-        if (documentRoleKeyRef.current !== roleKey) {
-          documentRoleKeyRef.current = roleKey;
-          setDocumentRole(null);
-          setDocumentRole(
-            await resolveOpenDocumentRole(singleDocument, client)
-          );
-        }
         return;
       }
 
@@ -620,6 +604,24 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       setIsBusy(true);
 
       try {
+        // Only a group's original is ever uploaded as a source. What is on
+        // screen may be out of date, so the open document's role is looked up
+        // again before anything is sent.
+        if (singleDocument) {
+          for (const document of documents) {
+            const check = await checkTranslatableOriginal(document, client);
+            if (!check.translatable) {
+              toast.push({
+                title: 'Translation was not started',
+                description: check.message,
+                status: 'error',
+                closable: true,
+              });
+              return;
+            }
+          }
+        }
+
         const availableLocaleIds = locales
           .filter((locale) => locale.enabled !== false)
           .map((locale) => locale.localeId);
@@ -784,6 +786,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       getTargetLocales,
       getDefaultSourceDocuments,
       skippedOriginalCount,
+      singleDocument,
     ]
   );
 
@@ -1624,6 +1627,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     getTargetLocales,
     excludedLocale,
     documentRole,
+    skippedOriginalCount,
 
     // Actions
     setLocales,

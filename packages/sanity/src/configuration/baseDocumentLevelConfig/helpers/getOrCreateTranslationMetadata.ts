@@ -103,9 +103,10 @@ export const getOrCreateTranslationMetadata = async (
     };
   }
 
+  let metadata: TranslationGroupMetadata;
   try {
     // Use createIfNotExists to handle race conditions
-    return await client.createIfNotExists({
+    metadata = await client.createIfNotExists({
       _id: translationMetadataId(publishedId),
       _type: TRANSLATION_METADATA_TYPE,
       translations: [baseLangEntry],
@@ -115,12 +116,17 @@ export const getOrCreateTranslationMetadata = async (
     });
   } catch (error) {
     // If creation fails due to race condition, fetch the existing document
-    const metadata = await findExisting();
+    const existing = await findExisting();
 
-    if (metadata) {
-      return metadata;
+    if (existing) {
+      return existing;
     }
 
     throw error;
   }
+
+  // createIfNotExists returns a metadata document already stored under this
+  // id unchanged, which need not name this document as its original.
+  assertOriginal(metadata);
+  return metadata;
 };

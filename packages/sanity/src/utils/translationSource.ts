@@ -37,7 +37,9 @@ export type TranslationGroupMetadata = SanityDocumentLike & {
  * - `original` — the document translations are made from.
  * - `translation` — a translation (machine or hand-written) of the original.
  * - `unresolved` — the group has no original gt-sanity can identify: no marker
- *   and no source-locale entry, or the marked original no longer exists.
+ *   and no source-locale entry, or the marked original no longer exists. Also
+ *   the group's original when its language field no longer matches the
+ *   language the group records for it.
  */
 export type TranslationRole =
   | { kind: 'original'; language: string }
@@ -46,6 +48,13 @@ export type TranslationRole =
       kind: 'unresolved';
       language: string;
       reason: 'noOriginal' | 'originalMissing';
+    }
+  | {
+      kind: 'unresolved';
+      language: string;
+      reason: 'languageChanged';
+      /** The language the group records for this document. */
+      recordedLanguage: string;
     };
 
 /**
@@ -114,6 +123,16 @@ export function resolveTranslationRole({
     };
   }
   if (original.ref === getPublishedId(documentId)) {
+    // Translating it would upload a document in one language as the source
+    // of a group recorded in another.
+    if (documentLanguage !== original.language) {
+      return {
+        kind: 'unresolved',
+        language: documentLanguage,
+        reason: 'languageChanged',
+        recordedLanguage: original.language,
+      };
+    }
     return { kind: 'original', language: original.language };
   }
   if (!originalExists) {
@@ -131,24 +150,31 @@ export function resolveTranslationRole({
 }
 
 /**
- * The translation group a document belongs to, found by the document's own
- * published id rather than through the source-locale entry, so originals in
- * any language — and translations — find their group.
- *
- * Older plugin versions could create a second metadata document for the same
- * original; the oldest one is used.
+ * Filter matching every translation group a document belongs to, found by the
+ * document's own published id (`$id`) rather than through the source-locale
+ * entry, so originals in any language — and translations — find their group.
+ * Kept to a plain filter so a Studio listener can use it as is.
  */
+export const TRANSLATION_GROUP_FILTER = `*[
+  _type == '${TRANSLATION_METADATA_TYPE}' &&
+  $id in translations[].value._ref
+]`;
+
+/**
+ * The translation group a document belongs to. Older plugin versions could
+ * create a second metadata document for the same original; the oldest one is
+ * used. Requires `$id`, the document's published id.
+ */
+export const TRANSLATION_GROUP_QUERY = `${TRANSLATION_GROUP_FILTER} | order(_createdAt asc)[0]`;
+
+/** The translation group a document belongs to; see `TRANSLATION_GROUP_QUERY`. */
 export function findTranslationGroup(
   documentId: string,
   client: SanityClient
 ): Promise<TranslationGroupMetadata | null> {
-  return client.fetch(
-    `*[
-      _type == '${TRANSLATION_METADATA_TYPE}' &&
-      count(translations[value._ref == $id]) > 0
-    ] | order(_createdAt asc)[0]`,
-    { id: getPublishedId(documentId) }
-  );
+  return client.fetch(TRANSLATION_GROUP_QUERY, {
+    id: getPublishedId(documentId),
+  });
 }
 
 async function documentExists(
@@ -162,6 +188,36 @@ async function documentExists(
   return count > 0;
 }
 
+/**
+ * Resolve a document's role in a translation group already looked up,
+ * checking that the group's original still exists when it is another
+ * document.
+ */
+export async function resolveRoleInGroup({
+  documentId,
+  documentLanguage,
+  metadata,
+  client,
+}: {
+  documentId: string;
+  documentLanguage: string;
+  metadata: TranslationGroupMetadata | null;
+  client: SanityClient;
+}): Promise<TranslationRole> {
+  const publishedId = getPublishedId(documentId);
+  let originalExists = true;
+  const originalRef = metadata ? getGroupOriginal(metadata).ref : undefined;
+  if (originalRef && originalRef !== publishedId) {
+    originalExists = await documentExists(originalRef, client);
+  }
+  return resolveTranslationRole({
+    documentId: publishedId,
+    documentLanguage,
+    metadata,
+    originalExists,
+  });
+}
+
 /** Look up a document's translation group and resolve its role in it. */
 export async function resolveDocumentRole(
   document: SanityDocumentLike,
@@ -171,21 +227,13 @@ export async function resolveDocumentRole(
   metadata: TranslationGroupMetadata | null;
 }> {
   const documentId = getPublishedId(document._id);
-  const documentLanguage = getDocumentLanguage(document);
   const metadata = await findTranslationGroup(documentId, client);
-
-  let originalExists = true;
-  const originalRef = metadata ? getGroupOriginal(metadata).ref : undefined;
-  if (originalRef && originalRef !== documentId) {
-    originalExists = await documentExists(originalRef, client);
-  }
-
   return {
-    role: resolveTranslationRole({
+    role: await resolveRoleInGroup({
       documentId,
-      documentLanguage,
+      documentLanguage: getDocumentLanguage(document),
       metadata,
-      originalExists,
+      client,
     }),
     metadata,
   };
@@ -199,6 +247,13 @@ export function describeUntranslatableRole(
     return {
       whatHappened: `This document is a translation of ${role.originalLanguage}`,
       fix: `Translate from the ${role.originalLanguage} original instead`,
+    };
+  }
+  if (role.reason === 'languageChanged') {
+    return {
+      whatHappened: 'Translation is unavailable for this document',
+      why: `its language is ${role.language}, but its translation group records it as ${role.recordedLanguage}`,
+      fix: `Change its language back to ${role.recordedLanguage} to translate this group again`,
     };
   }
   if (role.reason === 'originalMissing') {

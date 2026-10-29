@@ -37,6 +37,18 @@ import {
   getDocumentPublishedId,
 } from '../../utils/documentIds';
 import { getSelectedLocaleIds } from '../../utils/locales';
+import { pluginConfig } from '../../adapter/core';
+
+/**
+ * Explains why originals outside the source locale are missing from the
+ * list, including when they are all there is.
+ */
+function formatSkippedOriginalsNote(count: number): string {
+  const sourceLocale = pluginConfig.getSourceLocale();
+  return count === 1
+    ? `1 document written in a locale other than ${sourceLocale} is not included. Translate it from the Translate dialog on that document.`
+    : `${count} documents written in a locale other than ${sourceLocale} are not included. Translate each of them from the Translate dialog on that document.`;
+}
 
 const TranslationsToolContent: React.FC = () => {
   const [isTranslateAllDialogOpen, setIsTranslateAllDialogOpen] =
@@ -69,6 +81,7 @@ const TranslationsToolContent: React.FC = () => {
     branchId,
     getVersionId,
     getTargetLocales,
+    skippedOriginalCount,
   } = useTranslations();
 
   // Track which specific operation is running
@@ -220,6 +233,14 @@ const TranslationsToolContent: React.FC = () => {
                 />
               </Flex>
             </Flex>
+
+            {!loadingDocuments && skippedOriginalCount > 0 && (
+              <Card padding={3} radius={2} tone='primary' border>
+                <Text size={1}>
+                  {formatSkippedOriginalsNote(skippedOriginalCount)}
+                </Text>
+              </Card>
+            )}
 
             <TranslationsTable />
           </Stack>

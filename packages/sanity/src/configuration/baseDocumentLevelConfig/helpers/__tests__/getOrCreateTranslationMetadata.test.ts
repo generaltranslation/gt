@@ -101,6 +101,33 @@ describe('getOrCreateTranslationMetadata for a non-default original', () => {
     expect(createIfNotExists).not.toHaveBeenCalled();
     expect(metadataIn(dataset)).toHaveLength(1);
   });
+
+  test('refuses an existing metadata document under its id that names another original', async () => {
+    // Not found by the document's own id, so createIfNotExists returns the
+    // stored document unchanged.
+    const stale = metadataDoc(
+      'translation.metadata.page-fr',
+      [
+        ['de', 'page-de'],
+        ['en', 'page-en'],
+      ],
+      { gtSourceLanguage: 'de' }
+    );
+    const { client, createIfNotExists } = createGroqClient([
+      stale,
+      { _id: 'page-de', _type: 'page' },
+    ]);
+
+    await expect(
+      getOrCreateTranslationMetadata(
+        'page-fr',
+        { _id: 'page-fr', _type: 'page' },
+        client,
+        'fr'
+      )
+    ).rejects.toThrow(/translation of de/);
+    expect(createIfNotExists).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('getOrCreateTranslationMetadata for a source-locale original', () => {

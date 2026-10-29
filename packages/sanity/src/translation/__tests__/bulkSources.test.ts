@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { planBulkSources, selectBulkSourceDocuments } from '../bulkSources';
+import { selectBulkSourceDocuments } from '../bulkSources';
 import {
   createGroqClient,
   metadataDoc,
@@ -117,34 +117,61 @@ describe('Translate All document selection', () => {
   });
 });
 
-describe('planBulkSources', () => {
-  test('lists excluded members and skipped originals in published and draft form', () => {
-    expect(
-      planBulkSources([
-        {
-          nonDefaultOriginal: true,
-          originalRef: 'b-fr',
-          memberRefs: ['b-fr', 'b-en'],
-        },
-      ])
-    ).toEqual({
-      excludedIds: ['b-en', 'drafts.b-en'],
-      nonDefaultOriginalIds: ['b-fr', 'drafts.b-fr'],
+describe('Translate All query', () => {
+  test('runs the same document query as before when nothing is marked', async () => {
+    const { client, fetch } = createGroqClient([
+      page('a', 'en'),
+      metadataDoc('m-a', [['en', 'a']]),
+    ]);
+
+    await selectBulkSourceDocuments({
+      client,
+      scopeFilter: SCOPE_FILTER,
+      languageField: 'language',
+      sourceLocale: 'en',
+    });
+
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch.mock.calls[1]).toEqual([
+      `*[${SCOPE_FILTER} && (!defined(language) || language == "en")]`,
+    ]);
+  });
+
+  test('leaves out drafts of translations and every member but the original', async () => {
+    const dataset = [
+      page('b-fr', 'fr'),
+      page('b-en', 'en'),
+      page('drafts.b-en', 'en'),
+      // A second fr entry is a member, not the original.
+      page('b-fr-2', 'fr'),
+      metadataDoc(
+        'm-b',
+        [
+          ['fr', 'b-fr'],
+          ['en', 'b-en'],
+          ['fr', 'b-fr-2'],
+        ],
+        { gtSourceLanguage: 'fr' }
+      ),
+      page('a', 'en'),
+    ];
+
+    expect(await selectBulkSources(dataset)).toEqual({
+      ids: ['a'],
+      skippedOriginalCount: 1,
     });
   });
 
-  test('keeps the original of a group marked with the source locale', () => {
-    expect(
-      planBulkSources([
-        {
-          nonDefaultOriginal: false,
-          originalRef: 'a',
-          memberRefs: ['a', 'a-fr'],
-        },
-      ])
-    ).toEqual({
-      excludedIds: ['a-fr', 'drafts.a-fr'],
-      nonDefaultOriginalIds: [],
+  test('counts an original with a draft once', async () => {
+    const dataset = [
+      page('b-fr', 'fr'),
+      page('drafts.b-fr', 'fr'),
+      metadataDoc('m-b', [['fr', 'b-fr']], { gtSourceLanguage: 'fr' }),
+    ];
+
+    expect(await selectBulkSources(dataset)).toEqual({
+      ids: [],
+      skippedOriginalCount: 1,
     });
   });
 });

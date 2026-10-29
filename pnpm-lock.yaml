@@ -1588,7 +1588,7 @@ importers:
         version: 2.0.17
       '@sanity/document-internationalization':
         specifier: ^6.2.30
-        version: 6.2.30(7e173a6e345453cba40405057fa9e64e)
+        version: 6.2.30(ec7b5d21508528878286e6fdea8e5738)
       '@sanity/incompatible-plugin':
         specifier: ^1.0.5
         version: 1.0.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -1606,7 +1606,7 @@ importers:
         version: 4.6.2
       sanity-plugin-internationalized-array:
         specifier: ^5.1.27
-        version: 5.1.27(7e78dfe38f71d6cc7e011255e647d74e)
+        version: 5.1.27(463d484b7e32313aa5e470a144c56aa4)
     devDependencies:
       '@portabletext/types':
         specifier: ^2.0.15
@@ -1619,7 +1619,7 @@ importers:
         version: 5.2.1(react@19.2.3)
       '@sanity/language-filter':
         specifier: ^5.0.16
-        version: 5.0.16(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(sanity@6.9.2(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(@noble/hashes@2.2.0)(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.25.10)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))(@sanity/sdk@2.1.2(@types/react@19.2.7)(immer@10.1.3)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)))(@types/node@26.6.3)(@types/react@19.2.7)(babel-plugin-react-compiler@1.0.0)(bufferutil@4.0.9)(esbuild@0.25.10)(jiti@2.7.0)(oxfmt@0.47.0)(prismjs@1.30.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(rolldown@1.2.12)(sass@1.77.4)(styled-components@6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(terser@5.51.2)(typescript@5.9.3))(styled-components@6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3))
+        version: 5.0.16(28016d254930acad51d89bcb0cc26d99)
       '@sanity/mutator':
         specifier: ^6.9.2
         version: 6.9.2(@types/react@19.2.7)
@@ -1641,6 +1641,9 @@ importers:
       '@types/react':
         specifier: ^19.2.7
         version: 19.2.7
+      '@types/react-dom':
+        specifier: ^19.2.3
+        version: 19.3.0(@types/react@19.2.7)
       groq-js:
         specifier: ^1.29.0
         version: 1.29.0
@@ -1658,7 +1661,7 @@ importers:
         version: 19.2.3(react@19.2.3)
       sanity:
         specifier: ^6.9.2
-        version: 6.9.2(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(@noble/hashes@2.2.0)(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.25.10)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))(@sanity/sdk@2.1.2(@types/react@19.2.7)(immer@10.1.3)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)))(@types/node@26.6.3)(@types/react@19.2.7)(babel-plugin-react-compiler@1.0.0)(bufferutil@4.0.9)(esbuild@0.25.10)(jiti@2.7.0)(oxfmt@0.47.0)(prismjs@1.30.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(rolldown@1.2.12)(sass@1.77.4)(styled-components@6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(terser@5.51.2)(typescript@5.9.3)
+        version: 6.9.2(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(@noble/hashes@2.2.0)(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.25.10)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))(@sanity/sdk@2.1.2(@types/react@19.2.7)(immer@10.1.3)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)))(@types/node@26.6.3)(@types/react-dom@19.3.0(@types/react@19.2.7))(@types/react@19.2.7)(babel-plugin-react-compiler@1.0.0)(bufferutil@4.0.9)(esbuild@0.25.10)(jiti@2.7.0)(oxfmt@0.47.0)(prismjs@1.30.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(rolldown@1.2.12)(sass@1.77.4)(styled-components@6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(terser@5.51.2)(typescript@5.9.3)
       styled-components:
         specifier: ^6.1.19
         version: 6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -25604,7 +25607,7 @@ snapshots:
     dependencies:
       mux-embed: 5.17.10
 
-  '@mux/mux-player-react@3.13.2(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+  '@mux/mux-player-react@3.13.2(@types/react-dom@19.3.0(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     dependencies:
       '@mux/mux-player': 3.13.2(react@19.2.3)
       '@mux/playback-core': 0.35.2
@@ -25613,6 +25616,7 @@ snapshots:
       react-dom: 19.2.3(react@19.2.3)
     optionalDependencies:
       '@types/react': 19.2.7
+      '@types/react-dom': 19.3.0(@types/react@19.2.7)
 
   '@mux/mux-player@3.13.2(react@19.2.3)':
     dependencies:
@@ -28694,7 +28698,7 @@ snapshots:
     dependencies:
       '@sanity/diff-match-patch': 3.2.0
 
-  '@sanity/document-internationalization@6.2.30(7e173a6e345453cba40405057fa9e64e)':
+  '@sanity/document-internationalization@6.2.30(ec7b5d21508528878286e6fdea8e5738)':
     dependencies:
       '@sanity/icons': 5.2.1(react@19.2.3)
       '@sanity/mutator': 6.9.2(@types/react@19.2.7)
@@ -28704,9 +28708,9 @@ snapshots:
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
       rxjs: 7.8.2
-      sanity: 6.9.2(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(@noble/hashes@2.2.0)(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.25.10)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))(@sanity/sdk@2.1.2(@types/react@19.2.7)(immer@10.1.3)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)))(@types/node@26.6.3)(@types/react@19.2.7)(babel-plugin-react-compiler@1.0.0)(bufferutil@4.0.9)(esbuild@0.25.10)(jiti@2.7.0)(oxfmt@0.47.0)(prismjs@1.30.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(rolldown@1.2.12)(sass@1.77.4)(styled-components@6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(terser@5.51.2)(typescript@5.9.3)
-      sanity-plugin-internationalized-array: 5.1.27(7e78dfe38f71d6cc7e011255e647d74e)
-      sanity-plugin-utils: 2.0.15(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(sanity@6.9.2(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(@noble/hashes@2.2.0)(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.25.10)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))(@sanity/sdk@2.1.2(@types/react@19.2.7)(immer@10.1.3)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)))(@types/node@26.6.3)(@types/react@19.2.7)(babel-plugin-react-compiler@1.0.0)(bufferutil@4.0.9)(esbuild@0.25.10)(jiti@2.7.0)(oxfmt@0.47.0)(prismjs@1.30.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(rolldown@1.2.12)(sass@1.77.4)(styled-components@6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(terser@5.51.2)(typescript@5.9.3))(styled-components@6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3))
+      sanity: 6.9.2(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(@noble/hashes@2.2.0)(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.25.10)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))(@sanity/sdk@2.1.2(@types/react@19.2.7)(immer@10.1.3)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)))(@types/node@26.6.3)(@types/react-dom@19.3.0(@types/react@19.2.7))(@types/react@19.2.7)(babel-plugin-react-compiler@1.0.0)(bufferutil@4.0.9)(esbuild@0.25.10)(jiti@2.7.0)(oxfmt@0.47.0)(prismjs@1.30.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(rolldown@1.2.12)(sass@1.77.4)(styled-components@6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(terser@5.51.2)(typescript@5.9.3)
+      sanity-plugin-internationalized-array: 5.1.27(463d484b7e32313aa5e470a144c56aa4)
+      sanity-plugin-utils: 2.0.15(28016d254930acad51d89bcb0cc26d99)
     transitivePeerDependencies:
       - '@types/react'
       - styled-components
@@ -28786,7 +28790,7 @@ snapshots:
 
   '@sanity/json-match@1.0.5': {}
 
-  '@sanity/language-filter@5.0.16(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(sanity@6.9.2(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(@noble/hashes@2.2.0)(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.25.10)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))(@sanity/sdk@2.1.2(@types/react@19.2.7)(immer@10.1.3)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)))(@types/node@26.6.3)(@types/react@19.2.7)(babel-plugin-react-compiler@1.0.0)(bufferutil@4.0.9)(esbuild@0.25.10)(jiti@2.7.0)(oxfmt@0.47.0)(prismjs@1.30.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(rolldown@1.2.12)(sass@1.77.4)(styled-components@6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(terser@5.51.2)(typescript@5.9.3))(styled-components@6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3))':
+  '@sanity/language-filter@5.0.16(28016d254930acad51d89bcb0cc26d99)':
     dependencies:
       '@sanity/icons': 5.2.1(react@19.2.3)
       '@sanity/ui': 4.0.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(styled-components@6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3))
@@ -28794,7 +28798,7 @@ snapshots:
       react-dom: 19.2.3(react@19.2.3)
       react-rx: 4.2.5(react@19.2.3)(rxjs@7.8.2)
       rxjs: 7.8.2
-      sanity: 6.9.2(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(@noble/hashes@2.2.0)(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.25.10)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))(@sanity/sdk@2.1.2(@types/react@19.2.7)(immer@10.1.3)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)))(@types/node@26.6.3)(@types/react@19.2.7)(babel-plugin-react-compiler@1.0.0)(bufferutil@4.0.9)(esbuild@0.25.10)(jiti@2.7.0)(oxfmt@0.47.0)(prismjs@1.30.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(rolldown@1.2.12)(sass@1.77.4)(styled-components@6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(terser@5.51.2)(typescript@5.9.3)
+      sanity: 6.9.2(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(@noble/hashes@2.2.0)(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.25.10)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))(@sanity/sdk@2.1.2(@types/react@19.2.7)(immer@10.1.3)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)))(@types/node@26.6.3)(@types/react-dom@19.3.0(@types/react@19.2.7))(@types/react@19.2.7)(babel-plugin-react-compiler@1.0.0)(bufferutil@4.0.9)(esbuild@0.25.10)(jiti@2.7.0)(oxfmt@0.47.0)(prismjs@1.30.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(rolldown@1.2.12)(sass@1.77.4)(styled-components@6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(terser@5.51.2)(typescript@5.9.3)
     transitivePeerDependencies:
       - styled-components
 
@@ -30382,6 +30386,10 @@ snapshots:
   '@types/react-dom@19.2.3(@types/react@19.2.17)':
     dependencies:
       '@types/react': 19.2.17
+
+  '@types/react-dom@19.3.0(@types/react@19.2.7)':
+    dependencies:
+      '@types/react': 19.2.7
 
   '@types/react-dom@19.3.0(@types/react@19.3.0)':
     dependencies:
@@ -39632,21 +39640,21 @@ snapshots:
     dependencies:
       truncate-utf8-bytes: 1.0.2
 
-  sanity-plugin-internationalized-array@5.1.27(7e78dfe38f71d6cc7e011255e647d74e):
+  sanity-plugin-internationalized-array@5.1.27(463d484b7e32313aa5e470a144c56aa4):
     dependencies:
       '@sanity/icons': 5.2.1(react@19.2.3)
-      '@sanity/language-filter': 5.0.16(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(sanity@6.9.2(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(@noble/hashes@2.2.0)(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.25.10)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))(@sanity/sdk@2.1.2(@types/react@19.2.7)(immer@10.1.3)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)))(@types/node@26.6.3)(@types/react@19.2.7)(babel-plugin-react-compiler@1.0.0)(bufferutil@4.0.9)(esbuild@0.25.10)(jiti@2.7.0)(oxfmt@0.47.0)(prismjs@1.30.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(rolldown@1.2.12)(sass@1.77.4)(styled-components@6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(terser@5.51.2)(typescript@5.9.3))(styled-components@6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3))
+      '@sanity/language-filter': 5.0.16(28016d254930acad51d89bcb0cc26d99)
       '@sanity/ui': 4.0.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(styled-components@6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3))
       '@sanity/util': 6.9.2(@types/react@19.2.7)
       lodash-es: 4.18.1
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
-      sanity: 6.9.2(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(@noble/hashes@2.2.0)(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.25.10)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))(@sanity/sdk@2.1.2(@types/react@19.2.7)(immer@10.1.3)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)))(@types/node@26.6.3)(@types/react@19.2.7)(babel-plugin-react-compiler@1.0.0)(bufferutil@4.0.9)(esbuild@0.25.10)(jiti@2.7.0)(oxfmt@0.47.0)(prismjs@1.30.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(rolldown@1.2.12)(sass@1.77.4)(styled-components@6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(terser@5.51.2)(typescript@5.9.3)
+      sanity: 6.9.2(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(@noble/hashes@2.2.0)(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.25.10)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))(@sanity/sdk@2.1.2(@types/react@19.2.7)(immer@10.1.3)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)))(@types/node@26.6.3)(@types/react-dom@19.3.0(@types/react@19.2.7))(@types/react@19.2.7)(babel-plugin-react-compiler@1.0.0)(bufferutil@4.0.9)(esbuild@0.25.10)(jiti@2.7.0)(oxfmt@0.47.0)(prismjs@1.30.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(rolldown@1.2.12)(sass@1.77.4)(styled-components@6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(terser@5.51.2)(typescript@5.9.3)
     transitivePeerDependencies:
       - '@types/react'
       - styled-components
 
-  sanity-plugin-utils@2.0.15(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(sanity@6.9.2(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(@noble/hashes@2.2.0)(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.25.10)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))(@sanity/sdk@2.1.2(@types/react@19.2.7)(immer@10.1.3)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)))(@types/node@26.6.3)(@types/react@19.2.7)(babel-plugin-react-compiler@1.0.0)(bufferutil@4.0.9)(esbuild@0.25.10)(jiti@2.7.0)(oxfmt@0.47.0)(prismjs@1.30.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(rolldown@1.2.12)(sass@1.77.4)(styled-components@6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(terser@5.51.2)(typescript@5.9.3))(styled-components@6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3)):
+  sanity-plugin-utils@2.0.15(28016d254930acad51d89bcb0cc26d99):
     dependencies:
       '@sanity/asset-utils': 2.3.0
       '@sanity/icons': 5.2.1(react@19.2.3)
@@ -39656,10 +39664,10 @@ snapshots:
       react-dom: 19.2.3(react@19.2.3)
       react-fast-compare: 3.2.2
       rxjs: 7.8.2
-      sanity: 6.9.2(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(@noble/hashes@2.2.0)(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.25.10)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))(@sanity/sdk@2.1.2(@types/react@19.2.7)(immer@10.1.3)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)))(@types/node@26.6.3)(@types/react@19.2.7)(babel-plugin-react-compiler@1.0.0)(bufferutil@4.0.9)(esbuild@0.25.10)(jiti@2.7.0)(oxfmt@0.47.0)(prismjs@1.30.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(rolldown@1.2.12)(sass@1.77.4)(styled-components@6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(terser@5.51.2)(typescript@5.9.3)
+      sanity: 6.9.2(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(@noble/hashes@2.2.0)(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.25.10)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))(@sanity/sdk@2.1.2(@types/react@19.2.7)(immer@10.1.3)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)))(@types/node@26.6.3)(@types/react-dom@19.3.0(@types/react@19.2.7))(@types/react@19.2.7)(babel-plugin-react-compiler@1.0.0)(bufferutil@4.0.9)(esbuild@0.25.10)(jiti@2.7.0)(oxfmt@0.47.0)(prismjs@1.30.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(rolldown@1.2.12)(sass@1.77.4)(styled-components@6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(terser@5.51.2)(typescript@5.9.3)
       styled-components: 6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
 
-  sanity@6.9.2(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(@noble/hashes@2.2.0)(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.25.10)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))(@sanity/sdk@2.1.2(@types/react@19.2.7)(immer@10.1.3)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)))(@types/node@26.6.3)(@types/react@19.2.7)(babel-plugin-react-compiler@1.0.0)(bufferutil@4.0.9)(esbuild@0.25.10)(jiti@2.7.0)(oxfmt@0.47.0)(prismjs@1.30.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(rolldown@1.2.12)(sass@1.77.4)(styled-components@6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(terser@5.51.2)(typescript@5.9.3):
+  sanity@6.9.2(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(@noble/hashes@2.2.0)(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.25.10)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))(@sanity/sdk@2.1.2(@types/react@19.2.7)(immer@10.1.3)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)))(@types/node@26.6.3)(@types/react-dom@19.3.0(@types/react@19.2.7))(@types/react@19.2.7)(babel-plugin-react-compiler@1.0.0)(bufferutil@4.0.9)(esbuild@0.25.10)(jiti@2.7.0)(oxfmt@0.47.0)(prismjs@1.30.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(rolldown@1.2.12)(sass@1.77.4)(styled-components@6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(terser@5.51.2)(typescript@5.9.3):
     dependencies:
       '@algorithm.ts/lcs': 4.0.6
       '@date-fns/tz': 1.5.0
@@ -39668,7 +39676,7 @@ snapshots:
       '@dnd-kit/sortable': 10.0.0(@dnd-kit/core@6.3.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
       '@dnd-kit/utilities': 3.2.2(react@19.2.3)
       '@isaacs/ttlcache': 2.1.5
-      '@mux/mux-player-react': 3.13.2(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@mux/mux-player-react': 3.13.2(@types/react-dom@19.3.0(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@portabletext/editor': 7.10.18(@types/react@19.2.7)(react@19.2.3)
       '@portabletext/html': 1.1.2
       '@portabletext/patches': 2.0.6

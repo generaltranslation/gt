@@ -130,6 +130,38 @@ describe('resolveTranslationRole', () => {
       reason: 'originalMissing',
     });
   });
+
+  test('an original whose language no longer matches its group is unresolved', () => {
+    const marked = metadataDoc('m', [['fr', 'page']], {
+      gtSourceLanguage: 'fr',
+    });
+    expect(
+      resolveTranslationRole({
+        documentId: 'page',
+        documentLanguage: 'de',
+        metadata: marked,
+      })
+    ).toEqual({
+      kind: 'unresolved',
+      language: 'de',
+      reason: 'languageChanged',
+      recordedLanguage: 'fr',
+    });
+
+    const unmarked = metadataDoc('m', [['en', 'page']]);
+    expect(
+      resolveTranslationRole({
+        documentId: 'page',
+        documentLanguage: 'fr',
+        metadata: unmarked,
+      })
+    ).toEqual({
+      kind: 'unresolved',
+      language: 'fr',
+      reason: 'languageChanged',
+      recordedLanguage: 'en',
+    });
+  });
 });
 
 describe('resolveDocumentRole', () => {
