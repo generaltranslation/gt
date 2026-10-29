@@ -348,21 +348,15 @@ ${SCSS}
   });
 
   it('keeps <style> elements inside markup as written', () => {
-    const markup = '<T>Hi <style>.a { color: red; }</style></T>';
-    const withScss = analyzeSvelteSource(
-      `<script>import { T } from 'gt-svelte';</script>${markup}${SCSS}`,
+    // Only the top-level <style> is blanked, so the one inside <T> is still
+    // found and rejected.
+    const analysis = analyzeSvelteSource(
+      `<script>import { T } from 'gt-svelte';</script><T>Hi <style>.a { color: red; }</style></T>${SCSS}`,
       { parse }
     );
-    const plain = analyzeSvelteSource(
-      `<script>import { T } from 'gt-svelte';</script>${markup}`,
-      { parse }
-    );
-    expect(withScss.errors).toEqual([]);
-    expect(withScss.translations[0].source).toEqual([
-      'Hi ',
-      { t: 'style', i: 1, c: '.a { color: red; }' },
+    expect(analysis.errors.map((error) => error.whatHappened)).toEqual([
+      '<style> is not supported inside <T>',
     ]);
-    expect(withScss.translations[0].hash).toBe(plain.translations[0].hash);
   });
 });
 
@@ -386,6 +380,17 @@ describe('errors', () => {
     expect(errorsFor('<T>{@html x}</T>', 'let x;')).toEqual([
       '{@html} is not supported inside <T>',
     ]);
+  });
+
+  it('rejects <style>', () => {
+    expect(errorsFor('<T>Hi <style>.a { color: red; }</style></T>')).toEqual([
+      '<style> is not supported inside <T>',
+    ]);
+    expect(
+      errorsFor(
+        '<T>Hi <b><svelte:element this="style">a</svelte:element></b></T>'
+      )
+    ).toEqual(['<style> is not supported inside <T>']);
   });
 
   it('allows blocks wrapped in <Var>', () => {

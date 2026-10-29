@@ -418,6 +418,15 @@ class TranslationBuilder {
     counter: Counter,
     whitespace: FragmentWhitespace
   ): JsxElement | undefined {
+    if (node.type !== 'Component' && getTagName(node) === 'style') {
+      // Its contents are CSS, not translatable text.
+      this.problem(
+        node.start,
+        '<style> is not supported inside <T>',
+        'Move it outside <T>'
+      );
+      return undefined;
+    }
     const id = ++counter.index;
     for (const attribute of node.attributes) {
       if (attribute.type === 'AnimateDirective') {
