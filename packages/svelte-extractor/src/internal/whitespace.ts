@@ -1,16 +1,29 @@
 import type { SvelteNode } from './types.js';
 
-/** How Svelte treats whitespace in one fragment. */
+/** Where a fragment sits, for Svelte's whitespace handling. */
 export type FragmentWhitespace = {
   /**
    * Whether whitespace is kept as written: inside `<pre>` and `<textarea>`,
    * or with `<svelte:options preserveWhitespace />`.
    */
   preserve: boolean;
-  /** Whether the fragment is the children of a `<pre>`. */
-  pre: boolean;
-  /** Whether a lone space between nodes is dropped, as inside `<table>`. */
-  dropsSpaces: boolean;
+  /** Whether the fragment is in the SVG namespace. */
+  svg: boolean;
+  /** Whether the fragment is inside an SVG `<text>`. */
+  svgText: boolean;
+  /** The element the fragment is the children of, if any. */
+  element?: string;
+};
+
+/** The text of a text node, as Svelte writes it and as the DOM holds it. */
+export type RenderedText = {
+  /** The text Svelte writes into the HTML. */
+  markup: string;
+  /**
+   * The text the DOM holds once the browser parses that HTML, which is also
+   * what translations render.
+   */
+  text: string;
 };
 
 const STARTS_WITH_WHITESPACE = /^[ \t\r\n]+/;
@@ -42,61 +55,109 @@ const SPACE_DROPPING_ELEMENTS = new Set([
   'datalist',
 ]);
 
-/** Whitespace handling for the children of `parent`, inside `outer`. */
-export function getChildWhitespace(
-  outer: FragmentWhitespace,
-  parent: SvelteNode
+/** Whitespace handling at the top level of a component. */
+export function getRootWhitespace(
+  options: { preserveWhitespace?: boolean; namespace?: string } | null
 ): FragmentWhitespace {
-  const isElement = parent.type === 'RegularElement';
-  const name = parent.name as string;
   return {
-    preserve:
-      outer.preserve || (isElement && (name === 'pre' || name === 'textarea')),
-    pre: isElement && name === 'pre',
-    dropsSpaces: isElement && SPACE_DROPPING_ELEMENTS.has(name),
+    preserve: options?.preserveWhitespace === true,
+    svg: options?.namespace === 'svg',
+    svgText: false,
   };
 }
 
 /**
- * Returns the text Svelte renders for each text node of a fragment, keyed by
- * node, replicating the compiler's `clean_nodes`. Text Svelte removes has no
- * entry.
+ * Whitespace handling for the children of `node`, inside `outer`.
  *
+ * Elements inside `<svg>` are treated as SVG until a `<foreignObject>`, an
+ * approximation of Svelte's namespace inference, which also looks at
+ * element names.
+ */
+export function getChildWhitespace(
+  outer: FragmentWhitespace,
+  node: SvelteNode
+): FragmentWhitespace {
+  if (node.type !== 'RegularElement') return { ...outer, element: undefined };
+  const name = node.name as string;
+  const svg = outer.svg || name === 'svg';
+  return {
+    preserve: outer.preserve || name === 'pre' || name === 'textarea',
+    svg: svg && name !== 'foreignObject',
+    svgText: outer.svgText || (svg && name === 'text'),
+    element: name,
+  };
+}
+
+/**
+ * Returns the rendered text of each text node of a fragment, keyed by node.
+ * Text Svelte removes has no entry.
+ *
+ * Svelte's whitespace rules are replicated from the compiler's `clean_nodes`:
  * - Whitespace at the start and end of the fragment is removed.
  * - Whitespace between text and an element, component, or block becomes a
  *   single space, or nothing after text that already ends with whitespace.
  * - Whitespace next to an expression tag, and whitespace within text, is
  *   kept as written.
+ * - A lone space is dropped inside SVG and table-like elements.
  *
  * Comments are removed first, so text on both sides of one is adjacent.
- * Whitespace in SVG is not dropped as Svelte drops it.
+ *
+ * The HTML parser then turns carriage returns into line feeds and drops a
+ * line feed that opens a `<pre>`.
  */
 export function getRenderedText(
   nodes: SvelteNode[],
   whitespace: FragmentWhitespace
-): Map<SvelteNode, string> {
+): Map<SvelteNode, RenderedText> {
   const regular = nodes.filter(
     (node) => node.type !== 'Comment' && !HOISTED_NODE_TYPES.has(node.type)
   );
-  const rendered = new Map<SvelteNode, string>();
+  const markup = whitespace.preserve
+    ? getPreservedMarkup(regular, whitespace)
+    : getCleanedMarkup(regular, whitespace);
 
-  if (whitespace.preserve) {
-    regular.forEach((node, index) => {
-      if (node.type !== 'Text') return;
-      const data = node.data as string;
-      // The HTML parser drops a newline that opens a <pre>.
-      if (whitespace.pre && index === 0 && (data === '\n' || data === '\r\n')) {
-        return;
-      }
-      rendered.set(node, data);
-    });
-    return rendered;
+  const rendered = new Map<SvelteNode, RenderedText>();
+  for (const [node, text] of markup) {
+    let parsed = text.replace(/\r\n?/g, '\n');
+    if (whitespace.element === 'pre' && node === regular[0]) {
+      parsed = parsed.replace(/^\n/, '');
+    }
+    rendered.set(node, { markup: text, text: parsed });
   }
+  return rendered;
+}
 
+function getPreservedMarkup(
+  regular: SvelteNode[],
+  whitespace: FragmentWhitespace
+): Map<SvelteNode, string> {
+  const markup = new Map<SvelteNode, string>();
+  regular.forEach((node, index) => {
+    if (node.type !== 'Text') return;
+    const data = node.data as string;
+    // Svelte drops a line break that is all a <pre> starts with.
+    if (
+      whitespace.element === 'pre' &&
+      index === 0 &&
+      (data === '\n' || data === '\r\n')
+    ) {
+      return;
+    }
+    markup.set(node, data);
+  });
+  return markup;
+}
+
+function getCleanedMarkup(
+  regular: SvelteNode[],
+  whitespace: FragmentWhitespace
+): Map<SvelteNode, string> {
+  const markup = new Map<SvelteNode, string>();
   let start = 0;
   let end = regular.length;
   while (start < end && isWhitespaceText(regular[start])) start++;
   while (end > start && isWhitespaceText(regular[end - 1])) end--;
+  if (start === end) return markup;
 
   const texts = new Map<SvelteNode, string>();
   for (let i = start; i < end; i++) {
@@ -104,7 +165,6 @@ export function getRenderedText(
       texts.set(regular[i], regular[i].data as string);
     }
   }
-  if (start === end) return rendered;
   const first = regular[start];
   if (first.type === 'Text') {
     texts.set(first, texts.get(first)!.replace(STARTS_WITH_WHITESPACE, ''));
@@ -114,6 +174,9 @@ export function getRenderedText(
     texts.set(last, texts.get(last)!.replace(ENDS_WITH_WHITESPACE, ''));
   }
 
+  const dropsSpaces =
+    (whitespace.svg && !whitespace.svgText) ||
+    SPACE_DROPPING_ELEMENTS.has(whitespace.element ?? '');
   for (let i = start; i < end; i++) {
     const node = regular[i];
     if (node.type !== 'Text') continue;
@@ -133,11 +196,11 @@ export function getRenderedText(
       text = text.replace(ENDS_WITH_WHITESPACE, ' ');
     }
     texts.set(node, text);
-    if (text && (text !== ' ' || !whitespace.dropsSpaces)) {
-      rendered.set(node, text);
+    if (text && (text !== ' ' || !dropsSpaces)) {
+      markup.set(node, text);
     }
   }
-  return rendered;
+  return markup;
 }
 
 function isWhitespaceText(node: SvelteNode): boolean {

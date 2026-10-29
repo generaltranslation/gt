@@ -12,6 +12,9 @@
   </GTProvider>
   ```
 -->
+
+<svelte:options preserveWhitespace={false} />
+
 <script lang="ts">
   import type { Content } from '@generaltranslation/format/types';
   import { getI18nConfig } from 'gt-i18n/internal';

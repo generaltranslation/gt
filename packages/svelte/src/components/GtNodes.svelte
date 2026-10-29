@@ -3,6 +3,9 @@
   Renders translated JSX children by calling the snippets the preprocessor
   generated from the source `<T>` children. Internal to gt-svelte.
 -->
+
+<svelte:options preserveWhitespace={false} />
+
 <script lang="ts">
   import type { JsxChildren } from '@generaltranslation/format/types';
   import GtNodes from './GtNodes.svelte';

@@ -48,3 +48,9 @@
 </div>
 <div><pre><Passthrough>  a  <b> b </b>
   c  </Passthrough></pre></div>
+<div><Passthrough><pre>
+first
+second</pre></Passthrough></div>
+<div><Passthrough><span>a&#13;b</span></Passthrough></div>
+<div><Passthrough><svg><text>a</text>
+<text>b</text></svg></Passthrough></div>

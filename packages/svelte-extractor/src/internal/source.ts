@@ -14,6 +14,8 @@ import {
   type TranslationPlan,
 } from './translation.js';
 import { planVariables, type VariablePlan } from './variables.js';
+import type { FragmentWhitespace } from './whitespace.js';
+import { getChildWhitespace, getRootWhitespace } from './whitespace.js';
 import type {
   SourceCodeContext,
   SourceLocation,
@@ -260,7 +262,7 @@ function planTranslations(
   const components = findTranslationComponents(
     root.fragment,
     bindings,
-    root.options?.preserveWhitespace === true
+    getRootWhitespace(root.options ?? null)
   );
   if (components.length === 0) return { plans, errors };
 
@@ -274,13 +276,13 @@ function planTranslations(
     return { plans, errors };
   }
 
-  for (const { node, preserveWhitespace } of components) {
+  for (const { node, whitespace } of components) {
     const analysis = analyzeTranslation(
       source,
       node,
       bindings,
       variables.edits,
-      preserveWhitespace
+      whitespace
     );
     if (!analysis.ok) {
       for (const problem of analysis.problems) {
@@ -342,21 +344,21 @@ function isPropertyName(
 
 type TranslationComponent = {
   node: SvelteElementNode;
-  /** Whether Svelte keeps whitespace in `<T>` as written. */
-  preserveWhitespace: boolean;
+  /** Whitespace handling where `<T>` is rendered. */
+  whitespace: FragmentWhitespace;
 };
 
 /** Finds `<T>` components, without descending into them. */
 function findTranslationComponents(
   value: unknown,
   bindings: GTBindings,
-  preserveWhitespace: boolean,
+  whitespace: FragmentWhitespace,
   found: TranslationComponent[] = []
 ): TranslationComponent[] {
   if (!value || typeof value !== 'object') return found;
   if (Array.isArray(value)) {
     for (const item of value) {
-      findTranslationComponents(item, bindings, preserveWhitespace, found);
+      findTranslationComponents(item, bindings, whitespace, found);
     }
     return found;
   }
@@ -365,18 +367,17 @@ function findTranslationComponents(
     node.type === 'Component' &&
     resolveComponent(bindings, node.name as string) === 'T'
   ) {
-    found.push({ node: node as SvelteElementNode, preserveWhitespace });
+    found.push({ node: node as SvelteElementNode, whitespace });
     return found;
   }
-  const preservesChildren =
-    preserveWhitespace ||
-    (node.type === 'RegularElement' &&
-      (node.name === 'pre' || node.name === 'textarea'));
+  const childWhitespace = node.type
+    ? getChildWhitespace(whitespace, node)
+    : whitespace;
   for (const key in node) {
     if (key === 'metadata' || key === 'loc' || key === 'name_loc') continue;
     const child = node[key];
     if (child && typeof child === 'object') {
-      findTranslationComponents(child, bindings, preservesChildren, found);
+      findTranslationComponents(child, bindings, childWhitespace, found);
     }
   }
   return found;

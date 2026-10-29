@@ -9,6 +9,9 @@
   <T>Posted <RelativeTime value={postedAt} /></T>
   ```
 -->
+
+<svelte:options preserveWhitespace={false} />
+
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { getFormatLocales, getFormatter } from '../runtime/format';

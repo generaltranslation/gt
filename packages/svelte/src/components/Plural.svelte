@@ -9,6 +9,9 @@
   </Plural>
   ```
 -->
+
+<svelte:options preserveWhitespace={false} />
+
 <script lang="ts">
   import { getPluralForm } from 'generaltranslation/internal';
   import type { PluralType } from 'generaltranslation/types';

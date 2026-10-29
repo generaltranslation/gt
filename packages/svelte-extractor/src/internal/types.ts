@@ -44,7 +44,7 @@ export type SvelteRoot = {
   instance?: { content: { body: SvelteNode[] } } | null;
   module?: { content: { body: SvelteNode[] } } | null;
   /** The `<svelte:options>` element. */
-  options?: { preserveWhitespace?: boolean } | null;
+  options?: { preserveWhitespace?: boolean; namespace?: string } | null;
 };
 
 /** The `parse` function from `svelte/compiler`. */

@@ -13,7 +13,7 @@ import {
 import { hashSource } from 'generaltranslation/id';
 import type { GTBindings, GTComponentKind } from './imports.js';
 import { resolveComponent } from './imports.js';
-import type { FragmentWhitespace } from './whitespace.js';
+import type { FragmentWhitespace, RenderedText } from './whitespace.js';
 import { getChildWhitespace, getRenderedText } from './whitespace.js';
 import type {
   GTRuntimeMetadata,
@@ -90,8 +90,9 @@ export type TranslationPlan = {
   /** Generated `{#snippet}` declarations, one per element and variable. */
   snippets: string[];
   /**
-   * Text rewrites that make whitespace written as entities render the same
-   * on the server and in the browser.
+   * Text rewrites that write out the whitespace Svelte renders, so the source
+   * renders the extracted text on the server and in the browser, with or
+   * without the `preserveWhitespace` compiler option.
    */
   edits: TextEdit[];
 };
@@ -128,13 +129,17 @@ export function analyzeTranslation(
   node: SvelteElementNode,
   bindings: GTBindings,
   variableEdits: TextEdit[] = [],
-  preserveWhitespace = false
+  /** Whitespace handling where `<T>` is rendered. */
+  whitespace: FragmentWhitespace = {
+    preserve: false,
+    svg: false,
+    svgText: false,
+  }
 ): TranslationAnalysis {
-  return new TranslationBuilder(source, bindings, variableEdits).build(node, {
-    preserve: preserveWhitespace,
-    pre: false,
-    dropsSpaces: false,
-  });
+  return new TranslationBuilder(source, bindings, variableEdits).build(
+    node,
+    getChildWhitespace(whitespace, node)
+  );
 }
 
 class TranslationBuilder {
@@ -359,23 +364,17 @@ class TranslationBuilder {
   /** Converts a text node, given the text Svelte renders for it. */
   private convertText(
     node: SvelteNode,
-    text: string | undefined
+    rendered: RenderedText | undefined
   ): string | undefined {
-    if (!text) return undefined;
-    const raw = node.raw as string;
-    // Svelte trims the decoded text on the server but the raw markup in the
-    // browser, so whitespace written as an entity can render differently.
-    // Writing it out makes both render the text translations use.
-    if (
-      countMatches(node.data as string, SVELTE_WHITESPACE) !==
-      countMatches(raw, SVELTE_WHITESPACE)
-    ) {
-      const markup = escapeText(text);
-      if (markup !== raw) {
-        this.edits.push({ start: node.start, end: node.end, text: markup });
-      }
+    // Writing out the text Svelte renders keeps the source rendering it when
+    // the compiler is configured to preserve whitespace, which the extractor
+    // cannot see. It also makes whitespace written as an entity, which
+    // Svelte trims on the server but not in the browser, render the same.
+    const markup = rendered ? escapeText(rendered.markup) : '';
+    if (markup !== node.raw) {
+      this.edits.push({ start: node.start, end: node.end, text: markup });
     }
-    return text;
+    return rendered?.text || undefined;
   }
 
   private convertExpressionTag(node: SvelteNode): string | undefined {
@@ -751,7 +750,6 @@ class TranslationBuilder {
 
 // ===== Helpers ===== //
 
-const SVELTE_WHITESPACE = /[ \t\n\r]/g;
 const MARKUP_CHARACTERS: Record<string, string> = {
   '&': '&amp;',
   '<': '&lt;',
@@ -762,10 +760,6 @@ const MARKUP_CHARACTERS: Record<string, string> = {
 /** Escapes text so Svelte parses it back as the same text. */
 function escapeText(text: string): string {
   return text.replace(/[&<{}]/g, (char) => MARKUP_CHARACTERS[char]);
-}
-
-function countMatches(text: string, pattern: RegExp): number {
-  return text.match(pattern)?.length ?? 0;
 }
 
 const CONTENT_PROP_NAMES = new Map<string, string>(

@@ -47,3 +47,9 @@
 </div>
 <div><pre><T>  a  <b> b </b>
   c  </T></pre></div>
+<div><T><pre>
+first
+second</pre></T></div>
+<div><T><span>a&#13;b</span></T></div>
+<div><T><svg><text>a</text>
+<text>b</text></svg></T></div>

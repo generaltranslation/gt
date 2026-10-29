@@ -35,9 +35,7 @@ describe('transformSvelteSource', () => {
         let name = $state('Ada');
       </script>
 
-      <Translate _hash="8eab79643759a9cf" _gtm={{"v":{"":{"_gt_value_2":2}}}} context="greeting">
-        Hello <b class="x" title="Bold">dear <Var>{name}</Var></b>!
-      {#snippet __gt_v_2()}<Var>{name}</Var>{/snippet}{#snippet __gt_e_1(__gt_kids, __gt_d)}<b class="x" title={__gt_d?.ti ?? "Bold"}>{@render __gt_kids()}</b>{/snippet}</Translate>
+      <Translate _hash="8eab79643759a9cf" _gtm={{"v":{"":{"_gt_value_2":2}}}} context="greeting">Hello <b class="x" title="Bold">dear <Var>{name}</Var></b>!{#snippet __gt_v_2()}<Var>{name}</Var>{/snippet}{#snippet __gt_e_1(__gt_kids, __gt_d)}<b class="x" title={__gt_d?.ti ?? "Bold"}>{@render __gt_kids()}</b>{/snippet}</Translate>
       "
     `);
     expect(() =>
@@ -158,6 +156,33 @@ describe('transformSvelteSource', () => {
       i: 1,
       c: { t: 'tbody', i: 2 },
     });
+    expect(
+      source('<T><svg><text>a b</text>\n<text> c</text></svg></T>')
+    ).toEqual({
+      t: 'svg',
+      i: 1,
+      c: [
+        { t: 'text', i: 2, c: 'a b' },
+        { t: 'text', i: 3, c: 'c' },
+      ],
+    });
+    expect(
+      source('<svelte:options namespace="svg" /><T><g /> <g /></T>')
+    ).toEqual([
+      { t: 'g', i: 1 },
+      { t: 'g', i: 2 },
+    ]);
+    expect(
+      source(
+        '<T><svg><foreignObject><b>a</b> <i>b</i></foreignObject></svg></T>'
+      )
+    ).toMatchObject({ c: { c: [{ t: 'b' }, ' ', { t: 'i' }] } });
+    // The HTML parser turns carriage returns into line feeds.
+    expect(source('<T><span>a\r\nb&#13;c</span></T>')).toEqual({
+      t: 'span',
+      i: 1,
+      c: 'a\nb\nc',
+    });
   });
 
   it('keeps whitespace as written where Svelte preserves it', () => {
@@ -166,12 +191,12 @@ describe('transformSvelteSource', () => {
         `<script>import { T } from 'gt-svelte';</script>${markup}`,
         { parse, filename: 'Fixture.svelte' }
       ).translations[0].source;
-    expect(source('<T><pre>\n  a  </pre></T>')).toEqual({
+    // The HTML parser drops a line feed that opens a <pre>.
+    expect(source('<T><pre>\nfirst\n  second  </pre></T>')).toEqual({
       t: 'pre',
       i: 1,
-      c: '\n  a  ',
+      c: 'first\n  second  ',
     });
-    // Svelte drops a newline that is all a <pre> starts with.
     expect(source('<T><pre>\n<b>a</b></pre></T>')).toEqual({
       t: 'pre',
       i: 1,
@@ -183,20 +208,26 @@ describe('transformSvelteSource', () => {
     );
   });
 
-  it('writes out whitespace encoded as entities for source rendering', () => {
+  it('writes out the text Svelte renders for source rendering', () => {
     // The rewritten children, before the generated snippets.
     const body = (markup: string) =>
       transform(
         `<script>import { T } from 'gt-svelte';</script><T>${markup}</T>`
       )!.code.match(/<T _hash="\w+">([\s\S]*?)(?:\{#snippet|<\/T>)/)![1];
+    // Whitespace Svelte trims or collapses is written as rendered, so the
+    // preserveWhitespace compiler option does not change the source.
+    expect(body('\n  Tom &amp; Jerry\n  <b> x </b>\n')).toBe(
+      'Tom &amp; Jerry <b>x</b>'
+    );
+    expect(body('<b>x</b>\n  <!-- c -->\n  <i>y</i>')).toBe(
+      '<b>x</b> <!-- c --><i>y</i>'
+    );
+    expect(body('<pre>\n  a\n</pre>')).toBe('<pre>\n  a\n</pre>');
+    // Whitespace written as entities is written out.
     expect(body('&#32;Hello&#32;')).toBe('Hello');
     expect(body('a&#13;<b>b</b>')).toBe('a <b>b</b>');
     expect(body("{'x'}&#9;&amp;&#123;&#32;<b>b</b>")).toBe(
       "{'x'}\t&amp;&#123; <b>b</b>"
-    );
-    // Other text is left as written.
-    expect(body('\n  Tom &amp; Jerry\n  <b>x</b>\n')).toBe(
-      '\n  Tom &amp; Jerry\n  <b>x</b>\n'
     );
   });
 

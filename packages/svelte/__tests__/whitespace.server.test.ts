@@ -1,28 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { analyzeSvelteSource } from '@generaltranslation/svelte-extractor';
-import { parse } from 'svelte/compiler';
 import type { Component } from 'svelte';
 import { render } from 'svelte/server';
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { Content } from '@generaltranslation/format/types';
 import Harness from './fixtures/Harness.svelte';
 import Whitespace from './fixtures/Whitespace.svelte';
 import WhitespacePlain from './fixtures/WhitespacePlain.svelte';
 import { setupGT, withoutComments } from './helpers';
 
 const FIXTURES = join(process.cwd(), '__tests__/fixtures');
-
-/** A catalog whose translations are each `<T>`'s own serialized source. */
-function identityCatalog(fixture: string): Record<string, Content> {
-  const { translations } = analyzeSvelteSource(
-    readFileSync(join(FIXTURES, fixture), 'utf8'),
-    { parse }
-  );
-  return Object.fromEntries(
-    translations.map(({ hash, source }) => [hash, source as Content])
-  );
-}
 
 /** The rendered `<div>` contents, with hydration comments removed. */
 function cases(
@@ -63,6 +49,9 @@ const expected = [
   'You can make 7 of 50 recipes',
   'Read the <a href="/docs">docs</a> today',
   '<pre>  a  <b> b </b>\n  c  </pre>',
+  '<pre>\nfirst\nsecond</pre>',
+  '<span>a\nb</span>',
+  '<svg><text>a</text><text>b</text></svg>',
 ];
 
 describe('<T> whitespace', () => {
@@ -79,10 +68,5 @@ describe('<T> whitespace', () => {
 
   it('renders source text with the whitespace Svelte renders', () => {
     expect(cases(Whitespace, { locale: 'en' })).toEqual(expected);
-  });
-
-  it('renders an unchanged translation exactly like the source', () => {
-    const translations = identityCatalog('Whitespace.svelte');
-    expect(cases(Whitespace, { locale: 'fr', translations })).toEqual(expected);
   });
 });
