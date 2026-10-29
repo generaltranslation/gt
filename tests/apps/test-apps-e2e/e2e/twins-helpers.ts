@@ -11,6 +11,8 @@ import type {
 } from '@playwright/test';
 import {
   attributedHashes,
+  checkAttribution,
+  derivedEntryHashes,
   distinctiveSegments,
   findFilledTables,
   readTranslations,
@@ -74,15 +76,23 @@ export function readTwinBuild(config: TwinAppConfig): TwinBuild {
     manifest.locales
   );
   const attributed = attributedHashes(clientDir, manifest);
+  const report = readTwinReport(appDir);
+  const source = translations[manifest.defaultLocale];
+  // The string lists below come from the translation files: a build that
+  // attributes fewer entries than expected fails here instead of shrinking them
+  const problems = checkAttribution({ source, attributed, report });
+  if (problems.length > 0) {
+    throw new Error(
+      `The locale twin build of ${config.appDir} is incomplete:\n${problems.join('\n')}`
+    );
+  }
   return {
     clientDir,
     manifest,
-    report: readTwinReport(clientDir),
+    report,
     translations,
     attributed,
-    unattributed: Object.keys(translations[manifest.defaultLocale]).filter(
-      (hash) => !attributed.has(hash)
-    ),
+    unattributed: [...derivedEntryHashes(source)],
     segments: distinctiveSegments(translations, attributed),
     localeCookieName: readLocaleCookieName(clientDir),
   };

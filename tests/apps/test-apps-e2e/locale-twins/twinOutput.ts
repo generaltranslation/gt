@@ -19,6 +19,15 @@ export type TwinManifest = {
   twins: Record<string, Record<string, string>>;
 };
 
+/** An entry the build left unattributed (it keeps its source text in code). */
+export type TwinReportUnattributedEntry = {
+  file: string;
+  line?: number;
+  column?: number;
+  api: string;
+  reason: string;
+};
+
 /** The parts of `gt-locale-twins-report.json` the tests read. */
 export type TwinReport = {
   defaultLocale: string;
@@ -30,6 +39,7 @@ export type TwinReport = {
   twinnedBytes: number;
   twinBytes: Record<string, number>;
   outputMultiplier: number;
+  unattributed: TwinReportUnattributedEntry[];
   spa?: { bootstrap: string; documents: string[]; cspHash?: string };
 };
 
@@ -52,6 +62,8 @@ export type TranslationFile = Record<string, TranslationContent>;
 
 export const TWIN_MANIFEST_FILE = 'gt-locale-twins.json';
 export const TWIN_REPORT_FILE = 'gt-locale-twins-report.json';
+/** Where the build writes its report, relative to the Vite root (not public). */
+export const TWIN_REPORT_PATH = `node_modules/.cache/gt/${TWIN_REPORT_FILE}`;
 const DOCUMENT_DATA_PATTERN =
   /<script\b[^>]*\bid=["']?gt-locale-twins-data["']?[^>]*>([\s\S]*?)<\/script\s*>/i;
 
@@ -65,8 +77,9 @@ export function readTwinManifest(clientDir: string): TwinManifest {
   return readJson(path.join(clientDir, TWIN_MANIFEST_FILE)) as TwinManifest;
 }
 
-export function readTwinReport(clientDir: string): TwinReport {
-  return readJson(path.join(clientDir, TWIN_REPORT_FILE)) as TwinReport;
+/** Reads the build report of the app whose Vite root is `rootDir`. */
+export function readTwinReport(rootDir: string): TwinReport {
+  return readJson(path.join(rootDir, TWIN_REPORT_PATH)) as TwinReport;
 }
 
 export function readTwinDocumentData(html: string): TwinDocumentData {
@@ -116,8 +129,8 @@ export function twinOf(
 /**
  * The client files a visitor of `locale` can receive: that locale's twins,
  * every shared file (JS and others), and the documents. Originals of twinned
- * files and other locales' twins are excluded; so are source maps, the twin
- * manifest and the build report.
+ * files and other locales' twins are excluded; so are source maps and the
+ * twin manifest. (The build report is not in the client output.)
  */
 export function servedFiles(
   clientDir: string,
@@ -130,7 +143,7 @@ export function servedFiles(
   );
   const ownTwins = new Set(Object.values(manifest.twins[locale] ?? {}));
   return listFiles(clientDir).filter((file) => {
-    if (file === TWIN_MANIFEST_FILE || file === TWIN_REPORT_FILE) return false;
+    if (file === TWIN_MANIFEST_FILE) return false;
     if (file.endsWith('.map')) return false;
     if (twinned.has(file)) return false;
     if (allTwins.has(file)) return ownTwins.has(file);
@@ -358,4 +371,81 @@ export function referencedJsFiles(code: string, jsFiles: string[]): string[] {
 
 function readJson(file: string): unknown {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
+}
+
+/**
+ * Hashes of the translation file entries that hold a `<Derive>` element:
+ * derived content is hashed at runtime, so the compiler cannot attribute it
+ * and reports it as unattributed (reason `derive`). The test apps use no
+ * other kind of unattributed content.
+ */
+export function derivedEntryHashes(file: TranslationFile): Set<string> {
+  return new Set(
+    Object.entries(file)
+      .filter(([, content]) => containsDerive(content))
+      .map(([hash]) => hash)
+  );
+}
+
+function containsDerive(content: TranslationContent): boolean {
+  if (Array.isArray(content)) return content.some(containsDerive);
+  if (!content || typeof content !== 'object') return false;
+  const element = content as {
+    t?: string;
+    c?: TranslationContent;
+    d?: { b?: Record<string, TranslationContent> };
+  };
+  return (
+    element.t === 'Derive' ||
+    containsDerive(element.c) ||
+    Object.values(element.d?.b ?? {}).some(containsDerive)
+  );
+}
+
+/**
+ * Checks that the build attributed exactly the source translation file's
+ * entries minus the unattributed ones its report lists: the derived entries,
+ * one report entry each. A broken attribution therefore fails here instead of
+ * silently shrinking the string lists the isolation checks use. Returns the
+ * problems found (empty when the attribution is complete).
+ */
+export function checkAttribution({
+  source,
+  attributed,
+  report,
+}: {
+  /** The default locale's translation file. */
+  source: TranslationFile;
+  attributed: Set<string>;
+  report: TwinReport;
+}): string[] {
+  const derived = derivedEntryHashes(source);
+  const problems: string[] = [];
+  for (const hash of Object.keys(source)) {
+    if (!derived.has(hash) && !attributed.has(hash)) {
+      problems.push(
+        `${hash} is in the translation files but no twin carries it`
+      );
+    }
+  }
+  for (const hash of attributed) {
+    if (!(hash in source)) {
+      problems.push(`${hash} is in a twin but not in the translation files`);
+    }
+    if (derived.has(hash)) {
+      problems.push(`${hash} is derived content but a twin carries it`);
+    }
+  }
+  const reported = report.unattributed ?? [];
+  if (reported.length !== derived.size) {
+    problems.push(
+      `the report lists ${reported.length} unattributed entries, the translation files have ${derived.size} derived entries`
+    );
+  }
+  for (const entry of reported) {
+    if (entry.reason !== 'derive') {
+      problems.push(`unexpected unattributed entry ${JSON.stringify(entry)}`);
+    }
+  }
+  return problems;
 }

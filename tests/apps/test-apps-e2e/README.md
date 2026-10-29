@@ -55,7 +55,13 @@ route rendered from its twins (`twins.clientOnlyRoute`).
 `.turbo/playwright/locale-twins-report/<app>.json`. Expected strings come from
 the app's translation files and build output (`locale-twins/twinOutput.ts`),
 so the spec applies to any twin app that renders a `Locale: <code>` marker, a
-`LocaleSelector`, and a link to its lazy route (`twins.lazyRoute`).
+`LocaleSelector`, and a link to its lazy route (`twins.lazyRoute`). Before any
+check, the build must have attributed every entry of the source translation
+file except its derived (`<Derive>`) entries, one per unattributed entry in the
+build report (`checkAttribution`), so a broken attribution fails instead of
+shrinking the string lists. The build report is read from
+`<app>/node_modules/.cache/gt/gt-locale-twins-report.json` (it is not part of
+the client output).
 
 Each twin app also has node-level build tests (`pnpm --filter <app> test`,
 shared suite in `locale-twins/buildSuite.ts`), which run in the normal CI test

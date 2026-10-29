@@ -10,7 +10,9 @@ import os from 'node:os';
 import path from 'node:path';
 import {
   attributedHashes,
+  checkAttribution,
   checkIsolation,
+  derivedEntryHashes,
   distinctiveSegments,
   readTranslations,
   readTwinDocumentData,
@@ -19,6 +21,7 @@ import {
   referencedJsFiles,
   servedFiles,
   textSegments,
+  TWIN_REPORT_FILE,
   UNFILLED_PLACEHOLDER_PATTERN,
   type TranslationFile,
   type TwinManifest,
@@ -35,6 +38,8 @@ export type BuildSuiteTestApi = {
 };
 
 export type LocaleTwinsBuildSuiteOptions = {
+  /** The app's Vite root (the build report is written below it). */
+  root: string;
   /** Directory with the committed `[locale].json` files. */
   translationsDir: string;
   /** Builds the app's client into `outDir`, reading `translationsDir`. */
@@ -84,7 +89,7 @@ export function defineLocaleTwinsBuildSuite(
     return {
       outDir,
       manifest: readTwinManifest(outDir),
-      report: readTwinReport(outDir),
+      report: readTwinReport(options.root),
     };
   };
 
@@ -121,9 +126,24 @@ export function defineLocaleTwinsBuildSuite(
       }
     });
 
+    it('attributes every translation file entry except the reported unattributed ones', () => {
+      const source = translations[first.manifest.defaultLocale];
+      assert.deepEqual(
+        checkAttribution({ source, attributed, report: first.report }),
+        []
+      );
+      assert.ok(
+        first.report.unattributed.length > 0,
+        'the app has an unattributed control'
+      );
+    });
+
     it('translates every attributed entry (no missing translations)', () => {
-      assert.ok(attributed.size > 0, 'the build attributed entries');
       assert.deepEqual(first.report.missingTranslations, {});
+    });
+
+    it('keeps the build report out of the client output', () => {
+      assert.ok(!fs.existsSync(path.join(first.outDir, TWIN_REPORT_FILE)));
     });
 
     it('leaves no unfilled placeholder in any served file (§9.8)', () => {
@@ -200,9 +220,7 @@ export function defineLocaleTwinsBuildSuite(
 
     it('keeps the source text of unattributed entries in code', () => {
       const { defaultLocale } = first.manifest;
-      const unattributed = Object.keys(translations[defaultLocale]).filter(
-        (hash) => !attributed.has(hash)
-      );
+      const unattributed = [...derivedEntryHashes(translations[defaultLocale])];
       assert.ok(unattributed.length > 0, 'the app has an unattributed control');
       for (const locale of first.manifest.locales) {
         const text = servedFiles(first.outDir, first.manifest, locale)

@@ -39,6 +39,7 @@ function useTranslations(translationsDir: string): void {
 defineLocaleTwinsBuildSuite(
   { describe, it, beforeAll, afterAll },
   {
+    root: appDir,
     translationsDir: path.join(appDir, 'src/_gt'),
     // TanStack Start renders documents per request; there is no static one.
     documents: [],

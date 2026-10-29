@@ -33,6 +33,7 @@ describe('vite7-react-twins sources', () => {
 defineLocaleTwinsBuildSuite(
   { describe, it, beforeAll, afterAll },
   {
+    root: appDir,
     translationsDir: path.join(appDir, 'src/_gt'),
     async build({ outDir, translationsDir }) {
       // vite.config.ts reads the translations directory from the environment;

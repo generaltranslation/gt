@@ -9,6 +9,7 @@ const appDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 defineLocaleTwinsBuildSuite(
   { describe, it, beforeAll, afterAll },
   {
+    root: appDir,
     translationsDir: path.join(appDir, 'src/_gt'),
     async build({ outDir, translationsDir }) {
       // vite.config.ts reads the translations directory from the environment;
