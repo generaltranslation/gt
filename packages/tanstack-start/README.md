@@ -180,4 +180,29 @@ export const Route = createFileRoute('/_app')({
 
 Visitors then see a blank page until their translations load, then the app in their locale, as in a Vite SPA. Translated content in the root route is prerendered in the build-time locale and switches to the visitor's locale after load. Pending components also render in the shell: the `pendingComponent` of routes under the root, or the router's `defaultPendingComponent`. `npx gt init` reports a root route that renders more than the document in SPA mode.
 
+## Locale twins
+
+With `files.gt.splitting: "locale-twins"` in `gt.config.json` and the compiler enabled in the Vite plugin (`gtTanstackStart({ experimentalCompilerOptions: { type: 'babel' } })`), each request gets only its locale's strings for the pages it visits, with no translations snapshot in the page. The server still renders each page from the whole locale; the browser reads its translations from its twins. Point the document at the request locale's files in your server entry:
+
+```ts
+// src/server.ts
+/// <reference types="@generaltranslation/compiler/locale-twins-manifest" />
+import { createServerEntry } from '@tanstack/react-start/server-entry';
+import {
+  createStartHandler,
+  defaultStreamHandler,
+} from '@tanstack/react-start/server';
+import { createLocaleTwinAssets } from 'gt-tanstack-start';
+import { manifest } from 'virtual:gt-locale-twins-manifest';
+
+const fetch = createStartHandler({
+  handler: defaultStreamHandler,
+  transformAssets: createLocaleTwinAssets({ manifest }),
+});
+
+export default createServerEntry({ fetch });
+```
+
+See the [locale twins guide](https://generaltranslation.com/docs/react/guides/locale-twins) for the full setup, hosting and limitations.
+
 See the [full documentation](https://generaltranslation.com/docs/tanstack-start) for guides and API reference.

@@ -42,4 +42,20 @@ export default function App() {
 }
 ```
 
+## Locale twins
+
+Vite apps can ship each visitor only their locale's strings for the pages they visit: set `files.gt.splitting` to `"locale-twins"` in `gt.config.json` and add the `@generaltranslation/compiler` Vite plugin. The built `index.html` picks the locale's files in the browser, so the app can be hosted statically. To choose the locale on your own server instead, use `gt-react/locale-twins`:
+
+```js
+import { createLocaleTwinDocument } from 'gt-react/locale-twins';
+
+// builtIndexHtml: the text of dist/index.html
+const twinDocument = createLocaleTwinDocument({ html: builtIndexHtml });
+
+// in your request handler, for page requests (a Fetch API Request):
+const response = twinDocument.respond(request);
+```
+
+See the [locale twins guide](https://generaltranslation.com/docs/react/guides/locale-twins) for setup, hosting and limitations.
+
 See the [full documentation](https://generaltranslation.com/docs/react) for guides and API reference.

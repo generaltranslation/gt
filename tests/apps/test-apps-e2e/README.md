@@ -3,7 +3,8 @@
 This workspace turns the manual test-app workflow into a sequential Playwright
 matrix. For every browser-capable app it first verifies that the app's GT entry
 package resolves inside this checkout's `packages/` directory, then starts the
-app's development server and exercises its configured locale behavior in
+app's development server (or, for locale twin apps, builds the app and serves
+its production output) and exercises its configured locale behavior in
 Chromium. The React Native app is excluded because it requires a native runtime.
 
 Run the complete matrix from the repository root:
@@ -26,8 +27,9 @@ the root `.turbo/playwright/` directory.
 The full matrix runs daily at 06:00 UTC through
 `.github/workflows/test-apps-e2e-cron.yml` and can also be started manually.
 Failures upload the Playwright artifacts and notify the libraries pager in
-Slack. Pull requests run the matrix only when this workflow file changes, so
-the scheduled workflow can be tested without adding time to normal CI.
+Slack. Pull requests run the full matrix only when this workflow file changes,
+so the scheduled workflow can be tested without adding time to normal CI.
+Pull requests that touch locale twin code run only the twin apps (see below).
 
 ## Locale twins (production builds)
 
@@ -61,3 +63,11 @@ job: placeholders filled, twin sets closed, per-locale isolation at file level,
 and §9.7 (retranslating one string changes only that locale's twin URLs).
 Pull requests that touch the compiler or the React/i18n runtimes run only the
 twin apps in Chromium.
+
+Run the twin apps locally after building the packages they use (each command
+runs `vite build` first, so the build must succeed):
+
+```bash
+pnpm turbo run build --filter='gt-test-vite-react-twins^...' --filter='gt-test-vite7-react-twins^...'
+GT_TEST_APPS=vite-react-twins,vite-react-twins-server,vite7-react-twins pnpm --filter gt-test-apps-e2e test:e2e
+```

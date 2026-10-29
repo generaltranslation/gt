@@ -11,6 +11,8 @@ The compiler uses a **4-pass Babel pipeline** on `.tsx/.jsx/.ts/.js` files:
 3. **Collection Pass** — Collects translation data, computes hashes, validates usage
 4. **Injection Pass** — Injects hashes and metadata into the AST
 
+Two optional passes follow: **4b Locale Twins Pass** (see [Locale twins](#locale-twins)) and **5 Runtime Translate Pass** (dev hot reload; skipped when 4b stripped source text, because it would put the text back).
+
 Entry point: `src/index.ts` (creates the unplugin).
 
 ## Code Organization
@@ -29,6 +31,8 @@ src/
 │   ├── jsx-insertion/    # JSX auto-insertion logic + rules doc
 │   ├── collection/
 │   └── injection/
+├── transform/            # AST edits used by the passes (locale-twins/: registration, msg hashes, stripping)
+├── locale-twins/         # Post-build twin engine and Vite hooks (no Babel)
 ├── state/                # State management classes
 └── utils/                # Stateless helpers
 ```
@@ -59,6 +63,26 @@ Key flags in `PluginConfig` (`src/config.ts`):
 
 Can be set via `gt.config.json` under `files.gt.parsingFlags.enableAutoJsxInjection`.
 
+## Locale twins
+
+Opt-in translation splitting strategy (`files.gt.splitting: 'locale-twins'` in gt.config.json, or the `splitting` / `localeTwins` plugin options, resolved once at plugin creation by `resolveLocaleTwinsSettings` in `src/config.ts`). Every client chunk that carries entries is emitted once per locale, so a visitor downloads one locale's entries for the pages they visit. Vocabulary: _locale twin_, _twinned chunk_, _shared chunk_, _attribution_, _unattributed entry_. The shared contract (placeholder format, filled table, manifest) lives in `packages/core/src/locale-twins/` and is imported from `generaltranslation/internal`; the runtime registry and the SPA document/bootstrap/server helper live in `packages/i18n/src/locale-twins/`.
+
+Two halves:
+
+- **Transform (per module, Pass 4b, `passes/localeTwinsPass.ts`).** Runs only when the injection pass ran, so `compileTimeHash: false` attributes nothing. Inserts one `GtInternalRegisterLocaleTwin("__GT_LOCALE_TWIN__:<hashes>:<base64url sources>")` call after the imports, imported from the GT source the module already uses (`getLocaleTwinRegistrationImportSource`; gt-next modules get none), and injects `$_hash` into attributed `msg()` calls. In client production builds only (`isClientProductionBuild` in `utils/bundlerEnvironment.ts`) it also blanks attributed source text to `""` (`transform/locale-twins/stripSourceText.ts`), keeping every element, prop and variable so GT JSX indices are unchanged. Entries it cannot attribute keep their text and are collected per module id into one build warning (`utils/locale-twins/unattributedEntries.ts`).
+- **Build (after the client output is written, `locale-twins/`).** `generateLocaleTwins.ts` is the pure engine: seed (files with a placeholder) plus closure (files that reference a twinned file), per-locale fill and rename, per-locale version, source maps, manifest, report. `writeLocaleTwins.ts` is the Node-side runner (reads `[locale].json`, writes twins, `gt-locale-twins.json`, `gt-locale-twins-report.json`, rewrites SPA HTML via `spaDocument.ts`). Diagnostics are in `buildDiagnostics.ts` and `diagnostics.ts`, created with `createCompilerDiagnostic`.
+
+Vite integration is `locale-twins/vite/localeTwinsViteHooks.ts`, assigned to the plugin's **only** `vite:` key in `src/index.ts`. unplugin `Object.assign`s that object over the generic hooks, so a hook defined there replaces the generic one of the same name: the generic end-of-build work runs through `finishBuild` (called from the generic `buildEnd` and via `onBuildEnd`), and `configResolved` work goes through `onConfigResolved`. Add every new Vite hook inside `createLocaleTwinsViteHooks`. The hooks:
+
+- `buildEnd` records the module graph and `outputOptions` adds the default vendor chunk (`vite/vendorChunk.ts`: Rolldown `codeSplitting.groups` on Vite 8, `manualChunks` on Vite 7), client environment of a build only, skipped with a warning when the user configured chunking. Both run on the same plugin instance on purpose: TanStack Start loads the Vite config once per environment (`builder.sharedPlugins`), creating extra plugin instances that never see the graph.
+- `writeBundle` (`order: 'post'`) runs the engine for the client consumer of `vite build` only.
+- `resolveId`/`load` serve `virtual:gt-locale-twins-manifest` (`vite/manifestModule.ts`): server environments read the client build's manifest, everything else gets `null`. Types: `locale-twins-manifest.d.ts`.
+- `configureServer` prints the dev notice; `vite dev` never strips or twins.
+
+gt.config.json and `files.gt.output` resolve against `process.cwd()` captured at plugin creation, not Vite's `root`.
+
+The user guide for this feature is maintained outside this repo (docs site); keep option names and file names there in sync when they change.
+
 ## Testing
 
 ```sh
@@ -70,6 +94,8 @@ Test suites in `src/passes/__tests__/`:
 - `jsxInsertionPass.test.ts` — core JSX insertion behavior
 - `jsxInsertionE2E.test.ts` — end-to-end pipeline tests
 - `jsxInsertionEdgeCases.test.ts` — edge cases and regressions
+
+Locale twins: `src/__tests__/localeTwins*.test.ts` (transform), `src/locale-twins/__tests__/generateLocaleTwins.test.ts` (engine) and `viteBuild.test.ts` (real Vite 8 and Vite 7 builds of `__tests__/fixtures/spa` through `buildFixture.ts`, which loads the config once per environment like TanStack Start). Build the workspace dependencies first: `pnpm turbo run build --filter='@generaltranslation/compiler^...'`.
 
 ## Important Invariants
 
