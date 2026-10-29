@@ -25,15 +25,24 @@ export type LocaleTwinPlaceholderMatch = {
 };
 
 const HASH_SOURCE = '[0-9a-f]{16}';
-const HASH_PATTERN = new RegExp(`^${HASH_SOURCE}$`);
-const PLACEHOLDER_SOURCE = `${LOCALE_TWIN_PLACEHOLDER_PREFIX}:(?:${HASH_SOURCE}(?:,${HASH_SOURCE})*):[A-Za-z0-9_-]+`;
-const PLACEHOLDER_PATTERN = new RegExp(
-  `^${LOCALE_TWIN_PLACEHOLDER_PREFIX}:(${HASH_SOURCE}(?:,${HASH_SOURCE})*):([A-Za-z0-9_-]+)$`
-);
-const PLACEHOLDER_TOKEN_PATTERN = new RegExp(
-  `(['"\`])(${PLACEHOLDER_SOURCE})\\1`,
-  'g'
-);
+const HASH_PATTERN = /^[0-9a-f]{16}$/;
+
+// The placeholder patterns are built on first use: module-level template
+// strings and RegExp calls would survive tree-shaking in apps without twins.
+let placeholderPattern: RegExp | undefined;
+
+function getPlaceholderPattern(): RegExp {
+  placeholderPattern ??= new RegExp(
+    `^${LOCALE_TWIN_PLACEHOLDER_PREFIX}:(${HASH_SOURCE}(?:,${HASH_SOURCE})*):([A-Za-z0-9_-]+)$`
+  );
+  return placeholderPattern;
+}
+
+/** A fresh global pattern for placeholder string-literal tokens. */
+function createPlaceholderTokenPattern(): RegExp {
+  const placeholderSource = `${LOCALE_TWIN_PLACEHOLDER_PREFIX}:(?:${HASH_SOURCE}(?:,${HASH_SOURCE})*):[A-Za-z0-9_-]+`;
+  return new RegExp(`(['"\`])(${placeholderSource})\\1`, 'g');
+}
 
 /**
  * Encodes a module's entries as an unfilled locale twin placeholder:
@@ -102,7 +111,7 @@ export function findLocaleTwinPlaceholders(
   code: string
 ): LocaleTwinPlaceholderMatch[] {
   const matches: LocaleTwinPlaceholderMatch[] = [];
-  const pattern = new RegExp(PLACEHOLDER_TOKEN_PATTERN);
+  const pattern = createPlaceholderTokenPattern();
   let match: RegExpExecArray | null;
   while ((match = pattern.exec(code)) !== null) {
     const start = match.index;
@@ -129,7 +138,7 @@ export function findLocaleTwinPlaceholders(
 function decodePlaceholderParts(
   value: string
 ): { hashes: string[]; entries: LocaleTwinEntries } | undefined {
-  const match = PLACEHOLDER_PATTERN.exec(value);
+  const match = getPlaceholderPattern().exec(value);
   if (!match) return undefined;
   const hashes = match[1].split(',');
   for (let i = 1; i < hashes.length; i++) {

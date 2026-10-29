@@ -11,8 +11,9 @@ export type LocaleTwinTable = {
   e: LocaleTwinEntries;
 };
 
-const LINE_SEPARATOR = String.fromCharCode(0x2028);
-const PARAGRAPH_SEPARATOR = String.fromCharCode(0x2029);
+// Pure: unused in apps without locale twins, so bundlers can drop them
+const LINE_SEPARATOR = /* @__PURE__ */ String.fromCharCode(0x2028);
+const PARAGRAPH_SEPARATOR = /* @__PURE__ */ String.fromCharCode(0x2029);
 
 /**
  * Serializes a table into the JS source token that replaces a placeholder

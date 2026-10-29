@@ -4,9 +4,10 @@ import {
   parseLocaleTwinTable,
 } from 'generaltranslation/internal';
 import type { LocaleTwinTable } from 'generaltranslation/internal';
-import type { Content } from 'generaltranslation/types';
 import logger from '../logs/logger';
 import { createGtI18nDiagnostic } from '../logs/diagnostics';
+import { localeTwinHooks } from './runtime';
+import { getLocaleTwinState } from './state';
 
 function createInvalidLocaleTwinMessage(error: unknown): string {
   return createGtI18nDiagnostic({
@@ -19,39 +20,12 @@ function createInvalidLocaleTwinMessage(error: unknown): string {
 }
 
 /**
- * Registry state for the locale twins a page has loaded. Stored as a plain bag
- * on `globalThis.__generaltranslation.localeTwins` so it exists before any GT
- * initialization and is shared by every bundled copy of this module.
- */
-type LocaleTwinRegistry = {
-  /** Locale of the first registered twin. */
-  locale?: string;
-  /** Registered tables, kept by reference. */
-  tables: LocaleTwinTable[];
-  /** Runtime diagnostics already reported on this page (each logs once). */
-  reported?: Set<string>;
-  /** Whether a locale twin client loads whole locales for dictionaries. */
-  dictionaryLoading?: boolean;
-};
-
-type GlobalWithLocaleTwins = {
-  __generaltranslation?: Record<string, unknown> & {
-    localeTwins?: LocaleTwinRegistry;
-  };
-};
-
-/** @internal Shared registry bag; not exported from the package. */
-export function getLocaleTwinRegistry(): LocaleTwinRegistry {
-  const globalObj = globalThis as unknown as GlobalWithLocaleTwins;
-  globalObj.__generaltranslation ??= {};
-  globalObj.__generaltranslation.localeTwins ??= { tables: [] };
-  return globalObj.__generaltranslation.localeTwins;
-}
-
-/**
  * Registers a locale twin's table. The compiler injects one call per module
  * with attributed entries (as `GtInternalRegisterLocaleTwin`); the build
  * replaces its placeholder argument with the table for each twin's locale.
+ *
+ * The first call (filled or not, so server bundles too) installs the locale
+ * twin runtime hooks; apps without locale twins never load that runtime.
  *
  * Web-only: exported from gt-react and gt-tanstack-start, intentionally not
  * from gt-react-native (whose registry therefore stays empty).
@@ -62,6 +36,8 @@ export function getLocaleTwinRegistry(): LocaleTwinRegistry {
  * placeholder.
  */
 export function registerLocaleTwin(value: string): boolean {
+  const state = getLocaleTwinState();
+  state.hooks ??= localeTwinHooks;
   if (isUnfilledLocaleTwinPlaceholder(value)) return false;
   let table: LocaleTwinTable;
   try {
@@ -71,26 +47,13 @@ export function registerLocaleTwin(value: string): boolean {
     logger.error(createInvalidLocaleTwinMessage(error));
     return false;
   }
-  const registry = getLocaleTwinRegistry();
-  registry.locale ??= table.l;
-  registry.tables.push(table);
+  state.locale ??= table.l;
+  state.tables.push(table);
   return true;
 }
 
-/** Returns the registered content for `hash`, if any twin provided it. */
-export function getLocaleTwinEntry(hash: string): Content | undefined {
-  for (const table of getLocaleTwinRegistry().tables) {
-    if (Object.hasOwn(table.e, hash)) return table.e[hash];
-  }
-  return undefined;
-}
-
-/** Returns the locale of the registered twins, if any were registered. */
-export function getLocaleTwinLocale(): string | undefined {
-  return getLocaleTwinRegistry().locale;
-}
-
-/** Whether at least one locale twin table has been registered. */
-export function hasLocaleTwins(): boolean {
-  return getLocaleTwinRegistry().tables.length > 0;
-}
+export {
+  getLocaleTwinEntry,
+  getLocaleTwinLocale,
+  hasLocaleTwins,
+} from './state';

@@ -1,8 +1,8 @@
-import { isLocaleTwinsClient } from './runtime';
+import { getLocaleTwinState } from './state';
 
-const NAVIGATING_RELOAD = Symbol.for(
-  'generaltranslation.locale-twins.navigating-reload'
-);
+/** @internal `Symbol.for()` key of the navigating-reload brand. */
+export const NAVIGATING_RELOAD_KEY =
+  'generaltranslation.locale-twins.navigating-reload';
 
 type Reload<State> = (state: State) => void;
 
@@ -12,14 +12,10 @@ type Reload<State> = (state: State) => void;
  * such a reload; any other custom reload is followed by a document reload.
  */
 export function markNavigatingReload<T extends Reload<never>>(reload: T): T {
-  Object.defineProperty(reload, NAVIGATING_RELOAD, { value: true });
+  Object.defineProperty(reload, Symbol.for(NAVIGATING_RELOAD_KEY), {
+    value: true,
+  });
   return reload;
-}
-
-function isNavigatingReload(reload: Reload<never>): boolean {
-  return (
-    (reload as unknown as Record<symbol, unknown>)[NAVIGATING_RELOAD] === true
-  );
 }
 
 type BrowserGlobals = { window?: { location: { reload(): void } } };
@@ -42,5 +38,5 @@ export function reloadForLocaleSwitch<State>(
 ): void {
   if (!reload) return reloadDocument();
   reload(state);
-  if (isLocaleTwinsClient() && !isNavigatingReload(reload)) reloadDocument();
+  getLocaleTwinState().hooks?.afterCustomReload(reload, reloadDocument);
 }

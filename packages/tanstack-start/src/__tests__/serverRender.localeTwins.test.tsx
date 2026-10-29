@@ -5,6 +5,7 @@
  * its source text there, so the server must render it the same way.
  */
 import { renderToString } from 'react-dom/server';
+import { encodeLocaleTwinPlaceholder } from 'generaltranslation/internal';
 import { hashMessage } from 'gt-i18n/internal';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -32,7 +33,14 @@ vi.mock('@tanstack/react-start/server', () => ({
   setResponseHeader: vi.fn(),
 }));
 
-import { msg, t, T, useGT, useMessages } from '../index.server';
+import {
+  GtInternalRegisterLocaleTwin,
+  msg,
+  t,
+  T,
+  useGT,
+  useMessages,
+} from '../index.server';
 import { ensureInitialized } from '../setup/initializeGT.server';
 import { setupRouterGTIntegration } from '../router/setupRouterGTIntegration.server';
 import type { GTRouterOptions } from '../router/types';
@@ -82,8 +90,24 @@ function resetGT() {
   globals.__generaltranslation = gtContext ? { reactCore: { gtContext } } : {};
 }
 
+/**
+ * What the page module does in a production server build: the compiler
+ * registers its attributed entries with an unfilled placeholder.
+ */
+function registerPageModule() {
+  GtInternalRegisterLocaleTwin(
+    encodeLocaleTwinPlaceholder({
+      [T_HASH]: 'Hello',
+      [GT_HASH]: 'Tides',
+      [MSG_HASH]: 'Maps',
+      [T_FN_HASH]: 'Fog',
+    })
+  );
+}
+
 function initialize(splitting: 'locale' | 'locale-twins') {
   resetGT();
+  if (splitting === 'locale-twins') registerPageModule();
   pluginModule.config = {
     defaultLocale: 'en',
     locales: ['en', 'fr'],

@@ -30,10 +30,9 @@ import { DictionarySourceNotFoundError } from './translations-manager/utils/Dict
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
 import {
-  isLocaleTwinsClient,
+  disablesLoadingForLocaleTwins,
   lookupLocaleTwinEntry,
-  setLocaleTwinDictionaryLoading,
-} from '../locale-twins/runtime';
+} from '../locale-twins/lookup';
 
 /**
  * Default translation timeout in milliseconds for a runtime translation request
@@ -149,10 +148,9 @@ class I18nCache<TranslationValue extends Translation = Translation> {
     // from the registered twins, never from a loader or the CDN, unless the
     // app uses the dictionaries API: dictionary entries are never twinned
     // and stay on whole-locale loading (only dictionary lookups read it).
-    const localeTwinsClient = isLocaleTwinsClient();
-    const dictionaryLoading = localeTwinsClient && usesDictionaries(params);
-    if (localeTwinsClient) setLocaleTwinDictionaryLoading(dictionaryLoading);
-    const disableLoading = localeTwinsClient && !dictionaryLoading;
+    const disableLoading = disablesLoadingForLocaleTwins(
+      usesDictionaries(params)
+    );
     const loadTranslations = routeCreateTranslationLoader({
       loadTranslations: params.loadTranslations,
       type: disableLoading

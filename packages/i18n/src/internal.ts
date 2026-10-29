@@ -66,11 +66,11 @@ export {
   isLocaleTwinsClient,
   lookupLocaleTwinEntry,
   resolveLocaleTwinLookup,
-} from './locale-twins/runtime';
+} from './locale-twins/lookup';
 export type {
   LocaleTwinLookup,
   LocaleTwinLookupOptions,
-} from './locale-twins/runtime';
+} from './locale-twins/lookup';
 export {
   markNavigatingReload,
   reloadForLocaleSwitch,

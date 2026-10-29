@@ -3,13 +3,14 @@
  * entry, the source text (content no twin carries, in production builds), or
  * the usual translation path (dev builds, dictionary entries).
  */
+import { encodeLocaleTwinPlaceholder } from 'generaltranslation/internal';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { I18nCache } from '../../i18n-cache/I18nCache';
 import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
 import type { I18nConfigParams } from '../../i18n-config/I18nConfig';
 import { setI18nCache } from '../../i18n-cache/singleton-operations';
 import { registerLocaleTwin } from '../registry';
-import { resolveLocaleTwinLookup } from '../runtime';
+import { resolveLocaleTwinLookup } from '../lookup';
 
 type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
 
@@ -24,6 +25,16 @@ const TWINS_CONFIG: I18nConfigParams = {
 
 function register(locale: string, entries: Record<string, unknown>) {
   return registerLocaleTwin(JSON.stringify({ l: locale, e: entries }));
+}
+
+/**
+ * What a server bundle (or an original chunk) does: register an unfilled
+ * placeholder, which installs the locale twin runtime but no table.
+ */
+function registerUnfilled() {
+  return registerLocaleTwin(
+    encodeLocaleTwinPlaceholder({ [ATTRIBUTED_HASH]: 'Hello' })
+  );
 }
 
 function createCache(
@@ -70,6 +81,7 @@ describe('resolveLocaleTwinLookup', () => {
   });
 
   it('renders content without a compile-time hash as source in production', () => {
+    registerUnfilled();
     createCache();
 
     expect(resolveLocaleTwinLookup('fr', {}, undefined).rendersSource).toBe(
@@ -91,6 +103,7 @@ describe('resolveLocaleTwinLookup', () => {
 
   it('translates unattributed content as usual in dev builds', () => {
     vi.stubEnv('NODE_ENV', 'development');
+    registerUnfilled();
     createCache();
 
     expect(resolveLocaleTwinLookup('fr', {}, undefined).rendersSource).toBe(
@@ -99,6 +112,7 @@ describe('resolveLocaleTwinLookup', () => {
   });
 
   it('never renders source with locale splitting', () => {
+    registerUnfilled();
     createCache({ defaultLocale: 'en', locales: ['en', 'fr'] });
 
     expect(resolveLocaleTwinLookup('fr', {}, undefined).rendersSource).toBe(
@@ -108,6 +122,7 @@ describe('resolveLocaleTwinLookup', () => {
 
   it('translates dictionary entries as usual (they load whole locales)', () => {
     stubBrowser();
+    registerUnfilled();
     createCache(TWINS_CONFIG, { dictionary: { title: 'Title' } });
 
     expect(
@@ -119,16 +134,36 @@ describe('resolveLocaleTwinLookup', () => {
   describe('on a locale twin client', () => {
     beforeEach(stubBrowser);
 
-    it('reports once when content renders as source and no twin was registered (compiler plugin missing)', () => {
+    it('reports once when nothing registered a twin (compiler plugin missing)', () => {
       const error = vi.spyOn(console, 'error').mockImplementation(() => {});
       createCache();
 
-      resolveLocaleTwinLookup('fr', {}, undefined);
-      resolveLocaleTwinLookup('fr', {}, undefined);
+      // Nothing installed the locale twin runtime: translate as usual
+      expect(resolveLocaleTwinLookup('fr', {}, undefined)).toEqual({
+        entry: undefined,
+        rendersSource: false,
+      });
+      resolveLocaleTwinLookup('fr', { $_hash: ATTRIBUTED_HASH }, undefined);
 
       expect(error).toHaveBeenCalledTimes(1);
       expect(error.mock.calls[0][0]).toMatch(
         /gt-i18n.*Error.*no locale twin was registered.*compiler plugin/s
+      );
+    });
+
+    it('reports once when only unfilled placeholders registered (original chunks served)', () => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      registerUnfilled();
+      createCache();
+
+      expect(resolveLocaleTwinLookup('fr', {}, undefined).rendersSource).toBe(
+        true
+      );
+      resolveLocaleTwinLookup('fr', {}, undefined);
+
+      expect(error).toHaveBeenCalledTimes(1);
+      expect(error.mock.calls[0][0]).toMatch(
+        /gt-i18n.*Error.*no locale twin was registered.*original client chunks/s
       );
     });
 
@@ -145,6 +180,7 @@ describe('resolveLocaleTwinLookup', () => {
 
     it('warns once when dictionary entries cannot load their locale', () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      register('fr', { [ATTRIBUTED_HASH]: 'Bonjour' });
       createCache();
 
       resolveLocaleTwinLookup('fr', { $_dictionary: true }, undefined);

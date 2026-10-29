@@ -7,6 +7,7 @@
     "dev": "vite --port 5174 --strictPort",
     "build": "vite build",
     "preview": "vite preview --port 4174 --strictPort",
+    "test": "vitest run",
     "lint": "oxlint --config ../../../examples/.oxlintrc.react.json .",
     "typecheck": "tsc --noEmit"
   },
@@ -17,10 +18,12 @@
   },
   "devDependencies": {
     "@generaltranslation/compiler": "workspace:*",
+    "@types/node": "^26.6.3",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.2",
     "typescript": "^5",
-    "vite": "^8.0.16"
+    "vite": "^8.0.16",
+    "vitest": "catalog:"
   }
 }

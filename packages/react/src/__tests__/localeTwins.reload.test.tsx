@@ -10,7 +10,10 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 import { useSetLocale } from '@generaltranslation/react-core/hooks';
-import { markNavigatingReload } from 'gt-i18n/internal';
+import {
+  GtInternalRegisterLocaleTwin,
+  markNavigatingReload,
+} from 'gt-i18n/internal';
 import { BrowserGTProvider } from '../provider/BrowserGTProvider';
 import { createOrUpdateBrowserConditionStore } from '../condition-store/createBrowserConditionStore';
 import { initializeGTSRAClient } from '../setup/initializeGTSRAClient';
@@ -30,6 +33,13 @@ const TWINS_CONFIG = {
     },
   },
 };
+
+/** A locale twin page: its chunks registered their twins (English here). */
+function loadTwinPage() {
+  GtInternalRegisterLocaleTwin(
+    JSON.stringify({ l: 'en', e: { '0123456789abcdef': 'Hello' } })
+  );
+}
 
 /** jsdom's `location.reload` cannot be spied on, so swap `window` for the call. */
 function stubDocumentReload() {
@@ -108,6 +118,7 @@ describe('locale switching with locale twins', () => {
   describe('SPA (condition store)', () => {
     it('follows a soft _reload with a document reload', () => {
       const softReload = vi.fn();
+      loadTwinPage();
 
       const documentReload = switchLocaleInSPA(TWINS_CONFIG, softReload);
 
@@ -119,6 +130,7 @@ describe('locale switching with locale twins', () => {
 
     it('keeps a navigating _reload as the only reload', () => {
       const navigate = markNavigatingReload(vi.fn());
+      loadTwinPage();
 
       const documentReload = switchLocaleInSPA(TWINS_CONFIG, navigate);
 
@@ -139,6 +151,7 @@ describe('locale switching with locale twins', () => {
   describe('server-rendered apps (GTProvider)', () => {
     it('follows a soft _reload with a document reload', async () => {
       const softReload = vi.fn();
+      loadTwinPage();
 
       const documentReload = await switchLocaleWithProvider(
         TWINS_CONFIG,

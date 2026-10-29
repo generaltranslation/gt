@@ -19,11 +19,21 @@ const { pluginModule, localeRouting } = vi.hoisted(() => ({
 vi.mock('gt-tanstack-start/internal/_config', () => pluginModule);
 
 // The plugin resolves this module to the enabled or disabled variant.
-vi.mock('gt-tanstack-start/internal/localeRouting', async () =>
-  localeRouting.enabled
-    ? import('../../internal/localeRouting.enabled')
-    : import('../../internal/localeRouting.disabled')
-);
+vi.mock('gt-tanstack-start/internal/localeRouting', async () => {
+  const enabled = await import('../../internal/localeRouting.enabled');
+  const disabled = await import('../../internal/localeRouting.disabled');
+  const variant = () => (localeRouting.enabled ? enabled : disabled);
+  return {
+    getRouterLocaleRewrite: (
+      ...args: Parameters<typeof enabled.getRouterLocaleRewrite>
+    ) => variant().getRouterLocaleRewrite(...args),
+    getPathLocale: () => variant().getPathLocale(),
+    replaceWithLocaleURL: (
+      ...args: Parameters<typeof enabled.replaceWithLocaleURL>
+    ) => variant().replaceWithLocaleURL(...args),
+    createLocaleReload: () => variant().createLocaleReload(),
+  };
+});
 
 // The client entry imports gt-react's browser build; Node resolves the server one.
 vi.mock('gt-react', async () => {
@@ -122,10 +132,14 @@ describe.sequential('client initialization with locale twins', () => {
 
   it('keeps the locale routing navigation as the only reload', async () => {
     const location = stubBrowser('/en/about');
-    const { reactCore } = await initializeWith({
+    const { gtReact, reactCore } = await initializeWith({
       ...TWINS_CONFIG,
       localeRouting: true,
     });
+    // The page's chunks registered their twins
+    gtReact.GtInternalRegisterLocaleTwin(
+      JSON.stringify({ l: 'en', e: { '0123456789abcdef': 'Hello' } })
+    );
 
     reactCore.getReadonlyConditionStore().setLocale('fr');
 

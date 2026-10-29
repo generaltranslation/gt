@@ -5,8 +5,10 @@ import {
 import type { CustomMapping } from '@generaltranslation/format/types';
 import { GTRuntime } from 'generaltranslation/runtime';
 import {
+  DEFAULT_TRANSLATION_SPLITTING,
+  isLocaleTwinsSplitting,
   libraryDefaultLocale,
-  resolveTranslationSplitting,
+  LOCALE_TWINS_SPLITTING,
 } from 'generaltranslation/internal';
 import type { TranslationSplittingStrategy } from 'generaltranslation/types';
 import type { GTConfig } from '../config/types';
@@ -72,7 +74,13 @@ export class I18nConfig extends LocaleConfig {
     };
     this.gtServicesEnabled = gtServicesEnabled;
     this.logLevel = getGeneralTranslationLogLevel();
-    this.translationSplitting = resolveTranslationSplitting(params);
+    // Not validated here (every app ships this): the compiler plugin rejects
+    // unknown strategies at build time
+    this.translationSplitting = isLocaleTwinsSplitting(
+      params.files?.gt?.splitting as TranslationSplittingStrategy | undefined
+    )
+      ? LOCALE_TWINS_SPLITTING
+      : DEFAULT_TRANSLATION_SPLITTING;
   }
 
   getDefaultLocale(): string {
