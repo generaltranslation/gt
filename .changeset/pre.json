@@ -66,7 +66,8 @@
     "gt-bundle-example-vite-vue": "0.0.0",
     "gt-svelte": "0.0.0",
     "@generaltranslation/svelte-extractor": "0.0.0",
-    "gt-test-sveltekit": "0.0.0"
+    "gt-test-sveltekit": "0.0.0",
+    "gt-test-sveltekit-3": "0.0.0"
   },
   "changesets": [
     "cli-explicit-exports",
@@ -83,6 +84,7 @@
     "samsara-seed-prerelease",
     "shared-compiler-options-type",
     "svelte-sdk",
+    "svelte-whitespace",
     "tanstack-start-basepath-case",
     "tanstack-start-locale-routing-treeshake",
     "tanstack-start-optional-middleware",

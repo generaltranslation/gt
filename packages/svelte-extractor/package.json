@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/svelte-extractor",
-  "version": "0.1.0-samsara.0",
+  "version": "0.1.0-samsara.1",
   "description": "Svelte source code extraction and preprocessing for General Translation",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
