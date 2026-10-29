@@ -1,0 +1,83 @@
+{
+  "464cf4b5fd1a9034": [
+    "Bienvenue dans l’application de test ",
+    {
+      "t": "b",
+      "i": 1,
+      "c": "SvelteKit"
+    }
+  ],
+  "b178963f85fde351": [
+    "Lisez la ",
+    {
+      "t": "a",
+      "i": 2,
+      "c": "documentation",
+      "d": {
+        "ti": "Documentation (FR)"
+      }
+    },
+    ", ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " !"
+  ],
+  "837dc98051553ff3": {
+    "t": "Plural",
+    "i": 1,
+    "d": {
+      "b": {
+        "one": {
+          "t": "C2",
+          "i": 2,
+          "c": [
+            "Vous avez ",
+            {
+              "t": "b",
+              "i": 3,
+              "c": "un"
+            },
+            " message"
+          ]
+        },
+        "other": {
+          "t": "C2",
+          "i": 2,
+          "c": [
+            "Vous avez ",
+            {
+              "t": "b",
+              "i": 3,
+              "c": {
+                "i": 4,
+                "k": "_gt_n_4",
+                "v": "n"
+              }
+            },
+            " messages"
+          ]
+        }
+      },
+      "t": "p"
+    }
+  },
+  "855313f4b7d612ab": [
+    "Vous pouvez préparer ",
+    {
+      "i": 1,
+      "k": "_gt_n_1",
+      "v": "n"
+    },
+    " recettes sur ",
+    {
+      "i": 2,
+      "k": "_gt_n_2",
+      "v": "n"
+    }
+  ],
+  "9683fd40e0ecd2ee": "Ajouter un message",
+  "a0382323b1806463": "Une chaîne traduite à l’aide de useGT."
+}
