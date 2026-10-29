@@ -740,6 +740,81 @@ export function Layout({ children }: { children: React.ReactNode }) {
       });
     });
 
+    it('sets up locale twins with the compiler and without locale stubs', async () => {
+      await run(
+        'init',
+        '--json',
+        '--defaults',
+        '--locales',
+        'es',
+        'fr',
+        '--no-live-translations',
+        '--splitting',
+        'locale-twins'
+      );
+
+      // gt-tanstack-start runs the compiler, so it is not installed separately.
+      expect(vi.mocked(installPackage).mock.calls).toEqual([
+        ['gt-tanstack-start', expect.objectContaining({ id: 'pnpm' }), false],
+        ['gt', expect.objectContaining({ id: 'pnpm' }), true],
+      ]);
+      expect(readConfig().files).toEqual({
+        gt: {
+          output: path.join('src/_gt', '[locale].json'),
+          splitting: 'locale-twins',
+        },
+      });
+      expect(fs.existsSync(file('src/loadTranslations.ts'))).toBe(false);
+      expect(fs.existsSync(file('src/_gt'))).toBe(false);
+      expect(fs.readFileSync(file('vite.config.ts'), 'utf8')).toContain(
+        "plugins: [gtTanstackStart({ experimentalCompilerOptions: { type: 'babel' } })]"
+      );
+      expect(events().at(-1)).toMatchObject({
+        outcome: 'success',
+        completedSteps: [
+          'installed gt-tanstack-start',
+          'created gt.config.json',
+          'configured vite.config.ts',
+          'configured src/router.tsx',
+          'installed gt',
+        ],
+      });
+      const guidance = vi
+        .mocked(logger.message)
+        .mock.calls.map(([message]) => String(message))
+        .find((message) => message.includes('Locale twins'));
+      expect(guidance).toContain('gt translate');
+      expect(guidance).toContain('vite build');
+      expect(guidance).toContain('createLocaleTwinAssets');
+
+      // A rerun keeps the configured strategy without the flag.
+      vi.mocked(installPackage).mockClear();
+      await run('init', '--json', '--defaults', '--no-live-translations');
+      expect(readConfig().files.gt.splitting).toBe('locale-twins');
+      expect(fs.existsSync(file('src/_gt'))).toBe(false);
+      expect(events().at(-1)).toMatchObject({ outcome: 'success' });
+    });
+
+    it('rejects locale twins with CDN storage before any change', async () => {
+      await expect(
+        run(
+          'init',
+          '--json',
+          '--defaults',
+          '--locales',
+          'fr',
+          '--no-live-translations',
+          '--storage',
+          'cdn',
+          '--splitting',
+          'locale-twins'
+        )
+      ).rejects.toThrow('--splitting locale-twins');
+
+      expect(installPackage).not.toHaveBeenCalled();
+      expect(fs.existsSync(file('gt.config.json'))).toBe(false);
+    });
+
     it('stops before any change when the Vite config is missing', async () => {
       fs.rmSync(file('vite.config.ts'));
 
@@ -764,6 +839,29 @@ export function Layout({ children }: { children: React.ReactNode }) {
         'setupRouterGTIntegration'
       );
     });
+  });
+
+  it('rejects locale twins for a framework without Vite setup', async () => {
+    vi.mocked(detectFramework).mockResolvedValue({
+      name: 'next-app',
+      type: 'react',
+    });
+
+    await expect(
+      run(
+        'init',
+        '--json',
+        '--defaults',
+        '--no-react-setup',
+        '--locales',
+        'fr',
+        '--no-dev-credentials',
+        '--splitting',
+        'locale-twins'
+      )
+    ).rejects.toThrow('supports Vite single-page apps and TanStack Start');
+
+    expect(fs.existsSync(file('gt.config.json'))).toBe(false);
   });
 
   it('writes and reuses App Router public development credentials without a tooling key', async () => {

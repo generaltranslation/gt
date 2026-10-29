@@ -11,11 +11,12 @@ import {
   writeTranslationStubs,
   writeViteLoader,
 } from '../../setupViteSPA.js';
-import type {
-  BuildToolContext,
-  BuildToolSetup,
-  ManualAction,
-  SetupResult,
+import {
+  usesLocaleTwins,
+  type BuildToolContext,
+  type BuildToolSetup,
+  type ManualAction,
+  type SetupResult,
 } from '../index.js';
 import { getLoaderUpdateActions } from '../shared/loader.js';
 import { readSourceFile } from '../shared/source.js';
@@ -41,6 +42,7 @@ import {
   configureViteConfig,
   enablesSpaMode,
   getViteConfigAction,
+  getVitePluginCompilerAction,
   getVitePluginConfigAction,
   getVitePluginLoaderPath,
   registersVitePlugin,
@@ -127,6 +129,46 @@ async function getLoaderExportActions(
   ];
 }
 
+/** Keeps a loader's locale files out of locale twin client builds. */
+const LOCALE_TWINS_CLIENT_GUARD =
+  'if (import.meta.env.PROD && !import.meta.env.SSR) return {};';
+
+/**
+ * With locale twins, the browser reads translations from the build and only
+ * the server loads whole locales. Setup writes no locale stubs, which would
+ * hide the build's missing translations diagnostic, and edits no loader: a
+ * loader the Vite plugin uses must skip production client builds, or every
+ * locale ships to the browser as unused chunks.
+ */
+async function syncLocaleTwinLoaders(
+  ctx: BuildToolContext & { translationsDir: string }
+): Promise<SetupResult> {
+  const { appDirectory, translationsDir, previousTranslationsDir } = ctx;
+  const { files, unreadableOption } = await findLoaders(appDirectory);
+  const manualActions = files.flatMap((file) =>
+    getLoaderUpdateActions(file, translationsDir, previousTranslationsDir, true)
+  );
+  const [loader] = files;
+  if (
+    loader &&
+    !(
+      await fs.promises.readFile(path.join(appDirectory, loader), 'utf8')
+    ).includes('import.meta.env.SSR')
+  ) {
+    manualActions.push({
+      whatHappened: `${loader} loads whole locales in the browser too, but locale twins carry the browser's translations in the build`,
+      fix: `Start loadTranslations in ${loader} with ${LOCALE_TWINS_CLIENT_GUARD}, or delete ${loader} so ${Libraries.GT_TANSTACK_START} loads the files.gt.output of gt.config.json on the server only`,
+    });
+  }
+  if (unreadableOption) {
+    manualActions.push(
+      ...getUnreadableLoaderActions(translationsDir, previousTranslationsDir)
+    );
+  }
+  manualActions.push(...(await getLoaderExportActions(appDirectory, loader)));
+  return { steps: [], manualActions };
+}
+
 /**
  * Adds locale stubs, keeps an existing template loader pointing at the
  * translations directory and asks to update any other loader, since the Vite
@@ -135,6 +177,7 @@ async function getLoaderExportActions(
 async function syncTranslationFiles(
   ctx: BuildToolContext & { translationsDir: string }
 ): Promise<SetupResult> {
+  if (usesLocaleTwins(ctx)) return syncLocaleTwinLoaders(ctx);
   const { appDirectory, translationsDir, previousTranslationsDir } = ctx;
   const loader = await writeViteLoader({ ...ctx, create: false });
   if (loader === 'missing') await writeTranslationStubs(ctx);
@@ -202,6 +245,12 @@ export const tanstackStartSetup: BuildToolSetup = {
   skipsGTInstall: () => false,
   devCredentialsOption: '--live-translations',
   docsUrl: DOCS_URL,
+  supportsLocaleTwins: true,
+  localeTwinsCompilerFix:
+    "Add experimentalCompilerOptions: { type: 'babel' } to the gtTanstackStart() options in your Vite config",
+  localeTwinsNextSteps: [
+    'Next step: serve each request the twins for its locale by passing createLocaleTwinAssets from gt-tanstack-start to createStartHandler({ transformAssets }) in your server entry (src/server.ts)',
+  ],
   async preflight(appDirectory) {
     await inspectTanStackStart(appDirectory);
   },
@@ -261,6 +310,8 @@ export const tanstackStartSetup: BuildToolSetup = {
     if (viteReady) {
       const configAction = getVitePluginConfigAction(viteConfig, ctx);
       if (configAction) manualActions.push(configAction);
+      const compilerAction = getVitePluginCompilerAction(viteConfig, ctx);
+      if (compilerAction) manualActions.push(compilerAction);
     } else {
       const configured = configureViteConfig(viteConfig, ctx);
       if (configured) {

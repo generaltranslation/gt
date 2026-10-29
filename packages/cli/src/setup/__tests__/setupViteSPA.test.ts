@@ -7,6 +7,7 @@ import {
   setupViteSPA,
   writeViteLoader,
 } from '../setupViteSPA.js';
+import { viteSetup } from '../buildTools/vite.js';
 
 describe('setupViteSPA', () => {
   let appDirectory: string;
@@ -577,5 +578,77 @@ describe('writeViteLoader with a source directory', () => {
     ).resolves.toBe('missing');
 
     expect(fs.readdirSync(path.join(appDirectory, 'app'))).toEqual([]);
+  });
+});
+
+describe('viteSetup with locale twins', () => {
+  let appDirectory: string;
+  const file = (name: string) => path.join(appDirectory, name);
+  const read = (name: string) => fs.readFileSync(file(name), 'utf8');
+  const twins = () => ({
+    appDirectory,
+    configFilepath: 'gt.config.json',
+    defaultLocale: 'en',
+    locales: ['fr', 'en'],
+    translationsDir: 'src/_gt',
+    splitting: 'locale-twins' as const,
+  });
+
+  beforeEach(() => {
+    appDirectory = fs.mkdtempSync(path.join(tmpdir(), 'gt-vite-twins-'));
+    fs.mkdirSync(file('src'));
+    fs.writeFileSync(
+      file('index.html'),
+      '<div id="root"></div>\n<script type="module" src="/src/main.tsx"></script>\n'
+    );
+    fs.writeFileSync(file('src/main.tsx'), '// app');
+    fs.writeFileSync(file('gt.config.json'), '{}');
+    fs.writeFileSync(
+      file('vite.config.ts'),
+      "import { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\n\nexport default defineConfig({\n  plugins: [react()],\n});\n"
+    );
+  });
+
+  afterEach(() => {
+    fs.rmSync(appDirectory, { recursive: true, force: true });
+  });
+
+  it('initializes without a loader and adds the compiler', async () => {
+    const result = await viteSetup.apply(twins());
+
+    expect(read('src/gt-entry.ts'))
+      .toBe(`import { initializeGTSPA } from 'gt-react';
+import gtConfig from '../gt.config.json';
+
+await initializeGTSPA(gtConfig);
+
+await import('./main');
+`);
+    expect(read('vite.config.ts')).toContain(
+      'plugins: [react(), gtCompiler()],'
+    );
+    expect(fs.existsSync(file('src/loadTranslations.ts'))).toBe(false);
+    expect(fs.existsSync(file('src/_gt'))).toBe(false);
+    expect(result).toEqual({
+      steps: [
+        'configured initializeGTSPA',
+        'added gtCompiler() to vite.config.ts',
+      ],
+      manualActions: [],
+    });
+  });
+
+  it('leaves loaders alone when the React setup is skipped', async () => {
+    fs.writeFileSync(file('src/loadTranslations.ts'), '// custom loader');
+
+    const result = await viteSetup.syncLoader({
+      ...twins(),
+      translationsDir: 'src/_gt',
+      previousTranslationsDir: 'public/_gt',
+    });
+
+    expect(read('src/loadTranslations.ts')).toBe('// custom loader');
+    expect(fs.existsSync(file('src/_gt'))).toBe(false);
+    expect(result).toEqual({ steps: [], manualActions: [] });
   });
 });

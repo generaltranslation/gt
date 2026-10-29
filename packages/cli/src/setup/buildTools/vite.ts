@@ -6,8 +6,9 @@ import {
   setupViteSPA,
   writeViteLoader,
 } from '../setupViteSPA.js';
-import type { BuildToolSetup } from './index.js';
+import { usesLocaleTwins, type BuildToolSetup } from './index.js';
 import { getLoaderUpdateActions } from './shared/loader.js';
+import { addCompilerPlugin } from './shared/viteConfig.js';
 
 export const VITE_LOADER_FILE = 'src/loadTranslations.ts';
 
@@ -18,6 +19,7 @@ export const viteSetup: BuildToolSetup = {
   ownsLoader: true,
   skipsGTInstall: (isUsingGT) => isUsingGT,
   devCredentialsOption: '--live-translations',
+  supportsLocaleTwins: true,
   async preflight(appDirectory) {
     await inspectViteSPA(appDirectory);
   },
@@ -30,7 +32,10 @@ export const viteSetup: BuildToolSetup = {
     translationsDir,
     previousTranslationsDir,
     keepAppSource,
+    splitting,
   }) {
+    // Locale twins load no translations at runtime.
+    if (usesLocaleTwins({ splitting })) return { steps: [], manualActions: [] };
     if (keepAppSource) {
       return {
         steps: [],
@@ -67,7 +72,7 @@ export const viteSetup: BuildToolSetup = {
   },
   async apply(ctx) {
     const { manualAction } = await setupViteSPA(ctx);
-    return manualAction
+    const result = manualAction
       ? {
           steps: [],
           manualActions: [
@@ -78,5 +83,15 @@ export const viteSetup: BuildToolSetup = {
           ],
         }
       : { steps: ['configured initializeGTSPA'], manualActions: [] };
+    if (!usesLocaleTwins(ctx)) return result;
+    // The compiler attributes strings to the chunks that render them.
+    const compiler = await addCompilerPlugin(
+      ctx.appDirectory,
+      ctx.configFilepath
+    );
+    return {
+      steps: [...result.steps, ...compiler.steps],
+      manualActions: [...result.manualActions, ...compiler.manualActions],
+    };
   },
 };

@@ -3,7 +3,9 @@ import { Command, Option, type CommanderError } from 'commander';
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
+  TRANSLATION_SPLITTING_STRATEGIES,
 } from 'generaltranslation/internal';
+import type { TranslationSplittingStrategy } from 'generaltranslation/types';
 import findFilepath from '../fs/findFilepath.js';
 import { withJsonExtension } from '../fs/config/loadConfig.js';
 import { logger } from '../console/logger.js';
@@ -47,6 +49,7 @@ export type ConfigureOptions = {
   locales?: string[];
   storage?: 'local' | 'cdn';
   translationsDir?: string;
+  splitting?: TranslationSplittingStrategy;
   fileFormats?: Array<SetupFileFormat | 'none'>;
   filePatterns?: string[];
   liveTranslations?: boolean;
@@ -105,6 +108,12 @@ export function attachConfigureFlags(
     .option(
       '--translations-dir <path>',
       'Directory for local GT translation files'
+    )
+    .addOption(
+      new Option(
+        '--splitting <strategy>',
+        'How the app ships translations: locale loads a whole locale at runtime; locale-twins (Vite and TanStack Start) builds per-locale copies of the chunks that render each string'
+      ).choices(TRANSLATION_SPLITTING_STRATEGIES)
     )
     .addOption(
       new Option(

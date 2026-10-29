@@ -1602,6 +1602,122 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     });
   });
 
+  describe('locale twins', () => {
+    const twins = () => ({ ...ctx(), splitting: 'locale-twins' as const });
+    const twinsVite = configuredVite.replace(
+      'gtTanstackStart()',
+      "gtTanstackStart({ experimentalCompilerOptions: { type: 'babel' } })"
+    );
+
+    it('enables the compiler and writes no locale stubs', async () => {
+      write('src/routes/__root.tsx', templateRoot);
+
+      const result = await tanstackStartSetup.apply(twins());
+
+      expect(read('vite.config.ts')).toBe(twinsVite);
+      expect(read('src/router.tsx')).toBe(configuredRouter);
+      expect(read('src/routes/__root.tsx')).toBe(configuredRoot);
+      expect(fs.existsSync(file('src/loadTranslations.ts'))).toBe(false);
+      expect(fs.existsSync(file('src/_gt'))).toBe(false);
+      expect(result).toEqual({
+        steps: [
+          'configured vite.config.ts',
+          'configured src/router.tsx',
+          'configured src/routes/__root.tsx',
+        ],
+        manualActions: [],
+      });
+    });
+
+    it('changes nothing on a rerun', async () => {
+      await tanstackStartSetup.apply(twins());
+      const before = snapshot();
+
+      const result = await tanstackStartSetup.apply(twins());
+
+      expect(snapshot()).toEqual(before);
+      expect(result).toEqual({ steps: [], manualActions: [] });
+    });
+
+    it('names the compiler and a non-default config in the manual plugin snippet', async () => {
+      write('vite.config.ts', 'export default {}\n');
+
+      const result = await tanstackStartSetup.apply({
+        ...twins(),
+        configFilepath: 'config/gt.config.json',
+      });
+
+      expect(result.manualActions).toEqual([
+        viteAction(
+          "gtTanstackStart({ config: 'config/gt.config.json', experimentalCompilerOptions: { type: 'babel' } })"
+        ),
+        routerAction,
+      ]);
+    });
+
+    it('asks a registered plugin without the compiler to enable it', async () => {
+      await tanstackStartSetup.apply(ctx());
+
+      const result = await tanstackStartSetup.apply(twins());
+
+      expect(read('vite.config.ts')).toBe(configuredVite);
+      expect(result.manualActions).toEqual([
+        {
+          whatHappened:
+            'vite.config.ts was left unchanged, but its gtTanstackStart() call does not run the GT compiler, which locale twins need',
+          fix: "Add experimentalCompilerOptions: { type: 'babel' } to the options of the gtTanstackStart() call in vite.config.ts, keeping its other options (see https://generaltranslation.com/docs/react/tanstack-start/setup)",
+        },
+      ]);
+    });
+
+    it('asks a loader the plugin uses to skip production client builds', async () => {
+      write('src/loadTranslations.ts', templateLoader);
+      // A rerun, so the loader already reads the translations directory.
+      const rerun = { ...twins(), previousTranslationsDir: 'src/_gt' };
+
+      const result = await tanstackStartSetup.apply(rerun);
+
+      expect(read('src/loadTranslations.ts')).toBe(templateLoader);
+      expect(fs.existsSync(file('src/_gt'))).toBe(false);
+      expect(result.manualActions).toEqual([
+        {
+          whatHappened:
+            "src/loadTranslations.ts loads whole locales in the browser too, but locale twins carry the browser's translations in the build",
+          fix: 'Start loadTranslations in src/loadTranslations.ts with if (import.meta.env.PROD && !import.meta.env.SSR) return {};, or delete src/loadTranslations.ts so gt-tanstack-start loads the files.gt.output of gt.config.json on the server only',
+        },
+      ]);
+
+      write(
+        'src/loadTranslations.ts',
+        templateLoader.replace(
+          '{\n',
+          '{\n  if (import.meta.env.PROD && !import.meta.env.SSR) return {};\n'
+        )
+      );
+      await expect(tanstackStartSetup.apply(rerun)).resolves.toMatchObject({
+        manualActions: [],
+      });
+    });
+
+    it.each([
+      "gtTanstackStart({ experimentalCompilerOptions: { type: 'babel', compileTimeHash: true } })",
+      'gtTanstackStart(options)',
+      'gtTanstackStart({ experimentalCompilerOptions: compiler })',
+    ])(
+      'accepts a registered plugin that may run the compiler: %s',
+      async (call) => {
+        write(
+          'vite.config.ts',
+          configuredVite.replace('gtTanstackStart()', call)
+        );
+
+        const result = await tanstackStartSetup.apply(twins());
+
+        expect(result.manualActions).toEqual([]);
+      }
+    );
+  });
+
   it('configures an app without a root route', async () => {
     fs.rmSync(file('src/routes/__root.tsx'));
 

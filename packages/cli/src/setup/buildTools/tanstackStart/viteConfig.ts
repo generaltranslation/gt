@@ -2,7 +2,11 @@
 import * as t from '@babel/types';
 import path from 'node:path';
 import { parseModule } from '../../setupViteSPA.js';
-import type { BuildToolContext, ManualAction } from '../index.js';
+import {
+  usesLocaleTwins,
+  type BuildToolContext,
+  type ManualAction,
+} from '../index.js';
 import {
   applyEdits,
   getCodeStyle,
@@ -187,16 +191,71 @@ function toStringLiteral(value: string, quote: string): string {
   return `${quote}${escaped}${quote}`;
 }
 
-/** The plugin call, naming the config only when it is not the default. */
+/** Locale twins need the compiler to attribute strings to chunks. */
+const COMPILER_OPTION = 'experimentalCompilerOptions';
+const getCompilerOption = (quote: string) =>
+  `${COMPILER_OPTION}: { type: ${quote}babel${quote} }`;
+
+/**
+ * The plugin call, naming the config only when it is not the default, and
+ * enabling the compiler for locale twins.
+ */
 function getVitePluginCall(
   name: string,
   ctx: BuildToolContext,
   quote: string
 ): string {
   const config = getVitePluginConfig(ctx);
-  return config === VITE_PLUGIN_DEFAULT_CONFIG
-    ? `${name}()`
-    : `${name}({ config: ${toStringLiteral(config, quote)} })`;
+  const options = [
+    ...(config === VITE_PLUGIN_DEFAULT_CONFIG
+      ? []
+      : [`config: ${toStringLiteral(config, quote)}`]),
+    ...(usesLocaleTwins(ctx) ? [getCompilerOption(quote)] : []),
+  ];
+  return options.length ? `${name}({ ${options.join(', ')} })` : `${name}()`;
+}
+
+/**
+ * Whether a plugin call enables the compiler: false when it is off, or null
+ * when only runtime values, such as a spread or a variable, could tell.
+ */
+function enablesCompiler(call: t.CallExpression): boolean | null {
+  if (call.arguments.length === 0) return false;
+  const [options] = call.arguments;
+  if (call.arguments.length !== 1 || options.type !== 'ObjectExpression') {
+    return null;
+  }
+  const compiler = findPropertyValue(options, COMPILER_OPTION);
+  if (compiler === undefined) return false;
+  if (compiler?.type !== 'ObjectExpression') return null;
+  const type = findPropertyValue(compiler, 'type');
+  if (type === undefined) return false;
+  if (type?.type !== 'StringLiteral') return null;
+  return type.value === 'babel';
+}
+
+/**
+ * Asks to enable the compiler in a registered plugin for locale twins.
+ * Editing its options could drop the person's own, so the file is left to
+ * them.
+ */
+export function getVitePluginCompilerAction(
+  viteConfig: SourceFile,
+  ctx: BuildToolContext
+): ManualAction | undefined {
+  if (!usesLocaleTwins(ctx)) return undefined;
+  const calls = findVitePluginCalls(viteConfig);
+  if (
+    calls.length === 0 ||
+    !calls.every((call) => enablesCompiler(call) === false)
+  ) {
+    return undefined;
+  }
+  const local = getVitePluginImport(viteConfig)!;
+  return {
+    whatHappened: `${viteConfig.path} was left unchanged, but its ${local}() call does not run the GT compiler, which locale twins need`,
+    fix: `Add ${getCompilerOption("'")} to the options of the ${local}() call in ${viteConfig.path}, keeping its other options (see ${DOCS_URL})`,
+  };
 }
 
 /**
