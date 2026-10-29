@@ -1,5 +1,4 @@
 import type {
-  DictionaryConfig,
   I18nCacheConstructorParams,
   I18nConfigParams,
 } from 'gt-i18n/internal';
@@ -10,7 +9,4 @@ import type {
  * @param {string[]} params.locales - The locales to support
  * @param {object} params.loadTranslations - The custom translation loader to use
  */
-export type InitializeGTParams = I18nConfigParams &
-  I18nCacheConstructorParams &
-  // shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
-  DictionaryConfig;
+export type InitializeGTParams = I18nConfigParams & I18nCacheConstructorParams;

@@ -2,8 +2,7 @@ import type { ReactElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 
-const { mockConditionStore, mockLoadDictionary } = vi.hoisted(() => ({
-  mockLoadDictionary: vi.fn(async (locale: string) => ({ greeting: locale })),
+const { mockConditionStore } = vi.hoisted(() => ({
   mockConditionStore: {
     getLocale: vi.fn(() => 'fr'),
     getRegion: vi.fn(() => undefined),
@@ -22,11 +21,6 @@ vi.mock('@generaltranslation/react-core/pure', async (importOriginal) => ({
     typeof import('@generaltranslation/react-core/pure')
   >()),
   getTranslationsSnapshot: vi.fn(async () => ({ hello: 'bonjour' })),
-}));
-
-vi.mock('gt-i18n/internal', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('gt-i18n/internal')>()),
-  getDictionaryManager: () => ({ loadDictionary: mockLoadDictionary }),
 }));
 
 vi.mock('@tanstack/react-start/server', () => ({
@@ -164,7 +158,6 @@ describe.sequential('setupRouterGTIntegration server', () => {
         region: undefined,
         enableI18n: true,
         translations: { hello: 'bonjour' },
-        dictionaries: { fr: { greeting: 'fr' } },
       },
     });
   });
@@ -190,29 +183,8 @@ describe.sequential('setupRouterGTIntegration server', () => {
       region: undefined,
       enableI18n: true,
       translations: { hello: 'bonjour' },
-      dictionaries: { fr: { greeting: 'fr' } },
       children: 'app',
     });
-  });
-
-  it('loads the dictionary for a translated locale only', async () => {
-    const router = createRouter();
-    setupRouterGTIntegration({ router });
-
-    await expect(router.options.dehydrate?.()).resolves.toMatchObject({
-      gt: { dictionaries: { fr: { greeting: 'fr' } } },
-    });
-    expect(mockLoadDictionary).toHaveBeenCalledWith('fr');
-
-    // Both sides bundle the source dictionary for the default locale.
-    mockLoadDictionary.mockClear();
-    mockConditionStore.getLocale.mockReturnValue('en');
-    const defaultRouter = createRouter();
-    setupRouterGTIntegration({ router: defaultRouter });
-    await expect(defaultRouter.options.dehydrate?.()).resolves.toMatchObject({
-      gt: { locale: 'en', dictionaries: {} },
-    });
-    expect(mockLoadDictionary).not.toHaveBeenCalled();
   });
 
   it('marks the GT state of a prerendered SPA shell', async () => {
@@ -233,7 +205,6 @@ describe.sequential('setupRouterGTIntegration server', () => {
         region: undefined,
         enableI18n: true,
         translations: { hello: 'bonjour' },
-        dictionaries: { fr: { greeting: 'fr' } },
         shell: true,
       },
     });

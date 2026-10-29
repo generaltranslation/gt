@@ -5,7 +5,7 @@ import { trackVariableDeclarator } from '../../transform/tracking/trackVariableD
 
 /**
  * Process variable assignments.
- * - Track callback variables (via translation function invocations: useGT, useTranslations, useMessages, etc.)
+ * - Track callback variables (via translation function invocations: useGT, useMessages, etc.)
  * - Track overriding variables
  *
  * GT callbacks:

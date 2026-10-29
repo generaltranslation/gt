@@ -128,7 +128,7 @@ describe('rsc component wrappers', () => {
     expect(module.mFallback).toBe(gtI18n.mFallback);
     expect(module.gtFallback).toBe(gtI18n.gtFallback);
     expect(module.useGT).toBeTypeOf('function');
-    expect(module.useTranslations).toBeTypeOf('function');
+    expect(module).not.toHaveProperty('useTranslations');
     expect(module.useMessages).toBeTypeOf('function');
     expect(module.useLocale).toBeTypeOf('function');
     expect(module.useLocaleDirection).toBeTypeOf('function');

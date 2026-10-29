@@ -35,16 +35,3 @@ export type {
   LookupOptionsFor,
   RuntimeTranslationOptions,
 } from './translation-functions/types/options';
-// ===== Compat: dictionary (key-based) API types ===== //
-export type {
-  Dictionary,
-  DictionaryEntry,
-  DictionaryEntryOptions,
-  DictionaryLeaf,
-  DictionaryObject,
-  DictionaryObjectTranslation,
-  DictionaryValue,
-  DictionaryPath,
-  DictionaryKey,
-  TFunctionType,
-} from './compat/types';
