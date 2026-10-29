@@ -1,6 +1,7 @@
 import { parse } from '@babel/parser';
 import type { TranslationSplittingStrategy } from 'generaltranslation/types';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
+import { isLocaleTwinsSplitting } from 'generaltranslation/internal';
 import fs from 'node:fs';
 import path from 'node:path';
 import { logger } from '../console/logger.js';
@@ -377,7 +378,7 @@ export async function setupViteSPA({
     entryImport,
   } = await inspectViteSPA(appDirectory);
 
-  const twins = splitting === 'locale-twins';
+  const twins = isLocaleTwinsSplitting(splitting);
   // An app-owned initializer may have custom imports and options. Nesting a
   // generated initializer around it would initialize GT twice.
   if (customBootstrap) {

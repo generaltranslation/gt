@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { isLocaleTwinsSplitting } from 'generaltranslation/internal';
 import type { GTConfig } from 'generaltranslation/types';
 import {
   createConfigReadError,
@@ -178,7 +179,7 @@ export function createConfigModule(
       // Locale twins carry the browser's translations in the build, so only
       // the server loads whole locales. The constant condition lets the
       // production client build drop every locale file.
-      ...(config.files?.gt?.splitting === 'locale-twins'
+      ...(isLocaleTwinsSplitting(config.files?.gt?.splitting)
         ? ['  if (import.meta.env.PROD && !import.meta.env.SSR) return {};']
         : []),
       `  const load = files[${segments.map((segment) => JSON.stringify(segment)).join(' + locale + ')}];`,

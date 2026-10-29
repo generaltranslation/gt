@@ -4,9 +4,13 @@ import type { TranslationSplittingStrategy } from '../types-dir/config';
 export const DEFAULT_TRANSLATION_SPLITTING: TranslationSplittingStrategy =
   'locale';
 
+/** The locale twins translation splitting strategy. */
+export const LOCALE_TWINS_SPLITTING: TranslationSplittingStrategy =
+  'locale-twins';
+
 /** Every accepted `files.gt.splitting` value. */
 export const TRANSLATION_SPLITTING_STRATEGIES: readonly TranslationSplittingStrategy[] =
-  ['locale', 'locale-twins'];
+  ['locale', LOCALE_TWINS_SPLITTING];
 
 /**
  * Prefix of every unfilled locale twin placeholder. The bare prefix is never a

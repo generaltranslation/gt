@@ -3,11 +3,9 @@
  * into `index.html`) and the readers: the browser bootstrap and the server
  * helper. Edge-safe: no Node APIs.
  */
-import {
-  createDiagnosticMessage,
-  formatDiagnosticErrorDetails,
-} from 'generaltranslation/internal';
+import { formatDiagnosticErrorDetails } from 'generaltranslation/internal';
 import { LOCALE_TWIN_BOOTSTRAP_SCRIPT } from './bootstrap';
+import { createGtI18nDiagnostic } from '../logs/diagnostics';
 import {
   LOCALE_TWIN_BOOTSTRAP_ATTRIBUTE,
   LOCALE_TWIN_DOCUMENT_DATA_ID,
@@ -150,8 +148,7 @@ export function escapeHtmlAttribute(value: string): string {
 const REBUILD_FIX =
   "Serve the index.html written by `vite build` with the 'locale-twins' translation splitting strategy";
 
-const MISSING_LOCALE_TWIN_DOCUMENT_DATA = createDiagnosticMessage({
-  source: 'gt-i18n',
+const MISSING_LOCALE_TWIN_DOCUMENT_DATA = createGtI18nDiagnostic({
   severity: 'Error',
   whatHappened: 'The document has no locale twin data',
   why: `it has no <script id="${LOCALE_TWIN_DOCUMENT_DATA_ID}"> block`,
@@ -161,8 +158,7 @@ const MISSING_LOCALE_TWIN_DOCUMENT_DATA = createDiagnosticMessage({
 function createUnsupportedLocaleTwinDocumentVersionMessage(
   version: unknown
 ): string {
-  return createDiagnosticMessage({
-    source: 'gt-i18n',
+  return createGtI18nDiagnostic({
     severity: 'Error',
     whatHappened: `The document has an unsupported locale twin document version ${String(version)}`,
     why: `this version of gt-i18n reads version ${LOCALE_TWIN_DOCUMENT_VERSION}`,
@@ -173,8 +169,7 @@ function createUnsupportedLocaleTwinDocumentVersionMessage(
 function createInvalidLocaleTwinDocumentDataMessage(
   details: string | string[] | undefined
 ): string {
-  return createDiagnosticMessage({
-    source: 'gt-i18n',
+  return createGtI18nDiagnostic({
     severity: 'Error',
     whatHappened: 'The document has invalid locale twin data',
     fix: REBUILD_FIX,

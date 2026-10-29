@@ -1,4 +1,5 @@
 import type { TranslationSplittingStrategy } from 'generaltranslation/types';
+import { isLocaleTwinsSplitting } from 'generaltranslation/internal';
 import type { SupportedReactFrameworks } from '../../types/index.js';
 import { reactRouterSetup } from './reactRouter/index.js';
 import { tanstackStartSetup } from './tanstackStart/index.js';
@@ -25,7 +26,7 @@ export type BuildToolContext = {
 
 /** Locale twins carry translations in the build: no loader, no snapshot. */
 export function usesLocaleTwins(ctx: Pick<BuildToolContext, 'splitting'>) {
-  return ctx.splitting === 'locale-twins';
+  return isLocaleTwinsSplitting(ctx.splitting);
 }
 
 /** Setup steps for a build tool whose app entry GT configures itself. */

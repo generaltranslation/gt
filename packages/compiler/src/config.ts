@@ -8,12 +8,11 @@ import type {
   TranslationSplittingStrategy,
 } from 'generaltranslation/types';
 import {
-  isTranslationSplittingStrategy,
   resolveTranslationSplitting,
-  TRANSLATION_SPLITTING_STRATEGIES,
+  resolveTranslationSplittingValue,
 } from 'generaltranslation/internal';
 import { defaultLocaleCookieName } from 'gt-i18n/internal/cookies';
-import { createCompilerDiagnostic } from './utils/diagnostics';
+import { COMPILER_DIAGNOSTIC_SOURCE } from './utils/diagnostics';
 
 export type LogLevel = NonNullable<GTCompilerOptions['logLevel']>;
 
@@ -130,19 +129,13 @@ export function resolveLocaleTwinsSettings(
 function resolvePluginSplitting(
   options: Pick<PluginConfig, 'splitting' | 'gtConfig'>
 ): TranslationSplittingStrategy {
-  const { splitting } = options;
-  if (splitting === undefined) {
+  if (options.splitting === undefined) {
     return resolveTranslationSplitting(options.gtConfig);
   }
-  if (isTranslationSplittingStrategy(splitting)) return splitting;
-  throw new Error(
-    createCompilerDiagnostic({
-      severity: 'Error',
-      whatHappened: `The splitting option is set to ${JSON.stringify(splitting)}`,
-      why: 'that is not a translation splitting strategy',
-      fix: `Set it to ${TRANSLATION_SPLITTING_STRATEGIES.map((s) => JSON.stringify(s)).join(' or ')}, or remove it`,
-    })
-  );
+  return resolveTranslationSplittingValue(options.splitting, {
+    setting: 'The splitting option',
+    source: COMPILER_DIAGNOSTIC_SOURCE,
+  });
 }
 
 function definedValues<T extends object>(value: T): Partial<T> {

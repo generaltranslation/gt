@@ -1,13 +1,16 @@
 export {
   DEFAULT_TRANSLATION_SPLITTING,
+  LOCALE_TWINS_SPLITTING,
   LOCALE_TWIN_MANIFEST_FILE,
   LOCALE_TWIN_MANIFEST_VERSION,
   LOCALE_TWIN_PLACEHOLDER_PREFIX,
   TRANSLATION_SPLITTING_STRATEGIES,
 } from './constants';
 export {
+  isLocaleTwinsSplitting,
   isTranslationSplittingStrategy,
   resolveTranslationSplitting,
+  resolveTranslationSplittingValue,
 } from './splitting';
 export {
   decodeLocaleTwinPlaceholder,

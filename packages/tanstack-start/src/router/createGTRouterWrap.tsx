@@ -5,6 +5,7 @@ import {
   type ReactNode,
 } from 'react';
 import { getI18nConfig } from '@generaltranslation/react-core/pure';
+import { isLocaleTwinsSplitting } from 'generaltranslation/internal';
 import { getReactI18nCache, getTranslationsSnapshot } from 'gt-react';
 import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
 import type { GTRouterState } from './types';
@@ -16,7 +17,7 @@ type GTConditionSource = Pick<
 
 /** Whether the app builds locale twins (`files.gt.splitting`). */
 export function usesLocaleTwins(): boolean {
-  return getI18nConfig().getTranslationSplitting() === 'locale-twins';
+  return isLocaleTwinsSplitting(getI18nConfig().getTranslationSplitting());
 }
 
 export async function readGTRouterState(

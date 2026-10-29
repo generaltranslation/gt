@@ -1,6 +1,9 @@
 import { Argument, Command, InvalidArgumentError, Option } from 'commander';
 import { ProjectApiKeyPermission } from 'generaltranslation/api';
-import { isTranslationSplittingStrategy } from 'generaltranslation/internal';
+import {
+  isLocaleTwinsSplitting,
+  isTranslationSplittingStrategy,
+} from 'generaltranslation/internal';
 import {
   DEFAULT_TRANSLATIONS_DIR,
   REACT_QUICKSTART_URL,
@@ -1158,7 +1161,7 @@ See https://www.npmjs.com/package/gt-vue`);
     const splitting = options.splitting ?? configuredSplitting;
     // Locale twins are built from local translation files by the Vite
     // compiler plugin, for apps whose entry setup knows how to configure.
-    const localeTwins = splitting === 'locale-twins';
+    const localeTwins = isLocaleTwinsSplitting(splitting);
     if (localeTwins) {
       if (!buildTool?.supportsLocaleTwins) {
         session.reject(

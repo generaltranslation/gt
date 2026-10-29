@@ -17,7 +17,10 @@
  */
 import path from 'node:path';
 import type { VitePlugin } from 'unplugin';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import {
+  isLocaleTwinsSplitting,
+  libraryDefaultLocale,
+} from 'generaltranslation/internal';
 import type {
   GTConfig,
   LogLevel,
@@ -94,7 +97,7 @@ type OutputItem =
 export function createLocaleTwinsViteHooks(
   options: LocaleTwinsViteHooksOptions
 ): Partial<VitePlugin> {
-  const enabled = options.splitting === 'locale-twins';
+  const enabled = isLocaleTwinsSplitting(options.splitting);
   const quiet = options.logLevel === 'silent' || options.logLevel === 'error';
   let resolvedConfig: ConfigLike | undefined;
   const pendingWarnings: string[] = [];
