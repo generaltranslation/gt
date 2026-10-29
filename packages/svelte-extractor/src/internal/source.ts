@@ -257,7 +257,11 @@ function planTranslations(
     ...(problem.fix && { fix: problem.fix }),
     location: toLocation(parsed, problem.offset),
   }));
-  const components = findTranslationComponents(root.fragment, bindings);
+  const components = findTranslationComponents(
+    root.fragment,
+    bindings,
+    root.options?.preserveWhitespace === true
+  );
   if (components.length === 0) return { plans, errors };
 
   const reservedIndex = findReservedIdentifier(root);
@@ -270,12 +274,13 @@ function planTranslations(
     return { plans, errors };
   }
 
-  for (const node of components) {
+  for (const { node, preserveWhitespace } of components) {
     const analysis = analyzeTranslation(
       source,
       node,
       bindings,
-      variables.edits
+      variables.edits,
+      preserveWhitespace
     );
     if (!analysis.ok) {
       for (const problem of analysis.problems) {
@@ -292,7 +297,6 @@ function planTranslations(
   return { plans, errors };
 }
 
-/** Finds `<T>` components, without descending into them. */
 /**
  * Returns the offset of the first identifier that could collide with the
  * names the preprocessor generates. Text, strings, comments, member
@@ -336,14 +340,24 @@ function isPropertyName(
   );
 }
 
+type TranslationComponent = {
+  node: SvelteElementNode;
+  /** Whether Svelte keeps whitespace in `<T>` as written. */
+  preserveWhitespace: boolean;
+};
+
+/** Finds `<T>` components, without descending into them. */
 function findTranslationComponents(
   value: unknown,
   bindings: GTBindings,
-  found: SvelteElementNode[] = []
-): SvelteElementNode[] {
+  preserveWhitespace: boolean,
+  found: TranslationComponent[] = []
+): TranslationComponent[] {
   if (!value || typeof value !== 'object') return found;
   if (Array.isArray(value)) {
-    for (const item of value) findTranslationComponents(item, bindings, found);
+    for (const item of value) {
+      findTranslationComponents(item, bindings, preserveWhitespace, found);
+    }
     return found;
   }
   const node = value as SvelteNode;
@@ -351,14 +365,18 @@ function findTranslationComponents(
     node.type === 'Component' &&
     resolveComponent(bindings, node.name as string) === 'T'
   ) {
-    found.push(node as SvelteElementNode);
+    found.push({ node: node as SvelteElementNode, preserveWhitespace });
     return found;
   }
+  const preservesChildren =
+    preserveWhitespace ||
+    (node.type === 'RegularElement' &&
+      (node.name === 'pre' || node.name === 'textarea'));
   for (const key in node) {
     if (key === 'metadata' || key === 'loc' || key === 'name_loc') continue;
     const child = node[key];
     if (child && typeof child === 'object') {
-      findTranslationComponents(child, bindings, found);
+      findTranslationComponents(child, bindings, preservesChildren, found);
     }
   }
   return found;

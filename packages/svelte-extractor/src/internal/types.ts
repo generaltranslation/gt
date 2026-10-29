@@ -43,6 +43,8 @@ export type SvelteRoot = {
   css?: { start: number; end: number } | null;
   instance?: { content: { body: SvelteNode[] } } | null;
   module?: { content: { body: SvelteNode[] } } | null;
+  /** The `<svelte:options>` element. */
+  options?: { preserveWhitespace?: boolean } | null;
 };
 
 /** The `parse` function from `svelte/compiler`. */

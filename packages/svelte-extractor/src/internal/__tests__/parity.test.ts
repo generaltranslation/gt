@@ -26,7 +26,8 @@ function analyzeSvelte(markup: string) {
 
 /**
  * Each case pairs a Svelte `<T>` with the React `<T>` a developer would write
- * for the same content. Both must serialize identically and share a hash.
+ * for the same content, with the whitespace Svelte renders. Both must
+ * serialize identically and share a hash.
  */
 const cases: { name: string; svelte: string; tsx: string }[] = [
   {
@@ -35,22 +36,18 @@ const cases: { name: string; svelte: string; tsx: string }[] = [
     tsx: `<T>Hello world</T>`,
   },
   {
-    name: 'multi-line text and indentation',
+    name: 'line breaks and indentation within text',
     svelte: `<T>
       Hello there,
          friend.
     </T>`,
-    tsx: `<T>
-      Hello there,
-         friend.
-    </T>`,
+    tsx: `<T>{'Hello there,\\n         friend.'}</T>`,
   },
   {
-    name: 'runs of spaces within a line and tabs',
+    name: 'runs of spaces, tabs, and line breaks within text',
     svelte: `<T>a   b\tc
       d</T>`,
-    tsx: `<T>a   b\tc
-      d</T>`,
+    tsx: `<T>{'a   b\\tc\\n      d'}</T>`,
   },
   {
     name: 'nested elements and translatable attributes',
@@ -59,25 +56,19 @@ const cases: { name: string; svelte: string; tsx: string }[] = [
       <img alt="A cat" src="/cat.png" />
       <input placeholder="Your name" aria-label="Name" />
     </T>`,
-    tsx: `<T>
-      Click <a href="/x" className="link" title="Go &amp; see">here <b>now</b></a>
-      <img alt="A cat" src="/cat.png" />
-      <input placeholder="Your name" aria-label="Name" />
-    </T>`,
+    tsx: `<T>Click <a href="/x" className="link" title="Go &amp; see">here <b>now</b></a> <img alt="A cat" src="/cat.png" /> <input placeholder="Your name" aria-label="Name" /></T>`,
   },
   {
-    name: 'space between elements on one line, dropped between lines',
+    name: 'whitespace between elements, on one line or across lines',
     svelte: `<T><b>a</b> <i>b</i>
       <u>c</u></T>`,
-    tsx: `<T><b>a</b> <i>b</i>
-      <u>c</u></T>`,
+    tsx: `<T><b>a</b> <i>b</i> <u>c</u></T>`,
   },
   {
     name: 'entities and non-breaking spaces',
     svelte: `<T>Fish &amp; chips&nbsp;&lt;3
       &nbsp;</T>`,
-    tsx: `<T>Fish &amp; chips&nbsp;&lt;3
-      &nbsp;</T>`,
+    tsx: `<T>{'Fish & chips\\u00a0<3\\n      \\u00a0'}</T>`,
   },
   {
     name: 'static expressions keep exact whitespace',
@@ -97,12 +88,7 @@ const cases: { name: string; svelte: string; tsx: string }[] = [
       <Num value={count} /> items since <DateTime value={date} />
       (<RelativeTime value={date} />).
     </T>`,
-    tsx: `<T>
-      Hi <Var>{name}</Var>, <Var name="user">{name}</Var>
-      you owe <Currency currency="EUR">{price}</Currency> for
-      <Num>{count}</Num> items since <DateTime>{date}</DateTime>
-      (<RelativeTime>{date}</RelativeTime>).
-    </T>`,
+    tsx: `<T>Hi <Var>{name}</Var>, <Var name="user">{name}</Var> you owe <Currency currency="EUR">{price}</Currency> for <Num>{count}</Num> items since <DateTime>{date}</DateTime> (<RelativeTime>{date}</RelativeTime>).</T>`,
   },
   {
     name: 'variables whose value is their only child',
@@ -111,11 +97,7 @@ const cases: { name: string; svelte: string; tsx: string }[] = [
       <Num name="items">{count}</Num> items since <DateTime>{date}</DateTime>
       (<RelativeTime>{date}</RelativeTime>), <Num> {5} </Num> today.
     </T>`,
-    tsx: `<T>
-      You owe <Currency currency="EUR">{price}</Currency> for
-      <Num name="items">{count}</Num> items since <DateTime>{date}</DateTime>
-      (<RelativeTime>{date}</RelativeTime>), <Num> {5} </Num> today.
-    </T>`,
+    tsx: `<T>You owe <Currency currency="EUR">{price}</Currency> for <Num name="items">{count}</Num> items since <DateTime>{date}</DateTime> (<RelativeTime>{date}</RelativeTime>), <Num> {5} </Num> today.</T>`,
   },
   {
     name: 'component elements',
@@ -144,18 +126,7 @@ const cases: { name: string; svelte: string; tsx: string }[] = [
       </Plural>
       <span>after</span>
     </T>`,
-    tsx: `<T>
-      <Plural
-        n={count}
-        one={<><b>One</b> item for <Var>{name}</Var></>}
-        other={<>
-          <Num>{count}</Num> items for <Var>{name}</Var>
-        </>}
-      >
-        No items
-      </Plural>
-      <span>after</span>
-    </T>`,
+    tsx: `<T><Plural n={count} one={<><b>One</b> item for <Var>{name}</Var></>} other={<><Num>{count}</Num> items for <Var>{name}</Var></>}>No items</Plural> <span>after</span></T>`,
   },
   {
     name: 'plural with string branches',

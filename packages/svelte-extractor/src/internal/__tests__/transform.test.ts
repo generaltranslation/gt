@@ -35,7 +35,9 @@ describe('transformSvelteSource', () => {
         let name = $state('Ada');
       </script>
 
-      <Translate _hash="8eab79643759a9cf" _gtm={{"v":{"":{"_gt_value_2":2}}}} context="greeting">Hello <b class="x" title="Bold">dear <Var>{name}</Var></b>!{#snippet __gt_v_2()}<Var>{name}</Var>{/snippet}{#snippet __gt_e_1(__gt_kids, __gt_d)}<b class="x" title={__gt_d?.ti ?? "Bold"}>{@render __gt_kids()}</b>{/snippet}</Translate>
+      <Translate _hash="8eab79643759a9cf" _gtm={{"v":{"":{"_gt_value_2":2}}}} context="greeting">
+        Hello <b class="x" title="Bold">dear <Var>{name}</Var></b>!
+      {#snippet __gt_v_2()}<Var>{name}</Var>{/snippet}{#snippet __gt_e_1(__gt_kids, __gt_d)}<b class="x" title={__gt_d?.ti ?? "Bold"}>{@render __gt_kids()}</b>{/snippet}</Translate>
       "
     `);
     expect(() =>
@@ -115,33 +117,87 @@ describe('transformSvelteSource', () => {
     );
   });
 
-  it('normalizes children whitespace to JSX semantics for source rendering', () => {
-    const result = transform(`<script>import { T } from 'gt-svelte';</script>
-<T>
-  <b>a</b>
-  <i>b</i> c
-</T>`);
-    expect(result?.code).toContain('<T _hash=');
-    expect(result?.code).toMatch(/<b>a<\/b><i>b<\/i> c\{#snippet/);
+  it('extracts the whitespace Svelte renders', () => {
+    const source = (markup: string) => {
+      const analysis = analyzeSvelteSource(
+        `<script>import { T, Num } from 'gt-svelte';</script>${markup}`,
+        { parse, filename: 'Fixture.svelte' }
+      );
+      expect(analysis.errors).toEqual([]);
+      return analysis.translations[0].source;
+    };
+    // Whitespace between text and an element or component is one space.
+    expect(
+      source(`<T>
+  You can make <Num value={7} /> of
+  <Num value={50} />
+  recipes
+</T>`)
+    ).toEqual([
+      'You can make ',
+      { i: 1, k: '_gt_n_1', v: 'n' },
+      ' of ',
+      { i: 2, k: '_gt_n_2', v: 'n' },
+      ' recipes',
+    ]);
+    // Whitespace at the edges of a fragment is removed.
+    expect(source('<T> Hello <b> world </b></T>')).toEqual([
+      'Hello ',
+      { t: 'b', i: 1, c: 'world' },
+    ]);
+    // Whitespace within text and next to expressions is kept as written.
+    expect(source('<T>\n  Hello\n    world{" "}\n</T>')).toEqual([
+      'Hello\n    world',
+      ' ',
+    ]);
+    // Text on both sides of a comment is adjacent.
+    expect(source('<T>a <!-- c --> b</T>')).toEqual(['a ', 'b']);
+    // A lone space is dropped where Svelte drops it.
+    expect(source('<T><table> <tbody></tbody> </table></T>')).toEqual({
+      t: 'table',
+      i: 1,
+      c: { t: 'tbody', i: 2 },
+    });
   });
 
-  it('renders edge whitespace that Svelte would trim as string expressions', () => {
+  it('keeps whitespace as written where Svelte preserves it', () => {
+    const source = (markup: string) =>
+      analyzeSvelteSource(
+        `<script>import { T } from 'gt-svelte';</script>${markup}`,
+        { parse, filename: 'Fixture.svelte' }
+      ).translations[0].source;
+    expect(source('<T><pre>\n  a  </pre></T>')).toEqual({
+      t: 'pre',
+      i: 1,
+      c: '\n  a  ',
+    });
+    // Svelte drops a newline that is all a <pre> starts with.
+    expect(source('<T><pre>\n<b>a</b></pre></T>')).toEqual({
+      t: 'pre',
+      i: 1,
+      c: { t: 'b', i: 2, c: 'a' },
+    });
+    expect(source('<pre><T>  a  </T></pre>')).toBe('  a  ');
+    expect(source('<svelte:options preserveWhitespace /><T>  a  </T>')).toBe(
+      '  a  '
+    );
+  });
+
+  it('writes out whitespace encoded as entities for source rendering', () => {
     // The rewritten children, before the generated snippets.
     const body = (markup: string) =>
       transform(
         `<script>import { T } from 'gt-svelte';</script><T>${markup}</T>`
       )!.code.match(/<T _hash="\w+">([\s\S]*?)(?:\{#snippet|<\/T>)/)![1];
-    expect(body(' free')).toBe('{" free"}');
-    expect(body('Hello <b>world </b>again')).toBe(
-      'Hello <b>{"world "}</b>again'
+    expect(body('&#32;Hello&#32;')).toBe('Hello');
+    expect(body('a&#13;<b>b</b>')).toBe('a <b>b</b>');
+    expect(body("{'x'}&#9;&amp;&#123;&#32;<b>b</b>")).toBe(
+      "{'x'}\t&amp;&#123; <b>b</b>"
     );
-    expect(body('<code>  npm  i  </code>')).toBe('<code>{"  npm  i  "}</code>');
-    // Whitespace JSX removes is removed, including encoded whitespace.
-    expect(body('\n  Hello\n    world\n')).toBe('Hello world');
-    expect(body('a&#13;<b>b</b>')).toBe('a<b>b</b>');
-    expect(body('foo&#9;bar')).toBe('foo bar');
-    // Text Svelte renders as is keeps its raw form.
-    expect(body('Tom &amp; Jerry <b>x</b>')).toBe('Tom &amp; Jerry <b>x</b>');
+    // Other text is left as written.
+    expect(body('\n  Tom &amp; Jerry\n  <b>x</b>\n')).toBe(
+      '\n  Tom &amp; Jerry\n  <b>x</b>\n'
+    );
   });
 
   it('transforms <T> inside blocks and namespace imports', () => {

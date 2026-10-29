@@ -9,7 +9,6 @@ export type {
 } from './internal/source.js';
 export { findSvelteTags } from './internal/tags.js';
 export type { SvelteTag } from './internal/tags.js';
-export { normalizeJsxText } from './internal/whitespace.js';
 export type {
   GTRuntimeMetadata,
   SourceCodeContext,

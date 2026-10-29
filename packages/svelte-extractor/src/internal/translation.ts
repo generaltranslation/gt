@@ -13,7 +13,8 @@ import {
 import { hashSource } from 'generaltranslation/id';
 import type { GTBindings, GTComponentKind } from './imports.js';
 import { resolveComponent } from './imports.js';
-import { normalizeJsxText } from './whitespace.js';
+import type { FragmentWhitespace } from './whitespace.js';
+import { getChildWhitespace, getRenderedText } from './whitespace.js';
 import type {
   GTRuntimeMetadata,
   SvelteAttribute,
@@ -88,7 +89,10 @@ export type TranslationPlan = {
   runtimeMetadata: GTRuntimeMetadata;
   /** Generated `{#snippet}` declarations, one per element and variable. */
   snippets: string[];
-  /** Whitespace edits that make source rendering match JSX semantics. */
+  /**
+   * Text rewrites that make whitespace written as entities render the same
+   * on the server and in the browser.
+   */
   edits: TextEdit[];
 };
 
@@ -114,18 +118,23 @@ type VariableSite = { scope: string; parent: string; key: string; id: number };
  * Analyzes one `<T>` component and builds its serialized JSX children,
  * hash, runtime metadata, and generated snippets.
  *
- * Element and variable ids, variable keys, branch numbering, and whitespace
- * normalization replicate React's `addGTIdentifier` and
- * `writeChildrenAsObjects` over Babel's JSX output, so the hash matches the
- * equivalent React `<T>`.
+ * Text keeps the whitespace Svelte renders for it. Element and variable ids,
+ * variable keys, and branch numbering replicate React's `addGTIdentifier`
+ * and `writeChildrenAsObjects` over Babel's JSX output, so the hash matches
+ * a React `<T>` whose text has the same whitespace.
  */
 export function analyzeTranslation(
   source: string,
   node: SvelteElementNode,
   bindings: GTBindings,
-  variableEdits: TextEdit[] = []
+  variableEdits: TextEdit[] = [],
+  preserveWhitespace = false
 ): TranslationAnalysis {
-  return new TranslationBuilder(source, bindings, variableEdits).build(node);
+  return new TranslationBuilder(source, bindings, variableEdits).build(node, {
+    preserve: preserveWhitespace,
+    pre: false,
+    dropsSpaces: false,
+  });
 }
 
 class TranslationBuilder {
@@ -148,13 +157,17 @@ class TranslationBuilder {
     private readonly variableEdits: TextEdit[]
   ) {}
 
-  build(node: SvelteElementNode): TranslationAnalysis {
+  build(
+    node: SvelteElementNode,
+    whitespace: FragmentWhitespace
+  ): TranslationAnalysis {
     const metadata = this.readMetadata(node);
     const children = this.convertChildren(
       node.fragment.nodes,
       '',
       { index: 0 },
-      { kind: 'T', id: '' }
+      { kind: 'T', id: '' },
+      whitespace
     );
     this.addVariableMetadata();
 
@@ -264,20 +277,18 @@ class TranslationBuilder {
     nodes: SvelteNode[],
     scope: string,
     counter: Counter,
-    parent: Parent
+    parent: Parent,
+    whitespace: FragmentWhitespace
   ): JsxChildren | undefined {
     const children: JsxChild[] = [];
-    nodes.forEach((child, index) => {
+    const rendered = getRenderedText(nodes, whitespace);
+    for (const child of nodes) {
       const converted =
         child.type === 'Text'
-          ? this.convertText(
-              child,
-              getRenderedSibling(nodes, index, -1),
-              getRenderedSibling(nodes, index, 1)
-            )
-          : this.convertNode(child, scope, counter, parent);
+          ? this.convertText(child, rendered.get(child))
+          : this.convertNode(child, scope, counter, parent, whitespace);
       if (converted !== undefined) children.push(converted);
-    });
+    }
     if (children.length === 0) return undefined;
     return children.length === 1 ? children[0] : children;
   }
@@ -286,7 +297,8 @@ class TranslationBuilder {
     node: SvelteNode,
     scope: string,
     counter: Counter,
-    parent: Parent
+    parent: Parent,
+    whitespace: FragmentWhitespace
   ): JsxChild | undefined {
     switch (node.type) {
       case 'Comment':
@@ -296,13 +308,19 @@ class TranslationBuilder {
         return this.convertExpressionTag(node);
       case 'RegularElement':
       case 'SvelteElement':
-        return this.convertElement(node as SvelteElementNode, scope, counter);
+        return this.convertElement(
+          node as SvelteElementNode,
+          scope,
+          counter,
+          whitespace
+        );
       case 'Component':
         return this.convertComponent(
           node as SvelteElementNode,
           scope,
           counter,
-          parent
+          parent,
+          whitespace
         );
       case 'SnippetBlock': {
         if (parent.kind === 'T') {
@@ -338,22 +356,26 @@ class TranslationBuilder {
     }
   }
 
+  /** Converts a text node, given the text Svelte renders for it. */
   private convertText(
     node: SvelteNode,
-    previous: SvelteNode | undefined,
-    next: SvelteNode | undefined
+    text: string | undefined
   ): string | undefined {
-    const data = node.data as string;
+    if (!text) return undefined;
     const raw = node.raw as string;
-    // The hash and translations use the decoded text, normalized like JSX.
-    const normalized = normalizeJsxText(data);
-    // Rewrite the source so Svelte renders exactly that text, the way
-    // translations render it.
-    const text = renderableText(normalized, data, raw, previous, next);
-    if (text !== raw) {
-      this.edits.push({ start: node.start, end: node.end, text });
+    // Svelte trims the decoded text on the server but the raw markup in the
+    // browser, so whitespace written as an entity can render differently.
+    // Writing it out makes both render the text translations use.
+    if (
+      countMatches(node.data as string, SVELTE_WHITESPACE) !==
+      countMatches(raw, SVELTE_WHITESPACE)
+    ) {
+      const markup = escapeText(text);
+      if (markup !== raw) {
+        this.edits.push({ start: node.start, end: node.end, text: markup });
+      }
     }
-    return normalized ? normalized : undefined;
+    return text;
   }
 
   private convertExpressionTag(node: SvelteNode): string | undefined {
@@ -372,7 +394,8 @@ class TranslationBuilder {
     node: SvelteElementNode,
     scope: string,
     counter: Counter,
-    parent: Parent
+    parent: Parent,
+    whitespace: FragmentWhitespace
   ): JsxChild | undefined {
     const kind = resolveComponent(this.bindings, node.name);
     if (kind === 'T') {
@@ -383,9 +406,9 @@ class TranslationBuilder {
       return this.convertVariable(node, kind, scope, counter, parent);
     }
     if (kind === 'Branch' || kind === 'Plural') {
-      return this.convertBranch(node, kind, scope, counter);
+      return this.convertBranch(node, kind, scope, counter, whitespace);
     }
-    return this.convertElement(node, scope, counter);
+    return this.convertElement(node, scope, counter, whitespace);
   }
 
   // ===== Elements ===== //
@@ -393,7 +416,8 @@ class TranslationBuilder {
   private convertElement(
     node: SvelteElementNode,
     scope: string,
-    counter: Counter
+    counter: Counter,
+    whitespace: FragmentWhitespace
   ): JsxElement | undefined {
     const id = ++counter.index;
     for (const attribute of node.attributes) {
@@ -431,10 +455,13 @@ class TranslationBuilder {
     const d = getContentProps(node);
     const enclosing = this.enclosingSnippets();
     const children = this.withLocalSnippets(node.fragment.nodes, () =>
-      this.convertChildren(node.fragment.nodes, scope, counter, {
-        kind: 'element',
-        id: `${scope}${id}`,
-      })
+      this.convertChildren(
+        node.fragment.nodes,
+        scope,
+        counter,
+        { kind: 'element', id: `${scope}${id}` },
+        getChildWhitespace(whitespace, node)
+      )
     );
     if (children !== undefined) element.c = children;
     if (d) element.d = d;
@@ -524,7 +551,8 @@ class TranslationBuilder {
     node: SvelteElementNode,
     kind: 'Branch' | 'Plural',
     scope: string,
-    counter: Counter
+    counter: Counter,
+    whitespace: FragmentWhitespace
   ): JsxElement | undefined {
     const id = ++counter.index;
     // No inherited keys, so names like "constructor" are ordinary branches.
@@ -603,10 +631,13 @@ class TranslationBuilder {
       const fragmentId = ++branchCounter.index;
       const body = child.body as { nodes: SvelteNode[] };
       const content = this.withLocalSnippets(body.nodes, () =>
-        this.convertChildren(body.nodes, branchScope, branchCounter, {
-          kind: 'branch',
-          id: `${branchScope}${fragmentId}`,
-        })
+        this.convertChildren(
+          body.nodes,
+          branchScope,
+          branchCounter,
+          { kind: 'branch', id: `${branchScope}${fragmentId}` },
+          getChildWhitespace(whitespace, child)
+        )
       );
       const fragment: JsxElement = { t: `C${fragmentId}`, i: fragmentId };
       if (content !== undefined) fragment.c = content;
@@ -626,10 +657,13 @@ class TranslationBuilder {
       };
     }
     // Fallback children keep the running counter, like React.
-    const children = this.convertChildren(childNodes, scope, counter, {
-      kind: 'element',
-      id: `${scope}${id}`,
-    });
+    const children = this.convertChildren(
+      childNodes,
+      scope,
+      counter,
+      { kind: 'element', id: `${scope}${id}` },
+      getChildWhitespace(whitespace, node)
+    );
     if (children !== undefined) element.c = children;
     if (d) element.d = d;
 
@@ -717,77 +751,17 @@ class TranslationBuilder {
 
 // ===== Helpers ===== //
 
-const LEADING_WHITESPACE = /^[ \t\n\r\f]*/;
-const TRAILING_WHITESPACE = /[ \t\n\r\f]*$/;
 const SVELTE_WHITESPACE = /[ \t\n\r]/g;
-const MARKUP_CHARACTERS = /[&<{}]/;
+const MARKUP_CHARACTERS: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '{': '&#123;',
+  '}': '&#125;',
+};
 
-/**
- * Returns markup that Svelte renders as the normalized text of a text node,
- * the way translations render it.
- *
- * JSX keeps whitespace at the edges of text, but Svelte trims it at the
- * start and end of a fragment and collapses it next to elements, so text
- * whose edge whitespace Svelte would change becomes a string expression,
- * which Svelte renders as is. Other text keeps its raw form unless an
- * entity encodes whitespace, which JSX normalizes after decoding.
- */
-function renderableText(
-  normalized: string,
-  data: string,
-  raw: string,
-  previous: SvelteNode | undefined,
-  next: SvelteNode | undefined
-): string {
-  if (!normalized) return '';
-  const keepsEdges =
-    keepsEdgeWhitespace(normalized.match(LEADING_WHITESPACE)![0], previous) &&
-    keepsEdgeWhitespace(normalized.match(TRAILING_WHITESPACE)![0], next);
-  if (!keepsEdges) return `{${JSON.stringify(normalized)}}`;
-  if (
-    countMatches(data, SVELTE_WHITESPACE) ===
-    countMatches(raw, SVELTE_WHITESPACE)
-  ) {
-    return normalizeJsxText(raw);
-  }
-  return MARKUP_CHARACTERS.test(normalized)
-    ? `{${JSON.stringify(normalized)}}`
-    : normalized;
-}
-
-/**
- * Whether Svelte keeps whitespace at the edge of a text node, given the
- * node rendered next to that edge: it trims whitespace at a fragment edge,
- * keeps it next to an expression, and collapses it to one space next to an
- * element. Adjacent text is not handled.
- */
-function keepsEdgeWhitespace(
-  whitespace: string,
-  sibling: SvelteNode | undefined
-): boolean {
-  if (!whitespace) return true;
-  if (!sibling || sibling.type === 'Text') return false;
-  return sibling.type === 'ExpressionTag' || whitespace === ' ';
-}
-
-/**
- * Returns the sibling Svelte renders next to `nodes[index]` in `direction`,
- * skipping comments, snippet declarations, and text the preprocessor removes.
- */
-function getRenderedSibling(
-  nodes: SvelteNode[],
-  index: number,
-  direction: 1 | -1
-): SvelteNode | undefined {
-  for (let i = index + direction; i >= 0 && i < nodes.length; i += direction) {
-    const node = nodes[i];
-    if (node.type === 'Comment' || node.type === 'SnippetBlock') continue;
-    if (node.type === 'Text' && !normalizeJsxText(node.data as string)) {
-      continue;
-    }
-    return node;
-  }
-  return undefined;
+/** Escapes text so Svelte parses it back as the same text. */
+function escapeText(text: string): string {
+  return text.replace(/[&<{}]/g, (char) => MARKUP_CHARACTERS[char]);
 }
 
 function countMatches(text: string, pattern: RegExp): number {
