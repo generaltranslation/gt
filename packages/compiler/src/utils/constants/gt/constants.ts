@@ -26,8 +26,6 @@ export enum GT_COMPONENT_TYPES {
 export enum GT_FUNCTIONS_WITH_CALLBACKS {
   useGT = 'useGT',
   getGT = 'getGT',
-  useTranslations = 'useTranslations',
-  getTranslations = 'getTranslations',
   useMessages = 'useMessages',
   getMessages = 'getMessages',
 }
@@ -53,8 +51,6 @@ export type GT_FUNCTIONS = GT_FUNCTIONS_WITH_CALLBACKS | GT_OTHER_FUNCTIONS;
 export enum GT_CALLBACK_FUNCTIONS {
   useGT_callback = 'useGT_callback',
   getGT_callback = 'getGT_callback',
-  useTranslations_callback = 'useTranslations_callback',
-  getTranslations_callback = 'getTranslations_callback',
   useMessages_callback = 'useMessages_callback',
   getMessages_callback = 'getMessages_callback',
 }
@@ -68,10 +64,6 @@ export const GT_FUNCTIONS_TO_CALLBACKS: Record<
 > = {
   [GT_FUNCTIONS_WITH_CALLBACKS.useGT]: GT_CALLBACK_FUNCTIONS.useGT_callback,
   [GT_FUNCTIONS_WITH_CALLBACKS.getGT]: GT_CALLBACK_FUNCTIONS.getGT_callback,
-  [GT_FUNCTIONS_WITH_CALLBACKS.useTranslations]:
-    GT_CALLBACK_FUNCTIONS.useTranslations_callback,
-  [GT_FUNCTIONS_WITH_CALLBACKS.getTranslations]:
-    GT_CALLBACK_FUNCTIONS.getTranslations_callback,
   [GT_FUNCTIONS_WITH_CALLBACKS.useMessages]:
     GT_CALLBACK_FUNCTIONS.useMessages_callback,
   [GT_FUNCTIONS_WITH_CALLBACKS.getMessages]:

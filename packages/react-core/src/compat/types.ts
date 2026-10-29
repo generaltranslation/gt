@@ -1,4 +1,4 @@
-import type { DictionaryEntry, DictionaryObject } from 'gt-i18n';
+import type { DictionaryEntry, DictionaryObject } from 'gt-i18n/internal';
 
 export type DictionaryLookup = {
   locale: string;

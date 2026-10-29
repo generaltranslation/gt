@@ -17,6 +17,9 @@ const esmDeclarationStubsPlugin = createEsmDeclarationStubsPlugin(
   [
     'index.types',
     'index.rsc',
+    'compat.types',
+    'compat.rsc',
+    'compat/server',
     'config',
     'server',
     'unstable.types',
@@ -55,12 +58,14 @@ export default defineConfig(
           }),
         ],
       }),
-      // src/index.types.ts and src/unstable.types.ts only back the exports map's
+      // src/index.types.ts, src/compat.types.ts and src/unstable.types.ts only back the exports map's
       // "types" conditions; their declarations ship, but their runtime modules
       // are unreachable.
       onSuccess: createRemoveRuntimeArtifactsHook(process.cwd(), 'dist', [
         'index.types.js',
         'index.types.js.map',
+        'compat.types.js',
+        'compat.types.js.map',
         'unstable.types.js',
         'unstable.types.js.map',
       ]),
@@ -90,6 +95,8 @@ export default defineConfig(
       onSuccess: createRemoveRuntimeArtifactsHook(process.cwd(), 'dist', [
         'index.types.mjs',
         'index.types.mjs.map',
+        'compat.types.mjs',
+        'compat.types.mjs.map',
         'unstable.types.mjs',
         'unstable.types.mjs.map',
       ]),

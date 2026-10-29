@@ -1,20 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const {
-  mockGetGTInternal,
-  mockGetMessagesInternal,
-  mockGetTranslationsInternal,
-} = vi.hoisted(() => ({
+const { mockGetGTInternal, mockGetMessagesInternal } = vi.hoisted(() => ({
   mockGetGTInternal: vi.fn(async () => 'gt'),
   mockGetMessagesInternal: vi.fn(async () => 'messages'),
-  mockGetTranslationsInternal: vi.fn(async () => 'translations'),
 }));
 
 vi.mock('gt-i18n/internal', async (importOriginal) => ({
   ...(await importOriginal<typeof import('gt-i18n/internal')>()),
   getGTInternal: mockGetGTInternal,
   getMessagesInternal: mockGetMessagesInternal,
-  getTranslationsInternal: mockGetTranslationsInternal,
 }));
 
 vi.mock('@tanstack/react-start/server', () => ({
@@ -33,7 +27,6 @@ import {
   getGT,
   getLocale,
   getMessages,
-  getTranslations,
 } from '../runtime.server';
 
 type GlobalWithRegistry = {
@@ -68,7 +61,6 @@ describe.sequential('server translation functions', () => {
     setConditionStore(new AsyncLocalConditionStore(config));
     mockGetGTInternal.mockClear();
     mockGetMessagesInternal.mockClear();
-    mockGetTranslationsInternal.mockClear();
   });
 
   it('requires a TanStack Start request', () => {
@@ -93,7 +85,6 @@ describe.sequential('server translation functions', () => {
     expect(getEnableI18n()).toBe(false);
     await expect(getGT(messages)).resolves.toBe('gt');
     await expect(getMessages()).resolves.toBe('messages');
-    await expect(getTranslations('metadata')).resolves.toBe('translations');
     vi.mocked(getRequest).mockRestore();
 
     expect(mockGetGTInternal).toHaveBeenCalledWith(
@@ -103,11 +94,6 @@ describe.sequential('server translation functions', () => {
     expect(mockGetMessagesInternal).toHaveBeenCalledWith({
       locale: 'fr',
       enableI18n: false,
-    });
-    expect(mockGetTranslationsInternal).toHaveBeenCalledWith({
-      locale: 'fr',
-      enableI18n: false,
-      rootId: 'metadata',
     });
   });
 });

@@ -1,11 +1,11 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { I18nStore } from '@generaltranslation/react-core/pure';
-import { InternalGTProvider } from '@generaltranslation/react-core/components';
 import { useTranslations } from '@generaltranslation/react-core/hooks';
+import { initializeDictionaryManager, type Dictionary } from 'gt-i18n/internal';
 import { initializeGTSRA } from '../../setup/initializeGTSRA';
+import { BrowserGTProvider as RootGTProvider } from '../../provider/BrowserGTProvider';
 import { BrowserGTProvider } from '../BrowserGTProvider';
-import type { Dictionary } from 'gt-i18n';
+import { ServerGTProvider } from '../ServerGTProvider';
 
 type TestGlobal = typeof globalThis & {
   __generaltranslation?: Record<string, unknown>;
@@ -27,35 +27,38 @@ function initialize(dictionary?: Dictionary) {
     defaultLocale: 'en',
     locales: ['en', 'fr'],
     loadTranslations: async () => ({}),
-    dictionary,
   });
+  if (dictionary) initializeDictionaryManager({ dictionary });
 }
 
-describe('dictionaries reach useTranslations', () => {
+describe.each([
+  ['BrowserGTProvider', BrowserGTProvider],
+  ['ServerGTProvider', ServerGTProvider],
+])('compat %s', (_name, GTProvider) => {
   beforeEach(resetGTGlobals);
   afterEach(resetGTGlobals);
 
-  it('reads the source dictionary from GTProvider dictionaries', () => {
+  it('reads the source dictionary from its dictionaries', () => {
     initialize();
 
     const html = renderToStaticMarkup(
-      <BrowserGTProvider
+      <GTProvider
         locale='en'
         translations={{}}
         dictionaries={{ en: { greeting: 'Hello' } }}
       >
         <Greeting />
-      </BrowserGTProvider>
+      </GTProvider>
     );
 
     expect(html).toBe('<p>Hello</p>');
   });
 
-  it('reads the target dictionary from GTProvider dictionaries', () => {
+  it('reads the target dictionary from its dictionaries', () => {
     initialize();
 
     const html = renderToStaticMarkup(
-      <BrowserGTProvider
+      <GTProvider
         locale='fr'
         translations={{}}
         dictionaries={{
@@ -64,30 +67,40 @@ describe('dictionaries reach useTranslations', () => {
         }}
       >
         <Greeting />
-      </BrowserGTProvider>
+      </GTProvider>
     );
 
     expect(html).toBe('<p>Bonjour</p>');
   });
 
-  it('falls back to the dictionary manager without a dictionary provider', () => {
+  it('falls back to the dictionary manager without dictionaries', () => {
     initialize({ greeting: 'Hello' });
 
     const html = renderToStaticMarkup(
-      <InternalGTProvider
-        translations={{}}
-        locale='en'
-        region={undefined}
-        enableI18n
-        setLocale={() => undefined}
-        setRegion={() => undefined}
-        setEnableI18n={() => undefined}
-        i18nStore={new I18nStore()}
-      >
+      <GTProvider locale='en' translations={{}}>
         <Greeting />
-      </InternalGTProvider>
+      </GTProvider>
     );
 
     expect(html).toBe('<p>Hello</p>');
+  });
+});
+
+describe('useTranslations under the root GTProvider', () => {
+  beforeEach(resetGTGlobals);
+  afterEach(resetGTGlobals);
+
+  it('throws a diagnostic that names the /compat GTProvider', () => {
+    initialize({ greeting: 'Hello' });
+
+    expect(() =>
+      renderToStaticMarkup(
+        <RootGTProvider locale='en' translations={{}}>
+          <Greeting />
+        </RootGTProvider>
+      )
+    ).toThrow(
+      /useTranslations\(\) was called outside a GTProvider from a \/compat entry[\s\S]*'gt-react\/compat'/
+    );
   });
 });

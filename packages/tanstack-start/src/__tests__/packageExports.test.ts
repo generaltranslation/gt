@@ -117,6 +117,8 @@ describe.sequential('gt-tanstack-start package exports', () => {
         .filter((file) => /\.(cjs|mjs)$/.test(file))
         .sort()
     ).toEqual([
+      'compat.client.mjs',
+      'compat.server.mjs',
       'index.client.mjs',
       'index.server.mjs',
       'unstable.client.mjs',
@@ -128,6 +130,8 @@ describe.sequential('gt-tanstack-start package exports', () => {
     for (const file of [
       'index.client.d.mts',
       'index.server.d.mts',
+      'compat.client.d.mts',
+      'compat.server.d.mts',
       'unstable.client.d.mts',
       'unstable.server.d.mts',
     ]) {
@@ -164,7 +168,19 @@ describe.sequential('gt-tanstack-start package exports', () => {
     );
   });
 
-  it.each(['index.client.mjs', 'unstable.client.mjs'])(
+  it.each(['index.client.mjs', 'index.server.mjs'])(
+    'imports the dictionary module only from compat, not %s',
+    (file) => {
+      expect(getImportSpecifiers(readDistFile(file))).not.toContain(
+        'gt-tanstack-start/internal/_compat-config'
+      );
+      expect(
+        getImportSpecifiers(readDistFile(file.replace('index.', 'compat.')))
+      ).toContain('gt-tanstack-start/internal/_compat-config');
+    }
+  );
+
+  it.each(['index.client.mjs', 'compat.client.mjs', 'unstable.client.mjs'])(
     'keeps Node.js builtins out of the browser entrypoint %s',
     (file) => {
       // Browser bundlers cannot resolve Node.js builtins.
@@ -300,6 +316,26 @@ describe.sequential('gt-tanstack-start package exports', () => {
         assert.equal(typeof getGT, 'function');
         assert.equal(typeof getLocale, 'function');
         assert.equal(typeof setupRouterGTIntegration, 'function');
+      `,
+    ]);
+  });
+
+  it.each([
+    [[], 'compat.server.mjs'],
+    [['--conditions=browser'], 'compat.client.mjs'],
+    [['--conditions=workerd', '--conditions=browser'], 'compat.server.mjs'],
+  ])('resolves gt-tanstack-start/compat with %j to %s', (conditions, file) => {
+    node([
+      ...conditions,
+      '--input-type=module',
+      '-e',
+      `
+        import assert from 'node:assert/strict';
+
+        assert.equal(
+          import.meta.resolve('gt-tanstack-start/compat').endsWith(${JSON.stringify(`/dist/${file}`)}),
+          true
+        );
       `,
     ]);
   });

@@ -6,7 +6,11 @@
 import { TSESTree } from '@typescript-eslint/utils';
 import type { RuleFixer } from '@typescript-eslint/utils/ts-eslint';
 import type { SourceCode } from '@typescript-eslint/utils/ts-eslint';
-import { CORE_LIBRARY } from './constants.js';
+import {
+  CORE_LIBRARY,
+  isCompatSource,
+  isGTLibrarySource,
+} from './constants.js';
 
 /**
  * Collects all import declarations whose source matches one of the
@@ -19,7 +23,7 @@ export function getGTImportDecls(
   return sourceCode.ast.body.filter(
     (stmt): stmt is TSESTree.ImportDeclaration =>
       stmt.type === TSESTree.AST_NODE_TYPES.ImportDeclaration &&
-      libs.includes(stmt.source.value as string)
+      isGTLibrarySource(libs, stmt.source.value)
   );
 }
 
@@ -49,7 +53,7 @@ export function findImportedSpecifier(
  * already imported (possibly aliased), returns the alias. Otherwise
  * appends an import-fix to `fixes` and returns the canonical name.
  *
- * NOTE: If the GT import has no named specifiers (e.g. namespace import
+ * NOTE: If no native GT import has named specifiers (e.g. namespace import
  * `import * as GT from 'gt-react'`), no import fix is emitted. The
  * generated JSX will reference the canonical name without a matching
  * import — this is acceptable because namespace imports don't currently
@@ -63,8 +67,13 @@ export function addComponentImport(
 ): string {
   const spec = findImportedSpecifier(gtImportDecls, componentName);
   if (spec) return spec.local.name;
+  // The core package and compat entries don't export components, and a
+  // type-only import would make the component type-only.
   const target = gtImportDecls.find(
-    (decl) => decl.source.value !== CORE_LIBRARY
+    (decl) =>
+      decl.importKind !== 'type' &&
+      decl.source.value !== CORE_LIBRARY &&
+      !isCompatSource(decl.source.value)
   );
   if (target) {
     const namedSpecs = target.specifiers.filter(

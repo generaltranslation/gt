@@ -4,7 +4,11 @@ import {
   ESLintUtils,
   TSESTree,
 } from '@typescript-eslint/utils';
-import { GTLibrary, RULE_URL } from '../../utils/constants.js';
+import {
+  GTLibrary,
+  RULE_URL,
+  isGTLibrarySource,
+} from '../../utils/constants.js';
 import { isGTFunction } from '../../utils/isGTFunction.js';
 
 const createRule = ESLintUtils.RuleCreator((name) => `${RULE_URL}${name}`);
@@ -20,6 +24,7 @@ const HOOKS: Record<string, string> = {
 };
 
 // gt-next's versions are server-only, and valid in async Server Components.
+// Each library also covers its /compat entry, which has getTranslations().
 const DEFAULT_LIBS: GTLibrary[] = ['gt-tanstack-start'];
 
 type FunctionNode =
@@ -217,7 +222,7 @@ export const translationFunctionPlacement = createRule({
               type: 'string',
             },
             description:
-              'List of library modules whose translation functions to check',
+              'List of library modules whose translation functions to check. Each also covers its /compat entry.',
           },
         },
         additionalProperties: false,
@@ -227,12 +232,27 @@ export const translationFunctionPlacement = createRule({
       moduleScope:
         '{{name}}() reads the locale of the current request or browser, so at module scope it runs once and reuses that locale for every later request. Call it inside a route loader, head data or server function.',
       inComponent:
-        '{{name}}() is for route loaders, head data and server functions. In components and hooks, use {{hook}}() instead.',
+        "{{name}}() is for route loaders, head data and server functions. In components and hooks, use {{hook}}() from '{{source}}' instead.",
     },
   },
   defaultOptions: [{ libs: DEFAULT_LIBS }],
   create(context, [options]) {
     const { libs = DEFAULT_LIBS } = options;
+
+    /** The source of the import that binds the identifier, if any. */
+    function getImportSource(
+      identifier: TSESTree.Identifier
+    ): string | undefined {
+      const [def] =
+        ASTUtils.findVariable(
+          context.sourceCode.getScope(identifier),
+          identifier.name
+        )?.defs ?? [];
+      return def?.type === 'ImportBinding' &&
+        def.parent.type === AST_NODE_TYPES.ImportDeclaration
+        ? def.parent.source.value
+        : undefined;
+    }
 
     /**
      * The function a namespace import call names, like `i18n.getLocale()`
@@ -257,7 +277,7 @@ export const translationFunctionPlacement = createRule({
       return def?.type === 'ImportBinding' &&
         def.node.type === AST_NODE_TYPES.ImportNamespaceSpecifier &&
         def.parent.type === AST_NODE_TYPES.ImportDeclaration &&
-        libs.includes(def.parent.source.value as GTLibrary)
+        isGTLibrarySource(libs, def.parent.source.value)
         ? callee.property.name
         : undefined;
     }
@@ -279,10 +299,22 @@ export const translationFunctionPlacement = createRule({
           return;
         }
         if (isComponentOrHook(fn)) {
+          const binding =
+            node.callee.type === AST_NODE_TYPES.MemberExpression
+              ? node.callee.object
+              : node.callee;
           context.report({
             node,
             messageId: 'inComponent',
-            data: { name, hook: HOOKS[name] },
+            data: {
+              name,
+              hook: HOOKS[name],
+              // The hook comes from the same entry as the function.
+              source:
+                binding.type === AST_NODE_TYPES.Identifier
+                  ? getImportSource(binding)
+                  : undefined,
+            },
           });
         }
       },

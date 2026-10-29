@@ -4,8 +4,8 @@ import {
   initializeDictionaryManager,
   isDictionaryManagerInitialized,
   type Locale,
+  type Dictionary,
 } from 'gt-i18n/internal';
-import type { Dictionary } from 'gt-i18n';
 import { getParams } from '../setup/shared';
 import { getDictionary } from './getDictionary';
 import { resolveDictionaryLoader } from './resolveDictionaryLoader';

@@ -35,8 +35,6 @@ export { useRegion } from './request/getRegion';
 export { useLocaleDirection } from './request/getLocaleDirection';
 export { useLocalizeHref } from './link/getLocalizeHref';
 export { useMessages, useGT } from './server-dir/buildtime/strings';
-// shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
-export { useTranslations } from './compat/getTranslations';
 
 // ===== Client Boundary ===== //
 

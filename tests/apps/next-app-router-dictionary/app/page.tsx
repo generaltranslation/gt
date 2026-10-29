@@ -1,4 +1,5 @@
-import { getLocale, getTranslations } from 'gt-next/server';
+import { getTranslations } from 'gt-next/compat/server';
+import { getLocale } from 'gt-next/server';
 import { ClientDemo } from './client-demo';
 
 type StringRecord = Record<string, string>;

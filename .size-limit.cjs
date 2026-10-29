@@ -116,6 +116,9 @@ module.exports = [
   react('gt-react (client)', 'index.client', '55 kB'),
   reactNode('gt-react (rsc)', 'index.rsc'),
   reactNode('gt-react (server)', 'index.server', '55 kB'),
+  react('gt-react/compat (client)', 'compat.client'),
+  reactNode('gt-react/compat (rsc)', 'compat.rsc'),
+  reactNode('gt-react/compat (server)', 'compat.server'),
   react('gt-react/macros', 'macros'),
 
   // Locale matching is loaded only when initializeGTSPA() runs. Track the
@@ -130,6 +133,10 @@ module.exports = [
   nextNode('gt-next (server)', 'index.server', '85 kB'),
   nextNode('gt-next/config', 'config', '300 kB'),
   nextNode('gt-next/server', 'server', '85 kB'),
+  next('gt-next/compat (client)', 'compat.client', '75 kB'),
+  nextNode('gt-next/compat (rsc)', 'compat.rsc', '85 kB'),
+  nextNode('gt-next/compat (server)', 'compat.server', '85 kB'),
+  nextNode('gt-next/compat/server', 'compat/server', '85 kB'),
   nextNode('gt-next/middleware', 'middleware'),
   next('gt-next/link', 'link', '65 kB'),
   nextNode('gt-next/internal/_dictionary', 'internal/_dictionary'),
@@ -142,12 +149,16 @@ module.exports = [
   nextNode('gt-next/internal/_getRegion', 'internal/_getRegion'),
 
   node('gt-node', 'index', '40 kB'),
+  node('gt-node/compat', 'compat'),
   node('gt-node/internal', 'internal'),
 
   tanstack('gt-tanstack-start (client)', 'index.client'),
   tanstackNode('gt-tanstack-start (server)', 'index.server'),
+  tanstack('gt-tanstack-start/compat (client)', 'compat.client'),
+  tanstackNode('gt-tanstack-start/compat (server)', 'compat.server'),
 
   reactNative('gt-react-native', 'index', '52 kB'),
+  reactNative('gt-react-native/compat', 'compat'),
   reactNativeNode('gt-react-native/plugin', 'plugin'),
   reactNative('gt-react-native/internal', 'internal'),
 ];
