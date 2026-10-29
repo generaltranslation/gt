@@ -32,6 +32,9 @@ export default defineConfig({
           name: 'client',
           environment: 'jsdom',
           include: ['__tests__/**/*.client.test.svelte.ts'],
+          // createServerRenderer() starts and compiles a Vite SSR server in
+          // beforeAll, which takes about 7s in CI and can exceed the 10s default.
+          hookTimeout: 60_000,
           env: { _GT_LOG_LEVEL: 'off' },
         },
       },
