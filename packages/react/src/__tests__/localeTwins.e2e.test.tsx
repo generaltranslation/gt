@@ -244,7 +244,7 @@ describe('locale twins end to end', () => {
     expect(html).toContain('Save 3 items');
     expect(error).toHaveBeenCalledTimes(1);
     expect(error.mock.calls[0][0]).toMatch(
-      /no locale twin was registered.*compiler plugin/s
+      /no locale twin was registered[\s\S]*compiler plugin/
     );
   });
 

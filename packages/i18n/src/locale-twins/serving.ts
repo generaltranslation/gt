@@ -221,10 +221,12 @@ export function getLocaleTwinDocumentHeaders(): Record<string, string> {
  * `Cache-Control` and `Content-Type` are set only when absent.
  */
 export function applyLocaleTwinDocumentHeaders(headers: Headers): void {
-  const documentHeaders = new Headers(getLocaleTwinDocumentHeaders());
-  for (const [name, value] of documentHeaders) {
-    if (name === 'vary') headers.set(name, mergeVary(headers.get(name), value));
-    else if (!headers.has(name)) headers.set(name, value);
+  for (const [name, value] of Object.entries(getLocaleTwinDocumentHeaders())) {
+    if (name.toLowerCase() === 'vary') {
+      headers.set(name, mergeVary(headers.get(name), value));
+    } else if (!headers.has(name)) {
+      headers.set(name, value);
+    }
   }
 }
 
