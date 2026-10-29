@@ -2,8 +2,7 @@ import {
   createLookupOptions,
   getRuntimeEnvironment,
   interpolateMessage,
-  lookupLocaleTwinEntry,
-  rendersSourceWithLocaleTwins,
+  resolveLocaleTwinLookup,
 } from 'gt-i18n/internal';
 import type { GTTranslationOptions } from 'gt-i18n/types';
 import type { LookupOptionsFor } from 'gt-i18n/internal/types';
@@ -65,20 +64,22 @@ export function resolveStringContent(
   const i18nCache = getReactI18nCache();
   const defaultLocale = getI18nConfig().getDefaultLocale();
 
-  // Locale twins: stripped code is resolved by hash, source locale included
-  const twinEntry = lookupLocaleTwinEntry<StringContent>(locale, options);
-  if (twinEntry !== undefined) {
-    const lookupOptions = createLookupOptions(locale, options, 'ICU');
+  // Locale twins: stripped code is resolved by hash, source locale included;
+  // content no twin carries renders its source text
+  const twin = resolveLocaleTwinLookup<StringContent>(
+    locale,
+    options,
+    options.$_hash
+  );
+  if (twin.entry !== undefined) {
     return interpolateMessage({
       source: content,
-      target: twinEntry,
-      options: lookupOptions,
+      target: twin.entry,
+      options: createLookupOptions(locale, options, 'ICU'),
       sourceLocale: defaultLocale,
     });
   }
-
-  // Content no twin carries renders its source text, on the server too
-  if (!getShouldTranslate() || rendersSourceWithLocaleTwins(options.$_hash)) {
+  if (!getShouldTranslate() || twin.rendersSource) {
     return interpolateMessage({
       options,
       source: content,

@@ -114,7 +114,9 @@ describe.sequential('client initialization with locale twins', () => {
       { loadTranslations }
     );
 
-    await expect(gtReact.getTranslationsSnapshot('fr')).resolves.toEqual({});
+    await expect(gtReact.getTranslationsSnapshot('fr')).resolves.toEqual({
+      fr: {},
+    });
     expect(loadTranslations).not.toHaveBeenCalled();
   });
 

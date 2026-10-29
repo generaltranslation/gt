@@ -2,8 +2,7 @@ import { useCallback } from 'react';
 import {
   createLookupOptions,
   interpolateMessage,
-  lookupLocaleTwinEntry,
-  rendersSourceWithLocaleTwins,
+  resolveLocaleTwinLookup,
 } from 'gt-i18n/internal';
 import { useTranslationConditions } from './utils';
 import type { GTFunctionType, GTTranslationOptions } from 'gt-i18n/types';
@@ -36,22 +35,22 @@ export function useGT(_messages?: Message[]): GTFunctionType {
         'ICU'
       );
 
-      // Locale twins: stripped code is resolved by hash, source locale included
-      const twinEntry = lookupLocaleTwinEntry<string>(
+      // Locale twins: stripped code is resolved by hash, source locale
+      // included; content no twin carries renders its source text
+      const twin = resolveLocaleTwinLookup<string>(
         lookupOptions.$locale,
-        lookupOptions
+        lookupOptions,
+        options.$_hash
       );
-      if (twinEntry !== undefined) {
+      if (twin.entry !== undefined) {
         return interpolateMessage({
           source: message,
-          target: twinEntry,
+          target: twin.entry,
           options: lookupOptions,
           sourceLocale: defaultLocale,
         });
       }
-
-      // Content no twin carries renders its source text, on the server too
-      if (!shouldTranslate || rendersSourceWithLocaleTwins(options.$_hash)) {
+      if (!shouldTranslate || twin.rendersSource) {
         return interpolateMessage({
           options: lookupOptions,
           source: message,

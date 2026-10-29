@@ -65,7 +65,11 @@ export {
 export {
   isLocaleTwinsClient,
   lookupLocaleTwinEntry,
-  rendersSourceWithLocaleTwins,
+  resolveLocaleTwinLookup,
+} from './locale-twins/runtime';
+export type {
+  LocaleTwinLookup,
+  LocaleTwinLookupOptions,
 } from './locale-twins/runtime';
 export {
   markNavigatingReload,

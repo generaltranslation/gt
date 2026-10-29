@@ -1,5 +1,4 @@
 import {
-  createDiagnosticMessage,
   formatDiagnosticErrorDetails,
   isUnfilledLocaleTwinPlaceholder,
   parseLocaleTwinTable,
@@ -7,10 +6,10 @@ import {
 import type { LocaleTwinTable } from 'generaltranslation/internal';
 import type { Content } from 'generaltranslation/types';
 import logger from '../logs/logger';
+import { createGtI18nDiagnostic } from '../logs/diagnostics';
 
 function createInvalidLocaleTwinMessage(error: unknown): string {
-  return createDiagnosticMessage({
-    source: 'gt-i18n',
+  return createGtI18nDiagnostic({
     severity: 'Error',
     whatHappened: 'A locale twin could not be registered',
     why: 'the loaded chunk contains neither a locale twin table nor an unfilled placeholder',
@@ -31,6 +30,8 @@ type LocaleTwinRegistry = {
   tables: LocaleTwinTable[];
   /** Runtime diagnostics already reported on this page (each logs once). */
   reported?: Set<string>;
+  /** Whether a locale twin client loads whole locales for dictionaries. */
+  dictionaryLoading?: boolean;
 };
 
 type GlobalWithLocaleTwins = {

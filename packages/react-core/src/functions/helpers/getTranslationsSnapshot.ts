@@ -1,6 +1,5 @@
 import { Hash, Locale } from 'gt-i18n/internal/types';
 import { Translation } from 'gt-i18n/types';
-import { isLocaleTwinsClient } from 'gt-i18n/internal';
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
@@ -10,14 +9,14 @@ import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 /**
  * Serializable cached translations for provider hydration; a failed load
  * yields a snapshot with no entry for the locale, so hydration caches nothing
- * and a later lookup retries. Always `{}` on a locale twin client.
+ * and a later lookup retries. On a locale twin client the cache loads
+ * nothing (the snapshot for the locale is empty), unless the app uses the
+ * dictionaries API, whose entries stay on whole-locale loading.
  * TODO: perhaps move to /i18n for type generics
  */
 export async function getTranslationsSnapshot(
   locale: Locale
 ): Promise<Record<Locale, Record<Hash, Translation>>> {
-  // Locale twin clients get translations from the registered twins only
-  if (isLocaleTwinsClient()) return {};
   const i18nCache = getReactI18nCache();
   try {
     return { [locale]: await i18nCache.loadTranslations(locale) };

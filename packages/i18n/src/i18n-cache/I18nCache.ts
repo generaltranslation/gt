@@ -32,6 +32,7 @@ import { getI18nConfig } from '../i18n-config/singleton-operations';
 import {
   isLocaleTwinsClient,
   lookupLocaleTwinEntry,
+  setLocaleTwinDictionaryLoading,
 } from '../locale-twins/runtime';
 
 /**
@@ -145,15 +146,20 @@ class I18nCache<TranslationValue extends Translation = Translation> {
     };
 
     // Create cache miss handlers. Locale twin clients get their translations
-    // from the registered twins, never from a loader or the CDN.
+    // from the registered twins, never from a loader or the CDN, unless the
+    // app uses the dictionaries API: dictionary entries are never twinned
+    // and stay on whole-locale loading (only dictionary lookups read it).
     const localeTwinsClient = isLocaleTwinsClient();
+    const dictionaryLoading = localeTwinsClient && usesDictionaries(params);
+    if (localeTwinsClient) setLocaleTwinDictionaryLoading(dictionaryLoading);
+    const disableLoading = localeTwinsClient && !dictionaryLoading;
     const loadTranslations = routeCreateTranslationLoader({
       loadTranslations: params.loadTranslations,
-      type: localeTwinsClient
+      type: disableLoading
         ? LoadTranslationsType.DISABLED
         : getLoadTranslationsType(params),
       remoteTranslationLoaderParams: {
-        cacheUrl: localeTwinsClient ? null : params.cacheUrl,
+        cacheUrl: disableLoading ? null : params.cacheUrl,
         projectId: params.projectId,
         _versionId: params._versionId,
         _branchId: params._branchId,
@@ -741,6 +747,14 @@ export { I18nCache };
  * Validate constructor params: log warnings for suspicious configs and throw
  * on hard misconfigurations.
  */
+/** Whether the app configured the dictionaries API on the cache. */
+function usesDictionaries(params: I18nCacheConstructorParams): boolean {
+  return (
+    params.loadDictionary !== undefined ||
+    Object.keys(params.dictionary ?? {}).length > 0
+  );
+}
+
 function validateCacheParams(params: I18nCacheConstructorParams): void {
   // Runtime translation against a custom API URL still needs GT credentials
   if (params.runtimeUrl && params.runtimeUrl !== defaultRuntimeApiUrl) {

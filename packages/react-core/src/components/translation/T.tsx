@@ -1,9 +1,5 @@
 import { useTranslate } from '../../hooks/external-store';
-import {
-  getI18nConfig,
-  lookupLocaleTwinEntry,
-  rendersSourceWithLocaleTwins,
-} from 'gt-i18n/internal';
+import { getI18nConfig, resolveLocaleTwinLookup } from 'gt-i18n/internal';
 import { useRef, type ReactNode } from 'react';
 import { renderPreparedT } from '../../utils/rendering/renderPipeline';
 import type { TProps } from '../../utils/translation/prepareT.shared';
@@ -75,13 +71,15 @@ function useComputeT({
   }
 
   // Locale twins: stripped source children render through the registered
-  // twin's JSX, source locale included
-  const fromLocaleTwin =
-    lookupLocaleTwinEntry(locale, targetOptions) !== undefined;
-  // Content no twin carries renders its source text, on the server too
-  const unattributed = rendersSourceWithLocaleTwins(
+  // twin's JSX, source locale included; content no twin carries renders its
+  // source text. targetOptions.$_hash may be computed at runtime, so only
+  // the compiler's own hash counts as attributed.
+  const twin = resolveLocaleTwinLookup(
+    locale,
+    targetOptions,
     params._hash ?? params.$_hash
   );
+  const fromLocaleTwin = twin.entry !== undefined;
 
   const result = _renderPreparedT({
     taggedSourceChildren,
@@ -89,7 +87,7 @@ function useComputeT({
     locale,
     defaultLocale,
     enableI18n,
-    shouldTranslate: (shouldTranslate && !unattributed) || fromLocaleTwin,
+    shouldTranslate: (shouldTranslate && !twin.rendersSource) || fromLocaleTwin,
     hash: targetOptions.$_hash,
   });
 

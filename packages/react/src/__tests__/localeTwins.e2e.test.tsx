@@ -23,6 +23,7 @@ import {
   serializeLocaleTwinTable,
 } from 'generaltranslation/internal';
 import type { LocaleTwinEntries } from 'generaltranslation/internal';
+import { hashSource } from 'generaltranslation/id';
 import * as GTReact from '../index.client';
 import { initializeGTSPA } from '../setup/initializeGTSPA';
 
@@ -169,6 +170,7 @@ describe('locale twins end to end', () => {
   beforeEach(resetGTGlobals);
   afterEach(() => {
     resetGTGlobals();
+    vi.unstubAllEnvs();
     vi.restoreAllMocks();
   });
 
@@ -229,6 +231,56 @@ describe('locale twins end to end', () => {
     expect(warn.mock.calls[0][0]).toContain(
       'loaded locale twins for "fr", but GT is rendering "en"'
     );
+  });
+
+  it('reports a build without the compiler plugin instead of rendering source silently', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    // The same page, untouched by the compiler: no hashes, no placeholder
+    const { Page } = evaluateModule(PAGE_SOURCE);
+    await initializeGTSPA({ ...GT_CONFIG, locale: 'fr' });
+
+    const html = renderToStaticMarkup(<Page name='Ada' />);
+
+    expect(html).toContain('Save 3 items');
+    expect(error).toHaveBeenCalledTimes(1);
+    expect(error.mock.calls[0][0]).toMatch(
+      /no locale twin was registered.*compiler plugin/s
+    );
+  });
+
+  it('translates dictionary entries from the whole locale (dictionaries stay on locale loading)', async () => {
+    const titleHash = hashSource({ source: 'Harbor guide', dataFormat: 'ICU' });
+    const loadTranslations = vi.fn(async () => ({
+      [titleHash]: 'Guide du port',
+    }));
+    function Title() {
+      const t = GTReact.useTranslations();
+      return <h1>{t('title')}</h1>;
+    }
+    await initializeGTSPA({
+      ...GT_CONFIG,
+      locale: 'fr',
+      dictionary: { title: 'Harbor guide' },
+      loadTranslations,
+    });
+
+    const html = renderToStaticMarkup(<Title />);
+
+    expect(loadTranslations).toHaveBeenCalledWith('fr');
+    expect(html).toBe('<h1>Guide du port</h1>');
+  });
+
+  it('translates content without a compile-time hash as usual in dev builds', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    const noticeHash = hashSource({ source: 'Notice', dataFormat: 'ICU' });
+    const loadTranslations = vi.fn(async () => ({ [noticeHash]: 'Avis' }));
+    function Notice() {
+      const gt = GTReact.useGT();
+      return <p>{gt('Notice')}</p>;
+    }
+    await initializeGTSPA({ ...GT_CONFIG, locale: 'fr', loadTranslations });
+
+    expect(renderToStaticMarkup(<Notice />)).toBe('<p>Avis</p>');
   });
 
   it('never loads translations or calls the CDN', async () => {

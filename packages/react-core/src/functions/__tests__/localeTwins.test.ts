@@ -70,11 +70,11 @@ describe('locale twins in react-core functions', () => {
     expect(t('', { name: 'Ada', $_hash: HASH })).toBe('Bonjour Ada');
   });
 
-  it('getTranslationsSnapshot() returns {} on a locale twin client without loading', async () => {
+  it('getTranslationsSnapshot() loads nothing on a locale twin client', async () => {
     register('fr', { [HASH]: 'Bonjour {name}' });
     const { loadTranslations } = setup('fr');
 
-    await expect(getTranslationsSnapshot('fr')).resolves.toEqual({});
+    await expect(getTranslationsSnapshot('fr')).resolves.toEqual({ fr: {} });
     expect(loadTranslations).not.toHaveBeenCalled();
   });
 
