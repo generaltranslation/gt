@@ -69,7 +69,28 @@ const invalidDelimiters: GTConfig = {
   },
 };
 
+// Apps spread an imported gt.config.json into the runtime, and JSON imports
+// widen files.gt.splitting to string (this is the type TypeScript infers);
+// runtimes validate the value instead.
+declare const gtConfigJson: {
+  defaultLocale: string;
+  locales: string[];
+  files: { gt: { output: string; splitting: string } };
+};
+const configFromJson: GTConfig = { ...gtConfigJson };
+
+const invalidSplitting: GTConfig = {
+  files: {
+    gt: {
+      // @ts-expect-error a splitting strategy is a string.
+      splitting: true,
+    },
+  },
+};
+
 void validConfig;
+void configFromJson;
+void invalidSplitting;
 void invalidWhitespace;
 void invalidViteConfigPath;
 void invalidDelimiters;

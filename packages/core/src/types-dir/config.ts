@@ -61,8 +61,13 @@ export type TranslationSplittingStrategy = 'locale' | 'locale-twins';
 export type GTOutputFileConfig = {
   output?: string;
   publish?: boolean;
-  /** Translation splitting strategy. Defaults to `'locale'`. */
-  splitting?: TranslationSplittingStrategy;
+  /**
+   * Translation splitting strategy. Defaults to `'locale'`. Any string is
+   * accepted so an imported gt.config.json (whose JSON strings widen to
+   * `string`) typechecks; runtimes reject unknown values with
+   * `resolveTranslationSplitting`.
+   */
+  splitting?: TranslationSplittingStrategy | (string & {});
   parsingFlags?: GTParsingFlags;
   /** @deprecated Use `parsingFlags.includeSourceCodeContext` instead. */
   includeSourceCodeContext?: boolean;
