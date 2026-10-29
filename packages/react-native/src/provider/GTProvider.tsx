@@ -29,6 +29,7 @@ export type GTProviderProps = Omit<
   | 'setLocale'
   | 'setRegion'
   | 'setEnableI18n'
+  | '_canLoadOverrideLocales'
 > &
   Omit<NativeConditionStoreParams, 'locale' | '_reload'> & {
     children?: ReactNode;

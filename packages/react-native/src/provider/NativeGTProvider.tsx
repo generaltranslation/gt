@@ -36,6 +36,8 @@ export function NativeGTProvider(props: NativeGTProviderProps) {
       setRegion={conditionStore.setRegion}
       setEnableI18n={conditionStore.setEnableI18n}
       i18nStore={i18nStoreRef.current}
+      // Native apps never hydrate, so overrides may load with any loader.
+      _canLoadOverrideLocales
     />
   );
 }

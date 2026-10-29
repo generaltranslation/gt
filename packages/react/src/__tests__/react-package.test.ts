@@ -15,6 +15,10 @@ const runtimeArtifactNames = [
   'index.server.mjs',
   'macros.cjs',
   'macros.mjs',
+  'unstable.cjs',
+  'unstable.mjs',
+  'unstable.rsc.cjs',
+  'unstable.rsc.mjs',
 ].sort();
 const builtArtifacts = runtimeArtifactNames.map((artifact) =>
   join(packageRoot, 'dist', artifact)
@@ -47,7 +51,7 @@ function isAllowedExternalizedSubpath(
   specifier: string
 ): boolean {
   return (
-    file.startsWith('index.') &&
+    (file.startsWith('index.') || file.startsWith('unstable.')) &&
     (specifier.startsWith('@generaltranslation/react-core/') ||
       specifier.startsWith('gt-i18n/'))
   );
@@ -216,12 +220,57 @@ describe('gt-react package exports', () => {
     ]);
   });
 
+  it('resolves gt-react/unstable with the same conditions as the root entry', () => {
+    const resolve = (conditions: string[]) =>
+      execFileSync(
+        process.execPath,
+        [
+          ...conditions.map((condition) => `--conditions=${condition}`),
+          '--input-type=module',
+          '-e',
+          "process.stdout.write(import.meta.resolve('gt-react/unstable'))",
+        ],
+        { cwd: packageRoot }
+      )
+        .toString()
+        .replace(/^.*\/dist\//, '');
+
+    expect(resolve([])).toBe('unstable.mjs');
+    expect(resolve(['browser'])).toBe('unstable.mjs');
+    expect(resolve(['workerd', 'browser'])).toBe('unstable.mjs');
+    expect(resolve(['react-server', 'worker', 'browser'])).toBe(
+      'unstable.rsc.mjs'
+    );
+  });
+
+  it('loads the gt-react/unstable client and RSC surfaces', () => {
+    node([
+      '-e',
+      `
+          const assert = require('node:assert/strict');
+          const client = require('gt-react/unstable');
+          const rsc = require('./dist/unstable.rsc.cjs');
+          const core = require('@generaltranslation/react-core/unstable');
+
+          // gt-react-native/unstable is checked against the same surface.
+          assert.deepEqual(Object.keys(client).sort(), Object.keys(core).sort());
+          assert.deepEqual(Object.keys(client).sort(), Object.keys(rsc).sort());
+          assert.equal(typeof client.useGT, 'function');
+          assert.equal(typeof client.t, 'function');
+          assert.equal(client.t, rsc.t);
+          assert.notEqual(client.useGT, rsc.useGT);
+        `,
+    ]);
+  });
+
   it('preserves use client in emitted client entrypoints', () => {
     for (const file of [
       'dist/index.client.cjs',
       'dist/index.client.mjs',
       'dist/index.server.cjs',
       'dist/index.server.mjs',
+      'dist/unstable.cjs',
+      'dist/unstable.mjs',
     ]) {
       expect(readFileSync(join(packageRoot, file), 'utf8')).toMatch(
         /^['"]use client['"];?/
