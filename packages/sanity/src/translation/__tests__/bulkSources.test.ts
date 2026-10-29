@@ -1,12 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import {
-  BULK_TRANSLATION_GROUPS_QUERY,
-  bulkSourceLanguageFilter,
-  planBulkSources,
-  withIdVariants,
-  type BulkTranslationGroup,
-} from '../bulkSources';
-import { getPublishedId } from '../../utils/documentIds';
+import { planBulkSources, selectBulkSourceDocuments } from '../bulkSources';
 import {
   createGroqClient,
   metadataDoc,
@@ -18,39 +11,32 @@ const page = (id: string, language?: string) => ({
   ...(language && { language }),
 });
 
+const SCOPE_FILTER = `!(_type in ["system.group"]) && !(_id in path("_.**")) && (_type == "page")`;
+
 /** The Translate All document selection, as the provider runs it. */
 async function selectBulkSources(dataset: Record<string, unknown>[]) {
   const { client } = createGroqClient(
     dataset as (Record<string, unknown> & { _id: string })[]
   );
-  const baseFilter = `!(_type in ["system.group"]) && !(_id in path("_.**")) && (_type == "page")`;
-  const groups = await client.fetch<BulkTranslationGroup[]>(
-    BULK_TRANSLATION_GROUPS_QUERY,
-    { sourceLocale: 'en' }
-  );
-  const memberIds = withIdVariants(
-    groups.flatMap((group) => group.memberRefs ?? [])
-  );
-  const existing = await client.fetch<string[]>(
-    `*[${baseFilter} && _id in $memberIds]._id`,
-    { memberIds }
-  );
-  const plan = planBulkSources(groups, new Set(existing.map(getPublishedId)));
-  const docs = await client.fetch<{ _id: string }[]>(
-    `*[${baseFilter} && ${bulkSourceLanguageFilter('language', 'en')}]`,
-    { originalIds: plan.originalIds, excludedIds: plan.excludedIds }
-  );
+  const { documents, skippedOriginalCount } = await selectBulkSourceDocuments({
+    client,
+    scopeFilter: SCOPE_FILTER,
+    languageField: 'language',
+    sourceLocale: 'en',
+  });
   return {
-    ids: docs.map((doc) => doc._id).sort(),
-    unresolvedGroupCount: plan.unresolvedGroupCount,
+    ids: documents.map((doc) => doc._id).sort(),
+    skippedOriginalCount,
   };
 }
 
 describe('Translate All document selection', () => {
-  test('includes marked originals and skips groups without an original', async () => {
+  test('covers only source-locale originals', async () => {
     const dataset = [
       // Standalone source-locale page: an original, as before.
       page('standalone'),
+      // Standalone page in another locale: never picked up, as before.
+      page('lonely-fr', 'fr'),
       // Unmarked group: the source-locale entry is the original.
       page('a', 'en'),
       page('a-fr', 'fr'),
@@ -58,7 +44,8 @@ describe('Translate All document selection', () => {
         ['en', 'a'],
         ['fr', 'a-fr'],
       ]),
-      // Marked group: the fr page is the original, the en page a translation.
+      // Marked group with a fr original: skipped, and its en page is a
+      // translation, so it is left out too.
       page('drafts.b-fr', 'fr'),
       page('b-en', 'en'),
       metadataDoc(
@@ -69,7 +56,8 @@ describe('Translate All document selection', () => {
         ],
         { gtSourceLanguage: 'fr' }
       ),
-      // Marked group whose original was deleted.
+      // Marked group whose original was deleted: its en page is still a
+      // translation.
       page('c-en', 'en'),
       metadataDoc(
         'm-c',
@@ -79,18 +67,22 @@ describe('Translate All document selection', () => {
         ],
         { gtSourceLanguage: 'fr' }
       ),
-      // Unmarked group without a source-locale entry.
-      page('d-fr', 'fr'),
+      // Group marked with the source locale: its en page is the original.
+      page('d-en', 'en'),
       page('d-de', 'de'),
-      metadataDoc('m-d', [
-        ['fr', 'd-fr'],
-        ['de', 'd-de'],
-      ]),
+      metadataDoc(
+        'm-d',
+        [
+          ['en', 'd-en'],
+          ['de', 'd-de'],
+        ],
+        { gtSourceLanguage: 'en' }
+      ),
     ];
 
     expect(await selectBulkSources(dataset)).toEqual({
-      ids: ['a', 'drafts.b-fr', 'standalone'],
-      unresolvedGroupCount: 2,
+      ids: ['a', 'd-en', 'standalone'],
+      skippedOriginalCount: 1,
     });
   });
 
@@ -103,41 +95,56 @@ describe('Translate All document selection', () => {
         ['fr', 'a-fr'],
       ]),
       page('b'),
+      page('c-de', 'de'),
     ];
 
     expect(await selectBulkSources(dataset)).toEqual({
       ids: ['a', 'b'],
-      unresolvedGroupCount: 0,
+      skippedOriginalCount: 0,
+    });
+  });
+
+  test('does not count skipped originals outside the translateDocuments scope', async () => {
+    const dataset = [
+      { _id: 'post-fr', _type: 'post', language: 'fr' },
+      metadataDoc('m-post', [['fr', 'post-fr']], { gtSourceLanguage: 'fr' }),
+    ];
+
+    expect(await selectBulkSources(dataset)).toEqual({
+      ids: [],
+      skippedOriginalCount: 0,
     });
   });
 });
 
 describe('planBulkSources', () => {
-  test('lists originals and excluded members in published and draft form', () => {
-    const plan = planBulkSources(
-      [
+  test('lists excluded members and skipped originals in published and draft form', () => {
+    expect(
+      planBulkSources([
         {
-          marked: true,
+          nonDefaultOriginal: true,
           originalRef: 'b-fr',
           memberRefs: ['b-fr', 'b-en'],
         },
-      ],
-      new Set(['b-fr', 'b-en'])
-    );
-
-    expect(plan).toEqual({
-      originalIds: ['b-fr', 'drafts.b-fr'],
+      ])
+    ).toEqual({
       excludedIds: ['b-en', 'drafts.b-en'],
-      unresolvedGroupCount: 0,
+      nonDefaultOriginalIds: ['b-fr', 'drafts.b-fr'],
     });
   });
 
-  test('does not count a group none of whose members are in scope', () => {
-    const plan = planBulkSources(
-      [{ marked: false, originalRef: null, memberRefs: ['x-fr'] }],
-      new Set()
-    );
-
-    expect(plan.unresolvedGroupCount).toBe(0);
+  test('keeps the original of a group marked with the source locale', () => {
+    expect(
+      planBulkSources([
+        {
+          nonDefaultOriginal: false,
+          originalRef: 'a',
+          memberRefs: ['a', 'a-fr'],
+        },
+      ])
+    ).toEqual({
+      excludedIds: ['a-fr', 'drafts.a-fr'],
+      nonDefaultOriginalIds: [],
+    });
   });
 });

@@ -44,13 +44,9 @@ export const SingleDocumentView: React.FC = () => {
     );
   }
 
-  // Check if this is a source language document
-  const currentDocumentLanguage =
-    document[pluginConfig.getLanguageField()] || pluginConfig.getSourceLocale();
-  const shouldShowTranslationComponents =
-    pluginConfig.getAllowNonDefaultSourceLocales()
-      ? documentRole?.kind === 'original'
-      : currentDocumentLanguage === pluginConfig.getSourceLocale();
+  // Translation tools are only shown on the original of a translation group,
+  // in whatever language it is written.
+  const shouldShowTranslationComponents = documentRole?.kind === 'original';
 
   if (!shouldShowTranslationComponents) {
     return (

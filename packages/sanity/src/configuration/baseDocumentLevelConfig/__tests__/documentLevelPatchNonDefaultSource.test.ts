@@ -29,9 +29,6 @@ const metadataIn = (dataset: Record<string, unknown>[]) =>
 beforeEach(() => {
   vi.spyOn(pluginConfig, 'getSourceLocale').mockReturnValue('en');
   vi.spyOn(pluginConfig, 'getLanguageField').mockReturnValue('language');
-  vi.spyOn(pluginConfig, 'getAllowNonDefaultSourceLocales').mockReturnValue(
-    true
-  );
   vi.spyOn(pluginConfig, 'getIgnoreFields').mockReturnValue([]);
   vi.spyOn(pluginConfig, 'getSkipFields').mockReturnValue([]);
   vi.spyOn(pluginConfig, 'getDedupeFields').mockReturnValue([]);

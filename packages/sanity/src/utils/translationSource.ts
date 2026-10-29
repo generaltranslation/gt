@@ -10,9 +10,8 @@ import { TRANSLATION_METADATA_TYPE } from './translationMetadata';
  *
  * Only written when gt-sanity creates metadata for an original that is not in
  * the configured source locale. Without it, the group's original is its
- * configured-source-locale entry, which is how every group behaved before
- * `allowNonDefaultSourceLocales` existed, so existing content needs no
- * migration.
+ * configured-source-locale entry, which is how every group behaved before the
+ * marker existed, so existing content needs no migration.
  */
 export const SOURCE_LANGUAGE_FIELD = 'gtSourceLanguage';
 
@@ -49,9 +48,14 @@ export type TranslationRole =
       reason: 'noOriginal' | 'originalMissing';
     };
 
-/** Whether translating from documents outside the source locale is enabled. */
-export function allowsNonDefaultSourceLocales(): boolean {
-  return pluginConfig.getAllowNonDefaultSourceLocales();
+/**
+ * Whether a document written in `language` is translated from a locale other
+ * than the configured source locale. Those translations need their own
+ * handling (marker, per-file upload locale, group-wide reference resolution);
+ * everything translated from the source locale behaves as it always has.
+ */
+export function isNonDefaultSourceLanguage(language: string): boolean {
+  return language !== pluginConfig.getSourceLocale();
 }
 
 /** The language a document is written in; untagged documents are the source. */

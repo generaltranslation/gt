@@ -18,13 +18,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('getOrCreateTranslationMetadata with non-default originals', () => {
-  beforeEach(() => {
-    vi.spyOn(pluginConfig, 'getAllowNonDefaultSourceLocales').mockReturnValue(
-      true
-    );
-  });
-
+describe('getOrCreateTranslationMetadata for a non-default original', () => {
   test('finds an existing group by the document’s own id', async () => {
     const group = metadataDoc(
       'translation.metadata.page-fr',
@@ -109,16 +103,13 @@ describe('getOrCreateTranslationMetadata with non-default originals', () => {
   });
 });
 
-describe('getOrCreateTranslationMetadata with the option off', () => {
-  test('looks the group up through the source-locale entry and never marks it', async () => {
-    vi.spyOn(pluginConfig, 'getAllowNonDefaultSourceLocales').mockReturnValue(
-      false
-    );
+describe('getOrCreateTranslationMetadata for a source-locale original', () => {
+  test('looks the group up through the source-locale entry', async () => {
     const group = metadataDoc('translation.metadata.page', [
       ['en', 'page'],
       ['fr', 'page-fr'],
     ]);
-    const { client, dataset, fetch } = createGroqClient([group]);
+    const { client, fetch, createIfNotExists } = createGroqClient([group]);
 
     const found = await getOrCreateTranslationMetadata(
       'page',
@@ -126,16 +117,32 @@ describe('getOrCreateTranslationMetadata with the option off', () => {
       client,
       'en'
     );
-    expect(found._id).toBe('translation.metadata.page');
-    expect(fetch.mock.calls[0][1]).toEqual({ baseLanguage: 'en', id: 'page' });
 
-    await getOrCreateTranslationMetadata(
-      'other-fr',
-      { _id: 'other-fr', _type: 'page' },
-      client,
-      'fr'
+    expect(found._id).toBe('translation.metadata.page');
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch.mock.calls[0][1]).toEqual({ baseLanguage: 'en', id: 'page' });
+    expect(createIfNotExists).not.toHaveBeenCalled();
+  });
+
+  test('refuses a source-locale translation in a group marked with another original', async () => {
+    const group = metadataDoc(
+      'translation.metadata.page-fr',
+      [
+        ['fr', 'page-fr'],
+        ['en', 'page-en'],
+      ],
+      { gtSourceLanguage: 'fr' }
     );
-    expect(metadataIn(dataset)).toHaveLength(2);
-    expect(metadataIn(dataset)[1]).not.toHaveProperty('gtSourceLanguage');
+    const { client, createIfNotExists } = createGroqClient([group]);
+
+    await expect(
+      getOrCreateTranslationMetadata(
+        'page-en',
+        { _id: 'page-en', _type: 'page' },
+        client,
+        'en'
+      )
+    ).rejects.toThrow(/translation of fr/);
+    expect(createIfNotExists).not.toHaveBeenCalled();
   });
 });

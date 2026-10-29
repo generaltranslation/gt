@@ -33,13 +33,10 @@ afterEach(() => {
 });
 
 describe('resolveRefs', () => {
-  test('with non-default originals, resolves a reference to any group member', async () => {
-    vi.spyOn(pluginConfig, 'getAllowNonDefaultSourceLocales').mockReturnValue(
-      true
-    );
+  test('for a non-default original, resolves a reference to any group member', async () => {
     const { client } = createGroqClient(dataset);
 
-    const resolved = await resolveRefs(translatedPage, 'de', client);
+    const resolved = await resolveRefs(translatedPage, 'de', client, 'fr');
 
     expect(resolved).toMatchObject({
       author: { _ref: 'author-de' },
@@ -47,10 +44,7 @@ describe('resolveRefs', () => {
     });
   });
 
-  test('with the option off, only resolves references to source-locale documents', async () => {
-    vi.spyOn(pluginConfig, 'getAllowNonDefaultSourceLocales').mockReturnValue(
-      false
-    );
+  test('for a source-locale original, only resolves references to source-locale documents', async () => {
     const { client } = createGroqClient(dataset);
 
     const resolved = await resolveRefs(translatedPage, 'de', client);
@@ -59,5 +53,8 @@ describe('resolveRefs', () => {
       author: { _ref: 'author-fr' },
       editor: { _ref: 'author-de' },
     });
+    expect(await resolveRefs(translatedPage, 'de', client, 'en')).toEqual(
+      resolved
+    );
   });
 });

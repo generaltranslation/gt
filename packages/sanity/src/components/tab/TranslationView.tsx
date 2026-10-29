@@ -58,7 +58,6 @@ export const TranslationView = () => {
     getVersionId,
     documentRole,
   } = useTranslations();
-  const allowNonDefault = pluginConfig.getAllowNonDefaultSourceLocales();
 
   const [isImporting, setIsImporting] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -83,19 +82,9 @@ export const TranslationView = () => {
     return documentLanguage || pluginConfig.getSourceLocale();
   }, [document]);
 
-  // Only show translation components if we're on a source language document.
-  // With non-default originals allowed, that is the original of its
-  // translation group, in whatever language.
-  const shouldShowTranslationComponents = useMemo(() => {
-    if (!currentDocumentLanguage) return false;
-    if (allowNonDefault) return documentRole?.kind === 'original';
-    return currentDocumentLanguage === pluginConfig.getSourceLocale();
-  }, [currentDocumentLanguage, allowNonDefault, documentRole]);
-
   // The locale this document is translated from, never a target.
-  const sourceLocale = allowNonDefault
-    ? currentDocumentLanguage
-    : pluginConfig.getSourceLocale();
+  const sourceLocale =
+    currentDocumentLanguage ?? pluginConfig.getSourceLocale();
 
   // Get available locales (excluding source locale)
   const availableLocales = useMemo(() => {
@@ -231,34 +220,32 @@ export const TranslationView = () => {
     handleImportTranslations({ autoOnly: true });
   }, [handleImportTranslations]);
 
-  // Show message if we're not on a source language document
-  if (!shouldShowTranslationComponents && allowNonDefault) {
-    if (!documentRole) {
-      return (
-        <Flex align='center' justify='center' padding={4}>
-          <Spinner />
-        </Flex>
-      );
-    }
-    if (documentRole.kind !== 'original') {
-      const { whatHappened, why, fix } =
-        describeUntranslatableRole(documentRole);
-      return (
-        <Card padding={4} tone='neutral' border>
-          <Text size={1} muted>
-            {whatHappened}
-            {why ? ` because ${why}` : ''}. {fix}.
-          </Text>
-        </Card>
-      );
-    }
-  }
-  if (!shouldShowTranslationComponents) {
+  // Translation tools are only shown on the original of a translation group,
+  // in whatever language it is written.
+  if (!currentDocumentLanguage) {
     return (
       <Card padding={4} tone='neutral' border>
         <Text size={1} muted>
           Translation tools are only available for{' '}
           <code>{pluginConfig.getSourceLocale()}</code> documents.
+        </Text>
+      </Card>
+    );
+  }
+  if (!documentRole) {
+    return (
+      <Flex align='center' justify='center' padding={4}>
+        <Spinner />
+      </Flex>
+    );
+  }
+  if (documentRole.kind !== 'original') {
+    const { whatHappened, why, fix } = describeUntranslatableRole(documentRole);
+    return (
+      <Card padding={4} tone='neutral' border>
+        <Text size={1} muted>
+          {whatHappened}
+          {why ? ` because ${why}` : ''}. {fix}.
         </Text>
       </Card>
     );

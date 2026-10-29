@@ -57,11 +57,10 @@ export function setLocaleSelected(
 /**
  * Selects every target locale, or clears them all when every one is already
  * selected. The source locale is never a target, so it is left untouched.
- * `null` means no locale is excluded.
  */
 export function toggleAllLocales(
   locales: TranslationLocale[],
-  sourceLocale: string | null
+  sourceLocale: string
 ): TranslationLocale[] {
   const allSelected = locales
     .filter((locale) => locale.localeId !== sourceLocale)

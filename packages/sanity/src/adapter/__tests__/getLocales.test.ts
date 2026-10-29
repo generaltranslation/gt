@@ -11,21 +11,19 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const localeIds = async () =>
-  (await getLocales(null)).map((locale) => locale.localeId);
+const localeIds = async (sourceLanguage?: string) =>
+  (await getLocales(null, sourceLanguage)).map((locale) => locale.localeId);
 
 describe('getLocales', () => {
   test('offers only the configured targets by default', async () => {
-    vi.spyOn(pluginConfig, 'getAllowNonDefaultSourceLocales').mockReturnValue(
-      false
-    );
     expect(await localeIds()).toEqual(['fr', 'de']);
   });
 
-  test('also offers the source locale when non-default originals are allowed', async () => {
-    vi.spyOn(pluginConfig, 'getAllowNonDefaultSourceLocales').mockReturnValue(
-      true
-    );
-    expect(await localeIds()).toEqual(['en', 'fr', 'de']);
+  test('offers only the configured targets for a source-locale original', async () => {
+    expect(await localeIds('en')).toEqual(['fr', 'de']);
+  });
+
+  test('also offers the source locale for an original in another locale', async () => {
+    expect(await localeIds('fr')).toEqual(['en', 'fr', 'de']);
   });
 });

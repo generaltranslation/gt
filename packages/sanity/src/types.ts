@@ -51,7 +51,15 @@ export type GTFile = {
 };
 
 export interface Adapter {
-  getLocales: (secrets: Secrets | null) => Promise<TranslationLocale[]>;
+  /**
+   * @param sourceLanguage - language of the document being translated, when
+   *   known. An original outside the configured source locale is also offered
+   *   the configured source locale as a target.
+   */
+  getLocales: (
+    secrets: Secrets | null,
+    sourceLanguage?: string
+  ) => Promise<TranslationLocale[]>;
   getTranslationTask: (
     document: GTFile,
     secrets: Secrets | null

@@ -14,20 +14,26 @@ export async function findTranslatedDocuments(
   return documents;
 }
 
+/**
+ * @param sourceLanguage - language of the original `sourceDocumentId`.
+ *   Defaults to the configured source locale.
+ */
 export async function findTranslatedDocumentForLocale(
   sourceDocumentId: string,
   localeId: string,
-  client: SanityClient
+  client: SanityClient,
+  sourceLanguage: string = pluginConfig.getSourceLocale()
 ) {
   const cleanDocId = getPublishedId(sourceDocumentId);
 
   // Use the last locale entry defensively. Older versions could create
   // duplicate locale entries when bulk imports raced.
-  // With non-default originals allowed, the group is found through its
-  // original, whatever language that is.
-  const originalRef = pluginConfig.getAllowNonDefaultSourceLocales()
-    ? GROUP_ORIGINAL_REF
-    : 'translations[language == $sourceLocale][0].value._ref';
+  // An original outside the configured source locale is found through its
+  // group's marker.
+  const originalRef =
+    sourceLanguage !== pluginConfig.getSourceLocale()
+      ? GROUP_ORIGINAL_REF
+      : 'translations[language == $sourceLocale][0].value._ref';
   const query = `*[
     _type == "translation.metadata" &&
     (

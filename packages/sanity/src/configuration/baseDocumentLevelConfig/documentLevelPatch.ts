@@ -9,11 +9,10 @@ import { createI18nDocAndPatchMetadata } from './helpers/createI18nDocAndPatchMe
 import { getOrCreateTranslationMetadata } from './helpers/getOrCreateTranslationMetadata';
 import { patchI18nDoc } from './helpers/patchI18nDoc';
 import type { GTFile } from '../../types';
-import { pluginConfig } from '../../adapter/core';
 import { getPublishedId } from '../../utils/documentIds';
 import {
-  allowsNonDefaultSourceLocales,
   getDocumentLanguage,
+  isNonDefaultSourceLanguage,
 } from '../../utils/translationSource';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 
@@ -32,8 +31,6 @@ export const documentLevelPatch = async (
   languageField: string = 'language',
   mergeWithTargetLocale: boolean = false
 ): Promise<void> => {
-  const allowNonDefault = allowsNonDefaultSourceLocales();
-
   //this is the document that will serve as the translated doc
   let i18nDoc: SanityDocument | undefined;
 
@@ -50,12 +47,9 @@ export const documentLevelPatch = async (
   );
 
   // The document being translated is its group's original, written in its
-  // own language — which is the configured source locale unless non-default
-  // originals are allowed.
-  const baseLanguage = allowNonDefault
-    ? getDocumentLanguage(baseDoc)
-    : pluginConfig.getSourceLocale();
-  if (allowNonDefault && localeId === baseLanguage) {
+  // own language. Untagged documents are in the configured source locale.
+  const baseLanguage = getDocumentLanguage(baseDoc);
+  if (isNonDefaultSourceLanguage(baseLanguage) && localeId === baseLanguage) {
     throw new Error(sameLanguageDiagnostic(docInfo.documentId, localeId));
   }
 

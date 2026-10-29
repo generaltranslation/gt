@@ -155,15 +155,6 @@ export type GTPluginConfig = Omit<
   // is the one automatic action that puts content in front of readers and
   // cannot be undone by turning the switch back off.
   autoPublish?: boolean;
-  // Let documents written in a locale other than `sourceLocale` be translated.
-  // Each translation group (a `translation.metadata` document) has exactly one
-  // original: the `sourceLocale` entry, or — when gt-sanity first translates a
-  // document written in another locale — that document, recorded on the
-  // metadata as `gtSourceLanguage`. Every other document in a group is a
-  // translation and cannot be translated from. Field-level
-  // (internationalized-array) localization always uses `sourceLocale`.
-  // Defaults to false.
-  allowNonDefaultSourceLocales?: boolean;
 };
 
 /**
@@ -209,7 +200,6 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
     autoImport = DEFAULT_TRANSLATION_PREFERENCES.autoImport,
     autoPatchReferences = DEFAULT_TRANSLATION_PREFERENCES.autoPatchReferences,
     autoPublish = DEFAULT_TRANSLATION_PREFERENCES.autoPublish,
-    allowNonDefaultSourceLocales = false,
   }) => {
     // Resolve sourceLocale: explicit sourceLocale > defaultLocale (from gt.config.json) > library default
     const resolvedSourceLocale =
@@ -263,8 +253,7 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
         autoPatchReferences,
         autoPublish,
         preserveExistingTranslations,
-      },
-      allowNonDefaultSourceLocales
+      }
     );
     gt.setConfig({
       sourceLocale: resolvedSourceLocale,

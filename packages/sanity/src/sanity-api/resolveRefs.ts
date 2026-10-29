@@ -26,11 +26,15 @@ const isReference = (value: unknown): value is Reference =>
  * 2. Fetches the referenced documents, looks for the translation.metadata file for each reference
  * 3. Updates the document reference with the other translated document reference
  * 4. Returns the document with the updated references
+ *
+ * @param sourceLanguage - language of the original `doc` was translated from.
+ *   Defaults to the configured source locale.
  */
 export async function resolveRefs(
   doc: SanityDocument,
   locale: string,
-  client: SanityClient
+  client: SanityClient,
+  sourceLanguage: string = pluginConfig.getSourceLocale()
 ) {
   const references = findReferences(doc);
 
@@ -41,7 +45,8 @@ export async function resolveRefs(
   const translatedRefs = await resolveTranslatedReferences(
     references,
     locale,
-    client
+    client,
+    sourceLanguage
   );
   return updateDocumentReferences(doc, translatedRefs);
 }
@@ -120,7 +125,8 @@ function findReferences(
 async function resolveTranslatedReferences(
   references: { ref: Reference; path: string[] }[],
   locale: string,
-  client: SanityClient
+  client: SanityClient,
+  sourceLanguage: string
 ): Promise<Map<string, string>> {
   const refIds = references.map((r) => r.ref._ref);
   const translatedRefs = new Map<string, string>();
@@ -131,7 +137,7 @@ async function resolveTranslatedReferences(
 
   const sourceLocale = pluginConfig.getSourceLocale();
 
-  if (pluginConfig.getAllowNonDefaultSourceLocales()) {
+  if (sourceLanguage !== sourceLocale) {
     return resolveGroupMemberReferences(refIds, locale, client);
   }
 
@@ -154,10 +160,10 @@ async function resolveTranslatedReferences(
 }
 
 /**
- * With non-default originals allowed, a document can be translated from a
- * locale other than the configured source, so the references it carries point
- * at documents in that locale — originals or translations. Any member of a
- * translation group resolves to the group's document in `locale`.
+ * A document translated from an original outside the configured source locale
+ * carries references to documents in that original's locale — originals or
+ * translations. Any member of a translation group resolves to the group's
+ * document in `locale`.
  */
 async function resolveGroupMemberReferences(
   refIds: string[],
