@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { stringifyJson } from '../stringifyJson.js';
 import { displayUpdatedConfigFile } from '../../console/logging.js';
 import { logger } from '../../console/logger.js';
 
@@ -42,10 +43,10 @@ export default async function updateConfig(
   try {
     // if file exists
     let oldContent: Record<string, unknown> = {};
+    let originalText: string | undefined;
     if (fs.existsSync(configFilepath)) {
-      const parsed = JSON.parse(
-        await fs.promises.readFile(configFilepath, 'utf-8')
-      );
+      originalText = await fs.promises.readFile(configFilepath, 'utf-8');
+      const parsed = JSON.parse(originalText);
       oldContent =
         typeof parsed === 'object' && parsed !== null
           ? (parsed as Record<string, unknown>)
@@ -62,7 +63,7 @@ export default async function updateConfig(
     const filteredContent = applyNullFilter(mergedContent, options);
 
     // write to file
-    const jsonContent = JSON.stringify(filteredContent, null, 2);
+    const jsonContent = stringifyJson(filteredContent, originalText);
     await fs.promises.writeFile(configFilepath, jsonContent, 'utf-8');
 
     // show update in console

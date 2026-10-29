@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import type { SanityClient, SanityDocument } from 'sanity';
-import { pluginConfig } from '../../adapter/core';
-import { documentLevelPatch } from './documentLevelPatch';
+import { pluginConfig } from '../../../adapter/core';
+import { documentLevelPatch } from '../documentLevelPatch';
 
 describe('documentLevelPatch', () => {
   afterEach(() => {
