@@ -21,6 +21,8 @@ export const SingleDocumentView: React.FC = () => {
     handleImportDocument,
     branchId,
     getVersionId,
+    getTargetLocales,
+    documentRole,
   } = useTranslations();
 
   // Get the first (and only) document in single document mode
@@ -46,7 +48,9 @@ export const SingleDocumentView: React.FC = () => {
   const currentDocumentLanguage =
     document[pluginConfig.getLanguageField()] || pluginConfig.getSourceLocale();
   const shouldShowTranslationComponents =
-    currentDocumentLanguage === pluginConfig.getSourceLocale();
+    pluginConfig.getAllowNonDefaultSourceLocales()
+      ? documentRole?.kind === 'original'
+      : currentDocumentLanguage === pluginConfig.getSourceLocale();
 
   if (!shouldShowTranslationComponents) {
     return (
@@ -77,7 +81,7 @@ export const SingleDocumentView: React.FC = () => {
 
             <Stack gap={2}>
               {locales.length > 0 ? (
-                locales
+                getTargetLocales(document)
                   .filter((locale) => locale.enabled !== false)
                   .map((locale) => {
                     const documentId = getDocumentPublishedId(document);

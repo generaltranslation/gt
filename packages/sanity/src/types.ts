@@ -43,6 +43,11 @@ export type GTFile = {
   documentId: string;
   versionId?: string;
   fileName?: string;
+  /**
+   * Language the document is written in, when it is an original outside the
+   * configured source locale. Omitted means the configured source locale.
+   */
+  sourceLocale?: string;
 };
 
 export interface Adapter {

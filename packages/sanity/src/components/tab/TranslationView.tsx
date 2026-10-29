@@ -5,7 +5,7 @@
  */
 
 import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
-import { Stack, Text, Card, Button, Flex, Switch } from '@sanity/ui';
+import { Stack, Text, Card, Button, Flex, Spinner, Switch } from '@sanity/ui';
 import { Tooltip } from '@sanity/ui/tooltip';
 import { useToast } from '@sanity/ui/toast';
 import { pluginConfig } from '../../adapter/core';
@@ -15,6 +15,7 @@ import { version as PACKAGE_VERSION } from '../../../package.json';
 import { useTranslations } from '../TranslationsProvider';
 import { LanguageStatus } from '../shared/LanguageStatus';
 import { resolveLanguageStatusState } from '../../utils/languageStatusState';
+import { describeUntranslatableRole } from '../../utils/translationSource';
 import { LocaleSelector } from '../shared/LocaleSelector';
 import { DownloadIcon } from '@sanity/icons/Download';
 import { LinkIcon } from '@sanity/icons/Link';
@@ -55,7 +56,9 @@ export const TranslationView = () => {
     preserveExistingTranslations,
     setPreserveExistingTranslations,
     getVersionId,
+    documentRole,
   } = useTranslations();
+  const allowNonDefault = pluginConfig.getAllowNonDefaultSourceLocales();
 
   const [isImporting, setIsImporting] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -80,27 +83,33 @@ export const TranslationView = () => {
     return documentLanguage || pluginConfig.getSourceLocale();
   }, [document]);
 
-  // Only show translation components if we're on a source language document
+  // Only show translation components if we're on a source language document.
+  // With non-default originals allowed, that is the original of its
+  // translation group, in whatever language.
   const shouldShowTranslationComponents = useMemo(() => {
     if (!currentDocumentLanguage) return false;
+    if (allowNonDefault) return documentRole?.kind === 'original';
     return currentDocumentLanguage === pluginConfig.getSourceLocale();
-  }, [currentDocumentLanguage]);
+  }, [currentDocumentLanguage, allowNonDefault, documentRole]);
+
+  // The locale this document is translated from, never a target.
+  const sourceLocale = allowNonDefault
+    ? currentDocumentLanguage
+    : pluginConfig.getSourceLocale();
 
   // Get available locales (excluding source locale)
   const availableLocales = useMemo(() => {
-    const sourceLocale = pluginConfig.getSourceLocale();
     return locales.filter(
       (locale) => locale.enabled !== false && locale.localeId !== sourceLocale
     );
-  }, [locales]);
+  }, [locales, sourceLocale]);
 
   // Every configured target locale, regardless of selection. The status
   // section renders this stable list so toggling locale checkboxes doesn't
   // add/remove rows and shift the layout.
   const statusLocales = useMemo(() => {
-    const sourceLocale = pluginConfig.getSourceLocale();
     return locales.filter((locale) => locale.localeId !== sourceLocale);
-  }, [locales]);
+  }, [locales, sourceLocale]);
 
   // Get document ID for status tracking
   const documentId = useMemo(() => {
@@ -223,6 +232,27 @@ export const TranslationView = () => {
   }, [handleImportTranslations]);
 
   // Show message if we're not on a source language document
+  if (!shouldShowTranslationComponents && allowNonDefault) {
+    if (!documentRole) {
+      return (
+        <Flex align='center' justify='center' padding={4}>
+          <Spinner />
+        </Flex>
+      );
+    }
+    if (documentRole.kind !== 'original') {
+      const { whatHappened, why, fix } =
+        describeUntranslatableRole(documentRole);
+      return (
+        <Card padding={4} tone='neutral' border>
+          <Text size={1} muted>
+            {whatHappened}
+            {why ? ` because ${why}` : ''}. {fix}.
+          </Text>
+        </Card>
+      );
+    }
+  }
   if (!shouldShowTranslationComponents) {
     return (
       <Card padding={4} tone='neutral' border>
@@ -345,7 +375,13 @@ export const TranslationView = () => {
                     setIsUploadingExisting(false);
                   }
                 }}
-                disabled={isBusy || !availableLocales.length}
+                disabled={
+                  isBusy ||
+                  !availableLocales.length ||
+                  // Local edits are only collected for groups whose original
+                  // is in the configured source locale.
+                  sourceLocale !== pluginConfig.getSourceLocale()
+                }
                 icon={UploadIcon}
                 text='Save Local Edits'
                 loading={isUploadingExisting}
@@ -416,7 +452,7 @@ export const TranslationView = () => {
             <Flex gap={2} align='center' justify='flex-start'>
               <Tooltip
                 placement='top'
-                content={`Replaces references to ${pluginConfig.getSourceLocale()} documents in this document with the corresponding translated document reference`}
+                content={`Replaces references to ${sourceLocale} documents in this document with the corresponding translated document reference`}
               >
                 <Button
                   mode='ghost'

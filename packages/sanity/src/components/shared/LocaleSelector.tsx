@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
 import { Button, Flex, Grid, Stack, Text } from '@sanity/ui';
-import { pluginConfig } from '../../adapter/core';
 import {
   isLocaleSelected,
   setLocaleSelected,
@@ -14,8 +13,11 @@ import { LocaleCheckbox } from './LocaleCheckbox';
  * the provider's `locales` (`enabled`), which every bulk action already reads.
  */
 export const LocaleSelector = () => {
-  const { locales, setLocales } = useTranslations();
-  const sourceLocale = pluginConfig.getSourceLocale();
+  const {
+    locales,
+    setLocales,
+    excludedLocale: sourceLocale,
+  } = useTranslations();
   const targetLocales = locales.filter(
     (locale) => locale.localeId !== sourceLocale
   );

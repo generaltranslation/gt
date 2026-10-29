@@ -23,7 +23,12 @@ export const createTask: Adapter['createTask'] = async (
           fileName,
           fileId: documentInfo.documentId,
           fileFormat: 'HTML',
-          locale: gt.sourceLocale || libraryDefaultLocale,
+          // Per-file locale with a default request-level `sourceLocale`; see
+          // uploadFiles and generaltranslation/gt-cloud#5620.
+          locale:
+            serializedDocument.sourceLocale ??
+            documentInfo.sourceLocale ??
+            (gt.sourceLocale || libraryDefaultLocale),
           versionId: documentInfo.versionId || undefined,
         },
       },

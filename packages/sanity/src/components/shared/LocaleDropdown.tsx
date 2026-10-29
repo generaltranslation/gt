@@ -13,7 +13,6 @@ import {
 import { Popover } from '@sanity/ui/popover';
 import { ChevronDownIcon } from '@sanity/icons/ChevronDown';
 import { SearchIcon } from '@sanity/icons/Search';
-import { pluginConfig } from '../../adapter/core';
 import { getLocaleDisplay } from '../../utils/localeDisplay';
 import { isLocaleSelected, setLocaleSelected } from '../../utils/locales';
 import { useTranslations } from '../TranslationsProvider';
@@ -33,15 +32,14 @@ function matchesSearch(localeId: string, search: string): boolean {
  * (`enabled`), which every bulk action already reads.
  */
 export const LocaleDropdown = () => {
-  const { locales, setLocales } = useTranslations();
+  const { locales, setLocales, excludedLocale } = useTranslations();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const buttonRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
 
-  const sourceLocale = pluginConfig.getSourceLocale();
   const targetLocales = locales.filter(
-    (locale) => locale.localeId !== sourceLocale
+    (locale) => locale.localeId !== excludedLocale
   );
   const selectedCount = targetLocales.filter(isLocaleSelected).length;
 

@@ -67,6 +67,7 @@ export class GTConfig {
   translationLevel: FieldLevelTranslationMode;
   fieldLevelDocuments: TranslateDocumentFilter[];
   preferences: TranslationPreferences;
+  allowNonDefaultSourceLocales: boolean = false;
 
   private static instance: GTConfig;
   constructor(
@@ -146,7 +147,8 @@ export class GTConfig {
     additionalBlockDeserializers: unknown[] = [],
     translationLevel: FieldLevelTranslationMode = 'document',
     fieldLevelDocuments: TranslateDocumentFilter[] = [],
-    preferences: TranslationPreferences = DEFAULT_TRANSLATION_PREFERENCES
+    preferences: TranslationPreferences = DEFAULT_TRANSLATION_PREFERENCES,
+    allowNonDefaultSourceLocales: boolean = false
   ) {
     this.secretsNamespace = secretsNamespace;
     this.languageField = languageField;
@@ -165,6 +167,7 @@ export class GTConfig {
     this.translationLevel = translationLevel;
     this.fieldLevelDocuments = fieldLevelDocuments;
     this.preferences = preferences;
+    this.allowNonDefaultSourceLocales = allowNonDefaultSourceLocales;
   }
 
   getSecretsNamespace() {
@@ -219,6 +222,9 @@ export class GTConfig {
   }
   getPreferences() {
     return this.preferences;
+  }
+  getAllowNonDefaultSourceLocales() {
+    return this.allowNonDefaultSourceLocales;
   }
 }
 export const pluginConfig = GTConfig.getInstance();

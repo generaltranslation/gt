@@ -68,6 +68,7 @@ const TranslationsToolContent: React.FC = () => {
     handlePublishAllTranslations,
     branchId,
     getVersionId,
+    getTargetLocales,
   } = useTranslations();
 
   // Track which specific operation is running
@@ -104,7 +105,11 @@ const TranslationsToolContent: React.FC = () => {
   const isWaitingOnTranslations = pendingTranslations.size > 0;
 
   const selectedLocaleIds = getSelectedLocaleIds(locales);
-  const totalTranslations = documents.length * selectedLocaleIds.length;
+  // A document is never translated into its own language.
+  const totalTranslations = documents.reduce(
+    (count, doc) => count + getSelectedLocaleIds(getTargetLocales(doc)).length,
+    0
+  );
   // Counted the same way the table marks a row imported, and only over the
   // selected locales, so deselecting one can't push the count past the total.
   const importedCount = documents.reduce((count, doc) => {
@@ -112,7 +117,7 @@ const TranslationsToolContent: React.FC = () => {
     const versionId = getVersionId(doc);
     return (
       count +
-      selectedLocaleIds.filter((localeId) => {
+      getSelectedLocaleIds(getTargetLocales(doc)).filter((localeId) => {
         const key = createTranslationStatusKey(
           branchId,
           publishedId,

@@ -2,6 +2,7 @@ import { SanityClient } from 'sanity';
 import { pluginConfig } from '../adapter/core';
 import { getPublishedId } from '../utils/documentIds';
 import { findLatestDraft } from '../configuration/utils/findLatestDraft';
+import { GROUP_ORIGINAL_REF } from '../utils/translationSource';
 
 export async function findTranslatedDocuments(
   documentId: string,
@@ -22,10 +23,15 @@ export async function findTranslatedDocumentForLocale(
 
   // Use the last locale entry defensively. Older versions could create
   // duplicate locale entries when bulk imports raced.
+  // With non-default originals allowed, the group is found through its
+  // original, whatever language that is.
+  const originalRef = pluginConfig.getAllowNonDefaultSourceLocales()
+    ? GROUP_ORIGINAL_REF
+    : 'translations[language == $sourceLocale][0].value._ref';
   const query = `*[
     _type == "translation.metadata" &&
     (
-      translations[language == $sourceLocale][0].value._ref == $cleanDocId
+      ${originalRef} == $cleanDocId
     ) &&
     defined(translations[language == $localeId])
   ][0].translations[language == $localeId].value._ref`;

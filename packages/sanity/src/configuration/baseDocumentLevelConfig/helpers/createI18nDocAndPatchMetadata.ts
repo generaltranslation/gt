@@ -1,6 +1,7 @@
 // adapted from https://github.com/sanity-io/sanity-translations-tab. See LICENSE.md for more details.
 
 import { SanityClient, SanityDocumentLike } from 'sanity';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { pluginConfig } from '../../../adapter/core';
 import { applyDocuments } from '../../../utils/applyDocuments';
 import { getPublishedId } from '../../../utils/documentIds';
@@ -25,6 +26,23 @@ export async function createI18nDocAndPatchMetadata(
   const existingLocaleKey = translations.find(
     (translation) => translation.language === localeId
   );
+  // Replacing the entry that points at the source would detach the original
+  // from its own group.
+  if (
+    (existingLocaleKey?.value as { _ref?: string } | undefined)?._ref ===
+    publishedSourceDocumentId
+  ) {
+    throw new Error(
+      createDiagnosticMessage({
+        source: 'gt-sanity',
+        severity: 'Error',
+        whatHappened: `Skipped importing a ${localeId} translation`,
+        why: `the translation group already records the source document as its ${localeId} entry`,
+        fix: 'Translate into locales other than the original document language',
+        details: [`Document ID: ${publishedSourceDocumentId}`],
+      })
+    );
+  }
   const operation = existingLocaleKey ? 'replace' : 'after';
   const location = existingLocaleKey
     ? metadataTranslations(`== "${localeId}"`)

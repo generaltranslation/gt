@@ -131,6 +131,10 @@ async function resolveTranslatedReferences(
 
   const sourceLocale = pluginConfig.getSourceLocale();
 
+  if (pluginConfig.getAllowNonDefaultSourceLocales()) {
+    return resolveGroupMemberReferences(refIds, locale, client);
+  }
+
   // Optimized GROQ query that directly returns only the needed translation pairs
   const query = `*[_type == "${TRANSLATION_METADATA_TYPE}" && count(${metadataTranslations('== $sourceLocale', 'value._ref in $refIds')}) > 0] {
     "originalRef": ${metadataTranslationRef('$sourceLocale')},
@@ -146,6 +150,38 @@ async function resolveTranslatedReferences(
     translatedRefs.set(originalRef, translatedRef);
   }
 
+  return translatedRefs;
+}
+
+/**
+ * With non-default originals allowed, a document can be translated from a
+ * locale other than the configured source, so the references it carries point
+ * at documents in that locale — originals or translations. Any member of a
+ * translation group resolves to the group's document in `locale`.
+ */
+async function resolveGroupMemberReferences(
+  refIds: string[],
+  locale: string,
+  client: SanityClient
+): Promise<Map<string, string>> {
+  const translatedRefs = new Map<string, string>();
+  const query = `*[_type == "${TRANSLATION_METADATA_TYPE}" && count(translations[value._ref in $refIds]) > 0] {
+    "memberRefs": translations[defined(value._ref)].value._ref,
+    "translatedRefs": ${metadataTranslations('== $locale')}.value._ref
+  }[count(translatedRefs) > 0]`;
+
+  const groups: { memberRefs: string[]; translatedRefs: string[] }[] =
+    await client.fetch(query, { refIds, locale });
+
+  const requested = new Set(refIds);
+  for (const { memberRefs, translatedRefs: localeRefs } of groups) {
+    const translatedRef = localeRefs[localeRefs.length - 1];
+    for (const memberRef of memberRefs) {
+      if (requested.has(memberRef) && memberRef !== translatedRef) {
+        translatedRefs.set(memberRef, translatedRef);
+      }
+    }
+  }
   return translatedRefs;
 }
 

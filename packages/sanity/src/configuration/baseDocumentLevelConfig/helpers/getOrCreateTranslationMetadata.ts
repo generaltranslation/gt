@@ -13,6 +13,14 @@ import {
   translationMetadataId,
   TRANSLATION_METADATA_TYPE,
 } from '../../../utils/translationMetadata';
+import { pluginConfig } from '../../../adapter/core';
+import {
+  allowsNonDefaultSourceLocales,
+  createNotAnOriginalError,
+  findTranslationGroup,
+  resolveTranslationRole,
+  SOURCE_LANGUAGE_FIELD,
+} from '../../../utils/translationSource';
 
 type TranslationReference = KeyedObject & {
   _type: 'internationalizedArrayReferenceValue';
@@ -26,15 +34,39 @@ export const getOrCreateTranslationMetadata = async (
   baseLanguage: string
 ): Promise<SanityDocumentLike> => {
   const publishedId = getPublishedId(documentId);
+  const allowNonDefault = allowsNonDefaultSourceLocales();
+
+  // With non-default originals allowed, the group is found by the document's
+  // own id: looking it up through the `baseLanguage` entry misses a group the
+  // document already belongs to and creates a second, conflicting one.
+  const findExisting = async () => {
+    if (!allowNonDefault) {
+      return client.fetch(
+        `*[
+          _type == '${TRANSLATION_METADATA_TYPE}' &&
+          ${metadataTranslationRef('$baseLanguage')} == $id
+        ][0]`,
+        { baseLanguage, id: publishedId }
+      );
+    }
+    const group = await findTranslationGroup(publishedId, client);
+    if (group) {
+      // Only a group's original is translated from. Importing into a group
+      // through any other member would treat a translation as the source.
+      const role = resolveTranslationRole({
+        documentId: publishedId,
+        documentLanguage: baseLanguage,
+        metadata: group,
+      });
+      if (role.kind !== 'original') {
+        throw createNotAnOriginalError(publishedId, role);
+      }
+    }
+    return group;
+  };
 
   // First, try to get existing metadata
-  const existingMetadata = await client.fetch(
-    `*[
-        _type == '${TRANSLATION_METADATA_TYPE}' &&
-        ${metadataTranslationRef('$baseLanguage')} == $id
-      ][0]`,
-    { baseLanguage, id: publishedId }
-  );
+  const existingMetadata = await findExisting();
 
   if (existingMetadata) {
     return existingMetadata;
@@ -69,16 +101,16 @@ export const getOrCreateTranslationMetadata = async (
       _id: translationMetadataId(publishedId),
       _type: TRANSLATION_METADATA_TYPE,
       translations: [baseLangEntry],
+      // Marks the group's original when it is not in the configured source
+      // locale. Without the marker, the source-locale entry is the original.
+      ...(allowNonDefault &&
+        baseLanguage !== pluginConfig.getSourceLocale() && {
+          [SOURCE_LANGUAGE_FIELD]: baseLanguage,
+        }),
     });
   } catch (error) {
     // If creation fails due to race condition, fetch the existing document
-    const metadata = await client.fetch(
-      `*[
-          _type == '${TRANSLATION_METADATA_TYPE}' &&
-          ${metadataTranslationRef('$baseLanguage')} == $id
-        ][0]`,
-      { baseLanguage, id: publishedId }
-    );
+    const metadata = await findExisting();
 
     if (metadata) {
       return metadata;
