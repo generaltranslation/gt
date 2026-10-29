@@ -7,6 +7,9 @@
   <T>You have <Num value={count} /> messages</T>
   ```
 -->
+
+<svelte:options preserveWhitespace={false} />
+
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { getFormatLocales, getFormatter } from '../runtime/format';

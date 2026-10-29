@@ -14,7 +14,9 @@ export type ServerRenderer = {
  * Starts a Vite server that compiles fixtures for the server, so browser
  * tests can hydrate a real server render.
  */
-export async function createServerRenderer(): Promise<ServerRenderer> {
+export async function createServerRenderer(
+  compilerOptions: { preserveWhitespace?: boolean } = {}
+): Promise<ServerRenderer> {
   // esbuild expects encoded text to be an instance of the global Uint8Array.
   const { TextEncoder: NodeTextEncoder } = await import('node:util');
   vi.stubGlobal(
@@ -31,7 +33,7 @@ export async function createServerRenderer(): Promise<ServerRenderer> {
   const server: ViteDevServer = await createServer({
     configFile: false,
     logLevel: 'silent',
-    plugins: [svelte({ preprocess: [gtPreprocess()] })],
+    plugins: [svelte({ preprocess: [gtPreprocess()], compilerOptions })],
     resolve: {
       alias: { 'gt-svelte': join(process.cwd(), 'src/index.ts') },
     },

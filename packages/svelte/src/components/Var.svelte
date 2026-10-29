@@ -7,6 +7,9 @@
   <T>Hello, <Var>{name}</Var>!</T>
   ```
 -->
+
+<svelte:options preserveWhitespace={false} />
+
 <script lang="ts">
   import type { Snippet } from 'svelte';
 

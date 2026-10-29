@@ -10,6 +10,9 @@
   </Branch>
   ```
 -->
+
+<svelte:options preserveWhitespace={false} />
+
 <script lang="ts">
   import type { Snippet } from 'svelte';
 

@@ -52,6 +52,7 @@
     "gt-test-rolldown-react",
     "gt-test-rollup-react",
     "gt-test-sveltekit",
+    "gt-test-sveltekit-3",
     "gt-test-tanstack-start",
     "gt-test-vite-react",
     "gt-test-vite-vue",

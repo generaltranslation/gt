@@ -115,33 +115,124 @@ describe('transformSvelteSource', () => {
     );
   });
 
-  it('normalizes children whitespace to JSX semantics for source rendering', () => {
-    const result = transform(`<script>import { T } from 'gt-svelte';</script>
-<T>
-  <b>a</b>
-  <i>b</i> c
-</T>`);
-    expect(result?.code).toContain('<T _hash=');
-    expect(result?.code).toMatch(/<b>a<\/b><i>b<\/i> c\{#snippet/);
+  it('extracts the whitespace Svelte renders', () => {
+    const source = (markup: string) => {
+      const analysis = analyzeSvelteSource(
+        `<script>import { T, Num } from 'gt-svelte';</script>${markup}`,
+        { parse, filename: 'Fixture.svelte' }
+      );
+      expect(analysis.errors).toEqual([]);
+      return analysis.translations[0].source;
+    };
+    // Whitespace between text and an element or component is one space.
+    expect(
+      source(`<T>
+  You can make <Num value={7} /> of
+  <Num value={50} />
+  recipes
+</T>`)
+    ).toEqual([
+      'You can make ',
+      { i: 1, k: '_gt_n_1', v: 'n' },
+      ' of ',
+      { i: 2, k: '_gt_n_2', v: 'n' },
+      ' recipes',
+    ]);
+    // Whitespace at the edges of a fragment is removed.
+    expect(source('<T> Hello <b> world </b></T>')).toEqual([
+      'Hello ',
+      { t: 'b', i: 1, c: 'world' },
+    ]);
+    // Whitespace within text and next to expressions is kept as written.
+    expect(source('<T>\n  Hello\n    world{" "}\n</T>')).toEqual([
+      'Hello\n    world',
+      ' ',
+    ]);
+    // Text on both sides of a comment is adjacent.
+    expect(source('<T>a <!-- c --> b</T>')).toEqual(['a ', 'b']);
+    // A lone space is dropped where Svelte drops it.
+    expect(source('<T><table> <tbody></tbody> </table></T>')).toEqual({
+      t: 'table',
+      i: 1,
+      c: { t: 'tbody', i: 2 },
+    });
+    expect(
+      source('<T><svg><text>a b</text>\n<text> c</text></svg></T>')
+    ).toEqual({
+      t: 'svg',
+      i: 1,
+      c: [
+        { t: 'text', i: 2, c: 'a b' },
+        { t: 'text', i: 3, c: 'c' },
+      ],
+    });
+    expect(
+      source('<svelte:options namespace="svg" /><T><g /> <g /></T>')
+    ).toEqual([
+      { t: 'g', i: 1 },
+      { t: 'g', i: 2 },
+    ]);
+    expect(
+      source(
+        '<T><svg><foreignObject><b>a</b> <i>b</i></foreignObject></svg></T>'
+      )
+    ).toMatchObject({ c: { c: [{ t: 'b' }, ' ', { t: 'i' }] } });
+    // The HTML parser turns carriage returns into line feeds.
+    expect(source('<T><span>a\r\nb&#13;c</span></T>')).toEqual({
+      t: 'span',
+      i: 1,
+      c: 'a\nb\nc',
+    });
   });
 
-  it('renders edge whitespace that Svelte would trim as string expressions', () => {
+  it('keeps whitespace as written where Svelte preserves it', () => {
+    const source = (markup: string) =>
+      analyzeSvelteSource(
+        `<script>import { T } from 'gt-svelte';</script>${markup}`,
+        { parse, filename: 'Fixture.svelte' }
+      ).translations[0].source;
+    // The HTML parser drops a line feed that opens a <pre>.
+    expect(source('<T><pre>\nfirst\n  second  </pre></T>')).toEqual({
+      t: 'pre',
+      i: 1,
+      c: 'first\n  second  ',
+    });
+    expect(source('<T><pre>\n<b>a</b></pre></T>')).toEqual({
+      t: 'pre',
+      i: 1,
+      c: { t: 'b', i: 2, c: 'a' },
+    });
+    expect(source('<pre><T>  a  </T></pre>')).toBe('  a  ');
+    expect(source('<svelte:options preserveWhitespace /><T>  a  </T>')).toBe(
+      '  a  '
+    );
+  });
+
+  it('writes out the text Svelte renders for source rendering', () => {
     // The rewritten children, before the generated snippets.
     const body = (markup: string) =>
       transform(
         `<script>import { T } from 'gt-svelte';</script><T>${markup}</T>`
       )!.code.match(/<T _hash="\w+">([\s\S]*?)(?:\{#snippet|<\/T>)/)![1];
-    expect(body(' free')).toBe('{" free"}');
-    expect(body('Hello <b>world </b>again')).toBe(
-      'Hello <b>{"world "}</b>again'
+    // Whitespace Svelte trims or collapses is written as rendered, so the
+    // preserveWhitespace compiler option does not change the source.
+    expect(body('\n  Tom &amp; Jerry\n  <b> x </b>\n')).toBe(
+      'Tom &amp; Jerry <b>x</b>'
     );
-    expect(body('<code>  npm  i  </code>')).toBe('<code>{"  npm  i  "}</code>');
-    // Whitespace JSX removes is removed, including encoded whitespace.
-    expect(body('\n  Hello\n    world\n')).toBe('Hello world');
-    expect(body('a&#13;<b>b</b>')).toBe('a<b>b</b>');
-    expect(body('foo&#9;bar')).toBe('foo bar');
-    // Text Svelte renders as is keeps its raw form.
-    expect(body('Tom &amp; Jerry <b>x</b>')).toBe('Tom &amp; Jerry <b>x</b>');
+    expect(body('<b>x</b>\n  <!-- c -->\n  <i>y</i>')).toBe(
+      '<b>x</b> <!-- c --><i>y</i>'
+    );
+    // The source renders the same text whether Svelte parses it as HTML
+    // or sets it directly, which skips the parser's line feed handling.
+    expect(body("<pre>\n  a{'b'}\n</pre>")).toBe("<pre>  a{'b'}\n</pre>");
+    expect(body('<pre>\n\na</pre>')).toBe('<pre>\n\na</pre>');
+    expect(body('a&#13;b\r\nc')).toBe('a\nb\nc');
+    // Whitespace written as entities is written out.
+    expect(body('&#32;Hello&#32;')).toBe('Hello');
+    expect(body('a&#13;<b>b</b>')).toBe('a <b>b</b>');
+    expect(body("{'x'}&#9;&amp;&#123;&#32;<b>b</b>")).toBe(
+      "{'x'}\t&amp;&#123; <b>b</b>"
+    );
   });
 
   it('transforms <T> inside blocks and namespace imports', () => {
@@ -257,21 +348,15 @@ ${SCSS}
   });
 
   it('keeps <style> elements inside markup as written', () => {
-    const markup = '<T>Hi <style>.a { color: red; }</style></T>';
-    const withScss = analyzeSvelteSource(
-      `<script>import { T } from 'gt-svelte';</script>${markup}${SCSS}`,
+    // Only the top-level <style> is blanked, so the one inside <T> is still
+    // found and rejected.
+    const analysis = analyzeSvelteSource(
+      `<script>import { T } from 'gt-svelte';</script><T>Hi <style>.a { color: red; }</style></T>${SCSS}`,
       { parse }
     );
-    const plain = analyzeSvelteSource(
-      `<script>import { T } from 'gt-svelte';</script>${markup}`,
-      { parse }
-    );
-    expect(withScss.errors).toEqual([]);
-    expect(withScss.translations[0].source).toEqual([
-      'Hi ',
-      { t: 'style', i: 1, c: '.a { color: red; }' },
+    expect(analysis.errors.map((error) => error.whatHappened)).toEqual([
+      '<style> is not supported inside <T>',
     ]);
-    expect(withScss.translations[0].hash).toBe(plain.translations[0].hash);
   });
 });
 
@@ -294,6 +379,20 @@ describe('errors', () => {
     ]);
     expect(errorsFor('<T>{@html x}</T>', 'let x;')).toEqual([
       '{@html} is not supported inside <T>',
+    ]);
+  });
+
+  it('rejects <style> and <script>', () => {
+    expect(errorsFor('<T>Hi <style>.a { color: red; }</style></T>')).toEqual([
+      '<style> is not supported inside <T>',
+    ]);
+    expect(
+      errorsFor(
+        '<T>Hi <b><svelte:element this="style">a</svelte:element></b></T>'
+      )
+    ).toEqual(['<style> is not supported inside <T>']);
+    expect(errorsFor('<T>Hi <script>let a = { b: 1 };</script></T>')).toEqual([
+      '<script> is not supported inside <T>',
     ]);
   });
 

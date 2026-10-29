@@ -30,12 +30,31 @@ function identityCatalog(): Record<string, Content> {
 }
 
 let server: ServerRenderer;
-const renderOnServer = (props: Record<string, unknown>) =>
-  server.render('Whitespace.svelte', props);
+const renderOnServer = (
+  props: Record<string, unknown>,
+  fixture = 'Whitespace.svelte'
+) => server.render(fixture, props);
 beforeAll(async () => {
   server = await createServerRenderer();
 });
 afterAll(() => server?.close());
+
+/**
+ * Parses HTML as the browser does, which turns carriage returns into line
+ * feeds and drops a line feed that opens a `<pre>`.
+ */
+function parseHtml(html: string): HTMLElement {
+  const element = document.createElement('div');
+  element.innerHTML = html;
+  return element;
+}
+
+/** The text of each case's `<div>`. */
+function caseTexts(root: HTMLElement): (string | null)[] {
+  return [...root.querySelectorAll(':scope > div')].map(
+    (element) => element.textContent
+  );
+}
 
 let cleanup: (() => void) | undefined;
 afterEach(() => {
@@ -63,7 +82,9 @@ describe.each([
     });
     cleanup = () => unmount(component);
     flushSync();
-    expect(withoutComments(target.innerHTML)).toBe(html);
+    expect(withoutComments(target.innerHTML)).toBe(
+      withoutComments(parseHtml(html).innerHTML)
+    );
   });
 
   it('hydrates the server render without a mismatch', async () => {
@@ -80,6 +101,63 @@ describe.each([
     cleanup = () => unmount(component);
     flushSync();
     expect(warn).not.toHaveBeenCalled();
-    expect(withoutComments(target.innerHTML)).toBe(withoutComments(html));
+    expect(withoutComments(target.innerHTML)).toBe(
+      withoutComments(parseHtml(html).innerHTML)
+    );
+  });
+});
+
+describe('<T> whitespace with the preserveWhitespace compiler option', () => {
+  let preserving: ServerRenderer;
+  beforeAll(async () => {
+    preserving = await createServerRenderer({ preserveWhitespace: true });
+  });
+  afterAll(() => preserving?.close());
+
+  it('renders an unchanged translation like the source', async () => {
+    setupGT();
+    const source = caseTexts(
+      parseHtml(await preserving.render('Whitespace.svelte', { locale: 'en' }))
+    );
+    expect(source).toHaveLength(28);
+    const translated = caseTexts(
+      parseHtml(
+        await preserving.render('Whitespace.svelte', {
+          locale: 'fr',
+          translations: identityCatalog(),
+        })
+      )
+    );
+    expect(translated).toEqual(source);
+  });
+});
+
+describe('<T> whitespace in the DOM', () => {
+  it('gives the source and an unchanged translation the text of the same markup outside <T>', async () => {
+    setupGT();
+    const expected = caseTexts(
+      parseHtml(
+        await renderOnServer({ locale: 'en' }, 'WhitespacePlain.svelte')
+      )
+    );
+    expect(expected).toHaveLength(28);
+    for (const props of [
+      { locale: 'en' },
+      { locale: 'fr', translations: identityCatalog() },
+    ]) {
+      expect(caseTexts(parseHtml(await renderOnServer(props)))).toEqual(
+        expected
+      );
+      const target = document.createElement('div');
+      document.body.appendChild(target);
+      const component = mount(Harness, {
+        target,
+        props: { component: Whitespace, ...props } as never,
+      });
+      flushSync();
+      expect(caseTexts(target)).toEqual(expected);
+      unmount(component);
+      target.remove();
+    }
   });
 });

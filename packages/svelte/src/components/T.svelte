@@ -8,6 +8,9 @@
   <T context="Greeting">Hello, <b><Var>{name}</Var></b>!</T>
   ```
 -->
+
+<svelte:options preserveWhitespace={false} />
+
 <script lang="ts">
   import { getI18nConfig } from 'gt-i18n/internal';
   import { untrack, type Snippet } from 'svelte';

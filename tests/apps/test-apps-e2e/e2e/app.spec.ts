@@ -21,6 +21,10 @@ test(`${appName} renders local translations and switches locales`, async ({
     case 'sveltekit':
       await testSvelteKitApp(page, request);
       break;
+    case 'sveltekit-3':
+      await testSvelteKitApp(page, request);
+      await testSvelteKit3App(page, request);
+      break;
     case 'next':
       await testNextApp(page);
       break;
@@ -183,6 +187,28 @@ async function testSvelteKitApp(page: Page, request: APIRequestContext) {
   await selectLocale(page, 'en');
   await expect(page.getByText('Locale: en')).toBeVisible();
   await expect(page.getByTestId('plural')).toHaveText('You have 2 messages');
+}
+
+/** Checks the SvelteKit 3 app's hooks and formatter-wrapped `<T>`. */
+async function testSvelteKit3App(page: Page, request: APIRequestContext) {
+  // hooks.server.ts sets <html lang dir> from the request locale.
+  const frenchHtml = await (
+    await request.get('/', {
+      headers: { cookie: 'generaltranslation.locale=fr' },
+    })
+  ).text();
+  expect(frenchHtml).toContain('<html lang="fr" dir="ltr">');
+
+  // Content wrapped across lines keeps the spaces Svelte renders.
+  await page.context().clearCookies();
+  await page.goto('/');
+  await expect(page.getByTestId('wrapped')).toHaveText(
+    'You can make 7 of 50 recipes'
+  );
+  await selectLocale(page, 'fr');
+  await expect(page.getByTestId('wrapped')).toHaveText(
+    'Vous pouvez préparer 7 recettes sur 50'
+  );
 }
 
 async function testNextApp(page: Page) {
