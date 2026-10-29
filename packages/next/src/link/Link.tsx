@@ -13,7 +13,8 @@ export type LinkProps = ComponentProps<typeof NextLink>;
  *
  * Internal hrefs are prefixed with the current GT locale by default. Pass a
  * locale string to use a specific locale, or pass `locale={false}` to leave the
- * href unchanged. External URLs are never prefixed.
+ * href unchanged. External URLs and paths that don't match `pathRegex` are
+ * never prefixed.
  *
  * With `prefixDefaultLocale: false` (the default), current default-locale links
  * are left unprefixed. Explicit default-locale links are left unprefixed only

@@ -45,4 +45,15 @@ describe('useLocalizeHref', () => {
     expect(await localize('/checkout', 'fr')).toBe('/fr/checkout');
     expect(await localize('/checkout', false)).toBe('/checkout');
   });
+
+  it('leaves paths outside pathRegex unprefixed', async () => {
+    vi.stubEnv('_GENERALTRANSLATION_PATH_REGEX', '^/(?!api(?:/|$)).*');
+    mockUseLocale.mockReturnValue('fr');
+
+    expect(await localize('/api/export?format=csv')).toBe(
+      '/api/export?format=csv'
+    );
+    expect(await localize('/api', 'de')).toBe('/api');
+    expect(await localize('/apis')).toBe('/fr/apis');
+  });
 });
