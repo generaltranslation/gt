@@ -8,10 +8,15 @@ import type { PrimaryInlineExtractor } from '@generaltranslation/vue-extractor/i
 
 const mocks = vi.hoisted(() => ({
   planVueExtraction: vi.fn(),
+  planSvelteExtraction: vi.fn(),
 }));
 
 vi.mock('@generaltranslation/vue-extractor/integration', () => ({
   planVueExtraction: mocks.planVueExtraction,
+}));
+
+vi.mock('@generaltranslation/svelte-extractor/integration', () => ({
+  planSvelteExtraction: mocks.planSvelteExtraction,
 }));
 
 import { extractInlineFromProject } from '../extractInline.js';
@@ -34,6 +39,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(process, 'cwd').mockReturnValue(projectRoot);
   mocks.planVueExtraction.mockReturnValue({ handled: false });
+  mocks.planSvelteExtraction.mockReturnValue({ handled: false });
 });
 
 describe('extractInlineFromProject', () => {
@@ -196,5 +202,30 @@ describe('extractInlineFromProject', () => {
 
     expect(result).toBe(rejection);
     await expect(result).rejects.toBe(primaryError);
+  });
+
+  it('passes parsing flags to the Svelte plan', async () => {
+    const extractPrimary = vi.fn(() => Promise.resolve(emptyOutput));
+    const run = vi.fn(() => Promise.resolve(emptyOutput));
+    mocks.planSvelteExtraction.mockReturnValue({ handled: true, run });
+    const patterns = ['src/**/*.svelte'];
+
+    const result = await extractInlineFromProject(
+      Libraries.GT_SVELTE,
+      patterns,
+      parsingFlags,
+      parsingOptions,
+      extractPrimary
+    );
+
+    expect(mocks.planSvelteExtraction).toHaveBeenCalledWith({
+      library: Libraries.GT_SVELTE,
+      projectRoot,
+      filePatterns: patterns,
+      includeSourceCodeContext: true,
+    });
+    expect(run).toHaveBeenCalledWith({ extractPrimary });
+    expect(mocks.planVueExtraction).not.toHaveBeenCalled();
+    expect(result).toBe(emptyOutput);
   });
 });

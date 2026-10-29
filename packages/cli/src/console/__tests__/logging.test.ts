@@ -242,7 +242,7 @@ describe('logging prompts', () => {
     await expect(name).resolves.toBe('my-app');
   });
 
-  it('labels Vue and React inline catalogs without conflating frameworks', async () => {
+  it('labels Vue, Svelte and React inline catalogs without conflating frameworks', async () => {
     const { logCollectedFiles } = await import('../logging.js');
 
     logCollectedFiles(
@@ -252,6 +252,16 @@ describe('logging prompts', () => {
     );
     expect(clack.log.message).toHaveBeenLastCalledWith(
       expect.stringContaining('<Vue Elements> (2)'),
+      undefined
+    );
+
+    logCollectedFiles(
+      [{ fileName: '__INTERNAL_GT_TEMPLATE_NAME__' }],
+      4,
+      'gt-svelte'
+    );
+    expect(clack.log.message).toHaveBeenLastCalledWith(
+      expect.stringContaining('<Svelte Elements> (4)'),
       undefined
     );
 

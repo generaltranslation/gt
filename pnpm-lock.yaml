@@ -810,6 +810,9 @@ importers:
       '@generaltranslation/supported-locales':
         specifier: workspace:*
         version: link:../supported-locales
+      '@generaltranslation/svelte-extractor':
+        specifier: workspace:*
+        version: link:../svelte-extractor
       '@generaltranslation/vue-extractor':
         specifier: workspace:*
         version: link:../vue-extractor
