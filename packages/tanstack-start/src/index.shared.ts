@@ -36,4 +36,6 @@ export {
   mFallback,
   gtFallback,
   t,
+  // ===== Compiler-injected ===== //
+  GtInternalRegisterLocaleTwin,
 } from 'gt-react';

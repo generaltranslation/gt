@@ -150,6 +150,7 @@ export type { SharedGTProviderProps } from './provider/GTProviderProps';
 export {
   GtInternalRuntimeTranslateJsx,
   GtInternalRuntimeTranslateString,
+  GtInternalRegisterLocaleTwin,
 } from 'gt-i18n/internal';
 export type {
   GTTranslationOptions,

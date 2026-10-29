@@ -244,6 +244,29 @@ describe.sequential('gt-tanstack-start package exports', () => {
     ]);
   });
 
+  it.each(['default', 'browser', 'worker', 'workerd'])(
+    'registers locale twins through the main entrypoint (%s condition)',
+    (condition) => {
+      node([
+        ...(condition === 'default' ? [] : [`--conditions=${condition}`]),
+        '--input-type=module',
+        '-e',
+        `
+          import assert from 'node:assert/strict';
+          import { GtInternalRegisterLocaleTwin } from 'gt-tanstack-start';
+
+          assert.equal(
+            GtInternalRegisterLocaleTwin(JSON.stringify({ l: 'fr', e: {} })),
+            true
+          );
+          assert.equal(globalThis.__generaltranslation.localeTwins.locale, 'fr');
+          // Loading the entrypoint under worker conditions leaves open handles.
+          process.exit(0);
+        `,
+      ]);
+    }
+  );
+
   it.each(['workerd', 'worker'])(
     'resolves the server ESM entrypoint when %s and browser conditions are active',
     (workerCondition) => {

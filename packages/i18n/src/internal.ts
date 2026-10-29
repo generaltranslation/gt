@@ -55,3 +55,10 @@ export type { GlobalSingleton } from './globals/createGlobalSingleton';
 export { getRuntimeEnvironment } from './utils/getRuntimeEnvironment';
 export { hashMessage } from './utils/hashMessage';
 export { getCookieValue, parseAcceptLanguage } from './utils/request';
+export {
+  registerLocaleTwin,
+  registerLocaleTwin as GtInternalRegisterLocaleTwin,
+  getLocaleTwinEntry,
+  getLocaleTwinLocale,
+  hasLocaleTwins,
+} from './locale-twins/registry';

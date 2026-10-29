@@ -113,6 +113,43 @@ describe('gt-react package exports', () => {
     ]);
   });
 
+  it('registers locale twins through the CJS entrypoint', () => {
+    node([
+      '-e',
+      `
+          const assert = require('node:assert/strict');
+          const { GtInternalRegisterLocaleTwin } = require('gt-react');
+
+          assert.equal(
+            GtInternalRegisterLocaleTwin(JSON.stringify({ l: 'fr', e: {} })),
+            true
+          );
+          assert.equal(globalThis.__generaltranslation.localeTwins.locale, 'fr');
+        `,
+    ]);
+  });
+
+  it.each(['default', 'browser', 'worker', 'workerd', 'react-server'])(
+    'registers locale twins through the ESM entrypoint (%s condition)',
+    (condition) => {
+      node([
+        ...(condition === 'default' ? [] : [`--conditions=${condition}`]),
+        '--input-type=module',
+        '-e',
+        `
+          import assert from 'node:assert/strict';
+          import { GtInternalRegisterLocaleTwin } from 'gt-react';
+
+          assert.equal(
+            GtInternalRegisterLocaleTwin(JSON.stringify({ l: 'fr', e: {} })),
+            true
+          );
+          assert.equal(globalThis.__generaltranslation.localeTwins.locale, 'fr');
+        `,
+      ]);
+    }
+  );
+
   it('exports the condition-store factory from the browser entrypoint', () => {
     node([
       '--conditions=browser',
