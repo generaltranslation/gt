@@ -6,7 +6,12 @@ import generate from '@babel/generator';
 import traverse from '@babel/traverse';
 
 // Core modules
-import { GTConfig, PluginConfig, resolveLocaleTwinsSettings } from './config';
+import {
+  GTConfig,
+  PluginConfig,
+  ResolvedLocaleTwinsOptions,
+  resolveLocaleTwinsSettings,
+} from './config';
 
 // Import passes
 import { collectionPass } from './passes/collectionPass';
@@ -18,6 +23,7 @@ import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
 import { localeTwinsPass } from './passes/localeTwinsPass';
 import { shouldTransformModuleId } from './utils/moduleId';
+import { createLocaleTwinsViteHooks } from './locale-twins/vite/localeTwinsViteHooks';
 
 /**
  * Architecture:
@@ -216,6 +222,23 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
     const debugManifest = resolvedOptions._debugHashManifest
       ? new Map<string, unknown>()
       : undefined;
+    const writeDebugManifest = (): void => {
+      if (!debugManifest || debugManifest.size === 0) return;
+      const outPath = path.resolve(
+        process.cwd(),
+        '_gt_debug_hash_manifest.json'
+      );
+      fs.writeFileSync(
+        outPath,
+        JSON.stringify(Object.fromEntries(debugManifest), null, 2)
+      );
+      // eslint-disable-next-line no-console
+      console.log(
+        `[gt-compiler] Debug hash manifest written to ${outPath} (${debugManifest.size} entries)`
+      );
+    };
+    // gt.config.json and files.gt.output are relative to the working directory
+    const configDir = process.cwd();
 
     return {
       name: '@generaltranslation/GT_PLUGIN',
@@ -312,21 +335,19 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         }
       },
       buildEnd() {
-        if (debugManifest && debugManifest.size > 0) {
-          const fs = require('fs');
-          const path = require('path');
-          const outPath = path.resolve(
-            process.cwd(),
-            '_gt_debug_hash_manifest.json'
-          );
-          const manifest = Object.fromEntries(debugManifest);
-          fs.writeFileSync(outPath, JSON.stringify(manifest, null, 2));
-          // eslint-disable-next-line no-console
-          console.log(
-            `[gt-compiler] Debug hash manifest written to ${outPath} (${debugManifest.size} entries)`
-          );
-        }
+        writeDebugManifest();
       },
+      // Vite-only hooks for locale twins. unplugin merges this object into
+      // the Vite plugin, so its buildEnd replaces the generic one above.
+      vite: createLocaleTwinsViteHooks({
+        splitting: resolvedOptions.splitting!,
+        localeTwins: resolvedOptions.localeTwins as ResolvedLocaleTwinsOptions,
+        gtConfig: resolvedOptions.gtConfig,
+        compileTimeHash: resolvedOptions.compileTimeHash !== false,
+        configDir,
+        logLevel: options.logLevel,
+        onBuildEnd: writeDebugManifest,
+      }),
     };
   }
 );
