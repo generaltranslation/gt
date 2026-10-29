@@ -1,5 +1,9 @@
 import { useTranslate } from '../../hooks/external-store';
-import { getI18nConfig, lookupLocaleTwinEntry } from 'gt-i18n/internal';
+import {
+  getI18nConfig,
+  lookupLocaleTwinEntry,
+  rendersSourceWithLocaleTwins,
+} from 'gt-i18n/internal';
 import { useRef, type ReactNode } from 'react';
 import { renderPreparedT } from '../../utils/rendering/renderPipeline';
 import type { TProps } from '../../utils/translation/prepareT.shared';
@@ -74,6 +78,10 @@ function useComputeT({
   // twin's JSX, source locale included
   const fromLocaleTwin =
     lookupLocaleTwinEntry(locale, targetOptions) !== undefined;
+  // Content no twin carries renders its source text, on the server too
+  const unattributed = rendersSourceWithLocaleTwins(
+    params._hash ?? params.$_hash
+  );
 
   const result = _renderPreparedT({
     taggedSourceChildren,
@@ -81,7 +89,7 @@ function useComputeT({
     locale,
     defaultLocale,
     enableI18n,
-    shouldTranslate: shouldTranslate || fromLocaleTwin,
+    shouldTranslate: (shouldTranslate && !unattributed) || fromLocaleTwin,
     hash: targetOptions.$_hash,
   });
 

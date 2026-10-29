@@ -11,6 +11,9 @@ export default defineConfig({
         new URL('./src/internal/localeRouting.ts', import.meta.url)
       ),
     },
+    // gt-react and react-core (workspace links) install their own React copy;
+    // render tests need one React, the copy react-dom uses here.
+    dedupe: ['react', 'react-dom'],
   },
   test: {
     pool: 'threads',

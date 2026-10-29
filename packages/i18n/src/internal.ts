@@ -65,6 +65,7 @@ export {
 export {
   isLocaleTwinsClient,
   lookupLocaleTwinEntry,
+  rendersSourceWithLocaleTwins,
 } from './locale-twins/runtime';
 export {
   markNavigatingReload,

@@ -3,6 +3,7 @@ import {
   getRuntimeEnvironment,
   interpolateMessage,
   lookupLocaleTwinEntry,
+  rendersSourceWithLocaleTwins,
 } from 'gt-i18n/internal';
 import type { GTTranslationOptions } from 'gt-i18n/types';
 import type { LookupOptionsFor } from 'gt-i18n/internal/types';
@@ -76,7 +77,8 @@ export function resolveStringContent(
     });
   }
 
-  if (!getShouldTranslate()) {
+  // Content no twin carries renders its source text, on the server too
+  if (!getShouldTranslate() || rendersSourceWithLocaleTwins(options.$_hash)) {
     return interpolateMessage({
       options,
       source: content,

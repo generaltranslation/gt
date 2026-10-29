@@ -81,6 +81,31 @@ export function lookupLocaleTwinEntry<T = unknown>(
   return entry;
 }
 
+/** The hashes the compiler attributes to locale twins (16 lowercase hex). */
+const ATTRIBUTED_HASH = /^[0-9a-f]{16}$/;
+
+/**
+ * Whether an entry renders its source text because no locale twin carries it.
+ *
+ * With locale twins on, the browser only has translations for entries the
+ * compiler attributed (those with a compile-time hash); every other entry
+ * renders its source text there. Servers and dev builds render those entries
+ * the same way, so server-rendered HTML hydrates and dev matches production.
+ *
+ * @param compileTimeHash - The `$_hash`/`_hash` the compiler injected, if any.
+ */
+export function rendersSourceWithLocaleTwins(
+  compileTimeHash: unknown
+): boolean {
+  return (
+    getConfiguredSplitting() === 'locale-twins' &&
+    !(
+      typeof compileTimeHash === 'string' &&
+      ATTRIBUTED_HASH.test(compileTimeHash)
+    )
+  );
+}
+
 // ===== Mismatch diagnostics ===== //
 
 const NO_TWINS_REGISTERED = createDiagnosticMessage({
