@@ -5,6 +5,8 @@ import {
   linkDeriveUpdates,
 } from '../postProcess.js';
 import type { Updates } from '../../types/index.js';
+import { hashMessageTree } from 'generaltranslation/id';
+import { TYPE } from '@generaltranslation/icu';
 
 describe('calculateHashes', () => {
   it('generates consistent hashes for same input', async () => {
@@ -42,6 +44,27 @@ describe('calculateHashes', () => {
     await calculateHashes(updates);
 
     expect(updates[0].metadata.hash).toBe(updates[1].metadata.hash);
+  });
+
+  it('hashes ICU_TREE sources with hashMessageTree', async () => {
+    const tree = [{ type: TYPE.literal, value: 'Save' }];
+    const updates: Updates = [
+      {
+        dataFormat: 'ICU_TREE',
+        source: tree,
+        metadata: { context: 'button', maxChars: -12, requiresReview: true },
+      },
+    ];
+
+    await calculateHashes(updates);
+
+    expect(updates[0].metadata.hash).toBe(
+      hashMessageTree(tree, {
+        context: 'button',
+        maxChars: 12,
+        requiresReview: true,
+      })
+    );
   });
 });
 

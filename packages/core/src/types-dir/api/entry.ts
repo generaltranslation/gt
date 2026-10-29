@@ -21,7 +21,8 @@ export type EntryMetadata = {
   hash?: string;
   context?: string;
   maxChars?: number;
-  dataFormat?: DataFormat;
+  // Runtime translation does not accept ICU syntax trees.
+  dataFormat?: Exclude<DataFormat, 'ICU_TREE'>;
   fileFormat?: RuntimeFileFormat;
   actionType?: ActionType;
 };

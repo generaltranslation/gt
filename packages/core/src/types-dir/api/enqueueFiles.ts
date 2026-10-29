@@ -1,4 +1,5 @@
 import type { DataFormat, JsxChildren } from '@generaltranslation/format/types';
+import type { MessageFormatElement } from '@generaltranslation/icu';
 
 type UpdateMetadata = {
   id?: string;
@@ -36,6 +37,10 @@ export type Updates = ({
   | {
       dataFormat: 'STRING';
       source: string;
+    }
+  | {
+      dataFormat: 'ICU_TREE';
+      source: MessageFormatElement[];
     }
 ))[];
 

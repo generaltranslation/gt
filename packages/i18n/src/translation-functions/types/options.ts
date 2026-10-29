@@ -70,7 +70,8 @@ export type EncodedTranslationOptions = GTTranslationOptions & {
  */
 export type RuntimeTranslationOptions = TranslationVariables &
   Omit<TranslationMetadata, '$id' | '$format'> & {
-    $format?: DataFormat;
+    // Runtime translation does not accept ICU syntax trees.
+    $format?: Exclude<DataFormat, 'ICU_TREE'>;
   };
 
 /**

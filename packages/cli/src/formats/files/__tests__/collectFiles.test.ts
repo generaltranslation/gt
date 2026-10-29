@@ -3,6 +3,7 @@ import { collectFiles } from '../collectFiles.js';
 import { aggregateInlineTranslations } from '../../../translation/stage.js';
 import type { Settings, TranslateFlags } from '../../../types/index.js';
 import { Libraries } from '../../../types/libraries.js';
+import { TYPE } from '@generaltranslation/icu';
 
 vi.mock('../aggregateFiles.js', () => ({
   aggregateFiles: vi.fn(async () => ({
@@ -70,6 +71,28 @@ describe('collectFiles', () => {
         id: 'custom-id',
         hash: 'content-hash',
         dataFormat: 'ICU',
+      },
+    });
+  });
+
+  it('uploads ICU_TREE sources as GTJSON tree values', async () => {
+    const tree = [{ type: TYPE.literal, value: 'Save' }];
+    vi.mocked(aggregateInlineTranslations).mockResolvedValue([
+      {
+        dataFormat: 'ICU_TREE',
+        source: tree,
+        metadata: { hash: 'tree-hash', context: 'button' },
+      },
+    ]);
+
+    const { files } = await collectFiles(options, settings, Libraries.GT_REACT);
+
+    expect(JSON.parse(files[0].content)).toEqual({ 'tree-hash': tree });
+    expect(files[0].formatMetadata).toEqual({
+      'tree-hash': {
+        hash: 'tree-hash',
+        context: 'button',
+        dataFormat: 'ICU_TREE',
       },
     });
   });

@@ -43,9 +43,10 @@ export type JsxChild = string | JsxElement | Variable;
 export type StringFormat = 'ICU' | 'I18NEXT' | 'STRING';
 
 /**
- * The format of the content.
+ * The format of the content. `ICU_TREE` content is an ICU message syntax
+ * tree (`MessageFormatElement[]` from `@generaltranslation/icu`).
  */
-export type DataFormat = 'JSX' | StringFormat;
+export type DataFormat = 'JSX' | StringFormat | 'ICU_TREE';
 
 /**
  * String format content.
