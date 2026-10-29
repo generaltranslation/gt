@@ -6,7 +6,7 @@ import generate from '@babel/generator';
 import traverse from '@babel/traverse';
 
 // Core modules
-import { GTConfig, PluginConfig } from './config';
+import { GTConfig, PluginConfig, resolveLocaleTwinsSettings } from './config';
 
 // Import passes
 import { collectionPass } from './passes/collectionPass';
@@ -194,6 +194,9 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       ...options,
       ...(loadedGTConfig ? { gtConfig: loadedGTConfig } : {}),
     };
+    // Resolve once so an invalid strategy fails at plugin creation and
+    // build hooks can read the resolved values from resolvedOptions
+    Object.assign(resolvedOptions, resolveLocaleTwinsSettings(resolvedOptions));
 
     if (shouldWarn(options.logLevel)) {
       if (gtConfigLoadResult.status === 'missing') {

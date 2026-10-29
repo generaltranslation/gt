@@ -52,3 +52,6 @@ export { indexVars } from './derive/indexVars';
 export { extractVars } from './derive/extractVars';
 export { condenseVars } from './derive/condenseVars';
 export { VAR_IDENTIFIER } from './derive/utils/constants';
+
+// locale twins
+export * from './locale-twins';

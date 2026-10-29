@@ -49,10 +49,20 @@ export type GTCompilerOptions = {
   enableAutoJsxInjection?: boolean;
 };
 
+/**
+ * How a project's translations are divided into units the browser downloads.
+ * - `'locale'` (default): each unit is one whole locale.
+ * - `'locale-twins'`: the build emits a per-locale copy of every chunk that
+ *   carries entries, holding only that locale's entries for the chunk.
+ */
+export type TranslationSplittingStrategy = 'locale' | 'locale-twins';
+
 /** Configuration for generated GT translation files. */
 export type GTOutputFileConfig = {
   output?: string;
   publish?: boolean;
+  /** Translation splitting strategy. Defaults to `'locale'`. */
+  splitting?: TranslationSplittingStrategy;
   parsingFlags?: GTParsingFlags;
   /** @deprecated Use `parsingFlags.includeSourceCodeContext` instead. */
   includeSourceCodeContext?: boolean;

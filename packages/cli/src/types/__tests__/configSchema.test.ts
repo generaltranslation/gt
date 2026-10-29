@@ -131,3 +131,22 @@ describe('GT config schema static url options', () => {
     expect(validate([1])).toBe(false);
   });
 });
+
+describe('GT config schema translation splitting', () => {
+  it('accepts files.gt.splitting strategies and rejects others', () => {
+    const validate = new Ajv({ strict: false }).compile(
+      schema.properties?.files?.properties?.gt ?? {}
+    );
+
+    expect(validate({ output: 'src/_gt/[locale].json' })).toBe(true);
+    expect(
+      validate({ output: 'src/_gt/[locale].json', splitting: 'locale' })
+    ).toBe(true);
+    expect(
+      validate({ output: 'src/_gt/[locale].json', splitting: 'locale-twins' })
+    ).toBe(true);
+    expect(
+      validate({ output: 'src/_gt/[locale].json', splitting: 'module' })
+    ).toBe(false);
+  });
+});

@@ -46,7 +46,14 @@ export type {
   GTFilesConfig,
   GTOutputFileConfig,
   GTParsingFlags,
+  TranslationSplittingStrategy,
 } from './types-dir/config';
+export type {
+  LocaleTwinEntries,
+  LocaleTwinManifest,
+  LocaleTwinPlaceholderMatch,
+  LocaleTwinTable,
+} from './locale-twins';
 export type {
   JsonObject,
   JsonPrimitive,

@@ -2,9 +2,12 @@ import { GTUnpluginOptions } from '../..';
 import { TransformState } from '../types';
 import {
   PluginSettings,
+  DEFAULT_LOCALE_TWINS_OPTIONS,
   resolveAutoderive,
   resolveDevHotReload,
+  resolveLocaleTwinsSettings,
 } from '../../config';
+import { DEFAULT_TRANSLATION_SPLITTING } from 'generaltranslation/internal';
 import { StringCollector } from '../StringCollector';
 import { ScopeTracker } from '../ScopeTracker';
 import { Logger } from '../Logger';
@@ -29,6 +32,8 @@ const DEFAULT_SETTINGS: PluginSettings = {
   legacyGtReactImportSource: false,
   _debugHashManifest: false,
   devHotReload: { strings: false, jsx: false },
+  splitting: DEFAULT_TRANSLATION_SPLITTING,
+  localeTwins: DEFAULT_LOCALE_TWINS_OPTIONS,
 };
 
 /**
@@ -64,6 +69,8 @@ export function initializeState(
     autoderive: _a,
     devHotReload: _b,
     legacyGtReactImportSource: _c,
+    splitting: _d,
+    localeTwins: _e,
     ...restOptions
   } = options;
 
@@ -73,6 +80,7 @@ export function initializeState(
     autoderive,
     legacyGtReactImportSource,
     devHotReload,
+    ...resolveLocaleTwinsSettings(options),
     ...restOptions,
     filename,
   };

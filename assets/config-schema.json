@@ -122,6 +122,12 @@
                 "translations/[locale].json"
               ]
             },
+            "splitting": {
+              "type": "string",
+              "enum": ["locale", "locale-twins"],
+              "description": "Translation splitting strategy. \"locale\" loads a whole locale at once; \"locale-twins\" builds a per-locale copy of every client chunk that carries translations (Vite builds with the GT compiler plugin).",
+              "default": "locale"
+            },
             "parsingFlags": {
               "type": "object",
               "description": "Options controlling inline source extraction",
