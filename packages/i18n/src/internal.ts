@@ -81,7 +81,17 @@ export {
   initializeDictionaryManager,
 } from './compat/singleton-operations';
 export type {
+  Dictionary,
   DictionaryConfig,
+  DictionaryEntry,
+  DictionaryEntryOptions,
+  DictionaryKey,
+  DictionaryLeaf,
   DictionaryLoader,
   DictionaryLookupOptions,
+  DictionaryObject,
+  DictionaryObjectTranslation,
+  DictionaryPath,
+  DictionaryValue,
+  TFunctionType,
 } from './compat/types';

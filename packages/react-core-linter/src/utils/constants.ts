@@ -14,6 +14,20 @@ export const GT_LIBRARIES = [
 
 export type GTLibrary = (typeof GT_LIBRARIES)[number];
 
+/**
+ * Whether an import source is one of the libraries or its dictionary (compat)
+ * entry, such as 'gt-next/compat' or 'gt-next/compat/server'.
+ */
+export function isGTLibrarySource(
+  libs: readonly string[],
+  source: string
+): boolean {
+  return (
+    libs.includes(source) ||
+    libs.includes(source.replace(/\/compat(?:\/.*)?$/, ''))
+  );
+}
+
 // Components
 export const T_COMPONENT_NAME = 'T';
 export const VAR_COMPONENT_NAME = 'Var';
@@ -27,8 +41,6 @@ export const PLURAL_COMPONENT_NAME = 'Plural';
 // Functions
 export const USE_GT_FUNCTION_NAME = 'useGT';
 export const GET_GT_FUNCTION_NAME = 'getGT';
-export const USE_TRANSLATIONS_FUNCTION_NAME = 'useTranslations';
-export const GET_TRANSLATIONS_FUNCTION_NAME = 'getTranslations';
 export const USE_MESSAGES_FUNCTION_NAME = 'useMessages';
 export const GET_MESSAGES_FUNCTION_NAME = 'getMessages';
 export const MSG_FUNCTION_NAME = 'msg';

@@ -4,13 +4,11 @@ import {
   renderDictionaryEntry,
   renderDictionaryObject,
   resolveDictionaryLookupOptions,
+  type DictionaryObjectTranslation,
 } from 'gt-i18n/internal';
 import { useLocale } from '../hooks/condition-store';
 import { useGT } from '../hooks/useGT';
-import type {
-  DictionaryObjectTranslation,
-  TranslationVariables,
-} from 'gt-i18n';
+import type { TranslationVariables } from 'gt-i18n';
 import { useDefaultLocale } from '../hooks/i18n-config';
 import { useShouldTranslate } from '../hooks/utils';
 import { useTrackedDictionaryResolver } from './useTrackedDictionaryResolver';

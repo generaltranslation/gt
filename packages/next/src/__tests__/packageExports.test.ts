@@ -105,6 +105,50 @@ describe('gt-next package exports', () => {
     }
   );
 
+  it('mirrors the root export conditions for gt-next/compat', () => {
+    const packageJson = JSON.parse(
+      readFileSync(join(packageRoot, 'package.json'), 'utf8')
+    ) as { exports: Record<string, Record<string, unknown>> };
+    const rootConditions = Object.keys(packageJson.exports['.']);
+    const compatExport = packageJson.exports['./compat'];
+
+    expect(Object.keys(compatExport)).toEqual(rootConditions);
+    expect(JSON.stringify(compatExport).replaceAll('compat.', 'index.')).toBe(
+      JSON.stringify(packageJson.exports['.'])
+    );
+    expect(packageJson.exports['./compat/server']).toEqual(
+      JSON.parse(
+        JSON.stringify(packageJson.exports['./server']).replaceAll(
+          './dist/server',
+          './dist/compat/server'
+        )
+      )
+    );
+  });
+
+  it.each([
+    [['react-server', 'browser'], 'compat.rsc.mjs'],
+    [['workerd', 'browser'], 'compat.server.mjs'],
+    [['browser'], 'compat.client.mjs'],
+    [[], 'compat.server.mjs'],
+  ])('resolves gt-next/compat with conditions %j to %s', (conditions, file) => {
+    runNode([
+      ...conditions.map((condition) => `--conditions=${condition}`),
+      '--input-type=module',
+      '--eval',
+      `
+          import assert from 'node:assert/strict';
+          import { basename } from 'node:path';
+          import { fileURLToPath } from 'node:url';
+
+          assert.equal(
+            basename(fileURLToPath(import.meta.resolve('gt-next/compat'))),
+            ${JSON.stringify(file)}
+          );
+        `,
+    ]);
+  });
+
   it('prefers the RSC entrypoint over worker and browser conditions', () => {
     runNode([
       '--conditions=react-server',

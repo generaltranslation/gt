@@ -17,6 +17,10 @@
     "./dist/index.rsc.*",
     "./dist/index.client.*",
     "./dist/server.*",
+    "./dist/compat.server.*",
+    "./dist/compat.rsc.*",
+    "./dist/compat.client.*",
+    "./dist/compat/server.*",
     "./dist/link.*",
     "./dist/link/Link.*",
     "./dist/utils/client-boundary.*"
@@ -103,6 +107,38 @@
         "default": "./dist/index.server.js"
       }
     },
+    "./compat": {
+      "react-server": {
+        "import": {
+          "types": "./dist/compat.rsc.d.mts",
+          "default": "./dist/compat.rsc.mjs"
+        },
+        "default": {
+          "types": "./dist/compat.rsc.d.ts",
+          "default": "./dist/compat.rsc.js"
+        }
+      },
+      "workerd": {
+        "import": "./dist/compat.server.mjs",
+        "default": "./dist/compat.server.js"
+      },
+      "worker": {
+        "import": "./dist/compat.server.mjs",
+        "default": "./dist/compat.server.js"
+      },
+      "browser": {
+        "import": "./dist/compat.client.mjs",
+        "default": "./dist/compat.client.js"
+      },
+      "import": {
+        "types": "./dist/compat.types.d.mts",
+        "default": "./dist/compat.server.mjs"
+      },
+      "default": {
+        "types": "./dist/compat.types.d.ts",
+        "default": "./dist/compat.server.js"
+      }
+    },
     "./config": {
       "import": {
         "types": "./dist/config.d.mts",
@@ -121,6 +157,16 @@
       "default": {
         "types": "./dist/server.d.ts",
         "default": "./dist/server.js"
+      }
+    },
+    "./compat/server": {
+      "import": {
+        "types": "./dist/compat/server.d.mts",
+        "default": "./dist/compat/server.mjs"
+      },
+      "default": {
+        "types": "./dist/compat/server.d.ts",
+        "default": "./dist/compat/server.js"
       }
     },
     "./middleware": {

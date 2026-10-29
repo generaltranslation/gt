@@ -29,11 +29,7 @@ import {
   unresolvedLoadTranslationsBuildError,
 } from './errors/createErrors';
 import { compilePathRegex } from './utils/pathRegex';
-import {
-  getLocaleProperties,
-  isValidLocale,
-  standardizeLocale,
-} from '@generaltranslation/format';
+import { isValidLocale, standardizeLocale } from '@generaltranslation/format';
 import {
   localeRefreshSupported,
   rootParamStability,
@@ -360,31 +356,10 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   }
 
   // Resolve dictionary filepath
-  let resolvedDictionaryFilePath =
+  const resolvedDictionaryFilePath =
     typeof mergedConfig.dictionary === 'string'
       ? mergedConfig.dictionary
       : resolveConfigFilepath('dictionary', ['.ts', '.js', '.json']); // fallback to dictionary
-
-  // Check [defaultLocale].json file
-  if (!resolvedDictionaryFilePath && mergedConfig.defaultLocale) {
-    resolvedDictionaryFilePath = resolveConfigFilepath(
-      mergedConfig.defaultLocale,
-      ['.json']
-    );
-
-    // Check [defaultLanguageCode].json file
-    if (!resolvedDictionaryFilePath) {
-      const defaultLanguage = getLocaleProperties(
-        mergedConfig.defaultLocale
-      )?.languageCode;
-
-      if (defaultLanguage && defaultLanguage !== mergedConfig.defaultLocale) {
-        resolvedDictionaryFilePath = resolveConfigFilepath(defaultLanguage, [
-          '.json',
-        ]);
-      }
-    }
-  }
 
   // Get the type of dictionary file
   const resolvedDictionaryFilePathType = resolvedDictionaryFilePath

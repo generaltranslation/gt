@@ -10,8 +10,8 @@ import { getRuntimeImports, resolveRelative } from './utils/importGraph';
 // only use native APIs never ship it. Two checks:
 // 1. Source: native runtime modules never reach a compat/ module or require
 //    the dictionary aliases through relative imports.
-// 2. Built output: bundling a native-only import from the published entries
-//    tree-shakes every compat module away.
+// 2. Built output: bundling everything a native entry exports leaves every
+//    compat module out.
 
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const repoRoot = resolve(packageRoot, '../..');
@@ -19,6 +19,21 @@ const repoRoot = resolve(packageRoot, '../..');
 // ===== Source graph ===== //
 
 const nativeModules = [
+  // Public native entries
+  'packages/node/src/index.ts',
+  'packages/react/src/index.client.ts',
+  'packages/react/src/index.server.ts',
+  'packages/react/src/index.rsc.ts',
+  'packages/react/src/index.types.ts',
+  'packages/react-native/src/index.tsx',
+  'packages/next/src/index.client.ts',
+  'packages/next/src/index.server.ts',
+  'packages/next/src/index.rsc.ts',
+  'packages/next/src/index.types.ts',
+  'packages/next/src/server.ts',
+  'packages/tanstack-start/src/index.client.ts',
+  'packages/tanstack-start/src/index.server.ts',
+  // Native internals
   'packages/i18n/src/i18n-cache/I18nCache.ts',
   'packages/i18n/src/i18n-cache/singleton-operations.ts',
   'packages/i18n/src/translation-functions/internal/getGT.ts',
@@ -47,6 +62,9 @@ const dictionarySpecifiers = [
   'gt-tanstack-start/internal/_compat-config',
 ];
 
+// compat/ modules and the compat.* entries
+const isCompatModule = (file: string) => /[\\/]compat[\\/.]/.test(file);
+
 function findCompatLeaks(): string[] {
   const leaks: string[] = [];
   const parents = new Map<string, string | null>();
@@ -74,7 +92,7 @@ function findCompatLeaks(): string[] {
       if (!specifier.startsWith('.')) continue;
       const resolved = resolveRelative(repoRoot, specifier, file);
       if (!resolved) continue;
-      if (resolved.includes('/compat/')) {
+      if (isCompatModule(resolved)) {
         leaks.push(`${chainTo(file)} -> ${resolved}`);
         continue;
       }
@@ -149,24 +167,42 @@ function findMarkers(code: string): string[] {
   return compatMarkers.filter((marker) => code.includes(marker));
 }
 
-const nativeImports = 'T, useGT, useMessages, Var';
-
+// Every export of each native entry, so nothing is tree-shaken away by an
+// unused import.
 const nativeBundles = [
   {
     name: 'gt-react client',
-    contents: `export { ${nativeImports} } from 'gt-react';`,
+    contents: `export * from 'gt-react';`,
     conditions: ['browser'],
     platform: 'browser' as const,
+  },
+  {
+    name: 'gt-react server',
+    contents: `export * from 'gt-react';`,
+    conditions: [],
+    platform: 'node' as const,
+  },
+  {
+    name: 'gt-react rsc',
+    contents: `export * from 'gt-react';`,
+    conditions: ['react-server'],
+    platform: 'node' as const,
   },
   {
     name: 'gt-next client',
-    contents: `export { ${nativeImports} } from 'gt-next';`,
+    contents: `export * from 'gt-next';`,
     conditions: ['browser'],
     platform: 'browser' as const,
   },
   {
+    name: 'gt-next server',
+    contents: `export * from 'gt-next';`,
+    conditions: [],
+    platform: 'node' as const,
+  },
+  {
     name: 'gt-next rsc',
-    contents: `export { ${nativeImports} } from 'gt-next';`,
+    contents: `export * from 'gt-next'; export * from 'gt-next/server';`,
     conditions: ['react-server'],
     platform: 'node' as const,
   },
@@ -187,28 +223,41 @@ describe('gt compat leak enforcement', () => {
       });
 
       expect(findMarkers(code)).toEqual([]);
-      expect(inputs.filter((input) => /[\\/]compat[\\/]/.test(input))).toEqual(
-        []
-      );
+      expect(inputs.filter(isCompatModule)).toEqual([]);
     }
   );
 
   it('the markers detect compat modules when they are imported', async () => {
     const { code, inputs } = await bundle(
-      `export { useTranslations } from 'gt-react';`,
+      `export { GTDictionaryProvider, useTranslations } from 'gt-react/compat';`,
       {
         conditions: ['browser'],
         platform: 'browser',
       }
     );
 
-    expect(inputs.some((input) => /[\\/]compat[\\/]/.test(input))).toBe(true);
+    expect(inputs.some(isCompatModule)).toBe(true);
     expect(findMarkers(code)).toEqual(
       expect.arrayContaining([
         'dictionaryManager',
         'compatStore',
         'dictionaryContext',
         'Dictionary entry',
+      ])
+    );
+  });
+
+  it('gt-next/compat brings the dictionary aliases into the RSC bundle', async () => {
+    const { code } = await bundle(
+      `export * from 'gt-next/compat'; export * from 'gt-next/compat/server';`,
+      { conditions: ['react-server'], platform: 'node' }
+    );
+
+    expect(findMarkers(code)).toEqual(
+      expect.arrayContaining([
+        'dictionaryManager',
+        'gt-next/internal/_dictionary',
+        'gt-next/internal/_load-dictionary',
       ])
     );
   });

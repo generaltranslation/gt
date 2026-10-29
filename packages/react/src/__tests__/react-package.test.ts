@@ -13,6 +13,12 @@ const runtimeArtifactNames = [
   'index.client.mjs',
   'index.server.cjs',
   'index.server.mjs',
+  'compat.rsc.cjs',
+  'compat.rsc.mjs',
+  'compat.client.cjs',
+  'compat.client.mjs',
+  'compat.server.cjs',
+  'compat.server.mjs',
   'macros.cjs',
   'macros.mjs',
 ].sort();
@@ -46,8 +52,9 @@ function isAllowedExternalizedSubpath(
   file: string,
   specifier: string
 ): boolean {
+  // Entries keep shared React context and singletons external.
   return (
-    file.startsWith('index.') &&
+    /^(?:index|compat)\./.test(file) &&
     (specifier.startsWith('@generaltranslation/react-core/') ||
       specifier.startsWith('gt-i18n/'))
   );
@@ -216,12 +223,55 @@ describe('gt-react package exports', () => {
     ]);
   });
 
+  it.each([
+    [[], 'compat.server'],
+    [['--conditions=browser'], 'compat.client'],
+    [['--conditions=workerd', '--conditions=browser'], 'compat.server'],
+    [['--conditions=react-server', '--conditions=browser'], 'compat.rsc'],
+  ])('resolves gt-react/compat with %j to %s', (conditions, file) => {
+    node([
+      ...conditions,
+      '-e',
+      `
+          const assert = require('node:assert/strict');
+          assert.equal(
+            require.resolve('gt-react/compat').endsWith(${JSON.stringify(`/dist/${file}.cjs`)}),
+            true
+          );
+        `,
+    ]);
+  });
+
+  it('loads the dictionary API from built ESM compat entrypoints', () => {
+    for (const conditions of [[], ['--conditions=browser']]) {
+      node([
+        ...conditions,
+        '--input-type=module',
+        '-e',
+        `
+          import assert from 'node:assert/strict';
+          import * as compat from 'gt-react/compat';
+          import * as react from 'gt-react';
+
+          assert.equal(typeof compat.GTDictionaryProvider, 'function');
+          assert.equal(typeof compat.useTranslations, 'function');
+          assert.equal(typeof compat.initializeGTDictionary, 'function');
+          assert.equal('useTranslations' in react, false);
+        `,
+      ]);
+    }
+  });
+
   it('preserves use client in emitted client entrypoints', () => {
     for (const file of [
       'dist/index.client.cjs',
       'dist/index.client.mjs',
       'dist/index.server.cjs',
       'dist/index.server.mjs',
+      'dist/compat.client.cjs',
+      'dist/compat.client.mjs',
+      'dist/compat.server.cjs',
+      'dist/compat.server.mjs',
     ]) {
       expect(readFileSync(join(packageRoot, file), 'utf8')).toMatch(
         /^['"]use client['"];?/

@@ -118,6 +118,7 @@ Load only the relevant file for the area being changed:
 
 - **Exports:** Most packages use conditional exports (`package.json` `exports` field) with separate paths for different entry points (e.g., `gt-next` has `/client`, `/server`, `/middleware`, `/config`).
 - **Internal subpaths:** Packages expose `/internal` subpaths for cross-package use. These are not part of the public API.
+- **Compatibility APIs:** The dictionary (key-based) API (`useTranslations`, `getTranslations`, `GTDictionaryProvider`, the `Dictionary*` types) lives under `<pkg>/compat` (`gt-react`, `gt-react-native`, `gt-next` plus `gt-next/compat/server`, `gt-tanstack-start`, `gt-node`). gt-i18n and react-core host its internals in `compat/` modules behind their existing entries. Native code never imports compat code; compat builds on public native APIs.
 - **React i18n-context:** `packages/react/src/i18n-context/` has restricted imports from `gt-i18n` (only the root entry and `/internal`). This is enforced by ESLint.
 - **CLI version generation:** `packages/cli/src/generated/version.ts` is ignored and generated from `packages/cli/package.json` by `node scripts/generate-version.js`; do not edit or track it manually.
 - **gt-react / gt-react-native parity:** These two packages are fixed-version siblings (released together via changesets). When a feature is added to one, the equivalent should be added to the other unless it's platform-specific (e.g., DOM-only UI components). Compare their `index.ts`/`index.tsx` exports to verify parity.

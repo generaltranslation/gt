@@ -5,7 +5,6 @@ import { Client_GTProvider } from '../utils/client-boundary';
 import { getNextI18nCache } from '../i18n-cache/NextI18nCache';
 import { getI18nConfig } from 'gt-i18n/internal';
 import { getEnableI18n } from '../request/getEnableI18n';
-import { loadDictionaries } from '../compat/dictionaries';
 
 export async function GTProvider({ children }: GTProviderProps) {
   // ---------- SETUP ---------- //
@@ -22,12 +21,8 @@ export async function GTProvider({ children }: GTProviderProps) {
     ? i18nCache.loadTranslations(locale)
     : Promise.resolve({});
 
-  // shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
-  const dictionariesSnapshotPromise = loadDictionaries(locale);
-
   // Block until cache check resolves
   const translationsSnapshot = { [locale]: await translationsSnapshotPromise };
-  const dictionariesSnapshot = await dictionariesSnapshotPromise;
 
   return (
     <Client_GTProvider
@@ -38,7 +33,6 @@ export async function GTProvider({ children }: GTProviderProps) {
       region={region}
       enableI18n={enableI18n}
       translations={translationsSnapshot}
-      dictionaries={dictionariesSnapshot}
     >
       {children}
     </Client_GTProvider>

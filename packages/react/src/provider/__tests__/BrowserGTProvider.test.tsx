@@ -54,7 +54,6 @@ describe('BrowserGTProvider', () => {
         <BrowserGTProvider
           locale={locale}
           translations={{}}
-          dictionaries={{}}
           _syncConditions={syncConditions}
         />
       );
@@ -101,7 +100,6 @@ describe('BrowserGTProvider', () => {
           region={region}
           enableI18n={enableI18n}
           translations={{ [locale]: {} }}
-          dictionaries={{}}
           _reload={reload}
         >
           <Conditions />

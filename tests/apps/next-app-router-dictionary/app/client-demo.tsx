@@ -1,6 +1,7 @@
 'use client';
 
-import { LocaleSelector, useLocale, useTranslations } from 'gt-next';
+import { LocaleSelector, useLocale } from 'gt-next';
+import { useTranslations } from 'gt-next/compat';
 
 type StringRecord = Record<string, string>;
 

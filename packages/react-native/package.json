@@ -11,6 +11,11 @@
       "types": "./dist/module/index.d.ts",
       "default": "./dist/module/index.js"
     },
+    "./compat": {
+      "source": "./src/compat.ts",
+      "types": "./dist/module/compat.d.ts",
+      "default": "./dist/module/compat.js"
+    },
     "./plugin": {
       "source": "./src/plugin.ts",
       "types": "./dist/module/plugin.d.ts",

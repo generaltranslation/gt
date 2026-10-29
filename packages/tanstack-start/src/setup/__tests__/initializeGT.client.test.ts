@@ -15,8 +15,6 @@ const {
   pluginModule: {
     config: undefined as Record<string, unknown> | undefined,
     loadTranslations: undefined,
-    dictionary: undefined,
-    loadDictionary: undefined,
   },
   localeRoutingModule: {
     createLocaleReload: vi.fn(),

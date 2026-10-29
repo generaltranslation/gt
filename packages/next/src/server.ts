@@ -23,5 +23,3 @@ export { getRegion } from './request/getRegion';
 export { tx } from './server-dir/runtime/tx';
 export { Tx } from './server-dir/runtime/_Tx';
 export { getMessages, getGT } from './server-dir/buildtime/strings';
-// shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
-export { getTranslations } from './compat/getTranslations';

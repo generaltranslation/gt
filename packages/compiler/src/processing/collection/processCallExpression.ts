@@ -14,7 +14,6 @@ import {
 import {
   validateTranslationFunction,
   validateUseMessagesCallback,
-  validateUseTranslationsCallback,
 } from '../../transform/validation/validateTranslationFunction';
 import { registerUseGTCallback } from '../../transform/registration/callbacks/registerUseGTCallback';
 import { getTrackedVariable } from '../../transform/getTrackedVariable';
@@ -95,7 +94,7 @@ export function processCallExpression(
 
 /**
  * Handle general translation variables
- * useGTCallback(), useTranslationsCallback(), useMessagesCallback(), etc.
+ * useGTCallback(), useMessagesCallback(), etc.
  */
 function handleTranslationCallbackInvocation(
   callExprPath: NodePath<t.CallExpression>,
@@ -108,10 +107,6 @@ function handleTranslationCallbackInvocation(
     case GT_CALLBACK_FUNCTIONS.useGT_callback:
     case GT_CALLBACK_FUNCTIONS.getGT_callback:
       handleUseGTCallback(callExprPath, state, identifier);
-      break;
-    case GT_CALLBACK_FUNCTIONS.useTranslations_callback:
-    case GT_CALLBACK_FUNCTIONS.getTranslations_callback:
-      handleUseTranslationsCallback(callExprPath, state);
       break;
     case GT_CALLBACK_FUNCTIONS.useMessages_callback:
     case GT_CALLBACK_FUNCTIONS.getMessages_callback:
@@ -162,19 +157,6 @@ function handleUseGTCallback(
     hash: useGTCallbackParams.hash,
     format: useGTCallbackParams.format,
   });
-}
-
-/**
- * Handle useTranslations_callback / getTranslations_callback
- */
-function handleUseTranslationsCallback(
-  callExprPath: NodePath<t.CallExpression>,
-  state: TransformState
-) {
-  const callExpr = callExprPath.node;
-  const useTranslationsCallbackParams =
-    validateUseTranslationsCallback(callExpr);
-  state.errorTracker.addErrors(useTranslationsCallbackParams.errors);
 }
 
 /**

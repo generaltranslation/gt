@@ -51,8 +51,6 @@ export {
   useSetRegion,
   useSetEnableI18n,
 } from '@generaltranslation/react-core/hooks';
-// shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
-export { useTranslations } from '@generaltranslation/react-core/hooks';
 
 // ===== Functions ===== //
 export {

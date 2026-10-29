@@ -1004,7 +1004,7 @@ describe('withGTConfig', () => {
       expect(result.env!._GENERALTRANSLATION_DICTIONARY_FILE_TYPE).toBe('.ts');
     });
 
-    it('falls back to [defaultLocale].json then [languageCode].json', async () => {
+    it('does not treat [defaultLocale].json as a dictionary', async () => {
       const withGTConfig = await getWithGTConfig();
       // No dictionary.ts/.js/.json found, but en.json exists
       const resolvedEnJsonPath = require('path').resolve('./en.json');
@@ -1015,9 +1015,9 @@ describe('withGTConfig', () => {
 
       const result = withGTConfig({}, { defaultLocale: 'en' });
 
-      expect(result.env!._GENERALTRANSLATION_DICTIONARY_FILE_TYPE).toBe(
-        '.json'
-      );
+      expect(
+        result.env!._GENERALTRANSLATION_DICTIONARY_FILE_TYPE
+      ).toBeUndefined();
     });
 
     it('no dictionary found = no _GENERALTRANSLATION_DICTIONARY_FILE_TYPE', async () => {

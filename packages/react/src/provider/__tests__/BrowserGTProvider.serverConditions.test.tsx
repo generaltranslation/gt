@@ -66,7 +66,6 @@ describe('server-provided conditions', () => {
           enableI18n={snapshot.enableI18n}
           _reload={reload}
           translations={{}}
-          dictionaries={{}}
         >
           <Counter />
         </BrowserGTProvider>

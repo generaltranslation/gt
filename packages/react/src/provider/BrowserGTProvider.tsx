@@ -1,8 +1,5 @@
 import { I18nStore, getI18nConfig } from '@generaltranslation/react-core/pure';
-import {
-  DictionaryProvider,
-  InternalGTProvider,
-} from '@generaltranslation/react-core/components';
+import { InternalGTProvider } from '@generaltranslation/react-core/components';
 import { defaultResetLocaleCookieName } from 'gt-i18n/internal/cookies';
 import { useCallback, useEffect, useRef } from 'react';
 import type { SharedGTProviderProps } from './GTProviderProps';
@@ -85,18 +82,10 @@ export function BrowserGTProvider(props: SharedGTProviderProps) {
   ]);
 
   const i18nStore = useI18nStore();
-  // shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
-  const {
-    dictionaries,
-    onMissingDictionaryEntry,
-    onMissingDictionaryObj,
-    children,
-    ...nativeProps
-  } = props;
 
   return (
     <InternalGTProvider
-      {...nativeProps}
+      {...props}
       locale={locale}
       region={region}
       enableI18n={enableI18n}
@@ -104,16 +93,7 @@ export function BrowserGTProvider(props: SharedGTProviderProps) {
       setRegion={setRegion}
       setEnableI18n={setEnableI18n}
       i18nStore={i18nStore}
-    >
-      {/* shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries */}
-      <DictionaryProvider
-        dictionaries={dictionaries}
-        onMissingDictionaryEntry={onMissingDictionaryEntry}
-        onMissingDictionaryObj={onMissingDictionaryObj}
-      >
-        {children}
-      </DictionaryProvider>
-    </InternalGTProvider>
+    />
   );
 }
 

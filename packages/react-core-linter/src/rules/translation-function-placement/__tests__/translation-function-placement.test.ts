@@ -10,6 +10,7 @@ const ruleTester = new RuleTester({
 });
 
 const imports = `import { getGT, getLocale } from 'gt-tanstack-start';\n`;
+const compatImports = `import { getTranslations } from 'gt-tanstack-start/compat';\n`;
 
 // Run at the top level: RuleTester registers its own tests, which vitest
 // never runs when they are registered from inside another test.
@@ -47,6 +48,10 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
     });`,
     `import * as server from 'gt-next/server';
     const gt = await server.getGT();`,
+    `${compatImports}
+    export const Route = createFileRoute('/')({
+      loader: async () => (await getTranslations())('page.title'),
+    });`,
     // Same names from other libraries, or not imported at all
     `import { getGT } from 'gt-next/server';
     const gt = await getGT();`,
@@ -58,6 +63,32 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
     }`,
   ],
   invalid: [
+    {
+      // An explicitly configured /compat entry matches too.
+      code: `${compatImports}const t = await getTranslations();`,
+      options: [{ libs: ['gt-tanstack-start/compat'] }],
+      errors: [{ messageId: 'moduleScope', data: { name: 'getTranslations' } }],
+    },
+    {
+      code: `${compatImports}const t = await getTranslations();`,
+      errors: [{ messageId: 'moduleScope', data: { name: 'getTranslations' } }],
+    },
+    {
+      code: `${compatImports}
+      function Page() {
+        return <p>{use(getTranslations())('page.title')}</p>;
+      }`,
+      errors: [
+        {
+          messageId: 'inComponent',
+          data: {
+            name: 'getTranslations',
+            hook: 'useTranslations',
+            source: 'gt-tanstack-start/compat',
+          },
+        },
+      ],
+    },
     {
       code: `import * as i18n from 'gt-tanstack-start';
       export const locale = i18n.getLocale();`,
@@ -71,7 +102,11 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
       errors: [
         {
           messageId: 'inComponent',
-          data: { name: 'getLocale', hook: 'useLocale' },
+          data: {
+            name: 'getLocale',
+            hook: 'useLocale',
+            source: 'gt-tanstack-start',
+          },
         },
       ],
     },
@@ -80,7 +115,11 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
       errors: [
         {
           messageId: 'inComponent',
-          data: { name: 'getLocale', hook: 'useLocale' },
+          data: {
+            name: 'getLocale',
+            hook: 'useLocale',
+            source: 'gt-tanstack-start',
+          },
         },
       ],
     },
@@ -89,7 +128,11 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
       errors: [
         {
           messageId: 'inComponent',
-          data: { name: 'getLocale', hook: 'useLocale' },
+          data: {
+            name: 'getLocale',
+            hook: 'useLocale',
+            source: 'gt-tanstack-start',
+          },
         },
       ],
     },
@@ -101,7 +144,11 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
       errors: [
         {
           messageId: 'inComponent',
-          data: { name: 'getLocale', hook: 'useLocale' },
+          data: {
+            name: 'getLocale',
+            hook: 'useLocale',
+            source: 'gt-tanstack-start',
+          },
         },
       ],
     },
@@ -121,7 +168,11 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
       errors: [
         {
           messageId: 'inComponent',
-          data: { name: 'getLocale', hook: 'useLocale' },
+          data: {
+            name: 'getLocale',
+            hook: 'useLocale',
+            source: 'gt-tanstack-start',
+          },
         },
       ],
     },
@@ -133,7 +184,11 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
       errors: [
         {
           messageId: 'inComponent',
-          data: { name: 'getLocale', hook: 'useLocale' },
+          data: {
+            name: 'getLocale',
+            hook: 'useLocale',
+            source: 'gt-tanstack-start',
+          },
         },
       ],
     },
@@ -147,14 +202,21 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
       errors: [
         {
           messageId: 'inComponent',
-          data: { name: 'getLocale', hook: 'useLocale' },
+          data: {
+            name: 'getLocale',
+            hook: 'useLocale',
+            source: 'gt-tanstack-start',
+          },
         },
       ],
     },
     {
       code: `${imports}export default memo(() => use(getGT())('Card'));`,
       errors: [
-        { messageId: 'inComponent', data: { name: 'getGT', hook: 'useGT' } },
+        {
+          messageId: 'inComponent',
+          data: { name: 'getGT', hook: 'useGT', source: 'gt-tanstack-start' },
+        },
       ],
     },
     {
@@ -162,7 +224,11 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
       errors: [
         {
           messageId: 'inComponent',
-          data: { name: 'getLocale', hook: 'useLocale' },
+          data: {
+            name: 'getLocale',
+            hook: 'useLocale',
+            source: 'gt-tanstack-start',
+          },
         },
       ],
     },
@@ -175,7 +241,11 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
       errors: [
         {
           messageId: 'inComponent',
-          data: { name: 'getLocale', hook: 'useLocale' },
+          data: {
+            name: 'getLocale',
+            hook: 'useLocale',
+            source: 'gt-tanstack-start',
+          },
         },
       ],
     },
@@ -201,7 +271,11 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
       errors: [
         {
           messageId: 'inComponent',
-          data: { name: 'getLocale', hook: 'useLocale' },
+          data: {
+            name: 'getLocale',
+            hook: 'useLocale',
+            source: 'gt-tanstack-start',
+          },
         },
       ],
     },
@@ -214,7 +288,10 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
         return null;
       };`,
       errors: [
-        { messageId: 'inComponent', data: { name: 'getGT', hook: 'useGT' } },
+        {
+          messageId: 'inComponent',
+          data: { name: 'getGT', hook: 'useGT', source: 'gt-tanstack-start' },
+        },
       ],
     },
     {
@@ -223,7 +300,10 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
         return React.useMemo(() => getGT(), []);
       }`,
       errors: [
-        { messageId: 'inComponent', data: { name: 'getGT', hook: 'useGT' } },
+        {
+          messageId: 'inComponent',
+          data: { name: 'getGT', hook: 'useGT', source: 'gt-tanstack-start' },
+        },
       ],
     },
     {
@@ -232,7 +312,10 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
         return use(getGT())('Card');
       });`,
       errors: [
-        { messageId: 'inComponent', data: { name: 'getGT', hook: 'useGT' } },
+        {
+          messageId: 'inComponent',
+          data: { name: 'getGT', hook: 'useGT', source: 'gt-tanstack-start' },
+        },
       ],
     },
     {
@@ -244,11 +327,19 @@ ruleTester.run('translation-function-placement', translationFunctionPlacement, {
       errors: [
         {
           messageId: 'inComponent',
-          data: { name: 'getLocale', hook: 'useLocale' },
+          data: {
+            name: 'getLocale',
+            hook: 'useLocale',
+            source: 'gt-tanstack-start',
+          },
         },
         {
           messageId: 'inComponent',
-          data: { name: 'getLocale', hook: 'useLocale' },
+          data: {
+            name: 'getLocale',
+            hook: 'useLocale',
+            source: 'gt-tanstack-start',
+          },
         },
       ],
     },

@@ -5,8 +5,6 @@ import {
   type ReactNode,
 } from 'react';
 import { getTranslationsSnapshot } from '@generaltranslation/react-core/pure';
-// shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
-import { loadRouterDictionaries } from '../compat/loadRouterDictionaries';
 import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal';
 import type { GTRouterState } from './types';
 
@@ -19,17 +17,11 @@ export async function readGTRouterState(
   conditionStore: GTConditionSource
 ): Promise<GTRouterState> {
   const locale = conditionStore.getLocale();
-  const [translations, dictionaries] = await Promise.all([
-    getTranslationsSnapshot(locale),
-    // shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
-    loadRouterDictionaries(locale),
-  ]);
   return {
     locale,
     region: conditionStore.getRegion(),
     enableI18n: conditionStore.getEnableI18n(),
-    translations,
-    dictionaries,
+    translations: await getTranslationsSnapshot(locale),
   };
 }
 
