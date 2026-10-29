@@ -35,6 +35,7 @@ import {
   rootParamStability,
   turboConfigStable,
 } from './plugin/getStableNextVersionInfo';
+import { distDir, nodeRequire } from './plugin/nodeCompat';
 import { validateCompiler } from './config-dir/utils/validateCompiler';
 import {
   REQUEST_FUNCTION_ALIASES,
@@ -181,7 +182,7 @@ function haveSameLocales(
  * @param {number} [batchInterval=defaultInitGTProps.batchInterval] - The interval in milliseconds between batched translation requests.
  * @param {boolean} [ignoreBrowserLocales=defaultWithGTConfigProps.ignoreBrowserLocales] - Whether to ignore browser's preferred locales.
  * @param {boolean} [disableInvalidLocaleWarning=defaultWithGTConfigProps.disableInvalidLocaleWarning] - Whether to disable invalid request locale warnings.
- * @param {string|undefined} [pathRegex] - Regular expression that request pathnames must match for i18n middleware to be applied.
+ * @param {string|undefined} [pathRegex] - Regular expression that request pathnames must match for i18n middleware to be applied. Write it for paths without the locale prefix: `<Link>`, `useLocalizeHref()` and `getLocalizeHref()` test the unprefixed path and leave non-matching paths unprefixed.
  * @param {object} headersAndCookies - Additional headers and cookies that can be passed for extended configuration.
  * @param {boolean} [localeRouting] - Default for createNextMiddleware's `localeRouting` option.
  * @param {boolean} [prefixDefaultLocale] - Default for createNextMiddleware's `prefixDefaultLocale` option.
@@ -366,11 +367,11 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   if (mergedConfig.experimentalCompilerOptions?.type === 'swc') {
     try {
       if (turboPackEnabled) {
-        const absolutePath = path.resolve(__dirname, './gt_swc_plugin.wasm');
+        const absolutePath = path.resolve(distDir, './gt_swc_plugin.wasm');
         resolvedWasmFilePath =
           './' + path.relative(process.cwd(), absolutePath).replace(/\\/g, '/');
       } else {
-        resolvedWasmFilePath = path.resolve(__dirname, './gt_swc_plugin.wasm');
+        resolvedWasmFilePath = path.resolve(distDir, './gt_swc_plugin.wasm');
       }
     } catch (error) {
       console.error(
@@ -814,9 +815,9 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
         // Try to load GT compiler if available
         if (mergedConfig.experimentalCompilerOptions?.type === 'babel') {
           try {
-            const {
-              webpack: gtUnplugin,
-            } = require('@generaltranslation/compiler');
+            const { webpack: gtUnplugin } = nodeRequire(
+              '@generaltranslation/compiler'
+            );
             webpackConfig.plugins.unshift(
               gtUnplugin({
                 ...mergedConfig.experimentalCompilerOptions,
