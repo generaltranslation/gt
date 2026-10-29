@@ -56,6 +56,8 @@ export default {
 };
 ```
 
+Only Vite builds generate locale twins; with webpack, Rspack, esbuild or plain Rollup the plugin warns and skips them. `vite dev` behaves as without locale twins. The build report (twinned and shared files, sizes, missing translations, unattributed entries) is written to `node_modules/.cache/gt/gt-locale-twins-report.json`, outside the public output directory.
+
 See the [locale twins guide](https://generaltranslation.com/docs/react/guides/locale-twins) for setup, hosting and limitations.
 
 See the [full documentation](https://generaltranslation.com/docs) for guides and API reference.

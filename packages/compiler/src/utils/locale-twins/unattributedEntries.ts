@@ -24,43 +24,83 @@ const REASONS: Record<LocaleTwinUnattributedReason, string> = {
 };
 
 /**
- * One unattributed entry as `file:line:column api: reason` (1-based line
- * and column in the code the compiler received; the file is relative to the
- * working directory when it is inside it).
+ * Where an unattributed entry is: the module id the compiler received, the
+ * 1-based line and column of its call or `<T>` (when known), its API and why
+ * it is unattributed.
  */
-export function formatUnattributedEntry(
+export type UnattributedEntryLocation = {
+  file: string;
+  line?: number;
+  column?: number;
+  api: string;
+  reason: LocaleTwinUnattributedReason;
+};
+
+/** Locates an unattributed entry recorded while transforming `file`. */
+export function locateUnattributedEntry(
   file: string,
   { api, reason, node }: LocaleTwinUnattributedEntry
-): string {
+): UnattributedEntryLocation {
   const start = findLocation(node)?.start;
-  const location = start ? `:${start.line}:${start.column + 1}` : '';
-  return `${displayPath(file)}${location} ${API_LABELS[api]}: ${REASONS[reason]}`;
+  return {
+    file,
+    ...(start && { line: start.line, column: start.column + 1 }),
+    api: API_LABELS[api],
+    reason,
+  };
+}
+
+/**
+ * One unattributed entry as `file:line:column api: reason`, the file relative
+ * to `baseDir` when it is inside it (default: the working directory).
+ */
+export function formatUnattributedEntry(
+  entry: UnattributedEntryLocation,
+  baseDir = process.cwd()
+): string {
+  const location =
+    entry.line === undefined ? '' : `:${entry.line}:${entry.column}`;
+  return `${displayPath(entry.file, baseDir)}${location} ${entry.api}: ${REASONS[entry.reason]}`;
+}
+
+/**
+ * The entry for the build report: `file` relative to `baseDir` (POSIX) when
+ * it is inside it.
+ */
+export function toUnattributedReportEntry(
+  entry: UnattributedEntryLocation,
+  baseDir: string
+): UnattributedEntryLocation {
+  return {
+    ...entry,
+    file: displayPath(entry.file, baseDir).split(path.sep).join('/'),
+  };
 }
 
 /**
  * The build warning listing every entry that keeps its source text in
- * client code in locale twins mode.
+ * client code in locale twins mode: no twin carries it, so it renders in the
+ * source locale for every visitor.
  */
 export function createUnattributedEntriesWarning(details: string[]): string {
   const count = details.length;
   const one = count === 1;
   return createCompilerDiagnostic({
     severity: 'Warning',
-    whatHappened: `${count} translation ${one ? 'entry keeps its' : 'entries keep their'} source text in client code`,
-    why: `the compiler cannot attribute ${one ? 'it' : 'them'} to a locale twin at build time`,
-    reassurance: one
-      ? 'It still renders, but its source text ships to every locale'
-      : 'They still render, but their source text ships to every locale',
-    fix: `To move ${one ? 'it' : 'them'} into locale twins, use static content and let the compiler compute the hash`,
+    whatHappened: `${count} translation ${one ? 'entry renders' : 'entries render'} untranslated with locale twins`,
+    why: `the compiler cannot attribute ${one ? 'it' : 'them'} to a locale twin at build time, so ${one ? 'it keeps its' : 'they keep their'} source text in client code and ${one ? 'renders' : 'render'} in the source locale for every visitor (in production builds; vite dev still translates ${one ? 'it' : 'them'})`,
+    fix: `To translate ${one ? 'it' : 'them'}, use static content and let the compiler compute the hash`,
     // One entry per item; reasons may contain commas
     details: details.join('; '),
   });
 }
 
-function displayPath(file: string): string {
+function displayPath(file: string, baseDir: string): string {
   if (!path.isAbsolute(file)) return file;
-  const relative = path.relative(process.cwd(), file);
-  return relative.startsWith('..') ? file : relative;
+  const relative = path.relative(baseDir, file);
+  return relative.startsWith('..') || path.isAbsolute(relative)
+    ? file
+    : relative;
 }
 
 /**

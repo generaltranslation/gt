@@ -332,6 +332,52 @@ export function Page() {
   return jsxs(T, { children: ["Hello ", jsx(Derive, { children: getName() })] });
 }`;
 
+const MSG_MODULE = `import { msg } from 'gt-react';
+export const greeting = msg("Hello there");`;
+
+describe('outside production Vite builds', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('leaves vite dev output as without locale twins (no registration, no msg hash)', async () => {
+    const code = await transform(MSG_MODULE, CLIENT_DEV);
+
+    expect(code ?? MSG_MODULE).not.toContain('$_hash');
+    expect(findLocaleTwinPlaceholders(code ?? '')).toEqual([]);
+  });
+
+  it('keeps msg hashes in server builds so SSR renders what the client renders', async () => {
+    const code = (await transform(MSG_MODULE, SERVER_BUILD))!;
+
+    expect(code).toContain('$_hash');
+    expect(code).toContain('"Hello there"');
+  });
+
+  it.each(['webpack', 'rspack', 'esbuild', 'rollup'] as const)(
+    'skips locale twins with %s and warns once',
+    async (framework) => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const plugin = gtUnplugin.raw(
+        { ...TWINS, logLevel: 'warn' },
+        { framework }
+      );
+      const code = await runTransform(plugin, MSG_MODULE, null);
+      await runTransform(plugin, MSG_MODULE, null);
+
+      expect(code ?? '').not.toContain('$_hash');
+      expect(findLocaleTwinPlaceholders(code ?? '')).toEqual([]);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0][0]).toMatch(
+        new RegExp(
+          `^@generaltranslation/compiler Warning: .*${framework}.*Vite`,
+          's'
+        )
+      );
+    }
+  );
+});
+
 describe('unattributed entries', () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -367,7 +413,7 @@ export const a = msg("Next");`,
     expect(warn).toHaveBeenCalledTimes(1);
     const [message] = warn.mock.calls[0] as [string];
     expect(message).toMatch(
-      /^@generaltranslation\/compiler Warning: 4 translation entries/
+      /^@generaltranslation\/compiler Warning: 4 translation entries render untranslated/
     );
     expect(message).toContain('/app/src/page.tsx:5:13 gt(): uses derive()');
     expect(message).toContain('/app/src/page.tsx:7:13 gt(): has a custom hash');

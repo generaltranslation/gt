@@ -2,6 +2,7 @@
  * Builds the `fixtures/spa` app with a real `vite build` (Vite 8 or Vite 7)
  * and the compiler plugin, in a temporary copy of the fixture.
  */
+import type { LocaleTwinBuildReport } from '../writeLocaleTwins';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -38,8 +39,13 @@ export type FixtureApp = {
   exists(fileName: string): boolean;
   /** JS files in the output, outDir-relative. */
   jsFiles(): string[];
+  /** The locale twins build report (kept out of the public outDir). */
+  report(): LocaleTwinBuildReport;
   cleanup(): void;
 };
+
+/** Where the build writes its report, relative to the Vite root. */
+export const REPORT_PATH = 'node_modules/.cache/gt/gt-locale-twins-report.json';
 
 /** Copies the fixture (and its fake `node_modules`) to a temporary directory. */
 export function createFixtureApp(): FixtureApp {
@@ -63,6 +69,8 @@ export function createFixtureApp(): FixtureApp {
         .filter((name) => /\.m?js$/.test(name))
         .map((name) => name.split(path.sep).join('/'))
         .sort(),
+    report: () =>
+      JSON.parse(fs.readFileSync(path.join(dir, REPORT_PATH), 'utf8')),
     cleanup: () => fs.rmSync(dir, { recursive: true, force: true }),
   };
 }

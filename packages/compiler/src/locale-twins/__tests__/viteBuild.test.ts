@@ -26,6 +26,7 @@ import {
   createFixtureApp,
   createPlugin,
   fixtureConfig,
+  REPORT_PATH,
   VITE_VERSIONS,
   warnings,
   type FixtureApp,
@@ -187,17 +188,18 @@ describe.each(VITE_VERSIONS)('$name client build', ({ load }) => {
     await buildFixture(vite, app, { splitting: 'locale' });
 
     expect(app.exists(LOCALE_TWIN_MANIFEST_FILE)).toBe(false);
-    expect(app.exists('gt-locale-twins-report.json')).toBe(false);
+    expect(fs.existsSync(path.join(app.dir, REPORT_PATH))).toBe(false);
     expect(app.jsFiles().some((name) => name.includes('vendor-'))).toBe(false);
     expect(app.jsFiles().filter(isTwin)).toEqual([]);
   });
 
-  it('writes the build report and warns about missing translations', async () => {
+  it('writes the build report outside the public outDir and warns about missing translations', async () => {
     const vite = await load();
     const app = newApp();
     await buildFixture(vite, app);
 
-    const report = JSON.parse(app.read('gt-locale-twins-report.json'));
+    expect(app.exists('gt-locale-twins-report.json')).toBe(false);
+    const report = app.report();
     const manifest = parseLocaleTwinManifest(
       app.read(LOCALE_TWIN_MANIFEST_FILE)
     );
@@ -207,6 +209,16 @@ describe.each(VITE_VERSIONS)('$name client build', ({ load }) => {
       twinned: manifest.twinned,
       // es.json has no "Routes label"
       missingTranslations: { es: [ROUTES_LABEL_HASH] },
+      // msg() with a custom hash keeps its source text in code
+      unattributed: [
+        {
+          file: 'src/footer.js',
+          line: 5,
+          column: 20,
+          api: 'msg()',
+          reason: 'customHash',
+        },
+      ],
     });
     expect(report.shared).toContain(
       chunkContaining(app, 'fake-lib library code')
@@ -221,7 +233,7 @@ describe.each(VITE_VERSIONS)('$name client build', ({ load }) => {
     expect(app.logs.map((entry) => entry.message)).toEqual(
       expect.arrayContaining([
         expect.stringMatching(
-          /Locale twins: 2 twinned and 2 shared JS files, 3 locales/
+          /Locale twins: 2 twinned and 2 shared JS files, 3 locales.*Report: node_modules\/\.cache\/gt\/gt-locale-twins-report\.json/
         ),
       ])
     );
@@ -431,7 +443,7 @@ describe.each(VITE_VERSIONS)('$name SPA document', ({ load }) => {
     // The inline bootstrap and its CSP hash
     const bootstrap = inlineBootstrap(html);
     expect(bootstrap).toBe(LOCALE_TWIN_BOOTSTRAP_SCRIPT);
-    const report = JSON.parse(app.read('gt-locale-twins-report.json'));
+    const report = app.report();
     expect(report.spa).toEqual({
       bootstrap: 'inline',
       documents: ['index.html'],
@@ -521,7 +533,7 @@ describe.each(VITE_VERSIONS)('$name SPA document', ({ load }) => {
     expect(parseLocaleTwinDocument(html).data.localeCookieName).toBe(
       'app-locale'
     );
-    const report = JSON.parse(app.read('gt-locale-twins-report.json'));
+    const report = app.report();
     expect(report.spa).toEqual({
       bootstrap: 'external',
       documents: ['index.html'],

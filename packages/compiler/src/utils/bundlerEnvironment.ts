@@ -17,6 +17,22 @@ export function getBundlerEnvironment(
 }
 
 /**
+ * Whether a module is being transformed by the Vite dev server: Vite's
+ * environment mode when present (anything but `'build'`), otherwise the
+ * resolved Vite command. Without either (direct calls, tests) it is not.
+ */
+export function isDevServerTransform({
+  environment,
+  command,
+}: {
+  environment?: BundlerEnvironment;
+  command?: string;
+}): boolean {
+  if (environment?.mode) return environment.mode !== 'build';
+  return command === 'serve';
+}
+
+/**
  * Whether a module is being transformed for a client production build:
  * Vite's environment (`consumer === 'client'` and `mode === 'build'`) when
  * present, otherwise the legacy `ssr` transform flag plus the resolved Vite

@@ -13,6 +13,7 @@ export {
 export type { MissingLocaleTwinTranslations } from './diagnostics';
 export {
   LOCALE_TWIN_BOOTSTRAP_FILE_PREFIX,
+  LOCALE_TWIN_REPORT_DIR,
   LOCALE_TWIN_REPORT_FILE,
   writeLocaleTwinReport,
   writeLocaleTwinSpaDocuments,
@@ -30,6 +31,12 @@ export type {
   RewriteLocaleTwinDocumentInput,
   RewriteLocaleTwinDocumentResult,
 } from './spaDocument';
+export { createLocaleTwinsPlugin } from './createLocaleTwinsPlugin';
+export type {
+  LocaleTwinsPlugin,
+  LocaleTwinsPluginOptions,
+  LocaleTwinsTransform,
+} from './createLocaleTwinsPlugin';
 export { createLocaleTwinsViteHooks } from './vite/localeTwinsViteHooks';
 export {
   LOCALE_TWIN_MANIFEST_MODULE_ID,

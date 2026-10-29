@@ -16,6 +16,7 @@ import {
 } from './generateLocaleTwins';
 import { createMissingTranslationsDiagnostic } from './diagnostics';
 import { rewriteLocaleTwinDocument } from './spaDocument';
+import type { UnattributedEntryLocation } from '../utils/locale-twins/unattributedEntries';
 import {
   createInvalidTranslationFileDiagnostic,
   createLargeOutputMultiplierDiagnostic,
@@ -24,8 +25,14 @@ import {
   createUnreadablePreviousManifestDiagnostic,
 } from './buildDiagnostics';
 
-/** Build report file written next to the twin manifest. */
+/** Build report file name. */
 export const LOCALE_TWIN_REPORT_FILE = 'gt-locale-twins-report.json';
+
+/**
+ * Directory of the build report, relative to the Vite root. It is kept out of
+ * the client outDir, which static hosts serve publicly.
+ */
+export const LOCALE_TWIN_REPORT_DIR = 'node_modules/.cache/gt';
 
 /** External bootstrap: `<prefix>.<content hash>.js`, next to the entry chunk. */
 export const LOCALE_TWIN_BOOTSTRAP_FILE_PREFIX = 'gt-locale-twins-bootstrap';
@@ -51,6 +58,11 @@ export type LocaleTwinSpaReport = {
 export type LocaleTwinBuildReport = LocaleTwinReport & {
   defaultLocale: string;
   locales: string[];
+  /**
+   * Entries that keep their source text in client code (they render in the
+   * source locale): file relative to the Vite root, 1-based line and column.
+   */
+  unattributed: UnattributedEntryLocation[];
   /** Present when the build has an HTML document that loads twins. */
   spa?: LocaleTwinSpaReport;
 };
@@ -71,6 +83,8 @@ export type WriteLocaleTwinsInput = {
   missingTranslations: 'warn' | 'error';
   /** Whether the default vendor chunk was configured (for the multiplier hint). */
   vendorChunk: boolean;
+  /** Unattributed entries of the client build, for the report. */
+  unattributed?: UnattributedEntryLocation[];
   warn(message: string): void;
 };
 
@@ -142,20 +156,28 @@ export function writeLocaleTwins(
       defaultLocale: result.manifest.defaultLocale,
       locales: result.manifest.locales,
       ...report,
+      unattributed: input.unattributed ?? [],
     },
   };
 }
 
 /**
- * Writes the build report ({@link LOCALE_TWIN_REPORT_FILE}) into `outDir`.
- * Separate from {@link writeLocaleTwins} so later post-build steps (e.g. the
- * SPA document rewrite) can add to the report first.
+ * Writes the build report ({@link LOCALE_TWIN_REPORT_FILE}) into
+ * {@link LOCALE_TWIN_REPORT_DIR} under the Vite `root` (not the public
+ * outDir: it lists the build's files and missing translations). Separate from
+ * {@link writeLocaleTwins} so later post-build steps (e.g. the SPA document
+ * rewrite) can add to the report first. Returns the report path.
  */
 export function writeLocaleTwinReport(
-  outDir: string,
+  root: string,
   report: LocaleTwinBuildReport
 ): string {
-  const reportPath = path.join(outDir, LOCALE_TWIN_REPORT_FILE);
+  const reportPath = path.join(
+    root,
+    LOCALE_TWIN_REPORT_DIR,
+    LOCALE_TWIN_REPORT_FILE
+  );
+  fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`);
   return reportPath;
 }
@@ -285,9 +307,13 @@ function readPreviousManifest(
 }
 
 /**
- * Every emitted file other than an original twinned file is served as built,
- * so none of them may contain an unfilled placeholder. Source maps are
- * skipped: they are not executed.
+ * No file a visitor can be served may contain an unfilled placeholder:
+ * shared JS files and other assets are served as built, so they are checked.
+ * Original twinned JS files are the exception: they keep their unfilled
+ * placeholders (the next build reads them, which keeps twin generation
+ * idempotent), and no served document references them (SPA documents and
+ * the TanStack Start asset transform point at twins), so they may be left
+ * out of a deploy. Source maps are skipped: they are not executed.
  */
 function assertNoUnfilledPlaceholders(
   input: WriteLocaleTwinsInput,

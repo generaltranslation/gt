@@ -6,9 +6,10 @@
  * - `outputOptions`: adds the default vendor chunk to the client environment
  *   of a build (never over the user's own chunking).
  * - `writeBundle` (post): in the client environment of a build, generates the
- *   twins and writes them, the manifest and the build report into the outDir,
- *   and rewrites HTML documents (SPA `index.html`) to load their locale's
- *   entry twin.
+ *   twins and writes them and the manifest into the outDir, rewrites HTML
+ *   documents (SPA `index.html`) to load their locale's entry twin, and
+ *   writes the build report under `<root>/node_modules/.cache/gt/` (out of
+ *   the public outDir).
  * - `resolveId`/`load`: `virtual:gt-locale-twins-manifest` in any environment.
  * - `configureServer`: the dev-mode notice.
  *
@@ -17,16 +18,12 @@
  */
 import path from 'node:path';
 import type { VitePlugin } from 'unplugin';
-import {
-  isLocaleTwinsSplitting,
-  libraryDefaultLocale,
-} from 'generaltranslation/internal';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 import type {
   GTConfig,
   LogLevel,
   ResolvedLocaleTwinsOptions,
 } from '../../config';
-import type { TranslationSplittingStrategy } from 'generaltranslation/types';
 import { COMPILER_DIAGNOSTIC_SOURCE } from '../../utils/diagnostics';
 import {
   createVendorChunkSkippedDiagnostic,
@@ -34,6 +31,10 @@ import {
   LOCALE_TWINS_WITHOUT_COMPILE_TIME_HASH,
 } from '../buildDiagnostics';
 import type { LocaleTwinInputFile } from '../generateLocaleTwins';
+import {
+  toUnattributedReportEntry,
+  type UnattributedEntryLocation,
+} from '../../utils/locale-twins/unattributedEntries';
 import {
   writeLocaleTwinReport,
   writeLocaleTwinSpaDocuments,
@@ -52,7 +53,8 @@ import {
 } from './vendorChunk';
 
 export type LocaleTwinsViteHooksOptions = {
-  splitting: TranslationSplittingStrategy;
+  /** Locale twins are on (and the bundler is Vite). */
+  enabled: boolean;
   localeTwins: ResolvedLocaleTwinsOptions;
   gtConfig: GTConfig | undefined;
   compileTimeHash: boolean;
@@ -66,6 +68,8 @@ export type LocaleTwinsViteHooksOptions = {
    * the generic `buildEnd` hook.
    */
   onBuildEnd?: (context: unknown) => void;
+  /** The client build's unattributed entries, for the build report. */
+  getUnattributed?: () => UnattributedEntryLocation[];
 };
 
 type Consumer = 'client' | 'server';
@@ -97,7 +101,7 @@ type OutputItem =
 export function createLocaleTwinsViteHooks(
   options: LocaleTwinsViteHooksOptions
 ): Partial<VitePlugin> {
-  const enabled = isLocaleTwinsSplitting(options.splitting);
+  const { enabled } = options;
   const quiet = options.logLevel === 'silent' || options.logLevel === 'error';
   let resolvedConfig: ConfigLike | undefined;
   const pendingWarnings: string[] = [];
@@ -232,6 +236,9 @@ export function createLocaleTwinsViteHooks(
             : undefined,
           missingTranslations: options.localeTwins.missingTranslations,
           vendorChunk: options.localeTwins.vendorChunk,
+          unattributed: (options.getUnattributed?.() ?? []).map((entry) =>
+            toUnattributedReportEntry(entry, config.root)
+          ),
           warn,
         });
         // Post-build steps that need the manifest run here and may add to
@@ -248,7 +255,7 @@ export function createLocaleTwinsViteHooks(
           localeCookieName: options.localeTwins.localeCookieName,
         });
         if (spa) report.spa = spa;
-        const reportPath = writeLocaleTwinReport(outDir, report);
+        const reportPath = writeLocaleTwinReport(config.root, report);
         info(
           `[${COMPILER_DIAGNOSTIC_SOURCE}] Locale twins: ${report.twinned.length} twinned and ${report.shared.length} shared JS files, ${manifest.locales.length} locales, JS output x${report.outputMultiplier.toFixed(2)}. Report: ${path.relative(config.root, reportPath)}`
         );

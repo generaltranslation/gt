@@ -21,17 +21,8 @@ import { handleErrors, InvalidLibraryUsageError } from './passes/handleErrors';
 import { initializeState } from './state/utils/initializeState';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
-import { localeTwinsPass } from './passes/localeTwinsPass';
 import { shouldTransformModuleId } from './utils/moduleId';
-import { createLocaleTwinsViteHooks } from './locale-twins/vite/localeTwinsViteHooks';
-import {
-  getBundlerEnvironment,
-  isClientProductionBuild,
-} from './utils/bundlerEnvironment';
-import {
-  createUnattributedEntriesWarning,
-  formatUnattributedEntry,
-} from './utils/locale-twins/unattributedEntries';
+import { createLocaleTwinsPlugin } from './locale-twins/createLocaleTwinsPlugin';
 
 /**
  * Architecture:
@@ -199,7 +190,7 @@ function resolveGTConfig(options: GTUnpluginOptions): GTConfigLoadResult {
  * that works across webpack, Vite, Rollup, and other bundlers.
  */
 const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
-  (options = {}) => {
+  (options = {}, meta) => {
     const gtConfigLoadResult = resolveGTConfig(options);
     const loadedGTConfig =
       gtConfigLoadResult.status === 'loaded'
@@ -245,32 +236,24 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         `[gt-compiler] Debug hash manifest written to ${outPath} (${debugManifest.size} entries)`
       );
     };
-    // gt.config.json and files.gt.output are relative to the working directory
-    const configDir = process.cwd();
-
-    // Vite command, for bundler contexts without per-environment info
-    let viteCommand: string | undefined;
-
-    // Locale twins: module id → entries that keep their source text in client
-    // code (formatted), reported once per client build in buildEnd
-    const unattributedByModule = new Map<string, string[]>();
-
     /** End of a build (any bundler; Vite calls it from its buildEnd override). */
     const finishBuild = (context: unknown): void => {
-      // Locale twins: list entries that kept their source text in the
-      // client build (the server environment never records any)
-      if (
-        unattributedByModule.size > 0 &&
-        getBundlerEnvironment(context)?.config?.consumer !== 'server'
-      ) {
-        const details = [...unattributedByModule.values()].flat();
-        unattributedByModule.clear();
-        if (shouldWarn(options.logLevel)) {
-          console.warn(createUnattributedEntriesWarning(details));
-        }
-      }
+      localeTwins.buildEnd(context);
       writeDebugManifest();
     };
+
+    // The 'locale-twins' translation splitting strategy
+    const localeTwins = createLocaleTwinsPlugin({
+      splitting: resolvedOptions.splitting!,
+      localeTwins: resolvedOptions.localeTwins as ResolvedLocaleTwinsOptions,
+      gtConfig: resolvedOptions.gtConfig,
+      compileTimeHash: resolvedOptions.compileTimeHash !== false,
+      // gt.config.json and files.gt.output are relative to the working directory
+      configDir: process.cwd(),
+      logLevel: options.logLevel,
+      framework: meta.framework,
+      onBuildEnd: finishBuild,
+    });
 
     return {
       name: '@generaltranslation/GT_PLUGIN',
@@ -282,20 +265,18 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         id: string,
         transformOptions?: { ssr?: boolean }
       ) {
-        // Locale twins: client production builds ship source text only in
-        // the placeholder, so the attributed text is stripped from code
-        const stripSourceText =
-          resolvedOptions.splitting === 'locale-twins' &&
-          isClientProductionBuild({
-            environment: getBundlerEnvironment(this),
-            ssr: transformOptions?.ssr,
-            command: viteCommand,
-          });
-
-        if (stripSourceText) unattributedByModule.delete(id);
+        // Locale twins: production Vite builds run the locale twins pass;
+        // client production builds also strip the attributed source text
+        const twins = localeTwins.beginTransform(
+          this,
+          id,
+          transformOptions?.ssr
+        );
 
         // Initialize processing state
-        const state = initializeState(resolvedOptions, id, { stripSourceText });
+        const state = initializeState(resolvedOptions, id, {
+          stripSourceText: twins.stripSourceText,
+        });
         if (debugManifest) state.debugManifest = debugManifest;
         try {
           // Skip transformation if not needed
@@ -343,23 +324,9 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           }
 
           // Pass 4b: Locale twins registration (placeholder + msg $_hash, and
-          // client source stripping), gated on the 'locale-twins' splitting
-          // strategy and compileTimeHash
-          if (injectionRan && state.settings.splitting === 'locale-twins') {
-            traverse(ast, localeTwinsPass(state));
-            if (stripSourceText) {
-              const unattributed = state.localeTwins.getUnattributed(
-                state.statistics.localeTwinRegistrationsCount > 0
-              );
-              if (unattributed.length > 0) {
-                unattributedByModule.set(
-                  id,
-                  unattributed.map((entry) =>
-                    formatUnattributedEntry(id, entry)
-                  )
-                );
-              }
-            }
+          // client source stripping), gated on compileTimeHash
+          if (injectionRan && twins.active) {
+            localeTwins.runPass(state, ast, id);
           }
 
           // Pass 5: Runtime translate (dev hot reload). Skipped when source
@@ -409,18 +376,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       },
       // Vite-only hooks for locale twins. unplugin merges this object into
       // the Vite plugin, so its buildEnd replaces the generic one above.
-      vite: createLocaleTwinsViteHooks({
-        splitting: resolvedOptions.splitting!,
-        localeTwins: resolvedOptions.localeTwins as ResolvedLocaleTwinsOptions,
-        gtConfig: resolvedOptions.gtConfig,
-        compileTimeHash: resolvedOptions.compileTimeHash !== false,
-        configDir,
-        logLevel: options.logLevel,
-        onConfigResolved: (config) => {
-          viteCommand = config.command;
-        },
-        onBuildEnd: finishBuild,
-      }),
+      vite: localeTwins.vite,
     };
   }
 );
