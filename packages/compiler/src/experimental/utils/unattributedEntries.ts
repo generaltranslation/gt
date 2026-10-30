@@ -5,7 +5,7 @@ import type {
   LocaleTwinUnattributedEntry,
   LocaleTwinUnattributedReason,
 } from '../state/LocaleTwinCollector';
-import { createCompilerDiagnostic } from '../../utils/diagnostics';
+import { createCompilerDiagnostic } from './diagnostics';
 
 const API_LABELS: Record<LocaleTwinEntryApi, string> = {
   T: '<T>',

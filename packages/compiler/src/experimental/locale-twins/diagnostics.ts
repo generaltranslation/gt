@@ -1,7 +1,7 @@
 import {
   createCompilerDiagnostic,
   formatDiagnosticErrorDetails,
-} from '../../utils/diagnostics';
+} from '../utils/diagnostics';
 
 /** Missing translation hashes per locale (only locales with missing entries). */
 export type MissingLocaleTwinTranslations = Record<string, string[]>;

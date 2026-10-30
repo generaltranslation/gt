@@ -5,7 +5,7 @@
 import {
   createCompilerDiagnostic,
   formatDiagnosticErrorDetails,
-} from '../../utils/diagnostics';
+} from '../utils/diagnostics';
 
 function errorDetails(label: string, error: unknown): string[] {
   const details = formatDiagnosticErrorDetails(error);

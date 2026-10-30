@@ -6,11 +6,11 @@
  * plugin behaves like the regular one.
  */
 import { createUnplugin } from 'unplugin';
-import { createGTUnpluginFactory } from '../index';
-import { GT_IMPORT_SOURCES } from '../utils/constants/gt/constants';
+import { createGTUnpluginFactory } from './createGTUnpluginFactory';
 import { resolveLocaleTwinsSettings } from './config';
 import type { GTUnpluginOptions } from './config';
 import { createLocaleTwinsPlugin } from './locale-twins/createLocaleTwinsPlugin';
+import { EXPERIMENTAL_IMPORT_SOURCES } from './utils/importSources';
 
 export type {
   GTUnpluginOptions,
@@ -48,8 +48,7 @@ export const unplugin = createUnplugin<GTUnpluginOptions | undefined>(
         ...options,
         // Auto-inserted <T> must be the locale twin version
         autoJsxImportSource:
-          options.autoJsxImportSource ??
-          GT_IMPORT_SOURCES.GT_REACT_EXPERIMENTAL,
+          options.autoJsxImportSource ?? EXPERIMENTAL_IMPORT_SOURCES.GT_REACT,
       },
       meta
     )

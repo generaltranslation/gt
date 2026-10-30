@@ -23,7 +23,7 @@ import type { VitePlugin } from 'unplugin';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import type { GTConfig, LogLevel } from '../../../config';
 import type { ResolvedLocaleTwinsOptions } from '../../config';
-import { COMPILER_DIAGNOSTIC_SOURCE } from '../../../utils/diagnostics';
+import { COMPILER_DIAGNOSTIC_SOURCE } from '../../utils/diagnostics';
 import {
   createVendorChunkSkippedDiagnostic,
   LOCALE_TWINS_DEV_NOTICE,

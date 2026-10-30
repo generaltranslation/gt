@@ -4,7 +4,6 @@ import { PluginSettings } from '../config';
 import { Logger } from './Logger';
 import { ErrorTracker } from './ErrorTracker';
 import { ScopeTracker } from './ScopeTracker';
-import type { EntryObserver } from './EntryObserver';
 /**
  * Plugin state for processing files
  * Matches the Rust TransformVisitor structure
@@ -12,8 +11,6 @@ import type { EntryObserver } from './EntryObserver';
 export interface TransformState {
   settings: PluginSettings;
   stringCollector: StringCollector;
-  /** Observes the module's entries for a build extension, if any */
-  entryObserver?: EntryObserver;
   scopeTracker: ScopeTracker;
   logger: Logger;
   errorTracker: ErrorTracker;

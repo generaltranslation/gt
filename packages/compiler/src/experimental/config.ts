@@ -2,7 +2,10 @@
  * Options of the experimental compiler plugin
  * (`@generaltranslation/compiler/experimental`).
  */
-import type { TranslationSplittingStrategy } from 'generaltranslation/types';
+import type {
+  GTExperimentalSettings,
+  TranslationSplittingStrategy,
+} from 'generaltranslation/internal/experimental';
 import {
   resolveTranslationSplitting,
   resolveTranslationSplittingValue,
@@ -11,8 +14,9 @@ import {
   defaultEnableI18nCookieName,
   defaultLocaleCookieName,
 } from 'gt-i18n/internal/cookies';
+import type { GTConfig } from '../config';
 import type { GTUnpluginOptions as RegularGTUnpluginOptions } from '../index';
-import { COMPILER_DIAGNOSTIC_SOURCE } from '../utils/diagnostics';
+import { COMPILER_DIAGNOSTIC_SOURCE } from './utils/diagnostics';
 
 /** Build options for the `'locale-twins'` translation splitting strategy. */
 export type LocaleTwinsOptions = {
@@ -48,6 +52,8 @@ export const DEFAULT_LOCALE_TWINS_OPTIONS: ResolvedLocaleTwinsOptions = {
 
 /** Options of the experimental GT compiler plugin. */
 export interface GTUnpluginOptions extends RegularGTUnpluginOptions {
+  /** gt.config.json, with its `experimental` settings. */
+  gtConfig?: GTConfig & GTExperimentalSettings;
   /**
    * Translation splitting strategy. Overrides gt.config.json
    * `experimental.splitting` (default: `'locale'`).

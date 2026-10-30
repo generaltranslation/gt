@@ -30,7 +30,6 @@ import {
   minifyCanonicalName,
 } from '../../utils/constants/gt/helpers';
 import { validateStringLiteralPropertyFromArg } from './validation/validateStringLiteralPropertyFromArg';
-import { getObjectPropertyFromObjectExpression } from '../../utils/parsing/getObjectPropertyFromObjectExpression';
 import { GT_COMPONENT_TYPES } from '../../utils/constants/gt/constants';
 import { getBranchComponentParameters } from './utils/getBranchComponentParameters';
 import { validateNameFieldForVarComponent } from './validation/validateNameFieldForVarComponent';
@@ -165,7 +164,6 @@ function constructJsxChild(
     value = validation.value;
   } else if (t.isStringLiteral(child)) {
     value = child.value;
-    state.entryObserver?.recordTextSite(childPath);
   } else if (t.isTemplateLiteral(child)) {
     const validation = validateTemplateLiteral(child);
     errors.push(...validation.errors.map((msg) => dynamicContentError(msg)));
@@ -173,10 +171,8 @@ function constructJsxChild(
       return { errors };
     }
     value = validation.value;
-    state.entryObserver?.recordTextSite(childPath);
   } else if (t.isNumericLiteral(child)) {
     value = child.value.toString();
-    state.entryObserver?.recordTextSite(childPath);
   } else if (t.isBooleanLiteral(child)) {
     value = child.value as unknown as JsxChild;
   } else if (t.isNullLiteral(child)) {
@@ -188,7 +184,6 @@ function constructJsxChild(
       return { errors };
     }
     value = validation.value;
-    state.entryObserver?.recordTextSite(childPath);
   } else if (t.isIdentifier(child)) {
     // <T>{name}</T> or <T>{undefined}</T>
     const validation = validateIdentifier(child, state);
@@ -521,10 +516,6 @@ function constructGTProp(
       }
       if (validation.value === undefined) return;
       value[prop as keyof typeof HTML_CONTENT_PROPS] = validation.value;
-      const property = getObjectPropertyFromObjectExpression(parameters, name);
-      if (t.isObjectProperty(property)) {
-        state.entryObserver?.recordTextProperty(property);
-      }
     });
   }
 

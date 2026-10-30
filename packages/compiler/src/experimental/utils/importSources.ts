@@ -1,5 +1,11 @@
 import { GT_IMPORT_SOURCES } from '../../utils/constants/gt/constants';
 
+/** The `/experimental` GT entry points, which export the locale twin API. */
+export const EXPERIMENTAL_IMPORT_SOURCES = {
+  GT_REACT: 'gt-react/experimental',
+  GT_TANSTACK_START: 'gt-tanstack-start/experimental',
+} as const;
+
 /** The compiler-injected registration function of a locale twin. */
 export const LOCALE_TWIN_REGISTRATION_FUNCTION = 'GtInternalRegisterLocaleTwin';
 
@@ -14,8 +20,8 @@ export function getLocaleTwinRegistrationImportSource(
   importSource: string
 ): string | undefined {
   switch (importSource) {
-    case GT_IMPORT_SOURCES.GT_REACT_EXPERIMENTAL:
-    case GT_IMPORT_SOURCES.GT_TANSTACK_START_EXPERIMENTAL:
+    case EXPERIMENTAL_IMPORT_SOURCES.GT_REACT:
+    case EXPERIMENTAL_IMPORT_SOURCES.GT_TANSTACK_START:
       return importSource;
     case GT_IMPORT_SOURCES.GT_I18N:
       return 'gt-i18n/internal/experimental';

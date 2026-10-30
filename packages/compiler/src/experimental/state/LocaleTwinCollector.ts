@@ -1,19 +1,17 @@
 import type * as t from '@babel/types';
 import type { Content } from '@generaltranslation/format/types';
-import type { NodePath } from '@babel/traverse';
 import type {
   CollectedEntry,
   EntryApi,
-  EntryObserver,
   RuntimeHashedEntry,
   TextSite,
-} from '../../state/EntryObserver';
+} from './entries';
 
 export type {
   CollectedEntry as LocaleTwinEntry,
   EntryApi as LocaleTwinEntryApi,
   TextSite as LocaleTwinTextSite,
-} from '../../state/EntryObserver';
+} from './entries';
 
 /**
  * Why an entry keeps its source text in client code:
@@ -41,13 +39,13 @@ const ENTRY_HASH_PATTERN = /^[0-9a-f]{16}$/;
 
 /**
  * Collects the entries attributed to one module for the locale twins
- * registration call. Entries are recorded during the collection pass, in
- * source order, with their AST nodes so later passes can act on them.
+ * registration call. Entries are recorded during the collection pass
+ * (`experimental/passes/collectionPass.ts`), in source order, with their AST
+ * nodes so later passes can act on them.
  */
-export class LocaleTwinCollector implements EntryObserver {
+export class LocaleTwinCollector {
   private entries: CollectedEntry[] = [];
   private unattributed: LocaleTwinUnattributedEntry[] = [];
-  private textCapture: TextSite[] | undefined;
   private prefetchMessages: { hash: string; site: TextSite }[] = [];
 
   /**
@@ -108,33 +106,6 @@ export class LocaleTwinCollector implements EntryObserver {
     return sources;
   }
 
-  /**
-   * Records the text sites reported by {@link recordTextSite} while `fn`
-   * runs (the construction of one `<T>`'s children) and returns them.
-   */
-  captureTextSites<R>(fn: () => R): {
-    result: R;
-    textSites: TextSite[];
-  } {
-    const previous = this.textCapture;
-    const textSites: TextSite[] = [];
-    this.textCapture = textSites;
-    try {
-      return { result: fn(), textSites };
-    } finally {
-      this.textCapture = previous;
-    }
-  }
-
-  /** Reports a source-text expression found while building `<T>` children. */
-  recordTextSite(path: NodePath): void {
-    if (!this.textCapture || path.key == null) return;
-    this.textCapture.push({
-      container: path.container as object,
-      key: path.key,
-    });
-  }
-
   /** Records the `message` property of an injected useGT prefetch item. */
   recordPrefetchMessage(hash: string, property: t.ObjectProperty): void {
     this.prefetchMessages.push({
@@ -149,10 +120,5 @@ export class LocaleTwinCollector implements EntryObserver {
     return this.prefetchMessages
       .filter(({ hash }) => hash in sources)
       .map(({ site }) => site);
-  }
-
-  /** Reports a text-valued object property (an html content prop). */
-  recordTextProperty(property: t.ObjectProperty): void {
-    this.textCapture?.push({ container: property, key: 'value' });
   }
 }

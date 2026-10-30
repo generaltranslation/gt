@@ -119,19 +119,16 @@ function injectUseGTParameters(
   // Inject the parameters into the call expression
   expression.arguments = [
     t.arrayExpression(
-      translationContent.map((content) => {
-        const message = t.objectProperty(
-          t.identifier('message'),
-          t.stringLiteral(content.message)
-        );
-        // The entry observer may need to find the message again
-        state.entryObserver?.recordPrefetchMessage(content.hash, message);
-        return t.objectExpression([
+      translationContent.map((content) =>
+        t.objectExpression([
           t.objectProperty(
             t.identifier('$_hash'),
             t.stringLiteral(content.hash)
           ),
-          message,
+          t.objectProperty(
+            t.identifier('message'),
+            t.stringLiteral(content.message)
+          ),
           ...(content.id
             ? [
                 t.objectProperty(
@@ -164,8 +161,8 @@ function injectUseGTParameters(
                 ),
               ]
             : []),
-        ]);
-      })
+        ])
+      )
     ),
   ];
 }

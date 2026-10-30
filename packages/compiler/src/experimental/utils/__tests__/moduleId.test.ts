@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import gtUnplugin from '../index';
+import { unplugin as gtUnplugin } from '../../index';
 
 function getTransformInclude(): (id: string) => boolean {
   const plugin = gtUnplugin.raw({ logLevel: 'silent' }, { framework: 'vite' });
@@ -10,7 +10,9 @@ function getTransformInclude(): (id: string) => boolean {
   return (id) => Boolean(transformInclude(id));
 }
 
-describe('module id filter (transformInclude)', () => {
+// The experimental plugin compiles TanStack Router split route modules
+// (`?tsr-split=component`) and skips dependencies.
+describe('experimental plugin module id filter (transformInclude)', () => {
   const transformInclude = getTransformInclude();
 
   it.each([

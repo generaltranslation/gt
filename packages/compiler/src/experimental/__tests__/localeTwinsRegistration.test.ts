@@ -158,7 +158,8 @@ export const a = msg("Plain");`);
     ) => Promise<TransformResult>;
     const result = await hook.call(
       createTestContext(),
-      T_MODULE,
+      // The regular plugin knows only the regular entry points
+      T_MODULE.replace("'gt-react/experimental'", "'gt-react'"),
       '/src/page.tsx'
     );
     const code = typeof result === 'string' ? result : (result?.code ?? '');

@@ -1,7 +1,6 @@
 import { NodePath, VisitNode } from '@babel/traverse';
 import * as t from '@babel/types';
 import { TransformState } from '../../state/types';
-import type { TextSite } from '../../state/EntryObserver';
 import {
   isTranslationComponent,
   isTranslationFunctionCallback,
@@ -148,16 +147,11 @@ function handleUseGTCallback(
     useGTCallbackParams.hasDeriveContext
   ) {
     state.stringCollector.incrementCounter();
-    state.entryObserver?.addRuntimeHashed({
-      api: 'gt',
-      reason: 'derive',
-      node: callExprPath.node,
-    });
     return;
   }
 
   // Track the function call
-  const hash = registerUseGTCallback({
+  registerUseGTCallback({
     identifier,
     state,
     content: useGTCallbackParams.content,
@@ -167,12 +161,6 @@ function handleUseGTCallback(
     requiresReview: useGTCallbackParams.requiresReview,
     hash: useGTCallbackParams.hash,
     format: useGTCallbackParams.format,
-  });
-  state.entryObserver?.add({
-    api: 'gt',
-    hash,
-    source: useGTCallbackParams.content,
-    node: callExprPath.node,
   });
 }
 
@@ -254,24 +242,18 @@ function handleReactInvocation(
     return;
   }
 
-  // Validate the arguments, recording where the children's source text sits
-  // for the entry observer
+  // Validate the arguments
   const {
-    result: {
-      errors,
-      _hash,
-      id,
-      context,
-      children,
-      maxChars,
-      requiresReview,
-      hasDeriveContext,
-      hasDeriveChildren,
-    },
-    textSites,
-  } = captureTextSites(state, () =>
-    validateTranslationComponentArgs(callExprPath, canonicalName, state)
-  );
+    errors,
+    _hash,
+    id,
+    context,
+    children,
+    maxChars,
+    requiresReview,
+    hasDeriveContext,
+    hasDeriveChildren,
+  } = validateTranslationComponentArgs(callExprPath, canonicalName, state);
 
   if (errors.length > 0) {
     state.errorTracker.addErrors(errors);
@@ -308,21 +290,6 @@ function handleReactInvocation(
     context,
     requiresReview,
   });
-  if (!hash) {
-    state.entryObserver?.addRuntimeHashed({
-      api: 'T',
-      reason: 'derive',
-      node: callExpr,
-    });
-  } else if (children !== undefined) {
-    state.entryObserver?.add({
-      api: 'T',
-      hash,
-      source: children,
-      node: callExpr,
-      textSites,
-    });
-  }
 }
 
 /**
@@ -337,21 +304,16 @@ function handleStandaloneTranslation(
   // Reuse the same validation as useGT_callback (identical argument structure)
   const params = validateTranslationFunction(callExprPath, state);
   state.errorTracker.addErrors(params.errors);
-  if (params.errors.length > 0) {
+  if (params.errors.length > 0 || params.content === undefined) {
     return;
   }
 
-  // Skip derive content (autoderive content resolves to undefined)
-  if (params.content === undefined || params.hasDeriveContext) {
-    state.entryObserver?.addRuntimeHashed({
-      api: injectHash ? 't' : 'msg',
-      reason: 'derive',
-      node: callExprPath.node,
-    });
+  // Skip derive content
+  if (params.hasDeriveContext) {
     return;
   }
 
-  const hash = registerStandaloneTranslation({
+  registerStandaloneTranslation({
     state,
     content: params.content,
     hash: params.hash,
@@ -362,20 +324,4 @@ function handleStandaloneTranslation(
     format: params.format,
     injectHash,
   });
-  state.entryObserver?.add({
-    api: injectHash ? 't' : 'msg',
-    hash,
-    source: params.content,
-    node: callExprPath.node,
-  });
-}
-
-/** Runs `fn`, collecting the text sites the entry observer is told about. */
-function captureTextSites<R>(
-  state: TransformState,
-  fn: () => R
-): { result: R; textSites?: TextSite[] } {
-  return state.entryObserver
-    ? state.entryObserver.captureTextSites(fn)
-    : { result: fn() };
 }

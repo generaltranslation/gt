@@ -15,9 +15,9 @@
  */
 import traverse from '@babel/traverse';
 import { isLocaleTwinsSplitting } from 'generaltranslation/internal/experimental';
-import type { TranslationSplittingStrategy } from 'generaltranslation/types';
+import type { TranslationSplittingStrategy } from 'generaltranslation/internal/experimental';
 import type { GTConfig, LogLevel } from '../../config';
-import type { PluginExtension } from '../../index';
+import type { PluginExtension } from '../createGTUnpluginFactory';
 import type { ResolvedLocaleTwinsOptions } from '../config';
 import { localeTwinsPass } from '../passes/localeTwinsPass';
 import { LocaleTwinCollector } from '../state/LocaleTwinCollector';
@@ -104,7 +104,7 @@ export function createLocaleTwinsPlugin(
       };
       if (twin.stripSourceText) unattributedByModule.delete(id);
       return {
-        observer: twin.collector,
+        collector: twin.collector,
         afterInjection(_state, ast) {
           traverse(ast, localeTwinsPass(twin));
           if (twin.stripSourceText) {

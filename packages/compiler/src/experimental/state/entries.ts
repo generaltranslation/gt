@@ -1,5 +1,4 @@
 import type * as t from '@babel/types';
-import type { NodePath } from '@babel/traverse';
 import type { Content } from '@generaltranslation/format/types';
 
 /** Translation APIs whose entries the collection pass finds. */
@@ -47,26 +46,3 @@ export type RuntimeHashedEntry = {
   reason: RuntimeHashedReason;
   node: t.Node;
 };
-
-/**
- * Observes the translatable entries the collection and injection passes find,
- * with where their source text sits in the AST. Build extensions implement it
- * (`TransformExtension.observer`); a regular build has none.
- */
-export interface EntryObserver {
-  /** An entry with a compile-time hash. */
-  add(entry: CollectedEntry): void;
-  /** An entry whose hash is only known at runtime. */
-  addRuntimeHashed(entry: RuntimeHashedEntry): void;
-  /**
-   * Runs `fn` (the construction of one `<T>`'s children) and returns the
-   * text sites reported while it ran.
-   */
-  captureTextSites<R>(fn: () => R): { result: R; textSites: TextSite[] };
-  /** A source-text expression found while building `<T>` children. */
-  recordTextSite(path: NodePath): void;
-  /** A text-valued object property (an html content prop) of `<T>` children. */
-  recordTextProperty(property: t.ObjectProperty): void;
-  /** The `message` property of an injected useGT prefetch item. */
-  recordPrefetchMessage(hash: string, property: t.ObjectProperty): void;
-}

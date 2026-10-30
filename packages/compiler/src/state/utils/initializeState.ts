@@ -6,7 +6,6 @@ import {
   resolveDevHotReload,
 } from '../../config';
 import { StringCollector } from '../StringCollector';
-import type { EntryObserver } from '../EntryObserver';
 import { ScopeTracker } from '../ScopeTracker';
 import { Logger } from '../Logger';
 import { ErrorTracker } from '../ErrorTracker';
@@ -37,8 +36,7 @@ const DEFAULT_SETTINGS: PluginSettings = {
  */
 export function initializeState(
   options: GTUnpluginOptions,
-  filename: string,
-  entryObserver?: EntryObserver
+  filename: string
 ): TransformState {
   // Pull enableAutoJsxInjection from gtConfig if provided
   const gtConfig = options.gtConfig;
@@ -82,7 +80,6 @@ export function initializeState(
   return {
     settings,
     stringCollector: new StringCollector(),
-    entryObserver,
     scopeTracker: new ScopeTracker(),
     logger: new Logger(settings.logLevel),
     errorTracker: new ErrorTracker(),

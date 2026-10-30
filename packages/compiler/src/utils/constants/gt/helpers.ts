@@ -163,18 +163,15 @@ export function isGTImportSource(name: string): name is GT_IMPORT_SOURCES {
       GT_IMPORT_SOURCES.GT_REACT,
       GT_IMPORT_SOURCES.GT_REACT_CLIENT,
       GT_IMPORT_SOURCES.GT_REACT_BROWSER,
-      GT_IMPORT_SOURCES.GT_REACT_EXPERIMENTAL,
       GT_IMPORT_SOURCES.GT_I18N,
       GT_IMPORT_SOURCES.GT_TANSTACK_START,
-      GT_IMPORT_SOURCES.GT_TANSTACK_START_EXPERIMENTAL,
     ] as string[]
   ).includes(name);
 }
 
 /**
  * Check if a source exports gt-react's string translation `t`.
- * gt-tanstack-start re-exports gt-react's API, including `t`, and the
- * `/experimental` entry points re-export everything.
+ * gt-tanstack-start re-exports gt-react's API, including `t`.
  */
 export function isGTReactImportSource(
   name: string
@@ -182,17 +179,13 @@ export function isGTReactImportSource(
   | GT_IMPORT_SOURCES.GT_REACT
   | GT_IMPORT_SOURCES.GT_REACT_CLIENT
   | GT_IMPORT_SOURCES.GT_REACT_BROWSER
-  | GT_IMPORT_SOURCES.GT_REACT_EXPERIMENTAL
-  | GT_IMPORT_SOURCES.GT_TANSTACK_START
-  | GT_IMPORT_SOURCES.GT_TANSTACK_START_EXPERIMENTAL {
+  | GT_IMPORT_SOURCES.GT_TANSTACK_START {
   return (
     [
       GT_IMPORT_SOURCES.GT_REACT,
       GT_IMPORT_SOURCES.GT_REACT_CLIENT,
       GT_IMPORT_SOURCES.GT_REACT_BROWSER,
-      GT_IMPORT_SOURCES.GT_REACT_EXPERIMENTAL,
       GT_IMPORT_SOURCES.GT_TANSTACK_START,
-      GT_IMPORT_SOURCES.GT_TANSTACK_START_EXPERIMENTAL,
     ] as string[]
   ).includes(name);
 }
