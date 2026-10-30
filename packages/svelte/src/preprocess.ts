@@ -1,6 +1,6 @@
 import { transformSvelteSource } from '@generaltranslation/svelte-extractor';
 import type { SvelteExtractionError } from '@generaltranslation/svelte-extractor';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import type { PreprocessorGroup } from 'svelte/compiler';
 import { parse } from 'svelte/compiler';
 import {

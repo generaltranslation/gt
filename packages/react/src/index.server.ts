@@ -1,6 +1,6 @@
 'use client';
 
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import type { ReactNode } from 'react';
 import type { TxProps } from './utils/TxProps';
 

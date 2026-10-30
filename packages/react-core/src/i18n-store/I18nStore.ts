@@ -1,7 +1,7 @@
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
-} from 'generaltranslation/internal';
+} from 'generaltranslation/diagnostics';
 import { getTranslateListenerKey } from 'gt-i18n/internal';
 import type {
   DictionaryEntrySnapshot,

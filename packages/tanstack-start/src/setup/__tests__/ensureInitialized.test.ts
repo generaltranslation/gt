@@ -17,7 +17,7 @@ vi.mock('gt-react', () => ({
   initializeGT: mockInitializeReactGT,
 }));
 
-vi.mock('../../functions/parseLocale', () => ({
+vi.mock('../../functions/determineLocaleClient', () => ({
   determineLocaleClient: () => 'fr',
 }));
 

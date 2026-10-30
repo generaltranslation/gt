@@ -180,6 +180,4 @@ export const babelCompilerTurbopackUnavailableWarning =
   `gt-next (plugin): The GT babel compiler is not compatible with Turbopack. ` +
   `To use compiler optimizations with Turbopack, set experimentalCompilerOptions: { type: 'swc' }.`;
 
-export const disablingCompileTimeHashWarning = `gt-next (plugin): Compile-time hash is disabled. Compiler optimizations are inactive.`;
-
-export const swcPluginCompatibilityChangeWarning = `gt-next (plugin): As of gt-next@6.12.4, SWC plugin support is disabled for Next.js versions prior to ${SWC_PLUGIN_SUPPORT}. Update to the latest version of Next.js.`;
+export const swcPluginCompatibilityChangeWarning = `gt-next (plugin): The GT swc compiler requires next@${SWC_PLUGIN_SUPPORT} or newer. Update to the latest version of Next.js.`;

@@ -22,7 +22,6 @@ export default defineConfig({
             '__tests__/**/*.server.test.ts',
             '__tests__/**/*.unit.test.ts',
           ],
-          env: { _GT_LOG_LEVEL: 'off' },
         },
       },
       {
@@ -32,7 +31,6 @@ export default defineConfig({
           name: 'client',
           environment: 'jsdom',
           include: ['__tests__/**/*.client.test.svelte.ts'],
-          env: { _GT_LOG_LEVEL: 'off' },
         },
       },
     ],

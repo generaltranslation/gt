@@ -1,9 +1,7 @@
 import logger from '../logs/logger';
 import { I18nCacheConfig, I18nCacheConstructorParams } from './types';
-import {
-  createDiagnosticMessage,
-  defaultRuntimeApiUrl,
-} from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
+import { defaultRuntimeApiUrl } from 'generaltranslation/internal';
 import { Translation } from './translations-manager/utils/types/translation-data';
 import { LookupOptions } from '../translation-functions/types/options';
 import { SafeTranslationsLoader } from './translations-manager/translations-loaders/types';
@@ -149,8 +147,10 @@ class I18nCache<TranslationValue extends Translation = Translation> {
       },
     }) as SafeTranslationsLoader<TranslationValue>;
     const loadDictionary = params.loadDictionary ?? (() => Promise.resolve({}));
+    // Without a project ID or API key, each runtime translation request rejects.
+    const i18nConfig = getI18nConfig();
     this.createTranslateMany = createTranslateManyFactory(
-      getI18nConfig().getGTClass(),
+      () => i18nConfig.getTranslationRuntime(),
       this.config.runtimeTranslation?.timeout ?? DEFAULT_TRANSLATION_TIMEOUT,
       {
         ...(this.config.modelProvider && {
@@ -642,7 +642,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
   private _resolveCacheLocale(locale: string) {
     const resolvedLocale = this._resolveLocale(locale);
     const i18nConfig = getI18nConfig();
-    if (i18nConfig.requiresTranslation(resolvedLocale)) {
+    if (i18nConfig.requiresTranslation({ locale: resolvedLocale })) {
       return resolvedLocale;
     }
 
@@ -651,7 +651,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
     const aliasLocale = i18nConfig.resolveAliasLocale(
       i18nConfig.standardizeLocale(locale)
     );
-    if (i18nConfig.requiresTranslation(aliasLocale)) {
+    if (i18nConfig.requiresTranslation({ locale: aliasLocale })) {
       return aliasLocale;
     }
 
@@ -712,6 +712,7 @@ export { I18nCache };
  * Validate constructor params: log warnings for suspicious configs and throw
  * on hard misconfigurations.
  */
+
 function validateCacheParams(params: I18nCacheConstructorParams): void {
   // Runtime translation against a custom API URL still needs GT credentials
   if (params.runtimeUrl && params.runtimeUrl !== defaultRuntimeApiUrl) {

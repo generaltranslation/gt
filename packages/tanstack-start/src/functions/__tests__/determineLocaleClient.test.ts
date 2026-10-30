@@ -8,7 +8,7 @@ vi.mock('@tanstack/react-start/server', () => ({
 
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 import { getLocaleFromPath } from '../localeRouting';
-import { determineLocaleClient } from '../parseLocale';
+import { determineLocaleClient } from '../determineLocaleClient';
 import { resolveRequestConditions } from '../requestConditions';
 
 type GlobalWithRegistry = {

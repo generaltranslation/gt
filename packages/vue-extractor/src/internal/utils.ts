@@ -1,6 +1,6 @@
 import path from 'node:path';
 import type * as t from '@babel/types';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import type {
   VueExtractionMetadata,
   VueExtractionResult,

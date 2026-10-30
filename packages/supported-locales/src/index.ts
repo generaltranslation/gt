@@ -3,7 +3,7 @@ import {
   getLocaleProperties,
   isValidLocale,
   standardizeLocale,
-} from 'generaltranslation';
+} from '@generaltranslation/format';
 
 /**
  * @function getSupportedLocale
