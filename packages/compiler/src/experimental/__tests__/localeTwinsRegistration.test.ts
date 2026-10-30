@@ -128,7 +128,6 @@ export const el = jsx(T, { children: "Hello world" });`))!;
   it.each([
     ['gt-react/experimental', 'gt-react/experimental'],
     ['gt-tanstack-start/experimental', 'gt-tanstack-start/experimental'],
-    ['gt-i18n', 'gt-i18n/internal/experimental'],
   ])('imports from %s as %s', async (source, expected) => {
     const code = (await transform(`import { msg } from '${source}';
 export const a = msg("Plain");`))!;
@@ -138,7 +137,14 @@ export const a = msg("Plain");`))!;
   });
 
   // Only the /experimental entry points have the locale twin runtime
-  it.each(['gt-next', 'gt-react', 'gt-react/browser', 'gt-tanstack-start'])(
+  // (gt-i18n's msg() and t() read only whole-locale translations)
+  it.each([
+    'gt-next',
+    'gt-react',
+    'gt-react/browser',
+    'gt-tanstack-start',
+    'gt-i18n',
+  ])(
     'skips modules whose GT source (%s) has no registration export',
     async (source) => {
       const code = await transform(`import { msg } from '${source}';
@@ -350,6 +356,29 @@ export function Page() {
       [icuHash('Kept')]: 'Kept',
       [jsxHash('Static')]: 'Static',
     });
+  });
+
+  // In a module that also imports an /experimental entry point, the calls of
+  // a regular entry point stay unattributed: they cannot read the twins
+  it('leaves calls imported from a regular entry point unattributed', async () => {
+    const code = (await transform(`import { jsx } from 'react/jsx-runtime';
+import { T } from 'gt-react/experimental';
+import { msg, t as tr } from 'gt-i18n';
+import * as GT from 'gt-react';
+import { useGT } from 'gt-react';
+export const a = msg("Shared");
+export const b = tr("Helper");
+export const c = GT.msg("Namespaced");
+export function Page() {
+  const gt = useGT();
+  const d = gt("Regular");
+  return [jsx(GT.T, { children: "Regular T" }), jsx(T, { children: "Twin" })];
+}`))!;
+
+    const [placeholder] = findLocaleTwinPlaceholders(code);
+    expect(placeholder.entries).toEqual({ [jsxHash('Twin')]: 'Twin' });
+    expect(code).toContain('msg("Shared")');
+    expect(code).not.toMatch(/msg\("Shared", \{ "\$_hash"/);
   });
 
   it('injects $_hash into msg() calls, keeping a user-supplied one', async () => {

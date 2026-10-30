@@ -62,6 +62,11 @@ export class ImportSourceAliases {
     }
   }
 
+  /** Whether an import's source is an aliased `/experimental` entry point. */
+  isExperimental(source: t.StringLiteral): boolean {
+    return this.originals.has(source);
+  }
+
   /** Puts every aliased import source back. */
   restore(): void {
     for (const [source, original] of this.originals) source.value = original;

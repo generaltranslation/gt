@@ -14,6 +14,7 @@ import { getCalleeNameFromExpression } from '../../../utils/parsing/getCalleeNam
 import { createErrorLocation } from '../../../utils/errors';
 import { validateChildrenPropertyFromObjectExpression } from '../../../utils/validation/validateChildrenFromObjectExpression';
 import type { LocaleTwinCollector } from '../../state/LocaleTwinCollector';
+import type { ImportSourceAliases } from '../../utils/importSourceAliases';
 import { findTextSites } from '../../transform/findTextSites';
 
 /** What the regular collection had recorded before it visited a node. */
@@ -42,13 +43,16 @@ export function takeCollectionSnapshot(
  *   for `<T>`), unless the call spreads its arguments;
  * - a call it reserved no hash for (derive content or `$context`) is hashed
  *   at runtime;
- * - a call it rejected with errors records nothing.
+ * - a call it rejected with errors records nothing;
+ * - a call of a regular GT entry point (gt-i18n, `gt-react`, ...) is
+ *   unattributed: its translation functions cannot read the twins.
  */
 export function observeCallExpression(
   callExprPath: NodePath<t.CallExpression>,
   state: TransformState,
   collector: LocaleTwinCollector,
-  before: CollectionSnapshot
+  before: CollectionSnapshot,
+  importSources: ImportSourceAliases
 ): void {
   const callExpr = callExprPath.node;
   const { namespaceName, functionName } = getCalleeNameFromExpression(callExpr);
@@ -69,6 +73,14 @@ export function observeCallExpression(
   ) {
     // A gt() call takes a counter slot, with a hash unless it is derived
     if (counter === before.counter) return;
+    if (isRegularImport(callExprPath, callExpr.callee, importSources)) {
+      collector.addUnattributed({
+        api: 'gt',
+        reason: 'importSource',
+        node: callExpr,
+      });
+      return;
+    }
     if (hasSpreadArgument(callExpr)) {
       collector.addUnattributed({
         api: 'gt',
@@ -108,6 +120,20 @@ export function observeCallExpression(
     }
     const jsx = collected.getTranslationJsx(counter);
     if (!jsx) return;
+    if (
+      isRegularImport(
+        callExprPath,
+        callExpr.arguments[0] as t.Expression,
+        importSources
+      )
+    ) {
+      collector.addUnattributed({
+        api: 'T',
+        reason: 'importSource',
+        node: callExpr,
+      });
+      return;
+    }
     if (!jsx.hash) {
       collector.addRuntimeHashed({
         api: 'T',
@@ -132,19 +158,65 @@ export function observeCallExpression(
   ) {
     const api = canonicalName === GT_OTHER_FUNCTIONS.t ? 't' : 'msg';
     const runtimeOnly = collected.getRuntimeOnlyContent();
-    if (
-      runtimeOnly.length > before.runtimeOnly &&
-      hasSpreadArgument(callExpr)
-    ) {
-      collector.addUnattributed({ api, reason: 'spread', node: callExpr });
-    } else if (runtimeOnly.length > before.runtimeOnly) {
+    if (runtimeOnly.length > before.runtimeOnly) {
       const { hash, message } = runtimeOnly[runtimeOnly.length - 1];
-      collector.add({ api, hash, source: message, node: callExpr });
+      if (isRegularImport(callExprPath, callExpr.callee, importSources)) {
+        collector.addUnattributed({
+          api,
+          reason: 'importSource',
+          node: callExpr,
+        });
+      } else if (hasSpreadArgument(callExpr)) {
+        collector.addUnattributed({ api, reason: 'spread', node: callExpr });
+      } else {
+        collector.add({ api, hash, source: message, node: callExpr });
+      }
     } else if (state.errorTracker.getErrors().length === before.errors) {
       // Registered nothing without an error: derive content or $context
       collector.addRuntimeHashed({ api, reason: 'derive', node: callExpr });
     }
   }
+}
+
+/**
+ * Whether `expr` (a callee, `GT.msg`, or a `<T>` component) is bound to an
+ * import of a regular GT entry point: directly, or for a `gt` function
+ * through the `useGT()` / `await getGT()` call that created it. Unresolved
+ * bindings count as `/experimental`.
+ */
+function isRegularImport(
+  path: NodePath,
+  expr: t.Expression | t.V8IntrinsicIdentifier,
+  importSources: ImportSourceAliases
+): boolean {
+  const source = findImportSource(path, expr, true);
+  return source !== undefined && !importSources.isExperimental(source);
+}
+
+function findImportSource(
+  path: NodePath,
+  expr: t.Expression | t.V8IntrinsicIdentifier,
+  followCall: boolean
+): t.StringLiteral | undefined {
+  const object = t.isMemberExpression(expr) ? expr.object : expr;
+  if (!t.isIdentifier(object)) return undefined;
+  const binding = path.scope.getBinding(object.name);
+  if (!binding) return undefined;
+  const declaration = binding.path.parentPath?.node;
+  if (
+    (binding.path.isImportSpecifier() ||
+      binding.path.isImportDefaultSpecifier() ||
+      binding.path.isImportNamespaceSpecifier()) &&
+    t.isImportDeclaration(declaration)
+  ) {
+    return declaration.source;
+  }
+  if (!followCall || !binding.path.isVariableDeclarator()) return undefined;
+  let init = binding.path.node.init;
+  if (t.isAwaitExpression(init)) init = init.argument;
+  return t.isCallExpression(init)
+    ? findImportSource(binding.path, init.callee, false)
+    : undefined;
 }
 
 /**

@@ -308,7 +308,7 @@ export function createGTUnpluginFactory<
           }
 
           // Pass 3: Collection
-          traverse(ast, collectionPass(state, collector));
+          traverse(ast, collectionPass(state, collector, importSources));
 
           // Handle errors
           if (handleErrors(state)) {

@@ -13,6 +13,7 @@ import {
 } from '../processing/collection/observeCallExpression';
 import { observeTaggedTemplateExpression } from '../processing/collection/observeTaggedTemplateExpression';
 import type { LocaleTwinCollector } from '../state/LocaleTwinCollector';
+import type { ImportSourceAliases } from '../utils/importSourceAliases';
 
 /**
  * Collection pass of the experimental plugin: the regular collection pass,
@@ -20,11 +21,13 @@ import type { LocaleTwinCollector } from '../state/LocaleTwinCollector';
  * differently ({@link checkUnaryChildren}). With a collector (a module the
  * locale twins pass runs on), the entry the regular pass registered for each
  * call and tagged template it visits goes to the module's
- * {@link LocaleTwinCollector}.
+ * {@link LocaleTwinCollector}; calls of a regular GT entry point (not an
+ * aliased `/experimental` one) stay unattributed.
  */
 export function collectionPass(
   state: TransformState,
-  collector: LocaleTwinCollector | undefined
+  collector: LocaleTwinCollector | undefined,
+  importSources: ImportSourceAliases
 ): TraverseOptions {
   const regular = regularCollectionPass(state);
   const processCallExpression = regular.CallExpression as VisitNodeFunction<
@@ -42,7 +45,9 @@ export function collectionPass(
       checkUnaryChildren(path, state);
       const before = takeCollectionSnapshot(state);
       processCallExpression.call(this, path, pluginState);
-      if (collector) observeCallExpression(path, state, collector, before);
+      if (collector) {
+        observeCallExpression(path, state, collector, before, importSources);
+      }
     },
     TaggedTemplateExpression(
       path: NodePath<t.TaggedTemplateExpression>,
