@@ -175,6 +175,12 @@ export function createConfigModule(
     lines.push(
       `const files = import.meta.glob(${JSON.stringify(glob)}, { import: 'default' });`,
       'export async function loadTranslations(locale) {',
+      // Locale twins carry the browser's translations in the build, so only
+      // the server loads whole locales. The constant condition lets the
+      // production client build drop every locale file.
+      ...(config.files?.gt?.splitting === 'locale-twins'
+        ? ['  if (import.meta.env.PROD && !import.meta.env.SSR) return {};']
+        : []),
       `  const load = files[${segments.map((segment) => JSON.stringify(segment)).join(' + locale + ')}];`,
       '  return load ? load() : {};',
       '}'

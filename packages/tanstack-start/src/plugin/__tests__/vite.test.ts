@@ -452,6 +452,36 @@ describe.sequential('gtTanstackStart config module', () => {
     expect(generated).toContain('import.meta.glob');
   });
 
+  it('loads locale files only on the server and in dev with locale twins', async () => {
+    const twins = createProject({
+      'gt.config.json': JSON.stringify({
+        defaultLocale: 'en',
+        locales: ['en', 'fr'],
+        files: {
+          gt: { output: 'src/_gt/[locale].json', splitting: 'locale-twins' },
+        },
+      }),
+    });
+    const whole = createProject({
+      'gt.config.json': gtConfig('src/_gt/[locale].json'),
+    });
+
+    const { code: twinsCode } = await loadConfigModuleCode(
+      twins.configPlugin,
+      twins.root
+    );
+    const { code: wholeCode } = await loadConfigModuleCode(
+      whole.configPlugin,
+      whole.root
+    );
+
+    const guard =
+      'if (import.meta.env.PROD && !import.meta.env.SSR) return {};';
+    expect(twinsCode).toContain(guard);
+    expect(twinsCode).toContain('import.meta.glob');
+    expect(wholeCode).not.toContain(guard);
+  });
+
   it('resolves the translation output from each working directory', async () => {
     const { configPlugin, root } = createProject({
       'gt.config.json': gtConfig('src/_gt/[locale].json'),
