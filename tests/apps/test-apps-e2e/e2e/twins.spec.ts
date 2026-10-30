@@ -80,6 +80,49 @@ function missingRenderedText(
   return missing;
 }
 
+let loaderHashes: Promise<Set<string>> | undefined;
+
+/**
+ * The entries the loader route's `msg()` values render (empty without one):
+ * those the source locale shows in its loader messages. They are in the twin
+ * of the route module, which every page loads, but only that route renders
+ * them, so checks that a page renders every entry of its twins skip them.
+ */
+function loaderMessageHashes(
+  browser: Browser,
+  baseURL: string
+): Promise<Set<string>> {
+  loaderHashes ??= (async () => {
+    if (!twins!.loaderRoute) return new Set<string>();
+    const { defaultLocale } = build.manifest;
+    const sourceText = await serverRenderedLoaderMessages(
+      browser,
+      baseURL,
+      twins!.loaderRoute,
+      { browserLocale: 'de-DE', cookieLocale: defaultLocale }
+    );
+    const hashes = Object.keys(build.translations[defaultLocale]).filter(
+      (hash) =>
+        missingRenderedText(sourceText, defaultLocale, [hash]).length === 0
+    );
+    expect(hashes.length, 'loader message entries').toBe(
+      sourceText.split('\n').filter(Boolean).length
+    );
+    return new Set(hashes);
+  })();
+  return loaderHashes;
+}
+
+/** `hashes` without the loader route's entries. */
+async function withoutLoaderMessages(
+  browser: Browser,
+  baseURL: string,
+  hashes: Iterable<string>
+): Promise<string[]> {
+  const loader = await loaderMessageHashes(browser, baseURL);
+  return [...hashes].filter((hash) => !loader.has(hash));
+}
+
 type PageVisit = {
   locale: string;
   firstPage: CapturedResponse[];
@@ -115,12 +158,17 @@ async function visitPages(
   const firstMark = await capture.mark();
   const firstPage = capture.responses.slice(0, firstMark.responses);
   const firstHashes = tableHashes(firstPage, locale).hashes;
+  const firstRendered = await withoutLoaderMessages(
+    browser,
+    baseURL,
+    firstHashes
+  );
   await expect
     .poll(async () =>
       missingRenderedText(
         await page.locator('body').innerText(),
         locale,
-        firstHashes
+        firstRendered
       )
     )
     .toEqual([]);
@@ -500,8 +548,12 @@ test('§9.5 the server renders each locale and the page hydrates from its twins 
 
     // The server HTML is already localized: it shows every entry of the
     // page's twins, in this locale, and the browser renders the same text.
-    const pageHashes = tableHashes(capture.responses, locale).hashes;
-    expect(pageHashes.size, locale).toBeGreaterThan(0);
+    const pageHashes = await withoutLoaderMessages(
+      browser,
+      baseURL!,
+      tableHashes(capture.responses, locale).hashes
+    );
+    expect(pageHashes.length, locale).toBeGreaterThan(0);
     expect(
       missingRenderedText(server.text, locale, pageHashes),
       `${locale}: server-rendered text`
@@ -590,7 +642,11 @@ test('§9.5 a route the server does not render renders from its twins in the bro
     await expect(localeMarker(page, locale)).toBeVisible();
     await page.waitForLoadState('networkidle');
     await capture.settle();
-    const hashes = tableHashes(capture.responses, locale).hashes;
+    const hashes = await withoutLoaderMessages(
+      browser,
+      baseURL!,
+      tableHashes(capture.responses, locale).hashes
+    );
     await expect
       .poll(async () =>
         missingRenderedText(
@@ -646,19 +702,7 @@ test('§9.5 msg() values a route loader returns render translated on the server,
   const route = twins!.loaderRoute;
   test.skip(!route, 'the app has no route loader messages');
   const { defaultLocale } = build.manifest;
-
-  // The entries the loader returns: those the source locale renders there
-  const sourceText = await serverRenderedLoaderMessages(
-    browser,
-    baseURL!,
-    route!,
-    { browserLocale: 'de-DE', cookieLocale: defaultLocale }
-  );
-  const hashes = Object.keys(build.translations[defaultLocale]).filter(
-    (hash) =>
-      missingRenderedText(sourceText, defaultLocale, [hash]).length === 0
-  );
-  expect(hashes.length).toBe(sourceText.split('\n').filter(Boolean).length);
+  const hashes = [...(await loaderMessageHashes(browser, baseURL!))];
 
   for (const locale of build.manifest.locales) {
     if (locale === defaultLocale) continue;
