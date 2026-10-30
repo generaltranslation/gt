@@ -2,6 +2,8 @@
  * Vite hooks for the `'locale-twins'` translation splitting strategy. They go
  * in the unplugin `vite:` override, which unplugin merges into the plugin.
  *
+ * - `buildStart`: in the client environment of a build, watches the
+ *   translation files the twins are filled from (`vite build --watch`).
  * - `buildEnd`: records the module graph for the vendor chunk.
  * - `outputOptions`: adds the default vendor chunk to the client environment
  *   of a build (never over the user's own chunking).
@@ -151,11 +153,29 @@ export function createLocaleTwinsViteHooks(
     };
   }
 
-  /** Whether this hook runs in the client environment of a vendor-chunked build. */
-  function addsVendorChunk(context: HookContext | undefined): boolean {
-    if (!enabled || !options.localeTwins.vendorChunk) return false;
+  const gtConfig = options.gtConfig ?? {};
+  const defaultLocale = gtConfig.defaultLocale ?? libraryDefaultLocale;
+  const locales = gtConfig.locales ?? [defaultLocale];
+  const outputPattern = gtConfig.files?.gt?.output;
+  /** Absolute path of a locale's `[locale].json` (`files.gt.output`). */
+  const translationFile = outputPattern
+    ? (locale: string) =>
+        path.resolve(
+          options.configDir,
+          outputPattern.replace(/\[locale\]/g, locale)
+        )
+    : undefined;
+
+  /** Whether this hook runs in the client environment of a build with locale twins. */
+  function generatesTwins(context: HookContext | undefined): boolean {
+    if (!enabled) return false;
     const { consumer, config } = describeEnvironment(context);
     return consumer === 'client' && config.command === 'build';
+  }
+
+  /** Whether this hook runs in the client environment of a vendor-chunked build. */
+  function addsVendorChunk(context: HookContext | undefined): boolean {
+    return options.localeTwins.vendorChunk && generatesTwins(context);
   }
 
   const hooks: Partial<VitePlugin> = {
@@ -165,6 +185,17 @@ export function createLocaleTwinsViteHooks(
       for (const message of pendingWarnings.splice(0)) warn(message);
       if (enabled && config.command === 'build' && usesChunkImportMap(config)) {
         throw new Error(LOCALE_TWINS_WITH_CHUNK_IMPORT_MAP);
+      }
+    },
+
+    // The twins are filled from the translation files, which SPA client code
+    // no longer imports: watch them so `vite build --watch` regenerates the
+    // twins after a translation edit (files created later included)
+    buildStart(this: HookContext & { addWatchFile(id: string): void }) {
+      if (!translationFile || !generatesTwins(this)) return;
+      for (const locale of locales) {
+        if (locale !== defaultLocale)
+          this.addWatchFile(translationFile(locale));
       }
     },
 
@@ -224,30 +255,20 @@ export function createLocaleTwinsViteHooks(
         outputOptions: { dir?: string },
         bundle: Record<string, OutputItem>
       ) {
-        if (!enabled) return;
-        const { consumer, config } = describeEnvironment(this);
-        if (consumer !== 'client' || config.command !== 'build') return;
+        if (!generatesTwins(this)) return;
+        const { config } = describeEnvironment(this);
         if (!options.compileTimeHash) {
           warn(LOCALE_TWINS_WITHOUT_COMPILE_TIME_HASH);
         }
         const outDir =
           outputOptions.dir ?? path.resolve(config.root, config.build.outDir);
         const output = readOutput(bundle);
-        const gtConfig = options.gtConfig ?? {};
-        const defaultLocale = gtConfig.defaultLocale ?? libraryDefaultLocale;
-        const outputPattern = gtConfig.files?.gt?.output;
         const { manifest, report } = writeLocaleTwins({
           outDir,
           ...output,
           defaultLocale,
-          locales: gtConfig.locales ?? [defaultLocale],
-          translationFile: outputPattern
-            ? (locale) =>
-                path.resolve(
-                  options.configDir,
-                  outputPattern.replace(/\[locale\]/g, locale)
-                )
-            : undefined,
+          locales,
+          translationFile,
           missingTranslations: options.localeTwins.missingTranslations,
           vendorChunk: options.localeTwins.vendorChunk,
           unattributed: (options.getUnattributed?.() ?? []).map((entry) =>
