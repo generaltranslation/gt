@@ -165,6 +165,23 @@ describe.sequential('setupRouterGTIntegration server with locale twins', () => {
     ]);
   });
 
+  // The request's own values are dropped from a 404 too, so they go on the
+  // match even when locale twins add nothing to them
+  it('puts the request headers it keeps on the deepest match', async () => {
+    initialize('locale-twins');
+    const router = createRouter({ routeHeaders: [{}] });
+    responseHeaders.current.set('vary', 'Cookie, Accept-Language');
+    responseHeaders.current.set('cache-control', 'no-store');
+    setupRouterGTIntegration({ router });
+
+    await router.options.dehydrate?.();
+
+    expect(router.state.matches[0].headers).toEqual({
+      vary: 'Cookie, Accept-Language',
+      'cache-control': 'no-store',
+    });
+  });
+
   it("keeps the app's own Cache-Control", async () => {
     initialize('locale-twins');
     const router = createRouter({

@@ -18,10 +18,11 @@ const DOCUMENT_HEADERS = ['vary', 'cache-control'];
  * so the routes' and the request's own `Vary` values are kept in the merged
  * value, and a `Cache-Control` either of them set is left as it is.
  *
- * The headers go on the request (Start's own merge for 2xx documents) and on
- * the deepest match: Start builds the document Response from the matches'
- * headers, and H3 adds the request's response headers to 2xx responses only,
- * so a localized 404 or 500 document gets them from the match.
+ * The headers go on the request (Start's own merge for 2xx documents) and,
+ * with the request's own values they keep, on the deepest match: Start
+ * builds the document Response from the matches' headers, and H3 adds the
+ * request's response headers to 2xx responses only, so a localized 404 or
+ * 500 document gets them from the match.
  */
 export function setLocaleTwinDocumentHeaders(
   matches: readonly RouteMatchHeaders[]
@@ -38,23 +39,22 @@ export function setLocaleTwinDocumentHeaders(
   }
   const before = new Headers(headers);
   applyLocaleTwinDocumentHeaders(headers);
-  const changed: Record<string, string> = {};
+  const documentHeaders: Record<string, string> = {};
   for (const name of DOCUMENT_HEADERS) {
     const value = headers.get(name);
-    if (value !== null && value !== before.get(name)) {
-      setResponseHeader(name, value);
-      changed[name] = value;
-    }
+    if (value === null) continue;
+    documentHeaders[name] = value;
+    if (value !== before.get(name)) setResponseHeader(name, value);
   }
   const deepest = matches.at(-1);
-  if (deepest && Object.keys(changed).length > 0) {
+  if (deepest && Object.keys(documentHeaders).length > 0) {
     deepest.headers = {
       ...Object.fromEntries(
         Object.entries(deepest.headers ?? {}).filter(
-          ([name]) => !(name.toLowerCase() in changed)
+          ([name]) => !(name.toLowerCase() in documentHeaders)
         )
       ),
-      ...changed,
+      ...documentHeaders,
     };
   }
 }
