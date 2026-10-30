@@ -1,5 +1,8 @@
 import { describe, expect, test } from 'vitest';
-import { selectBulkSourceDocuments } from '../bulkSources';
+import {
+  recheckBulkSourceDocuments,
+  selectBulkSourceDocuments,
+} from '../bulkSources';
 import {
   createGroqClient,
   metadataDoc,
@@ -173,5 +176,79 @@ describe('Translate All query', () => {
       ids: [],
       skippedOriginalCount: 1,
     });
+  });
+});
+
+describe('rechecking a Translate All selection before upload', () => {
+  const recheck = (
+    dataset: Record<string, unknown>[],
+    documents: { _id: string }[]
+  ) => {
+    const { client, fetch } = createGroqClient(
+      dataset as (Record<string, unknown> & { _id: string })[]
+    );
+    return {
+      fetch,
+      result: recheckBulkSourceDocuments({
+        client,
+        documents,
+        scopeFilter: SCOPE_FILTER,
+        languageField: 'language',
+        sourceLocale: 'en',
+      }),
+    };
+  };
+
+  test('drops a document that became a translation in a marked group', async () => {
+    // Loaded as a standalone en original; since then it was added to a group
+    // whose original is fr.
+    const dataset = [
+      page('a', 'en'),
+      page('drafts.b-en', 'en'),
+      page('b-fr', 'fr'),
+      metadataDoc(
+        'm-b',
+        [
+          ['fr', 'b-fr'],
+          ['en', 'b-en'],
+        ],
+        { gtSourceLanguage: 'fr' }
+      ),
+    ];
+
+    const { result } = recheck(dataset, [
+      page('a', 'en'),
+      page('drafts.b-en', 'en'),
+    ]);
+    expect(await result).toEqual({
+      documents: [page('a', 'en')],
+      droppedCount: 1,
+    });
+  });
+
+  test('keeps an original whose draft is the one loaded', async () => {
+    const dataset = [
+      page('drafts.c', 'en'),
+      metadataDoc('m-other', [['fr', 'x-fr']], { gtSourceLanguage: 'fr' }),
+    ];
+
+    const { result } = recheck(dataset, [page('drafts.c', 'en')]);
+    expect(await result).toEqual({
+      documents: [page('drafts.c', 'en')],
+      droppedCount: 0,
+    });
+  });
+
+  test('keeps the loaded selection without marked groups', async () => {
+    // Its language changed since loading, but nothing is marked, so the
+    // selection behaves as it always did.
+    const dataset = [page('a', 'fr')];
+
+    const { result, fetch } = recheck(dataset, [page('a', 'en')]);
+    expect(await result).toEqual({
+      documents: [page('a', 'en')],
+      droppedCount: 0,
+    });
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 });

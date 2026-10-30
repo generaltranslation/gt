@@ -7,6 +7,7 @@ import {
   resolveDocumentRoleState,
   UNVERIFIED_ROLE_MESSAGE,
 } from '../documentRoleState';
+import { HAS_MARKED_GROUPS_QUERY } from '../../translation/bulkSources';
 import { createGroqClient, metadataDoc } from './groqClient';
 
 const failingClient = {
@@ -14,6 +15,32 @@ const failingClient = {
     throw new Error('network down');
   }),
 } as unknown as SanityClient;
+
+/**
+ * A client whose translation group lookups fail while every other query —
+ * including whether the dataset has marked groups — runs against `dataset`.
+ */
+function clientFailingGroupLookup(
+  dataset: Parameters<typeof createGroqClient>[0]
+) {
+  const { client } = createGroqClient(dataset);
+  const fetch = client.fetch.bind(client);
+  return {
+    fetch: vi.fn(async (query: string, params?: Record<string, unknown>) => {
+      if (query === HAS_MARKED_GROUPS_QUERY) return fetch(query, params);
+      throw new Error('network down');
+    }),
+  } as unknown as SanityClient;
+}
+
+const markedGroup = metadataDoc(
+  'm-other',
+  [
+    ['fr', 'other-fr'],
+    ['en', 'other-en'],
+  ],
+  { gtSourceLanguage: 'fr' }
+);
 
 beforeEach(() => {
   vi.spyOn(pluginConfig, 'getSourceLocale').mockReturnValue('en');
@@ -59,8 +86,13 @@ describe('resolveDocumentRoleState', () => {
     });
   });
 
-  test('a failed lookup leaves a source-locale document translatable', async () => {
-    const { client } = createGroqClient([]);
+  test('a failed lookup leaves a source-locale document translatable without marked groups', async () => {
+    const { client } = createGroqClient([
+      metadataDoc('m', [
+        ['en', 'other'],
+        ['fr', 'other-fr'],
+      ]),
+    ]);
 
     expect(
       await resolveDocumentRoleState({
@@ -73,6 +105,30 @@ describe('resolveDocumentRoleState', () => {
       status: 'resolved',
       role: { kind: 'original', language: 'en' },
     });
+  });
+
+  test('a failed lookup leaves a source-locale document unverified once marked groups exist', async () => {
+    const { client } = createGroqClient([markedGroup]);
+
+    expect(
+      await resolveDocumentRoleState({
+        documentId: 'page',
+        language: 'en',
+        snapshot: { error: new Error('listener failed') },
+        client,
+      })
+    ).toEqual({ status: 'unverified' });
+  });
+
+  test('a source-locale document is unverified when marked groups cannot be checked either', async () => {
+    expect(
+      await resolveDocumentRoleState({
+        documentId: 'page',
+        language: 'en',
+        snapshot: { error: new Error('listener failed') },
+        client: failingClient,
+      })
+    ).toEqual({ status: 'unverified' });
   });
 
   test('a failed lookup leaves another locale unverified, not a translation', async () => {
@@ -135,13 +191,31 @@ describe('checkTranslatableOriginal', () => {
     });
   });
 
-  test('keeps translating a source-locale document when the lookup fails', async () => {
+  test('keeps translating a source-locale document when the lookup fails without marked groups', async () => {
+    expect(
+      await checkTranslatableOriginal(
+        { _id: 'page', _type: 'page', language: 'en' },
+        clientFailingGroupLookup([])
+      )
+    ).toEqual({ translatable: true });
+  });
+
+  test('refuses a source-locale document when the lookup fails and marked groups exist', async () => {
+    expect(
+      await checkTranslatableOriginal(
+        { _id: 'page', _type: 'page', language: 'en' },
+        clientFailingGroupLookup([markedGroup])
+      )
+    ).toEqual({ translatable: false, message: UNVERIFIED_ROLE_MESSAGE });
+  });
+
+  test('refuses a source-locale document when marked groups cannot be checked either', async () => {
     expect(
       await checkTranslatableOriginal(
         { _id: 'page', _type: 'page', language: 'en' },
         failingClient
       )
-    ).toEqual({ translatable: true });
+    ).toEqual({ translatable: false, message: UNVERIFIED_ROLE_MESSAGE });
   });
 
   test('refuses a document in another locale when the lookup fails', async () => {

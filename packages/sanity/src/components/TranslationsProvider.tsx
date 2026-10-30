@@ -56,7 +56,10 @@ import {
   checkTranslatableOriginal,
   type DocumentRoleState,
 } from '../utils/documentRoleState';
-import { selectBulkSourceDocuments } from '../translation/bulkSources';
+import {
+  recheckBulkSourceDocuments,
+  selectBulkSourceDocuments,
+} from '../translation/bulkSources';
 import { createRefreshTracker } from '../utils/refreshTracker';
 import type {
   FileProperties,
@@ -248,6 +251,32 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+/** The scope and source locale Translate All selects its documents from. */
+function getTranslateAllSelection() {
+  const filterConditions = pluginConfig
+    .getTranslateDocuments()
+    .map((filter) => {
+      if (filter.type && filter.documentId) {
+        return `(_type == "${filter.type}" && _id == "${filter.documentId}")`;
+      } else if (filter.type) {
+        return `_type == "${filter.type}"`;
+      } else if (filter.documentId) {
+        return `_id == "${filter.documentId}"`;
+      }
+      return null;
+    })
+    .filter(Boolean);
+
+  return {
+    scopeFilter:
+      filterConditions.length === 0
+        ? `!(_type in ["system.group"]) && !(_id in path("_.**"))`
+        : `!(_type in ["system.group"]) && !(_id in path("_.**")) && (${filterConditions.join(' || ')})`,
+    languageField: pluginConfig.getLanguageField(),
+    sourceLocale: pluginConfig.getSourceLocale(),
+  };
+}
+
 export const useTranslations = () => {
   const context = useContext(TranslationsContext);
   if (!context) {
@@ -427,38 +456,13 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         return;
       }
 
-      const translateDocuments = pluginConfig.getTranslateDocuments();
-
-      const filterConditions = translateDocuments
-        .map((filter) => {
-          if (filter.type && filter.documentId) {
-            return `(_type == "${filter.type}" && _id == "${filter.documentId}")`;
-          } else if (filter.type) {
-            return `_type == "${filter.type}"`;
-          } else if (filter.documentId) {
-            return `_id == "${filter.documentId}"`;
-          }
-          return null;
-        })
-        .filter(Boolean);
-
-      const languageField = pluginConfig.getLanguageField();
-      const sourceLocale = pluginConfig.getSourceLocale();
-
-      const scopeFilter =
-        filterConditions.length === 0
-          ? `!(_type in ["system.group"]) && !(_id in path("_.**"))`
-          : `!(_type in ["system.group"]) && !(_id in path("_.**")) && (${filterConditions.join(' || ')})`;
-
       // Originals outside the source locale, and translations in their
       // groups, are left out: each such original is translated from the
       // Translate dialog on that document.
       const { documents: docs, skippedOriginalCount } =
         await selectBulkSourceDocuments({
           client,
-          scopeFilter,
-          languageField,
-          sourceLocale,
+          ...getTranslateAllSelection(),
         });
       setDocuments(dedupeDocumentsPreferDraft(docs));
       setSkippedOriginalCount(skippedOriginalCount);
@@ -588,13 +592,59 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   // Studio-side translations are only collected for groups whose original is
   // in the configured source locale.
   const getDefaultSourceDocuments = useCallback(
-    () =>
+    (sourceDocuments: SanityDocument[] = documents) =>
       hasNonDefaultSource
-        ? documents.filter(
+        ? sourceDocuments.filter(
             (doc) => !isNonDefaultSourceLanguage(getDocumentLanguage(doc))
           )
-        : documents,
+        : sourceDocuments,
     [documents, hasNonDefaultSource]
+  );
+
+  // Only a group's original is ever uploaded as a source. What is on screen
+  // may be out of date, so every upload checks its documents again first:
+  // the open document's role is looked up afresh, and a Translate All
+  // selection is run again for the documents it loaded, dropping any that are
+  // no longer originals. Returns null when nothing should be uploaded.
+  const getUploadableSources = useCallback(
+    async (
+      candidates: SanityDocument[],
+      abortTitle: string
+    ): Promise<SanityDocument[] | null> => {
+      if (singleDocument) {
+        for (const document of candidates) {
+          const check = await checkTranslatableOriginal(document, client);
+          if (!check.translatable) {
+            toast.push({
+              title: abortTitle,
+              description: check.message,
+              status: 'error',
+              closable: true,
+            });
+            return null;
+          }
+        }
+        return candidates;
+      }
+
+      const { documents: eligible, droppedCount } =
+        await recheckBulkSourceDocuments({
+          client,
+          documents: candidates,
+          ...getTranslateAllSelection(),
+        });
+      if (droppedCount > 0) {
+        toast.push({
+          title: `Skipped ${droppedCount} document(s) that are no longer the original of their translation group`,
+          description:
+            'They changed after this page loaded. Reload the page to see the current documents.',
+          status: 'warning',
+          closable: true,
+        });
+      }
+      return eligible.length > 0 ? eligible : null;
+    },
+    [client, singleDocument, toast]
   );
 
   const handleTranslateAll = useCallback(
@@ -604,23 +654,11 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       setIsBusy(true);
 
       try {
-        // Only a group's original is ever uploaded as a source. What is on
-        // screen may be out of date, so the open document's role is looked up
-        // again before anything is sent.
-        if (singleDocument) {
-          for (const document of documents) {
-            const check = await checkTranslatableOriginal(document, client);
-            if (!check.translatable) {
-              toast.push({
-                title: 'Translation was not started',
-                description: check.message,
-                status: 'error',
-                closable: true,
-              });
-              return;
-            }
-          }
-        }
+        const sourceDocuments = await getUploadableSources(
+          documents,
+          'Translation was not started'
+        );
+        if (!sourceDocuments) return;
 
         const availableLocaleIds = locales
           .filter((locale) => locale.enabled !== false)
@@ -634,7 +672,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         if (preserveExistingTranslations && !force) {
           try {
             const captured = await captureExistingTranslations({
-              documents: getDefaultSourceDocuments(),
+              documents: getDefaultSourceDocuments(sourceDocuments),
               localeIds: availableLocaleIds,
               secrets,
               context: translationContext,
@@ -661,11 +699,11 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
           }
         }
 
-        const transformedDocuments = serializeSourceDocuments();
+        const transformedDocuments = serializeSourceDocuments(sourceDocuments);
 
         // A document is never translated into its own language.
         const targetLocaleIdsByDocument = new Map(
-          documents.map((doc) => [
+          sourceDocuments.map((doc) => [
             getDocumentPublishedId(doc),
             getSelectedLocaleIds(getTargetLocales(doc)),
           ])
@@ -746,8 +784,8 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
 
         toast.push({
           title: force
-            ? `Retranslating ${documents.length} documents from scratch`
-            : `Translation tasks created for ${documents.length} documents`,
+            ? `Retranslating ${sourceDocuments.length} documents from scratch`
+            : `Translation tasks created for ${sourceDocuments.length} documents`,
           status: 'success',
           closable: true,
         });
@@ -785,8 +823,8 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       hasNonDefaultSource,
       getTargetLocales,
       getDefaultSourceDocuments,
+      getUploadableSources,
       skippedOriginalCount,
-      singleDocument,
     ]
   );
 
@@ -799,8 +837,8 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         .filter((locale) => locale.enabled !== false)
         .map((locale) => locale.localeId);
 
-      const sourceDocuments = getDefaultSourceDocuments();
-      if (sourceDocuments.length === 0) {
+      const defaultSourceDocuments = getDefaultSourceDocuments();
+      if (defaultSourceDocuments.length === 0) {
         toast.push({
           title: `Local edits can only be saved for translations of ${pluginConfig.getSourceLocale()} documents`,
           status: 'warning',
@@ -808,6 +846,11 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         });
         return;
       }
+      const sourceDocuments = await getUploadableSources(
+        defaultSourceDocuments,
+        'Local edits were not saved'
+      );
+      if (!sourceDocuments) return;
       const transformedDocuments = serializeSourceDocuments(sourceDocuments);
 
       // Seed the source files first. uploadTranslations requires the source to
@@ -858,6 +901,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     schema,
     serializeSourceDocuments,
     getDefaultSourceDocuments,
+    getUploadableSources,
   ]);
 
   const handleImportAll = useCallback(async () => {

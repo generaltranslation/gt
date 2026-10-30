@@ -3,6 +3,7 @@ import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/diagnostics';
+import { hasMarkedTranslationGroups } from '../translation/bulkSources';
 import { getPublishedId } from './documentIds';
 import {
   describeUntranslatableRole,
@@ -20,8 +21,9 @@ import {
  *   locale wait for the lookup.
  * - `resolved` — the role. A source-locale document is assumed to be an
  *   original, as it always was, until its lookup says otherwise.
- * - `unverified` — the lookup failed for a document outside the source
- *   locale, so it is not known to be an original.
+ * - `unverified` — the lookup failed, so the document is not known to be an
+ *   original. A source-locale document is only unverified when the dataset
+ *   has marked translation groups (or that could not be checked either).
  */
 export type DocumentRoleState =
   | { status: 'resolving' }
@@ -61,13 +63,25 @@ export function getInitialDocumentRoleState(
 }
 
 /**
- * The state after a failed lookup. A source-locale document keeps the
- * behavior it always had and stays translatable.
+ * Whether a document whose translation group could not be looked up may still
+ * be treated as an original. Only a source-locale document in a dataset
+ * without marked translation groups may: there, as before marked groups
+ * existed, every source-locale document is translated as an original. With
+ * marked groups, a source-locale document may be a translation of another
+ * original, so it is not assumed to be one — nor when that check fails too.
  */
-function getFailedLookupState(language: string): DocumentRoleState {
-  return isNonDefaultSourceLanguage(language)
-    ? { status: 'unverified' }
-    : { status: 'resolved', role: { kind: 'original', language } };
+async function isOriginalWithoutLookup(
+  documentId: string,
+  language: string,
+  client: SanityClient
+): Promise<boolean> {
+  if (isNonDefaultSourceLanguage(language)) return false;
+  try {
+    return !(await hasMarkedTranslationGroups(client));
+  } catch (error) {
+    console.error(createRoleLookupDiagnostic(documentId, error));
+    return false;
+  }
 }
 
 /** Resolve the open document's role from a lookup of its translation group. */
@@ -95,7 +109,9 @@ export async function resolveDocumentRoleState({
     };
   } catch (error) {
     console.error(createRoleLookupDiagnostic(documentId, error));
-    return getFailedLookupState(language);
+    return (await isOriginalWithoutLookup(documentId, language, client))
+      ? { status: 'resolved', role: { kind: 'original', language } }
+      : { status: 'unverified' };
   }
 }
 
@@ -111,7 +127,8 @@ export function getGroupRevision(snapshot: TranslationGroupSnapshot): string {
  * Whether a document may be uploaded as a source right now, looked up fresh
  * rather than read from what is rendered. Only a group's original is ever
  * uploaded. If the lookup fails, a source-locale document is translated as it
- * always was; any other document is not.
+ * always was only while the dataset has no marked translation groups; any
+ * other document is not.
  */
 export async function checkTranslatableOriginal(
   document: SanityDocumentLike,
@@ -123,9 +140,9 @@ export async function checkTranslatableOriginal(
     role = (await resolveDocumentRole(document, client)).role;
   } catch (error) {
     console.error(createRoleLookupDiagnostic(document._id, error));
-    return isNonDefaultSourceLanguage(language)
-      ? { translatable: false, message: UNVERIFIED_ROLE_MESSAGE }
-      : { translatable: true };
+    return (await isOriginalWithoutLookup(document._id, language, client))
+      ? { translatable: true }
+      : { translatable: false, message: UNVERIFIED_ROLE_MESSAGE };
   }
   if (role.kind === 'original') return { translatable: true };
   return {
