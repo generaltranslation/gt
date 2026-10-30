@@ -93,10 +93,25 @@ export const defaultGroups = [
         matches: isWithinVariableDeclaration('DEFAULT_CACHE_EXPIRY_TIME'),
         expectedMatches: 1,
       },
+    ],
+  },
+  {
+    // Runtimes leave cacheExpiryTime unset to use this TTL.
+    name: 'DEFAULT_CACHE_EXPIRY_TIME',
+    declarations: [
+      'packages/i18n/src/i18n-cache/translations-manager/utils/constants.ts',
+    ],
+    exceptions: [
       {
-        path: 'packages/next/src/config-dir/props/defaultWithGTConfigProps.ts',
-        reason: 'The matching duration is a Next.js cache TTL.',
-        matches: isWithinVariableDeclaration('defaultCacheExpiryTime'),
+        path: 'packages/api/src/wrappers/transport.ts',
+        reason: 'The matching duration is the API request timeout.',
+        matches: isWithinVariableDeclaration('DEFAULT_TIMEOUT_MS'),
+        expectedMatches: 1,
+      },
+      {
+        path: 'packages/api/src/wrappers/transport.ts',
+        reason: 'The matching duration is a rate-limit retry delay.',
+        matches: isWithinVariableDeclaration('RATE_LIMIT_RETRY_DELAY_MS'),
         expectedMatches: 1,
       },
     ],
@@ -118,6 +133,11 @@ export const defaultGroups = [
         expectedMatches: 1,
       },
     ],
+  },
+  {
+    name: 'defaultDashboardUrl',
+    declarations: ['packages/core/src/settings/settingsUrls.ts'],
+    exceptions: [],
   },
   {
     name: 'defaultRuntimeApiUrl',

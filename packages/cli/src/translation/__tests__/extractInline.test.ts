@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Libraries, type InlineLibrary } from '../../types/libraries.js';
 import type {
-  GTParsingFlags,
+  ResolvedGTParsingFlags,
   ParsingConfigOptions,
 } from '../../types/parsing.js';
 import type { PrimaryInlineExtractor } from '@generaltranslation/vue-extractor/integration';
@@ -28,7 +28,7 @@ const parsingFlags = {
   vueCompilerOptions: {
     whitespace: 'preserve' as const,
   },
-} as GTParsingFlags;
+} as ResolvedGTParsingFlags;
 const parsingOptions = {
   conditionNames: ['source', 'import'],
 } as ParsingConfigOptions;

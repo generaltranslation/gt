@@ -3,6 +3,7 @@ import type {
   JsxElement,
   Variable,
 } from '@generaltranslation/format/types';
+import type { GTParsingFlags } from 'generaltranslation/types';
 
 /** A direct Branch or Plural source value preserved by the GT wire format. */
 export type VueBranchSource = VueJsxChildren;
@@ -54,12 +55,9 @@ export type VueCompiler = {
 };
 
 /** Vue template compiler options that can change extracted source hashes. */
-export type VueCompilerOptions = {
-  /** Controls how Vue normalizes whitespace between template children. */
-  whitespace?: 'condense' | 'preserve';
-  /** Replaces Vue's default `{{` and `}}` interpolation delimiters. */
-  delimiters?: [string, string];
-};
+export type VueCompilerOptions = NonNullable<
+  GTParsingFlags['vueCompilerOptions']
+>;
 
 /** Source lines captured around an extracted translation. */
 export type VueSourceCode = {

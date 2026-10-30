@@ -1,6 +1,7 @@
 import type React from 'react';
 import type { ReactNode } from 'react';
 import { InternalRegionSelector } from '@generaltranslation/react-core/components';
+import type { InternalRegionSelectorOptions } from '@generaltranslation/react-core/hooks';
 import { useRegionSelector } from './useRegionSelector';
 
 /**
@@ -59,16 +60,8 @@ export function RegionSelector({
   );
 }
 
-export type RegionSelectorProps = {
-  regions?: string[];
+export type RegionSelectorProps = InternalRegionSelectorOptions & {
   placeholder?: ReactNode;
-  customMapping?: {
-    [region: string]:
-      | string
-      | { name?: string; emoji?: string; locale?: string };
-  };
-  prioritizeCurrentLocaleRegion?: boolean;
-  sortRegionsAlphabetically?: boolean;
   asLocaleSelector?: boolean;
   [key: string]: any;
 };

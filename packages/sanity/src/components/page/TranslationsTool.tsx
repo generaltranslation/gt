@@ -20,6 +20,7 @@ import { RefreshIcon } from '@sanity/icons/Refresh';
 import { TranslateIcon } from '@sanity/icons/Translate';
 import { UploadIcon } from '@sanity/icons/Upload';
 import { Link } from 'sanity/router';
+import { defaultDashboardUrl } from 'generaltranslation/internal';
 import { BaseTranslationWrapper } from '../shared/BaseTranslationWrapper';
 import { TranslationsProvider, useTranslations } from '../TranslationsProvider';
 import { TranslationsTable } from './TranslationsTable';
@@ -302,7 +303,7 @@ const TranslationsToolContent: React.FC = () => {
             <Flex align='center' justify='space-between' gap={3} wrap='wrap'>
               <Text size={1} muted>
                 For more information, see the{' '}
-                <Link href='https://dash.generaltranslation.com'>
+                <Link href={defaultDashboardUrl}>
                   General Translation Dashboard
                 </Link>
                 .

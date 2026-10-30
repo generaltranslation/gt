@@ -12,14 +12,16 @@ import {
   GTConfigSchema,
   describeConfigIssues,
   describeConfigParseError,
+  gtConfigFilePaths,
 } from 'generaltranslation/config-schema';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { PACKAGE_NAME } from '../../errors-dir/constants';
+import type { PluginOptions } from '../types';
 
-const DEFAULT_CONFIG_FILE_PATHS = [
-  path.join(process.cwd(), 'gt.config.json'),
-  path.join(process.cwd(), '.locadex', 'gt.config.json'),
-];
+// shortcut: keeps the plugin's existing search, which skips .gt/; drop the filter to match the CLI.
+const DEFAULT_CONFIG_FILE_PATHS = gtConfigFilePaths
+  .filter((configFilePath) => !configFilePath.startsWith('.gt/'))
+  .map((configFilePath) => path.join(process.cwd(), configFilePath));
 
 /**
  * Given a list of locales or a config object or a path to a config file, return a list of locales to polyfill.
@@ -29,14 +31,7 @@ export function resolveLocales({
   locales,
   config,
   configFilePath,
-}: {
-  locales?: string[];
-  config?: { defaultLocale: string; locales: string[] } & Record<
-    string,
-    unknown
-  >;
-  configFilePath?: string;
-}): string[] {
+}: Pick<PluginOptions, 'locales' | 'config' | 'configFilePath'>): string[] {
   let result: string[] = [];
 
   // Resolve locales from the given options

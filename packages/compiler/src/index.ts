@@ -9,6 +9,7 @@ import {
   GTConfigSchema,
   describeConfigIssues,
   describeConfigParseError,
+  gtConfigFilePaths,
 } from 'generaltranslation/config-schema';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 
@@ -101,7 +102,8 @@ type GTConfigLoadResult =
     };
 
 function loadGTConfigFromCwd(): GTConfigLoadResult {
-  const configPath = path.join(process.cwd(), 'gt.config.json');
+  // The compiler reads only the root config file.
+  const configPath = path.join(process.cwd(), gtConfigFilePaths[0]);
   if (!fs.existsSync(configPath)) {
     return { status: 'missing' };
   }

@@ -9,9 +9,9 @@ import { matchFiles } from '../../fs/matchFiles.js';
 import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
 import type {
   ParsingConfigOptions,
-  GTParsingFlags,
+  ResolvedGTParsingFlags,
 } from '../../types/parsing.js';
-import { resolveAutoderive } from '../../types/parsing.js';
+import { resolveAutoderive } from 'generaltranslation/config-schema';
 import { getPathsAndAliases } from '../jsx/utils/getPathsAndAliases.js';
 import {
   GTLibrary,
@@ -36,7 +36,7 @@ export async function createInlineUpdates(
   pkg: GTLibrary,
   validate: boolean,
   filePatterns: string[] | undefined,
-  parsingFlags: GTParsingFlags,
+  parsingFlags: ResolvedGTParsingFlags,
   parsingOptions: ParsingConfigOptions
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   const updates: Updates = [];

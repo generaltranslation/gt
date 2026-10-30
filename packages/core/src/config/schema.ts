@@ -84,12 +84,24 @@ export const GTParsingFlagsSchema = pipe(
     vueCompilerOptions: optional(
       pipe(
         strictObject({
-          whitespace: optional(picklist(['condense', 'preserve'])),
+          whitespace: optional(
+            pipe(
+              picklist(['condense', 'preserve']),
+              description(
+                'How Vue normalizes whitespace between template children'
+              )
+            )
+          ),
           delimiters: optional(
-            strictTuple([
-              pipe(string(), minLength(1)),
-              pipe(string(), minLength(1)),
-            ])
+            pipe(
+              strictTuple([
+                pipe(string(), minLength(1)),
+                pipe(string(), minLength(1)),
+              ]),
+              description(
+                "Replaces Vue's default {{ and }} interpolation delimiters"
+              )
+            )
           ),
         }),
         description('Hash-affecting Vue template compiler options')
@@ -371,6 +383,14 @@ export const GTConfigSchema = looseObject({
   ),
   files: optional(GTFilesConfigSchema),
 });
+
+/** Where gt.config.json is looked up from the project root, in order. */
+export const gtConfigFilePaths = [
+  'gt.config.json',
+  '.gt/gt.config.json',
+  // Legacy location
+  '.locadex/gt.config.json',
+] as const;
 
 // Issue values for these keys are secrets and never appear in messages.
 const secretConfigKeys = new Set(['apiKey', 'devApiKey']);

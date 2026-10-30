@@ -6,7 +6,7 @@ import type { FileFormat, Updates } from 'generaltranslation/types';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import {
   ParsingConfigOptions,
-  GTParsingFlags,
+  ResolvedGTParsingFlags,
   ParseFlagsByFileType,
 } from './parsing.js';
 import { Libraries, InlineLibrary } from './libraries.js';
@@ -51,11 +51,8 @@ export type Options = {
   experimentalFlattenJsonFiles?: boolean;
   experimentalLocalizeStaticImports?: boolean;
   experimentalLocalizeRelativeAssets?: boolean;
-  experimentalAddHeaderAnchorIds?: 'mintlify' | 'default';
-  docsImportRewrites?: Array<{
-    match: string;
-    replace: string;
-  }>;
+  experimentalAddHeaderAnchorIds?: AdditionalOptions['experimentalAddHeaderAnchorIds'];
+  docsImportRewrites?: AdditionalOptions['docsImportRewrites'];
 };
 
 export type MintlifyOptions = InferInput<typeof MintlifyOptionsSchema>;
@@ -91,14 +88,11 @@ export type TranslateFlags = SharedFlags & {
   experimentalFlattenJsonFiles?: boolean;
   experimentalLocalizeStaticImports?: boolean;
   experimentalLocalizeRelativeAssets?: boolean;
-  experimentalAddHeaderAnchorIds?: 'mintlify' | 'default';
+  experimentalAddHeaderAnchorIds?: AdditionalOptions['experimentalAddHeaderAnchorIds'];
   omitConfigIds?: boolean;
   excludeStaticUrls?: string[];
   excludeStaticImports?: string[];
-  docsImportRewrites?: Array<{
-    match: string;
-    replace: string;
-  }>;
+  docsImportRewrites?: AdditionalOptions['docsImportRewrites'];
 };
 
 export type WrapOptions = {
@@ -242,7 +236,7 @@ export type Settings = {
     parsingFlags: ParseFlagsByFileType;
     gtJson: {
       publish?: boolean; // if true, publish gtjson translations to the CDN
-      parsingFlags: GTParsingFlags; // Flags for parsing inline content
+      parsingFlags: ResolvedGTParsingFlags; // Flags for parsing inline content
     };
   };
   stageTranslations: boolean; // if true, always stage the project during translate command

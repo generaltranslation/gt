@@ -6,12 +6,10 @@ import {
   GTConfigSchema,
   describeConfigIssues,
   describeConfigParseError,
+  gtConfigFilePaths,
+  resolveAutoderive,
 } from 'generaltranslation/config-schema';
-import type { GTConfig } from 'generaltranslation/types';
-import {
-  defaultWithGTConfigProps,
-  defaultCacheExpiryTime,
-} from './config-dir/props/defaultWithGTConfigProps';
+import { defaultWithGTConfigProps } from './config-dir/props/defaultWithGTConfigProps';
 import {
   type BaseWithGTConfigProps,
   type withGTConfigProps,
@@ -65,14 +63,11 @@ type RuntimeCredentialProps = {
 };
 
 type InternalGTConfigProps = BaseWithGTConfigProps &
-  RuntimeCredentialProps &
-  Pick<GTConfig, 'customMapping' | 'files'> & {
+  RuntimeCredentialProps & {
     loadDictionaryEnabled?: boolean;
     loadTranslationsType?: 'remote' | 'custom' | 'disabled';
     _dictionaryFileType?: string;
     _cacheComponentsEnabled?: boolean;
-    _disableDevHotReload?: boolean;
-    // _tagIds is declared on BaseWithGTConfigProps (the public props).
   };
 
 type WithGTConfigValue<T> =
@@ -172,33 +167,6 @@ function haveSameLocales(
  *   defaultLocale: 'en'
  * })
  *
- * @param {string|undefined} config - Optional config filepath (defaults to './gt.config.json'). If a file is found, it will be parsed for GT config variables.
- * @param {string|undefined} dictionary - Optional dictionary configuration file path. If a string is provided, it will be used as a path.
- * @param {string|null} [runtimeUrl=defaultInitGTProps.runtimeUrl] - The base URL for the GT API. Set to an empty string to disable automatic translations. Set to null to disable.
- * @param {string|null} [cacheUrl=defaultInitGTProps.cacheUrl] - The URL for cached translations. Set to null to disable.
- * @param {string[]|undefined} - Whether to use local translations.
- * @param {string[]} [locales=defaultInitGTProps.locales] - List of supported locales for the application.
- * @param {string} [defaultLocale=defaultInitGTProps.defaultLocale] - The default locale to use if none is specified.
- * @param {string|undefined} [getLocalePath="getLocale"] - The path to the custom getLocale function.
- * @param {string|undefined} [getRegionPath="getRegion"] - The path to the custom getRegion function.
- * @param {object} [renderSettings=defaultInitGTProps.renderSettings] - Render settings for how translations should be handled.
- * @param {number} [cacheExpiryTime] - The time in milliseconds for how long translations should be cached.
- * @param {number} [maxConcurrentRequests=defaultInitGTProps.maxConcurrentRequests] - Maximum number of concurrent requests allowed.
- * @param {number} [maxBatchSize=defaultInitGTProps.maxBatchSize] - Maximum translation requests in the same batch.
- * @param {number} [batchInterval=defaultInitGTProps.batchInterval] - The interval in milliseconds between batched translation requests.
- * @param {boolean} [ignoreBrowserLocales=defaultWithGTConfigProps.ignoreBrowserLocales] - Whether to ignore browser's preferred locales.
- * @param {boolean} [disableInvalidLocaleWarning=defaultWithGTConfigProps.disableInvalidLocaleWarning] - Whether to disable invalid request locale warnings.
- * @param {string|undefined} [pathRegex] - Regular expression that request pathnames must match for i18n middleware to be applied. Write it for paths without the locale prefix: `<Link>`, `useLocalizeHref()` and `getLocalizeHref()` test the unprefixed path and leave non-matching paths unprefixed.
- * @param {object} headersAndCookies - Additional headers and cookies that can be passed for extended configuration.
- * @param {boolean} [localeRouting] - Default for createNextMiddleware's `localeRouting` option.
- * @param {boolean} [prefixDefaultLocale] - Default for createNextMiddleware's `prefixDefaultLocale` option.
- * @param {boolean} [enableSmartRouting] - Default for createNextMiddleware's `enableSmartRouting` option.
- * @param {boolean} [ignoreSourceMaps] - Default for createNextMiddleware's `ignoreSourceMaps` option.
- * @param {object} [pathConfig] - Default for createNextMiddleware's `pathConfig` option.
- * @param {object} [routeOverrides] - Default for createNextMiddleware's `routeOverrides` option.
- * @param {object} [localeRoutes] - Default for createNextMiddleware's `localeRoutes` option.
- * @param {object} metadata - Additional metadata that can be passed for extended configuration.
- *
  * @param {object} nextConfig - The Next.js configuration object to extend
  * @param {withGTConfigProps} props - General Translation configuration properties
  * @returns {NextConfig} - An updated Next.js config with GT settings applied
@@ -232,18 +200,11 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   // ---------- LOAD GT CONFIG FILE ---------- //
 
   let loadedConfig: Partial<InternalGTConfigProps> = {};
-  let configPath: string | undefined;
-  if (props.config) {
-    configPath = props.config;
-  } else if (fs.existsSync(defaultWithGTConfigProps.config)) {
-    configPath = defaultWithGTConfigProps.config;
-  } else if (fs.existsSync('./.gt/gt.config.json')) {
-    // Support config under .gt for parity with .locadex
-    configPath = './.gt/gt.config.json';
-  } else if (fs.existsSync('./.locadex/gt.config.json')) {
-    // Backward compatibility: support legacy .locadex directory
-    configPath = './.locadex/gt.config.json';
-  }
+  const configPath =
+    props.config ||
+    gtConfigFilePaths
+      .map((configFilePath) => `./${configFilePath}`)
+      .find((configFilePath) => fs.existsSync(configFilePath));
   if (configPath && fs.existsSync(configPath)) {
     let fileContent: unknown;
     try {
@@ -587,15 +548,6 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     mergedConfig.cacheExpiryTime = 0;
   }
 
-  // Set default cache expiry if and only if no dev key
-  if (
-    mergedConfig.loadTranslationsType == 'remote' &&
-    !mergedConfig.devApiKey &&
-    typeof mergedConfig.cacheExpiryTime === 'undefined'
-  ) {
-    mergedConfig.cacheExpiryTime = defaultCacheExpiryTime;
-  }
-
   // ---------- ERROR CHECKS ---------- //
 
   // Check: invalid locale
@@ -698,22 +650,15 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   const { type: _type, ...compilerOptions } =
     mergedConfig.experimentalCompilerOptions || {};
 
-  // Read autoderive from parsingFlags (single source of truth shared with CLI)
-  const rawAutoderive =
-    loadedConfig.files?.gt?.parsingFlags?.autoderive ?? false;
-  const autoderiveJsx =
-    typeof rawAutoderive === 'boolean'
-      ? rawAutoderive
-      : (rawAutoderive.jsx ?? false);
-  const autoderiveStrings =
-    typeof rawAutoderive === 'boolean'
-      ? rawAutoderive
-      : (rawAutoderive.strings ?? false);
+  // The SWC plugin reads autoderive only from gt.config.json parsingFlags.
+  const autoderive = resolveAutoderive(
+    loadedConfig.files?.gt?.parsingFlags?.autoderive
+  );
 
   const swcPluginOptions: Record<string, unknown> = {
     ...compilerOptions,
-    autoderiveJsx,
-    autoderiveStrings,
+    autoderiveJsx: autoderive.jsx,
+    autoderiveStrings: autoderive.strings,
   };
 
   const swcPluginEntry: [string, Record<string, unknown>] | null =

@@ -5,6 +5,7 @@
 import type {
   GTCompilerOptions,
   GTConfig as SharedGTConfig,
+  GTParsingFlags,
 } from 'generaltranslation/types';
 
 export type LogLevel = NonNullable<GTCompilerOptions['logLevel']>;
@@ -13,9 +14,13 @@ export type LogLevel = NonNullable<GTCompilerOptions['logLevel']>;
 export type GTConfig = Partial<SharedGTConfig>;
 
 /**
- * Plugin configuration options (from babel config)
+ * Plugin configuration options (from babel config). The parsing flags override
+ * the same flags in gt.config.json.
  */
-export interface PluginConfig extends GTCompilerOptions {
+export interface PluginConfig
+  extends
+    GTCompilerOptions,
+    Pick<GTParsingFlags, 'autoderive' | 'devHotReload'> {
   /** GT Configuration object — pass the parsed gt.config.json to sync settings */
   gtConfig?: GTConfig;
   /** Enable macro transform (t`...`, t(`...`), t("a" + b)) */
@@ -24,12 +29,8 @@ export interface PluginConfig extends GTCompilerOptions {
   stringTranslationMacro?: string;
   /** Package source for components inserted by Auto JSX Injection */
   autoJsxImportSource?: string;
-  /** Automatically treat interpolated/concatenated values as derive() calls */
-  autoderive?: boolean | { jsx?: boolean; strings?: boolean };
   /** Debug: write a hash → jsxChildren manifest file on build */
   _debugHashManifest?: boolean;
-  /** Dev hot reload: inject runtime translate calls and enable Suspense-based <T> */
-  devHotReload?: boolean | { strings?: boolean; jsx?: boolean };
 }
 
 /**
@@ -59,29 +60,15 @@ export interface PluginSettings {
 }
 
 /**
- * Resolves the autoderive config value into separate jsx and strings flags.
- * - `true` enables both (backward compatible)
- * - `false` disables both (backward compatible)
- * - `{ jsx?: boolean; strings?: boolean }` enables selectively (missing keys default to false)
- */
-export function resolveAutoderive(
-  value: boolean | { jsx?: boolean; strings?: boolean } | undefined
-): { jsx: boolean; strings: boolean } {
-  if (value === undefined || typeof value === 'boolean') {
-    return { jsx: !!value, strings: !!value };
-  }
-  return { jsx: value.jsx ?? false, strings: value.strings ?? false };
-}
-
-/**
  * Resolves the devHotReload config value into separate strings and jsx flags.
  * - `true` enables strings only (JSX is handled at runtime via Suspense, no compiler injection needed)
  * - `false` disables both
  * - `{ strings?: boolean; jsx?: boolean }` enables selectively (missing keys default to false)
  */
-export function resolveDevHotReload(
-  value: boolean | { strings?: boolean; jsx?: boolean } | undefined
-): { strings: boolean; jsx: boolean } {
+export function resolveDevHotReload(value: GTParsingFlags['devHotReload']): {
+  strings: boolean;
+  jsx: boolean;
+} {
   if (value === undefined || typeof value === 'boolean') {
     return { strings: !!value, jsx: false };
   }

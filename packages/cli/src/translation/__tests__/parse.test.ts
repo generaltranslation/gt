@@ -4,7 +4,7 @@ import { createInlineUpdates } from '../../react/parse/createInlineUpdates.js';
 import { createPythonInlineUpdates } from '../../python/parse/createPythonInlineUpdates.js';
 import { Libraries } from '../../types/libraries.js';
 import type {
-  GTParsingFlags,
+  ResolvedGTParsingFlags,
   ParsingConfigOptions,
 } from '../../types/parsing.js';
 import type { TranslateFlags } from '../../types/index.js';
@@ -102,7 +102,7 @@ describe('createUpdates', () => {
     const patterns = ['src/entry.tsx'];
     const parsingFlags = {
       includeSourceCodeContext: true,
-    } as GTParsingFlags;
+    } as ResolvedGTParsingFlags;
     const parsingOptions = {
       conditionNames: ['source', 'import'],
     } as ParsingConfigOptions;
