@@ -4,11 +4,13 @@ import {
   extractDynamicParams,
   replaceDynamicSegments,
   getLocalizedPath,
+} from '../utils';
+import {
   createPathMatcher,
   createPathToSharedPathMap,
-  getSharedPath as matchSharedPath,
   type PathConfig,
-} from '../utils';
+} from '../createPathMatcher';
+import { getSharedPath as matchSharedPath } from '../matchPath';
 
 function getSharedPath(...args: Parameters<typeof matchSharedPath>) {
   return matchSharedPath(...args)?.sharedPath;

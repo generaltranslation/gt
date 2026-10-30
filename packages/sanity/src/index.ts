@@ -24,7 +24,7 @@ import {
 import type { GTFieldLevelLocalizationConfig } from './schema/fieldLevelConfig';
 import './schema/schemaOptions';
 import TranslationsTool from './components/page/TranslationsTool';
-import { documentInternationalization } from './documentInternationalization';
+import { documentInternationalization } from '@sanity/document-internationalization';
 import type { CustomDeserializers } from './serialization/types';
 import { resolveTargetLocales } from './utils/locales';
 import { SECRETS_NAMESPACE } from './utils/shared';
@@ -35,14 +35,14 @@ export {
   DocumentInternationalizationMenu,
   useDeleteTranslationAction,
   useDuplicateWithTranslationsAction,
-} from './documentInternationalization';
+} from '@sanity/document-internationalization';
 export { documentInternationalization };
 export type {
-  DocumentInternationalizationConfig,
+  PluginConfig as DocumentInternationalizationConfig,
   Language,
   Metadata,
   TranslationReference,
-} from './documentInternationalization';
+} from '@sanity/document-internationalization';
 
 // ===== Studio Structure ===== //
 // Grouping translations by locale is opt-in: the structure tool's layout is

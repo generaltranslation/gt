@@ -3,7 +3,7 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
 import {
   defaultLocaleCookieName,
   defaultResetLocaleCookieName,
-} from '@generaltranslation/react-core/pure';
+} from 'gt-i18n/internal/cookies';
 import {
   createInvalidMiddlewareDefaultLocaleError,
   createUnsupportedLocalesWarning,

@@ -4,8 +4,6 @@ import docWithInlineMarksFixture from '../__fixtures__/documentInlineMarks.json'
 import inlineDocumentLevelArticleFixture from '../__fixtures__/inlineDocumentLevelArticle.json';
 import annotationAndInlineBlocksFixture from '../__fixtures__/annotationAndInlineBlocks.json';
 
-export { default as inlineSchema } from '../__fixtures__/inlineSchema';
-export { default as schema } from '../__fixtures__/schema';
 export const documentLevelArticle = documentLevelArticleFixture;
 export const docWithInlineMarks = docWithInlineMarksFixture;
 export const inlineDocumentLevelArticle = inlineDocumentLevelArticleFixture;

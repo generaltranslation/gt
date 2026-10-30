@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'node:path';
-import { DataFormat } from '../../types/data.js';
+import type { DataFormat } from '@generaltranslation/format/types';
 import { logger } from '../../console/logger.js';
 
 /**

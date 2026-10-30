@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ApiError, ErrorCode } from 'generaltranslation/api';
+import { ApiError, ErrorCode } from '@generaltranslation/api';
 import path from 'node:path';
 import type { GT } from 'generaltranslation';
 import type { Settings } from '../../../types/index.js';

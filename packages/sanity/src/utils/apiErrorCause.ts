@@ -1,4 +1,4 @@
-import { ApiError, ErrorCode } from 'generaltranslation/api';
+import { ApiError, ErrorCode } from '@generaltranslation/api';
 
 /** A short cause for an API failure that trying again will not fix; undefined for any other failure. */
 export function apiErrorCause(error: unknown): string | undefined {

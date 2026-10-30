@@ -1,13 +1,13 @@
 import {
   HTML_CONTENT_PROPS,
   type GTProp,
+  type HtmlContentPropKeysRecord,
   type JsxChild,
   type JsxChildren,
   type JsxElement,
   type Variable,
   type VariableType,
-} from 'generaltranslation/types';
-import type { HtmlContentPropKeysRecord } from 'generaltranslation/types';
+} from '@generaltranslation/format/types';
 import {
   getPluralForm,
   isAcceptedPluralForm,

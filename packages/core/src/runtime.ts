@@ -6,7 +6,8 @@
 import type { LocaleConfig } from '@generaltranslation/format';
 import { snapshotLocaleConfig } from '@generaltranslation/format/internal';
 import type { UserTokenProvider } from '@generaltranslation/api';
-import type { TranslateManyResult, TranslationResult } from './types';
+import type { TranslateManyResult } from './types-dir/api/translateMany';
+import type { TranslationResult } from './types-dir/api/translate';
 import type {
   TranslateManyEntry,
   TranslateOptions,

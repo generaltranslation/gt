@@ -11,7 +11,7 @@ import {
   getWarnings,
 } from '../../../state/translateWarnings.js';
 import { logger } from '../../../console/logger.js';
-import { ApiError, ErrorCode } from 'generaltranslation/api';
+import { ApiError, ErrorCode } from '@generaltranslation/api';
 
 const mockGt = {
   queryFiles: vi.fn(),

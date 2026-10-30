@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 import { createNextMiddleware } from '../createNextMiddleware';
-import type { PathConfig } from '../utils';
+import type { PathConfig } from '../createPathMatcher';
 
 const origin = 'http://localhost:3000';
 const query = '?tag=a&tag=b';

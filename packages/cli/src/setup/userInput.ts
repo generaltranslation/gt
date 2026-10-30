@@ -1,5 +1,5 @@
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-import type { CustomMapping } from 'generaltranslation/types';
+import type { CustomMapping } from '@generaltranslation/format/types';
 import { promptLocale, promptLocaleList } from '../console/logging.js';
 import { validateLocale } from '../console/promptParsing.js';
 import type { OnboardingSession } from './onboarding.js';

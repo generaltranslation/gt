@@ -7,7 +7,7 @@ import {
 } from '@generaltranslation/react-core/components-rsc';
 import { initializeI18nConfig as initializeReactI18nConfig } from '@generaltranslation/react-core/pure';
 import { hashSource } from 'generaltranslation/id';
-import type { JsxChildren } from 'generaltranslation/types';
+import type { JsxChildren } from '@generaltranslation/format/types';
 import * as React from 'react';
 import {
   compile,

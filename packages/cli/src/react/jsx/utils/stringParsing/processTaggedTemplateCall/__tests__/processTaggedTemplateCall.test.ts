@@ -7,7 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { processTaggedTemplateCall } from '../index.js';
 import { ParsingConfig, ParsingOutput } from '../../types.js';
-import { Updates } from '../../../../../../types/index.js';
+import { Updates } from 'generaltranslation/types';
 
 // Handle CommonJS/ESM interop
 const traverse = (traverseModule as unknown).default || traverseModule;

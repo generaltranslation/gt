@@ -1,7 +1,5 @@
-import {
-  defaultResetLocaleCookieName,
-  getI18nConfig,
-} from '@generaltranslation/react-core/pure';
+import { getI18nConfig } from '@generaltranslation/react-core/pure';
+import { defaultResetLocaleCookieName } from 'gt-i18n/internal/cookies';
 import type { WritableConditionStoreParams } from 'gt-i18n/internal';
 import { getCookieValue, setCookieValue } from './cookies';
 import { readBrowserLocale } from './readBrowserLocale';

@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { createNextMiddleware } from '../createNextMiddleware';
-import type { PathConfig } from '../utils';
+import type { PathConfig } from '../createPathMatcher';
 import type { CustomMapping } from '@generaltranslation/format/types';
 
 // ---- Cookie Constants (must match the real defaults) ----

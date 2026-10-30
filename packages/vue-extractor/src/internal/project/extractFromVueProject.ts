@@ -31,10 +31,8 @@ import {
   resolveProjectDirectory,
   type VueSourceScope,
 } from './scopes.js';
-import {
-  isVueSfcSource,
-  readVueProjectInspection,
-} from './inspectVueProject.js';
+import { readVueProjectInspection } from './inspectVueProject.js';
+import { isVueSfcSource } from './vueSourceClassification.js';
 import type {
   VueCompilerOptions,
   VueExtractionOutput,

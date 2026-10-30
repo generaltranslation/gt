@@ -1,5 +1,5 @@
 import { Argument, Command, InvalidArgumentError, Option } from 'commander';
-import { ProjectApiKeyPermission } from 'generaltranslation/api';
+import { ProjectApiKeyPermission } from '@generaltranslation/api';
 import {
   DEFAULT_TRANSLATIONS_DIR,
   REACT_QUICKSTART_URL,

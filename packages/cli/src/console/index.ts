@@ -8,8 +8,8 @@ import {
   colorizeFunctionName,
 } from './colors.js';
 import { formatCodeClamp } from './formatting.js';
-import { ApiError, ErrorCode } from 'generaltranslation/api';
-import { GT_DASHBOARD_URL } from '../utils/constants.js';
+import { ApiError, ErrorCode } from '@generaltranslation/api';
+import { defaultDashboardUrl } from 'generaltranslation/internal';
 
 const withWillErrorInNextVersion = (message: string): string =>
   `${message} (This will become an error in the next major version of the CLI.)`;
@@ -444,7 +444,7 @@ export const fileEncodingSkipReason = (error: unknown): string =>
   `File could not be decoded: ${error instanceof Error ? error.message : String(error)}`;
 
 const dashboardHint = (task: string) =>
-  `Open the dashboard ${GT_DASHBOARD_URL} to ${task}.`;
+  `Open the dashboard ${defaultDashboardUrl} to ${task}.`;
 
 /** A short fix for an API failure whose code has one; the server message stays the detail. */
 export function describeApiError(error: unknown): string | undefined {

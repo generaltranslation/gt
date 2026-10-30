@@ -10,7 +10,7 @@ import {
 import {
   defaultLocaleCookieName,
   defaultRegionCookieName,
-} from '@generaltranslation/react-core/pure';
+} from 'gt-i18n/internal/cookies';
 import { defaultLocaleHeaderName } from '../utils/headers';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { resolveLocaleOrDefault } from '../request/localeValidation';

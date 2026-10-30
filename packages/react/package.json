@@ -19,7 +19,8 @@
   "dependencies": {
     "generaltranslation": "workspace:*",
     "@generaltranslation/react-core": "workspace:*",
-    "gt-i18n": "workspace:*"
+    "gt-i18n": "workspace:*",
+    "@generaltranslation/format": "workspace:*"
   },
   "scripts": {
     "patch": "pnpm version patch",

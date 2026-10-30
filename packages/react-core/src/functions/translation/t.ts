@@ -10,7 +10,10 @@ import {
   getReadonlyConditionStore,
   isReadonlyConditionStoreInitialized,
 } from '../../condition-store/singleton-operations';
-import { StringContent, StringFormat } from 'generaltranslation/types';
+import type {
+  StringContent,
+  StringFormat,
+} from '@generaltranslation/format/types';
 import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 import { getShouldTranslate } from '../../hooks/utils/getShouldTranslate';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';

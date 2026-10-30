@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { Updates } from '../../types/index.js';
+import { Updates } from 'generaltranslation/types';
 import { extractFromPythonSource } from '@generaltranslation/python-extractor';
 import { mapExtractionResultsToUpdates } from '../../extraction/mapToUpdates.js';
 import {

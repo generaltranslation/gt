@@ -5,7 +5,8 @@ import {
   type TranslateContentData,
 } from '@generaltranslation/api';
 import type { Content } from '@generaltranslation/format/types';
-import type { TranslateManyResult, TranslationResult } from '../types';
+import type { TranslateManyResult } from '../types-dir/api/translateMany';
+import type { TranslationResult } from '../types-dir/api/translate';
 import type {
   EntryMetadata,
   TranslateManyEntry,
@@ -16,7 +17,7 @@ import { apiVersionHeaders, resolveServiceLocale } from '../apiClient';
 import { libraryDefaultLocale } from '../settings/settings';
 import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
 import { noTargetLocaleProvidedError } from '../logging/errors';
-import { hashSource } from '../id';
+import { hashSource } from '../id/hashSource';
 import { validateModelProvider } from './modelProvider';
 import { unwrapApiResult } from './utils/unwrapApiResult';
 

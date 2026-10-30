@@ -1,12 +1,10 @@
 import type { RuntimeTranslateManyOptions } from 'generaltranslation/internal';
 import type { CustomMapping } from '@generaltranslation/format/types';
-import type { GTConfig } from '../config/types';
+import type { GTConfig } from 'generaltranslation/types';
 import type { TranslationsLoader } from './translations-manager/translations-loaders/types';
 import type { TranslationBatchConfig } from './translations-manager/TranslationsCache';
-import type {
-  Dictionary,
-  DictionaryLoader,
-} from './translations-manager/DictionaryCache';
+import type { DictionaryLoader } from './translations-manager/DictionaryCache';
+import type { Dictionary } from './translations-manager/utils/types/dictionary';
 
 export type DictionaryConfig = {
   dictionary?: Dictionary;
@@ -124,5 +122,3 @@ export interface AsyncReadonlyConditionStoreInterface {
   getRegion(): Promise<string | undefined>;
   getEnableI18n(): Promise<boolean>;
 }
-
-export type { TranslationsLoader, Dictionary, DictionaryLoader };

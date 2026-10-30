@@ -96,13 +96,10 @@ export { Derive } from 'gt-react';
 // ===== gt-react Hooks ===== //
 export { useDefaultLocale, useLocaleProperties, useLocales } from 'gt-react';
 
-// ===== gt-react Functions ===== //
+// ===== Functions ===== //
 export {
   decodeMsg,
   decodeOptions,
-  decodeVars,
-  declareVar,
-  derive,
   getDefaultLocale,
   getLocaleProperties,
   getLocales,
@@ -111,9 +108,13 @@ export {
   gtFallback,
   mFallback,
   msg,
-} from 'gt-react';
+} from 'gt-i18n';
+export { decodeVars, declareVar, derive } from 'generaltranslation';
 export { isLocaleSupported } from './request/localeValidation';
 
 // ===== Types ===== //
-export type { GTTranslationOptions, RuntimeTranslationOptions } from 'gt-react';
+export type {
+  GTTranslationOptions,
+  RuntimeTranslationOptions,
+} from 'gt-i18n/types';
 export type { WithGTServerSideProps, WithGTStaticProps };

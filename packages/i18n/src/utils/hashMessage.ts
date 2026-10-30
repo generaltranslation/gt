@@ -1,7 +1,7 @@
 import { hashSource } from 'generaltranslation/id';
 import { indexVars } from 'generaltranslation/internal';
 import { LookupOptions } from '../translation-functions/types/options';
-import { Translation } from '../types';
+import type { Translation } from '../i18n-cache/translations-manager/utils/types/translation-data';
 import type { IcuMessage } from '@generaltranslation/format/types';
 
 /**

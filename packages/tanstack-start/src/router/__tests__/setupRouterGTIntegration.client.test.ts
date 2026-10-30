@@ -30,8 +30,6 @@ const {
 
 vi.mock('gt-react', () => ({
   createOrUpdateBrowserConditionStore: mockCreateOrUpdateBrowserConditionStore,
-  getTranslationsSnapshot: mockGetTranslationsSnapshot,
-  getReactI18nCache: () => ({ loadDictionary: mockLoadDictionary }),
 }));
 
 vi.mock('@generaltranslation/react-core/pure', async (importOriginal) => ({
@@ -39,6 +37,8 @@ vi.mock('@generaltranslation/react-core/pure', async (importOriginal) => ({
     typeof import('@generaltranslation/react-core/pure')
   >()),
   getReadonlyConditionStore: () => mockConditionStore,
+  getTranslationsSnapshot: mockGetTranslationsSnapshot,
+  getReactI18nCache: () => ({ loadDictionary: mockLoadDictionary }),
 }));
 
 vi.mock('../../provider/GTProvider.client', () => ({

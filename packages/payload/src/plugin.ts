@@ -1,5 +1,6 @@
 import { GT } from 'generaltranslation';
-import type { CustomMapping, GTConfig } from 'generaltranslation/types';
+import type { CustomMapping } from '@generaltranslation/format/types';
+import type { GTConfig } from 'generaltranslation/types';
 import type {
   Block,
   CollectionConfig,
@@ -14,7 +15,7 @@ import type {
 } from 'payload';
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
 import { APIError } from 'payload';
-import { ApiError } from 'generaltranslation/api';
+import { ApiError } from '@generaltranslation/api';
 import { siteCoverage } from './coverage';
 import { createGtPayloadDiagnostic } from './diagnostics';
 import { canUpdate } from './documents';

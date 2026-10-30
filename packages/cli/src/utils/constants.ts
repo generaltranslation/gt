@@ -1,7 +1,5 @@
 import { hashStringSync } from './hash.js';
 
-export { defaultDashboardUrl as GT_DASHBOARD_URL } from 'generaltranslation/internal';
-
 export const REACT_QUICKSTART_URL =
   'https://generaltranslation.com/docs/react/tutorials/quickstart';
 

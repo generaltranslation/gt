@@ -6,8 +6,6 @@ import { getI18nConfig } from 'gt-i18n/internal';
 
 const EMPTY_LOCALES_PROP: string[] = [];
 
-export { getFormatLocales };
-
 export function useFormatLocales(
   localesProp: string[] = EMPTY_LOCALES_PROP
 ): string[] {

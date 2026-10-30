@@ -10,12 +10,11 @@ import { createFileMapping } from '../formats/files/fileMapping.js';
 import { getGitUnifiedDiff } from '../utils/gitDiff.js';
 import { createClients } from '../utils/api.js';
 import { noProjectIdError } from '../console/index.js';
-import {
-  FileReference,
-  isBinaryFileFormat,
-  type FileFormat,
-} from 'generaltranslation/types';
-import type { OverwriteTranslationsData } from 'generaltranslation/api';
+import { FileReference, isBinaryFileFormat } from 'generaltranslation/types';
+import type {
+  FileFormat,
+  OverwriteTranslationsData,
+} from '@generaltranslation/api';
 import { readFileContent } from '../fs/fileContent.js';
 import os from 'node:os';
 import { randomUUID } from 'node:crypto';

@@ -1,4 +1,4 @@
-import { isTransientApiError } from 'generaltranslation/api';
+import { isTransientApiError } from '@generaltranslation/api';
 
 /** How many times a read is requested again after a transient API failure. */
 export const TRANSIENT_READ_RETRIES = 3;

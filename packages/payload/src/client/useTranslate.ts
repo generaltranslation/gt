@@ -1,12 +1,13 @@
 import { toast } from '@payloadcms/ui';
-import { ApiError, isTransientApiError } from 'generaltranslation/api';
+import { ApiError, isTransientApiError } from '@generaltranslation/api';
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
 import { useState } from 'react';
 import { createGtPayloadDiagnostic } from '../diagnostics';
 import type { RunProgress } from '../runs';
 import type { BillingCode } from '../types';
 import { followRun, startRun, type Scope } from './api';
-import { localeNames, type LocaleOption } from './locales';
+import type { LocaleOption } from '../locales';
+import { localeNames } from './locales';
 
 const documents = (count: number) =>
   count === 1 ? 'one document' : `${count} documents`;

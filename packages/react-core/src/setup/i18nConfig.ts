@@ -9,7 +9,7 @@ import {
   defaultEnableI18nCookieName,
   defaultLocaleCookieName,
   defaultRegionCookieName,
-} from './cookieNames';
+} from 'gt-i18n/internal/cookies';
 
 /**
  * Helps us distinguish behavior for SPA vs server-rendered apps.

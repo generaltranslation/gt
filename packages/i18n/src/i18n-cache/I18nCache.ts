@@ -19,7 +19,7 @@ import type {
   Dictionary,
   DictionaryEntry,
   DictionaryObject,
-} from './translations-manager/DictionaryCache';
+} from './translations-manager/utils/types/dictionary';
 import { resolveDictionaryLookupOptions } from './translations-manager/utils/dictionary-helpers';
 import { DictionarySourceNotFoundError } from './translations-manager/utils/DictionarySourceNotFoundError';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';

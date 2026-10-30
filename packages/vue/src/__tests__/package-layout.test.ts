@@ -369,7 +369,9 @@ describe('gt-vue package layout', () => {
         );
         expect(bundledSource).not.toMatch(/["']gt-i18n\/internal["']/);
         expect(bundledSource).not.toContain('spaRuntime');
-        expect(bundledSource).not.toContain('@generaltranslation/format');
+        expect(bundledSource).not.toMatch(
+          /["']@generaltranslation\/format["']/
+        );
         expect(bundledSource).not.toContain(
           'The browser SPA runtime is not initialized'
         );

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ApiError, ErrorCode } from 'generaltranslation/api';
+import { ApiError, ErrorCode } from '@generaltranslation/api';
 import { retryTransientRead } from '../retryTransientRead.js';
 
 describe('retryTransientRead', () => {

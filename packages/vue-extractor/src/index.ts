@@ -1,7 +1,7 @@
 export { extractFromVueSource } from './internal/extractFromVueSource.js';
 export { planVueExtraction } from './integration.js';
+export type { InlineExtractionOutput } from './internal/project/mergeVueProjectExtraction.js';
 export type {
-  InlineExtractionOutput,
   PrimaryInlineExtractor,
   VueExtractionPlan,
   VueExtractionPlannerOptions,

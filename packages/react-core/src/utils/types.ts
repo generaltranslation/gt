@@ -11,14 +11,6 @@ import type {
 } from 'generaltranslation/types';
 import React from 'react';
 
-export type {
-  GTTranslationOptions,
-  GTFunctionType,
-  MFunctionType,
-  RuntimeTranslationOptions,
-} from 'gt-i18n/types';
-export type { GTProp };
-
 /**
  * TaggedElement is a React element with a GTProp property.
  */

@@ -4,11 +4,11 @@ import { NextRequest } from 'next/server';
 import {
   defaultLocaleCookieName,
   defaultResetLocaleCookieName,
-} from '@generaltranslation/react-core/pure';
+} from 'gt-i18n/internal/cookies';
 import { defaultLocaleRoutingEnabledCookieName } from '../../utils/cookies';
 import { defaultLocaleHeaderName } from '../../utils/headers';
 import { createNextMiddleware } from '../createNextMiddleware';
-import type { PathConfig } from '../utils';
+import type { PathConfig } from '../createPathMatcher';
 
 const origin = 'http://localhost:3000';
 const search = '?tag=one&tag=two&literal=%252F%2B';

@@ -4,8 +4,11 @@ import {
   type ComponentType,
   type ReactNode,
 } from 'react';
-import { getI18nConfig } from '@generaltranslation/react-core/pure';
-import { getReactI18nCache, getTranslationsSnapshot } from 'gt-react';
+import {
+  getI18nConfig,
+  getReactI18nCache,
+  getTranslationsSnapshot,
+} from '@generaltranslation/react-core/pure';
 import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
 import type { GTRouterState } from './types';
 

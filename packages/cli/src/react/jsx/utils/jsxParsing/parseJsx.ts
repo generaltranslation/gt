@@ -1,4 +1,5 @@
-import type { Metadata, Updates } from '../../../../types/index.js';
+import type { Metadata } from '../../../../types/index.js';
+import type { Updates } from 'generaltranslation/types';
 import { randomUUID } from 'node:crypto';
 import generateModule from '@babel/generator';
 // Handle CommonJS/ESM interop

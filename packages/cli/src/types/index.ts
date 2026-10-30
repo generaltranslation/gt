@@ -1,8 +1,11 @@
 import type { CustomMapping } from '@generaltranslation/format/types';
 import type { InferInput } from 'valibot';
-import type { UserTokenProvider } from 'generaltranslation/api';
-import type { ModelProvider } from 'generaltranslation/internal';
-import type { FileFormat, Updates } from 'generaltranslation/types';
+import type {
+  FileFormat,
+  ModelProvider,
+  UserTokenProvider,
+} from '@generaltranslation/api';
+import type { Updates } from 'generaltranslation/types';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import {
   ParsingConfigOptions,

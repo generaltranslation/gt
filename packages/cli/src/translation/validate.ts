@@ -1,16 +1,15 @@
 import { logErrorAndExit, stripAnsi } from '../console/logging.js';
 import chalk from 'chalk';
 import findFilepath from '../fs/findFilepath.js';
-import { Options, Settings, Updates } from '../types/index.js';
+import { Options, Settings } from '../types/index.js';
+import { Updates } from 'generaltranslation/types';
 import { logger } from '../console/logger.js';
 
 import { createUpdates } from './parse.js';
 import { createInlineUpdates } from '../react/parse/createInlineUpdates.js';
 import { InlineLibrary, Libraries } from '../types/libraries.js';
-import {
-  extractInlineFromProject,
-  type PrimaryInlineExtractor,
-} from './extractInline.js';
+import { extractInlineFromProject } from './extractInline.js';
+import type { PrimaryInlineExtractor } from '@generaltranslation/vue-extractor/integration';
 
 // Types for programmatic validation API
 export type ValidationLevel = 'error' | 'warning';

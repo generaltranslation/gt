@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { ApiError, ErrorCode } from 'generaltranslation/api';
+import { ApiError, ErrorCode } from '@generaltranslation/api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const api = vi.hoisted(() => ({

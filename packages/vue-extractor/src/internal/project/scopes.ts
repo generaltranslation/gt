@@ -32,8 +32,6 @@ import {
 } from './consumerUsage.js';
 import { DEFAULT_VUE_SOURCE_PATTERNS } from './sourcePatterns.js';
 
-export { DEFAULT_VUE_SOURCE_PATTERNS } from './sourcePatterns.js';
-
 /** One package boundary whose sources share Vue build configuration. */
 export type VueSourceScope = {
   directory: string;

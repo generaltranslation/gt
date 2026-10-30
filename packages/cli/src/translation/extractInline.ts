@@ -11,8 +11,6 @@ import type {
   ResolvedGTParsingFlags,
 } from '../types/parsing.js';
 
-export type { PrimaryInlineExtractor } from '@generaltranslation/vue-extractor/integration';
-
 const missingVueExtractorDiagnostic = createDiagnosticMessage({
   source: 'gt',
   severity: 'Error',

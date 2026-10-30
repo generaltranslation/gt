@@ -51,6 +51,8 @@
   },
   "homepage": "https://generaltranslation.com/",
   "dependencies": {
+    "@generaltranslation/api": "workspace:*",
+    "@generaltranslation/format": "workspace:*",
     "generaltranslation": "workspace:*",
     "parse5": "^7.3.0"
   },

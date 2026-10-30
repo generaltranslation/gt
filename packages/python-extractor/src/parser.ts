@@ -71,6 +71,3 @@ async function resolveWasmPath(specifier: string): Promise<string> {
       throw new Error(`Unknown WASM specifier for Bun: ${specifier}`);
   }
 }
-
-export type { Parser };
-export { type Tree, type Node as SyntaxNode } from 'web-tree-sitter';

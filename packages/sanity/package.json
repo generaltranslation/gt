@@ -64,6 +64,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@generaltranslation/api": "workspace:*",
+    "@generaltranslation/format": "workspace:*",
     "@portabletext/block-tools": "^5.1.1",
     "@portabletext/to-html": "^2.0.14",
     "@sanity/document-internationalization": "^6.2.30",

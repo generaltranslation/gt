@@ -1,4 +1,5 @@
-import { Updates, TranslateFlags } from '../types/index.js';
+import { Updates } from 'generaltranslation/types';
+import { TranslateFlags } from '../types/index.js';
 import fs from 'fs';
 import { logger } from '../console/logger.js';
 import loadJSON from '../fs/loadJSON.js';
@@ -17,10 +18,8 @@ import {
   isPythonLibrary,
   Libraries,
 } from '../types/libraries.js';
-import {
-  extractInlineFromProject,
-  type PrimaryInlineExtractor,
-} from './extractInline.js';
+import { extractInlineFromProject } from './extractInline.js';
+import type { PrimaryInlineExtractor } from '@generaltranslation/vue-extractor/integration';
 
 /**
  * Searches for gt-react or gt-next dictionary files and creates updates for them,

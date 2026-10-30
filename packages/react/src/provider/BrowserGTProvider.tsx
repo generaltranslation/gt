@@ -2,10 +2,8 @@ import {
   I18nStore,
   InternalGTProvider,
 } from '@generaltranslation/react-core/components';
-import {
-  defaultResetLocaleCookieName,
-  getI18nConfig,
-} from '@generaltranslation/react-core/pure';
+import { getI18nConfig } from '@generaltranslation/react-core/pure';
+import { defaultResetLocaleCookieName } from 'gt-i18n/internal/cookies';
 import { useCallback, useEffect, useRef } from 'react';
 import type { SharedGTProviderProps } from './GTProviderProps';
 import { setCookieValue } from '../condition-store/cookies';
