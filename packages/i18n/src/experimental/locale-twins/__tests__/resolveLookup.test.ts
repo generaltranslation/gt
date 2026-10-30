@@ -137,6 +137,22 @@ describe('resolveLocaleTwinLookup', () => {
     ).toBe(false);
   });
 
+  // `<T context={derive(...)}>Hello</T>` can hash at runtime to the entry
+  // of an attributed `<T context="greeting">Hello</T>`. The server has no
+  // filled twin, so it renders source; the browser must too.
+  it('renders runtime-hashed content as source even when a twin carries its hash', () => {
+    register('fr', { [RUNTIME_HASH]: 'Bonjour' });
+    createCache();
+
+    expect(
+      resolveLocaleTwinLookup('fr', { $_hash: RUNTIME_HASH }, undefined)
+    ).toEqual({
+      entry: undefined,
+      rendersSource: true,
+      sourceFallback: false,
+    });
+  });
+
   it('renders unattributed content as source once a module without attributed entries ran', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     // What the compiler emits in a module without attributed entries

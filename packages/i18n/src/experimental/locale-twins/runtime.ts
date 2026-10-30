@@ -88,12 +88,13 @@ const ATTRIBUTED_HASH = /^[0-9a-f]{16}$/;
 
 /**
  * Resolves a rendering lookup (`<T>`, `useGT`, `t()`, `getGT()`) against the
- * locale twins. The registered entry for the lookup's hash comes first
- * (source locale included, since client code is stripped). Otherwise, in
- * production builds with locale twins, content without a compile-time hash
- * renders its source text on the client and the server alike, so
- * server-rendered HTML hydrates. Dev builds translate as usual (no
- * stripping, no twins).
+ * locale twins. In production builds with locale twins, content without a
+ * compile-time hash renders its source text on the client and the server
+ * alike, so server-rendered HTML hydrates, even when its runtime hash
+ * matches an entry another (attributed) call registered. Otherwise the
+ * registered entry for the lookup's hash comes first (source locale
+ * included, since client code is stripped). Dev builds translate as usual
+ * (no stripping, no twins).
  *
  * @param locale - The locale the caller is rendering.
  * @param options - The lookup's hash.
@@ -107,11 +108,14 @@ export function resolveLocaleTwinLookup<T = unknown>(
   compileTimeHash: unknown
 ): LocaleTwinLookup<T> {
   checkCompiled();
+  if (rendersSource(compileTimeHash)) {
+    return { entry: undefined, rendersSource: true, sourceFallback: false };
+  }
   const hash = options.$_hash;
   const entry = hash ? lookup(locale, hash) : undefined;
   return {
     entry: entry as T | undefined,
-    rendersSource: entry === undefined && rendersSource(compileTimeHash),
+    rendersSource: false,
     sourceFallback:
       entry !== undefined && isLocaleTwinSourceFallback(hash as string),
   };
