@@ -4,11 +4,16 @@ import type { LocaleTwinEntries } from './placeholder';
 
 /**
  * A filled locale twin value: one locale's content for a module's entries.
- * Short keys keep twins small: `l` is the locale, `e` maps hash to content.
+ * Short keys keep twins small: `l` is the locale, `e` maps hash to content,
+ * and `s` (omitted when empty) lists the hashes whose content is the
+ * source-locale text because the locale has no translation for them. The
+ * runtime formats those in the source locale, as it formats a missing
+ * translation without locale twins.
  */
 export type LocaleTwinTable = {
   l: string;
   e: LocaleTwinEntries;
+  s?: string[];
 };
 
 // Pure: unused in apps without locale twins, so bundlers can drop them
@@ -49,13 +54,15 @@ export function parseLocaleTwinTable(value: string): LocaleTwinTable {
 
 function isLocaleTwinTable(value: unknown): value is LocaleTwinTable {
   if (typeof value !== 'object' || value === null) return false;
-  const { l, e } = value as Record<string, unknown>;
+  const { l, e, s } = value as Record<string, unknown>;
   return (
     typeof l === 'string' &&
     l.length > 0 &&
     typeof e === 'object' &&
     e !== null &&
-    !Array.isArray(e)
+    !Array.isArray(e) &&
+    (s === undefined ||
+      (Array.isArray(s) && s.every((hash) => typeof hash === 'string')))
   );
 }
 

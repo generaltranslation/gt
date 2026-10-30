@@ -14,6 +14,7 @@ import {
   type LocaleTwinEntries,
   type LocaleTwinManifest,
   type LocaleTwinPlaceholderMatch,
+  type LocaleTwinTable,
 } from 'generaltranslation/internal';
 
 /** A v3 source map as JSON text or an object (e.g. Rollup's `chunk.map`). */
@@ -157,10 +158,7 @@ export function generateLocaleTwins(
     const filledCode = new Map<string, string>();
     for (const file of twinned) {
       const fileTables = file.placeholders.map((match) =>
-        serializeLocaleTwinTable({
-          l: locale,
-          e: entriesForLocale(match, locale, input),
-        })
+        serializeLocaleTwinTable(tableForLocale(match, locale, input))
       );
       tables.set(file.fileName, fileTables);
       filledCode.set(file.fileName, fillPlaceholders(file, fileTables));
@@ -451,18 +449,27 @@ function findMissingTranslations(
   return missing;
 }
 
-function entriesForLocale(
+/**
+ * A placeholder's table for `locale`: its translations, with the source text
+ * (listed in `s`) for hashes the locale has no translation for.
+ */
+function tableForLocale(
   match: LocaleTwinPlaceholderMatch,
   locale: string,
   input: GenerateLocaleTwinsInput
-): LocaleTwinEntries {
-  if (locale === input.defaultLocale) return match.entries;
+): LocaleTwinTable {
+  if (locale === input.defaultLocale) return { l: locale, e: match.entries };
   const translations = input.translations[locale] ?? {};
   const entries: LocaleTwinEntries = {};
+  const sourceFallbacks: string[] = [];
   for (const hash of match.hashes) {
-    entries[hash] = translations[hash] ?? match.entries[hash];
+    const translation = translations[hash];
+    if (translation === undefined) sourceFallbacks.push(hash);
+    entries[hash] = translation ?? match.entries[hash];
   }
-  return entries;
+  return sourceFallbacks.length > 0
+    ? { l: locale, e: entries, s: sourceFallbacks }
+    : { l: locale, e: entries };
 }
 
 /** The file's code with placeholders filled and references not yet renamed. */

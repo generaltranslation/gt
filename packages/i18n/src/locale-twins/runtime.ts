@@ -18,6 +18,7 @@ import {
   getLocaleTwinLocale,
   getLocaleTwinState,
   hasLocaleTwins,
+  isLocaleTwinSourceFallback,
   reportLocaleTwinIssueOnce,
 } from './state';
 import type {
@@ -65,6 +66,8 @@ function resolve(
     entry,
     rendersSource:
       entry === undefined && rendersSource(options, compileTimeHash),
+    sourceFallback:
+      entry !== undefined && isLocaleTwinSourceFallback(hash as string),
   };
 }
 

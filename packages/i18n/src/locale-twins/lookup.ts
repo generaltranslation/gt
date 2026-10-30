@@ -94,6 +94,7 @@ export function lookupLocaleTwinEntry<T = unknown>(
 const NOT_TWINNED: LocaleTwinLookup<never> = {
   entry: undefined,
   rendersSource: false,
+  sourceFallback: false,
 };
 
 /**

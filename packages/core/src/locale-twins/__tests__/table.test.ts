@@ -46,6 +46,13 @@ describe('parseLocaleTwinTable', () => {
     expect(parseLocaleTwinTable(runtimeValue)).toEqual(table);
   });
 
+  it('keeps the source fallback hashes', () => {
+    const table = { l: 'fr', e: { [HASH_A]: 'Hello' }, s: [HASH_A] };
+    expect(
+      parseLocaleTwinTable(JSON.parse(serializeLocaleTwinTable(table)))
+    ).toEqual(table);
+  });
+
   it('accepts an empty entry table', () => {
     expect(parseLocaleTwinTable('{"l":"en","e":{}}')).toEqual({
       l: 'en',
@@ -64,6 +71,8 @@ describe('parseLocaleTwinTable', () => {
       '{"l":"fr"}',
       '{"l":"fr","e":[]}',
       '{"l":"fr","e":null}',
+      '{"l":"fr","e":{},"s":"x"}',
+      '{"l":"fr","e":{},"s":[1]}',
     ]) {
       expect(() => parseLocaleTwinTable(value)).toThrow(
         /^generaltranslation Error: .*locale twin table/

@@ -17,6 +17,11 @@ export type LocaleTwinLookup<T> = {
   /** The registered twin entry for the hash; render it when present. */
   entry: T | undefined;
   /**
+   * Whether the entry is source-locale text standing in for a translation
+   * the twin's locale lacks: format it in the source locale.
+   */
+  sourceFallback: boolean;
+  /**
    * Whether the content renders its source text because no locale twin
    * carries it (no compile-time hash in a production locale twins build).
    */
@@ -56,6 +61,8 @@ export type LocaleTwinState = {
    * content kept by reference.
    */
   entries: Map<string, Content>;
+  /** Hashes whose registered entry is a source fallback. */
+  sourceFallbacks: Set<string>;
   /**
    * Whether an unfilled placeholder was registered: a server bundle, or an
    * original (untwinned) chunk in a browser.
@@ -79,7 +86,10 @@ type GlobalWithLocaleTwins = {
 export function getLocaleTwinState(): LocaleTwinState {
   const globalObj = globalThis as unknown as GlobalWithLocaleTwins;
   globalObj.__generaltranslation ??= {};
-  globalObj.__generaltranslation.localeTwins ??= { entries: new Map() };
+  globalObj.__generaltranslation.localeTwins ??= {
+    entries: new Map(),
+    sourceFallbacks: new Set(),
+  };
   return globalObj.__generaltranslation.localeTwins;
 }
 
@@ -109,4 +119,9 @@ export function getLocaleTwinLocale(): string | undefined {
 /** Whether at least one locale twin table has been registered. */
 export function hasLocaleTwins(): boolean {
   return getLocaleTwinState().entries.size > 0;
+}
+
+/** Whether the registered entry for `hash` is a source fallback. */
+export function isLocaleTwinSourceFallback(hash: string): boolean {
+  return getLocaleTwinState().sourceFallbacks.has(hash);
 }

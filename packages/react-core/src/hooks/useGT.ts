@@ -47,9 +47,10 @@ export function useGT(_messages?: Message[]): GTFunctionType {
         options.$_hash
       );
       if (twin.entry !== undefined) {
+        // A source fallback is formatted in the source locale, like a miss
         return interpolateMessage({
-          source: message,
-          target: twin.entry,
+          source: twin.sourceFallback ? twin.entry : message,
+          target: twin.sourceFallback ? undefined : twin.entry,
           options: twinOptions,
           sourceLocale: defaultLocale,
         });

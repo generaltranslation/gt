@@ -262,7 +262,7 @@ describe.each(VITE_VERSIONS)('$name client build', ({ load }) => {
     );
     const about = chunkWithEntry(app, ABOUT_US_HASH);
     expect(app.read(manifest.twins.es[about])).toContain(
-      `{\\"l\\":\\"es\\",\\"e\\":{\\"${ABOUT_US_HASH}\\":\\"About us\\"}}`
+      `{\\"l\\":\\"es\\",\\"e\\":{\\"${ABOUT_US_HASH}\\":\\"About us\\"},\\"s\\":[\\"${ABOUT_US_HASH}\\"]}`
     );
     expect(warnings(app)).toEqual(
       expect.arrayContaining([

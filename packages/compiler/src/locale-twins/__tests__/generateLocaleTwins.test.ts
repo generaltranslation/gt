@@ -81,8 +81,18 @@ function rollupOutput(): Record<string, { code: string }> {
 }
 
 /** The JS literal a filled placeholder becomes: a string holding the table JSON. */
-function filled(locale: string, entries: Record<string, unknown>): string {
-  return JSON.stringify(JSON.stringify({ l: locale, e: entries }));
+function filled(
+  locale: string,
+  entries: Record<string, unknown>,
+  sourceFallbacks?: string[]
+): string {
+  return JSON.stringify(
+    JSON.stringify({
+      l: locale,
+      e: entries,
+      ...(sourceFallbacks && { s: sourceFallbacks }),
+    })
+  );
 }
 
 describe('generateLocaleTwins', () => {
@@ -208,7 +218,9 @@ describe('generateLocaleTwins', () => {
     );
   });
 
-  it('falls back to the source text for missing translations and reports them per locale', () => {
+  // The runtime formats source fallbacks in the source locale (plural rules,
+  // number formats), as a server cache miss does
+  it('falls back to the source text for missing translations, marks it, and reports them per locale', () => {
     const { files, manifest, report } = generateLocaleTwins({
       files: rolldownOutput(),
       defaultLocale: 'en',
@@ -219,7 +231,10 @@ describe('generateLocaleTwins', () => {
     });
 
     expect(files[manifest.twins.fr['assets/a-C7otXMrN.js']]).toContain(
-      filled('fr', { [HASH_A]: 'Page A text' })
+      filled('fr', { [HASH_A]: 'Page A text' }, [HASH_A])
+    );
+    expect(files[manifest.twins.fr['assets/index-DGIdfwLW.js']]).toContain(
+      filled('fr', { [HASH_MAIN]: 'Texte principal' })
     );
     expect(report.missingTranslations).toEqual({
       fr: [HASH_A],

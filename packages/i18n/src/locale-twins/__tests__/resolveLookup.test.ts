@@ -77,6 +77,33 @@ describe('resolveLocaleTwinLookup', () => {
     ).toEqual({
       entry: 'Bonjour',
       rendersSource: false,
+      sourceFallback: false,
+    });
+  });
+
+  it('marks a source fallback (a translation missing from the twin)', () => {
+    registerLocaleTwin(
+      JSON.stringify({
+        l: 'fr',
+        e: { [ATTRIBUTED_HASH]: 'Hello', [RUNTIME_HASH]: 'Bonjour' },
+        s: [ATTRIBUTED_HASH],
+      })
+    );
+    createCache();
+
+    expect(
+      resolveLocaleTwinLookup(
+        'fr',
+        { $_hash: ATTRIBUTED_HASH },
+        ATTRIBUTED_HASH
+      )
+    ).toEqual({ entry: 'Hello', rendersSource: false, sourceFallback: true });
+    expect(
+      resolveLocaleTwinLookup('fr', { $_hash: RUNTIME_HASH }, RUNTIME_HASH)
+    ).toEqual({
+      entry: 'Bonjour',
+      rendersSource: false,
+      sourceFallback: false,
     });
   });
 
@@ -154,6 +181,7 @@ describe('resolveLocaleTwinLookup', () => {
       expect(resolveLocaleTwinLookup('fr', {}, undefined)).toEqual({
         entry: undefined,
         rendersSource: false,
+        sourceFallback: false,
       });
       resolveLocaleTwinLookup('fr', { $_hash: ATTRIBUTED_HASH }, undefined);
 

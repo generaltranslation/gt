@@ -70,6 +70,21 @@ describe('locale twins in react-core functions', () => {
     expect(t('', { name: 'Ada', $_hash: HASH })).toBe('Bonjour Ada');
   });
 
+  // A translation missing from the twin is the source text, formatted in the
+  // source locale like a server cache miss (French "one" covers 0)
+  it('t() formats a source fallback in the source locale', () => {
+    GtInternalRegisterLocaleTwin(
+      JSON.stringify({
+        l: 'fr',
+        e: { [HASH]: '{n, plural, one {# boat} other {# boats}}' },
+        s: [HASH],
+      })
+    );
+    setup('fr');
+
+    expect(t('', { n: 0, $_hash: HASH })).toBe('0 boats');
+  });
+
   // With i18n disabled the served twins are the default locale's (source
   // text), whatever the locale preference
   it('t() renders the default locale twin when i18n is disabled', () => {

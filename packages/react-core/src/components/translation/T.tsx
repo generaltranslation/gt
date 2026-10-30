@@ -88,7 +88,12 @@ function useComputeT({
   const result = _renderPreparedT({
     taggedSourceChildren,
     targetJsxChildren,
-    locale: fromLocaleTwin ? twinLocale : locale,
+    // A source fallback renders in the source locale, like a miss
+    locale: fromLocaleTwin
+      ? twin.sourceFallback
+        ? defaultLocale
+        : twinLocale
+      : locale,
     defaultLocale,
     enableI18n,
     shouldTranslate: (shouldTranslate && !twin.rendersSource) || fromLocaleTwin,

@@ -54,8 +54,11 @@ export function registerLocaleTwin(value?: string): boolean {
     return false;
   }
   state.locale ??= table.l;
+  const sourceFallbacks = table.s ?? [];
   for (const [hash, content] of Object.entries(table.e)) {
-    if (!state.entries.has(hash)) state.entries.set(hash, content);
+    if (state.entries.has(hash)) continue;
+    state.entries.set(hash, content);
+    if (sourceFallbacks.indexOf(hash) !== -1) state.sourceFallbacks.add(hash);
   }
   return true;
 }

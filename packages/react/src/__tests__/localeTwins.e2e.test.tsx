@@ -228,6 +228,37 @@ describe('locale twins end to end', () => {
     }
   });
 
+  // A translation missing from fr.json: the twin carries the source text,
+  // which renders in the source locale like a server cache miss (French
+  // plural rules would pick "one" for 0)
+  it('renders source fallbacks in the source locale', async () => {
+    const code =
+      await compileForClientBuild(`import { jsx, jsxs } from 'react/jsx-runtime';
+import { T, Plural, useGT } from 'gt-react';
+export function Page() {
+  const gt = useGT();
+  return jsxs("main", { children: [
+    jsx(T, { children: jsx(Plural, { n: 0, one: "boat", other: "boats" }) }),
+    jsx("p", { children: gt("{n, plural, one {# boat} other {# boats}}", { n: 0 }) }),
+  ] });
+}`);
+    const [match] = findLocaleTwinPlaceholders(code);
+    const { Page } = evaluateModule(
+      code.slice(0, match.start) +
+        serializeLocaleTwinTable({
+          l: 'fr',
+          e: match.entries,
+          s: match.hashes,
+        }) +
+        code.slice(match.end)
+    );
+    await initializeGTSPA({ ...GT_CONFIG, locale: 'fr' });
+
+    expect(renderToStaticMarkup(<Page name='Ada' />)).toBe(
+      '<main>boats<p>0 boats</p></main>'
+    );
+  });
+
   it('reports serving the original (untwinned) chunk', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     const { Page } = evaluateModule(strippedCode);
