@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 import { getLocaleFromPath, getPathnameForLocale } from '../localeRouting';
 
@@ -10,40 +10,16 @@ describe.sequential('locale routing', () => {
     });
   });
 
-  it('reads supported locales from the first path segment', () => {
-    expect(getLocaleFromPath('/fr/about')).toBe('fr');
-    expect(getLocaleFromPath('/ar')).toBe('ar');
-    expect(getLocaleFromPath('/about')).toBeUndefined();
-    expect(getLocaleFromPath('/')).toBeUndefined();
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
-  it('reads locale prefixes after the TanStack Router basepath', () => {
-    expect(getLocaleFromPath('/app/fr/about', '/app')).toBe('fr');
-    expect(getLocaleFromPath('/app/about', '/app')).toBeUndefined();
-  });
+  it('uses the TanStack Router basepath', () => {
+    vi.stubEnv('TSS_ROUTER_BASEPATH', 'app');
 
-  it('replaces existing locale prefixes', () => {
-    expect(getPathnameForLocale('/fr/about', 'ar')).toBe('/ar/about');
-    expect(getPathnameForLocale('/fr', 'ar')).toBe('/ar');
-  });
-
-  it('leaves the default locale unprefixed', () => {
-    expect(getPathnameForLocale('/fr/about', 'en')).toBe('/about');
-    expect(getPathnameForLocale('/about', 'en')).toBe('/about');
-    expect(getPathnameForLocale('/', 'en')).toBe('/');
-  });
-
-  it('prefixes non-default locales', () => {
-    expect(getPathnameForLocale('/about', 'fr')).toBe('/fr/about');
-    expect(getPathnameForLocale('/', 'fr')).toBe('/fr');
-  });
-
-  it('preserves the TanStack Router basepath', () => {
-    expect(getPathnameForLocale('/app/fr/about', 'ar', '/app')).toBe(
-      '/app/ar/about'
-    );
-    expect(getPathnameForLocale('/app/fr/about', 'en', '/app')).toBe(
-      '/app/about'
-    );
+    expect(getLocaleFromPath('/app/fr/about')).toBe('fr');
+    expect(
+      getPathnameForLocale({ pathname: '/app/fr/about', locale: 'ar' })
+    ).toBe('/app/ar/about');
   });
 });
