@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignalLogRouteImport } from './routes/signal-log'
+import { Route as HarborNoticesRouteImport } from './routes/harbor-notices'
 import { Route as HarborGuideRouteImport } from './routes/harbor-guide'
 import { Route as IndexRouteImport } from './routes/index'
 
 const SignalLogRoute = SignalLogRouteImport.update({
   id: '/signal-log',
   path: '/signal-log',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HarborNoticesRoute = HarborNoticesRouteImport.update({
+  id: '/harbor-notices',
+  path: '/harbor-notices',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HarborGuideRoute = HarborGuideRouteImport.update({
@@ -32,30 +38,34 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/harbor-guide': typeof HarborGuideRoute
+  '/harbor-notices': typeof HarborNoticesRoute
   '/signal-log': typeof SignalLogRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/harbor-guide': typeof HarborGuideRoute
+  '/harbor-notices': typeof HarborNoticesRoute
   '/signal-log': typeof SignalLogRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/harbor-guide': typeof HarborGuideRoute
+  '/harbor-notices': typeof HarborNoticesRoute
   '/signal-log': typeof SignalLogRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/harbor-guide' | '/signal-log'
+  fullPaths: '/' | '/harbor-guide' | '/harbor-notices' | '/signal-log'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/harbor-guide' | '/signal-log'
-  id: '__root__' | '/' | '/harbor-guide' | '/signal-log'
+  to: '/' | '/harbor-guide' | '/harbor-notices' | '/signal-log'
+  id: '__root__' | '/' | '/harbor-guide' | '/harbor-notices' | '/signal-log'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   HarborGuideRoute: typeof HarborGuideRoute
+  HarborNoticesRoute: typeof HarborNoticesRoute
   SignalLogRoute: typeof SignalLogRoute
 }
 
@@ -66,6 +76,13 @@ declare module '@tanstack/react-router' {
       path: '/signal-log'
       fullPath: '/signal-log'
       preLoaderRoute: typeof SignalLogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/harbor-notices': {
+      id: '/harbor-notices'
+      path: '/harbor-notices'
+      fullPath: '/harbor-notices'
+      preLoaderRoute: typeof HarborNoticesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/harbor-guide': {
@@ -88,6 +105,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   HarborGuideRoute: HarborGuideRoute,
+  HarborNoticesRoute: HarborNoticesRoute,
   SignalLogRoute: SignalLogRoute,
 }
 export const routeTree = rootRouteImport

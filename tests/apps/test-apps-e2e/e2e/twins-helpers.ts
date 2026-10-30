@@ -45,6 +45,12 @@ export type TwinAppConfig = {
   /** A route the server never renders (TanStack Start `ssr: false`). */
   clientOnlyRoute?: string;
   /**
+   * A server-rendered route whose loader returns `msg()` values that its
+   * component renders with `useMessages()` inside
+   * `[data-testid="loader-messages"]`, linked from every page.
+   */
+  loaderRoute?: string;
+  /**
    * Query parameter of the app's test-only hydration mismatch control: it
    * serves that locale's twins while the server renders the request locale.
    */

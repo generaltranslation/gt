@@ -617,6 +617,99 @@ test('§9.5 a route the server does not render renders from its twins in the bro
   }
 });
 
+const LOADER_MESSAGES = '[data-testid="loader-messages"]';
+
+/** The loader messages' text as the server rendered it (no JavaScript). */
+async function serverRenderedLoaderMessages(
+  browser: Browser,
+  baseURL: string,
+  path: string,
+  options: ContextOptions
+): Promise<string> {
+  const context = await newLocaleContext(browser, build, baseURL, options, {
+    javaScriptEnabled: false,
+  });
+  const page = await context.newPage();
+  await page.goto(path);
+  const text = await page.locator(LOADER_MESSAGES).innerText();
+  await context.close();
+  return text;
+}
+
+// A loader's msg() values reach the browser dehydrated from the server on a
+// direct load (the browser does not run the loader again), so the browser
+// must resolve the server's encoded messages from its twins
+test('§9.5 msg() values a route loader returns render translated on the server, after hydration and after client-side navigation', async ({
+  browser,
+  baseURL,
+}) => {
+  const route = twins!.loaderRoute;
+  test.skip(!route, 'the app has no route loader messages');
+  const { defaultLocale } = build.manifest;
+
+  // The entries the loader returns: those the source locale renders there
+  const sourceText = await serverRenderedLoaderMessages(
+    browser,
+    baseURL!,
+    route!,
+    { browserLocale: 'de-DE', cookieLocale: defaultLocale }
+  );
+  const hashes = Object.keys(build.translations[defaultLocale]).filter(
+    (hash) =>
+      missingRenderedText(sourceText, defaultLocale, [hash]).length === 0
+  );
+  expect(hashes.length).toBe(sourceText.split('\n').filter(Boolean).length);
+
+  for (const locale of build.manifest.locales) {
+    if (locale === defaultLocale) continue;
+    const options = { browserLocale: 'de-DE', cookieLocale: locale };
+
+    // Direct first load: the server HTML is translated...
+    const server = await serverRenderedLoaderMessages(
+      browser,
+      baseURL!,
+      route!,
+      options
+    );
+    expect(
+      missingRenderedText(server, locale, hashes),
+      `${locale}: server-rendered loader messages`
+    ).toEqual([]);
+
+    // ...and hydrates to the same text without errors
+    const context = await newLocaleContext(browser, build, baseURL!, options);
+    const direct = await context.newPage();
+    const directErrors = collectErrors(direct);
+    await direct.goto(route!);
+    await waitForHydration(direct);
+    await direct.waitForLoadState('networkidle');
+    expect(
+      await direct.locator(LOADER_MESSAGES).innerText(),
+      `${locale}: hydrated loader messages`
+    ).toBe(server);
+    expect(directErrors, `${locale}: hydration errors`).toEqual([]);
+
+    // Client-side navigation runs the loader in the browser
+    const navigated = await context.newPage();
+    const navigationErrors = collectErrors(navigated);
+    await navigated.goto('/');
+    await waitForHydration(navigated);
+    await navigated.locator(`a[href="${route}"]`).first().click();
+    await expect(navigated).toHaveURL(new RegExp(`${route}$`));
+    await expect
+      .poll(async () =>
+        missingRenderedText(
+          await navigated.locator(LOADER_MESSAGES).innerText(),
+          locale,
+          hashes
+        )
+      )
+      .toEqual([]);
+    expect(navigationErrors, `${locale}: navigation errors`).toEqual([]);
+    await context.close();
+  }
+});
+
 test('§9.10 report: translation bytes per page vs whole-locale loading', async ({
   browser,
   baseURL,

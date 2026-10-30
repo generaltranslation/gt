@@ -48,7 +48,10 @@ built server entry (`createLocaleTwinAssets`). It adds the
 §9.5 checks: localized server HTML that hydrates without errors, a mismatch
 control (`--mismatch-control` enables `?__gt_twin_locale=<locale>`, which
 serves another locale's twins and must fail hydration), and an `ssr: false`
-route rendered from its twins (`twins.clientOnlyRoute`).
+route rendered from its twins (`twins.clientOnlyRoute`), and a route whose
+loader returns `msg()` values (`twins.loaderRoute`): they render translated in
+the server HTML, after hydration (the browser reuses the server's dehydrated
+loader data) and after client-side navigation.
 
 `e2e/twins.spec.ts` covers spec §9.1–9.6 and 9.8 and writes the §9.10 report
 (translation bytes per page vs. whole-locale loading, output multiplier) to

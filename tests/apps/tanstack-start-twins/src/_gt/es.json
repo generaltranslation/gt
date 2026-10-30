@@ -13,6 +13,7 @@
   "91fa6e5e8a549597": "Portada del atlas",
   "02e1f7a8e5564bec": "Abrir la guía del puerto",
   "488defd997244a42": "Leer el registro de señales",
+  "de3b8102ea65147c": "Leer los avisos del puerto",
   "c01396a4b7c75c68": "Edición de la guía del puerto para la travesía de invierno.",
   "1614eb9a429bba2b": "Las tasas de fondeo no se cobran a los buques de rescate.",
   "1ca2d3c56eb45b98": [
@@ -48,6 +49,9 @@
       ]
     }
   ],
+  "b75e910819132640": "El muelle norte está cerrado por reparaciones.",
+  "4dd97d142f7b9599": "El práctico {pilot} recibe a cada ferry al amanecer.",
+  "dc1a8fb3e47ec682": "¡Bienvenido a bordo, {traveler}!",
   "0f82ab45be785eea": "Mapas dibujados a mano y verificados por marineros.",
   "0b1b597c32477308": "Los avisos de niebla se publican en el muelle.",
   "6f85251079d9d9cd": "Las tablas de mareas se actualizan cada mañana al amanecer.",

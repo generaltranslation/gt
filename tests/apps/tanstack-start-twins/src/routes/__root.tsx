@@ -43,6 +43,9 @@ function RootComponent() {
             <Link to='/signal-log'>
               <T>Read the signal log</T>
             </Link>
+            <Link to='/harbor-notices'>
+              <T>Read the harbor notices</T>
+            </Link>
           </nav>
           <LocaleSelector />
         </section>

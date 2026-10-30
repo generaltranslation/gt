@@ -13,6 +13,7 @@
   "91fa6e5e8a549597": "Front page of the atlas",
   "02e1f7a8e5564bec": "Open the harbor guide",
   "488defd997244a42": "Read the signal log",
+  "de3b8102ea65147c": "Read the harbor notices",
   "c01396a4b7c75c68": "Harbor guide edition for the winter crossing.",
   "1614eb9a429bba2b": "Anchorage fees are waived for rescue vessels.",
   "1ca2d3c56eb45b98": [
@@ -48,6 +49,9 @@
       ]
     }
   ],
+  "b75e910819132640": "The north pier is closed for repairs.",
+  "4dd97d142f7b9599": "Pilot {pilot} meets every ferry at dawn.",
+  "dc1a8fb3e47ec682": "Welcome aboard, {traveler}!",
   "0f82ab45be785eea": "Maps drawn by hand and verified by sailors.",
   "0b1b597c32477308": "Fog warnings are posted at the pier.",
   "6f85251079d9d9cd": "Tide tables refresh every morning at dawn.",

@@ -13,6 +13,7 @@
   "91fa6e5e8a549597": "Page d’accueil de l’atlas",
   "02e1f7a8e5564bec": "Ouvrir le guide du port",
   "488defd997244a42": "Lire le journal des signaux",
+  "de3b8102ea65147c": "Lire les avis du port",
   "c01396a4b7c75c68": "Édition du guide du port pour la traversée d’hiver.",
   "1614eb9a429bba2b": "Les droits de mouillage sont supprimés pour les navires de sauvetage.",
   "1ca2d3c56eb45b98": [
@@ -48,6 +49,9 @@
       ]
     }
   ],
+  "b75e910819132640": "La jetée nord est fermée pour travaux.",
+  "4dd97d142f7b9599": "Le pilote {pilot} accueille chaque ferry à l’aube.",
+  "dc1a8fb3e47ec682": "Bienvenue à bord, {traveler} !",
   "0f82ab45be785eea": "Cartes dessinées à la main et vérifiées par des marins.",
   "0b1b597c32477308": "Les avis de brouillard sont affichés sur la jetée.",
   "6f85251079d9d9cd": "Les horaires des marées sont mis à jour chaque matin à l’aube.",

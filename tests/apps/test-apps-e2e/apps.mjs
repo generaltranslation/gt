@@ -207,6 +207,7 @@ export const apps = Object.freeze({
       serving: 'tanstack',
       lazyRoute: '/harbor-guide',
       clientOnlyRoute: '/signal-log',
+      loaderRoute: '/harbor-notices',
       mismatchControlParam: '__gt_twin_locale',
     },
   },
