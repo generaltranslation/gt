@@ -44,13 +44,17 @@ export type LocaleTwinEntry = {
  * - `customHash`: a user-supplied hash that is not a compile-time hash
  * - `taggedTemplate`: a t`...` tagged template the macro did not expand
  *   (no `$_hash` in code)
- * - `importSource`: the module's GT import source has no registration export
+ * - `importSource`: the module's GT import source does not support locale
+ *   twins (gt-next)
+ * - `call`: the call cannot carry the locale twin marker (more than two
+ *   arguments, or `<T>` props that are not an object literal)
  */
 export type LocaleTwinUnattributedReason =
   | 'derive'
   | 'customHash'
   | 'taggedTemplate'
-  | 'importSource';
+  | 'importSource'
+  | 'call';
 
 /** An entry that is not attributed to the module, so it keeps its text. */
 export type LocaleTwinUnattributedEntry = {
@@ -62,9 +66,10 @@ export type LocaleTwinUnattributedEntry = {
 const ENTRY_HASH_PATTERN = /^[0-9a-f]{16}$/;
 
 /**
- * Collects the entries attributed to one module for the locale twins
- * registration call. Entries are recorded during the collection pass, in
- * source order, with their AST nodes so later passes can act on them.
+ * Collects the entries of one module for the locale twins pass: attributed
+ * entries (each call site gets a placeholder in client builds) and the ones
+ * the compiler cannot attribute. Entries are recorded during the collection
+ * pass, in source order, with their AST nodes so later passes can act on them.
  */
 export class LocaleTwinCollector {
   private entries: LocaleTwinEntry[] = [];
@@ -95,20 +100,33 @@ export class LocaleTwinCollector {
 
   /**
    * Every entry that keeps its source text in code, in source order. When
-   * `registered` is false (the module got no registration call), the
-   * attributed entries are included with reason `importSource`.
+   * `supported` is false (the module's GT import source does not support
+   * locale twins, so the pass skipped it), the attributed entries are
+   * included with reason `importSource`.
    */
-  getUnattributed(registered: boolean): LocaleTwinUnattributedEntry[] {
-    const unregistered: LocaleTwinUnattributedEntry[] = registered
+  getUnattributed(supported: boolean): LocaleTwinUnattributedEntry[] {
+    const unsupported: LocaleTwinUnattributedEntry[] = supported
       ? []
       : this.entries.map(({ api, node }) => ({
           api,
           node,
           reason: 'importSource',
         }));
-    return [...this.unattributed, ...unregistered].sort(
+    return [...this.unattributed, ...unsupported].sort(
       (a, b) => (a.node.start ?? 0) - (b.node.start ?? 0)
     );
+  }
+
+  /**
+   * Moves an attributed entry to the unattributed ones (its call cannot
+   * carry the locale twin marker, so it keeps its text).
+   */
+  unattribute(
+    entry: LocaleTwinEntry,
+    reason: LocaleTwinUnattributedReason
+  ): void {
+    this.entries = this.entries.filter((candidate) => candidate !== entry);
+    this.addUnattributed({ api: entry.api, reason, node: entry.node });
   }
 
   /** Every attributed entry, in source order (hashes may repeat). */

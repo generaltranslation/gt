@@ -5,9 +5,10 @@
  *
  * - Locale twins need the Vite integration: other bundlers get one warning
  *   and no locale twins pass.
- * - The pass (registration, msg() hashes) runs in production builds only, in
- *   every environment (the server keeps its placeholder inert but needs the
- *   msg() hashes the client uses, so SSR renders what the client renders).
+ * - The pass runs in production builds only, in every environment: client
+ *   builds get a placeholder at every attributed call site, and every build
+ *   marks the entries it cannot attribute, so SSR renders what the client
+ *   renders.
  *   `vite dev` output is exactly what it is without locale twins.
  * - Client production builds also strip attributed source text.
  */
@@ -53,7 +54,7 @@ export type LocaleTwinsPluginOptions = {
 
 /** What the locale twins pass does for one module transform. */
 export type LocaleTwinsTransform = {
-  /** Run the pass (registration placeholder, msg() hashes). */
+  /** Run the pass (call site markers). */
   active: boolean;
   /** Remove attributed source text (client production builds). */
   stripSourceText: boolean;
@@ -114,7 +115,7 @@ export function createLocaleTwinsPlugin(
       traverse(ast, localeTwinsPass(state));
       if (!state.settings.stripSourceText) return;
       const unattributed = state.localeTwins.getUnattributed(
-        state.statistics.localeTwinRegistrationsCount > 0
+        state.statistics.localeTwinModulesCount > 0
       );
       if (unattributed.length > 0) {
         unattributedByModule.set(

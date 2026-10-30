@@ -323,10 +323,9 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             traverse(ast, injectionPass(state));
           }
 
-          // Pass 4b: Locale twins registration (placeholder + msg $_hash, and
-          // client source stripping), gated on compileTimeHash. Modules
-          // without attributed entries still get a registration without a
-          // placeholder, which installs the locale twin runtime.
+          // Pass 4b: Locale twins call site markers (client placeholders and
+          // source stripping; source markers on unattributed entries), gated
+          // on compileTimeHash.
           if (state.settings.compileTimeHash && twins.active) {
             localeTwins.runPass(state, ast, id);
           }
@@ -338,7 +337,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             state.settings.devHotReload.jsx;
           const sourceTextStripped =
             state.settings.stripSourceText &&
-            state.statistics.localeTwinRegistrationsCount > 0;
+            state.statistics.localeTwinPlaceholdersCount > 0;
           if (
             devHotReloadActive &&
             hasCollectionContent &&
@@ -353,8 +352,8 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             state.statistics.macroExpansionsCount === 0 &&
             state.statistics.jsxInsertionsCount === 0 &&
             state.statistics.runtimeTranslateCount === 0 &&
-            state.statistics.localeTwinRegistrationsCount === 0 &&
-            state.statistics.localeTwinRuntimeRegistrationsCount === 0
+            state.statistics.localeTwinPlaceholdersCount === 0 &&
+            state.statistics.localeTwinSourceMarkersCount === 0
           ) {
             return null;
           }

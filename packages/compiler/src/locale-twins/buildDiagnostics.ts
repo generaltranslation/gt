@@ -135,6 +135,18 @@ export const LOCALE_TWINS_WITHOUT_COMPILE_TIME_HASH = createCompilerDiagnostic({
   fix: 'Remove compileTimeHash: false from the compiler plugin options',
 });
 
+/**
+ * The runtime reads `files.gt.splitting` from the config passed to
+ * `initializeGT()` / `initializeGTSPA()`, not from the plugin options.
+ */
+export const LOCALE_TWINS_ONLY_IN_PLUGIN_OPTIONS = createCompilerDiagnostic({
+  severity: 'Warning',
+  whatHappened:
+    'Locale twins are on in the compiler plugin options, but files.gt.splitting is not "locale-twins" in the GT config',
+  why: 'the GT runtime reads files.gt.splitting from the config passed to initializeGT()/initializeGTSPA(), so it would still load whole locales and switch locales without reloading the page',
+  fix: 'Set files.gt.splitting to "locale-twins" in gt.config.json (or the gtConfig you pass to the plugin and the runtime)',
+});
+
 /** The server build needs the client build's twin manifest. */
 export function createMissingLocaleTwinManifestDiagnostic(
   manifestPath: string

@@ -253,7 +253,7 @@ export function writeLocaleTwinSpaDocuments(
 
 /**
  * Reads `[locale].json` for every non-default locale. The default locale's
- * table comes from the placeholders, so it needs no file. Missing files are
+ * content comes from the placeholders, so it needs no file. Missing files are
  * reported once; their locales fall back to the source text.
  */
 function readTranslations(

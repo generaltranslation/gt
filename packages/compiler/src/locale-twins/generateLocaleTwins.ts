@@ -12,11 +12,10 @@ import {
 import {
   findLocaleTwinPlaceholders,
   LOCALE_TWIN_MANIFEST_VERSION,
-  serializeLocaleTwinTable,
+  serializeLocaleTwinValue,
   type LocaleTwinEntries,
   type LocaleTwinManifest,
   type LocaleTwinPlaceholderMatch,
-  type LocaleTwinTable,
 } from 'generaltranslation/internal';
 
 /** A v3 source map as JSON text or an object (e.g. Rollup's `chunk.map`). */
@@ -60,6 +59,16 @@ export type LocaleTwinReport = {
   missingTranslations: MissingLocaleTwinTranslations;
   /** Number of placeholder literals filled (per locale). */
   placeholders: number;
+  /**
+   * The entry hashes each twinned file carries (sorted, de-duplicated),
+   * keyed by original file name; files without placeholders are omitted.
+   */
+  entries: Record<string, string[]>;
+  /**
+   * UTF-8 bytes of the filled placeholder values (the translations a twin
+   * carries) per locale, keyed by original file name.
+   */
+  translationBytes: Record<string, Record<string, number>>;
   /** UTF-8 bytes of the shared JS files. */
   sharedBytes: number;
   /** UTF-8 bytes of the original twinned JS files. */
@@ -140,6 +149,7 @@ export function generateLocaleTwins(
   const sharedBytes = sum(shared.map((file) => byteLength(file.code)));
   const twinnedBytes = sum(twinned.map((file) => byteLength(file.code)));
   const twinBytes: Record<string, number> = {};
+  const translationBytes: Record<string, Record<string, number>> = {};
 
   const files: Record<string, string> = {};
   const versions: Record<string, string> = {};
@@ -156,15 +166,20 @@ export function generateLocaleTwins(
   }
 
   for (const locale of locales) {
-    const tables = new Map<string, string[]>();
+    const values = new Map<string, string[]>();
     const filledCode = new Map<string, string>();
+    const localeTranslationBytes: Record<string, number> = {};
     for (const file of twinned) {
-      const fileTables = file.placeholders.map((match) =>
-        serializeLocaleTwinTable(tableForLocale(match, locale, input))
+      const fileValues = file.placeholders.map((match) =>
+        valueForLocale(match, locale, input)
       );
-      tables.set(file.fileName, fileTables);
-      filledCode.set(file.fileName, fillPlaceholders(file, fileTables));
+      values.set(file.fileName, fileValues);
+      filledCode.set(file.fileName, fillPlaceholders(file, fileValues));
+      if (fileValues.length > 0) {
+        localeTranslationBytes[file.fileName] = sum(fileValues.map(byteLength));
+      }
     }
+    translationBytes[locale] = localeTranslationBytes;
     const version = computeVersion(filledCode);
     versions[locale] = version;
     const localeTwins: Record<string, string> = {};
@@ -176,7 +191,7 @@ export function generateLocaleTwins(
       writeTwin(
         file,
         localeTwins[file.fileName],
-        tables.get(file.fileName)!,
+        values.get(file.fileName)!,
         localeTwins,
         files
       );
@@ -213,6 +228,12 @@ export function generateLocaleTwins(
         (count, file) => count + file.placeholders.length,
         0
       ),
+      entries: Object.fromEntries(
+        twinned
+          .filter((file) => file.placeholders.length > 0)
+          .map((file) => [file.fileName, placeholderHashes([file])])
+      ),
+      translationBytes,
       sharedBytes,
       twinnedBytes,
       twinBytes,
@@ -233,13 +254,13 @@ export function generateLocaleTwins(
 function writeTwin(
   file: TwinnedFile,
   twinName: string,
-  tables: string[],
+  values: string[],
   localeTwins: Record<string, string>,
   files: Record<string, string>
 ): void {
   const code = new MagicString(file.code);
   file.placeholders.forEach((match, index) => {
-    code.overwrite(match.start, match.end, tables[index]);
+    code.overwrite(match.start, match.end, values[index]);
   });
   for (const reference of file.references) {
     const twin = localeTwins[reference.target];
@@ -475,9 +496,7 @@ function findMissingTranslations(
   locales: string[],
   input: GenerateLocaleTwinsInput
 ): MissingLocaleTwinTranslations {
-  const hashes = new Set(
-    twinned.flatMap((file) => file.placeholders.flatMap((m) => m.hashes))
-  );
+  const hashes = placeholderHashes(twinned);
   const missing: MissingLocaleTwinTranslations = {};
   for (const locale of locales) {
     if (locale === input.defaultLocale) continue;
@@ -490,35 +509,39 @@ function findMissingTranslations(
   return missing;
 }
 
+/** The files' placeholder hashes, sorted and de-duplicated. */
+function placeholderHashes(files: TwinnedFile[]): string[] {
+  return [
+    ...new Set(files.flatMap((file) => file.placeholders.map((m) => m.hash))),
+  ].sort(compare);
+}
+
 /**
- * A placeholder's table for `locale`: its translations, with the source text
- * (listed in `s`) for hashes the locale has no translation for.
+ * The JS expression that replaces a placeholder in `locale`'s twin:
+ * `[locale, translation]`, or `[defaultLocale, source]` for the default
+ * locale and for entries the locale has no translation for (formatted in
+ * the source locale, like a missing translation without locale twins).
  */
-function tableForLocale(
+function valueForLocale(
   match: LocaleTwinPlaceholderMatch,
   locale: string,
   input: GenerateLocaleTwinsInput
-): LocaleTwinTable {
-  if (locale === input.defaultLocale) return { l: locale, e: match.entries };
-  const translations = input.translations[locale] ?? {};
-  const entries: LocaleTwinEntries = {};
-  const sourceFallbacks: string[] = [];
-  for (const hash of match.hashes) {
-    const translation = translations[hash];
-    if (translation === undefined) sourceFallbacks.push(hash);
-    entries[hash] = translation ?? match.entries[hash];
-  }
-  return sourceFallbacks.length > 0
-    ? { l: locale, e: entries, s: sourceFallbacks }
-    : { l: locale, e: entries };
+): string {
+  const translation =
+    locale === input.defaultLocale
+      ? undefined
+      : input.translations[locale]?.[match.hash];
+  return translation === undefined
+    ? serializeLocaleTwinValue(input.defaultLocale, match.source)
+    : serializeLocaleTwinValue(locale, translation);
 }
 
 /** The file's code with placeholders filled and references not yet renamed. */
-function fillPlaceholders(file: TwinnedFile, tables: string[]): string {
+function fillPlaceholders(file: TwinnedFile, values: string[]): string {
   let code = '';
   let cursor = 0;
   file.placeholders.forEach((match, index) => {
-    code += file.code.slice(cursor, match.start) + tables[index];
+    code += file.code.slice(cursor, match.start) + values[index];
     cursor = match.end;
   });
   return code + file.code.slice(cursor);

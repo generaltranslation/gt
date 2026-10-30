@@ -4,10 +4,10 @@ import { processProgram } from '../processing/locale-twins/processProgram';
 
 /**
  * Locale twins pass — for the `'locale-twins'` translation splitting
- * strategy, inserts one registration call per module carrying an unfilled
- * placeholder (the module's attributed hashes and source-locale content) and
- * injects `$_hash` into attributed msg() calls. Reads the entries recorded by
- * the collection pass; does not use basePass.
+ * strategy, marks call sites: an unfilled placeholder per attributed entry in
+ * client production builds (with its source text stripped), and a source
+ * marker on entries the compiler cannot attribute. Reads the entries recorded
+ * by the collection pass; does not use basePass.
  */
 export function localeTwinsPass(state: TransformState): TraverseOptions {
   return {

@@ -12,7 +12,7 @@ import { LocaleTwinCollector } from './LocaleTwinCollector';
 export interface TransformState {
   settings: PluginSettings;
   stringCollector: StringCollector;
-  /** Entries attributed to this module for the locale twins registration call */
+  /** Entries of this module for the locale twins pass (call site markers) */
   localeTwins: LocaleTwinCollector;
   scopeTracker: ScopeTracker;
   logger: Logger;
@@ -23,10 +23,12 @@ export interface TransformState {
     macroExpansionsCount: number;
     jsxInsertionsCount: number;
     runtimeTranslateCount: number;
-    /** Locale twins registration calls inserted (0 or 1 per module) */
-    localeTwinRegistrationsCount: number;
-    /** Locale twins registrations without a placeholder (0 or 1 per module) */
-    localeTwinRuntimeRegistrationsCount: number;
+    /** 1 when the locale twins pass ran on the module (its GT import supports it) */
+    localeTwinModulesCount: number;
+    /** Locale twin placeholders inserted (client production builds) */
+    localeTwinPlaceholdersCount: number;
+    /** Source markers (`0`) inserted on unattributed entries */
+    localeTwinSourceMarkersCount: number;
   };
   /** Debug: shared manifest map for hash → jsxChildren mapping (accumulated across files) */
   debugManifest?: Map<string, unknown>;
