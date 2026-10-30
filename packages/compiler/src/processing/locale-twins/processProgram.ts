@@ -13,7 +13,6 @@ import { isLocaleTwinsImportSource } from '../../utils/constants/gt/helpers';
 import { createErrorLocation } from '../../utils/errors';
 import { injectLocaleTwinMarker } from '../../transform/locale-twins/injectLocaleTwinMarker';
 import { stripSourceText } from '../../transform/locale-twins/stripSourceText';
-import { transformTemplateLiteral } from '../../transform/macro-expansion/transformTemplateLiteral';
 
 /**
  * Process program for the locale twins pass:
@@ -68,10 +67,11 @@ export function processProgram(
 }
 
 /**
- * Replaces each unattributed tagged template with the call the macro
- * transform would produce (t`Hi ${name}` → t("Hi {0}", { "0": name })),
- * carrying the `0` marker. The runtime's tagged template path has no options
- * to carry it.
+ * Replaces each unattributed tagged template with a call carrying the `0`
+ * marker, built like the runtime's tagged template path builds its message:
+ * t`Hi ${name}` → t("Hi {0}", { "0": name }), one variable per substitution
+ * whatever its expression (`${a + b}` stays one value). The runtime's tagged
+ * template path has no options to carry the marker.
  */
 function expandTaggedTemplates(
   program: NodePath<t.Program>,
@@ -87,11 +87,20 @@ function expandTaggedTemplates(
   program.traverse({
     TaggedTemplateExpression(path) {
       if (!tagged.has(path.node)) return;
-      // The collection pass recorded it, so its template has no errors
-      const content = transformTemplateLiteral(path.get('quasi')).content[0];
-      if (!content) return;
-      const args: t.Expression[] = [content.message];
-      if (content.variables) args.push(content.variables);
+      const { quasis, expressions } = path.node.quasi;
+      let message = '';
+      const variables: t.ObjectProperty[] = [];
+      quasis.forEach((quasi, index) => {
+        message += quasi.value.cooked ?? quasi.value.raw;
+        const expression = expressions[index];
+        if (expression === undefined || !t.isExpression(expression)) return;
+        message += `{${index}}`;
+        variables.push(
+          t.objectProperty(t.stringLiteral(String(index)), expression)
+        );
+      });
+      const args: t.Expression[] = [t.stringLiteral(message)];
+      if (variables.length > 0) args.push(t.objectExpression(variables));
       const call = t.callExpression(path.node.tag, args);
       injectLocaleTwinMarker('t', call, t.numericLiteral(0));
       path.replaceWith(call);

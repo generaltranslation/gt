@@ -297,6 +297,28 @@ export const b = (name) => t\`Hi \${name}\`;`,
     }
   );
 
+  // Like the runtime's tagged template path: one variable per substitution,
+  // whatever its expression (no string flattening of `a + b`)
+  it.each(BUILDS)(
+    'keep each tagged template substitution as one value (%s build)',
+    async (_name, environment) => {
+      const out = squash(
+        (await transform(
+          `import { t } from 'gt-react';
+export const total = (a, b) => t\`Total \${a + b} (\${"x"})\`;`,
+          {
+            environment,
+            options: { ...TWINS, enableMacroTransform: false },
+          }
+        ))!
+      );
+
+      expect(out).toContain(
+        squash(`t("Total {0} ({1})", { "0": a + b, "1": "x", $_twin: 0 })`)
+      );
+    }
+  );
+
   it.each(BUILDS)(
     'mark the options of a call with extra arguments (%s build)',
     async (_name, environment) => {
