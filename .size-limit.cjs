@@ -105,6 +105,7 @@ module.exports = [
 
   i18n('gt-i18n', 'index'),
   i18n('gt-i18n/internal', 'internal'),
+  i18n('gt-i18n/internal/compat', 'internal-compat'),
   i18n('gt-i18n/internal/cookies', 'internal-cookies'),
   i18n('gt-i18n/internal/string', 'internal-string'),
 
@@ -112,6 +113,7 @@ module.exports = [
   reactCore('@generaltranslation/react-core/hooks', 'hooks'),
   reactCore('@generaltranslation/react-core/components', 'components'),
   reactCore('@generaltranslation/react-core/components-rsc', 'components-rsc'),
+  reactCore('@generaltranslation/react-core/compat', 'compat'),
 
   react('gt-react (client)', 'index.client', '55 kB'),
   reactNode('gt-react (rsc)', 'index.rsc'),

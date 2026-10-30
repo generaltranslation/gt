@@ -32,7 +32,7 @@ vi.mock('@generaltranslation/react-core/pure', () => ({
   getReadonlyConditionStore: () => mockClientConditionStore,
 }));
 
-vi.mock('gt-i18n/internal', () => ({
+vi.mock('gt-i18n/internal/compat', () => ({
   getTranslationsInternal: mockGetTranslationsInternal,
   initializeDictionaryManager: mockInitializeDictionaryManager,
   isDictionaryManagerInitialized: mockIsDictionaryManagerInitialized,

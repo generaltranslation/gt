@@ -10,8 +10,8 @@ const { compatPluginModule, mockGetTranslationsInternal } = vi.hoisted(() => ({
 
 vi.mock('gt-tanstack-start/internal/_compat-config', () => compatPluginModule);
 
-vi.mock('gt-i18n/internal', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('gt-i18n/internal')>()),
+vi.mock('gt-i18n/internal/compat', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('gt-i18n/internal/compat')>()),
   getTranslationsInternal: mockGetTranslationsInternal,
 }));
 
@@ -24,7 +24,7 @@ vi.mock('@tanstack/react-start/server', () => ({
 
 import { getRequest } from '@tanstack/react-start/server';
 import { internalInitializeGTSRA } from '@generaltranslation/react-core/pure';
-import { getDictionaryManager } from 'gt-i18n/internal';
+import { getDictionaryManager } from 'gt-i18n/internal/compat';
 import { AsyncLocalConditionStore } from '../../condition-store/AsyncLocalConditionStore';
 import { setConditionStore } from '../../condition-store/singleton';
 import { getTranslations } from '../../compat.server';

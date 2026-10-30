@@ -46,8 +46,10 @@ vi.mock('@generaltranslation/react-core/pure', () => ({
   getTranslationsSnapshot: async (locale: string) => ({ hello: locale }),
 }));
 vi.mock('gt-i18n/internal', () => ({
-  getDictionaryManager: () => ({ loadDictionary: mockLoadDictionary }),
   getI18nConfig: () => ({ getDefaultLocale: () => 'en' }),
+}));
+vi.mock('gt-i18n/internal/compat', () => ({
+  getDictionaryManager: () => ({ loadDictionary: mockLoadDictionary }),
   initializeDictionaryManager: mockInitializeDictionaryManager,
   isDictionaryManagerInitialized: mockIsDictionaryManagerInitialized,
 }));

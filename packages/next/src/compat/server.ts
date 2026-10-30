@@ -5,4 +5,4 @@ import { initializeGTServer } from '../setup/initGT.server';
 initializeGTServer();
 
 export { getTranslations } from './getTranslations';
-export type { TFunctionType } from 'gt-i18n/internal';
+export type { TFunctionType } from 'gt-i18n/internal/compat';
