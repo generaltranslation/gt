@@ -4,9 +4,9 @@
  * "locale-twins"` in gt.config.json). It runs the experimental GT compiler
  * (`@generaltranslation/compiler/experimental`, enable it with
  * `experimentalCompilerOptions: { type: 'babel' }`), inserts JSX from
- * `gt-tanstack-start/experimental`, and keeps whole-locale translation files
- * out of the production client build. A copy of `plugin/vite.ts` (keep in
- * sync).
+ * `gt-tanstack-start/experimental`, and, when the build generates locale
+ * twins, keeps whole-locale translation files out of the production client
+ * build. A copy of `plugin/vite.ts` (keep in sync).
  */
 import path from 'node:path';
 import type { Logger, Plugin } from 'vite';
@@ -85,7 +85,7 @@ export function gtTanstackStart(
     ...configModuleOptions
   }: GTTanstackStartPluginOptions = options;
   const configFile = path.resolve(cwd, config ?? 'gt.config.json');
-  const { compilerPlugin, warnings } = createCompilerPlugin(
+  const { compilerPlugin, localeTwins, warnings } = createCompilerPlugin(
     experimentalCompilerOptions,
     configFile
   );
@@ -112,7 +112,10 @@ export function gtTanstackStart(
       localeRouting,
       omittedApiKeys,
     } = createConfigModule(root, cwd, configFile, configModuleOptions);
-    const code = loadTranslationsOnlyOnServer(regularCode);
+    // Without twins the browser loads whole locales, as without this plugin
+    const code = localeTwins
+      ? loadTranslationsOnlyOnServer(regularCode)
+      : regularCode;
     if (omittedApiKeys) {
       logger?.warnOnce(
         createApiKeysOmittedWarning(path.relative(cwd, configFile))

@@ -1,5 +1,7 @@
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
+import { isLocaleTwinsSplitting } from 'generaltranslation/internal/experimental';
+import type { GTExperimentalSettings } from 'generaltranslation/internal/experimental';
 import type { Plugin } from 'vite';
 import { readConfigFile } from '../../plugin/configModule';
 import {
@@ -16,12 +18,18 @@ type CompilerVitePlugin = (options: Record<string, unknown>) => Plugin;
 /**
  * The compiler plugin with locale twins: a copy of `plugin/compiler.ts` (keep
  * in sync) that runs `@generaltranslation/compiler/experimental` and inserts
- * JSX from `gt-tanstack-start/experimental`.
+ * JSX from `gt-tanstack-start/experimental`. `localeTwins` is whether the
+ * build generates locale twins: the compiler runs and gt.config.json sets
+ * `experimental.splitting` to `"locale-twins"`.
  */
 export function createCompilerPlugin(
   { type = 'none', ...compilerSettings }: GTTanstackStartCompilerOptions = {},
   configFile: string
-): { compilerPlugin: Plugin | undefined; warnings: string[] } {
+): {
+  compilerPlugin: Plugin | undefined;
+  localeTwins: boolean;
+  warnings: string[];
+} {
   const warnings: string[] = [];
   if (compilerSettings.compileTimeHash === false) {
     warnings.push(compileTimeHashDisabledWarning);
@@ -39,7 +47,9 @@ export function createCompilerPlugin(
   if (autoJsxInjection && !enabled) {
     warnings.push(autoJsxInjectionCompilerWarning);
   }
-  if (!enabled) return { compilerPlugin: undefined, warnings };
+  if (!enabled) {
+    return { compilerPlugin: undefined, localeTwins: false, warnings };
+  }
 
   // Loaded only when enabled, so apps that do not opt in never load Babel.
   let gtCompiler: CompilerVitePlugin;
@@ -49,7 +59,7 @@ export function createCompilerPlugin(
     ).vite;
   } catch (error) {
     warnings.push(createCompilerUnresolvedWarning(error));
-    return { compilerPlugin: undefined, warnings };
+    return { compilerPlugin: undefined, localeTwins: false, warnings };
   }
 
   // The compiler spreads options over its defaults, so an explicit undefined
@@ -64,7 +74,16 @@ export function createCompilerPlugin(
     autoJsxImportSource: 'gt-tanstack-start/experimental',
   });
 
-  return { compilerPlugin: adaptCompilerPlugin(plugin), warnings };
+  return {
+    compilerPlugin: adaptCompilerPlugin(plugin),
+    // The compiler's own splitting option overrides gt.config.json
+    localeTwins: isLocaleTwinsSplitting(
+      (compilerSettings as { splitting?: string }).splitting ??
+        (gtConfig as GTExperimentalSettings | undefined)?.experimental
+          ?.splitting
+    ),
+    warnings,
+  };
 }
 
 /**
