@@ -1,22 +1,29 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 
-const { mockConditionStore, mockGetTranslationsSnapshot, responseHeaders } =
-  vi.hoisted(() => ({
-    mockGetTranslationsSnapshot: vi.fn(async () => ({ hello: 'bonjour' })),
-    mockConditionStore: {
-      getLocale: vi.fn(() => 'fr'),
-      getRegion: vi.fn(() => undefined),
-      getEnableI18n: vi.fn(() => true),
-      isLocaleRoutingEnabled: vi.fn(() => false),
-    },
-    responseHeaders: { current: new Headers() },
-  }));
+const {
+  mockConditionStore,
+  mockGetTranslationsSnapshot,
+  mockLoadDictionary,
+  responseHeaders,
+} = vi.hoisted(() => ({
+  mockGetTranslationsSnapshot: vi.fn(async () => ({ hello: 'bonjour' })),
+  mockLoadDictionary: vi.fn(
+    async (_locale: string): Promise<Record<string, unknown>> => ({})
+  ),
+  mockConditionStore: {
+    getLocale: vi.fn(() => 'fr'),
+    getRegion: vi.fn(() => undefined),
+    getEnableI18n: vi.fn(() => true),
+    isLocaleRoutingEnabled: vi.fn(() => false),
+  },
+  responseHeaders: { current: new Headers() },
+}));
 
 vi.mock('gt-react', () => ({
   GTProvider: () => null,
   getTranslationsSnapshot: mockGetTranslationsSnapshot,
-  getReactI18nCache: () => ({ loadDictionary: async () => ({}) }),
+  getReactI18nCache: () => ({ loadDictionary: mockLoadDictionary }),
   initializeGT: vi.fn(),
 }));
 
@@ -67,6 +74,8 @@ describe.sequential('setupRouterGTIntegration server with locale twins', () => {
   beforeEach(() => {
     responseHeaders.current = new Headers();
     mockGetTranslationsSnapshot.mockClear();
+    mockLoadDictionary.mockReset();
+    mockLoadDictionary.mockResolvedValue({});
   });
 
   it('loads the request locale but sends no translations snapshot', async () => {
@@ -81,6 +90,23 @@ describe.sequential('setupRouterGTIntegration server with locale twins', () => {
     expect(mockGetTranslationsSnapshot).toHaveBeenCalledWith('fr');
     expect(dehydrated.gt).not.toHaveProperty('translations');
     expect(dehydrated.gt).toMatchObject({ locale: 'fr' });
+  });
+
+  // Dictionary entries are never twinned: their translations are in the
+  // whole-locale snapshot
+  it('sends the translations snapshot when the app has a dictionary', async () => {
+    mockLoadDictionary.mockImplementation(async (locale) =>
+      locale === 'en' ? { greeting: 'Hello' } : { greeting: 'Bonjour' }
+    );
+    initialize('locale-twins');
+    const router = createRouter();
+    setupRouterGTIntegration({ router });
+
+    const dehydrated = (await router.options.dehydrate?.()) as {
+      gt: Record<string, unknown>;
+    };
+
+    expect(dehydrated.gt.translations).toEqual({ hello: 'bonjour' });
   });
 
   // vite dev serves no twins: the client hydrates from the snapshot as

@@ -482,6 +482,25 @@ describe.sequential('gtTanstackStart config module', () => {
     expect(wholeCode).not.toContain(guard);
   });
 
+  // Dictionary entries are never twinned: they stay on whole-locale loading
+  it('keeps loading locale files in the browser for a dictionary with locale twins', async () => {
+    const { configPlugin, root } = createProject({
+      'gt.config.json': JSON.stringify({
+        defaultLocale: 'en',
+        locales: ['en', 'fr'],
+        files: {
+          gt: { output: 'src/_gt/[locale].json', splitting: 'locale-twins' },
+        },
+      }),
+      'src/dictionary.ts': 'export const dictionary = { greeting: "Hello" };',
+    });
+
+    const { code } = await loadConfigModuleCode(configPlugin, root);
+
+    expect(code).toContain('import.meta.glob');
+    expect(code).not.toContain('import.meta.env.PROD');
+  });
+
   it('resolves the translation output from each working directory', async () => {
     const { configPlugin, root } = createProject({
       'gt.config.json': gtConfig('src/_gt/[locale].json'),

@@ -25,25 +25,31 @@ export async function readGTRouterState(
   conditionStore: GTConditionSource
 ): Promise<GTRouterState> {
   const locale = conditionStore.getLocale();
-  const [translations, dictionaries] = await Promise.all([
+  const defaultLocale = getI18nConfig().getDefaultLocale();
+  const cache = getReactI18nCache();
+  // Locale twins carry translations in the production client build, so the
+  // server only loads them and the page gets no snapshot. vite dev serves no
+  // twins and hydrates from the snapshot. Dictionary entries are never
+  // twinned: an app with a (source) dictionary keeps the snapshot.
+  const twinsCarryTranslations =
+    usesLocaleTwins() && getRuntimeEnvironment() === 'production';
+  const [translations, dictionaries, sourceDictionary] = await Promise.all([
     getTranslationsSnapshot(locale),
     // Dictionary reads only use loaded dictionaries, so the translated one is
     // loaded before render, as gt-next's GTProvider does. Both sides already
     // bundle the source dictionary, which serves the default locale.
-    locale === getI18nConfig().getDefaultLocale()
+    locale === defaultLocale
       ? {}
-      : getReactI18nCache()
+      : cache
           .loadDictionary(locale)
           .then((dictionary) => ({ [locale]: dictionary })),
+    twinsCarryTranslations ? cache.loadDictionary(defaultLocale) : {},
   ]);
   return {
     locale,
     region: conditionStore.getRegion(),
     enableI18n: conditionStore.getEnableI18n(),
-    // Locale twins carry translations in the production client build, so
-    // the server only loads them (above) and the page gets no snapshot.
-    // vite dev serves no twins and hydrates from the snapshot.
-    ...(usesLocaleTwins() && getRuntimeEnvironment() === 'production'
+    ...(twinsCarryTranslations && Object.keys(sourceDictionary).length === 0
       ? {}
       : { translations }),
     dictionaries,

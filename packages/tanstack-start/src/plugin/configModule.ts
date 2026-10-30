@@ -178,8 +178,9 @@ export function createConfigModule(
       'export async function loadTranslations(locale) {',
       // Locale twins carry the browser's translations in the build, so only
       // the server loads whole locales. The constant condition lets the
-      // production client build drop every locale file.
-      ...(isLocaleTwinsSplitting(config.files?.gt?.splitting)
+      // production client build drop every locale file. Dictionary entries
+      // are never twinned, so an app with a dictionary keeps loading them.
+      ...(isLocaleTwinsSplitting(config.files?.gt?.splitting) && !dictionaryFile
         ? ['  if (import.meta.env.PROD && !import.meta.env.SSR) return {};']
         : []),
       `  const load = files[${segments.map((segment) => JSON.stringify(segment)).join(' + locale + ')}];`,
