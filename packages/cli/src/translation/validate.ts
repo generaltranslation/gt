@@ -2,7 +2,7 @@ import { logErrorAndExit, stripAnsi } from '../console/logging.js';
 import chalk from 'chalk';
 import findFilepath from '../fs/findFilepath.js';
 import { Options, Settings } from '../types/index.js';
-import { Updates } from 'generaltranslation/types';
+import { Updates } from 'generaltranslation';
 import { logger } from '../console/logger.js';
 
 import { createUpdates } from './parse.js';

@@ -1,4 +1,4 @@
-import type { CustomMapping } from '@generaltranslation/format/types';
+import type { CustomMapping } from '@generaltranslation/format';
 import type { InferInput, ObjectEntries, ObjectSchema } from 'valibot';
 import type {
   GTConfigSchema,

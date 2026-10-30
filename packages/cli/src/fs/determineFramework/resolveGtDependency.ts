@@ -1,5 +1,5 @@
 import { Libraries } from '../../types/libraries.js';
-import { PYTHON_GT_DEPENDENCIES } from '@generaltranslation/python-extractor';
+import { PYTHON_GT_DEPENDENCIES } from '@generaltranslation/python-extractor/constants';
 
 /**
  * Resolve a dependency name (hyphenated or underscored) to a Python GT library.

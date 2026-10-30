@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { FileToUpload } from 'generaltranslation/types';
+import type { FileToUpload } from 'generaltranslation';
 import type { Settings, TranslateFlags } from '../../../types/index.js';
 import { createMockSettings } from '../../../api/__mocks__/settings.js';
 import {

@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { JsxChildren } from '@generaltranslation/format/types';
+import type { JsxChildren } from '@generaltranslation/format';
 import { hashSource } from 'generaltranslation/id';
 import { describe, expect, it } from 'vitest';
 import {

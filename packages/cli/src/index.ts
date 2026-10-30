@@ -10,6 +10,8 @@ import { VueCLI } from './cli/vue.js';
 import { SvelteCLI } from './cli/svelte.js';
 import { logger } from './console/logger.js';
 
+export * from './types/index.js';
+
 export function main(program: Command) {
   program.name('gt');
 

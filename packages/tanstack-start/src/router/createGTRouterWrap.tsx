@@ -9,7 +9,7 @@ import {
   getReactI18nCache,
   getTranslationsSnapshot,
 } from '@generaltranslation/react-core/pure';
-import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
+import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal';
 import type { GTRouterState } from './types';
 
 type GTConditionSource = Pick<

@@ -1,6 +1,6 @@
 import type { RuntimeTranslateManyOptions } from 'generaltranslation/internal';
-import type { CustomMapping } from '@generaltranslation/format/types';
-import type { GTConfig } from 'generaltranslation/types';
+import type { CustomMapping } from '@generaltranslation/format';
+import type { GTConfig } from 'generaltranslation';
 import type { TranslationsLoader } from './translations-manager/translations-loaders/types';
 import type { TranslationBatchConfig } from './translations-manager/TranslationsCache';
 import type { DictionaryLoader } from './translations-manager/DictionaryCache';

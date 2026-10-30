@@ -1,4 +1,4 @@
-import type { GTParsingFlags } from 'generaltranslation/types';
+import type { GTParsingFlags } from 'generaltranslation';
 import type { SupportedFileExtension } from './index.js';
 
 /**

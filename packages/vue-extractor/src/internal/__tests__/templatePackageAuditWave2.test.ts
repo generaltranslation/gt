@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { compileScript, compileTemplate, parse } from '@vue/compiler-sfc';
-import type { JsxChildren } from '@generaltranslation/format/types';
+import type { JsxChildren } from '@generaltranslation/format';
 import { afterEach, describe, expect, it } from 'vitest';
 import { resolveVueCompilerOptions } from '../../config.js';
 import { extractFromVueSource } from './testVueCompiler.js';
@@ -713,7 +713,6 @@ describe('template/package audit wave 2: metadata and public boundary', () => {
       './inspect',
       './integration',
       './project',
-      './types',
     ]);
   });
 

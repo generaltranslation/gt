@@ -25,9 +25,9 @@ export {
   useSetLocale,
 } from './runtime/strings';
 export { msg } from 'gt-i18n';
-export type { LocaleProperties } from '@generaltranslation/format/types';
+export type { LocaleProperties } from '@generaltranslation/format';
 export type {
   GTFunctionType,
   GTTranslationOptions,
   MFunctionType,
-} from 'gt-i18n/types';
+} from 'gt-i18n';

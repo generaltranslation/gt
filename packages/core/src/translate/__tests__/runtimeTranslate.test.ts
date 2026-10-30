@@ -2,7 +2,7 @@ import type {
   RuntimeTranslationResponse,
   TranslateContentData,
 } from '@generaltranslation/api';
-import type { Content } from '@generaltranslation/format/types';
+import type { Content } from '@generaltranslation/format';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { hashSource } from '../../id/hashSource';
 import { GTRuntime } from '../../runtime';

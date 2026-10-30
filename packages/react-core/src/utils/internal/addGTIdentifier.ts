@@ -1,5 +1,10 @@
 import React, { ReactElement, isValidElement, ReactNode } from 'react';
-import { isAcceptedPluralForm } from 'generaltranslation/internal';
+import {
+  isAcceptedPluralForm,
+  Transformation,
+  TransformationPrefix,
+  VariableTransformationSuffix,
+} from 'generaltranslation/internal';
 import {
   GTTag,
   TaggedChild,
@@ -7,11 +12,6 @@ import {
   TaggedElement,
   TaggedElementProps,
 } from '../types';
-import {
-  Transformation,
-  TransformationPrefix,
-  VariableTransformationSuffix,
-} from 'generaltranslation/types';
 
 type GTComponentType = {
   _gtt?: Transformation;

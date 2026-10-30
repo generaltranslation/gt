@@ -1,10 +1,10 @@
+import { I18nStore } from '@generaltranslation/react-core/pure';
 import {
-  I18nStore,
   InternalGTProvider,
   type InternalGTProviderProps,
 } from '@generaltranslation/react-core/components';
 import { useMemo, useRef } from 'react';
-import type { LocaleCandidates } from 'gt-i18n/internal/types';
+import type { LocaleCandidates } from 'gt-i18n/internal';
 import type { NativeConditionStoreParams } from '../condition-store/NativeConditionStore';
 import { NativeConditionStore } from '../condition-store/NativeConditionStore';
 

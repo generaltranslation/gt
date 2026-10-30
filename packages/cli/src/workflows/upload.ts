@@ -12,7 +12,7 @@ import { syncFonts } from './utils/syncFonts.js';
 import { BranchStep } from './steps/BranchStep.js';
 import { UploadSourcesStep } from './steps/UploadSourcesStep.js';
 import { UploadTranslationsStep } from './steps/UploadTranslationsStep.js';
-import type { FileReference, FileToUpload } from 'generaltranslation/types';
+import type { FileReference, FileToUpload } from 'generaltranslation';
 import { getWarnings } from '../state/translateWarnings.js';
 import { BranchData } from '../types/branch.js';
 

@@ -1,4 +1,4 @@
-import { Updates } from 'generaltranslation/types';
+import { Updates } from 'generaltranslation';
 import { hashSource, hashString } from 'generaltranslation/id';
 import type { SourceCode } from '../react/jsx/utils/extractSourceCode.js';
 

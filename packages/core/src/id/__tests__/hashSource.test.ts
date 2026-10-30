@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { JsxChildren } from '@generaltranslation/format/types';
+import type { JsxChildren } from '@generaltranslation/format';
 import { hashSource } from '../hashSource';
 
 describe('hashSource rich wire literals', () => {

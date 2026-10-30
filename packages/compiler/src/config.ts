@@ -6,7 +6,7 @@ import type {
   GTCompilerOptions,
   GTConfig as SharedGTConfig,
   GTParsingFlags,
-} from 'generaltranslation/types';
+} from 'generaltranslation';
 
 export type LogLevel = NonNullable<GTCompilerOptions['logLevel']>;
 

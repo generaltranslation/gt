@@ -2,11 +2,11 @@ import { GT, type ProjectHandle } from 'generaltranslation';
 import {
   resolveCanonicalLocale as resolveCanonicalCode,
   standardizeLocale,
+  type CustomMapping,
 } from '@generaltranslation/format';
 import { snapshotLocaleConfig } from '@generaltranslation/format/internal';
 import type { UserTokenProvider } from '@generaltranslation/api';
 import { credentialScope } from 'generaltranslation/internal';
-import type { CustomMapping } from '@generaltranslation/format/types';
 import type { Settings } from '../types/index.js';
 
 // Format modules resolve locales without settings, so the mapping is module state.

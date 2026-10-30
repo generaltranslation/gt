@@ -1,6 +1,6 @@
 import { render } from 'svelte/server';
 import { describe, expect, it } from 'vitest';
-import type { Content } from '@generaltranslation/format/types';
+import type { Content } from '@generaltranslation/format';
 import DuplicateVariableNames from './fixtures/DuplicateVariableNames.svelte';
 import Harness from './fixtures/Harness.svelte';
 import VariableChildren from './fixtures/VariableChildren.svelte';

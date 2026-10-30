@@ -7,7 +7,7 @@ import {
   type JsxElement,
   type Variable,
   type VariableType,
-} from '@generaltranslation/format/types';
+} from '@generaltranslation/format';
 import {
   getPluralForm,
   isAcceptedPluralForm,

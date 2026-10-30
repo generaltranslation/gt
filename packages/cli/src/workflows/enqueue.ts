@@ -6,7 +6,7 @@ import {
 } from '../console/index.js';
 import { Settings, TranslateFlags } from '../types/index.js';
 import { createClients } from '../utils/api.js';
-import { FileToUpload } from 'generaltranslation/types';
+import { FileToUpload } from 'generaltranslation';
 import { EnqueueStep, type EnqueueFilesResult } from './steps/EnqueueStep.js';
 import { BranchStep } from './steps/BranchStep.js';
 import { logger } from '../console/logger.js';

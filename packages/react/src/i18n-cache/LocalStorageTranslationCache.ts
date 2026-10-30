@@ -1,4 +1,4 @@
-import { Translation } from 'gt-i18n/types';
+import { Translation } from 'gt-i18n';
 
 // TODO: Add purge key/locks to prevent concurrent purges across tabs
 // TODO: Add cache key/locks for non-atomic read-modify-write operations across tabs

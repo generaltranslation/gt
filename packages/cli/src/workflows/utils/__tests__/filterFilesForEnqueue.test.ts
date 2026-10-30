@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { GT } from 'generaltranslation';
-import type { FileReference } from 'generaltranslation/types';
+import type { GT, FileReference } from 'generaltranslation';
 import { filterFilesForEnqueue } from '../filterFilesForEnqueue.js';
 
 describe('filterFilesForEnqueue', () => {

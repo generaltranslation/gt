@@ -1,6 +1,5 @@
-import type { FileReference } from 'generaltranslation/types';
+import type { FileReference, ProjectHandle } from 'generaltranslation';
 import { logger } from '../../console/logger.js';
-import type { ProjectHandle } from 'generaltranslation';
 import type { Settings } from '../../types/index.js';
 import chalk from 'chalk';
 

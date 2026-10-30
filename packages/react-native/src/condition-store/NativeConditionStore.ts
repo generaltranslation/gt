@@ -2,7 +2,7 @@ import type {
   LocaleCandidates,
   WritableConditionStoreInterface,
   WritableConditionStoreParams,
-} from 'gt-i18n/internal/types';
+} from 'gt-i18n/internal';
 import { getI18nConfig } from '@generaltranslation/react-core/pure';
 import { getLocale } from '../utils/getLocale';
 import {

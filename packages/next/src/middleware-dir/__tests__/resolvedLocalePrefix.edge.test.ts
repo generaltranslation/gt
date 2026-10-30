@@ -5,7 +5,7 @@ import {
   defaultLocaleCookieName,
   defaultResetLocaleCookieName,
 } from 'gt-i18n/internal/cookies';
-import type { CustomMapping } from '@generaltranslation/format/types';
+import type { CustomMapping } from '@generaltranslation/format';
 import { defaultLocaleRoutingEnabledCookieName } from '../../utils/cookies';
 import { defaultLocaleHeaderName } from '../../utils/headers';
 import { createNextMiddleware } from '../createNextMiddleware';

@@ -10,7 +10,7 @@ import { describe, it, expect } from 'vitest';
 import * as parser from '@babel/parser';
 import traverse from '@babel/traverse';
 import generate from '@babel/generator';
-import type { JsxChildren } from '@generaltranslation/format/types';
+import type { JsxChildren } from '@generaltranslation/format';
 import { collectionPass } from '../collectionPass';
 import { injectionPass } from '../injectionPass';
 import { initializeState } from '../../state/utils/initializeState';

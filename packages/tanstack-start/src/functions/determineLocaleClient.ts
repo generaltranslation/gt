@@ -1,6 +1,6 @@
 import { getI18nConfig } from '@generaltranslation/react-core/pure';
-import { getCookieValue } from 'gt-i18n/internal';
-import type { LocaleResolverConfig } from 'gt-i18n/internal/types';
+import { getCookieValue } from 'gt-i18n/internal/cookies';
+import type { LocaleResolverConfig } from 'gt-i18n/internal';
 
 /**
  * Read the locale cookie during client initialization, then the browser's

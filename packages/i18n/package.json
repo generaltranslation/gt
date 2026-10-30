@@ -66,16 +66,6 @@
         "default": "./dist/index.mjs"
       }
     },
-    "./types": {
-      "require": {
-        "types": "./dist/types.d.cts",
-        "default": "./dist/types.cjs"
-      },
-      "import": {
-        "types": "./dist/types.d.mts",
-        "default": "./dist/types.mjs"
-      }
-    },
     "./internal": {
       "require": {
         "types": "./dist/internal.d.cts",
@@ -104,16 +94,6 @@
       "import": {
         "types": "./dist/internal-string.d.mts",
         "default": "./dist/internal-string.mjs"
-      }
-    },
-    "./internal/types": {
-      "require": {
-        "types": "./dist/internal-types.d.cts",
-        "default": "./dist/internal-types.cjs"
-      },
-      "import": {
-        "types": "./dist/internal-types.d.mts",
-        "default": "./dist/internal-types.mjs"
       }
     }
   }

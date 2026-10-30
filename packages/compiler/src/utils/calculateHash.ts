@@ -5,7 +5,7 @@ import type {
   JsxElement,
   Variable,
   VariableType,
-} from '@generaltranslation/format/types';
+} from '@generaltranslation/format';
 import { hashSource as _hashSource } from 'generaltranslation/id';
 
 /**

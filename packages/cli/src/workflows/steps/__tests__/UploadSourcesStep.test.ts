@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { UploadSourcesStep } from '../UploadSourcesStep.js';
-import type { FileToUpload } from 'generaltranslation/types';
+import type { FileToUpload } from 'generaltranslation';
 import type { BranchData } from '../../../types/branch.js';
 import {
   clearOrphanedFileNames,

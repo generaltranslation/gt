@@ -7,7 +7,7 @@ import { createMockSettings } from '../__mocks__/settings.js';
 import { saveEveryDiff } from '../__mocks__/saveEveryDiff.js';
 import { logger } from '../../console/logger.js';
 import { clearWarnings, getWarnings } from '../../state/translateWarnings.js';
-import type { FileReference } from 'generaltranslation/types';
+import type { FileReference } from 'generaltranslation';
 import type { DownloadedVersionsV1 } from '../../fs/config/downloadedVersions.js';
 
 // Runs the real `git diff --no-index` rather than mocking it: the defect here is

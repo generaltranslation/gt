@@ -7,7 +7,7 @@ import type {
   JsxChild,
   JsxElement,
   Variable,
-} from '@generaltranslation/format/types';
+} from '@generaltranslation/format';
 import Greeting from './fixtures/Greeting.svelte';
 import Harness from './fixtures/Harness.svelte';
 import LocaleSwitcher from './fixtures/LocaleSwitcher.svelte';

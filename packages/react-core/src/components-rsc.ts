@@ -30,18 +30,11 @@ export {
 export { RscT as T } from './components/translation/T.rsc';
 export { RscTx as Tx } from './components/translation/Tx.rsc';
 
-// ===== Functions ===== //
-export { getTranslationsSnapshot } from './functions/helpers/getTranslationsSnapshot';
-export { t } from './functions/translation/t';
-
 // ===== Helpers ===== //
-export { getFormatLocales } from './hooks/utils/getFormatLocales';
 export { getPluralBranch } from './utils/plurals/getPluralBranch';
 export { getShouldTranslate } from './hooks/utils/getShouldTranslate';
 export { prepareT } from './utils/translation/prepareT.shared';
 export { createRenderVariable } from './utils/rendering/createRenderVariable';
-export { createRenderPipeline } from './utils/rendering/createRenderPipeline';
-export type { RenderPipeline } from './utils/rendering/createRenderPipeline';
 export type { RenderDefaultChildrenArgs } from './utils/rendering/renderDefaultChildren.shared';
 export type { RenderPreparedTParams } from './utils/rendering/renderPreparedT.shared';
 export type { RenderTranslatedChildrenArgs } from './utils/rendering/renderTranslatedChildren.shared';
@@ -53,14 +46,6 @@ export {
   renderTranslatedChildren,
   renderVariable,
 } from './utils/rendering/renderPipeline.rsc';
-
-// ===== Internal ===== //
-export { internalInitializeGTSRA } from './setup/initializeGTSRA';
-export { getReadonlyConditionStore } from './condition-store/singleton-operations';
-export {
-  getReactI18nCache,
-  setReactI18nCache,
-} from './i18n-cache/singleton-operations';
 
 // ===== Types ===== //
 export type {
@@ -87,4 +72,3 @@ export type {
   RelativeTimeProps,
   ResolvedRelativeTimeProps,
 } from './components/variables/RelativeTime.shared';
-export type { RelativeTimeFormatOptions, RenderVariable } from './utils/types';

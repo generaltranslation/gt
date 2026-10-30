@@ -1,8 +1,10 @@
 import { useCallback, useMemo } from 'react';
-import type { LocaleProperties } from '@generaltranslation/format/types';
+import {
+  getLocaleProperties,
+  type LocaleProperties,
+} from '@generaltranslation/format';
 import { useCustomMapping, useLocales } from './i18n-config';
 import { useLocale } from './condition-store';
-import { getLocaleProperties } from '@generaltranslation/format';
 
 // Explicit return type so the inferred type stays portable for downstream
 // packages (e.g. gt-react-native), otherwise the getLocaleProperties callback

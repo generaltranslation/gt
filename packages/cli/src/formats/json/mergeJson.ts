@@ -1,4 +1,4 @@
-import type { LocaleProperties } from '@generaltranslation/format/types';
+import type { LocaleProperties } from '@generaltranslation/format';
 import {
   AdditionalOptions,
   SourceObjectOptions,

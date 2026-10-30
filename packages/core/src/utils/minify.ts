@@ -1,4 +1,4 @@
-import type { VariableType } from '@generaltranslation/format/types';
+import type { VariableType } from '@generaltranslation/format';
 import type { VariableTransformationSuffix } from '../types-dir/transformations';
 
 const VARIABLE_TRANSFORMATION_SUFFIXES_TO_MINIFIED_NAMES = {

@@ -4,10 +4,7 @@ import {
   getMessagesInternal,
   getTranslationsInternal,
 } from 'gt-i18n/internal';
-import type {
-  Message,
-  SyncResolutionFunctionWithFallback,
-} from 'gt-i18n/types';
+import type { Message, SyncResolutionFunctionWithFallback } from 'gt-i18n';
 import { getRequestConditions } from '../../request/getRequestConditions';
 
 export async function getGT(

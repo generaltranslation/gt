@@ -7,7 +7,7 @@ import { useShouldTranslate } from '../utils';
 import { useI18nStore } from '../../i18n-store/useI18nStore';
 import { DictionaryLookup, TranslateLookup } from '../../i18n-store/storeTypes';
 import { useCallback, useEffect } from 'react';
-import { Translation } from 'gt-i18n/types';
+import { Translation } from 'gt-i18n';
 import { useGTContext } from '../../context/context';
 
 export type OnMissingTranslation = <T extends Translation>(

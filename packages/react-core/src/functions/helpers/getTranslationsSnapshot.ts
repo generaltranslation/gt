@@ -1,5 +1,5 @@
-import { Hash, Locale } from 'gt-i18n/internal/types';
-import { Translation } from 'gt-i18n/types';
+import { Hash, Locale } from 'gt-i18n/internal';
+import { Translation } from 'gt-i18n';
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,

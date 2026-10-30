@@ -4,7 +4,7 @@ import type {
   JsxChild,
   JsxChildren,
   Variable,
-} from '@generaltranslation/format/types';
+} from '@generaltranslation/format';
 import { stableStringify as stringify } from '../utils/stableStringify';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';

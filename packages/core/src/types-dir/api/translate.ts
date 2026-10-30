@@ -4,7 +4,7 @@ import {
   IcuMessage,
   JsxChildren,
   StringMessage,
-} from '@generaltranslation/format/types';
+} from '@generaltranslation/format';
 
 /**
  * TypedResult is a union type that represents the different types of translations that can be returned.

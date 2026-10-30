@@ -14,7 +14,7 @@
 
 <script lang="ts">
   import { getPluralForm } from 'generaltranslation/internal';
-  import type { PluralType } from 'generaltranslation/types';
+  import type { PluralType } from 'generaltranslation';
   import { getI18nConfig } from 'gt-i18n/internal';
   import type { Snippet } from 'svelte';
   import { useContentLocale } from '../runtime/source';

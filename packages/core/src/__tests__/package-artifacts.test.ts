@@ -155,9 +155,8 @@ it('loads packed ESM/CJS, typechecks NodeNext declarations and keeps the publish
     }
 
     const types = `
-      import { GT, GTIntl, type OrgHandle, type ProjectHandle } from 'generaltranslation';
-      import { GTRuntime, type LocaleConfig } from 'generaltranslation/runtime';
-      import type { TranslateManyResult, TranslateOptions, TranslationResult } from 'generaltranslation/types';
+      import { GT, GTIntl, type LocaleConfig, type OrgHandle, type ProjectHandle, type TranslateManyResult, type TranslateOptions, type TranslationResult } from 'generaltranslation';
+      import { GTRuntime } from 'generaltranslation/runtime';
       const options = { targetLocale: 'es' } satisfies TranslateOptions;
       const localeConfig: LocaleConfig = { defaultLocale: 'en', locales: ['en', 'es'] };
       const account: GT = new GT({ apiKey: 'key' });

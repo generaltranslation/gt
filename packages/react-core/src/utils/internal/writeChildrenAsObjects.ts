@@ -1,7 +1,10 @@
 import { getVariableName } from '../variables/getVariableName';
 import { TaggedChild, TaggedChildren, TaggedElement } from '../../utils/types';
 import { isValidTaggedElement } from '../../utils/utils';
-import { minifyVariableType } from 'generaltranslation/internal';
+import {
+  minifyVariableType,
+  type Transformation,
+} from 'generaltranslation/internal';
 import {
   GTProp,
   HTML_CONTENT_PROPS,
@@ -10,8 +13,7 @@ import {
   JsxChildren,
   JsxElement,
   Variable,
-} from '@generaltranslation/format/types';
-import type { Transformation } from 'generaltranslation/types';
+} from '@generaltranslation/format';
 
 /**
  * Gets the tag name of a React element.

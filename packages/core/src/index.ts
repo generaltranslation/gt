@@ -24,18 +24,65 @@ import {
   projectKeyWithoutProjectIdError,
 } from './logging/errors';
 
-export { GTRuntime } from './runtime';
 export type { LocaleConfig } from '@generaltranslation/format';
-export type {
-  GTAccountConfig,
-  GTCredentials,
-  GTProjectConfig,
-} from './clientConfig';
+export type { GTAccountConfig } from './clientConfig';
 export { decodeVars } from './derive/decodeVars';
 export { declareVar } from './derive/declareVar';
 export { derive } from './derive/derive';
 
 export { GTIntl } from '@generaltranslation/format';
+export { HTML_CONTENT_PROPS } from '@generaltranslation/format';
+export type {
+  Content,
+  CustomMapping,
+  CustomRegionMapping,
+  CutoffFormatOptions,
+  DataFormat,
+  FormatVariables,
+  GTProp,
+  HtmlContentPropKeysRecord,
+  HtmlContentPropValuesRecord,
+  I18nextMessage,
+  IcuMessage,
+  JsxChild,
+  JsxChildren,
+  JsxElement,
+  LocaleProperties,
+  StringContent,
+  StringFormat,
+  StringMessage,
+  Variable,
+  VariableType,
+} from '@generaltranslation/format';
+export type {
+  EntryMetadata,
+  TranslateManyEntry,
+  TranslateOptions,
+} from './types-dir/api/entry';
+export type { HashMetadata } from './id/types';
+export type { PluralType } from './settings/plurals';
+export type {
+  GTCompilerOptions,
+  GTConfig,
+  GTFilesConfig,
+  GTOutputFileConfig,
+  GTParsingFlags,
+} from './types-dir/config';
+export type { JsonPrimitive } from './types-dir/api/json';
+export type { Updates } from './types-dir/api/enqueueFiles';
+export {
+  isBinaryFileFormat,
+  type FileReference,
+  type FileToUpload,
+} from './types-dir/api/file';
+export type { FileUpload } from './types-dir/api/uploadFiles';
+export type { PublishFileEntry } from './translate/publishFiles';
+export type { TranslateManyResult } from './types-dir/api/translateMany';
+export type {
+  TranslationError,
+  TranslationResult,
+} from './types-dir/api/translate';
+export type { MoveMapping } from './translate/moveFiles';
 
 /** Constructs `GT`: project-scoped with `projectId`, account-scoped without. */
 type GTConstructor = {

@@ -1,7 +1,5 @@
-import {
-  I18nStore,
-  InternalGTProvider,
-} from '@generaltranslation/react-core/components';
+import { I18nStore } from '@generaltranslation/react-core/pure';
+import { InternalGTProvider } from '@generaltranslation/react-core/components';
 import { useRef } from 'react';
 import type { SharedGTProviderProps } from './GTProviderProps';
 import { useHandleMissingTranslations } from '../hooks/useHandleMissingTranslations';

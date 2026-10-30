@@ -8,7 +8,7 @@
 - `derive`, `declareVar`, `decodeVars`: import from `generaltranslation` (or `gt-i18n`).
 - `ReadonlyConditionStore`: import from `gt-i18n/internal`.
 - `defaultLocaleCookieName`, `defaultRegionCookieName`, `defaultEnableI18nCookieName`, `defaultResetLocaleCookieName`: import from `gt-i18n/internal/cookies`.
-- Types `GTTranslationOptions`, `GTFunctionType`, `MFunctionType`, `RuntimeTranslationOptions`: import from `gt-i18n/types`.
-- Type `GTProp`: import from `@generaltranslation/format/types`.
+- Types `GTTranslationOptions`, `GTFunctionType`, `MFunctionType`, `RuntimeTranslationOptions`: import from `gt-i18n`.
+- Type `GTProp`: import from `@generaltranslation/format`.
 
 `gt-react`, `gt-react-native`, `gt-next`, and `gt-tanstack-start` still export the same user-facing names.

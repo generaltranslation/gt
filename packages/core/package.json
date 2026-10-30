@@ -109,16 +109,6 @@
         "default": "./dist/internal.mjs"
       }
     },
-    "./types": {
-      "require": {
-        "types": "./dist/types.d.cts",
-        "default": "./dist/types.cjs"
-      },
-      "import": {
-        "types": "./dist/types.d.mts",
-        "default": "./dist/types.mjs"
-      }
-    },
     "./diagnostics": {
       "require": {
         "types": "./dist/diagnostics.d.cts",

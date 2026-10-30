@@ -1,7 +1,4 @@
-import type {
-  JsxChildren,
-  StringFormat,
-} from '@generaltranslation/format/types';
+import type { JsxChildren, StringFormat } from '@generaltranslation/format';
 import { getLocale } from '../../helpers/locale';
 import type {
   JsxTranslationOptions,
