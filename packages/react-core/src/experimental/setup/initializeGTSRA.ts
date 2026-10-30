@@ -1,4 +1,4 @@
-import type { GTConfig } from 'generaltranslation/types';
+import type { GTExperimentalSettings } from 'generaltranslation/internal/experimental';
 import {
   getLocaleTwinCacheParams,
   initializeLocaleTwins,
@@ -9,7 +9,7 @@ import { initializeI18nConfig } from '../../setup/i18nConfig';
 import type { ReactInitializeGTParams } from '../../setup/initializeGTSRA';
 
 export type LocaleTwinsInitializeGTParams = ReactInitializeGTParams &
-  Pick<GTConfig, 'experimental'>;
+  GTExperimentalSettings;
 
 /**
  * `internalInitializeGTSRA()` with locale twins: records

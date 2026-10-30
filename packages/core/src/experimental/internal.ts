@@ -11,6 +11,11 @@ export {
   LOCALE_TWIN_PLACEHOLDER_PREFIX,
   TRANSLATION_SPLITTING_STRATEGIES,
 } from './locale-twins/constants';
+export type {
+  GTExperimentalConfig,
+  GTExperimentalSettings,
+  TranslationSplittingStrategy,
+} from './locale-twins/config';
 export {
   isLocaleTwinsSplitting,
   isTranslationSplittingStrategy,

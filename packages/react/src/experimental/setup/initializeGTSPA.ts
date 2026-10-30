@@ -10,14 +10,14 @@ import {
   getLocaleTwinCacheParams,
   initializeLocaleTwins,
 } from '@generaltranslation/react-core/internal/experimental';
-import type { GTConfig } from 'generaltranslation/types';
+import type { GTExperimentalSettings } from 'generaltranslation/internal/experimental';
 import { BrowserI18nCache } from '../../i18n-cache/BrowserI18nCache';
 import type { InitializeGTSPAParams as RegularInitializeGTSPAParams } from '../../setup/initializeGTSPA';
 import { addRuntimeCredentials } from '../../setup/runtimeCredentials';
 import { createOrUpdateBrowserConditionStore } from '../condition-store/createBrowserConditionStore';
 
 export type InitializeGTSPAParams = RegularInitializeGTSPAParams &
-  Pick<GTConfig, 'experimental'>;
+  GTExperimentalSettings;
 
 /**
  * `initializeGTSPA()` with locale twins (`experimental.splitting:

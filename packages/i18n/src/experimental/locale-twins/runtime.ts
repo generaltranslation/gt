@@ -4,7 +4,7 @@
  * experimental entry points, so apps without locale twins never load it.
  */
 import { isLocaleTwinsSplitting } from 'generaltranslation/internal/experimental';
-import type { GTConfig } from 'generaltranslation/types';
+import type { GTExperimentalSettings } from 'generaltranslation/internal/experimental';
 import { createGtI18nDiagnostic } from './diagnostics';
 import {
   getI18nConfig,
@@ -29,9 +29,7 @@ type BrowserGlobals = { window?: unknown; document?: unknown };
  * Records `experimental.splitting` for the locale twin runtime. The
  * experimental `initializeGT*` functions call it before GT renders.
  */
-export function initializeLocaleTwins(
-  config: Pick<GTConfig, 'experimental'>
-): void {
+export function initializeLocaleTwins(config: GTExperimentalSettings): void {
   getLocaleTwinState().enabled = isLocaleTwinsSplitting(
     config.experimental?.splitting
   );

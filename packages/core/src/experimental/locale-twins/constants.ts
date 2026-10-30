@@ -1,4 +1,4 @@
-import type { TranslationSplittingStrategy } from '../../types-dir/config';
+import type { TranslationSplittingStrategy } from './config';
 
 /** Translation splitting strategy used when `experimental.splitting` is unset. */
 export const DEFAULT_TRANSLATION_SPLITTING: TranslationSplittingStrategy =

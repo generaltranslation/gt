@@ -45,9 +45,7 @@ export type {
   GTConfig,
   GTFilesConfig,
   GTOutputFileConfig,
-  GTExperimentalConfig,
   GTParsingFlags,
-  TranslationSplittingStrategy,
 } from './types-dir/config';
 export type {
   JsonObject,

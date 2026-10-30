@@ -1,7 +1,7 @@
 import type {
-  GTConfig,
+  GTExperimentalSettings,
   TranslationSplittingStrategy,
-} from '../../types-dir/config';
+} from './config';
 import { createDiagnosticMessage } from '../../logging/diagnostics';
 import {
   DEFAULT_TRANSLATION_SPLITTING,
@@ -16,7 +16,7 @@ import { LOCALE_TWIN_DIAGNOSTIC_SOURCE } from './diagnostics';
  * strategies so a typo never silently disables the feature.
  */
 export function resolveTranslationSplitting(
-  config: GTConfig | undefined
+  config: GTExperimentalSettings | undefined
 ): TranslationSplittingStrategy {
   return resolveTranslationSplittingValue(config?.experimental?.splitting);
 }
