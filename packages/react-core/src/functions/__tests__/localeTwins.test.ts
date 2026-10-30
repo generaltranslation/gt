@@ -3,7 +3,7 @@
  * locale included, and never ship or load a translations snapshot.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { GtInternalRegisterLocaleTwin } from 'gt-i18n/internal';
+import { GtInternalRegisterLocaleTwin, hashMessage } from 'gt-i18n/internal';
 import { ReactI18nCache } from '../../i18n-cache/ReactI18nCache';
 import { setReactI18nCache } from '../../i18n-cache/singleton-operations';
 import { setReadonlyConditionStore } from '../../condition-store/singleton-operations';
@@ -102,6 +102,51 @@ describe('locale twins in react-core functions', () => {
 
     await expect(getTranslationsSnapshot('fr')).resolves.toEqual({ fr: {} });
     expect(loadTranslations).not.toHaveBeenCalled();
+  });
+
+  // Content the compiler cannot hash (a tagged template the macro left in
+  // place, a call whose options are spread) renders as source on the server
+  // and on the twin client alike, so the server HTML hydrates
+  describe('content without a compile-time hash', () => {
+    const SOURCE_TRANSLATIONS = {
+      [hashMessage('Hello {0}', { $format: 'ICU' })]: 'Bonjour {0}',
+      [hashMessage('Hello Ada', { $format: 'STRING' })]: 'Bonjour Ada',
+      [hashMessage('Hello', { $format: 'ICU' })]: 'Bonjour',
+    };
+
+    function renderAll() {
+      const options = [{ $context: 'greeting' }] as const;
+      return [t`Hello ${'Ada'}`, t`Hello`, t('Hello', ...options)];
+    }
+
+    it('renders source on the server', async () => {
+      vi.unstubAllGlobals();
+      // What every server bundle module with a GT import does
+      GtInternalRegisterLocaleTwin();
+      initializeI18nConfig(TWINS_CONFIG, 'SPA');
+      setReadonlyConditionStore({
+        getLocale: () => 'fr',
+        getRegion: () => undefined,
+        getEnableI18n: () => true,
+        setLocale: () => {},
+        setRegion: () => {},
+        setEnableI18n: () => {},
+      });
+      const cache = new ReactI18nCache({
+        loadTranslations: async () => SOURCE_TRANSLATIONS,
+      });
+      setReactI18nCache(cache);
+      await getTranslationsSnapshot('fr');
+
+      expect(renderAll()).toEqual(['Hello Ada', 'Hello', 'Hello']);
+    });
+
+    it('renders source on a locale twin client', () => {
+      register('fr', { [HASH]: 'Bonjour {name}' });
+      setup('fr');
+
+      expect(renderAll()).toEqual(['Hello Ada', 'Hello', 'Hello']);
+    });
   });
 
   it('getTranslationsSnapshot() still loads the locale on the server', async () => {

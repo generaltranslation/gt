@@ -126,25 +126,33 @@ function handleTaggedTemplateLiteralTranslation(
 ): string {
   const locale = getLocale();
   // for tagged template literals, there has been no compiler transformation
-  // (1) lookup interpolated template (aka derived message)
-  const interpolatedTemplate = interpolateTemplateLiteral(
-    messageOrStrings,
-    values
-  );
-  const i18nCache = getReactI18nCache();
-  const translatedInterpolatedTemplate = i18nCache.lookupTranslation(
-    locale,
-    interpolatedTemplate,
-    { $format: 'STRING' }
-  );
-  if (translatedInterpolatedTemplate) return translatedInterpolatedTemplate;
+  // (1) lookup interpolated template (aka derived message), unless locale
+  // twins render it as source: a twin client cannot look it up, so the
+  // server must not either
+  if (!resolveLocaleTwinLookup(locale, {}, undefined).rendersSource) {
+    const interpolatedTemplate = interpolateTemplateLiteral(
+      messageOrStrings,
+      values
+    );
+    const i18nCache = getReactI18nCache();
+    const translatedInterpolatedTemplate = i18nCache.lookupTranslation(
+      locale,
+      interpolatedTemplate,
+      { $format: 'STRING' }
+    );
+    if (translatedInterpolatedTemplate) return translatedInterpolatedTemplate;
+  }
 
   // (2) resolve uninterpolated message
   const { message, variables } = extractInterpolatableValues(
     messageOrStrings,
     values
   );
-  return resolveStringContent(locale, message, variables);
+  return resolveStringContent(
+    locale,
+    message,
+    createLookupOptions(locale, variables, 'ICU')
+  );
 }
 
 /**
