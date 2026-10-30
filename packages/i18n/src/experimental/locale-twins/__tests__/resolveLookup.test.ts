@@ -1,26 +1,33 @@
 /**
  * How a rendering lookup resolves with locale twins on: the registered twin
  * entry, the source text (content no twin carries, in production builds), or
- * the usual translation path (dev builds, dictionary entries).
+ * the usual translation path (dev builds).
  */
-import { encodeLocaleTwinPlaceholder } from 'generaltranslation/internal';
+import { encodeLocaleTwinPlaceholder } from 'generaltranslation/internal/experimental';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { I18nCache } from '../../i18n-cache/I18nCache';
-import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
-import type { I18nConfigParams } from '../../i18n-config/I18nConfig';
-import { setI18nCache } from '../../i18n-cache/singleton-operations';
+import type { GTConfig } from 'generaltranslation/types';
+import { I18nCache } from '../../../i18n-cache/I18nCache';
+import { initializeI18nConfig } from '../../../i18n-config/singleton-operations';
+import type { I18nConfigParams } from '../../../i18n-config/I18nConfig';
+import { setI18nCache } from '../../../i18n-cache/singleton-operations';
 import { registerLocaleTwin } from '../registry';
-import { resolveLocaleTwinLookup } from '../lookup';
+import {
+  getLocaleTwinCacheParams,
+  initializeLocaleTwins,
+  resolveLocaleTwinLookup,
+} from '../runtime';
 
 type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
 
 const ATTRIBUTED_HASH = '0123456789abcdef';
 const RUNTIME_HASH = 'fedcba9876543210';
 
-const TWINS_CONFIG: I18nConfigParams = {
+type TwinsConfig = I18nConfigParams & Pick<GTConfig, 'experimental'>;
+
+const TWINS_CONFIG: TwinsConfig = {
   defaultLocale: 'en',
   locales: ['en', 'fr'],
-  files: { gt: { output: 'src/_gt/[locale].json', splitting: 'locale-twins' } },
+  experimental: { splitting: 'locale-twins' },
 };
 
 function register(locale: string, entries: Record<string, unknown>) {
@@ -29,7 +36,7 @@ function register(locale: string, entries: Record<string, unknown>) {
 
 /**
  * What a server bundle (or an original chunk) does: register an unfilled
- * placeholder, which installs the locale twin runtime but no table.
+ * placeholder, which records compiled code but registers no table.
  */
 function registerUnfilled() {
   return registerLocaleTwin(
@@ -37,12 +44,14 @@ function registerUnfilled() {
   );
 }
 
+/** What the experimental initializeGT* functions do. */
 function createCache(
-  config: I18nConfigParams = TWINS_CONFIG,
+  config: TwinsConfig = TWINS_CONFIG,
   cacheParams: ConstructorParameters<typeof I18nCache>[0] = {}
 ) {
   initializeI18nConfig(config);
-  const cache = new I18nCache(cacheParams);
+  initializeLocaleTwins(config);
+  const cache = new I18nCache(getLocaleTwinCacheParams(cacheParams));
   setI18nCache(cache);
   return cache;
 }
@@ -128,7 +137,7 @@ describe('resolveLocaleTwinLookup', () => {
     ).toBe(false);
   });
 
-  it('renders unattributed content as source once a module without attributed entries registers', () => {
+  it('renders unattributed content as source once a module without attributed entries ran', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     // What the compiler emits in a module without attributed entries
     expect(registerLocaleTwin()).toBe(false);
@@ -159,17 +168,6 @@ describe('resolveLocaleTwinLookup', () => {
     );
   });
 
-  it('translates dictionary entries as usual (they load whole locales)', () => {
-    stubBrowser();
-    registerUnfilled();
-    createCache(TWINS_CONFIG, { dictionary: { title: 'Title' } });
-
-    expect(
-      resolveLocaleTwinLookup('fr', { $_dictionary: true }, undefined)
-        .rendersSource
-    ).toBe(false);
-  });
-
   describe('on a locale twin client', () => {
     beforeEach(stubBrowser);
 
@@ -177,7 +175,7 @@ describe('resolveLocaleTwinLookup', () => {
       const error = vi.spyOn(console, 'error').mockImplementation(() => {});
       createCache();
 
-      // Nothing installed the locale twin runtime: translate as usual
+      // No compiled module ran: translate as usual
       expect(resolveLocaleTwinLookup('fr', {}, undefined)).toEqual({
         entry: undefined,
         rendersSource: false,
@@ -227,20 +225,6 @@ describe('resolveLocaleTwinLookup', () => {
         true
       );
       expect(error).not.toHaveBeenCalled();
-    });
-
-    it('warns once when dictionary entries cannot load their locale', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      register('fr', { [ATTRIBUTED_HASH]: 'Bonjour' });
-      createCache();
-
-      resolveLocaleTwinLookup('fr', { $_dictionary: true }, undefined);
-      resolveLocaleTwinLookup('fr', { $_dictionary: true }, undefined);
-
-      expect(warn).toHaveBeenCalledTimes(1);
-      expect(warn.mock.calls[0][0]).toMatch(
-        /gt-i18n.*Warning.*[Dd]ictionar.*initializeGT/s
-      );
     });
   });
 });

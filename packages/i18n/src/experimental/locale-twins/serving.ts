@@ -11,8 +11,8 @@ import type { CustomMapping } from 'generaltranslation/types';
 import {
   defaultEnableI18nCookieName,
   defaultLocaleCookieName,
-} from '../utils/cookieNames';
-import { getCookieValue, parseAcceptLanguage } from '../utils/request';
+} from '../../utils/cookieNames';
+import { getCookieValue, parseAcceptLanguage } from '../../utils/request';
 import {
   escapeHtmlAttribute,
   parseLocaleTwinDocument,

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   defaultEnableI18nCookieName,
   defaultLocaleCookieName,
-} from '../../utils/cookieNames';
+} from '../../../utils/cookieNames';
 import {
   createLocaleTwinDocumentMarkup,
   type LocaleTwinDocumentData,

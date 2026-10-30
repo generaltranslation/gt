@@ -6,7 +6,7 @@
 import { formatDiagnosticErrorDetails } from 'generaltranslation/internal';
 import type { CustomMapping } from 'generaltranslation/types';
 import { LOCALE_TWIN_BOOTSTRAP_SCRIPT } from './bootstrap';
-import { createGtI18nDiagnostic } from '../logs/diagnostics';
+import { createGtI18nDiagnostic } from './diagnostics';
 import {
   LOCALE_TWIN_BOOTSTRAP_ATTRIBUTE,
   LOCALE_TWIN_DOCUMENT_DATA_ID,

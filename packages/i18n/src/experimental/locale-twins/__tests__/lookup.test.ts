@@ -5,14 +5,15 @@
  * flag, the registry and the resolved locale is reported.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { I18nCache } from '../../i18n-cache/I18nCache';
-import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
-import type { I18nConfigParams } from '../../i18n-config/I18nConfig';
-import { getGTInternal } from '../../translation-functions/internal/getGT';
-import { getMessagesInternal } from '../../translation-functions/internal/getMessages';
-import { setI18nCache } from '../../i18n-cache/singleton-operations';
-import { msg } from '../../translation-functions/msg/msg';
-import { encodeLocaleTwinPlaceholder } from 'generaltranslation/internal';
+import { I18nCache } from '../../../i18n-cache/I18nCache';
+import { initializeI18nConfig } from '../../../i18n-config/singleton-operations';
+import type { I18nConfigParams } from '../../../i18n-config/I18nConfig';
+import { setI18nCache } from '../../../i18n-cache/singleton-operations';
+import type { GTConfig } from 'generaltranslation/types';
+import { getGTInternal, getMessagesInternal } from '../translationFunctions';
+import { msg } from '../msg';
+import { getLocaleTwinCacheParams, initializeLocaleTwins } from '../runtime';
+import { encodeLocaleTwinPlaceholder } from 'generaltranslation/internal/experimental';
 import { hashSource } from 'generaltranslation/id';
 import { registerLocaleTwin } from '../registry';
 
@@ -24,10 +25,12 @@ const GREETING_HASH = '0123456789abcdef';
 const SAVE_HASH = '1111111111111111';
 const NAMED_HASH = '2222222222222222';
 
-const TWINS_CONFIG: I18nConfigParams = {
+type TwinsConfig = I18nConfigParams & Pick<GTConfig, 'experimental'>;
+
+const TWINS_CONFIG: TwinsConfig = {
   defaultLocale: 'en',
   locales: ['en', 'fr'],
-  files: { gt: { output: 'src/_gt/[locale].json', splitting: 'locale-twins' } },
+  experimental: { splitting: 'locale-twins' },
 };
 
 function register(locale: string, entries: Record<string, unknown>) {
@@ -44,14 +47,21 @@ function stubBrowser() {
   vi.stubGlobal('document', {});
 }
 
+/** What the experimental initializeGT* functions do. */
 function createCache(
-  config: I18nConfigParams = TWINS_CONFIG,
+  config: TwinsConfig = TWINS_CONFIG,
   cacheParams: ConstructorParameters<typeof I18nCache>[0] = {}
 ) {
   initializeI18nConfig(config);
-  const cache = new I18nCache(cacheParams);
+  initializeLocaleTwins(config);
+  const cache = new I18nCache(getLocaleTwinCacheParams(cacheParams));
   setI18nCache(cache);
   return cache;
+}
+
+async function lookup(locale: string, hash: string) {
+  const gt = await getGTInternal({ locale, enableI18n: true });
+  return gt('', { $_hash: hash });
 }
 
 describe('locale twins runtime lookups', () => {
@@ -66,16 +76,13 @@ describe('locale twins runtime lookups', () => {
     vi.restoreAllMocks();
   });
 
-  it('resolves stripped source-locale content from the registry', () => {
+  it('resolves stripped source-locale content from the registry', async () => {
     register('en', { [GREETING_HASH]: 'Hello {name}' });
-    const cache = createCache();
+    createCache();
 
-    expect(
-      cache.lookupTranslation('en', '', {
-        $format: 'ICU',
-        $_hash: GREETING_HASH,
-      })
-    ).toBe('Hello {name}');
+    const gt = await getGTInternal({ locale: 'en', enableI18n: true });
+
+    expect(gt('', { name: 'Ada', $_hash: GREETING_HASH })).toBe('Hello Ada');
   });
 
   it('translates with getGT() from the registry without loading the locale or calling the CDN', async () => {
@@ -189,9 +196,9 @@ describe('locale twins runtime lookups', () => {
       );
     });
 
-    // Every module the compiler plugin builds installs the locale twin
-    // runtime, so a lookup without one means the plugin is missing
-    it('reports lookups without a hash once when nothing installed the twin runtime', async () => {
+    // Every module the compiler plugin builds calls the registration
+    // function, so a lookup without one means the plugin is missing
+    it('reports lookups without a hash once when no compiled module ran', async () => {
       const error = vi.spyOn(console, 'error').mockImplementation(() => {});
       createCache();
 
@@ -203,7 +210,7 @@ describe('locale twins runtime lookups', () => {
       expect(error.mock.calls[0][0]).toContain('compiler plugin');
     });
 
-    it('does not report lookups without a hash once the twin runtime is installed', async () => {
+    it('does not report lookups without a hash once a compiled module ran', async () => {
       const error = vi.spyOn(console, 'error').mockImplementation(() => {});
       registerLocaleTwin();
       createCache();
@@ -214,59 +221,45 @@ describe('locale twins runtime lookups', () => {
       expect(error).not.toHaveBeenCalled();
     });
 
-    it('reports once when twins are registered but twin mode is off', () => {
+    it('reports once when twins are registered but twin mode is off', async () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       register('fr', {
         [GREETING_HASH]: 'Bonjour',
         [SAVE_HASH]: 'Enregistrer',
       });
-      const cache = createCache({ defaultLocale: 'en', locales: ['en', 'fr'] });
+      createCache({ defaultLocale: 'en', locales: ['en', 'fr'] });
 
-      expect(
-        cache.lookupTranslation('fr', '', {
-          $format: 'ICU',
-          $_hash: GREETING_HASH,
-        })
-      ).toBe('Bonjour');
-      cache.lookupTranslation('fr', '', { $format: 'ICU', $_hash: SAVE_HASH });
+      expect(await lookup('fr', GREETING_HASH)).toBe('Bonjour');
+      await lookup('fr', SAVE_HASH);
 
-      expect(warn).toHaveBeenCalledTimes(1);
-      expect(warn.mock.calls[0][0]).toMatch(
-        /gt-i18n.*Warning.*files\.gt\.splitting/s
+      const flagOff = warn.mock.calls.filter(([message]) =>
+        /gt-i18n.*Warning.*experimental\.splitting/s.test(String(message))
       );
+      expect(flagOff).toHaveLength(1);
     });
 
-    it('reports once when the registered twin locale differs from the rendered locale', () => {
+    it('reports once when the registered twin locale differs from the rendered locale', async () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       register('fr', {
         [GREETING_HASH]: 'Bonjour',
         [SAVE_HASH]: 'Enregistrer',
       });
-      const cache = createCache({
-        ...TWINS_CONFIG,
-        locales: ['en', 'fr', 'es'],
-      });
+      createCache({ ...TWINS_CONFIG, locales: ['en', 'fr', 'es'] });
 
-      cache.lookupTranslation('es', '', {
-        $format: 'ICU',
-        $_hash: GREETING_HASH,
-      });
-      cache.lookupTranslation('es', '', { $format: 'ICU', $_hash: SAVE_HASH });
+      await lookup('es', GREETING_HASH);
+      await lookup('es', SAVE_HASH);
 
       expect(warn).toHaveBeenCalledTimes(1);
       expect(warn.mock.calls[0][0]).toMatch(/"fr".*"es"/s);
     });
 
-    it('stays silent when the flag, the registry and the locale agree', () => {
+    it('stays silent when the flag, the registry and the locale agree', async () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const error = vi.spyOn(console, 'error').mockImplementation(() => {});
       register('fr', { [GREETING_HASH]: 'Bonjour' });
-      const cache = createCache();
+      createCache();
 
-      cache.lookupTranslation('fr', '', {
-        $format: 'ICU',
-        $_hash: GREETING_HASH,
-      });
+      await lookup('fr', GREETING_HASH);
 
       expect(warn).not.toHaveBeenCalled();
       expect(error).not.toHaveBeenCalled();

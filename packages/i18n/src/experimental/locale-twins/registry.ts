@@ -1,12 +1,11 @@
 import {
-  formatDiagnosticErrorDetails,
   isUnfilledLocaleTwinPlaceholder,
   parseLocaleTwinTable,
-} from 'generaltranslation/internal';
-import type { LocaleTwinTable } from 'generaltranslation/internal';
-import logger from '../logs/logger';
-import { createGtI18nDiagnostic } from '../logs/diagnostics';
-import { localeTwinHooks } from './runtime';
+} from 'generaltranslation/internal/experimental';
+import type { LocaleTwinTable } from 'generaltranslation/internal/experimental';
+import { formatDiagnosticErrorDetails } from 'generaltranslation/internal';
+import logger from '../../logs/logger';
+import { createGtI18nDiagnostic } from './diagnostics';
 import { getLocaleTwinState } from './state';
 
 function createInvalidLocaleTwinMessage(error: unknown): string {
@@ -21,16 +20,14 @@ function createInvalidLocaleTwinMessage(error: unknown): string {
 
 /**
  * Registers a locale twin's table. The compiler injects one call per module
- * with attributed entries (as `GtInternalRegisterLocaleTwin`); the build
+ * built in locale twin mode (as `GtInternalRegisterLocaleTwin`); the build
  * replaces its placeholder argument with the table for each twin's locale.
  *
- * The first call (filled or not, so server bundles too) installs the locale
- * twin runtime hooks; apps without locale twins never load that runtime.
- * Modules without attributed entries call it without a value, so the
- * runtime is installed even before the page registers its first twin.
+ * Every call records that compiled code ran, so the runtime can tell a
+ * missing compiler plugin apart from a page that registered no table yet.
  *
- * Web-only: exported from gt-react and gt-tanstack-start, intentionally not
- * from gt-react-native (whose registry therefore stays empty).
+ * Web-only: exported from the `/experimental` entry points of gt-react and
+ * gt-tanstack-start, not from gt-react-native.
  *
  * @param value - A filled table (`JSON.stringify({ l, e })`), an unfilled
  * placeholder (server bundles, original chunks), or nothing (a module
@@ -39,7 +36,7 @@ function createInvalidLocaleTwinMessage(error: unknown): string {
  */
 export function registerLocaleTwin(value?: string): boolean {
   const state = getLocaleTwinState();
-  state.hooks ??= localeTwinHooks;
+  state.compiled = true;
   if (value === undefined) return false;
   if (isUnfilledLocaleTwinPlaceholder(value)) {
     state.unfilled = true;

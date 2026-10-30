@@ -96,14 +96,14 @@
         "default": "./dist/internal-cookies.mjs"
       }
     },
-    "./internal/locale-twins": {
+    "./internal/experimental": {
       "require": {
-        "types": "./dist/internal-locale-twins.d.cts",
-        "default": "./dist/internal-locale-twins.cjs"
+        "types": "./dist/internal-experimental.d.cts",
+        "default": "./dist/internal-experimental.cjs"
       },
       "import": {
-        "types": "./dist/internal-locale-twins.d.mts",
-        "default": "./dist/internal-locale-twins.mjs"
+        "types": "./dist/internal-experimental.d.mts",
+        "default": "./dist/internal-experimental.mjs"
       }
     },
     "./internal/string": {

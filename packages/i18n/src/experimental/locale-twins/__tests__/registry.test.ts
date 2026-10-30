@@ -1,4 +1,4 @@
-import { encodeLocaleTwinPlaceholder } from 'generaltranslation/internal';
+import { encodeLocaleTwinPlaceholder } from 'generaltranslation/internal/experimental';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   getLocaleTwinEntry,

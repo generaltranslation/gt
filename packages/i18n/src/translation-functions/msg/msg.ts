@@ -87,14 +87,8 @@ export function msg(
       },
     });
   } catch {
-    // Locale twin builds inject `$_hash` into msg() calls, also those whose
-    // variables only m() supplies (m(msg('Hi {user}'), { user })): keep the
-    // hash so m() still finds the translation, and do not warn about them
-    if (!options.$_hash || Object.keys(variables).length > 0) {
-      logger.warn(createInterpolationFailureMessage(message));
-    }
-    if (!options.$_hash) return message;
-    interpolatedString = message;
+    logger.warn(createInterpolationFailureMessage(message));
+    return message;
   }
 
   // Encode options
