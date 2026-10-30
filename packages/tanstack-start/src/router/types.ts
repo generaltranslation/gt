@@ -51,7 +51,10 @@ export type GTIntegrableRouter = {
   };
   /** True while Start renders a prerendered SPA shell (Router >= 1.159). */
   isShell?: () => boolean;
-  /** The matched routes, with the response headers their `headers()` set. */
+  /**
+   * The matched routes, with the response headers their `headers()` set.
+   * Start builds the document Response from these headers after dehydrate().
+   */
   state?: {
     matches: ReadonlyArray<{ headers?: Record<string, string> }>;
   };

@@ -516,6 +516,33 @@ test('§9.5 the server renders each locale and the page hydrates from its twins 
   }
 });
 
+// H3 adds Start's request-scoped response headers to 2xx responses only
+test('§9.1 a server-rendered error document varies by locale too', async ({
+  browser,
+  baseURL,
+}) => {
+  test.skip(twins!.serving !== 'tanstack', 'no server rendering');
+  const locale = build.manifest.locales.find(
+    (candidate) => candidate !== build.manifest.defaultLocale
+  )!;
+  const context = await newLocaleContext(browser, build, baseURL!, {
+    browserLocale: 'de-DE',
+    cookieLocale: locale,
+  });
+  const response = await context.request.get('/gt-missing-page', {
+    headers: { Accept: 'text/html' },
+  });
+  expect(response.status()).toBe(404);
+  expect(await response.text()).toMatch(
+    new RegExp(`<html[^>]*\\blang="${locale}"`)
+  );
+  const headers = response.headers();
+  expect(headers.vary).toMatch(/cookie/i);
+  expect(headers.vary).toMatch(/accept-language/i);
+  expect(headers['cache-control']).toMatch(/no-cache/);
+  await context.close();
+});
+
 test('§9.5 control: twins of another locale fail hydration', async ({
   browser,
   baseURL,

@@ -49,9 +49,7 @@ export function setupRouterGTIntegration({
       const state = await gt.load();
       // The document varies by locale without a snapshot to show for it.
       if (usesLocaleTwins() && !router.isShell?.()) {
-        setLocaleTwinDocumentHeaders(
-          router.state?.matches.map((match) => match.headers) ?? []
-        );
+        setLocaleTwinDocumentHeaders(router.state?.matches ?? []);
       }
       // A prerendered SPA shell is served to every visitor in the build-time
       // locale. The client hydrates it with that state, then renders the

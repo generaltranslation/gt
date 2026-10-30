@@ -145,6 +145,26 @@ describe.sequential('setupRouterGTIntegration server with locale twins', () => {
     );
   });
 
+  // Start builds the document Response from the matches' headers; H3 adds
+  // the request-scoped response headers to 2xx responses only (not a 404)
+  it('puts the document headers on the deepest match', async () => {
+    initialize('locale-twins');
+    const router = createRouter({
+      routeHeaders: [{ 'X-Root': '1' }, { Vary: 'Accept-Encoding' }],
+    });
+    setupRouterGTIntegration({ router });
+
+    await router.options.dehydrate?.();
+
+    expect(router.state.matches.map((match) => match.headers)).toEqual([
+      { 'X-Root': '1' },
+      {
+        vary: 'Accept-Encoding, Cookie, Accept-Language',
+        'cache-control': 'private, no-cache',
+      },
+    ]);
+  });
+
   it("keeps the app's own Cache-Control", async () => {
     initialize('locale-twins');
     const router = createRouter({
