@@ -8,7 +8,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import type { LocaleTwinManifest } from 'generaltranslation/types';
+import type { LocaleTwinManifest } from 'generaltranslation/internal/experimental';
 import type { LocaleTwinDocumentData } from 'gt-i18n/internal/experimental';
 
 /** The twin manifest (`gt-locale-twins.json`). */
