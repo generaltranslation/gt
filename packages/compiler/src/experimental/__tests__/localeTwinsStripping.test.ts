@@ -270,6 +270,28 @@ export const el = jsx(T, { children: jsx("span", { children: ${expression} }) })
     }
   );
 
+  // A helper call is not JSX: the regular compiler treats it as opaque
+  // (autoderive), so its arguments are data, not children
+  it.each(['locale', 'locale-twins'] as const)(
+    'accepts a helper call with a unary argument inside <T> with autoderive (%s)',
+    async (splitting) => {
+      const code = await transform(
+        `import { jsx } from 'react/jsx-runtime';
+import { T } from 'gt-react/experimental';
+function render(tag, options) { return 'Hello'; }
+export const el = jsx(T, { children: render('span', { children: void 0 }) });`,
+        CLIENT_BUILD,
+        {
+          ...TWINS,
+          autoderive: { jsx: true },
+          gtConfig: { ...TWINS.gtConfig, experimental: { splitting } },
+        }
+      );
+
+      expect(code ?? '').toContain("render('span', { children: void 0 })");
+    }
+  );
+
   it.each([
     ['-1', '-1'],
     ['+2', '2'],

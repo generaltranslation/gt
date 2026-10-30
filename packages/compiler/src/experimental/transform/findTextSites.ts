@@ -6,6 +6,7 @@ import { getTrackedVariable } from '../../transform/getTrackedVariable';
 import { getCalleeNameFromJsxExpressionParam } from '../../transform/jsx-children/utils/getCalleeNameFromJsxExpressionParam';
 import { getBranchComponentParameters } from '../../transform/jsx-children/utils/getBranchComponentParameters';
 import { validateChildrenFromArgs } from '../../transform/jsx-children/validation/validateChildrenFromArgs';
+import { validateJsxCall } from '../../transform/jsx-children/validation/validateJsxCall';
 import { validateStringLiteralPropertyFromArg } from '../../transform/jsx-children/validation/validateStringLiteralPropertyFromArg';
 import {
   isBranchComponent,
@@ -68,12 +69,17 @@ function addChildSites(
   }
 }
 
-/** A `jsx(Component, props)` child: its children and its text props. */
+/**
+ * A `jsx(Component, props)` child: its children and its text props. Any
+ * other call is opaque, like in `constructJsxChildren` (autoderive): its
+ * arguments are not children.
+ */
 function addElementSites(
   callExprPath: NodePath<t.CallExpression>,
   state: TransformState,
   sites: TextSite[]
 ): void {
+  if (validateJsxCall(callExprPath.node, state).length > 0) return;
   const [firstArg, parameters] = callExprPath.node.arguments;
   if (!t.isExpression(firstArg) || !t.isObjectExpression(parameters)) return;
   const { namespaceName, functionName } =
