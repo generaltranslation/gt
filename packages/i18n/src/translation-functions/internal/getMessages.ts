@@ -2,6 +2,7 @@ import { GTTranslationOptions } from '../types/options';
 import { decodeOptions } from '../msg/decodeOptions';
 import { isEncodedTranslationOptions } from '../utils/isEncodedTranslationOptions';
 import { getGTInternal } from './getGT';
+import { extractVariables } from '../../utils/extractVariables';
 import { MFunctionType } from '../types/functions';
 import { getWritableConditionStore } from '../../condition-store/singleton-operations';
 
@@ -65,9 +66,12 @@ export async function getMessagesInternal({
 
     // Return early if string already interpolated eg: mFallback(msg('Hello, {name}!', { name: 'Brian' }))
     if (isEncodedTranslationOptions(decodedOptions)) {
-      return gt(decodedOptions.$_source, decodedOptions) as T extends string
-        ? string
-        : T;
+      // Variables given here fill in those msg() did not have:
+      // m(msg('Welcome, {user}!'), { user }) with a compiler-injected $_hash
+      return gt(decodedOptions.$_source, {
+        ...extractVariables(options),
+        ...decodedOptions,
+      }) as T extends string ? string : T;
     }
 
     // Use gt to interpolate

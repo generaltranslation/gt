@@ -125,6 +125,55 @@ describe('locale twins runtime lookups', () => {
     expect(m(save)).toBe('Save');
   });
 
+  // The variables come from m(), not msg(): compiled client code has
+  // msg('', { $_hash }), server code msg('Welcome, {user}!', { $_hash })
+  describe('msg() whose variables m() supplies', () => {
+    const WELCOME_FR = 'Bienvenue, {user} !';
+
+    it('renders the twin translation on a locale twin client', async () => {
+      register('fr', { [GREETING_HASH]: WELCOME_FR });
+      createCache();
+      const welcome = msg('', { $_hash: GREETING_HASH });
+
+      const m = await getMessagesInternal({ locale: 'fr', enableI18n: true });
+
+      expect(m(welcome, { user: 'Alice' })).toBe('Bienvenue, Alice !');
+    });
+
+    it('renders the same translation on the server', async () => {
+      vi.unstubAllGlobals();
+      registerLocaleTwin(
+        encodeLocaleTwinPlaceholder({ [GREETING_HASH]: 'Welcome, {user}!' })
+      );
+      const loadTranslations = vi
+        .fn()
+        .mockResolvedValue({ [GREETING_HASH]: WELCOME_FR });
+      createCache(TWINS_CONFIG, { loadTranslations });
+      const welcome = msg('Welcome, {user}!', { $_hash: GREETING_HASH });
+
+      const m = await getMessagesInternal({ locale: 'fr', enableI18n: true });
+
+      expect(m(welcome, { user: 'Alice' })).toBe('Bienvenue, Alice !');
+    });
+  });
+
+  // A custom alias is the twin's locale; formatting uses its mapped code
+  it('formats twin content for a custom locale alias with m()', async () => {
+    register('fr_CA', {
+      [GREETING_HASH]: '{n, plural, one {# bateau} other {# bateaux}}',
+    });
+    createCache({
+      ...TWINS_CONFIG,
+      locales: ['en', 'fr_CA'],
+      customMapping: { fr_CA: { code: 'fr-CA' } },
+    });
+    const boats = msg('', { n: 0, $_hash: GREETING_HASH });
+
+    const m = await getMessagesInternal({ locale: 'fr_CA', enableI18n: true });
+
+    expect(m(boats)).toBe('0 bateau');
+  });
+
   describe('mismatch diagnostics', () => {
     it('reports once when twin mode is on but no twin was registered', async () => {
       const error = vi.spyOn(console, 'error').mockImplementation(() => {});

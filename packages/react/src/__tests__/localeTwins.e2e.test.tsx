@@ -44,6 +44,7 @@ const GT_CONFIG = {
 const PAGE_SOURCE = `import { jsx, jsxs } from 'react/jsx-runtime';
 import { T, Var, useGT, msg, useMessages, t } from 'gt-react';
 const greeting = msg("Hello {name}", { name: "Ada" });
+const welcome = msg("Welcome, {user}!");
 export function Page({ name }) {
   const gt = useGT();
   const m = useMessages();
@@ -51,6 +52,7 @@ export function Page({ name }) {
     jsxs(T, { children: ["Hi ", jsx("b", { className: "x", children: "there" }), jsx(Var, { children: name }), jsx("input", { placeholder: "Your name" })] }),
     jsx("p", { children: gt("Save {count} items", { count: 3 }) }),
     jsx("p", { children: m(greeting) }),
+    jsx("p", { children: m(welcome, { user: name }) }),
     jsx("p", { children: t("Cancel") }),
   ] });
 }`;
@@ -71,6 +73,7 @@ const FRENCH: Record<string, unknown> = {
   ],
   [JSON.stringify('Save {count} items')]: 'Enregistrer {count} éléments',
   [JSON.stringify('Hello {name}')]: 'Bonjour {name}',
+  [JSON.stringify('Welcome, {user}!')]: 'Bienvenue, {user} !',
   [JSON.stringify('Cancel')]: 'Annuler',
 };
 
@@ -184,11 +187,12 @@ describe('locale twins end to end', () => {
       'Your name',
       'Save',
       'Hello',
+      'Welcome',
       'Cancel',
     ]) {
       expect(code).not.toContain(text);
     }
-    expect(Object.keys(sourceEntries)).toHaveLength(4);
+    expect(Object.keys(sourceEntries)).toHaveLength(5);
   });
 
   it('renders the source locale from its twin', async () => {
@@ -196,7 +200,7 @@ describe('locale twins end to end', () => {
 
     expect(html).toBe(
       '<main>Hi <b class="x">there</b>Ada<input placeholder="Your name"/>' +
-        '<p>Save 3 items</p><p>Hello Ada</p><p>Cancel</p></main>'
+        '<p>Save 3 items</p><p>Hello Ada</p><p>Welcome, Ada!</p><p>Cancel</p></main>'
     );
   });
 
@@ -205,7 +209,7 @@ describe('locale twins end to end', () => {
 
     expect(html).toBe(
       '<main>Salut <b class="x">toi</b> Ada<input placeholder="Votre nom"/>' +
-        '<p>Enregistrer 3 éléments</p><p>Bonjour Ada</p><p>Annuler</p></main>'
+        '<p>Enregistrer 3 éléments</p><p>Bonjour Ada</p><p>Bienvenue, Ada !</p><p>Annuler</p></main>'
     );
   });
 
@@ -219,7 +223,7 @@ describe('locale twins end to end', () => {
 
       expect(renderToStaticMarkup(<Page name='Ada' />)).toBe(
         '<main>Hi <b class="x">there</b>Ada<input placeholder="Your name"/>' +
-          '<p>Save 3 items</p><p>Hello Ada</p><p>Cancel</p></main>'
+          '<p>Save 3 items</p><p>Hello Ada</p><p>Welcome, Ada!</p><p>Cancel</p></main>'
       );
       expect(warn).not.toHaveBeenCalled();
     } finally {
