@@ -114,6 +114,10 @@ beforeEach(() => {
     globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
   ).IS_REACT_ACT_ENVIRONMENT = true;
   vi.spyOn(pluginConfig, 'getSourceLocale').mockReturnValue('en');
+  // Feature tests run with the option on; flag-off tests turn it off.
+  vi.spyOn(pluginConfig, 'getAllowNonDefaultSourceLocales').mockReturnValue(
+    true
+  );
   vi.spyOn(pluginConfig, 'getLanguageField').mockReturnValue('language');
   // Sanity UI reads media queries, which jsdom does not implement.
   vi.stubGlobal(
@@ -211,5 +215,38 @@ describe('TranslationView role gating', () => {
       "This document's translation group couldn't be verified."
     );
     expect(container.textContent).not.toContain('translation of');
+  });
+});
+
+describe('TranslationView without allowNonDefaultSourceLocales', () => {
+  beforeEach(() => {
+    vi.spyOn(pluginConfig, 'getAllowNonDefaultSourceLocales').mockReturnValue(
+      false
+    );
+  });
+
+  test('only offers translation on source-locale documents', async () => {
+    setTranslations({ language: 'fr', preserveExistingTranslations: false });
+    translations.current.documentRole = null;
+    await renderView();
+
+    expect(container.textContent).toBe(
+      'Translation tools are only available for en documents.'
+    );
+  });
+
+  test('shows the tools on a source-locale document without waiting for a role', async () => {
+    setTranslations({ language: 'en', preserveExistingTranslations: true });
+    translations.current.documentRole = null;
+    await renderView();
+
+    expect(container.querySelector('[data-ui="Spinner"]')).toBeNull();
+    expect(container.textContent).toContain('Translate');
+    const input = preservationSwitch();
+    expect(input.checked).toBe(true);
+    expect(input.disabled).toBe(false);
+    expect(container.textContent).not.toContain(
+      'Local edits can only be saved'
+    );
   });
 });

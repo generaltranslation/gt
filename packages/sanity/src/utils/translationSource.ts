@@ -58,6 +58,17 @@ export type TranslationRole =
     };
 
 /**
+ * Whether translating from documents outside the configured source locale is
+ * turned on (`allowNonDefaultSourceLocales`). When it is off, every code path
+ * behaves as it did before the option existed: only source-locale documents
+ * are translated, no translation group is marked, and nothing in this module
+ * that reads a translation group is used.
+ */
+export function allowsNonDefaultSourceLocales(): boolean {
+  return pluginConfig.getAllowNonDefaultSourceLocales();
+}
+
+/**
  * Whether a document written in `language` is translated from a locale other
  * than the configured source locale. Those translations need their own
  * handling (marker, per-file upload locale, group-wide reference resolution);

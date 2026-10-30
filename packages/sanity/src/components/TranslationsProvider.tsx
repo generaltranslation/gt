@@ -48,6 +48,7 @@ import {
   getSelectedLocaleIds,
 } from '../utils/locales';
 import {
+  allowsNonDefaultSourceLocales,
   EXISTING_TRANSLATIONS_BY_ORIGINAL_QUERY,
   getDocumentLanguage,
   isNonDefaultSourceLanguage,
@@ -57,6 +58,7 @@ import {
   type DocumentRoleState,
 } from '../utils/documentRoleState';
 import {
+  getSourceLocaleSelectionQuery,
   recheckBulkSourceDocuments,
   selectBulkSourceDocuments,
 } from '../translation/bulkSources';
@@ -290,10 +292,48 @@ interface TranslationsProviderProps {
   singleDocument?: SanityDocument | null;
 }
 
-export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
-  children,
-  singleDocument,
-}) => {
+/**
+ * Provides translation state and actions to the Translations page and the
+ * Translate dialog.
+ *
+ * The open document's role in its translation group is only looked up with
+ * `allowNonDefaultSourceLocales`. Without it, nothing subscribes to or reads
+ * translation groups for the role, as before the option existed. The option
+ * is fixed for the Studio's lifetime, so the rendered component never
+ * switches between the two.
+ */
+export const TranslationsProvider: React.FC<TranslationsProviderProps> = (
+  props
+) =>
+  allowsNonDefaultSourceLocales() ? (
+    <TranslationsProviderWithDocumentRole {...props} />
+  ) : (
+    <TranslationsProviderContent {...props} documentRole={null} />
+  );
+
+const TranslationsProviderWithDocumentRole: React.FC<
+  TranslationsProviderProps
+> = (props) => {
+  const client = useClient();
+  const documentStore = useDocumentStore();
+  // Looked up apart from loading documents, so it never holds up the first
+  // status refresh.
+  const documentRole = useDocumentRole({
+    documentId: props.singleDocument?._id,
+    language: props.singleDocument
+      ? getDocumentLanguage(props.singleDocument)
+      : undefined,
+    client,
+    documentStore,
+  });
+  return <TranslationsProviderContent {...props} documentRole={documentRole} />;
+};
+
+const TranslationsProviderContent: React.FC<
+  TranslationsProviderProps & { documentRole: DocumentRoleState | null }
+> = ({ children, singleDocument, documentRole }) => {
+  // Fixed for the Studio's lifetime; see TranslationsProvider.
+  const allowNonDefault = allowsNonDefaultSourceLocales();
   const [isBusy, setIsBusy] = useState(false);
   const [documents, setDocuments] = useState<SanityDocument[]>([]);
   // Originals outside the source locale that Translate All leaves out; each is
@@ -414,33 +454,30 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
 
   const getTargetLocales = useCallback(
     (document: SanityDocument) => {
+      if (!allowNonDefault) return locales;
       const language = getDocumentLanguage(document);
       return isNonDefaultSourceLanguage(language)
         ? getDocumentTargetLocales(locales, language)
         : locales;
     },
-    [locales]
+    [allowNonDefault, locales]
   );
 
-  const singleDocumentLanguage = singleDocument
-    ? getDocumentLanguage(singleDocument)
-    : undefined;
-  const documentStore = useDocumentStore();
-  // Looked up apart from loading documents, so it never holds up the first
-  // status refresh.
-  const documentRole = useDocumentRole({
-    documentId: singleDocument?._id,
-    language: singleDocumentLanguage,
-    client,
-    documentStore,
-  });
+  // Only read with `allowNonDefaultSourceLocales`: without it, every document
+  // is translated from the configured source locale.
+  const singleDocumentLanguage =
+    allowNonDefault && singleDocument
+      ? getDocumentLanguage(singleDocument)
+      : undefined;
   const excludedLocale =
     singleDocumentLanguage ?? pluginConfig.getSourceLocale();
   // Only the document open in the Translate dialog can be an original outside the
   // source locale; Translate All only picks up source-locale originals.
-  const hasNonDefaultSource = documents.some((doc) =>
-    isNonDefaultSourceLanguage(getDocumentLanguage(doc))
-  );
+  const hasNonDefaultSource =
+    allowNonDefault &&
+    documents.some((doc) =>
+      isNonDefaultSourceLanguage(getDocumentLanguage(doc))
+    );
 
   // Declared before the effects that refresh on these changes, so a refresh
   // started by one already runs under the new scope.
@@ -453,6 +490,14 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     try {
       if (singleDocument) {
         setDocuments([singleDocument]);
+        return;
+      }
+
+      if (!allowNonDefault) {
+        const docs = await client.fetch(
+          getSourceLocaleSelectionQuery(getTranslateAllSelection())
+        );
+        setDocuments(dedupeDocumentsPreferDraft(docs));
         return;
       }
 
@@ -476,7 +521,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } finally {
       setLoadingDocuments(false);
     }
-  }, [client, singleDocument]);
+  }, [allowNonDefault, client, singleDocument]);
 
   const fetchLocales = useCallback(async () => {
     if (!secrets) return;
@@ -559,10 +604,11 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
           const { [pluginConfig.getLanguageField()]: _, ...cleanDoc } = doc;
           try {
             const strategy = getTranslationStrategy(doc);
-            // Each original is serialized in its own language. Field-level
-            // (internationalized-array) documents always use the source locale.
+            // With `allowNonDefaultSourceLocales`, each original is serialized
+            // in its own language. Field-level (internationalized-array)
+            // documents always use the source locale.
             const baseLanguage =
-              strategy.level === 'document'
+              allowNonDefault && strategy.level === 'document'
                 ? getDocumentLanguage(doc)
                 : pluginConfig.getSourceLocale();
             return {
@@ -586,7 +632,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
           return null;
         })
         .filter((doc) => doc !== null),
-    [documents, schema]
+    [allowNonDefault, documents, schema]
   );
 
   // Studio-side translations are only collected for groups whose original is
@@ -654,10 +700,11 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       setIsBusy(true);
 
       try {
-        const sourceDocuments = await getUploadableSources(
-          documents,
-          'Translation was not started'
-        );
+        // Without `allowNonDefaultSourceLocales`, the loaded documents are
+        // uploaded as they are.
+        const sourceDocuments = allowNonDefault
+          ? await getUploadableSources(documents, 'Translation was not started')
+          : documents;
         if (!sourceDocuments) return;
 
         const availableLocaleIds = locales
@@ -701,16 +748,23 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
 
         const transformedDocuments = serializeSourceDocuments(sourceDocuments);
 
-        // A document is never translated into its own language.
-        const targetLocaleIdsByDocument = new Map(
-          sourceDocuments.map((doc) => [
-            getDocumentPublishedId(doc),
-            getSelectedLocaleIds(getTargetLocales(doc)),
-          ])
-        );
-        const enqueueLocaleIds = hasNonDefaultSource
-          ? Array.from(new Set([...targetLocaleIdsByDocument.values()].flat()))
-          : availableLocaleIds;
+        // A document is never translated into its own language. Without
+        // `allowNonDefaultSourceLocales`, every document is translated into
+        // the selected locales.
+        const targetLocaleIdsByDocument = allowNonDefault
+          ? new Map(
+              sourceDocuments.map((doc) => [
+                getDocumentPublishedId(doc),
+                getSelectedLocaleIds(getTargetLocales(doc)),
+              ])
+            )
+          : null;
+        const enqueueLocaleIds =
+          targetLocaleIdsByDocument && hasNonDefaultSource
+            ? Array.from(
+                new Set([...targetLocaleIdsByDocument.values()].flat())
+              )
+            : availableLocaleIds;
 
         const uploadResult = await uploadFiles(transformedDocuments, secrets);
         await initProject(uploadResult, { timeout: 600 }, secrets);
@@ -732,7 +786,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         const enqueuedStatusKeys = new Set<string>();
         const enqueuedStableKeys = new Set<string>();
         for (const { info } of transformedDocuments) {
-          for (const localeId of targetLocaleIdsByDocument.get(
+          for (const localeId of targetLocaleIdsByDocument?.get(
             info.documentId
           ) ?? availableLocaleIds) {
             enqueuedStatusKeys.add(
@@ -820,6 +874,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       serializeSourceDocuments,
       uploadedVersions,
       uploadedVersionsStorageKey,
+      allowNonDefault,
       hasNonDefaultSource,
       getTargetLocales,
       getDefaultSourceDocuments,
@@ -837,20 +892,26 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         .filter((locale) => locale.enabled !== false)
         .map((locale) => locale.localeId);
 
-      const defaultSourceDocuments = getDefaultSourceDocuments();
-      if (defaultSourceDocuments.length === 0) {
-        toast.push({
-          title: `Local edits can only be saved for translations of ${pluginConfig.getSourceLocale()} documents`,
-          status: 'warning',
-          closable: true,
-        });
-        return;
+      let sourceDocuments = documents;
+      // Without `allowNonDefaultSourceLocales`, the loaded documents are
+      // uploaded as they are.
+      if (allowNonDefault) {
+        const defaultSourceDocuments = getDefaultSourceDocuments();
+        if (defaultSourceDocuments.length === 0) {
+          toast.push({
+            title: `Local edits can only be saved for translations of ${pluginConfig.getSourceLocale()} documents`,
+            status: 'warning',
+            closable: true,
+          });
+          return;
+        }
+        const uploadable = await getUploadableSources(
+          defaultSourceDocuments,
+          'Local edits were not saved'
+        );
+        if (!uploadable) return;
+        sourceDocuments = uploadable;
       }
-      const sourceDocuments = await getUploadableSources(
-        defaultSourceDocuments,
-        'Local edits were not saved'
-      );
-      if (!sourceDocuments) return;
       const transformedDocuments = serializeSourceDocuments(sourceDocuments);
 
       // Seed the source files first. uploadTranslations requires the source to
@@ -900,6 +961,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     client,
     schema,
     serializeSourceDocuments,
+    allowNonDefault,
     getDefaultSourceDocuments,
     getUploadableSources,
   ]);
@@ -1426,7 +1488,11 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       const result = await processBatch(
         patchTasks,
         async ({ doc, localeId }) => {
-          const sourceLocale = getDocumentLanguage(doc);
+          // With `allowNonDefaultSourceLocales`, each document is resolved
+          // from its own language.
+          const sourceLocale = allowNonDefault
+            ? getDocumentLanguage(doc)
+            : pluginConfig.getSourceLocale();
 
           // Skip source locale - only process translated documents
           if (localeId === sourceLocale) {

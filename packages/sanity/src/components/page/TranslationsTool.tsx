@@ -38,6 +38,7 @@ import {
 } from '../../utils/documentIds';
 import { getSelectedLocaleIds } from '../../utils/locales';
 import { pluginConfig } from '../../adapter/core';
+import { allowsNonDefaultSourceLocales } from '../../utils/translationSource';
 
 /**
  * Explains why originals outside the source locale are missing from the
@@ -234,13 +235,15 @@ const TranslationsToolContent: React.FC = () => {
               </Flex>
             </Flex>
 
-            {!loadingDocuments && skippedOriginalCount > 0 && (
-              <Card padding={3} radius={2} tone='primary' border>
-                <Text size={1}>
-                  {formatSkippedOriginalsNote(skippedOriginalCount)}
-                </Text>
-              </Card>
-            )}
+            {allowsNonDefaultSourceLocales() &&
+              !loadingDocuments &&
+              skippedOriginalCount > 0 && (
+                <Card padding={3} radius={2} tone='primary' border>
+                  <Text size={1}>
+                    {formatSkippedOriginalsNote(skippedOriginalCount)}
+                  </Text>
+                </Card>
+              )}
 
             <TranslationsTable />
           </Stack>

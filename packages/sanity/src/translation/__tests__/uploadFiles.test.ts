@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 const uploadSourceFiles = vi.fn();
 
@@ -18,6 +18,7 @@ vi.mock('../../adapter/core', async () => {
 });
 
 const { uploadFiles } = await import('../uploadFiles');
+const { pluginConfig } = await import('../../adapter/core');
 
 const serializedDocument = (content: string) => ({
   name: 'doc',
@@ -27,6 +28,14 @@ const serializedDocument = (content: string) => ({
 beforeEach(() => {
   uploadSourceFiles.mockReset();
   uploadSourceFiles.mockResolvedValue({ uploadedFiles: [] });
+  // Feature tests run with the option on; flag-off tests turn it off.
+  vi.spyOn(pluginConfig, 'getAllowNonDefaultSourceLocales').mockReturnValue(
+    true
+  );
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 describe('uploadFiles', () => {
@@ -77,6 +86,56 @@ describe('uploadFiles', () => {
             fileFormat: 'HTML',
             locale: 'en',
             versionId: 'r1',
+          },
+        },
+      ],
+      { sourceLocale: 'en' }
+    );
+  });
+});
+
+describe('uploadFiles without allowNonDefaultSourceLocales', () => {
+  beforeEach(() => {
+    vi.spyOn(pluginConfig, 'getAllowNonDefaultSourceLocales').mockReturnValue(
+      false
+    );
+  });
+
+  test('sends every file in the configured source locale, as before the option', async () => {
+    await uploadFiles(
+      [
+        {
+          info: { documentId: 'page', versionId: 'r1' },
+          serializedDocument: serializedDocument('<p>Hello</p>'),
+        },
+        {
+          info: { documentId: 'page-fr', versionId: 'r2', sourceLocale: 'fr' },
+          serializedDocument: serializedDocument('<p>Bonjour</p>'),
+        },
+      ],
+      null
+    );
+
+    expect(uploadSourceFiles).toHaveBeenCalledWith(
+      [
+        {
+          source: {
+            content: '<p>Hello</p>',
+            fileName: 'sanity/page',
+            fileId: 'page',
+            fileFormat: 'HTML',
+            locale: 'en',
+            versionId: 'r1',
+          },
+        },
+        {
+          source: {
+            content: '<p>Bonjour</p>',
+            fileName: 'sanity/page-fr',
+            fileId: 'page-fr',
+            fileFormat: 'HTML',
+            locale: 'en',
+            versionId: 'r2',
           },
         },
       ],

@@ -17,6 +17,7 @@ import { LanguageStatus } from '../shared/LanguageStatus';
 import { resolveLanguageStatusState } from '../../utils/languageStatusState';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import {
+  allowsNonDefaultSourceLocales,
   describeUntranslatableRole,
   getDocumentLanguage,
 } from '../../utils/translationSource';
@@ -75,14 +76,24 @@ export const TranslationView = () => {
   // Get the single document (first document in single document mode)
   const document = documents[0];
 
-  // The document's language; untagged documents are in the source locale.
-  const currentDocumentLanguage = document
-    ? getDocumentLanguage(document)
-    : null;
+  // Fixed for the Studio's lifetime.
+  const allowNonDefault = allowsNonDefaultSourceLocales();
+
+  // With `allowNonDefaultSourceLocales`, translation tools are shown on the
+  // original of a translation group, in whatever language it is written
+  // (untagged documents are in the source locale). Without it, they are only
+  // shown on documents in the configured source locale.
+  const shouldShowTranslationComponents = !document
+    ? false
+    : allowNonDefault ||
+      (document[pluginConfig.getLanguageField()] ||
+        pluginConfig.getSourceLocale()) === pluginConfig.getSourceLocale();
 
   // The locale this document is translated from, never a target.
   const sourceLocale =
-    currentDocumentLanguage ?? pluginConfig.getSourceLocale();
+    allowNonDefault && document
+      ? getDocumentLanguage(document)
+      : pluginConfig.getSourceLocale();
   // Local edits are only collected for groups whose original is in the
   // configured source locale. The saved preference is left as it is, since
   // it still applies to those documents.
@@ -222,9 +233,7 @@ export const TranslationView = () => {
     handleImportTranslations({ autoOnly: true });
   }, [handleImportTranslations]);
 
-  // Translation tools are only shown on the original of a translation group,
-  // in whatever language it is written.
-  if (!currentDocumentLanguage) {
+  if (!shouldShowTranslationComponents) {
     return (
       <Card padding={4} tone='neutral' border>
         <Text size={1} muted>
@@ -234,7 +243,11 @@ export const TranslationView = () => {
       </Card>
     );
   }
-  if (!documentRole || documentRole.status === 'resolving') {
+  // The role is only looked up with `allowNonDefaultSourceLocales`.
+  if (
+    allowNonDefault &&
+    (!documentRole || documentRole.status === 'resolving')
+  ) {
     return (
       <Flex align='center' justify='center' padding={4}>
         <Spinner />
@@ -242,11 +255,15 @@ export const TranslationView = () => {
     );
   }
   const unavailableMessage =
-    documentRole.status === 'unverified'
-      ? UNVERIFIED_ROLE_MESSAGE
-      : documentRole.role.kind !== 'original'
-        ? createDiagnosticMessage(describeUntranslatableRole(documentRole.role))
-        : null;
+    !allowNonDefault || !documentRole || documentRole.status === 'resolving'
+      ? null
+      : documentRole.status === 'unverified'
+        ? UNVERIFIED_ROLE_MESSAGE
+        : documentRole.role.kind !== 'original'
+          ? createDiagnosticMessage(
+              describeUntranslatableRole(documentRole.role)
+            )
+          : null;
   if (unavailableMessage) {
     return (
       <Card padding={4} tone='neutral' border>

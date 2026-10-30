@@ -5,6 +5,7 @@ import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { pluginConfig } from '../../../adapter/core';
 import { applyDocuments } from '../../../utils/applyDocuments';
 import { getPublishedId } from '../../../utils/documentIds';
+import { allowsNonDefaultSourceLocales } from '../../../utils/translationSource';
 import { randomKey } from '../../../utils/randomKey';
 import { metadataTranslations } from '../../../utils/translationMetadata';
 
@@ -27,10 +28,12 @@ export async function createI18nDocAndPatchMetadata(
     (translation) => translation.language === localeId
   );
   // Replacing the entry that points at the source would detach the original
-  // from its own group.
+  // from its own group. Only checked with `allowNonDefaultSourceLocales`,
+  // where an original can be translated into a locale its group records.
   if (
+    allowsNonDefaultSourceLocales() &&
     (existingLocaleKey?.value as { _ref?: string } | undefined)?._ref ===
-    publishedSourceDocumentId
+      publishedSourceDocumentId
   ) {
     throw new Error(
       createDiagnosticMessage({

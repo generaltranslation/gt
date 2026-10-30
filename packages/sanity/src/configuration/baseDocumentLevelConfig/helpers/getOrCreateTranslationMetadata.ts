@@ -14,6 +14,7 @@ import {
   TRANSLATION_METADATA_TYPE,
 } from '../../../utils/translationMetadata';
 import {
+  allowsNonDefaultSourceLocales,
   createNotAnOriginalError,
   findTranslationGroup,
   isNonDefaultSourceLanguage,
@@ -34,7 +35,11 @@ export const getOrCreateTranslationMetadata = async (
   baseLanguage: string
 ): Promise<SanityDocumentLike> => {
   const publishedId = getPublishedId(documentId);
-  const nonDefaultSource = isNonDefaultSourceLanguage(baseLanguage);
+  // Without `allowNonDefaultSourceLocales`, groups are found through their
+  // `baseLanguage` entry, never marked, and never checked for their original.
+  const allowNonDefault = allowsNonDefaultSourceLocales();
+  const nonDefaultSource =
+    allowNonDefault && isNonDefaultSourceLanguage(baseLanguage);
 
   const findExisting = async (): Promise<SanityDocumentLike | null> => {
     // An original in the configured source locale finds its group through
@@ -49,7 +54,7 @@ export const getOrCreateTranslationMetadata = async (
       );
       // A group marked with another original makes this document one of its
       // translations, which is never translated from.
-      if (metadata) assertOriginal(metadata);
+      if (metadata && allowNonDefault) assertOriginal(metadata);
       return metadata;
     }
     // An original in another locale is found by its own id: looking it up
@@ -127,6 +132,6 @@ export const getOrCreateTranslationMetadata = async (
 
   // createIfNotExists returns a metadata document already stored under this
   // id unchanged, which need not name this document as its original.
-  assertOriginal(metadata);
+  if (allowNonDefault) assertOriginal(metadata);
   return metadata;
 };

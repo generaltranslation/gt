@@ -160,9 +160,19 @@ run, use **Retranslate from scratch** in the Translate All dialog.
 
 ## Translating From Other Locales
 
-A document written in a locale other than `sourceLocale` — say, a page that
-only exists in French — can be translated from the Translate dialog on that
-document. Its targets include `sourceLocale`.
+By default only documents in `sourceLocale` can be translated. To translate a
+document written in another locale — say, a page that only exists in French —
+from the Translate dialog on that document, turn on
+`allowNonDefaultSourceLocales`:
+
+```ts
+gtPlugin({
+  // ...
+  allowNonDefaultSourceLocales: true, // off by default
+});
+```
+
+With it on, such a document's targets include `sourceLocale`.
 
 Each translation group (a `translation.metadata` document) has exactly one
 original, and every other document in it is a translation that cannot be
@@ -183,6 +193,11 @@ those originals (already marked by an earlier translation) it skipped.
 **Save Local Edits** only applies to groups whose original is in
 `sourceLocale`, and field-level localization always translates from
 `sourceLocale`.
+
+Turning `allowNonDefaultSourceLocales` off again once groups have been marked is
+not supported. gt-sanity then ignores the marker, as it did before the option
+existed, so a `sourceLocale` translation of an original in another locale is
+treated as an original and can be translated from again.
 
 ## Automatic Actions
 

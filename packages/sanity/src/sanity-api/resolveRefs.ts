@@ -2,10 +2,14 @@ import { SanityClient, SanityDocument } from 'sanity';
 import { pluginConfig } from '../adapter/core';
 import { getPublishedId } from '../utils/documentIds';
 import {
+  metadataTranslationRef,
   metadataTranslations,
   TRANSLATION_METADATA_TYPE,
 } from '../utils/translationMetadata';
-import { SOURCE_LANGUAGE_FIELD } from '../utils/translationSource';
+import {
+  allowsNonDefaultSourceLocales,
+  SOURCE_LANGUAGE_FIELD,
+} from '../utils/translationSource';
 
 interface Reference {
   _type: 'reference';
@@ -137,6 +141,10 @@ async function resolveTranslatedReferences(
 
   const sourceLocale = pluginConfig.getSourceLocale();
 
+  if (!allowsNonDefaultSourceLocales()) {
+    return resolveSourceLocaleReferences(refIds, locale, client, sourceLocale);
+  }
+
   if (sourceLanguage !== sourceLocale) {
     return resolveGroupMemberReferences(refIds, locale, client);
   }
@@ -164,6 +172,36 @@ async function resolveTranslatedReferences(
         translatedRefs.set(originalRef, translatedRef);
       }
     }
+  }
+
+  return translatedRefs;
+}
+
+/**
+ * Without `allowNonDefaultSourceLocales`: each reference to a group's
+ * source-locale entry resolves to the group's document in `locale`.
+ */
+async function resolveSourceLocaleReferences(
+  refIds: string[],
+  locale: string,
+  client: SanityClient,
+  sourceLocale: string
+): Promise<Map<string, string>> {
+  const translatedRefs = new Map<string, string>();
+
+  // Optimized GROQ query that directly returns only the needed translation pairs
+  const query = `*[_type == "${TRANSLATION_METADATA_TYPE}" && count(${metadataTranslations('== $sourceLocale', 'value._ref in $refIds')}) > 0] {
+    "originalRef": ${metadataTranslationRef('$sourceLocale')},
+    "translatedRefs": ${metadataTranslations('== $locale')}.value._ref
+  }[defined(originalRef) && count(translatedRefs) > 0]`;
+
+  const translationPairs: { originalRef: string; translatedRefs: string[] }[] =
+    await client.fetch(query, { refIds, sourceLocale, locale });
+
+  // Build the translation map
+  for (const { originalRef, translatedRefs: localeRefs } of translationPairs) {
+    const translatedRef = localeRefs[localeRefs.length - 1];
+    translatedRefs.set(originalRef, translatedRef);
   }
 
   return translatedRefs;

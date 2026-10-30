@@ -51,6 +51,25 @@ function getLanguageFilter(languageField: string, sourceLocale: string) {
   return `(!defined(${languageField}) || ${languageField} == "${sourceLocale}")`;
 }
 
+/**
+ * The Translate All selection without marked groups: every source-locale
+ * document in scope. This is the query Translate All has always run, and the
+ * only one it runs without `allowNonDefaultSourceLocales`.
+ *
+ * @param scopeFilter - GROQ filter for the `translateDocuments` scope.
+ */
+export function getSourceLocaleSelectionQuery({
+  scopeFilter,
+  languageField,
+  sourceLocale,
+}: {
+  scopeFilter: string;
+  languageField: string;
+  sourceLocale: string;
+}): string {
+  return `*[${scopeFilter} && ${getLanguageFilter(languageField, sourceLocale)}]`;
+}
+
 /** The Translate All selection when the dataset has marked groups. */
 function getMarkedSelectionFilter(scopeFilter: string, languageFilter: string) {
   return `${scopeFilter} && ${languageFilter} && !(_id in ${MARKED_TRANSLATION_IDS})`;
@@ -77,17 +96,21 @@ export async function selectBulkSourceDocuments({
   languageField: string;
   sourceLocale: string;
 }): Promise<{ documents: SanityDocument[]; skippedOriginalCount: number }> {
-  const languageFilter = getLanguageFilter(languageField, sourceLocale);
-
   const hasMarkedGroups = await hasMarkedTranslationGroups(client);
   if (!hasMarkedGroups) {
     return {
       documents: await client.fetch<SanityDocument[]>(
-        `*[${scopeFilter} && ${languageFilter}]`
+        getSourceLocaleSelectionQuery({
+          scopeFilter,
+          languageField,
+          sourceLocale,
+        })
       ),
       skippedOriginalCount: 0,
     };
   }
+
+  const languageFilter = getLanguageFilter(languageField, sourceLocale);
 
   const { documents, skippedOriginalIds } = await client.fetch<{
     documents: SanityDocument[];

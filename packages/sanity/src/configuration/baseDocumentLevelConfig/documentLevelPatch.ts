@@ -10,7 +10,9 @@ import { getOrCreateTranslationMetadata } from './helpers/getOrCreateTranslation
 import { patchI18nDoc } from './helpers/patchI18nDoc';
 import type { GTFile } from '../../types';
 import { getPublishedId } from '../../utils/documentIds';
+import { pluginConfig } from '../../adapter/core';
 import {
+  allowsNonDefaultSourceLocales,
   getDocumentLanguage,
   isNonDefaultSourceLanguage,
 } from '../../utils/translationSource';
@@ -46,10 +48,19 @@ export const documentLevelPatch = async (
     client
   );
 
-  // The document being translated is its group's original, written in its
-  // own language. Untagged documents are in the configured source locale.
-  const baseLanguage = getDocumentLanguage(baseDoc);
-  if (isNonDefaultSourceLanguage(baseLanguage) && localeId === baseLanguage) {
+  // With `allowNonDefaultSourceLocales`, the document being translated is its
+  // group's original, written in its own language (untagged documents are in
+  // the configured source locale). Otherwise it is always treated as written
+  // in the configured source locale.
+  const allowNonDefault = allowsNonDefaultSourceLocales();
+  const baseLanguage = allowNonDefault
+    ? getDocumentLanguage(baseDoc)
+    : pluginConfig.getSourceLocale();
+  if (
+    allowNonDefault &&
+    isNonDefaultSourceLanguage(baseLanguage) &&
+    localeId === baseLanguage
+  ) {
     throw new Error(sameLanguageDiagnostic(docInfo.documentId, localeId));
   }
 

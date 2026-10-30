@@ -4,6 +4,10 @@ import { getLocales } from '../getLocales';
 
 beforeEach(() => {
   vi.spyOn(pluginConfig, 'getSourceLocale').mockReturnValue('en');
+  // Feature tests run with the option on; flag-off tests turn it off.
+  vi.spyOn(pluginConfig, 'getAllowNonDefaultSourceLocales').mockReturnValue(
+    true
+  );
   vi.spyOn(pluginConfig, 'getLocales').mockReturnValue(['fr', 'de']);
 });
 
@@ -25,5 +29,19 @@ describe('getLocales', () => {
 
   test('also offers the source locale for an original in another locale', async () => {
     expect(await localeIds('fr')).toEqual(['en', 'fr', 'de']);
+  });
+});
+
+describe('getLocales without allowNonDefaultSourceLocales', () => {
+  beforeEach(() => {
+    vi.spyOn(pluginConfig, 'getAllowNonDefaultSourceLocales').mockReturnValue(
+      false
+    );
+  });
+
+  test('offers only the configured targets, whatever the document language', async () => {
+    expect(await localeIds()).toEqual(['fr', 'de']);
+    expect(await localeIds('en')).toEqual(['fr', 'de']);
+    expect(await localeIds('fr')).toEqual(['fr', 'de']);
   });
 });

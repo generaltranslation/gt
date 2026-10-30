@@ -28,6 +28,10 @@ const metadataIn = (dataset: Record<string, unknown>[]) =>
 
 beforeEach(() => {
   vi.spyOn(pluginConfig, 'getSourceLocale').mockReturnValue('en');
+  // Feature tests run with the option on; flag-off tests turn it off.
+  vi.spyOn(pluginConfig, 'getAllowNonDefaultSourceLocales').mockReturnValue(
+    true
+  );
   vi.spyOn(pluginConfig, 'getLanguageField').mockReturnValue('language');
   vi.spyOn(pluginConfig, 'getIgnoreFields').mockReturnValue([]);
   vi.spyOn(pluginConfig, 'getSkipFields').mockReturnValue([]);
@@ -152,5 +156,75 @@ describe('documentLevelPatch from a non-default original', () => {
 
     expect(create).not.toHaveBeenCalled();
     expect(metadataIn(dataset)).toHaveLength(1);
+  });
+});
+
+describe('documentLevelPatch without allowNonDefaultSourceLocales', () => {
+  beforeEach(() => {
+    vi.spyOn(pluginConfig, 'getAllowNonDefaultSourceLocales').mockReturnValue(
+      false
+    );
+  });
+
+  test('imports into a source-locale document of a marked group, as before the option', async () => {
+    const group = metadataDoc(
+      'translation.metadata.page-fr',
+      [
+        ['fr', 'page-fr'],
+        ['en', 'page-en'],
+      ],
+      { gtSourceLanguage: 'fr' }
+    );
+    const { client, dataset } = createGroqClient([
+      frOriginal,
+      { _id: 'page-en', _type: 'page', language: 'en', title: 'Hello' },
+      group,
+    ]);
+
+    await documentLevelPatch(
+      { documentId: 'page-en' },
+      { ...translated('Hallo'), _id: 'page-en' } as SanityDocument,
+      'de',
+      client
+    );
+
+    const metadata = metadataIn(dataset);
+    expect(metadata).toHaveLength(1);
+    const entries = (
+      metadata[0].translations as {
+        language: string;
+        value: { _ref: string };
+      }[]
+    ).map((entry) => [entry.language, entry.value._ref]);
+    expect(entries).toEqual([
+      ['fr', 'page-fr'],
+      ['en', 'page-en'],
+      ['de', 'generated-1'],
+    ]);
+  });
+
+  test('treats every document as written in the source locale and never marks a group', async () => {
+    const { client, dataset } = createGroqClient([frOriginal]);
+
+    await documentLevelPatch(
+      { documentId: 'page-fr' },
+      translated('Hallo'),
+      'de',
+      client
+    );
+
+    const metadata = metadataIn(dataset);
+    expect(metadata).toHaveLength(1);
+    expect(metadata[0]).not.toHaveProperty('gtSourceLanguage');
+    const entries = (
+      metadata[0].translations as {
+        language: string;
+        value: { _ref: string };
+      }[]
+    ).map((entry) => [entry.language, entry.value._ref]);
+    expect(entries).toEqual([
+      ['en', 'page-fr'],
+      ['de', 'generated-1'],
+    ]);
   });
 });
