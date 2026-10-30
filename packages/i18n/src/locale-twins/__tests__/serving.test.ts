@@ -172,6 +172,18 @@ describe('createLocaleTwinDocument', () => {
 `);
   });
 
+  it('sets lang on the real <html> tag, not a commented one', () => {
+    const html = builtHtml().replace(
+      '<html lang="en">',
+      '<!-- <html lang="xx" data-old> -->\n<html data-x="a>b" lang="en">'
+    );
+    const rendered = createLocaleTwinDocument({ html }).render('fr');
+
+    expect(rendered).toContain(
+      '<!-- <html lang="xx" data-old> -->\n<html data-x="a>b" lang="fr">'
+    );
+  });
+
   it('renders the default locale for a locale without twins', () => {
     const document = createLocaleTwinDocument({ html: builtHtml() });
     expect(document.render('de')).toContain('index-A.en-11111111.js');

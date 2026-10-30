@@ -374,6 +374,59 @@ describe('generateLocaleTwins', () => {
     );
   });
 
+  // Rollup and Rolldown keep spaces in chunk names (`about page.tsx`)
+  it('renames references to chunks whose names contain spaces', () => {
+    const placeholder = encodeLocaleTwinPlaceholder({ [HASH_A]: 'About' });
+    const { files, manifest } = generateLocaleTwins({
+      files: {
+        'assets/about page-Ab12.js': { code: `e(\`${placeholder}\`)` },
+        'assets/index-Cd34.js': {
+          code:
+            'const d=["assets/about page-Ab12.js"];' +
+            'const p=()=>import(`./about page-Ab12.js`);',
+        },
+      },
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+      translations: { fr: { [HASH_A]: 'À propos' } },
+    });
+    const v = manifest.versions.fr;
+
+    expect(manifest.twinned).toEqual([
+      'assets/about page-Ab12.js',
+      'assets/index-Cd34.js',
+    ]);
+    expect(files[manifest.twins.fr['assets/index-Cd34.js']]).toBe(
+      `const d=["assets/about page-Ab12.fr-${v}.js"];` +
+        `const p=()=>import(\`./about page-Ab12.fr-${v}.js\`);`
+    );
+  });
+
+  // Only a string literal (or template chunk) whose whole value is a chunk
+  // path is a reference
+  it('leaves chunk names inside other strings and comments alone', () => {
+    const placeholder = encodeLocaleTwinPlaceholder({ [HASH_A]: 'Page' });
+    const code =
+      'import"./page-Ab12.js";' +
+      `const hint="See './page-Ab12.js'";` +
+      '/* ./page-Ab12.js */' +
+      'const t=`Loaded ${"x"} from ./page-Ab12.js`;';
+    const { files, manifest } = generateLocaleTwins({
+      files: {
+        'assets/page-Ab12.js': { code: `e('${placeholder}')` },
+        'assets/entry.js': { code },
+      },
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+      translations: { fr: { [HASH_A]: 'Page fr' } },
+    });
+    const v = manifest.versions.fr;
+
+    expect(files[manifest.twins.fr['assets/entry.js']]).toBe(
+      code.replace('import"./page-Ab12.js"', `import"./page-Ab12.fr-${v}.js"`)
+    );
+  });
+
   it('resolves references by path when two chunks share a basename', () => {
     const placeholder = encodeLocaleTwinPlaceholder({ [HASH_A]: 'A' });
     const { files, manifest } = generateLocaleTwins({

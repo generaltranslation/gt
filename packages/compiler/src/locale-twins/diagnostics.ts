@@ -1,4 +1,7 @@
-import { createCompilerDiagnostic } from '../utils/diagnostics';
+import {
+  createCompilerDiagnostic,
+  formatDiagnosticErrorDetails,
+} from '../utils/diagnostics';
 
 /** Missing translation hashes per locale (only locales with missing entries). */
 export type MissingLocaleTwinTranslations = Record<string, string[]>;
@@ -41,5 +44,20 @@ export function createMissingTranslationsDiagnostic(
         ? "set localeTwins.missingTranslations to 'warn' to build with source text fallbacks"
         : undefined,
     details: locales.map((locale) => `${locale}: ${missing[locale].join(' ')}`),
+  });
+}
+
+/** An emitted JS file could not be parsed to find its chunk references. */
+export function createUnparsableChunkDiagnostic(
+  fileName: string,
+  error: unknown
+): string {
+  const details = formatDiagnosticErrorDetails(error);
+  return createCompilerDiagnostic({
+    severity: 'Error',
+    whatHappened: `Locale twins could not read the emitted file ${fileName}`,
+    why: 'it is not valid JavaScript, so its references to other chunks cannot be found',
+    fix: 'Check the plugins that change the output after bundling, or report this issue to General Translation',
+    details: details === undefined ? undefined : [details],
   });
 }

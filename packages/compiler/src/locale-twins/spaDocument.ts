@@ -48,10 +48,14 @@ type TwinnedTag = {
   fileName: string;
 };
 
+// A start tag's attributes: quoted values may contain `>`.
+const ATTRIBUTES = `(?:[^>"']|"[^"]*"|'[^']*')*`;
 // HTML end tags allow whitespace and (ignored) attributes before `>`, in any
 // case: `</script >`, `</SCRIPT\n>`, `</script foo>`.
-const TAG_PATTERN =
-  /<script\b([^>]*)>\s*<\/script\b[^>]*>|<link\b([^>]*?)\/?>/gi;
+const TAG_PATTERN = new RegExp(
+  `<script\\b(${ATTRIBUTES})>\\s*</script\\b[^>]*>|<link\\b(${ATTRIBUTES}?)/?>`,
+  'gi'
+);
 const ATTRIBUTE_PATTERN =
   /([^\s"'<>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
 // `--!>` also ends a comment, and an unclosed comment runs to the end.

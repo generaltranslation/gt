@@ -133,4 +133,18 @@ describe('rewriteLocaleTwinDocument', () => {
       });
     }
   );
+
+  it('reads attribute values that contain ">"', () => {
+    const result = rewrite(
+      document(
+        '<script type="module" data-note="a>b" crossorigin src="/assets/index-A.js"></script>'
+      )
+    )!;
+
+    expect(result.html).not.toContain('src="/assets/index-A.js"');
+    expect(parseLocaleTwinDocument(result.html).data.tags[0]).toMatchObject({
+      tag: 'script',
+      attributes: { type: 'module', 'data-note': 'a>b', crossorigin: '' },
+    });
+  });
 });

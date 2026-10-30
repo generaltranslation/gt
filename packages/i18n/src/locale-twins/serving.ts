@@ -212,15 +212,35 @@ function renderTag(tag: LocaleTwinDocumentTag, locale: string): string {
     : `<link ${attributes}>`;
 }
 
+// A comment (skipped), or the `<html>` start tag. Quoted attribute values
+// may contain `>`. `--!>` also ends a comment, and an unclosed comment runs
+// to the end.
+const HTML_START_TAG_PATTERN =
+  /<!--[\s\S]*?(?:--!?>|$)|<html\b((?:[^>"']|"[^"]*"|'[^']*')*)>/gi;
+const ATTRIBUTE_PATTERN =
+  /(\s+)([^\s"'>/=]+)(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?/g;
+
 /** Sets `lang` on the `<html>` start tag (the data block comes after it). */
 function setHtmlLang(html: string, locale: string): string {
   const lang = `lang="${escapeHtmlAttribute(locale)}"`;
-  return html.replace(/<html\b([^>]*)>/i, (_match, attributes: string) => {
-    const langPattern = /(\s)lang\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/i;
-    return langPattern.test(attributes)
-      ? `<html${attributes.replace(langPattern, `$1${lang}`)}>`
-      : `<html ${lang}${attributes}>`;
-  });
+  let done = false;
+  return html.replace(
+    HTML_START_TAG_PATTERN,
+    (match, attributes: string | undefined) => {
+      if (done || attributes === undefined) return match;
+      done = true;
+      let found = false;
+      const updated = attributes.replace(
+        ATTRIBUTE_PATTERN,
+        (attribute, space: string, name: string) => {
+          if (found || name.toLowerCase() !== 'lang') return attribute;
+          found = true;
+          return `${space}${lang}`;
+        }
+      );
+      return found ? `<html${updated}>` : `<html ${lang}${attributes}>`;
+    }
+  );
 }
 
 /**

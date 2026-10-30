@@ -1,9 +1,11 @@
 import { createHash } from 'node:crypto';
 import type { EncodedSourceMap } from '@jridgewell/trace-mapping';
+import { parse } from '@babel/parser';
 import MagicString from 'magic-string';
 import { composeSourceMaps } from './composeSourceMaps';
 import {
   createInvalidTwinLocaleDiagnostic,
+  createUnparsableChunkDiagnostic,
   createMissingTranslationsDiagnostic,
   type MissingLocaleTwinTranslations,
 } from './diagnostics';
@@ -282,12 +284,12 @@ const JS_FILE = /\.m?js$/;
 const SOURCE_MAP_COMMENT = /\/\/[#@] sourceMappingURL=(\S+)\s*$/;
 
 /**
- * A string literal (any quote style) whose content is a path ending in a JS
- * file name: `"./x.js"`, `` `./x.js` ``, `"assets/x.js"`, `'/base/assets/x.js'`.
- * Group 2 is the directory prefix, group 3 the basename.
+ * The whole value of a string literal that references a JS file: a path
+ * ending in a JS file name, `./x.js`, `assets/x.js`, `/base/assets/x.js`.
+ * File names may contain spaces (Rollup keeps them); directories may not.
+ * Group 1 is the directory prefix, group 2 the basename.
  */
-const REFERENCE_PATTERN =
-  /(['"`])((?:[^'"`\s\\]*\/)?)([^'"`\s\\/]+\.m?js)(?=\1)/g;
+const REFERENCE_PATTERN = /^((?:[^'"`\s\\]*\/)?)([^'"`\\/]+\.m?js)$/;
 
 /** Scans every emitted JS file for placeholders and references, sorted by name. */
 function scanFiles(
@@ -325,21 +327,58 @@ function findSourceMapComment(code: string): SourceMapComment | undefined {
   };
 }
 
+/**
+ * Finds the string literals (any quote style, or a template literal without
+ * expressions) whose whole value is a path to an emitted JS file. Text that
+ * merely mentions a file name (in a longer string or a comment) is not a
+ * reference. The code is tokenized, not parsed into an AST.
+ */
 function findReferences(
   importer: string,
   code: string,
   byBasename: Map<string, string[]>
 ): FileReference[] {
+  // Most files (vendor code) name no emitted file: skip tokenizing them
+  if (![...byBasename.keys()].some((name) => code.includes(name))) return [];
+  let tokens: Array<{ type: { label: string }; start: number; end: number }>;
+  try {
+    tokens = parse(code, {
+      sourceType: 'module',
+      tokens: true,
+      allowReturnOutsideFunction: true,
+      allowAwaitOutsideFunction: true,
+    }).tokens as typeof tokens;
+  } catch (error) {
+    throw new Error(createUnparsableChunkDiagnostic(importer, error));
+  }
   const references: FileReference[] = [];
-  for (const match of code.matchAll(REFERENCE_PATTERN)) {
-    const [, , prefix, name] = match;
+  for (const token of tokens) {
+    let valueStart: number;
+    let valueEnd: number;
+    if (token.type.label === 'string') {
+      valueStart = token.start + 1;
+      valueEnd = token.end - 1;
+    } else if (
+      token.type.label === 'template' &&
+      code[token.start - 1] === '`' &&
+      code[token.end] === '`'
+    ) {
+      valueStart = token.start;
+      valueEnd = token.end;
+    } else {
+      continue;
+    }
+    // The raw text: emitted chunk paths contain no escapes
+    const match = REFERENCE_PATTERN.exec(code.slice(valueStart, valueEnd));
+    if (!match) continue;
+    const [, prefix, name] = match;
     const target = resolveReference(
       importer,
       prefix + name,
       byBasename.get(name)
     );
     if (target === undefined) continue;
-    const start = match.index! + 1 + prefix.length;
+    const start = valueStart + prefix.length;
     references.push({ start, end: start + name.length, target });
   }
   return references;
