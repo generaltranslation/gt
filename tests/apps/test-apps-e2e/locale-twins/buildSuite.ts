@@ -14,6 +14,7 @@ import {
   checkIsolation,
   derivedEntryHashes,
   distinctiveSegments,
+  expectedInlineValues,
   readTranslations,
   readTwinDocumentData,
   readTwinManifest,
@@ -103,7 +104,7 @@ export function defineLocaleTwinsBuildSuite(
         options.translationsDir,
         first.manifest.locales
       );
-      attributed = attributedHashes(first.outDir, first.manifest);
+      attributed = attributedHashes(first.report);
     }, BUILD_TIMEOUT);
 
     afterAll(() => {
@@ -155,6 +156,23 @@ export function defineLocaleTwinsBuildSuite(
             UNFILLED_PLACEHOLDER_PATTERN,
             `${file} has an unfilled placeholder`
           );
+        }
+      }
+    });
+
+    it('fills every placeholder of a twin with its locale’s content (or a source fallback)', () => {
+      const { manifest } = first;
+      for (const locale of manifest.locales) {
+        for (const [original, twin] of Object.entries(manifest.twins[locale])) {
+          const code = read(first, twin);
+          for (const expected of expectedInlineValues(
+            read(first, original),
+            locale,
+            manifest.defaultLocale,
+            translations
+          )) {
+            assert.ok(code.includes(expected), `${twin} lacks ${expected}`);
+          }
         }
       }
     });

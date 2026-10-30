@@ -59,13 +59,16 @@ so the spec applies to any twin app that renders a `Locale: <code>` marker, a
 check, the build must have attributed every entry of the source translation
 file except its derived (`<Derive>`) entries, one per unattributed entry in the
 build report (`checkAttribution`), so a broken attribution fails instead of
-shrinking the string lists. The build report is read from
-`<app>/node_modules/.cache/gt/gt-locale-twins-report.json` (it is not part of
-the client output).
+shrinking the string lists. Twins carry each call site's content inline,
+without its hash, so the entries a twin carries and the bytes of its inline
+translations come from the build report (`entries`, `translationBytes`), read
+from `<app>/node_modules/.cache/gt/gt-locale-twins-report.json` (it is not
+part of the client output).
 
 Each twin app also has node-level build tests (`pnpm --filter <app> test`,
 shared suite in `locale-twins/buildSuite.ts`), which run in the normal CI test
-job: placeholders filled, twin sets closed, per-locale isolation at file level,
+job: every placeholder filled with its locale's content (recomputed from the
+translation files), twin sets closed, per-locale isolation at file level,
 and §9.7 (retranslating one string changes only that locale's twin URLs).
 Pull requests that touch the compiler or the React/i18n runtimes run only the
 twin apps in Chromium.

@@ -107,7 +107,7 @@ async function visitPages(
   const context = await newLocaleContext(browser, build, baseURL, options);
   const page = await context.newPage();
   const errors = collectErrors(page);
-  const capture = new ResponseCapture(page);
+  const capture = new ResponseCapture(page, build);
 
   await page.goto('/');
   await expect(localeMarker(page, locale)).toBeVisible();
@@ -231,7 +231,7 @@ test('§9.1 selects the locale from the cookie, then Accept-Language / navigator
     const context = await newLocaleContext(browser, build, baseURL!, options);
     const page = await context.newPage();
     const errors = collectErrors(page);
-    const capture = new ResponseCapture(page);
+    const capture = new ResponseCapture(page, build);
     const documentResponse = await page.goto('/');
     await expect(localeMarker(page, expected)).toBeVisible();
     await expect(page.locator('html')).toHaveAttribute('lang', expected);
@@ -325,7 +325,7 @@ test('§9.2/§9.3/§9.6/§9.8 each locale receives only its strings, per page, w
     const lazyFiles = visit.lazyRoute
       .filter((response) =>
         response.tables.some((table) =>
-          Object.keys(table.entries).some((hash) => lazyOnly.includes(hash))
+          table.hashes.some((hash) => lazyOnly.includes(hash))
         )
       )
       .map((response) => response.file);
@@ -407,7 +407,7 @@ test('§9.4 switching reloads into the new locale’s twins; shared files come f
     },
   ]);
   const cache = await trackCacheHits(page);
-  const capture = new ResponseCapture(page);
+  const capture = new ResponseCapture(page, build);
   await page.goto('/');
   await expect(localeMarker(page, from)).toBeVisible();
   await page.waitForLoadState('networkidle');
@@ -491,7 +491,7 @@ test('§9.5 the server renders each locale and the page hydrates from its twins 
     const context = await newLocaleContext(browser, build, baseURL!, options);
     const page = await context.newPage();
     const errors = collectErrors(page);
-    const capture = new ResponseCapture(page);
+    const capture = new ResponseCapture(page, build);
     await page.goto('/');
     await waitForHydration(page);
     await page.waitForLoadState('networkidle');
@@ -530,7 +530,7 @@ test('§9.5 control: twins of another locale fail hydration', async ({
   });
   const page = await context.newPage();
   const errors = collectErrors(page);
-  const capture = new ResponseCapture(page);
+  const capture = new ResponseCapture(page, build);
   await page.goto(`/?${twins!.mismatchControlParam}=${served}`);
   await expect(localeMarker(page, rendered)).toBeVisible();
   await page.waitForLoadState('networkidle');
@@ -558,7 +558,7 @@ test('§9.5 a route the server does not render renders from its twins in the bro
     const context = await newLocaleContext(browser, build, baseURL!, options);
     const page = await context.newPage();
     const errors = collectErrors(page);
-    const capture = new ResponseCapture(page);
+    const capture = new ResponseCapture(page, build);
     await page.goto(route!);
     await expect(localeMarker(page, locale)).toBeVisible();
     await page.waitForLoadState('networkidle');
