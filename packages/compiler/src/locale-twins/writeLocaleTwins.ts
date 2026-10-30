@@ -191,6 +191,7 @@ export type WriteLocaleTwinSpaDocumentsInput = {
   manifest: LocaleTwinManifest;
   bootstrap: 'inline' | 'external';
   localeCookieName: string;
+  enableI18nCookieName: string;
   /** `gt.config.json` `customMapping`, for the bootstrap's locale matching. */
   customMapping?: CustomMapping;
 };
@@ -221,6 +222,7 @@ export function writeLocaleTwinSpaDocuments(
       html,
       manifest: input.manifest,
       localeCookieName: input.localeCookieName,
+      enableI18nCookieName: input.enableI18nCookieName,
       customMapping: input.customMapping,
       externalBootstrap,
     });

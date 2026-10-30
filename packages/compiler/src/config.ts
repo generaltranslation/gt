@@ -11,7 +11,10 @@ import {
   resolveTranslationSplitting,
   resolveTranslationSplittingValue,
 } from 'generaltranslation/internal';
-import { defaultLocaleCookieName } from 'gt-i18n/internal/cookies';
+import {
+  defaultEnableI18nCookieName,
+  defaultLocaleCookieName,
+} from 'gt-i18n/internal/cookies';
 import { COMPILER_DIAGNOSTIC_SOURCE } from './utils/diagnostics';
 
 export type LogLevel = NonNullable<GTCompilerOptions['logLevel']>;
@@ -29,6 +32,12 @@ export type LocaleTwinsOptions = {
    * custom `localeCookieName` to GT (default: the canonical GT locale cookie).
    */
   localeCookieName?: string;
+  /**
+   * Enable-i18n cookie the SPA bootstrap reads. Set it when the app passes a
+   * custom `enableI18nCookieName` to GT (default: the canonical GT
+   * enable-i18n cookie).
+   */
+  enableI18nCookieName?: string;
 };
 
 /** {@link LocaleTwinsOptions} with every default applied. */
@@ -39,6 +48,7 @@ export const DEFAULT_LOCALE_TWINS_OPTIONS: ResolvedLocaleTwinsOptions = {
   spaBootstrap: 'inline',
   vendorChunk: true,
   localeCookieName: defaultLocaleCookieName,
+  enableI18nCookieName: defaultEnableI18nCookieName,
 };
 
 /** A complete or partial gt.config.json accepted by compiler integrations. */

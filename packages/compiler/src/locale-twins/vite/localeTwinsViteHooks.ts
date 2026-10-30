@@ -288,6 +288,7 @@ export function createLocaleTwinsViteHooks(
           manifest,
           bootstrap: options.localeTwins.spaBootstrap,
           localeCookieName: options.localeTwins.localeCookieName,
+          enableI18nCookieName: options.localeTwins.enableI18nCookieName,
           customMapping: gtConfig.customMapping,
         });
         if (spa) report.spa = spa;

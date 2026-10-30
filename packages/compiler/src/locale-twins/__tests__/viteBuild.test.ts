@@ -582,7 +582,11 @@ describe.each(VITE_VERSIONS)('$name SPA document', ({ load }) => {
     const vite = await load();
     const app = newApp();
     await buildFixture(vite, app, {
-      localeTwins: { spaBootstrap: 'external', localeCookieName: 'app-locale' },
+      localeTwins: {
+        spaBootstrap: 'external',
+        localeCookieName: 'app-locale',
+        enableI18nCookieName: 'app-enable',
+      },
     });
 
     const html = app.read('index.html');
@@ -595,9 +599,9 @@ describe.each(VITE_VERSIONS)('$name SPA document', ({ load }) => {
       /^\/assets\/gt-locale-twins-bootstrap\.[0-9a-f]{8}\.js$/
     );
     expect(app.read(src!.slice(1))).toBe(LOCALE_TWIN_BOOTSTRAP_SCRIPT);
-    expect(parseLocaleTwinDocument(html).data.localeCookieName).toBe(
-      'app-locale'
-    );
+    const { data } = parseLocaleTwinDocument(html);
+    expect(data.localeCookieName).toBe('app-locale');
+    expect(data.enableI18nCookieName).toBe('app-enable');
     const report = app.report();
     expect(report.spa).toEqual({
       bootstrap: 'external',

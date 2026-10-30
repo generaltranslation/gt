@@ -1,6 +1,9 @@
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { defaultLocaleCookieName } from 'gt-i18n/internal/cookies';
+import {
+  defaultEnableI18nCookieName,
+  defaultLocaleCookieName,
+} from 'gt-i18n/internal/cookies';
 import { createLocaleTwinsViteHooks } from '../vite/localeTwinsViteHooks';
 
 const CONFIG_DIR = '/app';
@@ -13,6 +16,7 @@ function createHooks(enabled = true) {
       spaBootstrap: 'inline',
       vendorChunk: true,
       localeCookieName: defaultLocaleCookieName,
+      enableI18nCookieName: defaultEnableI18nCookieName,
     },
     gtConfig: {
       defaultLocale: 'en',
