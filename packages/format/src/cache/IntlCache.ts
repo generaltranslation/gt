@@ -57,6 +57,7 @@ class IntlCache {
    * @returns Cached or newly created Intl instance.
    */
   get<K extends keyof CustomIntlConstructors>(
+    // biome-ignore lint/suspicious/noShadowRestrictedNames: names the Intl constructor key being cached
     constructor: K,
     ...args: ConstructorParameters<CustomIntlConstructors[K]>
   ): InstanceType<ConstructorType<K>> {

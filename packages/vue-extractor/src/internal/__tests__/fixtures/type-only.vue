@@ -2,4 +2,6 @@
 import type { T } from 'gt-vue';
 </script>
 
-<template><T>Type-only component</T></template>
+<template
+  ><T>Type-only component</T></template
+>

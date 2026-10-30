@@ -9,6 +9,7 @@ import type { ExampleSummary } from '../shared/types.ts';
 let examples: ExampleSummary[] | null = null;
 let failed = false;
 const listeners = new Set<() => void>();
+// biome-ignore lint/correctness/noUnusedVariables: read by the `request ??=` dedupe in load()
 let request: Promise<void> | null = null;
 
 function load() {

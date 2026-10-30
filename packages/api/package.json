@@ -29,9 +29,9 @@
     "build": "tsdown",
     "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
     "build:release": "pnpm run build:clean",
-    "codegen": "openapi-ts && oxfmt src/generated spec/openapi.json",
-    "format": "oxfmt --check src openapi-ts.config.ts tsdown.config.mts package.json tsconfig.json spec/openapi.json",
-    "lint": "oxlint src",
+    "codegen": "openapi-ts && biome format --write src/generated spec/openapi.json",
+    "format": "biome format src openapi-ts.config.ts tsdown.config.mts package.json tsconfig.json spec/openapi.json",
+    "lint": "biome lint src",
     "test": "vitest run --typecheck",
     "typecheck": "tsc --noEmit"
   },
@@ -42,10 +42,9 @@
   "author": "General Translation, Inc.",
   "license": "MIT",
   "devDependencies": {
+    "@biomejs/biome": "catalog:",
     "@hey-api/openapi-ts": "0.88.0",
     "@types/node": "catalog:",
-    "oxfmt": "catalog:",
-    "oxlint": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

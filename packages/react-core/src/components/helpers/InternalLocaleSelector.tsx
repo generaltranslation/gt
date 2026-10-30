@@ -57,6 +57,7 @@ export function InternalLocaleSelector({
   customMapping?: CustomMapping;
   setLocale: (locale: string) => void;
   getLocaleProperties: (locale: string) => LocaleProperties;
+  // biome-ignore lint/suspicious/noExplicitAny: forwards arbitrary props to the rendered element
   [key: string]: any;
 }): React.JSX.Element | null {
   // Get display name

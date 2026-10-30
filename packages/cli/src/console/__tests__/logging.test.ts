@@ -75,8 +75,9 @@ describe('logging prompts', () => {
 
   it('keeps customMapping aliases and typed or selected locale tags selectable', async () => {
     clack.autocomplete.mockResolvedValueOnce('french');
-    const { promptLocale, getLocalePromptOptions } =
-      await import('../logging.js');
+    const { promptLocale, getLocalePromptOptions } = await import(
+      '../logging.js'
+    );
     const customMapping = { french: { code: 'fr' } };
 
     await expect(

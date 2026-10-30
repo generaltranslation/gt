@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "oxlint --config ../.oxlintrc.react.json .",
+    "lint": "biome lint .",
     "preview": "vite preview",
     "translate": "gt translate",
     "typecheck": "tsc -b"
@@ -18,13 +18,13 @@
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.6.3",
     "@generaltranslation/compiler": "workspace:*",
     "@types/node": "^26.6.3",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
     "gt": "workspace:*",
-    "oxlint": "^1.86.0",
     "typescript": "~7.0.2",
     "vite": "^8.3.1"
   }

@@ -47,7 +47,9 @@ export const {
  * Note that this gets used by RSC, but SSR (aka 'use client' bondary on server)
  * uses context to access this condition store
  */
-export class AsyncConditionStore implements AsyncReadonlyConditionStoreInterface {
+export class AsyncConditionStore
+  implements AsyncReadonlyConditionStoreInterface
+{
   private getLocaleFn: () => Promise<string>;
   private getRegionFn: () => Promise<string | undefined>;
   private enableI18n: boolean;

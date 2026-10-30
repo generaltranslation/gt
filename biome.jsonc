@@ -1,0 +1,349 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "includes": [
+      "**",
+      "!!**/dist",
+      "!!.turbo",
+      "!tests/seeds",
+      "!!pnpm-lock.yaml",
+      "!**/*.svg",
+      "!packages/vue-extractor/src/internal/__tests__/fixtures/template-adversarial.vue",
+      "!packages/vue-extractor/src/internal/__tests__/fixtures/template-runtime-parity.vue"
+    ]
+  },
+  "formatter": {
+    "indentStyle": "space",
+    "lineEnding": "lf",
+    "includes": [
+      "**",
+      "!.changeset/*.md",
+      "!examples/next-chatbot/lib/db/migrations",
+      "!tests/apps/compiler-cli-parity/**",
+      "!**/next-env.d.ts",
+      "!**/routeTree.gen.ts"
+    ]
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "jsxQuoteStyle": "single",
+      "trailingCommas": "es5"
+    },
+    // Keep `import React` counted as used: some packages (e.g. gt-sanity, jsx: preserve)
+    // leave the JSX runtime to their bundler.
+    "jsxRuntime": "reactClassic",
+    "globals": ["NodeJS", "React", "__DEV__", "t"]
+  },
+  "css": {
+    "parser": { "tailwindDirectives": true },
+    "formatter": { "quoteStyle": "single" }
+  },
+  "markdown": { "formatter": { "enabled": false } },
+  "yaml": { "formatter": { "quoteStyle": "single" } },
+  "html": {
+    "formatter": { "enabled": true, "selfCloseVoidElements": "always" },
+    "experimentalFullSupportEnabled": true
+  },
+  "assist": { "enabled": false },
+  "linter": {
+    "includes": [
+      "**",
+      "!**/*.d.ts",
+      "!**/rollup.config.*",
+      "!**/routeTree.gen.ts",
+      "!packages/api/src/generated/**"
+    ],
+    "rules": {
+      "preset": "none",
+      // Explicit equivalents of oxlint's default "correctness" rules (the presets add
+      // many rules oxlint never enforced). `no-cond-assign` is left out: Biome's
+      // equivalent, noAssignInExpressions, flags every assignment in an expression.
+      "correctness": {
+        "noUndeclaredVariables": "warn",
+        "noUnusedVariables": "warn",
+        "noUnusedImports": "warn",
+        "noConstAssign": "error",
+        "noConstantCondition": "error",
+        "noEmptyCharacterClassInRegex": "error",
+        "noEmptyPattern": "error",
+        "noGlobalObjectCalls": "error",
+        "noInvalidBuiltinInstantiation": "error",
+        "noInvalidConstructorSuper": "error",
+        "noNonoctalDecimalEscape": "error",
+        "noPrecisionLoss": "error",
+        "noSelfAssign": "error",
+        "noSetterReturn": "error",
+        "noUnreachable": "error",
+        "noUnreachableSuper": "error",
+        "noUnsafeFinally": "error",
+        "noUnsafeOptionalChaining": "error",
+        "noUnusedLabels": "error",
+        "noUnusedPrivateClassMembers": "error",
+        "useIsNan": "error",
+        "useValidForDirection": "error",
+        "useValidTypeof": "error",
+        "useYield": "error"
+      },
+      "suspicious": {
+        "noConsole": {
+          "level": "warn",
+          "options": {
+            "allow": ["warn", "error"]
+          }
+        },
+        "noExplicitAny": "warn",
+        "noDocumentCookie": "off",
+        "noAsyncPromiseExecutor": "error",
+        "noCatchAssign": "error",
+        "noClassAssign": "error",
+        "noCompareNegZero": "error",
+        "noControlCharactersInRegex": "error",
+        "noDebugger": "error",
+        "noDuplicateCase": "error",
+        "noDuplicateClassMembers": "error",
+        "noDuplicateElseIf": "error",
+        "noDuplicateEnumValues": "error",
+        "noDuplicateObjectKeys": "error",
+        "noExtraNonNullAssertion": "error",
+        "noFunctionAssign": "error",
+        "noGlobalAssign": "error",
+        "noImportAssign": "error",
+        "noIrregularWhitespace": "error",
+        "noMisleadingCharacterClass": "error",
+        "noMisleadingInstantiator": "error",
+        "noNonNullAssertedOptionalChain": "error",
+        "noShadowRestrictedNames": "error",
+        "noSparseArray": "error",
+        "noThenProperty": "error",
+        "noUnsafeDeclarationMerging": "error",
+        "noUnsafeNegation": "error",
+        "noUselessRegexBackrefs": "error",
+        "noWith": "error",
+        "useGetterReturn": "error",
+        "useNamespaceKeyword": "error"
+      },
+      "style": {
+        "useConst": "warn"
+      },
+      "performance": {
+        "noImgElement": "off"
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["**/*.html"],
+      "html": { "formatter": { "indentScriptAndStyle": true } }
+    },
+    {
+      "includes": [
+        "examples/**",
+        "tests/apps/**",
+        "!tests/apps/compiler-cli-parity/**",
+        "!tests/apps/vite-vue/**"
+      ],
+      "linter": {
+        "domains": {
+          "react": "recommended",
+          "next": "recommended"
+        },
+        "rules": {
+          "correctness": {
+            "useExhaustiveDependencies": "off"
+          },
+          "suspicious": {
+            "noArrayIndexKey": "off"
+          },
+          "security": {
+            "noDangerouslySetInnerHtml": "off"
+          }
+        }
+      }
+    },
+    {
+      // Tests, e2e harnesses and scripts print progress and use loose test doubles.
+      "includes": [
+        "**/__tests__/**",
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/e2e/**",
+        "scripts/**",
+        "tests/**",
+        "tools/**"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": { "noConsole": "off", "noExplicitAny": "off" }
+        }
+      },
+      // Several packages run Vitest with `globals: true`.
+      "javascript": {
+        "globals": [
+          "afterAll",
+          "afterEach",
+          "beforeAll",
+          "beforeEach",
+          "describe",
+          "expect",
+          "it",
+          "test",
+          "vi"
+        ]
+      }
+    },
+    {
+      // Extractor fixtures intentionally contain unused and template-only bindings.
+      "includes": ["packages/vue-extractor/src/internal/__tests__/fixtures/**"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUndeclaredVariables": "off",
+            "noUnusedImports": "off",
+            "noUnusedVariables": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/next/src/**/*.{ts,tsx}"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "gt-react/client": "Next server/RSC code must not import the gt-react client entrypoint. Use a 'use client' boundary module instead."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "packages/next/src/client.ts",
+        "packages/next/src/index.client.ts",
+        "packages/next/src/index.types.ts",
+        "packages/next/src/components/ClientSelectors.tsx",
+        "packages/next/src/provider/ClientProviderWrapper.tsx",
+        "packages/next/src/**/__tests__/**"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "packages/react-core/src/components-rsc.ts",
+        "packages/react-core/src/**/*.rsc.{ts,tsx}",
+        "packages/react-core/src/**/*.shared.{ts,tsx}",
+        "packages/react/src/context.rsc.ts"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "@generaltranslation/react-core/context": "RSC-safe modules must not import the broad context barrel; import from @generaltranslation/react-core/components-rsc or pure helpers instead.",
+                  "react": {
+                    "importNames": [
+                      "createContext",
+                      "useContext",
+                      "useEffect",
+                      "useState",
+                      "useSyncExternalStore"
+                    ],
+                    "message": "RSC-safe modules must not use context- or state-backed React APIs."
+                  }
+                },
+                "patterns": [
+                  {
+                    "group": [
+                      "**/hooks/condition-store",
+                      "**/hooks/external-store",
+                      "**/hooks/i18n-config",
+                      "**/context/context",
+                      "**/context/InternalGTProvider"
+                    ],
+                    "message": "RSC-safe modules must not import hook or context modules; pass request conditions explicitly."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "packages/cli/src/**/*.ts",
+        "packages/sanity/src/**/*.{ts,tsx}",
+        "!packages/cli/src/cli/commands/api.ts",
+        "!**/__tests__/**",
+        "!**/*.test.{ts,tsx}"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "generaltranslation/api": {
+                    "allowImportNames": [
+                      "FileFormat",
+                      "ProjectApiKeyPermission",
+                      "ApiClientConfig",
+                      "GetFileInfoResponse",
+                      "GetTranslationStatusData",
+                      "JobResult",
+                      "UserTokenProvider"
+                    ],
+                    "message": "CLI and Sanity must not issue generated API requests directly. Add the request to createGtApiAdapter in packages/core/src/adapter/createGtApi.ts and call it through the shared adapter."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/locadex/**/*.{ts,tsx}"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": {
+              "level": "error",
+              "options": {
+                "allow": ["error"]
+              }
+            }
+          },
+          "correctness": {
+            "useImportExtensions": {
+              "level": "error",
+              "options": {
+                "forceJsExtensions": true
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

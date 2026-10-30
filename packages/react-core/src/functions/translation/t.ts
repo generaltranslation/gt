@@ -233,6 +233,7 @@ interface StringOrTemplateSyncResolutionFunction {
  * @param values - The values to interpolate.
  * @returns The translated message.
  */
+// biome-ignore lint/correctness/noUnusedVariables: documents the template-tag call signature referenced by the {@link} above
 type TemplateSyncResolutionFunction = (
   strings: TemplateStringsArray,
   ...values: unknown[]

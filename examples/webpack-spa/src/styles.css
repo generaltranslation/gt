@@ -18,12 +18,7 @@ body {
   background: radial-gradient(1200px 600px at 50% -10%, #1a1f2b, var(--bg));
   color: var(--text);
   font-family:
-    'Inter',
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
+    'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.55;
 }
 

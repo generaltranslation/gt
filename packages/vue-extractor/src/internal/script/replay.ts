@@ -1721,6 +1721,7 @@ export function createReplayAnalysis({
         ...context,
         thisValue: instance,
       };
+      // biome-ignore lint/suspicious/noShadowRestrictedNames: the class constructor method being replayed
       let constructor: (ScopedExpression & { node: t.ClassMethod }) | undefined;
       for (const member of classNode.body.body) {
         if ('decorators' in member && member.decorators?.length)

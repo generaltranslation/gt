@@ -570,14 +570,14 @@ export function createLocalModuleResolver(
       return Boolean(
         (parent?.type === 'AssignmentExpression' &&
           parent.left === member.node) ||
-        (parent?.type === 'UpdateExpression' &&
-          parent.argument === member.node) ||
-        (parent?.type === 'UnaryExpression' &&
-          parent.operator === 'delete' &&
-          parent.argument === member.node) ||
-        ((parent?.type === 'ForInStatement' ||
-          parent?.type === 'ForOfStatement') &&
-          parent.left === member.node)
+          (parent?.type === 'UpdateExpression' &&
+            parent.argument === member.node) ||
+          (parent?.type === 'UnaryExpression' &&
+            parent.operator === 'delete' &&
+            parent.argument === member.node) ||
+          ((parent?.type === 'ForInStatement' ||
+            parent?.type === 'ForOfStatement') &&
+            parent.left === member.node)
       );
     });
   };

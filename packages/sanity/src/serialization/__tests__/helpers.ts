@@ -111,7 +111,6 @@ export const addedBlockDeserializers = [
   {
     deserialize(
       el: HTMLElement,
-      //eslint-disable-next-line no-undef -- not picking up NodeListOf/ChildNode
       next: (nodes: NodeListOf<ChildNode>) => unknown
     ): TypedObject | undefined {
       if (!el.className || el.className?.toLowerCase() !== 'annotation') {

@@ -7,7 +7,7 @@
     "dev": "concurrently -k -n rolldown,sirv \"rolldown -c --watch\" \"sirv dist --host 127.0.0.1 --port 5177 --single\"",
     "build": "rolldown -c",
     "preview": "sirv dist --host 127.0.0.1 --port 4177 --single",
-    "lint": "oxlint --config ../../../examples/.oxlintrc.react.json .",
+    "lint": "biome lint .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -7,7 +7,7 @@
     "dev": "webpack serve --mode development --host 127.0.0.1 --port 5175",
     "build": "webpack --mode production",
     "preview": "webpack serve --mode production --host 127.0.0.1 --port 4175",
-    "lint": "oxlint --config ../../../examples/.oxlintrc.react.json .",
+    "lint": "biome lint .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

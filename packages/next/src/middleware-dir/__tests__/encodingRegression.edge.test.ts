@@ -189,6 +189,7 @@ describe.each([true, false])(
 
     it.each(reservedEscapes)(
       'keeps aliases containing %s distinct from double-encoded aliases',
+      // biome-ignore lint/suspicious/noShadowRestrictedNames: test parameter; the deprecated global `escape` is never used here
       (escape) => {
         for (const suffix of ['', '/[id]']) {
           const firstAlias = '/a%' + escape + 'b';
@@ -229,6 +230,7 @@ describe.each([true, false])(
 
     it.each(reservedEscapes)(
       'does not match a double-encoded request against a static %s alias',
+      // biome-ignore lint/suspicious/noShadowRestrictedNames: test parameter; the deprecated global `escape` is never used here
       (escape) => {
         const middleware = createNextMiddleware({
           prefixDefaultLocale,

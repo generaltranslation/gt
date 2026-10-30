@@ -70,5 +70,6 @@ export type RegionSelectorProps = {
   prioritizeCurrentLocaleRegion?: boolean;
   sortRegionsAlphabetically?: boolean;
   asLocaleSelector?: boolean;
+  // biome-ignore lint/suspicious/noExplicitAny: forwards arbitrary props to the rendered element
   [key: string]: any;
 };

@@ -7,7 +7,7 @@
     "dev": "concurrently -k -n rollup,sirv \"rollup -c -w\" \"sirv dist --host 127.0.0.1 --port 5176 --single\"",
     "build": "rollup -c",
     "preview": "sirv dist --host 127.0.0.1 --port 4176 --single",
-    "lint": "oxlint --config ../../../examples/.oxlintrc.react.json .",
+    "lint": "biome lint .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

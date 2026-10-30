@@ -339,12 +339,13 @@ function isIgnoredConsumerPath(root: string, file: string): boolean {
   const rootDirectory = directories[0]?.toLowerCase();
   return Boolean(
     (rootDirectory && GENERATED_CONSUMER_ROOT_DIRECTORIES.has(rootDirectory)) ||
-    directories.some((segment) => {
-      const normalized = segment.toLowerCase();
-      return (
-        segment.startsWith('.') || IGNORED_CONSUMER_DIRECTORIES.has(normalized)
-      );
-    })
+      directories.some((segment) => {
+        const normalized = segment.toLowerCase();
+        return (
+          segment.startsWith('.') ||
+          IGNORED_CONSUMER_DIRECTORIES.has(normalized)
+        );
+      })
   );
 }
 
@@ -1322,9 +1323,9 @@ function bindingHasRuntimeUsage(
         !isTypeOnlyReference(reference) &&
         !(scriptSetup && isCompilerConsumedSetupMacroReference(reference))
     ) ||
-    runtimeUsages.some((usage) =>
-      templateUsageMatchesBinding(usage, localName, owner)
-    )
+      runtimeUsages.some((usage) =>
+        templateUsageMatchesBinding(usage, localName, owner)
+      )
   );
 }
 
@@ -1378,10 +1379,10 @@ function isCompilerConsumedSetupMacroReference(
   }
   return Boolean(
     VALUE_SETUP_COMPILER_MACROS.has(macro) &&
-    parent?.isVariableDeclarator() &&
-    parent.node.init === consumedCall.node &&
-    parent.parentPath?.isVariableDeclaration() &&
-    parent.parentPath.parentPath?.isProgram()
+      parent?.isVariableDeclarator() &&
+      parent.node.init === consumedCall.node &&
+      parent.parentPath?.isVariableDeclaration() &&
+      parent.parentPath.parentPath?.isProgram()
   );
 }
 
@@ -1398,9 +1399,9 @@ function isTypeOnlyReference(reference: NodePath<t.Node>): boolean {
   );
   return Boolean(
     exportSpecifier?.isExportSpecifier() &&
-    (exportSpecifier.node.exportKind === 'type' ||
-      (exportSpecifier.parentPath?.isExportNamedDeclaration() &&
-        exportSpecifier.parentPath.node.exportKind === 'type'))
+      (exportSpecifier.node.exportKind === 'type' ||
+        (exportSpecifier.parentPath?.isExportNamedDeclaration() &&
+          exportSpecifier.parentPath.node.exportKind === 'type'))
   );
 }
 
@@ -1516,12 +1517,14 @@ function isMemberWrite(
   const parent = member.parentPath?.node;
   return Boolean(
     (parent?.type === 'AssignmentExpression' && parent.left === member.node) ||
-    (parent?.type === 'UpdateExpression' && parent.argument === member.node) ||
-    (parent?.type === 'UnaryExpression' &&
-      parent.operator === 'delete' &&
-      parent.argument === member.node) ||
-    ((parent?.type === 'ForInStatement' || parent?.type === 'ForOfStatement') &&
-      parent.left === member.node)
+      (parent?.type === 'UpdateExpression' &&
+        parent.argument === member.node) ||
+      (parent?.type === 'UnaryExpression' &&
+        parent.operator === 'delete' &&
+        parent.argument === member.node) ||
+      ((parent?.type === 'ForInStatement' ||
+        parent?.type === 'ForOfStatement') &&
+        parent.left === member.node)
   );
 }
 

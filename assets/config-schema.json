@@ -34,10 +34,7 @@
         "type": "string"
       },
       "uniqueItems": true,
-      "examples": [
-        ["fr", "es", "de"],
-        ["en-US", "fr-FR", "es-ES"]
-      ]
+      "examples": [["fr", "es", "de"], ["en-US", "fr-FR", "es-ES"]]
     },
     "baseUrl": {
       "type": "string",

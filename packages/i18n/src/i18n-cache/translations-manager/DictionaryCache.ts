@@ -12,7 +12,6 @@ import type {
   Dictionary,
   DictionaryEntry,
   DictionaryKey,
-  DictionaryPath,
   DictionaryValue,
 } from './utils/types/dictionary';
 export type {

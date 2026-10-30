@@ -21,7 +21,9 @@ const missingRequestScopeError = createDiagnosticMessage({
 /**
  * Read-only ConditionStore backed by request-scoped AsyncLocalStorage.
  */
-export class AsyncLocalConditionStore implements ReadonlyConditionStoreInterface {
+export class AsyncLocalConditionStore
+  implements ReadonlyConditionStoreInterface
+{
   private readonly storage = new AsyncLocalStorage<RequestConditions>();
 
   constructor(private readonly config: InitializeGTParams) {}

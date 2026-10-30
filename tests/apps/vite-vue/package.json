@@ -6,8 +6,8 @@
   "scripts": {
     "build": "pnpm run generate && pnpm run typecheck && vite build",
     "dev": "vite --host 127.0.0.1 --port 5179 --strictPort",
-    "generate": "gt --skip-version-check generate --config gt.config.json && oxfmt src/_gt",
-    "lint": "oxlint --config ../../../.oxlintrc.json .",
+    "generate": "gt --skip-version-check generate --config gt.config.json && biome format --write src/_gt",
+    "lint": "biome lint .",
     "preview": "vite preview --host 127.0.0.1 --port 5179 --strictPort",
     "test:e2e:serve": "pnpm run build && pnpm run preview",
     "typecheck": "tsc --noEmit"

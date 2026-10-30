@@ -223,9 +223,9 @@ function isInsideDirectory(root: string, candidate: string): boolean {
 function isMissingPathError(error: unknown): boolean {
   return Boolean(
     error &&
-    typeof error === 'object' &&
-    'code' in error &&
-    (error.code === 'ENOENT' || error.code === 'ENOTDIR')
+      typeof error === 'object' &&
+      'code' in error &&
+      (error.code === 'ENOENT' || error.code === 'ENOTDIR')
   );
 }
 
@@ -1584,13 +1584,13 @@ function isImportMetaUrl(node: t.Node): boolean {
   const unwrapped = unwrapNode(node);
   return Boolean(
     unwrapped &&
-    unwrapped.type === 'MemberExpression' &&
-    !unwrapped.computed &&
-    unwrapped.object.type === 'MetaProperty' &&
-    unwrapped.object.meta.name === 'import' &&
-    unwrapped.object.property.name === 'meta' &&
-    unwrapped.property.type === 'Identifier' &&
-    unwrapped.property.name === 'url'
+      unwrapped.type === 'MemberExpression' &&
+      !unwrapped.computed &&
+      unwrapped.object.type === 'MetaProperty' &&
+      unwrapped.object.meta.name === 'import' &&
+      unwrapped.object.property.name === 'meta' &&
+      unwrapped.property.type === 'Identifier' &&
+      unwrapped.property.name === 'url'
   );
 }
 
@@ -1699,9 +1699,9 @@ function hasDirectMemberMutation(binding: Binding): boolean {
     const parentPath = targetPath.parentPath;
     return Boolean(
       parentPath &&
-      (parentPath.isAssignmentExpression() ||
-        parentPath.isUpdateExpression() ||
-        parentPath.isUnaryExpression({ operator: 'delete' }))
+        (parentPath.isAssignmentExpression() ||
+          parentPath.isUpdateExpression() ||
+          parentPath.isUnaryExpression({ operator: 'delete' }))
     );
   });
 }

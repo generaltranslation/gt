@@ -9,7 +9,7 @@
     "build": "rollup -c",
     "translate": "gt translate",
     "preview": "sirv dist --host 127.0.0.1 --port 4173 --single",
-    "lint": "oxlint --config ../.oxlintrc.react.json .",
+    "lint": "biome lint .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -18,6 +18,7 @@
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.6.3",
     "@generaltranslation/compiler": "workspace:*",
     "@rollup/plugin-commonjs": "^29.0.3",
     "@rollup/plugin-json": "^6.1.0",
@@ -29,7 +30,6 @@
     "@types/react-dom": "^19.3.0",
     "dotenv": "^18.0.5",
     "gt": "workspace:*",
-    "oxlint": "^1.86.0",
     "rollup": "^4.63.5",
     "rollup-plugin-livereload": "^2.0.5",
     "rollup-plugin-postcss": "^4.0.2",

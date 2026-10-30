@@ -113,7 +113,7 @@ try {
     );
     process.exitCode = 1;
   } else {
-    // Pretty-printed and then run through the repo's oxfmt (its JSON style — e.g.
+    // Pretty-printed and then run through the repo's Biome formatter (its JSON style — e.g.
     // short arrays inline — differs from JSON.stringify), so the committed fixture
     // is diffable and `pnpm lint` stays clean right after regenerating.
     const out = join(E2E_DIR, 'fixture.json');
@@ -122,9 +122,13 @@ try {
       JSON.stringify({ events, locales: LOCALES, overlay }, null, 2) + '\n'
     );
     try {
-      execSync(`npx oxfmt ${JSON.stringify(out)}`, { stdio: 'ignore' });
+      execSync(`npx biome format --write ${JSON.stringify(out)}`, {
+        stdio: 'ignore',
+      });
     } catch {
-      console.warn('oxfmt not available — run `npx oxfmt e2e/fixture.json`');
+      console.warn(
+        'biome not available — run `npx biome format --write e2e/fixture.json`'
+      );
     }
     console.log('wrote e2e/fixture.json');
   }

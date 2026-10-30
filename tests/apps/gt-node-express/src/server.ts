@@ -117,7 +117,6 @@ app.use(async (_req, res) => {
 });
 
 app.listen(port, () => {
-  // oxlint-disable-next-line no-console -- Report the local development URL.
   console.log(`gt-node Express app listening on http://localhost:${port}`);
 });
 

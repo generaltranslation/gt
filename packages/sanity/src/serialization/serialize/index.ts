@@ -275,7 +275,6 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
         },
       });
     } catch (err) {
-      //eslint-disable-next-line no-console -- this is a warning
       console.warn(
         `Had issues serializing block of type "${obj._type}". Specify a serialization method for this block in your serialization config. Received error: ${err}`
       );

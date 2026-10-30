@@ -347,13 +347,17 @@ export function parseVueScript(
       );
       const uncertainTranslationHelper = Boolean(
         calleePath &&
-        pathMayReferenceUncertainTranslationHelper(
-          path.node.callee,
-          calleePath,
-          path.scope,
-          state
-        ) &&
-        callArgumentsMayProvideTranslationFunction(path.node, path.scope, state)
+          pathMayReferenceUncertainTranslationHelper(
+            path.node.callee,
+            calleePath,
+            path.scope,
+            state
+          ) &&
+          callArgumentsMayProvideTranslationFunction(
+            path.node,
+            path.scope,
+            state
+          )
       );
       if (
         !callTarget.definitelyOrdinary &&
@@ -637,9 +641,10 @@ function isSafeMutableNamespaceBinding(binding: Binding): boolean {
       const parent = reference.parentPath;
       return Boolean(
         parent &&
-        (parent.isMemberExpression() || parent.isOptionalMemberExpression()) &&
-        parent.node.object === reference.node &&
-        !memberChainWrites(parent)
+          (parent.isMemberExpression() ||
+            parent.isOptionalMemberExpression()) &&
+          parent.node.object === reference.node &&
+          !memberChainWrites(parent)
       );
     })
   );
@@ -661,12 +666,13 @@ function memberChainWrites(
   const parent = current.parentPath;
   return Boolean(
     parent &&
-    ((parent.isAssignmentExpression() && parent.node.left === current.node) ||
-      (parent.isUpdateExpression() && parent.node.argument === current.node) ||
-      (parent.isUnaryExpression({ operator: 'delete' }) &&
-        parent.node.argument === current.node) ||
-      ((parent.isForInStatement() || parent.isForOfStatement()) &&
-        parent.node.left === current.node))
+      ((parent.isAssignmentExpression() && parent.node.left === current.node) ||
+        (parent.isUpdateExpression() &&
+          parent.node.argument === current.node) ||
+        (parent.isUnaryExpression({ operator: 'delete' }) &&
+          parent.node.argument === current.node) ||
+        ((parent.isForInStatement() || parent.isForOfStatement()) &&
+          parent.node.left === current.node))
   );
 }
 
@@ -1510,12 +1516,12 @@ function expressionAliasesKnownNonVueRuntime(
   const source = getBindingSource(binding);
   return Boolean(
     source &&
-    source.pattern.type === 'Identifier' &&
-    expressionAliasesKnownNonVueRuntime(
-      source.expression.node,
-      source.expression.scope,
-      new Set(seen).add(binding)
-    )
+      source.pattern.type === 'Identifier' &&
+      expressionAliasesKnownNonVueRuntime(
+        source.expression.node,
+        source.expression.scope,
+        new Set(seen).add(binding)
+      )
   );
 }
 
@@ -2039,30 +2045,30 @@ function recordCrossBlockWrites(
 
       const valueHasComponent = Boolean(
         value &&
-        (expressionMayProduceComponent(value, scope, state, new Set()) ||
-          containerMayContainComponent(value, scope, state, new Set()))
+          (expressionMayProduceComponent(value, scope, state, new Set()) ||
+            containerMayContainComponent(value, scope, state, new Set()))
       );
       const valueHasGTComponent = Boolean(
         value &&
-        (expressionMayProduceComponent(
-          value,
-          scope,
-          state,
-          new Set(),
-          'translation'
-        ) ||
-          containerMayContainComponent(
+          (expressionMayProduceComponent(
             value,
             scope,
             state,
             new Set(),
             'translation'
-          ))
+          ) ||
+            containerMayContainComponent(
+              value,
+              scope,
+              state,
+              new Set(),
+              'translation'
+            ))
       );
       const valueHasString = Boolean(
         value &&
-        (expressionMayProduceStringFunction(value, scope, state, new Set()) ||
-          containerMayContainStringFunction(value, scope, state, new Set()))
+          (expressionMayProduceStringFunction(value, scope, state, new Set()) ||
+            containerMayContainStringFunction(value, scope, state, new Set()))
       );
       if (hadComponent || valueHasComponent) {
         state.analysis.uncertainComponents.add(path);
@@ -2499,8 +2505,8 @@ function bindingReadsUnsafeMutableImport(
   const mutableSource = state.mutableImportSources.get(rootBinding);
   return Boolean(
     mutableSource &&
-    (state.unsafeMutableNamespaceSources.has(mutableSource) ||
-      !isSafeMutableNamespaceBinding(rootBinding))
+      (state.unsafeMutableNamespaceSources.has(mutableSource) ||
+        !isSafeMutableNamespaceBinding(rootBinding))
   );
 }
 
@@ -5272,13 +5278,13 @@ function componentContainerShapeIsKnown(
     const source = getBindingSource(binding);
     return Boolean(
       source?.pattern.type === 'Identifier' &&
-      componentContainerShapeIsKnown(
-        source.expression.node,
-        source.expression.scope,
-        state,
-        nextSeen,
-        atPosition
-      )
+        componentContainerShapeIsKnown(
+          source.expression.node,
+          source.expression.scope,
+          state,
+          nextSeen,
+          atPosition
+        )
     );
   }
   if (expression.type === 'ObjectExpression') {
@@ -5387,8 +5393,8 @@ function resolveKnownCallTargetAtPosition(
   const materialized = unwrapExpression(candidate.node);
   const definitelyOrdinary = Boolean(
     materialized?.type === 'Identifier' &&
-    !candidate.scope.getBinding(materialized.name) &&
-    ORDINARY_GLOBAL_VALUES.has(materialized.name)
+      !candidate.scope.getBinding(materialized.name) &&
+      ORDINARY_GLOBAL_VALUES.has(materialized.name)
   );
   return { definitelyOrdinary, value: undefined };
 }
@@ -6635,12 +6641,13 @@ function isUnconditionalSiblingAssignment(
   const assignmentFunction = assignment.getFunctionParent()?.node;
   return Boolean(
     declarationStatement &&
-    assignmentStatement?.isExpressionStatement() &&
-    declarationStatement.parentPath?.node ===
-      assignmentStatement.parentPath?.node &&
-    binding.referencePaths.every(
-      (reference) => reference.getFunctionParent()?.node === assignmentFunction
-    )
+      assignmentStatement?.isExpressionStatement() &&
+      declarationStatement.parentPath?.node ===
+        assignmentStatement.parentPath?.node &&
+      binding.referencePaths.every(
+        (reference) =>
+          reference.getFunctionParent()?.node === assignmentFunction
+      )
   );
 }
 
@@ -7820,12 +7827,12 @@ function expressionMayResolveToBinding(
     const source = getBindingSource(binding);
     return Boolean(
       source?.pattern.type === 'Identifier' &&
-      expressionMayResolveToBinding(
-        source.expression.node,
-        source.expression.scope,
-        targets,
-        new Set(seen).add(binding)
-      )
+        expressionMayResolveToBinding(
+          source.expression.node,
+          source.expression.scope,
+          targets,
+          new Set(seen).add(binding)
+        )
     );
   }
   if (expression.type === 'ConditionalExpression') {
@@ -8693,13 +8700,13 @@ function expressionMayProduceGTContainer(
         : finalAssignment;
       const result = Boolean(
         selected &&
-        expressionMayProduceGTContainer(
-          selected.node,
-          selected.scope,
-          state,
-          nextNodes,
-          new Set(seenBindings).add(binding)
-        )
+          expressionMayProduceGTContainer(
+            selected.node,
+            selected.scope,
+            state,
+            nextNodes,
+            new Set(seenBindings).add(binding)
+          )
       );
       if (cacheable) state.gtContainerPossibilities.set(binding, result);
       return result;
@@ -9130,13 +9137,13 @@ function callMayProduceGTContainer(
   if (method === 'fill') {
     return Boolean(
       firstExpression &&
-      expressionMayProduceComponent(
-        firstExpression,
-        scope,
-        state,
-        new Set(),
-        'T'
-      )
+        expressionMayProduceComponent(
+          firstExpression,
+          scope,
+          state,
+          new Set(),
+          'T'
+        )
     );
   }
   if (['with', 'toSpliced'].includes(method)) {
@@ -9447,11 +9454,11 @@ function bindingIsDefinitelyNotStringFunction(
       const target = source.expression.scope.getBinding(expression.name);
       result = Boolean(
         target &&
-        bindingIsDefinitelyNotStringFunction(
-          target,
-          state,
-          new Set(seen).add(binding)
-        )
+          bindingIsDefinitelyNotStringFunction(
+            target,
+            state,
+            new Set(seen).add(binding)
+          )
       );
     } else if (
       !known &&
@@ -10170,14 +10177,14 @@ function expressionMayProduceComponent(
     }
     return Boolean(
       property &&
-      objectPropertyMayProduceComponent(
-        expression.object,
-        property,
-        scope,
-        state,
-        seen,
-        kind
-      )
+        objectPropertyMayProduceComponent(
+          expression.object,
+          property,
+          scope,
+          state,
+          seen,
+          kind
+        )
     );
   }
   if (
@@ -11213,7 +11220,13 @@ function computedSourceMayProduceComponent(
       );
       return Boolean(
         getter &&
-        functionMayReturnComponent(getter.node, getter.scope, state, seen, kind)
+          functionMayReturnComponent(
+            getter.node,
+            getter.scope,
+            state,
+            seen,
+            kind
+          )
       );
     }
   }
@@ -11231,7 +11244,7 @@ function computedSourceMayProduceStringFunction(
   const getter = resolveComputedGetter(node, scope, state);
   return Boolean(
     getter &&
-    functionMayReturnStringFunction(getter.node, getter.scope, state, seen)
+      functionMayReturnStringFunction(getter.node, getter.scope, state, seen)
   );
 }
 

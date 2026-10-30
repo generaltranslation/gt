@@ -25,20 +25,20 @@ export async function initProject(
     const [job] = jobs;
 
     if (job?.status === 'completed') {
-      // eslint-disable-next-line no-console
+      // biome-ignore lint/suspicious/noConsole: intentional console output
       console.log('Setup successfully completed');
     } else if (!complete) {
-      // eslint-disable-next-line no-console
+      // biome-ignore lint/suspicious/noConsole: intentional console output
       console.log(
         'Setup timed out — proceeding without setup (Timed out while waiting for setup generation)'
       );
     } else if (job?.status === 'failed') {
-      // eslint-disable-next-line no-console
+      // biome-ignore lint/suspicious/noConsole: intentional console output
       console.log(
         `Setup failed — proceeding without setup (${job.error?.message ?? 'Unknown error'})`
       );
     } else {
-      // eslint-disable-next-line no-console
+      // biome-ignore lint/suspicious/noConsole: intentional console output
       console.log('Setup status unknown — proceeding without setup');
     }
   }

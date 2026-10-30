@@ -83,7 +83,7 @@ async function createSingletons() {
   await transaction
     .commit()
     .then((res) => {
-      // eslint-disable-next-line no-console
+      // biome-ignore lint/suspicious/noConsole: intentional console output
       console.log(res);
     })
     .catch((err) => {

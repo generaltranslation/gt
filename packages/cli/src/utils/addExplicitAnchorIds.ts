@@ -323,6 +323,7 @@ function applyAnchorIds(
     // alone. Other modes keep the anchor on its text line as before.
     if (mintlifyMode && heading.endLine > heading.startLine) continue;
 
+    // biome-ignore lint/suspicious/noShadowRestrictedNames: local flag; the deprecated global `escape` is never used here
     const escape = escapeAnchors && !mapping.explicit;
     const anchor = escape ? `\\{#${mapping.id}\\}` : `{#${mapping.id}}`;
     const { text, trailer } = splitHeadingLine(lines[index], heading);

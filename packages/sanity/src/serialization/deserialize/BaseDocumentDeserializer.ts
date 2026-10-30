@@ -87,7 +87,7 @@ export const deserializeArray = (
         (deserializedObject as Record<string, unknown>)._key = child.id;
       }
     } catch (e) {
-      //eslint-disable-next-line no-console
+      // biome-ignore lint/suspicious/noConsole: intentional console output
       console.debug(
         `Tried to deserialize block: ${child.outerHTML} in an array but failed to identify it! Error: ${e}`
       );
@@ -130,7 +130,7 @@ export const deserializeObject = (
       if (deserialized && Object.keys(deserialized).length) {
         output[child.className] = deserialized;
       } else {
-        //eslint-disable-next-line no-console
+        // biome-ignore lint/suspicious/noConsole: intentional console output
         console.debug(
           `Deserializer: Skipping empty or unreadable HTML: ${child.outerHTML}`
         );
@@ -176,7 +176,7 @@ export const deserializeHTML = (
     output = deserializeArray(HTMLnode, deserializers, blockDeserializers);
   } else {
     output = {};
-    //eslint-disable-next-line no-console
+    // biome-ignore lint/suspicious/noConsole: intentional console output
     console.debug(
       `Tried to deserialize block ${HTMLnode.outerHTML} but failed to identify it!`
     );

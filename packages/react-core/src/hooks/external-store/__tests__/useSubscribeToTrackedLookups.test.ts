@@ -28,8 +28,9 @@ describe('useSubscribeToTrackedLookups', () => {
   it('does not subscribe to tracked lookup events in production', async () => {
     process.env.NODE_ENV = 'production';
     const subscribeToEvents = vi.fn(() => vi.fn());
-    const { useSubscribeToTrackedLookups } =
-      await import('../useSubscribeToTrackedLookups');
+    const { useSubscribeToTrackedLookups } = await import(
+      '../useSubscribeToTrackedLookups'
+    );
 
     useSubscribeToTrackedLookups(
       { current: new Set(['matching-key']) },
@@ -57,8 +58,9 @@ describe('useSubscribeToTrackedLookups', () => {
         return getSnapshot();
       }
     );
-    const { useSubscribeToTrackedLookups } =
-      await import('../useSubscribeToTrackedLookups');
+    const { useSubscribeToTrackedLookups } = await import(
+      '../useSubscribeToTrackedLookups'
+    );
 
     useSubscribeToTrackedLookups(
       { current: new Set(['matching-key']) },

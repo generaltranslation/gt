@@ -111,7 +111,9 @@ describe('extractInlineFromProject', () => {
     const run = vi.fn(
       async ({
         extractPrimary: delegatedPrimary = undefined,
-      }: { extractPrimary?: PrimaryInlineExtractor } = {}) => {
+      }: {
+        extractPrimary?: PrimaryInlineExtractor;
+      } = {}) => {
         expect(delegatedPrimary).toBe(extractPrimary);
         await delegatedPrimary?.(undefined);
         return mergedOutput;
@@ -142,7 +144,9 @@ describe('extractInlineFromProject', () => {
     const run = vi.fn(
       async ({
         extractPrimary: delegatedPrimary = undefined,
-      }: { extractPrimary?: PrimaryInlineExtractor } = {}) => {
+      }: {
+        extractPrimary?: PrimaryInlineExtractor;
+      } = {}) => {
         await delegatedPrimary?.(partitionedPrimaryPatterns);
         return emptyOutput;
       }

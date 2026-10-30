@@ -59,7 +59,6 @@ export function initializeState(
   );
 
   // Spread options but exclude already-resolved fields
-  // eslint-disable-next-line no-unused-vars
   const {
     autoderive: _a,
     devHotReload: _b,

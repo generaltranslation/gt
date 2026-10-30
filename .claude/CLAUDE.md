@@ -8,7 +8,7 @@ Open source i18n libraries for React, Next.js, and more. Repo: `generaltranslati
 - **Build system:** Turbo (`turbo.json` defines task graph)
 - **Releases:** Changesets (`pnpm changeset` to add, `changeset publish` to release)
 - **Testing:** Vitest across all packages
-- **Linting:** oxlint + oxfmt (enforced via lefthook pre-commit)
+- **Linting/formatting:** Biome (`biome.jsonc`, enforced via lefthook pre-commit)
 - **License:** MIT
 
 ## Commands
@@ -16,10 +16,10 @@ Open source i18n libraries for React, Next.js, and more. Repo: `generaltranslati
 ```sh
 pnpm build          # Build all packages (turbo, cached)
 pnpm test           # Test all packages
-pnpm lint           # Lint all packages
-pnpm lint:fix       # Lint + auto-fix
-pnpm format         # Check formatting with oxfmt
-pnpm format:fix     # Format everything with oxfmt
+pnpm lint           # Lint + format check the whole repo (biome ci)
+pnpm lint:fix       # Apply Biome lint fixes + formatting
+pnpm format         # Check formatting with Biome
+pnpm format:fix     # Format everything with Biome
 pnpm changeset      # Create a changeset for a new release
 pnpm version-packages  # Apply changesets to bump versions
 pnpm release        # Publish packages (changeset publish)
@@ -61,8 +61,8 @@ Turbo tasks: `build`, `test`, `lint`, `lint:fix`, `format`, `format:fix`, `trans
 ## Code Conventions
 
 - TypeScript everywhere. Strict mode.
-- oxfmt: single quotes, 2-space indent, trailing commas (es5), semicolons, LF line endings.
-- ESLint: `@typescript-eslint` rules, unused vars prefixed with `_`, no explicit `any` (warn).
+- Biome formatter: single quotes, 2-space indent, trailing commas (es5), semicolons, LF line endings.
+- Biome linter: unused vars prefixed with `_`, no explicit `any` (warn). Suppress with `// biome-ignore lint/<group>/<rule>: <reason>`.
 - Prefer `const` over `let`. Never `var`.
 - Test files: `*.test.ts` / `*.spec.ts` using Vitest.
 - Build outputs go to `dist/`. Change source files and rebuild instead of editing `dist/` directly.

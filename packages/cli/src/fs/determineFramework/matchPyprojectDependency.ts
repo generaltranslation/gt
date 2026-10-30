@@ -12,7 +12,7 @@ import { resolveGtDependency } from './resolveGtDependency.js';
 export function matchPyprojectDependency(
   content: string
 ): typeof Libraries.GT_FLASK | typeof Libraries.GT_FASTAPI | null {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: dynamic value shape
   let parsed: Record<string, any>;
   try {
     parsed = parse(content) as Record<string, unknown>;

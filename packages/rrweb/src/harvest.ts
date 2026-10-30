@@ -50,7 +50,7 @@ export type GtLeaf = { text: string } | { variable: true };
 // GT field separators (U+001C-U+001F) delimit internal metadata inside string leaves;
 // they never render, so strip them from emitted text. (Matching these control chars is
 // the whole point.)
-// oxlint-disable-next-line no-control-regex
+// biome-ignore lint/suspicious/noControlCharactersInRegex: matches the ASCII field-separator control characters
 const FIELD_SEP = /[\u001c-\u001f]/g;
 
 function isElement(node: GtElement | GtVariable): node is GtElement {

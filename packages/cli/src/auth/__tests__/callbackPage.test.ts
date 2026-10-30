@@ -85,6 +85,7 @@ describe('callback page', () => {
     for (const reason of ['denied', 'failed'] as const) {
       const page = renderCallbackPage({ ok: false, reason });
       expect(page).toMatch(
+        // biome-ignore lint/correctness/noEmptyCharacterClassInRegex: `[^]` intentionally matches any character, including newlines
         /Run<span class="gap"> <\/span><button type="button" class="cmd" aria-label="Copy npx gt login">npx gt login<svg class="copy"[^]*?<svg class="done"[^]*?<\/button><span class="gap"> <\/span>to try again\.<span class="status" role="status"><\/span>/
       );
       expect(page.split('<script').length).toBe(2);
