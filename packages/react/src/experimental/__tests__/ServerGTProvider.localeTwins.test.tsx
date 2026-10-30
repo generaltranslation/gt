@@ -1,15 +1,15 @@
 /**
  * With locale twins the server renders without a translations snapshot: it
- * loads the whole request locale into its cache (gt-tanstack-start's
- * gtMiddleware does this) and the provider takes no `translations` prop.
+ * loads the whole request locale into its cache (gt-tanstack-start's router
+ * integration does this) and the provider takes no `translations` prop.
  */
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { getTranslationsSnapshot } from '@generaltranslation/react-core/pure';
 import { useGT } from '@generaltranslation/react-core/hooks';
-import { initializeGTSRA } from '../../setup/initializeGTSRA';
-import { ServerGTProvider } from '../ServerGTProvider';
+import { initializeGTSRA } from '../setup/initializeGTSRA';
+import { ServerGTProvider } from '../provider/ServerGTProvider';
 
 const HASH = '0123456789abcdef';
 
@@ -32,9 +32,7 @@ describe('ServerGTProvider with locale twins', () => {
     initializeGTSRA({
       defaultLocale: 'en',
       locales: ['en', 'fr'],
-      files: {
-        gt: { output: 'src/_gt/[locale].json', splitting: 'locale-twins' },
-      },
+      experimental: { splitting: 'locale-twins' },
       loadTranslations: async (locale: string) =>
         locale === 'fr' ? { [HASH]: 'Bonjour' } : {},
     });

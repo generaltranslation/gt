@@ -120,15 +120,60 @@
         "default": "./dist/macros.mjs"
       }
     },
-    "./locale-twins": {
+    "./experimental": {
+      "react-server": {
+        "require": {
+          "types": "./dist/experimental/index.rsc.d.cts",
+          "default": "./dist/experimental/index.rsc.cjs"
+        },
+        "import": {
+          "types": "./dist/experimental/index.rsc.d.mts",
+          "default": "./dist/experimental/index.rsc.mjs"
+        },
+        "default": "./dist/experimental/index.rsc.mjs"
+      },
+      "workerd": {
+        "require": {
+          "types": "./dist/experimental/index.types.d.cts",
+          "default": "./dist/experimental/index.server.cjs"
+        },
+        "import": {
+          "types": "./dist/experimental/index.types.d.mts",
+          "default": "./dist/experimental/index.server.mjs"
+        },
+        "default": "./dist/experimental/index.server.mjs"
+      },
+      "worker": {
+        "require": {
+          "types": "./dist/experimental/index.types.d.cts",
+          "default": "./dist/experimental/index.server.cjs"
+        },
+        "import": {
+          "types": "./dist/experimental/index.types.d.mts",
+          "default": "./dist/experimental/index.server.mjs"
+        },
+        "default": "./dist/experimental/index.server.mjs"
+      },
+      "browser": {
+        "require": {
+          "types": "./dist/experimental/index.types.d.cts",
+          "default": "./dist/experimental/index.client.cjs"
+        },
+        "import": {
+          "types": "./dist/experimental/index.types.d.mts",
+          "default": "./dist/experimental/index.client.mjs"
+        },
+        "default": "./dist/experimental/index.client.mjs"
+      },
       "require": {
-        "types": "./dist/locale-twins.d.cts",
-        "default": "./dist/locale-twins.cjs"
+        "types": "./dist/experimental/index.types.d.cts",
+        "default": "./dist/experimental/index.server.cjs"
       },
       "import": {
-        "types": "./dist/locale-twins.d.mts",
-        "default": "./dist/locale-twins.mjs"
-      }
+        "types": "./dist/experimental/index.types.d.mts",
+        "default": "./dist/experimental/index.server.mjs"
+      },
+      "default": "./dist/experimental/index.server.mjs"
     }
   },
   "keywords": [

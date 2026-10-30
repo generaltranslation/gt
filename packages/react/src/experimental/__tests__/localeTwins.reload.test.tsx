@@ -12,26 +12,26 @@ import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 import { useSetLocale } from '@generaltranslation/react-core/hooks';
 import {
   GtInternalRegisterLocaleTwin,
+  initializeLocaleTwins,
   markNavigatingReload,
-} from 'gt-i18n/internal';
+} from '@generaltranslation/react-core/internal/experimental';
 import { BrowserGTProvider } from '../provider/BrowserGTProvider';
 import { createOrUpdateBrowserConditionStore } from '../condition-store/createBrowserConditionStore';
-import { initializeGTSRAClient } from '../setup/initializeGTSRAClient';
+import { initializeGTSRAClient } from '../setup/initializeGTSRA';
 
 type TestGlobal = typeof globalThis & {
   __generaltranslation?: unknown;
   IS_REACT_ACT_ENVIRONMENT?: boolean;
 };
 
-const BASE_CONFIG = { defaultLocale: 'en', locales: ['en', 'fr'] };
+const BASE_CONFIG: {
+  defaultLocale: string;
+  locales: string[];
+  experimental?: { splitting: 'locale-twins' };
+} = { defaultLocale: 'en', locales: ['en', 'fr'] };
 const TWINS_CONFIG = {
   ...BASE_CONFIG,
-  files: {
-    gt: {
-      output: 'src/_gt/[locale].json',
-      splitting: 'locale-twins' as const,
-    },
-  },
+  experimental: { splitting: 'locale-twins' as const },
 };
 
 /** A locale twin page: its chunks registered their twins (English here). */
@@ -53,6 +53,7 @@ function switchLocaleInSPA(
   softReload: (state: { locale: string }) => void
 ) {
   initializeI18nConfig(config, 'SPA');
+  initializeLocaleTwins(config);
   const store = createOrUpdateBrowserConditionStore({
     locale: 'en',
     _reload: softReload,

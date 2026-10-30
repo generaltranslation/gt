@@ -6,7 +6,6 @@ import {
   defaultResetLocaleCookieName,
   getI18nConfig,
 } from '@generaltranslation/react-core/pure';
-import { reloadForLocaleSwitch } from 'gt-i18n/internal';
 import { useCallback, useEffect, useRef } from 'react';
 import type { SharedGTProviderProps } from './GTProviderProps';
 import { setCookieValue } from '../condition-store/cookies';
@@ -20,7 +19,10 @@ export function BrowserGTProvider(props: SharedGTProviderProps) {
   const enableI18n = props.enableI18n ?? true;
   const syncConditions = props._syncConditions ?? true;
   const reload = useCallback(
-    (next: Conditions) => reloadForLocaleSwitch(next, props._reload),
+    (next: Conditions) => {
+      if (props._reload) props._reload(next);
+      else if (typeof window !== 'undefined') window.location.reload();
+    },
     [props._reload]
   );
   const setLocale = useCallback(

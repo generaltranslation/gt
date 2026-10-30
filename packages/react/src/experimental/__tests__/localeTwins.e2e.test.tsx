@@ -21,28 +21,25 @@ import { createRequire } from 'node:module';
 import {
   findLocaleTwinPlaceholders,
   serializeLocaleTwinTable,
-} from 'generaltranslation/internal';
-import type { LocaleTwinEntries } from 'generaltranslation/internal';
+} from 'generaltranslation/internal/experimental';
+import type { LocaleTwinEntries } from 'generaltranslation/internal/experimental';
 import { hashSource } from 'generaltranslation/id';
 import * as GTReact from '../index.client';
-import { initializeGTSPA } from '../setup/initializeGTSPA';
+
+const { initializeGTSPA } = GTReact;
 
 type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
 
 const GT_CONFIG = {
   defaultLocale: 'en',
   locales: ['en', 'fr'],
-  files: {
-    gt: {
-      output: 'src/_gt/[locale].json',
-      splitting: 'locale-twins' as const,
-    },
-  },
+  files: { gt: { output: 'src/_gt/[locale].json' } },
+  experimental: { splitting: 'locale-twins' as const },
 };
 
 /** A page as Vite hands it to the GT compiler (JSX already compiled). */
 const PAGE_SOURCE = `import { jsx, jsxs } from 'react/jsx-runtime';
-import { T, Var, useGT, msg, useMessages, t } from 'gt-react';
+import { T, Var, useGT, msg, useMessages, t } from 'gt-react/experimental';
 const greeting = msg("Hello {name}", { name: "Ada" });
 const welcome = msg("Welcome, {user}!");
 export function Page({ name }) {
@@ -79,14 +76,14 @@ const FRENCH: Record<string, unknown> = {
 
 // The compiler ships CommonJS; load it natively instead of through Vite.
 const compiler = createRequire(import.meta.url)(
-  '@generaltranslation/compiler'
-) as typeof import('@generaltranslation/compiler');
+  '@generaltranslation/compiler/experimental'
+) as typeof import('@generaltranslation/compiler/experimental');
 
 let strippedCode: string;
 let sourceEntries: LocaleTwinEntries;
 
 async function compileForClientBuild(code: string): Promise<string> {
-  const plugin = compiler.default.raw(
+  const plugin = compiler.unplugin.raw(
     { logLevel: 'silent', gtConfig: GT_CONFIG },
     { framework: 'vite' }
   );
@@ -140,7 +137,7 @@ function fillPlaceholder(code: string, locale: string): string {
 function evaluateModule(code: string): { Page: React.FC<{ name: string }> } {
   const modules: Record<string, unknown> = {
     'react/jsx-runtime': ReactJsxRuntime,
-    'gt-react': GTReact,
+    'gt-react/experimental': GTReact,
   };
   const body = code
     .replace(
@@ -238,7 +235,7 @@ describe('locale twins end to end', () => {
   it('renders source fallbacks in the source locale', async () => {
     const code =
       await compileForClientBuild(`import { jsx, jsxs } from 'react/jsx-runtime';
-import { T, Plural, useGT } from 'gt-react';
+import { T, Plural, useGT } from 'gt-react/experimental';
 export function Page() {
   const gt = useGT();
   return jsxs("main", { children: [
