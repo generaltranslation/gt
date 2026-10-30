@@ -77,7 +77,7 @@ export function createCustomLocaleProperties(
  */
 export function _getLocaleProperties(
   locale: string,
-  defaultLocale: string = libraryDefaultLocale,
+  defaultLocale?: string,
   customMapping?: CustomMapping
 ): LocaleProperties {
   // Check for canonical locale

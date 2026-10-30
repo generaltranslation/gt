@@ -17,19 +17,13 @@ function warnInvalidLocale(locale: string, defaultLocale: string) {
 }
 
 export function resolveLocaleOrDefault(locale: unknown): string {
-  const i18nConfig = getI18nConfig();
-  const defaultLocale = i18nConfig.getDefaultLocale();
-  const supportedLocale =
-    typeof locale === 'string' && locale.length > 0
-      ? i18nConfig.determineSupportedLocale(locale)
-      : undefined;
-
+  const supportedLocale = determineSupportedLocale(locale);
   if (supportedLocale) return supportedLocale;
 
+  const defaultLocale = getI18nConfig().getDefaultLocale();
   if (typeof locale === 'string' && locale.length > 0) {
     warnInvalidLocale(locale, defaultLocale);
   }
-
   return defaultLocale;
 }
 

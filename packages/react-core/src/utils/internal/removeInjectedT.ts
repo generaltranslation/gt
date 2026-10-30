@@ -38,15 +38,11 @@ export function removeInjectedT(children: ReactNode): ReactNode {
  * 5. Then move on to processing the element's children
  */
 function handleSingleChildElement(
-  child: ReactElement,
+  child: ReactElement<object>,
   derivationDepth: number
 ): ReactNode {
   const { type: elementType, props: elementProps } = child;
   const transformation = getTransformation(elementType);
-  // unlikely edge case: encountered an element with props that cannot be processed
-  if (typeof elementProps !== 'object' || elementProps === null) {
-    return child;
-  }
 
   if (transformation) {
     const { componentType, injectionType } = transformation;
@@ -144,7 +140,8 @@ function handleSingleChild(
   child: ReactNode,
   derivationDepth: number
 ): ReactNode {
-  if (isValidElement(child)) {
+  // React element props are always an object.
+  if (isValidElement<object>(child)) {
     return handleSingleChildElement(child, derivationDepth);
   }
   return child;
@@ -184,8 +181,7 @@ function getTransformation(elementType: ReactElement['type']):
     typeof elementType === 'function' && '_gtt' in elementType
       ? elementType._gtt
       : undefined;
-  if (transformation == null || typeof transformation !== 'string')
-    return undefined;
+  if (typeof transformation !== 'string') return undefined;
 
   // Extract metadata from transformation string
   const parts = transformation.split('-');

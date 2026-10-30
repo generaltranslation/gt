@@ -25,11 +25,9 @@ export function hashMessage<T extends Translation>(
   return hashSource({
     source:
       options.$format === 'ICU' ? indexVars(message as IcuMessage) : message,
-    ...(metadataOptions.$context && { context: metadataOptions.$context }),
-    ...(metadataOptions.$maxChars != null && {
-      maxChars: Math.abs(metadataOptions.$maxChars),
-    }),
-    ...(metadataOptions.$requiresReview === true && { requiresReview: true }),
+    context: metadataOptions.$context,
+    maxChars: metadataOptions.$maxChars,
+    requiresReview: metadataOptions.$requiresReview,
     dataFormat: options.$format,
   });
 }
