@@ -2,7 +2,6 @@ import {
   createLookupOptions,
   getRuntimeEnvironment,
   interpolateMessage,
-  resolveLocaleTwinLookup,
 } from 'gt-i18n/internal';
 import type { GTTranslationOptions } from 'gt-i18n/types';
 import type { LookupOptionsFor } from 'gt-i18n/internal/types';
@@ -63,31 +62,7 @@ export function resolveStringContent(
 ): StringContent {
   const i18nCache = getReactI18nCache();
   const defaultLocale = getI18nConfig().getDefaultLocale();
-
-  // Locale twins: stripped code is resolved by hash, source locale included;
-  // content no twin carries renders its source text. Without translation
-  // (i18n disabled) the page has the default locale's twins.
-  const shouldTranslate = getShouldTranslate();
-  const twinLocale = shouldTranslate ? locale : defaultLocale;
-  const twin = resolveLocaleTwinLookup<StringContent>(
-    twinLocale,
-    options,
-    options.$_hash
-  );
-  if (twin.entry !== undefined) {
-    // A source fallback is formatted in the source locale, like a miss
-    return interpolateMessage({
-      source: content,
-      target: twin.entry,
-      options: createLookupOptions(
-        twin.sourceFallback ? defaultLocale : twinLocale,
-        options,
-        'ICU'
-      ),
-      sourceLocale: defaultLocale,
-    });
-  }
-  if (!shouldTranslate || twin.rendersSource) {
+  if (!getShouldTranslate()) {
     return interpolateMessage({
       options,
       source: content,
@@ -126,33 +101,25 @@ function handleTaggedTemplateLiteralTranslation(
 ): string {
   const locale = getLocale();
   // for tagged template literals, there has been no compiler transformation
-  // (1) lookup interpolated template (aka derived message), unless locale
-  // twins render it as source: a twin client cannot look it up, so the
-  // server must not either
-  if (!resolveLocaleTwinLookup(locale, {}, undefined).rendersSource) {
-    const interpolatedTemplate = interpolateTemplateLiteral(
-      messageOrStrings,
-      values
-    );
-    const i18nCache = getReactI18nCache();
-    const translatedInterpolatedTemplate = i18nCache.lookupTranslation(
-      locale,
-      interpolatedTemplate,
-      { $format: 'STRING' }
-    );
-    if (translatedInterpolatedTemplate) return translatedInterpolatedTemplate;
-  }
+  // (1) lookup interpolated template (aka derived message)
+  const interpolatedTemplate = interpolateTemplateLiteral(
+    messageOrStrings,
+    values
+  );
+  const i18nCache = getReactI18nCache();
+  const translatedInterpolatedTemplate = i18nCache.lookupTranslation(
+    locale,
+    interpolatedTemplate,
+    { $format: 'STRING' }
+  );
+  if (translatedInterpolatedTemplate) return translatedInterpolatedTemplate;
 
   // (2) resolve uninterpolated message
   const { message, variables } = extractInterpolatableValues(
     messageOrStrings,
     values
   );
-  return resolveStringContent(
-    locale,
-    message,
-    createLookupOptions(locale, variables, 'ICU')
-  );
+  return resolveStringContent(locale, message, variables);
 }
 
 /**

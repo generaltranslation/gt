@@ -9,10 +9,7 @@ import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 /**
  * Serializable cached translations for provider hydration; a failed load
  * yields a snapshot with no entry for the locale, so hydration caches nothing
- * and a later lookup retries. On a locale twin client the cache loads
- * nothing (the snapshot for the locale is empty), unless the app uses the
- * dictionaries API, whose entries stay on whole-locale loading.
- * TODO: perhaps move to /i18n for type generics
+ * and a later lookup retries. TODO: perhaps move to /i18n for type generics
  */
 export async function getTranslationsSnapshot(
   locale: Locale

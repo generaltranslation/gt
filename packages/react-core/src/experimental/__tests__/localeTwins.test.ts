@@ -3,7 +3,13 @@
  * locale included, and never ship or load a translations snapshot.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { GtInternalRegisterLocaleTwin, hashMessage } from 'gt-i18n/internal';
+import { hashMessage } from 'gt-i18n/internal';
+import {
+  GtInternalRegisterLocaleTwin,
+  getLocaleTwinCacheParams,
+  initializeLocaleTwins,
+} from 'gt-i18n/internal/experimental';
+import type { GTConfig } from 'generaltranslation/types';
 import { ReactI18nCache } from '../../i18n-cache/ReactI18nCache';
 import { setReactI18nCache } from '../../i18n-cache/singleton-operations';
 import { setReadonlyConditionStore } from '../../condition-store/singleton-operations';
@@ -11,21 +17,23 @@ import {
   initializeI18nConfig,
   type ReactI18nConfigParams,
 } from '../../setup/i18nConfig';
-import { getTranslationsSnapshot } from '../helpers/getTranslationsSnapshot';
-import { t } from '../translation/t';
+import { getTranslationsSnapshot } from '../../functions/helpers/getTranslationsSnapshot';
+import { t } from '../functions/t';
 
 type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
 
 const HASH = '0123456789abcdef';
 
-const TWINS_CONFIG: ReactI18nConfigParams = {
+const TWINS_CONFIG: ReactI18nConfigParams & Pick<GTConfig, 'experimental'> = {
   defaultLocale: 'en',
   locales: ['en', 'fr'],
-  files: { gt: { output: 'src/_gt/[locale].json', splitting: 'locale-twins' } },
+  experimental: { splitting: 'locale-twins' },
 };
 
+/** What the experimental initializeGT* functions do. */
 function setup(locale: string, config = TWINS_CONFIG, enableI18n = true) {
   initializeI18nConfig(config, 'SPA');
+  initializeLocaleTwins(config);
   setReadonlyConditionStore({
     getLocale: () => locale,
     getRegion: () => undefined,
@@ -35,7 +43,9 @@ function setup(locale: string, config = TWINS_CONFIG, enableI18n = true) {
     setEnableI18n: () => {},
   });
   const loadTranslations = vi.fn(async () => ({ [HASH]: 'Bonjour {name}' }));
-  setReactI18nCache(new ReactI18nCache({ loadTranslations }));
+  setReactI18nCache(
+    new ReactI18nCache(getLocaleTwinCacheParams({ loadTranslations }))
+  );
   return { loadTranslations };
 }
 
@@ -124,6 +134,7 @@ describe('locale twins in react-core functions', () => {
       // What every server bundle module with a GT import does
       GtInternalRegisterLocaleTwin();
       initializeI18nConfig(TWINS_CONFIG, 'SPA');
+      initializeLocaleTwins(TWINS_CONFIG);
       setReadonlyConditionStore({
         getLocale: () => 'fr',
         getRegion: () => undefined,

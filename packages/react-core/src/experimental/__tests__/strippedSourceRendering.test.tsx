@@ -5,9 +5,14 @@
  */
 import React from 'react';
 import { describe, expect, it } from 'vitest';
-import { renderTranslatedChildren } from '../renderPipeline';
-import { addGTIdentifier } from '../../internal/addGTIdentifier';
-import type { TranslatedChildren } from '../../types';
+import { createLocaleTwinRenderTranslatedChildren } from '../rendering/renderTranslatedChildren';
+import { renderVariable } from '../../utils/rendering/renderPipeline';
+import { addGTIdentifier } from '../../utils/internal/addGTIdentifier';
+import type { TranslatedChildren } from '../../utils/types';
+
+const renderTranslatedChildren = createLocaleTwinRenderTranslatedChildren({
+  renderVariable,
+});
 
 function render(source: React.ReactNode, target: unknown) {
   return renderTranslatedChildren({

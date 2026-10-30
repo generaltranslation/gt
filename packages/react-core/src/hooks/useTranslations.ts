@@ -16,12 +16,6 @@ import { useShouldTranslate } from './utils';
 import { useTrackedDictionaryResolver } from './external-store/useTrackedDictionaryResolver';
 import { useTrackedDictionaryObjResolver } from './external-store/useTrackedDictionaryObjResolver';
 
-/**
- * Marks dictionary lookups: with locale twins, dictionary entries are never
- * twinned and keep loading whole locales instead of rendering source text.
- */
-const DICTIONARY_LOOKUP = { $_dictionary: true } as const;
-
 // ===== Hook ===== //
 
 export function useTranslations(rootId?: string): UseTranslationsFunction {
@@ -48,7 +42,6 @@ export function useTranslations(rootId?: string): UseTranslationsFunction {
         return gt(sourceEntry.entry, {
           ...sourceOptions,
           ...extractVariables(options),
-          ...DICTIONARY_LOOKUP,
           $locale: defaultLocale,
         });
       }
@@ -68,7 +61,6 @@ export function useTranslations(rootId?: string): UseTranslationsFunction {
       return gt(sourceEntry.entry, {
         ...sourceOptions,
         ...extractVariables(options),
-        ...DICTIONARY_LOOKUP,
         $locale: locale,
       });
     },
@@ -111,7 +103,6 @@ function useTranslationsObj(rootId?: string): UseTranslationsObjFunction {
         translate: (sourceEntry, dictionaryOptions) =>
           gt(sourceEntry.entry, {
             ...dictionaryOptions,
-            ...DICTIONARY_LOOKUP,
             $locale: shouldTranslate ? locale : defaultLocale,
           }),
       });
