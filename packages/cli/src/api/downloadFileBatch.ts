@@ -19,13 +19,14 @@ import {
   readLockfile,
   writeLockfile,
   findOrCreateEntry,
+  findLockfileEntry,
 } from '../fs/config/downloadedVersions.js';
 import { recordDownloaded, recordRemerged } from '../state/recentDownloads.js';
 import { recordWarning } from '../state/translateWarnings.js';
 import type { FileStatusTracker } from '../workflows/steps/PollJobsStep.js';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import { hasNonIdentityFileFormatTransformForType } from '../formats/files/transformFormat.js';
-import { getPosixRelative, getRelative } from '../fs/findFilepath.js';
+import { getRelative, isSameFilePath } from '../fs/findFilepath.js';
 import { encodeFileContent } from '../fs/fileContent.js';
 import {
   getInlineElementsLabel,
@@ -168,12 +169,9 @@ function shouldSkipSourceFormatMerge(
     if (!hasNonIdentityFileFormatTransformForType(options, fileType)) continue;
 
     const transformedSourcePaths = options.files.resolvedPaths[fileType] || [];
-    const normalizedInput = inputPath.replace(/\\/g, '/');
     if (
-      transformedSourcePaths.some(
-        (sourcePath) =>
-          getPosixRelative(sourcePath) === normalizedInput ||
-          getRelative(sourcePath) === inputPath
+      transformedSourcePaths.some((sourcePath) =>
+        isSameFilePath(sourcePath, inputPath)
       )
     ) {
       return true;
@@ -290,7 +288,7 @@ export async function downloadFileBatch(
           fs.mkdirSync(dir, { recursive: true });
         }
         // If a local translation already exists for the same source version, skip overwrite
-        const existingEntry = entryMap.get(fileId);
+        const existingEntry = findLockfileEntry(entryMap, fileId, inputPath);
         const downloadedTranslation =
           existingEntry?.versionId === versionId
             ? existingEntry.translations[locale]
@@ -330,7 +328,7 @@ export async function downloadFileBatch(
               updatedAt: new Date().toISOString(),
               // Store a relative path (matches the text path) so gt-lock.json
               // stays portable and the skip-on-re-download check matches.
-              fileName: getPosixRelative(outputPath),
+              fileName: getRelative(outputPath),
             };
             // A staged entry tracks the whole file, not one locale. Keep it
             // staged until every configured locale has downloaded, so a partial
@@ -483,7 +481,7 @@ export async function downloadFileBatch(
           entry.translations[locale] = {
             ...entry.translations[locale],
             updatedAt: new Date().toISOString(),
-            fileName: getPosixRelative(outputPath),
+            fileName: getRelative(outputPath),
           };
           // A staged entry tracks the whole file, not one locale. Keep it
           // staged until every configured locale has downloaded, so a partial

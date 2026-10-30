@@ -7,6 +7,7 @@ import {
   writeLockfile,
   findOrCreateEntry,
   buildEntryMap,
+  findLockfileEntry,
   writeStagedEntries,
   getStagedEntriesFromLockfile,
   DownloadedVersionEntry,
@@ -692,6 +693,84 @@ describe('readLockfile / writeLockfile', () => {
         versionId: 'ver1',
         fileName: winFileName,
       });
+    });
+  });
+
+  describe('findLockfileEntry', () => {
+    const directEntry: DownloadedVersionEntry = {
+      fileId: 'exact-file-id',
+      versionId: 'v1',
+      fileName: 'public/locales/en.json',
+      translations: { es: { fileName: 'public/locales/es.json' } },
+    };
+
+    const legacyWinEntry: DownloadedVersionEntry = {
+      fileId: 'legacy-win-hash',
+      versionId: 'v1',
+      fileName: 'public\\locales\\en.json',
+      translations: { es: { fileName: 'public\\locales\\es.json' } },
+    };
+
+    const entryWithoutFileName: DownloadedVersionEntry = {
+      fileId: 'v1-file-id',
+      versionId: 'v1',
+      translations: {},
+    };
+
+    it('matches directly on exact fileId in O(1)', () => {
+      const map = new Map<string, DownloadedVersionEntry>([
+        [directEntry.fileId, directEntry],
+      ]);
+      expect(findLockfileEntry(map, 'exact-file-id')).toBe(directEntry);
+    });
+
+    it('falls back to matching normalized entry.fileName for legacy Windows entries', () => {
+      const map = new Map<string, DownloadedVersionEntry>([
+        [legacyWinEntry.fileId, legacyWinEntry],
+      ]);
+      // Searching by newly computed POSIX fileId succeeds via portable path fallback
+      const found = findLockfileEntry(
+        map,
+        'new-posix-hash',
+        'public/locales/en.json'
+      );
+      expect(found).toBe(legacyWinEntry);
+    });
+
+    it('returns undefined when entry.fileName is missing (e.g. v1 entries)', () => {
+      const map = new Map<string, DownloadedVersionEntry>([
+        [entryWithoutFileName.fileId, entryWithoutFileName],
+      ]);
+      expect(
+        findLockfileEntry(map, 'new-posix-hash', 'public/locales/en.json')
+      ).toBeUndefined();
+    });
+
+    it('returns undefined on ambiguous fallback matches (multiple entries with same path)', () => {
+      const dup1: DownloadedVersionEntry = {
+        fileId: 'id-1',
+        versionId: 'v1',
+        fileName: 'public\\locales\\en.json',
+        translations: {},
+      };
+      const dup2: DownloadedVersionEntry = {
+        fileId: 'id-2',
+        versionId: 'v2',
+        fileName: 'public/locales/en.json',
+        translations: {},
+      };
+      const map = new Map<string, DownloadedVersionEntry>([
+        [dup1.fileId, dup1],
+        [dup2.fileId, dup2],
+      ]);
+      expect(
+        findLockfileEntry(map, 'unknown-id', 'public/locales/en.json')
+      ).toBeUndefined();
+    });
+
+    it('returns undefined when no match exists and no portablePath provided', () => {
+      const map = new Map<string, DownloadedVersionEntry>();
+      expect(findLockfileEntry(map, 'unknown-id')).toBeUndefined();
     });
   });
 });

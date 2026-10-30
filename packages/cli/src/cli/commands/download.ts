@@ -1,7 +1,10 @@
 import { noFilesError, noVersionIdError } from '../../console/index.js';
 import { SupportedLibraries, TranslateFlags } from '../../types/index.js';
 import { Settings } from '../../types/index.js';
-import { createFileMapping } from '../../formats/files/fileMapping.js';
+import {
+  createFileMapping,
+  lookupFileMapping,
+} from '../../formats/files/fileMapping.js';
 import { getStagedEntriesFromLockfile } from '../../fs/config/downloadedVersions.js';
 import {
   runDownloadWorkflow,
@@ -84,11 +87,13 @@ export async function handleDownload(
     locales: settings.locales,
     timeoutDuration: options.timeout,
     resolveOutputPath: (sourcePath, locale) => {
-      const posixPath = sourcePath.replace(/\\/g, '/');
       return (
-        fileMapping[locale]?.[posixPath] ??
-        fileMapping[locale]?.[sourcePath] ??
-        null
+        lookupFileMapping(
+          fileMapping,
+          locale,
+          sourcePath,
+          'windows-serialized'
+        ) ?? null
       );
     },
     options: settings,

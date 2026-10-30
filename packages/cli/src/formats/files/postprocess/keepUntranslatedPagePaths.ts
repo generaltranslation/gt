@@ -4,7 +4,7 @@ import YAML from 'yaml';
 import type { Settings, TransformOptions } from '../../../types/index.js';
 import type { JSONValue } from '../../../types/data/json.js';
 import { stringifyJson } from '../../../fs/stringifyJson.js';
-import { getPosixRelative, getRelative } from '../../../fs/findFilepath.js';
+import { getRelative } from '../../../fs/findFilepath.js';
 import {
   INDEX_PAGE,
   PAGE_EXTENSIONS,
@@ -28,7 +28,7 @@ import {
   validateJsonSchema,
 } from '../../json/utils.js';
 import { validateYamlSchema } from '../../yaml/utils.js';
-import { createFileMapping } from '../fileMapping.js';
+import { createFileMapping, lookupFileMapping } from '../fileMapping.js';
 
 /**
  * With `skipUntranslatedPages`, undo `transform` rewrites that point a
@@ -57,8 +57,7 @@ export function keepUntranslatedPagePaths(
   const isIncluded = (filePath: string) =>
     !includeFiles ||
     includeFiles.has(filePath) ||
-    includeFiles.has(getRelative(filePath)) ||
-    includeFiles.has(getPosixRelative(filePath));
+    includeFiles.has(getRelative(filePath));
 
   // Composite JSON: every locale's entry lives in the source file itself.
   for (const filePath of settings.files.resolvedPaths.json ?? []) {
@@ -155,7 +154,12 @@ export function keepUntranslatedPagePaths(
     if (!schema?.transform) continue;
     const source = YAML.parse(fs.readFileSync(filePath, 'utf8')) as JSONValue;
     for (const locale of targetLocales) {
-      const outputPath = fileMapping[locale]?.[getPosixRelative(filePath)];
+      const outputPath = lookupFileMapping(
+        fileMapping,
+        locale,
+        filePath,
+        'host-native'
+      );
       if (!outputPath || !fs.existsSync(outputPath) || !isIncluded(outputPath))
         continue;
       const target = YAML.parse(

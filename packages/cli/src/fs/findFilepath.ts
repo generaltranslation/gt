@@ -112,12 +112,9 @@ export function findFileInDir(dir: string, file: string): string {
   return '';
 }
 
-export function getRelative(absolutePath: string): string {
-  const path2 = path.resolve(absolutePath);
-  return path.relative(process.cwd(), path2);
-}
-
-export function getPosixRelative(absolutePath: string): string {
-  const path2 = path.resolve(absolutePath);
-  return path.relative(process.cwd(), path2).replace(/\\/g, '/');
-}
+export {
+  getRelative,
+  getFileId,
+  fromWindowsSerializedPath,
+  isSameFilePath,
+} from './paths.js';

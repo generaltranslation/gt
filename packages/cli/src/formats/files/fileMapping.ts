@@ -6,7 +6,7 @@ import {
 import { SUPPORTED_FILE_EXTENSIONS } from '../files/supportedFiles.js';
 import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig.js';
 import path from 'node:path';
-import { getPosixRelative } from '../../fs/findFilepath.js';
+import { fromWindowsSerializedPath, getRelative } from '../../fs/paths.js';
 import {
   getConfiguredLocaleProperties,
   replaceLocalePlaceholders,
@@ -44,7 +44,7 @@ export function createFileMapping(
     // Start with GTJSON Template files
     if (translatedPaths.gt) {
       const filepath = translatedPaths.gt;
-      localeMapping[TEMPLATE_FILE_NAME] = getPosixRelative(filepath);
+      localeMapping[TEMPLATE_FILE_NAME] = getRelative(filepath);
     }
 
     for (const typeIndex of SUPPORTED_FILE_EXTENSIONS) {
@@ -84,7 +84,7 @@ export function createFileMapping(
           });
         } else if (Array.isArray(transformPath)) {
           translatedFiles = translatedFiles.map((filePath) => {
-            const relativePath = getPosixRelative(filePath);
+            const relativePath = getRelative(filePath);
 
             // Try each transform in order until one matches
             for (const transform of transformPath) {
@@ -137,7 +137,7 @@ export function createFileMapping(
             targetLocaleProperties
           );
           translatedFiles = translatedFiles.map((filePath) => {
-            let relativePath = getPosixRelative(filePath);
+            let relativePath = getRelative(filePath);
             if (
               transformPath.match &&
               typeof transformPath.match === 'string'
@@ -162,9 +162,9 @@ export function createFileMapping(
       }
 
       for (let i = 0; i < sourcePaths.length; i++) {
-        const sourceFile = getPosixRelative(sourcePaths[i]);
+        const sourceFile = getRelative(sourcePaths[i]);
         // Format transforms keep the mapped path but rewrite the output suffix.
-        const translatedFile = getPosixRelative(
+        const translatedFile = getRelative(
           transformFormat
             ? replaceFileExtensionForFormat(translatedFiles[i], transformFormat)
             : translatedFiles[i]
@@ -177,4 +177,48 @@ export function createFileMapping(
   }
 
   return fileMapping;
+}
+
+export type PathRepresentation =
+  | 'portable'
+  | 'host-native'
+  | 'windows-serialized';
+
+/**
+ * Resolves translated output path from FileMapping using an explicit source representation.
+ * Prevents guessing whether backslashes are Windows separators or POSIX filename characters.
+ *
+ * @param fileMapping - The generated FileMapping
+ * @param locale - Target locale
+ * @param sourcePath - Source file path
+ * @param representation - Explicit input format ('portable', 'host-native', or 'windows-serialized')
+ */
+export function lookupFileMapping(
+  fileMapping: FileMapping,
+  locale: string,
+  sourcePath: string,
+  representation: PathRepresentation = 'portable'
+): string | undefined {
+  const mapping = fileMapping[locale];
+  if (!mapping) return undefined;
+
+  let lookupKey = sourcePath;
+
+  if (representation === 'host-native') {
+    lookupKey = getRelative(sourcePath);
+  } else if (representation === 'windows-serialized') {
+    lookupKey = fromWindowsSerializedPath(sourcePath);
+  }
+
+  // 1. Primary lookup
+  if (mapping[lookupKey]) {
+    return mapping[lookupKey];
+  }
+
+  // 2. Fallback for windows-serialized in case the path was already portable
+  if (representation === 'windows-serialized' && mapping[sourcePath]) {
+    return mapping[sourcePath];
+  }
+
+  return undefined;
 }

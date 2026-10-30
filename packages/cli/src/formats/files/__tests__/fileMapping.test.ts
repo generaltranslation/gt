@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import path from 'node:path';
-import { createFileMapping } from '../fileMapping.js';
+import { createFileMapping, lookupFileMapping } from '../fileMapping.js';
 import { TEMPLATE_FILE_NAME } from '../../../utils/constants.js';
-import { getPosixRelative } from '../../../fs/findFilepath.js';
+import { getRelative } from '../../../fs/paths.js';
 
 describe('createFileMapping', () => {
   it('uses a relative output path for GTJSON template files', () => {
@@ -145,7 +145,7 @@ describe('createFileMapping', () => {
         {},
         [locale],
         'en'
-      )[locale][getPosixRelative(source)];
+      )[locale][getRelative(source)];
 
     it('uses the qualifier in an array-form transform', () => {
       expect(
@@ -176,9 +176,7 @@ describe('createFileMapping', () => {
         'en'
       );
       expect(
-        mapping['fr-CA'][
-          getPosixRelative(path.resolve('res/values-en/strings.xml'))
-        ]
+        mapping['fr-CA'][getRelative(path.resolve('res/values-en/strings.xml'))]
       ).toBe('res/values-fr-rCA/strings.xml');
     });
 
@@ -194,9 +192,7 @@ describe('createFileMapping', () => {
         ['fr-CA'],
         'en'
       );
-      expect(mapping['fr-CA'][getPosixRelative(jsonSource)]).toBe(
-        'i18n/fr-CA.json'
-      );
+      expect(mapping['fr-CA'][getRelative(jsonSource)]).toBe('i18n/fr-CA.json');
     });
 
     it('produces POSIX mapping keys across platforms', () => {
@@ -214,5 +210,64 @@ describe('createFileMapping', () => {
       expect(keys).toContain('nested/docs/intro.mdx');
       expect(keys.some((k) => k.includes('\\'))).toBe(false);
     });
+  });
+});
+
+describe('lookupFileMapping', () => {
+  const fakeMapping = {
+    es: {
+      'public/locales/en.json': 'public/locales/es.json',
+      'docs/guide.mdx': 'i18n/es/docs/guide.mdx',
+    },
+  };
+
+  it('resolves output path with explicit portable representation', () => {
+    const res = lookupFileMapping(
+      fakeMapping,
+      'es',
+      'docs/guide.mdx',
+      'portable'
+    );
+    expect(res).toBe('i18n/es/docs/guide.mdx');
+  });
+
+  it('resolves legacy Windows serialized paths with explicit windows-serialized representation', () => {
+    const res = lookupFileMapping(
+      fakeMapping,
+      'es',
+      'public\\locales\\en.json',
+      'windows-serialized'
+    );
+    expect(res).toBe('public/locales/es.json');
+  });
+
+  it('resolves host-native absolute paths with explicit host-native representation', () => {
+    const absPath = path.resolve('public/locales/en.json');
+    const res = lookupFileMapping(fakeMapping, 'es', absPath, 'host-native');
+    expect(res).toBe('public/locales/es.json');
+  });
+
+  it('preserves literal backslashes in POSIX filenames when using portable representation', () => {
+    const mappingWithBackslash = {
+      es: {
+        'docs/strange\\name.mdx': 'i18n/es/docs/strange\\name.mdx',
+      },
+    };
+    const res = lookupFileMapping(
+      mappingWithBackslash,
+      'es',
+      'docs/strange\\name.mdx',
+      'portable'
+    );
+    expect(res).toBe('i18n/es/docs/strange\\name.mdx');
+  });
+
+  it('returns undefined when locale or key is missing', () => {
+    expect(
+      lookupFileMapping(fakeMapping, 'fr', 'docs/guide.mdx')
+    ).toBeUndefined();
+    expect(
+      lookupFileMapping(fakeMapping, 'es', 'missing.json')
+    ).toBeUndefined();
   });
 });

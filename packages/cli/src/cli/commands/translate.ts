@@ -5,7 +5,10 @@ import {
   FileTranslationData,
   runDownloadWorkflow,
 } from '../../workflows/download.js';
-import { createFileMapping } from '../../formats/files/fileMapping.js';
+import {
+  createFileMapping,
+  lookupFileMapping,
+} from '../../formats/files/fileMapping.js';
 import copyFile from '../../fs/copyFile.js';
 import flattenJsonFiles from '../../utils/flattenJsonFiles.js';
 import localizeStaticUrls from '../../utils/localizeStaticUrls.js';
@@ -20,7 +23,7 @@ import { persistPostProcessHashes } from '../../utils/persistPostprocessHashes.j
 import { runPublishWorkflow } from '../../workflows/publish.js';
 import { SUPPORTED_FILE_EXTENSIONS } from '../../formats/files/supportedFiles.js';
 import { hasNonIdentityFileFormatTransformForType } from '../../formats/files/transformFormat.js';
-import { getPosixRelative } from '../../fs/findFilepath.js';
+import { getRelative } from '../../fs/findFilepath.js';
 import type { InlineLibrary } from '../../types/libraries.js';
 
 // Downloads translations that were completed
@@ -57,7 +60,12 @@ export async function handleTranslate(
       locales: settings.locales,
       timeoutDuration: options.timeout,
       resolveOutputPath: (sourcePath, locale) =>
-        fileMapping[locale]?.[sourcePath] ?? null,
+        lookupFileMapping(
+          fileMapping,
+          locale,
+          sourcePath,
+          'windows-serialized'
+        ) ?? null,
       options: settings,
       inlineLibrary,
       forceRetranslation: options.force,
@@ -177,7 +185,7 @@ function filterPostProcessIncludesForFormatTransforms(
     if (!hasNonIdentityFileFormatTransformForType(settings, fileType)) continue;
 
     for (const sourcePath of settings.files.resolvedPaths[fileType] || []) {
-      transformedSourcePaths.add(getPosixRelative(sourcePath));
+      transformedSourcePaths.add(getRelative(sourcePath));
     }
   }
   if (transformedSourcePaths.size === 0) return includeFiles;
