@@ -48,7 +48,7 @@ describe('@generaltranslation/format package export', () => {
           const assert = require('node:assert/strict');
           const {
             formatCurrency,
-            LocaleConfig,
+            GTIntl,
             formatCutoff,
             formatList,
             formatMessage,
@@ -73,7 +73,7 @@ describe('@generaltranslation/format package export', () => {
             undefined,
           );
           assert.equal(typeof relativeFromDate, 'string');
-          assert.equal(new LocaleConfig().formatNum(1234.5, 'en-US'), '1,234.5');
+          assert.equal(new GTIntl({}, { locale: 'en-US' }).formatNum(1234.5), '1,234.5');
           assert.equal(getRegionProperties('US').name, 'United States');
           assert.equal(standardizeLocale('en-us'), 'en-US');
         `,
@@ -91,7 +91,7 @@ describe('@generaltranslation/format package export', () => {
         `
           import assert from 'node:assert/strict';
           import {
-            LocaleConfig,
+            GTIntl,
             formatCurrency,
             formatCutoff,
             formatList,
@@ -119,7 +119,7 @@ describe('@generaltranslation/format package export', () => {
           );
           assert.equal(typeof relativeFromDate, 'string');
           assert.equal(
-            new LocaleConfig({ customMapping: { en: 'English' } }).getLocaleName('en'),
+            new GTIntl({ customMapping: { en: 'English' } }).getLocaleName('en'),
             'English'
           );
           assert.equal(getRegionProperties('419').emoji, '🌎');

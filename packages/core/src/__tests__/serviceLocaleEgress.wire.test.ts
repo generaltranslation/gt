@@ -32,150 +32,82 @@ describe.sequential('GT service locale egress', () => {
     vi.unstubAllGlobals();
   });
 
-  it.each([
-    ['lowercase locale', 'en-us'],
-    ['custom alias', 'brand-english'],
-    ['canonical locale', 'en-US'],
-  ])(
-    'canonicalizes every locale in translation upload requests: %s',
-    async (_name, configuredSourceLocale) => {
-      const requests: unknown[] = [];
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
-          requests.push((await readRequest(input, init)).body);
-          return jsonResponse({ uploadedFiles: [] });
-        })
-      );
-
-      const gt = new GT({
-        apiKey: 'test-api-key',
-        projectId: 'test-project',
-        baseUrl,
-        sourceLocale: configuredSourceLocale,
-        customMapping: {
-          'brand-english': { code: 'en-us' },
-          'brand-french': { code: 'fr-fr' },
-        },
-      });
-      const files = [
-        {
-          source: {
-            content: '{}',
-            fileName: 'messages.json',
-            fileFormat: 'JSON' as const,
-            locale: gt.sourceLocale,
-          },
-          translations: [
-            {
-              content: '{}',
-              fileName: 'messages.json',
-              fileFormat: 'JSON' as const,
-              locale: 'brand-french',
-            },
-          ],
-        },
-      ];
-
-      await gt.uploadTranslations(files, {
-        sourceLocale: gt.sourceLocale,
-      });
-
-      expect(requests).toEqual([
-        expect.objectContaining({
-          sourceLocale: 'en-US',
-          data: [
-            expect.objectContaining({
-              source: expect.objectContaining({ locale: 'en-US' }),
-              translations: [expect.objectContaining({ locale: 'fr-FR' })],
-            }),
-          ],
-        }),
-      ]);
-      expect(files[0].source.locale).toBe(configuredSourceLocale);
-      expect(files[0].translations[0].locale).toBe('brand-french');
-    }
-  );
-
   it('sends canonical locales across project and file API requests', async () => {
-    const requests: { pathname: string; body: unknown }[] = [];
+    const requests: { pathname: string; search: string; body: unknown }[] = [];
     vi.stubGlobal(
       'fetch',
       vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
         const request = await readRequest(input, init);
-        requests.push(request);
-        const url = new URL(request.pathname, baseUrl);
+        requests.push({
+          ...request,
+          search: new URL((input as Request).url).search,
+        });
+        const { pathname, body } = request;
 
-        if (url.pathname.endsWith('/setup/generate')) {
-          return jsonResponse({ status: 'completed' });
+        if (pathname.endsWith('/context/generate')) {
+          return jsonResponse({ job: null });
         }
-        if (url.pathname.endsWith('/translations/enqueue')) {
-          return jsonResponse({ jobData: {} });
+        if (pathname.endsWith('/files/translate')) {
+          return jsonResponse({ jobs: [] });
         }
-        if (url.pathname.endsWith('/files/info')) {
-          return jsonResponse({ sourceFiles: [], translatedFiles: [] });
+        if (pathname.endsWith('/query')) {
+          const { files } = body as {
+            files: { fileId: string; locale?: string }[];
+          };
+          return jsonResponse({
+            results: files.map((file) => ({ ...file, status: 'not_found' })),
+          });
         }
-        if (url.pathname.endsWith('/files/download')) {
-          return jsonResponse({ files: [] });
+        if (pathname.endsWith('/content')) {
+          return jsonResponse({
+            fileId: 'file-id',
+            branchId: 'branch-id',
+            versionId: 'version-id',
+            locale: 'fr-FR',
+            fileName: 'messages.json',
+            fileFormat: 'JSON',
+            data: null,
+            status: 'ready',
+          });
         }
-        if (url.pathname.endsWith('/files/upload-files')) {
-          return jsonResponse({ uploadedFiles: [] });
-        }
-        return jsonResponse({ success: true });
+        return jsonResponse({
+          summary: { total: 0, succeeded: 0, failed: 0 },
+          results: [],
+        });
       })
     );
 
     const gt = new GT({
       apiKey: 'test-api-key',
-      projectId: 'test-project',
       baseUrl,
-      sourceLocale: 'en-us',
-      targetLocale: 'brand-french',
-      customMapping: {
-        'brand-english': { code: 'en-us' },
-        'brand-french': { code: 'fr-fr' },
+      projectId: 'test-project',
+      localeConfig: {
+        defaultLocale: 'en-us',
+        customMapping: {
+          'brand-english': { code: 'en-us' },
+          'brand-french': { code: 'fr-fr' },
+        },
       },
     });
+    const ids = {
+      fileId: 'file-id',
+      versionId: 'version-id',
+      branchId: 'branch-id',
+    };
 
-    await gt.setupProject([], { locales: ['brand-french', 'es-es'] });
-    await gt.enqueueFiles(
-      [
-        {
-          fileId: 'file-id',
-          versionId: 'version-id',
-          branchId: 'branch-id',
-        },
-      ],
-      {
-        sourceLocale: 'brand-english',
-        targetLocales: ['brand-french', 'es-es'],
-      }
-    );
-    await gt.submitUserEditDiffs({
-      diffs: [
-        {
-          fileName: 'messages.json',
-          locale: 'brand-french',
-          diff: 'diff',
-          branchId: 'branch-id',
-          versionId: 'version-id',
-          fileId: 'file-id',
-          localContent: '{}',
-        },
-      ],
+    await gt.generateProjectContext([ids], {
+      locales: ['brand-french', 'es-es'],
     });
-    await gt.queryFileData({
-      translatedFiles: [
-        {
-          fileId: 'file-id',
-          versionId: 'version-id',
-          branchId: 'branch-id',
-          locale: 'brand-french',
-        },
-      ],
+    await gt.translateFiles([ids], {
+      sourceLocale: 'brand-english',
+      targetLocales: ['brand-french', 'es-es'],
     });
-    await gt.downloadFile({ fileId: 'file-id', locale: 'brand-french' });
-    await gt.downloadFileBatch([
+    await gt.overwriteTranslations([
+      { ...ids, locale: 'brand-french', diff: 'diff', localContent: '{}' },
+    ]);
+    await gt.queryFiles([{ ...ids, locale: 'brand-french' }]);
+    await gt.getFileContent('file-id', { locale: 'brand-french' });
+    await gt.queryFilesContent([
       { fileId: 'file-id', locale: 'brand-french' },
       { fileId: 'other-file-id', locale: 'es-es' },
     ]);
@@ -193,54 +125,51 @@ describe.sequential('GT service locale egress', () => {
       { sourceLocale: 'en-us' }
     );
 
-    expect(requests).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          pathname: '/v2/project/setup/generate',
-          body: expect.objectContaining({ locales: ['fr-FR', 'es-ES'] }),
+    const project = '/v2/projects/test-project';
+    expect(requests).toEqual([
+      expect.objectContaining({
+        pathname: `${project}/context/generate`,
+        body: expect.objectContaining({ locales: ['fr-FR', 'es-ES'] }),
+      }),
+      expect.objectContaining({
+        pathname: `${project}/files/translate`,
+        body: expect.objectContaining({
+          sourceLocale: 'en-US',
+          targetLocales: ['fr-FR', 'es-ES'],
         }),
-        expect.objectContaining({
-          pathname: '/v2/project/translations/enqueue',
-          body: expect.objectContaining({
-            sourceLocale: 'en-US',
-            targetLocales: ['fr-FR', 'es-ES'],
-          }),
-        }),
-        expect.objectContaining({
-          pathname: '/v2/project/files/diffs',
-          body: {
-            diffs: [expect.objectContaining({ locale: 'fr-FR' })],
-          },
-        }),
-        expect.objectContaining({
-          pathname: '/v2/project/files/info',
-          body: expect.objectContaining({
-            translatedFiles: [expect.objectContaining({ locale: 'fr-FR' })],
-          }),
-        }),
-        expect.objectContaining({
-          pathname: '/v2/project/files/download',
-          body: [expect.objectContaining({ locale: 'fr-FR' })],
-        }),
-        expect.objectContaining({
-          pathname: '/v2/project/files/download',
-          body: [
+      }),
+      expect.objectContaining({
+        pathname: `${project}/files/translations/overwrite`,
+        body: { diffs: [expect.objectContaining({ locale: 'fr-FR' })] },
+      }),
+      expect.objectContaining({
+        pathname: `${project}/files/query`,
+        body: { files: [expect.objectContaining({ locale: 'fr-FR' })] },
+      }),
+      expect.objectContaining({
+        pathname: `${project}/files/file-id/content`,
+        search: '?locale=fr-FR',
+      }),
+      expect.objectContaining({
+        pathname: `${project}/files/content/query`,
+        body: {
+          files: [
             expect.objectContaining({ locale: 'fr-FR' }),
             expect.objectContaining({ locale: 'es-ES' }),
           ],
+        },
+      }),
+      expect.objectContaining({
+        pathname: `${project}/files`,
+        body: expect.objectContaining({
+          sourceLocale: 'en-US',
+          data: [
+            expect.objectContaining({
+              source: expect.objectContaining({ locale: 'en-US' }),
+            }),
+          ],
         }),
-        expect.objectContaining({
-          pathname: '/v2/project/files/upload-files',
-          body: expect.objectContaining({
-            sourceLocale: 'en-US',
-            data: [
-              expect.objectContaining({
-                source: expect.objectContaining({ locale: 'en-US' }),
-              }),
-            ],
-          }),
-        }),
-      ])
-    );
+      }),
+    ]);
   });
 });

@@ -25,8 +25,6 @@ export function hashString(string: string): string {
  *
  * @param {any} childrenAsObjects - The children objects to be hashed.
  * @param {string} [context] - The context for the children.
- * @param {string} [id] - Deprecated custom ID. It remains part of the hash for
- * backward compatibility, but will be removed in the next major version.
  * @param {number} [maxChars] - The maxChars limit for the JSX children object.
  * @param {string} [dataFormat] - The data format of the sources.
  * @param {string} [fileFormat] - The file format when the source is a whole document.
@@ -37,7 +35,6 @@ export function hashSource(
   {
     source,
     context,
-    id,
     maxChars,
     requiresReview,
     dataFormat,
@@ -57,7 +54,6 @@ export function hashSource(
     source?: SanitizedChildren;
   } & HashMetadata = {
     source: sanitizedSource,
-    ...(id && { id }),
     ...(context && { context }),
     ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
     // Only mixed in when true: false/absent must hash identically to
