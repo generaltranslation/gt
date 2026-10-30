@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { T, Var, useGT } from 'gt-tanstack-start';
+import { T, Var, useGT } from 'gt-tanstack-start/experimental';
 
 // Never server-rendered: the browser renders it from the locale's twins.
 export const Route = createFileRoute('/signal-log')({

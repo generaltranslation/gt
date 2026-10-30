@@ -9,7 +9,7 @@ import {
   t,
   useGT,
   useMessages,
-} from 'gt-tanstack-start';
+} from 'gt-tanstack-start/experimental';
 import { SharedFooter } from '../components/SharedFooter';
 
 // Server-rendered (the default), then hydrated from the locale's twins.

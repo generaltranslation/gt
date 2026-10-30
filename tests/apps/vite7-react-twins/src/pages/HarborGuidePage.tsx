@@ -1,4 +1,4 @@
-import { Num, T, msg, useGT, useMessages } from 'gt-react';
+import { Num, T, msg, useGT, useMessages } from 'gt-react/experimental';
 import { SharedFooter } from '../components/SharedFooter';
 
 const edition = msg('Harbor guide edition for the winter crossing.');

@@ -1,4 +1,4 @@
-import { T, useGT } from 'gt-react';
+import { T, useGT } from 'gt-react/experimental';
 
 /** Used by the home page and the lazy harbor guide page. */
 export function SharedFooter() {

@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { msg, useMessages } from 'gt-tanstack-start';
+import { msg, useMessages } from 'gt-tanstack-start/experimental';
 
 // The loader returns msg() values. On a direct load the server runs it and
 // the browser hydrates its dehydrated result (it does not run the loader

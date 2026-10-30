@@ -303,7 +303,7 @@ test('§9.1 selects the locale from the cookie, then Accept-Language / navigator
 
     const html = (await documentResponse!.text()) ?? '';
     if (twins!.serving !== 'static') {
-      // The server picked the locale (gt-react/locale-twins, or TanStack
+      // The server picked the locale (gt-react/experimental, or TanStack
       // Start's asset transform): static tags, no bootstrap.
       expect(html).toMatch(new RegExp(`<html[^>]*\\blang="${expected}"`));
       expect(html).not.toContain('gt-locale-twins-data');

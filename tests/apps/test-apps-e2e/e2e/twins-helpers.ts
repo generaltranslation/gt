@@ -37,7 +37,7 @@ export type TwinAppConfig = {
   translationsDir: string;
   /**
    * How documents are served: a static document with the browser bootstrap,
-   * `gt-react/locale-twins` on a server, or TanStack Start server rendering.
+   * `gt-react/experimental` on a server, or TanStack Start server rendering.
    */
   serving: 'static' | 'server-helper' | 'tanstack';
   /** A client-side route whose component is lazy (its own chunk). */

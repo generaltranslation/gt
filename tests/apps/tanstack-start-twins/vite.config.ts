@@ -1,6 +1,6 @@
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import react from '@vitejs/plugin-react';
-import { gtTanstackStart } from 'gt-tanstack-start/plugin/vite';
+import { gtTanstackStart } from 'gt-tanstack-start/experimental/plugin/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({

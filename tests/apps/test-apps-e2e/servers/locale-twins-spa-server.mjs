@@ -7,7 +7,7 @@
  *   fall back to `index.html` (the document the build rewrote with the locale
  *   bootstrap). Documents are `no-cache`; `/assets/*` is immutable, so a
  *   reload after a locale switch takes shared files from the HTTP cache.
- * - `server-helper`: documents come from `gt-react/locale-twins`
+ * - `server-helper`: documents come from `gt-react/experimental`
  *   (`createLocaleTwinDocument(...).respond(request)`), resolved from the app,
  *   so the locale is chosen per request; assets get
  *   `getLocaleTwinAssetHeaders()`.
@@ -56,7 +56,7 @@ const CONTENT_TYPES = {
 
 const helper =
   values.mode === 'server-helper'
-    ? createRequire(path.join(appDir, 'package.json'))('gt-react/locale-twins')
+    ? createRequire(path.join(appDir, 'package.json'))('gt-react/experimental')
     : undefined;
 const twinDocument = helper?.createLocaleTwinDocument({ html: documentHtml });
 const assetHeaders = helper?.getLocaleTwinAssetHeaders() ?? {

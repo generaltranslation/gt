@@ -8,7 +8,7 @@ import {
   t,
   useGT,
   useMessages,
-} from 'gt-react';
+} from 'gt-react/experimental';
 import { SharedFooter } from '../components/SharedFooter';
 
 // A module-level msg() attaches to this module; rendered with useMessages().

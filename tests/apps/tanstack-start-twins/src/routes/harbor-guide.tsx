@@ -1,5 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Num, T, msg, useGT, useMessages } from 'gt-tanstack-start';
+import {
+  Num,
+  T,
+  msg,
+  useGT,
+  useMessages,
+} from 'gt-tanstack-start/experimental';
 import { SharedFooter } from '../components/SharedFooter';
 
 // A lazy route: TanStack Start splits the component into its own chunk, so

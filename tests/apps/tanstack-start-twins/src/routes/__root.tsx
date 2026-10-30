@@ -6,7 +6,7 @@ import {
   Scripts,
   createRootRoute,
 } from '@tanstack/react-router';
-import { LocaleSelector, T, useLocale } from 'gt-tanstack-start';
+import { LocaleSelector, T, useLocale } from 'gt-tanstack-start/experimental';
 import '../styles.css';
 
 export const Route = createRootRoute({

@@ -141,7 +141,7 @@ export const apps = Object.freeze({
     command: 'pnpm --filter gt-test-esbuild-react dev',
     readyPath: '/',
   },
-  // Locale twins (files.gt.splitting: 'locale-twins'): production builds,
+  // Locale twins (experimental.splitting: 'locale-twins'): production builds,
   // tested by e2e/twins.spec.ts. See servers/locale-twins-spa-server.mjs and
   // servers/locale-twins-tanstack-server.mjs.
   'vite-react-twins': {

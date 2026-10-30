@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { LocaleSelector, T, useLocale } from 'gt-react';
+import { LocaleSelector, T, useLocale } from 'gt-react/experimental';
 import { HomePage } from './pages/HomePage';
 import { onLinkClick, usePathname } from './router';
 

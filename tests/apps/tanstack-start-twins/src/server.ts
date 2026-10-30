@@ -1,4 +1,4 @@
-/// <reference types="@generaltranslation/compiler/locale-twins-manifest" />
+/// <reference types="@generaltranslation/compiler/experimental/locale-twins-manifest" />
 import {
   createStartHandler,
   defaultStreamHandler,
@@ -7,7 +7,7 @@ import { createServerEntry } from '@tanstack/react-start/server-entry';
 import {
   createLocaleTwinAssets,
   type LocaleTwinAssets,
-} from 'gt-tanstack-start';
+} from 'gt-tanstack-start/experimental';
 import { manifest } from 'virtual:gt-locale-twins-manifest';
 
 // Points the document's scripts, module preloads, and the router manifest at

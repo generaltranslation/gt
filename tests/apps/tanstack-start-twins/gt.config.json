@@ -3,9 +3,11 @@
   "locales": ["fr", "es", "zh", "ja"],
   "files": {
     "gt": {
-      "output": "src/_gt/[locale].json",
-      "splitting": "locale-twins"
+      "output": "src/_gt/[locale].json"
     }
+  },
+  "experimental": {
+    "splitting": "locale-twins"
   },
   "src": ["src/**/*.tsx"]
 }

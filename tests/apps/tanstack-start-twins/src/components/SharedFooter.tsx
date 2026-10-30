@@ -1,4 +1,4 @@
-import { T, useGT } from 'gt-tanstack-start';
+import { T, useGT } from 'gt-tanstack-start/experimental';
 
 /** Used by the home page and the lazy harbor guide page. */
 export function SharedFooter() {

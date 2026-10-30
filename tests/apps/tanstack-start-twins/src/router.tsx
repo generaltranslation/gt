@@ -1,5 +1,5 @@
 import { createRouter } from '@tanstack/react-router';
-import { setupRouterGTIntegration } from 'gt-tanstack-start';
+import { setupRouterGTIntegration } from 'gt-tanstack-start/experimental';
 import { routeTree } from './routeTree.gen';
 
 export function getRouter() {

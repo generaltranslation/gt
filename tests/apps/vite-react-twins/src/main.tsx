@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { initializeGTSPA } from 'gt-react';
+import { initializeGTSPA } from 'gt-react/experimental';
 import gtConfig from '../gt.config.json';
 import loadTranslations from './loadTranslations';
 import { App } from './App';

@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
-import { vite as gtCompiler } from '@generaltranslation/compiler';
+import { vite as gtCompiler } from '@generaltranslation/compiler/experimental';
 import { defineConfig } from 'vite';
 import gtConfig from './gt.config.json' with { type: 'json' };
 

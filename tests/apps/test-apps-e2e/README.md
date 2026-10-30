@@ -35,10 +35,12 @@ start the workflow manually on its branch.
 
 Apps whose `apps.mjs` entry has a `twins` field (`vite-react-twins`,
 `vite-react-twins-server`, `vite7-react-twins`) are production builds with
-`files.gt.splitting: 'locale-twins'`. Their command runs `vite build` and then
+the experimental `experimental.splitting: 'locale-twins'` (they import GT from
+the `/experimental` entry points). Their command runs `vite build` and then
 `servers/locale-twins-spa-server.mjs`, which serves `dist/` either as a static
 host (`--mode static`: the browser bootstrap in `index.html` picks the twins)
-or through `gt-react/locale-twins` (`--mode server-helper`). Assets are sent
+or through `createLocaleTwinDocument` from `gt-react/experimental`
+(`--mode server-helper`). Assets are sent
 as immutable so locale switches can be checked against the HTTP cache.
 
 `tanstack-start-twins` is the TanStack Start twin app. Its command builds the

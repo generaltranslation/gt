@@ -9,7 +9,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { LocaleTwinManifest } from 'generaltranslation/types';
-import type { LocaleTwinDocumentData } from 'gt-i18n/internal/locale-twins';
+import type { LocaleTwinDocumentData } from 'gt-i18n/internal/experimental';
 
 /** The twin manifest (`gt-locale-twins.json`). */
 export type TwinManifest = LocaleTwinManifest;
