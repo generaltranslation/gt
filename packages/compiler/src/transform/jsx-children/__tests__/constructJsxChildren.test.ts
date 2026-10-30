@@ -11,7 +11,6 @@ import { stripTField } from './stripTField';
 import { hashSource } from 'generaltranslation/id';
 import type { JsxChildren } from '@generaltranslation/format/types';
 import { ScopeTracker } from '../../../state/ScopeTracker';
-import { LocaleTwinCollector } from '../../../state/LocaleTwinCollector';
 import { PluginSettings } from '../../../config';
 
 // TODO: ignore error if its just keys out of order
@@ -78,7 +77,6 @@ function createTest(dirPath: string) {
       const state: TransformState = {
         settings,
         stringCollector,
-        localeTwins: new LocaleTwinCollector(),
         scopeTracker,
         logger,
         errorTracker,

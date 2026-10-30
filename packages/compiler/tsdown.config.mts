@@ -9,6 +9,13 @@ export default defineConfig(
     createTsdownUnbundleConfig({
       format: 'cjs',
       dts: true,
+      // A hand-written ambient module declaration (no runtime code)
+      copy: [
+        {
+          from: 'src/experimental/locale-twins-manifest.d.ts',
+          to: 'dist/experimental',
+        },
+      ],
       outputOptions: {
         exports: 'named',
       },

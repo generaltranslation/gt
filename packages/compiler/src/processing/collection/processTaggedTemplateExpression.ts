@@ -36,7 +36,7 @@ export function processTaggedTemplateExpression(
     // If message is a TemplateLiteral, it contains derive() — skip
     // TODO: remove this check once derive is supported
     if (!t.isStringLiteral(message)) {
-      state.localeTwins.addUnattributed({
+      state.entryObserver?.addRuntimeHashed({
         api: 't',
         reason: 'derive',
         node: path.node,
@@ -51,7 +51,7 @@ export function processTaggedTemplateExpression(
       content: message.value,
       injectHash: false,
     });
-    state.localeTwins.addUnattributed({
+    state.entryObserver?.addRuntimeHashed({
       api: 't',
       reason: 'taggedTemplate',
       node: path.node,

@@ -1,17 +1,19 @@
-import { createUnplugin } from 'unplugin';
+import {
+  createUnplugin,
+  type UnpluginContextMeta,
+  type UnpluginFactory,
+  type VitePlugin,
+} from 'unplugin';
 import fs from 'node:fs';
 import path from 'node:path';
 import * as parser from '@babel/parser';
 import generate from '@babel/generator';
 import traverse from '@babel/traverse';
 
+import type { File } from '@babel/types';
+
 // Core modules
-import {
-  GTConfig,
-  PluginConfig,
-  ResolvedLocaleTwinsOptions,
-  resolveLocaleTwinsSettings,
-} from './config';
+import { GTConfig, PluginConfig } from './config';
 
 // Import passes
 import { collectionPass } from './passes/collectionPass';
@@ -22,7 +24,8 @@ import { initializeState } from './state/utils/initializeState';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
 import { shouldTransformModuleId } from './utils/moduleId';
-import { createLocaleTwinsPlugin } from './locale-twins/createLocaleTwinsPlugin';
+import type { EntryObserver } from './state/EntryObserver';
+import type { TransformState } from './state/types';
 
 /**
  * Architecture:
@@ -184,25 +187,71 @@ function resolveGTConfig(options: GTUnpluginOptions): GTConfigLoadResult {
 }
 
 /**
- * GT Universal Plugin - Main entry point
- *
- * Universal plugin for compile-time optimization of GT translation components
- * that works across webpack, Vite, Rollup, and other bundlers.
+ * What a build extension does for one module transform.
  */
-const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
-  (options = {}, meta) => {
+export type TransformExtension = {
+  /** Observes the module's entries during the collection pass. */
+  observer?: EntryObserver;
+  /**
+   * Runs after the injection pass (only with compile-time hashes, also on
+   * modules without entries). Returns whether it changed the AST, and
+   * whether the dev hot reload pass must be skipped.
+   */
+  afterInjection?(
+    state: TransformState,
+    ast: File
+  ): { modified: boolean; skipRuntimeTranslate: boolean };
+};
+
+/**
+ * A build extension of the GT compiler plugin, such as the experimental
+ * locale twins (`@generaltranslation/compiler/experimental`).
+ */
+export type PluginExtension = {
+  /** Decides what the extension does for a module transform. */
+  beginTransform(
+    context: unknown,
+    id: string,
+    ssr: boolean | undefined
+  ): TransformExtension | undefined;
+  /** End of a build (any bundler). */
+  buildEnd?(context: unknown): void;
+  /**
+   * Hooks for unplugin's `vite:` override. A `buildEnd` here replaces the
+   * generic one, so it must call `finishBuild`.
+   */
+  vite?: Partial<VitePlugin>;
+};
+
+/** What a build extension is created with. */
+export type PluginExtensionContext<Options extends GTUnpluginOptions> = {
+  /** The options with the gt.config.json the plugin loaded. */
+  options: Options;
+  meta: UnpluginContextMeta;
+  /** The plugin's end-of-build work, extension included. */
+  finishBuild(context: unknown): void;
+};
+
+/**
+ * The GT plugin's unplugin factory, optionally with a build extension.
+ */
+export function createGTUnpluginFactory<
+  Options extends GTUnpluginOptions = GTUnpluginOptions,
+>(
+  createExtension?: (
+    context: PluginExtensionContext<Options>
+  ) => PluginExtension
+): UnpluginFactory<Options | undefined> {
+  return (options = {} as Options, meta) => {
     const gtConfigLoadResult = resolveGTConfig(options);
     const loadedGTConfig =
       gtConfigLoadResult.status === 'loaded'
         ? gtConfigLoadResult.gtConfig
         : undefined;
-    const resolvedOptions: GTUnpluginOptions = {
+    const resolvedOptions: Options = {
       ...options,
       ...(loadedGTConfig ? { gtConfig: loadedGTConfig } : {}),
     };
-    // Resolve once so an invalid strategy fails at plugin creation and
-    // build hooks can read the resolved values from resolvedOptions
-    Object.assign(resolvedOptions, resolveLocaleTwinsSettings(resolvedOptions));
 
     if (shouldWarn(options.logLevel)) {
       if (gtConfigLoadResult.status === 'missing') {
@@ -236,23 +285,16 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         `[gt-compiler] Debug hash manifest written to ${outPath} (${debugManifest.size} entries)`
       );
     };
-    /** End of a build (any bundler; Vite calls it from its buildEnd override). */
+    /** End of a build (any bundler). */
     const finishBuild = (context: unknown): void => {
-      localeTwins.buildEnd(context);
+      extension?.buildEnd?.(context);
       writeDebugManifest();
     };
 
-    // The 'locale-twins' translation splitting strategy
-    const localeTwins = createLocaleTwinsPlugin({
-      splitting: resolvedOptions.splitting!,
-      localeTwins: resolvedOptions.localeTwins as ResolvedLocaleTwinsOptions,
-      gtConfig: resolvedOptions.gtConfig,
-      compileTimeHash: resolvedOptions.compileTimeHash !== false,
-      // gt.config.json and files.gt.output are relative to the working directory
-      configDir: process.cwd(),
-      logLevel: options.logLevel,
-      framework: meta.framework,
-      onBuildEnd: finishBuild,
+    const extension = createExtension?.({
+      options: resolvedOptions,
+      meta,
+      finishBuild,
     });
 
     return {
@@ -265,18 +307,18 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         id: string,
         transformOptions?: { ssr?: boolean }
       ) {
-        // Locale twins: production Vite builds run the locale twins pass;
-        // client production builds also strip the attributed source text
-        const twins = localeTwins.beginTransform(
+        const transformExtension = extension?.beginTransform(
           this,
           id,
           transformOptions?.ssr
         );
 
         // Initialize processing state
-        const state = initializeState(resolvedOptions, id, {
-          stripSourceText: twins.stripSourceText,
-        });
+        const state = initializeState(
+          resolvedOptions,
+          id,
+          transformExtension?.observer
+        );
         if (debugManifest) state.debugManifest = debugManifest;
         try {
           // Skip transformation if not needed
@@ -323,26 +365,20 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             traverse(ast, injectionPass(state));
           }
 
-          // Pass 4b: Locale twins registration (placeholder + msg $_hash, and
-          // client source stripping), gated on compileTimeHash. Modules
-          // without attributed entries still get a registration without a
-          // placeholder, which installs the locale twin runtime.
-          if (state.settings.compileTimeHash && twins.active) {
-            localeTwins.runPass(state, ast, id);
-          }
+          // Pass 4b: Build extension, gated on compileTimeHash
+          const extensionResult =
+            state.settings.compileTimeHash && transformExtension?.afterInjection
+              ? transformExtension.afterInjection(state, ast)
+              : undefined;
 
-          // Pass 5: Runtime translate (dev hot reload). Skipped when source
-          // text was stripped: its calls would put the text back in the code
+          // Pass 5: Runtime translate (dev hot reload)
           const devHotReloadActive =
             state.settings.devHotReload.strings ||
             state.settings.devHotReload.jsx;
-          const sourceTextStripped =
-            state.settings.stripSourceText &&
-            state.statistics.localeTwinRegistrationsCount > 0;
           if (
             devHotReloadActive &&
             hasCollectionContent &&
-            !sourceTextStripped
+            !extensionResult?.skipRuntimeTranslate
           ) {
             traverse(ast, runtimeTranslatePass(state));
           }
@@ -353,8 +389,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             state.statistics.macroExpansionsCount === 0 &&
             state.statistics.jsxInsertionsCount === 0 &&
             state.statistics.runtimeTranslateCount === 0 &&
-            state.statistics.localeTwinRegistrationsCount === 0 &&
-            state.statistics.localeTwinRuntimeRegistrationsCount === 0
+            !extensionResult?.modified
           ) {
             return null;
           }
@@ -377,11 +412,21 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       buildEnd() {
         finishBuild(this);
       },
-      // Vite-only hooks for locale twins. unplugin merges this object into
-      // the Vite plugin, so its buildEnd replaces the generic one above.
-      vite: localeTwins.vite,
+      // unplugin merges this object into the Vite plugin, so a buildEnd here
+      // replaces the generic one above.
+      ...(extension?.vite ? { vite: extension.vite } : {}),
     };
-  }
+  };
+}
+
+/**
+ * GT Universal Plugin - Main entry point
+ *
+ * Universal plugin for compile-time optimization of GT translation components
+ * that works across webpack, Vite, Rollup, and other bundlers.
+ */
+const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
+  createGTUnpluginFactory()
 );
 
 // Export the unplugin with different bundler integrations

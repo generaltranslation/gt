@@ -163,15 +163,18 @@ export function isGTImportSource(name: string): name is GT_IMPORT_SOURCES {
       GT_IMPORT_SOURCES.GT_REACT,
       GT_IMPORT_SOURCES.GT_REACT_CLIENT,
       GT_IMPORT_SOURCES.GT_REACT_BROWSER,
+      GT_IMPORT_SOURCES.GT_REACT_EXPERIMENTAL,
       GT_IMPORT_SOURCES.GT_I18N,
       GT_IMPORT_SOURCES.GT_TANSTACK_START,
+      GT_IMPORT_SOURCES.GT_TANSTACK_START_EXPERIMENTAL,
     ] as string[]
   ).includes(name);
 }
 
 /**
  * Check if a source exports gt-react's string translation `t`.
- * gt-tanstack-start re-exports gt-react's API, including `t`.
+ * gt-tanstack-start re-exports gt-react's API, including `t`, and the
+ * `/experimental` entry points re-export everything.
  */
 export function isGTReactImportSource(
   name: string
@@ -179,28 +182,19 @@ export function isGTReactImportSource(
   | GT_IMPORT_SOURCES.GT_REACT
   | GT_IMPORT_SOURCES.GT_REACT_CLIENT
   | GT_IMPORT_SOURCES.GT_REACT_BROWSER
-  | GT_IMPORT_SOURCES.GT_TANSTACK_START {
+  | GT_IMPORT_SOURCES.GT_REACT_EXPERIMENTAL
+  | GT_IMPORT_SOURCES.GT_TANSTACK_START
+  | GT_IMPORT_SOURCES.GT_TANSTACK_START_EXPERIMENTAL {
   return (
     [
       GT_IMPORT_SOURCES.GT_REACT,
       GT_IMPORT_SOURCES.GT_REACT_CLIENT,
       GT_IMPORT_SOURCES.GT_REACT_BROWSER,
+      GT_IMPORT_SOURCES.GT_REACT_EXPERIMENTAL,
       GT_IMPORT_SOURCES.GT_TANSTACK_START,
+      GT_IMPORT_SOURCES.GT_TANSTACK_START_EXPERIMENTAL,
     ] as string[]
   ).includes(name);
-}
-
-/**
- * The import source for the locale twins registration call, given a GT import
- * source the module already uses. gt-i18n exposes it from `gt-i18n/internal`.
- * Returns undefined for sources without the export (gt-next).
- */
-export function getLocaleTwinRegistrationImportSource(
-  importSource: string
-): string | undefined {
-  if (isGTReactImportSource(importSource)) return importSource;
-  if (importSource === GT_IMPORT_SOURCES.GT_I18N) return 'gt-i18n/internal';
-  return undefined;
 }
 
 export function getGtReactImportSource(

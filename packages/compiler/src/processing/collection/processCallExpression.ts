@@ -1,6 +1,7 @@
 import { NodePath, VisitNode } from '@babel/traverse';
 import * as t from '@babel/types';
 import { TransformState } from '../../state/types';
+import type { TextSite } from '../../state/EntryObserver';
 import {
   isTranslationComponent,
   isTranslationFunctionCallback,
@@ -147,7 +148,7 @@ function handleUseGTCallback(
     useGTCallbackParams.hasDeriveContext
   ) {
     state.stringCollector.incrementCounter();
-    state.localeTwins.addUnattributed({
+    state.entryObserver?.addRuntimeHashed({
       api: 'gt',
       reason: 'derive',
       node: callExprPath.node,
@@ -167,7 +168,7 @@ function handleUseGTCallback(
     hash: useGTCallbackParams.hash,
     format: useGTCallbackParams.format,
   });
-  state.localeTwins.add({
+  state.entryObserver?.add({
     api: 'gt',
     hash,
     source: useGTCallbackParams.content,
@@ -254,7 +255,7 @@ function handleReactInvocation(
   }
 
   // Validate the arguments, recording where the children's source text sits
-  // (for client source stripping in locale twins mode)
+  // for the entry observer
   const {
     result: {
       errors,
@@ -268,7 +269,7 @@ function handleReactInvocation(
       hasDeriveChildren,
     },
     textSites,
-  } = state.localeTwins.captureTextSites(() =>
+  } = captureTextSites(state, () =>
     validateTranslationComponentArgs(callExprPath, canonicalName, state)
   );
 
@@ -308,13 +309,13 @@ function handleReactInvocation(
     requiresReview,
   });
   if (!hash) {
-    state.localeTwins.addUnattributed({
+    state.entryObserver?.addRuntimeHashed({
       api: 'T',
       reason: 'derive',
       node: callExpr,
     });
   } else if (children !== undefined) {
-    state.localeTwins.add({
+    state.entryObserver?.add({
       api: 'T',
       hash,
       source: children,
@@ -342,7 +343,7 @@ function handleStandaloneTranslation(
 
   // Skip derive content (autoderive content resolves to undefined)
   if (params.content === undefined || params.hasDeriveContext) {
-    state.localeTwins.addUnattributed({
+    state.entryObserver?.addRuntimeHashed({
       api: injectHash ? 't' : 'msg',
       reason: 'derive',
       node: callExprPath.node,
@@ -361,10 +362,20 @@ function handleStandaloneTranslation(
     format: params.format,
     injectHash,
   });
-  state.localeTwins.add({
+  state.entryObserver?.add({
     api: injectHash ? 't' : 'msg',
     hash,
     source: params.content,
     node: callExprPath.node,
   });
+}
+
+/** Runs `fn`, collecting the text sites the entry observer is told about. */
+function captureTextSites<R>(
+  state: TransformState,
+  fn: () => R
+): { result: R; textSites?: TextSite[] } {
+  return state.entryObserver
+    ? state.entryObserver.captureTextSites(fn)
+    : { result: fn() };
 }

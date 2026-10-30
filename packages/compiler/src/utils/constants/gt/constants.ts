@@ -41,7 +41,6 @@ export enum GT_OTHER_FUNCTIONS {
   derive = 'derive',
   GtInternalRuntimeTranslateString = 'GtInternalRuntimeTranslateString',
   GtInternalRuntimeTranslateJsx = 'GtInternalRuntimeTranslateJsx',
-  GtInternalRegisterLocaleTwin = 'GtInternalRegisterLocaleTwin',
 }
 
 /**
@@ -101,8 +100,10 @@ export enum GT_IMPORT_SOURCES {
   GT_REACT = 'gt-react',
   GT_REACT_CLIENT = 'gt-react/client',
   GT_REACT_BROWSER = 'gt-react/browser',
+  GT_REACT_EXPERIMENTAL = 'gt-react/experimental',
   GT_I18N = 'gt-i18n',
   GT_TANSTACK_START = 'gt-tanstack-start',
+  GT_TANSTACK_START_EXPERIMENTAL = 'gt-tanstack-start/experimental',
 }
 
 /**

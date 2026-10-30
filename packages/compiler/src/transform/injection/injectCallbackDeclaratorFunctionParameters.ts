@@ -124,8 +124,8 @@ function injectUseGTParameters(
           t.identifier('message'),
           t.stringLiteral(content.message)
         );
-        // Locale twins: client builds strip the message once attributed
-        state.localeTwins.recordPrefetchMessage(content.hash, message);
+        // The entry observer may need to find the message again
+        state.entryObserver?.recordPrefetchMessage(content.hash, message);
         return t.objectExpression([
           t.objectProperty(
             t.identifier('$_hash'),

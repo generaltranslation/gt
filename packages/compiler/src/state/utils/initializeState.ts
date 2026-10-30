@@ -2,14 +2,11 @@ import { GTUnpluginOptions } from '../..';
 import { TransformState } from '../types';
 import {
   PluginSettings,
-  DEFAULT_LOCALE_TWINS_OPTIONS,
   resolveAutoderive,
   resolveDevHotReload,
-  resolveLocaleTwinsSettings,
 } from '../../config';
-import { DEFAULT_TRANSLATION_SPLITTING } from 'generaltranslation/internal';
 import { StringCollector } from '../StringCollector';
-import { LocaleTwinCollector } from '../LocaleTwinCollector';
+import type { EntryObserver } from '../EntryObserver';
 import { ScopeTracker } from '../ScopeTracker';
 import { Logger } from '../Logger';
 import { ErrorTracker } from '../ErrorTracker';
@@ -33,9 +30,6 @@ const DEFAULT_SETTINGS: PluginSettings = {
   legacyGtReactImportSource: false,
   _debugHashManifest: false,
   devHotReload: { strings: false, jsx: false },
-  splitting: DEFAULT_TRANSLATION_SPLITTING,
-  localeTwins: DEFAULT_LOCALE_TWINS_OPTIONS,
-  stripSourceText: false,
 };
 
 /**
@@ -44,7 +38,7 @@ const DEFAULT_SETTINGS: PluginSettings = {
 export function initializeState(
   options: GTUnpluginOptions,
   filename: string,
-  { stripSourceText = false }: { stripSourceText?: boolean } = {}
+  entryObserver?: EntryObserver
 ): TransformState {
   // Pull enableAutoJsxInjection from gtConfig if provided
   const gtConfig = options.gtConfig;
@@ -72,8 +66,6 @@ export function initializeState(
     autoderive: _a,
     devHotReload: _b,
     legacyGtReactImportSource: _c,
-    splitting: _d,
-    localeTwins: _e,
     ...restOptions
   } = options;
 
@@ -83,16 +75,14 @@ export function initializeState(
     autoderive,
     legacyGtReactImportSource,
     devHotReload,
-    ...resolveLocaleTwinsSettings(options),
     ...restOptions,
     filename,
-    stripSourceText,
   };
 
   return {
     settings,
     stringCollector: new StringCollector(),
-    localeTwins: new LocaleTwinCollector(),
+    entryObserver,
     scopeTracker: new ScopeTracker(),
     logger: new Logger(settings.logLevel),
     errorTracker: new ErrorTracker(),
@@ -102,8 +92,6 @@ export function initializeState(
       macroExpansionsCount: 0,
       jsxInsertionsCount: 0,
       runtimeTranslateCount: 0,
-      localeTwinRegistrationsCount: 0,
-      localeTwinRuntimeRegistrationsCount: 0,
     },
   };
 }

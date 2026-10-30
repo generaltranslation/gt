@@ -4,6 +4,20 @@
   "description": "Universal plugin for compile-time optimization of GT translation components",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./experimental": {
+      "types": "./dist/experimental/index.d.ts",
+      "default": "./dist/experimental/index.js"
+    },
+    "./experimental/locale-twins-manifest": {
+      "types": "./dist/experimental/locale-twins-manifest.d.ts"
+    },
+    "./package.json": "./package.json"
+  },
   "author": "General Translation, Inc.",
   "license": "MIT",
   "scripts": {
@@ -61,8 +75,7 @@
     "vitest": "catalog:"
   },
   "files": [
-    "dist",
-    "locale-twins-manifest.d.ts"
+    "dist"
   ],
   "engines": {
     "node": ">=16.0.0"
