@@ -94,6 +94,12 @@ module.exports = [
     '1 kB'
   ),
   core('generaltranslation/types', 'types'),
+  // Node-only: loads valibot to validate gt.config.json.
+  nodeEntry(
+    'generaltranslation/config-schema',
+    'packages/core/dist/config-schema.mjs',
+    '10 kB'
+  ),
 
   format('@generaltranslation/format', 'index'),
   format('@generaltranslation/format/types', 'types'),

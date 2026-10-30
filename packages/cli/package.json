@@ -12,6 +12,8 @@
   "type": "module",
   "scripts": {
     "generate-version": "node scripts/generate-version.js",
+    "generate:config-schema": "node scripts/generate-config-schema.js",
+    "check:config-schema": "node scripts/generate-config-schema.js --check",
     "transpile": "pnpm run generate-version && tsdown",
     "copy-instructions": "rm -rf dist/setup/instructions && cp -r src/setup/instructions dist/setup/instructions",
     "build": "pnpm run transpile && pnpm run copy-instructions",
@@ -162,6 +164,7 @@
     "tsconfig-paths": "^4.2.0",
     "unified": "^11.0.5",
     "unist-util-visit": "^5.0.0",
+    "valibot": "^1.5.0",
     "yaml": "^2.8.0"
   },
   "devDependencies": {
@@ -174,6 +177,7 @@
     "@types/node": "catalog:",
     "@types/resolve": "^1.20.2",
     "@types/semver": "^7.7.1",
+    "@valibot/to-json-schema": "^1.8.0",
     "ajv": "^8.18.0",
     "eslint": "^9.20.0",
     "esm": "^3.2.25",

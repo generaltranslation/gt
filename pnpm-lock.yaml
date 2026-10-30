@@ -909,6 +909,9 @@ importers:
       unist-util-visit:
         specifier: ^5.0.0
         version: 5.0.0
+      valibot:
+        specifier: ^1.5.0
+        version: 1.5.0(typescript@5.9.3)
       yaml:
         specifier: ^2.8.0
         version: 2.8.1
@@ -940,6 +943,9 @@ importers:
       '@types/semver':
         specifier: ^7.7.1
         version: 7.7.1
+      '@valibot/to-json-schema':
+        specifier: ^1.8.0
+        version: 1.8.0(valibot@1.5.0(typescript@5.9.3))
       ajv:
         specifier: ^8.18.0
         version: 8.18.0
@@ -1034,6 +1040,9 @@ importers:
       '@noble/hashes':
         specifier: ^2.2.0
         version: 2.2.0
+      valibot:
+        specifier: ^1.5.0
+        version: 1.5.0(typescript@5.9.3)
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -11443,6 +11452,11 @@ packages:
     peerDependencies:
       '@urql/core': ^5.0.0
 
+  '@valibot/to-json-schema@1.8.0':
+    resolution: {integrity: sha512-a0M+uwCuQZEPAo65NYkFSJ14O5c213KoSZmPdoCfuFvUhfULi4T2Z6Tpjv6lTVMW9RoLm74RpRAjNEa43KcN+g==}
+    peerDependencies:
+      valibot: ^1.5.0
+
   '@vanilla-extract/babel-plugin-debug-ids@1.2.2':
     resolution: {integrity: sha512-MeDWGICAF9zA/OZLOKwhoRlsUW+fiMwnfuOAqFVohL31Agj7Q/RBWAYweqjHLgFBCsdnr6XIfwjJnmb2znEWxw==}
 
@@ -20196,6 +20210,14 @@ packages:
 
   v8-compile-cache-lib@3.0.1:
     resolution: {integrity: sha512-wa7YjyUGfNZngI/vtK0UHAN+lgDCxBPCylVXGp0zu59Fz5aiGtNXaq3DhIov063MorB+VfufLh3JlF2KdTK3xg==}
+
+  valibot@1.5.0:
+    resolution: {integrity: sha512-nil6AkP2TChWL43Z5uJ6GTxX01CUA+g8LWUM+N/rB9NBbkUMaUsi9PUNzlUPgoKASgmx9f7eGOYpJ04/fSa6FQ==}
+    peerDependencies:
+      typescript: '>=5'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
 
   validate-npm-package-license@3.0.4:
     resolution: {integrity: sha512-DpKm2Ui/xN7/HQKCtpZxoRWBhZ9Z0kqtygG8XCgNQ8ZlDnxuQmWhj566j8fN4Cu3/JmbhsDo7fcAJq4s9h27Ew==}
@@ -31462,6 +31484,10 @@ snapshots:
       '@urql/core': 5.2.0(graphql@16.14.2)
       wonka: 6.3.6
 
+  '@valibot/to-json-schema@1.8.0(valibot@1.5.0(typescript@5.9.3))':
+    dependencies:
+      valibot: 1.5.0(typescript@5.9.3)
+
   '@vanilla-extract/babel-plugin-debug-ids@1.2.2':
     dependencies:
       '@babel/core': 7.29.7
@@ -42319,6 +42345,10 @@ snapshots:
   uuidv7@0.4.4: {}
 
   v8-compile-cache-lib@3.0.1: {}
+
+  valibot@1.5.0(typescript@5.9.3):
+    optionalDependencies:
+      typescript: 5.9.3
 
   validate-npm-package-license@3.0.4:
     dependencies:

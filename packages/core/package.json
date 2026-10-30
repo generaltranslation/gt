@@ -52,9 +52,10 @@
   },
   "dependencies": {
     "@generaltranslation/api": "workspace:*",
+    "@generaltranslation/format": "workspace:*",
     "@generaltranslation/icu": "workspace:*",
     "@noble/hashes": "^2.2.0",
-    "@generaltranslation/format": "workspace:*"
+    "valibot": "^1.5.0"
   },
   "exports": {
     ".": {
@@ -126,6 +127,16 @@
       "import": {
         "types": "./dist/diagnostics.d.mts",
         "default": "./dist/diagnostics.mjs"
+      }
+    },
+    "./config-schema": {
+      "require": {
+        "types": "./dist/config-schema.d.cts",
+        "default": "./dist/config-schema.cjs"
+      },
+      "import": {
+        "types": "./dist/config-schema.d.mts",
+        "default": "./dist/config-schema.mjs"
       }
     }
   }
