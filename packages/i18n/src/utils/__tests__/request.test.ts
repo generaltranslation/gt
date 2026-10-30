@@ -25,6 +25,14 @@ describe('parseAcceptLanguage', () => {
     ]);
   });
 
+  it('parses at most 32 entries', () => {
+    const header = Array.from({ length: 100 }, (_, i) => `x-${i}`).join(',');
+    expect(parseAcceptLanguage(header)).toEqual(
+      Array.from({ length: 32 }, (_, i) => `x-${i}`)
+    );
+    expect(parseAcceptLanguage([header, 'en'])).toHaveLength(32);
+  });
+
   it('omits wildcards and unacceptable or invalid candidates', () => {
     expect(parseAcceptLanguage('*, en;q=0, es;q=invalid, fr;q=2')).toEqual([]);
   });
