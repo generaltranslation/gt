@@ -26,19 +26,25 @@ function createInvalidLocaleTwinMessage(error: unknown): string {
  *
  * The first call (filled or not, so server bundles too) installs the locale
  * twin runtime hooks; apps without locale twins never load that runtime.
+ * Modules without attributed entries call it without a value, so the
+ * runtime is installed even before the page registers its first twin.
  *
  * Web-only: exported from gt-react and gt-tanstack-start, intentionally not
  * from gt-react-native (whose registry therefore stays empty).
  *
- * @param value - A filled table (`JSON.stringify({ l, e })`) or an unfilled
- * placeholder (server bundles, original chunks).
- * @returns `true` when a table was registered, `false` for an unfilled
- * placeholder.
+ * @param value - A filled table (`JSON.stringify({ l, e })`), an unfilled
+ * placeholder (server bundles, original chunks), or nothing (a module
+ * without attributed entries).
+ * @returns `true` when a table was registered, `false` otherwise.
  */
-export function registerLocaleTwin(value: string): boolean {
+export function registerLocaleTwin(value?: string): boolean {
   const state = getLocaleTwinState();
   state.hooks ??= localeTwinHooks;
-  if (isUnfilledLocaleTwinPlaceholder(value)) return false;
+  if (value === undefined) return false;
+  if (isUnfilledLocaleTwinPlaceholder(value)) {
+    state.unfilled = true;
+    return false;
+  }
   let table: LocaleTwinTable;
   try {
     table = parseLocaleTwinTable(value);

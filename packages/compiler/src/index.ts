@@ -324,8 +324,10 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           }
 
           // Pass 4b: Locale twins registration (placeholder + msg $_hash, and
-          // client source stripping), gated on compileTimeHash
-          if (injectionRan && twins.active) {
+          // client source stripping), gated on compileTimeHash. Modules
+          // without attributed entries still get a registration without a
+          // placeholder, which installs the locale twin runtime.
+          if (state.settings.compileTimeHash && twins.active) {
             localeTwins.runPass(state, ast, id);
           }
 
@@ -351,7 +353,8 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             state.statistics.macroExpansionsCount === 0 &&
             state.statistics.jsxInsertionsCount === 0 &&
             state.statistics.runtimeTranslateCount === 0 &&
-            state.statistics.localeTwinRegistrationsCount === 0
+            state.statistics.localeTwinRegistrationsCount === 0 &&
+            state.statistics.localeTwinRuntimeRegistrationsCount === 0
           ) {
             return null;
           }

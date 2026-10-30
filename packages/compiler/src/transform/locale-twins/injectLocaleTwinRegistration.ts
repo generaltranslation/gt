@@ -15,12 +15,13 @@ import { GT_OTHER_FUNCTIONS } from '../../utils/constants/gt/constants';
  * call runs before the rest of the module body. The placeholder is a string
  * literal argument of a call to an imported function with side effects, so
  * minifiers keep it and tree-shaking cannot drop it; the call's result is
- * intentionally unused.
+ * intentionally unused. Without a placeholder (a module without attributed
+ * entries) the call has no argument and only installs the runtime.
  */
 export function injectLocaleTwinRegistration(
   programPath: NodePath<t.Program>,
   importSource: string,
-  placeholder: string
+  placeholder?: string
 ): void {
   const local = programPath.scope.generateUidIdentifier(
     GT_OTHER_FUNCTIONS.GtInternalRegisterLocaleTwin
@@ -35,7 +36,10 @@ export function injectLocaleTwinRegistration(
     t.stringLiteral(importSource)
   );
   const registration = t.expressionStatement(
-    t.callExpression(t.identifier(local.name), [t.stringLiteral(placeholder)])
+    t.callExpression(
+      t.identifier(local.name),
+      placeholder === undefined ? [] : [t.stringLiteral(placeholder)]
+    )
   );
 
   const body = programPath.node.body;

@@ -286,10 +286,42 @@ export const a = msg("Plain");`,
     expect(code ?? '').not.toContain('$_hash');
   });
 
-  it('inserts nothing for a module without entries', async () => {
+  // A page can evaluate GT modules before any module with attributed entries
+  // (an entry that only lazy-imports its pages, a page with only
+  // unattributed entries). The call without a placeholder installs the
+  // locale twin runtime there too.
+  it('registers a module without attributed entries without a placeholder', async () => {
+    const code = (await transform(`import { useLocale } from 'gt-react';
+export const useIt = () => useLocale();`))!;
+
+    expect(code).toMatch(
+      /import \{ GtInternalRegisterLocaleTwin as (_GtInternalRegisterLocaleTwin) \} from "gt-react";\s*\1\(\);/
+    );
+    expect(findLocaleTwinPlaceholders(code)).toEqual([]);
+  });
+
+  it('registers a module with only unattributed entries without a placeholder', async () => {
+    const code = (await transform(`import { useGT, derive } from 'gt-react';
+export function useBook() {
+  const gt = useGT();
+  return gt("Book", { $context: derive(getMeaning()) });
+}`))!;
+
+    expect(code).toMatch(/_GtInternalRegisterLocaleTwin\(\);/);
+    expect(findLocaleTwinPlaceholders(code)).toEqual([]);
+  });
+
+  it('inserts nothing for a module without a GT import', async () => {
+    expect(await transform(`export const add = (a, b) => a + b;`)).toBeNull();
+  });
+
+  it('inserts nothing in a module without entries with the default splitting strategy', async () => {
     expect(
-      await transform(`import { useLocale } from 'gt-react';
-export const useIt = () => useLocale();`)
+      await transform(
+        `import { useLocale } from 'gt-react';
+export const useIt = () => useLocale();`,
+        { logLevel: 'silent', gtConfig: {} }
+      )
     ).toBeNull();
   });
 });

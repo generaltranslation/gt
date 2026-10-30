@@ -54,6 +54,11 @@ export type LocaleTwinState = {
   locale?: string;
   /** Registered tables, kept by reference. */
   tables: LocaleTwinTable[];
+  /**
+   * Whether an unfilled placeholder was registered: a server bundle, or an
+   * original (untwinned) chunk in a browser.
+   */
+  unfilled?: boolean;
   /** Runtime diagnostics already reported on this page (each logs once). */
   reported?: Set<string>;
   /** Whether a locale twin client loads whole locales for dictionaries. */

@@ -25,6 +25,8 @@ export interface TransformState {
     runtimeTranslateCount: number;
     /** Locale twins registration calls inserted (0 or 1 per module) */
     localeTwinRegistrationsCount: number;
+    /** Locale twins registrations without a placeholder (0 or 1 per module) */
+    localeTwinRuntimeRegistrationsCount: number;
   };
   /** Debug: shared manifest map for hash → jsxChildren mapping (accumulated across files) */
   debugManifest?: Map<string, unknown>;

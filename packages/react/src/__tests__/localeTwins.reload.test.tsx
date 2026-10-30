@@ -128,6 +128,21 @@ describe('locale switching with locale twins', () => {
       expect(documentReload).toHaveBeenCalledTimes(1);
     });
 
+    it('follows a soft _reload with a document reload before the first twin registers', () => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const softReload = vi.fn();
+      // An entry that only lazy-imports its pages: its GT modules register
+      // without a placeholder
+      GtInternalRegisterLocaleTwin();
+
+      const documentReload = switchLocaleInSPA(TWINS_CONFIG, softReload);
+
+      expect(softReload).toHaveBeenCalledTimes(1);
+      expect(documentReload).toHaveBeenCalledTimes(1);
+      expect(error).not.toHaveBeenCalled();
+      error.mockRestore();
+    });
+
     it('keeps a navigating _reload as the only reload', () => {
       const navigate = markNavigatingReload(vi.fn());
       loadTwinPage();

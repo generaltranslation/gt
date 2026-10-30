@@ -103,6 +103,7 @@ export function initializeState(
       jsxInsertionsCount: 0,
       runtimeTranslateCount: 0,
       localeTwinRegistrationsCount: 0,
+      localeTwinRuntimeRegistrationsCount: 0,
     },
   };
 }

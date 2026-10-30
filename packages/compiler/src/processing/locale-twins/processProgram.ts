@@ -9,8 +9,12 @@ import { stripSourceText } from '../../transform/locale-twins/stripSourceText';
 
 /**
  * Process program for the locale twins pass:
- * - Skips modules without attributed entries or without a GT import source
- *   that exports the registration function
+ * - Skips modules without a GT import source that exports the registration
+ *   function
+ * - Modules without attributed entries get a registration without a
+ *   placeholder: it installs the locale twin runtime before the page
+ *   registers its first twin (an entry that only lazy-imports its pages, or
+ *   a page whose entries are all unattributed)
  * - Injects `$_hash` into attributed msg() calls
  * - Inserts the registration call carrying the module's placeholder
  * - In client production builds, strips the attributed source text
@@ -19,11 +23,16 @@ export function processProgram(
   state: TransformState
 ): VisitNode<t.Node, t.Program> {
   return (path) => {
-    const sources = state.localeTwins.getSources();
-    if (Object.keys(sources).length === 0) return;
-
     const importSource = findRegistrationImportSource(path.node);
     if (!importSource) return;
+
+    const sources = state.localeTwins.getSources();
+    if (Object.keys(sources).length === 0) {
+      injectLocaleTwinRegistration(path, importSource);
+      state.statistics.localeTwinRuntimeRegistrationsCount += 1;
+      path.stop();
+      return;
+    }
 
     injectMsgHashes(state);
     injectLocaleTwinRegistration(

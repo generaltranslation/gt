@@ -101,6 +101,18 @@ describe('resolveLocaleTwinLookup', () => {
     ).toBe(false);
   });
 
+  it('renders unattributed content as source once a module without attributed entries registers', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    // What the compiler emits in a module without attributed entries
+    expect(registerLocaleTwin()).toBe(false);
+    createCache();
+
+    expect(resolveLocaleTwinLookup('fr', {}, undefined).rendersSource).toBe(
+      true
+    );
+    expect(error).not.toHaveBeenCalled();
+  });
+
   it('translates unattributed content as usual in dev builds', () => {
     vi.stubEnv('NODE_ENV', 'development');
     registerUnfilled();
@@ -165,6 +177,17 @@ describe('resolveLocaleTwinLookup', () => {
       expect(error.mock.calls[0][0]).toMatch(
         /gt-i18n.*Error.*no locale twin was registered.*original client chunks/s
       );
+    });
+
+    it('does not report a page whose modules have no attributed entries', () => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      registerLocaleTwin();
+      createCache();
+
+      expect(resolveLocaleTwinLookup('fr', {}, undefined).rendersSource).toBe(
+        true
+      );
+      expect(error).not.toHaveBeenCalled();
     });
 
     it('does not report unattributed content next to registered twins', () => {

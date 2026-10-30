@@ -92,8 +92,10 @@ function rendersSource(
   ) {
     return false;
   }
-  // Only unfilled placeholders registered: the original chunks were served
-  if (isLocaleTwinsClient() && !hasLocaleTwins()) reportOnce('unregistered');
+  // Unfilled placeholders on a client: the original chunks were served
+  if (isLocaleTwinsClient() && getLocaleTwinState().unfilled) {
+    reportOnce('unregistered');
+  }
   return true;
 }
 
