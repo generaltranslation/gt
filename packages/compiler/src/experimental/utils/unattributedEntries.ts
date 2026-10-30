@@ -18,6 +18,7 @@ const REASONS: Record<LocaleTwinUnattributedReason, string> = {
   derive:
     'uses derive(), <Derive> or autoderive (its hash is only known at runtime)',
   customHash: 'has a custom hash that is not a compile-time hash',
+  spread: 'spreads its arguments (the compiler cannot add its hash to them)',
   taggedTemplate: 'is a tagged template the macro transform did not expand',
   importSource:
     'its GT import source has no locale twin registration (import GT from gt-react/experimental or gt-tanstack-start/experimental)',

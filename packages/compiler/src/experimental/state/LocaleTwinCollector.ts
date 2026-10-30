@@ -18,6 +18,8 @@ export type {
  * - `derive`: derive(), <Derive>/<Static> or autoderive content, or a derive
  *   `$context`; its hash is only known at runtime
  * - `customHash`: a user-supplied hash that is not a compile-time hash
+ * - `spread`: a string call that spreads its arguments, so the compiler
+ *   cannot add its hash (and a spread `$context` is unknown at build time)
  * - `taggedTemplate`: a t`...` tagged template the macro did not expand
  *   (no `$_hash` in code)
  * - `importSource`: the module's GT import source has no registration export
@@ -26,6 +28,7 @@ export type {
 export type LocaleTwinUnattributedReason =
   | RuntimeHashedEntry['reason']
   | 'customHash'
+  | 'spread'
   | 'importSource';
 
 /** An entry that is not attributed to the module, so it keeps its text. */

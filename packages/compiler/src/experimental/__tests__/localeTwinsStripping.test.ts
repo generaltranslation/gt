@@ -500,6 +500,47 @@ export const b = msg("Plain");`,
     );
   });
 
+  // The compiler cannot add $_hash to spread options, and their $context is
+  // unknown at build time
+  it('include string calls that spread their arguments', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const plugin = createPlugin();
+    const code = await runTransform(
+      plugin,
+      `import { msg, useGT } from 'gt-react/experimental';
+const options = [{ $context: 'greeting' }];
+export const a = msg("Hello", ...options);
+export const b = msg("Hi {name}", { name: 'Ada' }, ...options);
+export function C() {
+  const gt = useGT();
+  return gt("Spread", ...options);
+}
+export const d = msg("Plain");`,
+      CLIENT_BUILD,
+      '/app/src/spread.ts'
+    );
+    await buildEnd(plugin, CLIENT_BUILD);
+
+    const output = withoutPlaceholder(code!);
+    expect(output).toContain('msg("Hello", ...options)');
+    expect(output).toContain('msg("Hi {name}", { name: \'Ada\' }, ...options)');
+    expect(output).toContain('gt("Spread", ...options)');
+    expect(output).not.toContain('Plain');
+    expect(findLocaleTwinPlaceholders(code!)[0].entries).toEqual({
+      [icuHash('Plain')]: 'Plain',
+    });
+    const [message] = warn.mock.calls[0] as [string];
+    expect(message).toContain(
+      '/app/src/spread.ts:3:18 msg(): spreads its arguments'
+    );
+    expect(message).toContain(
+      '/app/src/spread.ts:4:18 msg(): spreads its arguments'
+    );
+    expect(message).toContain(
+      '/app/src/spread.ts:7:10 gt(): spreads its arguments'
+    );
+  });
+
   it('locate a <T> inserted by auto JSX injection by its first child', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const plugin = createPlugin({

@@ -39,7 +39,7 @@ export function takeCollectionSnapshot(
  * useGT/getGT, `t()` and `msg()`. Follows the dispatch of the regular
  * `processing/collection/processCallExpression.ts` (keep in sync):
  * - a registration with a hash is an attributed entry (with its text sites
- *   for `<T>`);
+ *   for `<T>`), unless the call spreads its arguments;
  * - a call it reserved no hash for (derive content or `$context`) is hashed
  *   at runtime;
  * - a call it rejected with errors records nothing.
@@ -69,6 +69,14 @@ export function observeCallExpression(
   ) {
     // A gt() call takes a counter slot, with a hash unless it is derived
     if (counter === before.counter) return;
+    if (hasSpreadArgument(callExpr)) {
+      collector.addUnattributed({
+        api: 'gt',
+        reason: 'spread',
+        node: callExpr,
+      });
+      return;
+    }
     const hash = collected.getTranslationHash(counter)?.hash;
     if (!hash) {
       collector.addRuntimeHashed({
@@ -124,7 +132,12 @@ export function observeCallExpression(
   ) {
     const api = canonicalName === GT_OTHER_FUNCTIONS.t ? 't' : 'msg';
     const runtimeOnly = collected.getRuntimeOnlyContent();
-    if (runtimeOnly.length > before.runtimeOnly) {
+    if (
+      runtimeOnly.length > before.runtimeOnly &&
+      hasSpreadArgument(callExpr)
+    ) {
+      collector.addUnattributed({ api, reason: 'spread', node: callExpr });
+    } else if (runtimeOnly.length > before.runtimeOnly) {
       const { hash, message } = runtimeOnly[runtimeOnly.length - 1];
       collector.add({ api, hash, source: message, node: callExpr });
     } else if (state.errorTracker.getErrors().length === before.errors) {
@@ -132,6 +145,15 @@ export function observeCallExpression(
       collector.addRuntimeHashed({ api, reason: 'derive', node: callExpr });
     }
   }
+}
+
+/**
+ * Whether a string call spreads its arguments (`msg('Hi', ...options)`): the
+ * compiler cannot inject `$_hash` into them, so stripping its message would
+ * leave the runtime nothing to look up.
+ */
+function hasSpreadArgument(callExpr: t.CallExpression): boolean {
+  return callExpr.arguments.some((arg) => t.isSpreadElement(arg));
 }
 
 /** Whether a `jsx(Component, props)` call renders a GT translation component. */
