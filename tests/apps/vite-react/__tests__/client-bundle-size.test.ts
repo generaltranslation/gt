@@ -27,25 +27,19 @@ const BASELINE = {
 
 /**
  * Growth allowed over the baseline, in gzip bytes. Every app keeps the core
- * locale twin checks (about 500 B gzip in the GT chunk, 100 B in react-core
- * code): the hook checks at each lookup, the twin client decision that turns
- * off the translation loader, and the missing compiler plugin diagnostic.
+ * locale twin code (measured at +404 B gzip in the GT chunk and +531 B for
+ * all JS): reading each call site's locale twin marker, the twin client
+ * decision that turns off the translation loader, the reload rule, and the
+ * missing compiler plugin diagnostic.
  */
-const GZIP_BUDGET = { gtChunk: 550, allJs: 650 };
+const GZIP_BUDGET = { gtChunk: 440, allJs: 570 };
 
 /**
- * Strings that only the locale twin runtime contains: the placeholder prefix
- * (registration), the navigating-reload brand (locale switch rule), and the
- * runtime's mismatch diagnostics.
+ * Strings that only locale twin builds and their serving code contain: the
+ * placeholder prefix (the placeholder helpers must tree-shake away) and the
+ * SPA document's data block (document and bootstrap helpers).
  */
-const TWIN_RUNTIME_MARKERS = [
-  '__GT_LOCALE_TWIN__',
-  'generaltranslation.locale-twins.navigating-reload',
-  'A locale twin could not be registered',
-  'but GT is rendering',
-  'the runtime is not in locale twin mode',
-  'Dictionary entries render untranslated',
-];
+const TWIN_RUNTIME_MARKERS = ['__GT_LOCALE_TWIN__', 'gt-locale-twins-data'];
 
 type JsFile = { name: string; code: string; gzip: number };
 
