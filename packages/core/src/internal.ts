@@ -76,12 +76,10 @@ export {
 } from './locale-twins/placeholder';
 export type {
   LocaleTwinEntries,
+  LocaleTwinPlaceholderEntry,
   LocaleTwinPlaceholderMatch,
 } from './locale-twins/placeholder';
-export {
-  parseLocaleTwinTable,
-  serializeLocaleTwinTable,
-} from './locale-twins/table';
-export type { LocaleTwinTable } from './locale-twins/table';
+export { serializeLocaleTwinValue } from './locale-twins/value';
+export type { LocaleTwinValue } from './locale-twins/value';
 export { parseLocaleTwinManifest } from './locale-twins/manifest';
 export type { LocaleTwinManifest } from './locale-twins/manifest';

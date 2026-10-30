@@ -10,88 +10,77 @@ import {
 const HASH_A = '0123456789abcdef';
 const HASH_B = 'fedcba9876543210';
 
-describe('encodeLocaleTwinPlaceholder', () => {
-  it('encodes hashes and base64url source payload behind the prefix', () => {
-    expect(encodeLocaleTwinPlaceholder({ [HASH_A]: 'Hello' })).toBe(
-      '__GT_LOCALE_TWIN__:0123456789abcdef:WyJIZWxsbyJd'
-    );
-  });
+const HELLO = Buffer.from('"Hello"').toString('base64url');
 
-  it('sorts hashes and aligns sources with them', () => {
-    expect(encodeLocaleTwinPlaceholder({ [HASH_B]: 'b', [HASH_A]: 'a' })).toBe(
-      `__GT_LOCALE_TWIN__:${HASH_A},${HASH_B}:${Buffer.from('["a","b"]').toString('base64url')}`
+describe('encodeLocaleTwinPlaceholder', () => {
+  it('encodes the hash and a base64url source payload behind the prefix', () => {
+    expect(encodeLocaleTwinPlaceholder(HASH_A, 'Hello')).toBe(
+      `__GT_LOCALE_TWIN__:0123456789abcdef:${HELLO}`
     );
   });
 
   it('uses the URL-safe alphabet without padding', () => {
-    expect(encodeLocaleTwinPlaceholder({ [HASH_A]: 'Hi?>' })).toBe(
-      '__GT_LOCALE_TWIN__:0123456789abcdef:WyJIaT8-Il0'
+    expect(encodeLocaleTwinPlaceholder(HASH_A, 'Hi?>')).toBe(
+      '__GT_LOCALE_TWIN__:0123456789abcdef:IkhpPz4i'
     );
-    expect(encodeLocaleTwinPlaceholder({ [HASH_A]: '~~~' })).toBe(
-      '__GT_LOCALE_TWIN__:0123456789abcdef:WyJ-fn4iXQ'
+    expect(encodeLocaleTwinPlaceholder(HASH_A, '~~~')).toBe(
+      '__GT_LOCALE_TWIN__:0123456789abcdef:In5-fiI'
     );
-  });
-
-  it('rejects an empty entry set', () => {
-    expect(() => encodeLocaleTwinPlaceholder({})).toThrow(/at least one/);
   });
 
   it('rejects hashes that are not 16 lowercase hex characters', () => {
-    expect(() =>
-      encodeLocaleTwinPlaceholder({ ABCDEF0123456789: 'x' })
-    ).toThrow(/ABCDEF0123456789/);
-    expect(() => encodeLocaleTwinPlaceholder({ abc: 'x' })).toThrow(/abc/);
+    expect(() => encodeLocaleTwinPlaceholder('ABCDEF0123456789', 'x')).toThrow(
+      /ABCDEF0123456789/
+    );
+    expect(() => encodeLocaleTwinPlaceholder('abc', 'x')).toThrow(/abc/);
   });
 });
 
 describe('decodeLocaleTwinPlaceholder', () => {
   it('round-trips ICU strings and JSX content, including non-Latin text', () => {
-    const entries = {
-      [HASH_A]: 'Hello, {name}! ÿÿÿ',
-      [HASH_B]: [
-        'Bonjour ',
-        { t: 'b', i: 1, c: '世界 ✓' },
-        { k: 'name', v: 'v', i: 2 },
-      ],
-    };
+    const jsx = [
+      'Bonjour ',
+      { t: 'b', i: 1, c: '世界 ✓' },
+      { k: 'name', v: 'v', i: 2 },
+    ];
     expect(
-      decodeLocaleTwinPlaceholder(encodeLocaleTwinPlaceholder(entries))
-    ).toEqual(entries);
+      decodeLocaleTwinPlaceholder(
+        encodeLocaleTwinPlaceholder(HASH_A, 'Hello, {name}! ÿÿÿ')
+      )
+    ).toEqual({ hash: HASH_A, source: 'Hello, {name}! ÿÿÿ' });
+    expect(
+      decodeLocaleTwinPlaceholder(encodeLocaleTwinPlaceholder(HASH_B, jsx))
+    ).toEqual({ hash: HASH_B, source: jsx });
   });
 
   it('decodes a known-good placeholder', () => {
     expect(
       decodeLocaleTwinPlaceholder(
-        '__GT_LOCALE_TWIN__:0123456789abcdef:WyJIaT8-Il0'
+        '__GT_LOCALE_TWIN__:0123456789abcdef:IkhpPz4i'
       )
-    ).toEqual({ [HASH_A]: 'Hi?>' });
+    ).toEqual({ hash: HASH_A, source: 'Hi?>' });
   });
 
   it('returns undefined for the bare prefix and other malformed values', () => {
-    const payload = 'WyJIZWxsbyJd';
     for (const value of [
       LOCALE_TWIN_PLACEHOLDER_PREFIX,
       `${LOCALE_TWIN_PLACEHOLDER_PREFIX}:`,
-      `${LOCALE_TWIN_PLACEHOLDER_PREFIX}::${payload}`,
+      `${LOCALE_TWIN_PLACEHOLDER_PREFIX}::${HELLO}`,
       `${LOCALE_TWIN_PLACEHOLDER_PREFIX}:${HASH_A}`,
       `${LOCALE_TWIN_PLACEHOLDER_PREFIX}:${HASH_A}:`,
-      `${LOCALE_TWIN_PLACEHOLDER_PREFIX}:0123456789ABCDEF:${payload}`,
-      `${LOCALE_TWIN_PLACEHOLDER_PREFIX}:0123456789abcde:${payload}`,
-      // payload length does not match the hash count
-      `${LOCALE_TWIN_PLACEHOLDER_PREFIX}:${HASH_A},${HASH_B}:${payload}`,
-      // hashes not sorted / duplicated
-      `${LOCALE_TWIN_PLACEHOLDER_PREFIX}:${HASH_B},${HASH_A}:${Buffer.from('["a","b"]').toString('base64url')}`,
-      `${LOCALE_TWIN_PLACEHOLDER_PREFIX}:${HASH_A},${HASH_A}:${Buffer.from('["a","a"]').toString('base64url')}`,
-      // payload is not JSON / not an array
+      `${LOCALE_TWIN_PLACEHOLDER_PREFIX}:0123456789ABCDEF:${HELLO}`,
+      `${LOCALE_TWIN_PLACEHOLDER_PREFIX}:0123456789abcde:${HELLO}`,
+      // one entry per placeholder
+      `${LOCALE_TWIN_PLACEHOLDER_PREFIX}:${HASH_A},${HASH_B}:${HELLO}`,
+      // payload is not JSON
       `${LOCALE_TWIN_PLACEHOLDER_PREFIX}:${HASH_A}:${Buffer.from('nope').toString('base64url')}`,
-      `${LOCALE_TWIN_PLACEHOLDER_PREFIX}:${HASH_A}:${Buffer.from('{"a":1}').toString('base64url')}`,
       // standard base64 characters are not part of the format
-      `${LOCALE_TWIN_PLACEHOLDER_PREFIX}:${HASH_A}:WyJIaT8+Il0=`,
+      `${LOCALE_TWIN_PLACEHOLDER_PREFIX}:${HASH_A}:SGk/Pg==`,
       // surrounding text
-      ` __GT_LOCALE_TWIN__:0123456789abcdef:WyJIZWxsbyJd`,
-      `__GT_LOCALE_TWIN__:0123456789abcdef:WyJIZWxsbyJd `,
+      ` __GT_LOCALE_TWIN__:0123456789abcdef:${HELLO}`,
+      `__GT_LOCALE_TWIN__:0123456789abcdef:${HELLO} `,
       '',
-      '{"l":"en","e":{}}',
+      '["en","Hello"]',
     ]) {
       expect(decodeLocaleTwinPlaceholder(value)).toBeUndefined();
     }
@@ -102,20 +91,20 @@ describe('isUnfilledLocaleTwinPlaceholder', () => {
   it('accepts well-formed placeholders only', () => {
     expect(
       isUnfilledLocaleTwinPlaceholder(
-        '__GT_LOCALE_TWIN__:0123456789abcdef:WyJIZWxsbyJd'
+        `__GT_LOCALE_TWIN__:0123456789abcdef:${HELLO}`
       )
     ).toBe(true);
     expect(
       isUnfilledLocaleTwinPlaceholder(LOCALE_TWIN_PLACEHOLDER_PREFIX)
     ).toBe(false);
-    expect(isUnfilledLocaleTwinPlaceholder('{"l":"fr","e":{}}')).toBe(false);
+    expect(isUnfilledLocaleTwinPlaceholder('["fr","Bonjour"]')).toBe(false);
     expect(isUnfilledLocaleTwinPlaceholder(undefined)).toBe(false);
     expect(isUnfilledLocaleTwinPlaceholder(42)).toBe(false);
   });
 });
 
 describe('findLocaleTwinPlaceholders', () => {
-  const placeholder = '__GT_LOCALE_TWIN__:0123456789abcdef:WyJIZWxsbyJd';
+  const placeholder = `__GT_LOCALE_TWIN__:0123456789abcdef:${HELLO}`;
 
   it.each([
     ['double quotes', '"'],
@@ -133,15 +122,15 @@ describe('findLocaleTwinPlaceholders', () => {
           token: `${quote}${placeholder}${quote}`,
           quote,
           placeholder,
-          hashes: [HASH_A],
-          entries: { [HASH_A]: 'Hello' },
+          hash: HASH_A,
+          source: 'Hello',
         },
       ]);
     }
   );
 
   it('finds every token in a chunk with mixed quote styles', () => {
-    const second = encodeLocaleTwinPlaceholder({ [HASH_B]: 'Bye' });
+    const second = encodeLocaleTwinPlaceholder(HASH_B, 'Bye');
     const code = `a("${placeholder}");b(\`${second}\`);c('${placeholder}')`;
     const found = findLocaleTwinPlaceholders(code);
     expect(found.map((m) => m.token)).toEqual([
@@ -192,7 +181,7 @@ describe('findLocaleTwinPlaceholders', () => {
   });
 
   it('skips syntactically matching tokens whose payload is malformed', () => {
-    const bad = `${LOCALE_TWIN_PLACEHOLDER_PREFIX}:${HASH_A},${HASH_B}:WyJIZWxsbyJd`;
+    const bad = `${LOCALE_TWIN_PLACEHOLDER_PREFIX}:${HASH_A}:${Buffer.from('nope').toString('base64url')}`;
     expect(findLocaleTwinPlaceholders(`x("${bad}","${placeholder}")`)).toEqual([
       expect.objectContaining({ placeholder }),
     ]);

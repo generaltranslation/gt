@@ -14,8 +14,9 @@ export const TRANSLATION_SPLITTING_STRATEGIES: readonly TranslationSplittingStra
 
 /**
  * Prefix of every unfilled locale twin placeholder. The bare prefix is never a
- * well-formed placeholder on its own: a placeholder must name at least one
- * entry hash, so runtime code that contains this constant never matches.
+ * well-formed placeholder on its own: a placeholder must name an entry hash
+ * and carry its source, so runtime code that contains this constant never
+ * matches.
  */
 export const LOCALE_TWIN_PLACEHOLDER_PREFIX = '__GT_LOCALE_TWIN__';
 
