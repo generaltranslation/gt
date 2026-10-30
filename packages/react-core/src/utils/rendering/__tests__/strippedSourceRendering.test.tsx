@@ -49,4 +49,27 @@ describe('rendering translations into stripped source', () => {
     expect(result.props.type).toBe('text');
     expect(result.props['data-_gt']).toBeUndefined();
   });
+
+  it.each([
+    ['""', ''],
+    ['false', false],
+  ])(
+    'applies translated html content props to an element whose children are %s',
+    (_label, children) => {
+      for (const target of [
+        { i: 1, d: { ti: 'Tooltip' } },
+        { i: 1, d: { ti: 'Tooltip' }, c: '' },
+      ]) {
+        const result = render(
+          <span title=''>{children}</span>,
+          target
+        ) as React.ReactElement<Record<string, unknown>>;
+
+        expect(result.type).toBe('span');
+        expect(result.props.title).toBe('Tooltip');
+        expect(result.props.children).toBe(children);
+        expect(result.props['data-_gt']).toBeUndefined();
+      }
+    }
+  );
 });

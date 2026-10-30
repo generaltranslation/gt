@@ -32,6 +32,11 @@ type RenderTranslatedChildrenArgs = {
   enableI18n: boolean;
 };
 
+/** Children that render nothing: none, `""`, or a boolean. */
+function isEmptyChildren(children: unknown): boolean {
+  return children == null || children === '' || typeof children === 'boolean';
+}
+
 function createRenderTranslatedChildren({
   renderVariable,
 }: {
@@ -151,8 +156,13 @@ function createRenderTranslatedChildren({
       });
     }
 
-    // childless element with translated html content props (e.g. placeholder)
-    if (sourceProps?.children == null && Object.keys(translatedProps).length) {
+    // element without rendered children (none, "", or a boolean) with
+    // translated html content props (e.g. placeholder, or a title that a
+    // locale twin client build blanked)
+    if (
+      isEmptyChildren(sourceProps?.children) &&
+      Object.keys(translatedProps).length
+    ) {
       return React.cloneElement(sourceElement, {
         ...sourceProps,
         ...translatedProps,
