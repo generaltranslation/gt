@@ -54,6 +54,7 @@
     "@types/babel__generator": "^7.6.0",
     "@types/babel__traverse": "^7.20.0",
     "@types/node": "catalog:",
+    "terser": "^5.51.2",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vite": "^8.3.1",

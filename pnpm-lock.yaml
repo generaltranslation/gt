@@ -1022,6 +1022,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 22.13.10
+      terser:
+        specifier: ^5.51.2
+        version: 5.51.2
       tsdown:
         specifier: 'catalog:'
         version: 0.21.10(@arethetypeswrong/core@0.18.5)(publint@0.3.25)(synckit@0.11.11)(typescript@5.9.3)
