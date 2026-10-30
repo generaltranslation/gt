@@ -644,7 +644,29 @@ await import('./main');
     });
   });
 
-  it('leaves loaders alone when the React setup is skipped', async () => {
+  // vite dev still loads translations through the loader
+  it('moves the development loader to a new translations directory', async () => {
+    await writeViteLoader({
+      ...twins(),
+      translationsDir: 'public/_gt',
+      create: true,
+    });
+
+    const result = await viteSetup.syncLoader({
+      ...twins(),
+      translationsDir: 'src/_gt',
+      previousTranslationsDir: 'public/_gt',
+    });
+
+    expect(read('src/loadTranslations.ts')).toContain('import(`./_gt/');
+    expect(fs.existsSync(file('src/_gt/fr.json'))).toBe(true);
+    expect(result).toEqual({
+      steps: ['updated src/loadTranslations.ts'],
+      manualActions: [],
+    });
+  });
+
+  it('asks to move a custom development loader', async () => {
     fs.writeFileSync(file('src/loadTranslations.ts'), '// custom loader');
 
     const result = await viteSetup.syncLoader({
@@ -654,7 +676,13 @@ await import('./main');
     });
 
     expect(read('src/loadTranslations.ts')).toBe('// custom loader');
-    expect(fs.existsSync(file('src/_gt'))).toBe(false);
-    expect(result).toEqual({ steps: [], manualActions: [] });
+    expect(result).toEqual({
+      steps: [],
+      manualActions: [
+        expect.objectContaining({
+          fix: 'Update your custom src/loadTranslations.ts to load translations from src/_gt',
+        }),
+      ],
+    });
   });
 });

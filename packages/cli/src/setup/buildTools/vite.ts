@@ -32,10 +32,8 @@ export const viteSetup: BuildToolSetup = {
     translationsDir,
     previousTranslationsDir,
     keepAppSource,
-    splitting,
   }) {
-    // Locale twins load no translations at runtime.
-    if (usesLocaleTwins({ splitting })) return { steps: [], manualActions: [] };
+    // Locale twin apps keep the loader too: vite dev serves no twins.
     if (keepAppSource) {
       return {
         steps: [],
