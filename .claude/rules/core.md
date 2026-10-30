@@ -14,3 +14,4 @@ paths:
 - Run `pnpm build` from root after making changes here to verify downstream packages still compile.
 - Exports use subpath exports (e.g., `/internal`, `/runtime`). Types are exported from the same entry as their values; there are no types-only subpaths. Internal subpaths are not public API but are used across packages.
 - Be careful with breaking changes to `/internal` subpaths — other packages in the monorepo depend on them.
+- Follow "Imports and re-exports" in `AGENTS.md`: only entry files re-export, and first-party packages import format- and api-owned symbols from `@generaltranslation/format` and `@generaltranslation/api`, not from `generaltranslation`.
