@@ -49,6 +49,35 @@ describe('resolveTranslationRole', () => {
     ).toEqual({ kind: 'translation', language: 'fr', originalLanguage: 'en' });
   });
 
+  test('without a marker, every source-locale document is an original', () => {
+    // Groups that don't record this document as their en entry: a legacy
+    // entry keyed by language with no \`language\` field, a second en entry,
+    // and a document listed under another language.
+    const legacy = metadataDoc('legacy', [['fr', 'page-fr']]);
+    legacy.translations?.push({ value: { _ref: 'page' } });
+    const groups = [
+      legacy,
+      metadataDoc('duplicate', [
+        ['en', 'other-page'],
+        ['en', 'page'],
+      ]),
+      metadataDoc('mislabeled', [
+        ['en', 'other-page'],
+        ['fr', 'page'],
+      ]),
+    ];
+
+    for (const metadata of groups) {
+      expect(
+        resolveTranslationRole({
+          documentId: 'drafts.page',
+          documentLanguage: 'en',
+          metadata,
+        })
+      ).toEqual({ kind: 'original', language: 'en' });
+    }
+  });
+
   test('with a marker, only the marked language is the original', () => {
     const metadata = metadataDoc(
       'm',

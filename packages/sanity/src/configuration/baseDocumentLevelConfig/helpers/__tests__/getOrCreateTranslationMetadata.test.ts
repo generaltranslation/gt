@@ -151,6 +151,23 @@ describe('getOrCreateTranslationMetadata for a source-locale original', () => {
     expect(createIfNotExists).not.toHaveBeenCalled();
   });
 
+  test('reuses an unmarked group under its id that has no entry for it', async () => {
+    // Not found through the en entry, so createIfNotExists returns the stored
+    // document unchanged.
+    const group = metadataDoc('translation.metadata.page', [['fr', 'page-fr']]);
+    const { client, createIfNotExists } = createGroqClient([group]);
+
+    const found = await getOrCreateTranslationMetadata(
+      'page',
+      { _id: 'page', _type: 'page' },
+      client,
+      'en'
+    );
+
+    expect(found._id).toBe('translation.metadata.page');
+    expect(createIfNotExists).toHaveBeenCalledTimes(1);
+  });
+
   test('refuses a source-locale translation in a group marked with another original', async () => {
     const group = metadataDoc(
       'translation.metadata.page-fr',

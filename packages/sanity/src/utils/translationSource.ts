@@ -114,6 +114,13 @@ export function resolveTranslationRole({
     return { kind: 'original', language: documentLanguage };
   }
 
+  // An unmarked group keeps the rule from before the marker existed: every
+  // source-locale document is an original, however the group records its
+  // entries.
+  if (!metadata[SOURCE_LANGUAGE_FIELD] && documentLanguage === defaultLocale) {
+    return { kind: 'original', language: documentLanguage };
+  }
+
   const original = getGroupOriginal(metadata, defaultLocale);
   if (!original.ref) {
     return {
