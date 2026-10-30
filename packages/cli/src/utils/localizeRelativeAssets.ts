@@ -8,6 +8,7 @@ import { visit } from 'unist-util-visit';
 import type { Literal, Root } from 'mdast';
 import { escapeHtmlInTextNodes, normalizeCJKCharacters } from 'gt-remark';
 import { parseMdxForRoundTrip, restoreAnchorIds } from './mdxAnchorSyntax.js';
+import { batchProcess, FILE_IO_CONCURRENCY } from './batchProcess.js';
 import type { StaticLocalizationSettings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 
@@ -180,39 +181,41 @@ export default async function localizeRelativeAssets(
   );
 
   const cwd = process.cwd();
-  const processPromises = Object.entries(fileMapping)
-    .filter(([locale]) => locales.includes(locale))
-    .map(async ([, filesMap]) => {
-      const reverseMap = new Map<string, string>();
-      for (const [sourcePath, targetPath] of Object.entries(filesMap)) {
-        reverseMap.set(targetPath, sourcePath);
-      }
-      const targetFiles = Object.values(filesMap).filter(
-        (p) =>
-          (p.endsWith('.md') || p.endsWith('.mdx')) &&
-          (!includeFiles || includeFiles.has(p))
-      );
+  // One locale at a time so the concurrency bound covers the whole pass
+  const targetMappings = Object.entries(fileMapping).filter(([locale]) =>
+    locales.includes(locale)
+  );
+  for (const [, filesMap] of targetMappings) {
+    const reverseMap = new Map<string, string>();
+    for (const [sourcePath, targetPath] of Object.entries(filesMap)) {
+      reverseMap.set(targetPath, sourcePath);
+    }
+    const targetFiles = Object.values(filesMap).filter(
+      (p) =>
+        (p.endsWith('.md') || p.endsWith('.mdx')) &&
+        (!includeFiles || includeFiles.has(p))
+    );
 
-      await Promise.all(
-        targetFiles.map(async (targetPath) => {
-          if (!fs.existsSync(targetPath)) return;
-          const sourcePath = reverseMap.get(targetPath);
-          if (!sourcePath) return;
-          if (!fs.existsSync(sourcePath)) return;
+    await batchProcess(
+      targetFiles,
+      async (targetPath) => {
+        if (!fs.existsSync(targetPath)) return;
+        const sourcePath = reverseMap.get(targetPath);
+        if (!sourcePath) return;
+        if (!fs.existsSync(sourcePath)) return;
 
-          const content = await fs.promises.readFile(targetPath, 'utf8');
-          const result = localizeRelativeAssetsForContent(
-            content,
-            sourcePath,
-            targetPath,
-            cwd
-          );
-          if (result.hasChanges) {
-            await fs.promises.writeFile(targetPath, result.content);
-          }
-        })
-      );
-    });
-
-  await Promise.all(processPromises);
+        const content = await fs.promises.readFile(targetPath, 'utf8');
+        const result = localizeRelativeAssetsForContent(
+          content,
+          sourcePath,
+          targetPath,
+          cwd
+        );
+        if (result.hasChanges) {
+          await fs.promises.writeFile(targetPath, result.content);
+        }
+      },
+      FILE_IO_CONCURRENCY
+    );
+  }
 }

@@ -400,7 +400,7 @@ describe('gt api', () => {
     expect(exit).toHaveBeenCalledOnce();
   });
 
-  it('writes error bodies verbatim and exits once on HTTP errors', async () => {
+  it('writes error bodies on their own line and exits once on HTTP errors', async () => {
     const responseBody = '{\n  "error": "missing"\n}';
     const fetchMock = vi.fn<typeof fetch>(async () =>
       Promise.resolve(
@@ -434,7 +434,7 @@ describe('gt api', () => {
       )
     ).rejects.toThrow('exit 1');
 
-    expect(outputText(stdout)).toBe(responseBody);
+    expect(outputText(stdout)).toBe(`${responseBody}\n`);
     expect(stderr.join('')).toBe(
       'GET /v2/missing returned HTTP 404 Not Found\n'
     );

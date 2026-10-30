@@ -30,7 +30,7 @@ export function useTrackedDictionaryObjResolver(): TrackedDictionaryObjResolver 
   }
 
   // subscribe to dictionary object updates
-  useSubscribeToTrackedLookups(
+  const trackedLookupsVersion = useSubscribeToTrackedLookups(
     trackedKeysRef,
     i18nStore.subscribeToDictionaryObjectEvents,
     getDictionaryListenerKey
@@ -58,11 +58,13 @@ export function useTrackedDictionaryObjResolver(): TrackedDictionaryObjResolver 
 
       return dictionaryObject;
     },
+    // trackedLookupsVersion: change identity when a tracked entry arrives
     [
       i18nStore,
       dictionariesSnapshot,
       devHotReloadEnabled,
       onMissingDictionaryObj,
+      trackedLookupsVersion,
     ]
   );
 }
