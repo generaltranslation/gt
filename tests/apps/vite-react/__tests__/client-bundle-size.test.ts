@@ -1,9 +1,9 @@
 /**
- * Locale twins (`files.gt.splitting: 'locale-twins'`) are opt-in, so an app
- * that does not use them must not pay for their runtime. This builds the app
- * (no twins) and checks that the client JS carries no locale twin runtime and
- * that GT's client chunk stays within a small budget of the size it had
- * before locale twins existed.
+ * Locale twins are experimental and live behind the `/experimental` entry
+ * points, so an app that imports GT from the regular entry points must not
+ * pay for them. This builds the app (no twins) and checks that the client JS
+ * carries no locale twin code and that GT's client chunk stays the size it
+ * has without locale twins.
  */
 import fs from 'node:fs';
 import os from 'node:os';
@@ -16,42 +16,42 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 const appDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 /**
- * Sizes measured on the commit before locale twins (b462015ce): gt-react's
- * client chunk (`assets/index.client-*.js`) and all JS, in bytes, gzip with
- * Node's default level. Update them only for deliberate growth.
+ * Sizes measured on the samsara merge base (098ff41ee, before the locale
+ * twins work): gt-react's client chunk (`assets/index.client-*.js`) and all
+ * JS, in bytes, gzip with Node's default level. Update them only for
+ * deliberate growth.
  */
 const BASELINE = {
-  gtChunk: { min: 113_076, gzip: 36_454 },
-  allJs: { min: 317_682, gzip: 101_187 },
+  gtChunk: { min: 113_030, gzip: 36_457 },
+  allJs: { min: 317_569, gzip: 101_189 },
 };
 
 /**
- * Growth allowed over the baseline, in gzip bytes. Every app keeps the core
- * locale twin checks (about 500 B gzip in the GT chunk, 100 B in react-core
- * code): the hook checks at each lookup, the twin client decision that turns
- * off the translation loader, and the missing compiler plugin diagnostic.
- * All JS also covers react-core's source rule for tagged templates and the
- * `m()` variables that fill in a twin `msg()` (about 20 B).
+ * Growth allowed over the baseline, in gzip bytes. The regular entry points
+ * carry no locale twin code, so this only absorbs incidental noise.
  */
-const GZIP_BUDGET = { gtChunk: 550, allJs: 670 };
+const GZIP_BUDGET = { gtChunk: 8, allJs: 16 };
 
 /**
- * Strings that only the locale twin runtime contains: the placeholder prefix
- * (registration), the navigating-reload brand (locale switch rule), and the
- * runtime's mismatch diagnostics.
+ * Strings that only locale twin code contains: the registration export and
+ * placeholder prefix, the navigating-reload brand (locale switch rule), the
+ * SPA document data block, the config key, and the runtime's diagnostics.
  */
 const TWIN_RUNTIME_MARKERS = [
+  'GtInternalRegisterLocaleTwin',
   '__GT_LOCALE_TWIN__',
   'generaltranslation.locale-twins.navigating-reload',
+  'gt-locale-twins-data',
+  'experimental.splitting',
+  'locale-twins',
   'A locale twin could not be registered',
   'but GT is rendering',
   'the runtime is not in locale twin mode',
-  'Dictionary entries render untranslated',
 ];
 
 type JsFile = { name: string; code: string; gzip: number };
 
-describe('vite-react client bundle without locale twins', () => {
+describe('vite-react client bundle with the regular GT entry points', () => {
   let outDir: string;
   let files: JsFile[];
 
@@ -85,7 +85,7 @@ describe('vite-react client bundle without locale twins', () => {
     if (outDir) fs.rmSync(outDir, { recursive: true, force: true });
   });
 
-  it('ships no locale twin runtime', () => {
+  it('ships no locale twin code', () => {
     const found = files.flatMap(({ name, code }) =>
       TWIN_RUNTIME_MARKERS.filter((marker) => code.includes(marker)).map(
         (marker) => `${name}: ${marker}`
