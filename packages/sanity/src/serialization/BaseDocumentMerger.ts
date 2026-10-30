@@ -2,8 +2,6 @@
 
 import { Merger } from './types';
 import { SanityDocument } from 'sanity';
-import { extractWithPath, arrayToJSONMatchPath } from '@sanity/mutator';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -119,60 +117,6 @@ const reconcileObject = (
   return updatedObj;
 };
 
-const fieldLevelMerge = (
-  translatedFields: Record<string, unknown>,
-  //should be fetched according to the revision and id of the translated obj above
-  baseDoc: SanityDocument,
-  localeId: string,
-  baseLang: string = libraryDefaultLocale
-): Record<string, unknown> => {
-  const merged: Record<string, unknown> = {};
-  const metaKeys = ['_rev', '_id', '_type'];
-  metaKeys.forEach((metaKey) => {
-    if (translatedFields[metaKey]) {
-      merged[metaKey] = translatedFields[metaKey];
-    }
-  });
-
-  //get any field that matches the base language, because it's been translated
-  const originPaths = extractWithPath(`..${baseLang}`, translatedFields);
-  originPaths.forEach((match) => {
-    const origVal = extractWithPath(
-      arrayToJSONMatchPath(match.path),
-      baseDoc
-    )[0].value;
-    const translatedVal = extractWithPath(
-      arrayToJSONMatchPath(match.path),
-      translatedFields
-    )[0].value;
-    let valToPatch;
-    if (typeof translatedVal === 'string') {
-      valToPatch = translatedVal;
-    } else if (Array.isArray(translatedVal) && translatedVal.length) {
-      valToPatch = reconcileArray(
-        (origVal as Array<unknown>) ?? [],
-        translatedVal
-      );
-    } else if (
-      typeof translatedVal === 'object' &&
-      Object.keys(translatedVal as Record<string, unknown>).length
-    ) {
-      valToPatch = reconcileObject(
-        isRecord(origVal) ? origVal : {},
-        translatedVal as Record<string, unknown>
-      );
-    }
-    const destinationPath = [
-      ...match.path.slice(0, match.path.length - 1), //cut off the "en"
-      localeId.replace('-', '_'), // replace it with our locale
-    ];
-
-    merged[arrayToJSONMatchPath(destinationPath)] = valToPatch;
-  });
-
-  return merged;
-};
-
 const documentLevelMerge = <
   TTranslatedFields extends Record<string, unknown>,
   TBaseDoc extends SanityDocument,
@@ -188,7 +132,6 @@ const documentLevelMerge = <
 };
 
 export const BaseDocumentMerger: Merger = {
-  fieldLevelMerge,
   documentLevelMerge,
   reconcileArray,
   reconcileObject,

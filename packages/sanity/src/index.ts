@@ -1,14 +1,13 @@
 import type { PortableTextHtmlComponents } from '@portabletext/to-html';
-import { getLocaleProperties } from 'generaltranslation';
-import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
+import type { CustomMapping } from 'generaltranslation/types';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-import { formatLocalePropertiesLabel } from './utils/localeDisplay';
+import { formatLocaleLabel } from './utils/localeDisplay';
 import { definePlugin } from 'sanity';
 import { route } from 'sanity/router';
 import { translateAction } from './actions/translateAction';
 import {
+  configureGt,
   DEFAULT_TRANSLATION_PREFERENCES,
-  gt,
   pluginConfig,
 } from './adapter/core';
 import type {
@@ -64,14 +63,7 @@ export {
 } from './serialization/BaseSerializationConfig';
 export { attachGTData, detachGTData } from './serialization/data';
 export { translateAction };
-export type {
-  Secrets,
-  Adapter,
-  ExportForTranslation,
-  ImportTranslation,
-  TranslationFunctionContext,
-  TranslationsTabConfigOptions,
-} from './types';
+export type { Secrets, TranslationFunctionContext } from './types';
 export type { SerializedDocument } from './serialization/types';
 
 // ===== Field-Level (Internationalized Array) Localization ===== //
@@ -93,10 +85,9 @@ export type {
 export type { GTSchemaFieldOptions } from './schema/schemaOptions';
 export type { FieldLevelTranslationMode };
 
-export type GTPluginConfig = Omit<
-  Parameters<typeof gt.setConfig>[0],
-  'locales'
-> & {
+export type GTPluginConfig = {
+  sourceLocale?: string;
+  customMapping?: CustomMapping;
   locales: string[];
   // Alias for sourceLocale — accepted so users can spread gt.config.json directly.
   defaultLocale?: string;
@@ -122,11 +113,9 @@ export type GTPluginConfig = Omit<
   // auto-configures sanity-plugin-internationalized-array (the reference
   // plugin, which owns the schema types and Studio UI) from this plugin's
   // locales. Leave disabled if you register that plugin yourself.
-  // `fieldLevelLocalization` is a descriptive alias for the same config.
-  internationalizedArray?: GTFieldLevelLocalizationConfig;
   fieldLevelLocalization?: GTFieldLevelLocalizationConfig;
   // How matched documents are translated. Independent from schema setup:
-  // enabling `internationalizedArray` only adds editable fields; routing
+  // enabling `fieldLevelLocalization` only adds editable fields; routing
   // translation through the array path requires opting in here. Default 'document'.
   translationLevel?: FieldLevelTranslationMode;
   // In 'mixed' mode, the document types that use the internationalized-array
@@ -177,8 +166,6 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
     defaultLocale,
     locales,
     customMapping,
-    apiKey,
-    projectId,
     singletons,
     singletonMapping,
     ignoreFields,
@@ -191,7 +178,6 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
     additionalDeserializers = {},
     additionalBlockDeserializers = [],
     showDocumentInternationalization = true,
-    internationalizedArray,
     fieldLevelLocalization,
     translationLevel = 'document',
     fieldLevelDocuments,
@@ -222,11 +208,7 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
     const normalizedFieldLevelDocuments =
       normalizeFilters(fieldLevelDocuments) ?? [];
 
-    // `internationalizedArray` and `fieldLevelLocalization` are aliases.
-    const rawFieldLevelConfig =
-      internationalizedArray ?? fieldLevelLocalization;
-    warnOnRemovedFieldLevelOptions(rawFieldLevelConfig);
-    const fieldLevelConfig = resolveFieldLevelConfig(rawFieldLevelConfig);
+    const fieldLevelConfig = resolveFieldLevelConfig(fieldLevelLocalization);
 
     pluginConfig.init(
       secretsNamespace,
@@ -255,12 +237,7 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
         preserveExistingTranslations,
       }
     );
-    gt.setConfig({
-      sourceLocale: resolvedSourceLocale,
-      customMapping: customMapping,
-      apiKey: apiKey,
-      projectId: projectId,
-    });
+    configureGt({ defaultLocale: resolvedSourceLocale, customMapping });
 
     // Document types localized in place via internationalized arrays must NOT
     // get @sanity/document-internationalization (language badges + per-locale
@@ -289,18 +266,9 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
       if (schemaTypes.length > 0) {
         const allLocales = [resolvedSourceLocale, ...targetLocales];
         const supportedLanguages = allLocales.map((locale) => {
-          const props = getLocaleProperties(
-            locale,
-            resolvedSourceLocale,
-            customMapping
-          );
           return {
             id: locale,
-            title: formatLocalePropertiesLabel(
-              locale,
-              props,
-              customMapping?.[locale]
-            ),
+            title: formatLocaleLabel(locale),
           };
         });
         plugins.push(
@@ -347,31 +315,3 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
     };
   }
 );
-
-// Options that existed while gt-sanity shipped its own field-level UI (v2.1.x)
-// and have no equivalent in sanity-plugin-internationalized-array.
-const REMOVED_FIELD_LEVEL_OPTIONS = [
-  'typePrefix',
-  'includeCompatibilityTypes',
-  'components',
-] as const;
-
-function warnOnRemovedFieldLevelOptions(
-  config: GTFieldLevelLocalizationConfig | undefined
-): void {
-  if (!config) return;
-  const removed = REMOVED_FIELD_LEVEL_OPTIONS.filter(
-    (key) => (config as Record<string, unknown>)[key] !== undefined
-  );
-  if (removed.length === 0) return;
-  console.warn(
-    createDiagnosticMessage({
-      source: 'gt-sanity',
-      severity: 'Warning',
-      whatHappened: `Ignored unsupported field-level localization ${removed.length === 1 ? 'option' : 'options'}`,
-      why: 'field-level localization is now provided by sanity-plugin-internationalized-array, which has no equivalent for these options',
-      fix: 'Remove them from the gtPlugin configuration',
-      details: removed,
-    })
-  );
-}

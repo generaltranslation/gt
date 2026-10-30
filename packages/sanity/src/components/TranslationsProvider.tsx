@@ -17,7 +17,8 @@ import {
   TranslationLocale,
   TranslationFunctionContext,
 } from '../types';
-import { api, overrideConfig, pluginConfig } from '../adapter/core';
+import { pluginConfig, projectFor } from '../adapter/core';
+import { getDefaultBranchId } from '../adapter/getDefaultBranchId';
 import { getTranslationStrategy } from '../translation/strategy';
 import { uploadFiles } from '../translation/uploadFiles';
 import { initProject } from '../translation/initProject';
@@ -36,6 +37,7 @@ import {
   ImportOptions,
 } from '../utils/importUtils';
 import { processBatch } from '../utils/batchProcessor';
+import { apiErrorCause } from '../utils/apiErrorCause';
 import {
   publishTranslations,
   TRANSLATION_DOCS_FOR_PUBLISH_QUERY,
@@ -54,6 +56,10 @@ import {
   getPublishedId,
 } from '../utils/documentIds';
 import { getDocumentFileName } from '../utils/fileNames';
+import {
+  existingTranslationsUploadToasts,
+  filterUploadedDocuments,
+} from '../utils/batchResults';
 import {
   getPreferencesStorageKey,
   readPreferences,
@@ -364,19 +370,9 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     }
   }, [client, singleDocument]);
 
-  const fetchLocales = useCallback(async () => {
+  const fetchLocales = useCallback(() => {
     if (!secrets) return;
-    try {
-      const availableLocales = await getLocales(secrets);
-      setLocales(availableLocales);
-    } catch {
-      toast.push({
-        title:
-          'Locales could not be loaded. Check your General Translation credentials and try again.',
-        status: 'error',
-        closable: true,
-      });
-    }
+    setLocales(getLocales());
   }, [secrets]);
 
   const fetchExistingTranslations = useCallback(async () => {
@@ -494,6 +490,13 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
                 closable: true,
               });
             }
+            if (captured.failedCount > 0) {
+              toast.push({
+                title: `${captured.failedCount} existing translation(s) could not be preserved and may be overwritten by this run. Check the console for details.`,
+                status: 'warning',
+                closable: true,
+              });
+            }
           } catch (error) {
             console.error(
               'Could not preserve existing translations. Continuing — edits made to translated documents may be overwritten by this run.',
@@ -511,6 +514,14 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         const transformedDocuments = serializeSourceDocuments();
 
         const uploadResult = await uploadFiles(transformedDocuments, secrets);
+        // Only the documents General Translation saved can be translated.
+        const uploadedDocuments = filterUploadedDocuments(
+          transformedDocuments,
+          uploadResult
+        );
+        if (uploadedDocuments.length === 0) {
+          throw new Error('No documents were uploaded to General Translation');
+        }
         await initProject(uploadResult, { timeout: 600 }, secrets);
         await createJobs(uploadResult, availableLocaleIds, secrets, force);
 
@@ -519,7 +530,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         // imports bump it), so status lookups go through getVersionId instead.
         // Persisted to sessionStorage so the pins survive a page refresh.
         const nextUploadedVersions = new Map(uploadedVersions);
-        for (const { info } of transformedDocuments) {
+        for (const { info } of uploadedDocuments) {
           if (info.versionId) {
             nextUploadedVersions.set(info.documentId, info.versionId);
           }
@@ -529,7 +540,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
 
         const enqueuedStatusKeys = new Set<string>();
         const enqueuedStableKeys = new Set<string>();
-        for (const { info } of transformedDocuments) {
+        for (const { info } of uploadedDocuments) {
           for (const localeId of availableLocaleIds) {
             enqueuedStatusKeys.add(
               createTranslationStatusKey(
@@ -580,15 +591,22 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
 
         toast.push({
           title: force
-            ? `Retranslating ${documents.length} documents from scratch`
-            : `Translation tasks created for ${documents.length} documents`,
+            ? `Retranslating ${uploadedDocuments.length} documents from scratch`
+            : `Translation tasks created for ${uploadedDocuments.length} documents`,
           status: 'success',
           closable: true,
         });
-      } catch {
+        if (uploadResult.summary.failed > 0) {
+          toast.push({
+            title: `${uploadResult.summary.failed} document(s) could not be uploaded and were not translated. Check the console for details.`,
+            status: 'warning',
+            closable: true,
+          });
+        }
+      } catch (error) {
+        console.error('Error creating translation tasks:', error);
         toast.push({
-          title:
-            'Translation tasks could not be created. No documents were changed. Try again or check the console for details.',
+          title: `Translation tasks could not be created. No documents were changed. ${apiErrorCause(error) ?? 'Try again or check the console for details.'}`,
           status: 'error',
           closable: true,
         });
@@ -625,14 +643,17 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       // exist, and this action exists for projects whose translations predate
       // General Translation, where no source has been uploaded yet. Enqueueing
       // is deliberately skipped so nothing is retranslated.
-      await uploadFiles(transformedDocuments, secrets);
+      const uploadResult = await uploadFiles(transformedDocuments, secrets);
 
       const existing = await collectExistingTranslations(
         documents,
         availableLocaleIds,
         translationContext
       );
-      const withTranslations = transformedDocuments
+      const withTranslations = filterUploadedDocuments(
+        transformedDocuments,
+        uploadResult
+      )
         .map((document) => ({
           ...document,
           translations: existing.get(document.info.documentId) ?? [],
@@ -640,21 +661,17 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         .filter((document) => document.translations.length > 0);
 
       const response = await uploadTranslations(withTranslations, secrets);
-      const count = response?.uploadedFiles.length ?? 0;
-
-      toast.push({
-        title:
-          count > 0
-            ? `Uploaded ${count} existing translation(s) across ${withTranslations.length} document(s)`
-            : 'No existing translations found to upload',
-        status: count > 0 ? 'success' : 'warning',
-        closable: true,
-      });
+      for (const params of existingTranslationsUploadToasts(
+        uploadResult,
+        response,
+        withTranslations.length
+      )) {
+        toast.push({ ...params, closable: true });
+      }
     } catch (error) {
       console.error('Error uploading existing translations:', error);
       toast.push({
-        title:
-          'Existing translations could not be uploaded. No documents were changed. Try again or check the console for details.',
+        title: `Existing translations could not be uploaded. No documents were changed. ${apiErrorCause(error) ?? 'Try again or check the console for details.'}`,
         status: 'error',
         closable: true,
       });
@@ -726,8 +743,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } catch (error) {
       console.error('Error importing translations:', error);
       toast.push({
-        title:
-          'Translations could not be imported. No documents were changed. Try again or check the console for details.',
+        title: `Translations could not be imported. No documents were changed. ${apiErrorCause(error) ?? 'Try again or check the console for details.'}`,
         status: 'error',
         closable: true,
       });
@@ -874,8 +890,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } catch (error) {
       console.error('Error importing missing translations:', error);
       toast.push({
-        title:
-          'Missing translations could not be imported. No documents were changed. Try again or check the console for details.',
+        title: `Missing translations could not be imported. No documents were changed. ${apiErrorCause(error) ?? 'Try again or check the console for details.'}`,
         status: 'error',
         closable: true,
       });
@@ -897,12 +912,14 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
 
   const handleGetBranchId = useCallback(
     async (secrets: Secrets) => {
-      overrideConfig(secrets);
-      const defaultBranch = await api.createBranch({
-        branchName: 'main',
-        defaultBranch: true,
-      });
-      setBranchId(defaultBranch.branch.id);
+      try {
+        setBranchId(await getDefaultBranchId(projectFor(secrets)));
+      } catch (error) {
+        console.error(
+          'Could not resolve the default General Translation branch',
+          error
+        );
+      }
     },
     [secrets]
   );
@@ -1000,8 +1017,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       } catch (error) {
         console.error('Error refreshing translation status:', error);
         toast.push({
-          title:
-            'Translation status could not be refreshed. Try again before importing.',
+          title: `Translation status could not be refreshed. ${apiErrorCause(error) ?? 'Try again before importing.'}`,
           status: 'error',
           closable: true,
         });

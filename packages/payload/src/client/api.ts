@@ -1,4 +1,5 @@
 // Calls to the plugin's endpoints from the admin panel.
+import { ApiError } from 'generaltranslation/api';
 import type { ClientConfig } from 'payload';
 import type { CoveragePage } from '../coverage';
 import type { RunKind, RunProgress, StepResult } from '../runs';
@@ -20,8 +21,16 @@ async function post<T>(route: string, path: string, body: unknown): Promise<T> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  const json = (await response.json()) as T & { error?: string };
-  if (!response.ok) throw new Error(json.error ?? response.statusText);
+  const json = (await response.json()) as T & {
+    error?: string;
+    code?: string;
+  };
+  if (!response.ok)
+    throw new ApiError(
+      json.error ?? response.statusText,
+      response.status,
+      json.code
+    );
   return json;
 }
 

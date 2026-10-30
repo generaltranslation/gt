@@ -97,10 +97,15 @@ describe('translateDocument: failures', () => {
     expect(result.locales).toEqual({});
   });
 
-  it("reports GT refusing the work at the plan's usage limit", async () => {
+  it.each([
+    'usage_limit_reached',
+    'spend_limit_reached',
+    'credits_insufficient',
+    'payment_required',
+  ] as const)('reports GT refusing the work for billing (%s)', async (code) => {
     const page = await createPage(payload);
     const gt = new FakeGt();
-    gt.usageLimitReached = true;
+    gt.billingCode = code;
     const result = await translateDocument({
       payload,
       gt,
@@ -108,11 +113,11 @@ describe('translateDocument: failures', () => {
       locales: ['es'],
     });
 
-    expect(result.usageLimitReached).toBe(true);
+    expect(result.billingCode).toBe(code);
     expect(result.locales.es).toMatchObject({ status: 'failed' });
   });
 
-  it('does not report the usage limit for other failures', async () => {
+  it('does not report billing for other failures', async () => {
     const page = await createPage(payload);
     const gt = new FakeGt();
     gt.unreachable = true;
@@ -123,6 +128,6 @@ describe('translateDocument: failures', () => {
       locales: ['es'],
     });
 
-    expect(result.usageLimitReached).toBeUndefined();
+    expect(result.billingCode).toBeUndefined();
   });
 });

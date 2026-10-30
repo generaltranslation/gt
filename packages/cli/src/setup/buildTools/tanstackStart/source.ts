@@ -1,7 +1,7 @@
 // Reads the Start entries setup configures.
 import fs from 'node:fs';
 import path from 'node:path';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { Libraries } from '../../../types/libraries.js';
 import { readSourceFile } from '../shared/source.js';
 

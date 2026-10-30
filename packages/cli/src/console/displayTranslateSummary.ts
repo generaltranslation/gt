@@ -10,16 +10,24 @@ const CATEGORY_LABELS: Record<WarningCategory, string> = {
   skipped_file: 'Files skipped',
   pending_review: 'Awaiting review approval',
   failed_move: 'File moves failed',
+  failed_upload: 'Uploads failed',
   failed_translation: 'Translations failed',
   failed_download: 'Downloads failed',
+  failed_edit_save: 'Local edits not saved',
+  failed_publish: 'CDN publish failed',
+  failed_project_update: 'Project settings not updated',
 };
 
 const CATEGORY_ORDER: WarningCategory[] = [
   'skipped_file',
   'pending_review',
   'failed_move',
+  'failed_upload',
   'failed_translation',
   'failed_download',
+  'failed_edit_save',
+  'failed_publish',
+  'failed_project_update',
 ];
 
 export function displayTranslateSummary() {

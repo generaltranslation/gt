@@ -54,11 +54,11 @@ export async function createUpdates(
       ];
     } else {
       let esbuildConfig;
-      if (options.jsconfig) {
-        const jsconfig = loadJSON(options.jsconfig);
+      if (options.tsconfig) {
+        const jsconfig = loadJSON(options.tsconfig);
         if (!jsconfig) {
           logger.error(
-            `Failed to resolve jsconfig.json or tsconfig.json at provided filepath: "${options.jsconfig}"`
+            `Failed to resolve jsconfig.json or tsconfig.json at provided filepath: "${options.tsconfig}"`
           );
           exitSync(1);
         }
@@ -101,7 +101,7 @@ export async function createUpdates(
     parsingFlags,
     parsingOptions,
     extractPrimary,
-    options.jsconfig || undefined
+    options.tsconfig || undefined
   );
 
   errors = [...errors, ...newErrors];

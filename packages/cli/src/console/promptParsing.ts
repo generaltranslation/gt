@@ -1,4 +1,4 @@
-import { isValidLocale } from 'generaltranslation';
+import { isValidLocale } from '@generaltranslation/format';
 import type { CustomMapping } from 'generaltranslation/types';
 
 export function validateLocale(value: string, customMapping?: CustomMapping) {

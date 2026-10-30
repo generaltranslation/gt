@@ -1,8 +1,13 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { isBinaryFileFormat } from 'generaltranslation/types';
+import {
+  isTransientApiError,
+  type QueryFilesContentResponse,
+} from 'generaltranslation/api';
 import { logger } from '../console/logger.js';
-import { api } from '../utils/api.js';
+import { createClients } from '../utils/api.js';
+import { noProjectIdError } from '../console/index.js';
 import { Settings } from '../types/index.js';
 import { validateJsonSchema } from '../formats/json/utils.js';
 import { validateYamlSchema } from '../formats/yaml/utils.js';
@@ -193,6 +198,8 @@ export type DownloadFileBatchResult = {
   successful: BatchedFiles;
   failed: BatchedFiles;
   skipped: BatchedFiles;
+  /** Not downloaded yet but worth requesting again: pending on the server, or the whole batch after a transient read failure. */
+  retryable: BatchedFiles;
 };
 /**
  * Downloads multiple translation files in a single batch request
@@ -201,7 +208,7 @@ export type DownloadFileBatchResult = {
  * @param options - Resolved CLI settings used for merge and lockfile behavior
  * @param forceDownload - Whether to bypass an up-to-date local translation
  * @param inlineLibrary - Inline runtime used to label the shared GTJSON file
- * @returns Object containing successful and failed file IDs
+ * @returns The successful, skipped, failed and retryable files
  */
 export async function downloadFileBatch(
   fileTracker: FileStatusTracker,
@@ -229,6 +236,7 @@ export async function downloadFileBatch(
     successful: [],
     failed: [],
     skipped: [],
+    retryable: [],
   };
 
   // Create a map of translationId to outputPath for easier lookup
@@ -239,17 +247,33 @@ export async function downloadFileBatch(
     ])
   );
 
+  let results: QueryFilesContentResponse['results'];
   try {
-    // Download the files
-    const responseData = await api.downloadFileBatch(
-      files.map((file) => ({
-        fileId: file.fileId,
-        branchId: file.branchId,
-        versionId: file.versionId,
-        locale: file.locale,
-      }))
+    const { project } = createClients(options);
+    if (!project) throw new Error(noProjectIdError);
+    ({ results } = await project.queryFilesContent(files));
+  } catch (error) {
+    logger.error(
+      `An unexpected error occurred while downloading files: ` + error
     );
-    const downloadedFiles = responseData.files || [];
+    // Only a read failure that may clear is worth requesting again.
+    if (isTransientApiError(error)) result.retryable = files;
+    else result.failed = files;
+    return result;
+  }
+
+  try {
+    // Results follow the selector order; pending files are retryable, missing files failed
+    result.retryable = files.filter(
+      (_, index) => results[index]?.status === 'pending'
+    );
+    const downloadedFiles = results.flatMap((file) =>
+      file.status === 'ready' &&
+      typeof file.data === 'string' &&
+      file.fileFormat
+        ? [{ ...file, data: file.data, fileFormat: file.fileFormat }]
+        : []
+    );
 
     // Process each file in the response
     for (const file of downloadedFiles) {
@@ -439,7 +463,7 @@ export async function downloadFileBatch(
             try {
               data = sortJsonString(data);
             } catch (error) {
-              logger.warn(`Failed to sort JSON file: ${file.id}: ` + error);
+              logger.warn(`Failed to sort JSON file: ${fileKey}: ` + error);
             }
           }
         }
@@ -501,7 +525,8 @@ export async function downloadFileBatch(
       }
     }
 
-    // Add any files that weren't in the response to the failed list
+    // Add any files that weren't in the response, and aren't pending, to the failed list
+    const pendingFiles = new Set(result.retryable);
     const downloadedFileKeys = new Set(
       downloadedFiles.map(
         (file) =>
@@ -509,7 +534,10 @@ export async function downloadFileBatch(
       )
     );
     for (const [fileKey, requestedFile] of requestedFileMap.entries()) {
-      if (!downloadedFileKeys.has(fileKey)) {
+      if (
+        !downloadedFileKeys.has(fileKey) &&
+        !pendingFiles.has(requestedFile)
+      ) {
         result.failed.push(requestedFile);
       }
     }
@@ -526,8 +554,12 @@ export async function downloadFileBatch(
     );
   }
 
-  // Mark all files as failed if we get here
-  result.failed = [...requestedFileMap.values()];
+  // A local failure is not retried: mark every file not yet saved or skipped as failed
+  const settledFiles = new Set([...result.successful, ...result.skipped]);
+  result.failed = [...requestedFileMap.values()].filter(
+    (file) => !settledFiles.has(file)
+  );
+  result.retryable = [];
   if (didUpdateDownloadedLock) {
     writeLockfile(downloadedVersions, originalV1);
   }

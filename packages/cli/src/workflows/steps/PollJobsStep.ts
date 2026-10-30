@@ -1,14 +1,15 @@
 import chalk from 'chalk';
-import type { JobResult } from 'generaltranslation/api';
+import type { JobResult, UnpolledJobResult } from 'generaltranslation/api';
 import { logger } from '../../console/logger.js';
-import type { ApiClient } from '../../utils/api.js';
-import { EnqueueFilesResult } from 'generaltranslation/types';
+import type { ProjectHandle } from 'generaltranslation';
+import type { EnqueueFilesResult } from './EnqueueStep.js';
 import { TEMPLATE_FILE_NAME } from '../../utils/constants.js';
 import type { FileProperties } from '../../types/files.js';
 import {
   getFileTranslationKey,
   queryCompletedTranslationKeys,
 } from '../utils/queryCompletedTranslations.js';
+import { retryTransientRead } from '../utils/retryTransientRead.js';
 import {
   getInlineElementsLabel,
   type InlineLibrary,
@@ -39,7 +40,7 @@ export class PollTranslationJobsStep {
   private previousProgress = 0;
 
   constructor(
-    private api: ApiClient,
+    private api: ProjectHandle,
     private inlineLibrary?: InlineLibrary
   ) {}
 
@@ -67,9 +68,8 @@ export class PollTranslationJobsStep {
     // Skip when force retranslation is enabled, since the server
     // no longer marks force-retranslated files as incomplete
     if (!forceRetranslation) {
-      const completedKeys = await queryCompletedTranslationKeys(
-        this.api,
-        fileQueryData
+      const completedKeys = await retryTransientRead(() =>
+        queryCompletedTranslationKeys(this.api, fileQueryData)
       );
 
       completedKeys.forEach((fileKey) => {
@@ -86,10 +86,10 @@ export class PollTranslationJobsStep {
       string,
       (typeof jobData.jobData)[number] & { jobId: string }
     >();
+    // Job locales already come back under the configured aliases.
     Object.entries(jobData.jobData).forEach(([jobId, job]) => {
-      const jobLocale = this.api.resolveAliasLocale(job.targetLocale);
-      const key = `${job.branchId}:${job.fileId}:${job.versionId}:${jobLocale}`;
-      jobMap.set(key, { ...job, jobId, targetLocale: jobLocale });
+      const key = `${job.branchId}:${job.fileId}:${job.versionId}:${job.targetLocale}`;
+      jobMap.set(key, { ...job, jobId });
     });
 
     // Build a map of jobs for quick lookup:
@@ -104,12 +104,11 @@ export class PollTranslationJobsStep {
       }
     >();
     Object.entries(jobData.jobData).forEach(([jobId, job]) => {
-      const jobLocale = this.api.resolveAliasLocale(job.targetLocale);
       jobFileMap.set(jobId, {
         branchId: job.branchId,
         fileId: job.fileId,
         versionId: job.versionId,
-        locale: jobLocale,
+        locale: job.targetLocale,
       });
     });
 
@@ -154,13 +153,11 @@ export class PollTranslationJobsStep {
       timeoutDuration - (Date.now() - startTime) / 1000
     );
 
-    // onPoll receives raw statuses and result.jobs normalized ones; only the
-    // shared fields are read here.
     const updateJobStatuses = (
-      statuses: readonly Pick<JobResult, 'jobId' | 'status'>[]
+      statuses: readonly (JobResult | UnpolledJobResult)[]
     ) => {
       for (const job of statuses) {
-        const jobFileProperties = jobFileMap.get(job.jobId);
+        const jobFileProperties = jobFileMap.get(job.id);
         if (!jobFileProperties) continue;
 
         const fileKey = `${jobFileProperties.branchId}:${jobFileProperties.fileId}:${jobFileProperties.versionId}:${jobFileProperties.locale}`;
@@ -171,13 +168,13 @@ export class PollTranslationJobsStep {
           fileTracker.completed.set(fileKey, fileProperties);
         } else if (job.status === 'failed') {
           fileTracker.failed.set(fileKey, fileProperties);
-        } else if (job.status === 'unknown') {
+        } else if (job.status === 'not_found' || job.status === 'unknown') {
           fileTracker.skipped.set(fileKey, fileProperties);
         } else {
           continue;
         }
         fileTracker.inProgress.delete(fileKey);
-        jobFileMap.delete(job.jobId);
+        jobFileMap.delete(job.id);
       }
       this.updateSpinner(fileTracker, fileQueryData);
     };

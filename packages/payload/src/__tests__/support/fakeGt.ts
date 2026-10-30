@@ -1,9 +1,7 @@
 import { parse, parseFragment, serialize } from 'parse5';
 import type { DefaultTreeAdapterMap } from 'parse5';
-import { resolveCanonicalLocale } from 'generaltranslation';
-import { ApiError } from 'generaltranslation/errors';
-import type { CustomMapping } from 'generaltranslation/types';
-import type { GtClient } from '../../types';
+import { ApiError } from 'generaltranslation/api';
+import type { BillingCode, GtClient } from '../../types';
 
 type Element = DefaultTreeAdapterMap['element'];
 type ChildNode = DefaultTreeAdapterMap['childNode'];
@@ -70,6 +68,16 @@ function writeKeyedHtml(source: string, values: Map<string, string>): string {
   return serialize(document);
 }
 
+// A batch write's summary, as GT reports it.
+function summarize(results: { status: 'succeeded' | 'failed' }[]) {
+  const succeeded = results.filter((r) => r.status === 'succeeded').length;
+  return {
+    total: results.length,
+    succeeded,
+    failed: results.length - succeeded,
+  };
+}
+
 // What a lengthened translation adds.
 const LONGER = ' AND THEN SOME MORE WORDS';
 
@@ -130,12 +138,16 @@ export class FakeGt {
   }[] = [];
   // Locales whose jobs fail.
   failLocales = new Set<string>();
+  // Locales whose jobs GT loses: status checks read them as not_found.
+  lostLocales = new Set<string>();
+  // Files whose source upload fails while the others are saved.
+  failSourceUploads = new Set<string>();
+  // Locales whose translation upload fails while the others are saved.
+  failTranslationUploads = new Set<string>();
   // Locales the project does not have: enqueue refuses the whole request.
   unsupportedLocales = new Set<string>();
-  // Like the SDK's: enqueue reports jobs under GT's code for a mapped locale.
-  customMapping: CustomMapping | undefined = undefined;
-  // When set, enqueue refuses the work as GT does at a plan's usage limit.
-  usageLimitReached = false;
+  // When set, enqueue refuses the work as GT does when billing stops it, with this code.
+  billingCode: BillingCode | undefined = undefined;
   // When set, every call fails as if GT were unreachable.
   unreachable = false;
   // Previous translation given as context, by fileId, locale and key.
@@ -148,16 +160,16 @@ export class FakeGt {
   // How many times each SDK method was called.
   readonly calls = {
     uploadSourceFiles: 0,
-    enqueueFiles: 0,
+    translateFiles: 0,
     awaitJobs: 0,
-    downloadFileBatch: 0,
+    queryFilesContent: 0,
     uploadTranslations: 0,
-    checkJobStatus: 0,
+    queryJobs: 0,
     translateMany: 0,
   };
   private finished = new Map<
     string,
-    { status: 'completed' | 'failed'; error?: { message: string } }
+    { status: 'completed' | 'failed'; error?: string }
   >();
   readonly uploadedTranslations: {
     fileId: string;
@@ -236,8 +248,23 @@ export class FakeGt {
   readonly uploadSourceFiles: GtClient['uploadSourceFiles'] = async (files) => {
     this.check();
     this.calls.uploadSourceFiles += 1;
-    const uploadedFiles = files.map(({ source }) => {
+    // Like GT's request validation: one over-long file ID fails the request.
+    if (files.some(({ source }) => source.fileId!.length > 64)) {
+      const message = 'File ID cannot exceed 64 characters';
+      throw new ApiError(message, 400);
+    }
+    const results = files.map(({ source }) => {
       const fileId = source.fileId!;
+      if (this.failSourceUploads.has(fileId))
+        return {
+          branchId: 'main',
+          fileId,
+          versionId: '',
+          fileName: source.fileName,
+          fileFormat: source.fileFormat,
+          status: 'failed' as const,
+          error: 'source upload failed',
+        };
       const versions = this.files.get(fileId) ?? [];
       this.files.set(fileId, versions);
       this.uploadedSources.push({
@@ -261,18 +288,22 @@ export class FakeGt {
         branchId: 'main',
         fileName: source.fileName,
         fileFormat: source.fileFormat,
+        status: 'succeeded' as const,
       };
     });
-    return { uploadedFiles, count: uploadedFiles.length, message: 'ok' };
+    return { summary: summarize(results), results };
   };
 
-  readonly enqueueFiles: GtClient['enqueueFiles'] = async (files, options) => {
+  readonly translateFiles: GtClient['translateFiles'] = async (
+    files,
+    options = {}
+  ) => {
     this.check();
-    this.calls.enqueueFiles += 1;
-    if (this.usageLimitReached) {
+    this.calls.translateFiles += 1;
+    if (this.billingCode) {
       const message =
         'Translating 511 tokens would exceed your free usage limit for this month.';
-      throw new ApiError(message, 402, message);
+      throw new ApiError(message, 402, this.billingCode);
     }
     const unsupported = (options.targetLocales ?? []).filter((l) =>
       this.unsupportedLocales.has(l)
@@ -282,33 +313,33 @@ export class FakeGt {
         `Target locale(s) not authorized: ${unsupported.join(', ')}.`
       );
     }
-    const jobData: Awaited<ReturnType<GtClient['enqueueFiles']>>['jobData'] =
-      {};
+    const jobs = [];
     for (const file of files) {
       for (const locale of options.targetLocales ?? []) {
         // Like GT, no job when the version already has this locale.
-        if (
-          this.version(file.fileId, file.versionId!)?.translations.has(locale)
-        )
+        if (this.version(file.fileId, file.versionId)?.translations.has(locale))
           continue;
-        const jobId = `job-${(this.nextJob += 1)}`;
-        this.jobs.set(jobId, {
-          fileId: file.fileId,
-          versionId: file.versionId!,
-          locale,
+        const id = `job-${(this.nextJob += 1)}`;
+        if (!this.lostLocales.has(locale))
+          this.jobs.set(id, {
+            fileId: file.fileId,
+            versionId: file.versionId,
+            locale,
+          });
+        jobs.push({
+          id,
+          status: 'queued' as const,
+          subject: {
+            type: 'file_translation' as const,
+            branchId: 'main',
+            fileId: file.fileId,
+            versionId: file.versionId,
+            locale,
+          },
         });
-        jobData[jobId] = {
-          sourceFileId: file.fileId,
-          fileId: file.fileId,
-          versionId: file.versionId!,
-          branchId: 'main',
-          targetLocale: resolveCanonicalLocale(locale, this.customMapping),
-          projectId: 'test-project',
-          force: false,
-        };
       }
     }
-    return { jobData } as Awaited<ReturnType<GtClient['enqueueFiles']>>;
+    return { jobs };
   };
 
   // Jobs finish the first time anyone waits on or checks them.
@@ -317,60 +348,62 @@ export class FakeGt {
     if (pending.length && this.duringTranslation)
       await this.duringTranslation();
     for (const jobId of pending) {
-      const job = this.jobs.get(jobId)!;
+      const job = this.jobs.get(jobId);
+      if (!job) continue;
       if (this.failLocales.has(job.locale)) {
         this.finished.set(jobId, {
           status: 'failed',
-          error: { message: 'translation failed' },
+          error: 'translation failed',
         });
         continue;
       }
       this.translate(job);
       this.finished.set(jobId, { status: 'completed' });
     }
-    return ids.map((jobId) => ({ jobId, ...this.finished.get(jobId)! }));
+    return ids.map((id) => ({
+      id,
+      ...(this.finished.get(id) ?? { status: 'not_found' as const }),
+    }));
   }
 
-  readonly awaitJobs: GtClient['awaitJobs'] = async (jobs) => {
+  readonly awaitJobs: GtClient['awaitJobs'] = async (jobIds) => {
     this.check();
     this.calls.awaitJobs += 1;
-    const ids = Array.isArray(jobs) ? jobs : Object.keys(jobs.jobData);
-    return { complete: true, jobs: await this.finish(ids) };
+    return { complete: true, jobs: await this.finish(jobIds) };
   };
 
-  readonly checkJobStatus: GtClient['checkJobStatus'] = async (jobIds) => {
+  readonly queryJobs: GtClient['queryJobs'] = async (jobIds) => {
     this.check();
-    this.calls.checkJobStatus += 1;
-    return this.finish(jobIds);
+    this.calls.queryJobs += 1;
+    return { results: await this.finish(jobIds) };
   };
 
-  readonly downloadFileBatch: GtClient['downloadFileBatch'] = async (
-    requests
+  readonly queryFilesContent: GtClient['queryFilesContent'] = async (
+    selectors
   ) => {
     this.check();
-    this.calls.downloadFileBatch += 1;
-    const files = requests.flatMap((request) => {
-      const version = this.version(request.fileId, request.versionId);
-      if (!version) return [];
-      const data = request.locale
-        ? version.translations.get(request.locale)?.content
-        : version.content;
-      if (data === undefined) return [];
-      return [
-        {
-          id: `${request.fileId}:${version.versionId}:${request.locale ?? ''}`,
+    this.calls.queryFilesContent += 1;
+    const results = selectors.map(({ fileId, versionId, locale }) => {
+      const version = this.version(fileId, versionId);
+      const data = locale
+        ? version?.translations.get(locale)?.content
+        : version?.content;
+      if (version && data !== undefined) {
+        return {
+          status: 'ready' as const,
           branchId: 'main',
-          fileId: request.fileId,
+          fileId,
           versionId: version.versionId,
-          locale: request.locale,
+          locale,
           fileName: version.fileName,
           data,
           metadata: {},
           fileFormat: 'HTML' as const,
-        },
-      ];
+        };
+      }
+      return { status: 'not_found' as const, fileId, locale };
     });
-    return { files, count: files.length };
+    return { results };
   };
 
   readonly translateMany = (async (
@@ -405,10 +438,24 @@ export class FakeGt {
   ) => {
     this.check();
     this.calls.uploadTranslations += 1;
-    for (const { source, translations } of files) {
+    const results = files.flatMap(({ source, translations }) => {
       const version = this.version(source.fileId!, source.versionId);
       if (!version) throw new Error('source version not found');
-      for (const translation of translations) {
+      return translations.map((translation) => {
+        const result = {
+          branchId: 'main',
+          fileId: source.fileId!,
+          versionId: version.versionId,
+          fileName: translation.fileName,
+          fileFormat: translation.fileFormat,
+          locale: translation.locale,
+        };
+        if (this.failTranslationUploads.has(translation.locale))
+          return {
+            ...result,
+            status: 'failed' as const,
+            error: 'translation upload failed',
+          };
         version.translations.set(translation.locale, {
           content: translation.content,
           human: true,
@@ -419,8 +466,9 @@ export class FakeGt {
           locale: translation.locale,
           content: translation.content,
         });
-      }
-    }
-    return { uploadedFiles: [], count: files.length, message: 'ok' };
+        return { ...result, status: 'succeeded' as const };
+      });
+    });
+    return { summary: summarize(results), results };
   };
 }

@@ -31,10 +31,7 @@ const generate = (generateModule as unknown).default || generateModule;
 //  Helper
 // ================================================================ //
 
-function injectAndAnalyze(
-  sourceCode: string,
-  legacyGtReactImportSource = false
-) {
+function injectAndAnalyze(sourceCode: string) {
   const ast = parse(sourceCode, {
     sourceType: 'module',
     plugins: ['jsx', 'typescript'],
@@ -50,7 +47,7 @@ function injectAndAnalyze(
     aliases[localName] = originalName;
   }
 
-  ensureTAndVarImported(ast, aliases, legacyGtReactImportSource);
+  ensureTAndVarImported(ast, aliases);
   autoInsertJsxComponents(ast, aliases);
 
   const code = generate(ast).code;
@@ -1000,15 +997,6 @@ describe('autoInsertJsxComponents — injection pass', () => {
       expect(r.imports).toContain('gt-react');
     });
 
-    it('injects legacy import when configured', () => {
-      const code = `
-        export default function Page() { return <div>Hello</div>; }
-      `;
-      const r = injectAndAnalyze(code, true);
-      expect(r.tCount).toBe(1);
-      expect(r.imports).toContain('gt-react/browser');
-    });
-
     it('does NOT inject import when no insertions', () => {
       const code = `
         export default function Page() { return <div />; }
@@ -1019,16 +1007,15 @@ describe('autoInsertJsxComponents — injection pass', () => {
       expect(r.tCount).toBe(0);
     });
 
-    it('does not duplicate import when already imported from gt-react/browser', () => {
+    it('does not duplicate import when already imported from gt-react', () => {
       // GtInternalTranslateJsx and GtInternalVar already imported —
       // ensureTAndVarImported should detect this and not add a second import.
       const code = `
-        import { GtInternalTranslateJsx, GtInternalVar } from "gt-react/browser";
+        import { GtInternalTranslateJsx, GtInternalVar } from "gt-react";
         export default function Page() { return <div>Hello</div>; }
       `;
       const r = injectAndAnalyze(code);
-      // Should only have one gt-react/browser import
-      const gtImports = r.imports.filter((i) => i === 'gt-react/browser');
+      const gtImports = r.imports.filter((i) => i === 'gt-react');
       expect(gtImports).toHaveLength(1);
     });
   });
