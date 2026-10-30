@@ -30,8 +30,10 @@ const BASELINE = {
  * locale twin checks (about 500 B gzip in the GT chunk, 100 B in react-core
  * code): the hook checks at each lookup, the twin client decision that turns
  * off the translation loader, and the missing compiler plugin diagnostic.
+ * All JS also covers react-core's source rule for tagged templates and the
+ * `m()` variables that fill in a twin `msg()` (about 20 B).
  */
-const GZIP_BUDGET = { gtChunk: 550, allJs: 650 };
+const GZIP_BUDGET = { gtChunk: 550, allJs: 670 };
 
 /**
  * Strings that only the locale twin runtime contains: the placeholder prefix
