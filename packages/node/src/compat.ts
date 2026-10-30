@@ -4,7 +4,7 @@
 export {
   getTranslations,
   initializeDictionaryManager as initializeGTDictionary,
-} from 'gt-i18n/internal';
+} from 'gt-i18n/internal/compat';
 export type {
   DictionaryManagerParams as InitializeGTDictionaryParams,
   Dictionary,
@@ -18,4 +18,4 @@ export type {
   DictionaryPath,
   DictionaryValue,
   TFunctionType,
-} from 'gt-i18n/internal';
+} from 'gt-i18n/internal/compat';

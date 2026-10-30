@@ -19,8 +19,11 @@ const {
 }));
 
 vi.mock('gt-i18n/internal', () => ({
-  getDictionaryManager: mockGetDictionaryManager,
   getI18nConfig: mockGetI18nConfig,
+}));
+
+vi.mock('gt-i18n/internal/compat', () => ({
+  getDictionaryManager: mockGetDictionaryManager,
   initializeDictionaryManager: mockInitializeDictionaryManager,
   isDictionaryManagerInitialized: mockIsDictionaryManagerInitialized,
 }));

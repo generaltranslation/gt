@@ -1,6 +1,7 @@
 import { useCallback, useRef } from 'react';
 import type { DictionaryEntrySnapshot, DictionaryLookup } from './types';
-import { getDictionaryListenerKey, getI18nConfig } from 'gt-i18n/internal';
+import { getI18nConfig } from 'gt-i18n/internal';
+import { getDictionaryListenerKey } from 'gt-i18n/internal/compat';
 import { useHandleMissingDictionaryEntry } from './missing-dictionary';
 import { useDictionaryContext } from './DictionaryContext';
 import { useSubscribeToTrackedLookups } from '../hooks/external-store/useSubscribeToTrackedLookups';

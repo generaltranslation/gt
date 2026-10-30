@@ -19,4 +19,4 @@ export type {
   DictionaryObjectTranslation,
   DictionaryPath,
   DictionaryValue,
-} from 'gt-i18n/internal';
+} from 'gt-i18n/internal/compat';

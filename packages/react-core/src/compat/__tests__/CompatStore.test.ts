@@ -2,11 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   I18nCache,
   initializeI18nConfig,
-  isDictionaryManagerInitialized,
   setI18nCache,
+} from 'gt-i18n/internal';
+import {
+  isDictionaryManagerInitialized,
   setDictionaryManager,
   type DictionaryManager,
-} from 'gt-i18n/internal';
+} from 'gt-i18n/internal/compat';
 import { CompatStore } from '../CompatStore';
 
 type TestGlobal = typeof globalThis & {

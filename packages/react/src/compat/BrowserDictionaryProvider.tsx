@@ -1,4 +1,4 @@
-import { DictionaryProvider } from '@generaltranslation/react-core/components';
+import { DictionaryProvider } from '@generaltranslation/react-core/compat';
 import type { GTDictionaryProviderProps } from './GTDictionaryProviderProps';
 
 /** Client-side GTDictionaryProvider. Owns its dictionary store. */

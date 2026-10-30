@@ -1,7 +1,10 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { useTranslations } from '@generaltranslation/react-core/hooks';
-import { initializeDictionaryManager, type Dictionary } from 'gt-i18n/internal';
+import { useTranslations } from '@generaltranslation/react-core/compat';
+import {
+  initializeDictionaryManager,
+  type Dictionary,
+} from 'gt-i18n/internal/compat';
 import { initializeGTSRA } from '../../setup/initializeGTSRA';
 import { BrowserGTProvider } from '../../provider/BrowserGTProvider';
 import { BrowserDictionaryProvider } from '../BrowserDictionaryProvider';

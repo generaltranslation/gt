@@ -12,7 +12,7 @@ const {
   mockUse: vi.fn(),
 }));
 
-vi.mock('gt-i18n/internal', () => ({
+vi.mock('gt-i18n/internal/compat', () => ({
   getTranslationsInternal: mockGetTranslationsInternal,
 }));
 

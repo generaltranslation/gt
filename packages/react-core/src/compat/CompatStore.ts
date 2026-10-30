@@ -1,10 +1,10 @@
+import type { Locale } from 'gt-i18n/internal';
 import {
   getDictionaryManager,
   initializeDictionaryManager,
   isDictionaryManagerInitialized,
-  type Locale,
   type Dictionary,
-} from 'gt-i18n/internal';
+} from 'gt-i18n/internal/compat';
 import type { Unsubscribe } from '../i18n-store/storeTypes';
 import { subscribeToSet } from '../i18n-store/utils/subscriptions';
 import { createRuntimeTranslationErrorLogger } from '../i18n-store/utils/runtimeTranslationErrors';

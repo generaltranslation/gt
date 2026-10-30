@@ -1,4 +1,5 @@
-import { getDictionaryListenerKey, getI18nConfig } from 'gt-i18n/internal';
+import { getI18nConfig } from 'gt-i18n/internal';
+import { getDictionaryListenerKey } from 'gt-i18n/internal/compat';
 import { useCallback, useEffect } from 'react';
 import { useShouldTranslate } from '../hooks/utils';
 import { useDictionaryContext } from './DictionaryContext';

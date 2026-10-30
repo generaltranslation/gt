@@ -2,7 +2,7 @@
 'gt-i18n': major
 ---
 
-The dictionary (key-based) API moves to the framework `/compat` entries. The `Dictionary*` types and `TFunctionType` leave the `gt-i18n` root and are exported from `gt-i18n/internal`, beside `getTranslations()` and the new `DictionaryManager` singleton (`initializeDictionaryManager()`, `getDictionaryManager()`, `setDictionaryManager()`, `isDictionaryManagerInitialized()`). `I18nCache` no longer loads or stores dictionaries: `I18nCacheConstructorParams` no longer accepts `dictionary` or `loadDictionary`, and `I18nCache.resolveCacheLocale()` is public so the manager builds on the cache's public API.
+The dictionary (key-based) API moves to the framework `/compat` entries. The `Dictionary*` types and `TFunctionType` leave the `gt-i18n` root and are exported from `gt-i18n/internal/compat`, beside `getTranslations()` and the new `DictionaryManager` singleton (`initializeDictionaryManager()`, `getDictionaryManager()`, `setDictionaryManager()`, `isDictionaryManagerInitialized()`). `I18nCache` no longer loads or stores dictionaries: `I18nCacheConstructorParams` no longer accepts `dictionary` or `loadDictionary`, and `I18nCache.resolveCacheLocale()` is public so the manager builds on the cache's public API.
 
 Migration:
 
@@ -19,4 +19,4 @@ Migration:
 | `import { useTranslations, getTranslations } from 'gt-tanstack-start'` | `import { useTranslations, getTranslations } from 'gt-tanstack-start/compat'`, and call `setupRouterGTDictionaryIntegration({ router })` from `gt-tanstack-start/compat` in `getRouter()` beside `setupRouterGTIntegration()`; there is no provider to render |
 | `import { getTranslations, type TFunctionType } from 'gt-node'` | `import { getTranslations, type TFunctionType } from 'gt-node/compat'` |
 | `initializeGT({ …, dictionary, loadDictionary })` (gt-node) | `initializeGT({ … })`, then `initializeGTDictionary({ dictionary, loadDictionary, cacheExpiryTime })` from `gt-node/compat`, with the `cacheExpiryTime` you pass to `initializeGT()` |
-| `import type { Dictionary, DictionaryEntry, …, TFunctionType } from 'gt-i18n'` | import the `Dictionary*` types from your framework's `/compat` entry (they also moved to `gt-i18n/internal`) |
+| `import type { Dictionary, DictionaryEntry, …, TFunctionType } from 'gt-i18n'` | import the `Dictionary*` types from your framework's `/compat` entry (they also moved to `gt-i18n/internal/compat`) |

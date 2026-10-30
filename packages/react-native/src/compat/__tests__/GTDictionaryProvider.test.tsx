@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { DictionaryProvider } from '@generaltranslation/react-core/components';
+import { DictionaryProvider } from '@generaltranslation/react-core/compat';
 import { GTDictionaryProvider } from '../GTDictionaryProvider';
 
 describe('GTDictionaryProvider', () => {

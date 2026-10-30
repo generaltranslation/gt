@@ -85,6 +85,16 @@
         "types": "./dist/components-rsc.d.mts",
         "default": "./dist/components-rsc.mjs"
       }
+    },
+    "./compat": {
+      "require": {
+        "types": "./dist/compat.d.ts",
+        "default": "./dist/compat.cjs"
+      },
+      "import": {
+        "types": "./dist/compat.d.mts",
+        "default": "./dist/compat.mjs"
+      }
     }
   },
   "keywords": [
