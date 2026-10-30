@@ -8,8 +8,8 @@ export default defineConfig({
     port: 5183,
     strictPort: true,
   },
-  // gtTanstackStart() goes after tanstackStart(), where `gt init` adds it, so
-  // the compiler sees TanStack's split route modules.
+  // gtTanstackStart() goes after tanstackStart() so the compiler sees
+  // TanStack's split route modules.
   plugins: [
     tanstackStart(),
     react(),
