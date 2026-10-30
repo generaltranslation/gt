@@ -50,10 +50,10 @@ export type {
 } from './types-dir/config';
 export type {
   LocaleTwinEntries,
-  LocaleTwinManifest,
   LocaleTwinPlaceholderMatch,
-  LocaleTwinTable,
-} from './locale-twins';
+} from './locale-twins/placeholder';
+export type { LocaleTwinManifest } from './locale-twins/manifest';
+export type { LocaleTwinTable } from './locale-twins/table';
 export type {
   JsonObject,
   JsonPrimitive,
