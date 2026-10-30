@@ -1,4 +1,4 @@
-import { formatDiagnosticErrorDetails } from '../logging/diagnostics';
+import { formatDiagnosticErrorDetails } from '../../logging/diagnostics';
 import { LOCALE_TWIN_MANIFEST_VERSION } from './constants';
 import { createLocaleTwinDiagnostic } from './diagnostics';
 

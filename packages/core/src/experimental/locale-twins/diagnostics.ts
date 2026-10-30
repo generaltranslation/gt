@@ -1,7 +1,7 @@
 import {
   createDiagnosticMessage,
   type DiagnosticMessageInput,
-} from '../logging/diagnostics';
+} from '../../logging/diagnostics';
 
 /** Source of the locale twin diagnostics `generaltranslation` owns. */
 export const LOCALE_TWIN_DIAGNOSTIC_SOURCE = 'generaltranslation';

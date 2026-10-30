@@ -1,6 +1,6 @@
-import type { TranslationSplittingStrategy } from '../types-dir/config';
+import type { TranslationSplittingStrategy } from '../../types-dir/config';
 
-/** Translation splitting strategy used when `files.gt.splitting` is unset. */
+/** Translation splitting strategy used when `experimental.splitting` is unset. */
 export const DEFAULT_TRANSLATION_SPLITTING: TranslationSplittingStrategy =
   'locale';
 
@@ -8,7 +8,7 @@ export const DEFAULT_TRANSLATION_SPLITTING: TranslationSplittingStrategy =
 export const LOCALE_TWINS_SPLITTING: TranslationSplittingStrategy =
   'locale-twins';
 
-/** Every accepted `files.gt.splitting` value. */
+/** Every accepted `experimental.splitting` value. */
 export const TRANSLATION_SPLITTING_STRATEGIES: readonly TranslationSplittingStrategy[] =
   ['locale', LOCALE_TWINS_SPLITTING];
 

@@ -2,16 +2,17 @@ import { defineConfig } from 'tsdown';
 import { createTsdownConfig, withPackageChecks } from '../../tsdown.preset.mts';
 
 const [cjsConfig, esmConfig] = createTsdownConfig(
-  [
-    'src/index.ts',
-    'src/api.ts',
-    'src/runtime.ts',
-    'src/id.ts',
-    'src/internal.ts',
-    'src/diagnostics.ts',
-    'src/errors.ts',
-    'src/types.ts',
-  ],
+  {
+    index: 'src/index.ts',
+    api: 'src/api.ts',
+    runtime: 'src/runtime.ts',
+    id: 'src/id.ts',
+    internal: 'src/internal.ts',
+    'internal-experimental': 'src/experimental/internal.ts',
+    diagnostics: 'src/diagnostics.ts',
+    errors: 'src/errors.ts',
+    types: 'src/types.ts',
+  },
   { alwaysBundle: [/^@noble\/hashes/] }
 );
 

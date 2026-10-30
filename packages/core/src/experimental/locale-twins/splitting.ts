@@ -1,8 +1,8 @@
 import type {
   GTConfig,
   TranslationSplittingStrategy,
-} from '../types-dir/config';
-import { createDiagnosticMessage } from '../logging/diagnostics';
+} from '../../types-dir/config';
+import { createDiagnosticMessage } from '../../logging/diagnostics';
 import {
   DEFAULT_TRANSLATION_SPLITTING,
   LOCALE_TWINS_SPLITTING,
@@ -11,26 +11,26 @@ import {
 import { LOCALE_TWIN_DIAGNOSTIC_SOURCE } from './diagnostics';
 
 /**
- * Resolves `files.gt.splitting` from a gt.config.json object, defaulting to
+ * Resolves `experimental.splitting` from a gt.config.json object, defaulting to
  * {@link DEFAULT_TRANSLATION_SPLITTING}. Throws a diagnostic error for unknown
  * strategies so a typo never silently disables the feature.
  */
 export function resolveTranslationSplitting(
-  config: Pick<GTConfig, 'files'> | undefined
+  config: GTConfig | undefined
 ): TranslationSplittingStrategy {
-  return resolveTranslationSplittingValue(config?.files?.gt?.splitting);
+  return resolveTranslationSplittingValue(config?.experimental?.splitting);
 }
 
 /**
  * Resolves a raw translation splitting setting (`undefined` → the default).
  * Throws a diagnostic error for unknown values that names the setting
- * (default `files.gt.splitting`) and comes from `source` (default
+ * (default `experimental.splitting`) and comes from `source` (default
  * `generaltranslation`), so other packages can validate their own options.
  */
 export function resolveTranslationSplittingValue(
   splitting: unknown,
   {
-    setting = 'files.gt.splitting',
+    setting = 'experimental.splitting',
     source = LOCALE_TWIN_DIAGNOSTIC_SOURCE,
   }: { setting?: string; source?: string } = {}
 ): TranslationSplittingStrategy {
@@ -47,7 +47,7 @@ export function resolveTranslationSplittingValue(
   );
 }
 
-/** Whether `value` is an accepted `files.gt.splitting` value. */
+/** Whether `value` is an accepted `experimental.splitting` value. */
 export function isTranslationSplittingStrategy(
   value: unknown
 ): value is TranslationSplittingStrategy {

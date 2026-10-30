@@ -5,7 +5,7 @@ import {
   resolveTranslationSplitting,
   resolveTranslationSplittingValue,
 } from '../../internal';
-import type { GTConfig } from '../../types';
+import type { GTConfig } from '../../../types';
 
 describe('resolveTranslationSplitting', () => {
   it('defaults to locale splitting', () => {
@@ -17,21 +17,21 @@ describe('resolveTranslationSplitting', () => {
     ).toBe('locale');
   });
 
-  it('reads files.gt.splitting from gt.config.json', () => {
-    const config: GTConfig = { files: { gt: { splitting: 'locale-twins' } } };
+  it('reads experimental.splitting from gt.config.json', () => {
+    const config: GTConfig = { experimental: { splitting: 'locale-twins' } };
     expect(resolveTranslationSplitting(config)).toBe('locale-twins');
     expect(
-      resolveTranslationSplitting({ files: { gt: { splitting: 'locale' } } })
+      resolveTranslationSplitting({ experimental: { splitting: 'locale' } })
     ).toBe('locale');
   });
 
   it('throws a diagnostic for unknown strategies', () => {
     expect(() =>
       resolveTranslationSplitting({
-        files: { gt: { splitting: 'module' as 'locale' } },
+        experimental: { splitting: 'module' as 'locale' },
       })
     ).toThrow(
-      /^generaltranslation Error: .*files\.gt\.splitting.*"module".*locale-twins/
+      /^generaltranslation Error: .*experimental\.splitting.*"module".*locale-twins/
     );
   });
 });

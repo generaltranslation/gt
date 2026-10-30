@@ -1,4 +1,4 @@
-import { decode, encode } from '../utils/base64';
+import { decode, encode } from '../../utils/base64';
 
 const BASE64URL_PATTERN = /^[A-Za-z0-9_-]*$/;
 

@@ -1,4 +1,4 @@
-import { formatDiagnosticErrorDetails } from '../logging/diagnostics';
+import { formatDiagnosticErrorDetails } from '../../logging/diagnostics';
 import { createLocaleTwinDiagnostic } from './diagnostics';
 import type { LocaleTwinEntries } from './placeholder';
 

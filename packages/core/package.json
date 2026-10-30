@@ -108,6 +108,16 @@
         "default": "./dist/internal.mjs"
       }
     },
+    "./internal/experimental": {
+      "require": {
+        "types": "./dist/internal-experimental.d.cts",
+        "default": "./dist/internal-experimental.cjs"
+      },
+      "import": {
+        "types": "./dist/internal-experimental.d.mts",
+        "default": "./dist/internal-experimental.mjs"
+      }
+    },
     "./types": {
       "require": {
         "types": "./dist/types.d.cts",

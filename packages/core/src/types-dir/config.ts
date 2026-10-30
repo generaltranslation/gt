@@ -57,17 +57,21 @@ export type GTCompilerOptions = {
  */
 export type TranslationSplittingStrategy = 'locale' | 'locale-twins';
 
+/** Experimental gt.config.json settings, under `experimental`. */
+export type GTExperimentalConfig = {
+  /**
+   * Translation splitting strategy. Defaults to `'locale'`. Any string is
+   * accepted so an imported gt.config.json (whose JSON strings widen to
+   * `string`) typechecks; the compiler rejects unknown values with
+   * `resolveTranslationSplitting`.
+   */
+  splitting?: TranslationSplittingStrategy | (string & {});
+};
+
 /** Configuration for generated GT translation files. */
 export type GTOutputFileConfig = {
   output?: string;
   publish?: boolean;
-  /**
-   * Translation splitting strategy. Defaults to `'locale'`. Any string is
-   * accepted so an imported gt.config.json (whose JSON strings widen to
-   * `string`) typechecks; runtimes reject unknown values with
-   * `resolveTranslationSplitting`.
-   */
-  splitting?: TranslationSplittingStrategy | (string & {});
   parsingFlags?: GTParsingFlags;
   /** @deprecated Use `parsingFlags.includeSourceCodeContext` instead. */
   includeSourceCodeContext?: boolean;
@@ -126,4 +130,7 @@ export type GTConfig = {
   _tagIds?: boolean;
 
   files?: GTFilesConfig;
+
+  /** Experimental features. They can change or go away in any release. */
+  experimental?: GTExperimentalConfig;
 };
