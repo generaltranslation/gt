@@ -42,12 +42,12 @@ export default function App() {
 }
 ```
 
-## Locale twins
+## Locale twins (experimental)
 
-Vite apps can ship each visitor only their locale's strings for the pages they visit: set `files.gt.splitting` to `"locale-twins"` in `gt.config.json` and add the `@generaltranslation/compiler` Vite plugin. The built `index.html` picks the locale's files in the browser, so the app can be hosted statically. To choose the locale on your own server instead, use `gt-react/locale-twins`:
+Vite apps can ship each visitor only their locale's strings for the pages they visit: set `experimental.splitting` to `"locale-twins"` in `gt.config.json`, add `vite()` from `@generaltranslation/compiler/experimental` to your Vite config, and import every GT API from `gt-react/experimental`, which re-exports `gt-react` with the locale twin versions. The built `index.html` picks the locale's files in the browser, so the app can be hosted statically. To choose the locale on your own server instead, use the server helper:
 
 ```js
-import { createLocaleTwinDocument } from 'gt-react/locale-twins';
+import { createLocaleTwinDocument } from 'gt-react/experimental';
 
 // builtIndexHtml: the text of dist/index.html
 const twinDocument = createLocaleTwinDocument({ html: builtIndexHtml });
@@ -58,7 +58,7 @@ const response = twinDocument.respond(request);
 
 `respond()` keeps headers you pass in `init` (`Cache-Control`, `Content-Type`) and merges `Vary`.
 
-Switching locales reloads the page, so only the new locale's files load. If you pass your own `_reload` that navigates (for example to a locale-prefixed URL), wrap it in `markNavigatingReload()` from `gt-react` so GT does not reload the page after it. Locale twins are web-only; `gt-react-native` has no equivalent.
+Switching locales reloads the page, so only the new locale's files load. If you pass your own `_reload` that navigates (for example to a locale-prefixed URL), wrap it in `markNavigatingReload()` from `gt-react/experimental` so GT does not reload the page after it. Locale twins are web-only; `gt-react-native` has no equivalent.
 
 See the [locale twins guide](https://generaltranslation.com/docs/react/guides/locale-twins) for setup, hosting and limitations.
 

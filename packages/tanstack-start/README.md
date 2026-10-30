@@ -180,19 +180,19 @@ export const Route = createFileRoute('/_app')({
 
 Visitors then see a blank page until their translations load, then the app in their locale, as in a Vite SPA. Translated content in the root route is prerendered in the build-time locale and switches to the visitor's locale after load. Pending components also render in the shell: the `pendingComponent` of routes under the root, or the router's `defaultPendingComponent`. `npx gt init` reports a root route that renders more than the document in SPA mode.
 
-## Locale twins
+## Locale twins (experimental)
 
-With `files.gt.splitting: "locale-twins"` in `gt.config.json` and the compiler enabled in the Vite plugin (`gtTanstackStart({ experimentalCompilerOptions: { type: 'babel' } })`), each request gets only its locale's strings for the pages it visits, with no translations snapshot in the page. The server still renders each page from the whole locale; the browser reads its translations from its twins. Point the document at the request locale's files in your server entry:
+Locale twins are experimental and live behind `/experimental` entry points. Set `experimental.splitting: "locale-twins"` in `gt.config.json`, register `gtTanstackStart()` from `gt-tanstack-start/experimental/plugin/vite` with the compiler enabled (`gtTanstackStart({ experimentalCompilerOptions: { type: 'babel' } })`), and import every GT API from `gt-tanstack-start/experimental`. Each request then gets only its locale's strings for the pages it visits, with no translations snapshot in the page. The server still renders each page from the whole locale; the browser reads its translations from its twins. Point the document at the request locale's files in your server entry:
 
 ```ts
 // src/server.ts
-/// <reference types="@generaltranslation/compiler/locale-twins-manifest" />
+/// <reference types="@generaltranslation/compiler/experimental/locale-twins-manifest" />
 import { createServerEntry } from '@tanstack/react-start/server-entry';
 import {
   createStartHandler,
   defaultStreamHandler,
 } from '@tanstack/react-start/server';
-import { createLocaleTwinAssets } from 'gt-tanstack-start';
+import { createLocaleTwinAssets } from 'gt-tanstack-start/experimental';
 import { manifest } from 'virtual:gt-locale-twins-manifest';
 
 const fetch = createStartHandler({
@@ -203,7 +203,7 @@ const fetch = createStartHandler({
 export default createServerEntry({ fetch });
 ```
 
-A custom `_reload` that navigates (for example to a locale-prefixed URL) should be wrapped in `markNavigatingReload()` from `gt-tanstack-start`; otherwise GT reloads the page after it so only the new locale's files load.
+A custom `_reload` that navigates (for example to a locale-prefixed URL) should be wrapped in `markNavigatingReload()` from `gt-tanstack-start/experimental`; otherwise GT reloads the page after it so only the new locale's files load.
 
 See the [locale twins guide](https://generaltranslation.com/docs/react/guides/locale-twins) for the full setup, hosting and limitations.
 

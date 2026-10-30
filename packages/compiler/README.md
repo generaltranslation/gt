@@ -34,13 +34,13 @@ export default {
 };
 ```
 
-## Locale twins (Vite)
+## Locale twins (Vite, experimental)
 
-With `files.gt.splitting: "locale-twins"` in `gt.config.json`, `vite build` writes a copy of each chunk that renders translated content for every locale (a locale twin), so each visitor downloads only their locale's strings for the pages they visit. Supported on Vite 8 and Vite 7 with `gt-react` and `gt-tanstack-start`. Run `gt translate` before `vite build`.
+Locale twins are experimental and live in `@generaltranslation/compiler/experimental`. With `experimental.splitting: "locale-twins"` in `gt.config.json`, `vite build` writes a copy of each chunk that renders translated content for every locale (a locale twin), so each visitor downloads only their locale's strings for the pages they visit. Supported on Vite 8 and Vite 7 with `gt-react/experimental` and `gt-tanstack-start/experimental` (the app imports every GT API from there). Run `gt translate` before `vite build`.
 
 ```js
 // vite.config.js
-import { vite as gtCompiler } from '@generaltranslation/compiler';
+import { vite as gtCompiler } from '@generaltranslation/compiler/experimental';
 
 export default {
   plugins: [
@@ -56,7 +56,7 @@ export default {
 };
 ```
 
-Only Vite builds generate locale twins; with webpack, Rspack, esbuild or plain Rollup the plugin warns and skips them. `vite dev` behaves as without locale twins. The build report (twinned and shared files, sizes, missing translations, unattributed entries) is written to `node_modules/.cache/gt/gt-locale-twins-report.json`, outside the public output directory.
+Only Vite builds generate locale twins; with webpack, Rspack, esbuild or plain Rollup the plugin warns and skips them. `vite dev` behaves as without locale twins. The build report (twinned and shared files, sizes, missing translations, unattributed entries) is written to `node_modules/.cache/gt/gt-locale-twins-report.json`, outside the public output directory. The regular `@generaltranslation/compiler` ignores `experimental.splitting`.
 
 See the [locale twins guide](https://generaltranslation.com/docs/react/guides/locale-twins) for setup, hosting and limitations.
 
