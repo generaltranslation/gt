@@ -257,6 +257,35 @@ export const el = jsxs(T, { id: "intro", context: "nav", children: [
     );
   });
 
+  // `{void 0}` renders nothing but was recorded as "0", which the stripped
+  // source locale twin would then render. Only - and + keep a number's value.
+  it.each(['void 0', '!0', '~0', 'typeof 0'])(
+    'rejects the unary child {%s} inside <T>, like any non-numeric unary child',
+    async (expression) => {
+      await expect(
+        transform(`import { jsx } from 'react/jsx-runtime';
+import { T } from 'gt-react';
+export const el = jsx(T, { children: jsx("span", { children: ${expression} }) });`)
+      ).rejects.toThrow('invalid library usage');
+    }
+  );
+
+  it.each([
+    ['-1', '-1'],
+    ['+2', '2'],
+  ])(
+    'keeps the numeric unary child {%s} inside <T>',
+    async (expression, text) => {
+      const code = (await transform(`import { jsx } from 'react/jsx-runtime';
+import { T } from 'gt-react';
+export const el = jsx(T, { children: ["Total ", ${expression}] });`))!;
+
+      expect(findLocaleTwinPlaceholders(code)[0].entries).toEqual({
+        [jsxHash(['Total ', text])]: ['Total ', text],
+      });
+    }
+  );
+
   it('preserves GT element and variable indices', async () => {
     const original =
       (await transform(`import { jsx, jsxs, Fragment } from 'react/jsx-runtime';

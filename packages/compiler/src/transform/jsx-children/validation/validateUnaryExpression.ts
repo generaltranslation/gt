@@ -11,10 +11,16 @@ export function validateUnaryExpression(unaryExpression: t.UnaryExpression): {
   const errors: string[] = [];
   let value: string | undefined;
 
-  let operator = '';
-  if (unaryExpression.operator === '-') {
-    operator = unaryExpression.operator;
+  // Only - and + keep a number's value: `void 0`, `!0`, `~0` or `typeof 0`
+  // render something else than the literal
+  if (unaryExpression.operator !== '-' && unaryExpression.operator !== '+') {
+    errors.push(
+      `Failed to construct JsxChild! Unary expression operator must be - or +` +
+        createErrorLocation(unaryExpression)
+    );
+    return { errors };
   }
+  const operator = unaryExpression.operator === '-' ? '-' : '';
   if (t.isNumericLiteral(unaryExpression.argument)) {
     if (unaryExpression.argument.value === 0) {
       value = '0';
