@@ -110,6 +110,61 @@
       },
       "default": "./dist/index.server.mjs"
     },
+    "./compat": {
+      "react-server": {
+        "require": {
+          "types": "./dist/compat.rsc.d.cts",
+          "default": "./dist/compat.rsc.cjs"
+        },
+        "import": {
+          "types": "./dist/compat.rsc.d.mts",
+          "default": "./dist/compat.rsc.mjs"
+        },
+        "default": "./dist/compat.rsc.mjs"
+      },
+      "workerd": {
+        "require": {
+          "types": "./dist/compat.server.d.cts",
+          "default": "./dist/compat.server.cjs"
+        },
+        "import": {
+          "types": "./dist/compat.server.d.mts",
+          "default": "./dist/compat.server.mjs"
+        },
+        "default": "./dist/compat.server.mjs"
+      },
+      "worker": {
+        "require": {
+          "types": "./dist/compat.server.d.cts",
+          "default": "./dist/compat.server.cjs"
+        },
+        "import": {
+          "types": "./dist/compat.server.d.mts",
+          "default": "./dist/compat.server.mjs"
+        },
+        "default": "./dist/compat.server.mjs"
+      },
+      "browser": {
+        "require": {
+          "types": "./dist/compat.client.d.cts",
+          "default": "./dist/compat.client.cjs"
+        },
+        "import": {
+          "types": "./dist/compat.client.d.mts",
+          "default": "./dist/compat.client.mjs"
+        },
+        "default": "./dist/compat.client.mjs"
+      },
+      "require": {
+        "types": "./dist/compat.server.d.cts",
+        "default": "./dist/compat.server.cjs"
+      },
+      "import": {
+        "types": "./dist/compat.server.d.mts",
+        "default": "./dist/compat.server.mjs"
+      },
+      "default": "./dist/compat.server.mjs"
+    },
     "./macros": {
       "require": {
         "types": "./dist/macros.d.cts",

@@ -10,7 +10,7 @@ import { ScopeTracker } from '../../state/ScopeTracker';
 
 /**
  * Track variable assignments.
- * - Track callback variables (via translation function invocations: useGT, useTranslations, useMessages, etc.)
+ * - Track callback variables (via translation function invocations: useGT, useMessages, etc.)
  * - Track overriding variables
  *
  * GT callbacks:
@@ -72,7 +72,7 @@ export function trackVariableDeclarator(
   // Extract identifiers from the LVal
   const identifiers = extractIdentifiersFromLVal(varDeclarator.id);
 
-  // Track GT functions with callbacks (useGT, useTranslations, useMessages, etc.)
+  // Track GT functions with callbacks (useGT, useMessages, etc.)
   const callbackFunctionName = GT_FUNCTIONS_TO_CALLBACKS[canonicalName];
 
   // There can only be one callback defined for const gt = useGT()

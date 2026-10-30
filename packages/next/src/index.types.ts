@@ -13,7 +13,6 @@ import type {
   WithGTStaticPropsFunction,
 } from './pages-dir/withGTStaticProps';
 import {
-  useTranslations as _useTranslations,
   useLocale as _useLocale,
   useRegion as _useRegion,
   useLocales as _useLocales,
@@ -69,15 +68,12 @@ type Messages = Message[];
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
  *
  * @param {React.ReactNode} children - The children components that will use the translation context.
- * @param {string} id - ID of a nested dictionary, so that only a subset of a large dictionary needs to be sent to the client.
  * @param {string} locale - The locale to use for the translation context.
  *
  * @returns {JSX.Element} The provider component for General Translation context.
  */
 export function GTProvider(
-  _: {
-    id?: string;
-  } & Partial<Parameters<typeof _GTProvider>[0]>
+  _: Partial<Parameters<typeof _GTProvider>[0]>
 ): React.ReactNode {
   throw new Error(typesFileError);
 }
@@ -425,25 +421,6 @@ export function isLocaleSupported(_: unknown): boolean {
 export const useGT: (
   _messages?: Messages
 ) => (message: string, options?: GTTranslationOptions) => string = () => {
-  throw new Error(typesFileError);
-};
-
-// shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
-/**
- * Returns the dictionary access function `t`.
- *
- * @param {string} [id] - Optional prefix to prepend to the translation keys.
- * @returns {Function} A translation function that accepts a key string and returns the translated value.
- * The returned function accepts interpolation variables.
- *
- * @example
- * const t = useTranslations('user');
- * console.log(t('name')); // Translates item 'user.name'
- *
- * const t = useTranslations();
- * console.log(t('hello')); // Translates item 'hello'
- */
-export const useTranslations: typeof _useTranslations = () => {
   throw new Error(typesFileError);
 };
 

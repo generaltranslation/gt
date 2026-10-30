@@ -3,8 +3,8 @@ import {
   initializeDictionaryManager,
   isDictionaryManagerInitialized,
   type Locale,
+  type Dictionary,
 } from 'gt-i18n/internal';
-import type { Dictionary } from 'gt-i18n';
 import type { Unsubscribe } from '../i18n-store/storeTypes';
 import { subscribeToSet } from '../i18n-store/utils/subscriptions';
 import { createRuntimeTranslationErrorLogger } from '../i18n-store/utils/runtimeTranslationErrors';

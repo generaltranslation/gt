@@ -3,11 +3,6 @@ import {
   config as pluginConfig,
   loadTranslations as pluginLoadTranslations,
 } from 'gt-tanstack-start/internal/_config';
-// shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
-import {
-  dictionary as pluginDictionary,
-  loadDictionary as pluginLoadDictionary,
-} from 'gt-tanstack-start/internal/_compat-config';
 import { AsyncLocalConditionStore } from '../condition-store/AsyncLocalConditionStore';
 import {
   getConditionStore,
@@ -39,9 +34,6 @@ export function ensureInitialized(): void {
   initialize({
     ...pluginConfig,
     loadTranslations: pluginLoadTranslations,
-    // shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
-    dictionary: pluginDictionary,
-    loadDictionary: pluginLoadDictionary,
   });
 }
 

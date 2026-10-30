@@ -36,17 +36,3 @@ export type {
   RuntimeTranslationOptions,
 } from './translation-functions/types/options';
 export type { Translation } from './i18n-cache/translations-manager/utils/types/translation-data';
-
-// ===== Compat: dictionary (key-based) API types ===== //
-export type {
-  Dictionary,
-  DictionaryEntry,
-  DictionaryEntryOptions,
-  DictionaryLeaf,
-  DictionaryObject,
-  DictionaryObjectTranslation,
-  DictionaryValue,
-  DictionaryPath,
-  DictionaryKey,
-  TFunctionType,
-} from './compat/types';

@@ -94,7 +94,6 @@ describe('Client_GTProvider', () => {
             <Client_GTProvider
               supportsLocaleRefresh={supportsLocaleRefresh}
               {...conditions}
-              dictionaries={{}}
               translations={{}}
             >
               content
@@ -154,7 +153,6 @@ describe('Client_GTProvider', () => {
             root.render(
               <Client_GTProvider
                 supportsLocaleRefresh={true}
-                dictionaries={{}}
                 locale='en-us'
                 translations={{}}
               >
@@ -196,7 +194,6 @@ describe('Client_GTProvider', () => {
           root.render(
             <Client_GTProvider
               supportsLocaleRefresh={supportsLocaleRefresh}
-              dictionaries={{}}
               locale='en-GB'
               translations={{}}
             >
@@ -225,7 +222,6 @@ describe('Client_GTProvider', () => {
       root.render(
         <Client_GTProvider
           supportsLocaleRefresh={true}
-          dictionaries={{}}
           locale='en-GB'
           translations={{}}
         >
@@ -263,7 +259,6 @@ describe('Client_GTProvider', () => {
       root.render(
         <Client_GTProvider
           supportsLocaleRefresh={true}
-          dictionaries={{}}
           locale='pt-BR'
           translations={{}}
         >
@@ -306,7 +301,6 @@ describe('Client_GTProvider', () => {
       root.render(
         <Client_GTProvider
           supportsLocaleRefresh={true}
-          dictionaries={{}}
           locale='en'
           translations={{}}
         >
@@ -348,7 +342,6 @@ describe('Client_GTProvider', () => {
       root.render(
         <Client_GTProvider
           supportsLocaleRefresh={true}
-          dictionaries={{}}
           locale='en'
           translations={{}}
         >
@@ -390,7 +383,6 @@ describe('Client_GTProvider', () => {
       root.render(
         <Client_GTProvider
           supportsLocaleRefresh={true}
-          dictionaries={{}}
           locale='fr'
           translations={{}}
         >
@@ -419,7 +411,6 @@ describe('Client_GTProvider', () => {
       root.render(
         <Client_GTProvider
           supportsLocaleRefresh={true}
-          dictionaries={{}}
           locale='fr'
           translations={{}}
         >

@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import * as t from '@babel/types';
 import {
   validateTranslationFunction,
-  validateUseTranslationsCallback,
   validateUseMessagesCallback,
 } from '../validateTranslationFunction';
 import { TransformState } from '../../../state/types';
@@ -876,41 +875,6 @@ describe('validateTranslationFunctionCallback', () => {
         expect(result.errors).toHaveLength(0);
         expect(result.context).toBe('greeting');
       });
-    });
-  });
-
-  describe('validateUseTranslationsCallback', () => {
-    it('should always return no errors with no arguments', () => {
-      const callExpr = t.callExpression(
-        t.identifier('useTranslations_callback'),
-        []
-      );
-
-      const result = validateUseTranslationsCallback(callExpr);
-
-      expect(result.errors).toHaveLength(0);
-    });
-
-    it('should always return no errors with arguments', () => {
-      const callExpr = t.callExpression(
-        t.identifier('useTranslations_callback'),
-        [t.identifier('someVar'), t.objectExpression([])]
-      );
-
-      const result = validateUseTranslationsCallback(callExpr);
-
-      expect(result.errors).toHaveLength(0);
-    });
-
-    it('should accept any type of arguments', () => {
-      const callExpr = t.callExpression(
-        t.identifier('useTranslations_callback'),
-        [t.stringLiteral('test'), t.numericLiteral(123), t.arrayExpression([])]
-      );
-
-      const result = validateUseTranslationsCallback(callExpr);
-
-      expect(result.errors).toHaveLength(0);
     });
   });
 

@@ -1,8 +1,4 @@
 import {
-  initializeDictionaryManager,
-  type DictionaryConfig,
-} from 'gt-i18n/internal';
-import {
   getTranslationsSnapshot,
   I18nStore,
   setI18nStore,
@@ -21,9 +17,7 @@ import { addRuntimeCredentials } from './runtimeCredentials';
 
 export type InitializeGTSPAParams = I18nConfigParams &
   BrowserI18nCacheParams &
-  CreateBrowserConditionStoreParams &
-  // shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
-  DictionaryConfig;
+  CreateBrowserConditionStoreParams;
 
 /**
  * Initialize GT for an SPA
@@ -33,22 +27,12 @@ export type InitializeGTSPAParams = I18nConfigParams &
  *
  * This is SPA for browser runtime
  */
-export async function initializeGTSPA({
-  dictionary,
-  loadDictionary,
-  ...config
-}: InitializeGTSPAParams) {
+export async function initializeGTSPA(config: InitializeGTSPAParams) {
   const runtimeConfig = addRuntimeCredentials(config);
   initializeI18nConfig(runtimeConfig, 'SPA');
 
   const i18nCache = new BrowserI18nCache(runtimeConfig);
   setReactI18nCache(i18nCache);
-  // shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
-  initializeDictionaryManager({
-    dictionary,
-    loadDictionary,
-    cacheExpiryTime: runtimeConfig.cacheExpiryTime,
-  });
 
   createOrUpdateBrowserConditionStore(runtimeConfig);
 

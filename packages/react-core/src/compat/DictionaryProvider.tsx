@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, type ReactNode } from 'react';
-import type { Dictionary } from 'gt-i18n';
+import type { Dictionary } from 'gt-i18n/internal';
 import type { Locale } from 'gt-i18n/internal';
 import { CompatStore } from './CompatStore';
 import { getDictionaryContext } from './DictionaryContext';

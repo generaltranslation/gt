@@ -31,6 +31,9 @@ const entries = [
   'src/index.client.ts',
   'src/index.server.ts',
   'src/index.types.ts',
+  'src/compat.rsc.ts',
+  'src/compat.client.ts',
+  'src/compat.server.ts',
   'src/macros.ts',
 ];
 
@@ -42,7 +45,11 @@ const typesOnlyEntry = 'src/index.types.ts';
 export default defineConfig(
   withPackageChecks(
     entries.flatMap((entry, index) => {
-      const entryDeps = entry.startsWith('src/index.') ? contextDeps : deps;
+      // Entries that share React context and singletons keep react-core and
+      // gt-i18n external.
+      const entryDeps = /^src\/(?:index|compat)\./.test(entry)
+        ? contextDeps
+        : deps;
       const [cjsConfig, esmConfig] = createTsdownConfig([entry], entryDeps);
 
       return [

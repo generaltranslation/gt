@@ -2,12 +2,11 @@ import type { ComponentType, ReactNode } from 'react';
 import type { SharedGTProviderProps } from 'gt-react';
 
 /** GT state shuttled from the server render to client hydration. */
-// shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
 export type GTRouterState = Pick<
   SharedGTProviderProps,
   'locale' | 'region' | 'translations'
 > &
-  Required<Pick<SharedGTProviderProps, 'enableI18n' | 'dictionaries'>>;
+  Required<Pick<SharedGTProviderProps, 'enableI18n'>>;
 
 export type GTDehydratedRouterData =
   | {

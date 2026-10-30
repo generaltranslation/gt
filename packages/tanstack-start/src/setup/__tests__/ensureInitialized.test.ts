@@ -1,21 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
 
-const { mockInitializeReactGT, pluginModule, compatPluginModule } = vi.hoisted(
-  () => ({
-    mockInitializeReactGT: vi.fn(),
-    pluginModule: {
-      config: { defaultLocale: 'en', locales: ['fr'], localeCookieName: 'lc' },
-      loadTranslations: async () => ({}),
-    },
-    compatPluginModule: {
-      dictionary: { greeting: 'Hello' },
-      loadDictionary: async () => ({}),
-    },
-  })
-);
+const { mockInitializeReactGT, pluginModule } = vi.hoisted(() => ({
+  mockInitializeReactGT: vi.fn(),
+  pluginModule: {
+    config: { defaultLocale: 'en', locales: ['fr'], localeCookieName: 'lc' },
+    loadTranslations: async () => ({}),
+  },
+}));
 
 vi.mock('gt-tanstack-start/internal/_config', () => pluginModule);
-vi.mock('gt-tanstack-start/internal/_compat-config', () => compatPluginModule);
 
 vi.mock('gt-react', () => ({
   createOrUpdateBrowserConditionStore: vi.fn(),
@@ -38,7 +31,7 @@ describe.sequential('ensureInitialized', () => {
     { side: 'server', load: () => import('../initializeGT.server') },
     { side: 'client', load: () => import('../initializeGT.client') },
   ])(
-    "passes the plugin's config, loaders and dictionary to GT ($side)",
+    "passes the plugin's config and translation loader to GT ($side)",
     async ({ load }) => {
       mockInitializeReactGT.mockReset();
       const { ensureInitialized } = await load();
@@ -49,8 +42,6 @@ describe.sequential('ensureInitialized', () => {
       expect(mockInitializeReactGT).toHaveBeenCalledWith({
         ...pluginModule.config,
         loadTranslations: pluginModule.loadTranslations,
-        dictionary: compatPluginModule.dictionary,
-        loadDictionary: compatPluginModule.loadDictionary,
       });
     }
   );

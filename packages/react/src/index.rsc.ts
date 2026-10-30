@@ -5,8 +5,6 @@ export { parseLocale } from './functions/parseLocale';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import type { CustomMapping } from '@generaltranslation/format';
 import { getGT, getI18nConfig, getMessages } from 'gt-i18n/internal';
-// shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
-import { getTranslations } from 'gt-i18n/internal';
 import { getLocale, getRegion } from 'gt-i18n';
 import { use } from 'react';
 
@@ -50,10 +48,6 @@ export {
 
 export function useGT() {
   return use(getGT());
-}
-// shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
-export function useTranslations(rootId?: string) {
-  return use(getTranslations(rootId));
 }
 export function useMessages() {
   return use(getMessages());
@@ -107,8 +101,7 @@ export {
 export { decodeVars, declareVar, derive } from 'generaltranslation';
 
 // ===== Setup ===== //
-// shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
-export { initializeGTRSC as initializeGT } from './setup/initializeGTRSC';
+export { internalInitializeGTSRA as initializeGT } from '@generaltranslation/react-core/pure';
 
 // ===== Types ===== //
 export type {

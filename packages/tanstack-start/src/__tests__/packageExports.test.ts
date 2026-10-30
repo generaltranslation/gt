@@ -116,11 +116,21 @@ describe.sequential('gt-tanstack-start package exports', () => {
       readdirSync(join(packageRoot, 'dist'))
         .filter((file) => /\.(cjs|mjs)$/.test(file))
         .sort()
-    ).toEqual(['index.client.mjs', 'index.server.mjs']);
+    ).toEqual([
+      'compat.client.mjs',
+      'compat.server.mjs',
+      'index.client.mjs',
+      'index.server.mjs',
+    ]);
   });
 
   it('references only declared dependencies from public declarations', () => {
-    for (const file of ['index.client.d.mts', 'index.server.d.mts']) {
+    for (const file of [
+      'index.client.d.mts',
+      'index.server.d.mts',
+      'compat.client.d.mts',
+      'compat.server.d.mts',
+    ]) {
       const declaration = readFileSync(join(packageRoot, 'dist', file), 'utf8');
 
       expect(declaration).not.toMatch(
@@ -154,18 +164,34 @@ describe.sequential('gt-tanstack-start package exports', () => {
     );
   });
 
-  it('keeps Node.js builtins out of the browser entrypoint', () => {
-    // Browser bundlers cannot resolve Node.js builtins.
-    const builtins = new Set(builtinModules);
-    const specifiers = getImportSpecifiers(readDistFile('index.client.mjs'));
+  it.each(['index.client.mjs', 'index.server.mjs'])(
+    'imports the dictionary module only from compat, not %s',
+    (file) => {
+      expect(getImportSpecifiers(readDistFile(file))).not.toContain(
+        'gt-tanstack-start/internal/_compat-config'
+      );
+      expect(
+        getImportSpecifiers(readDistFile(file.replace('index.', 'compat.')))
+      ).toContain('gt-tanstack-start/internal/_compat-config');
+    }
+  );
 
-    expect(specifiers.length).toBeGreaterThan(0);
-    expect(
-      specifiers.filter(
-        (specifier) => specifier.startsWith('node:') || builtins.has(specifier)
-      )
-    ).toEqual([]);
-  });
+  it.each(['index.client.mjs', 'compat.client.mjs'])(
+    'keeps Node.js builtins out of the browser entrypoint %s',
+    (file) => {
+      // Browser bundlers cannot resolve Node.js builtins.
+      const builtins = new Set(builtinModules);
+      const specifiers = getImportSpecifiers(readDistFile(file));
+
+      expect(specifiers.length).toBeGreaterThan(0);
+      expect(
+        specifiers.filter(
+          (specifier) =>
+            specifier.startsWith('node:') || builtins.has(specifier)
+        )
+      ).toEqual([]);
+    }
+  );
 
   it.each(['index.client.mjs', 'index.server.mjs'])(
     'does not import React 19-only use from %s',
@@ -249,6 +275,26 @@ describe.sequential('gt-tanstack-start package exports', () => {
         assert.equal(typeof getGT, 'function');
         assert.equal(typeof getLocale, 'function');
         assert.equal(typeof setupRouterGTIntegration, 'function');
+      `,
+    ]);
+  });
+
+  it.each([
+    [[], 'compat.server.mjs'],
+    [['--conditions=browser'], 'compat.client.mjs'],
+    [['--conditions=workerd', '--conditions=browser'], 'compat.server.mjs'],
+  ])('resolves gt-tanstack-start/compat with %j to %s', (conditions, file) => {
+    node([
+      ...conditions,
+      '--input-type=module',
+      '-e',
+      `
+        import assert from 'node:assert/strict';
+
+        assert.equal(
+          import.meta.resolve('gt-tanstack-start/compat').endsWith(${JSON.stringify(`/dist/${file}`)}),
+          true
+        );
       `,
     ]);
   });

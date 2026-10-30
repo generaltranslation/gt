@@ -6,6 +6,7 @@
 import { TSESTree } from '@typescript-eslint/utils';
 import type { RuleFixer } from '@typescript-eslint/utils/ts-eslint';
 import type { SourceCode } from '@typescript-eslint/utils/ts-eslint';
+import { isGTLibrarySource } from './constants.js';
 
 /**
  * Collects all import declarations whose source matches one of the
@@ -18,7 +19,7 @@ export function getGTImportDecls(
   return sourceCode.ast.body.filter(
     (stmt): stmt is TSESTree.ImportDeclaration =>
       stmt.type === TSESTree.AST_NODE_TYPES.ImportDeclaration &&
-      libs.includes(stmt.source.value as string)
+      isGTLibrarySource(libs, stmt.source.value)
   );
 }
 

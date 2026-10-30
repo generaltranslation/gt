@@ -18,7 +18,7 @@ const dictionaryManagerSingleton =
         whatHappened:
           'Cannot read the dictionary manager before it has been initialized',
         why: 'the internal DictionaryManager singleton is unavailable',
-        fix: 'Initialize GT with your dictionary before using useTranslations() or getTranslations().',
+        fix: "Call initializeGTDictionary() from your GT package's /compat entry after initializeGT(), before using useTranslations() or getTranslations().",
       }),
   });
 

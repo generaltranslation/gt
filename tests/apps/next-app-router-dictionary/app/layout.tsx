@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { GTProvider } from 'gt-next';
+import { GTDictionaryProvider } from 'gt-next/compat';
 import { getLocale } from 'gt-next/server';
 import './globals.css';
 
@@ -14,7 +15,9 @@ export default async function RootLayout({
   return (
     <html lang={await getLocale()}>
       <body>
-        <GTProvider>{children}</GTProvider>
+        <GTProvider>
+          <GTDictionaryProvider>{children}</GTDictionaryProvider>
+        </GTProvider>
       </body>
     </html>
   );
