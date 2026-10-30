@@ -181,24 +181,6 @@ describe('parseFilesConfig', () => {
       ]);
     });
 
-    it('passes files.gt.splitting through to gtJson', () => {
-      const twins = resolveFiles(
-        { gt: { output: 'src/_gt/[locale].json', splitting: 'locale-twins' } },
-        'en',
-        defaultLocales,
-        '/project'
-      );
-      expect(twins.gtJson.splitting).toBe('locale-twins');
-
-      const unset = resolveFiles(
-        { gt: { output: 'src/_gt/[locale].json' } },
-        'en',
-        defaultLocales,
-        '/project'
-      );
-      expect(unset.gtJson.splitting).toBeUndefined();
-    });
-
     it('should handle [locale] embedded mid-segment (Apple .lproj layout)', () => {
       const files = {
         dotStrings: {

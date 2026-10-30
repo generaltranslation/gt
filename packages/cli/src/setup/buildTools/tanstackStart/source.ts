@@ -10,6 +10,20 @@ export const DOCS_URL =
 
 export const VITE_PLUGIN_SOURCE = `${Libraries.GT_TANSTACK_START}/plugin/vite`;
 
+/** Where setup imports gt-tanstack-start's runtime and Vite plugin from. */
+export type GTImportSources = { runtime: string; vitePlugin: string };
+
+export const GT_IMPORT_SOURCES: GTImportSources = {
+  runtime: Libraries.GT_TANSTACK_START,
+  vitePlugin: VITE_PLUGIN_SOURCE,
+};
+
+/** Locale twins (experimental) are only in the /experimental entry points. */
+export const EXPERIMENTAL_GT_IMPORT_SOURCES: GTImportSources = {
+  runtime: `${Libraries.GT_TANSTACK_START}/experimental`,
+  vitePlugin: `${Libraries.GT_TANSTACK_START}/experimental/plugin/vite`,
+};
+
 // Vite's own lookup order for a config file.
 const VITE_CONFIG_EXTENSIONS = ['.js', '.mjs', '.ts', '.cjs', '.mts', '.cts'];
 
@@ -35,11 +49,13 @@ export function readViteConfig(appDirectory: string) {
 
 /**
  * Whether the gt-tanstack-start the app resolves has the Vite plugin, which
- * gt-tanstack-start 12 adds; undefined when it is not installed. Checked by
+ * gt-tanstack-start 12 adds (and, for `/experimental` sources, its
+ * experimental plugin); undefined when it is not installed. Checked by
  * capability rather than version, so prereleases of 12 count.
  */
 export async function hasVitePlugin(
-  appDirectory: string
+  appDirectory: string,
+  sources: GTImportSources = GT_IMPORT_SOURCES
 ): Promise<boolean | undefined> {
   for (let dir = path.resolve(appDirectory); ; dir = path.dirname(dir)) {
     const manifest = path.join(
@@ -52,7 +68,8 @@ export async function hasVitePlugin(
       const { exports } = JSON.parse(
         await fs.promises.readFile(manifest, 'utf8')
       ) as { exports?: Record<string, unknown> };
-      return exports?.['./plugin/vite'] !== undefined;
+      const subpath = `.${sources.vitePlugin.slice(Libraries.GT_TANSTACK_START.length)}`;
+      return exports?.[subpath] !== undefined;
     }
     if (path.dirname(dir) === dir) return undefined;
   }

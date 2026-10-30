@@ -34,6 +34,7 @@ import {
 } from './router.js';
 import {
   DOCS_URL,
+  GT_IMPORT_SOURCES,
   hasVitePlugin,
   inspectTanStackStart,
   readViteConfig,
@@ -42,6 +43,8 @@ import {
   configureViteConfig,
   enablesSpaMode,
   getViteConfigAction,
+  getGTImportSources,
+  getRegularVitePluginAction,
   getVitePluginCompilerAction,
   getVitePluginConfigAction,
   getVitePluginLoaderPath,
@@ -249,7 +252,7 @@ export const tanstackStartSetup: BuildToolSetup = {
   localeTwinsCompilerFix:
     "Add experimentalCompilerOptions: { type: 'babel' } to the gtTanstackStart() options in your Vite config",
   localeTwinsNextSteps: [
-    'Next step: serve each request the twins for its locale by passing createLocaleTwinAssets from gt-tanstack-start to createStartHandler({ transformAssets }) in your server entry (src/server.ts)',
+    'Next step: serve each request the twins for its locale by passing createLocaleTwinAssets from gt-tanstack-start/experimental to createStartHandler({ transformAssets }) in your server entry (src/server.ts)',
   ],
   async preflight(appDirectory) {
     await inspectTanStackStart(appDirectory);
@@ -294,19 +297,32 @@ export const tanstackStartSetup: BuildToolSetup = {
       await fs.promises.writeFile(path.join(appDirectory, file), content);
     };
 
+    const sources = getGTImportSources(ctx);
+    const pluginName =
+      sources === GT_IMPORT_SOURCES
+        ? 'Vite plugin'
+        : `${sources.vitePlugin} plugin`;
+
     // Installing gt-tanstack-start keeps an existing version, and an older one
     // has neither export the new setup imports.
-    if ((await hasVitePlugin(appDirectory)) === false) {
+    if ((await hasVitePlugin(appDirectory, sources)) === false) {
       manualActions.push({
-        whatHappened: `The installed ${Libraries.GT_TANSTACK_START} has no Vite plugin, so GT left ${viteConfig.path} and ${router.path} unchanged`,
+        whatHappened: `The installed ${Libraries.GT_TANSTACK_START} has no ${pluginName}, so GT left ${viteConfig.path} and ${router.path} unchanged`,
         fix: `Upgrade ${Libraries.GT_TANSTACK_START} to 12 or later, then rerun \`npx gt@latest init\` (see ${DOCS_URL})`,
       });
       return { steps, manualActions };
     }
 
-    const routerReady = callsRouterIntegration(router);
+    // Locale twins: an app set up before uses the regular entry points
+    const regularPluginAction = getRegularVitePluginAction(viteConfig, ctx);
+    if (regularPluginAction) {
+      manualActions.push(regularPluginAction);
+      return { steps, manualActions };
+    }
 
-    let viteReady = registersVitePlugin(viteConfig);
+    const routerReady = callsRouterIntegration(router, sources);
+
+    let viteReady = registersVitePlugin(viteConfig, sources);
     if (viteReady) {
       const configAction = getVitePluginConfigAction(viteConfig, ctx);
       if (configAction) manualActions.push(configAction);
@@ -328,20 +344,22 @@ export const tanstackStartSetup: BuildToolSetup = {
     // plugin is registered. Until then it is listed as a manual step.
     let routerIntegrated = routerReady;
     if (!routerReady) {
-      const configured = viteReady ? configureRouter(router) : undefined;
+      const configured = viteReady
+        ? configureRouter(router, sources)
+        : undefined;
       if (configured) {
         await writeSource(router.path, configured);
         steps.push(`configured ${router.path}`);
         routerIntegrated = true;
       } else {
-        manualActions.push(getRouterAction(router.path));
+        manualActions.push(getRouterAction(router.path, sources));
       }
     }
 
     // useLocale reads the provider the router integration renders, so the
     // root is only edited once the router is integrated.
     const root = await readSourceFile(appDirectory, 'src/routes/__root');
-    const rootLang = root ? configureRootLang(root) : undefined;
+    const rootLang = root ? configureRootLang(root, sources) : undefined;
     if (root && typeof rootLang === 'string' && routerIntegrated) {
       await writeSource(root.path, rootLang);
       steps.push(`configured ${root.path}`);
@@ -349,7 +367,7 @@ export const tanstackStartSetup: BuildToolSetup = {
       // A document the CLI cannot inspect may still hard-code its language.
       // Remind only while setup is first applied: a rerun could never tell
       // that it was fixed.
-      manualActions.push(getRootLangAction(root.path));
+      manualActions.push(getRootLangAction(root.path, sources));
     }
 
     // SPA mode serves one prerendered shell of the root route to every

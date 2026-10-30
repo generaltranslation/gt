@@ -3,7 +3,7 @@ import { ProjectApiKeyPermission } from 'generaltranslation/api';
 import {
   isLocaleTwinsSplitting,
   isTranslationSplittingStrategy,
-} from 'generaltranslation/internal';
+} from 'generaltranslation/internal/experimental';
 import {
   DEFAULT_TRANSLATIONS_DIR,
   REACT_QUICKSTART_URL,
@@ -1152,7 +1152,7 @@ See https://www.npmjs.com/package/gt-vue`);
       : existingConfig.publish === true
         ? 'cdn'
         : undefined;
-    const existingSplitting = asRecord(existingFiles.gt)?.splitting;
+    const existingSplitting = asRecord(existingConfig.experimental)?.splitting;
     const configuredSplitting = isTranslationSplittingStrategy(
       existingSplitting
     )
@@ -1337,16 +1337,8 @@ See https://www.npmjs.com/package/gt-vue`);
         files[fileExtension] = { ...existingFormat, include };
       }
     }
-    const gtFiles: Partial<NonNullable<FilesOptions['gt']>> = {};
     if (translationsDir && translationsDir !== configuredTranslationsDir) {
-      gtFiles.output = path.join(translationsDir, `[locale].json`);
-    }
-    if (options.splitting && options.splitting !== configuredSplitting) {
-      gtFiles.splitting = options.splitting;
-    }
-    // The update merges into the configured files.gt, which keeps its output.
-    if (Object.keys(gtFiles).length > 0) {
-      files.gt = gtFiles as NonNullable<FilesOptions['gt']>;
+      files.gt = { output: path.join(translationsDir, `[locale].json`) };
     }
 
     const envFramework =
@@ -1376,6 +1368,11 @@ See https://www.npmjs.com/package/gt-vue`);
           !supportsCDN),
       // An explicit switch to the CDN stops later runs inferring local files.
       clearGtOutput: storage === 'cdn' && configuredOutput !== undefined,
+      // Locale twins are experimental: experimental.splitting
+      experimental:
+        options.splitting && options.splitting !== configuredSplitting
+          ? { splitting: options.splitting }
+          : undefined,
       // An explicit format list replaces the configured selection.
       removeFiles: selectedFormats
         ? configuredFormats.filter(

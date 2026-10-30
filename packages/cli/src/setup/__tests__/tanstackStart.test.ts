@@ -1604,7 +1604,16 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 
   describe('locale twins', () => {
     const twins = () => ({ ...ctx(), splitting: 'locale-twins' as const });
-    const twinsVite = configuredVite.replace(
+    // Locale twins are experimental: setup imports the /experimental entries
+    const experimental = (source: string) =>
+      source
+        .replace(
+          "'gt-tanstack-start/plugin/vite'",
+          "'gt-tanstack-start/experimental/plugin/vite'"
+        )
+        .replace("'gt-tanstack-start'", "'gt-tanstack-start/experimental'");
+    const experimentalVite = experimental(configuredVite);
+    const twinsVite = experimentalVite.replace(
       'gtTanstackStart()',
       "gtTanstackStart({ experimentalCompilerOptions: { type: 'babel' } })"
     );
@@ -1615,8 +1624,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       const result = await tanstackStartSetup.apply(twins());
 
       expect(read('vite.config.ts')).toBe(twinsVite);
-      expect(read('src/router.tsx')).toBe(configuredRouter);
-      expect(read('src/routes/__root.tsx')).toBe(configuredRoot);
+      expect(read('src/router.tsx')).toBe(experimental(configuredRouter));
+      expect(read('src/routes/__root.tsx')).toBe(experimental(configuredRoot));
       expect(fs.existsSync(file('src/loadTranslations.ts'))).toBe(false);
       expect(fs.existsSync(file('src/_gt'))).toBe(false);
       expect(result).toEqual({
@@ -1647,20 +1656,37 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         configFilepath: 'config/gt.config.json',
       });
 
+      const action = viteAction(
+        "gtTanstackStart({ config: 'config/gt.config.json', experimentalCompilerOptions: { type: 'babel' } })"
+      );
       expect(result.manualActions).toEqual([
-        viteAction(
-          "gtTanstackStart({ config: 'config/gt.config.json', experimentalCompilerOptions: { type: 'babel' } })"
-        ),
-        routerAction,
+        { ...action, fix: experimental(action.fix) },
+        { ...routerAction, fix: experimental(routerAction.fix) },
+      ]);
+    });
+
+    it('asks to switch an app set up with the regular entry points', async () => {
+      await tanstackStartSetup.apply(ctx());
+      const before = snapshot();
+
+      const result = await tanstackStartSetup.apply(twins());
+
+      expect(snapshot()).toEqual(before);
+      expect(result.manualActions).toEqual([
+        {
+          whatHappened:
+            'vite.config.ts registers gtTanstackStart() from gt-tanstack-start/plugin/vite, but locale twins are experimental and need the one from gt-tanstack-start/experimental/plugin/vite',
+          fix: "Import gtTanstackStart from 'gt-tanstack-start/experimental/plugin/vite' in vite.config.ts, and add experimentalCompilerOptions: { type: 'babel' } to its options (see https://generaltranslation.com/docs/react/tanstack-start/setup)",
+        },
       ]);
     });
 
     it('asks a registered plugin without the compiler to enable it', async () => {
-      await tanstackStartSetup.apply(ctx());
+      write('vite.config.ts', experimentalVite);
 
       const result = await tanstackStartSetup.apply(twins());
 
-      expect(read('vite.config.ts')).toBe(configuredVite);
+      expect(read('vite.config.ts')).toBe(experimentalVite);
       expect(result.manualActions).toEqual([
         {
           whatHappened:
@@ -1708,8 +1734,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       async (call) => {
         write(
           'vite.config.ts',
-          configuredVite.replace('gtTanstackStart()', call)
+          experimentalVite.replace('gtTanstackStart()', call)
         );
+        write('src/router.tsx', experimental(configuredRouter));
 
         const result = await tanstackStartSetup.apply(twins());
 

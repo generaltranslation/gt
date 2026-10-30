@@ -21,7 +21,8 @@ export function getLocaleTwinsGuidance({
   configuredApp: boolean;
 }): string {
   const lines = [
-    `Locale twins: \`vite build\` writes a copy of each chunk that renders translated strings for every locale, using the translation files in ${translationsDir}.`,
+    `Locale twins (experimental): \`vite build\` writes a copy of each chunk that renders translated strings for every locale, using the translation files in ${translationsDir}.`,
+    '- Import every GT API in your app from the /experimental entry point: gt-react/experimental, or gt-tanstack-start/experimental for TanStack Start.',
     `- Run \`npx gt translate\` before \`vite build\`, or commit the translation files in ${translationsDir}, so the build can read them.`,
     '- `vite dev` serves no twins; check them with `vite build && vite preview`.',
     ...(configuredApp

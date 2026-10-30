@@ -12,14 +12,16 @@ export interface CheckCompilerImportResult {
 }
 
 /**
- * Given the vite config file ast, checks if the @generaltranslation/compiler package is imported.
+ * Given the vite config file ast, checks if the @generaltranslation/compiler
+ * package (or `source`, such as its /experimental entry) is imported.
  * If it is imported, capture any aliases or namespace.
  *
  * Does not handle:
  * - Nested expressions
  */
 export function checkCompilerImport(
-  ast: ParseResult<t.File>
+  ast: ParseResult<t.File>,
+  source = '@generaltranslation/compiler'
 ): CheckCompilerImportResult {
   const result: CheckCompilerImportResult = {
     hasCompilerImport: false,
@@ -28,10 +30,10 @@ export function checkCompilerImport(
   };
   traverse(ast, {
     ImportDeclaration(path) {
-      handleImportDeclaration(path, result);
+      handleImportDeclaration(path, result, source);
     },
     VariableDeclaration(path) {
-      handleVariableDeclaration(path, result);
+      handleVariableDeclaration(path, result, source);
     },
   });
   return result;
@@ -48,9 +50,10 @@ export function checkCompilerImport(
  */
 function handleImportDeclaration(
   path: traverseModule.NodePath<t.ImportDeclaration>,
-  result: CheckCompilerImportResult
+  result: CheckCompilerImportResult,
+  source: string
 ) {
-  if (path.node.source.value !== '@generaltranslation/compiler') return;
+  if (path.node.source.value !== source) return;
   for (const spec of path.node.specifiers) {
     if (t.isImportSpecifier(spec)) {
       // Handle named import: import { vite as gtCompiler } from '@generaltranslation/compiler'
@@ -74,16 +77,15 @@ function handleImportDeclaration(
  */
 function handleVariableDeclaration(
   path: traverseModule.NodePath<t.VariableDeclaration>,
-  result: CheckCompilerImportResult
+  result: CheckCompilerImportResult,
+  source: string
 ) {
   path.node.declarations.forEach((dec) => {
     // Handle destructuring: const { withGTConfig } = require('@generaltranslation/compiler')
     if (
       t.isCallExpression(dec.init) &&
       t.isIdentifier(dec.init.callee, { name: 'require' }) &&
-      t.isStringLiteral(dec.init.arguments[0], {
-        value: '@generaltranslation/compiler',
-      })
+      t.isStringLiteral(dec.init.arguments[0], { value: source })
     ) {
       if (t.isIdentifier(dec.id)) {
         // Handle namespace assignment: const gtCompiler = require('@generaltranslation/compiler')
@@ -120,9 +122,7 @@ function handleVariableDeclaration(
       t.isMemberExpression(dec.init) &&
       t.isCallExpression(dec.init.object) &&
       t.isIdentifier(dec.init.object.callee, { name: 'require' }) &&
-      t.isStringLiteral(dec.init.object.arguments[0], {
-        value: '@generaltranslation/compiler',
-      }) &&
+      t.isStringLiteral(dec.init.object.arguments[0], { value: source }) &&
       t.isIdentifier(dec.init.property, { name: 'vite' }) &&
       t.isIdentifier(dec.id)
     ) {

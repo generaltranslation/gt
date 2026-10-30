@@ -27,7 +27,7 @@ const configuredTanstackConfig = `import { defineConfig } from 'vite'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import viteReact from '@vitejs/plugin-react'
 import viteTsConfigPaths from 'vite-tsconfig-paths'
-import { vite as gtCompiler } from '@generaltranslation/compiler'
+import { vite as gtCompiler } from '@generaltranslation/compiler/experimental'
 
 const config = defineConfig({
   plugins: [
@@ -55,7 +55,7 @@ export default defineConfig({
 
 const configuredViteConfig = `import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { vite as gtCompiler } from '@generaltranslation/compiler';
+import { vite as gtCompiler } from '@generaltranslation/compiler/experimental';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -76,6 +76,27 @@ describe('addCompilerPlugin', () => {
 
   afterEach(() => {
     fs.rmSync(appDirectory, { recursive: true, force: true });
+  });
+
+  it('asks to switch a regular compiler to the experimental one', async () => {
+    write(
+      'vite.config.ts',
+      `import { defineConfig } from 'vite';
+import { vite as gtCompiler } from '@generaltranslation/compiler';
+export default defineConfig({ plugins: [gtCompiler()] });
+`
+    );
+
+    const result = await addCompilerPlugin(appDirectory);
+
+    expect(result.steps).toEqual([]);
+    expect(result.manualActions).toEqual([
+      expect.objectContaining({
+        fix: expect.stringContaining(
+          "Import vite from '@generaltranslation/compiler/experimental'"
+        ),
+      }),
+    ]);
   });
 
   it('adds the compiler after tanstackStart() in the file’s own style', async () => {
@@ -111,7 +132,7 @@ describe('addCompilerPlugin', () => {
     write(
       'vite.config.mts',
       `import { defineConfig } from "vite"
-import { vite as gtPlugin } from "@generaltranslation/compiler"
+import { vite as gtPlugin } from "@generaltranslation/compiler/experimental"
 
 export default defineConfig({ plugins: [] })
 `
@@ -120,7 +141,7 @@ export default defineConfig({ plugins: [] })
     await addCompilerPlugin(appDirectory);
 
     expect(read('vite.config.mts')).toBe(`import { defineConfig } from "vite"
-import { vite as gtPlugin } from "@generaltranslation/compiler"
+import { vite as gtPlugin } from "@generaltranslation/compiler/experimental"
 
 export default defineConfig({ plugins: [gtPlugin()] })
 `);
@@ -220,7 +241,7 @@ export default defineConfig({ plugins: [gtPlugin()] })
       {
         whatHappened: expect.any(String),
         fix: expect.stringContaining(
-          "import { vite as gtCompiler } from '@generaltranslation/compiler'"
+          "import { vite as gtCompiler } from '@generaltranslation/compiler/experimental'"
         ),
       },
     ]);

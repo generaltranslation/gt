@@ -14,12 +14,14 @@ import { applyEdits, getCodeStyle, getImportEdit, type Edit } from './edits.js';
 import { getPropertyName, readSourceFile, usesName } from './source.js';
 
 export const COMPILER_PACKAGE = '@generaltranslation/compiler';
+/** Locale twins are experimental: the compiler's /experimental entry. */
+export const EXPERIMENTAL_COMPILER_SOURCE = `${COMPILER_PACKAGE}/experimental`;
 const COMPILER_ALIAS = 'gtCompiler';
 const VITE_CONFIG_EXTENSIONS = ['.ts', '.mts', '.js', '.mjs'];
 const DEFAULT_CONFIG_FILE = 'gt.config.json';
 
 /** The fix a person applies when setup cannot edit the Vite config. */
-export const COMPILER_PLUGIN_FIX = `Add import { vite as ${COMPILER_ALIAS} } from '${COMPILER_PACKAGE}' to your Vite config and ${COMPILER_ALIAS}() to the end of its plugins array, after tanstackStart() and react()`;
+export const COMPILER_PLUGIN_FIX = `Add import { vite as ${COMPILER_ALIAS} } from '${EXPERIMENTAL_COMPILER_SOURCE}' to your Vite config and ${COMPILER_ALIAS}() to the end of its plugins array, after tanstackStart() and react()`;
 
 function parseConfig(content: string): ParseResult<t.File> | undefined {
   try {
@@ -112,9 +114,10 @@ function getPluginEdit(
 }
 
 /**
- * Adds `gtCompiler()` from @generaltranslation/compiler to the end of the
- * Vite config's plugins, so it runs after tanstackStart() splits routes and
- * after react() compiles JSX. Shapes it cannot edit become a manual action.
+ * Adds `gtCompiler()` from @generaltranslation/compiler/experimental (locale
+ * twins) to the end of the Vite config's plugins, so it runs after
+ * tanstackStart() splits routes and after react() compiles JSX. Shapes it
+ * cannot edit become a manual action.
  */
 export async function addCompilerPlugin(
   appDirectory: string,
@@ -138,7 +141,19 @@ export async function addCompilerPlugin(
       ],
     };
   }
-  const compilerImport = checkCompilerImport(ast);
+  // The regular plugin has no locale twins: switching is left to the person
+  if (checkPluginInvocation({ ast, ...checkCompilerImport(ast) })) {
+    return {
+      steps: [],
+      manualActions: [
+        {
+          whatHappened: `${config.path} runs the GT compiler from ${COMPILER_PACKAGE}, but locale twins are experimental and need ${EXPERIMENTAL_COMPILER_SOURCE}`,
+          fix: `Import vite from '${EXPERIMENTAL_COMPILER_SOURCE}' instead of '${COMPILER_PACKAGE}' in ${config.path}`,
+        },
+      ],
+    };
+  }
+  const compilerImport = checkCompilerImport(ast, EXPERIMENTAL_COMPILER_SOURCE);
   if (checkPluginInvocation({ ast, ...compilerImport })) {
     // Route splitting must run first, or split route modules miss the compiler.
     const compilerIndex = plugins.elements.findIndex((element) =>
@@ -194,7 +209,7 @@ export async function addCompilerPlugin(
       getImportEdit(
         ast.program.body,
         [
-          `import { vite as ${COMPILER_ALIAS} } from ${quote}${COMPILER_PACKAGE}${quote}${semi}`,
+          `import { vite as ${COMPILER_ALIAS} } from ${quote}${EXPERIMENTAL_COMPILER_SOURCE}${quote}${semi}`,
         ],
         eol
       )

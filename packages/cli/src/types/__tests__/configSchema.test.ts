@@ -132,21 +132,21 @@ describe('GT config schema static url options', () => {
   });
 });
 
-describe('GT config schema translation splitting', () => {
-  it('accepts files.gt.splitting strategies and rejects others', () => {
+describe('GT config schema experimental settings', () => {
+  it('accepts experimental.splitting strategies and rejects others', () => {
     const validate = new Ajv({ strict: false }).compile(
-      schema.properties?.files?.properties?.gt ?? {}
+      schema.properties?.experimental ?? {}
     );
 
-    expect(validate({ output: 'src/_gt/[locale].json' })).toBe(true);
+    expect(validate({})).toBe(true);
+    expect(validate({ splitting: 'locale' })).toBe(true);
+    expect(validate({ splitting: 'locale-twins' })).toBe(true);
+    expect(validate({ splitting: 'module' })).toBe(false);
+  });
+
+  it('no longer documents splitting under files.gt', () => {
     expect(
-      validate({ output: 'src/_gt/[locale].json', splitting: 'locale' })
-    ).toBe(true);
-    expect(
-      validate({ output: 'src/_gt/[locale].json', splitting: 'locale-twins' })
-    ).toBe(true);
-    expect(
-      validate({ output: 'src/_gt/[locale].json', splitting: 'module' })
-    ).toBe(false);
+      schema.properties?.files?.properties?.gt?.properties?.splitting
+    ).toBeUndefined();
   });
 });

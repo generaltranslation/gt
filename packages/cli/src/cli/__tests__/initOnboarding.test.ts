@@ -759,15 +759,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
         ['gt', expect.objectContaining({ id: 'pnpm' }), true],
       ]);
       expect(readConfig().files).toEqual({
-        gt: {
-          output: path.join('src/_gt', '[locale].json'),
-          splitting: 'locale-twins',
-        },
+        gt: { output: path.join('src/_gt', '[locale].json') },
       });
+      expect(readConfig().experimental).toEqual({ splitting: 'locale-twins' });
       expect(fs.existsSync(file('src/loadTranslations.ts'))).toBe(false);
       expect(fs.existsSync(file('src/_gt'))).toBe(false);
-      expect(fs.readFileSync(file('vite.config.ts'), 'utf8')).toContain(
+      const viteConfig = fs.readFileSync(file('vite.config.ts'), 'utf8');
+      expect(viteConfig).toContain(
         "plugins: [gtTanstackStart({ experimentalCompilerOptions: { type: 'babel' } })]"
+      );
+      expect(viteConfig).toContain(
+        "from 'gt-tanstack-start/experimental/plugin/vite'"
+      );
+      expect(fs.readFileSync(file('src/router.tsx'), 'utf8')).toContain(
+        "from 'gt-tanstack-start/experimental'"
       );
       expect(events().at(-1)).toMatchObject({
         outcome: 'success',
@@ -786,11 +791,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
       expect(guidance).toContain('gt translate');
       expect(guidance).toContain('vite build');
       expect(guidance).toContain('createLocaleTwinAssets');
+      expect(guidance).toContain('gt-tanstack-start/experimental');
 
       // A rerun keeps the configured strategy without the flag.
       vi.mocked(installPackage).mockClear();
       await run('init', '--json', '--defaults', '--no-live-translations');
-      expect(readConfig().files.gt.splitting).toBe('locale-twins');
+      expect(readConfig().experimental.splitting).toBe('locale-twins');
       expect(fs.existsSync(file('src/_gt'))).toBe(false);
       expect(events().at(-1)).toMatchObject({ outcome: 'success' });
     });

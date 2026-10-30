@@ -20,7 +20,24 @@ import {
   usesName,
   type SourceFile,
 } from '../shared/source.js';
-import { DOCS_URL, VITE_PLUGIN_SOURCE } from './source.js';
+import {
+  DOCS_URL,
+  EXPERIMENTAL_GT_IMPORT_SOURCES,
+  GT_IMPORT_SOURCES,
+  type GTImportSources,
+} from './source.js';
+
+/**
+ * Where setup imports gt-tanstack-start from: locale twins (experimental)
+ * need the /experimental entry points.
+ */
+export function getGTImportSources(
+  ctx: Pick<BuildToolContext, 'splitting'>
+): GTImportSources {
+  return usesLocaleTwins(ctx)
+    ? EXPERIMENTAL_GT_IMPORT_SOURCES
+    : GT_IMPORT_SOURCES;
+}
 
 const VITE_PLUGIN = 'gtTanstackStart';
 const START_PLUGIN = 'tanstackStart';
@@ -28,8 +45,11 @@ const START_PLUGIN_SOURCE = '@tanstack/react-start/plugin/vite';
 // The plugin reads this config path, relative to the working directory, by default.
 const VITE_PLUGIN_DEFAULT_CONFIG = 'gt.config.json';
 
-function getVitePluginImport(viteConfig: SourceFile): string | undefined {
-  return getLocalImport(viteConfig, VITE_PLUGIN, VITE_PLUGIN_SOURCE);
+function getVitePluginImport(
+  viteConfig: SourceFile,
+  sources: GTImportSources
+): string | undefined {
+  return getLocalImport(viteConfig, VITE_PLUGIN, sources.vitePlugin);
 }
 
 /**
@@ -58,16 +78,22 @@ function collectPluginCalls(
  * call; a call anywhere else, or behind a condition, may register nothing
  * with Vite.
  */
-function findVitePluginCalls(viteConfig: SourceFile): t.CallExpression[] {
-  const local = getVitePluginImport(viteConfig);
+function findVitePluginCalls(
+  viteConfig: SourceFile,
+  sources: GTImportSources
+): t.CallExpression[] {
+  const local = getVitePluginImport(viteConfig, sources);
   const plugins =
     viteConfig.statements && findPluginsArray(viteConfig.statements);
   if (local === undefined || plugins === undefined) return [];
   return collectPluginCalls(plugins.elements, local);
 }
 
-export function registersVitePlugin(viteConfig: SourceFile): boolean {
-  return findVitePluginCalls(viteConfig).length > 0;
+export function registersVitePlugin(
+  viteConfig: SourceFile,
+  sources: GTImportSources = GT_IMPORT_SOURCES
+): boolean {
+  return findVitePluginCalls(viteConfig, sources).length > 0;
 }
 
 /**
@@ -155,9 +181,10 @@ export function getVitePluginLoaderPath(
   viteConfig: SourceFile,
   appDirectory: string
 ): string | null | undefined {
-  const options = findVitePluginCalls(viteConfig).map((call) =>
-    getStaticPluginOption(call, 'loadTranslationsPath')
-  );
+  // Either plugin reads the option
+  const options = [GT_IMPORT_SOURCES, EXPERIMENTAL_GT_IMPORT_SOURCES]
+    .flatMap((sources) => findVitePluginCalls(viteConfig, sources))
+    .map((call) => getStaticPluginOption(call, 'loadTranslationsPath'));
   const loaderPath = options.find(
     (option): option is string => typeof option === 'string'
   );
@@ -244,14 +271,15 @@ export function getVitePluginCompilerAction(
   ctx: BuildToolContext
 ): ManualAction | undefined {
   if (!usesLocaleTwins(ctx)) return undefined;
-  const calls = findVitePluginCalls(viteConfig);
+  const sources = getGTImportSources(ctx);
+  const calls = findVitePluginCalls(viteConfig, sources);
   if (
     calls.length === 0 ||
     !calls.every((call) => enablesCompiler(call) === false)
   ) {
     return undefined;
   }
-  const local = getVitePluginImport(viteConfig)!;
+  const local = getVitePluginImport(viteConfig, sources)!;
   return {
     whatHappened: `${viteConfig.path} was left unchanged, but its ${local}() call does not run the GT compiler, which locale twins need`,
     fix: `Add ${getCompilerOption("'")} to the options of the ${local}() call in ${viteConfig.path}, keeping its other options (see ${DOCS_URL})`,
@@ -268,14 +296,15 @@ export function getVitePluginConfigAction(
 ): ManualAction | undefined {
   const { appDirectory, configFilepath } = ctx;
   const expected = path.resolve(appDirectory, configFilepath);
-  const current = findVitePluginCalls(viteConfig)
+  const sources = getGTImportSources(ctx);
+  const current = findVitePluginCalls(viteConfig, sources)
     .map(getStaticPluginConfig)
     .find(
       (config) =>
         config !== undefined && path.resolve(appDirectory, config) !== expected
     );
   if (current === undefined) return undefined;
-  const local = getVitePluginImport(viteConfig)!;
+  const local = getVitePluginImport(viteConfig, sources)!;
   return {
     whatHappened: `${viteConfig.path} was left unchanged, but its ${local}() call reads ${current} instead of ${getVitePluginConfig(ctx)}`,
     // Replacing the whole call would drop options such as
@@ -344,7 +373,8 @@ export function configureViteConfig(
 ): string | undefined {
   const { content, statements } = viteConfig;
   if (!statements) return undefined;
-  const local = getVitePluginImport(viteConfig);
+  const sources = getGTImportSources(ctx);
+  const local = getVitePluginImport(viteConfig, sources);
   // Another binding with this name would clash with the added import.
   if (!local && usesName(statements, [VITE_PLUGIN])) {
     return undefined;
@@ -396,7 +426,7 @@ export function configureViteConfig(
           getImportEdit(
             statements,
             [
-              `import { ${VITE_PLUGIN} } from ${quote}${VITE_PLUGIN_SOURCE}${quote}${semi}`,
+              `import { ${VITE_PLUGIN} } from ${quote}${sources.vitePlugin}${quote}${semi}`,
             ],
             eol
           ),
@@ -411,6 +441,27 @@ export function getViteConfigAction(
 ): ManualAction {
   return {
     whatHappened: `${viteConfig.path} was not configured automatically`,
-    fix: `Add import { ${VITE_PLUGIN} } from '${VITE_PLUGIN_SOURCE}' to ${viteConfig.path}, and add ${getVitePluginCall(VITE_PLUGIN, ctx, "'")} to the plugins of defineConfig (see ${DOCS_URL})`,
+    fix: `Add import { ${VITE_PLUGIN} } from '${getGTImportSources(ctx).vitePlugin}' to ${viteConfig.path}, and add ${getVitePluginCall(VITE_PLUGIN, ctx, "'")} to the plugins of defineConfig (see ${DOCS_URL})`,
+  };
+}
+
+/**
+ * Locale twins need gtTanstackStart() from the experimental plugin entry, so
+ * a config that registers the regular one is left to the person to switch.
+ */
+export function getRegularVitePluginAction(
+  viteConfig: SourceFile,
+  ctx: BuildToolContext
+): ManualAction | undefined {
+  const sources = getGTImportSources(ctx);
+  if (
+    sources === GT_IMPORT_SOURCES ||
+    !registersVitePlugin(viteConfig, GT_IMPORT_SOURCES)
+  ) {
+    return undefined;
+  }
+  return {
+    whatHappened: `${viteConfig.path} registers ${VITE_PLUGIN}() from ${GT_IMPORT_SOURCES.vitePlugin}, but locale twins are experimental and need the one from ${sources.vitePlugin}`,
+    fix: `Import ${VITE_PLUGIN} from '${sources.vitePlugin}' in ${viteConfig.path}, and add ${getCompilerOption("'")} to its options (see ${DOCS_URL})`,
   };
 }

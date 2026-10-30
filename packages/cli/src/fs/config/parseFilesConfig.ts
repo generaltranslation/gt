@@ -195,7 +195,6 @@ export function resolveFiles(
       >;
       return {
         publish: files.gt?.publish,
-        splitting: files.gt?.splitting,
         parsingFlags: {
           ...GT_PARSING_FLAGS_DEFAULT,
           ...rawGtFlags,

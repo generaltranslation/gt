@@ -1,7 +1,7 @@
 import { parse } from '@babel/parser';
 import type { TranslationSplittingStrategy } from 'generaltranslation/types';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import { isLocaleTwinsSplitting } from 'generaltranslation/internal';
+import { isLocaleTwinsSplitting } from 'generaltranslation/internal/experimental';
 import fs from 'node:fs';
 import path from 'node:path';
 import { logger } from '../console/logger.js';
@@ -141,7 +141,8 @@ export async function inspectViteSPA(appDirectory: string) {
       parseModule(entry, declaredEntryPath)?.some(
         (statement) =>
           statement.type === 'ImportDeclaration' &&
-          statement.source.value === Libraries.GT_REACT &&
+          (statement.source.value === Libraries.GT_REACT ||
+            statement.source.value === `${Libraries.GT_REACT}/experimental`) &&
           statement.importKind !== 'type' &&
           statement.specifiers.some(
             (specifier) =>
@@ -426,7 +427,7 @@ export async function setupViteSPA({
   );
   await fs.promises.writeFile(
     bootstrapPath,
-    `import { initializeGTSPA } from '${Libraries.GT_REACT}';
+    `import { initializeGTSPA } from '${twins ? `${Libraries.GT_REACT}/experimental` : Libraries.GT_REACT}';
 import gtConfig from '${configImport}';
 ${loadTranslationsImport}
 ${twins && translationsDir ? '// Locale twins carry the translations in production builds\n' : ''}await initializeGTSPA(${loadTranslationsOption});

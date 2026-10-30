@@ -1,5 +1,5 @@
 import type { TranslationSplittingStrategy } from 'generaltranslation/types';
-import { isLocaleTwinsSplitting } from 'generaltranslation/internal';
+import { isLocaleTwinsSplitting } from 'generaltranslation/internal/experimental';
 import type { SupportedReactFrameworks } from '../../types/index.js';
 import { reactRouterSetup } from './reactRouter/index.js';
 import { tanstackStartSetup } from './tanstackStart/index.js';
@@ -20,7 +20,7 @@ export type BuildToolContext = {
   translationsDir?: string;
   /** The translations directory in the existing config. */
   previousTranslationsDir?: string;
-  /** files.gt.splitting as setup writes it; 'locale' when unset. */
+  /** experimental.splitting as setup writes it; 'locale' when unset. */
   splitting?: TranslationSplittingStrategy;
 };
 
@@ -58,7 +58,7 @@ export type BuildToolSetup = {
   ): Promise<ManualAction | null | undefined>;
   /** Configures the app entry after gt.config.json is written. */
   apply(ctx: BuildToolContext): Promise<SetupResult>;
-  /** Supports files.gt.splitting 'locale-twins'. */
+  /** Supports experimental.splitting 'locale-twins'. */
   supportsLocaleTwins: boolean;
   /**
    * How to enable the GT compiler for locale twins when setup leaves the app

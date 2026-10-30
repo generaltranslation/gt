@@ -619,7 +619,7 @@ describe('viteSetup with locale twins', () => {
     const result = await viteSetup.apply(twins());
 
     expect(read('src/gt-entry.ts'))
-      .toBe(`import { initializeGTSPA } from 'gt-react';
+      .toBe(`import { initializeGTSPA } from 'gt-react/experimental';
 import gtConfig from '../gt.config.json';
 import loadTranslations from './loadTranslations';
 
@@ -632,6 +632,9 @@ await import('./main');
 `);
     expect(read('vite.config.ts')).toContain(
       'plugins: [react(), gtCompiler()],'
+    );
+    expect(read('vite.config.ts')).toContain(
+      "import { vite as gtCompiler } from '@generaltranslation/compiler/experimental';"
     );
     expect(read('src/loadTranslations.ts')).toContain('import(`./_gt/');
     expect(fs.existsSync(file('src/_gt/fr.json'))).toBe(true);
