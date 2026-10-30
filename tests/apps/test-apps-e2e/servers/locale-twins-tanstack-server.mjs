@@ -72,8 +72,12 @@ const server = http.createServer(async (request, response) => {
       await serverEntry.fetch(toRequest(request, url))
     );
   } catch (error) {
-    response.writeHead(500, { 'Content-Type': 'text/plain' });
-    response.end(String(error));
+    // Logged here, not sent: error text can expose stack traces and paths.
+    console.error(error);
+    if (!response.headersSent) {
+      response.writeHead(500, { 'Content-Type': 'text/plain' });
+    }
+    response.end('Internal Server Error');
   }
 });
 
