@@ -1,10 +1,10 @@
 'server-only';
 
-import { CompatStore } from '@generaltranslation/react-core/pure';
 import {
+  CompatStore,
   DictionaryProvider,
   type DictionaryProviderProps,
-} from '@generaltranslation/react-core/components';
+} from '@generaltranslation/react-core/compat';
 import { useMemo, useRef } from 'react';
 import type { GTDictionaryProviderProps } from './GTDictionaryProviderProps';
 

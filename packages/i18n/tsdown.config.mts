@@ -5,6 +5,7 @@ export default defineConfig(
   withPackageChecks(
     createTsdownConfig([
       'src/index.ts',
+      'src/internal-compat.ts',
       'src/internal-cookies.ts',
       'src/internal-string.ts',
       'src/internal.ts',

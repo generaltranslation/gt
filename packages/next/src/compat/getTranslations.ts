@@ -1,4 +1,7 @@
-import { getTranslationsInternal, type TFunctionType } from 'gt-i18n/internal';
+import {
+  getTranslationsInternal,
+  type TFunctionType,
+} from 'gt-i18n/internal/compat';
 import { use } from '../utils/use';
 import { getRequestConditions } from '../request/getRequestConditions';
 import { ensureNextDictionaryManager } from './dictionaries';

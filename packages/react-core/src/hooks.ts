@@ -29,7 +29,3 @@ export type {
   InternalRegionSelectorResult,
   RegionData,
 } from './hooks/useInternalRegionSelector';
-
-// ===== Compat: dictionary (key-based) API ===== //
-export { useTranslations } from './compat/useTranslations';
-export type { UseTranslationsFunction } from './compat/useTranslations';

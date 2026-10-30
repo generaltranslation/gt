@@ -1,10 +1,7 @@
 import { Fragment, type ComponentType, type ReactNode } from 'react';
 import { GTDictionaryProvider } from 'gt-react/compat';
-import {
-  getDictionaryManager,
-  getI18nConfig,
-  type Dictionary,
-} from 'gt-i18n/internal';
+import { getI18nConfig } from 'gt-i18n/internal';
+import { getDictionaryManager, type Dictionary } from 'gt-i18n/internal/compat';
 
 export type GTDictionaries = Record<string, Dictionary>;
 

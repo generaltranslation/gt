@@ -76,6 +76,16 @@
         "default": "./dist/internal.mjs"
       }
     },
+    "./internal/compat": {
+      "require": {
+        "types": "./dist/internal-compat.d.cts",
+        "default": "./dist/internal-compat.cjs"
+      },
+      "import": {
+        "types": "./dist/internal-compat.d.mts",
+        "default": "./dist/internal-compat.mjs"
+      }
+    },
     "./internal/cookies": {
       "require": {
         "types": "./dist/internal-cookies.d.cts",

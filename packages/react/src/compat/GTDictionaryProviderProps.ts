@@ -1,4 +1,4 @@
-import type { DictionaryProviderProps } from '@generaltranslation/react-core/components';
+import type { DictionaryProviderProps } from '@generaltranslation/react-core/compat';
 
 /**
  * Props of GTDictionaryProvider, which supplies dictionaries to

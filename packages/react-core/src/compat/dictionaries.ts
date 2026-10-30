@@ -1,10 +1,10 @@
+import type { Locale } from 'gt-i18n/internal';
 import {
   getDictionaryEntry,
   isDictionaryValue,
-  type Locale,
   type Dictionary,
   type DictionaryObject,
-} from 'gt-i18n/internal';
+} from 'gt-i18n/internal/compat';
 import type {
   DictionaryEntrySnapshot,
   DictionaryLookup,
