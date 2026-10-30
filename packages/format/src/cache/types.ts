@@ -6,9 +6,9 @@ import { CutoffFormatConstructor } from '../formatting/custom-formats/CutoffForm
  */
 type IntlConstructors = {
   [K in keyof typeof Intl as (typeof Intl)[K] extends new (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: dynamic value shape
     ...args: any[]
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: dynamic value shape
   ) => any
     ? K
     : never]: (typeof Intl)[K];

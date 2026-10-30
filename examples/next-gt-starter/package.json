@@ -7,7 +7,7 @@
     "dev": "next dev",
     "build": "gt translate; next build;",
     "start": "next start",
-    "lint": "oxlint --config ../.oxlintrc.next.json .",
+    "lint": "biome lint .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

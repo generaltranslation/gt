@@ -2,4 +2,6 @@
 import { T } from 'gt-vue';
 </script>
 
-<template><T :context.prop="'hero'">Hello</T></template>
+<template
+  ><T :context.prop="'hero'">Hello</T></template
+>

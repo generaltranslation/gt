@@ -15,8 +15,9 @@ describe('Python grammar WASM', () => {
   });
 
   it('resolves tree-sitter-python.wasm from this package', () => {
-    const wasmPath =
-      require.resolve('@generaltranslation/python-extractor/tree-sitter-python.wasm');
+    const wasmPath = require.resolve(
+      '@generaltranslation/python-extractor/tree-sitter-python.wasm'
+    );
 
     expect(wasmPath).toBe(
       fileURLToPath(

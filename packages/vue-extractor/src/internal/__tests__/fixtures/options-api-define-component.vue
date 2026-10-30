@@ -10,4 +10,6 @@ export default defineComponent({
 });
 </script>
 
-<template><Translation>Defined component</Translation></template>
+<template
+  ><Translation>Defined component</Translation></template
+>

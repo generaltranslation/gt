@@ -268,15 +268,15 @@ export function createSnapshotAnalysis({
     const operationStatement = operation.getStatementParent();
     return Boolean(
       declarationStatement &&
-      (operationStatement?.isExpressionStatement() ||
-        operationStatement?.isVariableDeclaration()) &&
-      declarationStatement.parentPath?.node ===
-        operationStatement.parentPath?.node &&
-      binding.referencePaths.every(
-        (reference) =>
-          reference.getFunctionParent()?.node ===
-          operation.getFunctionParent()?.node
-      )
+        (operationStatement?.isExpressionStatement() ||
+          operationStatement?.isVariableDeclaration()) &&
+        declarationStatement.parentPath?.node ===
+          operationStatement.parentPath?.node &&
+        binding.referencePaths.every(
+          (reference) =>
+            reference.getFunctionParent()?.node ===
+            operation.getFunctionParent()?.node
+        )
     );
   }
 

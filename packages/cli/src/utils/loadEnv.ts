@@ -5,7 +5,7 @@ export const envFiles = ['.env', '.env.local', '.env.production'] as const;
 
 /** Load executable startup env files without contaminating command stdout. */
 export function loadEnv(): void {
-  /* eslint-disable no-console -- dotenv 16's vault warnings bypass quiet via console.log. */
+  // biome-ignore-start lint/suspicious/noConsole: dotenv 16's vault warnings bypass quiet via console.log.
   const log = console.log;
   // Keep this override synchronous; remove it when dotenv supports stderr diagnostics.
   console.log = console.error;
@@ -16,5 +16,5 @@ export function loadEnv(): void {
   } finally {
     console.log = log;
   }
-  /* eslint-enable no-console */
+  // biome-ignore-end lint/suspicious/noConsole: intentional console output
 }

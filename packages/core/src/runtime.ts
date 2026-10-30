@@ -10,7 +10,6 @@ import {
   requiresTranslation as _requiresTranslation,
   resolveAliasLocale as _resolveAliasLocale,
   resolveCanonicalLocale as _resolveCanonicalLocale,
-  standardizeLocale as _standardizeLocale,
 } from '@generaltranslation/format';
 import type {
   CustomMapping,

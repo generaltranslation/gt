@@ -17,10 +17,12 @@ describe('react i18n config', () => {
   afterEach(resetGTGlobals);
 
   it('stores render strategy on the I18nConfig singleton', async () => {
-    const { getI18nConfig: getBaseI18nConfig } =
-      await import('gt-i18n/internal');
-    const { getI18nConfig, initializeI18nConfig } =
-      await import('../i18nConfig');
+    const { getI18nConfig: getBaseI18nConfig } = await import(
+      'gt-i18n/internal'
+    );
+    const { getI18nConfig, initializeI18nConfig } = await import(
+      '../i18nConfig'
+    );
 
     const config = initializeI18nConfig({ defaultLocale: 'en' }, 'SPA');
 
@@ -30,8 +32,9 @@ describe('react i18n config', () => {
   });
 
   it('defaults public pure initialization to server-render', async () => {
-    const { getI18nConfig: getBaseI18nConfig } =
-      await import('gt-i18n/internal');
+    const { getI18nConfig: getBaseI18nConfig } = await import(
+      'gt-i18n/internal'
+    );
     const { getI18nConfig, initializeI18nConfig } = await import('../../pure');
 
     const config = initializeI18nConfig({ defaultLocale: 'en' });
@@ -92,8 +95,9 @@ describe('react i18n config', () => {
   });
 
   it('accepts branded ReactI18nConfig instances from another bundled copy', async () => {
-    const { I18nConfig, setI18nConfig: setBaseI18nConfig } =
-      await import('gt-i18n/internal');
+    const { I18nConfig, setI18nConfig: setBaseI18nConfig } = await import(
+      'gt-i18n/internal'
+    );
     const { getI18nConfig } = await import('../i18nConfig');
 
     const bundledConfig = new I18nConfig({ defaultLocale: 'en' });

@@ -56,7 +56,7 @@
     "release:latest": "pnpm publish --access public --tag latest",
     "build": "plugin-kit verify-package --silent && pkg-utils build --strict --check --clean",
     "build:release": "pnpm run typecheck && pnpm run build",
-    "format": "oxfmt .",
+    "format": "biome format --write .",
     "link-watch": "plugin-kit link-watch",
     "prepublishOnly": "pnpm run build:release",
     "test": "vitest run",

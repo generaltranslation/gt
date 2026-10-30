@@ -1,4 +1,4 @@
-import { PortableTextSpan, PortableTextTextBlock } from 'sanity';
+import { PortableTextTextBlock } from 'sanity';
 
 // Helper function to merge multiple blocks
 // Prioritize blocks[0]

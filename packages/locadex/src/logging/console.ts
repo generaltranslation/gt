@@ -58,7 +58,7 @@ export function displayHeader() {
 }
 
 function displayAsciiTitle() {
-  // eslint-disable-next-line no-console
+  // biome-ignore lint/suspicious/noConsole: intentional console output
   console.log(
     chalk.cyan(
       `\n  ,ad8888ba,  888888888888  
@@ -74,7 +74,7 @@ Y8,        88      88
 }
 
 function displayInitializingText() {
-  // eslint-disable-next-line no-console
+  // biome-ignore lint/suspicious/noConsole: intentional console output
   console.log(
     `\n${chalk.bold.blue('General Translation, Inc.')}
 ${chalk.dim('https://generaltranslation.com/docs')}

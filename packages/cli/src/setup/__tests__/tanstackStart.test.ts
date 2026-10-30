@@ -322,8 +322,9 @@ describe('tanstackStartSetup', () => {
 
     await tanstackStartSetup.apply(ctx());
 
-    expect(read('src/router.tsx'))
-      .toBe(`import { createRouter } from "@tanstack/react-router";
+    expect(
+      read('src/router.tsx')
+    ).toBe(`import { createRouter } from "@tanstack/react-router";
 import { initializeGT } from "gt-tanstack-start";
 import gtConfig from "../gt.config.json";
 import loadTranslations from "./loadTranslations";

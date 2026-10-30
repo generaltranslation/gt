@@ -6,7 +6,7 @@
     "dev": "next dev --turbo",
     "build": "tsx lib/db/migrate && gt translate && next build",
     "start": "next start",
-    "lint": "oxlint --config ../.oxlintrc.next.json .",
+    "lint": "biome lint .",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "npx tsx lib/db/migrate.ts",
     "db:studio": "drizzle-kit studio",

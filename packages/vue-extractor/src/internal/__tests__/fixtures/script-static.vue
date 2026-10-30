@@ -21,7 +21,7 @@ useGT()('Direct hook call');
 gt?.('Optional call');
 gt!('Non-null call');
 
-// oxlint-disable-next-line prefer-const -- exercises a post-declaration assignment flow
+// exercises a post-declaration assignment flow
 let assigned;
 assigned = useGT();
 assigned('Assigned hook result');

@@ -118,6 +118,7 @@ function getOrCreateLocalStorageCache(
 }
 
 function loadLocalStorageCache() {
-  return (localStorageCacheModulePromise ??=
-    import('./LocalStorageTranslationCache'));
+  return (localStorageCacheModulePromise ??= import(
+    './LocalStorageTranslationCache'
+  ));
 }

@@ -7,7 +7,7 @@
     "dev": "vite dev --port 5173 --strictPort",
     "build": "vite build",
     "preview": "vite preview --port 4173 --strictPort",
-    "lint": "oxlint --config ../../../examples/.oxlintrc.react.json .",
+    "lint": "biome lint .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -28,8 +28,9 @@ vi.mock('../collectExistingTranslations', () => ({
     collectExistingTranslations(...args),
 }));
 
-const { captureExistingTranslations } =
-  await import('../captureExistingTranslations');
+const { captureExistingTranslations } = await import(
+  '../captureExistingTranslations'
+);
 
 const doc = (id: string, rev: string) =>
   ({ _id: id, _type: 'page', _rev: rev }) as unknown as SanityDocument;

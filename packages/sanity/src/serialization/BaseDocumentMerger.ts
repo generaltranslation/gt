@@ -58,7 +58,6 @@ const reconcileArray = (
         isRecord(origBlock) && origBlock._key === translatedItem._key
     );
     if (foundBlockIdx < 0) {
-      //eslint-disable-next-line no-console
       console.warn(
         `This block no longer exists on the original document. Was it removed? ${JSON.stringify(
           translatedItem

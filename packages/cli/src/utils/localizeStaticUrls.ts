@@ -87,7 +87,7 @@ function localizeUrlsInExpressionSource(
 ): string {
   if (!source.trim()) return source;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: dynamic value shape
   let ast: any;
   try {
     ast = parseBabel(source, {
@@ -102,7 +102,7 @@ function localizeUrlsInExpressionSource(
 
   const replacements: Array<{ start: number; end: number; text: string }> = [];
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: dynamic value shape
   const pushLiteralReplacement = (literal: any) => {
     if (
       !literal ||
@@ -143,9 +143,9 @@ function localizeUrlsInExpressionSource(
   }
 
   // Walk the AST for JSX url-attributes anywhere in the expression.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: dynamic value shape
   const seen = new Set<any>();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: dynamic value shape
   const walk = (node: any) => {
     if (!node || typeof node !== 'object') return;
     if (Array.isArray(node)) {

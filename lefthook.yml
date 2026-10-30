@@ -1,15 +1,10 @@
 pre-commit:
   parallel: false
   jobs:
-    - run: pnpm exec oxlint --fix {staged_files}
+    - run: pnpm exec biome check --write --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
       glob:
-        - '*.{js,ts,jsx,tsx,mjs}'
-        - '**/*.{js,ts,jsx,tsx,mjs}'
-      stage_fixed: true
-    - run: pnpm exec oxfmt --no-error-on-unmatched-pattern {staged_files}
-      glob:
-        - '*.{js,ts,jsx,tsx,mjs,json,md,yml,yaml,html,css,toml}'
-        - '**/*.{js,ts,jsx,tsx,mjs,json,md,yml,yaml,html,css,toml}'
+        - '*.{js,ts,jsx,tsx,mjs,cjs,mts,cts,json,jsonc,css,yml,yaml}'
+        - '**/*.{js,ts,jsx,tsx,mjs,cjs,mts,cts,json,jsonc,css,yml,yaml}'
       stage_fixed: true
     - run: node scripts/generate-version.js
       root: packages/cli

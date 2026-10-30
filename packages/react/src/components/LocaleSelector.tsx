@@ -33,5 +33,6 @@ export type LocaleSelectorProps = {
   locales?: string[];
   customNames?: { [key: string]: string };
   customMapping?: CustomMapping;
+  // biome-ignore lint/suspicious/noExplicitAny: forwards arbitrary props to the rendered element
   [key: string]: any;
 };

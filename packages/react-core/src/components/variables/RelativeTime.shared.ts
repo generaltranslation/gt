@@ -43,7 +43,6 @@ function computeRelativeTime({
   const resolvedDate = date ?? children;
 
   if (process.env.NODE_ENV === 'development' && value !== undefined && !unit) {
-    // eslint-disable-next-line no-console
     console.warn(
       '<RelativeTime>: `value` was provided without `unit`. The `value` prop will be ignored.'
     );

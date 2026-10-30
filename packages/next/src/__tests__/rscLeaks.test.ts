@@ -250,7 +250,6 @@ describe('gt-next RSC leak enforcement', () => {
     if (reported.length > 0) {
       // Deprecated modules reachable from the server graph. Not blocking, but
       // surfaced so maintainers can decide whether to address them.
-      // eslint-disable-next-line no-console
       console.warn(
         `rscLeaks: skipped ${reported.length} deprecated module(s) reachable from the server graph:\n` +
           reported.map((file) => `  ${file}`).join('\n')

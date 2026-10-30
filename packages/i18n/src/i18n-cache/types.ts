@@ -94,7 +94,8 @@ export interface ReadonlyConditionStoreInterface {
 /**
  * Condition store contract for runtimes that can persist locale changes.
  */
-export interface WritableConditionStoreInterface extends ReadonlyConditionStoreInterface {
+export interface WritableConditionStoreInterface
+  extends ReadonlyConditionStoreInterface {
   setLocale(locale: string): void;
   setRegion(region: string | undefined): void;
   setEnableI18n(enabled: boolean): void;
@@ -103,7 +104,8 @@ export interface WritableConditionStoreInterface extends ReadonlyConditionStoreI
 /**
  * Condition store contract for runtimes with scoped locale context.
  */
-export interface ScopedConditionStoreInterface extends ReadonlyConditionStoreInterface {
+export interface ScopedConditionStoreInterface
+  extends ReadonlyConditionStoreInterface {
   run<T>(locale: string, callback: () => T): T;
 }
 

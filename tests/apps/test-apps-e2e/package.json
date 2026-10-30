@@ -6,7 +6,7 @@
   "scripts": {
     "test:e2e": "node run.mjs",
     "test:e2e:install": "playwright install chromium-headless-shell",
-    "lint": "oxlint --config ../../../.oxlintrc.json .",
+    "lint": "biome lint .",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

@@ -65,7 +65,9 @@ async function resolveWasmPath(specifier: string): Promise<string> {
       return (await import('web-tree-sitter/web-tree-sitter.wasm')).default;
     case '@generaltranslation/python-extractor/tree-sitter-python.wasm':
       return (
-        await import('@generaltranslation/python-extractor/tree-sitter-python.wasm')
+        await import(
+          '@generaltranslation/python-extractor/tree-sitter-python.wasm'
+        )
       ).default;
     default:
       throw new Error(`Unknown WASM specifier for Bun: ${specifier}`);

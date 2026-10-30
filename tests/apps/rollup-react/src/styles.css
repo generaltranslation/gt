@@ -1,9 +1,6 @@
 :root {
   color-scheme: light dark;
-  font-family:
-    system-ui,
-    -apple-system,
-    sans-serif;
+  font-family: system-ui, -apple-system, sans-serif;
 }
 
 body {

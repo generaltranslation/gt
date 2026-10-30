@@ -9,7 +9,7 @@
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install chromium-headless-shell",
     "test:production": "pnpm build && pnpm test:e2e",
-    "lint": "oxlint --config ../../../examples/.oxlintrc.next.json .",
+    "lint": "biome lint .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

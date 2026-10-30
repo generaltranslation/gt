@@ -8,12 +8,12 @@ export default {
   },
 
   info(message: string) {
-    // eslint-disable-next-line no-console
+    // biome-ignore lint/suspicious/noConsole: intentional console output
     console.info(message);
   },
 
   debug(message: string) {
-    // eslint-disable-next-line no-console
+    // biome-ignore lint/suspicious/noConsole: intentional console output
     console.debug(message);
   },
 };

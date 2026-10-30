@@ -26,8 +26,9 @@ describe('i18n config singleton operations', () => {
   });
 
   it('throws when the config has not been initialized', async () => {
-    const { getI18nConfig, isI18nConfigInitialized } =
-      await import('../singleton-operations');
+    const { getI18nConfig, isI18nConfigInitialized } = await import(
+      '../singleton-operations'
+    );
 
     expect(isI18nConfigInitialized()).toBe(false);
     expect(() => getI18nConfig()).toThrow(
@@ -57,16 +58,18 @@ describe('i18n config singleton operations', () => {
     });
 
     vi.resetModules();
-    const { getI18nConfig, isI18nConfigInitialized } =
-      await import('../singleton-operations');
+    const { getI18nConfig, isI18nConfigInitialized } = await import(
+      '../singleton-operations'
+    );
 
     expect(isI18nConfigInitialized()).toBe(true);
     expect(getI18nConfig()).toBe(config);
   });
 
   it('preserves an existing global config', async () => {
-    const { getI18nConfig, initializeI18nConfig } =
-      await import('../singleton-operations');
+    const { getI18nConfig, initializeI18nConfig } = await import(
+      '../singleton-operations'
+    );
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     const config = initializeI18nConfig({
@@ -82,8 +85,9 @@ describe('i18n config singleton operations', () => {
 
   it('warns about an existing global config when debug logging is enabled', async () => {
     vi.stubEnv('_GENERALTRANSLATION_LOG_LEVEL', 'DEBUG');
-    const { getI18nConfig, initializeI18nConfig } =
-      await import('../singleton-operations');
+    const { getI18nConfig, initializeI18nConfig } = await import(
+      '../singleton-operations'
+    );
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     const config = initializeI18nConfig({
@@ -118,8 +122,9 @@ describe('i18n config singleton operations', () => {
   });
 
   it('stores the GT services enabled flag on the config singleton', async () => {
-    const { getI18nConfig, initializeI18nConfig } =
-      await import('../singleton-operations');
+    const { getI18nConfig, initializeI18nConfig } = await import(
+      '../singleton-operations'
+    );
 
     const config = initializeI18nConfig({
       projectId: 'test-project',

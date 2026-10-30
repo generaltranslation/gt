@@ -352,14 +352,14 @@ function hasMalformedStandaloneGTProvenance(
   const suffixSelection = selectMalformedSuffixLanguage(sourceCode, languages);
   return Boolean(
     suffixSelection?.recoverable &&
-    malformedSuffixHasGTProvenance(
-      sourceCode,
-      filePath,
-      options,
-      suffixSelection.language,
-      localModules,
-      recoveredPreamble
-    )
+      malformedSuffixHasGTProvenance(
+        sourceCode,
+        filePath,
+        options,
+        suffixSelection.language,
+        localModules,
+        recoveredPreamble
+      )
   );
 }
 

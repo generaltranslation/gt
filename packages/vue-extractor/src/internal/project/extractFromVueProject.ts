@@ -296,9 +296,9 @@ async function filterVueSourceFiles(
 function hasExtractionSignal(result: VueExtractionOutput | undefined): boolean {
   return Boolean(
     result &&
-    (result.results.length > 0 ||
-      result.errors.length > 0 ||
-      result.warnings.length > 0)
+      (result.results.length > 0 ||
+        result.errors.length > 0 ||
+        result.warnings.length > 0)
   );
 }
 

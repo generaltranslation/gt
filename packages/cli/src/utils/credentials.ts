@@ -121,7 +121,7 @@ export function areCredentialsSet(
   );
   return Boolean(
     settings.projectId &&
-    (process.env[devApiKey] || (!needsPublicKey && settings.apiKey))
+      (process.env[devApiKey] || (!needsPublicKey && settings.apiKey))
   );
 }
 

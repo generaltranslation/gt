@@ -168,7 +168,6 @@ export function validateTranslationFunction(
  * Validate useTranslations_callback / getTranslations_callback
  * - always valid (arguments can be dynamic)
  */
-// eslint-disable-next-line no-unused-vars
 export function validateUseTranslationsCallback(_callExpr: t.CallExpression): {
   errors: string[];
 } {
@@ -180,7 +179,6 @@ export function validateUseTranslationsCallback(_callExpr: t.CallExpression): {
  * Validate useMessages_callback / getMessages_callback
  * - always valid
  */
-// eslint-disable-next-line no-unused-vars
 export function validateUseMessagesCallback(_callExpr: t.CallExpression): {
   errors: string[];
 } {

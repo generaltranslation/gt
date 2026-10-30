@@ -7,7 +7,7 @@
     "build": "vite build",
     "test": "tsx scripts/check-parity.ts",
     "check-parity": "tsx scripts/check-parity.ts",
-    "lint": "oxlint --config ../../../.oxlintrc.json .",
+    "lint": "biome lint .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

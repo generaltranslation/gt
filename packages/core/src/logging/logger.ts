@@ -122,11 +122,11 @@ export class ConsoleLogHandler implements LogHandler {
     // Output to appropriate console method based on level
     switch (entry.level) {
       case 'debug':
-        // eslint-disable-next-line no-console
+        // biome-ignore lint/suspicious/noConsole: intentional console output
         console.debug(formattedMessage);
         break;
       case 'info':
-        // eslint-disable-next-line no-console
+        // biome-ignore lint/suspicious/noConsole: intentional console output
         console.info(formattedMessage);
         break;
       case 'warn':
@@ -343,8 +343,9 @@ export const error = (
 
 // Create context-specific loggers for different parts of the system
 export const fetchLogger = /* @__PURE__ */ defaultLogger.child('fetch');
-export const gtInstanceLogger =
-  /* @__PURE__ */ defaultLogger.child('GT instance');
+export const gtInstanceLogger = /* @__PURE__ */ defaultLogger.child(
+  'GT instance'
+);
 
 // Export types and classes
 export { Logger as GTLogger };

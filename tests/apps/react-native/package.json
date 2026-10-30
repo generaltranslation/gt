@@ -9,7 +9,7 @@
     "ios": "expo run:ios --port 5199",
     "web": "expo start --web --port 5199",
     "build": "tsc --noEmit",
-    "lint": "oxlint --config ../../../examples/.oxlintrc.react.json .",
+    "lint": "biome lint .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -6,4 +6,6 @@ export default {
 };
 </script>
 
-<template><T>Options API</T></template>
+<template
+  ><T>Options API</T></template
+>

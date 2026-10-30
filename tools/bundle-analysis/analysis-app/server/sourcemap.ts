@@ -224,6 +224,7 @@ export function loadSourceMap(
   return null;
 }
 
+// biome-ignore lint/suspicious/noControlCharactersInRegex: matches the full 7-bit ASCII range
 const ASCII = /^[\x00-\x7f]*$/;
 
 export type { RawSourceMap };

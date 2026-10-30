@@ -493,6 +493,7 @@ describe('resolveVueProjectAliases', () => {
     [`const registry = [aliases]; consume(registry);`, true],
   ])(
     'fails closed when an alias binding mutates or escapes: %s',
+    // biome-ignore lint/suspicious/noShadowRestrictedNames: test parameter; the deprecated global `escape` is never used here
     (escape, hasKey) => {
       const root = createProject({
         'vite.config.ts': `

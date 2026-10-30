@@ -66,6 +66,7 @@ function RootComponent() {
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang='en'>
+      {/* biome-ignore lint/style/noHeadElement: TanStack Start renders the document head itself */}
       <head>
         <HeadContent />
       </head>

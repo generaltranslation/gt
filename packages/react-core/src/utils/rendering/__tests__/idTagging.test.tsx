@@ -156,7 +156,6 @@ describe('<T> (RSC) id-tagging wiring', () => {
     cfg.tagIds = true;
     const { RscT } = await import('../../../components/translation/T.rsc');
     const spy = vi.fn((_p: Record<string, unknown>) => null);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (RscT as any)({
       children: 'Hello',
       _locale: 'en',
@@ -174,7 +173,6 @@ describe('<T> (RSC) id-tagging wiring', () => {
     cfg.tagIds = false;
     const { RscT } = await import('../../../components/translation/T.rsc');
     const spy = vi.fn((_p: Record<string, unknown>) => null);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (RscT as any)({
       children: 'Hello',
       _locale: 'en',
@@ -194,9 +192,7 @@ describe('resolveTagHash single-hash reuse', () => {
   it('reuses a precomputed $_hash without recomputing', async () => {
     cfg.tagIds = true;
     const { resolveTagHash } = await import('../../translation/resolveTagHash');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const options = { $format: 'JSX', $_hash: 'precomputed' } as any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const out = resolveTagHash('Hello' as any, options);
     expect(out).toBe('precomputed'); // returned as-is, not recomputed
     expect(options.$_hash).toBe('precomputed');
@@ -205,9 +201,7 @@ describe('resolveTagHash single-hash reuse', () => {
   it('computes once and caches on options so the lookup reuses it', async () => {
     cfg.tagIds = true;
     const { resolveTagHash } = await import('../../translation/resolveTagHash');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const options = { $format: 'JSX' } as any; // no $_hash yet
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const out = resolveTagHash('Hello' as any, options);
     expect(typeof out).toBe('string');
     expect((out as string).length).toBeGreaterThan(0);
@@ -217,9 +211,7 @@ describe('resolveTagHash single-hash reuse', () => {
   it('returns undefined and leaves options untouched when disabled', async () => {
     cfg.tagIds = false;
     const { resolveTagHash } = await import('../../translation/resolveTagHash');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const options = { $format: 'JSX' } as any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const out = resolveTagHash('Hello' as any, options);
     expect(out).toBeUndefined();
     expect(options.$_hash).toBeUndefined(); // pays nothing
@@ -231,11 +223,9 @@ describe('resolveTagHash single-hash reuse', () => {
     const { resolveTagHash } = await import('../../translation/resolveTagHash');
     cfg.legacy = true;
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const options = { $format: 'JSX' } as any;
       let out;
       expect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         out = resolveTagHash('Hello' as any, options);
       }).not.toThrow();
       expect(out).toBeUndefined();

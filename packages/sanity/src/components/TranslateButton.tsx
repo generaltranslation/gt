@@ -6,7 +6,7 @@ export function TranslateButton() {
   const router = useRouter();
 
   const handleClick = () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: dynamic value shape
     const panes = router.state.panes as any[];
     if (panes && panes.length > 0) {
       const currentPane = panes[0];

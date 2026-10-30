@@ -8,7 +8,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "lint": "oxlint --config ../.oxlintrc.react.json ."
+    "lint": "biome lint ."
   },
   "dependencies": {
     "@formatjs/intl-datetimeformat": "^7.8.0",

@@ -6,4 +6,6 @@ const dc = defineComponent;
 export default dc({ components: { T } });
 </script>
 
-<template><T>Aliased defineComponent</T></template>
+<template
+  ><T>Aliased defineComponent</T></template
+>

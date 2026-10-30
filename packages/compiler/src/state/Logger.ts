@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+/** biome-ignore-all lint/suspicious/noConsole: this module is the compiler console logger */
 import { LogLevel as LogLevelType } from '../config';
 
 export const LogLevel = {

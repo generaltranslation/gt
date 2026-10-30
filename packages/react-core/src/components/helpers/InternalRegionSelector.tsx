@@ -25,6 +25,7 @@ export function InternalRegionSelector({
   regionData: Map<string, RegionData>;
   setRegion: (region: string) => void;
   placeholder?: ReactNode;
+  // biome-ignore lint/suspicious/noExplicitAny: forwards arbitrary props to the rendered element
   [key: string]: any;
 }): React.JSX.Element | null {
   // If no regions are returned, just render nothing or handle gracefully

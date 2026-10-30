@@ -31,12 +31,12 @@ messages(rawTitle);
 (hookAlias as typeof createGT)()('Wrapped direct hook call');
 createGT()?.('Optional direct hook call');
 
-// oxlint-disable-next-line prefer-const -- exercises a post-declaration object assignment flow
+// exercises a post-declaration object assignment flow
 let objectAssigned: Translator;
 ({ translator: objectAssigned } = { translator: createGT() });
 objectAssigned('Object assignment flow');
 
-// oxlint-disable-next-line prefer-const -- exercises a post-declaration array assignment flow
+// exercises a post-declaration array assignment flow
 let arrayAssigned: Translator;
 [arrayAssigned] = [createGT()];
 arrayAssigned('Array assignment flow');

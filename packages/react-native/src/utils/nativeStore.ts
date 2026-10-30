@@ -28,7 +28,6 @@ export function getLocaleFromNativeStore(
 export function nativeStoreGet(key: string): string | null {
   if (Platform.OS === 'web') {
     if (typeof localStorage === 'undefined') {
-      // eslint-disable-next-line no-console
       console.warn(ssrUnsupportedWarning);
       return null;
     }
@@ -45,7 +44,6 @@ export function nativeStoreGet(key: string): string | null {
 export function nativeStoreSet(key: string, value: string): void {
   if (Platform.OS === 'web') {
     if (typeof localStorage === 'undefined') {
-      // eslint-disable-next-line no-console
       console.warn(ssrUnsupportedWarning);
       return;
     }

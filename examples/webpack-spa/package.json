@@ -9,7 +9,7 @@
     "build": "webpack --mode production",
     "translate": "gt translate",
     "preview": "webpack serve --mode production --host 127.0.0.1 --port 4180",
-    "lint": "oxlint --config ../.oxlintrc.react.json .",
+    "lint": "biome lint .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -19,13 +19,13 @@
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.6.3",
     "@generaltranslation/compiler": "workspace:*",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "css-loader": "^7.1.5",
     "dotenv": "^18.0.5",
     "html-webpack-plugin": "^5.6.8",
-    "oxlint": "^1.86.0",
     "style-loader": "^4.0.0",
     "ts-loader": "^9.6.2",
     "typescript": "~6.0.3",

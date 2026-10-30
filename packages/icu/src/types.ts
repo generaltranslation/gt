@@ -69,10 +69,8 @@ export interface DateTimeSkeleton {
 
 export type Skeleton = NumberSkeleton | DateTimeSkeleton;
 
-export interface SimpleFormatElement<
-  T extends TYPE,
-  S extends Skeleton,
-> extends BaseElement<T> {
+export interface SimpleFormatElement<T extends TYPE, S extends Skeleton>
+  extends BaseElement<T> {
   style?: string | S | null;
 }
 
