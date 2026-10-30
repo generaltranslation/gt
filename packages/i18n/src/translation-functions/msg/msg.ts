@@ -77,10 +77,14 @@ export function msg(
   }
 
   const variables = extractVariables(options);
+  // Locale twins: the call site carries its content, already localized
+  const [locale, text] = Array.isArray(options.$_twin)
+    ? (options.$_twin as [string, string])
+    : [libraryDefaultLocale, message]; // TODO: use compiler to insert locales
   let interpolatedString: string;
   try {
-    interpolatedString = formatMessage(message, {
-      locales: [libraryDefaultLocale], // TODO: use compiler to insert locales
+    interpolatedString = formatMessage(text, {
+      locales: [locale],
       variables: {
         ...variables,
         [VAR_IDENTIFIER]: 'other',

@@ -19,6 +19,7 @@ export function extractVariables<T extends TranslationVariables>(
         key !== '$_hash' &&
         key !== '$_source' &&
         key !== '$_fallback' &&
+        key !== '$_twin' &&
         key !== '$format' &&
         key !== '$locale' &&
         key !== '$requiresReview'

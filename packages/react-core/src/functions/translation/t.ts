@@ -2,7 +2,7 @@ import {
   createLookupOptions,
   getRuntimeEnvironment,
   interpolateMessage,
-  resolveLocaleTwinLookup,
+  resolveLocaleTwin,
 } from 'gt-i18n/internal';
 import type { GTTranslationOptions } from 'gt-i18n/types';
 import type { LookupOptionsFor } from 'gt-i18n/internal/types';
@@ -64,30 +64,24 @@ export function resolveStringContent(
   const i18nCache = getReactI18nCache();
   const defaultLocale = getI18nConfig().getDefaultLocale();
 
-  // Locale twins: stripped code is resolved by hash, source locale included;
-  // content no twin carries renders its source text. Without translation
-  // (i18n disabled) the page has the default locale's twins.
+  // Locale twins: content the call site's twin carries (source locale
+  // included), or the source text of unattributed content. Without
+  // translation (i18n disabled) the page has the default locale's twins.
   const shouldTranslate = getShouldTranslate();
-  const twinLocale = shouldTranslate ? locale : defaultLocale;
-  const twin = resolveLocaleTwinLookup<StringContent>(
-    twinLocale,
-    options,
-    options.$_hash
+  const twin = resolveLocaleTwin<StringContent>(
+    options.$_twin,
+    shouldTranslate ? locale : defaultLocale,
+    defaultLocale
   );
-  if (twin.entry !== undefined) {
-    // A source fallback is formatted in the source locale, like a miss
+  if (twin) {
     return interpolateMessage({
       source: content,
-      target: twin.entry,
-      options: createLookupOptions(
-        twin.sourceFallback ? defaultLocale : twinLocale,
-        options,
-        'ICU'
-      ),
+      target: twin.target,
+      options: createLookupOptions(twin.locale, options, 'ICU'),
       sourceLocale: defaultLocale,
     });
   }
-  if (!shouldTranslate || twin.rendersSource) {
+  if (!shouldTranslate) {
     return interpolateMessage({
       options,
       source: content,

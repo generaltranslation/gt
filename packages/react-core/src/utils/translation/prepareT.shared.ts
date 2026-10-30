@@ -34,6 +34,8 @@ type TProps = {
   children: ReactNode;
   _locale?: string;
   _enableI18n?: boolean;
+  /** @internal Locale twins call site marker, set by the compiler */
+  _twin?: unknown;
   _renderPreparedT?: RenderPreparedT;
 } & JsxTranslationOptions;
 

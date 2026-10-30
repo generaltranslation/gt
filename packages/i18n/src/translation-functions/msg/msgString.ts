@@ -34,7 +34,9 @@ export function msgString(
 
   const stringOptions = { ...options, $format: 'STRING' as const };
   const $_hash = hashStringMessage(message, stringOptions);
-  return encodeMsg(message, {
+  // Locale twins: the call site carries its content, already localized
+  const twin = options.$_twin;
+  return encodeMsg(Array.isArray(twin) ? (twin[1] as string) : message, {
     ...stringOptions,
     $_hash,
     $_source: message,

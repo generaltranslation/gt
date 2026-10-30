@@ -1,4 +1,4 @@
-import { getLocaleTwinState } from './state';
+import { isLocaleTwinsClient } from './lookup';
 
 /** @internal `Symbol.for()` key of the navigating-reload brand. */
 export const NAVIGATING_RELOAD_KEY =
@@ -38,5 +38,12 @@ export function reloadForLocaleSwitch<State>(
 ): void {
   if (!reload) return reloadDocument();
   reload(state);
-  getLocaleTwinState().hooks?.afterCustomReload(reload, reloadDocument);
+  if (
+    isLocaleTwinsClient() &&
+    (reload as unknown as Record<symbol, unknown>)[
+      Symbol.for(NAVIGATING_RELOAD_KEY)
+    ] !== true
+  ) {
+    reloadDocument();
+  }
 }

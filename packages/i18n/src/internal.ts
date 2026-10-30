@@ -55,22 +55,8 @@ export type { GlobalSingleton } from './globals/createGlobalSingleton';
 export { getRuntimeEnvironment } from './utils/getRuntimeEnvironment';
 export { hashMessage } from './utils/hashMessage';
 export { getCookieValue, parseAcceptLanguage } from './utils/request';
-export {
-  registerLocaleTwin,
-  registerLocaleTwin as GtInternalRegisterLocaleTwin,
-  getLocaleTwinEntry,
-  getLocaleTwinLocale,
-  hasLocaleTwins,
-} from './locale-twins/registry';
-export {
-  isLocaleTwinsClient,
-  lookupLocaleTwinEntry,
-  resolveLocaleTwinLookup,
-} from './locale-twins/lookup';
-export type {
-  LocaleTwinLookup,
-  LocaleTwinLookupOptions,
-} from './locale-twins/lookup';
+export { isLocaleTwinsClient, resolveLocaleTwin } from './locale-twins/lookup';
+export type { ResolvedLocaleTwin } from './locale-twins/lookup';
 export {
   markNavigatingReload,
   reloadForLocaleSwitch,

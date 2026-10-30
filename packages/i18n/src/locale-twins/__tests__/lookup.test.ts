@@ -1,38 +1,33 @@
 /**
- * Locale twins at runtime: stripped client code carries only `$_hash`, so
- * lookups must resolve from the twin registry (source locale included), the
- * client must not load whole locales, and a mismatch between the twin-mode
- * flag, the registry and the resolved locale is reported.
+ * Locale twins at runtime: each call site of client code carries its
+ * content in its `$_twin` marker (`[locale, content]` in a locale twin, `0`
+ * for content the compiler could not attribute). Lookups render it without
+ * a registry, the client never loads whole locales (dictionaries excepted),
+ * and mismatches between the build and the runtime are reported once.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { hashSource } from 'generaltranslation/id';
 import { I18nCache } from '../../i18n-cache/I18nCache';
 import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
 import type { I18nConfigParams } from '../../i18n-config/I18nConfig';
 import { getGTInternal } from '../../translation-functions/internal/getGT';
 import { getMessagesInternal } from '../../translation-functions/internal/getMessages';
 import { setI18nCache } from '../../i18n-cache/singleton-operations';
+import { decodeMsg } from '../../translation-functions/msg/decodeMsg';
 import { msg } from '../../translation-functions/msg/msg';
-import { encodeLocaleTwinPlaceholder } from 'generaltranslation/internal';
-import { hashSource } from 'generaltranslation/id';
-import { registerLocaleTwin } from '../registry';
+import { resolveLocaleTwin } from '../lookup';
 
 type TestGlobal = typeof globalThis & {
   __generaltranslation?: unknown;
 };
 
 const GREETING_HASH = '0123456789abcdef';
-const SAVE_HASH = '1111111111111111';
-const NAMED_HASH = '2222222222222222';
 
 const TWINS_CONFIG: I18nConfigParams = {
   defaultLocale: 'en',
-  locales: ['en', 'fr'],
+  locales: ['en', 'fr', 'es'],
   files: { gt: { output: 'src/_gt/[locale].json', splitting: 'locale-twins' } },
 };
-
-function register(locale: string, entries: Record<string, unknown>) {
-  return registerLocaleTwin(JSON.stringify({ l: locale, e: entries }));
-}
 
 function resetGTGlobals() {
   Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
@@ -54,7 +49,7 @@ function createCache(
   return cache;
 }
 
-describe('locale twins runtime lookups', () => {
+describe('locale twins on the client', () => {
   beforeEach(() => {
     resetGTGlobals();
     stubBrowser();
@@ -66,166 +61,147 @@ describe('locale twins runtime lookups', () => {
     vi.restoreAllMocks();
   });
 
-  it('resolves stripped source-locale content from the registry', () => {
-    register('en', { [GREETING_HASH]: 'Hello {name}' });
-    const cache = createCache();
+  it('renders the call site content of a twin with getGT(), source locale included', async () => {
+    createCache();
 
-    expect(
-      cache.lookupTranslation('en', '', {
-        $format: 'ICU',
-        $_hash: GREETING_HASH,
-      })
-    ).toBe('Hello {name}');
+    const fr = await getGTInternal({ locale: 'fr', enableI18n: true });
+    const en = await getGTInternal({ locale: 'en', enableI18n: true });
+
+    expect(fr('', { name: 'Ada', $_twin: ['fr', 'Bonjour {name}'] })).toBe(
+      'Bonjour Ada'
+    );
+    expect(en('', { name: 'Ada', $_twin: ['en', 'Hello {name}'] })).toBe(
+      'Hello Ada'
+    );
   });
 
-  it('translates with getGT() from the registry without loading the locale or calling the CDN', async () => {
-    register('fr', { [GREETING_HASH]: 'Bonjour {name}' });
+  it('loads no locale and calls no CDN, even with a projectId', async () => {
     const loadTranslations = vi.fn().mockResolvedValue({});
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
-    createCache(
+    const cache = createCache(
       { ...TWINS_CONFIG, projectId: 'project' },
-      { loadTranslations }
+      { loadTranslations, projectId: 'project' }
     );
 
+    await cache.loadTranslations('fr');
     const gt = await getGTInternal({ locale: 'fr', enableI18n: true });
+    gt('', { $_twin: ['fr', 'Bonjour'] });
 
-    expect(gt('', { name: 'Ada', $_hash: GREETING_HASH })).toBe('Bonjour Ada');
     expect(loadTranslations).not.toHaveBeenCalled();
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it('does not use the CDN for a configured projectId', async () => {
-    register('fr', { [GREETING_HASH]: 'Bonjour {name}' });
-    const fetchSpy = vi.spyOn(globalThis, 'fetch');
-    const cache = createCache(
-      { ...TWINS_CONFIG, projectId: 'project' },
-      {
-        projectId: 'project',
-      }
-    );
-
-    await cache.loadTranslations('fr');
-    await getGTInternal({ locale: 'fr', enableI18n: true });
-
-    expect(fetchSpy).not.toHaveBeenCalled();
-  });
-
-  it('resolves stripped msg() values with m(), source locale included', async () => {
-    register('en', {
-      [GREETING_HASH]: 'Hello {name}',
-      [SAVE_HASH]: 'Save',
-    });
+  // The twin's locale has no translation: the source text, formatted with
+  // the source locale's plural rules, like a miss without locale twins
+  it('formats a source fallback in the source locale', async () => {
     createCache();
-    const greeting = msg('', { name: 'Ada', $_hash: GREETING_HASH });
-    const save = msg('', { $format: 'STRING', $_hash: SAVE_HASH });
 
-    const m = await getMessagesInternal({ locale: 'en', enableI18n: true });
+    const gt = await getGTInternal({ locale: 'ja', enableI18n: true });
 
-    expect(m(greeting)).toBe('Hello Ada');
-    expect(m(save)).toBe('Save');
+    expect(
+      gt('', {
+        n: 0,
+        $_twin: ['en', '{n, plural, one {# boat} other {# boats}}'],
+      })
+    ).toBe('0 boats');
   });
 
-  describe('mismatch diagnostics', () => {
-    it('reports once when twin mode is on but no twin was registered', async () => {
+  it('renders msg() content from its twin with m() and decodeMsg()', async () => {
+    createCache();
+    const greeting = msg('', {
+      name: 'Ada',
+      $_twin: ['fr', 'Bonjour {name}'],
+    });
+    const save = msg('', { $format: 'STRING', $_twin: ['fr', 'Enregistrer'] });
+
+    const m = await getMessagesInternal({ locale: 'fr', enableI18n: true });
+
+    expect(m(greeting)).toBe('Bonjour Ada');
+    expect(m(save)).toBe('Enregistrer');
+    expect(decodeMsg(greeting)).toBe('Bonjour Ada');
+    expect(decodeMsg(save)).toBe('Enregistrer');
+  });
+
+  it('renders unattributed content (marker 0) as its source text', async () => {
+    const loadTranslations = vi.fn().mockResolvedValue({});
+    createCache(TWINS_CONFIG, { loadTranslations });
+
+    const gt = await getGTInternal({ locale: 'fr', enableI18n: true });
+
+    expect(gt('Hi {name}', { name: 'Ada', $_twin: 0 })).toBe('Hi Ada');
+  });
+
+  describe('diagnostics', () => {
+    it('reports once when content renders without a locale twin (compiler plugin missing)', async () => {
       const error = vi.spyOn(console, 'error').mockImplementation(() => {});
       createCache();
 
       const gt = await getGTInternal({ locale: 'fr', enableI18n: true });
+      expect(gt('Hello')).toBe('Hello');
       gt('', { $_hash: GREETING_HASH });
-      gt('', { $_hash: SAVE_HASH });
 
       expect(error).toHaveBeenCalledTimes(1);
       expect(error.mock.calls[0][0]).toMatch(
-        /gt-i18n.*Error.*no locale twin was registered/s
+        /gt-i18n.*Error.*without a locale twin.*compiler plugin/s
       );
     });
 
-    // Every module the compiler plugin builds installs the locale twin
-    // runtime, so a lookup without one means the plugin is missing
-    it('reports lookups without a hash once when nothing installed the twin runtime', async () => {
+    // An original (untwinned) chunk carries the unfilled placeholder string
+    it('reports once when a call site still has its unfilled placeholder', () => {
       const error = vi.spyOn(console, 'error').mockImplementation(() => {});
       createCache();
-
-      const gt = await getGTInternal({ locale: 'fr', enableI18n: true });
-      gt('Hello');
-      gt('Hello');
-
-      expect(error).toHaveBeenCalledTimes(1);
-      expect(error.mock.calls[0][0]).toContain('compiler plugin');
-    });
-
-    it('does not report lookups without a hash once the twin runtime is installed', async () => {
-      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-      registerLocaleTwin();
-      createCache();
-
-      const gt = await getGTInternal({ locale: 'fr', enableI18n: true });
-
-      expect(gt('Hello')).toBe('Hello');
-      expect(error).not.toHaveBeenCalled();
-    });
-
-    it('reports once when twins are registered but twin mode is off', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      register('fr', {
-        [GREETING_HASH]: 'Bonjour',
-        [SAVE_HASH]: 'Enregistrer',
-      });
-      const cache = createCache({ defaultLocale: 'en', locales: ['en', 'fr'] });
 
       expect(
-        cache.lookupTranslation('fr', '', {
-          $format: 'ICU',
-          $_hash: GREETING_HASH,
-        })
-      ).toBe('Bonjour');
-      cache.lookupTranslation('fr', '', { $format: 'ICU', $_hash: SAVE_HASH });
+        resolveLocaleTwin('__GT_LOCALE_TWIN__:x:y', 'fr', 'en')
+      ).toBeUndefined();
 
-      expect(warn).toHaveBeenCalledTimes(1);
-      expect(warn.mock.calls[0][0]).toMatch(
-        /gt-i18n.*Warning.*files\.gt\.splitting/s
-      );
+      expect(error).toHaveBeenCalledTimes(1);
     });
 
-    it('reports once when the registered twin locale differs from the rendered locale', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      register('fr', {
-        [GREETING_HASH]: 'Bonjour',
-        [SAVE_HASH]: 'Enregistrer',
-      });
-      const cache = createCache({
-        ...TWINS_CONFIG,
-        locales: ['en', 'fr', 'es'],
-      });
-
-      cache.lookupTranslation('es', '', {
-        $format: 'ICU',
-        $_hash: GREETING_HASH,
-      });
-      cache.lookupTranslation('es', '', { $format: 'ICU', $_hash: SAVE_HASH });
-
-      expect(warn).toHaveBeenCalledTimes(1);
-      expect(warn.mock.calls[0][0]).toMatch(/"fr".*"es"/s);
-    });
-
-    it('stays silent when the flag, the registry and the locale agree', () => {
+    it('stays silent for twin content and unattributed content', () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-      register('fr', { [GREETING_HASH]: 'Bonjour' });
-      const cache = createCache();
+      createCache();
 
-      cache.lookupTranslation('fr', '', {
-        $format: 'ICU',
-        $_hash: GREETING_HASH,
-      });
+      resolveLocaleTwin(['fr', 'Bonjour'], 'fr', 'en');
+      resolveLocaleTwin(['en', 'Missing'], 'fr', 'en');
+      resolveLocaleTwin(0, 'fr', 'en');
 
       expect(warn).not.toHaveBeenCalled();
       expect(error).not.toHaveBeenCalled();
     });
+
+    // Twin content renders as built whatever the runtime config says: the
+    // compiler checks the flag at build time instead (every app ships this)
+    it('renders twin content without checking the runtime flag or locale', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      createCache({ defaultLocale: 'en', locales: ['en', 'fr'] });
+
+      expect(resolveLocaleTwin(['fr', 'Bonjour'], 'es', 'en')).toEqual({
+        locale: 'fr',
+        target: 'Bonjour',
+      });
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it('does not report dictionary lookups (they keep loading whole locales)', () => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      createCache();
+
+      expect(resolveLocaleTwin(undefined, 'fr', 'en', true)).toBeUndefined();
+      expect(error).not.toHaveBeenCalled();
+    });
+  });
+});
+
+describe('locale twins on the server', () => {
+  beforeEach(resetGTGlobals);
+  afterEach(() => {
+    resetGTGlobals();
+    vi.restoreAllMocks();
   });
 
-  it('keeps loading whole locales on the server', async () => {
-    vi.unstubAllGlobals();
+  it('keeps loading whole locales and translating attributed entries', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     const loadTranslations = vi.fn().mockResolvedValue({
       [GREETING_HASH]: 'Bonjour {name}',
@@ -241,52 +217,63 @@ describe('locale twins runtime lookups', () => {
     expect(error).not.toHaveBeenCalled();
   });
 
-  it('keeps unattributed entries (no $_hash) rendering from code', async () => {
-    register('fr', { [GREETING_HASH]: 'Bonjour {name}' });
-    createCache();
-
-    const gt = await getGTInternal({ locale: 'en', enableI18n: true });
-
-    expect(gt('Hi {name}', { name: 'Ada' })).toBe('Hi Ada');
-    expect(gt('Hi {name}', { name: 'Ada', $_hash: NAMED_HASH })).toBe('Hi Ada');
-  });
-
-  // Content without a compile-time hash renders as source with locale twins
-  // (the client cannot load it), on the server too, so a route loader that
-  // runs on both sides returns the same text (React lookups do the same)
-  it('renders unattributed entries as source on the server with getGT() and getMessages()', async () => {
-    vi.unstubAllGlobals();
-    // What the server bundle's modules do
-    registerLocaleTwin(encodeLocaleTwinPlaceholder({ [SAVE_HASH]: 'Save' }));
-    registerLocaleTwin();
+  // The client renders it as source too, so a route loader that runs on
+  // both sides returns the same text
+  it('renders unattributed entries (marker 0) as source with getGT() and getMessages()', async () => {
     const loadTranslations = vi.fn().mockResolvedValue({
       [hashSource({ source: 'Season', dataFormat: 'ICU' })]: 'Saison',
-      [GREETING_HASH]: 'Bonjour {name}',
     });
     createCache(TWINS_CONFIG, { loadTranslations });
 
     const gt = await getGTInternal({ locale: 'fr', enableI18n: true });
     const m = await getMessagesInternal({ locale: 'fr', enableI18n: true });
 
-    expect(gt('Season')).toBe('Season');
-    expect(m('Season')).toBe('Season');
-    expect(gt('Hello {name}', { name: 'Ada', $_hash: GREETING_HASH })).toBe(
-      'Bonjour Ada'
-    );
+    expect(gt('Season', { $_twin: 0 })).toBe('Season');
+    expect(m(msg('Season', { $_twin: 0 }))).toBe('Season');
+    expect(gt('Season')).toBe('Saison');
+  });
+});
+
+describe('dictionaries on a locale twin client', () => {
+  const RUNTIME_HASH = 'fedcba9876543210';
+
+  beforeEach(() => {
+    resetGTGlobals();
+    stubBrowser();
   });
 
-  it('formats a source fallback from the registry in the source locale with getGT()', async () => {
-    registerLocaleTwin(
-      JSON.stringify({
-        l: 'fr',
-        e: { [GREETING_HASH]: '{n, plural, one {# boat} other {# boats}}' },
-        s: [GREETING_HASH],
+  afterEach(() => {
+    resetGTGlobals();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('keeps loading whole locales when the app uses dictionaries', async () => {
+    const loadTranslations = vi
+      .fn()
+      .mockResolvedValue({ [RUNTIME_HASH]: 'Titre' });
+    const cache = createCache(TWINS_CONFIG, {
+      loadTranslations,
+      dictionary: { title: 'Title' },
+    });
+
+    await cache.loadTranslations('fr');
+
+    expect(loadTranslations).toHaveBeenCalledWith('fr');
+    expect(
+      cache.lookupTranslation('fr', 'Title', {
+        $format: 'ICU',
+        $_hash: RUNTIME_HASH,
       })
-    );
-    createCache();
+    ).toBe('Titre');
+  });
 
-    const gt = await getGTInternal({ locale: 'fr', enableI18n: true });
+  it('loads nothing when the app uses no dictionaries', async () => {
+    const loadTranslations = vi.fn().mockResolvedValue({});
+    const cache = createCache(TWINS_CONFIG, { loadTranslations });
 
-    expect(gt('', { n: 0, $_hash: GREETING_HASH })).toBe('0 boats');
+    await cache.loadTranslations('fr');
+
+    expect(loadTranslations).not.toHaveBeenCalled();
   });
 });

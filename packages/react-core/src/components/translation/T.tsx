@@ -1,5 +1,6 @@
 import { useTranslate } from '../../hooks/external-store';
-import { getI18nConfig, resolveLocaleTwinLookup } from 'gt-i18n/internal';
+import { getI18nConfig, resolveLocaleTwin } from 'gt-i18n/internal';
+import type { JsxChildren } from 'generaltranslation/types';
 import { useRef, type ReactNode } from 'react';
 import { renderPreparedT } from '../../utils/rendering/renderPipeline';
 import type { TProps } from '../../utils/translation/prepareT.shared';
@@ -32,6 +33,7 @@ function useComputeT({
   _locale,
   _enableI18n,
   _renderPreparedT = renderPreparedT,
+  _twin,
   ...params
 }: TProps): ReactNode {
   // Prepare our source children for rendering
@@ -74,29 +76,17 @@ function useComputeT({
     return prev.current;
   }
 
-  // Locale twins: stripped source children render through the registered
-  // twin's JSX, source locale included; content no twin carries renders its
-  // source text. targetOptions.$_hash may be computed at runtime, so only
-  // the compiler's own hash counts as attributed.
-  const twin = resolveLocaleTwinLookup(
-    twinLocale,
-    targetOptions,
-    params._hash ?? params.$_hash
-  );
-  const fromLocaleTwin = twin.entry !== undefined;
+  // Locale twins: the twin's JSX (source locale included) renders with the
+  // stripped source children; unattributed content renders its source text
+  const twin = resolveLocaleTwin<JsxChildren>(_twin, twinLocale, defaultLocale);
 
   const result = _renderPreparedT({
     taggedSourceChildren,
-    targetJsxChildren,
-    // A source fallback renders in the source locale, like a miss
-    locale: fromLocaleTwin
-      ? twin.sourceFallback
-        ? defaultLocale
-        : twinLocale
-      : locale,
+    targetJsxChildren: twin ? twin.target : targetJsxChildren,
+    locale: twin ? twin.locale : locale,
     defaultLocale,
     enableI18n,
-    shouldTranslate: (shouldTranslate && !twin.rendersSource) || fromLocaleTwin,
+    shouldTranslate: twin ? twin.target !== undefined : shouldTranslate,
     hash: targetOptions.$_hash,
   });
 
