@@ -1,4 +1,7 @@
-import { resolveLocaleTwinLookup } from 'gt-i18n/internal/experimental';
+import {
+  isLocaleTwinsEnabled,
+  resolveLocaleTwinLookup,
+} from 'gt-i18n/internal/experimental';
 import type { ReactNode } from 'react';
 import {
   GtInternalTranslateJsx as RegularGtInternalTranslateJsx,
@@ -42,15 +45,21 @@ export { GtInternalTranslateJsx, T };
  * Renders the prepared `<T>` from its locale twin when one carries it.
  * Without translation (i18n disabled) the page has the default locale's
  * twins. Only the compiler's own hash counts as attributed: the prepared
- * hash may have been computed at runtime.
+ * hash may have been computed at runtime. Translations from whole locales
+ * (the server) render with the locale twin renderer too, so they match what
+ * a twin renders in the browser (for example the translated placeholder of
+ * a childless `<input>`).
  */
 function createRender({
   _hash,
   $_hash,
-  _renderPreparedT = renderPreparedT,
+  _renderPreparedT,
 }: TProps): RenderPreparedT {
   const compileTimeHash = _hash ?? $_hash;
   return (params: RenderPreparedTParams) => {
+    const render =
+      _renderPreparedT ??
+      (isLocaleTwinsEnabled() ? renderLocaleTwinPreparedT : renderPreparedT);
     const twinLocale = params.shouldTranslate
       ? params.locale
       : params.defaultLocale;
@@ -69,7 +78,7 @@ function createRender({
         shouldTranslate: true,
       });
     }
-    return _renderPreparedT(
+    return render(
       twin.rendersSource ? { ...params, shouldTranslate: false } : params
     );
   };
