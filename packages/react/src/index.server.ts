@@ -119,7 +119,6 @@ export type { SharedGTProviderProps } from './provider/GTProviderProps';
 export {
   GtInternalRuntimeTranslateJsx,
   GtInternalRuntimeTranslateString,
-  GtInternalRegisterLocaleTwin,
   // Locale twins (web-only): keep a custom navigating _reload as the reload
   markNavigatingReload,
 } from 'gt-i18n/internal';
