@@ -3046,6 +3046,63 @@ describe('localizeStaticUrls links to pages outside translation scope', () => {
     expect(written).toBeUndefined();
   });
 
+  it('resolves nested folder links through index pages', async () => {
+    const written = await runWithFiles(
+      '[Guides](/docs/guides/)',
+      ['docs/guides/index.mdx'],
+      {},
+      { docsUrlPattern: '/[locale]', experimentalHideDefaultLocale: true }
+    );
+
+    expect(written).toBeUndefined();
+  });
+
+  it('resolves root URL through index page', async () => {
+    const written = await runWithFiles(
+      '[Home](/)',
+      ['index.mdx'],
+      {},
+      { docsUrlPattern: '/[locale]', experimentalHideDefaultLocale: true }
+    );
+
+    expect(written).toBeUndefined();
+  });
+
+  it('strips query parameters and fragment suffixes when resolving index pages', async () => {
+    const written = await runWithFiles(
+      '[Products](/products/?filter=all#featured)',
+      ['products/index.mdx'],
+      {},
+      { docsUrlPattern: '/[locale]', experimentalHideDefaultLocale: true }
+    );
+
+    expect(written).toBeUndefined();
+  });
+
+  it('resolves folder links through .md index pages', async () => {
+    const written = await runWithFiles(
+      '[Products](/products/)',
+      ['products/index.md'],
+      {},
+      { docsUrlPattern: '/[locale]', experimentalHideDefaultLocale: true }
+    );
+
+    expect(written).toBeUndefined();
+  });
+
+  it('localizes folder links whose index page translation exists at a mapped path', async () => {
+    const output =
+      'i18n/ja/docusaurus-plugin-content-docs/current/products/index.mdx';
+    const written = await runWithFiles(
+      '[Products](/products/)',
+      ['products/index.mdx', output],
+      { 'products/index.mdx': output },
+      { docsUrlPattern: '/[locale]', experimentalHideDefaultLocale: true }
+    );
+
+    expect(written).toContain('[Products](/ja/products/)');
+  });
+
   it('localizes links whose translation lives at a transformed output path', async () => {
     // Docusaurus stores translations outside a locale-prefixed copy of the URL.
     const output = 'i18n/ja/docusaurus-plugin-content-docs/current/guide.mdx';
