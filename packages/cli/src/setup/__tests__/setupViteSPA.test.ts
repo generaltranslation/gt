@@ -613,22 +613,28 @@ describe('viteSetup with locale twins', () => {
     fs.rmSync(appDirectory, { recursive: true, force: true });
   });
 
-  it('initializes without a loader and adds the compiler', async () => {
+  // vite dev serves no twins: it loads the translation files as without
+  // locale twins, and production builds drop the loader
+  it('loads translation files in development only and adds the compiler', async () => {
     const result = await viteSetup.apply(twins());
 
     expect(read('src/gt-entry.ts'))
       .toBe(`import { initializeGTSPA } from 'gt-react';
 import gtConfig from '../gt.config.json';
+import loadTranslations from './loadTranslations';
 
-await initializeGTSPA(gtConfig);
+// Locale twins carry the translations in production builds
+await initializeGTSPA(
+  import.meta.env.DEV ? { ...gtConfig, loadTranslations } : gtConfig
+);
 
 await import('./main');
 `);
     expect(read('vite.config.ts')).toContain(
       'plugins: [react(), gtCompiler()],'
     );
-    expect(fs.existsSync(file('src/loadTranslations.ts'))).toBe(false);
-    expect(fs.existsSync(file('src/_gt'))).toBe(false);
+    expect(read('src/loadTranslations.ts')).toContain('import(`./_gt/');
+    expect(fs.existsSync(file('src/_gt/fr.json'))).toBe(true);
     expect(result).toEqual({
       steps: [
         'configured initializeGTSPA',

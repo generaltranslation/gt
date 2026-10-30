@@ -383,7 +383,7 @@ export async function setupViteSPA({
   // generated initializer around it would initialize GT twice.
   if (customBootstrap) {
     return {
-      manualAction: `Verify the existing GT bootstrap ${customBootstrap} uses ${configFilepath}${twins ? ' without a loadTranslations option' : translationsDir ? ` and loads translations from ${translationsDir}` : ' with CDN loading'}`,
+      manualAction: `Verify the existing GT bootstrap ${customBootstrap} uses ${configFilepath}${translationsDir ? ` and loads translations from ${translationsDir}${twins ? ' in development only (import.meta.env.DEV)' : ''}` : ' with CDN loading'}`,
     };
   }
 
@@ -392,8 +392,7 @@ export async function setupViteSPA({
   let loadTranslationsImport = '';
   let loadTranslationsOption = 'gtConfig';
   let loader: ViteLoaderResult | undefined;
-  // Locale twins carry translations in the build, so nothing loads them.
-  if (translationsDir && !twins) {
+  if (translationsDir) {
     loader = await writeViteLoader({
       appDirectory,
       defaultLocale,
@@ -413,7 +412,12 @@ export async function setupViteSPA({
       loaderExport === 'default'
         ? "import loadTranslations from './loadTranslations';\n"
         : "import { loadTranslations } from './loadTranslations';\n";
-    loadTranslationsOption = '{ ...gtConfig, loadTranslations }';
+    // Locale twins carry the translations in production builds; vite dev
+    // serves no twins and loads the files as usual. Vite replaces
+    // import.meta.env.DEV, so production builds drop the loader.
+    loadTranslationsOption = twins
+      ? '\n  import.meta.env.DEV ? { ...gtConfig, loadTranslations } : gtConfig\n'
+      : '{ ...gtConfig, loadTranslations }';
   }
 
   const configImport = toRelativeImport(
@@ -425,7 +429,7 @@ export async function setupViteSPA({
     `import { initializeGTSPA } from '${Libraries.GT_REACT}';
 import gtConfig from '${configImport}';
 ${loadTranslationsImport}
-await initializeGTSPA(${loadTranslationsOption});
+${twins && translationsDir ? '// Locale twins carry the translations in production builds\n' : ''}await initializeGTSPA(${loadTranslationsOption});
 
 await import('${entryImport}');
 `
