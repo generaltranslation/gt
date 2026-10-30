@@ -4,9 +4,8 @@ import type { LocaleTwinTextSite } from '../../state/LocaleTwinCollector';
 
 /**
  * Removes the source-locale text of every attributed entry from the module
- * (client builds in locale twins mode). The text travels in the call site's
- * placeholder instead, which each locale twin fills with that locale's
- * content.
+ * (client builds in locale twins mode). The text travels in the module's
+ * placeholder instead, and the runtime renders it from the registry by hash.
  *
  * Each text expression is replaced in place by `""`, never removed, so the
  * shape of the code (elements, props, variables, array positions, GT element

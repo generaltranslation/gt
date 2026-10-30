@@ -14,10 +14,10 @@ import {
   checkAttribution,
   derivedEntryHashes,
   distinctiveSegments,
+  findFilledTables,
   readTranslations,
   readTwinManifest,
   readTwinReport,
-  twinTables,
   type FilledTable,
   type TranslationFile,
   type TwinManifest,
@@ -75,8 +75,8 @@ export function readTwinBuild(config: TwinAppConfig): TwinBuild {
     path.join(appDir, config.translationsDir),
     manifest.locales
   );
+  const attributed = attributedHashes(clientDir, manifest);
   const report = readTwinReport(appDir);
-  const attributed = attributedHashes(report);
   const source = translations[manifest.defaultLocale];
   // The string lists below come from the translation files: a build that
   // attributes fewer entries than expected fails here instead of shrinking them
@@ -142,10 +142,7 @@ export class ResponseCapture {
   readonly requests: { url: string; resourceType: string }[] = [];
   private readonly pending: Promise<void>[] = [];
 
-  private readonly build: TwinBuild;
-
-  constructor(page: Page, build: TwinBuild) {
-    this.build = build;
+  constructor(page: Page) {
     page.on('request', (request) => {
       this.requests.push({
         url: request.url(),
@@ -168,11 +165,9 @@ export class ResponseCapture {
       headers: response.headers(),
       body,
       text,
-      tables: twinTables(
-        this.build.manifest,
-        this.build.report,
-        fileOfUrl(response.url())
-      ),
+      tables: /\.m?js$/.test(new URL(response.url()).pathname)
+        ? findFilledTables(text)
+        : [],
     });
   }
 
@@ -219,7 +214,7 @@ export function tableHashes(
         foreignTables.push(`${response.file}: ${table.locale}`);
       }
       bytes += table.bytes;
-      for (const hash of table.hashes) hashes.add(hash);
+      for (const hash of Object.keys(table.entries)) hashes.add(hash);
     }
   }
   return { hashes, foreignTables, bytes };

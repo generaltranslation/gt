@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 /**
  * End to end at the runtime level: a module compiled by the real GT compiler
- * for a locale twin client build (source text stripped, a placeholder at
- * each call site), its placeholders filled with a locale's content the way
- * the post-build step does, evaluated, then rendered with React.
+ * for a locale twin client build (source text stripped, one placeholder), its
+ * placeholder filled with a locale's table the way the post-build step does,
+ * evaluated (which registers the twin), then rendered with React.
  */
 import React from 'react';
 import * as ReactJsxRuntime from 'react/jsx-runtime';
@@ -20,12 +20,9 @@ import {
 import { createRequire } from 'node:module';
 import {
   findLocaleTwinPlaceholders,
-  serializeLocaleTwinValue,
+  serializeLocaleTwinTable,
 } from 'generaltranslation/internal';
-import type {
-  LocaleTwinPlaceholderMatch,
-  LocaleTwinValue,
-} from 'generaltranslation/internal';
+import type { LocaleTwinEntries } from 'generaltranslation/internal';
 import { hashSource } from 'generaltranslation/id';
 import * as GTReact from '../index.client';
 import { initializeGTSPA } from '../setup/initializeGTSPA';
@@ -47,7 +44,6 @@ const GT_CONFIG = {
 const PAGE_SOURCE = `import { jsx, jsxs } from 'react/jsx-runtime';
 import { T, Var, useGT, msg, useMessages, t } from 'gt-react';
 const greeting = msg("Hello {name}", { name: "Ada" });
-const welcome = msg("Welcome, {user}!");
 export function Page({ name }) {
   const gt = useGT();
   const m = useMessages();
@@ -55,7 +51,6 @@ export function Page({ name }) {
     jsxs(T, { children: ["Hi ", jsx("b", { className: "x", children: "there" }), jsx(Var, { children: name }), jsx("input", { placeholder: "Your name" })] }),
     jsx("p", { children: gt("Save {count} items", { count: 3 }) }),
     jsx("p", { children: m(greeting) }),
-    jsx("p", { children: m(welcome, { user: name }) }),
     jsx("p", { children: t("Cancel") }),
   ] });
 }`;
@@ -76,7 +71,6 @@ const FRENCH: Record<string, unknown> = {
   ],
   [JSON.stringify('Save {count} items')]: 'Enregistrer {count} éléments',
   [JSON.stringify('Hello {name}')]: 'Bonjour {name}',
-  [JSON.stringify('Welcome, {user}!')]: 'Bienvenue, {user} !',
   [JSON.stringify('Cancel')]: 'Annuler',
 };
 
@@ -86,6 +80,7 @@ const compiler = createRequire(import.meta.url)(
 ) as typeof import('@generaltranslation/compiler');
 
 let strippedCode: string;
+let sourceEntries: LocaleTwinEntries;
 
 async function compileForClientBuild(code: string): Promise<string> {
   const plugin = compiler.default.raw(
@@ -118,27 +113,20 @@ async function compileForClientBuild(code: string): Promise<string> {
   return typeof result === 'string' ? result : result.code;
 }
 
-/** Replaces every placeholder token like the twin generator does. */
-function fill(
-  code: string,
-  valueOf: (match: LocaleTwinPlaceholderMatch) => LocaleTwinValue
-): string {
-  let filled = '';
-  let cursor = 0;
-  for (const match of findLocaleTwinPlaceholders(code)) {
-    filled +=
-      code.slice(cursor, match.start) +
-      serializeLocaleTwinValue(...valueOf(match));
-    cursor = match.end;
+/** Replaces the placeholder token like the twin generator does. */
+function fillPlaceholder(code: string, locale: string): string {
+  const [match] = findLocaleTwinPlaceholders(code);
+  const entries: LocaleTwinEntries = {};
+  for (const [hash, source] of Object.entries(match.entries)) {
+    entries[hash] =
+      locale === GT_CONFIG.defaultLocale
+        ? source
+        : (FRENCH[JSON.stringify(source)] as LocaleTwinEntries[string]);
   }
-  return filled + code.slice(cursor);
-}
-
-function fillPlaceholders(code: string, locale: string): string {
-  return fill(code, ({ source }) =>
-    locale === GT_CONFIG.defaultLocale
-      ? [locale, source]
-      : [locale, FRENCH[JSON.stringify(source)] as LocaleTwinValue[1]]
+  return (
+    code.slice(0, match.start) +
+    serializeLocaleTwinTable({ l: locale, e: entries }) +
+    code.slice(match.end)
   );
 }
 
@@ -164,7 +152,7 @@ function evaluateModule(code: string): { Page: React.FC<{ name: string }> } {
 }
 
 async function renderPage(locale: string): Promise<string> {
-  const { Page } = evaluateModule(fillPlaceholders(strippedCode, locale));
+  const { Page } = evaluateModule(fillPlaceholder(strippedCode, locale));
   await initializeGTSPA({ ...GT_CONFIG, locale });
   return renderToStaticMarkup(<Page name='Ada' />);
 }
@@ -176,6 +164,7 @@ function resetGTGlobals() {
 describe('locale twins end to end', () => {
   beforeAll(async () => {
     strippedCode = await compileForClientBuild(PAGE_SOURCE);
+    sourceEntries = findLocaleTwinPlaceholders(strippedCode)[0].entries;
   });
 
   beforeEach(resetGTGlobals);
@@ -185,8 +174,9 @@ describe('locale twins end to end', () => {
     vi.restoreAllMocks();
   });
 
-  it('compiles a client build without source text outside the placeholders', () => {
-    const code = fill(strippedCode, () => ['en', '']);
+  it('compiles a client build without source text outside the placeholder', () => {
+    const [match] = findLocaleTwinPlaceholders(strippedCode);
+    const code = strippedCode.replace(match.token, '""');
 
     for (const text of [
       'Hi',
@@ -194,12 +184,11 @@ describe('locale twins end to end', () => {
       'Your name',
       'Save',
       'Hello',
-      'Welcome',
       'Cancel',
     ]) {
       expect(code).not.toContain(text);
     }
-    expect(findLocaleTwinPlaceholders(strippedCode)).toHaveLength(5);
+    expect(Object.keys(sourceEntries)).toHaveLength(4);
   });
 
   it('renders the source locale from its twin', async () => {
@@ -207,7 +196,7 @@ describe('locale twins end to end', () => {
 
     expect(html).toBe(
       '<main>Hi <b class="x">there</b>Ada<input placeholder="Your name"/>' +
-        '<p>Save 3 items</p><p>Hello Ada</p><p>Welcome, Ada!</p><p>Cancel</p></main>'
+        '<p>Save 3 items</p><p>Hello Ada</p><p>Cancel</p></main>'
     );
   });
 
@@ -216,21 +205,21 @@ describe('locale twins end to end', () => {
 
     expect(html).toBe(
       '<main>Salut <b class="x">toi</b> Ada<input placeholder="Votre nom"/>' +
-        '<p>Enregistrer 3 éléments</p><p>Bonjour Ada</p><p>Bienvenue, Ada !</p><p>Annuler</p></main>'
+        '<p>Enregistrer 3 éléments</p><p>Bonjour Ada</p><p>Annuler</p></main>'
     );
   });
 
   it('renders the default locale twin when the visitor disabled i18n', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     // The bootstrap (or server) serves the default locale's twins
-    const { Page } = evaluateModule(fillPlaceholders(strippedCode, 'en'));
+    const { Page } = evaluateModule(fillPlaceholder(strippedCode, 'en'));
     document.cookie = 'generaltranslation.enable-i18n=false';
     try {
       await initializeGTSPA({ ...GT_CONFIG, locale: 'fr' });
 
       expect(renderToStaticMarkup(<Page name='Ada' />)).toBe(
         '<main>Hi <b class="x">there</b>Ada<input placeholder="Your name"/>' +
-          '<p>Save 3 items</p><p>Hello Ada</p><p>Welcome, Ada!</p><p>Cancel</p></main>'
+          '<p>Save 3 items</p><p>Hello Ada</p><p>Cancel</p></main>'
       );
       expect(warn).not.toHaveBeenCalled();
     } finally {
@@ -253,8 +242,15 @@ export function Page() {
     jsx("p", { children: gt("{n, plural, one {# boat} other {# boats}}", { n: 0 }) }),
   ] });
 }`);
+    const [match] = findLocaleTwinPlaceholders(code);
     const { Page } = evaluateModule(
-      fill(code, ({ source }) => [GT_CONFIG.defaultLocale, source])
+      code.slice(0, match.start) +
+        serializeLocaleTwinTable({
+          l: 'fr',
+          e: match.entries,
+          s: match.hashes,
+        }) +
+        code.slice(match.end)
     );
     await initializeGTSPA({ ...GT_CONFIG, locale: 'fr' });
 
@@ -271,17 +267,19 @@ export function Page() {
     renderToStaticMarkup(<Page name='Ada' />);
 
     expect(error).toHaveBeenCalledTimes(1);
-    expect(error.mock.calls[0][0]).toContain('without a locale twin');
+    expect(error.mock.calls[0][0]).toContain('no locale twin was registered');
   });
 
-  // The runtime does not compare locales (every app would ship the check):
-  // the page renders the twins it loaded
-  it('renders the loaded twin when the runtime resolved another locale', async () => {
-    const { Page } = evaluateModule(fillPlaceholders(strippedCode, 'fr'));
+  it('reports a twin whose locale differs from the rendered locale', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { Page } = evaluateModule(fillPlaceholder(strippedCode, 'fr'));
     await initializeGTSPA({ ...GT_CONFIG, locale: 'en' });
 
-    expect(renderToStaticMarkup(<Page name='Ada' />)).toContain(
-      '<p>Enregistrer 3 éléments</p>'
+    renderToStaticMarkup(<Page name='Ada' />);
+
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toContain(
+      'loaded locale twins for "fr", but GT is rendering "en"'
     );
   });
 
@@ -296,7 +294,7 @@ export function Page() {
     expect(html).toContain('Save 3 items');
     expect(error).toHaveBeenCalledTimes(1);
     expect(error.mock.calls[0][0]).toMatch(
-      /without a locale twin[\s\S]*compiler plugin/
+      /no locale twin was registered[\s\S]*compiler plugin/
     );
   });
 
@@ -338,7 +336,7 @@ export function Page() {
   it('never loads translations or calls the CDN', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const loadTranslations = vi.fn(() => new Promise<never>(() => {}));
-    const { Page } = evaluateModule(fillPlaceholders(strippedCode, 'fr'));
+    const { Page } = evaluateModule(fillPlaceholder(strippedCode, 'fr'));
 
     // initializeGTSPA must not wait for a whole-locale load
     await initializeGTSPA({

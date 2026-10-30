@@ -18,9 +18,11 @@ const HASH_SHARED = '0123456789abcdef';
  * Page b has no strings of its own.
  */
 function rolldownOutput(): Record<string, { code: string }> {
-  const main = encodeLocaleTwinPlaceholder(HASH_MAIN, 'Main text');
-  const a = encodeLocaleTwinPlaceholder(HASH_A, 'Page A text');
-  const shared = encodeLocaleTwinPlaceholder(HASH_SHARED, 'Shared string');
+  const main = encodeLocaleTwinPlaceholder({ [HASH_MAIN]: 'Main text' });
+  const a = encodeLocaleTwinPlaceholder({ [HASH_A]: 'Page A text' });
+  const shared = encodeLocaleTwinPlaceholder({
+    [HASH_SHARED]: 'Shared string',
+  });
   return {
     'assets/index-DGIdfwLW.js': {
       code:
@@ -58,8 +60,8 @@ function rolldownOutput(): Record<string, { code: string }> {
  * single quotes, `import("./x.js")` and `from"./x.js"` in double quotes.
  */
 function rollupOutput(): Record<string, { code: string }> {
-  const main = encodeLocaleTwinPlaceholder(HASH_MAIN, 'Main text');
-  const a = encodeLocaleTwinPlaceholder(HASH_A, 'Page A text');
+  const main = encodeLocaleTwinPlaceholder({ [HASH_MAIN]: 'Main text' });
+  const a = encodeLocaleTwinPlaceholder({ [HASH_A]: 'Page A text' });
   return {
     'assets/index-uTNh2gR5.js': {
       code:
@@ -78,14 +80,24 @@ function rollupOutput(): Record<string, { code: string }> {
   };
 }
 
-/** The JS expression a filled placeholder becomes: `[locale, content]`. */
-function filled(locale: string, content: unknown): string {
-  return JSON.stringify([locale, content]);
+/** The JS literal a filled placeholder becomes: a string holding the table JSON. */
+function filled(
+  locale: string,
+  entries: Record<string, unknown>,
+  sourceFallbacks?: string[]
+): string {
+  return JSON.stringify(
+    JSON.stringify({
+      l: locale,
+      e: entries,
+      ...(sourceFallbacks && { s: sourceFallbacks }),
+    })
+  );
 }
 
 describe('generateLocaleTwins', () => {
-  it('writes one twin per locale with that locale’s content in place of the placeholder', () => {
-    const placeholder = encodeLocaleTwinPlaceholder(HASH_A, 'Page A');
+  it('writes one twin per locale with that locale’s table in place of the placeholder', () => {
+    const placeholder = encodeLocaleTwinPlaceholder({ [HASH_A]: 'Page A' });
     const result = generateLocaleTwins({
       files: {
         'assets/a-C7otXMrN.js': { code: `var r=e(\`${placeholder}\`);` },
@@ -99,9 +111,11 @@ describe('generateLocaleTwins', () => {
     const frName = twins.fr['assets/a-C7otXMrN.js'];
     const enName = twins.en['assets/a-C7otXMrN.js'];
     expect(result.files[frName]).toBe(
-      `var r=e(${filled('fr', 'Page A en français')});`
+      `var r=e(${filled('fr', { [HASH_A]: 'Page A en français' })});`
     );
-    expect(result.files[enName]).toBe(`var r=e(${filled('en', 'Page A')});`);
+    expect(result.files[enName]).toBe(
+      `var r=e(${filled('en', { [HASH_A]: 'Page A' })});`
+    );
   });
 
   it('twins every file with a placeholder and every file that references a twinned file', () => {
@@ -194,15 +208,19 @@ describe('generateLocaleTwins', () => {
     const pageA = files[manifest.twins.fr['assets/a-DzZqmkhL.js']];
 
     expect(report.shared).toEqual(['assets/vendor-BM75T8Fc.js']);
-    expect(index).toContain(`const b=g(${filled('fr', 'Texte principal')})`);
+    expect(index).toContain(
+      `const b=g(${filled('fr', { [HASH_MAIN]: 'Texte principal' })})`
+    );
     expect(index).toContain(`import("./a-DzZqmkhL.fr-${v}.js")`);
     expect(index).toContain(`m.f=["assets/a-DzZqmkhL.fr-${v}.js",`);
-    expect(pageA).toContain(`const s=r(${filled('fr', 'Texte A')})`);
+    expect(pageA).toContain(
+      `const s=r(${filled('fr', { [HASH_A]: 'Texte A' })})`
+    );
   });
 
   // The runtime formats source fallbacks in the source locale (plural rules,
   // number formats), as a server cache miss does
-  it('falls back to the source text in the source locale for missing translations, and reports them per locale', () => {
+  it('falls back to the source text for missing translations, marks it, and reports them per locale', () => {
     const { files, manifest, report } = generateLocaleTwins({
       files: rolldownOutput(),
       defaultLocale: 'en',
@@ -213,10 +231,10 @@ describe('generateLocaleTwins', () => {
     });
 
     expect(files[manifest.twins.fr['assets/a-C7otXMrN.js']]).toContain(
-      filled('en', 'Page A text')
+      filled('fr', { [HASH_A]: 'Page A text' }, [HASH_A])
     );
     expect(files[manifest.twins.fr['assets/index-DGIdfwLW.js']]).toContain(
-      filled('fr', 'Texte principal')
+      filled('fr', { [HASH_MAIN]: 'Texte principal' })
     );
     expect(report.missingTranslations).toEqual({
       fr: [HASH_A],
@@ -269,7 +287,7 @@ describe('generateLocaleTwins', () => {
   });
 
   it('handles import cycles: both chunks of a cycle are twinned and point at each other’s twin', () => {
-    const placeholder = encodeLocaleTwinPlaceholder(HASH_A, 'Cycle');
+    const placeholder = encodeLocaleTwinPlaceholder({ [HASH_A]: 'Cycle' });
     const { files, manifest } = generateLocaleTwins({
       files: {
         'assets/x-1.js': {
@@ -310,7 +328,7 @@ describe('generateLocaleTwins', () => {
   });
 
   it('reports placeholders, per-locale twin bytes and the output multiplier', () => {
-    const placeholder = encodeLocaleTwinPlaceholder(HASH_A, 'Hi');
+    const placeholder = encodeLocaleTwinPlaceholder({ [HASH_A]: 'Hi' });
     const vendor = 'export const v=1;'; // 17 bytes, shared
     const { report } = generateLocaleTwins({
       files: {
@@ -324,17 +342,12 @@ describe('generateLocaleTwins', () => {
       locales: ['en', 'ja'],
       translations: { ja: { [HASH_A]: 'こんにちは' } },
     });
-    const en = `e(${filled('en', 'Hi')});`.repeat(2);
-    const ja = `e(${filled('ja', 'こんにちは')});`.repeat(2);
+    const en = `e(${filled('en', { [HASH_A]: 'Hi' })});`.repeat(2);
+    const ja = `e(${filled('ja', { [HASH_A]: 'こんにちは' })});`.repeat(2);
     const original = `e(\`${placeholder}\`);`.repeat(2);
     const bytes = (text: string) => Buffer.byteLength(text, 'utf8');
 
     expect(report.placeholders).toBe(2);
-    expect(report.entries).toEqual({ 'assets/a-1.js': [HASH_A] });
-    expect(report.translationBytes).toEqual({
-      en: { 'assets/a-1.js': 2 * bytes(filled('en', 'Hi')) },
-      ja: { 'assets/a-1.js': 2 * bytes(filled('ja', 'こんにちは')) },
-    });
     expect(report.sharedBytes).toBe(17);
     expect(report.twinnedBytes).toBe(bytes(original));
     expect(report.twinBytes).toEqual({ en: bytes(en), ja: bytes(ja) });
@@ -344,7 +357,7 @@ describe('generateLocaleTwins', () => {
   });
 
   it('fills the default locale from the placeholder’s source text, not a translation file', () => {
-    const placeholder = encodeLocaleTwinPlaceholder(HASH_A, 'Source');
+    const placeholder = encodeLocaleTwinPlaceholder({ [HASH_A]: 'Source' });
     const { files, manifest } = generateLocaleTwins({
       files: { 'assets/a-1.js': { code: `e('${placeholder}')` } },
       defaultLocale: 'en',
@@ -357,13 +370,13 @@ describe('generateLocaleTwins', () => {
 
     expect(manifest.locales).toEqual(['en', 'fr']);
     expect(files[manifest.twins.en['assets/a-1.js']]).toBe(
-      `e(${filled('en', 'Source')})`
+      `e(${filled('en', { [HASH_A]: 'Source' })})`
     );
   });
 
   // Rollup and Rolldown keep spaces in chunk names (`about page.tsx`)
   it('renames references to chunks whose names contain spaces', () => {
-    const placeholder = encodeLocaleTwinPlaceholder(HASH_A, 'About');
+    const placeholder = encodeLocaleTwinPlaceholder({ [HASH_A]: 'About' });
     const { files, manifest } = generateLocaleTwins({
       files: {
         'assets/about page-Ab12.js': { code: `e(\`${placeholder}\`)` },
@@ -391,7 +404,7 @@ describe('generateLocaleTwins', () => {
 
   // `chunkFileNames: 'lazy pages/[name]-[hash].js'`
   it('renames references to chunks in directories whose names contain spaces', () => {
-    const placeholder = encodeLocaleTwinPlaceholder(HASH_A, 'About');
+    const placeholder = encodeLocaleTwinPlaceholder({ [HASH_A]: 'About' });
     const { files, manifest } = generateLocaleTwins({
       files: {
         'lazy pages/about-Ab12.js': { code: `e(\`${placeholder}\`)` },
@@ -420,7 +433,7 @@ describe('generateLocaleTwins', () => {
   // Only a string literal (or template chunk) whose whole value is a chunk
   // path is a reference
   it('leaves chunk names inside other strings and comments alone', () => {
-    const placeholder = encodeLocaleTwinPlaceholder(HASH_A, 'Page');
+    const placeholder = encodeLocaleTwinPlaceholder({ [HASH_A]: 'Page' });
     const code =
       'import"./page-Ab12.js";' +
       `const hint="See './page-Ab12.js'";` +
@@ -443,7 +456,7 @@ describe('generateLocaleTwins', () => {
   });
 
   it('resolves references by path when two chunks share a basename', () => {
-    const placeholder = encodeLocaleTwinPlaceholder(HASH_A, 'A');
+    const placeholder = encodeLocaleTwinPlaceholder({ [HASH_A]: 'A' });
     const { files, manifest } = generateLocaleTwins({
       files: {
         'assets/page.js': { code: `e('${placeholder}')` },
@@ -478,7 +491,7 @@ describe('generateLocaleTwins', () => {
   describe('source maps', () => {
     /** A chunk built from a multi-line source, with the bundler's map. */
     function chunkWithMap() {
-      const placeholder = encodeLocaleTwinPlaceholder(HASH_A, 'Page A');
+      const placeholder = encodeLocaleTwinPlaceholder({ [HASH_A]: 'Page A' });
       const source =
         `const label = register(\`${placeholder}\`), other = 1;\n` +
         'export default function pageA(el) {\n' +

@@ -14,10 +14,6 @@ import { hashMessage } from '../../utils/hashMessage';
 import { RegisterableMessages } from '../types/message';
 import { encodeMsg } from './encodeMsg';
 import { msgString } from './msgString';
-import {
-  getI18nConfig,
-  isI18nConfigInitialized,
-} from '../../i18n-config/singleton-operations';
 
 /**
  * Registers a message to be translated. Returns the message unchanged if no options are provided.
@@ -82,26 +78,17 @@ export function msg(
 
   const variables = extractVariables(options);
   let interpolatedString: string;
-  if (options.$_twin === undefined) {
-    try {
-      interpolatedString = formatMessage(message, {
-        locales: [libraryDefaultLocale], // TODO: use compiler to insert locales
-        variables: {
-          ...variables,
-          [VAR_IDENTIFIER]: 'other',
-        },
-      });
-    } catch {
-      logger.warn(createInterpolationFailureMessage(message));
-      return message;
-    }
-  } else {
-    // Locale twins: the call site carries its content, already localized,
-    // or `0` for its own source text
-    const [locale, text] = Array.isArray(options.$_twin)
-      ? (options.$_twin as [string, string])
-      : [libraryDefaultLocale, message];
-    interpolatedString = formatTwinContent(text, locale, variables);
+  try {
+    interpolatedString = formatMessage(message, {
+      locales: [libraryDefaultLocale], // TODO: use compiler to insert locales
+      variables: {
+        ...variables,
+        [VAR_IDENTIFIER]: 'other',
+      },
+    });
+  } catch {
+    logger.warn(createInterpolationFailureMessage(message));
+    return message;
   }
 
   // Encode options
@@ -119,34 +106,4 @@ export function msg(
     $_hash,
   };
   return encodeMsg(interpolatedString, encodedOptions);
-}
-
-/**
- * Formats a locale twin call site's content for the encoded text (what
- * decodeMsg() returns). The twin's locale is the configured locale, possibly
- * a custom alias, so the configured formatter resolves it once initializeGT()
- * ran.
- *
- * The marker goes into the encoded options, and m() formats the content
- * again with its own variables, so a failure here (variables m() supplies, as in
- * `m(msg('Welcome, {user}!'), { user })`, or an alias msg() cannot resolve
- * before initializeGT()) keeps the unformatted content instead of dropping
- * the message.
- */
-function formatTwinContent(
-  text: string,
-  locale: string,
-  variables: Record<string, unknown>
-): string {
-  const options = {
-    locales: [locale],
-    variables: { ...variables, [VAR_IDENTIFIER]: 'other' },
-  };
-  try {
-    return isI18nConfigInitialized()
-      ? getI18nConfig().formatMessage(text, undefined, options)
-      : formatMessage(text, options);
-  } catch {
-    return text;
-  }
 }

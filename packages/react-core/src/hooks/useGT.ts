@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import {
   createLookupOptions,
   interpolateMessage,
-  resolveLocaleTwin,
+  resolveLocaleTwinLookup,
 } from 'gt-i18n/internal';
 import { useTranslationConditions } from './utils';
 import type { GTFunctionType, GTTranslationOptions } from 'gt-i18n/types';
@@ -35,24 +35,30 @@ export function useGT(_messages?: Message[]): GTFunctionType {
         'ICU'
       );
 
-      // Locale twins: content the call site's twin carries (source locale
-      // included), or the source text of unattributed content. Without
+      // Locale twins: stripped code is resolved by hash, source locale
+      // included; content no twin carries renders its source text. Without
       // translation (i18n disabled) the page has the default locale's twins.
-      const twin = resolveLocaleTwin<string>(
-        options.$_twin,
-        shouldTranslate ? lookupOptions.$locale : defaultLocale,
-        defaultLocale,
-        options.$_dictionary
+      const twinLocale = shouldTranslate
+        ? lookupOptions.$locale
+        : defaultLocale;
+      const twin = resolveLocaleTwinLookup<string>(
+        twinLocale,
+        lookupOptions,
+        options.$_hash
       );
-      if (twin) {
+      if (twin.entry !== undefined) {
+        // A source fallback is formatted in the source locale, like a miss
         return interpolateMessage({
           source: message,
-          target: twin.target,
-          options: { ...lookupOptions, $locale: twin.locale },
+          target: twin.entry,
+          options: {
+            ...lookupOptions,
+            $locale: twin.sourceFallback ? defaultLocale : twinLocale,
+          },
           sourceLocale: defaultLocale,
         });
       }
-      if (!shouldTranslate) {
+      if (!shouldTranslate || twin.rendersSource) {
         return interpolateMessage({
           options: lookupOptions,
           source: message,

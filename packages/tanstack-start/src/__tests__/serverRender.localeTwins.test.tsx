@@ -1,11 +1,11 @@
 /**
  * Server rendering with locale twins must produce what the browser renders
  * from its twins, or hydration fails. The browser only has translations for
- * entries the compiler attributed (compile-time hash); it marks everything
- * else with `$_twin: 0` / `_twin={0}` in the client and server builds alike,
- * and both render that source text.
+ * entries the compiler attributed (compile-time hash); everything else renders
+ * its source text there, so the server must render it the same way.
  */
 import { renderToString } from 'react-dom/server';
+import { encodeLocaleTwinPlaceholder } from 'generaltranslation/internal';
 import { hashMessage } from 'gt-i18n/internal';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -33,7 +33,14 @@ vi.mock('@tanstack/react-start/server', () => ({
   setResponseHeader: vi.fn(),
 }));
 
-import { msg, t, T, useGT, useMessages } from '../index.server';
+import {
+  GtInternalRegisterLocaleTwin,
+  msg,
+  t,
+  T,
+  useGT,
+  useMessages,
+} from '../index.server';
 import { ensureInitialized } from '../setup/initializeGT.server';
 import { setupRouterGTIntegration } from '../router/setupRouterGTIntegration.server';
 import type { GTRouterOptions } from '../router/types';
@@ -56,20 +63,15 @@ const FRENCH = {
 
 const attributedMsg = msg('Maps', { $_hash: MSG_HASH });
 
-/**
- * The page as the compiler builds it for the server; with locale twins it
- * marks the entries it cannot attribute.
- */
-function Page({ twins }: { twins: boolean }) {
+function Page() {
   const gt = useGT();
   const m = useMessages();
-  // Unattributed: hashed at runtime, so no twin carries them
-  const unattributed = twins ? { $_twin: 0 } : {};
   return (
     <main>
       <T _hash={T_HASH}>Hello</T>|{gt('Tides', { $_hash: GT_HASH })}|
       {m(attributedMsg)}|{t('Fog', { $_hash: T_FN_HASH })}|
-      <T _twin={unattributed.$_twin}>Notice</T>|{gt('Season', unattributed)}
+      {/* Unattributed: hashed at runtime, so no twin carries them */}
+      <T>Notice</T>|{gt('Season')}
     </main>
   );
 }
@@ -88,8 +90,24 @@ function resetGT() {
   globals.__generaltranslation = gtContext ? { reactCore: { gtContext } } : {};
 }
 
+/**
+ * What the page module does in a production server build: the compiler
+ * registers its attributed entries with an unfilled placeholder.
+ */
+function registerPageModule() {
+  GtInternalRegisterLocaleTwin(
+    encodeLocaleTwinPlaceholder({
+      [T_HASH]: 'Hello',
+      [GT_HASH]: 'Tides',
+      [MSG_HASH]: 'Maps',
+      [T_FN_HASH]: 'Fog',
+    })
+  );
+}
+
 function initialize(splitting: 'locale' | 'locale-twins') {
   resetGT();
+  if (splitting === 'locale-twins') registerPageModule();
   pluginModule.config = {
     defaultLocale: 'en',
     locales: ['en', 'fr'],
@@ -101,7 +119,7 @@ function initialize(splitting: 'locale' | 'locale-twins') {
 }
 
 /** Renders the page for a French request through the router integration. */
-async function renderFrench(twins: boolean): Promise<string> {
+async function renderFrench(): Promise<string> {
   const router = {
     options: {} as GTRouterOptions,
     history: { location: { state: undefined }, replace: vi.fn() },
@@ -119,7 +137,7 @@ async function renderFrench(twins: boolean): Promise<string> {
     const Wrap = router.options.Wrap!;
     const html = renderToString(
       <Wrap>
-        <Page twins={twins} />
+        <Page />
       </Wrap>
     );
     return html.replace(/<!-- -->/g, '');
@@ -134,7 +152,7 @@ describe.sequential('server rendering with locale twins', () => {
   it('translates every entry without locale twins (control)', async () => {
     initialize('locale');
 
-    await expect(renderFrench(false)).resolves.toBe(
+    await expect(renderFrench()).resolves.toBe(
       '<main>Bonjour|Marées|Cartes|Brouillard|Avis|Saison</main>'
     );
   });
@@ -142,7 +160,7 @@ describe.sequential('server rendering with locale twins', () => {
   it('renders unattributed entries in the source locale, like the twins', async () => {
     initialize('locale-twins');
 
-    await expect(renderFrench(true)).resolves.toBe(
+    await expect(renderFrench()).resolves.toBe(
       '<main>Bonjour|Marées|Cartes|Brouillard|Notice|Season</main>'
     );
   });

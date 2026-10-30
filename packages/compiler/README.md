@@ -36,7 +36,7 @@ export default {
 
 ## Locale twins (Vite)
 
-With `files.gt.splitting: "locale-twins"` in `gt.config.json`, `vite build` writes a copy of each chunk that renders translated content for every locale (a locale twin), so each visitor downloads only their locale's strings for the pages they visit. Each translation sits inline at its call site (the `gt()`/`t()`/`msg()` call or the `<T>` element) in its locale's twin. Supported on Vite 8 and Vite 7 with `gt-react` and `gt-tanstack-start`. Run `gt translate` before `vite build`.
+With `files.gt.splitting: "locale-twins"` in `gt.config.json`, `vite build` writes a copy of each chunk that renders translated content for every locale (a locale twin), so each visitor downloads only their locale's strings for the pages they visit. Supported on Vite 8 and Vite 7 with `gt-react` and `gt-tanstack-start`. Run `gt translate` before `vite build`.
 
 ```js
 // vite.config.js

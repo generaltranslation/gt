@@ -21,14 +21,9 @@ export function useMessages(_messages?: Message[]): MFunctionType {
 
       const decodedOptions = decodeOptions(encodedMsg) ?? {};
       if (isEncodedTranslationOptions(decodedOptions)) {
-        // A locale twin call site encodes msg() without options of its own,
-        // so the variables given here still apply: m(msg('Hi {user}'), { user })
-        return gt(
-          decodedOptions.$_source,
-          decodedOptions.$_twin === undefined
-            ? decodedOptions
-            : { ...options, ...decodedOptions }
-        ) as T extends string ? string : T;
+        return gt(decodedOptions.$_source, decodedOptions) as T extends string
+          ? string
+          : T;
       }
 
       return gt(encodedMsg, options) as T extends string ? string : T;

@@ -1,19 +1,14 @@
 /**
  * App-agnostic helpers for checking locale twin builds: reading the build
- * output (manifest, report, document data), the entries each twin carries,
- * and turning translation files into the strings that must
+ * output (manifest, report, document data), finding the translation tables
+ * that twins carry, and turning translation files into the strings that must
  * (or must not) reach a visitor. Used by the Playwright specs and by each twin
- * test app's node-level build tests. At runtime it uses Node built-ins and
- * the locale twin contract (placeholder format) from generaltranslation; the
- * other build contract types come from the packages that own them.
+ * test app's node-level build tests. Node built-ins only at runtime; the
+ * build contract types come from the packages that own them.
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import {
-  findLocaleTwinPlaceholders,
-  serializeLocaleTwinValue,
-} from 'generaltranslation/internal';
-import type { Content, LocaleTwinManifest } from 'generaltranslation/types';
+import type { LocaleTwinManifest } from 'generaltranslation/types';
 import type { LocaleTwinDocumentData } from 'gt-i18n/internal/locale-twins';
 
 /** The twin manifest (`gt-locale-twins.json`). */
@@ -39,10 +34,6 @@ export type TwinReport = {
   twinnedBytes: number;
   twinBytes: Record<string, number>;
   outputMultiplier: number;
-  /** Entry hashes each twinned file carries, by original file name. */
-  entries: Record<string, string[]>;
-  /** Bytes of the filled placeholder values, per locale and original file. */
-  translationBytes: Record<string, Record<string, number>>;
   unattributed: TwinReportUnattributedEntry[];
   spa?: { bootstrap: string; documents: string[]; cspHash?: string };
 };
@@ -145,58 +136,49 @@ export function servedFiles(
   });
 }
 
-/** The entries a twin carries (its call sites' filled placeholders). */
+/** A translation table filled into a twin. */
 export type FilledTable = {
   locale: string;
-  hashes: string[];
-  /** UTF-8 bytes of the filled values (the inline translations). */
+  entries: Record<string, TranslationContent>;
+  /** UTF-8 bytes of the table's JSON (what the runtime parses). */
   bytes: number;
 };
 
-/**
- * The entries the served file `file` carries: for a locale twin, the hashes
- * of its call sites and the bytes of their inline content, from the build
- * report (inline values carry no hash, so the code alone cannot name them).
- * Shared files and documents carry none.
- */
-export function twinTables(
-  manifest: TwinManifest,
-  report: TwinReport,
-  file: string
-): FilledTable[] {
-  for (const [locale, twins] of Object.entries(manifest.twins)) {
-    for (const [original, twin] of Object.entries(twins)) {
-      if (twin !== file || !report.entries[original]) continue;
-      return [
-        {
-          locale,
-          hashes: report.entries[original],
-          bytes: report.translationBytes[locale]?.[original] ?? 0,
-        },
-      ];
-    }
-  }
-  return [];
-}
+const TABLE_TOKEN_START = '"{\\"l\\":\\"';
 
 /**
- * What each placeholder of an original twinned file becomes in `locale`'s
- * twin: `[locale, translation]`, or `[defaultLocale, source]` for the
- * default locale and for translations the locale lacks.
+ * Finds the filled translation tables in JS code. A filled placeholder is the
+ * JS string literal `JSON.stringify(JSON.stringify({ l, e }))`.
  */
-export function expectedInlineValues(
-  originalCode: string,
-  locale: string,
-  defaultLocale: string,
-  translations: Record<string, TranslationFile>
-): string[] {
-  return findLocaleTwinPlaceholders(originalCode).map(({ hash, source }) => {
-    const translation =
-      locale === defaultLocale ? undefined : translations[locale]?.[hash];
-    return translation === undefined
-      ? serializeLocaleTwinValue(defaultLocale, source)
-      : serializeLocaleTwinValue(locale, translation as Content);
-  });
+export function findFilledTables(code: string): FilledTable[] {
+  const tables: FilledTable[] = [];
+  let from = 0;
+  for (;;) {
+    const start = code.indexOf(TABLE_TOKEN_START, from);
+    if (start === -1) return tables;
+    const end = findStringLiteralEnd(code, start);
+    const json = JSON.parse(code.slice(start, end)) as string;
+    const table = JSON.parse(json) as {
+      l: string;
+      e: Record<string, TranslationContent>;
+    };
+    tables.push({
+      locale: table.l,
+      entries: table.e,
+      bytes: Buffer.byteLength(json),
+    });
+    from = end;
+  }
+}
+
+/** Index just past the closing quote of the `"` literal at `start`. */
+function findStringLiteralEnd(code: string, start: number): number {
+  for (let index = start + 1; index < code.length; index += 1) {
+    const char = code[index];
+    if (char === '\\') index += 1;
+    else if (char === '"') return index + 1;
+  }
+  throw new Error(`Unterminated string literal at ${start}`);
 }
 
 /**
@@ -305,12 +287,22 @@ export function distinctiveSegments(
 }
 
 /**
- * The hashes the build attributed: the entries its twins carry (from the
- * build report). Entries of the translation files that are not attributed
- * (derived content) keep their source text in code and render untranslated.
+ * The hashes the build attributed: the keys of the default-locale twins'
+ * tables. Entries of the translation files that are not attributed (derived
+ * content) keep their source text in code and render untranslated.
  */
-export function attributedHashes(report: TwinReport): Set<string> {
-  return new Set(Object.values(report.entries).flat());
+export function attributedHashes(
+  clientDir: string,
+  manifest: TwinManifest
+): Set<string> {
+  const hashes = new Set<string>();
+  for (const twin of Object.values(manifest.twins[manifest.defaultLocale])) {
+    const code = fs.readFileSync(path.join(clientDir, twin), 'utf8');
+    for (const table of findFilledTables(code)) {
+      for (const hash of Object.keys(table.entries)) hashes.add(hash);
+    }
+  }
+  return hashes;
 }
 
 export type IsolationResult = {

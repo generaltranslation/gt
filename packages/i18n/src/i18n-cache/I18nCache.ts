@@ -29,7 +29,10 @@ import { resolveDictionaryLookupOptions } from './translations-manager/utils/dic
 import { DictionarySourceNotFoundError } from './translations-manager/utils/DictionarySourceNotFoundError';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
-import { disablesLoadingForLocaleTwins } from '../locale-twins/lookup';
+import {
+  disablesLoadingForLocaleTwins,
+  lookupLocaleTwinEntry,
+} from '../locale-twins/lookup';
 
 /**
  * Default translation timeout in milliseconds for a runtime translation request
@@ -142,7 +145,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
     };
 
     // Create cache miss handlers. Locale twin clients get their translations
-    // from the locale twins, never from a loader or the CDN, unless the
+    // from the registered twins, never from a loader or the CDN, unless the
     // app uses the dictionaries API: dictionary entries are never twinned
     // and stay on whole-locale loading (only dictionary lookups read it).
     const disableLoading = disablesLoadingForLocaleTwins(
@@ -472,6 +475,10 @@ class I18nCache<TranslationValue extends Translation = Translation> {
     options: LookupOptions
   ): T | undefined {
     return this.guard<T | undefined>(undefined, () => {
+      // Locale twins: stripped code is resolved by hash, source locale included
+      const twinEntry = lookupLocaleTwinEntry<T>(locale, options);
+      if (twinEntry !== undefined) return twinEntry;
+
       // Validate
       const { translationLocale, options: lookupOptions } =
         this.resolveLookupParams(locale, options);
@@ -523,7 +530,11 @@ class I18nCache<TranslationValue extends Translation = Translation> {
 
         // Early return if i18n is disabled or default locale
         if (!asyncBoundaryLocale) {
-          return (message) => message;
+          return (message, lookupOptions) =>
+            lookupLocaleTwinEntry<typeof message>(
+              lookupOptions?.$locale ?? locale,
+              lookupOptions
+            ) ?? message;
         }
 
         const asyncBoundaryTxCache =
@@ -569,8 +580,18 @@ class I18nCache<TranslationValue extends Translation = Translation> {
           lookupOptions: LookupOptions = {} as LookupOptions
         ) =>
           this.guard(undefined, () => {
+            const requestedLocale =
+              lookupOptions.$locale ?? asyncBoundaryLocale;
+
+            // Locale twins: stripped code is resolved by hash
+            const twinEntry = lookupLocaleTwinEntry<typeof message>(
+              requestedLocale,
+              lookupOptions
+            );
+            if (twinEntry !== undefined) return twinEntry;
+
             const { translationLocale, options } = this.resolveLookupParams(
-              lookupOptions.$locale ?? asyncBoundaryLocale,
+              requestedLocale,
               lookupOptions
             );
 
@@ -720,6 +741,10 @@ export { I18nCache };
 
 // ===== Helper Functions ===== //
 
+/**
+ * Validate constructor params: log warnings for suspicious configs and throw
+ * on hard misconfigurations.
+ */
 /** Whether the app configured the dictionaries API on the cache. */
 function usesDictionaries(params: I18nCacheConstructorParams): boolean {
   return (
@@ -728,10 +753,6 @@ function usesDictionaries(params: I18nCacheConstructorParams): boolean {
   );
 }
 
-/**
- * Validate constructor params: log warnings for suspicious configs and throw
- * on hard misconfigurations.
- */
 function validateCacheParams(params: I18nCacheConstructorParams): void {
   // Runtime translation against a custom API URL still needs GT credentials
   if (params.runtimeUrl && params.runtimeUrl !== defaultRuntimeApiUrl) {

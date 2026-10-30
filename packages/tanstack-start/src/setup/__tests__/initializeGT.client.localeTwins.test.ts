@@ -132,10 +132,14 @@ describe.sequential('client initialization with locale twins', () => {
 
   it('keeps the locale routing navigation as the only reload', async () => {
     const location = stubBrowser('/en/about');
-    const { reactCore } = await initializeWith({
+    const { gtReact, reactCore } = await initializeWith({
       ...TWINS_CONFIG,
       localeRouting: true,
     });
+    // The page's chunks registered their twins
+    gtReact.GtInternalRegisterLocaleTwin(
+      JSON.stringify({ l: 'en', e: { '0123456789abcdef': 'Hello' } })
+    );
 
     reactCore.getReadonlyConditionStore().setLocale('fr');
 

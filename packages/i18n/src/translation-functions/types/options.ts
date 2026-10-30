@@ -21,12 +21,6 @@ export type TranslationMetadata = {
   $requiresReview?: boolean;
   /** @internal Used to carry the original source when rendering a translation */
   $_fallback?: string;
-  /**
-   * @internal Locale twins call site marker, set by the compiler:
-   * `[locale, content]` in a locale twin, `0` for content that renders its
-   * source text
-   */
-  $_twin?: unknown;
   /** @deprecated use {@link EncodedTranslationOptions} instead */
   $_source?: string;
   $maxChars?: number;

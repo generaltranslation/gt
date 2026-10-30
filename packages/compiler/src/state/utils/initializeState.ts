@@ -102,9 +102,8 @@ export function initializeState(
       macroExpansionsCount: 0,
       jsxInsertionsCount: 0,
       runtimeTranslateCount: 0,
-      localeTwinModulesCount: 0,
-      localeTwinPlaceholdersCount: 0,
-      localeTwinSourceMarkersCount: 0,
+      localeTwinRegistrationsCount: 0,
+      localeTwinRuntimeRegistrationsCount: 0,
     },
   };
 }

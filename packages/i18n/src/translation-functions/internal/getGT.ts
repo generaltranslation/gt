@@ -4,7 +4,7 @@ import { GTTranslationOptions, TranslationMetadata } from '../types/options';
 import { GTFunctionType } from '../types/functions';
 import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
 import { createLookupOptions } from './helpers';
-import { resolveLocaleTwin } from '../../locale-twins/lookup';
+import { resolveLocaleTwinLookup } from '../../locale-twins/lookup';
 import type { StringFormat } from '@generaltranslation/format/types';
 import { getWritableConditionStore } from '../../condition-store/singleton-operations';
 
@@ -94,18 +94,21 @@ export async function getGTInternal(
       'ICU'
     );
 
-    // Locale twins: content the call site's twin carries, or the source
-    // text of content the compiler could not attribute
-    const twin = resolveLocaleTwin<string>(
-      options.$_twin,
-      targetLocale,
-      sourceLocale
+    // Locale twins: the registered entry for the compile-time hash (a
+    // source fallback formats in the source locale), and content no twin
+    // carries renders its source text on the client and the server alike
+    const twin = resolveLocaleTwinLookup<string>(
+      lookupOptions.$locale,
+      lookupOptions,
+      options.$_hash
     );
-    if (twin) {
+    if (twin.entry !== undefined || twin.rendersSource) {
       return interpolateMessage({
         source: message,
-        target: twin.target,
-        options: { ...lookupOptions, $locale: twin.locale },
+        target: twin.entry,
+        options: twin.sourceFallback
+          ? { ...lookupOptions, $locale: sourceLocale }
+          : lookupOptions,
         sourceLocale,
       });
     }

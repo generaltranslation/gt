@@ -191,15 +191,16 @@ export function isGTReactImportSource(
 }
 
 /**
- * Whether a module importing from this GT source supports locale twins: its
- * runtime (gt-react, gt-tanstack-start, gt-i18n) reads the call site markers
- * the locale twins pass adds. gt-next does not.
+ * The import source for the locale twins registration call, given a GT import
+ * source the module already uses. gt-i18n exposes it from `gt-i18n/internal`.
+ * Returns undefined for sources without the export (gt-next).
  */
-export function isLocaleTwinsImportSource(importSource: string): boolean {
-  return (
-    isGTReactImportSource(importSource) ||
-    importSource === GT_IMPORT_SOURCES.GT_I18N
-  );
+export function getLocaleTwinRegistrationImportSource(
+  importSource: string
+): string | undefined {
+  if (isGTReactImportSource(importSource)) return importSource;
+  if (importSource === GT_IMPORT_SOURCES.GT_I18N) return 'gt-i18n/internal';
+  return undefined;
 }
 
 export function getGtReactImportSource(

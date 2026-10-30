@@ -20,7 +20,7 @@ const REASONS: Record<LocaleTwinUnattributedReason, string> = {
   customHash: 'has a custom hash that is not a compile-time hash',
   taggedTemplate: 'is a tagged template the macro transform did not expand',
   importSource:
-    'its GT import source does not support locale twins (use gt-react, gt-tanstack-start or gt-i18n)',
+    'its GT import source has no locale twin registration (use gt-react, gt-tanstack-start or gt-i18n)',
 };
 
 /**

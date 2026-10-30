@@ -1,9 +1,9 @@
 /**
- * Locale twin clients render stripped content from each call site's twin
- * marker (`$_twin`), source locale included, and never ship or load a
- * translations snapshot.
+ * Locale twin clients resolve stripped content from the twin registry, source
+ * locale included, and never ship or load a translations snapshot.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { GtInternalRegisterLocaleTwin } from 'gt-i18n/internal';
 import { ReactI18nCache } from '../../i18n-cache/ReactI18nCache';
 import { setReactI18nCache } from '../../i18n-cache/singleton-operations';
 import { setReadonlyConditionStore } from '../../condition-store/singleton-operations';
@@ -39,6 +39,10 @@ function setup(locale: string, config = TWINS_CONFIG, enableI18n = true) {
   return { loadTranslations };
 }
 
+function register(locale: string, entries: Record<string, unknown>) {
+  GtInternalRegisterLocaleTwin(JSON.stringify({ l: locale, e: entries }));
+}
+
 describe('locale twins in react-core functions', () => {
   beforeEach(() => {
     Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
@@ -52,56 +56,48 @@ describe('locale twins in react-core functions', () => {
     vi.restoreAllMocks();
   });
 
-  it('t() renders stripped source-locale text from its twin', () => {
+  it('t() renders stripped source-locale text from the registry', () => {
+    register('en', { [HASH]: 'Hello {name}' });
     setup('en');
 
-    expect(
-      t('', { name: 'Ada', $_hash: HASH, $_twin: ['en', 'Hello {name}'] })
-    ).toBe('Hello Ada');
+    expect(t('', { name: 'Ada', $_hash: HASH })).toBe('Hello Ada');
   });
 
-  it('t() renders a translation from its twin', () => {
-    const { loadTranslations } = setup('fr');
-
-    expect(
-      t('', { name: 'Ada', $_hash: HASH, $_twin: ['fr', 'Bonjour {name}'] })
-    ).toBe('Bonjour Ada');
-    expect(loadTranslations).not.toHaveBeenCalled();
-  });
-
-  it('t() renders unattributed content as source', () => {
+  it('t() renders a translation from the registry', () => {
+    register('fr', { [HASH]: 'Bonjour {name}' });
     setup('fr');
 
-    expect(t('Hi {name}', { name: 'Ada', $_twin: 0 })).toBe('Hi Ada');
+    expect(t('', { name: 'Ada', $_hash: HASH })).toBe('Bonjour Ada');
   });
 
   // A translation missing from the twin is the source text, formatted in the
   // source locale like a server cache miss (French "one" covers 0)
   it('t() formats a source fallback in the source locale', () => {
+    GtInternalRegisterLocaleTwin(
+      JSON.stringify({
+        l: 'fr',
+        e: { [HASH]: '{n, plural, one {# boat} other {# boats}}' },
+        s: [HASH],
+      })
+    );
     setup('fr');
 
-    expect(
-      t('', {
-        n: 0,
-        $_hash: HASH,
-        $_twin: ['en', '{n, plural, one {# boat} other {# boats}}'],
-      })
-    ).toBe('0 boats');
+    expect(t('', { n: 0, $_hash: HASH })).toBe('0 boats');
   });
 
   // With i18n disabled the served twins are the default locale's (source
   // text), whatever the locale preference
   it('t() renders the default locale twin when i18n is disabled', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    register('en', { [HASH]: 'Total: {n, number}' });
     setup('fr', TWINS_CONFIG, false);
 
-    expect(
-      t('', { n: 1234.5, $_hash: HASH, $_twin: ['en', 'Total: {n, number}'] })
-    ).toBe('Total: 1,234.5');
+    expect(t('', { n: 1234.5, $_hash: HASH })).toBe('Total: 1,234.5');
     expect(warn).not.toHaveBeenCalled();
   });
 
   it('getTranslationsSnapshot() loads nothing on a locale twin client', async () => {
+    register('fr', { [HASH]: 'Bonjour {name}' });
     const { loadTranslations } = setup('fr');
 
     await expect(getTranslationsSnapshot('fr')).resolves.toEqual({ fr: {} });

@@ -71,17 +71,11 @@ function chunkWithEntry(app: FixtureApp, hash: string): string {
     .jsFiles()
     .filter((name) => !isTwin(name))
     .filter((name) =>
-      findLocaleTwinPlaceholders(app.read(name)).some(
-        (match) => match.hash === hash
+      findLocaleTwinPlaceholders(app.read(name)).some((match) =>
+        match.hashes.includes(hash)
       )
     );
-  expect(
-    matches,
-    `exactly one chunk carries ${hash}: ${app
-      .jsFiles()
-      .map((name) => `${name}\n${app.read(name)}`)
-      .join('\n')}`
-  ).toHaveLength(1);
+  expect(matches, `exactly one chunk registers ${hash}`).toHaveLength(1);
   return matches[0];
 }
 
@@ -109,7 +103,7 @@ describe.each(VITE_VERSIONS)('$name client build', ({ load }) => {
         expect(findLocaleTwinPlaceholders(app.read(twin))).toEqual([]);
       }
     }
-    // Twins carry their locale's content and import that locale's twins
+    // Twins carry their locale's table and import that locale's twins
     const frEntry = app.read(manifest.twins.fr[entry]);
     expect(frEntry).toContain('Bienvenue à la maison');
     expect(frEntry).toContain(path.posix.basename(manifest.twins.fr[about]));
@@ -304,8 +298,7 @@ describe.each(VITE_VERSIONS)('$name client build', ({ load }) => {
     );
     const about = chunkWithEntry(app, ABOUT_US_HASH);
     expect(app.read(manifest.twins.es[about])).toContain(
-      // The source text, formatted in the source locale
-      '["en","About us"]'
+      `{\\"l\\":\\"es\\",\\"e\\":{\\"${ABOUT_US_HASH}\\":\\"About us\\"},\\"s\\":[\\"${ABOUT_US_HASH}\\"]}`
     );
     expect(warnings(app)).toEqual(
       expect.arrayContaining([
@@ -329,7 +322,7 @@ describe.each(VITE_VERSIONS)('$name client build', ({ load }) => {
           type: 'asset',
           fileName: 'leak.json',
           source: JSON.stringify(
-            encodeLocaleTwinPlaceholder(ROUTES_LABEL_HASH, 'Routes label')
+            encodeLocaleTwinPlaceholder({ [ROUTES_LABEL_HASH]: 'Routes label' })
           ),
         });
       },
@@ -366,27 +359,6 @@ describe.each(VITE_VERSIONS)('$name client build', ({ load }) => {
       expect.arrayContaining([
         expect.stringContaining(
           'Warning: Locale twins are on, but compileTimeHash is off'
-        ),
-      ])
-    );
-  });
-
-  // The runtime reads files.gt.splitting from the config the app passes to
-  // initializeGT(); twin content renders without it, but locale switches
-  // stay soft and whole locales load
-  it('warns when only the plugin option turns locale twins on', async () => {
-    const vite = await load();
-    const app = newApp();
-    const configPath = path.join(app.dir, 'gt.config.json');
-    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    delete config.files.gt.splitting;
-    fs.writeFileSync(configPath, JSON.stringify(config));
-    await buildFixture(vite, app, { splitting: 'locale-twins' });
-
-    expect(warnings(app)).toEqual(
-      expect.arrayContaining([
-        expect.stringMatching(
-          /Warning: Locale twins are on in the compiler plugin options, but files\.gt\.splitting is not "locale-twins"/
         ),
       ])
     );
@@ -690,10 +662,9 @@ describe.each(VITE_VERSIONS)('$name client and server builds', ({ load }) => {
     expect(serverFiles.filter(isTwin)).toEqual([]);
     expect(serverFiles.some((name) => name.includes('vendor-'))).toBe(false);
 
-    // The server keeps its source text and has no placeholders
+    // The server keeps its unfilled (inert) placeholder
     const serverCode = serverFiles.map((name) => app.read(name)).join('\n');
-    expect(findLocaleTwinPlaceholders(serverCode)).toEqual([]);
-    expect(serverCode).toContain('Welcome home');
+    expect(findLocaleTwinPlaceholders(serverCode)).not.toEqual([]);
     // and bundles the client manifest
     const server = await importServer(app);
     expect(server.render().manifest).toEqual(manifest);

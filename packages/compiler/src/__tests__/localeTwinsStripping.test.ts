@@ -1,7 +1,7 @@
 /**
  * With the `'locale-twins'` translation splitting strategy, client production
- * builds remove source-locale text from emitted code (it travels in each call
- * site's placeholder instead). Elements, props, variables and their GT
+ * builds remove source-locale text from emitted code (it travels in the
+ * module's placeholder instead). Elements, props, variables and their GT
  * indices stay, because translated JSX references them by index. Server and
  * dev builds keep the text.
  */
@@ -108,7 +108,7 @@ function squash(code: string): string {
   return code.replace(/\s+/g, '');
 }
 
-/** The code with placeholders (whose payload has the source) replaced. */
+/** The code without the registration call (whose payload has the source). */
 function withoutPlaceholder(code: string): string {
   let out = code;
   for (const { token } of findLocaleTwinPlaceholders(code)) {
@@ -134,14 +134,11 @@ describe('locale twins source stripping', () => {
     const code = (await transform(T_MODULE))!;
 
     expect(withoutPlaceholder(code)).not.toContain('Hello world');
-    expect(squash(withoutPlaceholder(code))).toContain(
-      squash(
-        `jsx(T, { children: "", _hash: "${jsxHash('Hello world')}", _twin: "<placeholder>" })`
-      )
+    expect(squash(code)).toContain(
+      squash(`jsx(T, { children: "", _hash: "${jsxHash('Hello world')}" })`)
     );
-    expect(findLocaleTwinPlaceholders(code)[0]).toMatchObject({
-      hash: jsxHash('Hello world'),
-      source: 'Hello world',
+    expect(findLocaleTwinPlaceholders(code)[0].entries).toEqual({
+      [jsxHash('Hello world')]: 'Hello world',
     });
   });
 
@@ -202,7 +199,7 @@ export function Page({ name }) {
     }
     expect(out).toContain(
       squash(
-        `msg("", { $context: "greeting", name: "x", $_twin: "<placeholder>" })`
+        `msg("", { $context: "greeting", name: "x", "$_hash": "${icuHash('Hello {name}', { context: 'greeting' })}" })`
       )
     );
     expect(out).toContain(
@@ -211,34 +208,20 @@ export function Page({ name }) {
       )
     );
     expect(out).toContain(
-      squash(
-        `gt("", { "$_hash": "${icuHash('Save it')}", $_twin: "<placeholder>" })`
-      )
+      squash(`gt("", { "$_hash": "${icuHash('Save it')}" })`)
     );
     expect(out).toContain(
-      squash(
-        `t("", { $id: "cancel", "$_hash": "${icuHash('Cancel')}", $_twin: "<placeholder>" })`
-      )
+      squash(`t("", { $id: "cancel", "$_hash": "${icuHash('Cancel')}" })`)
     );
     expect(out).toContain(
-      squash(
-        `gt("", { name, "$_hash": "${icuHash('Hi {name}')}", $_twin: "<placeholder>" })`
-      )
+      squash(`gt("", { name, "$_hash": "${icuHash('Hi {name}')}" })`)
     );
-    expect(
-      findLocaleTwinPlaceholders(code).map(({ hash, source }) => ({
-        hash,
-        source,
-      }))
-    ).toEqual([
-      {
-        hash: icuHash('Hello {name}', { context: 'greeting' }),
-        source: 'Hello {name}',
-      },
-      { hash: icuHash('Save it'), source: 'Save it' },
-      { hash: icuHash('Cancel'), source: 'Cancel' },
-      { hash: icuHash('Hi {name}'), source: 'Hi {name}' },
-    ]);
+    expect(findLocaleTwinPlaceholders(code)[0].entries).toEqual({
+      [icuHash('Hello {name}', { context: 'greeting' })]: 'Hello {name}',
+      [icuHash('Save it')]: 'Save it',
+      [icuHash('Cancel')]: 'Cancel',
+      [icuHash('Hi {name}')]: 'Hi {name}',
+    });
   });
 
   it('keeps <T> elements, props, variables and positions, blanking only text', async () => {
@@ -297,9 +280,8 @@ export const el = jsx(T, { children: jsx("span", { children: ${expression} }) })
 import { T } from 'gt-react';
 export const el = jsx(T, { children: ["Total ", ${expression}] });`))!;
 
-      expect(findLocaleTwinPlaceholders(code)[0]).toMatchObject({
-        hash: jsxHash(['Total ', text]),
-        source: ['Total ', text],
+      expect(findLocaleTwinPlaceholders(code)[0].entries).toEqual({
+        [jsxHash(['Total ', text])]: ['Total ', text],
       });
     }
   );
@@ -317,15 +299,14 @@ export const el = jsxs(T, { children: [
 ] });`))!;
     const [before] = findLocaleTwinPlaceholders(original);
 
-    // Recompile the stripped output without its placeholder: its children
-    // now contain only blanks
-    const recompiled = (await transform(
-      original.replace(`_twin: ${before.token}`, '')
-    ))!;
-    const [after] = findLocaleTwinPlaceholders(recompiled);
+    // Recompile the stripped output: its children now contain only blanks
+    const recompiled = (await transform(original, SERVER_BUILD))!;
+    const after = findLocaleTwinPlaceholders(recompiled).find(
+      (match) => match.token !== before.token
+    )!;
 
-    const beforeSource = before.source;
-    const afterSource = after.source;
+    const [beforeSource] = Object.values(before.entries);
+    const [afterSource] = Object.values(after.entries);
     expect(collectIds(afterSource)).toEqual(collectIds(beforeSource));
     expect(collectIds(beforeSource)).toEqual([
       'p#1',
@@ -388,17 +369,18 @@ describe('outside production Vite builds', () => {
     vi.restoreAllMocks();
   });
 
-  it('leaves vite dev output as without locale twins (no markers)', async () => {
-    const code = await transform(UNATTRIBUTED_MODULE, CLIENT_DEV);
+  it('leaves vite dev output as without locale twins (no registration, no msg hash)', async () => {
+    const code = await transform(MSG_MODULE, CLIENT_DEV);
 
-    expect(code ?? '').not.toContain('_twin');
+    expect(code ?? MSG_MODULE).not.toContain('$_hash');
     expect(findLocaleTwinPlaceholders(code ?? '')).toEqual([]);
   });
 
-  it('leaves attributed msg() calls of server builds as written (SSR hashes them at runtime)', async () => {
-    const code = await transform(MSG_MODULE, SERVER_BUILD);
+  it('keeps msg hashes in server builds so SSR renders what the client renders', async () => {
+    const code = (await transform(MSG_MODULE, SERVER_BUILD))!;
 
-    expect(code ?? MSG_MODULE).toContain('msg("Hello there")');
+    expect(code).toContain('$_hash');
+    expect(code).toContain('"Hello there"');
   });
 
   it.each(['webpack', 'rspack', 'esbuild', 'rollup'] as const)(
@@ -412,7 +394,7 @@ describe('outside production Vite builds', () => {
       const code = await runTransform(plugin, MSG_MODULE, null);
       await runTransform(plugin, MSG_MODULE, null);
 
-      expect(code ?? '').not.toContain('_twin');
+      expect(code ?? '').not.toContain('$_hash');
       expect(findLocaleTwinPlaceholders(code ?? '')).toEqual([]);
       expect(warn).toHaveBeenCalledTimes(1);
       expect(warn.mock.calls[0][0]).toMatch(

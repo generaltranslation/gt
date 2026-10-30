@@ -20,10 +20,7 @@
  */
 import path from 'node:path';
 import type { VitePlugin } from 'unplugin';
-import {
-  isLocaleTwinsSplitting,
-  libraryDefaultLocale,
-} from 'generaltranslation/internal';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 import type {
   GTConfig,
   LogLevel,
@@ -34,7 +31,6 @@ import {
   createVendorChunkSkippedDiagnostic,
   LOCALE_TWINS_DEV_NOTICE,
   LOCALE_TWINS_WITH_CHUNK_IMPORT_MAP,
-  LOCALE_TWINS_ONLY_IN_PLUGIN_OPTIONS,
   LOCALE_TWINS_WITHOUT_COMPILE_TIME_HASH,
 } from '../buildDiagnostics';
 import type { LocaleTwinInputFile } from '../generateLocaleTwins';
@@ -263,9 +259,6 @@ export function createLocaleTwinsViteHooks(
         const { config } = describeEnvironment(this);
         if (!options.compileTimeHash) {
           warn(LOCALE_TWINS_WITHOUT_COMPILE_TIME_HASH);
-        }
-        if (!isLocaleTwinsSplitting(gtConfig.files?.gt?.splitting)) {
-          warn(LOCALE_TWINS_ONLY_IN_PLUGIN_OPTIONS);
         }
         const outDir =
           outputOptions.dir ?? path.resolve(config.root, config.build.outDir);

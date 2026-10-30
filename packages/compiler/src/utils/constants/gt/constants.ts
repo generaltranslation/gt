@@ -41,6 +41,7 @@ export enum GT_OTHER_FUNCTIONS {
   derive = 'derive',
   GtInternalRuntimeTranslateString = 'GtInternalRuntimeTranslateString',
   GtInternalRuntimeTranslateJsx = 'GtInternalRuntimeTranslateJsx',
+  GtInternalRegisterLocaleTwin = 'GtInternalRegisterLocaleTwin',
 }
 
 /**
@@ -142,18 +143,6 @@ export enum USEGT_CALLBACK_OPTIONS {
   $_hash = '$_hash',
   $format = '$format',
   $requiresReview = '$requiresReview',
-}
-
-/**
- * Locale twins: the marker the compiler adds to a call site, as a string
- * translation option (`gt()`, `t()`, `msg()`) or a `<T>` prop. Its value is
- * an unfilled placeholder (client production builds; the twin generator
- * replaces it with `[locale, content]`) or `0` (content the compiler cannot
- * attribute, which renders its source text).
- */
-export enum LOCALE_TWIN_MARKER {
-  option = '$_twin',
-  prop = '_twin',
 }
 
 /**
