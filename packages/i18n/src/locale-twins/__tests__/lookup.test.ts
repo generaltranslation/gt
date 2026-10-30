@@ -122,6 +122,68 @@ describe('locale twins on the client', () => {
     expect(decodeMsg(save)).toBe('Enregistrer');
   });
 
+  // m(msg('Welcome, {user}!'), { user }): msg() cannot format the content
+  // without its variable, so it keeps the twin for m() to format
+  it('keeps the twin of a msg() whose variables m() supplies', async () => {
+    createCache();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const welcome = msg('', { $_twin: ['fr', 'Bienvenue, {user} !'] });
+
+    const m = await getMessagesInternal({ locale: 'fr', enableI18n: true });
+
+    expect(m(welcome, { user: 'Alice' })).toBe('Bienvenue, Alice !');
+    expect(decodeMsg(welcome)).toBe('Bienvenue, {user} !');
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('keeps the source-only marker of a msg() whose variables m() supplies', async () => {
+    createCache();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const welcome = msg('Welcome, {user}!', { $_twin: 0 });
+
+    const m = await getMessagesInternal({ locale: 'fr', enableI18n: true });
+
+    expect(m(welcome, { user: 'Alice' })).toBe('Welcome, Alice!');
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  // The twin's locale is the configured locale, which can be a custom alias
+  it('formats msg() content with the locale a custom alias maps to', async () => {
+    createCache({
+      ...TWINS_CONFIG,
+      locales: ['en', 'fr_CA'],
+      customMapping: { fr_CA: { code: 'fr-CA' } },
+    });
+    const boats = msg('', {
+      n: 0,
+      $_twin: ['fr_CA', '{n, plural, one {# bateau} other {# bateaux}}'],
+    });
+
+    const m = await getMessagesInternal({ locale: 'fr_CA', enableI18n: true });
+
+    expect(decodeMsg(boats)).toBe('0 bateau');
+    expect(m(boats)).toBe('0 bateau');
+  });
+
+  // Module-level msg() can run before initializeGT(): it cannot resolve the
+  // alias yet, but keeps the twin for m(), which runs after
+  it('keeps the twin of a msg() created before the config resolves its alias', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const boats = msg('', {
+      n: 0,
+      $_twin: ['fr_CA', '{n, plural, one {# bateau} other {# bateaux}}'],
+    });
+    createCache({
+      ...TWINS_CONFIG,
+      locales: ['en', 'fr_CA'],
+      customMapping: { fr_CA: { code: 'fr-CA' } },
+    });
+
+    const m = await getMessagesInternal({ locale: 'fr_CA', enableI18n: true });
+
+    expect(m(boats)).toBe('0 bateau');
+  });
+
   it('renders unattributed content (marker 0) as its source text', async () => {
     const loadTranslations = vi.fn().mockResolvedValue({});
     createCache(TWINS_CONFIG, { loadTranslations });
