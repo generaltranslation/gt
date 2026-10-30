@@ -236,3 +236,26 @@ describe('services-disabled approved locale spelling', () => {
     }
   );
 });
+describe('configured locale matcher', () => {
+  it.each([
+    [undefined, 307, '/en-GB/pricing'],
+    ['lookup', 200, undefined],
+  ])(
+    'routes a browser "en" preference with localeMatcher=%s',
+    (localeMatcher, status, target) => {
+      vi.stubEnv(
+        '_GENERALTRANSLATION_I18N_CONFIG_PARAMS',
+        JSON.stringify({
+          defaultLocale: 'fr',
+          locales: ['fr', 'en-GB'],
+          localeMatcher,
+        })
+      );
+      check(
+        createNextMiddleware()(request('/pricing', { browser: 'en' })),
+        status,
+        target
+      );
+    }
+  );
+});

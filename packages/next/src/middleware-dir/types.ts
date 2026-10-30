@@ -1,5 +1,8 @@
 import type { GTIntl } from '@generaltranslation/format';
-import type { CustomMapping } from '@generaltranslation/format/types';
+import type {
+  CustomMapping,
+  LocaleMatcher,
+} from '@generaltranslation/format/types';
 import type { HeadersAndCookies } from '../config-dir/props/withGTConfigProps';
 import type { PathConfig, PathMatcher } from './createPathMatcher';
 
@@ -38,6 +41,7 @@ export type MiddlewareI18nConfig = {
   customMapping?: CustomMapping;
   defaultLocale?: string;
   locales?: string[];
+  localeMatcher?: LocaleMatcher;
   headersAndCookies?: HeadersAndCookies;
 };
 

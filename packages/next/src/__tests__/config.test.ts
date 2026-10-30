@@ -1543,6 +1543,7 @@ describe('withGTConfig', () => {
           loadTranslationsPath: './server-only-loader.ts',
           customMetadata: 'server-only metadata',
           cacheExpiryTime: 12345,
+          localeMatcher: 'lookup',
           _versionId: 'version-id',
           _disableDevHotReload: true,
         }
@@ -1554,6 +1555,7 @@ describe('withGTConfig', () => {
       expect(clientConfig).toEqual({
         defaultLocale: expect.any(String),
         locales: expect.any(Array),
+        localeMatcher: 'lookup',
         runtimeUrl: expect.any(String),
         cacheUrl: expect.any(String),
         cacheExpiryTime: 12345,
