@@ -38,17 +38,23 @@ function manifestModule(manifest: LocaleTwinManifest | null): string {
 }
 
 /**
- * Source of the virtual module. Only server environments read the manifest:
- * a client build would see the previous build's file (its own manifest is
- * written after its modules load). In a server build with locale twins on, a
- * missing manifest is an error (the client environment must be built first).
+ * Source of the virtual module. Only server environments of a build read the
+ * manifest: a client build would see the previous build's file (its own
+ * manifest is written after its modules load), and `vite dev` serves no
+ * twins, so a manifest left in the outDir by an earlier build is stale. In a
+ * server build with locale twins on, a missing manifest is an error (the
+ * client environment must be built first).
  */
 export function loadManifestModule(options: {
   enabled: boolean;
   config: ManifestModuleConfig;
   consumer: 'client' | 'server';
 }): { code: string; manifestPath?: string } {
-  if (!options.enabled || options.consumer !== 'server') {
+  if (
+    !options.enabled ||
+    options.consumer !== 'server' ||
+    options.config.command !== 'build'
+  ) {
     return { code: manifestModule(null) };
   }
   const manifestPath = getClientManifestPath(options.config);
@@ -56,10 +62,7 @@ export function loadManifestModule(options: {
   try {
     text = fs.readFileSync(manifestPath, 'utf8');
   } catch {
-    if (options.config.command === 'build' && options.consumer === 'server') {
-      throw new Error(createMissingLocaleTwinManifestDiagnostic(manifestPath));
-    }
-    return { code: manifestModule(null) };
+    throw new Error(createMissingLocaleTwinManifestDiagnostic(manifestPath));
   }
   return {
     code: manifestModule(parseLocaleTwinManifest(text)),
