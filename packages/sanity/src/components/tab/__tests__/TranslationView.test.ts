@@ -24,6 +24,10 @@ vi.mock('../../../hooks/useClient', () => ({
 
 const { TranslationView } = await import('../TranslationView');
 
+// The first Sanity UI render pays a one-time warm-up cost: ~0.6s locally, but
+// over 5s on a busy CI runner.
+vi.setConfig({ testTimeout: 30_000 });
+
 const theme = buildTheme();
 let container: HTMLDivElement;
 let root: Root;
