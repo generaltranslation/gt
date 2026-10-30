@@ -14,6 +14,16 @@ const dataset = [
     ['fr', 'author-fr'],
     ['de', 'author-de'],
   ]),
+  // Marked group: fr original with en and de translations.
+  metadataDoc(
+    'm-marie',
+    [
+      ['fr', 'author-marie'],
+      ['en', 'author-marie-en'],
+      ['de', 'author-marie-de'],
+    ],
+    { gtSourceLanguage: 'fr' }
+  ),
 ];
 
 // A page translated into de from a fr original carries the fr references.
@@ -56,5 +66,20 @@ describe('resolveRefs', () => {
     expect(await resolveRefs(translatedPage, 'de', client, 'en')).toEqual(
       resolved
     );
+  });
+
+  test('for a source-locale original, resolves a reference to a marked group original', async () => {
+    const { client } = createGroqClient(dataset);
+    const page = {
+      _id: 'drafts.article-1-de',
+      _type: 'page',
+      author: { _type: 'reference', _ref: 'author-marie' },
+      reviewer: { _type: 'reference', _ref: 'author-marie-en' },
+    } as unknown as SanityDocument;
+
+    expect(await resolveRefs(page, 'de', client)).toMatchObject({
+      author: { _ref: 'author-marie-de' },
+      reviewer: { _ref: 'author-marie-de' },
+    });
   });
 });

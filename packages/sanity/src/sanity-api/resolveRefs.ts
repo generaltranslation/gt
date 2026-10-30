@@ -2,10 +2,10 @@ import { SanityClient, SanityDocument } from 'sanity';
 import { pluginConfig } from '../adapter/core';
 import { getPublishedId } from '../utils/documentIds';
 import {
-  metadataTranslationRef,
   metadataTranslations,
   TRANSLATION_METADATA_TYPE,
 } from '../utils/translationMetadata';
+import { SOURCE_LANGUAGE_FIELD } from '../utils/translationSource';
 
 interface Reference {
   _type: 'reference';
@@ -141,19 +141,29 @@ async function resolveTranslatedReferences(
     return resolveGroupMemberReferences(refIds, locale, client);
   }
 
-  // Optimized GROQ query that directly returns only the needed translation pairs
-  const query = `*[_type == "${TRANSLATION_METADATA_TYPE}" && count(${metadataTranslations('== $sourceLocale', 'value._ref in $refIds')}) > 0] {
-    "originalRef": ${metadataTranslationRef('$sourceLocale')},
+  // A source-locale document links to each group's source-locale entry, or
+  // to the original of a group marked with a non-default original.
+  const originals = metadataTranslations(
+    `in [$sourceLocale, ^.${SOURCE_LANGUAGE_FIELD}]`
+  );
+  const query = `*[_type == "${TRANSLATION_METADATA_TYPE}" && count(${originals}[value._ref in $refIds]) > 0] {
+    "originalRefs": ${originals}.value._ref,
     "translatedRefs": ${metadataTranslations('== $locale')}.value._ref
-  }[defined(originalRef) && count(translatedRefs) > 0]`;
+  }[count(translatedRefs) > 0]`;
 
-  const translationPairs: { originalRef: string; translatedRefs: string[] }[] =
-    await client.fetch(query, { refIds, sourceLocale, locale });
+  const translationPairs: {
+    originalRefs: string[];
+    translatedRefs: string[];
+  }[] = await client.fetch(query, { refIds, sourceLocale, locale });
 
   // Build the translation map
-  for (const { originalRef, translatedRefs: localeRefs } of translationPairs) {
+  for (const { originalRefs, translatedRefs: localeRefs } of translationPairs) {
     const translatedRef = localeRefs[localeRefs.length - 1];
-    translatedRefs.set(originalRef, translatedRef);
+    for (const originalRef of originalRefs) {
+      if (originalRef !== translatedRef) {
+        translatedRefs.set(originalRef, translatedRef);
+      }
+    }
   }
 
   return translatedRefs;
