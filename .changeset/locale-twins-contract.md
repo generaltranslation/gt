@@ -1,7 +1,6 @@
 ---
 'generaltranslation': minor
 '@generaltranslation/compiler': minor
-'gt': minor
 ---
 
 feat: add the experimental `experimental.splitting` option and the locale twins build contract

@@ -7,7 +7,6 @@ import {
   setupViteSPA,
   writeViteLoader,
 } from '../setupViteSPA.js';
-import { viteSetup } from '../buildTools/vite.js';
 
 describe('setupViteSPA', () => {
   let appDirectory: string;
@@ -578,114 +577,5 @@ describe('writeViteLoader with a source directory', () => {
     ).resolves.toBe('missing');
 
     expect(fs.readdirSync(path.join(appDirectory, 'app'))).toEqual([]);
-  });
-});
-
-describe('viteSetup with locale twins', () => {
-  let appDirectory: string;
-  const file = (name: string) => path.join(appDirectory, name);
-  const read = (name: string) => fs.readFileSync(file(name), 'utf8');
-  const twins = () => ({
-    appDirectory,
-    configFilepath: 'gt.config.json',
-    defaultLocale: 'en',
-    locales: ['fr', 'en'],
-    translationsDir: 'src/_gt',
-    splitting: 'locale-twins' as const,
-  });
-
-  beforeEach(() => {
-    appDirectory = fs.mkdtempSync(path.join(tmpdir(), 'gt-vite-twins-'));
-    fs.mkdirSync(file('src'));
-    fs.writeFileSync(
-      file('index.html'),
-      '<div id="root"></div>\n<script type="module" src="/src/main.tsx"></script>\n'
-    );
-    fs.writeFileSync(file('src/main.tsx'), '// app');
-    fs.writeFileSync(file('gt.config.json'), '{}');
-    fs.writeFileSync(
-      file('vite.config.ts'),
-      "import { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\n\nexport default defineConfig({\n  plugins: [react()],\n});\n"
-    );
-  });
-
-  afterEach(() => {
-    fs.rmSync(appDirectory, { recursive: true, force: true });
-  });
-
-  // vite dev serves no twins: it loads the translation files as without
-  // locale twins, and production builds drop the loader
-  it('loads translation files in development only and adds the compiler', async () => {
-    const result = await viteSetup.apply(twins());
-
-    expect(read('src/gt-entry.ts'))
-      .toBe(`import { initializeGTSPA } from 'gt-react/experimental';
-import gtConfig from '../gt.config.json';
-import loadTranslations from './loadTranslations';
-
-// Locale twins carry the translations in production builds
-await initializeGTSPA(
-  import.meta.env.DEV ? { ...gtConfig, loadTranslations } : gtConfig
-);
-
-await import('./main');
-`);
-    expect(read('vite.config.ts')).toContain(
-      'plugins: [react(), gtCompiler()],'
-    );
-    expect(read('vite.config.ts')).toContain(
-      "import { vite as gtCompiler } from '@generaltranslation/compiler/experimental';"
-    );
-    expect(read('src/loadTranslations.ts')).toContain('import(`./_gt/');
-    expect(fs.existsSync(file('src/_gt/fr.json'))).toBe(true);
-    expect(result).toEqual({
-      steps: [
-        'configured initializeGTSPA',
-        'added gtCompiler() to vite.config.ts',
-      ],
-      manualActions: [],
-    });
-  });
-
-  // vite dev still loads translations through the loader
-  it('moves the development loader to a new translations directory', async () => {
-    await writeViteLoader({
-      ...twins(),
-      translationsDir: 'public/_gt',
-      create: true,
-    });
-
-    const result = await viteSetup.syncLoader({
-      ...twins(),
-      translationsDir: 'src/_gt',
-      previousTranslationsDir: 'public/_gt',
-    });
-
-    expect(read('src/loadTranslations.ts')).toContain('import(`./_gt/');
-    expect(fs.existsSync(file('src/_gt/fr.json'))).toBe(true);
-    expect(result).toEqual({
-      steps: ['updated src/loadTranslations.ts'],
-      manualActions: [],
-    });
-  });
-
-  it('asks to move a custom development loader', async () => {
-    fs.writeFileSync(file('src/loadTranslations.ts'), '// custom loader');
-
-    const result = await viteSetup.syncLoader({
-      ...twins(),
-      translationsDir: 'src/_gt',
-      previousTranslationsDir: 'public/_gt',
-    });
-
-    expect(read('src/loadTranslations.ts')).toBe('// custom loader');
-    expect(result).toEqual({
-      steps: [],
-      manualActions: [
-        expect.objectContaining({
-          fix: 'Update your custom src/loadTranslations.ts to load translations from src/_gt',
-        }),
-      ],
-    });
   });
 });

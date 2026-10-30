@@ -1,5 +1,6 @@
 // src/router.tsx: the setupRouterGTIntegration call in getRouter.
 import * as t from '@babel/types';
+import { Libraries } from '../../../types/libraries.js';
 import { parseModule } from '../../setupViteSPA.js';
 import type { ManualAction } from '../index.js';
 import {
@@ -17,26 +18,24 @@ import {
   usesName,
   type SourceFile,
 } from '../shared/source.js';
-import { DOCS_URL, GT_IMPORT_SOURCES, type GTImportSources } from './source.js';
+import { DOCS_URL } from './source.js';
 
 const ROUTER_INTEGRATION = 'setupRouterGTIntegration';
 
-function getRouterIntegrationImport(
-  router: SourceFile,
-  sources: GTImportSources
-): string | undefined {
-  return getLocalImport(router, ROUTER_INTEGRATION, sources.runtime);
+function getRouterIntegrationImport(router: SourceFile): string | undefined {
+  return getLocalImport(
+    router,
+    ROUTER_INTEGRATION,
+    Libraries.GT_TANSTACK_START
+  );
 }
 
 /**
  * Whether getRouter integrates the router it returns, before that return and
  * on every path through it.
  */
-export function callsRouterIntegration(
-  router: SourceFile,
-  sources: GTImportSources = GT_IMPORT_SOURCES
-): boolean {
-  const local = getRouterIntegrationImport(router, sources);
+export function callsRouterIntegration(router: SourceFile): boolean {
+  const local = getRouterIntegrationImport(router);
   const { statements } = router;
   const onlyReturn =
     local && statements ? findOnlyReturn(statements) : undefined;
@@ -154,13 +153,10 @@ function findRouterReturn(
 }
 
 /** The router with setupRouterGTIntegration, or undefined when unsupported. */
-export function configureRouter(
-  router: SourceFile,
-  sources: GTImportSources = GT_IMPORT_SOURCES
-): string | undefined {
+export function configureRouter(router: SourceFile): string | undefined {
   const { content, statements } = router;
   if (!statements) return undefined;
-  const local = getRouterIntegrationImport(router, sources);
+  const local = getRouterIntegrationImport(router);
   // Another binding with this name would clash with the added import, and an
   // existing call that does not integrate the returned router needs review.
   if (
@@ -192,7 +188,7 @@ export function configureRouter(
           getImportEdit(
             statements,
             [
-              `import { ${ROUTER_INTEGRATION} } from ${quote}${sources.runtime}${quote}${semi}`,
+              `import { ${ROUTER_INTEGRATION} } from ${quote}${Libraries.GT_TANSTACK_START}${quote}${semi}`,
             ],
             eol
           ),
@@ -201,12 +197,9 @@ export function configureRouter(
   return parseModule(configured, router.path) ? configured : undefined;
 }
 
-export function getRouterAction(
-  routerPath: string,
-  sources: GTImportSources = GT_IMPORT_SOURCES
-): ManualAction {
+export function getRouterAction(routerPath: string): ManualAction {
   return {
     whatHappened: `${routerPath} was not configured automatically`,
-    fix: `Add import { ${ROUTER_INTEGRATION} } from '${sources.runtime}' to ${routerPath}, and call ${ROUTER_INTEGRATION}({ router }) in getRouter before it returns the router (see ${DOCS_URL})`,
+    fix: `Add import { ${ROUTER_INTEGRATION} } from '${Libraries.GT_TANSTACK_START}' to ${routerPath}, and call ${ROUTER_INTEGRATION}({ router }) in getRouter before it returns the router (see ${DOCS_URL})`,
   };
 }

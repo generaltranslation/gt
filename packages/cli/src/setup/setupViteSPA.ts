@@ -1,7 +1,5 @@
 import { parse } from '@babel/parser';
-import type { TranslationSplittingStrategy } from 'generaltranslation/types';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import { isLocaleTwinsSplitting } from 'generaltranslation/internal/experimental';
 import fs from 'node:fs';
 import path from 'node:path';
 import { logger } from '../console/logger.js';
@@ -14,8 +12,6 @@ type SetupViteSPAOptions = {
   locales: string[];
   translationsDir?: string;
   previousTranslationsDir?: string;
-  /** With 'locale-twins', translations ship in the build: no loader. */
-  splitting?: TranslationSplittingStrategy;
 };
 
 const defaultBootstrapFilename = 'gt-entry.ts';
@@ -141,8 +137,7 @@ export async function inspectViteSPA(appDirectory: string) {
       parseModule(entry, declaredEntryPath)?.some(
         (statement) =>
           statement.type === 'ImportDeclaration' &&
-          (statement.source.value === Libraries.GT_REACT ||
-            statement.source.value === `${Libraries.GT_REACT}/experimental`) &&
+          statement.source.value === Libraries.GT_REACT &&
           statement.importKind !== 'type' &&
           statement.specifiers.some(
             (specifier) =>
@@ -361,7 +356,6 @@ export async function setupViteSPA({
   locales,
   translationsDir,
   previousTranslationsDir,
-  splitting,
 }: SetupViteSPAOptions): Promise<{
   loader?: ViteLoaderResult;
   manualAction?: string;
@@ -379,12 +373,11 @@ export async function setupViteSPA({
     entryImport,
   } = await inspectViteSPA(appDirectory);
 
-  const twins = isLocaleTwinsSplitting(splitting);
   // An app-owned initializer may have custom imports and options. Nesting a
   // generated initializer around it would initialize GT twice.
   if (customBootstrap) {
     return {
-      manualAction: `Verify the existing GT bootstrap ${customBootstrap} uses ${configFilepath}${translationsDir ? ` and loads translations from ${translationsDir}${twins ? ' in development only (import.meta.env.DEV)' : ''}` : ' with CDN loading'}`,
+      manualAction: `Verify the existing GT bootstrap ${customBootstrap} uses ${configFilepath}${translationsDir ? ` and loads translations from ${translationsDir}` : ' with CDN loading'}`,
     };
   }
 
@@ -413,12 +406,7 @@ export async function setupViteSPA({
       loaderExport === 'default'
         ? "import loadTranslations from './loadTranslations';\n"
         : "import { loadTranslations } from './loadTranslations';\n";
-    // Locale twins carry the translations in production builds; vite dev
-    // serves no twins and loads the files as usual. Vite replaces
-    // import.meta.env.DEV, so production builds drop the loader.
-    loadTranslationsOption = twins
-      ? '\n  import.meta.env.DEV ? { ...gtConfig, loadTranslations } : gtConfig\n'
-      : '{ ...gtConfig, loadTranslations }';
+    loadTranslationsOption = '{ ...gtConfig, loadTranslations }';
   }
 
   const configImport = toRelativeImport(
@@ -427,10 +415,10 @@ export async function setupViteSPA({
   );
   await fs.promises.writeFile(
     bootstrapPath,
-    `import { initializeGTSPA } from '${twins ? `${Libraries.GT_REACT}/experimental` : Libraries.GT_REACT}';
+    `import { initializeGTSPA } from '${Libraries.GT_REACT}';
 import gtConfig from '${configImport}';
 ${loadTranslationsImport}
-${twins && translationsDir ? '// Locale twins carry the translations in production builds\n' : ''}await initializeGTSPA(${loadTranslationsOption});
+await initializeGTSPA(${loadTranslationsOption});
 
 await import('${entryImport}');
 `

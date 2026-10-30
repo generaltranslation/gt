@@ -1,10 +1,6 @@
 import { Argument, Command, InvalidArgumentError, Option } from 'commander';
 import { ProjectApiKeyPermission } from 'generaltranslation/api';
 import {
-  isLocaleTwinsSplitting,
-  isTranslationSplittingStrategy,
-} from 'generaltranslation/internal/experimental';
-import {
   DEFAULT_TRANSLATIONS_DIR,
   REACT_QUICKSTART_URL,
 } from '../utils/constants.js';
@@ -67,8 +63,6 @@ import {
   signInForSetup,
 } from '../setup/developmentCredentials.js';
 import { exitIfUnsupportedSetupTarget } from '../setup/setupTarget.js';
-import { getLocaleTwinsGuidance } from '../setup/buildTools/shared/localeTwins.js';
-import { COMPILER_PACKAGE } from '../setup/buildTools/shared/viteConfig.js';
 import {
   asRecord,
   attachConfigureFlags,
@@ -1152,32 +1146,6 @@ See https://www.npmjs.com/package/gt-vue`);
       : existingConfig.publish === true
         ? 'cdn'
         : undefined;
-    const existingSplitting = asRecord(existingConfig.experimental)?.splitting;
-    const configuredSplitting = isTranslationSplittingStrategy(
-      existingSplitting
-    )
-      ? existingSplitting
-      : undefined;
-    const splitting = options.splitting ?? configuredSplitting;
-    // Locale twins are built from local translation files by the Vite
-    // compiler plugin, for apps whose entry setup knows how to configure.
-    const localeTwins = isLocaleTwinsSplitting(splitting);
-    if (localeTwins) {
-      if (!buildTool?.supportsLocaleTwins) {
-        session.reject(
-          '--splitting locale-twins supports Vite single-page apps and TanStack Start; pass --framework vite or tanstack-start'
-        );
-      } else if (!isUsingGT) {
-        session.reject(
-          '--splitting locale-twins needs a GT runtime; rerun with --react-setup'
-        );
-      }
-      if (options.storage === 'cdn') {
-        session.reject(
-          '--splitting locale-twins builds from local translation files; use --storage local'
-        );
-      }
-    }
 
     if (isUsingGT && !supportsCDN && options.storage === 'cdn') {
       session.reject(
@@ -1190,7 +1158,7 @@ See https://www.npmjs.com/package/gt-vue`);
       : !supportsCDN
         ? 'local'
         : await session.answer<'local' | 'cdn'>('--storage', {
-            explicit: options.storage ?? (localeTwins ? 'local' : undefined),
+            explicit: options.storage,
             configured: configuredStorage,
             recommended: 'local',
             ask: () =>
@@ -1368,11 +1336,6 @@ See https://www.npmjs.com/package/gt-vue`);
           !supportsCDN),
       // An explicit switch to the CDN stops later runs inferring local files.
       clearGtOutput: storage === 'cdn' && configuredOutput !== undefined,
-      // Locale twins are experimental: experimental.splitting
-      experimental:
-        options.splitting && options.splitting !== configuredSplitting
-          ? { splitting: options.splitting }
-          : undefined,
       // An explicit format list replaces the configured selection.
       removeFiles: selectedFormats
         ? configuredFormats.filter(
@@ -1473,15 +1436,8 @@ See https://www.npmjs.com/package/gt-vue`);
       packageJson !== null &&
       !isPackageInstalled('gt', packageJson, true, true) &&
       !buildTool?.skipsGTInstall(isUsingGT);
-    // The React setup adds the compiler plugin, so it installs it too. A
-    // runtime that runs the compiler itself already depends on it.
-    const installCompiler =
-      localeTwins &&
-      reactSetup !== undefined &&
-      buildTool?.localeTwinsCompilerFix === undefined &&
-      !isPackageInstalled(COMPILER_PACKAGE, reactSetup.packageJson, true, true);
     const packageManager =
-      reactSetup?.install || installGT || installCompiler
+      reactSetup?.install || installGT
         ? await resolvePackageManager(session, options.packageManager)
         : undefined;
 
@@ -1508,14 +1464,6 @@ See https://www.npmjs.com/package/gt-vue`);
           reactSetup.install,
           packageManager,
           false
-        );
-      }
-      if (installCompiler && packageManager) {
-        await installWithProgress(
-          session,
-          COMPILER_PACKAGE,
-          packageManager,
-          true
         );
       }
       await executeReactSetup(session, reactSetup, options);
@@ -1558,7 +1506,6 @@ See https://www.npmjs.com/package/gt-vue`);
       locales: resolvedLocales,
       translationsDir: storage === 'local' ? translationsDir : undefined,
       previousTranslationsDir: configuredTranslationsDir,
-      splitting,
     };
 
     if (storage === 'local' && translationsDir) {
@@ -1664,15 +1611,6 @@ See https://www.npmjs.com/package/gt-vue`);
 
     if (reactSetup && buildTool) {
       reportSetupResult(await buildTool.apply(buildToolContext));
-    }
-    if (localeTwins && buildTool && translationsDir) {
-      logger.message(
-        getLocaleTwinsGuidance({
-          buildTool,
-          translationsDir,
-          configuredApp: reactSetup !== undefined,
-        })
-      );
     }
 
     if (installGT && packageManager) {

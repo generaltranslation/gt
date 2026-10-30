@@ -131,22 +131,3 @@ describe('GT config schema static url options', () => {
     expect(validate([1])).toBe(false);
   });
 });
-
-describe('GT config schema experimental settings', () => {
-  it('accepts experimental.splitting strategies and rejects others', () => {
-    const validate = new Ajv({ strict: false }).compile(
-      schema.properties?.experimental ?? {}
-    );
-
-    expect(validate({})).toBe(true);
-    expect(validate({ splitting: 'locale' })).toBe(true);
-    expect(validate({ splitting: 'locale-twins' })).toBe(true);
-    expect(validate({ splitting: 'module' })).toBe(false);
-  });
-
-  it('no longer documents splitting under files.gt', () => {
-    expect(
-      schema.properties?.files?.properties?.gt?.properties?.splitting
-    ).toBeUndefined();
-  });
-});

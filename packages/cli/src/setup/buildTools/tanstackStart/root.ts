@@ -1,5 +1,6 @@
 // src/routes/__root.*: the document lang, from the locale GT resolved.
 import * as t from '@babel/types';
+import { Libraries } from '../../../types/libraries.js';
 import { parseModule } from '../../setupViteSPA.js';
 import type { ManualAction } from '../index.js';
 import { applyEdits, getCodeStyle, getImportEdit } from '../shared/edits.js';
@@ -11,7 +12,7 @@ import {
   usesName,
   type SourceFile,
 } from '../shared/source.js';
-import { DOCS_URL, GT_IMPORT_SOURCES, type GTImportSources } from './source.js';
+import { DOCS_URL } from './source.js';
 
 const USE_LOCALE = 'useLocale';
 
@@ -111,8 +112,7 @@ function isOnlyRendered(
 function setLang(
   root: SourceFile,
   statements: t.Statement[],
-  html: t.JSXElement,
-  sources: GTImportSources
+  html: t.JSXElement
 ): string | undefined {
   const { content } = root;
   const { attributes, name } = html.openingElement;
@@ -127,7 +127,7 @@ function setLang(
   if (!component || !isOnlyRendered(statements, component)) {
     return undefined;
   }
-  const local = getLocalImport(root, USE_LOCALE, sources.runtime);
+  const local = getLocalImport(root, USE_LOCALE, Libraries.GT_TANSTACK_START);
   // Another binding with this name would clash with the added import, and a
   // local binding could hide the existing one where the hook is called.
   if (
@@ -150,7 +150,7 @@ function setLang(
           getImportEdit(
             statements,
             [
-              `import { ${USE_LOCALE} } from ${quote}${sources.runtime}${quote}${semi}`,
+              `import { ${USE_LOCALE} } from ${quote}${Libraries.GT_TANSTACK_START}${quote}${semi}`,
             ],
             eol
           ),
@@ -168,8 +168,7 @@ function setLang(
  * result only once the router is integrated.
  */
 export function configureRootLang(
-  root: SourceFile,
-  sources: GTImportSources = GT_IMPORT_SOURCES
+  root: SourceFile
 ): string | ManualAction | null | undefined {
   const { statements } = root;
   if (!statements) return null;
@@ -185,9 +184,8 @@ export function configureRootLang(
     return undefined;
   }
   return (
-    (htmlElements.length === 1 &&
-      setLang(root, statements, htmlElements[0], sources)) ||
-    getRootLangAction(root.path, sources)
+    (htmlElements.length === 1 && setLang(root, statements, htmlElements[0])) ||
+    getRootLangAction(root.path)
   );
 }
 
@@ -294,12 +292,9 @@ export function getSpaShellAction(rootPath: string): ManualAction {
   };
 }
 
-export function getRootLangAction(
-  rootPath: string,
-  sources: GTImportSources = GT_IMPORT_SOURCES
-): ManualAction {
+export function getRootLangAction(rootPath: string): ManualAction {
   return {
     whatHappened: `${rootPath} was not configured automatically`,
-    fix: `Call const locale = ${USE_LOCALE}() at the top of the root route's document component, before any early return, and render <html lang={locale}>, with import { ${USE_LOCALE} } from '${sources.runtime}', so the page language follows the resolved locale (see ${DOCS_URL})`,
+    fix: `Call const locale = ${USE_LOCALE}() at the top of the root route's document component, before any early return, and render <html lang={locale}>, with import { ${USE_LOCALE} } from '${Libraries.GT_TANSTACK_START}', so the page language follows the resolved locale (see ${DOCS_URL})`,
   };
 }

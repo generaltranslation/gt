@@ -4,8 +4,6 @@ import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/internal';
-import { TRANSLATION_SPLITTING_STRATEGIES } from 'generaltranslation/internal/experimental';
-import type { TranslationSplittingStrategy } from 'generaltranslation/types';
 import findFilepath from '../fs/findFilepath.js';
 import { withJsonExtension } from '../fs/config/loadConfig.js';
 import { logger } from '../console/logger.js';
@@ -49,7 +47,6 @@ export type ConfigureOptions = {
   locales?: string[];
   storage?: 'local' | 'cdn';
   translationsDir?: string;
-  splitting?: TranslationSplittingStrategy;
   fileFormats?: Array<SetupFileFormat | 'none'>;
   filePatterns?: string[];
   liveTranslations?: boolean;
@@ -108,12 +105,6 @@ export function attachConfigureFlags(
     .option(
       '--translations-dir <path>',
       'Directory for local GT translation files'
-    )
-    .addOption(
-      new Option(
-        '--splitting <strategy>',
-        'How the app ships translations: locale loads a whole locale at runtime; locale-twins (experimental; Vite and TanStack Start) builds per-locale copies of the chunks that render each string, with GT imported from the /experimental entry points'
-      ).choices(TRANSLATION_SPLITTING_STRATEGIES)
     )
     .addOption(
       new Option(

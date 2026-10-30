@@ -26,8 +26,6 @@ export type SetupConfigUpdate = {
   removeFiles?: string[];
   /** Drops files.gt.output after an explicit switch to CDN storage. */
   clearGtOutput?: boolean;
-  /** Merged into the configured experimental settings. */
-  experimental?: Record<string, unknown>;
 };
 
 function asObject(value: unknown): Record<string, unknown> {
@@ -75,13 +73,6 @@ export function mergeSetupConfig(
     for (const format of options.removeFiles ?? []) delete files[format];
     if (Object.keys(files).length > 0) mergedContent.files = files;
     else delete mergedContent.files;
-  }
-
-  if (options.experimental) {
-    mergedContent.experimental = {
-      ...asObject(oldContent.experimental),
-      ...options.experimental,
-    };
   }
 
   // The selected locale list replaces the configured one.

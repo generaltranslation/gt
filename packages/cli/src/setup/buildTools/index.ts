@@ -1,5 +1,3 @@
-import type { TranslationSplittingStrategy } from 'generaltranslation/types';
-import { isLocaleTwinsSplitting } from 'generaltranslation/internal/experimental';
 import type { SupportedReactFrameworks } from '../../types/index.js';
 import { reactRouterSetup } from './reactRouter/index.js';
 import { tanstackStartSetup } from './tanstackStart/index.js';
@@ -20,14 +18,7 @@ export type BuildToolContext = {
   translationsDir?: string;
   /** The translations directory in the existing config. */
   previousTranslationsDir?: string;
-  /** experimental.splitting as setup writes it; 'locale' when unset. */
-  splitting?: TranslationSplittingStrategy;
 };
-
-/** Locale twins carry translations in the build: no loader, no snapshot. */
-export function usesLocaleTwins(ctx: Pick<BuildToolContext, 'splitting'>) {
-  return isLocaleTwinsSplitting(ctx.splitting);
-}
 
 /** Setup steps for a build tool whose app entry GT configures itself. */
 export type BuildToolSetup = {
@@ -58,16 +49,6 @@ export type BuildToolSetup = {
   ): Promise<ManualAction | null | undefined>;
   /** Configures the app entry after gt.config.json is written. */
   apply(ctx: BuildToolContext): Promise<SetupResult>;
-  /** Supports experimental.splitting 'locale-twins'. */
-  supportsLocaleTwins: boolean;
-  /**
-   * How to enable the GT compiler for locale twins when setup leaves the app
-   * unchanged. Setups without one install @generaltranslation/compiler and
-   * add its Vite plugin themselves.
-   */
-  localeTwinsCompilerFix?: string;
-  /** Steps setup leaves to a person after a locale twins setup. */
-  localeTwinsNextSteps?: string[];
 };
 
 export const BUILD_TOOL_SETUPS: BuildToolSetup[] = [

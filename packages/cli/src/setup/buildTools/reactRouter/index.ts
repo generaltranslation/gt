@@ -33,7 +33,6 @@ export const reactRouterSetup: BuildToolSetup = {
   ownsLoader: true,
   skipsGTInstall: () => false,
   devCredentialsOption: '--live-translations',
-  supportsLocaleTwins: false,
   docsUrl: DOCS_URL,
   async preflight(appDirectory) {
     await inspectReactRouter(appDirectory);
