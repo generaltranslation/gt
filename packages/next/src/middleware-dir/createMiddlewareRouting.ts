@@ -4,12 +4,16 @@ import {
   defaultLocaleCookieName,
   defaultResetLocaleCookieName,
 } from '@generaltranslation/react-core/pure';
-import { createUnsupportedLocalesWarning } from '../errors/middleware';
+import {
+  createInvalidMiddlewareDefaultLocaleError,
+  createUnsupportedLocalesWarning,
+} from '../errors/middleware';
 import {
   defaultLocaleRoutingEnabledCookieName,
   defaultReferrerLocaleCookieName,
 } from '../utils/cookies';
 import { defaultLocaleHeaderName } from '../utils/headers';
+import { parseEnvConfig } from '../utils/parseEnvConfig';
 import { compilePathRegex } from '../utils/pathRegex';
 import {
   createPathMatcher,
@@ -17,7 +21,6 @@ import {
   type PathConfig,
   type PathMatcher,
 } from './createPathMatcher';
-import { parseEnvConfig } from './resolveMiddlewareConfig';
 import type {
   MiddlewareI18nConfig,
   MiddlewareRouting,
@@ -87,9 +90,7 @@ export function createMiddlewareRouting({
     headersAndCookies?.localeHeaderName || defaultLocaleHeaderName;
 
   if (!gt.isValidLocale(defaultLocale))
-    throw new Error(
-      `gt-next middleware: defaultLocale "${defaultLocale}" is not a valid locale.`
-    );
+    throw new Error(createInvalidMiddlewareDefaultLocaleError(defaultLocale));
 
   const warningLocales = locales.filter((locale) => !gt.isValidLocale(locale));
   if (warningLocales.length)

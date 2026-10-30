@@ -2,10 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 import { createNextMiddleware } from '../createNextMiddleware';
-import {
-  defaultMiddlewareConfig,
-  splitMiddlewareConfig,
-} from '../defaultMiddlewareConfig';
+import { splitMiddlewareConfig } from '../defaultMiddlewareConfig';
 import { resolveMiddlewareConfig } from '../resolveMiddlewareConfig';
 import type { MiddlewareConfig } from '../types';
 
@@ -105,16 +102,6 @@ describe('resolveMiddlewareConfig', () => {
       expect.stringContaining('_GENERALTRANSLATION_MIDDLEWARE_CONFIG')
     );
     error.mockRestore();
-  });
-});
-
-describe('parseEnvConfig', () => {
-  it('treats valid non-object JSON as unset', () => {
-    stubMiddlewareEnv('null');
-    vi.stubEnv('_GENERALTRANSLATION_I18N_CONFIG_PARAMS', 'null');
-
-    expect(resolveMiddlewareConfig()).toEqual(defaultMiddlewareConfig);
-    expect(() => createNextMiddleware()).not.toThrow();
   });
 });
 

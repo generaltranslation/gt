@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getParams } from '../shared';
 
 let savedEnv: NodeJS.ProcessEnv;
@@ -93,5 +93,20 @@ describe('getParams', () => {
     expect(nextI18nCacheParams.cacheExpiryTime).toBe(0);
     expect(nextI18nCacheParams._versionId).toBe('version-id');
     expect(nextI18nCacheParams.loadTranslations).toBeUndefined();
+  });
+
+  it('logs and ignores an env config that is not valid JSON', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS = '{';
+
+    const { i18nConfigParams } = getParams();
+
+    expect(i18nConfigParams.defaultLocale).toBeUndefined();
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS is not valid JSON'
+      )
+    );
+    error.mockRestore();
   });
 });
