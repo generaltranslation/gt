@@ -28,6 +28,7 @@ import { COMPILER_DIAGNOSTIC_SOURCE } from '../../utils/diagnostics';
 import {
   createVendorChunkSkippedDiagnostic,
   LOCALE_TWINS_DEV_NOTICE,
+  LOCALE_TWINS_WITH_CHUNK_IMPORT_MAP,
   LOCALE_TWINS_WITHOUT_COMPILE_TIME_HASH,
 } from '../buildDiagnostics';
 import type { LocaleTwinInputFile } from '../generateLocaleTwins';
@@ -84,7 +85,12 @@ type ConfigLike = {
   root: string;
   command: 'build' | 'serve';
   consumer?: Consumer;
-  build: { outDir: string; ssr?: unknown };
+  build: {
+    outDir: string;
+    ssr?: unknown;
+    chunkImportMap?: unknown;
+    rolldownOptions?: { experimental?: { chunkImportMap?: unknown } };
+  };
   environments?: Record<string, { build?: { outDir?: string } } | undefined>;
   logger: { info(message: string): void; warn(message: string): void };
 };
@@ -157,6 +163,9 @@ export function createLocaleTwinsViteHooks(
       options.onConfigResolved?.(config);
       resolvedConfig = config;
       for (const message of pendingWarnings.splice(0)) warn(message);
+      if (enabled && config.command === 'build' && usesChunkImportMap(config)) {
+        throw new Error(LOCALE_TWINS_WITH_CHUNK_IMPORT_MAP);
+      }
     },
 
     configureServer() {
@@ -269,6 +278,14 @@ export function createLocaleTwinsViteHooks(
     },
   };
   return hooks;
+}
+
+/** Whether a build maps chunks through an import map (Vite 8). */
+function usesChunkImportMap(config: ConfigLike): boolean {
+  return Boolean(
+    config.build?.chunkImportMap ||
+    config.build?.rolldownOptions?.experimental?.chunkImportMap
+  );
 }
 
 /** Reads emitted chunks (code as written to disk) and text assets. */

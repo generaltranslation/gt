@@ -102,6 +102,8 @@ const CHUNKING_OPTIONS = [
   'advancedChunks',
   'manualChunks',
   'inlineDynamicImports',
+  // Rollup rejects manualChunks with preserveModules
+  'preserveModules',
 ] as const;
 
 type BuildOptionsLike =

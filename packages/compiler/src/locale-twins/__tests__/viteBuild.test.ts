@@ -360,6 +360,35 @@ describe.each(VITE_VERSIONS)('$name client build', ({ load }) => {
     );
   });
 
+  // Rollup rejects manualChunks with preserveModules
+  it('adds no vendor chunk to a preserveModules build and warns', async () => {
+    const vite = await load();
+    const app = newApp();
+    await buildFixture(
+      vite,
+      app,
+      {},
+      {
+        build: {
+          rollupOptions: {
+            preserveEntrySignatures: 'exports-only',
+            output: { preserveModules: true },
+          },
+        },
+      }
+    );
+
+    expect(app.jsFiles().some((name) => name.includes('vendor-'))).toBe(false);
+    expect(app.exists(LOCALE_TWIN_MANIFEST_FILE)).toBe(true);
+    expect(warnings(app)).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(
+          /Locale twins did not add the default vendor chunk because build\.roll(up|down)Options\.output\.preserveModules is already configured/
+        ),
+      ])
+    );
+  });
+
   it('adds no vendor chunk and no warning when vendorChunk is off', async () => {
     const vite = await load();
     const app = newApp();
@@ -668,5 +697,18 @@ describe.each(VITE_VERSIONS)('$name dev server', ({ load }) => {
     } finally {
       await server.close();
     }
+  });
+});
+
+describe('Vite 8 chunk import map', () => {
+  // The import map would point every locale at the original chunks
+  it('fails a locale twins build with build.chunkImportMap', async () => {
+    const vite = await VITE_VERSIONS[0].load();
+    const app = newApp();
+    await expect(
+      buildFixture(vite, app, {}, {
+        build: { chunkImportMap: true },
+      } as vite8.InlineConfig)
+    ).rejects.toThrow(/Locale twins do not support build\.chunkImportMap/);
   });
 });

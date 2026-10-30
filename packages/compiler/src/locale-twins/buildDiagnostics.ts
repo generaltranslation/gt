@@ -147,3 +147,12 @@ export function createMissingLocaleTwinManifestDiagnostic(
     details: manifestPath,
   });
 }
+
+/** Vite 8's `build.chunkImportMap` maps every locale to the original chunks. */
+export const LOCALE_TWINS_WITH_CHUNK_IMPORT_MAP = createCompilerDiagnostic({
+  severity: 'Error',
+  whatHappened: 'Locale twins do not support build.chunkImportMap',
+  why: "the document's import map points every locale at the original chunks instead of their locale twins",
+  fix: 'Remove build.chunkImportMap (and build.rolldownOptions.experimental.chunkImportMap) from your Vite config',
+  wayOut: 'or set files.gt.splitting to "locale" in gt.config.json',
+});
