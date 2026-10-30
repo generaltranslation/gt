@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { LocaleTwinManifest } from 'generaltranslation/internal';
+import { parseLocaleTwinDocument } from 'gt-i18n/internal/locale-twins';
 import { rewriteLocaleTwinDocument } from '../spaDocument';
 
 const manifest: LocaleTwinManifest = {
@@ -84,4 +85,52 @@ describe('rewriteLocaleTwinDocument', () => {
 
     expect(rewrite(html)).toBeUndefined();
   });
+
+  it('writes the enable-i18n cookie and the custom locale codes for the bootstrap', () => {
+    const result = rewriteLocaleTwinDocument({
+      html: document(
+        '<script type="module" crossorigin src="/assets/index-A.js"></script>'
+      ),
+      manifest,
+      localeCookieName: 'generaltranslation.locale',
+      enableI18nCookieName: 'generaltranslation.enable-i18n',
+      customMapping: {
+        fr: { code: 'fr-FR', name: 'Français' },
+        en: 'English',
+      },
+    })!;
+
+    const { data } = parseLocaleTwinDocument(result.html);
+    expect(data.enableI18nCookieName).toBe('generaltranslation.enable-i18n');
+    expect(data.customMapping).toEqual({ fr: { code: 'fr-FR' } });
+  });
+
+  it.each([
+    [
+      undefined,
+      /<script data-gt-locale-twins-bootstrap nonce="n0nce">\(function/,
+    ],
+    [
+      { fileName: 'gt-locale-twins-bootstrap.abc.js' },
+      /<script data-gt-locale-twins-bootstrap nonce="n0nce" src="\/assets\/gt-locale-twins-bootstrap\.abc\.js"><\/script>/,
+    ],
+  ])(
+    "gives the bootstrap the entry script's CSP nonce (external: %j)",
+    (externalBootstrap, bootstrapTag) => {
+      const result = rewriteLocaleTwinDocument({
+        html: document(
+          '<script type="module" crossorigin nonce="n0nce" src="/assets/index-A.js"></script>'
+        ),
+        manifest,
+        localeCookieName: 'generaltranslation.locale',
+        externalBootstrap,
+      })!;
+
+      expect(result.html).toMatch(bootstrapTag);
+      expect(parseLocaleTwinDocument(result.html).data.tags[0]).toMatchObject({
+        tag: 'script',
+        attributes: { nonce: 'n0nce' },
+      });
+    }
+  );
 });

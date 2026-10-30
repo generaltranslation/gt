@@ -209,6 +209,25 @@ describe('locale twins end to end', () => {
     );
   });
 
+  it('renders the default locale twin when the visitor disabled i18n', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    // The bootstrap (or server) serves the default locale's twins
+    const { Page } = evaluateModule(fillPlaceholder(strippedCode, 'en'));
+    document.cookie = 'generaltranslation.enable-i18n=false';
+    try {
+      await initializeGTSPA({ ...GT_CONFIG, locale: 'fr' });
+
+      expect(renderToStaticMarkup(<Page name='Ada' />)).toBe(
+        '<main>Hi <b class="x">there</b>Ada<input placeholder="Your name"/>' +
+          '<p>Save 3 items</p><p>Hello Ada</p><p>Cancel</p></main>'
+      );
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      document.cookie =
+        'generaltranslation.enable-i18n=; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    }
+  });
+
   it('reports serving the original (untwinned) chunk', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     const { Page } = evaluateModule(strippedCode);

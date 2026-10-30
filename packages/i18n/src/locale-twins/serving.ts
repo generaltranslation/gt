@@ -8,7 +8,10 @@
  */
 import { LocaleConfig } from 'generaltranslation';
 import type { CustomMapping } from 'generaltranslation/types';
-import { defaultLocaleCookieName } from '../utils/cookieNames';
+import {
+  defaultEnableI18nCookieName,
+  defaultLocaleCookieName,
+} from '../utils/cookieNames';
 import { getCookieValue, parseAcceptLanguage } from '../utils/request';
 import {
   escapeHtmlAttribute,
@@ -34,13 +37,16 @@ export type ResolveLocaleTwinLocaleOptions = {
   locales: string[];
   /** Locale cookie name (default: the canonical GT locale cookie). */
   localeCookieName?: string;
+  /** Enable-i18n cookie name (default: the canonical GT enable-i18n cookie). */
+  enableI18nCookieName?: string;
   customMapping?: CustomMapping;
 };
 
 /**
  * Resolves the locale of a request the way GT resolves it everywhere: the
  * locale cookie, then `Accept-Language`, then the default locale. Candidates
- * without twins are skipped.
+ * without twins are skipped. A visitor who disabled i18n (enable-i18n cookie
+ * `false`) gets the default locale, whose twins carry the source text.
  */
 export function resolveLocaleTwinLocale(
   request: LocaleTwinRequestLike,
@@ -53,6 +59,7 @@ function createLocaleResolver({
   defaultLocale,
   locales,
   localeCookieName = defaultLocaleCookieName,
+  enableI18nCookieName = defaultEnableI18nCookieName,
   customMapping,
 }: ResolveLocaleTwinLocaleOptions): (request: LocaleTwinRequestLike) => string {
   const localeConfig = new LocaleConfig({
@@ -62,8 +69,12 @@ function createLocaleResolver({
   });
   return (request) => {
     const header = createHeaderReader(request);
+    const cookies = header('cookie');
+    if (getCookieValue(cookies, enableI18nCookieName) === 'false') {
+      return defaultLocale;
+    }
     const candidates: string[] = [];
-    const cookieLocale = getCookieValue(header('cookie'), localeCookieName);
+    const cookieLocale = getCookieValue(cookies, localeCookieName);
     if (cookieLocale) candidates.push(cookieLocale);
     candidates.push(...parseAcceptLanguage(header('accept-language')));
     return localeConfig.determineLocale(candidates) ?? defaultLocale;
@@ -102,6 +113,12 @@ export type CreateLocaleTwinDocumentOptions = {
   html: string;
   /** Locale cookie name (default: the one the build wrote into the document). */
   localeCookieName?: string;
+  /**
+   * Enable-i18n cookie name (default: the one the build wrote into the
+   * document, else the canonical GT enable-i18n cookie).
+   */
+  enableI18nCookieName?: string;
+  /** Custom locale mapping (default: the one the build wrote into the document). */
   customMapping?: CustomMapping;
 };
 
@@ -132,13 +149,16 @@ export type LocaleTwinDocument = {
 export function createLocaleTwinDocument({
   html,
   localeCookieName,
-  customMapping,
+  enableI18nCookieName,
+  customMapping: customMappingOption,
 }: CreateLocaleTwinDocumentOptions): LocaleTwinDocument {
   const { data, before, between, after } = parseLocaleTwinDocument(html);
+  const customMapping = customMappingOption ?? data.customMapping;
   const resolveLocale = createLocaleResolver({
     defaultLocale: data.defaultLocale,
     locales: data.locales,
     localeCookieName: localeCookieName ?? data.localeCookieName,
+    enableI18nCookieName: enableI18nCookieName ?? data.enableI18nCookieName,
     customMapping,
   });
   const localeConfig = new LocaleConfig({

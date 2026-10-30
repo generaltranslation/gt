@@ -212,6 +212,20 @@ describe.sequential('createLocaleTwinAssets', () => {
       expect(warn).toHaveBeenCalledWith(expect.stringContaining('"de"'));
       warn.mockRestore();
     });
+    it('serves the default locale twins when the visitor disabled i18n', async () => {
+      initializeServerGT({ ...gtConfig, enableI18nCookieName: 'my-enable' });
+
+      const transform = await createTransform(
+        createLocaleTwinAssets({ manifest }),
+        request('/', {
+          cookie: 'generaltranslation.locale=fr; my-enable=false',
+        })
+      );
+
+      expect(transform({ url: '/assets/index-Ab12.js', kind: 'script' })).toBe(
+        '/assets/index-Ab12.en-11111111.js'
+      );
+    });
   });
 
   describe('without GT initialized on the server', () => {
@@ -238,6 +252,28 @@ describe.sequential('createLocaleTwinAssets', () => {
           )
         )(ctx)
       ).toBe('/assets/index-Ab12.es-33333333.js');
+    });
+    it('serves the default locale twins when the visitor disabled i18n', async () => {
+      const ctx = { url: '/assets/index-Ab12.js', kind: 'script' };
+      expect(
+        (
+          await createTransform(
+            createLocaleTwinAssets({ manifest }),
+            request('/', {
+              cookie:
+                'generaltranslation.locale=fr; generaltranslation.enable-i18n=false',
+            })
+          )
+        )(ctx)
+      ).toBe('/assets/index-Ab12.en-11111111.js');
+      expect(
+        (
+          await createTransform(
+            createLocaleTwinAssets({ manifest, enableI18nCookieName: 'off' }),
+            request('/', { cookie: 'generaltranslation.locale=fr; off=false' })
+          )
+        )(ctx)
+      ).toBe('/assets/index-Ab12.en-11111111.js');
     });
   });
 

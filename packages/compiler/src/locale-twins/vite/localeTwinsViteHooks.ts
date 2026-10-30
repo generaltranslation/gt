@@ -258,6 +258,7 @@ export function createLocaleTwinsViteHooks(
           manifest,
           bootstrap: options.localeTwins.spaBootstrap,
           localeCookieName: options.localeTwins.localeCookieName,
+          customMapping: gtConfig.customMapping,
         });
         if (spa) report.spa = spa;
         const reportPath = writeLocaleTwinReport(config.root, report);

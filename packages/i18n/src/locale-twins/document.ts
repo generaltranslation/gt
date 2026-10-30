@@ -4,6 +4,7 @@
  * helper. Edge-safe: no Node APIs.
  */
 import { formatDiagnosticErrorDetails } from 'generaltranslation/internal';
+import type { CustomMapping } from 'generaltranslation/types';
 import { LOCALE_TWIN_BOOTSTRAP_SCRIPT } from './bootstrap';
 import { createGtI18nDiagnostic } from '../logs/diagnostics';
 import {
@@ -38,6 +39,13 @@ export type LocaleTwinDocumentData = {
   locales: string[];
   /** Cookie that holds the user's locale. */
   localeCookieName: string;
+  /**
+   * Cookie that holds the enable-i18n preference: `false` selects the
+   * default locale's twins.
+   */
+  enableI18nCookieName?: string;
+  /** Custom locale aliases (`gt.config.json` `customMapping`) by code. */
+  customMapping?: CustomMapping;
   /** In document order: the entry script first, then its modulepreloads. */
   tags: LocaleTwinDocumentTag[];
 };
@@ -46,18 +54,24 @@ export type LocaleTwinDocumentData = {
  * The markup that replaces a built document's entry script: the JSON data
  * block followed by the bootstrap, inline by default or loaded from
  * `bootstrap.src`. The inline bootstrap's text is exactly
- * {@link LOCALE_TWIN_BOOTSTRAP_SCRIPT} (for CSP hashes).
+ * {@link LOCALE_TWIN_BOOTSTRAP_SCRIPT} (for CSP hashes). `bootstrap.nonce`
+ * (the entry script's CSP nonce) goes on the bootstrap script.
  */
 export function createLocaleTwinDocumentMarkup(
   data: LocaleTwinDocumentData,
-  bootstrap?: { src: string }
+  bootstrap: { src?: string; nonce?: string } = {}
 ): string {
   // `<` is escaped so the JSON can never close the script element
   const json = JSON.stringify(data).replace(/</g, '\\u003c');
   const dataBlock = `<script type="application/json" id="${LOCALE_TWIN_DOCUMENT_DATA_ID}">${json}</script>`;
-  const script = bootstrap
-    ? `<script ${LOCALE_TWIN_BOOTSTRAP_ATTRIBUTE} src="${escapeHtmlAttribute(bootstrap.src)}"></script>`
-    : `<script ${LOCALE_TWIN_BOOTSTRAP_ATTRIBUTE}>${LOCALE_TWIN_BOOTSTRAP_SCRIPT}</script>`;
+  const nonce =
+    bootstrap.nonce === undefined
+      ? ''
+      : ` nonce="${escapeHtmlAttribute(bootstrap.nonce)}"`;
+  const script =
+    bootstrap.src === undefined
+      ? `<script ${LOCALE_TWIN_BOOTSTRAP_ATTRIBUTE}${nonce}>${LOCALE_TWIN_BOOTSTRAP_SCRIPT}</script>`
+      : `<script ${LOCALE_TWIN_BOOTSTRAP_ATTRIBUTE}${nonce} src="${escapeHtmlAttribute(bootstrap.src)}"></script>`;
   return dataBlock + script;
 }
 

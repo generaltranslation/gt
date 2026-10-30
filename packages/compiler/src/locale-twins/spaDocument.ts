@@ -7,6 +7,8 @@
  */
 import path from 'node:path';
 import type { LocaleTwinManifest } from 'generaltranslation/internal';
+import type { CustomMapping } from 'generaltranslation/types';
+import { defaultEnableI18nCookieName } from 'gt-i18n/internal/cookies';
 import {
   createLocaleTwinDocumentMarkup,
   LOCALE_TWIN_DOCUMENT_VERSION,
@@ -17,6 +19,13 @@ export type RewriteLocaleTwinDocumentInput = {
   html: string;
   manifest: LocaleTwinManifest;
   localeCookieName: string;
+  /** Enable-i18n cookie name (default: the canonical GT enable-i18n cookie). */
+  enableI18nCookieName?: string;
+  /**
+   * `gt.config.json` `customMapping`: the bootstrap matches browser languages
+   * to custom locale aliases through their codes.
+   */
+  customMapping?: CustomMapping;
   /**
    * Load the bootstrap from a file named `fileName`, written next to the
    * entry chunk, instead of inlining it.
@@ -60,11 +69,14 @@ export function rewriteLocaleTwinDocument(
   if (tags.length === 0) return undefined;
 
   const entryTag = tags.find((tag) => tag.tag === 'script') ?? tags[0];
-  let bootstrap: { src: string } | undefined;
+  // A nonce-based CSP (Vite `html.cspNonce`) must allow the bootstrap too
+  const bootstrap: { src?: string; nonce?: string } = {
+    nonce: entryTag.attributes.nonce,
+  };
   let bootstrapFile: string | undefined;
   if (input.externalBootstrap) {
     const { fileName } = input.externalBootstrap;
-    bootstrap = { src: replaceUrlBasename(entryTag.url, fileName) };
+    bootstrap.src = replaceUrlBasename(entryTag.url, fileName);
     bootstrapFile = path.posix.join(
       path.posix.dirname(entryTag.fileName),
       fileName
@@ -76,6 +88,11 @@ export function rewriteLocaleTwinDocument(
       defaultLocale: manifest.defaultLocale,
       locales: manifest.locales,
       localeCookieName: input.localeCookieName,
+      enableI18nCookieName:
+        input.enableI18nCookieName ?? defaultEnableI18nCookieName,
+      ...(input.customMapping && {
+        customMapping: pickCustomLocaleCodes(input.customMapping),
+      }),
       tags: tags.map(
         (tag): LocaleTwinDocumentTag => ({
           tag: tag.tag,
@@ -106,6 +123,17 @@ export function rewriteLocaleTwinDocument(
     }
   }
   return { html: output, bootstrapFile };
+}
+
+/** The custom locale aliases that map to a code (all the bootstrap reads). */
+function pickCustomLocaleCodes(customMapping: CustomMapping): CustomMapping {
+  const codes: CustomMapping = {};
+  for (const [locale, mapping] of Object.entries(customMapping)) {
+    if (typeof mapping === 'object' && mapping?.code) {
+      codes[locale] = { code: mapping.code };
+    }
+  }
+  return codes;
 }
 
 function findTwinnedTags(html: string, twinned: string[]): TwinnedTag[] {

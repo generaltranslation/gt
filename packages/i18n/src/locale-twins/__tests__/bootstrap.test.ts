@@ -215,6 +215,93 @@ describe('locale twin SPA bootstrap', () => {
     expect(page.lang()).toBe(expected);
   });
 
+  // Custom locale aliases match browser languages through their codes, as
+  // in LocaleConfig.determineLocale
+  it.each([
+    [['fr-FR'], ['en', 'french'], { french: { code: 'fr' } }],
+    [['fr'], ['en', 'french', 'es'], { french: { code: 'fr' } }],
+    [
+      ['zh-HK'],
+      ['en', 'cn', 'tw'],
+      { cn: { code: 'zh-CN' }, tw: { code: 'zh-TW' } },
+    ],
+    [['es-MX'], ['en', 'french', 'es'], { french: { code: 'fr' } }],
+    [['french'], ['en', 'french'], { french: { code: 'fr' } }],
+  ])(
+    'picks what the runtime picks for %j in %j with custom mapping %j',
+    (languages, locales, customMapping) => {
+      const defaultLocale = locales[0];
+      const expected =
+        new LocaleConfig({
+          defaultLocale,
+          locales,
+          customMapping,
+        }).determineLocale(languages) ?? defaultLocale;
+      const page = runBootstrap({
+        data: { ...DATA, defaultLocale, locales, customMapping, tags: [] },
+        languages,
+      });
+      expect(expected).not.toBe(defaultLocale);
+      expect(page.lang()).toBe(expected);
+    }
+  );
+
+  it('loads the default locale twins when the visitor disabled i18n', () => {
+    const page = runBootstrap({
+      data: { ...DATA, enableI18nCookieName: 'my-enable-i18n' },
+      cookie: 'generaltranslation.locale=es; my-enable-i18n=false',
+      languages: ['fr'],
+    });
+    expect(page.lang()).toBe('en');
+    expect(page.head()[0]).toMatchObject({
+      href: '/assets/index-A.en-11111111.js',
+    });
+
+    expect(
+      runBootstrap({
+        data: { ...DATA, enableI18nCookieName: 'my-enable-i18n' },
+        cookie: 'generaltranslation.locale=es; my-enable-i18n=true',
+      }).lang()
+    ).toBe('es');
+  });
+
+  it("gives the modulepreloads it adds the entry script's CSP nonce", () => {
+    const page = runBootstrap({
+      data: {
+        ...DATA,
+        tags: DATA.tags.map((tag) =>
+          tag.tag === 'script'
+            ? { ...tag, attributes: { ...tag.attributes, nonce: 'abc' } }
+            : tag
+        ),
+      },
+      cookie: 'generaltranslation.locale=fr',
+    });
+    page.domContentLoaded();
+    expect(page.head()).toEqual([
+      {
+        tag: 'link',
+        rel: 'modulepreload',
+        crossorigin: '',
+        nonce: 'abc',
+        href: '/assets/index-A.fr-22222222.js',
+      },
+      {
+        tag: 'link',
+        rel: 'modulepreload',
+        crossorigin: '',
+        href: '/assets/page-B.fr-22222222.js',
+      },
+      {
+        tag: 'script',
+        type: 'module',
+        crossorigin: '',
+        nonce: 'abc',
+        src: '/assets/index-A.fr-22222222.js',
+      },
+    ]);
+  });
+
   it('adds the entry script at once when the document is already parsed', () => {
     const page = runBootstrap({ data: DATA, readyState: 'interactive' });
     expect(page.head().map((element) => element.tag)).toEqual([

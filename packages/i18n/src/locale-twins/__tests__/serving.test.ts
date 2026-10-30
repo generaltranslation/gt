@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { defaultLocaleCookieName } from '../../utils/cookieNames';
+import {
+  defaultEnableI18nCookieName,
+  defaultLocaleCookieName,
+} from '../../utils/cookieNames';
 import {
   createLocaleTwinDocumentMarkup,
   type LocaleTwinDocumentData,
@@ -119,6 +122,31 @@ describe('resolveLocaleTwinLocale', () => {
     expect(resolveLocaleTwinLocale({ 'Accept-Language': 'fr' }, custom)).toBe(
       'fr'
     );
+  });
+  it('resolves the default locale when the visitor disabled i18n', () => {
+    expect(
+      resolveLocaleTwinLocale(
+        {
+          cookie: `${defaultLocaleCookieName}=fr; ${defaultEnableI18nCookieName}=false`,
+          'accept-language': 'ja',
+        },
+        options
+      )
+    ).toBe('en');
+    expect(
+      resolveLocaleTwinLocale(
+        { cookie: `${defaultLocaleCookieName}=fr; my-enable=false` },
+        { ...options, enableI18nCookieName: 'my-enable' }
+      )
+    ).toBe('en');
+    expect(
+      resolveLocaleTwinLocale(
+        {
+          cookie: `${defaultEnableI18nCookieName}=true; ${defaultLocaleCookieName}=fr`,
+        },
+        options
+      )
+    ).toBe('fr');
   });
 });
 
@@ -249,6 +277,42 @@ describe('createLocaleTwinDocument', () => {
     ).toBe('ja');
   });
 
+  it("uses the build's enable-i18n cookie and custom mapping", () => {
+    const html = builtHtml({
+      ...DATA,
+      locales: ['en', 'french'],
+      enableI18nCookieName: 'build-enable',
+      customMapping: { french: { code: 'fr' } },
+      tags: [],
+    });
+    const document = createLocaleTwinDocument({ html });
+    expect(document.resolveLocale({ 'accept-language': 'fr-FR' })).toBe(
+      'french'
+    );
+    expect(
+      document.resolveLocale({
+        cookie: 'build-enable=false',
+        'accept-language': 'fr-FR',
+      })
+    ).toBe('en');
+  });
+
+  it("keeps the entry script's CSP nonce on the twins it renders", () => {
+    const data = {
+      ...DATA,
+      tags: DATA.tags.map((tag) =>
+        tag.tag === 'script'
+          ? { ...tag, attributes: { ...tag.attributes, nonce: 'abc' } }
+          : tag
+      ),
+    };
+    expect(
+      createLocaleTwinDocument({ html: builtHtml(data) }).render('fr')
+    ).toContain(
+      '<script type="module" crossorigin nonce="abc" src="/assets/index-A.fr-22222222.js"></script>'
+    );
+  });
+
   it('throws a diagnostic for a document without locale twin data', () => {
     expect(() =>
       createLocaleTwinDocument({ html: '<!doctype html><html></html>' })
@@ -281,5 +345,21 @@ describe('locale twin headers', () => {
   it('returns fresh objects', () => {
     getLocaleTwinDocumentHeaders().Vary = 'nope';
     expect(getLocaleTwinDocumentHeaders().Vary).toBe('Cookie, Accept-Language');
+  });
+});
+
+describe('createLocaleTwinDocumentMarkup', () => {
+  it("gives the inline bootstrap the entry script's CSP nonce", () => {
+    expect(createLocaleTwinDocumentMarkup(DATA, { nonce: 'abc' })).toMatch(
+      /<script data-gt-locale-twins-bootstrap nonce="abc">\(function/
+    );
+  });
+
+  it("gives the external bootstrap the entry script's CSP nonce", () => {
+    expect(
+      createLocaleTwinDocumentMarkup(DATA, { src: '/b.js', nonce: 'a"b' })
+    ).toContain(
+      '<script data-gt-locale-twins-bootstrap nonce="a&quot;b" src="/b.js"></script>'
+    );
   });
 });

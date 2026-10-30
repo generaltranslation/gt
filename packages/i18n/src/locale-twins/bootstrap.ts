@@ -9,11 +9,17 @@ import { LOCALE_TWIN_DOCUMENT_DATA_ID } from './documentConstants';
  * once the document is parsed (the deferred timing of the tag it replaces).
  *
  * Locale order mirrors the browser runtime (`createBrowserConditionStore`):
- * the locale cookie, then `navigator.languages`, then the default locale.
- * `selectLocale` is `LocaleConfig.determineLocale` without custom mappings or
- * the `Intl.DisplayNames` validity checks: an exact configured locale, else a
- * same-language locale matching the full code, language-region,
- * language-script or minimized code, else the same through the bare language.
+ * the locale cookie, then `navigator.languages`, then the default locale. A
+ * visitor who disabled i18n (enable-i18n cookie `false`) gets the default
+ * locale, whose twins carry the source text. `selectLocale` is
+ * `LocaleConfig.determineLocale` without the `Intl.DisplayNames` validity
+ * checks: an exact configured locale, else a same-language locale matching
+ * the full code, language-region, language-script or minimized code, else
+ * the same through the bare language. Custom locale aliases match through
+ * their `customMapping` codes.
+ *
+ * The entry script's `nonce` (Vite `html.cspNonce`) is copied to the
+ * modulepreloads it adds; the script tags keep all their built attributes.
  *
  * Plain ES5 so it runs unchanged in any browser; it is inserted verbatim (never
  * transpiled). It never contains `</script` or `<!--`.
@@ -27,7 +33,10 @@ export const LOCALE_TWIN_BOOTSTRAP_SCRIPT = `(function () {
   if (cookie) candidates.push(cookie);
   var languages = navigator.languages || [];
   for (var i = 0; i < languages.length; i++) candidates.push(languages[i]);
-  var locale = selectLocale(candidates, data.locales) || data.defaultLocale;
+  var mapping = data.customMapping || {};
+  var locale = readCookie(document.cookie, data.enableI18nCookieName) === 'false'
+    ? data.defaultLocale
+    : selectLocale(candidates, data.locales) || data.defaultLocale;
   document.documentElement.lang = locale;
 
   var scripts = [];
@@ -36,10 +45,12 @@ export const LOCALE_TWIN_BOOTSTRAP_SCRIPT = `(function () {
     var url = tag.urls[locale];
     if (!url) continue;
     var crossorigin = tag.attributes.crossorigin;
+    var nonce = tag.attributes.nonce;
     if (tag.tag === 'script') {
       scripts.push(createElement('script', tag.attributes, 'src', url));
       var preload = { rel: 'modulepreload' };
       if (crossorigin !== undefined) preload.crossorigin = crossorigin;
+      if (nonce !== undefined) preload.nonce = nonce;
       document.head.appendChild(createElement('link', preload, 'href', url));
     } else {
       document.head.appendChild(createElement('link', tag.attributes, 'href', url));
@@ -66,6 +77,7 @@ export const LOCALE_TWIN_BOOTSTRAP_SCRIPT = `(function () {
   }
 
   function readCookie(header, name) {
+    if (!name) return undefined;
     var prefix = name + '=';
     var parts = (header || '').split(';');
     for (var c = 0; c < parts.length; c++) {
@@ -85,12 +97,12 @@ export const LOCALE_TWIN_BOOTSTRAP_SCRIPT = `(function () {
     for (var c = 0; c < candidates.length; c++) {
       var candidate = candidates[c];
       if (locales.indexOf(candidate) !== -1) return candidate;
-      var code = standardize(candidate);
+      var code = standardize(canonical(candidate));
       if (!code) continue;
       var language = matchCodes(code).language;
       var approved = {};
       for (var l = 0; l < locales.length; l++) {
-        var approvedCode = standardize(locales[l]);
+        var approvedCode = standardize(canonical(locales[l]));
         if (!approvedCode || has(approved, approvedCode)) continue;
         if (matchCodes(approvedCode).language === language) {
           approved[approvedCode] = locales[l];
@@ -149,6 +161,13 @@ export const LOCALE_TWIN_BOOTSTRAP_SCRIPT = `(function () {
     } catch (error) {
       return undefined;
     }
+  }
+
+  function canonical(locale) {
+    var custom = has(mapping, locale) ? mapping[locale] : undefined;
+    return custom && typeof custom === 'object' && custom.code
+      ? custom.code
+      : locale;
   }
 
   function has(object, key) {

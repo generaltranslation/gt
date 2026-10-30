@@ -50,9 +50,13 @@ function useComputeT({
     _enableI18n,
   });
 
+  // Without translation (i18n disabled) the page has the default locale's
+  // locale twins
+  const twinLocale = shouldTranslate ? locale : defaultLocale;
+
   // Lookup translation in cache
   const targetJsxChildren = useTranslate({
-    locale,
+    locale: twinLocale,
     message: sourceJsxChildren,
     options: targetOptions,
   });
@@ -75,7 +79,7 @@ function useComputeT({
   // source text. targetOptions.$_hash may be computed at runtime, so only
   // the compiler's own hash counts as attributed.
   const twin = resolveLocaleTwinLookup(
-    locale,
+    twinLocale,
     targetOptions,
     params._hash ?? params.$_hash
   );
@@ -84,7 +88,7 @@ function useComputeT({
   const result = _renderPreparedT({
     taggedSourceChildren,
     targetJsxChildren,
-    locale,
+    locale: fromLocaleTwin ? twinLocale : locale,
     defaultLocale,
     enableI18n,
     shouldTranslate: (shouldTranslate && !twin.rendersSource) || fromLocaleTwin,

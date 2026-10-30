@@ -24,12 +24,12 @@ const TWINS_CONFIG: ReactI18nConfigParams = {
   files: { gt: { output: 'src/_gt/[locale].json', splitting: 'locale-twins' } },
 };
 
-function setup(locale: string, config = TWINS_CONFIG) {
+function setup(locale: string, config = TWINS_CONFIG, enableI18n = true) {
   initializeI18nConfig(config, 'SPA');
   setReadonlyConditionStore({
     getLocale: () => locale,
     getRegion: () => undefined,
-    getEnableI18n: () => true,
+    getEnableI18n: () => enableI18n,
     setLocale: () => {},
     setRegion: () => {},
     setEnableI18n: () => {},
@@ -68,6 +68,17 @@ describe('locale twins in react-core functions', () => {
     setup('fr');
 
     expect(t('', { name: 'Ada', $_hash: HASH })).toBe('Bonjour Ada');
+  });
+
+  // With i18n disabled the served twins are the default locale's (source
+  // text), whatever the locale preference
+  it('t() renders the default locale twin when i18n is disabled', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    register('en', { [HASH]: 'Total: {n, number}' });
+    setup('fr', TWINS_CONFIG, false);
+
+    expect(t('', { n: 1234.5, $_hash: HASH })).toBe('Total: 1,234.5');
+    expect(warn).not.toHaveBeenCalled();
   });
 
   it('getTranslationsSnapshot() loads nothing on a locale twin client', async () => {

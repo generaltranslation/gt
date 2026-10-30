@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { LOCALE_TWIN_BOOTSTRAP_SCRIPT } from 'gt-i18n/internal/locale-twins';
+import type { CustomMapping } from 'generaltranslation/types';
 import {
   findLocaleTwinPlaceholders,
   LOCALE_TWIN_MANIFEST_FILE,
@@ -190,6 +191,8 @@ export type WriteLocaleTwinSpaDocumentsInput = {
   manifest: LocaleTwinManifest;
   bootstrap: 'inline' | 'external';
   localeCookieName: string;
+  /** `gt.config.json` `customMapping`, for the bootstrap's locale matching. */
+  customMapping?: CustomMapping;
 };
 
 /**
@@ -218,6 +221,7 @@ export function writeLocaleTwinSpaDocuments(
       html,
       manifest: input.manifest,
       localeCookieName: input.localeCookieName,
+      customMapping: input.customMapping,
       externalBootstrap,
     });
     if (!result) continue;

@@ -65,9 +65,12 @@ export function resolveStringContent(
   const defaultLocale = getI18nConfig().getDefaultLocale();
 
   // Locale twins: stripped code is resolved by hash, source locale included;
-  // content no twin carries renders its source text
+  // content no twin carries renders its source text. Without translation
+  // (i18n disabled) the page has the default locale's twins.
+  const shouldTranslate = getShouldTranslate();
+  const twinLocale = shouldTranslate ? locale : defaultLocale;
   const twin = resolveLocaleTwinLookup<StringContent>(
-    locale,
+    twinLocale,
     options,
     options.$_hash
   );
@@ -75,11 +78,11 @@ export function resolveStringContent(
     return interpolateMessage({
       source: content,
       target: twin.entry,
-      options: createLookupOptions(locale, options, 'ICU'),
+      options: createLookupOptions(twinLocale, options, 'ICU'),
       sourceLocale: defaultLocale,
     });
   }
-  if (!getShouldTranslate() || twin.rendersSource) {
+  if (!shouldTranslate || twin.rendersSource) {
     return interpolateMessage({
       options,
       source: content,

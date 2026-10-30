@@ -7,6 +7,8 @@ import type {
   CustomMapping,
   LocaleTwinManifest,
 } from 'generaltranslation/types';
+import { getI18nConfig } from '@generaltranslation/react-core/pure';
+import { getCookieValue } from 'gt-i18n/internal';
 import { resolveLocaleTwinLocale } from 'gt-i18n/internal/locale-twins';
 import {
   getConditionStore,
@@ -53,6 +55,11 @@ export type CreateLocaleTwinAssetsOptions = {
    * Otherwise the locale comes from GT, exactly as for SSR.
    */
   localeCookieName?: string;
+  /**
+   * Enable-i18n cookie name, used only without the gtTanstackStart() Vite
+   * plugin. Otherwise it is GT's `enableI18nCookieName`.
+   */
+  enableI18nCookieName?: string;
   /** Custom locale mapping, used only without the gtTanstackStart() Vite plugin. */
   customMapping?: CustomMapping;
 };
@@ -139,11 +146,16 @@ function mapUrl(
 /**
  * Resolves the request locale like SSR does (GT's request resolution, else
  * the request against the manifest without the Vite plugin) and narrows it
- * to a locale with twins.
+ * to a locale with twins. A visitor who disabled i18n (enable-i18n cookie
+ * `false`) renders the source text, so they get the default locale's twins.
  */
 function createTwinLocaleResolver(
   manifest: LocaleTwinManifest,
-  { localeCookieName, customMapping }: CreateLocaleTwinAssetsOptions
+  {
+    localeCookieName,
+    enableI18nCookieName,
+    customMapping,
+  }: CreateLocaleTwinAssetsOptions
 ): (request: Request) => string {
   const twinLocales = new LocaleConfig({
     defaultLocale: manifest.defaultLocale,
@@ -167,12 +179,20 @@ function createTwinLocaleResolver(
   function resolveRequestLocale(request: Request): string {
     ensureInitialized();
     if (isConditionStoreInitialized()) {
-      return getConditionStore().resolveLocale(request);
+      const disabled =
+        getCookieValue(
+          request.headers.get('cookie'),
+          getI18nConfig().getEnableI18nCookieName()
+        ) === 'false';
+      return disabled
+        ? manifest.defaultLocale
+        : getConditionStore().resolveLocale(request);
     }
     return resolveLocaleTwinLocale(request, {
       defaultLocale: manifest.defaultLocale,
       locales: manifest.locales,
       localeCookieName,
+      enableI18nCookieName,
       customMapping,
     });
   }
