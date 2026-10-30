@@ -4,10 +4,11 @@ const BASE64URL_PATTERN = /^[A-Za-z0-9_-]*$/;
 
 /** Encodes UTF-8 text as unpadded base64url. */
 export function encodeBase64Url(text: string): string {
-  return encode(text)
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
+  const base64 = encode(text).replace(/\+/g, '-').replace(/\//g, '_');
+  // Trim the padding without a regex (base64 ends in at most two '=')
+  let end = base64.length;
+  while (end > 0 && base64[end - 1] === '=') end--;
+  return base64.slice(0, end);
 }
 
 /** Decodes unpadded base64url into UTF-8 text. Returns undefined when invalid. */
