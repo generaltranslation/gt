@@ -1,4 +1,3 @@
-import type { LocaleTwinTable } from 'generaltranslation/internal';
 import type { Content } from 'generaltranslation/types';
 import logger from '../logs/logger';
 
@@ -52,8 +51,11 @@ export type LocaleTwinHooks = {
 export type LocaleTwinState = {
   /** Locale of the first registered twin. */
   locale?: string;
-  /** Registered tables, kept by reference. */
-  tables: LocaleTwinTable[];
+  /**
+   * Registered entries by hash (the first registration of a hash wins),
+   * content kept by reference.
+   */
+  entries: Map<string, Content>;
   /**
    * Whether an unfilled placeholder was registered: a server bundle, or an
    * original (untwinned) chunk in a browser.
@@ -77,7 +79,7 @@ type GlobalWithLocaleTwins = {
 export function getLocaleTwinState(): LocaleTwinState {
   const globalObj = globalThis as unknown as GlobalWithLocaleTwins;
   globalObj.__generaltranslation ??= {};
-  globalObj.__generaltranslation.localeTwins ??= { tables: [] };
+  globalObj.__generaltranslation.localeTwins ??= { entries: new Map() };
   return globalObj.__generaltranslation.localeTwins;
 }
 
@@ -96,10 +98,7 @@ export function reportLocaleTwinIssueOnce(
 
 /** Returns the registered content for `hash`, if any twin provided it. */
 export function getLocaleTwinEntry(hash: string): Content | undefined {
-  for (const table of getLocaleTwinState().tables) {
-    if (Object.hasOwn(table.e, hash)) return table.e[hash];
-  }
-  return undefined;
+  return getLocaleTwinState().entries.get(hash);
 }
 
 /** Returns the locale of the registered twins, if any were registered. */
@@ -109,5 +108,5 @@ export function getLocaleTwinLocale(): string | undefined {
 
 /** Whether at least one locale twin table has been registered. */
 export function hasLocaleTwins(): boolean {
-  return getLocaleTwinState().tables.length > 0;
+  return getLocaleTwinState().entries.size > 0;
 }

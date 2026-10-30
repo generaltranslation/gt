@@ -54,7 +54,9 @@ export function registerLocaleTwin(value?: string): boolean {
     return false;
   }
   state.locale ??= table.l;
-  state.tables.push(table);
+  for (const [hash, content] of Object.entries(table.e)) {
+    if (!state.entries.has(hash)) state.entries.set(hash, content);
+  }
   return true;
 }
 
