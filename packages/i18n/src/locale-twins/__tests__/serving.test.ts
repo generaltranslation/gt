@@ -163,6 +163,19 @@ describe('createLocaleTwinDocument', () => {
     );
   });
 
+  it.each(['</script >', '</SCRIPT\n>', '</script data-x="1">'])(
+    'finds the data block and bootstrap when their end tags read %j',
+    (endTag) => {
+      const html = builtHtml().replaceAll('</script>', endTag);
+      const rendered = createLocaleTwinDocument({ html }).render('fr');
+
+      expect(rendered).not.toContain('gt-locale-twins');
+      expect(rendered).toContain(
+        '<script type="module" crossorigin src="/assets/index-A.fr-22222222.js"></script>'
+      );
+    }
+  );
+
   it('escapes attribute values', () => {
     const data: LocaleTwinDocumentData = {
       ...DATA,

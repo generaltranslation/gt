@@ -72,12 +72,13 @@ export type ParsedLocaleTwinDocument = {
   after: string;
 };
 
+// HTML end tags allow whitespace and (ignored) attributes before `>`.
 const DATA_BLOCK_PATTERN = new RegExp(
-  `<script\\b[^>]*\\bid=["']?${LOCALE_TWIN_DOCUMENT_DATA_ID}["']?[^>]*>([\\s\\S]*?)</script\\s*>`,
+  `<script\\b[^>]*\\bid=["']?${LOCALE_TWIN_DOCUMENT_DATA_ID}["']?[^>]*>([\\s\\S]*?)</script\\b[^>]*>`,
   'i'
 );
 const BOOTSTRAP_PATTERN = new RegExp(
-  `<script\\b[^>]*\\b${LOCALE_TWIN_BOOTSTRAP_ATTRIBUTE}\\b[^>]*>[\\s\\S]*?</script\\s*>`,
+  `<script\\b[^>]*\\b${LOCALE_TWIN_BOOTSTRAP_ATTRIBUTE}\\b[^>]*>[\\s\\S]*?</script\\b[^>]*>`,
   'i'
 );
 

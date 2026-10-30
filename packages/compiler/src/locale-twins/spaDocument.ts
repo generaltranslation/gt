@@ -39,10 +39,14 @@ type TwinnedTag = {
   fileName: string;
 };
 
-const TAG_PATTERN = /<script\b([^>]*)>\s*<\/script\s*>|<link\b([^>]*?)\/?>/gi;
+// HTML end tags allow whitespace and (ignored) attributes before `>`, in any
+// case: `</script >`, `</SCRIPT\n>`, `</script foo>`.
+const TAG_PATTERN =
+  /<script\b([^>]*)>\s*<\/script\b[^>]*>|<link\b([^>]*?)\/?>/gi;
 const ATTRIBUTE_PATTERN =
   /([^\s"'<>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
-const COMMENT_PATTERN = /<!--[\s\S]*?-->/g;
+// `--!>` also ends a comment, and an unclosed comment runs to the end.
+const COMMENT_PATTERN = /<!--[\s\S]*?(?:--!?>|$)/g;
 
 /**
  * Returns the rewritten document, or `undefined` when it references no
