@@ -582,6 +582,57 @@ describe('downloadFileBatch', () => {
     expect(lockEntry.translations.es.fileName).toBe('public/gt/es.json');
   });
 
+  it('matches transformed source paths against POSIX inputPath across platforms', async () => {
+    const inputPath = 'locales/en/messages.pot';
+    const outputPath = '/output/locales/fr/messages.po';
+    const files = createBatchedFiles(1, {
+      inputPath,
+      outputPath,
+      locale: 'fr',
+    });
+    const fileTracker = createMockFileTracker(files);
+    vi.mocked(api.downloadFileBatch).mockResolvedValue({
+      files: [
+        {
+          id: 'trans-1',
+          branchId: 'branch-1',
+          fileId: 'file-1',
+          versionId: 'version-1',
+          locale: 'fr',
+          fileFormat: 'PO' as FileFormat,
+          data: 'msgid "hello"\nmsgstr "bonjour"',
+          fileName: 'messages.po',
+          metadata: {},
+        },
+      ],
+      count: 1,
+    });
+    setupFileSystemMocks();
+
+    const sourcePath = path.resolve(inputPath);
+    const settings = createMockSettings({
+      files: {
+        resolvedPaths: { pot: [sourcePath] },
+        placeholderPaths: {},
+        transformPaths: {},
+        transformFormats: { pot: 'PO' },
+      },
+      options: {
+        jsonSchema: { [inputPath]: { include: ['*'] } },
+      },
+    });
+
+    const result = await downloadFileBatch(fileTracker, files, settings);
+
+    expect(result.successful).toHaveLength(1);
+    expect(fs.promises.writeFile).toHaveBeenCalledWith(
+      outputPath,
+      'msgid "hello"\nmsgstr "bonjour"'
+    );
+    // Source format merge is skipped because inputPath matched transformed source path
+    expect(fs.readFileSync).not.toHaveBeenCalledWith(inputPath, 'utf8');
+  });
+
   it('keeps a previously recorded postProcessHash when it re-downloads a locale', async () => {
     const files = createBatchedFiles(1, { locale: 'es' });
     const fileTracker = createMockFileTracker(files);

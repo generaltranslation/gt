@@ -114,5 +114,5 @@ export function findFileInDir(dir: string, file: string): string {
 
 export function getRelative(absolutePath: string): string {
   const path2 = path.resolve(absolutePath);
-  return path.relative(process.cwd(), path2);
+  return path.relative(process.cwd(), path2).replace(/\\/g, '/');
 }
