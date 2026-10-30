@@ -1,9 +1,7 @@
 import { useCallback } from 'react';
 import { decodeOptions } from 'gt-i18n';
-import {
-  extractVariables,
-  isEncodedTranslationOptions,
-} from 'gt-i18n/internal';
+import { isEncodedTranslationOptions } from 'gt-i18n/internal';
+import { getLocaleTwinMessageOptions } from 'gt-i18n/internal/experimental';
 import type { GTTranslationOptions, MFunctionType } from 'gt-i18n/types';
 import type { Message } from '../../hooks/external-store/useTrackedTranslationResolver';
 import { useGT } from './useGT';
@@ -12,6 +10,7 @@ import { useGT } from './useGT';
  * `useMessages()` with locale twins: resolves through the locale twin
  * `useGT()`. Variables given to `m()` fill in those `msg()` did not have:
  * `m(msg('Welcome, {user}!'), { user })` with the compiler-injected `$_hash`.
+ * A message the compiler did not attribute renders as source.
  */
 export function useMessages(_messages?: Message[]): MFunctionType {
   const gt = useGT(_messages);
@@ -26,10 +25,10 @@ export function useMessages(_messages?: Message[]): MFunctionType {
 
       const decodedOptions = decodeOptions(encodedMsg) ?? {};
       if (isEncodedTranslationOptions(decodedOptions)) {
-        return gt(decodedOptions.$_source, {
-          ...extractVariables(options),
-          ...decodedOptions,
-        }) as Result;
+        return gt(
+          decodedOptions.$_source,
+          getLocaleTwinMessageOptions(decodedOptions, options)
+        ) as Result;
       }
 
       return gt(encodedMsg, options) as Result;

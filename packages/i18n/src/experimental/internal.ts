@@ -31,7 +31,7 @@ export {
   getGTInternal,
   getMessagesInternal,
 } from './locale-twins/translationFunctions';
-export { msg } from './locale-twins/msg';
+export { getLocaleTwinMessageOptions, msg } from './locale-twins/msg';
 
 // ===== SPA documents ===== //
 // The contract written by the build, the browser bootstrap and the edge-safe

@@ -16,7 +16,7 @@ import type {
 import type { GTTranslationOptions } from '../../translation-functions/types/options';
 import { interpolateMessage } from '../../translation-functions/utils/interpolation/interpolateMessage';
 import { isEncodedTranslationOptions } from '../../translation-functions/utils/isEncodedTranslationOptions';
-import { extractVariables } from '../../utils/extractVariables';
+import { getLocaleTwinMessageOptions } from './msg';
 import { resolveLocaleTwinLookup } from './runtime';
 
 type Conditions = { locale: string; enableI18n: boolean };
@@ -64,7 +64,8 @@ export async function getGTInternal(
  * `getMessagesInternal()` with locale twins: resolves through the locale
  * twin {@link getGTInternal}. Variables given to `m()` fill in those
  * `msg()` did not have: `m(msg('Welcome, {user}!'), { user })` with the
- * compiler-injected `$_hash`.
+ * compiler-injected `$_hash`. A message the compiler did not attribute
+ * renders as source (see {@link getLocaleTwinMessageOptions}).
  */
 export async function getMessagesInternal(
   conditions: Conditions
@@ -78,10 +79,10 @@ export async function getMessagesInternal(
     if (encodedMsg == null) return encodedMsg as Result;
     const decodedOptions = decodeOptions(encodedMsg) ?? {};
     if (isEncodedTranslationOptions(decodedOptions)) {
-      return gt(decodedOptions.$_source, {
-        ...extractVariables(options),
-        ...decodedOptions,
-      }) as Result;
+      return gt(
+        decodedOptions.$_source,
+        getLocaleTwinMessageOptions(decodedOptions, options)
+      ) as Result;
     }
     return gt(encodedMsg, options) as Result;
   };

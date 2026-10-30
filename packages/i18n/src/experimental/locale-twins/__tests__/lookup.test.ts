@@ -12,6 +12,7 @@ import { setI18nCache } from '../../../i18n-cache/singleton-operations';
 import type { GTConfig } from 'generaltranslation/types';
 import { getGTInternal, getMessagesInternal } from '../translationFunctions';
 import { msg } from '../msg';
+import { msg as regularMsg } from '../../../translation-functions/msg/msg';
 import { getLocaleTwinCacheParams, initializeLocaleTwins } from '../runtime';
 import { encodeLocaleTwinPlaceholder } from 'generaltranslation/internal/experimental';
 import { hashSource } from 'generaltranslation/id';
@@ -315,6 +316,40 @@ describe('locale twins runtime lookups', () => {
     expect(gt('Hello {name}', { name: 'Ada', $_hash: GREETING_HASH })).toBe(
       'Bonjour Ada'
     );
+  });
+
+  // msg() with a derived $context gets no compiler $_hash: the regular msg()
+  // encodes a hash it computed at runtime, which no twin carries
+  it('renders a msg() value without a compiler hash as source with m(), on the server and the client', async () => {
+    const options = { name: 'Ada', $context: 'greeting' };
+    const runtimeHash = hashSource({
+      source: 'Hello {name}',
+      context: 'greeting',
+      dataFormat: 'ICU',
+    });
+    vi.unstubAllGlobals();
+    registerLocaleTwin(encodeLocaleTwinPlaceholder({ [SAVE_HASH]: 'Save' }));
+    const loadTranslations = vi
+      .fn()
+      .mockResolvedValue({ [runtimeHash]: 'Bonjour {name}' });
+    createCache(TWINS_CONFIG, { loadTranslations });
+    const value = regularMsg('Hello {name}', options);
+
+    const serverM = await getMessagesInternal({
+      locale: 'fr',
+      enableI18n: true,
+    });
+    expect(serverM(value)).toBe('Hello Ada');
+
+    resetGTGlobals();
+    stubBrowser();
+    register('fr', { [SAVE_HASH]: 'Enregistrer' });
+    createCache();
+    const clientM = await getMessagesInternal({
+      locale: 'fr',
+      enableI18n: true,
+    });
+    expect(clientM(value)).toBe('Hello Ada');
   });
 
   it('formats a source fallback from the registry in the source locale with getGT()', async () => {
