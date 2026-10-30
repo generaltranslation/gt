@@ -61,3 +61,18 @@ export function createUnparsableChunkDiagnostic(
     details: details === undefined ? undefined : [details],
   });
 }
+
+/**
+ * The SPA document gives twinned files `integrity` digests. Each locale twin
+ * has its own bytes, so the browser would reject them.
+ */
+export function createTwinIntegrityDiagnostic(urls: string[]): string {
+  return createCompilerDiagnostic({
+    severity: 'Error',
+    whatHappened:
+      'Locale twins cannot rewrite a document that sets integrity attributes on twinned files',
+    why: 'each locale twin has different bytes, so the browser would reject it against the original digest',
+    fix: 'Remove the plugin or option that adds subresource integrity to index.html, or use the default translation splitting strategy',
+    details: urls,
+  });
+}

@@ -14,6 +14,7 @@ import {
   LOCALE_TWIN_DOCUMENT_VERSION,
   type LocaleTwinDocumentTag,
 } from 'gt-i18n/internal/locale-twins';
+import { createTwinIntegrityDiagnostic } from './diagnostics';
 
 export type RewriteLocaleTwinDocumentInput = {
   html: string;
@@ -71,6 +72,12 @@ export function rewriteLocaleTwinDocument(
   const { html, manifest } = input;
   const tags = findTwinnedTags(html, manifest.twinned);
   if (tags.length === 0) return undefined;
+  const withIntegrity = tags.filter((tag) => 'integrity' in tag.attributes);
+  if (withIntegrity.length > 0) {
+    throw new Error(
+      createTwinIntegrityDiagnostic(withIntegrity.map((tag) => tag.url))
+    );
+  }
 
   const entryTag = tags.find((tag) => tag.tag === 'script') ?? tags[0];
   // A nonce-based CSP (Vite `html.cspNonce`) must allow the bootstrap too

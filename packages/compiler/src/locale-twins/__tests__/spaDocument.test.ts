@@ -76,6 +76,40 @@ describe('rewriteLocaleTwinDocument', () => {
     expect(result?.html).toContain(comment);
   });
 
+  // Each twin has its own bytes, so the original's digest fails in the browser
+  it.each([
+    [
+      'entry script',
+      '<script type="module" crossorigin integrity="sha384-abc" src="/assets/index-A.js"></script>',
+      '',
+    ],
+    [
+      'modulepreload',
+      '<script type="module" crossorigin src="/assets/index-A.js"></script>',
+      '<link rel="modulepreload" integrity="sha384-def" href="/assets/page-B.js">',
+    ],
+  ])(
+    'fails on an integrity attribute on a twinned %s',
+    (_name, entry, extra) => {
+      expect(() => rewrite(document(entry, extra))).toThrow(
+        /integrity[\s\S]*\/assets\/(index-A|page-B)\.js/
+      );
+    }
+  );
+
+  it('keeps integrity attributes on shared files', () => {
+    const shared =
+      '<link rel="modulepreload" integrity="sha384-ghi" href="/assets/vendor-C.js">';
+    const result = rewrite(
+      document(
+        '<script type="module" crossorigin src="/assets/index-A.js"></script>',
+        shared
+      )
+    );
+
+    expect(result?.html).toContain(shared);
+  });
+
   it('leaves the rest of an unclosed comment alone', () => {
     const html = `<!doctype html>
 <html><head>
