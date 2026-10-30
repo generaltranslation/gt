@@ -54,25 +54,18 @@ describe('I18nConfig', () => {
   });
 
   it('validates configured locales when GT services are enabled', () => {
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
     expect(
       () =>
         new I18nConfig({
           defaultLocale: 'invalid-locale',
           projectId: 'test-project',
         })
-    ).toThrow('Invalid I18nConfig locale configuration');
-    expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Locale "invalid-locale" is not valid')
+    ).toThrow(
+      /Invalid I18nConfig locale configuration.*Invalid locale: invalid-locale/
     );
-
-    errorSpy.mockRestore();
   });
 
   it('validates custom mapping locales when GT services are enabled', () => {
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
     expect(
       () =>
         new I18nConfig({
@@ -85,15 +78,20 @@ describe('I18nConfig', () => {
             },
           },
         })
-    ).toThrow('Invalid I18nConfig locale configuration');
-    expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Locale "invalid-locale" is not valid')
+    ).toThrow(
+      /Invalid locale: invalid-locale, Invalid locale: invalid-object-locale/
     );
-    expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Locale "invalid-object-locale" is not valid')
-    );
+  });
 
-    errorSpy.mockRestore();
+  it('skips a null custom mapping entry from an unvalidated config', () => {
+    expect(
+      () =>
+        new I18nConfig({
+          defaultLocale: 'en',
+          projectId: 'test-project',
+          customMapping: { cn: null as never },
+        })
+    ).not.toThrow();
   });
 
   it('treats an empty string locale candidate as unsupported', () => {
@@ -153,21 +151,6 @@ describe('I18nConfig', () => {
       new I18nConfig({ defaultLocale: 'en-GB' }).determineLocale('en')
     ).toBe('en-GB');
   });
-
-  it.each([false, true])(
-    'rejects an invalid localeMatcher with services=%s',
-    (services) => {
-      expect(
-        () =>
-          new I18nConfig({
-            localeMatcher: 'fuzzy' as never,
-            ...(services
-              ? { projectId: 'test-project' }
-              : { cacheUrl: null, runtimeUrl: null }),
-          })
-      ).toThrow('Invalid I18nConfig localeMatcher');
-    }
-  );
 
   it('sends the dev API key as the runtime API key when no API key is set', () => {
     vi.stubEnv('GT_API_KEY', '');

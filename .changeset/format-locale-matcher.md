@@ -6,7 +6,7 @@
 'gt-vue': minor
 ---
 
-`determineLocale` now follows standard locale matching, selected by a new `localeMatcher` option (`'lookup' | 'best fit'`, default `'best fit'`) on `LocaleConfig`, `GTConfig`, gt-i18n's `I18nConfig` params, and gt-next's `withGTConfig` / `gt.config.json`. The `LocaleMatcher` type is exported next to `LocaleConfig`, and `I18nConfig` throws for any other value.
+`determineLocale` now follows standard locale matching, selected by a new `localeMatcher` option (`'lookup' | 'best fit'`, default `'best fit'`) on `LocaleConfig`, `GTConfig`, gt-i18n's `I18nConfig` params, and gt-next's `withGTConfig` / `gt.config.json`. The `LocaleMatcher` type is exported next to `LocaleConfig` and limits the option to these values; gt-next, the gt CLI, the compiler and gt-react-native reject any other value when they load `gt.config.json` or `withGTConfig()` props.
 
 Requested and configured locales are canonicalized the same way (`customMapping` alias → code, invalid tags skipped, standardized; a requested tag only needs a valid language-script-region base, so extension and private-use subtags are allowed), and the result is always the configured spelling. `determineLocale` never applies `defaultLocale`; callers keep owning the fallback.
 

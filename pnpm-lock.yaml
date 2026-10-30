@@ -1003,6 +1003,9 @@ importers:
       unplugin:
         specifier: ^2.3.10
         version: 2.3.10
+      valibot:
+        specifier: ^1.5.0
+        version: 1.5.0(typescript@5.9.3)
     devDependencies:
       '@types/babel__core':
         specifier: ^7.20.0
@@ -1164,6 +1167,9 @@ importers:
       react-dom:
         specifier: '>=16.8.0 <20.0.0'
         version: 19.2.3(react@19.2.3)
+      valibot:
+        specifier: ^1.5.0
+        version: 1.5.0(typescript@5.9.3)
     devDependencies:
       '@edge-runtime/vm':
         specifier: ^4.0.0
@@ -1432,6 +1438,9 @@ importers:
       gt-i18n:
         specifier: workspace:*
         version: link:../i18n
+      valibot:
+        specifier: ^1.5.0
+        version: 1.5.0(typescript@5.9.3)
     devDependencies:
       '@babel/core':
         specifier: ^7.28.4

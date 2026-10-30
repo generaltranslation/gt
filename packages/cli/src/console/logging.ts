@@ -333,15 +333,6 @@ export async function promptConfirm({
 }
 
 // Warning display functions
-export function warnApiKeyInConfig(optionsFilepath: string) {
-  logger.warn(
-    `Found ${chalk.cyan('apiKey')} in "${chalk.green(optionsFilepath)}". ` +
-      chalk.white(
-        'Your API key is exposed! Remove it from the file and include it as an environment variable.'
-      )
-  );
-}
-
 export function warnVariableProp(
   file: string,
   attrName: string,

@@ -613,7 +613,9 @@ export const GTConfigFileSchema = v.pipe(
     ),
     apiKey: v.optional(
       v.pipe(
-        v.never(),
+        v.never(
+          'Remove the API key from this file and set the GT_API_KEY environment variable'
+        ),
         v.metadata({
           description: v.getDescription(GTConfigSchema.entries.apiKey.wrapped),
         })
@@ -644,6 +646,9 @@ export const GTConfigFileSchema = v.pipe(
     ),
     omitConfigIds: optionalFlag(
       'Do not write _versionId or _branchId to gt.config.json'
+    ),
+    skipVersionCheck: optionalFlag(
+      'Skip the monorepo GT package version consistency check'
     ),
     src: v.optional(
       v.pipe(
@@ -750,6 +755,13 @@ export const GTConfigFileSchema = v.pipe(
     ],
   })
 );
+
+/**
+ * The file as the CLI loads it. Unknown top-level keys pass, because the file
+ * is shared with other tools, and generateSettings warns about them; editors
+ * still flag them through the strict JSON Schema.
+ */
+export const GTConfigFileLoadSchema = v.looseObject(GTConfigFileSchema.entries);
 
 /** Subschemas used in several places, emitted once under $defs in the JSON Schema. */
 export const GTConfigFileSchemaDefinitions = {
