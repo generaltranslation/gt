@@ -8,10 +8,13 @@ import { getRuntimeImports, resolveRelative } from './utils/importGraph';
 
 // Native code never imports the dictionary (compat) machinery, so apps that
 // only use native APIs never ship it. Two checks:
-// 1. Source: native runtime modules never reach a compat/ module or require
-//    the dictionary aliases through relative imports.
+// 1. Source: native runtime modules never reach a compat/ module, the compat
+//    internal subpaths or the dictionary aliases through relative imports.
 // 2. Built output: bundling everything a native entry exports leaves every
-//    compat module out.
+//    compat module out, for both the ESM and the CommonJS builds. CommonJS
+//    require() cannot tree-shake, so the CommonJS bundles also prove that the
+//    entries native code requires (gt-i18n/internal, react-core's
+//    pure/hooks/components) do not load the compat subpaths.
 
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const repoRoot = resolve(packageRoot, '../..');
@@ -55,8 +58,11 @@ const nativeModules = [
   'packages/tanstack-start/src/functions/runtime.ts',
 ];
 
-// Bundler aliases that resolve to the app's dictionary files.
-const dictionarySpecifiers = [
+// The compat internal subpaths, and bundler aliases that resolve to the app's
+// dictionary files.
+const compatSpecifiers = [
+  'gt-i18n/internal/compat',
+  '@generaltranslation/react-core/compat',
   'gt-next/internal/_dictionary',
   'gt-next/internal/_load-dictionary',
   'gt-tanstack-start/internal/_compat-config',
@@ -85,7 +91,7 @@ function findCompatLeaks(): string[] {
     const file = queue.shift()!;
     const code = readFileSync(join(repoRoot, file), 'utf8');
     for (const specifier of getRuntimeImports(code)) {
-      if (dictionarySpecifiers.includes(specifier)) {
+      if (compatSpecifiers.includes(specifier)) {
         leaks.push(`${chainTo(file)} -> ${specifier}`);
         continue;
       }
@@ -111,7 +117,8 @@ function findCompatLeaks(): string[] {
 // log prefixes, error names and the dictionary alias specifiers.
 const compatMarkers = [
   'dictionaryManager',
-  'DictionaryManager: ',
+  'DictionaryManager',
+  'source dictionary entry',
   'DictionarySourceNotFoundError',
   'compatStore',
   'dictionaryContext',
@@ -139,13 +146,18 @@ async function bundle(
   {
     conditions,
     platform,
-  }: { conditions: string[]; platform: 'browser' | 'node' }
+    format = 'esm',
+  }: {
+    conditions: string[];
+    platform: 'browser' | 'node';
+    format?: 'esm' | 'cjs';
+  }
 ): Promise<{ code: string; inputs: string[] }> {
   const result = await build({
     stdin: { contents, resolveDir: packageRoot, loader: 'js' },
     bundle: true,
     write: false,
-    format: 'esm',
+    format,
     platform,
     conditions,
     external,
@@ -206,6 +218,49 @@ const nativeBundles = [
     conditions: ['react-server'],
     platform: 'node' as const,
   },
+  {
+    name: 'gt-react client (CommonJS)',
+    contents: `module.exports = require('gt-react');`,
+    conditions: ['browser'],
+    platform: 'browser' as const,
+    format: 'cjs' as const,
+  },
+  {
+    name: 'gt-react server (CommonJS)',
+    contents: `module.exports = require('gt-react');`,
+    conditions: [],
+    platform: 'node' as const,
+    format: 'cjs' as const,
+  },
+  {
+    name: 'gt-react rsc (CommonJS)',
+    contents: `module.exports = require('gt-react');`,
+    conditions: ['react-server'],
+    platform: 'node' as const,
+    format: 'cjs' as const,
+  },
+  // The files `pnpm size` measures for gt-next
+  {
+    name: 'gt-next dist/index.client.js',
+    contents: `module.exports = require('./dist/index.client.js');`,
+    conditions: ['browser'],
+    platform: 'browser' as const,
+    format: 'cjs' as const,
+  },
+  {
+    name: 'gt-next dist/index.server.js',
+    contents: `module.exports = require('./dist/index.server.js');`,
+    conditions: [],
+    platform: 'node' as const,
+    format: 'cjs' as const,
+  },
+  {
+    name: 'gt-next dist/index.rsc.js',
+    contents: `module.exports = { ...require('./dist/index.rsc.js'), ...require('./dist/server.js') };`,
+    conditions: ['react-server'],
+    platform: 'node' as const,
+    format: 'cjs' as const,
+  },
 ];
 
 describe('gt compat leak enforcement', () => {
@@ -216,10 +271,11 @@ describe('gt compat leak enforcement', () => {
 
   it.each(nativeBundles)(
     '$name native-only bundle excludes compat modules',
-    async ({ contents, conditions, platform }) => {
+    async ({ contents, conditions, platform, format }) => {
       const { code, inputs } = await bundle(contents, {
         conditions,
         platform,
+        format,
       });
 
       expect(findMarkers(code)).toEqual([]);

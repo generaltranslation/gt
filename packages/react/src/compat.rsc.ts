@@ -1,7 +1,7 @@
 // Dictionary (key-based) API for React Server Components.
 
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import { getTranslations, type TFunctionType } from 'gt-i18n/internal';
+import { getTranslations, type TFunctionType } from 'gt-i18n/internal/compat';
 import { use } from 'react';
 import type { GTProviderProps } from './compat/GTProviderProps';
 
@@ -20,7 +20,7 @@ export function useTranslations(rootId?: string): TFunctionType {
   return use(getTranslations(rootId));
 }
 
-export { initializeDictionaryManager as initializeGTDictionary } from 'gt-i18n/internal';
+export { initializeDictionaryManager as initializeGTDictionary } from 'gt-i18n/internal/compat';
 export type { GTProviderProps } from './compat/GTProviderProps';
 export type {
   DictionaryManagerParams as InitializeGTDictionaryParams,
@@ -35,4 +35,4 @@ export type {
   DictionaryPath,
   DictionaryValue,
   TFunctionType,
-} from 'gt-i18n/internal';
+} from 'gt-i18n/internal/compat';

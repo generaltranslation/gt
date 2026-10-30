@@ -1,11 +1,11 @@
 import { useCallback, useMemo } from 'react';
+import { extractVariables } from 'gt-i18n/internal';
 import {
-  extractVariables,
   renderDictionaryEntry,
   renderDictionaryObject,
   resolveDictionaryLookupOptions,
   type DictionaryObjectTranslation,
-} from 'gt-i18n/internal';
+} from 'gt-i18n/internal/compat';
 import { useLocale } from '../hooks/condition-store';
 import { useGT } from '../hooks/useGT';
 import type { TranslationVariables } from 'gt-i18n';

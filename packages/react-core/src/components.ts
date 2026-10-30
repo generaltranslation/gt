@@ -17,7 +17,3 @@ export { InternalLocaleSelector } from './components/helpers/InternalLocaleSelec
 export { InternalRegionSelector } from './components/helpers/InternalRegionSelector';
 export { InternalGTProvider } from './context/InternalGTProvider';
 export type { InternalGTProviderProps } from './context/InternalGTProvider';
-
-// ===== Compat: dictionary (key-based) API ===== //
-export { DictionaryProvider } from './compat/DictionaryProvider';
-export type { DictionaryProviderProps } from './compat/DictionaryProvider';

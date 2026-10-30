@@ -1,4 +1,5 @@
-import { getDictionaryListenerKey, getI18nConfig } from 'gt-i18n/internal';
+import { getI18nConfig } from 'gt-i18n/internal';
+import { getDictionaryListenerKey } from 'gt-i18n/internal/compat';
 import type { DictionaryLookup, DictionaryObjectSnapshot } from './types';
 import { useCallback, useRef } from 'react';
 import { useHandleMissingDictionaryObject } from './missing-dictionary';

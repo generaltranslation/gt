@@ -1,7 +1,7 @@
 import {
   initializeDictionaryManager,
   isDictionaryManagerInitialized,
-} from 'gt-i18n/internal';
+} from 'gt-i18n/internal/compat';
 import { config as pluginConfig } from 'gt-tanstack-start/internal/_config';
 import {
   dictionary,

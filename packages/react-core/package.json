@@ -95,6 +95,16 @@
         "types": "./dist/unstable.d.mts",
         "default": "./dist/unstable.mjs"
       }
+    },
+    "./compat": {
+      "require": {
+        "types": "./dist/compat.d.ts",
+        "default": "./dist/compat.cjs"
+      },
+      "import": {
+        "types": "./dist/compat.d.mts",
+        "default": "./dist/compat.mjs"
+      }
     }
   },
   "keywords": [

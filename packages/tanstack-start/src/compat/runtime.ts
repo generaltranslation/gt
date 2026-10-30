@@ -1,8 +1,8 @@
+import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal';
 import {
   getTranslationsInternal,
-  type ReadonlyConditionStoreInterface,
   type TFunctionType,
-} from 'gt-i18n/internal';
+} from 'gt-i18n/internal/compat';
 
 /**
  * The dictionary translation function, bound to where an entry reads the

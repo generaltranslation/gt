@@ -1,7 +1,7 @@
 import {
   DictionaryProvider,
   type DictionaryProviderProps,
-} from '@generaltranslation/react-core/components';
+} from '@generaltranslation/react-core/compat';
 import {
   GTProvider as RootGTProvider,
   type GTProviderProps as RootGTProviderProps,

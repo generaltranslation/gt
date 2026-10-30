@@ -1,11 +1,10 @@
+import { getI18nConfig, type Locale } from 'gt-i18n/internal';
 import {
   getDictionaryManager,
-  getI18nConfig,
   initializeDictionaryManager,
   isDictionaryManagerInitialized,
-  type Locale,
   type Dictionary,
-} from 'gt-i18n/internal';
+} from 'gt-i18n/internal/compat';
 import { getParams } from '../setup/shared';
 import { getDictionary } from './getDictionary';
 import { resolveDictionaryLoader } from './resolveDictionaryLoader';

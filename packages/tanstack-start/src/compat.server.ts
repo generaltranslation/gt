@@ -28,4 +28,4 @@ export type {
   DictionaryPath,
   DictionaryValue,
   TFunctionType,
-} from 'gt-i18n/internal';
+} from 'gt-i18n/internal/compat';

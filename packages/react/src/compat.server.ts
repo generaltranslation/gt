@@ -6,9 +6,9 @@
 
 export { ServerGTProvider as GTProvider } from './compat/ServerGTProvider';
 export type { GTProviderProps } from './compat/GTProviderProps';
-export { useTranslations } from '@generaltranslation/react-core/hooks';
-export type { UseTranslationsFunction } from '@generaltranslation/react-core/hooks';
-export { initializeDictionaryManager as initializeGTDictionary } from 'gt-i18n/internal';
+export { useTranslations } from '@generaltranslation/react-core/compat';
+export type { UseTranslationsFunction } from '@generaltranslation/react-core/compat';
+export { initializeDictionaryManager as initializeGTDictionary } from 'gt-i18n/internal/compat';
 export type {
   DictionaryManagerParams as InitializeGTDictionaryParams,
   Dictionary,
@@ -22,4 +22,4 @@ export type {
   DictionaryPath,
   DictionaryValue,
   TFunctionType,
-} from 'gt-i18n/internal';
+} from 'gt-i18n/internal/compat';
