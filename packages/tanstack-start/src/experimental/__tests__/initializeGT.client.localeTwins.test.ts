@@ -36,11 +36,11 @@ vi.mock('gt-tanstack-start/internal/localeRouting', async () => {
 });
 
 // The client entry imports gt-react's browser build; Node resolves the server one.
-vi.mock('gt-react', async () => {
+vi.mock('gt-react/experimental', async () => {
   const { createRequire } = await import('node:module');
   const { pathToFileURL } = await import('node:url');
   const require = createRequire(import.meta.url);
-  const serverEntry = require.resolve('gt-react');
+  const serverEntry = require.resolve('gt-react/experimental');
   return import(
     pathToFileURL(
       serverEntry.replace(/index\.server\.c?js$/, 'index.client.mjs')
@@ -53,12 +53,8 @@ type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
 const TWINS_CONFIG = {
   defaultLocale: 'en',
   locales: ['en', 'fr'],
-  files: {
-    gt: {
-      output: 'src/_gt/[locale].json',
-      splitting: 'locale-twins' as const,
-    },
-  },
+  files: { gt: { output: 'src/_gt/[locale].json' } },
+  experimental: { splitting: 'locale-twins' as const },
 };
 
 /** A `document` whose `cookie` behaves like a browser cookie jar. */
@@ -97,10 +93,10 @@ async function initializeWith(
   pluginModule.loadTranslations = loadTranslations;
   localeRouting.enabled = config.localeRouting === true;
   vi.resetModules();
-  const { ensureInitialized } = await import('../initializeGT.client');
+  const { ensureInitialized } = await import('../../setup/initializeGT.client');
   ensureInitialized();
   return {
-    gtReact: await import('gt-react'),
+    gtReact: await import('gt-react/experimental'),
     reactCore: await import('@generaltranslation/react-core/pure'),
   };
 }

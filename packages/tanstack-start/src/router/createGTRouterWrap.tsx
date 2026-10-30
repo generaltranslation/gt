@@ -5,8 +5,6 @@ import {
   type ReactNode,
 } from 'react';
 import { getI18nConfig } from '@generaltranslation/react-core/pure';
-import { isLocaleTwinsSplitting } from 'generaltranslation/internal';
-import { getRuntimeEnvironment } from 'gt-i18n/internal';
 import { getReactI18nCache, getTranslationsSnapshot } from 'gt-react';
 import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
 import type { GTRouterState } from './types';
@@ -16,42 +14,26 @@ type GTConditionSource = Pick<
   'getLocale' | 'getRegion' | 'getEnableI18n'
 >;
 
-/** Whether the app builds locale twins (`files.gt.splitting`). */
-export function usesLocaleTwins(): boolean {
-  return isLocaleTwinsSplitting(getI18nConfig().getTranslationSplitting());
-}
-
 export async function readGTRouterState(
   conditionStore: GTConditionSource
 ): Promise<GTRouterState> {
   const locale = conditionStore.getLocale();
-  const defaultLocale = getI18nConfig().getDefaultLocale();
-  const cache = getReactI18nCache();
-  // Locale twins carry translations in the production client build, so the
-  // server only loads them and the page gets no snapshot. vite dev serves no
-  // twins and hydrates from the snapshot. Dictionary entries are never
-  // twinned: an app with a (source) dictionary keeps the snapshot.
-  const twinsCarryTranslations =
-    usesLocaleTwins() && getRuntimeEnvironment() === 'production';
-  const [translations, dictionaries, sourceDictionary] = await Promise.all([
+  const [translations, dictionaries] = await Promise.all([
     getTranslationsSnapshot(locale),
     // Dictionary reads only use loaded dictionaries, so the translated one is
     // loaded before render, as gt-next's GTProvider does. Both sides already
     // bundle the source dictionary, which serves the default locale.
-    locale === defaultLocale
+    locale === getI18nConfig().getDefaultLocale()
       ? {}
-      : cache
+      : getReactI18nCache()
           .loadDictionary(locale)
           .then((dictionary) => ({ [locale]: dictionary })),
-    twinsCarryTranslations ? cache.loadDictionary(defaultLocale) : {},
   ]);
   return {
     locale,
     region: conditionStore.getRegion(),
     enableI18n: conditionStore.getEnableI18n(),
-    ...(twinsCarryTranslations && Object.keys(sourceDictionary).length === 0
-      ? {}
-      : { translations }),
+    translations,
     dictionaries,
   };
 }

@@ -13,9 +13,23 @@ const NODE_MODULES_PATTERN = /[\\/]node_modules[\\/]/;
 
 type CompilerVitePlugin = (options: Record<string, unknown>) => Plugin;
 
+/** Which GT compiler the plugin runs, and where inserted JSX imports from. */
+export type CompilerIntegration = {
+  /** The compiler module that exports `vite`. */
+  compilerModule: string;
+  /** The import source of auto-inserted `<T>` and `<Var>`. */
+  autoJsxImportSource: string;
+};
+
+export const DEFAULT_COMPILER_INTEGRATION: CompilerIntegration = {
+  compilerModule: '@generaltranslation/compiler',
+  autoJsxImportSource: 'gt-tanstack-start',
+};
+
 export function createCompilerPlugin(
   { type = 'none', ...compilerSettings }: GTTanstackStartCompilerOptions = {},
-  configFile: string
+  configFile: string,
+  integration: CompilerIntegration = DEFAULT_COMPILER_INTEGRATION
 ): { compilerPlugin: Plugin | undefined; warnings: string[] } {
   const warnings: string[] = [];
   if (compilerSettings.compileTimeHash === false) {
@@ -40,7 +54,7 @@ export function createCompilerPlugin(
   let gtCompiler: CompilerVitePlugin;
   try {
     gtCompiler = createRequire(import.meta.url)(
-      '@generaltranslation/compiler'
+      integration.compilerModule
     ).vite;
   } catch (error) {
     warnings.push(createCompilerUnresolvedWarning(error));
@@ -56,7 +70,7 @@ export function createCompilerPlugin(
   const plugin = gtCompiler({
     ...definedSettings,
     ...(gtConfig ? { gtConfig } : {}),
-    autoJsxImportSource: 'gt-tanstack-start',
+    autoJsxImportSource: integration.autoJsxImportSource,
   });
 
   return { compilerPlugin: adaptCompilerPlugin(plugin), warnings };

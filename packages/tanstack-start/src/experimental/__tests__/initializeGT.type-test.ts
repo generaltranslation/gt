@@ -2,11 +2,12 @@
 import type { InitializeGTParams } from '../../types/InitializeGTParams';
 
 // What TypeScript infers for `import gtConfig from '../gt.config.json'`:
-// JSON imports widen files.gt.splitting to string.
+// JSON imports widen experimental.splitting to string.
 declare const gtConfig: {
   defaultLocale: string;
   locales: string[];
-  files: { gt: { output: string; splitting: string } };
+  files: { gt: { output: string } };
+  experimental: { splitting: string };
 };
 declare const loadTranslations: (locale: string) => Promise<object>;
 

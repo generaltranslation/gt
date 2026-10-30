@@ -2,7 +2,7 @@ import {
   getResponseHeader,
   setResponseHeader,
 } from '@tanstack/react-start/server';
-import { applyLocaleTwinDocumentHeaders } from 'gt-i18n/internal/locale-twins';
+import { applyLocaleTwinDocumentHeaders } from 'gt-i18n/internal/experimental';
 
 /** A matched route, with the response headers its `headers()` option set. */
 export type RouteMatchHeaders = { headers?: Record<string, string> };

@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
+import { experimentalImports } from './experimentalImports.mts';
 
 export default defineConfig({
   resolve: {
@@ -34,6 +35,25 @@ export default defineConfig({
     env: {
       _GT_LOG_LEVEL: 'off',
     },
+    // src/experimental runs the regular modules the way the experimental
+    // entry points are built (see experimentalImports.mts)
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'regular',
+          exclude: ['**/node_modules/**', 'src/experimental/**'],
+        },
+      },
+      {
+        extends: true,
+        plugins: [experimentalImports],
+        test: {
+          name: 'experimental',
+          include: ['src/experimental/**/*.test.{ts,tsx}'],
+        },
+      },
+    ],
     reporters: [
       [
         'default',

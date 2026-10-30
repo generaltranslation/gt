@@ -4,12 +4,7 @@ import {
   getServerConditionStore,
   isLocaleRoutingEnabled,
 } from '../setup/initializeGT.server';
-import { setLocaleTwinDocumentHeaders } from '../locale-twins/documentHeaders';
-import {
-  createGTRouterWrap,
-  readGTRouterState,
-  usesLocaleTwins,
-} from './createGTRouterWrap';
+import { createGTRouterWrap, readGTRouterState } from './createGTRouterWrap';
 import { getRouterLocaleRewrite } from './localeRewrite';
 import type {
   GTDehydratedRouterData,
@@ -47,10 +42,6 @@ export function setupRouterGTIntegration({
       const dehydrated =
         (await originalDehydrate?.()) as GTDehydratedRouterData;
       const state = await gt.load();
-      // The document varies by locale without a snapshot to show for it.
-      if (usesLocaleTwins() && !router.isShell?.()) {
-        setLocaleTwinDocumentHeaders(router.state?.matches ?? []);
-      }
       // A prerendered SPA shell is served to every visitor in the build-time
       // locale. The client hydrates it with that state, then renders the
       // visitor's own.

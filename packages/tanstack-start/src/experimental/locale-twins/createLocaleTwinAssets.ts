@@ -1,20 +1,16 @@
 import { LocaleConfig } from 'generaltranslation';
-import {
-  createDiagnosticMessage,
-  parseLocaleTwinManifest,
-} from 'generaltranslation/internal';
-import type {
-  CustomMapping,
-  LocaleTwinManifest,
-} from 'generaltranslation/types';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { parseLocaleTwinManifest } from 'generaltranslation/internal/experimental';
+import type { LocaleTwinManifest } from 'generaltranslation/internal/experimental';
+import type { CustomMapping } from 'generaltranslation/types';
 import { getI18nConfig } from '@generaltranslation/react-core/pure';
 import { getCookieValue } from 'gt-i18n/internal';
-import { resolveLocaleTwinLocale } from 'gt-i18n/internal/locale-twins';
+import { resolveLocaleTwinLocale } from 'gt-i18n/internal/experimental';
 import {
   getConditionStore,
   isConditionStoreInitialized,
-} from '../condition-store/singleton';
-import { ensureInitialized } from '../setup/initializeGT.server';
+} from '../../condition-store/singleton';
+import { ensureInitialized } from '../../setup/initializeGT.server';
 
 /**
  * The asset passed to the transform. Structural, so one transform fits every

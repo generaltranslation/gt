@@ -90,6 +90,41 @@
       },
       "default": "./dist/plugin/vite.mjs"
     },
+    "./experimental": {
+      "workerd": {
+        "import": {
+          "types": "./dist/experimental/index.server.d.mts",
+          "default": "./dist/experimental/index.server.mjs"
+        },
+        "default": "./dist/experimental/index.server.mjs"
+      },
+      "worker": {
+        "import": {
+          "types": "./dist/experimental/index.server.d.mts",
+          "default": "./dist/experimental/index.server.mjs"
+        },
+        "default": "./dist/experimental/index.server.mjs"
+      },
+      "browser": {
+        "import": {
+          "types": "./dist/experimental/index.client.d.mts",
+          "default": "./dist/experimental/index.client.mjs"
+        },
+        "default": "./dist/experimental/index.client.mjs"
+      },
+      "import": {
+        "types": "./dist/experimental/index.server.d.mts",
+        "default": "./dist/experimental/index.server.mjs"
+      },
+      "default": "./dist/experimental/index.server.mjs"
+    },
+    "./experimental/plugin/vite": {
+      "import": {
+        "types": "./dist/experimental/plugin/vite.d.mts",
+        "default": "./dist/experimental/plugin/vite.mjs"
+      },
+      "default": "./dist/experimental/plugin/vite.mjs"
+    },
     "./internal/_config": {
       "import": {
         "types": "./dist/internal/_config.d.mts",

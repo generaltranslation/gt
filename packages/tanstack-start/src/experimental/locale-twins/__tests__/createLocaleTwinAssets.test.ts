@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
-import type { LocaleTwinManifest } from 'generaltranslation/types';
+import type { LocaleTwinManifest } from 'generaltranslation/internal/experimental';
 import { getRequest, setCookie } from '@tanstack/react-start/server';
-import { AsyncLocalConditionStore } from '../../condition-store/AsyncLocalConditionStore';
-import { setConditionStore } from '../../condition-store/singleton';
+import { AsyncLocalConditionStore } from '../../../condition-store/AsyncLocalConditionStore';
+import { setConditionStore } from '../../../condition-store/singleton';
 import {
   createLocaleTwinAssets,
   type LocaleTwinAssetTransform,

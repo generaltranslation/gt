@@ -23,8 +23,8 @@ const noLocaleCandidatesWarning = createDiagnosticMessage({
 /**
  * Resolve the locale for a request without side effects: the path locale (with
  * `localeRouting`), then the locale cookie, then `Accept-Language`, else the
- * default locale. Shared by the request condition store and the locale twin
- * asset transform.
+ * default locale. Shared by `resolveRequestConditions()` and
+ * `AsyncLocalConditionStore.resolveLocale()`.
  */
 export function resolveRequestLocale(
   request: Request,

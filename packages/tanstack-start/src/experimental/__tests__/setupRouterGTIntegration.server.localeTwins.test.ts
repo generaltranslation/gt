@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
+import { initializeLocaleTwins } from 'gt-i18n/internal/experimental';
 
 const {
   mockConditionStore,
@@ -20,7 +21,7 @@ const {
   responseHeaders: { current: new Headers() },
 }));
 
-vi.mock('gt-react', () => ({
+vi.mock('gt-react/experimental', () => ({
   GTProvider: () => null,
   getTranslationsSnapshot: mockGetTranslationsSnapshot,
   getReactI18nCache: () => ({ loadDictionary: mockLoadDictionary }),
@@ -38,8 +39,8 @@ vi.mock('@tanstack/react-start/server', () => ({
 
 import type { AsyncLocalConditionStore } from '../../condition-store/AsyncLocalConditionStore';
 import { setConditionStore } from '../../condition-store/singleton';
-import { setupRouterGTIntegration } from '../setupRouterGTIntegration.server';
-import type { GTRouterOptions } from '../types';
+import { setupRouterGTIntegration } from '../router/setupRouterGTIntegration.server';
+import type { GTRouterOptions } from '../../router/types';
 
 function createRouter({
   routeHeaders = [],
@@ -62,11 +63,14 @@ function createRouter({
 
 function initialize(splitting: 'locale' | 'locale-twins') {
   Reflect.deleteProperty(globalThis, '__generaltranslation');
-  initializeI18nConfig({
+  const config = {
     defaultLocale: 'en',
     locales: ['en', 'fr'],
-    files: { gt: { output: 'src/_gt/[locale].json', splitting } },
-  });
+    experimental: { splitting },
+  };
+  // What the experimental initializeGT() does
+  initializeI18nConfig(config);
+  initializeLocaleTwins(config);
   setConditionStore(mockConditionStore as unknown as AsyncLocalConditionStore);
 }
 
@@ -88,7 +92,7 @@ describe.sequential('setupRouterGTIntegration server with locale twins', () => {
     };
 
     expect(mockGetTranslationsSnapshot).toHaveBeenCalledWith('fr');
-    expect(dehydrated.gt).not.toHaveProperty('translations');
+    expect(dehydrated.gt.translations).toEqual({});
     expect(dehydrated.gt).toMatchObject({ locale: 'fr' });
   });
 

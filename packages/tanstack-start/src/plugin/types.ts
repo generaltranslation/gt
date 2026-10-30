@@ -1,4 +1,3 @@
-import type { GTUnpluginOptions } from '@generaltranslation/compiler';
 import type { GTCompilerOptions } from 'generaltranslation/types';
 import type { InitializeGTParams } from '../types/InitializeGTParams';
 
@@ -9,11 +8,6 @@ export type GTTanstackStartCompilerOptions = GTCompilerOptions & {
    * @default 'none'
    */
   type?: 'babel' | 'none';
-  /**
-   * Build options for locale twins (`files.gt.splitting: 'locale-twins'` in
-   * gt.config.json), which need the compiler.
-   */
-  localeTwins?: GTUnpluginOptions['localeTwins'];
 };
 
 /**

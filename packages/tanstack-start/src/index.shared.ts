@@ -36,8 +36,4 @@ export {
   mFallback,
   gtFallback,
   t,
-  // ===== Locale twins (web-only) ===== //
-  markNavigatingReload,
-  // ===== Compiler-injected ===== //
-  GtInternalRegisterLocaleTwin,
 } from 'gt-react';

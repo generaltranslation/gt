@@ -5,7 +5,7 @@
  * its source text there, so the server must render it the same way.
  */
 import { renderToString } from 'react-dom/server';
-import { encodeLocaleTwinPlaceholder } from 'generaltranslation/internal';
+import { encodeLocaleTwinPlaceholder } from 'generaltranslation/internal/experimental';
 import { hashMessage } from 'gt-i18n/internal';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -41,9 +41,9 @@ import {
   useGT,
   useMessages,
 } from '../index.server';
-import { ensureInitialized } from '../setup/initializeGT.server';
+import { ensureInitialized } from '../../setup/initializeGT.server';
 import { setupRouterGTIntegration } from '../router/setupRouterGTIntegration.server';
-import type { GTRouterOptions } from '../router/types';
+import type { GTRouterOptions } from '../../router/types';
 
 // Compile-time hashes, as the compiler injects them (16 lowercase hex).
 const T_HASH = '1111111111111111';
@@ -111,7 +111,8 @@ function initialize(splitting: 'locale' | 'locale-twins') {
   pluginModule.config = {
     defaultLocale: 'en',
     locales: ['en', 'fr'],
-    files: { gt: { output: 'src/_gt/[locale].json', splitting } },
+    files: { gt: { output: 'src/_gt/[locale].json' } },
+    experimental: { splitting },
   };
   pluginModule.loadTranslations = async (locale: string) =>
     locale === 'fr' ? FRENCH : {};
