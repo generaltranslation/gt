@@ -300,6 +300,11 @@ export function createGTUnpluginFactory<
           // Pass 2: Macro expansion
           if (state.settings.enableMacroTransform) {
             traverse(ast, macroExpansionPass(state));
+            // Its injected t() import must be the locale twin version
+            importSources.aliasMacroImport(
+              ast.program,
+              state.settings.autoJsxImportSource
+            );
           }
 
           // Pass 3: Collection

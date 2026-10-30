@@ -190,6 +190,53 @@ export const el = jsx("div", { children: "Hello world" });`,
     expect(code).not.toMatch(/from ["']gt-react["']/);
   });
 
+  // The regular t() reads only whole-locale translations, which a locale
+  // twin client never loads, so a stripped macro call must use the twin t()
+  it.each([
+    [
+      'the module GT source',
+      `import { T } from 'gt-tanstack-start/experimental';\n`,
+      {},
+      'gt-tanstack-start/experimental',
+    ],
+    [
+      'autoJsxImportSource without a GT import',
+      '',
+      {},
+      'gt-react/experimental',
+    ],
+    [
+      'a custom autoJsxImportSource',
+      '',
+      { autoJsxImportSource: 'gt-tanstack-start/experimental' },
+      'gt-tanstack-start/experimental',
+    ],
+  ])(
+    'imports the global t macro from %s',
+    async (_name, imports, options, expected) => {
+      const code = (await transform(
+        `${imports}export const a = t\`Hello \${name}\`;`,
+        { ...TWINS, ...options }
+      ))!;
+
+      expect(code).toMatch(
+        new RegExp(`import \\{ t \\} from ["']${expected}["']`)
+      );
+      expect(code).not.toMatch(/from ["']gt-react["']/);
+      expect(findLocaleTwinPlaceholders(code)).toHaveLength(1);
+    }
+  );
+
+  it('keeps the global t macro import of a regular autoJsxImportSource', async () => {
+    const code = (await transform('export const a = t`Hello`;', {
+      ...TWINS,
+      autoJsxImportSource: 'gt-react',
+    }))!;
+
+    expect(code).toMatch(/import \{ t \} from ["']gt-react["']/);
+    expect(code).not.toContain('GtInternalRegisterLocaleTwin');
+  });
+
   it('registers modules whose <T> was inserted by auto JSX injection', async () => {
     const code = (await transform(
       `import { jsx } from 'react/jsx-runtime';
