@@ -58,11 +58,11 @@ export type LocaleTwinState = {
   locale?: string;
   /**
    * Registered entries by hash (the first registration of a hash wins),
-   * content kept by reference.
+   * content kept by reference. Created by the first registered table.
    */
-  entries: Map<string, Content>;
+  entries?: Map<string, Content>;
   /** Hashes whose registered entry is a source fallback. */
-  sourceFallbacks: Set<string>;
+  sourceFallbacks?: Set<string>;
   /**
    * Whether an unfilled placeholder was registered: a server bundle, or an
    * original (untwinned) chunk in a browser.
@@ -86,10 +86,8 @@ type GlobalWithLocaleTwins = {
 export function getLocaleTwinState(): LocaleTwinState {
   const globalObj = globalThis as unknown as GlobalWithLocaleTwins;
   globalObj.__generaltranslation ??= {};
-  globalObj.__generaltranslation.localeTwins ??= {
-    entries: new Map(),
-    sourceFallbacks: new Set(),
-  };
+  // Kept minimal: every app ships this, and only twins fill it
+  globalObj.__generaltranslation.localeTwins ??= {};
   return globalObj.__generaltranslation.localeTwins;
 }
 
@@ -108,7 +106,7 @@ export function reportLocaleTwinIssueOnce(
 
 /** Returns the registered content for `hash`, if any twin provided it. */
 export function getLocaleTwinEntry(hash: string): Content | undefined {
-  return getLocaleTwinState().entries.get(hash);
+  return getLocaleTwinState().entries?.get(hash);
 }
 
 /** Returns the locale of the registered twins, if any were registered. */
@@ -118,10 +116,10 @@ export function getLocaleTwinLocale(): string | undefined {
 
 /** Whether at least one locale twin table has been registered. */
 export function hasLocaleTwins(): boolean {
-  return getLocaleTwinState().entries.size > 0;
+  return (getLocaleTwinState().entries?.size ?? 0) > 0;
 }
 
 /** Whether the registered entry for `hash` is a source fallback. */
 export function isLocaleTwinSourceFallback(hash: string): boolean {
-  return getLocaleTwinState().sourceFallbacks.has(hash);
+  return getLocaleTwinState().sourceFallbacks?.has(hash) === true;
 }

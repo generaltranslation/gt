@@ -104,9 +104,11 @@ export async function getGTInternal(
     );
     if (twin.entry !== undefined || twin.rendersSource) {
       return interpolateMessage({
-        source: twin.sourceFallback ? twin.entry! : message,
-        target: twin.sourceFallback ? undefined : twin.entry,
-        options: lookupOptions,
+        source: message,
+        target: twin.entry,
+        options: twin.sourceFallback
+          ? { ...lookupOptions, $locale: sourceLocale }
+          : lookupOptions,
         sourceLocale,
       });
     }

@@ -54,11 +54,13 @@ export function registerLocaleTwin(value?: string): boolean {
     return false;
   }
   state.locale ??= table.l;
-  const sourceFallbacks = table.s ?? [];
+  const entries = (state.entries ??= new Map());
+  const sourceFallbacks = (state.sourceFallbacks ??= new Set());
+  const tableFallbacks = table.s ?? [];
   for (const [hash, content] of Object.entries(table.e)) {
-    if (state.entries.has(hash)) continue;
-    state.entries.set(hash, content);
-    if (sourceFallbacks.indexOf(hash) !== -1) state.sourceFallbacks.add(hash);
+    if (entries.has(hash)) continue;
+    entries.set(hash, content);
+    if (tableFallbacks.indexOf(hash) !== -1) sourceFallbacks.add(hash);
   }
   return true;
 }

@@ -77,9 +77,13 @@ export function resolveStringContent(
   if (twin.entry !== undefined) {
     // A source fallback is formatted in the source locale, like a miss
     return interpolateMessage({
-      source: twin.sourceFallback ? twin.entry : content,
-      target: twin.sourceFallback ? undefined : twin.entry,
-      options: createLookupOptions(twinLocale, options, 'ICU'),
+      source: content,
+      target: twin.entry,
+      options: createLookupOptions(
+        twin.sourceFallback ? defaultLocale : twinLocale,
+        options,
+        'ICU'
+      ),
       sourceLocale: defaultLocale,
     });
   }

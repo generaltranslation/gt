@@ -38,20 +38,23 @@ export function useGT(_messages?: Message[]): GTFunctionType {
       // Locale twins: stripped code is resolved by hash, source locale
       // included; content no twin carries renders its source text. Without
       // translation (i18n disabled) the page has the default locale's twins.
-      const twinOptions = shouldTranslate
-        ? lookupOptions
-        : createLookupOptions<StringFormat>(defaultLocale, options, 'ICU');
+      const twinLocale = shouldTranslate
+        ? lookupOptions.$locale
+        : defaultLocale;
       const twin = resolveLocaleTwinLookup<string>(
-        twinOptions.$locale,
-        twinOptions,
+        twinLocale,
+        lookupOptions,
         options.$_hash
       );
       if (twin.entry !== undefined) {
         // A source fallback is formatted in the source locale, like a miss
         return interpolateMessage({
-          source: twin.sourceFallback ? twin.entry : message,
-          target: twin.sourceFallback ? undefined : twin.entry,
-          options: twinOptions,
+          source: message,
+          target: twin.entry,
+          options: {
+            ...lookupOptions,
+            $locale: twin.sourceFallback ? defaultLocale : twinLocale,
+          },
           sourceLocale: defaultLocale,
         });
       }
