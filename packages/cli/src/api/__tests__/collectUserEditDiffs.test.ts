@@ -573,4 +573,55 @@ describe('collectAndSendUserEditDiffs', () => {
       expect(diffs[0].localContent).toBe(slice(JSON.stringify(edited), 'fr'));
     });
   });
+
+  it('preserves literal backslashes in POSIX filenames when resolving output paths', async () => {
+    const settings = buildSettings();
+    const literalFileName = 'docs/literal\\file.md';
+    const translatedPath = path.join(tempDir, 'docs', 'ja', 'doc.md');
+    fs.mkdirSync(path.dirname(translatedPath), { recursive: true });
+    const content = '# literal backslash\n';
+    fs.writeFileSync(translatedPath, content);
+
+    // Mock createFileMapping or configure settings so fileMapping has the literalFileName key
+    settings.files.resolvedPaths = {
+      md: [path.join(tempDir, 'docs', 'literal\\file.md')],
+    };
+    settings.files.placeholderPaths = {
+      md: [path.join(tempDir, 'docs', '[locale]', 'doc.md')],
+    };
+
+    writeLockFile({
+      version: 1,
+      entries: {
+        branch1: {
+          file1: {
+            version1: {
+              ja: {
+                updatedAt: new Date().toISOString(),
+                postProcessHash: hashStringSync(content),
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const files: FileReference[] = [
+      {
+        fileName: literalFileName,
+        fileFormat: 'MD',
+        branchId: 'branch1',
+        fileId: 'file1',
+        versionId: 'version1',
+      },
+    ];
+
+    await collectAndSendUserEditDiffs(files, settings);
+
+    // If 'portable' is used, lookupFileMapping matches the literal backslash key and finds the file.
+    // Matching postProcessHash causes it to skip submitting diffs without querying the server.
+    expect(api.queryFileData).not.toHaveBeenCalled();
+    expect(api.downloadFileBatch).not.toHaveBeenCalled();
+    expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
+  });
 });

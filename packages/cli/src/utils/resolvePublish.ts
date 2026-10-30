@@ -1,7 +1,6 @@
 import { Settings, ResolvedFiles } from '../types/index.js';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
-import { getRelative } from '../fs/findFilepath.js';
-import { hashStringSync } from './hash.js';
+import { getFileId } from '../fs/findFilepath.js';
 
 /**
  * Determines whether a file should be published based on the publish resolution logic:
@@ -37,8 +36,7 @@ export function buildPublishMap(
           settings.files.publishPaths?.has(absolutePath) ||
           settings.files.unpublishPaths?.has(absolutePath);
         if (hasGlobalPublish || hasExplicitConfig) {
-          const relativePath = getRelative(absolutePath);
-          const fileId = hashStringSync(relativePath);
+          const fileId = getFileId(absolutePath);
           publishMap.set(fileId, shouldPublishFile(absolutePath, settings));
         }
       }

@@ -6,7 +6,10 @@ import {
   DownloadedTranslation,
 } from '../fs/config/downloadedVersions.js';
 import { Settings } from '../types/index.js';
-import { createFileMapping } from '../formats/files/fileMapping.js';
+import {
+  createFileMapping,
+  lookupFileMapping,
+} from '../formats/files/fileMapping.js';
 import { getGitUnifiedDiff } from '../utils/gitDiff.js';
 import { api } from '../utils/api.js';
 import {
@@ -102,7 +105,13 @@ export async function collectAndSendUserEditDiffs(
 
   for (const uploadedFile of files) {
     for (const locale of settings.locales) {
-      const outputPath = fileMapping[locale]?.[uploadedFile.fileName] ?? null;
+      const outputPath =
+        lookupFileMapping(
+          fileMapping,
+          locale,
+          uploadedFile.fileName,
+          'portable'
+        ) ?? null;
       if (!outputPath) continue;
       if (!fs.existsSync(outputPath)) continue;
 

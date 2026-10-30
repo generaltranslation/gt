@@ -20,6 +20,7 @@ vi.mock('../../../fs/findFilepath.js', () => ({
     return files?.[filePath] ?? '';
   }),
   getRelative: vi.fn((filePath: string) => filePath),
+  getFileId: vi.fn((filePath: string) => `hash_${filePath.slice(0, 16)}`),
   readBinaryFileBase64: vi.fn((filePath: string) => {
     const files = (vi as unknown).__mockBinaryFiles;
     return files?.[filePath] ?? '';
@@ -35,6 +36,13 @@ vi.mock('../../../workflows/publish.js', () => ({
 }));
 vi.mock('../../../formats/files/fileMapping.js', () => ({
   createFileMapping: vi.fn(() => ({})),
+  lookupFileMapping: vi.fn(
+    (
+      mapping: Record<string, Record<string, string>>,
+      locale: string,
+      key: string
+    ) => mapping?.[locale]?.[key]
+  ),
 }));
 vi.mock('../../../utils/hash.js', () => ({
   hashStringSync: vi.fn((s: string) => `hash_${s.slice(0, 16)}`),
