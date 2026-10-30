@@ -6,6 +6,7 @@ import {
 } from 'react';
 import { getI18nConfig } from '@generaltranslation/react-core/pure';
 import { isLocaleTwinsSplitting } from 'generaltranslation/internal';
+import { getRuntimeEnvironment } from 'gt-i18n/internal';
 import { getReactI18nCache, getTranslationsSnapshot } from 'gt-react';
 import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
 import type { GTRouterState } from './types';
@@ -39,9 +40,12 @@ export async function readGTRouterState(
     locale,
     region: conditionStore.getRegion(),
     enableI18n: conditionStore.getEnableI18n(),
-    // Locale twins carry translations in the client build, so the server
-    // only loads them (above) and the page gets no snapshot.
-    ...(usesLocaleTwins() ? {} : { translations }),
+    // Locale twins carry translations in the production client build, so
+    // the server only loads them (above) and the page gets no snapshot.
+    // vite dev serves no twins and hydrates from the snapshot.
+    ...(usesLocaleTwins() && getRuntimeEnvironment() === 'production'
+      ? {}
+      : { translations }),
     dictionaries,
   };
 }

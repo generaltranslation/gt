@@ -83,6 +83,25 @@ describe.sequential('setupRouterGTIntegration server with locale twins', () => {
     expect(dehydrated.gt).toMatchObject({ locale: 'fr' });
   });
 
+  // vite dev serves no twins: the client hydrates from the snapshot as
+  // without locale twins
+  it('sends the translations snapshot in development', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    try {
+      initialize('locale-twins');
+      const router = createRouter();
+      setupRouterGTIntegration({ router });
+
+      const dehydrated = (await router.options.dehydrate?.()) as {
+        gt: Record<string, unknown>;
+      };
+
+      expect(dehydrated.gt.translations).toEqual({ hello: 'bonjour' });
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it('marks documents as varying by locale cookie and Accept-Language', async () => {
     initialize('locale-twins');
     const router = createRouter({
