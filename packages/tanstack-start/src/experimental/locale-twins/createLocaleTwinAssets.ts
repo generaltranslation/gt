@@ -6,11 +6,11 @@ import type { CustomMapping } from 'generaltranslation/types';
 import { getI18nConfig } from '@generaltranslation/react-core/pure';
 import { getCookieValue } from 'gt-i18n/internal';
 import { resolveLocaleTwinLocale } from 'gt-i18n/internal/experimental';
+import { isConditionStoreInitialized } from '../../condition-store/singleton';
 import {
-  getConditionStore,
-  isConditionStoreInitialized,
-} from '../../condition-store/singleton';
-import { ensureInitialized } from '../../setup/initializeGT.server';
+  ensureInitialized,
+  getServerConditionStore,
+} from '../setup/initializeGT.server';
 
 /**
  * The asset passed to the transform. Structural, so one transform fits every
@@ -182,7 +182,7 @@ function createTwinLocaleResolver(
         ) === 'false';
       return disabled
         ? manifest.defaultLocale
-        : getConditionStore().resolveLocale(request);
+        : getServerConditionStore().resolveLocale(request);
     }
     return resolveLocaleTwinLocale(request, {
       defaultLocale: manifest.defaultLocale,

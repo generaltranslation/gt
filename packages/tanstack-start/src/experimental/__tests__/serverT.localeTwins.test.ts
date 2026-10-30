@@ -35,7 +35,8 @@ async function initialize(
   pluginModule.config = {
     defaultLocale: 'en',
     locales: ['en', 'fr'],
-    files: { gt: { output: 'src/_gt/[locale].json', splitting } },
+    files: { gt: { output: 'src/_gt/[locale].json' } },
+    experimental: { splitting },
   };
   vi.resetModules();
   const entry = await import('../index.server');
@@ -64,6 +65,7 @@ async function renderFor(
 }
 
 // t() reads the locale outside React; on the server that is the request's.
+// With locale twins the browser has no source text to render it from.
 describe.sequential('t() during server rendering', () => {
   beforeEach(() => {
     Reflect.deleteProperty(globalThis, '__generaltranslation');

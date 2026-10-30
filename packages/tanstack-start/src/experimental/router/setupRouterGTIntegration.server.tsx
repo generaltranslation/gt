@@ -4,7 +4,7 @@ import {
   ensureInitialized,
   getServerConditionStore,
   isLocaleRoutingEnabled,
-} from '../../setup/initializeGT.server';
+} from '../setup/initializeGT.server';
 import { createGTRouterWrap } from '../../router/createGTRouterWrap';
 import { getRouterLocaleRewrite } from '../../router/localeRewrite';
 import type {

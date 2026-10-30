@@ -41,7 +41,7 @@ import {
   useGT,
   useMessages,
 } from '../index.server';
-import { ensureInitialized } from '../../setup/initializeGT.server';
+import { ensureInitialized } from '../setup/initializeGT.server';
 import { setupRouterGTIntegration } from '../router/setupRouterGTIntegration.server';
 import type { GTRouterOptions } from '../../router/types';
 

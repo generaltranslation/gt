@@ -1,5 +1,4 @@
 import { initializeGT as initializeReactGT } from 'gt-react';
-import { createConditionStoreSingleton } from 'gt-i18n/internal';
 import {
   config as pluginConfig,
   dictionary as pluginDictionary,
@@ -8,7 +7,6 @@ import {
 } from 'gt-tanstack-start/internal/_config';
 import { AsyncLocalConditionStore } from '../condition-store/AsyncLocalConditionStore';
 import {
-  conditionStoreNotInitializedError,
   getConditionStore,
   isConditionStoreInitialized,
   setConditionStore,
@@ -23,22 +21,10 @@ export function isLocaleRoutingEnabled(): boolean {
   );
 }
 
-/**
- * The runtime's shared condition store slot, which functions that run outside
- * React (such as `t()`) read the locale from.
- */
-const { setConditionStore: setRuntimeConditionStore } =
-  createConditionStoreSingleton<AsyncLocalConditionStore>(
-    conditionStoreNotInitializedError
-  );
-
 /** Initialize GT and its server request condition store. */
 function initialize(config: InitializeGTParams): void {
   initializeReactGT(config);
-  const conditionStore = new AsyncLocalConditionStore(config);
-  setConditionStore(conditionStore);
-  // Request-scoped, so t() during server rendering reads the request locale.
-  setRuntimeConditionStore(conditionStore);
+  setConditionStore(new AsyncLocalConditionStore(config));
 }
 
 /**

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 import { setCookie } from '@tanstack/react-start/server';
-import { resolveRequestLocale } from '../requestConditions';
+import { resolveRequestLocale } from '../resolveRequestLocale';
 
 vi.mock('@tanstack/react-start/server', () => ({
   setCookie: vi.fn(),

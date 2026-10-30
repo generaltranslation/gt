@@ -1,10 +1,7 @@
 import { getRequest } from '@tanstack/react-start/server';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
-import {
-  resolveRequestConditions,
-  resolveRequestLocale,
-} from '../functions/requestConditions';
+import { resolveRequestConditions } from '../functions/requestConditions';
 import type { InitializeGTParams } from '../types/InitializeGTParams';
 
 export type RequestConditions = {
@@ -35,17 +32,6 @@ export class AsyncLocalConditionStore implements ReadonlyConditionStoreInterface
 
   isLocaleRoutingEnabled(): boolean {
     return this.config.localeRouting === true;
-  }
-
-  /**
-   * The locale of a request: the one its conditions resolved to, or else one
-   * resolved the same way without writing the locale cookie.
-   */
-  resolveLocale(request: Request): string {
-    return (
-      this.requestConditions.get(request)?.locale ??
-      resolveRequestLocale(request, this.config)
-    );
   }
 
   getLocale = (): string => this.getConditions().locale;

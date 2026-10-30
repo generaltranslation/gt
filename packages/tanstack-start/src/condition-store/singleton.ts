@@ -2,8 +2,7 @@ import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { createGlobalSingleton } from 'gt-i18n/internal';
 import type { AsyncLocalConditionStore } from './AsyncLocalConditionStore';
 
-/** Reading server request state before the Vite plugin's config initializes GT. */
-export const conditionStoreNotInitializedError = createDiagnosticMessage({
+const conditionStoreNotInitializedError = createDiagnosticMessage({
   source: 'gt-tanstack-start',
   severity: 'Error',
   whatHappened: 'Cannot read GT server request state before initialization',

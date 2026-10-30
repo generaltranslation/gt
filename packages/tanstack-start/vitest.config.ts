@@ -36,13 +36,15 @@ export default defineConfig({
       _GT_LOG_LEVEL: 'off',
     },
     // src/experimental runs the regular modules the way the experimental
-    // entry points are built (see experimentalImports.mts)
+    // entry points are built (see experimentalImports.mts). It runs after the
+    // regular project, whose package export tests rebuild dist.
     projects: [
       {
         extends: true,
         test: {
           name: 'regular',
           exclude: ['**/node_modules/**', 'src/experimental/**'],
+          sequence: { groupOrder: 0 },
         },
       },
       {
@@ -51,6 +53,7 @@ export default defineConfig({
         test: {
           name: 'experimental',
           include: ['src/experimental/**/*.test.{ts,tsx}'],
+          sequence: { groupOrder: 1 },
         },
       },
     ],

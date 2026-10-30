@@ -1,10 +1,6 @@
 import path from 'node:path';
 import type { Logger, Plugin } from 'vite';
-import {
-  createCompilerPlugin,
-  DEFAULT_COMPILER_INTEGRATION,
-  type CompilerIntegration,
-} from './compiler';
+import { createCompilerPlugin } from './compiler';
 import {
   CONFIG_MODULE_ID,
   LOCALE_ROUTING_MODULE_ID,
@@ -51,23 +47,6 @@ const configModules = ((
 export function gtTanstackStart(
   options: GTTanstackStartPluginOptions = {}
 ): Plugin[] {
-  return createGTTanstackStartPlugins(options, DEFAULT_COMPILER_INTEGRATION);
-}
-
-/**
- * @internal How {@link gtTanstackStart} wires GT: the compiler it runs, the
- * import source of auto-inserted JSX, and a final edit of the generated
- * config module. Other entry points (`/experimental`) pass their own.
- */
-export type GTTanstackStartIntegration = CompilerIntegration & {
-  transformConfigModule?: (code: string) => string;
-};
-
-/** @internal {@link gtTanstackStart} with a given integration. */
-export function createGTTanstackStartPlugins(
-  options: GTTanstackStartPluginOptions,
-  integration: GTTanstackStartIntegration
-): Plugin[] {
   // Resolved at factory time because the compiler needs the parsed config
   // before Vite resolves its root. Both plugins read this same file; the
   // compiler keeps its factory-time snapshot until Vite restarts.
@@ -81,8 +60,7 @@ export function createGTTanstackStartPlugins(
   const configFile = path.resolve(cwd, config ?? 'gt.config.json');
   const { compilerPlugin, warnings } = createCompilerPlugin(
     experimentalCompilerOptions,
-    configFile,
-    integration
+    configFile
   );
   const moduleOptions = JSON.stringify(configModuleOptions);
   let root = cwd;
@@ -113,11 +91,7 @@ export function createGTTanstackStartPlugins(
         createApiKeysOmittedWarning(path.relative(cwd, configFile))
       );
     }
-    const configModule = {
-      code: integration.transformConfigModule?.(code) ?? code,
-      localeRouting,
-      options: moduleOptions,
-    };
+    const configModule = { code, localeRouting, options: moduleOptions };
     if (isServe) configModules.set(key, configModule);
     return configModule;
   }

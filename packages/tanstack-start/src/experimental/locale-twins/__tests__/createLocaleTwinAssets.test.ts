@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 import type { LocaleTwinManifest } from 'generaltranslation/internal/experimental';
 import { getRequest, setCookie } from '@tanstack/react-start/server';
-import { AsyncLocalConditionStore } from '../../../condition-store/AsyncLocalConditionStore';
+import { LocaleTwinConditionStore } from '../../condition-store/LocaleTwinConditionStore';
 import { setConditionStore } from '../../../condition-store/singleton';
 import {
   createLocaleTwinAssets,
@@ -63,10 +63,10 @@ function resetGlobals() {
 /** What the server initialization does, with fresh singletons. */
 function initializeServerGT(
   config: typeof gtConfig & { localeRouting?: boolean }
-): AsyncLocalConditionStore {
+): LocaleTwinConditionStore {
   resetGlobals();
   initializeI18nConfig(config);
-  const store = new AsyncLocalConditionStore(config);
+  const store = new LocaleTwinConditionStore(config);
   setConditionStore(store);
   return store;
 }

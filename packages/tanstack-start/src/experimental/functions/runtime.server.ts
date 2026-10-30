@@ -1,4 +1,4 @@
-import { getServerConditionStore } from '../../setup/initializeGT.server';
+import { getServerConditionStore } from '../setup/initializeGT.server';
 import { createLocaleTwinRuntime } from './runtime';
 
 const runtime = createLocaleTwinRuntime(getServerConditionStore);
