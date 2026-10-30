@@ -328,6 +328,10 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           // on compileTimeHash.
           if (state.settings.compileTimeHash && twins.active) {
             localeTwins.runPass(state, ast, id);
+            // Call sites that cannot carry their marker
+            if (handleErrors(state)) {
+              return null;
+            }
           }
 
           // Pass 5: Runtime translate (dev hot reload). Skipped when source

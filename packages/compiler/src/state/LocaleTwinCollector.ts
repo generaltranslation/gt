@@ -43,18 +43,16 @@ export type LocaleTwinEntry = {
  *   `$context`; its hash is only known at runtime
  * - `customHash`: a user-supplied hash that is not a compile-time hash
  * - `taggedTemplate`: a t`...` tagged template the macro did not expand
- *   (no `$_hash` in code)
+ *   (no `$_hash` in code; the locale twins pass expands it into a call that
+ *   carries the marker)
  * - `importSource`: the module's GT import source does not support locale
  *   twins (gt-next)
- * - `call`: the call cannot carry the locale twin marker (more than two
- *   arguments, or `<T>` props that are not an object literal)
  */
 export type LocaleTwinUnattributedReason =
   | 'derive'
   | 'customHash'
   | 'taggedTemplate'
-  | 'importSource'
-  | 'call';
+  | 'importSource';
 
 /** An entry that is not attributed to the module, so it keeps its text. */
 export type LocaleTwinUnattributedEntry = {
@@ -115,18 +113,6 @@ export class LocaleTwinCollector {
     return [...this.unattributed, ...unsupported].sort(
       (a, b) => (a.node.start ?? 0) - (b.node.start ?? 0)
     );
-  }
-
-  /**
-   * Moves an attributed entry to the unattributed ones (its call cannot
-   * carry the locale twin marker, so it keeps its text).
-   */
-  unattribute(
-    entry: LocaleTwinEntry,
-    reason: LocaleTwinUnattributedReason
-  ): void {
-    this.entries = this.entries.filter((candidate) => candidate !== entry);
-    this.addUnattributed({ api: entry.api, reason, node: entry.node });
   }
 
   /** Every attributed entry, in source order (hashes may repeat). */

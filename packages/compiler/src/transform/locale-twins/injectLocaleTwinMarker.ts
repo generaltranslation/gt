@@ -6,12 +6,14 @@ import { getObjectPropertyFromObjectExpression } from '../../utils/parsing/getOb
 /**
  * Adds the locale twin marker to a call site: the `_twin` prop of a
  * `jsx(T, props)` call, or the `$_twin` option of a `gt()` / `t()` / `msg()`
- * call (creating or extending its options object). A call that already has
- * the marker keeps it.
+ * call (creating or extending its options object; options given as an
+ * expression are spread into a new object). Arguments after the options
+ * are kept. A call that already has the marker keeps it.
  *
- * @returns Whether the call carries the marker afterwards. A call whose
- * props are not an object literal, or that has more than two arguments,
- * cannot carry it.
+ * @returns Whether the call carries the marker afterwards. A call that
+ * spreads its message or options (`gt(message, ...rest)`) cannot carry it,
+ * and neither can `<T>` props that are not an object literal (the
+ * collection pass already rejects those).
  */
 export function injectLocaleTwinMarker(
   api: LocaleTwinEntryApi,
@@ -27,11 +29,11 @@ export function injectLocaleTwinMarker(
   const args = callExpr.arguments;
   const marker = () =>
     t.objectProperty(t.identifier(LOCALE_TWIN_MARKER.option), value);
+  if (args.length === 0 || t.isSpreadElement(args[0])) return false;
   if (args.length === 1) {
     args.push(t.objectExpression([marker()]));
     return true;
   }
-  if (args.length !== 2) return false;
   const options = args[1];
   if (t.isObjectExpression(options)) {
     return addProperty(options, LOCALE_TWIN_MARKER.option, value);

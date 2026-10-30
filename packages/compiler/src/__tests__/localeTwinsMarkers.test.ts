@@ -5,7 +5,7 @@
  * generator fills per locale. Every production build marks the entries the
  * compiler cannot attribute with `0`, so server and client render them alike.
  */
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type {
   TransformResult,
   UnpluginBuildContext,
@@ -268,6 +268,75 @@ describe('locale twin source markers', () => {
     expect(markers(client)).toBe(3);
     expect(markers(server)).toBe(3);
   });
+});
+
+describe('call sites the compiler normalizes for their marker', () => {
+  const BUILDS = [
+    ['client', CLIENT_BUILD],
+    ['server', SERVER_BUILD],
+  ] as const;
+
+  // Tagged templates are unattributed: both builds render their source text
+  it.each(BUILDS)(
+    'expand tagged templates the macro transform left in place (%s build)',
+    async (_name, environment) => {
+      const out = squash(
+        (await transform(
+          `import { t } from 'gt-react';
+export const a = t\`Tagged\`;
+export const b = (name) => t\`Hi \${name}\`;`,
+          {
+            environment,
+            options: { ...TWINS, enableMacroTransform: false },
+          }
+        ))!
+      );
+
+      expect(out).toContain(squash(`t("Tagged", { $_twin: 0 })`));
+      expect(out).toContain(squash(`t("Hi {0}", { "0": name, $_twin: 0 })`));
+    }
+  );
+
+  it.each(BUILDS)(
+    'mark the options of a call with extra arguments (%s build)',
+    async (_name, environment) => {
+      const out = squash(
+        (await transform(
+          `import { useGT, derive } from 'gt-react';
+export function Page(extra) {
+  const gt = useGT();
+  return gt(derive(getGreeting()), { name: "Ada" }, extra);
+}`,
+          { environment }
+        ))!
+      );
+
+      expect(out).toContain(
+        squash(`gt(derive(getGreeting()), { name: "Ada", $_twin: 0 }, extra)`)
+      );
+    }
+  );
+
+  // A spread argument hides where the options are: no marker can be added
+  it.each(BUILDS)(
+    'reject a call that spreads its arguments (%s build)',
+    async (_name, environment) => {
+      const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+      await expect(
+        transform(
+          `import { useGT, derive } from 'gt-react';
+export function Page(options) {
+  const gt = useGT();
+  return gt(derive(getGreeting()), ...options);
+}`,
+          { environment, options: { ...TWINS, logLevel: 'error' } }
+        )
+      ).rejects.toThrow('invalid library usage');
+      expect(String(errors.mock.calls[0]?.[0])).toMatch(
+        /spreads its arguments[\s\S]*\/src\/page\.tsx:4/
+      );
+    }
+  );
 });
 
 describe('server production builds', () => {

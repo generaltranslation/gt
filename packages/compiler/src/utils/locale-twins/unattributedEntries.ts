@@ -21,7 +21,6 @@ const REASONS: Record<LocaleTwinUnattributedReason, string> = {
   taggedTemplate: 'is a tagged template the macro transform did not expand',
   importSource:
     'its GT import source does not support locale twins (use gt-react, gt-tanstack-start or gt-i18n)',
-  call: 'its call cannot carry the locale twin marker (pass the options as one object literal argument, or <T> props as an object)',
 };
 
 /**
