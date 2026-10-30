@@ -102,7 +102,11 @@ export async function collectAndSendUserEditDiffs(
 
   for (const uploadedFile of files) {
     for (const locale of settings.locales) {
-      const outputPath = fileMapping[locale]?.[uploadedFile.fileName] ?? null;
+      const posixFileName = uploadedFile.fileName.replace(/\\/g, '/');
+      const outputPath =
+        fileMapping[locale]?.[posixFileName] ??
+        fileMapping[locale]?.[uploadedFile.fileName] ??
+        null;
       if (!outputPath) continue;
       if (!fs.existsSync(outputPath)) continue;
 

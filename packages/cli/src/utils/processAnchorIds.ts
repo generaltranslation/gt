@@ -2,7 +2,7 @@ import {
   addExplicitAnchorIds,
   extractHeadingInfo,
 } from './addExplicitAnchorIds.js';
-import { getRelative, readFile } from '../fs/findFilepath.js';
+import { getPosixRelative, readFile } from '../fs/findFilepath.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import { Settings } from '../types/index.js';
 import * as fs from 'fs';
@@ -30,12 +30,12 @@ export default async function processAnchorIds(
   const sourceTypeByPath = new Map<string, 'md' | 'mdx'>();
   if (resolvedPaths.md) {
     for (const filePath of resolvedPaths.md) {
-      sourceTypeByPath.set(getRelative(filePath), 'md');
+      sourceTypeByPath.set(getPosixRelative(filePath), 'md');
     }
   }
   if (resolvedPaths.mdx) {
     for (const filePath of resolvedPaths.mdx) {
-      sourceTypeByPath.set(getRelative(filePath), 'mdx');
+      sourceTypeByPath.set(getPosixRelative(filePath), 'mdx');
     }
   }
 

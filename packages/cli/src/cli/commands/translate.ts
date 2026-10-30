@@ -20,7 +20,7 @@ import { persistPostProcessHashes } from '../../utils/persistPostprocessHashes.j
 import { runPublishWorkflow } from '../../workflows/publish.js';
 import { SUPPORTED_FILE_EXTENSIONS } from '../../formats/files/supportedFiles.js';
 import { hasNonIdentityFileFormatTransformForType } from '../../formats/files/transformFormat.js';
-import { getRelative } from '../../fs/findFilepath.js';
+import { getPosixRelative } from '../../fs/findFilepath.js';
 import type { InlineLibrary } from '../../types/libraries.js';
 
 // Downloads translations that were completed
@@ -177,7 +177,7 @@ function filterPostProcessIncludesForFormatTransforms(
     if (!hasNonIdentityFileFormatTransformForType(settings, fileType)) continue;
 
     for (const sourcePath of settings.files.resolvedPaths[fileType] || []) {
-      transformedSourcePaths.add(getRelative(sourcePath));
+      transformedSourcePaths.add(getPosixRelative(sourcePath));
     }
   }
   if (transformedSourcePaths.size === 0) return includeFiles;

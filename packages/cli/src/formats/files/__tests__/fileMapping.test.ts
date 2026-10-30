@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import path from 'node:path';
 import { createFileMapping } from '../fileMapping.js';
 import { TEMPLATE_FILE_NAME } from '../../../utils/constants.js';
-import { getRelative } from '../../../fs/findFilepath.js';
+import { getPosixRelative } from '../../../fs/findFilepath.js';
 
 describe('createFileMapping', () => {
   it('uses a relative output path for GTJSON template files', () => {
@@ -145,7 +145,7 @@ describe('createFileMapping', () => {
         {},
         [locale],
         'en'
-      )[locale][getRelative(source)];
+      )[locale][getPosixRelative(source)];
 
     it('uses the qualifier in an array-form transform', () => {
       expect(
@@ -176,7 +176,9 @@ describe('createFileMapping', () => {
         'en'
       );
       expect(
-        mapping['fr-CA'][getRelative(path.resolve('res/values-en/strings.xml'))]
+        mapping['fr-CA'][
+          getPosixRelative(path.resolve('res/values-en/strings.xml'))
+        ]
       ).toBe('res/values-fr-rCA/strings.xml');
     });
 
@@ -192,7 +194,25 @@ describe('createFileMapping', () => {
         ['fr-CA'],
         'en'
       );
-      expect(mapping['fr-CA'][getRelative(jsonSource)]).toBe('i18n/fr-CA.json');
+      expect(mapping['fr-CA'][getPosixRelative(jsonSource)]).toBe(
+        'i18n/fr-CA.json'
+      );
+    });
+
+    it('produces POSIX mapping keys across platforms', () => {
+      const source = path.resolve('nested/docs/intro.mdx');
+      const placeholder = path.resolve('i18n/[locale]/nested/docs/intro.mdx');
+      const mapping = createFileMapping(
+        { mdx: [source] },
+        { mdx: [placeholder] },
+        {},
+        {},
+        ['ja'],
+        'en'
+      );
+      const keys = Object.keys(mapping.ja);
+      expect(keys).toContain('nested/docs/intro.mdx');
+      expect(keys.some((k) => k.includes('\\'))).toBe(false);
     });
   });
 });

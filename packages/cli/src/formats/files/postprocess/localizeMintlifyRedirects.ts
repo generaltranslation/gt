@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { logger } from '../../../console/logger.js';
-import { getRelative } from '../../../fs/findFilepath.js';
+import { getPosixRelative } from '../../../fs/findFilepath.js';
 import loadJSON from '../../../fs/loadJSON.js';
 import { stringifyJson } from '../../../fs/stringifyJson.js';
 import type { Settings } from '../../../types/index.js';
@@ -164,12 +164,9 @@ function splitAnchor(url: string): [string, string] {
  * localization, URLs are relative to the working directory.
  */
 function pageUrl(fileName: string): string {
-  const relative = getRelative(fileName);
+  const relative = getPosixRelative(fileName);
   return normalizeUrl(
-    relative
-      .slice(0, relative.length - path.extname(relative).length)
-      .split(path.sep)
-      .join('/')
+    relative.slice(0, relative.length - path.extname(relative).length)
   );
 }
 

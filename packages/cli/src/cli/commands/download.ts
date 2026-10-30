@@ -83,8 +83,14 @@ export async function handleDownload(
     branchData: undefined,
     locales: settings.locales,
     timeoutDuration: options.timeout,
-    resolveOutputPath: (sourcePath, locale) =>
-      fileMapping[locale][sourcePath] ?? null,
+    resolveOutputPath: (sourcePath, locale) => {
+      const posixPath = sourcePath.replace(/\\/g, '/');
+      return (
+        fileMapping[locale]?.[posixPath] ??
+        fileMapping[locale]?.[sourcePath] ??
+        null
+      );
+    },
     options: settings,
     inlineLibrary,
     forceRetranslation: false, // force is not applicable for downloading staged translations

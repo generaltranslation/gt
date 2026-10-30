@@ -25,7 +25,7 @@ import { recordWarning } from '../state/translateWarnings.js';
 import type { FileStatusTracker } from '../workflows/steps/PollJobsStep.js';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import { hasNonIdentityFileFormatTransformForType } from '../formats/files/transformFormat.js';
-import { getRelative } from '../fs/findFilepath.js';
+import { getPosixRelative, getRelative } from '../fs/findFilepath.js';
 import { encodeFileContent } from '../fs/fileContent.js';
 import {
   getInlineElementsLabel,
@@ -168,9 +168,12 @@ function shouldSkipSourceFormatMerge(
     if (!hasNonIdentityFileFormatTransformForType(options, fileType)) continue;
 
     const transformedSourcePaths = options.files.resolvedPaths[fileType] || [];
+    const normalizedInput = inputPath.replace(/\\/g, '/');
     if (
       transformedSourcePaths.some(
-        (sourcePath) => getRelative(sourcePath) === inputPath
+        (sourcePath) =>
+          getPosixRelative(sourcePath) === normalizedInput ||
+          getRelative(sourcePath) === inputPath
       )
     ) {
       return true;
@@ -327,7 +330,7 @@ export async function downloadFileBatch(
               updatedAt: new Date().toISOString(),
               // Store a relative path (matches the text path) so gt-lock.json
               // stays portable and the skip-on-re-download check matches.
-              fileName: getRelative(outputPath),
+              fileName: getPosixRelative(outputPath),
             };
             // A staged entry tracks the whole file, not one locale. Keep it
             // staged until every configured locale has downloaded, so a partial
@@ -480,7 +483,7 @@ export async function downloadFileBatch(
           entry.translations[locale] = {
             ...entry.translations[locale],
             updatedAt: new Date().toISOString(),
-            fileName: getRelative(outputPath),
+            fileName: getPosixRelative(outputPath),
           };
           // A staged entry tracks the whole file, not one locale. Keep it
           // staged until every configured locale has downloaded, so a partial

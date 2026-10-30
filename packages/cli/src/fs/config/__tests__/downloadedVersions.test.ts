@@ -656,5 +656,42 @@ describe('readLockfile / writeLockfile', () => {
       expect(written.version).toBe(1);
       expect(written.entries.brc_other).toBeDefined();
     });
+
+    it('preserves and indexes existing Windows lockfile entries with native backslash paths', () => {
+      const winFileId =
+        '6e8fbd23f995cb654cba0ba79e7e426d3509d5ccfe7b340b3913192e84278e89';
+      const winFileName = 'public\\locales\\en.json';
+      writeLockFile({
+        version: 2,
+        branchId: 'brc_main',
+        entries: [
+          {
+            fileId: winFileId,
+            versionId: 'ver1',
+            fileName: winFileName,
+            staged: true,
+            translations: {
+              es: {
+                updatedAt: '2025-01-01T00:00:00Z',
+                fileName: 'public\\locales\\es.json',
+                postProcessHash: 'user-edit-hash',
+              },
+            },
+          },
+        ],
+      });
+
+      const { entryMap } = readLockfile(settings('brc_main'));
+      expect(entryMap.has(winFileId)).toBe(true);
+      const entry = entryMap.get(winFileId);
+      expect(entry?.fileName).toBe(winFileName);
+      expect(entry?.translations.es.postProcessHash).toBe('user-edit-hash');
+
+      const staged = getStagedEntriesFromLockfile(settings('brc_main'));
+      expect(staged[winFileId]).toEqual({
+        versionId: 'ver1',
+        fileName: winFileName,
+      });
+    });
   });
 });

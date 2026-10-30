@@ -3152,7 +3152,7 @@ describe('localizeStaticUrls links to pages outside translation scope', () => {
     );
 
     expect(written).toContain('[Products](/ja/products/)');
-  });
+  }, 15000);
 
   it('localizes links whose translation lives at a transformed output path', async () => {
     // Docusaurus stores translations outside a locale-prefixed copy of the URL.

@@ -6,7 +6,7 @@ import {
 import { SUPPORTED_FILE_EXTENSIONS } from '../files/supportedFiles.js';
 import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig.js';
 import path from 'node:path';
-import { getRelative } from '../../fs/findFilepath.js';
+import { getPosixRelative } from '../../fs/findFilepath.js';
 import {
   getConfiguredLocaleProperties,
   replaceLocalePlaceholders,
@@ -44,7 +44,7 @@ export function createFileMapping(
     // Start with GTJSON Template files
     if (translatedPaths.gt) {
       const filepath = translatedPaths.gt;
-      localeMapping[TEMPLATE_FILE_NAME] = getRelative(filepath);
+      localeMapping[TEMPLATE_FILE_NAME] = getPosixRelative(filepath);
     }
 
     for (const typeIndex of SUPPORTED_FILE_EXTENSIONS) {
@@ -84,7 +84,7 @@ export function createFileMapping(
           });
         } else if (Array.isArray(transformPath)) {
           translatedFiles = translatedFiles.map((filePath) => {
-            const relativePath = getRelative(filePath);
+            const relativePath = getPosixRelative(filePath);
 
             // Try each transform in order until one matches
             for (const transform of transformPath) {
@@ -137,7 +137,7 @@ export function createFileMapping(
             targetLocaleProperties
           );
           translatedFiles = translatedFiles.map((filePath) => {
-            let relativePath = getRelative(filePath);
+            let relativePath = getPosixRelative(filePath);
             if (
               transformPath.match &&
               typeof transformPath.match === 'string'
@@ -162,9 +162,9 @@ export function createFileMapping(
       }
 
       for (let i = 0; i < sourcePaths.length; i++) {
-        const sourceFile = getRelative(sourcePaths[i]);
+        const sourceFile = getPosixRelative(sourcePaths[i]);
         // Format transforms keep the mapped path but rewrite the output suffix.
-        const translatedFile = getRelative(
+        const translatedFile = getPosixRelative(
           transformFormat
             ? replaceFileExtensionForFormat(translatedFiles[i], transformFormat)
             : translatedFiles[i]
