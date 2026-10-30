@@ -286,10 +286,11 @@ const SOURCE_MAP_COMMENT = /\/\/[#@] sourceMappingURL=(\S+)\s*$/;
 /**
  * The whole value of a string literal that references a JS file: a path
  * ending in a JS file name, `./x.js`, `assets/x.js`, `/base/assets/x.js`.
- * File names may contain spaces (Rollup keeps them); directories may not.
- * Group 1 is the directory prefix, group 2 the basename.
+ * File and directory names may contain spaces (Rollup keeps them, as in
+ * `chunkFileNames: 'lazy pages/[name].js'`). Group 1 is the directory
+ * prefix, group 2 the basename.
  */
-const REFERENCE_PATTERN = /^((?:[^'"`\s\\]*\/)?)([^'"`\\/]+\.m?js)$/;
+const REFERENCE_PATTERN = /^((?:[^'"`\\]*\/)?)([^'"`\\/]+\.m?js)$/;
 
 /** Scans every emitted JS file for placeholders and references, sorted by name. */
 function scanFiles(
@@ -329,9 +330,11 @@ function findSourceMapComment(code: string): SourceMapComment | undefined {
 
 /**
  * Finds the string literals (any quote style, or a template literal without
- * expressions) whose whole value is a path to an emitted JS file. Text that
- * merely mentions a file name (in a longer string or a comment) is not a
- * reference. The code is tokenized, not parsed into an AST.
+ * expressions) whose whole value is a path to an emitted JS file, and the
+ * last chunk of a template literal with expressions that ends in one (a
+ * runtime URL, `${base}/assets/x.js`, from Vite's `renderBuiltUrl`). Text
+ * that merely mentions a file name (in a longer string or a comment) is not
+ * a reference. The code is tokenized, not parsed into an AST.
  */
 function findReferences(
   importer: string,
@@ -358,11 +361,7 @@ function findReferences(
     if (token.type.label === 'string') {
       valueStart = token.start + 1;
       valueEnd = token.end - 1;
-    } else if (
-      token.type.label === 'template' &&
-      code[token.start - 1] === '`' &&
-      code[token.end] === '`'
-    ) {
+    } else if (token.type.label === 'template' && code[token.end] === '`') {
       valueStart = token.start;
       valueEnd = token.end;
     } else {
@@ -375,7 +374,9 @@ function findReferences(
     const target = resolveReference(
       importer,
       prefix + name,
-      byBasename.get(name)
+      byBasename.get(name),
+      // Prose ("Loaded from ./x.js") is a reference only if it is a path
+      /\s/.test(prefix)
     );
     if (target === undefined) continue;
     const start = valueStart + prefix.length;
@@ -387,15 +388,16 @@ function findReferences(
 /**
  * Resolves a referenced path to an emitted file. A unique basename wins
  * (chunk-relative imports, base-relative preload lists and base-prefixed URLs
- * all end in it); duplicates are disambiguated by path.
+ * all end in it) unless `byPath`; duplicates are disambiguated by path.
  */
 function resolveReference(
   importer: string,
   path: string,
-  candidates: string[] | undefined
+  candidates: string[] | undefined,
+  byPath: boolean
 ): string | undefined {
   if (!candidates) return undefined;
-  if (candidates.length === 1) return candidates[0];
+  if (candidates.length === 1 && !byPath) return candidates[0];
   const resolved = path.startsWith('.')
     ? joinPath(dirname(importer), path)
     : path.replace(/^\/+/, '');

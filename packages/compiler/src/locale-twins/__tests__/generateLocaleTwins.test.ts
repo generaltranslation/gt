@@ -402,6 +402,34 @@ describe('generateLocaleTwins', () => {
     );
   });
 
+  // `chunkFileNames: 'lazy pages/[name]-[hash].js'`
+  it('renames references to chunks in directories whose names contain spaces', () => {
+    const placeholder = encodeLocaleTwinPlaceholder({ [HASH_A]: 'About' });
+    const { files, manifest } = generateLocaleTwins({
+      files: {
+        'lazy pages/about-Ab12.js': { code: `e(\`${placeholder}\`)` },
+        'assets/index-Cd34.js': {
+          code:
+            'const d=["lazy pages/about-Ab12.js"];' +
+            'const p=()=>import("../lazy pages/about-Ab12.js");' +
+            'const u=`${base}/lazy pages/about-Ab12.js`;' +
+            'const m="Loaded from lazy pages/about-Ab12.js";',
+        },
+      },
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+      translations: { fr: { [HASH_A]: 'À propos' } },
+    });
+    const v = manifest.versions.fr;
+
+    expect(files[manifest.twins.fr['assets/index-Cd34.js']]).toBe(
+      `const d=["lazy pages/about-Ab12.fr-${v}.js"];` +
+        `const p=()=>import("../lazy pages/about-Ab12.fr-${v}.js");` +
+        `const u=\`\${base}/lazy pages/about-Ab12.fr-${v}.js\`;` +
+        'const m="Loaded from lazy pages/about-Ab12.js";'
+    );
+  });
+
   // Only a string literal (or template chunk) whose whole value is a chunk
   // path is a reference
   it('leaves chunk names inside other strings and comments alone', () => {

@@ -154,6 +154,42 @@ describe.each(VITE_VERSIONS)('$name client build', ({ load }) => {
     }
   });
 
+  // `renderBuiltUrl` runtime code is emitted as-is: preload lists hold
+  // template literals such as `https://${window.cdn}/assets/about-X.js`
+  it('renames chunks in runtime preload URL templates', async () => {
+    const vite = await load();
+    const app = newApp();
+    await buildFixture(
+      vite,
+      app,
+      {},
+      {
+        experimental: {
+          renderBuiltUrl: (filename: string, { hostType }) =>
+            hostType === 'js'
+              ? { runtime: '`https://${window.cdn}/' + filename + '`' }
+              : { relative: true },
+        },
+        build: {
+          modulePreload: {
+            // List the lazy page itself, so its URL is in the preload list
+            resolveDependencies: (filename: string, deps: string[]) =>
+              deps.includes(filename) ? deps : [filename, ...deps],
+          },
+        },
+      }
+    );
+
+    const manifest = parseLocaleTwinManifest(
+      app.read(LOCALE_TWIN_MANIFEST_FILE)
+    );
+    const entry = chunkWithEntry(app, WELCOME_HOME_HASH);
+    const about = chunkWithEntry(app, ABOUT_US_HASH);
+    const frEntry = app.read(manifest.twins.fr[entry]);
+    expect(frEntry).toContain(`\${window.cdn}/${manifest.twins.fr[about]}\``);
+    expect(frEntry).not.toContain(path.posix.basename(about));
+  });
+
   it('replaces the previous twins when rebuilding into the same outDir', async () => {
     const vite = await load();
     const app = newApp();
