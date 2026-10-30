@@ -74,6 +74,11 @@ export type LocaleTwinsViteHooksOptions = {
 
 type Consumer = 'client' | 'server';
 
+/** The output options Vite passes to `outputOptions` (Rolldown or Rollup). */
+type OutputOptions = Parameters<
+  Extract<NonNullable<VitePlugin['outputOptions']>, (...args: never) => unknown>
+>[0];
+
 /** The parts of Vite's resolved (environment) config used here. */
 type ConfigLike = {
   root: string;
@@ -147,7 +152,7 @@ export function createLocaleTwinsViteHooks(
     return consumer === 'client' && config.command === 'build';
   }
 
-  const hooks = {
+  const hooks: Partial<VitePlugin> = {
     configResolved(config: ConfigLike) {
       options.onConfigResolved?.(config);
       resolvedConfig = config;
@@ -168,8 +173,8 @@ export function createLocaleTwinsViteHooks(
 
     outputOptions(
       this: (HookContext & { meta?: object }) | undefined,
-      outputOptions: Record<string, unknown>
-    ) {
+      outputOptions: OutputOptions
+    ): OutputOptions | null {
       if (!addsVendorChunk(this)) return null;
       const { name, config } = describeEnvironment(this);
       const userChunking = findUserChunking(
@@ -262,7 +267,7 @@ export function createLocaleTwinsViteHooks(
       },
     },
   };
-  return hooks as Partial<VitePlugin>;
+  return hooks;
 }
 
 /** Reads emitted chunks (code as written to disk) and text assets. */

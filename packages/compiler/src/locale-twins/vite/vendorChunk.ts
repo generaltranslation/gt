@@ -130,6 +130,15 @@ export function findUserChunking(build: BuildOptionsLike): string | undefined {
   return undefined;
 }
 
+/** Vendor chunking for Rolldown (Vite 8) or Rollup (Vite 7). */
+export type VendorChunkOutputOptions =
+  | {
+      codeSplitting: {
+        groups: { name: string; test: (id: string) => boolean }[];
+      };
+    }
+  | { manualChunks: (id: string) => string | undefined };
+
 /**
  * The output options that add the vendor chunk: a Rolldown code splitting
  * group on Vite 8, `manualChunks` on Vite 7 (Rollup). They are added in the
@@ -141,7 +150,7 @@ export function findUserChunking(build: BuildOptionsLike): string | undefined {
 export function createVendorChunkOutputOptions(
   isVendor: (id: string) => boolean,
   rolldown: boolean
-): Record<string, unknown> {
+): VendorChunkOutputOptions {
   if (rolldown) {
     return {
       codeSplitting: {
