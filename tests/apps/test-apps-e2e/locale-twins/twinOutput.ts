@@ -3,21 +3,16 @@
  * output (manifest, report, document data), finding the translation tables
  * that twins carry, and turning translation files into the strings that must
  * (or must not) reach a visitor. Used by the Playwright specs and by each twin
- * test app's node-level build tests. Node built-ins only.
+ * test app's node-level build tests. Node built-ins only at runtime; the
+ * build contract types come from the packages that own them.
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import type { LocaleTwinManifest } from 'generaltranslation/types';
+import type { LocaleTwinDocumentData } from 'gt-i18n/internal/locale-twins';
 
-/** Same shape as `LocaleTwinManifest` in `generaltranslation/internal`. */
-export type TwinManifest = {
-  version: number;
-  defaultLocale: string;
-  locales: string[];
-  twinned: string[];
-  entries: string[];
-  versions: Record<string, string>;
-  twins: Record<string, Record<string, string>>;
-};
+/** The twin manifest (`gt-locale-twins.json`). */
+export type TwinManifest = LocaleTwinManifest;
 
 /** An entry the build left unattributed (it keeps its source text in code). */
 export type TwinReportUnattributedEntry = {
@@ -44,17 +39,7 @@ export type TwinReport = {
 };
 
 /** Contents of the SPA document's `#gt-locale-twins-data` block. */
-export type TwinDocumentData = {
-  version: number;
-  defaultLocale: string;
-  locales: string[];
-  localeCookieName: string;
-  tags: {
-    tag: 'script' | 'link';
-    attributes: Record<string, string>;
-    urls: Record<string, string>;
-  }[];
-};
+export type TwinDocumentData = LocaleTwinDocumentData;
 
 /** A translation file's value: an ICU string or minified GT JSX. */
 export type TranslationContent = unknown;
