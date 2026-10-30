@@ -28,8 +28,9 @@ export {
   useSetEnableI18n,
   useSetLocale,
   useSetRegion,
-  useTranslations,
 } from '@generaltranslation/react-core/hooks';
+// shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
+export { useTranslations } from '@generaltranslation/react-core/hooks';
 export { useLocaleSelector, useRegionSelector } from './hooks/selectors';
 
 // ===== Functions ===== //
@@ -49,10 +50,12 @@ export {
 export { decodeVars, declareVar, derive } from 'generaltranslation';
 export { getLocaleFromNativeStore } from './utils/nativeStore';
 export { getLocale } from './utils/getLocale';
-export { internalInitializeGTSRA as initializeGT } from '@generaltranslation/react-core/pure';
+// shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
+export { initializeGT } from './setup/initializeGT';
 
 // ===== Types ===== //
 export type { GTTranslationOptions, RuntimeTranslationOptions } from 'gt-i18n';
 export type { GTProviderProps } from './provider/GTProvider';
 export type { GetLocaleParams } from './utils/getLocale';
-export type { ReactInitializeGTParams as InitializeGTParams } from '@generaltranslation/react-core/pure';
+// shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
+export type { InitializeGTParams } from './setup/initializeGT';

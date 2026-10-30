@@ -12,6 +12,9 @@
     "composite": true,
     "paths": {
       "gt-tanstack-start/internal/_config": ["./src/internal/_config.ts"],
+      "gt-tanstack-start/internal/_compat-config": [
+        "./src/internal/_compat-config.ts"
+      ],
       "gt-tanstack-start/internal/localeRouting": [
         "./src/internal/localeRouting.ts"
       ]

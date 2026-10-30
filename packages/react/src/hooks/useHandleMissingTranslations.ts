@@ -1,8 +1,6 @@
 'server-only';
 
 import {
-  OnMissingDictionaryEntry,
-  OnMissingDictionaryObj,
   OnMissingTranslation,
   I18nStore,
 } from '@generaltranslation/react-core/pure';
@@ -16,16 +14,10 @@ import { useMemo } from 'react';
  */
 export function useHandleMissingTranslations(i18nStore: I18nStore): {
   onMissingTranslation: OnMissingTranslation;
-  onMissingDictionaryEntry: OnMissingDictionaryEntry;
-  onMissingDictionaryObj: OnMissingDictionaryObj;
 } {
   return useMemo(
     () => ({
       onMissingTranslation: (lookup) => i18nStore.translate(lookup),
-      onMissingDictionaryEntry: (lookup) =>
-        i18nStore.translateDictionaryEntry(lookup),
-      onMissingDictionaryObj: (lookup) =>
-        i18nStore.translateDictionaryObject(lookup),
     }),
     [i18nStore]
   );

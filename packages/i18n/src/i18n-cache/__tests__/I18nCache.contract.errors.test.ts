@@ -11,8 +11,8 @@ const runtimePrototype = GTRuntime.prototype;
  * Contract tests for I18nCache error semantics.
  *
  * Locks in the observable error behavior of the PUBLIC I18nCache API:
- * errors throw in development and are logged-and-swallowed in production,
- * except DictionarySourceNotFoundError which always propagates. These tests
+ * errors throw in development and are logged-and-swallowed in production.
+ * These tests
  * import nothing from translations-manager/ and mock no internal modules.
  * getRuntimeEnvironment() treats every NODE_ENV except 'development' as
  * production, so vitest's default 'test' env exercises the production path.
@@ -75,11 +75,6 @@ describe('I18nCache error contract', () => {
     );
 
     await expect(cache.loadTranslations(invalidLocale)).resolves.toEqual({});
-    await expect(cache.loadDictionary(invalidLocale)).resolves.toEqual({});
-    expect(cache.lookupDictionary(invalidLocale, 'greeting')).toBeUndefined();
-    expect(
-      cache.lookupDictionaryObj(invalidLocale, 'greeting')
-    ).toBeUndefined();
 
     // getLookupTranslation degrades to an identity resolver
     const resolver = await cache.getLookupTranslation(invalidLocale);
@@ -93,75 +88,12 @@ describe('I18nCache error contract', () => {
     expect(() =>
       cache.lookupTranslation(invalidLocale, message, lookupOptions)
     ).toThrow('not valid');
-    expect(() => cache.lookupDictionary(invalidLocale, 'greeting')).toThrow(
-      'not valid'
-    );
-    expect(() => cache.lookupDictionaryObj(invalidLocale, 'greeting')).toThrow(
-      'not valid'
-    );
     await expect(cache.loadTranslations(invalidLocale)).rejects.toThrow(
-      'not valid'
-    );
-    await expect(cache.loadDictionary(invalidLocale)).rejects.toThrow(
       'not valid'
     );
     await expect(cache.getLookupTranslation(invalidLocale)).rejects.toThrow(
       'not valid'
     );
-  });
-
-  it.each([
-    { name: 'production', env: undefined },
-    { name: 'development', env: 'development' },
-  ])(
-    'DictionarySourceNotFoundError propagates from lookupDictionaryWithFallback in $name',
-    async ({ env }) => {
-      if (env) vi.stubEnv('NODE_ENV', env);
-      const cache = createCache({
-        dictionary: { greeting: 'Hello' },
-        loadDictionary: vi.fn().mockResolvedValue({}),
-      });
-
-      await expect(
-        cache.lookupDictionaryWithFallback('fr', 'missing')
-      ).rejects.toMatchObject({
-        name: 'DictionarySourceNotFoundError',
-        message: 'I18nCache: source dictionary entry missing is not defined',
-      });
-    }
-  );
-
-  it.each([
-    { name: 'production', env: undefined },
-    { name: 'development', env: 'development' },
-  ])(
-    'DictionarySourceNotFoundError propagates from lookupDictionaryObjWithFallback in $name',
-    async ({ env }) => {
-      if (env) vi.stubEnv('NODE_ENV', env);
-      const cache = createCache({
-        dictionary: { greeting: 'Hello' },
-        loadDictionary: vi.fn().mockResolvedValue({}),
-      });
-
-      await expect(
-        cache.lookupDictionaryObjWithFallback('fr', 'missing')
-      ).rejects.toMatchObject({
-        name: 'DictionarySourceNotFoundError',
-      });
-    }
-  );
-
-  it('lookupDictionaryObjWithFallback returns the loaded target subtree when the source is missing', async () => {
-    const cache = createCache({
-      dictionary: { greeting: 'Hello' },
-      loadDictionary: vi.fn().mockResolvedValue({
-        extra: { title: 'Titre' },
-      }),
-    });
-
-    await expect(
-      cache.lookupDictionaryObjWithFallback('fr', 'extra')
-    ).resolves.toEqual({ title: 'Titre' });
   });
 
   it('production: a failing translations loader is logged and swallowed', async () => {

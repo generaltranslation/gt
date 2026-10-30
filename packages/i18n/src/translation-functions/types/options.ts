@@ -43,13 +43,6 @@ export type GTTranslationOptions = TranslationVariables &
     | '$requiresReview'
   >;
 
-export type DictionaryEntryOptions = TranslationVariables &
-  Pick<TranslationMetadata, '$context' | '$format' | '$maxChars'>;
-
-export type DictionaryLookupOptions = DictionaryEntryOptions & {
-  $format: StringFormat;
-};
-
 /**
  * Options for string registration
  * Used by the msg() function

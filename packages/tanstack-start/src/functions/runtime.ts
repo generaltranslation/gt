@@ -1,15 +1,9 @@
 import {
   getGTInternal,
   getMessagesInternal,
-  getTranslationsInternal,
   type ReadonlyConditionStoreInterface,
 } from 'gt-i18n/internal';
-import type {
-  GTFunctionType,
-  MFunctionType,
-  Message,
-  TFunctionType,
-} from 'gt-i18n';
+import type { GTFunctionType, MFunctionType, Message } from 'gt-i18n';
 
 /**
  * The translation functions, bound to where an entry reads the locale: the
@@ -30,11 +24,5 @@ export function createRuntime(getStore: () => ReadonlyConditionStoreInterface) {
       ),
     getMessages: (): Promise<MFunctionType> =>
       getMessagesInternal({ locale: getLocale(), enableI18n: getEnableI18n() }),
-    getTranslations: (rootId?: string): Promise<TFunctionType> =>
-      getTranslationsInternal({
-        locale: getLocale(),
-        enableI18n: getEnableI18n(),
-        rootId,
-      }),
   };
 }

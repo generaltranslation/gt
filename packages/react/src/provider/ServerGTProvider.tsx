@@ -3,6 +3,7 @@ import { InternalGTProvider } from '@generaltranslation/react-core/components';
 import { useRef } from 'react';
 import type { SharedGTProviderProps } from './GTProviderProps';
 import { useHandleMissingTranslations } from '../hooks/useHandleMissingTranslations';
+import { ServerDictionaryProvider } from '../compat/ServerDictionaryProvider';
 
 /**
  * Consumes snapshot from server
@@ -12,6 +13,11 @@ export function ServerGTProvider({
   locale,
   region,
   enableI18n,
+  // shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
+  dictionaries,
+  onMissingDictionaryEntry: _onMissingDictionaryEntry,
+  onMissingDictionaryObj: _onMissingDictionaryObj,
+  children,
   ...props
 }: SharedGTProviderProps) {
   const i18nStoreRef = useRef<I18nStore | null>(null);
@@ -19,11 +25,9 @@ export function ServerGTProvider({
     i18nStoreRef.current = new I18nStore();
   }
 
-  const {
-    onMissingTranslation,
-    onMissingDictionaryEntry,
-    onMissingDictionaryObj,
-  } = useHandleMissingTranslations(i18nStoreRef.current);
+  const { onMissingTranslation } = useHandleMissingTranslations(
+    i18nStoreRef.current
+  );
 
   return (
     <InternalGTProvider
@@ -36,9 +40,12 @@ export function ServerGTProvider({
       setEnableI18n={noopSetEnableI18n}
       i18nStore={i18nStoreRef.current}
       onMissingTranslation={onMissingTranslation}
-      onMissingDictionaryEntry={onMissingDictionaryEntry}
-      onMissingDictionaryObj={onMissingDictionaryObj}
-    />
+    >
+      {/* shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries */}
+      <ServerDictionaryProvider dictionaries={dictionaries}>
+        {children}
+      </ServerDictionaryProvider>
+    </InternalGTProvider>
   );
 }
 

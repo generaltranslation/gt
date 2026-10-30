@@ -38,7 +38,11 @@ vi.mock('@generaltranslation/react-core/pure', async (importOriginal) => ({
   >()),
   getReadonlyConditionStore: () => mockConditionStore,
   getTranslationsSnapshot: mockGetTranslationsSnapshot,
-  getReactI18nCache: () => ({ loadDictionary: mockLoadDictionary }),
+}));
+
+vi.mock('gt-i18n/internal', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('gt-i18n/internal')>()),
+  getDictionaryManager: () => ({ loadDictionary: mockLoadDictionary }),
 }));
 
 vi.mock('../../provider/GTProvider.client', () => ({

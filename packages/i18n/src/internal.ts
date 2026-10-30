@@ -3,18 +3,12 @@ export {
   getMessages,
   getMessagesInternal,
 } from './translation-functions/internal/getMessages';
-export {
-  getTranslations,
-  getTranslationsInternal,
-} from './translation-functions/internal/getTranslations';
 export { tx, txInternal } from './translation-functions/internal/tx';
 export {
   GtInternalRuntimeTranslateString,
   GtInternalRuntimeTranslateJsx,
 } from './translation-functions/internal/runtime-translate';
 export { createLookupOptions } from './translation-functions/internal/helpers';
-export { renderDictionaryEntry } from './translation-functions/internal/renderDictionaryEntry';
-export { renderDictionaryObject } from './translation-functions/internal/renderDictionaryObject';
 export { I18nCache } from './i18n-cache/I18nCache';
 export type { TranslationsCacheMissEvent } from './i18n-cache/I18nCache';
 export { ReadonlyConditionStore } from './condition-store/ReadonlyConditionStore';
@@ -25,20 +19,8 @@ export type { LocaleCandidates } from './i18n-config/I18nConfig';
 export { getI18nCache, setI18nCache } from './i18n-cache/singleton-operations';
 export { interpolateMessage } from './translation-functions/utils/interpolation/interpolateMessage';
 export { extractVariables } from './utils/extractVariables';
-export {
-  getDictionaryListenerKey,
-  getTranslateListenerKey,
-} from './utils/listenerKeys';
-export type {
-  DictionaryListenerLookup,
-  TranslateListenerLookup,
-} from './utils/listenerKeys';
-export {
-  getDictionaryEntry,
-  isDictionaryValue,
-  getDictionaryValue,
-  resolveDictionaryLookupOptions,
-} from './i18n-cache/translations-manager/utils/dictionary-helpers';
+export { getTranslateListenerKey } from './utils/listenerKeys';
+export type { TranslateListenerLookup } from './utils/listenerKeys';
 
 export {
   getI18nConfig,
@@ -62,12 +44,9 @@ export type {
   WritableConditionStoreInterface,
   ScopedConditionStoreInterface,
   AsyncReadonlyConditionStoreInterface,
-  DictionaryConfig,
 } from './i18n-cache/types';
 export type { TranslationsLoader } from './i18n-cache/translations-manager/translations-loaders/types';
-export type { DictionaryLoader } from './i18n-cache/translations-manager/DictionaryCache';
 export type {
-  DictionaryLookupOptions,
   LookupOptions,
   NormalizedLookupOptions,
   TranslationMetadata,
@@ -77,3 +56,32 @@ export type {
   Hash,
   Locale,
 } from './i18n-cache/translations-manager/TranslationsCache';
+
+// ===== Compat: dictionary (key-based) API ===== //
+export {
+  getTranslations,
+  getTranslationsInternal,
+} from './compat/getTranslations';
+export { renderDictionaryEntry } from './compat/renderDictionaryEntry';
+export { renderDictionaryObject } from './compat/renderDictionaryObject';
+export { getDictionaryListenerKey } from './compat/listenerKeys';
+export type { DictionaryListenerLookup } from './compat/listenerKeys';
+export {
+  getDictionaryEntry,
+  isDictionaryValue,
+  getDictionaryValue,
+  resolveDictionaryLookupOptions,
+} from './compat/dictionary-helpers';
+export { DictionaryManager } from './compat/DictionaryManager';
+export type { DictionaryManagerParams } from './compat/DictionaryManager';
+export {
+  getDictionaryManager,
+  setDictionaryManager,
+  isDictionaryManagerInitialized,
+  initializeDictionaryManager,
+} from './compat/singleton-operations';
+export type {
+  DictionaryConfig,
+  DictionaryLoader,
+  DictionaryLookupOptions,
+} from './compat/types';

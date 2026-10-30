@@ -3,13 +3,6 @@ import type { CustomMapping } from '@generaltranslation/format';
 import type { GTConfig } from 'generaltranslation';
 import type { TranslationsLoader } from './translations-manager/translations-loaders/types';
 import type { TranslationBatchConfig } from './translations-manager/TranslationsCache';
-import type { DictionaryLoader } from './translations-manager/DictionaryCache';
-import type { Dictionary } from './translations-manager/utils/types/dictionary';
-
-export type DictionaryConfig = {
-  dictionary?: Dictionary;
-  loadDictionary?: DictionaryLoader;
-};
 
 type RuntimeTranslationConfig = {
   timeout?: number;
@@ -19,7 +12,7 @@ type RuntimeTranslationConfig = {
 /**
  * Parameters for the I18nCache constructor
  */
-export type I18nCacheConstructorParams = DictionaryConfig &
+export type I18nCacheConstructorParams =
   // Pick, not Omit: GTConfig also lists framework keys I18nCache ignores.
   Pick<
     GTConfig,

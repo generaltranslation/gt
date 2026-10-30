@@ -1,4 +1,8 @@
-import type { InternalGTProviderProps } from '@generaltranslation/react-core/components';
+import {
+  DictionaryProvider,
+  type DictionaryProviderProps,
+  type InternalGTProviderProps,
+} from '@generaltranslation/react-core/components';
 import { Suspense, use, useCallback, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
@@ -30,7 +34,12 @@ export type GTProviderProps = Omit<
   | 'setRegion'
   | 'setEnableI18n'
 > &
-  Omit<NativeConditionStoreParams, 'locale' | '_reload'> & {
+  Omit<NativeConditionStoreParams, 'locale' | '_reload'> &
+  // shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
+  Pick<
+    DictionaryProviderProps,
+    'dictionaries' | 'onMissingDictionaryEntry' | 'onMissingDictionaryObj'
+  > & {
     children?: ReactNode;
     locale?: LocaleCandidates;
     fallback?: ReactNode;
@@ -39,8 +48,24 @@ export type GTProviderProps = Omit<
 type LoadedGTProviderProps = Omit<NativeGTProviderProps, 'translations'>;
 type TranslationSnapshot = Record<Locale, LocaleTranslations>;
 
-export function GTProvider(props: GTProviderProps) {
-  return <LoadableGTProvider {...props} />;
+export function GTProvider({
+  // shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
+  dictionaries,
+  onMissingDictionaryEntry,
+  onMissingDictionaryObj,
+  ...props
+}: GTProviderProps) {
+  // Wraps the loading fallback too, so it can read dictionaries.
+  return (
+    // shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
+    <DictionaryProvider
+      dictionaries={dictionaries}
+      onMissingDictionaryEntry={onMissingDictionaryEntry}
+      onMissingDictionaryObj={onMissingDictionaryObj}
+    >
+      <LoadableGTProvider {...props} />
+    </DictionaryProvider>
+  );
 }
 
 /**

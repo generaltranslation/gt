@@ -13,7 +13,6 @@ vi.mock('@generaltranslation/react-core/pure', async (importOriginal) => ({
   >()),
   I18nStore: class {
     updateTranslations() {}
-    updateDictionaries() {}
   },
 }));
 

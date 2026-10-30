@@ -217,11 +217,15 @@ describe('gtTanstackStart', () => {
 });
 
 const CONFIG_MODULE_ID = 'gt-tanstack-start/internal/_config';
+const COMPAT_CONFIG_MODULE_ID = 'gt-tanstack-start/internal/_compat-config';
 const LOCALE_ROUTING_MODULE_ID = 'gt-tanstack-start/internal/localeRouting';
 
 type ConfigModuleExports = {
   config: unknown;
   loadTranslations?: (locale: string) => Promise<unknown>;
+};
+
+type CompatConfigModuleExports = {
   dictionary?: unknown;
   loadDictionary?: (locale: string) => Promise<unknown>;
 };
@@ -320,11 +324,26 @@ async function resolveLocaleRouting(
   );
 }
 
-/** Evaluates the config module through a real Vite server. */
-async function withConfigModule(
+/** The dictionary lives in its own module, imported only by compat code. */
+function withCompatConfigModule(
   configPlugin: Plugin,
   root: string,
-  callback: (module: ConfigModuleExports) => Promise<void>
+  callback: (module: CompatConfigModuleExports) => Promise<void>
+): Promise<void> {
+  return withConfigModule<CompatConfigModuleExports>(
+    configPlugin,
+    root,
+    callback,
+    COMPAT_CONFIG_MODULE_ID
+  );
+}
+
+/** Evaluates a config module through a real Vite server. */
+async function withConfigModule<Exports = ConfigModuleExports>(
+  configPlugin: Plugin,
+  root: string,
+  callback: (module: Exports) => Promise<void>,
+  moduleId: string = CONFIG_MODULE_ID
 ): Promise<void> {
   const server = await createServer({
     root,
@@ -336,9 +355,7 @@ async function withConfigModule(
     optimizeDeps: { noDiscovery: true },
   });
   try {
-    await callback(
-      (await server.ssrLoadModule(CONFIG_MODULE_ID)) as ConfigModuleExports
-    );
+    await callback((await server.ssrLoadModule(moduleId)) as Exports);
   } finally {
     await server.close();
   }
@@ -719,6 +736,10 @@ describe.sequential('gtTanstackStart config module', () => {
         batchConfig: { maxBatchSize: 5 },
         runtimeTranslation: { timeout: 2000 },
       });
+      expect(module).not.toHaveProperty('dictionary');
+      expect(module).not.toHaveProperty('loadDictionary');
+    });
+    await withCompatConfigModule(configPlugin, root, async (module) => {
       expect(module.dictionary).toBeUndefined();
       expect(module.loadDictionary).toBeUndefined();
     });
@@ -752,7 +773,7 @@ describe.sequential('gtTanstackStart config module', () => {
       options
     );
 
-    await withConfigModule(configPlugin, root, async (module) => {
+    await withCompatConfigModule(configPlugin, root, async (module) => {
       expect(module.dictionary).toEqual({ greeting: 'Hello' });
     });
   });
@@ -781,7 +802,7 @@ describe.sequential('gtTanstackStart config module', () => {
       options
     );
 
-    await withConfigModule(configPlugin, root, async (module) => {
+    await withCompatConfigModule(configPlugin, root, async (module) => {
       await expect(module.loadDictionary?.('fr')).resolves.toEqual({
         locale: 'fr',
       });
@@ -827,7 +848,7 @@ describe.sequential('gtTanstackStart config module', () => {
       'src/dictionary.ts': 'export const messages = {};',
     });
 
-    const loading = withConfigModule(configPlugin, root, async () => {});
+    const loading = withCompatConfigModule(configPlugin, root, async () => {});
     await expect(loading).rejects.toThrow(
       'src/dictionary.ts does not export a dictionary'
     );

@@ -2,8 +2,10 @@ import path from 'node:path';
 import type { Logger, Plugin } from 'vite';
 import { createCompilerPlugin } from './compiler';
 import {
+  COMPAT_CONFIG_MODULE_ID,
   CONFIG_MODULE_ID,
   LOCALE_ROUTING_MODULE_ID,
+  RESOLVED_COMPAT_CONFIG_MODULE_ID,
   RESOLVED_CONFIG_MODULE_ID,
   createConfigModule,
 } from './configModule';
@@ -30,7 +32,12 @@ const configModules = ((
   globalThis as {
     __gtTanstackStartConfigModules?: Map<
       string,
-      { code: string; localeRouting: boolean; options: string }
+      {
+        code: string;
+        compatCode: string;
+        localeRouting: boolean;
+        options: string;
+      }
     >;
   }
 ).__gtTanstackStartConfigModules ??= new Map());
@@ -80,18 +87,19 @@ export function gtTanstackStart(
       }
       return cached;
     }
-    const { code, localeRouting, omittedApiKeys } = createConfigModule(
-      root,
-      cwd,
-      configFile,
-      configModuleOptions
-    );
+    const { code, compatCode, localeRouting, omittedApiKeys } =
+      createConfigModule(root, cwd, configFile, configModuleOptions);
     if (omittedApiKeys) {
       logger?.warnOnce(
         createApiKeysOmittedWarning(path.relative(cwd, configFile))
       );
     }
-    const configModule = { code, localeRouting, options: moduleOptions };
+    const configModule = {
+      code,
+      compatCode,
+      localeRouting,
+      options: moduleOptions,
+    };
     if (isServe) configModules.set(key, configModule);
     return configModule;
   }
@@ -128,6 +136,9 @@ export function gtTanstackStart(
     },
     resolveId(id, importer) {
       if (id === CONFIG_MODULE_ID) return RESOLVED_CONFIG_MODULE_ID;
+      if (id === COMPAT_CONFIG_MODULE_ID) {
+        return RESOLVED_COMPAT_CONFIG_MODULE_ID;
+      }
       if (id === LOCALE_ROUTING_MODULE_ID) {
         // Only apps that enable locale routing bundle its browser code.
         const state = getConfigModule().localeRouting ? 'enabled' : 'disabled';
@@ -138,6 +149,9 @@ export function gtTanstackStart(
     },
     load(id) {
       if (id === RESOLVED_CONFIG_MODULE_ID) return getConfigModule().code;
+      if (id === RESOLVED_COMPAT_CONFIG_MODULE_ID) {
+        return getConfigModule().compatCode;
+      }
     },
   };
 

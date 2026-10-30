@@ -1,44 +1,16 @@
-import {
-  createDiagnosticMessage,
-  formatDiagnosticErrorDetails,
-} from 'generaltranslation/diagnostics';
 import { getTranslateListenerKey, Hash, Locale } from 'gt-i18n/internal';
 import type {
-  DictionaryEntrySnapshot,
-  DictionaryLookup,
-  DictionaryObjectSnapshot,
   StoreListener,
   TranslateEventListener,
   TranslateLookup,
   TranslateSnapshot,
   Unsubscribe,
 } from './storeTypes';
-import type { Dictionary, Translation } from 'gt-i18n';
+import type { Translation } from 'gt-i18n';
 import { subscribeToSet } from './utils/subscriptions';
 import { getReactI18nCache } from '../i18n-cache/singleton-operations';
 import { lookupTranslation } from './utils/translations';
-import {
-  lookupDictionaryEntry,
-  lookupDictionaryObject,
-} from './utils/dictionaries';
-
-export type DictionaryStoreListener = (event: DictionaryLookup) => void;
-
-const MAX_LOGGED_RUNTIME_TRANSLATION_ERRORS = 100;
-
-function getRuntimeTranslationErrorDedupeKey(error: unknown): string {
-  if (error instanceof Error) {
-    return `${error.name}|${error.message}`;
-  }
-  if (error !== null && typeof error === 'object') {
-    try {
-      return `object|${JSON.stringify(error)}`;
-    } catch {
-      return `object|${String(error)}`;
-    }
-  }
-  return `${typeof error}|${String(error)}`;
-}
+import { createRuntimeTranslationErrorLogger } from './utils/runtimeTranslationErrors';
 
 /**
  * I18nStore gives us the ability to perform client-side updates to translations.
@@ -53,9 +25,7 @@ export class I18nStore {
   // ----- Listener Sets ----- //
 
   private translateListeners = new Set<TranslateEventListener>();
-  private dictionaryEntryListeners = new Set<DictionaryStoreListener>();
-  private dictionaryObjectListeners = new Set<DictionaryStoreListener>();
-  private loggedRuntimeTranslationErrors = new Set<string>();
+  private logRuntimeTranslationError = createRuntimeTranslationErrorLogger();
 
   /**
    * I18nCache must be already initialized
@@ -68,10 +38,6 @@ export class I18nStore {
     translations: Record<Locale, Record<Hash, Translation>>
   ): void => {
     getReactI18nCache().updateTranslations(translations);
-  };
-
-  updateDictionaries = (dictionaries: Record<Locale, Dictionary>): void => {
-    getReactI18nCache().updateDictionaries(dictionaries);
   };
 
   // ========== runtime translation ========== //
@@ -90,55 +56,6 @@ export class I18nStore {
       })
       .catch((error) => this.logRuntimeTranslationError(error));
   };
-
-  translateDictionaryEntry = (lookup: DictionaryLookup): void => {
-    getReactI18nCache()
-      .lookupDictionaryWithFallback(lookup.locale, lookup.id)
-      .then(() => {
-        this.emitDictionaryEvent(lookup);
-      })
-      .catch((error) => this.logRuntimeTranslationError(error));
-  };
-
-  translateDictionaryObject = (lookup: DictionaryLookup): void => {
-    getReactI18nCache()
-      .lookupDictionaryObjWithFallback(lookup.locale, lookup.id)
-      .then(() => {
-        this.emitDictionaryEvent(lookup);
-      })
-      .catch((error) => this.logRuntimeTranslationError(error));
-  };
-
-  /**
-   * Runtime translation runs fire-and-forget, so a rejected request (for
-   * example a 401 from an invalid dev API key) is logged here instead of
-   * escaping as an unhandled rejection that kills the dev server during SSR.
-   * Identical failures log once.
-   */
-  private logRuntimeTranslationError(error: unknown): void {
-    const details = formatDiagnosticErrorDetails(error);
-    const dedupeKey = getRuntimeTranslationErrorDedupeKey(error);
-    if (this.loggedRuntimeTranslationErrors.has(dedupeKey)) return;
-    this.loggedRuntimeTranslationErrors.add(dedupeKey);
-    if (
-      this.loggedRuntimeTranslationErrors.size >
-      MAX_LOGGED_RUNTIME_TRANSLATION_ERRORS
-    ) {
-      const oldest = this.loggedRuntimeTranslationErrors.values().next().value;
-      if (oldest !== undefined) {
-        this.loggedRuntimeTranslationErrors.delete(oldest);
-      }
-    }
-    console.error(
-      createDiagnosticMessage({
-        source: '@generaltranslation/react-core',
-        severity: 'Error',
-        whatHappened: 'A runtime translation request failed.',
-        wayOut: 'Rendering falls back to untranslated content.',
-        details,
-      })
-    );
-  }
 
   // ========== UseSyncExternalStore ========== //
 
@@ -165,18 +82,6 @@ export class I18nStore {
     return subscribeToSet(this.translateListeners, listener);
   };
 
-  subscribeToDictionaryEntryEvents = (
-    listener: DictionaryStoreListener
-  ): Unsubscribe => {
-    return subscribeToSet(this.dictionaryEntryListeners, listener);
-  };
-
-  subscribeToDictionaryObjectEvents = (
-    listener: DictionaryStoreListener
-  ): Unsubscribe => {
-    return subscribeToSet(this.dictionaryObjectListeners, listener);
-  };
-
   // ----- Snapshots ----- //
 
   getTranslateSnapshot = <T extends Translation>(
@@ -193,36 +98,9 @@ export class I18nStore {
     );
   };
 
-  getDictionaryEntrySnapshot = (
-    lookup: DictionaryLookup,
-    dictionariesSnapshot: Record<Locale, Dictionary> = {}
-  ): DictionaryEntrySnapshot => {
-    return (
-      lookupDictionaryEntry(dictionariesSnapshot, lookup) ??
-      getReactI18nCache().lookupDictionary(lookup.locale, lookup.id)
-    );
-  };
-
-  getDictionaryObjectSnapshot = (
-    lookup: DictionaryLookup,
-    dictionariesSnapshot: Record<Locale, Dictionary> = {}
-  ): DictionaryObjectSnapshot => {
-    return (
-      lookupDictionaryObject(dictionariesSnapshot, lookup) ??
-      getReactI18nCache().lookupDictionaryObj(lookup.locale, lookup.id)
-    );
-  };
-
   // ----- Listener Utilities ----- //
 
   private emitTranslateEvent(event: TranslateLookup): void {
     this.translateListeners.forEach((listener) => listener(event));
-  }
-
-  private emitDictionaryEvent(event: DictionaryLookup): void {
-    this.dictionaryEntryListeners.forEach((listener) => listener(event));
-    this.dictionaryObjectListeners.forEach((listener) => {
-      listener(event);
-    });
   }
 }

@@ -4,11 +4,9 @@ import {
   type ComponentType,
   type ReactNode,
 } from 'react';
-import {
-  getI18nConfig,
-  getReactI18nCache,
-  getTranslationsSnapshot,
-} from '@generaltranslation/react-core/pure';
+import { getTranslationsSnapshot } from '@generaltranslation/react-core/pure';
+// shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
+import { loadRouterDictionaries } from '../compat/loadRouterDictionaries';
 import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal';
 import type { GTRouterState } from './types';
 
@@ -23,14 +21,8 @@ export async function readGTRouterState(
   const locale = conditionStore.getLocale();
   const [translations, dictionaries] = await Promise.all([
     getTranslationsSnapshot(locale),
-    // Dictionary reads only use loaded dictionaries, so the translated one is
-    // loaded before render, as gt-next's GTProvider does. Both sides already
-    // bundle the source dictionary, which serves the default locale.
-    locale === getI18nConfig().getDefaultLocale()
-      ? {}
-      : getReactI18nCache()
-          .loadDictionary(locale)
-          .then((dictionary) => ({ [locale]: dictionary })),
+    // shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
+    loadRouterDictionaries(locale),
   ]);
   return {
     locale,
