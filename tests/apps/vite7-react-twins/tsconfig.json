@@ -11,7 +11,11 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "types": ["vite/client", "node"]
+    "types": ["vite/client", "node"],
+    // The compiler's declarations import `vite`. Installed from npm, that
+    // resolves to this app's Vite 7; through the workspace link it would
+    // resolve to the compiler's own Vite 8 devDependency instead.
+    "paths": { "vite": ["./node_modules/vite"] }
   },
   "include": [
     "src/**/*.ts",
