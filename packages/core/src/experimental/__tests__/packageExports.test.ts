@@ -40,13 +40,18 @@ function run(format: 'esm' | 'cjs', body: string): void {
   );
 }
 
-describe('generaltranslation/internal/experimental', () => {
-  it.each(['esm', 'cjs'] as const)(
-    'exports the locale twin internals (%s)',
-    (format) => {
-      run(
-        format,
-        `
+// Each test starts a Node process that loads the built package, which can
+// take several seconds on a busy CI runner.
+describe(
+  'generaltranslation/internal/experimental',
+  { timeout: 30_000 },
+  () => {
+    it.each(['esm', 'cjs'] as const)(
+      'exports the locale twin internals (%s)',
+      (format) => {
+        run(
+          format,
+          `
         const experimental = LOAD('generaltranslation/internal/experimental');
         for (const name of ${JSON.stringify(TWIN_EXPORTS)}) {
           if (typeof experimental[name] !== 'function') throw new Error('missing ' + name);
@@ -55,30 +60,31 @@ describe('generaltranslation/internal/experimental', () => {
           throw new Error('experimental.splitting is not read');
         }
       `
-      );
-    }
-  );
+        );
+      }
+    );
 
-  it.each(['esm', 'cjs'] as const)(
-    'keeps locale twins out of generaltranslation/internal (%s)',
-    (format) => {
-      run(
-        format,
-        `
+    it.each(['esm', 'cjs'] as const)(
+      'keeps locale twins out of generaltranslation/internal (%s)',
+      (format) => {
+        run(
+          format,
+          `
           const internal = LOAD('generaltranslation/internal');
           const leaked = ${JSON.stringify(TWIN_EXPORTS)}.filter((name) => name in internal);
           if (leaked.length) throw new Error('leaked: ' + leaked.join(', '));
         `
-      );
-    }
-  );
+        );
+      }
+    );
 
-  it('publishes declarations for both module formats', () => {
-    for (const file of [
-      'dist/internal-experimental.d.cts',
-      'dist/internal-experimental.d.mts',
-    ]) {
-      expect(existsSync(join(packageRoot, file)), file).toBe(true);
-    }
-  });
-});
+    it('publishes declarations for both module formats', () => {
+      for (const file of [
+        'dist/internal-experimental.d.cts',
+        'dist/internal-experimental.d.mts',
+      ]) {
+        expect(existsSync(join(packageRoot, file)), file).toBe(true);
+      }
+    });
+  }
+);

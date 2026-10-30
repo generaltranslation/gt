@@ -46,7 +46,9 @@ function run(format: 'esm' | 'cjs', body: string): void {
   );
 }
 
-describe('gt-i18n/internal/experimental', () => {
+// Each test starts a Node process that loads the built package, which can
+// take several seconds on a busy CI runner.
+describe('gt-i18n/internal/experimental', { timeout: 30_000 }, () => {
   it.each(['esm', 'cjs'] as const)(
     'exports the locale twin runtime (%s)',
     (format) => {

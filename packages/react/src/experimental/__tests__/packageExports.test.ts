@@ -68,7 +68,9 @@ const CHECK_EXPORTS = `
   }
 `;
 
-describe('gt-react/experimental', () => {
+// Each test starts a Node process that loads the built package, which can
+// take several seconds on a busy CI runner.
+describe('gt-react/experimental', { timeout: 30_000 }, () => {
   it.each([
     ['default', []],
     ['browser', ['browser']],

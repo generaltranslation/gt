@@ -33,50 +33,58 @@ function reachableModules(entry: string): string[] {
   return [...seen].map((file) => file.slice(packageRoot.length));
 }
 
-describe('@generaltranslation/compiler/experimental', () => {
-  it('exports the experimental Vite plugin (CJS)', () => {
-    node(`
+// Each test starts a Node process that loads the built package, which can
+// take several seconds on a busy CI runner.
+describe(
+  '@generaltranslation/compiler/experimental',
+  { timeout: 30_000 },
+  () => {
+    it('exports the experimental Vite plugin (CJS)', () => {
+      node(`
       const experimental = require('@generaltranslation/compiler/experimental');
       if (typeof experimental.vite !== 'function') throw new Error('vite');
       if (typeof experimental.unplugin.raw !== 'function') throw new Error('unplugin');
       const plugin = experimental.vite({ logLevel: 'silent', gtConfig: { experimental: { splitting: 'locale-twins' } } });
       if (typeof plugin.resolveId !== 'function') throw new Error('no locale twin Vite hooks');
     `);
-  });
+    });
 
-  it('exports the experimental Vite plugin (ESM)', () => {
-    node(
-      `
+    it('exports the experimental Vite plugin (ESM)', () => {
+      node(
+        `
         const experimental = await import('@generaltranslation/compiler/experimental');
         if (typeof experimental.vite !== 'function') throw new Error('vite');
       `,
-      ['--input-type=module']
-    );
-  });
-
-  it('keeps the regular entry point free of locale twin code', () => {
-    const modules = reachableModules('dist/index.js');
-    expect(modules.filter((file) => file.includes('experimental'))).toEqual([]);
-    for (const file of modules) {
-      expect(readFileSync(join(packageRoot, file), 'utf8'), file).not.toMatch(
-        /GtInternalRegisterLocaleTwin|__GT_LOCALE_TWIN__/
+        ['--input-type=module']
       );
-    }
-    node(`
+    });
+
+    it('keeps the regular entry point free of locale twin code', () => {
+      const modules = reachableModules('dist/index.js');
+      expect(modules.filter((file) => file.includes('experimental'))).toEqual(
+        []
+      );
+      for (const file of modules) {
+        expect(readFileSync(join(packageRoot, file), 'utf8'), file).not.toMatch(
+          /GtInternalRegisterLocaleTwin|__GT_LOCALE_TWIN__/
+        );
+      }
+      node(`
       const regular = require('@generaltranslation/compiler');
       const plugin = regular.vite({ logLevel: 'silent' });
       if ('resolveId' in plugin) throw new Error('locale twin Vite hooks in the regular plugin');
     `);
-  });
+    });
 
-  it('publishes the virtual manifest module declaration', () => {
-    const file = join(
-      packageRoot,
-      'dist/experimental/locale-twins-manifest.d.ts'
-    );
-    expect(existsSync(file)).toBe(true);
-    expect(readFileSync(file, 'utf8')).toContain(
-      "declare module 'virtual:gt-locale-twins-manifest'"
-    );
-  });
-});
+    it('publishes the virtual manifest module declaration', () => {
+      const file = join(
+        packageRoot,
+        'dist/experimental/locale-twins-manifest.d.ts'
+      );
+      expect(existsSync(file)).toBe(true);
+      expect(readFileSync(file, 'utf8')).toContain(
+        "declare module 'virtual:gt-locale-twins-manifest'"
+      );
+    });
+  }
+);
