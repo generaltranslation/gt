@@ -156,7 +156,19 @@ export async function addCompilerPlugin(
         ],
       };
     }
-    return { steps: [], manualActions: [] };
+    const compilerCall = plugins.elements[compilerIndex];
+    return {
+      steps: [],
+      manualActions:
+        compilerCall?.type === 'CallExpression' && !passesGTConfig(compilerCall)
+          ? getConfigPathActions(
+              appDirectory,
+              configFilepath,
+              config.path,
+              `${config.content.slice(compilerCall.callee.start!, compilerCall.callee.end!)}()`
+            )
+          : [],
+    };
   }
   const edits: Edit[] = [];
   let call: string;
@@ -194,19 +206,50 @@ export async function addCompilerPlugin(
     path.join(appDirectory, config.path),
     applyEdits(config.content, edits)
   );
-  // The plugin reads gt.config.json from the app root by default.
-  const defaultConfig = path.join(appDirectory, DEFAULT_CONFIG_FILE);
-  const configPath = path.resolve(appDirectory, configFilepath);
   return {
     steps: [`added ${call} to ${config.path}`],
-    manualActions:
-      configPath === defaultConfig
-        ? []
-        : [
-            {
-              whatHappened: `The GT compiler reads ${DEFAULT_CONFIG_FILE} from the app root, but this app uses ${configFilepath}`,
-              fix: `In ${config.path}, import gtConfig from '${toRelativeImport(appDirectory, configPath)}' and pass it as ${call.slice(0, -1)}{ gtConfig })`,
-            },
-          ],
+    manualActions: getConfigPathActions(
+      appDirectory,
+      configFilepath,
+      config.path,
+      call
+    ),
   };
+}
+
+/** Whether a compiler call passes options with a `gtConfig` (or spreads some). */
+function passesGTConfig(call: t.CallExpression): boolean {
+  const [options] = call.arguments;
+  if (!options) return false;
+  // Options the setup cannot read may well carry the config
+  if (options.type !== 'ObjectExpression') return true;
+  return options.properties.some(
+    (property) =>
+      property.type === 'SpreadElement' ||
+      (property.type === 'ObjectProperty' &&
+        (t.isIdentifier(property.key, { name: 'gtConfig' }) ||
+          t.isStringLiteral(property.key, { value: 'gtConfig' })))
+  );
+}
+
+/**
+ * The plugin reads gt.config.json from the app root by default: a config
+ * elsewhere must be passed as `gtConfig`. `call` is the plugin call without
+ * arguments, as written in the Vite config.
+ */
+function getConfigPathActions(
+  appDirectory: string,
+  configFilepath: string,
+  viteConfigPath: string,
+  call: string
+): SetupResult['manualActions'] {
+  const defaultConfig = path.join(appDirectory, DEFAULT_CONFIG_FILE);
+  const configPath = path.resolve(appDirectory, configFilepath);
+  if (configPath === defaultConfig) return [];
+  return [
+    {
+      whatHappened: `The GT compiler reads ${DEFAULT_CONFIG_FILE} from the app root, but this app uses ${configFilepath}`,
+      fix: `In ${viteConfigPath}, import gtConfig from '${toRelativeImport(appDirectory, configPath)}' and pass it as ${call.slice(0, -1)}{ gtConfig })`,
+    },
+  ];
 }

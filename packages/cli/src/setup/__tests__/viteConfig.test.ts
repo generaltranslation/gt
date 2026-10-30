@@ -164,6 +164,37 @@ export default defineConfig({ plugins: [gtPlugin()] })
     });
   });
 
+  it('asks to pass a non-default config to a compiler already in the config', async () => {
+    write('vite.config.ts', configuredViteConfig);
+
+    const result = await addCompilerPlugin(appDirectory, 'config/gt.json');
+
+    expect(read('vite.config.ts')).toBe(configuredViteConfig);
+    expect(result).toEqual({
+      steps: [],
+      manualActions: [
+        {
+          whatHappened:
+            'The GT compiler reads gt.config.json from the app root, but this app uses config/gt.json',
+          fix: "In vite.config.ts, import gtConfig from './config/gt.json' and pass it as gtCompiler({ gtConfig })",
+        },
+      ],
+    });
+  });
+
+  it('accepts a compiler already given a gtConfig', async () => {
+    const config = configuredViteConfig.replace(
+      'gtCompiler()',
+      'gtCompiler({ gtConfig })'
+    );
+    write('vite.config.ts', config);
+
+    expect(await addCompilerPlugin(appDirectory, 'config/gt.json')).toEqual({
+      steps: [],
+      manualActions: [],
+    });
+  });
+
   it.each([
     ['no Vite config', undefined],
     [
