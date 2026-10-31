@@ -1,0 +1,271 @@
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { pluginConfig } from '../../../../adapter/core';
+import { getOrCreateTranslationMetadata } from '../getOrCreateTranslationMetadata';
+import {
+  createGroqClient,
+  metadataDoc,
+} from '../../../../utils/__tests__/groqClient';
+
+const metadataIn = (dataset: Record<string, unknown>[]) =>
+  dataset.filter((doc) => doc._type === 'translation.metadata');
+
+beforeEach(() => {
+  vi.spyOn(pluginConfig, 'getSourceLocale').mockReturnValue('en');
+  // Feature tests run with the option on; flag-off tests turn it off.
+  vi.spyOn(pluginConfig, 'getAllowNonDefaultSourceLocales').mockReturnValue(
+    true
+  );
+  vi.spyOn(pluginConfig, 'getLanguageField').mockReturnValue('language');
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe('getOrCreateTranslationMetadata for a non-default original', () => {
+  test('finds an existing group by the document’s own id', async () => {
+    const group = metadataDoc(
+      'translation.metadata.page-fr',
+      [
+        ['fr', 'page-fr'],
+        ['en', 'page-en'],
+      ],
+      { gtSourceLanguage: 'fr' }
+    );
+    const { client, createIfNotExists } = createGroqClient([group]);
+
+    const metadata = await getOrCreateTranslationMetadata(
+      'page-fr',
+      { _id: 'page-fr', _type: 'page' },
+      client,
+      'fr'
+    );
+
+    expect(metadata._id).toBe('translation.metadata.page-fr');
+    expect(createIfNotExists).not.toHaveBeenCalled();
+  });
+
+  test('marks a new group whose original is outside the source locale', async () => {
+    const { client, dataset } = createGroqClient([]);
+
+    await getOrCreateTranslationMetadata(
+      'page-fr',
+      { _id: 'drafts.page-fr', _type: 'page' },
+      client,
+      'fr'
+    );
+
+    expect(metadataIn(dataset)).toEqual([
+      expect.objectContaining({
+        _id: 'translation.metadata.page-fr',
+        gtSourceLanguage: 'fr',
+        translations: [
+          expect.objectContaining({
+            language: 'fr',
+            value: expect.objectContaining({ _ref: 'page-fr' }),
+          }),
+        ],
+      }),
+    ]);
+  });
+
+  test('does not mark a new group whose original is in the source locale', async () => {
+    const { client, dataset } = createGroqClient([]);
+
+    await getOrCreateTranslationMetadata(
+      'page',
+      { _id: 'page', _type: 'page' },
+      client,
+      'en'
+    );
+
+    const [created] = metadataIn(dataset);
+    expect(created).not.toHaveProperty('gtSourceLanguage');
+  });
+
+  test('refuses a translation instead of creating a second group for it', async () => {
+    // Before this lookup went through the document's own id, a non-default
+    // document already in a group was not found and got a new, conflicting
+    // metadata document.
+    const group = metadataDoc('translation.metadata.page', [
+      ['en', 'page'],
+      ['fr', 'page-fr'],
+    ]);
+    const { client, dataset, createIfNotExists } = createGroqClient([group]);
+
+    await expect(
+      getOrCreateTranslationMetadata(
+        'page-fr',
+        { _id: 'page-fr', _type: 'page' },
+        client,
+        'fr'
+      )
+    ).rejects.toThrow(/translation of en/);
+
+    expect(createIfNotExists).not.toHaveBeenCalled();
+    expect(metadataIn(dataset)).toHaveLength(1);
+  });
+
+  test('refuses an existing metadata document under its id that names another original', async () => {
+    // Not found by the document's own id, so createIfNotExists returns the
+    // stored document unchanged.
+    const stale = metadataDoc(
+      'translation.metadata.page-fr',
+      [
+        ['de', 'page-de'],
+        ['en', 'page-en'],
+      ],
+      { gtSourceLanguage: 'de' }
+    );
+    const { client, createIfNotExists } = createGroqClient([
+      stale,
+      { _id: 'page-de', _type: 'page' },
+    ]);
+
+    await expect(
+      getOrCreateTranslationMetadata(
+        'page-fr',
+        { _id: 'page-fr', _type: 'page' },
+        client,
+        'fr'
+      )
+    ).rejects.toThrow(/translation of de/);
+    expect(createIfNotExists).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('getOrCreateTranslationMetadata for a source-locale original', () => {
+  test('looks the group up through the source-locale entry', async () => {
+    const group = metadataDoc('translation.metadata.page', [
+      ['en', 'page'],
+      ['fr', 'page-fr'],
+    ]);
+    const { client, fetch, createIfNotExists } = createGroqClient([group]);
+
+    const found = await getOrCreateTranslationMetadata(
+      'page',
+      { _id: 'page', _type: 'page' },
+      client,
+      'en'
+    );
+
+    expect(found._id).toBe('translation.metadata.page');
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch.mock.calls[0][1]).toEqual({ baseLanguage: 'en', id: 'page' });
+    expect(createIfNotExists).not.toHaveBeenCalled();
+  });
+
+  test('reuses an unmarked group under its id that has no entry for it', async () => {
+    // Not found through the en entry, so createIfNotExists returns the stored
+    // document unchanged.
+    const group = metadataDoc('translation.metadata.page', [['fr', 'page-fr']]);
+    const { client, createIfNotExists } = createGroqClient([group]);
+
+    const found = await getOrCreateTranslationMetadata(
+      'page',
+      { _id: 'page', _type: 'page' },
+      client,
+      'en'
+    );
+
+    expect(found._id).toBe('translation.metadata.page');
+    expect(createIfNotExists).toHaveBeenCalledTimes(1);
+  });
+
+  test('refuses a source-locale translation in a group marked with another original', async () => {
+    const group = metadataDoc(
+      'translation.metadata.page-fr',
+      [
+        ['fr', 'page-fr'],
+        ['en', 'page-en'],
+      ],
+      { gtSourceLanguage: 'fr' }
+    );
+    const { client, createIfNotExists } = createGroqClient([group]);
+
+    await expect(
+      getOrCreateTranslationMetadata(
+        'page-en',
+        { _id: 'page-en', _type: 'page' },
+        client,
+        'en'
+      )
+    ).rejects.toThrow(/translation of fr/);
+    expect(createIfNotExists).not.toHaveBeenCalled();
+  });
+});
+
+describe('getOrCreateTranslationMetadata without allowNonDefaultSourceLocales', () => {
+  beforeEach(() => {
+    vi.spyOn(pluginConfig, 'getAllowNonDefaultSourceLocales').mockReturnValue(
+      false
+    );
+  });
+
+  test('looks every group up through its baseLanguage entry and never marks one', async () => {
+    const { client, dataset, fetch } = createGroqClient([]);
+
+    await getOrCreateTranslationMetadata(
+      'page-fr',
+      { _id: 'page-fr', _type: 'page' },
+      client,
+      'fr'
+    );
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch.mock.calls[0][1]).toEqual({
+      baseLanguage: 'fr',
+      id: 'page-fr',
+    });
+    const [created] = metadataIn(dataset);
+    expect(created).toMatchObject({ _id: 'translation.metadata.page-fr' });
+    expect(created).not.toHaveProperty('gtSourceLanguage');
+  });
+
+  test('returns a group marked with another original instead of refusing it', async () => {
+    const group = metadataDoc(
+      'translation.metadata.page-fr',
+      [
+        ['fr', 'page-fr'],
+        ['en', 'page-en'],
+      ],
+      { gtSourceLanguage: 'fr' }
+    );
+    const { client, createIfNotExists } = createGroqClient([group]);
+
+    const found = await getOrCreateTranslationMetadata(
+      'page-en',
+      { _id: 'page-en', _type: 'page' },
+      client,
+      'en'
+    );
+
+    expect(found._id).toBe('translation.metadata.page-fr');
+    expect(createIfNotExists).not.toHaveBeenCalled();
+  });
+
+  test('returns an existing metadata document under its id as is', async () => {
+    const stale = metadataDoc(
+      'translation.metadata.page',
+      [
+        ['de', 'page-de'],
+        ['fr', 'page-fr'],
+      ],
+      { gtSourceLanguage: 'de' }
+    );
+    const { client, createIfNotExists } = createGroqClient([
+      stale,
+      { _id: 'page-de', _type: 'page' },
+    ]);
+
+    const found = await getOrCreateTranslationMetadata(
+      'page',
+      { _id: 'page', _type: 'page' },
+      client,
+      'en'
+    );
+
+    expect(found._id).toBe('translation.metadata.page');
+    expect(createIfNotExists).toHaveBeenCalledTimes(1);
+  });
+});

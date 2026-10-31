@@ -51,7 +51,7 @@ exports[`Global field level snapshot test 1`] = `
       "_type": "block",
       "children": [
         {
-          "_key": "randomKey-18",
+          "_key": "randomKey-16",
           "_type": "span",
           "marks": [],
           "text": "New block text",

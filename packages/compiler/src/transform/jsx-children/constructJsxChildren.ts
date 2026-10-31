@@ -347,12 +347,12 @@ function constructJsxElement(
   }
 
   // Construct JsxChildren
-  // For branching components (Branch/Plural), use id.copy() so children and
-  // branch props start counting from the same base independently.
+  // Number Branch/Plural children with the running counter like any other
+  // children (only branch props restart), to match the runtime's addGTIdentifier.
   const jsxChildrenValidation = constructJsxChildrenForJsxElement(
     childrenValidation.value,
     state,
-    isBranchComponent(canonicalName ?? '') ? id.copy() : id
+    id
   );
   errors.push(...jsxChildrenValidation.errors);
   if (jsxChildrenValidation.errors.length > 0) {
@@ -361,9 +361,10 @@ function constructJsxElement(
   const children: JsxChildren | undefined = jsxChildrenValidation.value;
 
   // Construct GT Tag
+  // Branch props count from this element's id, not from after its children.
   const tagValidation = constructGTProp(
     callExprPath,
-    id,
+    new IdObject(idNumber),
     state,
     canonicalName,
     type

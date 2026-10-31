@@ -19,7 +19,10 @@ import {
   hasValidServiceLocales,
 } from './utils/validation.js';
 import { runPublishWorkflow } from '../../workflows/publish.js';
-import { aggregateFiles } from '../../formats/files/aggregateFiles.js';
+import {
+  aggregateFiles,
+  isUnparsableFile,
+} from '../../formats/files/aggregateFiles.js';
 import { recordWarning } from '../../state/translateWarnings.js';
 import {
   parseXcstringsCatalog,
@@ -70,6 +73,23 @@ export async function upload(
           content: readFile(filePath),
         });
       }
+    }
+  }
+
+  // Translation files are validated like their sources in aggregateFiles.
+  const skipValidation = additionalOptions.skipFileValidation;
+  const translationParseFormats = new Map<string, 'JSON' | 'YAML'>();
+  if (!skipValidation?.json) {
+    for (const filePath of [
+      ...(filePaths.json ?? []),
+      ...(filePaths.twilioContentJson ?? []),
+    ]) {
+      translationParseFormats.set(getRelative(filePath), 'JSON');
+    }
+  }
+  if (!skipValidation?.yaml) {
+    for (const filePath of filePaths.yaml ?? []) {
+      translationParseFormats.set(getRelative(filePath), 'YAML');
     }
   }
 
@@ -176,6 +196,17 @@ export async function upload(
             const reason = fileEncodingSkipReason(error);
             logger.warn(`Skipping ${relativePath}: ${reason}`);
             recordWarning('skipped_file', relativePath, reason);
+            continue;
+          }
+          const parseFormat = translationParseFormats.get(file.fileName);
+          if (
+            parseFormat &&
+            isUnparsableFile(
+              translatedContent,
+              getRelative(translatedFileName),
+              parseFormat
+            )
+          ) {
             continue;
           }
           translations.push({

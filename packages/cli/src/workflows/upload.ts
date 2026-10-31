@@ -58,9 +58,15 @@ export async function runUploadFilesWorkflow({
     await uploadStep.run({ files: files.map((f) => f.source), branchData });
 
     // Step 3: Upload translations (if any exist)
-    const filesWithTranslations = files.filter(
-      (f) => f.translations.length > 0
-    );
+    const filesWithTranslations = files
+      .filter((f) => f.translations.length > 0)
+      .map((f) => ({
+        ...f,
+        source: {
+          ...f.source,
+          branchId: f.source.branchId ?? branchData.currentBranch.id,
+        },
+      }));
     if (filesWithTranslations.length > 0) {
       await uploadTranslationsStep.run({
         files: filesWithTranslations,
