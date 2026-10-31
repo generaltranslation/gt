@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import type { ScopedConditionStoreInterface } from 'gt-i18n/internal/types';
-import { getI18nConfig } from 'gt-i18n/internal';
+import { getI18nConfig, getRuntimeEnvironment } from 'gt-i18n/internal';
 
 type Store = {
   locale: string;
@@ -23,6 +23,9 @@ type AsyncConditionStoreConstructorParams = {
 
 /**
  * Condition store implementation that uses AsyncLocalStorage.
+ * Outside a withGT() scope, reads throw in development and warn and fall back
+ * in production. getRuntimeEnvironment() decides which, as it does for the
+ * translation cache, so an unset NODE_ENV counts as production.
  */
 export class AsyncConditionStore implements ScopedConditionStoreInterface {
   private store: AsyncLocalStorage<Store>;
@@ -41,7 +44,7 @@ export class AsyncConditionStore implements ScopedConditionStoreInterface {
   getLocale(): string {
     const store = this.store.getStore();
     if (!store) {
-      if (process.env.NODE_ENV === 'production') {
+      if (getRuntimeEnvironment() === 'production') {
         console.warn(OUTSIDE_SCOPE_MESSAGE);
         return resolveLocale();
       }
@@ -53,7 +56,7 @@ export class AsyncConditionStore implements ScopedConditionStoreInterface {
   getRegion(): string | undefined {
     const store = this.store.getStore();
     if (!store) {
-      if (process.env.NODE_ENV === 'production') {
+      if (getRuntimeEnvironment() === 'production') {
         console.warn(REGION_MESSAGE);
         return undefined;
       }
@@ -68,7 +71,7 @@ export class AsyncConditionStore implements ScopedConditionStoreInterface {
   getEnableI18n(): boolean {
     const store = this.store.getStore();
     if (!store) {
-      if (process.env.NODE_ENV === 'production') {
+      if (getRuntimeEnvironment() === 'production') {
         console.warn(ENABLE_I18N_MESSAGE);
         return true;
       }
