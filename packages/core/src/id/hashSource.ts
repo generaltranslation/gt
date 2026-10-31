@@ -1,6 +1,6 @@
 // Functions provided to other GT libraries
 
-import { JsxChild, JsxChildren, Variable } from '../types';
+import { Content, JsxChild, JsxChildren, Variable } from '../types';
 import { stableStringify as stringify } from '../utils/stableStringify';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
@@ -43,18 +43,18 @@ export function hashSource(
     dataFormat,
     fileFormat,
   }: {
-    source: JsxChildren | string;
+    source: Content;
   } & HashMetadata,
   hashFunction: (string: string) => string = hashString
 ): string {
-  let sanitizedSource: SanitizedChildren | string;
+  let sanitizedSource: SanitizedChildren | Content;
   if (dataFormat === 'JSX') {
-    sanitizedSource = sanitizeJsxChildren(source);
+    sanitizedSource = sanitizeJsxChildren(source as JsxChildren);
   } else {
-    sanitizedSource = source as string;
+    sanitizedSource = source;
   }
   const sanitizedData: {
-    source?: SanitizedChildren;
+    source?: SanitizedChildren | Content;
   } & HashMetadata = {
     source: sanitizedSource,
     ...(id && { id }),

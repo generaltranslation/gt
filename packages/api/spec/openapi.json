@@ -162,7 +162,7 @@
       },
       "DataFormat": {
         "type": "string",
-        "enum": ["JSX", "ICU", "I18NEXT", "STRING"]
+        "enum": ["JSX", "ICU", "I18NEXT", "STRING", "ICU_TREE"]
       },
       "ModelProvider": {
         "type": "string",

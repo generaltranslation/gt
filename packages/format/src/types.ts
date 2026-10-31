@@ -6,6 +6,8 @@ export type { Variable, VariableType } from './types-dir/jsx/variables';
 export { HTML_CONTENT_PROPS } from './types-dir/jsx/content';
 export type {
   Content,
+  ContentByFormat,
+  ContentFor,
   DataFormat,
   GTProp,
   HtmlContentPropKeysRecord,

@@ -1,3 +1,4 @@
+import type { MessageTree } from '@generaltranslation/icu';
 import { Variable } from './variables';
 
 /**
@@ -43,19 +44,38 @@ export type JsxChild = string | JsxElement | Variable;
 export type StringFormat = 'ICU' | 'I18NEXT' | 'STRING';
 
 /**
+ * The shape of content in each data format. A value alone does not tell its
+ * format apart (ICU, I18next and plain messages are all strings, and an array
+ * of strings is both JSX children and a message tree), so pair content with
+ * its format where the difference matters.
+ */
+export type ContentByFormat = {
+  JSX: JsxChildren;
+  ICU: IcuMessage;
+  I18NEXT: I18nextMessage;
+  STRING: StringMessage;
+  ICU_TREE: MessageTree;
+};
+
+/**
  * The format of the content.
  */
-export type DataFormat = 'JSX' | StringFormat;
+export type DataFormat = keyof ContentByFormat;
+
+/**
+ * The content of the given data formats.
+ */
+export type ContentFor<F extends DataFormat> = ContentByFormat[F];
 
 /**
  * String format content.
  */
-export type StringContent = IcuMessage | StringMessage | I18nextMessage;
+export type StringContent = ContentFor<StringFormat>;
 
 /**
- * A content type representing JSX, ICU, and I18next messages.
+ * Content in any data format: what translation catalogs store.
  */
-export type Content = JsxChildren | StringContent;
+export type Content = ContentFor<DataFormat>;
 
 /**
  * GT's persisted rich-content wire format.

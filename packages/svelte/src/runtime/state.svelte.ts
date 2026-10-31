@@ -69,9 +69,12 @@ export class GTState {
   hydrate(locale: string, translations: Record<string, Content>): void {
     if (hasCachedTranslations(locale, translations)) return;
     // Snapshot in case the translations are reactive state: the cache
-    // clones them, and proxies cannot be cloned.
+    // clones them, and proxies cannot be cloned. Svelte's Snapshot type cannot
+    // expand recursive message trees, so it snapshots plain records.
     getI18nCache().updateTranslations({
-      [locale]: $state.snapshot(translations) as Record<string, Content>,
+      [locale]: $state.snapshot<Record<string, unknown>>(
+        translations
+      ) as Record<string, Content>,
     });
     rememberAddedTranslations(locale, translations);
   }
