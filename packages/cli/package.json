@@ -164,6 +164,14 @@
     "unist-util-visit": "^5.0.0",
     "yaml": "^2.8.0"
   },
+  "peerDependencies": {
+    "typescript": ">=5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@types/babel__generator": "^7.27.0",
     "@types/babel__traverse": "^7.20.6",
@@ -184,6 +192,7 @@
     "tsdown": "catalog:",
     "tslib": "catalog:",
     "typescript": "catalog:",
+    "typescript-native": "npm:typescript@7.1.0-beta",
     "vitest": "catalog:"
   }
 }
