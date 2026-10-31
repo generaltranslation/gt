@@ -13,6 +13,8 @@ import type {
 } from '../../types/parsing.js';
 import { resolveAutoderive } from '../../types/parsing.js';
 import { getPathsAndAliases } from '../jsx/utils/getPathsAndAliases.js';
+import { extractMessageTrees } from '../jsx/utils/stringParsing/extractMessageTrees/index.js';
+import type { ParsingConfig } from '../jsx/utils/stringParsing/types.js';
 import {
   GTLibrary,
   GT_LIBRARIES_UPSTREAM,
@@ -30,6 +32,7 @@ import {
   autoInsertJsxComponents,
 } from '../jsx/utils/jsxParsing/autoInsertion.js';
 import { INTERNAL_TRANSLATION_COMPONENT } from '../jsx/utils/constants.js';
+import { resetTypeCheckers } from '../jsx/utils/typeChecker.js';
 import traverseModule from '@babel/traverse';
 const traverse = traverseModule.default || traverseModule;
 
@@ -40,6 +43,7 @@ export async function createInlineUpdates(
   parsingFlags: GTParsingFlags,
   parsingOptions: ParsingConfigOptions
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
+  resetTypeCheckers();
   const updates: Updates = [];
 
   const errors: string[] = [];
@@ -71,32 +75,39 @@ export async function createInlineUpdates(
     const { importAliases, inlineTranslationPaths, translationComponentPaths } =
       getPathsAndAliases(ast, pkgs);
 
+    const stringParsingConfig: ParsingConfig = {
+      parsingOptions,
+      file,
+      ignoreInlineMetadata: false,
+      ignoreDynamicContent: false,
+      ignoreInvalidIcu: false,
+      ignoreInlineListContent: false,
+      includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
+      ignoreTaggedTemplates: false,
+      ignoreGlobalTaggedTemplates: false,
+      // User configurable, otherwise default to AUTO
+      autoderiveMethod: autoderive.strings ? 'AUTO' : 'DISABLED',
+    };
+
     // Process translation functions asynchronously
     for (const {
       localName: name,
       originalName,
       path,
     } of inlineTranslationPaths) {
-      parseStrings(
-        name,
-        originalName,
-        path,
-        {
-          parsingOptions,
-          file,
-          ignoreInlineMetadata: false,
-          ignoreDynamicContent: false,
-          ignoreInvalidIcu: false,
-          ignoreInlineListContent: false,
-          includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
-          ignoreTaggedTemplates: false,
-          ignoreGlobalTaggedTemplates: false,
-          // User configurable, otherwise default to AUTO
-          autoderiveMethod: autoderive.strings ? 'AUTO' : 'DISABLED',
-        },
-        { updates, errors, warnings }
-      );
+      parseStrings(name, originalName, path, stringParsingConfig, {
+        updates,
+        errors,
+        warnings,
+      });
     }
+
+    // Unstable tagged-template messages, extracted as message trees
+    await extractMessageTrees(ast, pkgs, stringParsingConfig, {
+      updates,
+      errors,
+      warnings,
+    });
 
     // Parse <T> components — PASS 1: user-written T
     if (REACT_LIBRARIES.includes(pkg as ReactLibrary)) {

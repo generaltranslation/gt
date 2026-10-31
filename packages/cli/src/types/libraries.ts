@@ -33,6 +33,41 @@ export const GT_LIBRARIES = [
 export type GTLibrary = (typeof GT_LIBRARIES)[number];
 
 /**
+ * Experimental tagged-template entry points. Their `t`/`useGT`/`getGT`
+ * messages are extracted as message trees, never by the legacy string and
+ * JSX extractors.
+ */
+export const UNSTABLE_GT_IMPORT_SOURCES = [
+  'gt-i18n/unstable',
+  'gt-react/unstable',
+  'gt-next/unstable',
+  'gt-next/unstable/server',
+  'gt-tanstack-start/unstable',
+  'gt-react-native/unstable',
+  'gt-node/unstable',
+  '@generaltranslation/react-core/unstable',
+  '@generaltranslation/react-core/unstable-rsc',
+] as const;
+
+export function isUnstableGTImportSource(source: string): boolean {
+  return (UNSTABLE_GT_IMPORT_SOURCES as readonly string[]).includes(source);
+}
+
+/**
+ * Whether an import source belongs to one of `pkgs` for the legacy
+ * extractors (prefix match, so subpaths count), excluding unstable sources.
+ */
+export function isLegacyGTImportSource(
+  source: string,
+  pkgs: readonly GTLibrary[]
+): boolean {
+  return (
+    !isUnstableGTImportSource(source) &&
+    pkgs.some((pkg) => source.startsWith(pkg))
+  );
+}
+
+/**
  * Libraries that support inline translation
  */
 export const INLINE_LIBRARIES = [
