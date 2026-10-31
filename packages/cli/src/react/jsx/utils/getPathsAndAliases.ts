@@ -13,7 +13,7 @@ import {
   T_GLOBAL_REGISTRATION_FUNCTION,
   T_GLOBAL_REGISTRATION_FUNCTION_MARKER,
 } from '../../jsx/utils/constants.js';
-import { GTLibrary } from '../../../types/libraries.js';
+import { GTLibrary, isLegacyGTImportSource } from '../../../types/libraries.js';
 import { extractImportName } from './parseAst.js';
 import * as t from '@babel/types';
 
@@ -73,7 +73,7 @@ export function getPathsAndAliases(
       }
     },
     ImportDeclaration(path) {
-      if (pkgs.some((pkg) => path.node.source.value.startsWith(pkg))) {
+      if (isLegacyGTImportSource(path.node.source.value, pkgs)) {
         const importName = extractImportName(
           path.node,
           pkgs,
@@ -120,7 +120,7 @@ export function getPathsAndAliases(
         if (
           args.length === 1 &&
           args[0].type === 'StringLiteral' &&
-          pkgs.some((pkg) => (args[0] as t.StringLiteral).value.startsWith(pkg))
+          isLegacyGTImportSource((args[0] as t.StringLiteral).value, pkgs)
         ) {
           const parentPath = path.parentPath;
           if (parentPath.isVariableDeclaration()) {
