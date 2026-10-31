@@ -1094,6 +1094,9 @@ importers:
       '@generaltranslation/format':
         specifier: workspace:*
         version: link:../format
+      '@generaltranslation/icu':
+        specifier: workspace:*
+        version: link:../icu
       generaltranslation:
         specifier: workspace:*
         version: link:../core
