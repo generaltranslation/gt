@@ -73,6 +73,16 @@
         "types": "./dist/parser.d.mts",
         "default": "./dist/parser.mjs"
       }
+    },
+    "./convert": {
+      "require": {
+        "types": "./dist/convert.d.cts",
+        "default": "./dist/convert.cjs"
+      },
+      "import": {
+        "types": "./dist/convert.d.mts",
+        "default": "./dist/convert.mjs"
+      }
     }
   }
 }

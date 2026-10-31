@@ -14,9 +14,9 @@ const INVALID_SIGNIFICANT_PRECISION = /^(?:(?:\+|#+)[rs]?|[rs])$/;
 const INTEGER_WIDTH = /(\*)(0+)|(#+)(0+)|(0+)/g;
 const NUMBER_SKELETON_WHITE_SPACE = /[\t-\r \x85\u200E\u200F\u2028\u2029]+/u;
 const DATE_TIME_FIELD =
-  /(?:[Eec]{1,6}|G{1,5}|[Qq]{1,5}|(?:[yYur]+|U{1,5})|[ML]{1,5}|d{1,2}|D{1,3}|F|[abB]{1,5}|[hHkK]{1,2}|w{1,2}|W|m{1,2}|s{1,2}|[zZOvVxX]{1,4})(?=([^']*'[^']*')*[^']*$)/g;
+  /(?:[Eec]{1,6}|G{1,5}|[Qq]{1,5}|(?:[yYur]+|U{1,5})|[ML]{1,5}|d{1,2}|D{1,3}|F|[abB]{1,5}|[hHkK]{1,2}|j{1,2}|J{1,2}|w{1,2}|W|m{1,2}|s{1,2}|[zZOvVxX]{1,4})(?=([^']*'[^']*')*[^']*$)/g;
 
-type ModernNumberFormatOptions = ExtendedNumberFormatOptions & {
+export type ModernNumberFormatOptions = ExtendedNumberFormatOptions & {
   roundingMode?:
     | 'ceil'
     | 'floor'
@@ -31,7 +31,7 @@ type ModernNumberFormatOptions = ExtendedNumberFormatOptions & {
   trailingZeroDisplay?: 'auto' | 'stripIfInteger';
 };
 
-const ROUNDING_MODES: Partial<
+export const ROUNDING_MODES: Partial<
   Record<string, NonNullable<ModernNumberFormatOptions['roundingMode']>>
 > = {
   floor: 'floor',
@@ -43,7 +43,7 @@ const ROUNDING_MODES: Partial<
   'half-up': 'halfExpand',
 };
 
-const HOUR_CYCLES: Record<string, Intl.LocaleHourCycleKey> = {
+export const HOUR_CYCLES: Record<string, Intl.LocaleHourCycleKey> = {
   h: 'h12',
   H: 'h23',
   K: 'h11',
@@ -353,7 +353,8 @@ function parseSignificantPrecision(
 }
 
 export function parseDateTimeSkeletonOptions(
-  skeleton: string
+  skeleton: string,
+  { localeHour = false }: { localeHour?: boolean } = {}
 ): Intl.DateTimeFormatOptions {
   const result: Intl.DateTimeFormatOptions = {};
 
@@ -388,6 +389,16 @@ export function parseDateTimeSkeletonOptions(
         break;
       case 'a':
         result.hour12 = true;
+        break;
+      // j and J remain only when parsed without a locale. FormatJS ignores
+      // them; with `localeHour` they are the locale's hour, which Intl spells
+      // as an hour with no hourCycle. J has no day period, so it is a 24-hour
+      // cycle, as in resolveLocaleHourSkeleton.
+      case 'j':
+      case 'J':
+        if (!localeHour) break;
+        result.hour = length === 2 ? '2-digit' : 'numeric';
+        if (field[0] === 'J') result.hourCycle = 'h23';
         break;
       case 'h':
       case 'H':

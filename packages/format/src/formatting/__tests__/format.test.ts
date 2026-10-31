@@ -7,7 +7,8 @@ describe('_formatMessageICU', () => {
     ['plain text', {}, 'plain text'],
     ['Hello {name}', { name: 'Ada' }, 'Hello Ada'],
     ['Zero: {value}', { value: 0 }, 'Zero: 0'],
-    ['False: {value}', { value: false }, 'False: '],
+    ['False: {value}', { value: false }, 'False: false'],
+    ['True: {value}!', { value: true }, 'True: true!'],
     ['Null: {value}', { value: null }, 'Null: '],
     [
       '{kind, select, constructor {ctor} __proto__ {proto} other {fallback}}',
@@ -290,22 +291,16 @@ describe('_formatMessageICU', () => {
     }
   );
 
-  it('preserves boolean interpolation serialization from the previous runtime', () => {
-    const result = publicFormatMessage('before {value} after', {
-      variables: { value: true },
-    });
-
-    expect(result).toBe('before ,true, after');
-  });
-
-  it('preserves Date interpolation serialization from the previous runtime', () => {
+  it('formats booleans and Dates as text, like a template literal', () => {
     const value = new Date(0);
     expect(
+      publicFormatMessage('before {value} after', {
+        variables: { value: true },
+      })
+    ).toBe('before true after');
+    expect(
       publicFormatMessage('before {value} after', { variables: { value } })
-    ).toBe(['before ', value, ' after'].toString());
-    expect(publicFormatMessage('{value}', { variables: { value } })).toBe(
-      value.toString()
-    );
+    ).toBe(`before ${value} after`);
   });
 });
 

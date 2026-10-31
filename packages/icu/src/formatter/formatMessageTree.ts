@@ -5,13 +5,20 @@
 
 import { resolveLocale } from './locale';
 import { libraryDefaultLocale } from '../settings/settings';
-import {
-  SKELETON_TYPE,
-  TYPE,
-  type ExtendedNumberFormatOptions,
-  type MessageFormatElement,
-  type MessageVariables,
+import type {
+  ExtendedNumberFormatOptions,
+  MessageVariables,
 } from '../types-dir/ast';
+import type {
+  DateTimeNode,
+  MessageBranches,
+  MessageTree,
+  NumberNode,
+  PluralNode,
+  SelectNode,
+  TagNode,
+} from '../tree/messageTree';
+import { branchNodes } from '../tree/walk';
 
 const NUMBER_STYLES: Record<string, Intl.NumberFormatOptions> = {
   integer: { maximumFractionDigits: 0 },
@@ -48,6 +55,54 @@ const TIME_STYLES: Record<string, Intl.DateTimeFormatOptions> = {
 type PluralValue = number | bigint;
 type TagFormatter = (parts: unknown[]) => unknown;
 
+/**
+ * A value that formats as text, as in a template literal: `true` is
+ * `'true'` and `12n` is `'12'`. `null` and `undefined` format as nothing. A
+ * Date is formatted by a date or time node, and is `String(date)` elsewhere.
+ */
+export type MessagePlainValue =
+  | string
+  | number
+  | bigint
+  | boolean
+  | Date
+  | null
+  | undefined;
+
+/**
+ * Formats a tag's children, such as `(parts) => <b>{parts}</b>`. It returns
+ * one part or several; several are spliced into the message, so `R` is the
+ * type of one part, not of the array.
+ */
+export type MessageTagFormatter<R> = (
+  parts: Array<string | R>
+) => R | Array<string | R>;
+
+/**
+ * Values for `formatMessageTree`: plain values, rich values `R` (such as
+ * React elements), and tag formatters that return them.
+ */
+export type MessageTreeValues<R> = Readonly<
+  Record<string, MessagePlainValue | R | MessageTagFormatter<R>>
+>;
+
+/**
+ * A tag's returned array is always several parts, so `R`, the type of one
+ * part, cannot be an array where tags format: `[42]` would reach an outer tag
+ * as the number 42, not as one `number[]`.
+ */
+export type OnePartValues<R> = [R] extends [readonly unknown[]]
+  ? NoInfer<Readonly<Record<string, MessagePlainValue | R>>>
+  : unknown;
+
+/**
+ * A message with rich values: that value, or the parts around it. Adjacent
+ * text is merged, so string-only parts still give one string.
+ */
+export type FormattedMessage<R> = [R] extends [string]
+  ? string
+  : string | R | Array<string | R>;
+
 type FormatContext = {
   message: string;
   locales: string | string[];
@@ -58,32 +113,63 @@ type FormatContext = {
 };
 
 /**
- * Formats an ICU syntax tree without parsing. Locales are validated the same
- * way as `formatMessage` from `@generaltranslation/icu/parser`.
+ * Formats a message tree without parsing, with native Intl. Plain values
+ * format as text, so the result is a string:
+ *
+ *   formatMessageTree(['Hi ', ['name']], 'en', { name: 'Ada' }); // 'Hi Ada'
+ *
+ * A rich value, or a tag formatter's result, is kept as a part:
+ *
+ *   formatMessageTree(['Read the ', ['b', 'tag', ['terms']]], 'en', {
+ *     b: (parts) => <b>{parts}</b>,
+ *   }); // ['Read the ', <b>terms</b>]
+ *
+ * Locales are validated the same way as `formatMessage` from
+ * `@generaltranslation/icu/parser`.
  */
-export function formatAst(
-  ast: MessageFormatElement[],
+export function formatMessageTree(
+  tree: MessageTree,
+  locales?: string | string[],
+  variables?: Readonly<Record<string, MessagePlainValue>>
+): string;
+/**
+ * With rich values or tag formatters, the result is a string, a rich value,
+ * or the parts around them. TypeScript infers `R` from rich values; a tag
+ * formatter alone needs it written, as in
+ * `formatMessageTree<ReactNode>(tree, locale, { b: (parts) => <b>{parts}</b> })`,
+ * since `R` types its `parts`.
+ */
+export function formatMessageTree<R>(
+  tree: MessageTree,
+  locales: string | string[] | undefined,
+  variables: MessageTreeValues<R> & OnePartValues<R>
+): FormattedMessage<R>;
+export function formatMessageTree(
+  tree: MessageTree,
   locales: string | string[] = libraryDefaultLocale,
   variables: MessageVariables = {}
 ): unknown {
   resolveLocale(locales);
-  return formatParsedAst(ast, '', locales, variables);
+  return formatParsedTree(tree, '', locales, variables);
 }
 
 /** Formats a tree whose locales were already validated; `message` is reported on errors. */
-export function formatParsedAst(
-  ast: MessageFormatElement[],
+export function formatParsedTree(
+  tree: MessageTree,
   message: string,
   locales: string | string[],
   variables: MessageVariables
 ): unknown {
-  const parts = formatElements(ast, { message, locales, variables });
+  const parts = formatNodes(tree, { message, locales, variables });
   if (parts.length === 1) return parts[0];
   return parts.length ? parts : '';
 }
 
-function formatElements(
-  elements: MessageFormatElement[],
+// `switch (node[1])` does not narrow a tuple union, so cases cast to these.
+type BranchNode = SelectNode | PluralNode;
+
+function formatNodes(
+  nodes: MessageTree,
   context: FormatContext,
   currentPluralValue?: PluralValue
 ): unknown[] {
@@ -97,33 +183,31 @@ function formatElements(
     }
   };
 
-  for (const element of elements) {
-    switch (element.type) {
-      case TYPE.literal:
-        append(element.value);
-        break;
-      case TYPE.pound:
-        if (currentPluralValue !== undefined) {
-          append(getNumberFormat(context).format(currentPluralValue));
-        }
-        break;
-      case TYPE.argument: {
-        const value = requireVariable(context.variables, element.value);
-        append(
-          typeof value === 'string' || typeof value === 'number'
-            ? String(value)
-            : value || ''
-        );
+  for (const node of nodes) {
+    if (typeof node === 'string') {
+      append(node);
+      continue;
+    }
+    if (node === 0) {
+      if (currentPluralValue !== undefined) {
+        append(getNumberFormat(context).format(currentPluralValue));
+      }
+      continue;
+    }
+    const name = node[0];
+    switch (node[1]) {
+      case undefined: {
+        const value = requireVariable(context.variables, name);
+        append(plainValueText(value));
         break;
       }
-      case TYPE.number: {
-        const value = requireVariable(context.variables, element.value);
+      case 'number': {
+        const value = requireVariable(context.variables, name);
+        const style = (node as NumberNode)[2];
         const options: ExtendedNumberFormatOptions =
-          typeof element.style === 'string'
-            ? (NUMBER_STYLES[element.style] ?? {})
-            : element.style?.type === SKELETON_TYPE.number
-              ? element.style.parsedOptions
-              : {};
+          typeof style === 'string'
+            ? (NUMBER_STYLES[style] ?? {})
+            : (style ?? {});
         const { scale, ...intlOptions } = options;
         const scaledValue = applyScale(value, scale);
         append(
@@ -131,66 +215,59 @@ function formatElements(
         );
         break;
       }
-      case TYPE.date:
-      case TYPE.time: {
-        const value = requireVariable(context.variables, element.value);
-        const namedStyles =
-          element.type === TYPE.date ? DATE_STYLES : TIME_STYLES;
+      case 'date':
+      case 'time': {
+        const value = requireVariable(context.variables, name);
+        const isDate = node[1] === 'date';
+        const style = (node as DateTimeNode)[2];
         const options =
-          typeof element.style === 'string'
-            ? namedStyles[element.style]
-            : element.style?.type === SKELETON_TYPE.dateTime
-              ? element.style.parsedOptions
-              : element.type === TYPE.time
-                ? TIME_STYLES.medium
-                : undefined;
+          typeof style === 'string'
+            ? (isDate ? DATE_STYLES : TIME_STYLES)[style]
+            : (style ?? (isDate ? undefined : TIME_STYLES.medium));
         append(
           getDateTimeFormat(context, options).format(value as number | Date)
         );
         break;
       }
-      case TYPE.select: {
-        const value = String(requireVariable(context.variables, element.value));
-        const option =
-          ownOption(element.options, value) ?? element.options.other;
-        if (!option)
-          throw invalidSelection(element.value, value, element.options);
-        formatElements(option.value, context).forEach(append);
+      case 'select': {
+        const branches = (node as BranchNode)[2];
+        const value = String(requireVariable(context.variables, name));
+        const branch =
+          ownBranch(branches, value) ?? ownBranch(branches, 'other');
+        if (!branch) throw invalidSelection(name, value, branches);
+        formatNodes(branch, context).forEach(append);
         break;
       }
-      case TYPE.plural: {
-        const rawValue = requireVariable(context.variables, element.value);
-        const exactSelector = `=${String(rawValue)}`;
-        let option = ownOption(element.options, exactSelector);
+      case 'plural':
+      case 'selectordinal': {
+        const [, kind, branches, offset = 0] = node as PluralNode;
+        const rawValue = requireVariable(context.variables, name);
+        let branch = ownBranch(branches, `=${String(rawValue)}`);
         const value =
           typeof rawValue === 'bigint' ? rawValue : Number(rawValue);
         const adjustedValue =
-          typeof value === 'bigint'
-            ? value - BigInt(element.offset)
-            : value - element.offset;
-        if (!option && hasPluralCategoryOption(element.options)) {
+          typeof value === 'bigint' ? value - BigInt(offset) : value - offset;
+        if (!branch && hasPluralCategoryOption(branches)) {
           const category = getPluralRules(
             context,
-            element.pluralType ?? 'cardinal'
+            kind === 'plural' ? 'cardinal' : 'ordinal'
           ).select(toPluralRulesNumber(adjustedValue));
-          option = ownOption(element.options, category);
+          branch = ownBranch(branches, category);
         }
-        option ??= element.options.other;
-        if (!option) {
-          throw invalidSelection(element.value, rawValue, element.options);
-        }
-        formatElements(option.value, context, adjustedValue).forEach(append);
+        branch ??= ownBranch(branches, 'other');
+        if (!branch) throw invalidSelection(name, rawValue, branches);
+        formatNodes(branch, context, adjustedValue).forEach(append);
         break;
       }
-      case TYPE.tag: {
-        const formatter = requireVariable(context.variables, element.value);
+      case 'tag': {
+        const formatter = requireVariable(context.variables, name);
         if (typeof formatter !== 'function') {
           throw new TypeError(
-            `The ICU tag variable "${element.value}" must be a function.`
+            `The ICU tag variable "${name}" must be a function.`
           );
         }
-        const children = formatElements(
-          element.children,
+        const children = formatNodes(
+          (node as TagNode)[2],
           context,
           currentPluralValue
         );
@@ -203,6 +280,25 @@ function formatElements(
   }
 
   return result;
+}
+
+function ownBranch(
+  branches: MessageBranches,
+  key: string
+): MessageTree | undefined {
+  const branch = ownOption(branches, key);
+  return branch === undefined ? undefined : branchNodes(branch);
+}
+
+function plainValueText(value: unknown): unknown {
+  if (value == null) return '';
+  return typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'bigint' ||
+    typeof value === 'boolean' ||
+    value instanceof Date
+    ? String(value)
+    : value;
 }
 
 function requireVariable(variables: MessageVariables, name: string): unknown {
