@@ -116,6 +116,26 @@
         "types": "./dist/internal-types.d.mts",
         "default": "./dist/internal-types.mjs"
       }
+    },
+    "./unstable": {
+      "require": {
+        "types": "./dist/unstable.d.cts",
+        "default": "./dist/unstable.cjs"
+      },
+      "import": {
+        "types": "./dist/unstable.d.mts",
+        "default": "./dist/unstable.mjs"
+      }
+    },
+    "./unstable/internal": {
+      "require": {
+        "types": "./dist/unstable-internal.d.cts",
+        "default": "./dist/unstable-internal.cjs"
+      },
+      "import": {
+        "types": "./dist/unstable-internal.d.mts",
+        "default": "./dist/unstable-internal.mjs"
+      }
     }
   }
 }
