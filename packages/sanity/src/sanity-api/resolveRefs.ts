@@ -6,6 +6,10 @@ import {
   metadataTranslations,
   TRANSLATION_METADATA_TYPE,
 } from '../utils/translationMetadata';
+import {
+  allowsNonDefaultSourceLocales,
+  SOURCE_LANGUAGE_FIELD,
+} from '../utils/translationSource';
 
 interface Reference {
   _type: 'reference';
@@ -26,11 +30,15 @@ const isReference = (value: unknown): value is Reference =>
  * 2. Fetches the referenced documents, looks for the translation.metadata file for each reference
  * 3. Updates the document reference with the other translated document reference
  * 4. Returns the document with the updated references
+ *
+ * @param sourceLanguage - language of the original `doc` was translated from.
+ *   Defaults to the configured source locale.
  */
 export async function resolveRefs(
   doc: SanityDocument,
   locale: string,
-  client: SanityClient
+  client: SanityClient,
+  sourceLanguage: string = pluginConfig.getSourceLocale()
 ) {
   const references = findReferences(doc);
 
@@ -41,7 +49,8 @@ export async function resolveRefs(
   const translatedRefs = await resolveTranslatedReferences(
     references,
     locale,
-    client
+    client,
+    sourceLanguage
   );
   return updateDocumentReferences(doc, translatedRefs);
 }
@@ -120,7 +129,8 @@ function findReferences(
 async function resolveTranslatedReferences(
   references: { ref: Reference; path: string[] }[],
   locale: string,
-  client: SanityClient
+  client: SanityClient,
+  sourceLanguage: string
 ): Promise<Map<string, string>> {
   const refIds = references.map((r) => r.ref._ref);
   const translatedRefs = new Map<string, string>();
@@ -130,6 +140,54 @@ async function resolveTranslatedReferences(
   }
 
   const sourceLocale = pluginConfig.getSourceLocale();
+
+  if (!allowsNonDefaultSourceLocales()) {
+    return resolveSourceLocaleReferences(refIds, locale, client, sourceLocale);
+  }
+
+  if (sourceLanguage !== sourceLocale) {
+    return resolveGroupMemberReferences(refIds, locale, client);
+  }
+
+  // A source-locale document links to each group's source-locale entry, or
+  // to the original of a group marked with a non-default original.
+  const originals = metadataTranslations(
+    `in [$sourceLocale, ^.${SOURCE_LANGUAGE_FIELD}]`
+  );
+  const query = `*[_type == "${TRANSLATION_METADATA_TYPE}" && count(${originals}[value._ref in $refIds]) > 0] {
+    "originalRefs": ${originals}.value._ref,
+    "translatedRefs": ${metadataTranslations('== $locale')}.value._ref
+  }[count(translatedRefs) > 0]`;
+
+  const translationPairs: {
+    originalRefs: string[];
+    translatedRefs: string[];
+  }[] = await client.fetch(query, { refIds, sourceLocale, locale });
+
+  // Build the translation map
+  for (const { originalRefs, translatedRefs: localeRefs } of translationPairs) {
+    const translatedRef = localeRefs[localeRefs.length - 1];
+    for (const originalRef of originalRefs) {
+      if (originalRef !== translatedRef) {
+        translatedRefs.set(originalRef, translatedRef);
+      }
+    }
+  }
+
+  return translatedRefs;
+}
+
+/**
+ * Without `allowNonDefaultSourceLocales`: each reference to a group's
+ * source-locale entry resolves to the group's document in `locale`.
+ */
+async function resolveSourceLocaleReferences(
+  refIds: string[],
+  locale: string,
+  client: SanityClient,
+  sourceLocale: string
+): Promise<Map<string, string>> {
+  const translatedRefs = new Map<string, string>();
 
   // Optimized GROQ query that directly returns only the needed translation pairs
   const query = `*[_type == "${TRANSLATION_METADATA_TYPE}" && count(${metadataTranslations('== $sourceLocale', 'value._ref in $refIds')}) > 0] {
@@ -146,6 +204,38 @@ async function resolveTranslatedReferences(
     translatedRefs.set(originalRef, translatedRef);
   }
 
+  return translatedRefs;
+}
+
+/**
+ * A document translated from an original outside the configured source locale
+ * carries references to documents in that original's locale — originals or
+ * translations. Any member of a translation group resolves to the group's
+ * document in `locale`.
+ */
+async function resolveGroupMemberReferences(
+  refIds: string[],
+  locale: string,
+  client: SanityClient
+): Promise<Map<string, string>> {
+  const translatedRefs = new Map<string, string>();
+  const query = `*[_type == "${TRANSLATION_METADATA_TYPE}" && count(translations[value._ref in $refIds]) > 0] {
+    "memberRefs": translations[defined(value._ref)].value._ref,
+    "translatedRefs": ${metadataTranslations('== $locale')}.value._ref
+  }[count(translatedRefs) > 0]`;
+
+  const groups: { memberRefs: string[]; translatedRefs: string[] }[] =
+    await client.fetch(query, { refIds, locale });
+
+  const requested = new Set(refIds);
+  for (const { memberRefs, translatedRefs: localeRefs } of groups) {
+    const translatedRef = localeRefs[localeRefs.length - 1];
+    for (const memberRef of memberRefs) {
+      if (requested.has(memberRef) && memberRef !== translatedRef) {
+        translatedRefs.set(memberRef, translatedRef);
+      }
+    }
+  }
   return translatedRefs;
 }
 
