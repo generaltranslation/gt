@@ -18,10 +18,12 @@ export const createCacheComponentsMissingRequestFunctionsWarning = (
     .join(' and ');
 
   return createGtNextDiagnostic({
-    whatHappened: `cacheComponents is enabled, but custom ${functionNames} ${isPlural ? 'are' : 'is'} not configured`,
-    wayOut:
-      'cacheComponents requires explicit request functions because request values cannot be inferred safely during prerendering',
-    fix: `Add ${fileNames} ${isPlural ? 'files' : 'file'}, or configure ${configKeys}`,
+    severity: 'Warning',
+    whatHappened: `cacheComponents is enabled, but custom ${functionNames} ${isPlural ? 'are' : 'is'} not configured, so next build fails with "uncached or runtime data during prerendering" when the default ${isPlural ? 'functions run' : 'function runs'} outside a <Suspense> boundary`,
+    why: `${isPlural ? 'they read' : 'it reads'} request headers or cookies`,
+    fix: `Add ${fileNames}, or configure ${configKeys}`,
+    docsUrl:
+      'https://generaltranslation.com/en-US/docs/react/nextjs/cache-components#request-values',
   });
 };
 
@@ -40,9 +42,10 @@ export const cacheComponentsMissingLoadTranslationsError =
     severity: 'Error',
     whatHappened:
       'cacheComponents is enabled, but custom loadTranslations() is not configured',
-    wayOut:
-      'gt-next cannot safely use the default remote translation loader with Cache Components',
+    why: 'gt-next cannot safely use the default remote translation loader with Cache Components',
     fix: 'Add a loadTranslations.ts file, or configure loadTranslationsPath, and mark any dynamic loading with "use cache"',
+    docsUrl:
+      'https://generaltranslation.com/en-US/docs/react/nextjs/cache-components#local-translations',
   });
 
 export const cacheComponentsDevHotReloadDisabledWarning =
