@@ -9,7 +9,9 @@
     "dist",
     "CHANGELOG.md"
   ],
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/unstable-icu.*"
+  ],
   "peerDependencies": {
     "react": ">=16.8.0",
     "react-dom": ">=16.8.0",
@@ -110,6 +112,13 @@
         "default": "./dist/unstable.server.mjs"
       },
       "default": "./dist/unstable.server.mjs"
+    },
+    "./unstable/icu": {
+      "import": {
+        "types": "./dist/unstable-icu.d.mts",
+        "default": "./dist/unstable-icu.mjs"
+      },
+      "default": "./dist/unstable-icu.mjs"
     },
     "./plugin/vite": {
       "import": {

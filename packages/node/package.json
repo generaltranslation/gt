@@ -9,7 +9,9 @@
     "dist",
     "CHANGELOG.md"
   ],
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/unstable-icu.*"
+  ],
   "scripts": {
     "build:release": "pnpm run build:clean",
     "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
@@ -98,6 +100,16 @@
       "import": {
         "types": "./dist/unstable.d.mts",
         "default": "./dist/unstable.mjs"
+      }
+    },
+    "./unstable/icu": {
+      "require": {
+        "types": "./dist/unstable-icu.d.cts",
+        "default": "./dist/unstable-icu.cjs"
+      },
+      "import": {
+        "types": "./dist/unstable-icu.d.mts",
+        "default": "./dist/unstable-icu.mjs"
       }
     }
   }

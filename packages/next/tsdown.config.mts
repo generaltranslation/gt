@@ -22,6 +22,7 @@ const esmDeclarationStubsPlugin = createEsmDeclarationStubsPlugin(
     'unstable.types',
     'unstable.rsc',
     'unstable/server',
+    'unstable/icu',
     'middleware',
     'link',
     'internal/_dictionary',

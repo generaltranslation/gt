@@ -19,6 +19,8 @@ const runtimeArtifactNames = [
   'unstable.mjs',
   'unstable.rsc.cjs',
   'unstable.rsc.mjs',
+  'unstable-icu.cjs',
+  'unstable-icu.mjs',
 ].sort();
 const builtArtifacts = runtimeArtifactNames.map((artifact) =>
   join(packageRoot, 'dist', artifact)
@@ -51,7 +53,7 @@ function isAllowedExternalizedSubpath(
   specifier: string
 ): boolean {
   return (
-    (file.startsWith('index.') || file.startsWith('unstable.')) &&
+    (file.startsWith('index.') || file.startsWith('unstable')) &&
     (specifier.startsWith('@generaltranslation/react-core/') ||
       specifier.startsWith('gt-i18n/'))
   );

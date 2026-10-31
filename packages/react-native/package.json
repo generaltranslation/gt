@@ -28,6 +28,11 @@
       "types": "./dist/module/unstable.d.ts",
       "default": "./dist/module/unstable.js"
     },
+    "./unstable/icu": {
+      "source": "./src/unstable-icu.ts",
+      "types": "./dist/module/unstable-icu.d.ts",
+      "default": "./dist/module/unstable-icu.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -50,7 +55,10 @@
   "sideEffects": [
     "./dist/commonjs/NativeGtReactNative.*",
     "./dist/module/NativeGtReactNative.*",
-    "./src/NativeGtReactNative.*"
+    "./src/NativeGtReactNative.*",
+    "./dist/module/unstable-icu.*",
+    "./dist/commonjs/unstable-icu.*",
+    "./src/unstable-icu.*"
   ],
   "scripts": {
     "patch": "pnpm version patch",
