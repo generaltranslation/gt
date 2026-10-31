@@ -17,9 +17,13 @@ const repoRoot = resolve(packageRoot, '../..');
 
 const entrypoints = [
   'packages/react-core/src/components-rsc.ts',
+  'packages/react-core/src/unstable-rsc.ts',
   'packages/react/src/index.rsc.ts',
+  'packages/react/src/unstable.rsc.ts',
   'packages/next/src/index.server.ts',
   'packages/next/src/server.ts',
+  'packages/next/src/unstable.rsc.ts',
+  'packages/next/src/unstable/server.ts',
   ...listSourceFiles('packages/next/src/server-dir'),
   ...listSourceFiles('packages/next/src/branches'),
   ...listSourceFiles('packages/next/src/variables'),
@@ -32,6 +36,9 @@ const workspaceSourceMap: Record<string, string> = {
   '@generaltranslation/react-core/pure': 'packages/react-core/src/pure.ts',
   '@generaltranslation/react-core/components-rsc':
     'packages/react-core/src/components-rsc.ts',
+  '@generaltranslation/react-core/unstable-rsc':
+    'packages/react-core/src/unstable-rsc.ts',
+  'gt-react/unstable': 'packages/react/src/unstable.rsc.ts',
 };
 
 // Specifiers that must never be imported from the RSC/server graph.
@@ -52,6 +59,9 @@ const forbiddenFiles = [
   'packages/react-core/src/context/InternalGTProvider.tsx',
   'packages/react/src/index.client.ts',
   'packages/react/src/index.server.ts',
+  'packages/react/src/unstable.ts',
+  'packages/react-core/src/unstable.ts',
+  'packages/react-core/src/unstable/useGT.ts',
 ];
 const forbiddenDirs = ['packages/react-core/src/hooks/'];
 const allowedFilesInForbiddenDirs = [

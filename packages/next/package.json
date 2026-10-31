@@ -17,6 +17,10 @@
     "./dist/index.rsc.*",
     "./dist/index.client.*",
     "./dist/server.*",
+    "./dist/unstable.server.*",
+    "./dist/unstable.rsc.*",
+    "./dist/unstable.client.*",
+    "./dist/unstable/server.*",
     "./dist/link.*",
     "./dist/link/Link.*",
     "./dist/utils/client-boundary.*"
@@ -119,6 +123,48 @@
       "default": {
         "types": "./dist/server.d.ts",
         "default": "./dist/server.js"
+      }
+    },
+    "./unstable": {
+      "react-server": {
+        "import": {
+          "types": "./dist/unstable.rsc.d.mts",
+          "default": "./dist/unstable.rsc.mjs"
+        },
+        "default": {
+          "types": "./dist/unstable.rsc.d.ts",
+          "default": "./dist/unstable.rsc.js"
+        }
+      },
+      "workerd": {
+        "import": "./dist/unstable.server.mjs",
+        "default": "./dist/unstable.server.js"
+      },
+      "worker": {
+        "import": "./dist/unstable.server.mjs",
+        "default": "./dist/unstable.server.js"
+      },
+      "browser": {
+        "import": "./dist/unstable.client.mjs",
+        "default": "./dist/unstable.client.js"
+      },
+      "import": {
+        "types": "./dist/unstable.types.d.mts",
+        "default": "./dist/unstable.server.mjs"
+      },
+      "default": {
+        "types": "./dist/unstable.types.d.ts",
+        "default": "./dist/unstable.server.js"
+      }
+    },
+    "./unstable/server": {
+      "import": {
+        "types": "./dist/unstable/server.d.mts",
+        "default": "./dist/unstable/server.mjs"
+      },
+      "default": {
+        "types": "./dist/unstable/server.d.ts",
+        "default": "./dist/unstable/server.js"
       }
     },
     "./middleware": {
