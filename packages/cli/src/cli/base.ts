@@ -327,12 +327,10 @@ export class BaseCLI {
       this.program
         .command('stage')
         .description(
-          'Submits the project to the General Translation API for translation. Translations created using this command will require human approval.'
+          'Submits the project to the General Translation API for translation without downloading the results. Projects with human review enabled hold the translations for approval.'
         )
     ).action(async (initOptions: TranslateFlags) => {
-      displayHeader(
-        'Staging project for translation with approval required...'
-      );
+      displayHeader('Staging project for translation...');
       await this.handleStage(initOptions);
       logger.endCommand('Done!');
     });
@@ -687,9 +685,12 @@ export class BaseCLI {
     if (!settings.stageTranslations) {
       // Update settings.stageTranslations to true
       settings.stageTranslations = true;
-      await updateConfig(settings.config, {
-        stageTranslations: true,
-      });
+      // A dry run only parses and validates, so it leaves gt.config.json as is
+      if (!initOptions.dryRun) {
+        await updateConfig(settings.config, {
+          stageTranslations: true,
+        });
+      }
     }
     await handleStage(initOptions, settings, this.library, true);
   }
