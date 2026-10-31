@@ -83,12 +83,32 @@ describe.sequential('runtime translation requests', () => {
         locale: 'es',
         dataFormat: 'STRING',
       },
+      tree: {
+        success: true,
+        translation: ['Hola, ', ['name']],
+        locale: 'es',
+        dataFormat: 'ICU_TREE',
+      },
+      invalidTree: {
+        success: true,
+        translation: 'Hola',
+        locale: 'es',
+        dataFormat: 'ICU_TREE',
+      },
     });
 
     const result = await translateMany(
       {
         jsx: { source: ['Hello ', { t: 'strong', c: ['world'] }] },
         invalid: { source: 'Forty-two' },
+        tree: {
+          source: ['Hello, ', ['name']],
+          metadata: { dataFormat: 'ICU_TREE' },
+        },
+        invalidTree: {
+          source: ['Hello'],
+          metadata: { dataFormat: 'ICU_TREE' },
+        },
       },
       options,
       mockConfig
@@ -102,6 +122,17 @@ describe.sequential('runtime translation requests', () => {
         dataFormat: 'JSX',
       },
       invalid: {
+        success: false,
+        error: 'Invalid translation returned',
+        code: 500,
+      },
+      tree: {
+        success: true,
+        translation: ['Hola, ', ['name']],
+        locale: 'es',
+        dataFormat: 'ICU_TREE',
+      },
+      invalidTree: {
         success: false,
         error: 'Invalid translation returned',
         code: 500,

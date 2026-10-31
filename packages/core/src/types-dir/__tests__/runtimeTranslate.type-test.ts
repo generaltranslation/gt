@@ -1,6 +1,8 @@
 import type { createGtApiAdapter } from '../../adapter/createGtApi.js';
 import type {
+  ContentFor,
   TranslateConfig,
+  TranslateManyEntry,
   TranslateManyResult,
   TranslationRequestConfig,
   TranslationResult,
@@ -41,3 +43,11 @@ const invalidTimeoutSpelling: TranslateConfig = {
   timeout: 1_000,
 };
 void invalidTimeoutSpelling;
+
+// A message tree is translation input like any other format.
+const tree: ContentFor<'ICU_TREE'> = ['Hello, ', ['name']];
+const treeEntry: TranslateManyEntry = {
+  source: tree,
+  metadata: { dataFormat: 'ICU_TREE' },
+};
+void treeEntry;

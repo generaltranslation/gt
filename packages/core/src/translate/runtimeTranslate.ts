@@ -6,6 +6,7 @@ import {
   type RuntimeTranslationResponse,
   type TranslateData,
 } from '@generaltranslation/api';
+import { isMessageTree } from '@generaltranslation/icu';
 import {
   resolveCanonicalLocale,
   standardizeLocale,
@@ -248,7 +249,19 @@ function toTranslationResult(
       locale: result.locale,
     };
   }
-  if (result.dataFormat !== 'JSX' && typeof result.translation === 'string') {
+  if (result.dataFormat === 'ICU_TREE' && isMessageTree(result.translation)) {
+    return {
+      success: true,
+      translation: result.translation,
+      dataFormat: result.dataFormat,
+      locale: result.locale,
+    };
+  }
+  if (
+    result.dataFormat !== 'JSX' &&
+    result.dataFormat !== 'ICU_TREE' &&
+    typeof result.translation === 'string'
+  ) {
     return {
       success: true,
       translation: result.translation,

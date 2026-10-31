@@ -1,6 +1,6 @@
 import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
-import type { DataFormat } from '@generaltranslation/format/types';
+import type { StringFormat } from '@generaltranslation/format/types';
 import { InlineMetadata } from '../processTranslationCall/extractStringEntryMetadata.js';
 import { ParsingConfig } from '../types.js';
 import { ParsingOutput } from '../types.js';
@@ -96,7 +96,7 @@ export function deriveExpression({
   for (const string of strings) {
     for (const context of contexts) {
       output.updates.push({
-        dataFormat: (metadata.format || 'ICU') as DataFormat,
+        dataFormat: (metadata.format || 'ICU') as StringFormat,
         source: string,
         metadata: {
           ...metadata,
