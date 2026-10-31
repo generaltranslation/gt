@@ -21,6 +21,7 @@ import {
   defaultLocaleRoutingEnabledCookieName,
   defaultReferrerLocaleCookieName,
 } from './cookies';
+import { localizeHref } from '../link/localize-utils';
 import { compilePathRegex, pathnameMatchesRegex } from './pathRegex';
 
 // withGTConfig exposes this build-time value to both middleware and client code.
@@ -56,6 +57,17 @@ export function Client_GTProvider({
   const reloadBrowserPage = useCallback(() => {
     globalThis.location.reload();
   }, []);
+  const navigateToLocaleUrl = useCallback(
+    (href: string) => {
+      // Older Next versions can retain a stale layout/provider after a redirect.
+      if (!supportsLocaleRefresh) {
+        globalThis.location.assign(href);
+        return;
+      }
+      router.push(href);
+    },
+    [router, supportsLocaleRefresh]
+  );
   const syncServerContent = useCallback<
     NonNullable<SharedGTProviderProps['_reload']>
   >(
@@ -84,10 +96,41 @@ export function Client_GTProvider({
           return;
         }
       }
+      if (localeRoutingApplies && locale !== defaultLocale) {
+        // Switching to a non-default locale navigates straight to the target
+        // locale's URL, computed with the same rules as `gt-next/link`, so the
+        // middleware does not need an extra redirect hop. Localized path
+        // aliases and locale availability stay the middleware's job.
+        const rawPathLocale = extractLocale(currentPathname);
+        const currentPathLocale = resolvePathLocale(
+          currentPathname,
+          i18nConfig,
+          defaultLocale,
+          locales
+        );
+        // The middleware only ever prefixes configured locales, so a first
+        // path segment that is not one (e.g. `/courses`) is not a locale prefix.
+        const unprefixedPathname =
+          rawPathLocale && locales.includes(rawPathLocale)
+            ? stripLocaleFromPathname(currentPathname, rawPathLocale)
+            : currentPathname;
+        const search = globalThis.location.search;
+        const hash = globalThis.location.hash;
+        const localizedHref = localizeHref(
+          `${unprefixedPathname}${search}${hash}`,
+          locale,
+          currentPathLocale,
+          defaultLocale
+        );
+        if (localizedHref !== `${currentPathname}${search}${hash}`) {
+          navigateToLocaleUrl(localizedHref);
+          return;
+        }
+      }
 
       refreshServerComponents();
     },
-    [refreshServerComponents, reloadBrowserPage]
+    [refreshServerComponents, reloadBrowserPage, navigateToLocaleUrl]
   );
   usePathCheck({
     reloadBrowserPage,
@@ -183,4 +226,12 @@ function resolvePathLocale(
 
 function extractLocale(pathname: string): string | null {
   return pathname.match(/^\/([^/]+)(?:\/|$)/)?.[1] ?? null;
+}
+
+/** Removes a leading `/<locale>` segment from a localized pathname. */
+function stripLocaleFromPathname(pathname: string, locale: string): string {
+  if (pathname === `/${locale}`) return '/';
+  if (pathname.startsWith(`/${locale}/`))
+    return pathname.slice(locale.length + 1);
+  return pathname;
 }
