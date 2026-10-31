@@ -67,8 +67,15 @@ export function useTranslations(rootId?: string): UseTranslationsFunction {
     [defaultLocale, gt, rootId, locale, resolveDictionaryEntry, shouldTranslate]
   );
 
+  // Wrap instead of mutating translateEntry, so the returned function changes
+  // identity when either translateEntry or translateObject changes
   return useMemo(
-    () => Object.assign(translateEntry, { obj: translateObject }),
+    () =>
+      Object.assign(
+        (suffix: string, options?: TranslationVariables) =>
+          translateEntry(suffix, options),
+        { obj: translateObject }
+      ),
     [translateEntry, translateObject]
   );
 }

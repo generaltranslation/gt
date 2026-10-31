@@ -1450,6 +1450,7 @@ describe('withGTConfig', () => {
 
       const expectedKeys = [
         '_GENERALTRANSLATION_I18N_CONFIG_PARAMS',
+        '_GENERALTRANSLATION_MIDDLEWARE_CONFIG',
         '_GENERALTRANSLATION_LOCAL_DICTIONARY_ENABLED',
         '_GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED',
         '_GENERALTRANSLATION_DEFAULT_LOCALE',
@@ -1480,6 +1481,33 @@ describe('withGTConfig', () => {
       const result = withGTConfig({}, { pathRegex });
 
       expect(result.env!._GENERALTRANSLATION_PATH_REGEX).toBe(pathRegex);
+    });
+
+    it('exposes middleware options to createNextMiddleware separately', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const pathConfig = { '/about': { fr: '/a-propos' } };
+
+      const result = withGTConfig(
+        {},
+        { prefixDefaultLocale: true, enableSmartRouting: undefined, pathConfig }
+      );
+
+      expect(
+        JSON.parse(result.env!._GENERALTRANSLATION_MIDDLEWARE_CONFIG!)
+      ).toEqual({ prefixDefaultLocale: true, pathConfig });
+      const i18nConfig = JSON.parse(
+        result.env!._GENERALTRANSLATION_I18N_CONFIG_PARAMS!
+      );
+      expect(i18nConfig).not.toHaveProperty('prefixDefaultLocale');
+      expect(i18nConfig).not.toHaveProperty('pathConfig');
+    });
+
+    it('exposes no middleware options by default', async () => {
+      const withGTConfig = await getWithGTConfig();
+
+      expect(withGTConfig().env!._GENERALTRANSLATION_MIDDLEWARE_CONFIG).toBe(
+        '{}'
+      );
     });
 
     it('I18N_CONFIG_PARAMS contains non-credential config as JSON string', async () => {
