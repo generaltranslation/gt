@@ -37,6 +37,19 @@ import {
   getDocumentPublishedId,
 } from '../../utils/documentIds';
 import { getSelectedLocaleIds } from '../../utils/locales';
+import { pluginConfig } from '../../adapter/core';
+import { allowsNonDefaultSourceLocales } from '../../utils/translationSource';
+
+/**
+ * Explains why originals outside the source locale are missing from the
+ * list, including when they are all there is.
+ */
+function formatSkippedOriginalsNote(count: number): string {
+  const sourceLocale = pluginConfig.getSourceLocale();
+  return count === 1
+    ? `1 document written in a locale other than ${sourceLocale} is not included. Translate it from the Translate dialog on that document.`
+    : `${count} documents written in a locale other than ${sourceLocale} are not included. Translate each of them from the Translate dialog on that document.`;
+}
 
 const TranslationsToolContent: React.FC = () => {
   const [isTranslateAllDialogOpen, setIsTranslateAllDialogOpen] =
@@ -68,6 +81,8 @@ const TranslationsToolContent: React.FC = () => {
     handlePublishAllTranslations,
     branchId,
     getVersionId,
+    getTargetLocales,
+    skippedOriginalCount,
   } = useTranslations();
 
   // Track which specific operation is running
@@ -104,7 +119,11 @@ const TranslationsToolContent: React.FC = () => {
   const isWaitingOnTranslations = pendingTranslations.size > 0;
 
   const selectedLocaleIds = getSelectedLocaleIds(locales);
-  const totalTranslations = documents.length * selectedLocaleIds.length;
+  // A document is never translated into its own language.
+  const totalTranslations = documents.reduce(
+    (count, doc) => count + getSelectedLocaleIds(getTargetLocales(doc)).length,
+    0
+  );
   // Counted the same way the table marks a row imported, and only over the
   // selected locales, so deselecting one can't push the count past the total.
   const importedCount = documents.reduce((count, doc) => {
@@ -112,7 +131,7 @@ const TranslationsToolContent: React.FC = () => {
     const versionId = getVersionId(doc);
     return (
       count +
-      selectedLocaleIds.filter((localeId) => {
+      getSelectedLocaleIds(getTargetLocales(doc)).filter((localeId) => {
         const key = createTranslationStatusKey(
           branchId,
           publishedId,
@@ -215,6 +234,16 @@ const TranslationsToolContent: React.FC = () => {
                 />
               </Flex>
             </Flex>
+
+            {allowsNonDefaultSourceLocales() &&
+              !loadingDocuments &&
+              skippedOriginalCount > 0 && (
+                <Card padding={3} radius={2} tone='primary' border>
+                  <Text size={1}>
+                    {formatSkippedOriginalsNote(skippedOriginalCount)}
+                  </Text>
+                </Card>
+              )}
 
             <TranslationsTable />
           </Stack>

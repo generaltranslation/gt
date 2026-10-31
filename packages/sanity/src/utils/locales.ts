@@ -71,3 +71,14 @@ export function toggleAllLocales(
       : { ...locale, enabled: !allSelected }
   );
 }
+
+/**
+ * The locales a document can be translated into: every locale except the one
+ * it is written in.
+ */
+export function getDocumentTargetLocales(
+  locales: TranslationLocale[],
+  documentLanguage: string
+): TranslationLocale[] {
+  return locales.filter((locale) => locale.localeId !== documentLanguage);
+}

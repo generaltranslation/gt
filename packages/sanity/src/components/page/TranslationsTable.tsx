@@ -12,7 +12,6 @@ import {
 
 const DocumentRow: React.FC<{ document: SanityDocument }> = ({ document }) => {
   const {
-    locales,
     translationStatuses,
     pendingTranslations,
     importingTranslations,
@@ -21,6 +20,7 @@ const DocumentRow: React.FC<{ document: SanityDocument }> = ({ document }) => {
     handleImportDocument,
     branchId,
     getVersionId,
+    getTargetLocales,
   } = useTranslations();
 
   const schema = useSchema();
@@ -32,7 +32,9 @@ const DocumentRow: React.FC<{ document: SanityDocument }> = ({ document }) => {
     params: { id: publishedId, type: document._type },
   });
 
-  const enabledLocales = locales.filter((locale) => locale.enabled !== false);
+  const enabledLocales = getTargetLocales(document).filter(
+    (locale) => locale.enabled !== false
+  );
 
   return (
     <Card border radius={3} overflow='hidden'>
