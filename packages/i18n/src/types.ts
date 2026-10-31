@@ -18,7 +18,6 @@ export type {
   LookupOptionsFor,
   RuntimeTranslationOptions,
 } from './translation-functions/types/options';
-export type { Translation } from './i18n-cache/translations-manager/utils/types/translation-data';
 export type {
   Dictionary,
   DictionaryEntry,

@@ -1,4 +1,4 @@
-import { Translation } from 'gt-i18n/types';
+import type { Content } from 'generaltranslation/types';
 
 // TODO: Add purge key/locks to prevent concurrent purges across tabs
 // TODO: Add cache key/locks for non-atomic read-modify-write operations across tabs
@@ -6,7 +6,7 @@ import { Translation } from 'gt-i18n/types';
 // ===== Types ===== //
 
 /** A cached translation entry with expiry metadata */
-type CachedEntry = { t: Translation; exp: number };
+type CachedEntry = { t: Content; exp: number };
 
 // ===== Constants ===== //
 
@@ -32,7 +32,7 @@ const activeIntervals = new Map<string, ReturnType<typeof setInterval>>();
  */
 export class LocalStorageTranslationCache {
   private _storageKey: string;
-  private _writeBuffer: Record<string, Translation> = {};
+  private _writeBuffer: Record<string, Content> = {};
   private _flushTimer: ReturnType<typeof setTimeout> | null = null;
   private _estimatedSize: number = 0;
   private _maxSize: number;
@@ -59,7 +59,7 @@ export class LocalStorageTranslationCache {
   }: {
     locale: string;
     projectId: string;
-    init?: Record<string, Translation>;
+    init?: Record<string, Content>;
     maxSize?: number;
     ttl?: number;
     purgeInterval?: number;
@@ -90,10 +90,10 @@ export class LocalStorageTranslationCache {
    * Returns the full translation map (cache + pending buffer writes).
    * Filters out expired entries. Buffer entries take priority.
    */
-  getInternalCache(): Record<string, Translation> {
+  getInternalCache(): Record<string, Content> {
     const now = Date.now();
     const cache = this._readFromStorage();
-    const result: Record<string, Translation> = {};
+    const result: Record<string, Content> = {};
 
     for (const [key, entry] of Object.entries(cache)) {
       if (entry.exp > now) {
@@ -110,7 +110,7 @@ export class LocalStorageTranslationCache {
    * Queue a translation for writing to localStorage.
    * Writes are batched via a debounced flush.
    */
-  write(hash: string, translation: Translation): void {
+  write(hash: string, translation: Content): void {
     this._writeBuffer[hash] = translation;
     this._scheduleFlush();
   }
@@ -257,7 +257,7 @@ export class LocalStorageTranslationCache {
    * Persist new entries to localStorage with expiry timestamps.
    * Reads current cache, merges buffer on top, writes back.
    */
-  private initStorage(buffer: Record<string, Translation>): void {
+  private initStorage(buffer: Record<string, Content>): void {
     try {
       const cache = this._readFromStorage();
       const exp = Date.now() + this._ttl;

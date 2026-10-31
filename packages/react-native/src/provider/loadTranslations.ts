@@ -1,8 +1,8 @@
 import { getReactI18nCache } from '@generaltranslation/react-core/pure';
 import type { Hash } from 'gt-i18n/internal/types';
-import type { Translation } from 'gt-i18n/types';
+import type { Content } from '@generaltranslation/format/types';
 
-export type LocaleTranslations = Record<Hash, Translation>;
+export type LocaleTranslations = Record<Hash, Content>;
 
 const translationPromises = new WeakMap<
   object,

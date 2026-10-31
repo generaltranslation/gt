@@ -4,7 +4,7 @@ import {
   createDiagnosticMessage,
   defaultRuntimeApiUrl,
 } from 'generaltranslation/internal';
-import { Translation } from './translations-manager/utils/types/translation-data';
+import type { Content } from '@generaltranslation/format/types';
 import { LookupOptions } from '../translation-functions/types/options';
 import { SafeTranslationsLoader } from './translations-manager/translations-loaders/types';
 import {
@@ -34,14 +34,12 @@ const DEFAULT_TRANSLATION_TIMEOUT = 12_000; // 12 seconds
 
 /**
  * A translation resolver is a function that synchronously resolves a translation
- * @template U - The type of the translation (default: Translation)
+ * @template U - The type of the translation (default: Content)
  * @param {U} message - The message to get the translation for
  * @param {LookupOptions} [options] - The options for the translation
  * @returns {U | undefined} The translation for the given message and options or undefined if the translation is not found
  */
-type TranslationResolver<U extends Translation = Translation> = <
-  T extends U = U,
->(
+type TranslationResolver<U extends Content = Content> = <T extends U = U>(
   message: T,
   options?: LookupOptions
 ) => T | undefined;
@@ -62,7 +60,7 @@ type DictionaryResolvers = {
  * @param {LookupOptions} options - The options for the prefetch
  * @returns {PrefetchEntry<TranslationType>} The prefetch entry
  */
-type PrefetchEntry<TranslationType extends Translation> = {
+type PrefetchEntry<TranslationType extends Content> = {
   message: TranslationType;
   options: LookupOptions;
 };
@@ -70,7 +68,7 @@ type PrefetchEntry<TranslationType extends Translation> = {
 /**
  * Callback function to prefetch entries during the async period
  */
-type PrefetchEntriesType<TranslationType extends Translation> = (
+type PrefetchEntriesType<TranslationType extends Content> = (
   prefetchEntries: PrefetchEntry<TranslationType>[]
 ) => Promise<void>;
 
@@ -78,7 +76,7 @@ type PrefetchEntriesType<TranslationType extends Translation> = (
  * Event fired when a runtime translation resolves a cache miss
  */
 export type TranslationsCacheMissEvent<
-  TranslationValue extends Translation = Translation,
+  TranslationValue extends Content = Content,
 > = {
   locale: Locale;
   hash: Hash;
@@ -89,7 +87,7 @@ export type TranslationsCacheMissEvent<
  * Class for managing translation functionality
  * @template TranslationValue - The type of the translation that will be cached
  */
-class I18nCache<TranslationValue extends Translation = Translation> {
+class I18nCache<TranslationValue extends Content = Content> {
   protected config: I18nCacheConfig;
 
   /**
@@ -756,7 +754,7 @@ function validateCacheParams(params: I18nCacheConstructorParams): void {
  * @param {string} locale - The locale to filter by
  * @returns {PrefetchEntry<TranslationType>[]} The filtered prefetch entries
  */
-function resolvePrefetchEntriesByLocale<TranslationType extends Translation>(
+function resolvePrefetchEntriesByLocale<TranslationType extends Content>(
   prefetchEntries: PrefetchEntry<TranslationType>[],
   locale: string,
   resolveLocale: (locale: string) => string
