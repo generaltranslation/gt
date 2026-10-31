@@ -83,6 +83,34 @@
       },
       "default": "./dist/index.server.mjs"
     },
+    "./unstable": {
+      "workerd": {
+        "import": {
+          "types": "./dist/unstable.server.d.mts",
+          "default": "./dist/unstable.server.mjs"
+        },
+        "default": "./dist/unstable.server.mjs"
+      },
+      "worker": {
+        "import": {
+          "types": "./dist/unstable.server.d.mts",
+          "default": "./dist/unstable.server.mjs"
+        },
+        "default": "./dist/unstable.server.mjs"
+      },
+      "browser": {
+        "import": {
+          "types": "./dist/unstable.client.d.mts",
+          "default": "./dist/unstable.client.mjs"
+        },
+        "default": "./dist/unstable.client.mjs"
+      },
+      "import": {
+        "types": "./dist/unstable.server.d.mts",
+        "default": "./dist/unstable.server.mjs"
+      },
+      "default": "./dist/unstable.server.mjs"
+    },
     "./plugin/vite": {
       "import": {
         "types": "./dist/plugin/vite.d.mts",

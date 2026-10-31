@@ -25,6 +25,14 @@ export type InternalGTProviderProps = {
   onMissingTranslation?: OnMissingTranslation;
   onMissingDictionaryEntry?: OnMissingDictionaryEntry;
   onMissingDictionaryObj?: OnMissingDictionaryObj;
+  /**
+   * @internal Whether a locale override missing from `translations` may
+   * suspend and load. Only for providers that never hydrate, such as React
+   * Native's: a server and a browser can load different catalogs for the same
+   * override, so on the web an override reads only `translations`.
+   * @default false
+   */
+  _canLoadOverrideLocales?: boolean;
 };
 
 // ===== Component ===== //
@@ -51,6 +59,7 @@ export function InternalGTProvider({
   onMissingTranslation,
   onMissingDictionaryEntry,
   onMissingDictionaryObj,
+  _canLoadOverrideLocales = false,
 }: InternalGTProviderProps) {
   const value = useMemo(
     () => ({
@@ -66,6 +75,7 @@ export function InternalGTProvider({
       onMissingTranslation,
       onMissingDictionaryEntry,
       onMissingDictionaryObj,
+      canLoadOverrideLocales: _canLoadOverrideLocales,
     }),
     [
       translations,
@@ -80,6 +90,7 @@ export function InternalGTProvider({
       onMissingTranslation,
       onMissingDictionaryEntry,
       onMissingDictionaryObj,
+      _canLoadOverrideLocales,
     ]
   );
 

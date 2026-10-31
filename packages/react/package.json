@@ -118,6 +118,28 @@
         "types": "./dist/macros.d.mts",
         "default": "./dist/macros.mjs"
       }
+    },
+    "./unstable": {
+      "react-server": {
+        "require": {
+          "types": "./dist/unstable.rsc.d.cts",
+          "default": "./dist/unstable.rsc.cjs"
+        },
+        "import": {
+          "types": "./dist/unstable.rsc.d.mts",
+          "default": "./dist/unstable.rsc.mjs"
+        },
+        "default": "./dist/unstable.rsc.mjs"
+      },
+      "require": {
+        "types": "./dist/unstable.d.cts",
+        "default": "./dist/unstable.cjs"
+      },
+      "import": {
+        "types": "./dist/unstable.d.mts",
+        "default": "./dist/unstable.mjs"
+      },
+      "default": "./dist/unstable.mjs"
     }
   },
   "keywords": [

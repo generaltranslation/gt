@@ -32,6 +32,8 @@ const entries = [
   'src/index.server.ts',
   'src/index.types.ts',
   'src/macros.ts',
+  'src/unstable.ts',
+  'src/unstable.rsc.ts',
 ];
 
 // src/index.types.ts only backs the exports map's "types" conditions; its
@@ -42,7 +44,12 @@ const typesOnlyEntry = 'src/index.types.ts';
 export default defineConfig(
   withPackageChecks(
     entries.flatMap((entry, index) => {
-      const entryDeps = entry.startsWith('src/index.') ? contextDeps : deps;
+      // unstable entries import gt-i18n and react-core like the index entries,
+      // so they share one copy of those packages with the app.
+      const entryDeps =
+        entry.startsWith('src/index.') || entry.startsWith('src/unstable.')
+          ? contextDeps
+          : deps;
       const [cjsConfig, esmConfig] = createTsdownConfig([entry], entryDeps);
 
       return [
