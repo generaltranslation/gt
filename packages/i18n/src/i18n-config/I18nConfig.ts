@@ -3,7 +3,7 @@ import {
   type LocaleConfigConstructorParams,
 } from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
-import { GTRuntime } from 'generaltranslation/runtime';
+import type { GTConstructorParams } from 'generaltranslation/runtime';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import type { GTConfig } from '../config/types';
 import {
@@ -92,15 +92,23 @@ export class I18nConfig extends LocaleConfig {
   }
 
   /**
-   * Get a GT instance bound to the resolved target locale. When omitted, the
-   * instance is locale agnostic.
-   *
-   * TODO: keep a cache to avoid creating new instances unnecessarily.
+   * Constructor params for a GTRuntime (the runtime translation API client)
+   * bound to the resolved target locale. When omitted, the runtime is locale
+   * agnostic. Build the runtime with createGTRuntime(); I18nConfig itself does
+   * not reference GTRuntime so client bundles that only format or resolve
+   * locales do not include the API client.
    */
-  getGTClass(locale?: string): GTRuntime {
-    return this.getGTClassClean(
-      locale ? this.resolveLocale(locale) : undefined
-    );
+  getGTRuntimeParams(locale?: string): GTConstructorParams {
+    return {
+      sourceLocale: this.getDefaultLocale(),
+      targetLocale: locale ? this.resolveLocale(locale) : undefined,
+      locales: this.getLocales(),
+      customMapping: this.getCustomMapping(),
+      projectId: this.runtimeConfig.projectId,
+      baseUrl: this.runtimeConfig.runtimeUrl || undefined,
+      apiKey: this.runtimeConfig.apiKey,
+      devApiKey: this.runtimeConfig.devApiKey,
+    };
   }
 
   determineLocale(
@@ -164,22 +172,6 @@ export class I18nConfig extends LocaleConfig {
 
   isDebugLoggingEnabled(): boolean {
     return isDebugLogLevel(this.logLevel);
-  }
-
-  /**
-   * Create a GT instance without resolving the target locale first.
-   */
-  private getGTClassClean(locale?: string) {
-    return new GTRuntime({
-      sourceLocale: this.getDefaultLocale(),
-      targetLocale: locale,
-      locales: this.getLocales(),
-      customMapping: this.getCustomMapping(),
-      projectId: this.runtimeConfig.projectId,
-      baseUrl: this.runtimeConfig.runtimeUrl || undefined,
-      apiKey: this.runtimeConfig.apiKey,
-      devApiKey: this.runtimeConfig.devApiKey,
-    });
   }
 
   private getLocaleConfig(config?: I18nConfigParams): LocaleConfig {

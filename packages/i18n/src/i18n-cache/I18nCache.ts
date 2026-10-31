@@ -1,3 +1,4 @@
+import { createGTRuntime } from '../i18n-config/createGTRuntime';
 import logger from '../logs/logger';
 import { I18nCacheConfig, I18nCacheConstructorParams } from './types';
 import {
@@ -149,7 +150,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
     }) as SafeTranslationsLoader<TranslationValue>;
     const loadDictionary = params.loadDictionary ?? (() => Promise.resolve({}));
     this.createTranslateMany = createTranslateManyFactory(
-      getI18nConfig().getGTClass(),
+      createGTRuntime(),
       this.config.runtimeTranslation?.timeout ?? DEFAULT_TRANSLATION_TIMEOUT,
       {
         ...(this.config.modelProvider && {
