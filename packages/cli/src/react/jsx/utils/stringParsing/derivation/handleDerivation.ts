@@ -14,7 +14,7 @@ import {
   warnAutoderiveNoResultsSync,
   warnUnstableHelperInLegacyMessageSync,
 } from '../../../../../console/index.js';
-import { isUnstableGTImportSource } from '../../../../../types/libraries.js';
+import { isUnstableGTImportSource } from 'generaltranslation/internal';
 
 import traverseModule from '@babel/traverse';
 import generateModule from '@babel/generator';
