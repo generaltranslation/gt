@@ -19,6 +19,8 @@ import { getPublishedId } from '../utils/documentIds';
  * - `$sourceDocumentIds` — what counts as a source. Every source under
  *   management, including ones that only exist as a draft, so a source is
  *   never returned as a translation of some other document.
+ * - `$localeIds` — which translations to return, or `null` for all of them.
+ *   Filtering here only narrows the output; it never decides what is a source.
  *
  * Known limitation: a group is in scope if it references any requested source,
  * so metadata that wrongly links two sources into one group can return the
@@ -32,7 +34,8 @@ export const TRANSLATION_DOCS_FOR_PUBLISH_QUERY = `*[
   count(translations[defined(value._ref) && value._ref in $publishedDocumentIds]) > 0
 ] {
   'translationDocs': translations[
-    defined(value._ref) && !(value._ref in $sourceDocumentIds)
+    defined(value._ref) && !(value._ref in $sourceDocumentIds) &&
+    ($localeIds == null || language in $localeIds)
   ]{
     _key,
     'docId': value._ref

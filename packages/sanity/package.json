@@ -1,6 +1,6 @@
 {
   "name": "gt-sanity",
-  "version": "4.0.25",
+  "version": "4.0.30",
   "description": "General Translation integration with Sanity",
   "keywords": [
     "sanity",
@@ -86,6 +86,7 @@
     "@sanity/ui": "^4.0.1",
     "@types/lodash.merge": "^4.6.9",
     "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
     "groq-js": "^1.29.0",
     "jsdom": "^26.1.0",
     "just-clone": "^6.2.0",

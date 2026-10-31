@@ -13,4 +13,4 @@ export async function RelativeTime(
 }
 
 /** @internal _gtt - The GT transformation for the component. */
-RelativeTime._gtt = 'variable-relative-time';
+RelativeTime._gtt = 'variable-relativetime';
