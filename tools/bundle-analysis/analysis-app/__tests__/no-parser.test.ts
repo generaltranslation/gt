@@ -35,4 +35,13 @@ describe('gt-i18n/unstable bundle', () => {
     expect(code).toContain('gt-i18n.unstable.placeholder');
     expect(code).not.toContain(PARSER_MARKER);
   });
+
+  it('keeps the parser for an app that imports /unstable/icu for its side effect', async () => {
+    // Resolved through gt-i18n's package exports, so a wrong `sideEffects`
+    // entry would let the bundler drop the bare import.
+    const code = await bundle(
+      join(import.meta.dirname, 'fixtures/unstableIcuConsumer.ts')
+    );
+    expect(code).toContain(PARSER_MARKER);
+  });
 });

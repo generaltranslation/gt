@@ -19,6 +19,8 @@ const runtimeArtifactNames = [
   'unstable.mjs',
   'unstable.rsc.cjs',
   'unstable.rsc.mjs',
+  'unstable-icu.cjs',
+  'unstable-icu.mjs',
 ].sort();
 const builtArtifacts = runtimeArtifactNames.map((artifact) =>
   join(packageRoot, 'dist', artifact)

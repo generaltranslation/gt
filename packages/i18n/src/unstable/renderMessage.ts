@@ -13,6 +13,7 @@ import { getI18nConfig } from '../i18n-config/singleton-operations';
 import { createGtI18nDiagnostic } from '../logs/diagnostics';
 import logger from '../logs/logger';
 import type { LookupOptions } from '../translation-functions/types/options';
+import { getTranslationParser } from './translationParser';
 
 export type MessageTreeMetadata = MessageTreeHashMetadata & {
   /** Precomputed hash (e.g. injected by a compiler); skips hashing. */
@@ -69,6 +70,7 @@ export function renderMessage(
   };
   const translation = lookupTreeTranslation(
     lookupTranslation(tree, options),
+    tree,
     locale,
     hash
   );
@@ -118,15 +120,43 @@ function createInvalidTreeTranslationWarning(
     whatHappened: `The "${locale}" translation of message ${hash} is not a message tree`,
     reassurance: 'The source message was rendered instead',
     fix: 'Regenerate the translations for this locale',
+    wayOut:
+      'If your translations are ICU strings, import the /unstable/icu entry of your GT package once, such as gt-react/unstable/icu',
+  });
+}
+
+function createIcuTranslationWarning(
+  locale: string,
+  hash: string,
+  error: unknown
+): string {
+  return createGtI18nDiagnostic({
+    severity: 'Warning',
+    whatHappened: `The "${locale}" ICU translation of message ${hash} could not be used`,
+    reassurance: 'The source message was rendered instead',
+    details: formatDiagnosticErrorDetails(error),
   });
 }
 
 function lookupTreeTranslation(
   value: unknown,
+  source: MessageTree,
   locale: string,
   hash: string
 ): MessageTree | undefined {
   if (value == null || isMessageTree(value)) return value ?? undefined;
+  const parseTranslation = getTranslationParser();
+  if (typeof value === 'string' && parseTranslation) {
+    try {
+      return parseTranslation(value, source, hash);
+    } catch (error) {
+      warnOnce(
+        `icu:${locale}:${hash}`,
+        createIcuTranslationWarning(locale, hash, error)
+      );
+      return undefined;
+    }
+  }
   warnOnce(
     `invalid:${locale}:${hash}`,
     createInvalidTreeTranslationWarning(locale, hash)

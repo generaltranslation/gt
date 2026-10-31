@@ -34,6 +34,7 @@ const entries = [
   'src/macros.ts',
   'src/unstable.ts',
   'src/unstable.rsc.ts',
+  'src/unstable-icu.ts',
 ];
 
 // src/index.types.ts only backs the exports map's "types" conditions; its
