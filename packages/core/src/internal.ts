@@ -14,6 +14,7 @@ export type {
 export { libraryDefaultLocale } from './settings/settings';
 export type { RuntimeTranslateManyOptions } from './types-dir/api/entry';
 export { pluralForms, isAcceptedPluralForm } from './settings/plurals';
+export { isUnstableGTImportSource } from './settings/unstableImportSources';
 
 export { _getPluralForm as getPluralForm } from './locales/getPluralForm';
 export type {
