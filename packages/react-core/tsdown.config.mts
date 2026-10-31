@@ -10,6 +10,8 @@ const entries = [
   'src/hooks.ts',
   'src/components.ts',
   'src/components-rsc.ts',
+  'src/unstable.ts',
+  'src/unstable-rsc.ts',
 ];
 
 const cjs = createTsdownUnbundleConfig({
