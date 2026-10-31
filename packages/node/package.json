@@ -89,6 +89,16 @@
         "types": "./dist/internal.d.mts",
         "default": "./dist/internal.mjs"
       }
+    },
+    "./unstable": {
+      "require": {
+        "types": "./dist/unstable.d.cts",
+        "default": "./dist/unstable.cjs"
+      },
+      "import": {
+        "types": "./dist/unstable.d.mts",
+        "default": "./dist/unstable.mjs"
+      }
     }
   }
 }
