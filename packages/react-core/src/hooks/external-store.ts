@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { Translation } from 'gt-i18n/types';
+import type { Content } from '@generaltranslation/format/types';
 import type {
   TranslateLookup,
   TranslateSnapshot,
@@ -14,7 +14,7 @@ import { useHandleMissingTranslation } from './utils/missing-translation';
 /**
  * @internal
  */
-export function useTranslate<T extends Translation>(
+export function useTranslate<T extends Content>(
   lookup: TranslateLookup<T>
 ): TranslateSnapshot<T> {
   const i18nStore = useI18nStore();

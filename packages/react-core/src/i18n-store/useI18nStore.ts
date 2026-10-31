@@ -2,7 +2,7 @@ import { Dictionary, Hash, Locale } from 'gt-i18n/internal/types';
 import { useGTContext } from '../context/context';
 import { I18nStore } from './I18nStore';
 import { getI18nStore } from './singleton-operations';
-import { Translation } from 'gt-i18n/types';
+import type { Content } from '@generaltranslation/format/types';
 
 export function useI18nStore(): I18nStore {
   const context = useGTContext();
@@ -11,7 +11,7 @@ export function useI18nStore(): I18nStore {
 
 export function useTranslationsSnapshot(): Record<
   Locale,
-  Record<Hash, Translation>
+  Record<Hash, Content>
 > {
   const context = useGTContext();
   return context?.translationsSnapshot || {};

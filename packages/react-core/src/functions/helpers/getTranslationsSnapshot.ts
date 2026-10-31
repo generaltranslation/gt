@@ -1,5 +1,5 @@
 import { Hash, Locale } from 'gt-i18n/internal/types';
-import { Translation } from 'gt-i18n/types';
+import type { Content } from '@generaltranslation/format/types';
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
@@ -13,7 +13,7 @@ import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
  */
 export async function getTranslationsSnapshot(
   locale: Locale
-): Promise<Record<Locale, Record<Hash, Translation>>> {
+): Promise<Record<Locale, Record<Hash, Content>>> {
   const i18nCache = getReactI18nCache();
   try {
     return { [locale]: await i18nCache.loadTranslations(locale) };
