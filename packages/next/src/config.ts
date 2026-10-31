@@ -661,6 +661,10 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     defaultLocale: mergedConfig.defaultLocale,
     locales: mergedConfig.locales,
     customMapping: mergedConfig.customMapping,
+    // Included so the client can resolve localized path aliases when switching
+    // locales (see client-boundary). This mirrors the default passed to
+    // createNextMiddleware; a middleware-side override is not visible here.
+    pathConfig: mergedConfig.pathConfig,
     runtimeUrl: mergedConfig.runtimeUrl,
     cacheUrl: mergedConfig.cacheUrl,
     cacheExpiryTime: mergedConfig.cacheExpiryTime,

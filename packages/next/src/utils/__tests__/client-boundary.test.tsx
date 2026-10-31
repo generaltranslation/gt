@@ -116,14 +116,13 @@ describe('Client_GTProvider', () => {
         expect(providerProps).toMatchObject(conditions);
         // Switching to German navigates straight to the localized URL; whether
         // the middleware accepts or rejects the locale remains its decision.
+        // A full-page navigation is used in both modes so that locale-dependent
+        // server-rendered ancestors (e.g. a shared root layout's <html lang>)
+        // are re-rendered.
         providerProps._reload({ ...conditions, locale: 'de-DE' });
-        if (supportsLocaleRefresh) {
-          expect(mockPush).toHaveBeenCalledTimes(1);
-          expect(mockPush).toHaveBeenCalledWith('/de-DE');
-        } else {
-          expect(mockAssign).toHaveBeenCalledTimes(1);
-          expect(mockAssign).toHaveBeenCalledWith('/de-DE');
-        }
+        expect(mockPush).not.toHaveBeenCalled();
+        expect(mockAssign).toHaveBeenCalledTimes(1);
+        expect(mockAssign).toHaveBeenCalledWith('/de-DE');
         expect(mockRefreshServerComponents).not.toHaveBeenCalled();
         expect(mockReloadBrowserPage).not.toHaveBeenCalled();
         vi.clearAllMocks();
@@ -488,11 +487,113 @@ describe('Client_GTProvider', () => {
         enableI18n: true,
       });
 
-      expect(mockPush).toHaveBeenCalledOnce();
-      expect(mockPush).toHaveBeenCalledWith('/de/courses?tab=syllabus#section');
+      expect(mockAssign).toHaveBeenCalledOnce();
+      expect(mockAssign).toHaveBeenCalledWith(
+        '/de/courses?tab=syllabus#section'
+      );
       expect(mockRefreshServerComponents).not.toHaveBeenCalled();
       expect(mockReloadBrowserPage).not.toHaveBeenCalled();
     } finally {
+      await act(async () => root.unmount());
+    }
+  });
+
+  it('navigates to the target locale alias when pathConfig localizes the route', async () => {
+    process.env._GENERALTRANSLATION_PATH_REGEX = '.*';
+    process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS =
+      JSON.stringify({
+        pathConfig: {
+          '/about': { fr: '/a-propos', de: '/uber-uns' },
+        },
+      });
+    mockPathname.mockReturnValue('/fr/a-propos');
+    vi.stubGlobal('location', {
+      assign: mockAssign,
+      hash: '',
+      pathname: '/fr/a-propos',
+      reload: mockReloadBrowserPage,
+      search: '',
+    });
+    mockGetI18nConfig.mockReturnValue({
+      determineLocale: ([locale]: string[]) => locale,
+      getDefaultLocale: () => 'en',
+      getLocales: () => ['en', 'de', 'fr'],
+    });
+    const { Client_GTProvider } = await import('../client-boundary');
+    const root = createRoot(document.createElement('div'));
+    try {
+      await act(async () =>
+        root.render(
+          <Client_GTProvider
+            supportsLocaleRefresh={true}
+            dictionaries={{}}
+            locale='fr'
+            translations={{}}
+          >
+            content
+          </Client_GTProvider>
+        )
+      );
+      const providerProps = mockGTProvider.mock.calls.at(-1)?.[0];
+      providerProps._reload({
+        locale: 'de',
+        region: undefined,
+        enableI18n: true,
+      });
+
+      // The French alias resolves back to /about, which then navigates to the
+      // German alias instead of re-prefixing the French one.
+      expect(mockAssign).toHaveBeenCalledOnce();
+      expect(mockAssign).toHaveBeenCalledWith('/de/uber-uns');
+      expect(mockPush).not.toHaveBeenCalled();
+    } finally {
+      delete process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS;
+      await act(async () => root.unmount());
+    }
+  });
+
+  it('keeps the Next basePath in place when switching locales', async () => {
+    process.env._GENERALTRANSLATION_PATH_REGEX = '.*';
+    process.env.NEXT_PUBLIC_BASE_PATH = '/docs';
+    mockPathname.mockReturnValue('/docs/courses');
+    vi.stubGlobal('location', {
+      assign: mockAssign,
+      hash: '',
+      pathname: '/docs/courses',
+      reload: mockReloadBrowserPage,
+      search: '',
+    });
+    mockGetI18nConfig.mockReturnValue({
+      determineLocale: ([locale]: string[]) => locale,
+      getDefaultLocale: () => 'en',
+      getLocales: () => ['en', 'de', 'fr'],
+    });
+    const { Client_GTProvider } = await import('../client-boundary');
+    const root = createRoot(document.createElement('div'));
+    try {
+      await act(async () =>
+        root.render(
+          <Client_GTProvider
+            supportsLocaleRefresh={true}
+            dictionaries={{}}
+            locale='en'
+            translations={{}}
+          >
+            content
+          </Client_GTProvider>
+        )
+      );
+      const providerProps = mockGTProvider.mock.calls.at(-1)?.[0];
+      providerProps._reload({
+        locale: 'de',
+        region: undefined,
+        enableI18n: true,
+      });
+
+      expect(mockAssign).toHaveBeenCalledOnce();
+      expect(mockAssign).toHaveBeenCalledWith('/docs/de/courses');
+    } finally {
+      delete process.env.NEXT_PUBLIC_BASE_PATH;
       await act(async () => root.unmount());
     }
   });
