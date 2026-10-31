@@ -168,6 +168,7 @@ describe('I18nCache error contract', () => {
     });
 
     await expect(cache.loadTranslations('fr')).resolves.toEqual({});
+    expect(cache.hasTranslations('fr')).toBe(false);
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       expect.stringContaining('Load failed')
     );

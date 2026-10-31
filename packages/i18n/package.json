@@ -53,6 +53,7 @@
   },
   "dependencies": {
     "@generaltranslation/format": "workspace:*",
+    "@generaltranslation/icu": "workspace:*",
     "generaltranslation": "workspace:*"
   },
   "exports": {

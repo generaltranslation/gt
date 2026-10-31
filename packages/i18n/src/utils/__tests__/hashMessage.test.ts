@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { hashSource } from 'generaltranslation/id';
 import { hashMessage } from '../hashMessage';
 
 describe('hashMessage', () => {
@@ -60,5 +61,26 @@ describe('hashMessage', () => {
     });
 
     expect(hash1).toBe(hash2);
+  });
+
+  it('rejects a message tree source', () => {
+    expect(() => hashMessage(['Hi ', ['name']], { $format: 'JSX' })).toThrow(
+      'A message tree was used as a string or JSX source'
+    );
+    expect(() =>
+      hashMessage([['n', 'plural', { other: [0] }]], { $format: 'JSX' })
+    ).toThrow('A message tree was used as a string or JSX source');
+  });
+
+  it('hashes an array of strings as JSX children, not a tree', () => {
+    expect(hashMessage(['Save'], { $format: 'JSX' })).toBe(
+      hashSource({ source: ['Save'], dataFormat: 'JSX' })
+    );
+  });
+
+  it('hashes empty JSX children as content', () => {
+    expect(hashMessage([], { $format: 'JSX' })).toBe(
+      hashSource({ source: [], dataFormat: 'JSX' })
+    );
   });
 });

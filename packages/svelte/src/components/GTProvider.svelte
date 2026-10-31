@@ -16,7 +16,7 @@
 <svelte:options preserveWhitespace={false} />
 
 <script lang="ts">
-  import type { Content } from '@generaltranslation/format/types';
+  import type { Translation } from 'gt-i18n/types';
   import { getI18nConfig } from 'gt-i18n/internal';
   import type { Snippet } from 'svelte';
   import { onMount, untrack } from 'svelte';
@@ -36,7 +36,7 @@
     /** The locale to render. Defaults to the configured default locale. */
     locale?: string;
     /** Preloaded translations for `locale`, from `loadTranslations()`. */
-    translations?: Record<string, Content>;
+    translations?: Record<string, Translation>;
     children?: Snippet;
   } = $props();
 
