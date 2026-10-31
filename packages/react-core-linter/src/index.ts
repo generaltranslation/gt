@@ -11,6 +11,7 @@ import { noDataAttrsOnBranch } from './rules/no-data-attrs-on-branch/index.js';
 import { staticJsx } from './rules/static-jsx/index.js';
 import { staticString } from './rules/static-string/index.js';
 import { translationFunctionPlacement } from './rules/translation-function-placement/index.js';
+import { unstableStaticBranch } from './rules/unstable-static-branch/index.js';
 
 const plugin: ESLint.Plugin = {
   meta: {
@@ -24,6 +25,8 @@ const plugin: ESLint.Plugin = {
     'static-string': staticString as unknown as Rule.RuleModule,
     'translation-function-placement':
       translationFunctionPlacement as unknown as Rule.RuleModule,
+    'unstable-static-branch':
+      unstableStaticBranch as unknown as Rule.RuleModule,
   },
   configs: {
     recommended: {
@@ -35,6 +38,7 @@ const plugin: ESLint.Plugin = {
         '@generaltranslation/react-core-linter/static-string': 'error',
         '@generaltranslation/react-core-linter/translation-function-placement':
           'error',
+        '@generaltranslation/react-core-linter/unstable-static-branch': 'error',
       },
     },
   },
@@ -49,6 +53,7 @@ plugin.configs = {
       '@generaltranslation/react-core-linter/static-string': 'error',
       '@generaltranslation/react-core-linter/translation-function-placement':
         'error',
+      '@generaltranslation/react-core-linter/unstable-static-branch': 'error',
     },
   },
 };

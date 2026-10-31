@@ -78,6 +78,7 @@
   },
   "dependencies": {
     "@generaltranslation/icu": "workspace:*",
+    "generaltranslation": "workspace:*",
     "@typescript-eslint/utils": "^8.50.1"
   }
 }
