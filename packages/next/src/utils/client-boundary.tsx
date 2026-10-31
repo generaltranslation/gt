@@ -21,7 +21,94 @@ import {
   defaultLocaleRoutingEnabledCookieName,
   defaultReferrerLocaleCookieName,
 } from './cookies';
+import { localizeHref } from '../link/localize-utils';
 import { compilePathRegex, pathnameMatchesRegex } from './pathRegex';
+
+type ClientPathConfig = Record<string, string | Record<string, string>>;
+
+/**
+ * Reads the `pathConfig` shared with the client at build time, if localized
+ * path aliases are configured. Absent in apps that don't use aliases.
+ */
+function getClientPathConfig(): ClientPathConfig | undefined {
+  if (typeof window === 'undefined') return undefined;
+  try {
+    const params = JSON.parse(
+      process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS || '{}'
+    );
+    return typeof params.pathConfig === 'object' && params.pathConfig !== null
+      ? params.pathConfig
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Normalizes a Next `basePath` to `''` or a slash-prefixed, slash-suffix-free form. */
+function normalizeBasePath(basePath: string | undefined): string {
+  if (!basePath || basePath === '/') return '';
+  return basePath.endsWith('/') ? basePath.slice(0, -1) : basePath;
+}
+
+/**
+ * Strips the Next `basePath` from a browser pathname. App routing, locale
+ * prefixes, and `pathConfig` entries are all relative to the base path, so it
+ * must be removed before resolving either one.
+ */
+function stripBasePath(pathname: string, basePath: string): string {
+  if (!basePath) return pathname;
+  if (pathname === basePath) return '/';
+  return pathname.startsWith(`${basePath}/`)
+    ? pathname.slice(basePath.length)
+    : pathname;
+}
+
+/**
+ * Resolves the current, possibly alias-localized app path back to its shared
+ * route: with `pathConfig` mapping `/about` to `{ fr: '/a-propos' }`, the
+ * French alias `/a-propos` resolves to `/about`. Paths that are not a
+ * declared alias are returned unchanged, matching how the middleware treats
+ * unknown paths as shared routes.
+ */
+function resolveSharedPath(
+  appPath: string,
+  pathConfig: ClientPathConfig | undefined
+): string {
+  if (!pathConfig) return appPath;
+  for (const [sharedPath, localizedPaths] of Object.entries(pathConfig)) {
+    if (
+      typeof localizedPaths === 'object' &&
+      localizedPaths !== null &&
+      Object.values(localizedPaths).includes(appPath)
+    ) {
+      return sharedPath;
+    }
+  }
+  return appPath;
+}
+
+/**
+ * Resolves the public path for a shared route in the target locale: its
+ * declared alias for that locale when one exists (e.g. German `/about` →
+ * `/uber-uns`), otherwise the shared route with the locale prefix applied by
+ * `localizeHref`.
+ */
+function localizeSharedPath(
+  sharedPath: string,
+  locale: string,
+  pathConfig: ClientPathConfig | undefined,
+  currentLocale: string,
+  defaultLocale: string
+): string {
+  const localizedPaths = pathConfig?.[sharedPath];
+  if (typeof localizedPaths === 'object' && localizedPaths !== null) {
+    const alias = localizedPaths[locale];
+    if (typeof alias === 'string') {
+      return `/${locale}${alias}`;
+    }
+  }
+  return localizeHref(sharedPath, locale, currentLocale, defaultLocale);
+}
 
 // withGTConfig exposes this build-time value to both middleware and client code.
 const pathRegex = compilePathRegex(process.env._GENERALTRANSLATION_PATH_REGEX);
@@ -81,6 +168,49 @@ export function Client_GTProvider({
         );
         if (currentPathLocale !== defaultLocale) {
           reloadBrowserPage();
+          return;
+        }
+      }
+      if (localeRoutingApplies && locale !== defaultLocale) {
+        // Switching to a non-default locale navigates straight to the target
+        // locale's URL, computed with the same rules as the middleware, so no
+        // extra redirect hop is needed.
+        const basePath = normalizeBasePath(process.env.NEXT_PUBLIC_BASE_PATH);
+        const appPathname = stripBasePath(currentPathname, basePath);
+        const rawPathLocale = extractLocale(appPathname);
+        const currentPathLocale = resolvePathLocale(
+          appPathname,
+          i18nConfig,
+          defaultLocale,
+          locales
+        );
+        // The middleware only ever prefixes configured locales, so a first
+        // path segment that is not one (e.g. `/courses`) is not a locale prefix.
+        const unprefixedPathname =
+          rawPathLocale && locales.includes(rawPathLocale)
+            ? stripLocaleFromPathname(appPathname, rawPathLocale)
+            : appPathname;
+        const pathConfig = getClientPathConfig();
+        // Resolve the current alias back to its shared route before switching,
+        // so the target locale gets its own alias instead of a re-prefixed one
+        // the middleware cannot map.
+        const sharedPath = resolveSharedPath(unprefixedPathname, pathConfig);
+        const localizedPathname = localizeSharedPath(
+          sharedPath,
+          locale,
+          pathConfig,
+          currentPathLocale,
+          defaultLocale
+        );
+        const search = globalThis.location.search;
+        const hash = globalThis.location.hash;
+        const targetHref = `${basePath}${localizedPathname}${search}${hash}`;
+        if (targetHref !== `${currentPathname}${search}${hash}`) {
+          // A full-page navigation keeps locale-dependent server-rendered
+          // content (e.g. `<html lang>` or ancestors rendered by a shared root
+          // layout) correct, works under a Next `basePath` deployment, and
+          // still lands on the final URL in one hop.
+          globalThis.location.assign(targetHref);
           return;
         }
       }
@@ -183,4 +313,12 @@ function resolvePathLocale(
 
 function extractLocale(pathname: string): string | null {
   return pathname.match(/^\/([^/]+)(?:\/|$)/)?.[1] ?? null;
+}
+
+/** Removes a leading `/<locale>` segment from a localized pathname. */
+function stripLocaleFromPathname(pathname: string, locale: string): string {
+  if (pathname === `/${locale}`) return '/';
+  if (pathname.startsWith(`/${locale}/`))
+    return pathname.slice(locale.length + 1);
+  return pathname;
 }
