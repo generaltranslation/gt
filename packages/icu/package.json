@@ -73,6 +73,26 @@
         "types": "./dist/parser.d.mts",
         "default": "./dist/parser.mjs"
       }
+    },
+    "./convert": {
+      "require": {
+        "types": "./dist/convert.d.cts",
+        "default": "./dist/convert.cjs"
+      },
+      "import": {
+        "types": "./dist/convert.d.mts",
+        "default": "./dist/convert.mjs"
+      }
+    },
+    "./internal": {
+      "require": {
+        "types": "./dist/internal.d.cts",
+        "default": "./dist/internal.cjs"
+      },
+      "import": {
+        "types": "./dist/internal.d.mts",
+        "default": "./dist/internal.mjs"
+      }
     }
   }
 }
