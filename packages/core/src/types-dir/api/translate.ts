@@ -1,9 +1,4 @@
-import {
-  I18nextMessage,
-  IcuMessage,
-  JsxChildren,
-  StringMessage,
-} from '@generaltranslation/format/types';
+import type { ContentFor, DataFormat } from '@generaltranslation/format/types';
 
 /**
  * TranslationResultReference is used to store the reference for a translation result.
@@ -16,17 +11,13 @@ export type TranslationResultReference = {
 /**
  * TypedResult is a union type that represents the different types of translations that can be returned.
  */
-export type TypedResult =
-  | {
-      // TODO: omit the t property (tag name) from the translated element
-      // I have to double check that this is the case, but I think it is
-      translation: JsxChildren;
-      dataFormat: 'JSX';
-    }
-  | {
-      translation: I18nextMessage | IcuMessage | StringMessage;
-      dataFormat: 'ICU' | 'I18NEXT' | 'STRING';
-    };
+// TODO: omit the t property (tag name) from translated JSX elements
+export type TypedResult = {
+  [Format in DataFormat]: {
+    translation: ContentFor<Format>;
+    dataFormat: Format;
+  };
+}[DataFormat];
 
 /**
  * RequestError is a type that represents an error that occurred during a translation request.

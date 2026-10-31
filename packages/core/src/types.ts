@@ -11,6 +11,8 @@ import type {
 export { HTML_CONTENT_PROPS } from '@generaltranslation/format/types';
 export type {
   Content,
+  ContentByFormat,
+  ContentFor,
   CustomMapping,
   CustomRegionMapping,
   CutoffFormatOptions,

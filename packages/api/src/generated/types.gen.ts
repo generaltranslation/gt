@@ -67,6 +67,7 @@ export const DataFormat = {
   ICU: 'ICU',
   I18NEXT: 'I18NEXT',
   STRING: 'STRING',
+  ICU_TREE: 'ICU_TREE',
 } as const;
 
 export type DataFormat = (typeof DataFormat)[keyof typeof DataFormat];
