@@ -27,9 +27,6 @@ export function createTimeoutFetch({
 
     const request = new Request(input, init);
     const controller = new AbortController();
-    const forwardAbort = () => controller.abort(request.signal.reason);
-    if (request.signal.aborted) forwardAbort();
-    else request.signal.addEventListener('abort', forwardAbort, { once: true });
     // fetch rejects with the abort reason, so only our own timeout reads as one.
     const timeoutError = new Error(`Request timed out after ${timeoutMs}ms`);
     const timeoutId = setTimeout(
@@ -38,20 +35,43 @@ export function createTimeoutFetch({
     );
 
     try {
+      const signal = followBoth(request.signal, controller);
       // Custom fetches may read only request.signal, but Node's fetch follows a copied Request's signal only weakly, so pass it in init too.
-      const timedRequest = new Request(request, { signal: controller.signal });
-      return await fetchImplementation(timedRequest, {
-        signal: controller.signal,
-      });
+      const timedRequest = new Request(request, { signal });
+      return await fetchImplementation(timedRequest, { signal });
     } finally {
       clearTimeout(timeoutId);
-      request.signal.removeEventListener('abort', forwardAbort);
     }
   };
 }
 
-const sleep = (ms: number): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, ms));
+// The caller's signal stays linked after the headers arrive, so its abort
+// also cancels a pending body read. Runtimes without AbortSignal.any forward
+// the caller's abort to the timeout controller instead.
+function followBoth(
+  callerSignal: AbortSignal,
+  controller: AbortController
+): AbortSignal {
+  if (typeof AbortSignal.any === 'function') {
+    return AbortSignal.any([callerSignal, controller.signal]);
+  }
+  const forwardAbort = () => controller.abort(callerSignal.reason);
+  if (callerSignal.aborted) forwardAbort();
+  else callerSignal.addEventListener('abort', forwardAbort, { once: true });
+  return controller.signal;
+}
+
+// Ends early, and clears its timer, when the signal aborts
+const sleep = (ms: number, signal: AbortSignal): Promise<void> =>
+  new Promise((resolve) => {
+    const finish = () => {
+      clearTimeout(timeoutId);
+      signal.removeEventListener('abort', finish);
+      resolve();
+    };
+    const timeoutId = setTimeout(finish, ms);
+    signal.addEventListener('abort', finish, { once: true });
+  });
 
 function parseDelayMs(value: string | null): number | undefined {
   if (!value) return undefined;
@@ -123,7 +143,9 @@ export function createRetryingFetch({
 
       // Drain the discarded 429/5xx body so undici can release the socket.
       void response?.body?.cancel();
-      await sleep(retryDelay(response, attempt, retryPolicy));
+      await sleep(retryDelay(response, attempt, retryPolicy), request.signal);
+      // A caller that gives up during the wait gets no retry
+      if (request.signal.aborted) throw request.signal.reason;
     }
 
     throw new Error('Max retries exceeded');
