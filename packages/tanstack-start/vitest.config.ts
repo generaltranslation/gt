@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
+import { experimentalImports } from './experimentalImports.mts';
 
 export default defineConfig({
   resolve: {
@@ -11,6 +12,9 @@ export default defineConfig({
         new URL('./src/internal/localeRouting.ts', import.meta.url)
       ),
     },
+    // gt-react and react-core (workspace links) install their own React copy;
+    // render tests need one React, the copy react-dom uses here.
+    dedupe: ['react', 'react-dom'],
   },
   test: {
     pool: 'threads',
@@ -31,6 +35,28 @@ export default defineConfig({
     env: {
       _GT_LOG_LEVEL: 'off',
     },
+    // src/experimental runs the regular modules the way the experimental
+    // entry points are built (see experimentalImports.mts). It runs after the
+    // regular project, whose package export tests rebuild dist.
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'regular',
+          exclude: ['**/node_modules/**', 'src/experimental/**'],
+          sequence: { groupOrder: 0 },
+        },
+      },
+      {
+        extends: true,
+        plugins: [experimentalImports],
+        test: {
+          name: 'experimental',
+          include: ['src/experimental/**/*.test.{ts,tsx}'],
+          sequence: { groupOrder: 1 },
+        },
+      },
+    ],
     reporters: [
       [
         'default',

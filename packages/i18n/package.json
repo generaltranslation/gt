@@ -96,6 +96,16 @@
         "default": "./dist/internal-cookies.mjs"
       }
     },
+    "./internal/experimental": {
+      "require": {
+        "types": "./dist/internal-experimental.d.cts",
+        "default": "./dist/internal-experimental.cjs"
+      },
+      "import": {
+        "types": "./dist/internal-experimental.d.mts",
+        "default": "./dist/internal-experimental.mjs"
+      }
+    },
     "./internal/string": {
       "require": {
         "types": "./dist/internal-string.d.cts",

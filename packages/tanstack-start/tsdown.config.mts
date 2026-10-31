@@ -1,5 +1,6 @@
 import { defineConfig } from 'tsdown';
 import { createTsdownConfig, withPackageChecks } from '../../tsdown.preset.mts';
+import { experimentalImports } from './experimentalImports.mts';
 
 const deps = {
   neverBundle: [
@@ -11,6 +12,7 @@ const deps = {
     /^@tanstack\/react-start\//,
     /^vite$/,
     /^@generaltranslation\/compiler$/,
+    /^@generaltranslation\/compiler\//,
     // Kept as bare imports so the Vite plugin can replace them.
     /^gt-tanstack-start\/internal\/(?:_config|localeRouting)$/,
     /^@generaltranslation\/react-core$/,
@@ -32,6 +34,9 @@ const entries: Record<string, string> = {
   'internal/localeRouting': 'src/internal/localeRouting.ts',
   'internal/localeRouting.enabled': 'src/internal/localeRouting.enabled.ts',
   'internal/localeRouting.disabled': 'src/internal/localeRouting.disabled.ts',
+  'experimental/index.client': 'src/experimental/index.client.ts',
+  'experimental/index.server': 'src/experimental/index.server.ts',
+  'experimental/plugin/vite': 'src/experimental/plugin/vite.ts',
 };
 
 export default defineConfig(
@@ -47,6 +52,10 @@ export default defineConfig(
           onlyBundle: false,
           ...deps,
         },
+        // The experimental entries reuse the regular modules
+        ...(name.startsWith('experimental/index.') && {
+          plugins: [experimentalImports],
+        }),
       };
     }),
     { profile: 'esm-only' }

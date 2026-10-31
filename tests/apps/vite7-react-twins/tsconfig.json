@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "types": ["vite/client", "node"],
+    // The compiler's declarations import `vite`. Installed from npm, that
+    // resolves to this app's Vite 7; through the workspace link it would
+    // resolve to the compiler's own Vite 8 devDependency instead.
+    "paths": { "vite": ["./node_modules/vite"] }
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "__tests__/**/*.ts",
+    "vite.config.ts",
+    "vitest.config.ts"
+  ]
+}

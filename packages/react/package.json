@@ -46,6 +46,7 @@
   },
   "homepage": "https://generaltranslation.com/",
   "devDependencies": {
+    "@generaltranslation/compiler": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": ">=18.0.0 <20.0.0",
     "@types/react-dom": ">=18.0.0 <20.0.0",
@@ -118,6 +119,61 @@
         "types": "./dist/macros.d.mts",
         "default": "./dist/macros.mjs"
       }
+    },
+    "./experimental": {
+      "react-server": {
+        "require": {
+          "types": "./dist/experimental/index.rsc.d.cts",
+          "default": "./dist/experimental/index.rsc.cjs"
+        },
+        "import": {
+          "types": "./dist/experimental/index.rsc.d.mts",
+          "default": "./dist/experimental/index.rsc.mjs"
+        },
+        "default": "./dist/experimental/index.rsc.mjs"
+      },
+      "workerd": {
+        "require": {
+          "types": "./dist/experimental/index.types.d.cts",
+          "default": "./dist/experimental/index.server.cjs"
+        },
+        "import": {
+          "types": "./dist/experimental/index.types.d.mts",
+          "default": "./dist/experimental/index.server.mjs"
+        },
+        "default": "./dist/experimental/index.server.mjs"
+      },
+      "worker": {
+        "require": {
+          "types": "./dist/experimental/index.types.d.cts",
+          "default": "./dist/experimental/index.server.cjs"
+        },
+        "import": {
+          "types": "./dist/experimental/index.types.d.mts",
+          "default": "./dist/experimental/index.server.mjs"
+        },
+        "default": "./dist/experimental/index.server.mjs"
+      },
+      "browser": {
+        "require": {
+          "types": "./dist/experimental/index.types.d.cts",
+          "default": "./dist/experimental/index.client.cjs"
+        },
+        "import": {
+          "types": "./dist/experimental/index.types.d.mts",
+          "default": "./dist/experimental/index.client.mjs"
+        },
+        "default": "./dist/experimental/index.client.mjs"
+      },
+      "require": {
+        "types": "./dist/experimental/index.types.d.cts",
+        "default": "./dist/experimental/index.server.cjs"
+      },
+      "import": {
+        "types": "./dist/experimental/index.types.d.mts",
+        "default": "./dist/experimental/index.server.mjs"
+      },
+      "default": "./dist/experimental/index.server.mjs"
     }
   },
   "keywords": [

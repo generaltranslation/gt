@@ -11,5 +11,11 @@
     "target": "ES2022",
     "types": ["node"]
   },
-  "include": ["*.mjs", "*.ts", "e2e/**/*.ts"]
+  "include": [
+    "*.mjs",
+    "*.ts",
+    "e2e/**/*.ts",
+    "locale-twins/**/*.ts",
+    "servers/**/*.mjs"
+  ]
 }

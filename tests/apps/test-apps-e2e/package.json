@@ -12,6 +12,8 @@
   "devDependencies": {
     "@playwright/test": "^1.49.0",
     "@types/node": "^20",
+    "generaltranslation": "workspace:*",
+    "gt-i18n": "workspace:*",
     "typescript": "^5"
   }
 }

@@ -484,6 +484,19 @@
       },
       "additionalProperties": false
     },
+    "experimental": {
+      "type": "object",
+      "description": "Experimental features. They can change or go away in any release.",
+      "properties": {
+        "splitting": {
+          "type": "string",
+          "enum": ["locale", "locale-twins"],
+          "description": "Translation splitting strategy. \"locale\" loads a whole locale at once; \"locale-twins\" builds a per-locale copy of every client chunk that carries translations (Vite builds with @generaltranslation/compiler/experimental; import GT from the /experimental entry points).",
+          "default": "locale"
+        }
+      },
+      "additionalProperties": true
+    },
     "sharedStaticAssets": {
       "type": "object",
       "description": "Configuration for moving shared static assets to a single directory and rewriting references in source files, or mirroring assets to each locale directory.",

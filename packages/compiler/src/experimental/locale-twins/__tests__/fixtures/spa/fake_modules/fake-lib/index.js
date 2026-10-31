@@ -1,0 +1,73 @@
+const FAKE_LIB_MARKER = 'fake-lib library code';
+
+// Bulk, so the library dominates the JS output like a real framework would.
+const FAKE_LIB_TABLE = [
+  'library code that every locale shares and that must stay out of twinned chunks 0',
+  'code that every locale shares and that must stay out of twinned chunks library 1',
+  'that every locale shares and that must stay out of twinned chunks library code 2',
+  'every locale shares and that must stay out of twinned chunks library code that 3',
+  'locale shares and that must stay out of twinned chunks library code that every 4',
+  'shares and that must stay out of twinned chunks library code that every locale 5',
+  'and that must stay out of twinned chunks library code that every locale shares 6',
+  'that must stay out of twinned chunks library code that every locale shares and 7',
+  'must stay out of twinned chunks library code that every locale shares and that 8',
+  'stay out of twinned chunks library code that every locale shares and that must 9',
+  'out of twinned chunks library code that every locale shares and that must stay 10',
+  'of twinned chunks library code that every locale shares and that must stay out 11',
+  'twinned chunks library code that every locale shares and that must stay out of 12',
+  'chunks library code that every locale shares and that must stay out of twinned 13',
+  'library code that every locale shares and that must stay out of twinned chunks 14',
+  'code that every locale shares and that must stay out of twinned chunks library 15',
+  'that every locale shares and that must stay out of twinned chunks library code 16',
+  'every locale shares and that must stay out of twinned chunks library code that 17',
+  'locale shares and that must stay out of twinned chunks library code that every 18',
+  'shares and that must stay out of twinned chunks library code that every locale 19',
+  'and that must stay out of twinned chunks library code that every locale shares 20',
+  'that must stay out of twinned chunks library code that every locale shares and 21',
+  'must stay out of twinned chunks library code that every locale shares and that 22',
+  'stay out of twinned chunks library code that every locale shares and that must 23',
+  'out of twinned chunks library code that every locale shares and that must stay 24',
+  'of twinned chunks library code that every locale shares and that must stay out 25',
+  'twinned chunks library code that every locale shares and that must stay out of 26',
+  'chunks library code that every locale shares and that must stay out of twinned 27',
+  'library code that every locale shares and that must stay out of twinned chunks 28',
+  'code that every locale shares and that must stay out of twinned chunks library 29',
+  'that every locale shares and that must stay out of twinned chunks library code 30',
+  'every locale shares and that must stay out of twinned chunks library code that 31',
+  'locale shares and that must stay out of twinned chunks library code that every 32',
+  'shares and that must stay out of twinned chunks library code that every locale 33',
+  'and that must stay out of twinned chunks library code that every locale shares 34',
+  'that must stay out of twinned chunks library code that every locale shares and 35',
+  'must stay out of twinned chunks library code that every locale shares and that 36',
+  'stay out of twinned chunks library code that every locale shares and that must 37',
+  'out of twinned chunks library code that every locale shares and that must stay 38',
+  'of twinned chunks library code that every locale shares and that must stay out 39',
+  'twinned chunks library code that every locale shares and that must stay out of 40',
+  'chunks library code that every locale shares and that must stay out of twinned 41',
+  'library code that every locale shares and that must stay out of twinned chunks 42',
+  'code that every locale shares and that must stay out of twinned chunks library 43',
+  'that every locale shares and that must stay out of twinned chunks library code 44',
+  'every locale shares and that must stay out of twinned chunks library code that 45',
+  'locale shares and that must stay out of twinned chunks library code that every 46',
+  'shares and that must stay out of twinned chunks library code that every locale 47',
+  'and that must stay out of twinned chunks library code that every locale shares 48',
+  'that must stay out of twinned chunks library code that every locale shares and 49',
+  'must stay out of twinned chunks library code that every locale shares and that 50',
+  'stay out of twinned chunks library code that every locale shares and that must 51',
+  'out of twinned chunks library code that every locale shares and that must stay 52',
+  'of twinned chunks library code that every locale shares and that must stay out 53',
+  'twinned chunks library code that every locale shares and that must stay out of 54',
+  'chunks library code that every locale shares and that must stay out of twinned 55',
+  'library code that every locale shares and that must stay out of twinned chunks 56',
+  'code that every locale shares and that must stay out of twinned chunks library 57',
+  'that every locale shares and that must stay out of twinned chunks library code 58',
+  'every locale shares and that must stay out of twinned chunks library code that 59',
+];
+
+export function formatLabel(label) {
+  return `[${FAKE_LIB_MARKER}] ${label} ${FAKE_LIB_TABLE.length}`;
+}
+
+export function describeTable() {
+  return FAKE_LIB_TABLE.join(' ');
+}

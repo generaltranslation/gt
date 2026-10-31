@@ -991,9 +991,21 @@ importers:
       '@generaltranslation/format':
         specifier: workspace:*
         version: link:../format
+      '@jridgewell/gen-mapping':
+        specifier: ^0.3.13
+        version: 0.3.13
+      '@jridgewell/trace-mapping':
+        specifier: ^0.3.31
+        version: 0.3.31
       generaltranslation:
         specifier: workspace:*
         version: link:../core
+      gt-i18n:
+        specifier: workspace:*
+        version: link:../i18n
+      magic-string:
+        specifier: ^0.30.21
+        version: 0.30.21
       unplugin:
         specifier: ^2.3.10
         version: 2.3.10
@@ -1016,6 +1028,12 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
+      vite:
+        specifier: ^8.3.1
+        version: 8.3.1(@types/node@22.13.10)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
+      vite7:
+        specifier: npm:vite@7.3.1
+        version: vite@7.3.1(@types/node@22.13.10)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
       vitest:
         specifier: 'catalog:'
         version: 3.2.4(@edge-runtime/vm@4.0.4)(@types/debug@4.1.12)(@types/node@22.13.10)(happy-dom@20.14.5(bufferutil@4.0.9))(jiti@2.7.0)(jsdom@29.1.1(@noble/hashes@2.2.0))(lightningcss@1.33.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
@@ -1292,6 +1310,9 @@ importers:
         specifier: '>=18.0.0'
         version: 19.1.1(react@19.1.1)
     devDependencies:
+      '@generaltranslation/compiler':
+        specifier: workspace:*
+        version: link:../compiler
       '@types/node':
         specifier: 'catalog:'
         version: 22.13.10
@@ -2637,6 +2658,52 @@ importers:
         specifier: ^8.0.16
         version: 8.1.4(@types/node@20.19.17)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
 
+  tests/apps/tanstack-start-twins:
+    dependencies:
+      '@tanstack/react-router':
+        specifier: ^1.170.15
+        version: 1.170.18(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@tanstack/react-start':
+        specifier: ^1.168.25
+        version: 1.168.28(esbuild@0.28.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(rolldown@1.2.15)(rollup@4.63.5)(vite@8.1.4(@types/node@20.19.17)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.19))
+      gt-tanstack-start:
+        specifier: workspace:*
+        version: link:../../../packages/tanstack-start
+      react:
+        specifier: ^19.2.4
+        version: 19.2.4
+      react-dom:
+        specifier: ^19.2.4
+        version: 19.2.4(react@19.2.4)
+    devDependencies:
+      '@generaltranslation/compiler':
+        specifier: workspace:*
+        version: link:../../../packages/compiler
+      '@types/node':
+        specifier: ^20
+        version: 20.19.17
+      '@types/react':
+        specifier: ^19
+        version: 19.2.7
+      '@types/react-dom':
+        specifier: ^19
+        version: 19.1.9(@types/react@19.2.7)
+      '@vitejs/plugin-react':
+        specifier: ^6.0.2
+        version: 6.0.3(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(rolldown@1.2.15)(vite@8.1.4(@types/node@20.19.17)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))(babel-plugin-react-compiler@1.0.0)(vite@8.1.4(@types/node@20.19.17)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))
+      gt:
+        specifier: workspace:*
+        version: link:../../../packages/cli
+      typescript:
+        specifier: ^5
+        version: 5.7.3
+      vite:
+        specifier: ^8.0.16
+        version: 8.1.4(@types/node@20.19.17)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@edge-runtime/vm@4.0.4)(@types/debug@4.1.12)(@types/node@20.19.17)(happy-dom@20.14.5(bufferutil@4.0.9))(jiti@2.7.0)(jsdom@29.1.1(@noble/hashes@2.2.0))(lightningcss@1.33.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
+
   tests/apps/test-apps-e2e:
     devDependencies:
       '@playwright/test':
@@ -2645,6 +2712,12 @@ importers:
       '@types/node':
         specifier: ^20
         version: 20.19.17
+      generaltranslation:
+        specifier: workspace:*
+        version: link:../../../packages/core
+      gt-i18n:
+        specifier: workspace:*
+        version: link:../../../packages/i18n
       typescript:
         specifier: ^5
         version: 5.7.3
@@ -2664,6 +2737,9 @@ importers:
       '@generaltranslation/compiler':
         specifier: workspace:*
         version: link:../../../packages/compiler
+      '@types/node':
+        specifier: ^26.6.3
+        version: 26.6.3
       '@types/react':
         specifier: ^19
         version: 19.2.7
@@ -2679,6 +2755,49 @@ importers:
       vite:
         specifier: ^8.0.16
         version: 8.1.4(@types/node@26.6.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@edge-runtime/vm@4.0.4)(@types/debug@4.1.12)(@types/node@26.6.3)(happy-dom@20.14.5(bufferutil@4.0.9))(jiti@2.7.0)(jsdom@29.1.1(@noble/hashes@2.2.0))(lightningcss@1.33.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
+
+  tests/apps/vite-react-twins:
+    dependencies:
+      gt-react:
+        specifier: workspace:*
+        version: link:../../../packages/react
+      react:
+        specifier: ^19.2.4
+        version: 19.3.0
+      react-dom:
+        specifier: ^19.2.4
+        version: 19.3.0(react@19.3.0)
+    devDependencies:
+      '@generaltranslation/compiler':
+        specifier: workspace:*
+        version: link:../../../packages/compiler
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.13.10
+      '@types/react':
+        specifier: ^19
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: ^19
+        version: 19.3.0(@types/react@19.3.0)
+      '@vitejs/plugin-react':
+        specifier: ^6.0.2
+        version: 6.1.1(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(rolldown@1.2.15)(vite@8.3.1(@types/node@22.13.10)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))(babel-plugin-react-compiler@1.0.0)(vite@8.3.1(@types/node@22.13.10)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))
+      gt:
+        specifier: workspace:*
+        version: link:../../../packages/cli
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+      vite:
+        specifier: ^8.0.16
+        version: 8.3.1(@types/node@22.13.10)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@edge-runtime/vm@4.0.4)(@types/debug@4.1.12)(@types/node@22.13.10)(happy-dom@20.14.5(bufferutil@4.0.9))(jiti@2.7.0)(jsdom@29.1.1(@noble/hashes@2.2.0))(lightningcss@1.33.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
 
   tests/apps/vite-vue:
     dependencies:
@@ -2701,6 +2820,43 @@ importers:
       vite:
         specifier: 8.1.4
         version: 8.1.4(@types/node@26.6.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
+
+  tests/apps/vite7-react-twins:
+    dependencies:
+      gt-react:
+        specifier: workspace:*
+        version: link:../../../packages/react
+      react:
+        specifier: ^19.2.4
+        version: 19.3.0
+      react-dom:
+        specifier: ^19.2.4
+        version: 19.3.0(react@19.3.0)
+    devDependencies:
+      '@generaltranslation/compiler':
+        specifier: workspace:*
+        version: link:../../../packages/compiler
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.13.10
+      '@types/react':
+        specifier: ^19
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: ^19
+        version: 19.3.0(@types/react@19.3.0)
+      '@vitejs/plugin-react':
+        specifier: ^5.1.2
+        version: 5.1.2(vite@7.3.1(@types/node@22.13.10)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+      vite:
+        specifier: 7.3.1
+        version: 7.3.1(@types/node@22.13.10)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@edge-runtime/vm@4.0.4)(@types/debug@4.1.12)(@types/node@22.13.10)(happy-dom@20.14.5(bufferutil@4.0.9))(jiti@2.7.0)(jsdom@29.1.1(@noble/hashes@2.2.0))(lightningcss@1.33.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
 
   tests/apps/webpack-react:
     dependencies:
@@ -31630,6 +31786,18 @@ snapshots:
       '@types/babel__core': 7.20.5
       react-refresh: 0.18.0
       vite: 7.1.7(@types/node@26.6.3)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vitejs/plugin-react@5.1.2(vite@7.3.1(@types/node@22.13.10)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))':
+    dependencies:
+      '@babel/core': 7.29.7
+      '@babel/plugin-transform-react-jsx-self': 7.27.1(@babel/core@7.29.7)
+      '@babel/plugin-transform-react-jsx-source': 7.27.1(@babel/core@7.29.7)
+      '@rolldown/pluginutils': 1.0.0-beta.53
+      '@types/babel__core': 7.20.5
+      react-refresh: 0.18.0
+      vite: 7.3.1(@types/node@22.13.10)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
     transitivePeerDependencies:
       - supports-color
 

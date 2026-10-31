@@ -1,0 +1,115 @@
+{
+  "c5e3c0aed806d1a4": {
+    "t": "h1",
+    "i": 1,
+    "c": "Lighthouse Atlas"
+  },
+  "91fa6e5e8a549597": "Front page of the atlas",
+  "02e1f7a8e5564bec": "Open the harbor guide",
+  "2f7614194b30b269": "Report a broken beacon to the harbor office.",
+  "7a542150e2f132e8": {
+    "t": "span",
+    "i": 1,
+    "c": "The atlas is maintained by volunteer cartographers."
+  },
+  "c01396a4b7c75c68": "Harbor guide edition for the winter crossing.",
+  "1614eb9a429bba2b": "Anchorage fees are waived for rescue vessels.",
+  "1ca2d3c56eb45b98": [
+    {
+      "t": "h2",
+      "i": 1,
+      "c": "Harbor guide for careful captains"
+    },
+    {
+      "t": "p",
+      "i": 2,
+      "c": [
+        "The guide was first printed in ",
+        {
+          "i": 3,
+          "k": "_gt_n_3",
+          "v": "n"
+        },
+        "."
+      ]
+    },
+    {
+      "t": "p",
+      "i": 4,
+      "c": [
+        "It was compiled by the keepers of the ",
+        {
+          "t": "em",
+          "i": 5,
+          "c": "northern coast"
+        },
+        "."
+      ]
+    }
+  ],
+  "0f82ab45be785eea": "Maps drawn by hand and verified by sailors.",
+  "0b1b597c32477308": "Fog warnings are posted at the pier.",
+  "6f85251079d9d9cd": "Tide tables refresh every morning at dawn.",
+  "72d5b2b493077458": "Your lantern is lit, {name}.",
+  "ac3d32d3424ecd81": {
+    "t": "p",
+    "i": 1,
+    "c": [
+      "Welcome aboard, ",
+      {
+        "i": 2,
+        "k": "_gt_value_2",
+        "v": "v"
+      },
+      ". The atlas charts",
+      " ",
+      {
+        "t": "b",
+        "i": 3,
+        "c": [
+          {
+            "i": 4,
+            "k": "_gt_n_4",
+            "v": "n"
+          },
+          " coastal islands"
+        ]
+      },
+      " ",
+      "and every ",
+      {
+        "t": "i",
+        "i": 5,
+        "c": "lighthouse keeper"
+      },
+      " who tends them."
+    ]
+  },
+  "da1bb78d9dad069a": {
+    "t": "Plural",
+    "i": 1,
+    "d": {
+      "b": {
+        "one": {
+          "t": "p",
+          "i": 2,
+          "c": "One fishing boat is moored tonight."
+        },
+        "other": {
+          "t": "p",
+          "i": 2,
+          "c": "Several fishing boats are moored tonight."
+        }
+      },
+      "t": "p"
+    }
+  },
+  "d63716aca0356aeb": [
+    "Current notice: ",
+    {
+      "t": "Derive",
+      "i": 1,
+      "c": "Storm watch season"
+    }
+  ]
+}
