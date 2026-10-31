@@ -16,6 +16,10 @@ import { handleErrors, InvalidLibraryUsageError } from './passes/handleErrors';
 import { initializeState } from './state/utils/initializeState';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
+import {
+  importsUnstableSource,
+  unstableHashInjectionPass,
+} from './passes/unstableHashInjectionPass';
 
 /**
  * Architecture:
@@ -272,6 +276,11 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             traverse(ast, injectionPass(state));
           }
 
+          // Pass 4b: $_hash injection for unstable tagged templates
+          if (state.settings.compileTimeHash && importsUnstableSource(ast)) {
+            traverse(ast, unstableHashInjectionPass(state));
+          }
+
           // Pass 5: Runtime translate (dev hot reload)
           const devHotReloadActive =
             state.settings.devHotReload.strings ||
@@ -285,7 +294,8 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             !injectionRan &&
             state.statistics.macroExpansionsCount === 0 &&
             state.statistics.jsxInsertionsCount === 0 &&
-            state.statistics.runtimeTranslateCount === 0
+            state.statistics.runtimeTranslateCount === 0 &&
+            state.statistics.unstableHashInjectionsCount === 0
           ) {
             return null;
           }

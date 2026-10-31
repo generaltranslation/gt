@@ -24,6 +24,10 @@ import {
 import { assertPlainValue, deriveVariants } from './typedValues.js';
 import type { TreeContext } from './types.js';
 
+// The compiler mirrors this walker without derive() in
+// packages/compiler/src/transform/injection/injectUnstableTaggedTemplateHash.ts;
+// test-fixtures/icu-tree-wire-format.json keeps both on the same hashes.
+
 const USE_UNSTABLE_HELPERS_FIX =
   'Import derive() from the same unstable entry as t, useGT, or getGT';
 
