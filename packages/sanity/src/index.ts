@@ -100,6 +100,26 @@ export type GTPluginConfig = Omit<
   locales: string[];
   // Alias for sourceLocale — accepted so users can spread gt.config.json directly.
   defaultLocale?: string;
+  /**
+   * Let documents written in a locale other than `sourceLocale` be translated
+   * from the Translate dialog on that document. Off by default: only
+   * `sourceLocale` documents can be translated.
+   *
+   * Each translation group (a `translation.metadata` document) has exactly one
+   * original: its `sourceLocale` document, or — once gt-sanity translates a
+   * document written in another locale — that document, recorded on the
+   * group's metadata as `gtSourceLanguage`. Every other document in a group is
+   * a translation and cannot be translated from. Translate All, Save Local
+   * Edits and field-level (internationalized-array) localization only
+   * translate from `sourceLocale`.
+   *
+   * Turning this off again after groups have been marked is not supported:
+   * translations of an original in another locale can then be treated as
+   * originals again.
+   *
+   * Defaults to false.
+   */
+  allowNonDefaultSourceLocales?: boolean;
   singletons?: string[];
   // Optional mapping function to map source document ids to translated singleton document ids
   // By default, the translated singleton document is is `${sourceDocumentId}-${locale}`
@@ -200,6 +220,7 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
     autoImport = DEFAULT_TRANSLATION_PREFERENCES.autoImport,
     autoPatchReferences = DEFAULT_TRANSLATION_PREFERENCES.autoPatchReferences,
     autoPublish = DEFAULT_TRANSLATION_PREFERENCES.autoPublish,
+    allowNonDefaultSourceLocales = false,
   }) => {
     // Resolve sourceLocale: explicit sourceLocale > defaultLocale (from gt.config.json) > library default
     const resolvedSourceLocale =
@@ -253,7 +274,8 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
         autoPatchReferences,
         autoPublish,
         preserveExistingTranslations,
-      }
+      },
+      allowNonDefaultSourceLocales
     );
     gt.setConfig({
       sourceLocale: resolvedSourceLocale,

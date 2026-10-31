@@ -13,7 +13,7 @@ exports[`Global test of working doc-level functionality and snapshot match 1`] =
         "_type": "block",
         "children": [
           {
-            "_key": "randomKey-16",
+            "_key": "randomKey-14",
             "_type": "span",
             "marks": [],
             "text": "This is block text 1 level deep",
@@ -31,7 +31,7 @@ exports[`Global test of working doc-level functionality and snapshot match 1`] =
           "_type": "block",
           "children": [
             {
-              "_key": "randomKey-14",
+              "_key": "randomKey-12",
               "_type": "span",
               "marks": [],
               "text": "This is a block text 2 levels deep",
@@ -51,7 +51,7 @@ exports[`Global test of working doc-level functionality and snapshot match 1`] =
       "_type": "block",
       "children": [
         {
-          "_key": "randomKey-18",
+          "_key": "randomKey-16",
           "_type": "span",
           "marks": [],
           "text": "This is block text at the top level.",
@@ -71,7 +71,7 @@ exports[`Global test of working doc-level functionality and snapshot match 1`] =
             "_type": "block",
             "children": [
               {
-                "_key": "randomKey-24",
+                "_key": "randomKey-22",
                 "_type": "span",
                 "marks": [],
                 "text": "This is block text in a nested object in an object in top-level block text.",
@@ -90,7 +90,7 @@ exports[`Global test of working doc-level functionality and snapshot match 1`] =
       "_type": "block",
       "children": [
         {
-          "_key": "randomKey-26",
+          "_key": "randomKey-24",
           "_type": "span",
           "marks": [],
           "text": "This is h1 text",
@@ -104,7 +104,7 @@ exports[`Global test of working doc-level functionality and snapshot match 1`] =
       "_type": "block",
       "children": [
         {
-          "_key": "randomKey-28",
+          "_key": "randomKey-26",
           "_type": "span",
           "marks": [],
           "text": "This is h2 text",
@@ -118,7 +118,7 @@ exports[`Global test of working doc-level functionality and snapshot match 1`] =
       "_type": "block",
       "children": [
         {
-          "_key": "randomKey-32",
+          "_key": "randomKey-30",
           "_type": "span",
           "marks": [],
           "text": "Bullet 1",
@@ -134,7 +134,7 @@ exports[`Global test of working doc-level functionality and snapshot match 1`] =
       "_type": "block",
       "children": [
         {
-          "_key": "randomKey-36",
+          "_key": "randomKey-34",
           "_type": "span",
           "marks": [],
           "text": "nested bullet a",
@@ -150,7 +150,7 @@ exports[`Global test of working doc-level functionality and snapshot match 1`] =
       "_type": "block",
       "children": [
         {
-          "_key": "randomKey-42",
+          "_key": "randomKey-40",
           "_type": "span",
           "marks": [],
           "text": "Styled bullet 2",
@@ -166,7 +166,7 @@ exports[`Global test of working doc-level functionality and snapshot match 1`] =
       "_type": "block",
       "children": [
         {
-          "_key": "randomKey-48",
+          "_key": "randomKey-46",
           "_type": "span",
           "marks": [],
           "text": "Number 1",

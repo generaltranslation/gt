@@ -14,7 +14,7 @@ exports[`Global test of working field-level functionality and snapshot match 1`]
           "_type": "block",
           "children": [
             {
-              "_key": "randomKey-16",
+              "_key": "randomKey-14",
               "_type": "span",
               "marks": [],
               "text": "This is block text 1 level deep",
@@ -32,7 +32,7 @@ exports[`Global test of working field-level functionality and snapshot match 1`]
             "_type": "block",
             "children": [
               {
-                "_key": "randomKey-14",
+                "_key": "randomKey-12",
                 "_type": "span",
                 "marks": [],
                 "text": "This is block text 2 levels deep",
@@ -54,7 +54,7 @@ exports[`Global test of working field-level functionality and snapshot match 1`]
         "_type": "block",
         "children": [
           {
-            "_key": "randomKey-18",
+            "_key": "randomKey-16",
             "_type": "span",
             "marks": [],
             "text": "This is block text at the top level.",
@@ -74,7 +74,7 @@ exports[`Global test of working field-level functionality and snapshot match 1`]
               "_type": "block",
               "children": [
                 {
-                  "_key": "randomKey-24",
+                  "_key": "randomKey-22",
                   "_type": "span",
                   "marks": [],
                   "text": "This is block text in a nested object in an object in top-level block text.",

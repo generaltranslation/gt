@@ -13,6 +13,7 @@ import type { MdxJsxFlowElement, MdxJsxTextElement } from 'mdast-util-mdx-jsx';
 import { escapeHtmlInTextNodes, normalizeCJKCharacters } from 'gt-remark';
 import { parse as parseBabel } from '@babel/parser';
 import { parseMdxForRoundTrip, restoreAnchorIds } from './mdxAnchorSyntax.js';
+import { batchProcess, FILE_IO_CONCURRENCY } from './batchProcess.js';
 
 const { isMatch } = micromatch;
 
@@ -247,9 +248,6 @@ export default async function localizeStaticUrls(
     settings.defaultLocale
   );
 
-  // Process all file types at once with a single call
-  const processPromises = [];
-
   // First, process default locale files (from source files)
   // This is needed because they might not be in the fileMapping if they're not being translated
   // Only process default locale if it's in the target locales filter
@@ -269,8 +267,9 @@ export default async function localizeStaticUrls(
     }
 
     if (defaultLocaleFiles.length > 0) {
-      const defaultPromise = Promise.all(
-        defaultLocaleFiles.map(async (filePath: string) => {
+      await batchProcess(
+        defaultLocaleFiles,
+        async (filePath) => {
           // Check if file exists before processing
           if (!fs.existsSync(filePath)) {
             return;
@@ -293,54 +292,55 @@ export default async function localizeStaticUrls(
           if (result.hasChanges) {
             await fs.promises.writeFile(filePath, result.content);
           }
-        })
+        },
+        FILE_IO_CONCURRENCY
       );
-      processPromises.push(defaultPromise);
     }
   }
 
-  // Then process all other locales from fileMapping
-  const mappingPromises = Object.entries(fileMapping)
-    .filter(([locale]) => locales.includes(locale)) // Filter by target locales
-    .map(async ([locale, filesMap]) => {
-      // Get all files that are md or mdx
-      const targetFiles = Object.values(filesMap).filter(
-        (p) =>
-          PAGE_EXTENSIONS.some((ext) => p.endsWith(ext)) &&
-          (!includeFiles || includeFiles.has(p))
-      );
+  // Then process all other locales from fileMapping, one locale at a time so
+  // the concurrency bound covers the whole pass
+  const targetMappings = Object.entries(fileMapping).filter(([locale]) =>
+    locales.includes(locale)
+  );
+  for (const [locale, filesMap] of targetMappings) {
+    // Get all files that are md or mdx
+    const targetFiles = Object.values(filesMap).filter(
+      (p) =>
+        PAGE_EXTENSIONS.some((ext) => p.endsWith(ext)) &&
+        (!includeFiles || includeFiles.has(p))
+    );
 
-      // Replace the placeholder path with the target path
-      await Promise.all(
-        targetFiles.map(async (filePath) => {
-          // Check if file exists before processing
-          if (!fs.existsSync(filePath)) {
-            return;
-          }
-          // Get file content
-          const fileContent = await fs.promises.readFile(filePath, 'utf8');
-          // Localize the file (handles both URLs and hrefs in single AST pass)
-          const result = localizeStaticUrlsForFile(
-            fileContent,
-            settings.defaultLocale,
-            locale,
-            settings.options?.experimentalHideDefaultLocale || false,
-            settings.options?.docsUrlPattern,
-            settings.options?.excludeStaticUrls,
-            settings.options?.baseDomain,
-            skipUntranslatedPages ? filesMap : undefined,
-            urlAttributes
-          );
-          // Only write the file if there were changes
-          if (result.hasChanges) {
-            await fs.promises.writeFile(filePath, result.content);
-          }
-        })
-      );
-    });
-  processPromises.push(...mappingPromises);
-
-  await Promise.all(processPromises);
+    // Replace the placeholder path with the target path
+    await batchProcess(
+      targetFiles,
+      async (filePath) => {
+        // Check if file exists before processing
+        if (!fs.existsSync(filePath)) {
+          return;
+        }
+        // Get file content
+        const fileContent = await fs.promises.readFile(filePath, 'utf8');
+        // Localize the file (handles both URLs and hrefs in single AST pass)
+        const result = localizeStaticUrlsForFile(
+          fileContent,
+          settings.defaultLocale,
+          locale,
+          settings.options?.experimentalHideDefaultLocale || false,
+          settings.options?.docsUrlPattern,
+          settings.options?.excludeStaticUrls,
+          settings.options?.baseDomain,
+          skipUntranslatedPages ? filesMap : undefined,
+          urlAttributes
+        );
+        // Only write the file if there were changes
+        if (result.hasChanges) {
+          await fs.promises.writeFile(filePath, result.content);
+        }
+      },
+      FILE_IO_CONCURRENCY
+    );
+  }
 }
 
 interface UrlTransformResult {
@@ -507,7 +507,7 @@ function transformMdxUrls(
   defaultLocale: string,
   targetLocale: string,
   hideDefaultLocale: boolean,
-  pattern: string = '/[locale]',
+  pattern: string | string[] = '/[locale]',
   exclude: string[] = [],
   baseDomain: string | undefined,
   localizedFiles: Record<string, string> | undefined,
@@ -519,35 +519,19 @@ function transformMdxUrls(
     type: 'markdown' | 'href';
   }> = [];
 
-  if (!pattern.startsWith('/')) {
-    pattern = '/' + pattern;
-  }
+  const patternHeads = getPatternHeads(pattern);
 
-  const patternHead = pattern.split('[locale]')[0];
-
-  // Quick check: if the file doesn't contain the pattern, skip expensive AST parsing
-  // For default locale processing, we also need to check if content might need adjustment
-  if (targetLocale === defaultLocale) {
-    // For default locale files, we always need to check as we're looking for either:
-    // - paths without locale (when hideDefaultLocale=false)
-    // - paths with default locale (when hideDefaultLocale=true)
-    const patternWithoutSlash = patternHead.replace(/\/$/, '');
-    if (!mdxContent.includes(patternWithoutSlash)) {
-      return {
-        content: mdxContent,
-        hasChanges: false,
-        transformedUrls: [],
-      };
-    }
-  } else {
-    // For non-default locales, use the original logic
-    if (!mdxContent.includes(patternHead.replace(/\/$/, ''))) {
-      return {
-        content: mdxContent,
-        hasChanges: false,
-        transformedUrls: [],
-      };
-    }
+  // Quick check: if the file doesn't contain any pattern, skip expensive AST parsing
+  if (
+    !patternHeads.some((patternHead) =>
+      mdxContent.includes(patternHead.replace(/\/$/, ''))
+    )
+  ) {
+    return {
+      content: mdxContent,
+      hasChanges: false,
+      transformedUrls: [],
+    };
   }
 
   // Parse the MDX content into an AST
@@ -582,6 +566,17 @@ function transformMdxUrls(
         return null;
       }
     }
+    // Localize with the pattern that matches this URL
+    const patternHead = findPatternHead(
+      baseDomain && shouldProcessAbsoluteUrl(originalUrl, baseDomain)
+        ? originalUrl.substring(baseDomain.length)
+        : originalUrl,
+      patternHeads
+    );
+    if (!patternHead) {
+      return null;
+    }
+
     // Check if URL should be processed
     if (
       !shouldProcessUrl(
@@ -844,7 +839,7 @@ function localizeStaticUrlsForFile(
   defaultLocale: string,
   targetLocale: string,
   hideDefaultLocale: boolean,
-  pattern: string = '/[locale]', // eg /docs/[locale] or /[locale]
+  pattern: string | string[] = '/[locale]', // eg /docs/[locale] or /[locale]
   exclude: string[] = [],
   baseDomain: string | undefined,
   localizedFiles: Record<string, string> | undefined,
@@ -862,6 +857,36 @@ function localizeStaticUrlsForFile(
     localizedFiles,
     urlAttributes
   );
+}
+
+/**
+ * The part of each docsUrlPattern before `[locale]`, with a leading slash,
+ * longest first so the most specific pattern matches a URL.
+ */
+export function getPatternHeads(pattern: string | string[]): string[] {
+  return (Array.isArray(pattern) ? pattern : [pattern])
+    .map((p) => (p.startsWith('/') ? p : `/${p}`).split('[locale]')[0])
+    .sort((a, b) => pathSegments(b).length - pathSegments(a).length);
+}
+
+/**
+ * The most specific pattern head a URL falls under. URLs are localized with
+ * that pattern only, so a URL a longer pattern leaves alone (e.g. one already
+ * localized) never falls through to a shorter one.
+ */
+export function findPatternHead(
+  url: string,
+  patternHeads: string[]
+): string | undefined {
+  // Query strings and fragments are not part of the path
+  const urlSegments = pathSegments(url.split(/[?#]/)[0]);
+  return patternHeads.find((patternHead) =>
+    checkIfPathMatchesPattern(urlSegments, pathSegments(patternHead))
+  );
+}
+
+function pathSegments(url: string): string[] {
+  return url.split('/').filter((segment) => segment !== '');
 }
 
 function checkIfPathMatchesPattern(

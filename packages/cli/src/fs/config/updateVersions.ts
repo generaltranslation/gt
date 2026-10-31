@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import { displayUpdatedVersionsFile } from '../../console/logging.js';
 import { logger } from '../../console/logger.js';
 import path from 'node:path';
+import { stringifyJson } from '../stringifyJson.js';
 
 const STAGED_VERSIONS_FILE = 'staged-versions.json';
 type StagedVersionData = Record<
@@ -20,7 +21,7 @@ export async function updateVersions({
   const versionFilepath = path.join(configDirectory, STAGED_VERSIONS_FILE);
   try {
     fs.mkdirSync(configDirectory, { recursive: true });
-    fs.writeFileSync(versionFilepath, JSON.stringify(versionData, null, 2));
+    fs.writeFileSync(versionFilepath, stringifyJson(versionData));
 
     // show update in console
     displayUpdatedVersionsFile(versionFilepath);

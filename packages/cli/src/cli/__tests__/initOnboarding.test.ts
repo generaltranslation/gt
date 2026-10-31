@@ -599,7 +599,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       });
       expect(logger.endCommand).toHaveBeenCalledWith(
         expect.stringContaining(
-          'https://generaltranslation.com/docs/react/react-quickstart'
+          'https://generaltranslation.com/docs/react/react-router-quickstart'
         )
       );
     });

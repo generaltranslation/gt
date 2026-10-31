@@ -717,6 +717,7 @@ export class BaseCLI {
       requireConfig: true,
     });
     await handleDownload(initOptions, settings, this.library);
+    await this.finalizeDownloadedTranslations(settings);
   }
 
   protected async handleTranslate(initOptions: TranslateFlags): Promise<void> {
@@ -755,6 +756,17 @@ export class BaseCLI {
     } else {
       await handleDownload(initOptions, settings, this.library);
     }
+    await this.finalizeDownloadedTranslations(settings);
+  }
+
+  /**
+   * Postprocesses the translations downloaded in this run and reports the
+   * summary. Shared by translate and download so both write the same output.
+   * @param settings - The settings for the command
+   */
+  protected async finalizeDownloadedTranslations(
+    settings: Settings
+  ): Promise<void> {
     // Only postprocess files downloaded in this run
     const include = getNeedsPostprocessing();
     if (include.size > 0) {
