@@ -1,3 +1,5 @@
+import { isUnstableGTImportSource } from 'generaltranslation/internal';
+
 /**
  * A list of all the libraries names supported by the CLI
  */
@@ -31,6 +33,20 @@ export const GT_LIBRARIES = [
   Libraries.GT_FASTAPI,
 ] as const;
 export type GTLibrary = (typeof GT_LIBRARIES)[number];
+
+/**
+ * Whether an import source belongs to one of `pkgs` for the legacy
+ * extractors (prefix match, so subpaths count), excluding unstable sources.
+ */
+export function isLegacyGTImportSource(
+  source: string,
+  pkgs: readonly GTLibrary[]
+): boolean {
+  return (
+    !isUnstableGTImportSource(source) &&
+    pkgs.some((pkg) => source.startsWith(pkg))
+  );
+}
 
 /**
  * Libraries that support inline translation
