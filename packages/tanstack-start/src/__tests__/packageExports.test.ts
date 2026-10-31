@@ -116,11 +116,21 @@ describe.sequential('gt-tanstack-start package exports', () => {
       readdirSync(join(packageRoot, 'dist'))
         .filter((file) => /\.(cjs|mjs)$/.test(file))
         .sort()
-    ).toEqual(['index.client.mjs', 'index.server.mjs']);
+    ).toEqual([
+      'index.client.mjs',
+      'index.server.mjs',
+      'unstable.client.mjs',
+      'unstable.server.mjs',
+    ]);
   });
 
   it('references only declared dependencies from public declarations', () => {
-    for (const file of ['index.client.d.mts', 'index.server.d.mts']) {
+    for (const file of [
+      'index.client.d.mts',
+      'index.server.d.mts',
+      'unstable.client.d.mts',
+      'unstable.server.d.mts',
+    ]) {
       const declaration = readFileSync(join(packageRoot, 'dist', file), 'utf8');
 
       expect(declaration).not.toMatch(
@@ -145,30 +155,67 @@ describe.sequential('gt-tanstack-start package exports', () => {
     );
   });
 
-  it('keeps Node.js builtins out of the browser entrypoint', () => {
-    // Browser bundlers cannot resolve Node.js builtins.
-    const builtins = new Set(builtinModules);
-    const specifiers = getImportSpecifiers(readDistFile('index.client.mjs'));
-
-    expect(specifiers.length).toBeGreaterThan(0);
-    expect(
-      specifiers.filter(
-        (specifier) => specifier.startsWith('node:') || builtins.has(specifier)
-      )
-    ).toEqual([]);
-  });
-
-  it.each(['index.client.mjs', 'index.server.mjs'])(
-    'does not import React 19-only use from %s',
+  it.each(['index.client.mjs', 'unstable.client.mjs'])(
+    'keeps Node.js builtins out of the browser entrypoint %s',
     (file) => {
-      // The peer range includes React 18, whose ESM build has no `use` export,
-      // so importing it fails at module link time.
-      const reactImports = getNamedReactImports(readDistFile(file));
+      // Browser bundlers cannot resolve Node.js builtins.
+      const builtins = new Set(builtinModules);
+      const specifiers = getImportSpecifiers(readDistFile(file));
 
-      expect(reactImports.length).toBeGreaterThan(0);
-      expect(reactImports).not.toContain('use');
+      expect(specifiers.length).toBeGreaterThan(0);
+      expect(
+        specifiers.filter(
+          (specifier) =>
+            specifier.startsWith('node:') || builtins.has(specifier)
+        )
+      ).toEqual([]);
     }
   );
+
+  it.each([
+    ['index.client.mjs', true],
+    ['index.server.mjs', true],
+    // Re-exports gt-react/unstable, so it may not import React directly.
+    ['unstable.client.mjs', false],
+  ])('does not import React 19-only use from %s', (file, importsReact) => {
+    // The peer range includes React 18, whose ESM build has no `use` export,
+    // so importing it fails at module link time.
+    const reactImports = getNamedReactImports(readDistFile(file));
+
+    if (importsReact) expect(reactImports.length).toBeGreaterThan(0);
+    expect(reactImports).not.toContain('use');
+  });
+
+  it('mirrors the root conditions for gt-tanstack-start/unstable', () => {
+    const { exports } = JSON.parse(
+      readFileSync(join(packageRoot, 'package.json'), 'utf8')
+    ) as { exports: Record<string, unknown> };
+
+    expect(exports['./unstable']).toEqual(
+      JSON.parse(
+        JSON.stringify(exports['.']).replaceAll('/index.', '/unstable.')
+      )
+    );
+  });
+
+  it('loads the tagged getGT from both unstable entrypoints', () => {
+    for (const conditions of [[], ['--conditions=browser']]) {
+      node([
+        ...conditions,
+        '--input-type=module',
+        '-e',
+        `
+          import assert from 'node:assert/strict';
+          import { getGT, plural, t, useGT } from 'gt-tanstack-start/unstable';
+
+          assert.equal(typeof getGT, 'function');
+          assert.equal(typeof plural, 'function');
+          assert.equal(typeof t, 'function');
+          assert.equal(typeof useGT, 'function');
+        `,
+      ]);
+    }
+  });
 
   it('loads isomorphic helpers from the main ESM entrypoint', () => {
     node([
