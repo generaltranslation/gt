@@ -7,8 +7,7 @@ import {
 import { invalidConfigurationError } from '../../console/index.js';
 import { aggregateFiles } from './aggregateFiles.js';
 import { aggregateInlineTranslations } from '../../translation/stage.js';
-import type { JsxChildren } from '@generaltranslation/format/types';
-import type { FileToUpload } from 'generaltranslation/types';
+import type { FileToUpload, Updates } from 'generaltranslation/types';
 import { hashStringSync } from '../../utils/hash.js';
 import { TEMPLATE_FILE_NAME, TEMPLATE_FILE_ID } from '../../utils/constants.js';
 import {
@@ -61,7 +60,7 @@ export async function collectFiles(
         logErrorAndExit(invalidConfigurationError);
       }
       // Convert updates to a file object
-      const fileData: Record<string, JsxChildren> = {};
+      const fileData: Record<string, Updates[number]['source']> = {};
       const fileMetadata: Record<string, unknown> = {};
       // Convert updates to the proper data format
       for (const update of updates) {
