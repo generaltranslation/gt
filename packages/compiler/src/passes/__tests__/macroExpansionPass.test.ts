@@ -448,3 +448,16 @@ describe('macroExpansionPass', () => {
     expect(tCalls[0].arguments).toHaveLength(1);
   });
 });
+
+describe('macroExpansionPass with unstable sources', () => {
+  it.each(['gt-react/unstable', 'gt-tanstack-start/unstable'])(
+    'does NOT transform tagged template t imported from %s',
+    (source) => {
+      const { ast, tCalls } = transform(
+        `import { t } from '${source}';\nconst x = t\`hello \${{ name }}\`;`
+      );
+      expect(tCalls).toHaveLength(0);
+      assertStillTaggedTemplate(ast);
+    }
+  );
+});

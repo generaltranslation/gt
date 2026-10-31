@@ -1,5 +1,5 @@
 import { Updates } from '../types/index.js';
-import { hashSource, hashString } from 'generaltranslation/id';
+import { hashMessageTree, hashSource, hashString } from 'generaltranslation/id';
 import type { SourceCode } from '../react/jsx/utils/extractSourceCode.js';
 
 /**
@@ -8,8 +8,7 @@ import type { SourceCode } from '../react/jsx/utils/extractSourceCode.js';
 export async function calculateHashes(updates: Updates): Promise<void> {
   await Promise.all(
     updates.map(async (update) => {
-      const hash = hashSource({
-        source: update.source,
+      const hashMetadata = {
         ...(update.metadata.context && { context: update.metadata.context }),
         ...(update.metadata.maxChars != null && {
           maxChars: update.metadata.maxChars,
@@ -20,9 +19,15 @@ export async function calculateHashes(updates: Updates): Promise<void> {
         ...(update.metadata.requiresReview === true && {
           requiresReview: true,
         }),
-        dataFormat: update.dataFormat,
-      });
-      update.metadata.hash = hash;
+      };
+      update.metadata.hash =
+        update.dataFormat === 'ICU_TREE'
+          ? hashMessageTree(update.source, hashMetadata)
+          : hashSource({
+              source: update.source,
+              ...hashMetadata,
+              dataFormat: update.dataFormat,
+            });
     })
   );
 }

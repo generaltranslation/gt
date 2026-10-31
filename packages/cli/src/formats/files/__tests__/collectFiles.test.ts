@@ -73,4 +73,26 @@ describe('collectFiles', () => {
       },
     });
   });
+
+  it('uploads ICU_TREE sources as GTJSON tree values', async () => {
+    const tree = ['Save'];
+    vi.mocked(aggregateInlineTranslations).mockResolvedValue([
+      {
+        dataFormat: 'ICU_TREE',
+        source: tree,
+        metadata: { hash: 'tree-hash', context: 'button' },
+      },
+    ]);
+
+    const { files } = await collectFiles(options, settings, Libraries.GT_REACT);
+
+    expect(JSON.parse(files[0].content)).toEqual({ 'tree-hash': tree });
+    expect(files[0].formatMetadata).toEqual({
+      'tree-hash': {
+        hash: 'tree-hash',
+        context: 'button',
+        dataFormat: 'ICU_TREE',
+      },
+    });
+  });
 });

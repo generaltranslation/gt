@@ -1,5 +1,5 @@
 import * as t from '@babel/types';
-import type { DataFormat } from '@generaltranslation/format/types';
+import type { StringFormat } from '@generaltranslation/format/types';
 import { ParsingConfig } from '../types.js';
 import { ParsingOutput } from '../types.js';
 import { isValidIcu } from '../../../evaluateJsx.js';
@@ -60,7 +60,7 @@ export function handleLiteralTranslationCall({
     const staticId = `derive-temp-id-${randomUUID()}`;
     for (const context of contextVariants) {
       output.updates.push({
-        dataFormat: (metadata.format || 'ICU') as DataFormat,
+        dataFormat: (metadata.format || 'ICU') as StringFormat,
         source,
         metadata: {
           ...metadata,
@@ -73,7 +73,7 @@ export function handleLiteralTranslationCall({
     }
   } else {
     output.updates.push({
-      dataFormat: (metadata.format || 'ICU') as DataFormat,
+      dataFormat: (metadata.format || 'ICU') as StringFormat,
       source,
       metadata: {
         ...metadata,
