@@ -8,3 +8,11 @@ The corpus covers semantics the frameworks share. Framework-native tree
 normalization still happens before serialization: Vue flattens fragments,
 drops comments, and coalesces adjacent text nodes, while React follows
 `React.Children`. Framework-specific tests pin those intentional differences.
+
+`icu-tree-wire-format.json` pins `hashMessageTree` from `generaltranslation/id`
+for tagged-template messages. Each case records the user-code `template`, its
+hash `options`, the canonical message `tree` (the compact `MessageTree` from
+`@generaltranslation/icu`: adjacent text merged, a branch without placeholders
+as one string, `other` on every select/plural, branch keys and Intl options
+sorted), and the persisted `hash`. Builders and extractors must produce the
+same tree for the same template.
