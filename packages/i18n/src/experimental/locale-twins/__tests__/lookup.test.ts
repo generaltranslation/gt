@@ -74,6 +74,7 @@ describe('locale twins runtime lookups', () => {
   afterEach(() => {
     resetGTGlobals();
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
     vi.restoreAllMocks();
   });
 
@@ -350,6 +351,47 @@ describe('locale twins runtime lookups', () => {
       enableI18n: true,
     });
     expect(clientM(value)).toBe('Hello Ada');
+  });
+
+  // A shared helper's regular msg() with a saved key: outside the production
+  // locale twin path, m() translates it under that key as usual
+  describe('msg() value with a saved $_hash', () => {
+    const value = regularMsg('Hello', { $_hash: 'legacy' });
+
+    it('keeps the saved key in dev builds', async () => {
+      vi.stubEnv('NODE_ENV', 'development');
+      registerLocaleTwin(encodeLocaleTwinPlaceholder({ [SAVE_HASH]: 'Save' }));
+      const loadTranslations = vi.fn().mockResolvedValue({ legacy: 'Bonjour' });
+      createCache(TWINS_CONFIG, { loadTranslations });
+
+      const m = await getMessagesInternal({ locale: 'fr', enableI18n: true });
+
+      expect(m(value)).toBe('Bonjour');
+    });
+
+    it("keeps the saved key with 'locale' splitting", async () => {
+      const loadTranslations = vi.fn().mockResolvedValue({ legacy: 'Bonjour' });
+      createCache(
+        { ...TWINS_CONFIG, experimental: { splitting: 'locale' } },
+        { loadTranslations }
+      );
+
+      const m = await getMessagesInternal({ locale: 'fr', enableI18n: true });
+
+      expect(m(value)).toBe('Bonjour');
+    });
+
+    // No twin carries the saved key, so the server renders source like the client
+    it('renders as source on the server in production builds with locale twins', async () => {
+      vi.unstubAllGlobals();
+      registerLocaleTwin(encodeLocaleTwinPlaceholder({ [SAVE_HASH]: 'Save' }));
+      const loadTranslations = vi.fn().mockResolvedValue({ legacy: 'Bonjour' });
+      createCache(TWINS_CONFIG, { loadTranslations });
+
+      const m = await getMessagesInternal({ locale: 'fr', enableI18n: true });
+
+      expect(m(value)).toBe('Hello');
+    });
   });
 
   it('formats a source fallback from the registry in the source locale with getGT()', async () => {

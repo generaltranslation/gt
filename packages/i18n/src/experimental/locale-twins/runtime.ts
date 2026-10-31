@@ -135,16 +135,25 @@ function lookup(locale: string, hash: string): unknown {
 }
 
 /**
+ * Whether content without a compile-time hash renders its source text: in
+ * production builds with locale twins, once compiled code ran. Otherwise it
+ * translates as usual.
+ */
+export function rendersUnattributedAsSource(): boolean {
+  const state = getLocaleTwinState();
+  // Without compiled modules (no compiler plugin) nothing is attributed
+  if (state.enabled !== true || !state.compiled) return false;
+  // Dev builds keep their source text and serve no twins: translate as usual
+  return getRuntimeEnvironment() === 'production';
+}
+
+/**
  * Whether content no twin carries renders its source text instead of a
  * translation: in production builds with locale twins, content without a
  * compile-time hash, once compiled code ran.
  */
 function rendersSource(compileTimeHash: unknown): boolean {
-  const state = getLocaleTwinState();
-  // Without compiled modules (no compiler plugin) nothing is attributed
-  if (state.enabled !== true || !state.compiled) return false;
-  // Dev builds keep their source text and serve no twins: translate as usual
-  if (getRuntimeEnvironment() !== 'production') return false;
+  if (!rendersUnattributedAsSource()) return false;
   if (
     typeof compileTimeHash === 'string' &&
     ATTRIBUTED_HASH.test(compileTimeHash)
@@ -152,7 +161,7 @@ function rendersSource(compileTimeHash: unknown): boolean {
     return false;
   }
   // Unfilled placeholders on a client: the original chunks were served
-  if (isLocaleTwinsClient() && state.unfilled) {
+  if (isLocaleTwinsClient() && getLocaleTwinState().unfilled) {
     reportOnce('unregistered');
   }
   return true;

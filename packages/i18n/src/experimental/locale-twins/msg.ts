@@ -13,6 +13,7 @@ import type {
 } from '../../translation-functions/types/options';
 import { createInterpolationFailureMessage } from '../../translation-functions/utils/messages';
 import { extractVariables } from '../../utils/extractVariables';
+import { rendersUnattributedAsSource } from './runtime';
 
 /**
  * Marks an encoded `msg()` value whose `$_hash` the compiler injected. The
@@ -73,10 +74,12 @@ export function msg(
 
 /**
  * The options `m()` resolves a decoded `msg()` value with: its own variables
- * under the decoded options, keeping `$_hash` only when the compiler
- * attributed the message. Without it the lookup hashes at runtime and has
- * no compile-time hash, so it renders as source on the server and the
- * client alike.
+ * under the decoded options. Where unattributed content renders as source
+ * (production builds with locale twins), `$_hash` is kept only when the
+ * compiler attributed the message: an unmarked one may have been computed at
+ * runtime, so without it the lookup has no compile-time hash and renders as
+ * source on the server and the client alike. Elsewhere `$_hash` is kept, so
+ * a saved key (`msg('Hello', { $_hash: 'legacy' })`) still translates.
  */
 export function getLocaleTwinMessageOptions(
   decodedOptions: EncodedTranslationOptions,
@@ -92,6 +95,8 @@ export function getLocaleTwinMessageOptions(
   return {
     ...extractVariables(options),
     ...decoded,
-    ...(attributed === true && { $_hash }),
+    ...((attributed === true || !rendersUnattributedAsSource()) && {
+      $_hash,
+    }),
   };
 }
