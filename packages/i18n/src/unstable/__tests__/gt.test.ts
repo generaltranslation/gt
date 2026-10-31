@@ -115,6 +115,14 @@ describe('gt-i18n/unstable rendering', () => {
     expect(gt`Save`).toBe('Save');
   });
 
+  it('looks up a compiler-injected $_hash without rehashing', async () => {
+    const gt = await setup({ fr: { injected: [literal('Enregistrer')] } });
+    // Not in public GTOptions: only emitted JS from the compiler passes it.
+    const compiled = { $_hash: 'injected' };
+    expect(gt(compiled)`Save`).toBe('Enregistrer');
+    expect(t(compiled)`Save`).toBe('Enregistrer');
+  });
+
   it('renders the source on a miss', async () => {
     const gt = await setup();
     expect(gt`Hello, ${{ name }}!`).toBe('Hello, Ada!');
