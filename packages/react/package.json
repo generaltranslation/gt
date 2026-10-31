@@ -10,7 +10,8 @@
     "CHANGELOG.md"
   ],
   "sideEffects": [
-    "./dist/macros.*"
+    "./dist/macros.*",
+    "./dist/unstable-icu.*"
   ],
   "peerDependencies": {
     "react": ">=18.0.0",
@@ -140,6 +141,17 @@
         "default": "./dist/unstable.mjs"
       },
       "default": "./dist/unstable.mjs"
+    },
+    "./unstable/icu": {
+      "require": {
+        "types": "./dist/unstable-icu.d.cts",
+        "default": "./dist/unstable-icu.cjs"
+      },
+      "import": {
+        "types": "./dist/unstable-icu.d.mts",
+        "default": "./dist/unstable-icu.mjs"
+      },
+      "default": "./dist/unstable-icu.mjs"
     }
   },
   "keywords": [

@@ -34,6 +34,7 @@ const entries = [
   'src/macros.ts',
   'src/unstable.ts',
   'src/unstable.rsc.ts',
+  'src/unstable-icu.ts',
 ];
 
 // src/index.types.ts only backs the exports map's "types" conditions; its
@@ -47,7 +48,7 @@ export default defineConfig(
       // unstable entries import gt-i18n and react-core like the index entries,
       // so they share one copy of those packages with the app.
       const entryDeps =
-        entry.startsWith('src/index.') || entry.startsWith('src/unstable.')
+        entry.startsWith('src/index.') || entry.startsWith('src/unstable')
           ? contextDeps
           : deps;
       const [cjsConfig, esmConfig] = createTsdownConfig([entry], entryDeps);

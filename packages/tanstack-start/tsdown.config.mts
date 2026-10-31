@@ -29,6 +29,7 @@ const entries: Record<string, string> = {
   'index.server': 'src/index.server.ts',
   'unstable.client': 'src/unstable.client.ts',
   'unstable.server': 'src/unstable.server.ts',
+  'unstable-icu': 'src/unstable-icu.ts',
   'plugin/vite': 'src/plugin/vite.ts',
   'internal/_config': 'src/internal/_config.ts',
   'internal/localeRouting': 'src/internal/localeRouting.ts',

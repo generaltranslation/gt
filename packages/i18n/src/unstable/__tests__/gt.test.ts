@@ -151,6 +151,8 @@ describe('gt-i18n/unstable rendering', () => {
     expect(gt`Bad type`).toBe('Bad type');
     expect(warn).toHaveBeenCalledTimes(2);
     expect(warn.mock.calls[0][0]).toContain('is not a message tree');
+    // A string may be an ICU translation the app has not opted in to.
+    expect(warn.mock.calls[0][0]).toContain('/unstable/icu');
   });
 
   it('treats a malformed nested branch as a miss', async () => {

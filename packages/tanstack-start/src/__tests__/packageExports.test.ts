@@ -119,6 +119,7 @@ describe.sequential('gt-tanstack-start package exports', () => {
     ).toEqual([
       'index.client.mjs',
       'index.server.mjs',
+      'unstable-icu.mjs',
       'unstable.client.mjs',
       'unstable.server.mjs',
     ]);

@@ -23,7 +23,8 @@
     "./dist/unstable/server.*",
     "./dist/link.*",
     "./dist/link/Link.*",
-    "./dist/utils/client-boundary.*"
+    "./dist/utils/client-boundary.*",
+    "./dist/unstable/icu.*"
   ],
   "dependencies": {
     "@generaltranslation/compiler": "workspace:*",
@@ -165,6 +166,16 @@
       "default": {
         "types": "./dist/unstable/server.d.ts",
         "default": "./dist/unstable/server.js"
+      }
+    },
+    "./unstable/icu": {
+      "import": {
+        "types": "./dist/unstable/icu.d.mts",
+        "default": "./dist/unstable/icu.mjs"
+      },
+      "default": {
+        "types": "./dist/unstable/icu.d.ts",
+        "default": "./dist/unstable/icu.js"
       }
     },
     "./middleware": {
