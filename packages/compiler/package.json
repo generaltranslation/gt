@@ -42,6 +42,7 @@
     "@babel/traverse": "^7.23.0",
     "@babel/types": "^7.23.0",
     "@generaltranslation/format": "workspace:*",
+    "@generaltranslation/icu": "workspace:*",
     "generaltranslation": "workspace:*",
     "unplugin": "^2.3.10"
   },
