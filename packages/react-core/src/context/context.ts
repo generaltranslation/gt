@@ -37,6 +37,8 @@ export type GTContextType = {
   onMissingTranslation?: OnMissingTranslation;
   onMissingDictionaryEntry?: OnMissingDictionaryEntry;
   onMissingDictionaryObj?: OnMissingDictionaryObj;
+  /** Whether unstable useGT() may suspend to load a locale override. */
+  canLoadOverrideLocales?: boolean;
 };
 
 const gtContextSingleton = createGlobalSingleton<
