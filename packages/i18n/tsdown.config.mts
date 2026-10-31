@@ -10,6 +10,8 @@ export default defineConfig(
       'src/types.ts',
       'src/internal.ts',
       'src/internal-types.ts',
+      'src/unstable.ts',
+      'src/unstable-internal.ts',
     ])
   )
 );
