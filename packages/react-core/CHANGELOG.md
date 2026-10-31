@@ -1,5 +1,11 @@
 # @generaltranslation/react-core
 
+## 11.4.17
+
+### Patch Changes
+
+- [#2554](https://github.com/generaltranslation/gt/pull/2554) [`a9c1e61`](https://github.com/generaltranslation/gt/commit/a9c1e61c523951637ef0e480e0f6200fd2426643) Thanks [@dyc3](https://github.com/dyc3)! - Keep the `gt` function from `useGT()` (and the dictionary hooks built on the same dev hot reload queue) stable across renders in development, so effects that list it as a dependency no longer re-run after every render. Its identity still changes when a hot-reloaded translation arrives, so memoized and effect-derived strings pick up the new translation.
+
 ## 11.4.16
 
 ### Patch Changes
