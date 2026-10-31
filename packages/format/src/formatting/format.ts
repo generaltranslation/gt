@@ -1,7 +1,7 @@
 import { FormatVariables } from '../types';
 import { intlCache } from '../cache/IntlCache';
 import { libraryDefaultLocale } from '../settings/settings';
-import { formatMessage } from '@generaltranslation/icu';
+import { formatMessage } from '@generaltranslation/icu/parser';
 
 type FormatParams<Value, Options> = {
   value: Value;
