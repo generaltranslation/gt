@@ -1094,6 +1094,9 @@ importers:
       '@generaltranslation/format':
         specifier: workspace:*
         version: link:../format
+      '@generaltranslation/icu':
+        specifier: workspace:*
+        version: link:../icu
       generaltranslation:
         specifier: workspace:*
         version: link:../core
@@ -2760,6 +2763,9 @@ importers:
         specifier: ^19.2.4
         version: 19.3.0(react@19.3.0)
     devDependencies:
+      '@generaltranslation/icu':
+        specifier: workspace:*
+        version: link:../../../packages/icu
       '@types/d3-hierarchy':
         specifier: ^3.1.7
         version: 3.1.7
@@ -2775,6 +2781,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^6.0.2
         version: 6.1.1(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.0(@babel/core@7.29.7))(@babel/runtime@7.29.2)(rolldown@1.2.15)(vite@8.3.1(@types/node@22.13.10)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))(babel-plugin-react-compiler@1.0.0)(vite@8.3.1(@types/node@22.13.10)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))
+      gt-i18n:
+        specifier: workspace:*
+        version: link:../../../packages/i18n
       playwright-core:
         specifier: ^1.55.0
         version: 1.57.0

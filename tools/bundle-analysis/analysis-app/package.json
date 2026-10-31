@@ -18,11 +18,13 @@
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
+    "@generaltranslation/icu": "workspace:*",
     "@types/d3-hierarchy": "^3.1.7",
     "@types/node": "catalog:",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.2",
+    "gt-i18n": "workspace:*",
     "playwright-core": "^1.55.0",
     "typescript": "catalog:",
     "vite": "^8.0.16",

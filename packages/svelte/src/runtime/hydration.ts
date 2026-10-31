@@ -1,8 +1,8 @@
-import type { Content } from '@generaltranslation/format/types';
+import type { Translation } from 'gt-i18n/types';
 import { getI18nCache } from 'gt-i18n/internal';
 import type { LookupOptions } from 'gt-i18n/internal/types';
 
-type Translations = Record<string, Content>;
+type Translations = Record<string, Translation>;
 type Cache = ReturnType<typeof getI18nCache>;
 
 /** Where a translations object is cached, and how to check it still is. */
