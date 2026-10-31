@@ -8,7 +8,10 @@ on:
 
 env:
   CI: true
-  CHANGE_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+  # Pull requests check out refs/pull/N/merge, whose first parent (HEAD^1) is
+  # the current base branch tip. pull_request.base.sha can be older, so a diff
+  # against it also picks up base branch commits the PR did not make.
+  CHANGE_BASE: ${{ github.event_name == 'pull_request' && 'HEAD^1' || github.event.before }}
   CARGO_HTTP_MULTIPLEXING: false
   CARGO_NET_RETRY: 10
 permissions:
