@@ -6,7 +6,7 @@
 
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { parse, type ParserOptions } from '../index';
+import { parse, type ParserOptions } from '../parser';
 
 type CompatibilityOptions = Omit<ParserOptions, 'locale'> & { locale?: string };
 type CompatibilityCase = {

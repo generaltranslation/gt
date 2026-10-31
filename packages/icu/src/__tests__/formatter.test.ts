@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, expectTypeOf, it, vi } from 'vitest';
-import { formatMessage } from '../index';
+import { formatMessage } from '../parser';
 
 describe('formatMessage', () => {
   it('interpolates direct arguments without dropping zero', () => {

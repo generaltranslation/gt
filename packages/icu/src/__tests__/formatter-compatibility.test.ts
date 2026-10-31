@@ -7,7 +7,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { formatMessage } from '../index';
+import { formatMessage } from '../parser';
 
 const LOCALES = ['en-US', 'fr-FR', 'de-DE'] as const;
 const NUMBERS = [

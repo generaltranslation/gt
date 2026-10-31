@@ -5,8 +5,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { parse, printAST } from '../index';
-import { TYPE, type MessageFormatElement } from '../types';
+import { parse, printAST } from '../parser';
+import { TYPE, type MessageFormatElement } from '../types-dir/ast';
 
 const GENERATED_ROUND_TRIP_MESSAGES = [
   ...Array.from(

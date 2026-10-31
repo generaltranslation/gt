@@ -3,7 +3,10 @@
  * @formatjs/icu-skeleton-parser (MIT). See THIRD_PARTY_NOTICES.md.
  */
 
-import type { ExtendedNumberFormatOptions, NumberSkeletonToken } from './types';
+import type {
+  ExtendedNumberFormatOptions,
+  NumberSkeletonToken,
+} from '../types-dir/ast';
 
 const FRACTION_PRECISION = /^\.(?:(0+)(\*)?|(#+)|(0+)(#+))$/;
 const SIGNIFICANT_PRECISION = /^@+(\+|#+)?[rs]?$/;

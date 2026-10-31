@@ -1,5 +1,5 @@
 import * as t from '@babel/types';
-import { parse } from '@generaltranslation/icu';
+import { parse } from '@generaltranslation/icu/parser';
 
 const MEANINGFUL_REGEX = /[\p{L}\p{N}]/u;
 

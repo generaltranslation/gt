@@ -16,7 +16,7 @@
 import { parse as formatJsParse } from '@formatjs/icu-messageformat-parser';
 import { IntlMessageFormat } from 'intl-messageformat';
 import { describe, expect, it } from 'vitest';
-import { formatMessage, parse, printAST } from '../index';
+import { formatMessage, parse, printAST } from '../parser';
 
 const PLURAL_LOCALES = [
   'en',

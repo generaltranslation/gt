@@ -3,7 +3,10 @@ import {
   GT_UNINDEXED_IDENTIFIER_REGEX,
 } from './regex';
 import { GTIndexedSelectElement, GTUnindexedSelectElement } from './types';
-import { TYPE, type MessageFormatElement } from '@generaltranslation/icu';
+import {
+  TYPE,
+  type MessageFormatElement,
+} from '@generaltranslation/icu/parser';
 
 // Visit any _gt_# select
 export function isGTIndexedSelectElement(
