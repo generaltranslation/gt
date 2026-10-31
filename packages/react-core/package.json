@@ -85,6 +85,26 @@
         "types": "./dist/components-rsc.d.mts",
         "default": "./dist/components-rsc.mjs"
       }
+    },
+    "./unstable": {
+      "require": {
+        "types": "./dist/unstable.d.ts",
+        "default": "./dist/unstable.cjs"
+      },
+      "import": {
+        "types": "./dist/unstable.d.mts",
+        "default": "./dist/unstable.mjs"
+      }
+    },
+    "./unstable-rsc": {
+      "require": {
+        "types": "./dist/unstable-rsc.d.ts",
+        "default": "./dist/unstable-rsc.cjs"
+      },
+      "import": {
+        "types": "./dist/unstable-rsc.d.mts",
+        "default": "./dist/unstable-rsc.mjs"
+      }
     }
   },
   "keywords": [
