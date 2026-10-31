@@ -9,6 +9,11 @@ import { requireLatestDraft } from '../utils/requireSourceDocument';
 import { pluginConfig } from '../../adapter/core';
 import { importDocument } from '../../translation/importDocument';
 import { serializeDocument } from '../../utils/serialize';
+import {
+  allowsNonDefaultSourceLocales,
+  getDocumentLanguage,
+  isNonDefaultSourceLanguage,
+} from '../../utils/translationSource';
 
 export const baseDocumentLevelConfig = {
   exportForTranslation: async (
@@ -18,13 +23,24 @@ export const baseDocumentLevelConfig = {
     const { client, schema } = context;
     const languageField = pluginConfig.getLanguageField();
     const doc = await requireLatestDraft(docInfo.documentId, client);
+    // With `allowNonDefaultSourceLocales`, an original outside the configured
+    // source locale declares its own language; everything else keeps the
+    // configured source locale.
+    const documentLanguage = allowsNonDefaultSourceLocales()
+      ? getDocumentLanguage(doc)
+      : undefined;
+    const sourceLocale =
+      documentLanguage && isNonDefaultSourceLanguage(documentLanguage)
+        ? documentLanguage
+        : undefined;
     delete doc[languageField];
-    const baseLanguage = pluginConfig.getSourceLocale();
+    const baseLanguage = sourceLocale ?? pluginConfig.getSourceLocale();
     const serialized = serializeDocument(doc, schema, baseLanguage);
     return {
       content: serialized.content,
       documentId: docInfo.documentId,
       versionId: docInfo.versionId,
+      ...(sourceLocale && { sourceLocale }),
     };
   },
   importTranslation: (

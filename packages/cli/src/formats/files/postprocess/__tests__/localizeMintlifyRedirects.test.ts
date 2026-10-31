@@ -267,6 +267,29 @@ describe('localizeMintlifyRedirects', () => {
     expect(read('docs.json')).toBe(afterFirst);
   });
 
+  it('never localizes a redirect that is already localized', async () => {
+    // Translated pages can be reported as orphaned alongside the English one;
+    // their redirects must not gain a second locale (/docs/ja-jp/fr-ca/old)
+    setup([
+      { source: '/docs/old', destination: '/docs/new' },
+      { source: '/docs/fr-ca/old', destination: '/docs/fr-ca/new' },
+      { source: '/docs/ja-jp/old', destination: '/docs/ja-jp/new' },
+    ]);
+    // Without translated destination pages on disk, nothing else rules out
+    // the nested-locale URLs
+    page('new', []);
+    const before = read('docs.json');
+
+    const added = await run([
+      ...removed('old'),
+      'docs/fr-ca/old.mdx',
+      'docs/ja-jp/old.mdx',
+    ]);
+
+    expect(added).toEqual([]);
+    expect(read('docs.json')).toBe(before);
+  });
+
   it('writes to the file docs.json references with $ref', async () => {
     setup({ $ref: './config/redirects.json' });
     writeJson('config/redirects.json', [
@@ -279,6 +302,20 @@ describe('localizeMintlifyRedirects', () => {
 
     expect(read('docs.json')).toBe(docsJsonBefore);
     expect(readRedirects('config/redirects.json')).toHaveLength(3);
+  });
+
+  it('keeps the trailing newline convention of the redirects file', async () => {
+    setup({ $ref: './redirects.json' });
+    page('new');
+    const redirects = [{ source: '/docs/old', destination: '/docs/new' }];
+
+    write('redirects.json', `${JSON.stringify(redirects, null, 2)}\n`);
+    await run(removed('old'));
+    expect(read('redirects.json')).toMatch(/\]\n$/);
+
+    write('redirects.json', JSON.stringify(redirects, null, 2));
+    await run(removed('old'));
+    expect(read('redirects.json')).toMatch(/\]$/);
   });
 
   it('follows a chain of $ref files to the redirects array', async () => {
@@ -313,6 +350,48 @@ describe('localizeMintlifyRedirects', () => {
 
     expect(await run(removed('old'))).toEqual([]);
     expect(read('docs.json')).toBe(before);
+  });
+
+  it('localizes redirects under every docsUrlPattern', async () => {
+    // auth0 serves a second docs tree from /ai/docs
+    setup(
+      [
+        { source: '/docs/old', destination: '/docs/new' },
+        { source: '/ai/docs/old', destination: '/ai/docs/new' },
+        { source: '/ai/docs/fr-ca/old', destination: '/ai/docs/fr-ca/new' },
+      ],
+      {
+        ...gtConfig({
+          docsUrlPattern: ['/docs/[locale]', '/ai/docs/[locale]'],
+        }),
+        files: {
+          mdx: {
+            include: ['./docs/**/*.mdx', './ai/docs/**/*.mdx'],
+            exclude: ['./docs/[locales]/**', './ai/docs/[locales]/**'],
+            transform: [
+              { match: '^((?:ai/)?docs/)(.*)$', replace: '$1{locale}/$2' },
+            ],
+          },
+        },
+      }
+    );
+    page('new');
+    write('ai/docs/new.mdx', '# new\n');
+    for (const locale of LOCALES) {
+      write(`ai/docs/${locale}/new.mdx`, `# new (${locale})\n`);
+    }
+
+    const added = await run([
+      ...removed('old'),
+      'ai/docs/old.mdx',
+      'ai/docs/fr-ca/old.mdx',
+    ]);
+
+    expect(added).toEqual([
+      { source: '/docs/fr-ca/old', destination: '/docs/fr-ca/new' },
+      { source: '/docs/ja-jp/old', destination: '/docs/ja-jp/new' },
+      { source: '/ai/docs/ja-jp/old', destination: '/ai/docs/ja-jp/new' },
+    ]);
   });
 
   it('does nothing without docsUrlPattern', async () => {
