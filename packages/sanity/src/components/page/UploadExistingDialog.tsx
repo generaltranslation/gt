@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Button, Dialog, Flex, Stack, Text } from '@sanity/ui';
 import { useTranslations } from '../TranslationsProvider';
+import { SelectedLocalesNote } from './SelectedLocalesNote';
 
 interface UploadExistingDialogProps {
   isOpen: boolean;
@@ -40,6 +41,7 @@ export const UploadExistingDialog: React.FC<UploadExistingDialogProps> = ({
             Save the translations currently in Sanity for all {documents.length}{' '}
             documents to General Translation?
           </Text>
+          <SelectedLocalesNote />
           <Text size={1} muted>
             They become the stored translation for each locale, so later
             translation runs reuse them. Anything General Translation already

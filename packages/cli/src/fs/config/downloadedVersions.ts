@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { logger } from '../../console/logger.js';
+import { stringifyJson } from '../stringifyJson.js';
 import type { Settings } from '../../types/index.js';
 
 const GT_LOCK_FILE = 'gt-lock.json';
@@ -195,9 +196,9 @@ export function writeLockfile(
           [data.branchId]: convertV2ToV1Branch(data),
         },
       };
-      fs.writeFileSync(filepath, JSON.stringify(mergedV1, null, 2));
+      fs.writeFileSync(filepath, stringifyJson(mergedV1));
     } else {
-      fs.writeFileSync(filepath, JSON.stringify(data, null, 2));
+      fs.writeFileSync(filepath, stringifyJson(data));
     }
   } catch (error) {
     logger.error(`An error occurred while updating ${GT_LOCK_FILE}: ${error}`);

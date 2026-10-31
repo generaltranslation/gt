@@ -1,5 +1,6 @@
 import { typesFileError } from './errors/createErrors';
 import { T as _T } from './server-dir/buildtime/T';
+import { useLocalizeHref as _useLocalizeHref } from './link/useLocalizeHref';
 import type {
   GetServerSideProps,
   GetServerSidePropsContext,
@@ -457,6 +458,19 @@ export const useTranslations: typeof _useTranslations = () => {
  * console.log(locale); // 'en-US'
  */
 export const useLocale: typeof _useLocale = () => {
+  throw new Error(typesFileError);
+};
+
+/**
+ * Returns a function that localizes hrefs the same way `gt-next/link` does,
+ * for navigation that does not render a `<Link>`, such as `router.push()` or
+ * a Button `href`. Works in Server and Client Components.
+ *
+ * @example
+ * const localizeHref = useLocalizeHref();
+ * localizeHref('/checkout'); // '/fr/checkout', or '/checkout' for the default locale
+ */
+export const useLocalizeHref: typeof _useLocalizeHref = () => {
   throw new Error(typesFileError);
 };
 

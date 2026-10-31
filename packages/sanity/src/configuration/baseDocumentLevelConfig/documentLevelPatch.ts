@@ -9,7 +9,14 @@ import { createI18nDocAndPatchMetadata } from './helpers/createI18nDocAndPatchMe
 import { getOrCreateTranslationMetadata } from './helpers/getOrCreateTranslationMetadata';
 import { patchI18nDoc } from './helpers/patchI18nDoc';
 import type { GTFile } from '../../types';
+import { getPublishedId } from '../../utils/documentIds';
 import { pluginConfig } from '../../adapter/core';
+import {
+  allowsNonDefaultSourceLocales,
+  getDocumentLanguage,
+  isNonDefaultSourceLanguage,
+} from '../../utils/translationSource';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 
 type TranslationReference = {
   language?: string;
@@ -26,8 +33,6 @@ export const documentLevelPatch = async (
   languageField: string = 'language',
   mergeWithTargetLocale: boolean = false
 ): Promise<void> => {
-  const baseLanguage = pluginConfig.getSourceLocale();
-
   //this is the document that will serve as the translated doc
   let i18nDoc: SanityDocument | undefined;
 
@@ -42,6 +47,22 @@ export const documentLevelPatch = async (
     docInfo.versionId,
     client
   );
+
+  // With `allowNonDefaultSourceLocales`, the document being translated is its
+  // group's original, written in its own language (untagged documents are in
+  // the configured source locale). Otherwise it is always treated as written
+  // in the configured source locale.
+  const allowNonDefault = allowsNonDefaultSourceLocales();
+  const baseLanguage = allowNonDefault
+    ? getDocumentLanguage(baseDoc)
+    : pluginConfig.getSourceLocale();
+  if (
+    allowNonDefault &&
+    isNonDefaultSourceLanguage(baseLanguage) &&
+    localeId === baseLanguage
+  ) {
+    throw new Error(sameLanguageDiagnostic(docInfo.documentId, localeId));
+  }
 
   /* first, check our metadata to see if a translated document exists
    * if no metadata exists, we create it atomically
@@ -153,3 +174,14 @@ export const documentLevelPatch = async (
     );
   }
 };
+
+function sameLanguageDiagnostic(documentId: string, localeId: string): string {
+  return createDiagnosticMessage({
+    source: 'gt-sanity',
+    severity: 'Error',
+    whatHappened: `Skipped importing a ${localeId} translation`,
+    why: `the document it would be written to is the ${localeId} original it was translated from`,
+    fix: 'Translate into locales other than the original document language',
+    details: [`Document ID: ${getPublishedId(documentId)}`],
+  });
+}
