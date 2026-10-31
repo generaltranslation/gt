@@ -1,0 +1,259 @@
+[
+  {
+    "name": "plain-literal",
+    "template": "gt`Save`",
+    "options": {},
+    "tree": ["Save"],
+    "hash": "bc3721bb952256a3"
+  },
+  {
+    "name": "context",
+    "template": "gt({ context: 'button' })`Save`",
+    "options": {
+      "context": "button"
+    },
+    "tree": ["Save"],
+    "hash": "eaaec92facdd6952"
+  },
+  {
+    "name": "one-argument",
+    "template": "gt`Hello, ${{ name }}!`",
+    "options": {},
+    "tree": ["Hello, ", ["name"], "!"],
+    "hash": "30d1e2e9c30560fa"
+  },
+  {
+    "name": "max-chars",
+    "template": "gt({ maxChars: 12 })`Read more about pricing`",
+    "options": {
+      "maxChars": 12
+    },
+    "tree": ["Read more about pricing"],
+    "hash": "f31907f45a0a6fa7"
+  },
+  {
+    "name": "max-chars-negative",
+    "template": "gt({ maxChars: -12 })`Read more about pricing`",
+    "options": {
+      "maxChars": -12
+    },
+    "tree": ["Read more about pricing"],
+    "hash": "f31907f45a0a6fa7"
+  },
+  {
+    "name": "nested-plural-pound-select",
+    "template": "gt`${plural({ count }, { one: part`${n} new message for ${select({ role }, { admin: 'admins', other: 'everyone' })}`, other: part`${n} new messages for ${select({ role }, { admin: 'admins', other: 'all # members' })}` })}`",
+    "options": {},
+    "tree": [
+      [
+        "count",
+        "plural",
+        {
+          "one": [
+            0,
+            " new message for ",
+            [
+              "role",
+              "select",
+              {
+                "admin": "admins",
+                "other": "everyone"
+              }
+            ]
+          ],
+          "other": [
+            0,
+            " new messages for ",
+            [
+              "role",
+              "select",
+              {
+                "admin": "admins",
+                "other": "all # members"
+              }
+            ]
+          ]
+        }
+      ]
+    ],
+    "hash": "f0594574d1e5db87"
+  },
+  {
+    "name": "plural-exact-key-order",
+    "template": "gt`${plural({ count }, { '=2': 'A pair', '=10': 'Ten items', other: part`${n} items` })}`",
+    "options": {},
+    "tree": [
+      [
+        "count",
+        "plural",
+        {
+          "=10": "Ten items",
+          "=2": "A pair",
+          "other": [0, " items"]
+        }
+      ]
+    ],
+    "hash": "0bd29d2f1029e570"
+  },
+  {
+    "name": "selectordinal",
+    "template": "gt`You finished ${selectordinal({ place }, { one: part`${n}st`, two: part`${n}nd`, few: part`${n}rd`, other: part`${n}th` })}!`",
+    "options": {},
+    "tree": [
+      "You finished ",
+      [
+        "place",
+        "selectordinal",
+        {
+          "few": [0, "rd"],
+          "one": [0, "st"],
+          "other": [0, "th"],
+          "two": [0, "nd"]
+        }
+      ],
+      "!"
+    ],
+    "hash": "67c2f83de4316fe4"
+  },
+  {
+    "name": "number-intl-options",
+    "template": "gt`Total: ${number({ price }, { style: 'currency', currency: 'USD' })}`",
+    "options": {},
+    "tree": [
+      "Total: ",
+      [
+        "price",
+        "number",
+        {
+          "currency": "USD",
+          "style": "currency"
+        }
+      ]
+    ],
+    "hash": "6c5ad7f23dce8cfa"
+  },
+  {
+    "name": "date",
+    "template": "gt`Due ${date({ due }, { dateStyle: 'medium' })}`",
+    "options": {},
+    "tree": [
+      "Due ",
+      [
+        "due",
+        "date",
+        {
+          "dateStyle": "medium"
+        }
+      ]
+    ],
+    "hash": "73addbdab23acda2"
+  },
+  {
+    "name": "derive",
+    "template": "gt`Welcome ${derive('back')}, ${{ user }}!`",
+    "options": {},
+    "tree": ["Welcome back, ", ["user"], "!"],
+    "hash": "b26ba017bc21378a"
+  },
+  {
+    "name": "anonymous",
+    "template": "gt`Hi ${name}!`",
+    "options": {},
+    "tree": ["Hi ", ["_gt_1"], "!"],
+    "hash": "835e724dcc0a0bef"
+  },
+  {
+    "name": "anonymous-numbering",
+    "template": "gt`${first} meets ${second} today`",
+    "options": {},
+    "tree": [["_gt_1"], " meets ", ["_gt_2"], " today"],
+    "hash": "6a48b1ea5490ef70"
+  },
+  {
+    "name": "anonymous-helper-values",
+    "template": "gt`${plural(count, { one: 'One file', other: part`${n} files` })} for ${select(role, { admin: 'admins', other: 'everyone' })}, ${number(price, { style: 'percent' })} by ${date(due)} from ${name}`",
+    "options": {},
+    "tree": [
+      [
+        "_gt_1",
+        "plural",
+        {
+          "one": "One file",
+          "other": [0, " files"]
+        }
+      ],
+      " for ",
+      [
+        "_gt_2",
+        "select",
+        {
+          "admin": "admins",
+          "other": "everyone"
+        }
+      ],
+      ", ",
+      [
+        "_gt_3",
+        "number",
+        {
+          "style": "percent"
+        }
+      ],
+      " by ",
+      ["_gt_4", "date"],
+      " from ",
+      ["_gt_5"]
+    ],
+    "hash": "5b79edbc2ecc0090"
+  },
+  {
+    "name": "literal-icu-syntax",
+    "template": "gt`Don't stop, '{team}' ${derive(\"O'Brien {x} #1\")} and ${{ name }}`",
+    "options": {},
+    "tree": ["Don't stop, '{team}' O'Brien {x} #1 and ", ["name"]],
+    "hash": "ab9b1ca6b77dc413"
+  },
+  {
+    "name": "part-in-branch",
+    "template": "gt`${plural({ count }, { '=0': 'No messages', one: part`${n} message from ${{ who }}`, other: part`${n} messages from ${{ who }}` })}`",
+    "options": {},
+    "tree": [
+      [
+        "count",
+        "plural",
+        {
+          "=0": "No messages",
+          "one": [0, " message from ", ["who"]],
+          "other": [0, " messages from ", ["who"]]
+        }
+      ]
+    ],
+    "hash": "4e243bbc45b99246"
+  },
+  {
+    "name": "select-integer-like-keys",
+    "template": "gt`${select({ size }, { 10: \"ten\", 2: \"two\", other: \"many\" })}`",
+    "options": {},
+    "tree": [
+      [
+        "size",
+        "select",
+        {
+          "2": "two",
+          "10": "ten",
+          "other": "many"
+        }
+      ]
+    ],
+    "hash": "0a671b1a1e4c961e"
+  },
+  {
+    "name": "requires-review",
+    "template": "gt({ requiresReview: true })`Delete account`",
+    "options": {
+      "requiresReview": true
+    },
+    "tree": ["Delete account"],
+    "hash": "0d0916e16ab052f0"
+  }
+]
