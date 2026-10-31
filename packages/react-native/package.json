@@ -23,6 +23,11 @@
       "types": "./dist/module/internal.d.ts",
       "default": "./dist/module/internal.js"
     },
+    "./unstable": {
+      "source": "./src/unstable.ts",
+      "types": "./dist/module/unstable.d.ts",
+      "default": "./dist/module/unstable.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
