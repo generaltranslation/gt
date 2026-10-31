@@ -1,5 +1,51 @@
 # gtx-cli
 
+## 2.26.11
+
+### Patch Changes
+
+- [#2532](https://github.com/generaltranslation/gt/pull/2532) [`de29049`](https://github.com/generaltranslation/gt/commit/de29049fa16e7c4f60c4cf2baf1a83def5168479) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Keep the trailing newline of JSON files the CLI rewrites in place, such as `redirects.json`, `docs.json`, `gt.config.json`, and `package.json`, and end JSON files the CLI generates, such as `gt-lock.json`, with a newline
+
+## 2.26.10
+
+### Patch Changes
+
+- [#2526](https://github.com/generaltranslation/gt/pull/2526) [`9e9b6d8`](https://github.com/generaltranslation/gt/commit/9e9b6d866cae109f7ec13f5b1d1182ccfb87d947) Thanks [@brian-lou](https://github.com/brian-lou)! - Add `GT_LOG_FORMAT=agent`, which prints plain `[time] LEVEL: msg` lines, and use it by default in CI or when stdout is not a TTY. Set `GT_LOG_FORMAT=default` to keep the interactive output. The ASCII banner no longer prints when `GT_LOG_FORMAT` is `json` or `agent`.
+
+## 2.26.9
+
+### Patch Changes
+
+- [#2525](https://github.com/generaltranslation/gt/pull/2525) [`aee1350`](https://github.com/generaltranslation/gt/commit/aee135077ebef9d98378b68d5898df548d83f137) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Limit how many files postprocessing reads and writes at once so large docs projects no longer fail with `EMFILE: too many open files`
+
+- Updated dependencies []:
+  - generaltranslation@9.5.8
+  - @generaltranslation/python-extractor@0.2.63
+  - @generaltranslation/supported-locales@2.1.44
+  - @generaltranslation/vue-extractor@0.1.22
+
+## 2.26.8
+
+### Patch Changes
+
+- [#2522](https://github.com/generaltranslation/gt/pull/2522) [`a0ba4ab`](https://github.com/generaltranslation/gt/commit/a0ba4aba791a99026b2900991fa6608c3cf1bd93) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - `gt download` performs same postprocessing as `gt translate`
+
+## 2.26.7
+
+### Patch Changes
+
+- [#2516](https://github.com/generaltranslation/gt/pull/2516) [`4fee937`](https://github.com/generaltranslation/gt/commit/4fee937e7c8645f8c05a7d4ef82867e2776648da) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - `gt api` now ends a non-2xx response body with a newline so the HTTP error message on stderr starts on its own line.
+
+- [#2515](https://github.com/generaltranslation/gt/pull/2515) [`e5bc047`](https://github.com/generaltranslation/gt/commit/e5bc04712794f7c9d08e83ad7b0e22cd38a853ce) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - `gt upload` now skips unparsable JSON and YAML translation files with a warning, as it already does for source files, instead of sending them and losing the whole translation batch.
+
+- [#2514](https://github.com/generaltranslation/gt/pull/2514) [`e2aee57`](https://github.com/generaltranslation/gt/commit/e2aee57260df269e77b7082ae2b428c2ec9076bb) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - `gt upload` now uploads translations to the resolved branch (for example, `--branch <name>`) instead of the project's default branch.
+
+## 2.26.6
+
+### Patch Changes
+
+- [#2461](https://github.com/generaltranslation/gt/pull/2461) [`81cc726`](https://github.com/generaltranslation/gt/commit/81cc7269baa6a5acf476eeeaccf40bbecf0eeb61) Thanks [@kevinwu98](https://github.com/kevinwu98)! - `gt init` now links React Router and Shopify Hydrogen apps to the React Router quickstart instead of the generic React quickstart.
+
 ## 2.26.5
 
 ### Patch Changes
