@@ -10,6 +10,7 @@ import { visit } from 'unist-util-visit';
 import type { Root } from 'mdast';
 import type { MdxjsEsm } from 'mdast-util-mdxjs-esm';
 import { parseMdxTolerantly } from './mdxAnchorSyntax.js';
+import { batchProcess, FILE_IO_CONCURRENCY } from './batchProcess.js';
 
 const { isMatch } = micromatch;
 
@@ -50,9 +51,6 @@ export default async function localizeStaticImports(
     settings.defaultLocale
   );
 
-  // Process all file types at once with a single call
-  const processPromises = [];
-
   // First, process default locale files (from source files)
   // This is needed because they might not be in the fileMapping if they're not being translated
   if (!fileMapping[settings.defaultLocale] && !includeFiles) {
@@ -67,8 +65,9 @@ export default async function localizeStaticImports(
     }
 
     if (defaultLocaleFiles.length > 0) {
-      const defaultPromise = Promise.all(
-        defaultLocaleFiles.map(async (filePath: string) => {
+      await batchProcess(
+        defaultLocaleFiles,
+        async (filePath) => {
           // Check if file exists before processing
           if (!fs.existsSync(filePath)) {
             return;
@@ -88,51 +87,49 @@ export default async function localizeStaticImports(
           );
           // Write the localized file back to the same path
           await fs.promises.writeFile(filePath, localizedFile);
-        })
+        },
+        FILE_IO_CONCURRENCY
       );
-      processPromises.push(defaultPromise);
     }
   }
 
-  // Then process all other locales from fileMapping
-  const mappingPromises = Object.entries(fileMapping).map(
-    async ([locale, filesMap]) => {
-      // Get all files that are md or mdx
-      const targetFiles = Object.values(filesMap).filter(
-        (p) =>
-          (p.endsWith('.md') || p.endsWith('.mdx')) &&
-          (!includeFiles || includeFiles.has(p))
-      );
+  // Then process all other locales from fileMapping, one locale at a time so
+  // the concurrency bound covers the whole pass
+  for (const [locale, filesMap] of Object.entries(fileMapping)) {
+    // Get all files that are md or mdx
+    const targetFiles = Object.values(filesMap).filter(
+      (p) =>
+        (p.endsWith('.md') || p.endsWith('.mdx')) &&
+        (!includeFiles || includeFiles.has(p))
+    );
 
-      // Replace the placeholder path with the target path
-      await Promise.all(
-        targetFiles.map(async (filePath) => {
-          // Check if file exists before processing
-          if (!fs.existsSync(filePath)) {
-            return;
-          }
-          // Get file content
-          const fileContent = await fs.promises.readFile(filePath, 'utf8');
-          // Localize the file
-          const localizedFile = localizeStaticImportsForFile(
-            fileContent,
-            settings.defaultLocale,
-            locale,
-            settings.options?.docsHideDefaultLocaleImport || false,
-            settings.options?.docsImportPattern,
-            settings.options?.excludeStaticImports,
-            filePath,
-            settings.options
-          );
-          // Write the localized file to the target path
-          await fs.promises.writeFile(filePath, localizedFile);
-        })
-      );
-    }
-  );
-  processPromises.push(...mappingPromises);
-
-  await Promise.all(processPromises);
+    // Replace the placeholder path with the target path
+    await batchProcess(
+      targetFiles,
+      async (filePath) => {
+        // Check if file exists before processing
+        if (!fs.existsSync(filePath)) {
+          return;
+        }
+        // Get file content
+        const fileContent = await fs.promises.readFile(filePath, 'utf8');
+        // Localize the file
+        const localizedFile = localizeStaticImportsForFile(
+          fileContent,
+          settings.defaultLocale,
+          locale,
+          settings.options?.docsHideDefaultLocaleImport || false,
+          settings.options?.docsImportPattern,
+          settings.options?.excludeStaticImports,
+          filePath,
+          settings.options
+        );
+        // Write the localized file to the target path
+        await fs.promises.writeFile(filePath, localizedFile);
+      },
+      FILE_IO_CONCURRENCY
+    );
+  }
 }
 
 interface ImportTransformResult {
