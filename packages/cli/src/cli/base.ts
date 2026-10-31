@@ -103,6 +103,7 @@ import updateConfig from '../fs/config/updateConfig.js';
 import {
   createLoadTranslationsFile,
   findLoadTranslationsFiles,
+  type LoadTranslationsRuntime,
 } from '../fs/createLoadTranslationsFile.js';
 import { saveLocalEdits } from '../api/saveLocalEdits.js';
 import { resolveProjectId } from '../fs/utils.js';
@@ -213,7 +214,7 @@ type LocalTranslationGuidanceOptions = {
   translationsDir: string;
 };
 
-type InlineRuntimeSetup = {
+export type InlineRuntimeSetup = {
   hasOtherInlineRuntime: boolean;
   hasVueRuntime: boolean;
   ranReactSetup: boolean;
@@ -1073,6 +1074,22 @@ export class BaseCLI {
     return runtimeSetup.hasOtherInlineRuntime || runtimeSetup.ranReactSetup;
   }
 
+  /** Returns where the generated loadTranslations.js runs. */
+  protected getLoadTranslationsRuntime(
+    _runtimeSetup: InlineRuntimeSetup
+  ): LoadTranslationsRuntime {
+    return 'bundler';
+  }
+
+  /** Returns how to use the generated loadTranslations.js. */
+  protected getGeneratedLoaderGuidance(
+    _runtime: LoadTranslationsRuntime
+  ): string {
+    return `Created ${chalk.cyan('loadTranslations.js')} file for local translations.
+Make sure to add this function to your app configuration.
+See https://generaltranslation.com/en/docs/next/guides/local-tx`;
+  }
+
   /** Returns framework guidance after selecting local translation storage. */
   protected getLocalTranslationGuidance({
     generatedLoader,
@@ -1081,9 +1098,11 @@ export class BaseCLI {
   }: LocalTranslationGuidanceOptions): string | undefined {
     const guidance: string[] = [];
     if (generatedLoader) {
-      guidance.push(`Created ${chalk.cyan('loadTranslations.js')} file for local translations.
-Make sure to add this function to your app configuration.
-See https://generaltranslation.com/en/docs/next/guides/local-tx`);
+      guidance.push(
+        this.getGeneratedLoaderGuidance(
+          this.getLoadTranslationsRuntime(runtimeSetup)
+        )
+      );
     }
     if (runtimeSetup.hasVueRuntime) {
       guidance.push(`GT will write local translation files to ${translationsDir}.
@@ -1533,6 +1552,7 @@ See https://www.npmjs.com/package/gt-vue`);
             defaultLocale: settings.defaultLocale,
             locales: resolvedLocales,
             previousTranslationsDir: configuredTranslationsDir,
+            runtime: this.getLoadTranslationsRuntime(runtimeSetup),
           }).catch((error: unknown) => {
             throw translationFilesError(error);
           })
