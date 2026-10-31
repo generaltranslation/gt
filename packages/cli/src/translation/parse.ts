@@ -26,6 +26,7 @@ import {
  * @param options - The options object
  * @param sourceDictionary - The source dictionary file path
  * @param pkg - The package name
+ * @param skippedPaths - Receives the paths the scan skipped
  * @returns An object containing the updates and errors
  */
 export async function createUpdates(
@@ -35,7 +36,8 @@ export async function createUpdates(
   pkg: InlineLibrary,
   validate: boolean,
   parsingFlags: GTParsingFlags,
-  parsingOptions: ParsingConfigOptions
+  parsingOptions: ParsingConfigOptions,
+  skippedPaths?: string[]
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   let updates: Updates = [];
   let errors: string[] = [];
@@ -89,7 +91,8 @@ export async function createUpdates(
                 validate,
                 primaryPatterns,
                 parsingFlags,
-                parsingOptions
+                parsingOptions,
+                skippedPaths
               );
   const {
     updates: newUpdates,
