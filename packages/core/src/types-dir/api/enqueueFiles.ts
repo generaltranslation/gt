@@ -1,4 +1,4 @@
-import type { DataFormat, JsxChildren } from '@generaltranslation/format/types';
+import type { ContentFor, DataFormat } from '@generaltranslation/format/types';
 
 type UpdateMetadata = {
   id?: string;
@@ -20,24 +20,9 @@ type UpdateMetadata = {
 // Types for the enqueueTranslationEntries function
 export type Updates = ({
   metadata: UpdateMetadata;
-} & (
-  | {
-      dataFormat: 'JSX';
-      source: JsxChildren;
-    }
-  | {
-      dataFormat: 'ICU';
-      source: string;
-    }
-  | {
-      dataFormat: 'I18NEXT';
-      source: string;
-    }
-  | {
-      dataFormat: 'STRING';
-      source: string;
-    }
-))[];
+} & {
+  [Format in DataFormat]: { dataFormat: Format; source: ContentFor<Format> };
+}[DataFormat])[];
 
 export type EnqueueFilesResult = {
   jobData: {
