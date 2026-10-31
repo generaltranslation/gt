@@ -3,15 +3,15 @@
  * while using only native Intl APIs. See THIRD_PARTY_NOTICES.md.
  */
 
-import { parse } from './parser';
-import { libraryDefaultLocale } from './settings';
+import { resolveLocale } from './locale';
+import { libraryDefaultLocale } from '../settings/settings';
 import {
   SKELETON_TYPE,
   TYPE,
   type ExtendedNumberFormatOptions,
   type MessageFormatElement,
   type MessageVariables,
-} from './types';
+} from '../types-dir/ast';
 
 const NUMBER_STYLES: Record<string, Intl.NumberFormatOptions> = {
   integer: { maximumFractionDigits: 0 },
@@ -57,13 +57,26 @@ type FormatContext = {
   pluralRules?: Map<Intl.PluralRuleType, Intl.PluralRules>;
 };
 
-export function formatMessage(
-  message: string,
+/**
+ * Formats an ICU syntax tree without parsing. Locales are validated the same
+ * way as `formatMessage` from `@generaltranslation/icu/parser`.
+ */
+export function formatAst(
+  ast: MessageFormatElement[],
   locales: string | string[] = libraryDefaultLocale,
   variables: MessageVariables = {}
 ): unknown {
-  const locale = resolveLocale(locales);
-  const ast = parse(message, { locale });
+  resolveLocale(locales);
+  return formatParsedAst(ast, '', locales, variables);
+}
+
+/** Formats a tree whose locales were already validated; `message` is reported on errors. */
+export function formatParsedAst(
+  ast: MessageFormatElement[],
+  message: string,
+  locales: string | string[],
+  variables: MessageVariables
+): unknown {
   const parts = formatElements(ast, { message, locales, variables });
   if (parts.length === 1) return parts[0];
   return parts.length ? parts : '';
@@ -302,14 +315,4 @@ function invalidSelection(
   return new RangeError(
     `The ICU variable "${name}" value ${JSON.stringify(String(value))} did not match any of: ${Object.keys(options).join(', ')}.`
   );
-}
-
-function resolveLocale(locales: string | string[]): Intl.Locale | undefined {
-  if (typeof Intl.Locale === 'undefined') return undefined;
-  const supported = Intl.NumberFormat.supportedLocalesOf(locales)[0];
-  const requested = typeof locales === 'string' ? locales : locales[0];
-  // Preserve intl-messageformat's behavior for empty locale lists: allowing
-  // Intl.Locale to reject an absent fallback avoids silently switching to the
-  // host locale. Resolving the full list first also supports sparse arrays.
-  return new Intl.Locale(supported ?? (requested as string));
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parse } from '@generaltranslation/icu';
+import { parse } from '@generaltranslation/icu/parser';
 import { condenseVars } from '../condenseVars';
 
 const expectParseableIcu = (icuString: string) => {

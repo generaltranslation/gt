@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatMessage, parse } from '@generaltranslation/icu';
+import { formatMessage, parse } from '@generaltranslation/icu/parser';
 import { declareVar } from '../declareVar';
 import { indexVars } from 'generaltranslation/internal';
 import { decodeVars } from '../decodeVars';

@@ -3,7 +3,7 @@ import type {
   PluralOrSelectOption,
   LiteralElement,
   SelectElement,
-} from '@generaltranslation/icu';
+} from '@generaltranslation/icu/parser';
 
 interface GTIndexedSelectOption extends PluralOrSelectOption {
   value: Array<LiteralElement>;
