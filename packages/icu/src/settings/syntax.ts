@@ -15,3 +15,6 @@ export function isArgumentName(name: string): boolean {
     !LEADING_DIRECTION_MARK.test(name)
   );
 }
+
+/** The plural or select branch used when no other branch matches. */
+export const FALLBACK_BRANCH_KEY = 'other';
