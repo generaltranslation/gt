@@ -1,8 +1,16 @@
-import type { ReactInitializeGTParams } from '@generaltranslation/react-core/pure';
+import {
+  initializeReactI18nCache,
+  internalInitializeGTSRA,
+  type ReactInitializeGTParams,
+} from '@generaltranslation/react-core/pure';
 
 export type InitializeGTParams = ReactInitializeGTParams;
 
-// Server-render initialization is identical to react-core's shared implementation
-// (there is no native-specific setup here), so re-export it directly instead of
-// maintaining a byte-for-byte copy.
-export { internalInitializeGTSRA as initializeGT } from '@generaltranslation/react-core/pure';
+/**
+ * Initialize GT for React Native. The i18nCache is always created: native
+ * providers load translations through it.
+ */
+export function initializeGT(config: InitializeGTParams): void {
+  internalInitializeGTSRA(config);
+  initializeReactI18nCache(config);
+}
