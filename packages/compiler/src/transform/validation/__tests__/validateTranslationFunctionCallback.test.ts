@@ -49,6 +49,7 @@ describe('validateTranslationFunctionCallback', () => {
         jsxElementCount: 0,
         dynamicContentViolations: 0,
         runtimeTranslateCount: 0,
+        unstableHashInjectionsCount: 0,
         macroExpansionsCount: 0,
         jsxInsertionsCount: 0,
       },
@@ -1005,6 +1006,7 @@ describe('validateTranslationFunctionCallback', () => {
           macroExpansionsCount: 0,
           jsxInsertionsCount: 0,
           runtimeTranslateCount: 0,
+          unstableHashInjectionsCount: 0,
         },
       };
 
@@ -1330,6 +1332,7 @@ describe('validateTranslationFunctionCallback', () => {
           macroExpansionsCount: 0,
           jsxInsertionsCount: 0,
           runtimeTranslateCount: 0,
+          unstableHashInjectionsCount: 0,
         },
       };
 
@@ -1412,6 +1415,7 @@ describe('validateTranslationFunctionCallback', () => {
           macroExpansionsCount: 0,
           jsxInsertionsCount: 0,
           runtimeTranslateCount: 0,
+          unstableHashInjectionsCount: 0,
         },
       };
 
