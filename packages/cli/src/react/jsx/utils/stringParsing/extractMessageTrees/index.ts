@@ -10,6 +10,7 @@ import {
 } from '@generaltranslation/icu';
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
 import type { MessageTreeHashMetadata } from 'generaltranslation/id';
+import { isUnstableGTImportSource } from 'generaltranslation/internal';
 import { randomUUID } from 'node:crypto';
 import {
   warnConflictingMessageVariableFormatsSync,
@@ -21,7 +22,6 @@ import {
 import {
   GT_LIBRARIES,
   isLegacyGTImportSource,
-  isUnstableGTImportSource,
   type GTLibrary,
 } from '../../../../../types/libraries.js';
 import {
@@ -41,6 +41,10 @@ import type { ParsingConfig, ParsingOutput } from '../types.js';
 
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
+
+// The compiler mirrors this walker without derive() in
+// packages/compiler/src/transform/injection/injectUnstableTaggedTemplateHash.ts;
+// test-fixtures/icu-tree-wire-format.json keeps both on the same hashes.
 
 const PART_FUNCTION = 'part';
 const PLURAL_COUNT_CONSTANT = 'n';
