@@ -1,3 +1,5 @@
+import type { MiddlewareConfig } from '../../middleware-dir/types';
+
 export type HeadersAndCookies = {
   localeHeaderName?: string;
   localeCookieName?: string;
@@ -42,7 +44,8 @@ export const REQUEST_FUNCTION_TO_CONFIG_KEY = {
   getRegion: 'getRegionPath',
 } as const;
 
-export type BaseWithGTConfigProps = {
+// Middleware options are defaults for createNextMiddleware(), passed via env.
+export type BaseWithGTConfigProps = MiddlewareConfig & {
   // Additional top-level keys are forwarded as runtime translation metadata.
   [key: string]: unknown;
   // Request scoped filepath
@@ -59,7 +62,7 @@ export type BaseWithGTConfigProps = {
   defaultLocale?: string;
   ignoreBrowserLocales?: boolean;
   disableInvalidLocaleWarning?: boolean;
-  /** Regular expression source that limits i18n middleware routing by pathname. */
+  /** Regular expression source that limits i18n middleware routing by pathname, written for paths without the locale prefix. `<Link>`, `useLocalizeHref()` and `getLocalizeHref()` leave non-matching paths unprefixed. */
   pathRegex?: string;
   // Rendering
   renderSettings?: {

@@ -7,6 +7,7 @@ import YAML, { isMap, isScalar } from 'yaml';
 import type { Content, Root, Yaml } from 'mdast';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import type { Settings } from '../types/index.js';
+import { batchProcess, FILE_IO_CONCURRENCY } from './batchProcess.js';
 
 const SKIPPABLE_URL_REGEX = /^(?:[a-z][a-z0-9+.-]*:|\/\/|#|\.\/|\.\.\/)/i;
 
@@ -140,8 +141,9 @@ export default async function localizeMintlifyFrontmatterUrls(
         shouldProcessFile(filePath, includeFiles)
     );
 
-    await Promise.all(
-      targetFiles.map(async (filePath) => {
+    await batchProcess(
+      targetFiles,
+      async (filePath) => {
         if (!fs.existsSync(filePath)) return;
 
         const content = await fs.promises.readFile(filePath, 'utf8');
@@ -153,7 +155,8 @@ export default async function localizeMintlifyFrontmatterUrls(
         if (result.changed) {
           await fs.promises.writeFile(filePath, result.content, 'utf8');
         }
-      })
+      },
+      FILE_IO_CONCURRENCY
     );
   }
 }

@@ -35,6 +35,7 @@ import {
   rootParamStability,
   turboConfigStable,
 } from './plugin/getStableNextVersionInfo';
+import { distDir, nodeRequire } from './plugin/nodeCompat';
 import { validateCompiler } from './config-dir/utils/validateCompiler';
 import {
   REQUEST_FUNCTION_ALIASES,
@@ -48,6 +49,7 @@ import {
 } from './errors/cacheComponents';
 import { getRuntimeCredentials } from './setup/runtimeCredentials';
 import { nextLocaleCookieName } from './utils/cookies';
+import { splitMiddlewareConfig } from './middleware-dir/defaultMiddlewareConfig';
 
 type AutoderiveConfig = boolean | { jsx?: boolean; strings?: boolean };
 
@@ -180,8 +182,15 @@ function haveSameLocales(
  * @param {number} [batchInterval=defaultInitGTProps.batchInterval] - The interval in milliseconds between batched translation requests.
  * @param {boolean} [ignoreBrowserLocales=defaultWithGTConfigProps.ignoreBrowserLocales] - Whether to ignore browser's preferred locales.
  * @param {boolean} [disableInvalidLocaleWarning=defaultWithGTConfigProps.disableInvalidLocaleWarning] - Whether to disable invalid request locale warnings.
- * @param {string|undefined} [pathRegex] - Regular expression that request pathnames must match for i18n middleware to be applied.
+ * @param {string|undefined} [pathRegex] - Regular expression that request pathnames must match for i18n middleware to be applied. Write it for paths without the locale prefix: `<Link>`, `useLocalizeHref()` and `getLocalizeHref()` test the unprefixed path and leave non-matching paths unprefixed.
  * @param {object} headersAndCookies - Additional headers and cookies that can be passed for extended configuration.
+ * @param {boolean} [localeRouting] - Default for createNextMiddleware's `localeRouting` option.
+ * @param {boolean} [prefixDefaultLocale] - Default for createNextMiddleware's `prefixDefaultLocale` option.
+ * @param {boolean} [enableSmartRouting] - Default for createNextMiddleware's `enableSmartRouting` option.
+ * @param {boolean} [ignoreSourceMaps] - Default for createNextMiddleware's `ignoreSourceMaps` option.
+ * @param {object} [pathConfig] - Default for createNextMiddleware's `pathConfig` option.
+ * @param {object} [routeOverrides] - Default for createNextMiddleware's `routeOverrides` option.
+ * @param {object} [localeRoutes] - Default for createNextMiddleware's `localeRoutes` option.
  * @param {object} metadata - Additional metadata that can be passed for extended configuration.
  *
  * @param {object} nextConfig - The Next.js configuration object to extend
@@ -358,11 +367,11 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   if (mergedConfig.experimentalCompilerOptions?.type === 'swc') {
     try {
       if (turboPackEnabled) {
-        const absolutePath = path.resolve(__dirname, './gt_swc_plugin.wasm');
+        const absolutePath = path.resolve(distDir, './gt_swc_plugin.wasm');
         resolvedWasmFilePath =
           './' + path.relative(process.cwd(), absolutePath).replace(/\\/g, '/');
       } else {
-        resolvedWasmFilePath = path.resolve(__dirname, './gt_swc_plugin.wasm');
+        resolvedWasmFilePath = path.resolve(distDir, './gt_swc_plugin.wasm');
       }
     } catch (error) {
       console.error(
@@ -644,7 +653,10 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     devApiKey: _devApiKey,
     ...privateConfigParams
   } = mergedConfig;
-  const I18NConfigParams = JSON.stringify(privateConfigParams);
+  // Middleware options get their own env var instead of the i18n config params.
+  const { middlewareConfig, otherConfig } =
+    splitMiddlewareConfig(privateConfigParams);
+  const I18NConfigParams = JSON.stringify(otherConfig);
   const clientI18NConfigParams = {
     defaultLocale: mergedConfig.defaultLocale,
     locales: mergedConfig.locales,
@@ -729,6 +741,7 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
       _GENERALTRANSLATION_LOCALE_REFRESH_SUPPORTED:
         localeRefreshSupported.toString(),
       _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams,
+      _GENERALTRANSLATION_MIDDLEWARE_CONFIG: JSON.stringify(middlewareConfig),
       NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS: JSON.stringify(
         clientI18NConfigParams
       ),
@@ -802,9 +815,9 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
         // Try to load GT compiler if available
         if (mergedConfig.experimentalCompilerOptions?.type === 'babel') {
           try {
-            const {
-              webpack: gtUnplugin,
-            } = require('@generaltranslation/compiler');
+            const { webpack: gtUnplugin } = nodeRequire(
+              '@generaltranslation/compiler'
+            );
             webpackConfig.plugins.unshift(
               gtUnplugin({
                 ...mergedConfig.experimentalCompilerOptions,
