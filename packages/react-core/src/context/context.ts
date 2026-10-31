@@ -1,5 +1,5 @@
 import { Dictionary, Hash, Locale } from 'gt-i18n/internal/types';
-import { Translation } from 'gt-i18n/types';
+import type { Content } from '@generaltranslation/format/types';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { createGlobalSingleton } from 'gt-i18n/internal';
 import { createContext, useContext, type Context } from 'react';
@@ -17,7 +17,7 @@ export type GTContextType = {
    * In SPA mode, these won't be accessible and translations
    * can be accessed via useSyncExternalStore() directly
    */
-  translationsSnapshot: Record<Locale, Record<Hash, Translation>>;
+  translationsSnapshot: Record<Locale, Record<Hash, Content>>;
   dictionariesSnapshot: Record<Locale, Dictionary>;
   /**
    * I18nStore allows us to sync state updates in ConditionStore and I18nCache

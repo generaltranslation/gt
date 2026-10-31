@@ -13,7 +13,8 @@ import type {
   TranslateSnapshot,
   Unsubscribe,
 } from './storeTypes';
-import type { Dictionary, Translation } from 'gt-i18n/types';
+import type { Dictionary } from 'gt-i18n/types';
+import type { Content } from '@generaltranslation/format/types';
 import { subscribeToSet } from './utils/subscriptions';
 import { Hash, Locale } from 'gt-i18n/internal/types';
 import { getReactI18nCache } from '../i18n-cache/singleton-operations';
@@ -66,7 +67,7 @@ export class I18nStore {
   // ========== Translation Updates ========== //
 
   updateTranslations = (
-    translations: Record<Locale, Record<Hash, Translation>>
+    translations: Record<Locale, Record<Hash, Content>>
   ): void => {
     getReactI18nCache().updateTranslations(translations);
   };
@@ -77,7 +78,7 @@ export class I18nStore {
 
   // ========== runtime translation ========== //
 
-  translate = async <T extends Translation>(
+  translate = async <T extends Content>(
     lookup: TranslateLookup<T>
   ): Promise<void> => {
     return getReactI18nCache()
@@ -147,7 +148,7 @@ export class I18nStore {
 
   // Keep subscription methods as arrow fields so hooks can pass them by
   // reference without losing access to this store instance.
-  subscribeToTranslate = <T extends Translation>(
+  subscribeToTranslate = <T extends Content>(
     lookup: TranslateLookup<T>,
     listener: StoreListener
   ): Unsubscribe => {
@@ -180,9 +181,9 @@ export class I18nStore {
 
   // ----- Snapshots ----- //
 
-  getTranslateSnapshot = <T extends Translation>(
+  getTranslateSnapshot = <T extends Content>(
     lookup: TranslateLookup<T>,
-    translationsSnapshot: Record<Locale, Record<Hash, Translation>> = {}
+    translationsSnapshot: Record<Locale, Record<Hash, Content>> = {}
   ): TranslateSnapshot<T> => {
     return (
       lookupTranslation(translationsSnapshot, lookup) ??

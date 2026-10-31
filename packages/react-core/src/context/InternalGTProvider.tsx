@@ -1,6 +1,7 @@
 import { useEffect, useMemo, type ReactNode } from 'react';
 import { I18nStore } from '../i18n-store/I18nStore';
-import type { Dictionary, Translation } from 'gt-i18n/types';
+import type { Dictionary } from 'gt-i18n/types';
+import type { Content } from '@generaltranslation/format/types';
 import type { Locale, Hash } from 'gt-i18n/internal/types';
 import { getGTContext } from './context';
 import type {
@@ -12,7 +13,7 @@ import type {
 export type InternalGTProviderProps = {
   children?: ReactNode;
   // For streaming translations to server
-  translations: Record<Locale, Record<Hash, Translation>>;
+  translations: Record<Locale, Record<Hash, Content>>;
   dictionaries?: Record<Locale, Dictionary>;
   locale: string;
   region: string | undefined;

@@ -1,13 +1,13 @@
 import { hashSource } from 'generaltranslation/id';
 import { indexVars } from 'generaltranslation/internal';
 import { LookupOptions } from '../translation-functions/types/options';
-import { Translation } from '../types';
+import type { Content } from '@generaltranslation/format/types';
 import type { IcuMessage } from '@generaltranslation/format/types';
 
 /**
  * Hash a message string
  */
-export function hashMessage<T extends Translation>(
+export function hashMessage<T extends Content>(
   message: T,
   options: LookupOptions
 ): string {

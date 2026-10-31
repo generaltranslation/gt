@@ -4,7 +4,7 @@ import {
   getI18nConfig,
   getTranslateListenerKey,
 } from 'gt-i18n/internal';
-import type { Translation } from 'gt-i18n/types';
+import type { Content } from '@generaltranslation/format/types';
 import type {
   TranslateLookup,
   TranslateSnapshot,
@@ -22,7 +22,7 @@ import { useSubscribeToTrackedLookups } from './useSubscribeToTrackedLookups';
  * Returns the translation, but also triggers a translation if it is not found
  * when dev hot reload is enabled.
  */
-export type TrackedTranslationResolver = <T extends Translation>(
+export type TrackedTranslationResolver = <T extends Content>(
   lookup: TranslateLookup<T>
 ) => TranslateSnapshot<T>;
 
@@ -79,9 +79,7 @@ export function useTrackedTranslationResolver(
    * - enqueues dev hot reload (if needed)
    */
   return useCallback(
-    <T extends Translation>(
-      lookup: TranslateLookup<T>
-    ): TranslateSnapshot<T> => {
+    <T extends Content>(lookup: TranslateLookup<T>): TranslateSnapshot<T> => {
       // Track the lookup for dev hot reload
       const lookupKey = getTranslateListenerKey(lookup);
       if (devHotReloadEnabled) {

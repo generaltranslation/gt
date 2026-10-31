@@ -1,5 +1,4 @@
 import { LookupOptions } from '../../translation-functions/types/options';
-import { Translation } from './utils/types/translation-data';
 import { hashMessage } from '../../utils/hashMessage';
 import { dedupePending } from './utils/dedupePending';
 import type { Content } from '@generaltranslation/format/types';
@@ -59,7 +58,7 @@ function normalizeBatchConfig(
  * @property {TranslationValue} message - The message from the source
  * @property {LookupOptions} options - The options for the translation
  */
-export type TranslationKey<TranslationValue extends Translation> = {
+export type TranslationKey<TranslationValue extends Content> = {
   message: TranslationValue;
   options: LookupOptions;
 };
@@ -79,18 +78,19 @@ export type Locale = string;
  * Locale is handled by the I18nCache that owns this cache, so it is not
  * passed here.
  */
-export type TranslationsCacheMissCallback<
-  TranslationValue extends Translation,
-> = (hash: Hash, translation: TranslationValue) => void;
+export type TranslationsCacheMissCallback<TranslationValue extends Content> = (
+  hash: Hash,
+  translation: TranslationValue
+) => void;
 
 /**
  * A queue entry for batching, used to also handle reject and resolve
  */
-type QueueEntry<TranslationValue extends Translation> = {
+type QueueEntry<TranslationValue extends Content> = {
   key: Hash;
   source: TranslationValue;
   metadata: EntryMetadata;
-  resolve: (value: Translation) => void;
+  resolve: (value: Content) => void;
   reject: (reason?: unknown) => void;
 };
 
@@ -109,7 +109,7 @@ export type TranslateMany = (
  *   Locale logic is handled by the owning I18nCache. Use a callback function that has the
  *   locale parameter embedded if you wish to use the locale code.
  */
-export class TranslationsCache<TranslationValue extends Translation> {
+export class TranslationsCache<TranslationValue extends Content> {
   private cache: Record<Hash, TranslationValue>;
   private pendingTranslations = new Map<Hash, Promise<TranslationValue>>();
   private queue: Array<QueueEntry<TranslationValue>> = [];
@@ -317,9 +317,9 @@ export class TranslationsCache<TranslationValue extends Translation> {
 /**
  * Convert a TranslationKey to a TranslateManyEntry
  */
-function convertBatchToTranslateManyParams<
-  TranslationValue extends Translation,
->(batch: QueueEntry<TranslationValue>[]): Record<Hash, TranslateManyEntry> {
+function convertBatchToTranslateManyParams<TranslationValue extends Content>(
+  batch: QueueEntry<TranslationValue>[]
+): Record<Hash, TranslateManyEntry> {
   return batch.reduce<Record<Hash, TranslateManyEntry>>((acc, entry) => {
     acc[entry.key] = {
       source: entry.source as Content,

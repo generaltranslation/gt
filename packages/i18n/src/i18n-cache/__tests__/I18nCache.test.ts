@@ -116,7 +116,7 @@ describe('I18nCache', () => {
     expect(loadTranslations).toHaveBeenCalledExactlyOnceWith('en-gb');
   });
 
-  it('loadTranslations() returns Record<Hash, Translation>', async () => {
+  it('loadTranslations() returns Record<Hash, Content>', async () => {
     const cache = createCache();
 
     const translations = await cache.loadTranslations('fr');

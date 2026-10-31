@@ -98,6 +98,12 @@ export type LookupOptions =
   | (JsxTranslationOptions & {
       $format: 'JSX';
       $locale?: string;
+    })
+  | (Pick<
+      TranslationMetadata,
+      '$context' | '$locale' | '$_hash' | '$maxChars' | '$requiresReview'
+    > & {
+      $format: 'ICU_TREE';
     });
 
 export type LookupOptionsFor<T extends DataFormat> = T extends 'JSX'

@@ -1,8 +1,5 @@
-import type {
-  DictionaryEntry,
-  DictionaryObject,
-  Translation,
-} from 'gt-i18n/types';
+import type { DictionaryEntry, DictionaryObject } from 'gt-i18n/types';
+import type { Content } from '@generaltranslation/format/types';
 import type { LookupOptions } from 'gt-i18n/internal/types';
 
 // ----- Listeners ----- //
@@ -13,7 +10,7 @@ export type TranslateEventListener = (lookup: TranslateLookup) => void;
 
 // ----- Lookups ----- //
 
-export type TranslateLookup<T extends Translation = Translation> = {
+export type TranslateLookup<T extends Content = Content> = {
   locale: string;
   message: T;
   options: LookupOptions;
@@ -25,10 +22,8 @@ export type DictionaryLookup = {
 };
 // ----- Snapshots ----- //
 
-export type TranslateSnapshot<T extends Translation = Translation> =
-  | T
-  | undefined;
-export type TranslateManySnapshot<T extends Translation = Translation> =
+export type TranslateSnapshot<T extends Content = Content> = T | undefined;
+export type TranslateManySnapshot<T extends Content = Content> =
   readonly TranslateSnapshot<T>[];
 export type DictionaryEntrySnapshot = DictionaryEntry | undefined;
 export type DictionaryObjectSnapshot = DictionaryObject | undefined;
