@@ -20,3 +20,8 @@ export function createRequest(payload: Payload, user?: TypedUser | null) {
     ? requestHelpers.createLocalReq({ user }, payload)
     : requestHelpers.createPayloadRequest({ payload, user });
 }
+
+export const translationsView =
+  'createLocalReq' in payloadModule
+    ? 'gt-payload/rsc#GtTranslationsView'
+    : 'gt-payload/rsc-v4#GtTranslationsView';

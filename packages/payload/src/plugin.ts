@@ -1,3 +1,4 @@
+import { translationsView } from './request';
 import { GT } from 'generaltranslation';
 import type { CustomMapping } from 'generaltranslation/types';
 import type {
@@ -59,7 +60,7 @@ type CoverageBody = { page?: number; limit?: number };
 const DOCUMENT_CONTROLS = 'gt-payload/client#GtDocumentControls';
 const NAV_LINK = 'gt-payload/client#GtNavLink';
 const RUNS_PROVIDER = 'gt-payload/client#GtRunsProvider';
-const TRANSLATIONS_VIEW = 'gt-payload/rsc#GtTranslationsView';
+
 // Also linked from the client nav link.
 const TRANSLATIONS_VIEW_PATH = '/translations';
 
@@ -337,7 +338,7 @@ export const gtPlugin =
           views: {
             ...config.admin?.components?.views,
             gtTranslations: {
-              Component: TRANSLATIONS_VIEW,
+              Component: translationsView,
               path: TRANSLATIONS_VIEW_PATH,
             },
           },

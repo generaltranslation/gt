@@ -25,6 +25,10 @@
     "./rsc": {
       "types": "./dist/rsc/index.d.ts",
       "import": "./dist/rsc/index.js"
+    },
+    "./rsc-v4": {
+      "types": "./dist/rsc-v4/index.d.ts",
+      "import": "./dist/rsc-v4/index.js"
     }
   },
   "files": [

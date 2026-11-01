@@ -14,9 +14,10 @@ describe('Payload request compatibility', () => {
     const req = { payload, user };
     const createPayloadRequest = vi.fn().mockResolvedValue(req);
     vi.doMock('payload', () => ({ createPayloadRequest }));
-    const { createRequest } = await import('../request');
+    const { createRequest, translationsView } = await import('../request');
     expect(await createRequest(payload, user)).toBe(req);
     expect(createPayloadRequest).toHaveBeenCalledWith({ payload, user });
+    expect(translationsView).toBe('gt-payload/rsc-v4#GtTranslationsView');
   });
 
   it('prefers the local helper when v3 also exposes its HTTP request helper', async () => {
@@ -24,9 +25,10 @@ describe('Payload request compatibility', () => {
     const createLocalReq = vi.fn().mockResolvedValue(req);
     const createPayloadRequest = vi.fn();
     vi.doMock('payload', () => ({ createLocalReq, createPayloadRequest }));
-    const { createRequest } = await import('../request');
+    const { createRequest, translationsView } = await import('../request');
     expect(await createRequest(payload, user)).toBe(req);
     expect(createLocalReq).toHaveBeenCalledWith({ user }, payload);
+    expect(translationsView).toBe('gt-payload/rsc#GtTranslationsView');
     expect(createPayloadRequest).not.toHaveBeenCalled();
   });
 
@@ -34,8 +36,9 @@ describe('Payload request compatibility', () => {
     const req = { payload, user };
     const createLocalReq = vi.fn().mockResolvedValue(req);
     vi.doMock('payload', () => ({ createLocalReq }));
-    const { createRequest } = await import('../request');
+    const { createRequest, translationsView } = await import('../request');
     expect(await createRequest(payload, user)).toBe(req);
     expect(createLocalReq).toHaveBeenCalledWith({ user }, payload);
+    expect(translationsView).toBe('gt-payload/rsc#GtTranslationsView');
   });
 });
