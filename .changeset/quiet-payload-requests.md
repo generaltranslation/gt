@@ -9,3 +9,5 @@ Select a separate v4 admin view entry point using DefaultTemplate from @payloadc
 Restore translation panel and coverage table spacing and colors on v4 using semantic design tokens with v3 and standalone fallbacks. Use button styles and sizes supported by both Payload majors.
 
 Derive the authenticated user type from PayloadRequest so public translation inputs and job/request declarations work with both v3 and v4, which removed the TypedUser export.
+
+Inset the translation drawer content and use compact, version-independent panel spacing with a readable maximum width.

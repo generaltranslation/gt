@@ -9,3 +9,12 @@ export const theme = {
   error: 'var(--color-text-danger, var(--theme-error-500, currentColor))',
   muted: 'var(--color-text-tertiary, var(--theme-elevation-400, currentColor))',
 } as const;
+
+// Our panel layout uses fixed CSS pixel spacing, independent of each Payload
+// major's spacing scale. Colors and native controls still follow its theme.
+export const panelSpacing = {
+  inset: 16,
+  section: 12,
+  control: 8,
+  label: 4,
+} as const;

@@ -1,5 +1,5 @@
 'use client';
-import { theme } from './theme';
+import { panelSpacing } from './theme';
 import { Button, CheckboxInput } from '@payloadcms/ui';
 import React from 'react';
 import type { LocaleOption } from './locales';
@@ -43,9 +43,11 @@ export function LocalePicker({
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-          gap: `calc(${theme.base} / 4)`,
-          marginTop: `calc(${theme.base} / 2)`,
+          gridTemplateColumns:
+            'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
+          columnGap: panelSpacing.inset,
+          rowGap: panelSpacing.label,
+          marginTop: panelSpacing.control,
         }}
       >
         {options.map((option) => (

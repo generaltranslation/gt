@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import React from 'react';
 import type { TranslateTarget } from '../types';
 import { TranslatePanel } from './TranslatePanel';
+import { panelSpacing } from './theme';
 
 // A Translate button on a document's edit view, opening the translate panel
 // in a drawer.
@@ -42,13 +43,15 @@ export function GtDocumentControls() {
         Translate
       </Button>
       <Drawer slug={slug} title='Translations'>
-        <TranslatePanel
-          scope={{ targets: [target] }}
-          onTranslated={() => router.refresh()}
-          blocked={
-            modified ? 'Save your changes before translating.' : undefined
-          }
-        />
+        <div style={{ padding: panelSpacing.inset }}>
+          <TranslatePanel
+            scope={{ targets: [target] }}
+            onTranslated={() => router.refresh()}
+            blocked={
+              modified ? 'Save your changes before translating.' : undefined
+            }
+          />
+        </div>
       </Drawer>
     </div>
   );
