@@ -1,7 +1,7 @@
 // The plugin's endpoints, as the admin panel calls them: start and step runs
 // that translate or save local edits, and report coverage.
 import type { Payload, TypedUser } from 'payload';
-import { createLocalReq } from 'payload';
+import { createRequest } from '../request';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { CoveragePage } from '../coverage';
 import { gtPlugin } from '../plugin';
@@ -39,10 +39,7 @@ async function call<T>(
     (e) => e.path === path && e.method === 'post'
   );
   if (!endpoint) throw new Error(`No endpoint ${path}`);
-  const req = await createLocalReq(
-    { user: signedIn ? user : undefined },
-    payload
-  );
+  const req = await createRequest(payload, signedIn ? user : undefined);
   req.json = async () => body;
   const response = await endpoint.handler(req);
   return { status: response.status, json: (await response.json()) as T };

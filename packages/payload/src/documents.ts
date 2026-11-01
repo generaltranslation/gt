@@ -1,5 +1,6 @@
 // Reading and writing documents through Payload's Local API.
-import { createLocalReq, docAccessOperationGlobal } from 'payload';
+import { docAccessOperationGlobal } from 'payload';
+import { createRequest } from './request';
 import type { FlattenedField, Payload, TypedUser } from 'payload';
 import { hasTranslatableFields, type FieldContext } from './content/fields';
 import { createGtPayloadDiagnostic } from './diagnostics';
@@ -328,7 +329,7 @@ export async function canUpdate(
   access: Access
 ): Promise<boolean> {
   if (!access.user) return true;
-  const req = await createLocalReq({ user: access.user }, payload);
+  const req = await createRequest(payload, access.user);
   // The change a translation makes: a draft where drafts are on.
   const config =
     'global' in target
