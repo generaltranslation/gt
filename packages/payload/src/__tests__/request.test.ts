@@ -1,8 +1,9 @@
-import type { Payload, TypedUser } from 'payload';
+import type { PayloadUser } from '../user';
+import type { Payload } from 'payload';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const payload = {} as Payload;
-const user = { id: 'editor', collection: 'users' } as TypedUser;
+const user = { id: 'editor', collection: 'users' } as PayloadUser;
 
 afterEach(() => {
   vi.doUnmock('payload');

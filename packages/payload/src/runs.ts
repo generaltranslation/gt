@@ -4,7 +4,8 @@
 // panel, or Payload's job queue. A lock on the run keeps two steppers from
 // doing the same step, and a lock on each document keeps two runs from saving
 // it at once.
-import type { CollectionConfig, Payload, TaskConfig, TypedUser } from 'payload';
+import type { PayloadUser } from './user';
+import type { CollectionConfig, Payload, TaskConfig } from 'payload';
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
 import { createGtPayloadDiagnostic } from './diagnostics';
 import { listSiteTargets } from './documents';
@@ -188,14 +189,14 @@ function tally(
 async function userOf(
   payload: Payload,
   run: Run
-): Promise<TypedUser | undefined> {
+): Promise<PayloadUser | undefined> {
   if (!run.startedBy) return undefined;
   const user = await payload.findByID({
     collection: run.startedBy.collection,
     id: run.startedBy.id,
     depth: 0,
   });
-  return { ...user, collection: run.startedBy.collection } as TypedUser;
+  return { ...user, collection: run.startedBy.collection } as PayloadUser;
 }
 
 export type StartRunInput = {
@@ -205,7 +206,7 @@ export type StartRunInput = {
   targets: TranslateTarget[] | 'site';
   locales: string[];
   saveLocalEdits?: boolean;
-  user?: TypedUser | null;
+  user?: PayloadUser | null;
 };
 
 // Creates a run and queues Payload's job for it.
@@ -250,7 +251,7 @@ async function startNext(
   payload: Payload,
   gt: GtClient,
   run: Run,
-  user: TypedUser | undefined
+  user: PayloadUser | undefined
 ): Promise<Partial<Run>> {
   const batch = run.pending.slice(0, START_BATCH);
   const pending = run.pending.slice(START_BATCH);
@@ -292,7 +293,7 @@ async function finishReady(
   payload: Payload,
   gt: GtClient,
   run: Run,
-  user: TypedUser | undefined
+  user: PayloadUser | undefined
 ): Promise<Partial<Run> | null> {
   const jobIds = run.jobs.flatMap((job) => (job.jobId ? [job.jobId] : []));
   const statuses = jobIds.length ? await checkTranslation({ gt, jobIds }) : [];

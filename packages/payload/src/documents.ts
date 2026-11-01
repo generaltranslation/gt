@@ -1,7 +1,8 @@
 // Reading and writing documents through Payload's Local API.
+import type { PayloadUser } from './user';
 import { docAccessOperationGlobal } from 'payload';
 import { createRequest } from './request';
-import type { FlattenedField, Payload, TypedUser } from 'payload';
+import type { FlattenedField, Payload } from 'payload';
 import { hasTranslatableFields, type FieldContext } from './content/fields';
 import { createGtPayloadDiagnostic } from './diagnostics';
 import { labelText } from './labels';
@@ -10,7 +11,7 @@ import type { Data, TranslateTarget } from './types';
 
 // A signed-in user whose access rules the reads and writes follow. Without
 // one, Payload's Local API skips access rules, as for server code.
-export type Access = { user?: TypedUser | null };
+export type Access = { user?: PayloadUser | null };
 
 const accessOptions = ({ user }: Access) =>
   user ? { user, overrideAccess: false } : {};

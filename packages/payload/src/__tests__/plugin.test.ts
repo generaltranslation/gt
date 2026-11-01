@@ -1,6 +1,7 @@
 // The plugin's endpoints, as the admin panel calls them: start and step runs
 // that translate or save local edits, and report coverage.
-import type { Payload, TypedUser } from 'payload';
+import type { PayloadUser } from '../user';
+import type { Payload } from 'payload';
 import { createRequest } from '../request';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { CoveragePage } from '../coverage';
@@ -15,7 +16,7 @@ import { FakeGt } from './support/fakeGt';
 import { createPage } from './support/fixtures';
 
 let payload: Payload;
-let user: TypedUser;
+let user: PayloadUser;
 const gt = new FakeGt();
 
 beforeAll(async () => {
@@ -23,7 +24,7 @@ beforeAll(async () => {
   user = (await payload.create({
     collection: 'users',
     data: { email: 'editor@example.com', password: 'secret-password' },
-  })) as TypedUser;
+  })) as PayloadUser;
 });
 
 afterAll(async () => {
