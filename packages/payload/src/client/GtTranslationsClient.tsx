@@ -1,4 +1,5 @@
 'use client';
+import { theme } from './theme';
 import React, { useState } from 'react';
 import { CoverageTable } from './CoverageTable';
 import { TranslatePanel } from './TranslatePanel';
@@ -12,20 +13,20 @@ export function GtTranslationsClient() {
       data-testid='gt-translations'
       style={{
         display: 'grid',
-        gap: 'calc(var(--base) * 2)',
-        padding: 'calc(var(--base) * 2) 0',
+        gap: `calc(${theme.base} * 2)`,
+        padding: `calc(${theme.base} * 2) 0`,
       }}
     >
       <div
         style={{
           display: 'grid',
-          gap: 'calc(var(--base) * 1.5)',
+          gap: `calc(${theme.base} * 1.5)`,
           maxWidth: 800,
         }}
       >
         <header>
           <h1 style={{ margin: 0 }}>Translations</h1>
-          <p style={{ margin: 'calc(var(--base) / 3) 0 0', opacity: 0.7 }}>
+          <p style={{ margin: `calc(${theme.base} / 3) 0 0`, opacity: 0.7 }}>
             Translate your whole site.
           </p>
         </header>

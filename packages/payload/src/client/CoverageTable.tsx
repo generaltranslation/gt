@@ -1,4 +1,5 @@
 'use client';
+import { theme } from './theme';
 import { Pagination, Pill, useConfig } from '@payloadcms/ui';
 import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
@@ -17,17 +18,17 @@ const CELL: Record<
   complete: {
     text: '✓',
     title: 'Translated',
-    color: 'var(--theme-success-500)',
+    color: theme.success,
   },
   partial: {
     text: 'Partly',
     title: 'Partly translated',
-    color: 'var(--theme-warning-500)',
+    color: theme.warning,
   },
   empty: {
     text: '—',
     title: 'Not translated',
-    color: 'var(--theme-elevation-400)',
+    color: theme.muted,
   },
 };
 
@@ -44,8 +45,8 @@ function editUrl(
 }
 
 const cellStyle = {
-  padding: 'calc(var(--base) / 2)',
-  borderBottom: '1px solid var(--theme-elevation-100)',
+  padding: `calc(${theme.base} / 2)`,
+  borderBottom: `1px solid ${theme.border}`,
   whiteSpace: 'nowrap',
 } as const;
 
@@ -79,16 +80,14 @@ export function CoverageTable({ reloadKey }: { reloadKey: number }) {
 
   if (error)
     return (
-      <p style={{ color: 'var(--theme-error-500)' }}>
-        Couldn't load your content. {error}
-      </p>
+      <p style={{ color: theme.error }}>Couldn't load your content. {error}</p>
     );
   if (!data) return <p style={{ opacity: 0.6 }}>Loading…</p>;
 
   return (
     <section
       data-testid='gt-coverage'
-      style={{ display: 'grid', gap: 'var(--base)' }}
+      style={{ display: 'grid', gap: theme.base }}
     >
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -116,7 +115,7 @@ export function CoverageTable({ reloadKey }: { reloadKey: number }) {
                       style={{
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: 'calc(var(--base) / 2)',
+                        gap: `calc(${theme.base} / 2)`,
                       }}
                     >
                       <Link

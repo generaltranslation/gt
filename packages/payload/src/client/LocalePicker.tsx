@@ -1,4 +1,5 @@
 'use client';
+import { theme } from './theme';
 import { Button, CheckboxInput } from '@payloadcms/ui';
 import React from 'react';
 import type { LocaleOption } from './locales';
@@ -30,8 +31,8 @@ export function LocalePicker({
       >
         <h4 style={{ margin: 0 }}>Languages</h4>
         <Button
-          buttonStyle='subtle'
-          size='small'
+          buttonStyle='secondary'
+          size='medium'
           margin={false}
           disabled={disabled}
           onClick={() => onChange(allSelected ? [] : available)}
@@ -43,8 +44,8 @@ export function LocalePicker({
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-          gap: 'calc(var(--base) / 4)',
-          marginTop: 'calc(var(--base) / 2)',
+          gap: `calc(${theme.base} / 4)`,
+          marginTop: `calc(${theme.base} / 2)`,
         }}
       >
         {options.map((option) => (

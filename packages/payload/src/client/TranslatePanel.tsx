@@ -1,4 +1,5 @@
 'use client';
+import { theme } from './theme';
 import { Button, CheckboxInput, useConfig } from '@payloadcms/ui';
 import React from 'react';
 import { apiRoute, progressLabel, type Scope } from './api';
@@ -42,9 +43,9 @@ export function TranslatePanel({
   return (
     <div
       data-testid='gt-translate-panel'
-      style={{ display: 'grid', gap: 'calc(var(--base) * 1.5)' }}
+      style={{ display: 'grid', gap: `calc(${theme.base} * 1.5)` }}
     >
-      <section style={{ display: 'grid', gap: 'var(--base)' }}>
+      <section style={{ display: 'grid', gap: theme.base }}>
         <LocalePicker
           options={options}
           selected={selected}
@@ -59,9 +60,7 @@ export function TranslatePanel({
           onToggle={(event) => setSaveLocalEdits(event.target.checked)}
         />
         {blocked && (
-          <p style={{ margin: 0, color: 'var(--theme-warning-500)' }}>
-            {blocked}
-          </p>
+          <p style={{ margin: 0, color: theme.warning }}>{blocked}</p>
         )}
         <div>
           <Button
@@ -77,13 +76,13 @@ export function TranslatePanel({
       </section>
       <section
         style={{
-          borderTop: '1px solid var(--theme-elevation-100)',
-          paddingTop: 'var(--base)',
+          borderTop: `1px solid ${theme.border}`,
+          paddingTop: theme.base,
         }}
       >
         <Button
           buttonStyle='secondary'
-          size='small'
+          size='medium'
           margin={false}
           id='gt-save'
           disabled={busy || Boolean(blocked)}
@@ -91,7 +90,7 @@ export function TranslatePanel({
         >
           Save local edits
         </Button>
-        <p style={{ margin: 'calc(var(--base) / 2) 0 0', opacity: 0.7 }}>
+        <p style={{ margin: `calc(${theme.base} / 2) 0 0`, opacity: 0.7 }}>
           Keeps the changes you made to translations when you translate again.
         </p>
       </section>
