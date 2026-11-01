@@ -69,17 +69,23 @@ function stripBasePath(pathname: string, basePath: string): string {
  * French alias `/a-propos` resolves to `/about`. Paths that are not a
  * declared alias are returned unchanged, matching how the middleware treats
  * unknown paths as shared routes.
+ *
+ * Only the source locale's own alias is considered: two locales may use the
+ * same string for different shared routes (`/projects` → `{ de: '/a-propos' }`
+ * next to `/about` → `{ fr: '/a-propos' }`), and matching every locale's alias
+ * would send a locale switch to the wrong page.
  */
 function resolveSharedPath(
   appPath: string,
-  pathConfig: ClientPathConfig | undefined
+  pathConfig: ClientPathConfig | undefined,
+  sourceLocale: string
 ): string {
   if (!pathConfig) return appPath;
   for (const [sharedPath, localizedPaths] of Object.entries(pathConfig)) {
     if (
       typeof localizedPaths === 'object' &&
       localizedPaths !== null &&
-      Object.values(localizedPaths).includes(appPath)
+      localizedPaths[sourceLocale] === appPath
     ) {
       return sharedPath;
     }
@@ -194,7 +200,11 @@ export function Client_GTProvider({
         // Resolve the current alias back to its shared route before switching,
         // so the target locale gets its own alias instead of a re-prefixed one
         // the middleware cannot map.
-        const sharedPath = resolveSharedPath(unprefixedPathname, pathConfig);
+        const sharedPath = resolveSharedPath(
+          unprefixedPathname,
+          pathConfig,
+          currentPathLocale
+        );
         const localizedPathname = localizeSharedPath(
           sharedPath,
           locale,

@@ -552,6 +552,64 @@ describe('Client_GTProvider', () => {
     }
   });
 
+  it('resolves aliases with the path locale, not another locale that reuses the string', async () => {
+    process.env._GENERALTRANSLATION_PATH_REGEX = '.*';
+    process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS =
+      JSON.stringify({
+        pathConfig: {
+          '/about': { fr: '/a-propos', de: '/uber-uns' },
+          // Another locale may legitimately reuse the same alias string for a
+          // different shared route.
+          '/projects': { de: '/a-propos' },
+        },
+      });
+    mockPathname.mockReturnValue('/de/a-propos');
+    vi.stubGlobal('location', {
+      assign: mockAssign,
+      hash: '',
+      pathname: '/de/a-propos',
+      reload: mockReloadBrowserPage,
+      search: '',
+    });
+    mockGetI18nConfig.mockReturnValue({
+      determineLocale: ([locale]: string[]) => locale,
+      getDefaultLocale: () => 'en',
+      getLocales: () => ['en', 'de', 'fr'],
+    });
+    const { Client_GTProvider } = await import('../client-boundary');
+    const root = createRoot(document.createElement('div'));
+    try {
+      await act(async () =>
+        root.render(
+          <Client_GTProvider
+            supportsLocaleRefresh={true}
+            dictionaries={{}}
+            locale='de'
+            translations={{}}
+          >
+            content
+          </Client_GTProvider>
+        )
+      );
+      const providerProps = mockGTProvider.mock.calls.at(-1)?.[0];
+      providerProps._reload({
+        locale: 'fr',
+        region: undefined,
+        enableI18n: true,
+      });
+
+      // `/de/a-propos` is the German alias of /projects, so the switch must
+      // land on /fr/projects -- not on /fr/a-propos via the French alias of
+      // /about, which merely shares the raw alias string.
+      expect(mockAssign).toHaveBeenCalledOnce();
+      expect(mockAssign).toHaveBeenCalledWith('/fr/projects');
+      expect(mockPush).not.toHaveBeenCalled();
+    } finally {
+      delete process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS;
+      await act(async () => root.unmount());
+    }
+  });
+
   it('keeps the Next basePath in place when switching locales', async () => {
     process.env._GENERALTRANSLATION_PATH_REGEX = '.*';
     process.env.NEXT_PUBLIC_BASE_PATH = '/docs';
