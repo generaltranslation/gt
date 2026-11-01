@@ -3,10 +3,10 @@
 import type { PayloadUser } from '../user';
 import type { Payload } from 'payload';
 import { createRequest } from '../request';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { CoveragePage } from '../coverage';
 import { gtPlugin } from '../plugin';
-import type { RunProgress, StepResult } from '../runs';
+import { runTask, type RunProgress, type StepResult } from '../runs';
 import {
   CANNOT_READ,
   createTestPayload,
@@ -15,7 +15,10 @@ import {
 import { FakeGt } from './support/fakeGt';
 import { createPage } from './support/fixtures';
 
+import { withV4AccessDefaults } from './support/v4AccessDefaults';
+
 let payload: Payload;
+let apiPayload: Payload;
 let user: PayloadUser;
 const gt = new FakeGt();
 
@@ -40,7 +43,7 @@ async function call<T>(
     (e) => e.path === path && e.method === 'post'
   );
   if (!endpoint) throw new Error(`No endpoint ${path}`);
-  const req = await createRequest(payload, signedIn ? user : undefined);
+  const req = await createRequest(apiPayload, signedIn ? user : undefined);
   req.json = async () => body;
   const response = await endpoint.handler(req);
   return { status: response.status, json: (await response.json()) as T };
@@ -56,325 +59,423 @@ const read = (id: string | number, locale: string) =>
     depth: 0,
   });
 
-describe('gtPlugin endpoints', () => {
-  it('refuses requests from someone who is not signed in', async () => {
-    const page = await createPage(payload);
-    const { status } = await call(
-      '/gt/runs',
-      { targets: [{ collection: 'pages', id: page.id }], locales: ['es'] },
-      false
-    );
-
-    expect(status).toBe(401);
-  });
-
-  it('translates a document through a run stepped from the admin panel', async () => {
-    const page = await createPage(payload);
-    const started = await call<RunProgress>('/gt/runs', {
-      targets: [{ collection: 'pages', id: page.id }],
-      locales: ['es'],
+describe.each(['v3', 'v4'] as const)(
+  'gtPlugin endpoints with %s access defaults',
+  (version) => {
+    beforeAll(() => {
+      apiPayload = version === 'v4' ? withV4AccessDefaults(payload) : payload;
     });
-    expect(started.json).toMatchObject({
-      status: 'running',
-      total: 1,
-      done: 0,
-    });
+    it('lists stale runs and queues background work despite private job and user access', async () => {
+      const page = await createPage(payload);
+      const jobsAccess = payload.config.jobs.access;
+      const userRead = payload.collections.users.config.access.read;
+      payload.config.jobs.access = { ...jobsAccess, queue: () => false };
+      payload.collections.users.config.access.read = () => false;
+      try {
+        const started = await call<RunProgress>('/gt/runs', {
+          targets: [{ collection: 'pages', id: page.id }],
+          locales: ['es'],
+        });
+        expect(started.status).toBe(200);
+        await payload.db.updateOne({
+          collection: 'gt-translation-runs',
+          id: started.json.id,
+          data: { updatedAt: new Date(Date.now() - 60_000).toISOString() },
+        });
+        const stale = await call<RunProgress[]>('/gt/runs/stale', {});
+        expect(stale.status).toBe(200);
+        expect(stale.json).toContainEqual(
+          expect.objectContaining({ id: started.json.id })
+        );
 
-    let step: StepResult | undefined;
-    for (let i = 0; i < 5 && step?.progress.status !== 'done'; i += 1)
-      step = (await call<StepResult>('/gt/runs/step', { id: started.json.id }))
-        .json;
-
-    expect(step?.progress).toMatchObject({
-      status: 'done',
-      total: 1,
-      done: 1,
-      failedLocales: [],
-    });
-    expect((await read(page.id, 'es')).title).toBe('HOME');
-  });
-
-  it('starts a run over the whole site when asked', async () => {
-    await createPage(payload);
-    const { json } = await call<RunProgress>('/gt/runs', {
-      site: true,
-      locales: ['es'],
-    });
-
-    const pages = (await payload.find({ collection: 'pages', limit: 0 }))
-      .totalDocs;
-    expect(json.total).toBeGreaterThanOrEqual(pages);
-  });
-
-  it('saves local edits through a save run', async () => {
-    const page = await createPage(payload);
-    const target = { collection: 'pages', id: page.id };
-    const translated = await call<RunProgress>('/gt/runs', {
-      targets: [target],
-      locales: ['es'],
-    });
-    for (let i = 0; i < 5; i += 1)
-      await call('/gt/runs/step', { id: translated.json.id });
-    await payload.update({
-      collection: 'pages',
-      id: page.id,
-      locale: 'es',
-      draft: true,
-      data: { title: 'Inicio' },
-    });
-    const saved = await call<RunProgress>('/gt/runs', {
-      kind: 'save',
-      targets: [target],
-      locales: ['es'],
-    });
-    const step = await call<StepResult>('/gt/runs/step', { id: saved.json.id });
-
-    expect(step.json.progress).toMatchObject({
-      kind: 'save',
-      status: 'done',
-      done: 1,
-    });
-    expect(gt.uploadedTranslations.at(-1)?.content).toContain('Inicio');
-  });
-
-  it('leaves out locales GT cannot translate into', async () => {
-    gt.unsupportedLocales.add('xx-not-a-locale');
-    const page = await createPage(payload);
-    const { json } = await call<RunProgress>('/gt/runs', {
-      targets: [{ collection: 'pages', id: page.id }],
-      locales: ['es', 'xx-not-a-locale'],
-    });
-    for (let i = 0; i < 5; i += 1) await call('/gt/runs/step', { id: json.id });
-
-    expect((await read(page.id, 'es')).title).toBe('HOME');
-  });
-
-  it("reports a page of the site with each language's coverage", async () => {
-    const page = await createPage(payload);
-    const { json } = await call<CoveragePage>('/gt/coverage', {
-      page: 1,
-      limit: 100,
+        // Force the worker's budget to end after one productive step so it
+        // must queue its continuation under the same restrictive job policy.
+        const task = runTask(() => gt);
+        if (typeof task.handler !== 'function')
+          throw new Error('Expected task handler');
+        const req = await createRequest(apiPayload, user);
+        const before = await payload.count({ collection: 'payload-jobs' });
+        const now = Date.now();
+        let clockCalls = 0;
+        const clock = vi
+          .spyOn(Date, 'now')
+          .mockImplementation(() => now + (clockCalls++ === 0 ? 0 : 26_000));
+        try {
+          await task.handler({
+            input: { runId: String(started.json.id) },
+            req,
+          } as Parameters<typeof task.handler>[0]);
+        } finally {
+          clock.mockRestore();
+        }
+        expect(
+          (await payload.count({ collection: 'payload-jobs' })).totalDocs
+        ).toBe(before.totalDocs + 1);
+        let progress = started.json;
+        for (let i = 0; i < 5 && progress.status !== 'done'; i += 1) {
+          const step = await call<StepResult>('/gt/runs/step', {
+            id: started.json.id,
+          });
+          expect(step.status).toBe(200);
+          progress = step.json.progress;
+        }
+        expect(progress).toMatchObject({
+          status: 'done',
+          failedDocuments: 0,
+          failedLocales: [],
+        });
+        expect((await read(page.id, 'es')).title).toBe('HOME');
+      } finally {
+        payload.config.jobs.access = jobsAccess;
+        payload.collections.users.config.access.read = userRead;
+      }
     });
 
-    expect(json.documents).toContainEqual({
-      target: { collection: 'pages', id: page.id },
-      title: 'Home',
-      label: 'Pages',
-      locales: { es: 'empty', fr: 'empty', de: 'empty' },
-    });
-    expect(json.totalPages).toBeGreaterThanOrEqual(1);
-  });
-
-  it('turns away coverage requests from signed-out users', async () => {
-    const { status } = await call('/gt/coverage', {}, false);
-
-    expect(status).toBe(401);
-  });
-
-  it('refuses to translate a document the user cannot update, before contacting GT', async () => {
-    const notice = await payload.create({
-      collection: 'notices',
-      locale: 'en',
-      data: { message: 'Closed today' },
-    });
-    LOCKED_OUT.add(String(user.email));
-    const before = gt.calls.uploadSourceFiles;
-    const { status } = await call('/gt/runs', {
-      targets: [{ collection: 'notices', id: notice.id }],
-      locales: ['es'],
-    });
-    LOCKED_OUT.delete(String(user.email));
-
-    expect(status).toBe(403);
-    expect(gt.calls.uploadSourceFiles).toBe(before);
-  });
-
-  it('refuses to translate a global the user cannot update', async () => {
-    await payload.updateGlobal({
-      slug: 'announcement',
-      locale: 'en',
-      data: { message: 'Closed today' },
-    });
-    LOCKED_OUT.add(String(user.email));
-    const { status } = await call('/gt/runs', {
-      targets: [{ global: 'announcement' }],
-      locales: ['es'],
-    });
-    LOCKED_OUT.delete(String(user.email));
-
-    expect(status).toBe(403);
-  });
-
-  it('leaves out of a site run what the user cannot update', async () => {
-    const notice = await payload.create({
-      collection: 'notices',
-      locale: 'en',
-      data: { message: 'Open late' },
-    });
-    LOCKED_OUT.add(String(user.email));
-    const { json } = await call<RunProgress>('/gt/runs', {
-      site: true,
-      locales: ['es'],
-    });
-    for (let i = 0; i < 50; i += 1) {
-      const step = (await call<StepResult>('/gt/runs/step', { id: json.id }))
-        .json;
-      if (step.progress.status === 'done') break;
-    }
-    LOCKED_OUT.delete(String(user.email));
-
-    const es = await payload.findByID({
-      collection: 'notices',
-      id: notice.id,
-      locale: 'es',
-      fallbackLocale: false,
-      depth: 0,
-    });
-    expect(es.message ?? null).toBeNull();
-  });
-
-  it('writes nothing for a run whose starter lost access before it finished', async () => {
-    const notice = await payload.create({
-      collection: 'notices',
-      locale: 'en',
-      data: { message: 'Back soon' },
-    });
-    const { json } = await call<RunProgress>('/gt/runs', {
-      targets: [{ collection: 'notices', id: notice.id }],
-      locales: ['es'],
-    });
-    await call('/gt/runs/step', { id: json.id });
-    LOCKED_OUT.add(String(user.email));
-    let progress = json;
-    for (let i = 0; i < 5 && progress.status !== 'done'; i += 1)
-      progress = (await call<StepResult>('/gt/runs/step', { id: json.id })).json
-        .progress;
-    LOCKED_OUT.delete(String(user.email));
-
-    expect(progress.failedLocales).toEqual(['es']);
-    const es = await payload.findByID({
-      collection: 'notices',
-      id: notice.id,
-      locale: 'es',
-      fallbackLocale: false,
-      depth: 0,
-    });
-    expect(es.message ?? null).toBeNull();
-  });
-
-  it("checks permission against the latest draft, as Payload's own update does", async () => {
-    const memo = await payload.create({
-      collection: 'memos',
-      locale: 'en',
-      data: { editable: false, note: 'Hello', _status: 'published' },
-    });
-    await payload.update({
-      collection: 'memos',
-      id: memo.id,
-      locale: 'en',
-      draft: true,
-      data: { editable: true },
-    });
-    const { status } = await call('/gt/runs', {
-      targets: [{ collection: 'memos', id: memo.id }],
-      locales: ['es'],
+    it('keeps run and lock collections inaccessible through normal access checks', async () => {
+      for (const collection of [
+        'gt-translation-runs',
+        'gt-translation-locks',
+      ]) {
+        const options = { collection, user, overrideAccess: false } as const;
+        await expect(payload.find(options)).rejects.toMatchObject({
+          status: 403,
+        });
+        await expect(
+          payload.create({ ...options, data: {} })
+        ).rejects.toMatchObject({ status: 403 });
+        await expect(
+          payload.update({ ...options, where: {}, data: {} })
+        ).rejects.toMatchObject({ status: 403 });
+        await expect(
+          payload.delete({ ...options, where: {} })
+        ).rejects.toMatchObject({ status: 403 });
+      }
+      expect((await call('/gt/runs/stale', {}, false)).status).toBe(401);
     });
 
-    expect(status).toBe(200);
-  });
+    it('refuses requests from someone who is not signed in', async () => {
+      const page = await createPage(payload);
+      const { status } = await call(
+        '/gt/runs',
+        { targets: [{ collection: 'pages', id: page.id }], locales: ['es'] },
+        false
+      );
 
-  it('lists in coverage the drafts the user can read', async () => {
-    const memo = await payload.create({
-      collection: 'memos',
-      locale: 'en',
-      data: { editable: false, note: 'Hi', _status: 'published' },
+      expect(status).toBe(401);
     });
-    await payload.update({
-      collection: 'memos',
-      id: memo.id,
-      locale: 'en',
-      draft: true,
-      data: { editable: true },
+
+    it('translates a document through a run stepped from the admin panel', async () => {
+      const page = await createPage(payload);
+      const started = await call<RunProgress>('/gt/runs', {
+        targets: [{ collection: 'pages', id: page.id }],
+        locales: ['es'],
+      });
+      expect(started.json).toMatchObject({
+        status: 'running',
+        total: 1,
+        done: 0,
+      });
+
+      let step: StepResult | undefined;
+      for (let i = 0; i < 5 && step?.progress.status !== 'done'; i += 1)
+        step = (
+          await call<StepResult>('/gt/runs/step', { id: started.json.id })
+        ).json;
+
+      expect(step?.progress).toMatchObject({
+        status: 'done',
+        total: 1,
+        done: 1,
+        failedLocales: [],
+      });
+      expect((await read(page.id, 'es')).title).toBe('HOME');
     });
-    const listed: unknown[] = [];
-    for (let page = 1; ; page += 1) {
+
+    it('starts a run over the whole site when asked', async () => {
+      await createPage(payload);
+      const { json } = await call<RunProgress>('/gt/runs', {
+        site: true,
+        locales: ['es'],
+      });
+
+      const pages = (await payload.find({ collection: 'pages', limit: 0 }))
+        .totalDocs;
+      expect(json.total).toBeGreaterThanOrEqual(pages);
+    });
+
+    it('saves local edits through a save run', async () => {
+      const page = await createPage(payload);
+      const target = { collection: 'pages', id: page.id };
+      const translated = await call<RunProgress>('/gt/runs', {
+        targets: [target],
+        locales: ['es'],
+      });
+      for (let i = 0; i < 5; i += 1)
+        await call('/gt/runs/step', { id: translated.json.id });
+      await payload.update({
+        collection: 'pages',
+        id: page.id,
+        locale: 'es',
+        draft: true,
+        data: { title: 'Inicio' },
+      });
+      const saved = await call<RunProgress>('/gt/runs', {
+        kind: 'save',
+        targets: [target],
+        locales: ['es'],
+      });
+      const step = await call<StepResult>('/gt/runs/step', {
+        id: saved.json.id,
+      });
+
+      expect(step.json.progress).toMatchObject({
+        kind: 'save',
+        status: 'done',
+        done: 1,
+      });
+      expect(gt.uploadedTranslations.at(-1)?.content).toContain('Inicio');
+    });
+
+    it('leaves out locales GT cannot translate into', async () => {
+      gt.unsupportedLocales.add('xx-not-a-locale');
+      const page = await createPage(payload);
+      const { json } = await call<RunProgress>('/gt/runs', {
+        targets: [{ collection: 'pages', id: page.id }],
+        locales: ['es', 'xx-not-a-locale'],
+      });
+      for (let i = 0; i < 5; i += 1)
+        await call('/gt/runs/step', { id: json.id });
+
+      expect((await read(page.id, 'es')).title).toBe('HOME');
+    });
+
+    it("reports a page of the site with each language's coverage", async () => {
+      const page = await createPage(payload);
       const { json } = await call<CoveragePage>('/gt/coverage', {
-        page,
+        page: 1,
         limit: 100,
       });
-      listed.push(...json.documents.map((d) => d.target));
-      if (page >= json.totalPages) break;
-    }
 
-    expect(listed).toContainEqual({ collection: 'memos', id: memo.id });
-  });
-
-  it('checks permission with the draft save translation makes, not the saved status', async () => {
-    const doc = await payload.create({
-      collection: 'gated',
-      locale: 'en',
-      data: { note: 'Hello', _status: 'published' },
-    });
-    const { status } = await call('/gt/runs', {
-      targets: [{ collection: 'gated', id: doc.id }],
-      locales: ['es'],
+      expect(json.documents).toContainEqual({
+        target: { collection: 'pages', id: page.id },
+        title: 'Home',
+        label: 'Pages',
+        locales: { es: 'empty', fr: 'empty', de: 'empty' },
+      });
+      expect(json.totalPages).toBeGreaterThanOrEqual(1);
     });
 
-    expect(status).toBe(200);
-  });
+    it('turns away coverage requests from signed-out users', async () => {
+      const { status } = await call('/gt/coverage', {}, false);
 
-  it('allows a document whose published version matches the rule though its draft does not', async () => {
-    const memo = await payload.create({
-      collection: 'memos',
-      locale: 'en',
-      data: { editable: true, note: 'Hello', _status: 'published' },
-    });
-    await payload.update({
-      collection: 'memos',
-      id: memo.id,
-      locale: 'en',
-      draft: true,
-      data: { editable: false },
-    });
-    const { status } = await call('/gt/runs', {
-      targets: [{ collection: 'memos', id: memo.id }],
-      locales: ['es'],
+      expect(status).toBe(401);
     });
 
-    expect(status).toBe(200);
-  });
+    it('refuses to translate a document the user cannot update, before contacting GT', async () => {
+      const notice = await payload.create({
+        collection: 'notices',
+        locale: 'en',
+        data: { message: 'Closed today' },
+      });
+      LOCKED_OUT.add(String(user.email));
+      const before = gt.calls.uploadSourceFiles;
+      const { status } = await call('/gt/runs', {
+        targets: [{ collection: 'notices', id: notice.id }],
+        locales: ['es'],
+      });
+      LOCKED_OUT.delete(String(user.email));
 
-  it('reports clearing removed text as failed when the starter can no longer read the document', async () => {
-    const notice = await payload.create({
-      collection: 'notices',
-      locale: 'en',
-      data: { message: 'Closed' },
+      expect(status).toBe(403);
+      expect(gt.calls.uploadSourceFiles).toBe(before);
     });
-    const target = { collection: 'notices', id: notice.id };
-    const translated = await call<RunProgress>('/gt/runs', {
-      targets: [target],
-      locales: ['es'],
-    });
-    for (let i = 0; i < 5; i += 1)
-      await call('/gt/runs/step', { id: translated.json.id });
-    await payload.update({
-      collection: 'notices',
-      id: notice.id,
-      locale: 'en',
-      data: { message: '' },
-    });
-    const { json } = await call<RunProgress>('/gt/runs', {
-      targets: [target],
-      locales: ['es'],
-    });
-    await call('/gt/runs/step', { id: json.id });
-    CANNOT_READ.add(String(user.email));
-    let progress = json;
-    for (let i = 0; i < 5 && progress.status !== 'done'; i += 1)
-      progress = (await call<StepResult>('/gt/runs/step', { id: json.id })).json
-        .progress;
-    CANNOT_READ.delete(String(user.email));
 
-    expect(progress.failedLocales).toEqual(['es']);
-  });
-});
+    it('refuses to translate a global the user cannot update', async () => {
+      await payload.updateGlobal({
+        slug: 'announcement',
+        locale: 'en',
+        data: { message: 'Closed today' },
+      });
+      LOCKED_OUT.add(String(user.email));
+      const { status } = await call('/gt/runs', {
+        targets: [{ global: 'announcement' }],
+        locales: ['es'],
+      });
+      LOCKED_OUT.delete(String(user.email));
+
+      expect(status).toBe(403);
+    });
+
+    it('leaves out of a site run what the user cannot update', async () => {
+      const notice = await payload.create({
+        collection: 'notices',
+        locale: 'en',
+        data: { message: 'Open late' },
+      });
+      LOCKED_OUT.add(String(user.email));
+      const { json } = await call<RunProgress>('/gt/runs', {
+        site: true,
+        locales: ['es'],
+      });
+      for (let i = 0; i < 50; i += 1) {
+        const step = (await call<StepResult>('/gt/runs/step', { id: json.id }))
+          .json;
+        if (step.progress.status === 'done') break;
+      }
+      LOCKED_OUT.delete(String(user.email));
+
+      const es = await payload.findByID({
+        collection: 'notices',
+        id: notice.id,
+        locale: 'es',
+        fallbackLocale: false,
+        depth: 0,
+      });
+      expect(es.message ?? null).toBeNull();
+    });
+
+    it('writes nothing for a run whose starter lost access before it finished', async () => {
+      const notice = await payload.create({
+        collection: 'notices',
+        locale: 'en',
+        data: { message: 'Back soon' },
+      });
+      const { json } = await call<RunProgress>('/gt/runs', {
+        targets: [{ collection: 'notices', id: notice.id }],
+        locales: ['es'],
+      });
+      await call('/gt/runs/step', { id: json.id });
+      LOCKED_OUT.add(String(user.email));
+      let progress = json;
+      for (let i = 0; i < 5 && progress.status !== 'done'; i += 1)
+        progress = (await call<StepResult>('/gt/runs/step', { id: json.id }))
+          .json.progress;
+      LOCKED_OUT.delete(String(user.email));
+
+      expect(progress.failedLocales).toEqual(['es']);
+      const es = await payload.findByID({
+        collection: 'notices',
+        id: notice.id,
+        locale: 'es',
+        fallbackLocale: false,
+        depth: 0,
+      });
+      expect(es.message ?? null).toBeNull();
+    });
+
+    it("checks permission against the latest draft, as Payload's own update does", async () => {
+      const memo = await payload.create({
+        collection: 'memos',
+        locale: 'en',
+        data: { editable: false, note: 'Hello', _status: 'published' },
+      });
+      await payload.update({
+        collection: 'memos',
+        id: memo.id,
+        locale: 'en',
+        draft: true,
+        data: { editable: true },
+      });
+      const { status } = await call('/gt/runs', {
+        targets: [{ collection: 'memos', id: memo.id }],
+        locales: ['es'],
+      });
+
+      expect(status).toBe(200);
+    });
+
+    it('lists in coverage the drafts the user can read', async () => {
+      const memo = await payload.create({
+        collection: 'memos',
+        locale: 'en',
+        data: { editable: false, note: 'Hi', _status: 'published' },
+      });
+      await payload.update({
+        collection: 'memos',
+        id: memo.id,
+        locale: 'en',
+        draft: true,
+        data: { editable: true },
+      });
+      const listed: unknown[] = [];
+      for (let page = 1; ; page += 1) {
+        const { json } = await call<CoveragePage>('/gt/coverage', {
+          page,
+          limit: 100,
+        });
+        listed.push(...json.documents.map((d) => d.target));
+        if (page >= json.totalPages) break;
+      }
+
+      expect(listed).toContainEqual({ collection: 'memos', id: memo.id });
+    });
+
+    it('checks permission with the draft save translation makes, not the saved status', async () => {
+      const doc = await payload.create({
+        collection: 'gated',
+        locale: 'en',
+        data: { note: 'Hello', _status: 'published' },
+      });
+      const { status } = await call('/gt/runs', {
+        targets: [{ collection: 'gated', id: doc.id }],
+        locales: ['es'],
+      });
+
+      expect(status).toBe(200);
+    });
+
+    it('allows a document whose published version matches the rule though its draft does not', async () => {
+      const memo = await payload.create({
+        collection: 'memos',
+        locale: 'en',
+        data: { editable: true, note: 'Hello', _status: 'published' },
+      });
+      await payload.update({
+        collection: 'memos',
+        id: memo.id,
+        locale: 'en',
+        draft: true,
+        data: { editable: false },
+      });
+      const { status } = await call('/gt/runs', {
+        targets: [{ collection: 'memos', id: memo.id }],
+        locales: ['es'],
+      });
+
+      expect(status).toBe(200);
+    });
+
+    it('reports clearing removed text as failed when the starter can no longer read the document', async () => {
+      const notice = await payload.create({
+        collection: 'notices',
+        locale: 'en',
+        data: { message: 'Closed' },
+      });
+      const target = { collection: 'notices', id: notice.id };
+      const translated = await call<RunProgress>('/gt/runs', {
+        targets: [target],
+        locales: ['es'],
+      });
+      for (let i = 0; i < 5; i += 1)
+        await call('/gt/runs/step', { id: translated.json.id });
+      await payload.update({
+        collection: 'notices',
+        id: notice.id,
+        locale: 'en',
+        data: { message: '' },
+      });
+      const { json } = await call<RunProgress>('/gt/runs', {
+        targets: [target],
+        locales: ['es'],
+      });
+      await call('/gt/runs/step', { id: json.id });
+      CANNOT_READ.add(String(user.email));
+      let progress = json;
+      for (let i = 0; i < 5 && progress.status !== 'done'; i += 1)
+        progress = (await call<StepResult>('/gt/runs/step', { id: json.id }))
+          .json.progress;
+      CANNOT_READ.delete(String(user.email));
+
+      expect(progress.failedLocales).toEqual(['es']);
+    });
+  }
+);

@@ -120,9 +120,12 @@ const progressOf = (run: Run): RunProgress => ({
   skippedStrings: run.skippedStrings ?? 0,
 });
 
+// Private bookkeeping is trusted server work. Explicitly bypass its deny-all
+// collection rules on both majors; document access is checked separately.
 const readRun = async (payload: Payload, id: string | number) =>
   (await payload.findByID({
     collection: RUNS_SLUG,
+    overrideAccess: true,
     id,
     depth: 0,
   })) as unknown as Run;
@@ -130,6 +133,7 @@ const readRun = async (payload: Payload, id: string | number) =>
 const updateRun = (payload: Payload, id: string | number, data: Partial<Run>) =>
   payload.update({
     collection: RUNS_SLUG,
+    overrideAccess: true,
     id,
     data: data as Record<string, unknown>,
     depth: 0,
@@ -192,7 +196,10 @@ async function userOf(
 ): Promise<PayloadUser | undefined> {
   if (!run.startedBy) return undefined;
   const user = await payload.findByID({
+    // Reload the starter as trusted bookkeeping; content operations below
+    // still enforce the refreshed user's current access rules.
     collection: run.startedBy.collection,
+    overrideAccess: true,
     id: run.startedBy.id,
     depth: 0,
   });
@@ -222,6 +229,7 @@ export async function startRun({
     targets === 'site' ? await listSiteTargets(payload, { user }) : targets;
   const run = (await payload.create({
     collection: RUNS_SLUG,
+    overrideAccess: true,
     data: {
       kind,
       status: pending.length ? 'running' : 'done',
@@ -241,6 +249,7 @@ export async function startRun({
   })) as unknown as Run;
   if (pending.length)
     await payload.jobs.queue({
+      overrideAccess: true,
       task: RUN_TASK,
       input: { runId: String(run.id) },
     });
@@ -444,6 +453,7 @@ async function stepHeld(
 export async function staleRuns(payload: Payload): Promise<RunProgress[]> {
   const result = await payload.find({
     collection: RUNS_SLUG,
+    overrideAccess: true,
     where: {
       and: [
         { status: { equals: 'running' } },
@@ -487,6 +497,7 @@ export function runTask(
         if (!step.progressed) await wait(JOB_WAIT_MS);
       } while (Date.now() < until);
       await payload.jobs.queue({
+        overrideAccess: true,
         task: RUN_TASK,
         input: { runId: input.runId },
       });

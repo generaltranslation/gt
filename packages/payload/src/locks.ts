@@ -46,6 +46,8 @@ export async function acquireLock(
   try {
     await payload.create({
       collection: LOCKS_SLUG,
+      // Only this internal helper may create private lock records.
+      overrideAccess: true,
       data: { key, token, expiresAt: new Date(now + ttlMs).toISOString() },
       depth: 0,
     });
