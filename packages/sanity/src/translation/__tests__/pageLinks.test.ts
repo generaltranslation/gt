@@ -8,16 +8,24 @@ type Doc = Record<string, unknown> & { _id: string; _type: string };
 
 const config: PageLinksConfig = { baseUrl: 'https://staging.acme.test' };
 
-/** Answers queries with Sanity's own GROQ engine over an in-memory dataset. */
+const isPublished = (doc: Doc) =>
+  !doc._id.startsWith('drafts.') && !doc._id.startsWith('versions.');
+
+/**
+ * Answers queries with Sanity's own GROQ engine over an in-memory dataset.
+ * groq-js has no perspectives, so the published perspective sees the dataset without drafts and release versions.
+ */
 function clientFor(dataset: Doc[]) {
   const queries: string[] = [];
-  const client = {
+  const over = (docs: Doc[]) => ({
     fetch: async (query: string, params: Record<string, unknown>) => {
       queries.push(query);
-      return (await evaluate(parse(query), { dataset, params })).get();
+      return (await evaluate(parse(query), { dataset: docs, params })).get();
     },
-  } as unknown as SanityClient;
-  return { client, queries };
+    withConfig: ({ perspective }: { perspective?: string }) =>
+      over(perspective === 'published' ? docs.filter(isPublished) : docs),
+  });
+  return { client: over(dataset) as unknown as SanityClient, queries };
 }
 
 const page = (id: string, slug: string, extra: Partial<Doc> = {}): Doc => ({
@@ -143,6 +151,7 @@ describe('collectPageLinks', () => {
       { _id: 'form', _type: 'gatedForm' },
       page('video', 'resources/videos/red-teaming', { gate: ref('form') }),
       page('drafts.webinar', 'webinar', { gate: ref('form') }),
+      page('versions.launch.event', 'event', { gate: ref('form') }),
       page('video-es', 'resources/videos/red-teaming', {
         language: 'es',
         gate: ref('form'),
@@ -157,24 +166,11 @@ describe('collectPageLinks', () => {
     ]);
   });
 
-  test('follows a referrer without a page up to its page', async () => {
+  test('links only pages that reference the document directly', async () => {
     const dataset = [
       { _id: 'form', _type: 'gatedForm' },
       { _id: 'section', _type: 'section', form: ref('form') },
       page('home', 'home', { sections: [{ _key: 'a', ...ref('section') }] }),
-    ];
-
-    expect(await linksOf(dataset, 'form')).toEqual([
-      { locale: 'en', href: 'https://staging.acme.test/home' },
-    ]);
-  });
-
-  test('stops two levels above the document', async () => {
-    const dataset = [
-      { _id: 'form', _type: 'gatedForm' },
-      { _id: 'section', _type: 'section', form: ref('form') },
-      { _id: 'module', _type: 'module', section: ref('section') },
-      page('home', 'home', { module: ref('module') }),
     ];
 
     expect(await linksOf(dataset, 'form')).toEqual([]);
@@ -270,7 +266,7 @@ describe('collectPageLinks', () => {
     ]);
   });
 
-  test('queries per locale and level, not per document', async () => {
+  test('queries per locale, not per document', async () => {
     pluginConfig.locales = ['es', 'fr'];
     const forms = Array.from({ length: 5 }, (_, index) => ({
       _id: `form${index}`,
@@ -278,8 +274,7 @@ describe('collectPageLinks', () => {
     }));
     const dataset = [
       ...forms,
-      { _id: 'section', _type: 'section', forms: forms.map((f) => ref(f._id)) },
-      page('home', 'home', { section: ref('section') }),
+      page('home', 'home', { forms: forms.map((form) => ref(form._id)) }),
     ];
     const { client, queries } = clientFor(dataset);
 
@@ -291,7 +286,7 @@ describe('collectPageLinks', () => {
     expect(links.get('form4')).toEqual([
       { locale: 'en', href: 'https://staging.acme.test/home' },
     ]);
-    // sources, translations, then two levels of referrers for the source locale
-    expect(queries).toHaveLength(4);
+    // sources, translations, then referrers for the source locale
+    expect(queries).toHaveLength(3);
   });
 });
