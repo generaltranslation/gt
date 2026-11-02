@@ -5,7 +5,7 @@ import {
   customSerializers,
 } from '../BaseSerializationConfig';
 import { ObjectField, SanityDocument, TypedObject, Schema } from 'sanity';
-import { TranslationLevel } from '../types';
+import { PageLink, TranslationLevel } from '../types';
 import {
   fieldFilter,
   isFieldExcludedFromTranslation,
@@ -355,7 +355,8 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
     translationLevel: TranslationLevel = 'document',
     baseLang: string = libraryDefaultLocale,
     stopTypes = defaultStopTypes,
-    serializers = customSerializers
+    serializers = customSerializers,
+    pageLinks: PageLink[] = []
   ) => {
     const schema = getSchema(doc._type);
     let filteredObj: Record<string, unknown> = {};
@@ -400,6 +401,13 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
     versionMeta.setAttribute('name', 'version');
     versionMeta.setAttribute('content', '3');
     rawHTMLHead.appendChild(versionMeta);
+    pageLinks.forEach(({ locale, href }) => {
+      const linkEl = document.createElement('link');
+      linkEl.setAttribute('rel', 'alternate');
+      linkEl.setAttribute('hreflang', locale);
+      linkEl.setAttribute('href', href);
+      rawHTMLHead.appendChild(linkEl);
+    });
 
     const rawHTML = document.createElement('html');
     rawHTML.appendChild(rawHTMLHead);

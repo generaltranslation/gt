@@ -21,6 +21,7 @@ import {
 import { api, overrideConfig, pluginConfig } from '../adapter/core';
 import { getTranslationStrategy } from '../translation/strategy';
 import { uploadFiles } from '../translation/uploadFiles';
+import { collectPageLinks } from '../translation/pageLinks';
 import { initProject } from '../translation/initProject';
 import { createJobs } from '../translation/createJobs';
 import { captureExistingTranslations } from '../translation/captureExistingTranslations';
@@ -68,6 +69,7 @@ import type {
   TranslationPreferences,
   TranslationStatus,
 } from '../adapter/types';
+import type { PageLink } from '../serialization/types';
 import {
   createStableTranslationKey,
   createTranslationStatusKey,
@@ -598,7 +600,7 @@ const TranslationsProviderContent: React.FC<
   }, [documents, locales, client, hasNonDefaultSource]);
 
   const serializeSourceDocuments = useCallback(
-    (sourceDocuments: SanityDocument[] = documents) =>
+    (sourceDocuments: SanityDocument[], pageLinks: Map<string, PageLink[]>) =>
       sourceDocuments
         .map((doc) => {
           const { [pluginConfig.getLanguageField()]: _, ...cleanDoc } = doc;
@@ -623,7 +625,8 @@ const TranslationsProviderContent: React.FC<
               serializedDocument: strategy.serialize(
                 cleanDoc as typeof doc,
                 schema,
-                baseLanguage
+                baseLanguage,
+                pageLinks.get(getDocumentPublishedId(doc))
               ),
             };
           } catch (error) {
@@ -693,6 +696,25 @@ const TranslationsProviderContent: React.FC<
     [client, singleDocument, toast]
   );
 
+  // Page links help reviewers but are not needed to translate, so a failure warns and uploads without them.
+  const collectSourcePageLinks = useCallback(
+    async (sourceDocuments: SanityDocument[]) => {
+      try {
+        return await collectPageLinks(sourceDocuments, client);
+      } catch (error) {
+        console.error('Could not resolve page links.', error);
+        toast.push({
+          title:
+            'Page links could not be resolved. Translation is continuing without them.',
+          status: 'warning',
+          closable: true,
+        });
+        return new Map<string, PageLink[]>();
+      }
+    },
+    [client, toast]
+  );
+
   const handleTranslateAll = useCallback(
     async ({ force = false }: TranslateAllOptions = {}) => {
       if (!secrets || documents.length === 0) return;
@@ -746,7 +768,10 @@ const TranslationsProviderContent: React.FC<
           }
         }
 
-        const transformedDocuments = serializeSourceDocuments(sourceDocuments);
+        const transformedDocuments = serializeSourceDocuments(
+          sourceDocuments,
+          await collectSourcePageLinks(sourceDocuments)
+        );
 
         // A document is never translated into its own language. Without
         // `allowNonDefaultSourceLocales`, every document is translated into
@@ -872,6 +897,7 @@ const TranslationsProviderContent: React.FC<
       branchId,
       preserveExistingTranslations,
       serializeSourceDocuments,
+      collectSourcePageLinks,
       uploadedVersions,
       uploadedVersionsStorageKey,
       allowNonDefault,
@@ -912,7 +938,10 @@ const TranslationsProviderContent: React.FC<
         if (!uploadable) return;
         sourceDocuments = uploadable;
       }
-      const transformedDocuments = serializeSourceDocuments(sourceDocuments);
+      const transformedDocuments = serializeSourceDocuments(
+        sourceDocuments,
+        await collectSourcePageLinks(sourceDocuments)
+      );
 
       // Seed the source files first. uploadTranslations requires the source to
       // exist, and this action exists for projects whose translations predate
@@ -964,6 +993,7 @@ const TranslationsProviderContent: React.FC<
     allowNonDefault,
     getDefaultSourceDocuments,
     getUploadableSources,
+    collectSourcePageLinks,
   ]);
 
   const handleImportAll = useCallback(async () => {

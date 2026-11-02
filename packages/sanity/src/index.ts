@@ -27,6 +27,7 @@ import './schema/schemaOptions';
 import TranslationsTool from './components/page/TranslationsTool';
 import { documentInternationalization } from './documentInternationalization';
 import type { CustomDeserializers } from './serialization/types';
+import type { PageLinksConfig } from './translation/pageLinks';
 import { resolveTargetLocales } from './utils/locales';
 import { SECRETS_NAMESPACE } from './utils/shared';
 
@@ -73,6 +74,7 @@ export type {
   TranslationsTabConfigOptions,
 } from './types';
 export type { SerializedDocument } from './serialization/types';
+export type { PageLinksConfig } from './translation/pageLinks';
 
 // ===== Field-Level (Internationalized Array) Localization ===== //
 // gt-sanity configures the reference plugin rather than shipping its own UI;
@@ -175,6 +177,9 @@ export type GTPluginConfig = Omit<
   // is the one automatic action that puts content in front of readers and
   // cannot be undone by turning the switch back off.
   autoPublish?: boolean;
+  // Declares the pages each document is shown on in the files sent to
+  // General Translation, so reviewers can open a string where it lives.
+  pageLinks?: PageLinksConfig;
 };
 
 /**
@@ -221,6 +226,7 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
     autoPatchReferences = DEFAULT_TRANSLATION_PREFERENCES.autoPatchReferences,
     autoPublish = DEFAULT_TRANSLATION_PREFERENCES.autoPublish,
     allowNonDefaultSourceLocales = false,
+    pageLinks,
   }) => {
     // Resolve sourceLocale: explicit sourceLocale > defaultLocale (from gt.config.json) > library default
     const resolvedSourceLocale =
@@ -275,7 +281,8 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
         autoPublish,
         preserveExistingTranslations,
       },
-      allowNonDefaultSourceLocales
+      allowNonDefaultSourceLocales,
+      pageLinks ?? null
     );
     gt.setConfig({
       sourceLocale: resolvedSourceLocale,

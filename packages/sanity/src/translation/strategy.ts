@@ -3,6 +3,7 @@ import { pluginConfig } from '../adapter/core';
 import { documentLevelPatch } from '../configuration/baseDocumentLevelConfig/documentLevelPatch';
 import { internationalizedArrayPatch } from '../configuration/internationalizedArrayConfig/internationalizedArrayPatch';
 import type {
+  PageLink,
   SerializedDocument,
   TranslationLevel,
 } from '../serialization/types';
@@ -20,7 +21,8 @@ export type SanityTranslationAdapter = {
   serialize: (
     document: SanityDocument,
     schema: Schema,
-    baseLanguage: string
+    baseLanguage: string,
+    pageLinks?: PageLink[]
   ) => SerializedDocument;
   patch: (
     docInfo: GTFile,
@@ -33,8 +35,8 @@ export type SanityTranslationAdapter = {
 
 const documentAdapter: SanityTranslationAdapter = {
   level: 'document',
-  serialize: (document, schema, baseLanguage) =>
-    serializeDocument(document, schema, baseLanguage, 'document'),
+  serialize: (document, schema, baseLanguage, pageLinks) =>
+    serializeDocument(document, schema, baseLanguage, 'document', pageLinks),
   patch: (docInfo, deserialized, localeId, client, mergeWithTargetLocale) =>
     documentLevelPatch(
       docInfo,
@@ -48,8 +50,14 @@ const documentAdapter: SanityTranslationAdapter = {
 
 const internationalizedArrayAdapter: SanityTranslationAdapter = {
   level: 'internationalizedArray',
-  serialize: (document, schema, baseLanguage) =>
-    serializeDocument(document, schema, baseLanguage, 'internationalizedArray'),
+  serialize: (document, schema, baseLanguage, pageLinks) =>
+    serializeDocument(
+      document,
+      schema,
+      baseLanguage,
+      'internationalizedArray',
+      pageLinks
+    ),
   patch: (docInfo, deserialized, localeId, client) =>
     internationalizedArrayPatch(docInfo, deserialized, localeId, client),
 };

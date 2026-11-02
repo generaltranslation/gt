@@ -14,6 +14,12 @@ export type SerializedDocument = {
   content: string;
 };
 
+/** A page a document is shown on, written into the head as `<link rel="alternate" hreflang href>`. */
+export type PageLink = {
+  locale: string;
+  href: string;
+};
+
 // 'document'  – translate the whole document (creates per-locale documents).
 // 'field'     – legacy object-keyed model (e.g. `title: { en, es_ES }`).
 // 'internationalizedArray' – sanity-plugin-internationalized-array shape:

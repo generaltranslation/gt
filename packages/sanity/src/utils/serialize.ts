@@ -15,6 +15,7 @@ import type { FieldMatcher } from '../adapter/types';
 import { getPublishedId } from './documentIds';
 import type {
   CustomDeserializers,
+  PageLink,
   TranslationLevel,
 } from '../serialization/types';
 import { collapseToSourceLocale } from '../serialization/internationalizedArray/collapse';
@@ -41,7 +42,8 @@ export function serializeDocument(
   document: SanityDocument,
   schema: Schema,
   baseLanguage: string,
-  level: TranslationLevel = 'document'
+  level: TranslationLevel = 'document',
+  pageLinks: PageLink[] = []
 ) {
   const stopTypes = [
     ...defaultStopTypes,
@@ -75,7 +77,8 @@ export function serializeDocument(
     innerLevel,
     baseLanguage,
     stopTypes,
-    serializers
+    serializers,
+    pageLinks
   );
   return serialized;
 }

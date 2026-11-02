@@ -1,6 +1,7 @@
 import { PortableTextBlock } from 'sanity';
 import { describe, expect, test, vi } from 'vitest';
 import { BaseDocumentSerializer } from '../../serialize/index';
+import { BaseDocumentDeserializer } from '../../deserialize/BaseDocumentDeserializer';
 import { detachGTData } from '../../data';
 import {
   customSerializers,
@@ -58,6 +59,48 @@ describe('Has all required metadata', () => {
     );
     const version = typeMetaTag?.getAttribute('content');
     expect(version).toEqual('3');
+  });
+});
+
+describe('Page links', () => {
+  const pageLinks = [
+    { locale: 'en', href: 'https://staging.acme.test/article' },
+    { locale: 'es', href: 'https://staging.acme.test/es/articulo' },
+  ];
+  const serialized = BaseDocumentSerializer(schema).serializeDocument(
+    documentLevelArticle,
+    'document',
+    'en',
+    defaultStopTypes,
+    customSerializers,
+    pageLinks
+  );
+
+  test('declares each page as an alternate link after the metadata', () => {
+    const head = Array.from(getHTMLNode(serialized).head.children);
+
+    expect(
+      head
+        .filter((element) => element.tagName === 'LINK')
+        .map((link) => ({
+          rel: link.getAttribute('rel'),
+          locale: link.getAttribute('hreflang'),
+          href: link.getAttribute('href'),
+        }))
+    ).toEqual(pageLinks.map((link) => ({ rel: 'alternate', ...link })));
+    expect(head.at(-1)?.tagName).toBe('LINK');
+  });
+
+  // The test setup numbers span keys in call order, so they differ between two imports.
+  const imported = (content: string) =>
+    JSON.stringify(
+      BaseDocumentDeserializer.deserializeDocument(content)
+    ).replace(/randomKey-\d+/g, 'randomKey');
+
+  test('do not change the imported document', () => {
+    expect(imported(serialized.content)).toBe(
+      imported(getSerialized(documentLevelArticle, 'document').content)
+    );
   });
 });
 
