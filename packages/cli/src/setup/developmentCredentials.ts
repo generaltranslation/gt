@@ -10,7 +10,11 @@ import { logger } from '../console/logger.js';
 import { promptConfirm, promptSelect, promptText } from '../console/logging.js';
 import type { Settings, SupportedFrameworks } from '../types/index.js';
 import { api } from '../utils/api.js';
-import { setCredentials } from '../utils/credentials.js';
+import {
+  findLegacyDevelopmentKey,
+  getCredentialsEnvFileName,
+  setCredentials,
+} from '../utils/credentials.js';
 import { envFiles } from '../utils/loadEnv.js';
 import { createUserAuthError } from '../auth/errors.js';
 import { loginInteractively } from '../auth/interactiveLogin.js';
@@ -18,7 +22,17 @@ import { OnboardingError, type OnboardingSession } from './onboarding.js';
 
 const DEVELOPMENT_KEY_NAME = 'Development key (gt init)';
 
-/** .env.local never reaches production; the runtime key there is set on the host. */
+function legacyDevelopmentKeyWarning(name: string, envFileName: string) {
+  return createDiagnosticMessage({
+    source: 'gt',
+    severity: 'Warning',
+    whatHappened: `.env.local still sets ${name}`,
+    why: 'next build loads .env.local, and gt-next rejects a development key in production builds',
+    fix: `Remove ${name} from .env.local; the new key is in ${envFileName}`,
+  });
+}
+
+/** The development env file never reaches production; the runtime key there is set on the host. */
 export function productionRuntimeKeyGuidance(dashboardUrl: string): string {
   return `${chalk.dim('For runtime translation in production, create an API key in the dashboard')} ${chalk.cyan(dashboardUrl)} ${chalk.dim('and set GT_API_KEY and GT_PROJECT_ID in your hosting environment.')}`;
 }
@@ -249,8 +263,8 @@ export async function resolveDevelopmentProject(
 
 /**
  * Creates the chosen project if needed, mints a development key limited to
- * runtime translation, and saves both to .env.local. Callers inspect
- * .env.local first; the key is never printed.
+ * runtime translation, and saves both to the framework's env file. Callers
+ * inspect that file first; the key is never printed.
  */
 export async function provisionDevelopmentCredentials(
   session: OnboardingSession,
@@ -292,11 +306,16 @@ export async function provisionDevelopmentCredentials(
     );
   session.step('created a development key');
   await setCredentials({ projectId, apiKey: apiKey.key }, framework, cwd);
-  session.step('saved development credentials to .env.local');
+  const envFileName = getCredentialsEnvFileName(framework);
+  session.step(`saved development credentials to ${envFileName}`);
   const projectLabel = projectName
     ? `${projectName} (${projectId})`
     : projectId;
   logger.success(
-    `Created development key "${apiKey.name}" for project ${projectLabel} and saved both to ${chalk.cyan('.env.local')}.`
+    `Created development key "${apiKey.name}" for project ${projectLabel} and saved both to ${chalk.cyan(envFileName)}.`
   );
+  const legacyKey = await findLegacyDevelopmentKey(framework, cwd);
+  if (legacyKey) {
+    logger.warn(legacyDevelopmentKeyWarning(legacyKey, envFileName));
+  }
 }

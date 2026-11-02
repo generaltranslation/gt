@@ -389,7 +389,7 @@ describe('init and configure onboarding', () => {
       framework: 'next-pages',
       files: { gt: { output: path.join('public/_gt', '[locale].json') } },
     });
-    expect(fs.readFileSync(file('.env.local'), 'utf8')).toBe(
+    expect(fs.readFileSync(file('.env.development.local'), 'utf8')).toBe(
       `NEXT_PUBLIC_GT_PROJECT_ID=p1\nNEXT_PUBLIC_GT_DEV_API_KEY=${SECRET_KEY}\n`
     );
     expect(installPackage).not.toHaveBeenCalled();
@@ -719,7 +719,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     await run(...args, '--project-id', 'p1');
 
     const envFile = `NEXT_PUBLIC_GT_PROJECT_ID=p1\nNEXT_PUBLIC_GT_DEV_API_KEY=${SECRET_KEY}\n`;
-    expect(fs.readFileSync(file('.env.local'), 'utf8')).toBe(envFile);
+    expect(fs.readFileSync(file('.env.development.local'), 'utf8')).toBe(
+      envFile
+    );
     expect(api.createProjectApiKey).toHaveBeenCalledTimes(1);
     vi.stubEnv('NEXT_PUBLIC_GT_PROJECT_ID', 'p1');
     vi.stubEnv('NEXT_PUBLIC_GT_DEV_API_KEY', SECRET_KEY);
@@ -732,7 +734,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 
     expect(api.createProjectApiKey).toHaveBeenCalledTimes(1);
     expect(hasLogin).not.toHaveBeenCalled();
-    expect(fs.readFileSync(file('.env.local'), 'utf8')).toBe(envFile);
+    expect(fs.readFileSync(file('.env.development.local'), 'utf8')).toBe(
+      envFile
+    );
     expect(events().at(-1)).toMatchObject({ outcome: 'success' });
   });
 
@@ -1157,7 +1161,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         'p1'
       );
       expect(readConfig().framework).toBe('next-pages');
-      expect(fs.readFileSync(file('.env.local'), 'utf8')).toContain(
+      expect(fs.readFileSync(file('.env.development.local'), 'utf8')).toContain(
         'NEXT_PUBLIC_GT_PROJECT_ID=p1\n'
       );
     });

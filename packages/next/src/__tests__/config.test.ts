@@ -1252,6 +1252,9 @@ describe('withGTConfig', () => {
         process.env[name] = 'gtx-development-key';
 
         expect(() => withGTConfig()).toThrow(/development API key/i);
+        expect(() => withGTConfig()).toThrow(
+          `${name} is set. Next.js loads .env.local for next build too, so move ${name} to .env.development.local`
+        );
       }
     );
 

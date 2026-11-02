@@ -124,7 +124,7 @@ export function attachConfigureFlags(
     .addOption(
       new Option(
         '--dev-credentials',
-        'Save a project ID and a new development key to .env.local'
+        'Save a project ID and a new development key to .env.local (.env.development.local for Next.js)'
       ).conflicts('liveTranslations')
     )
     .option('--no-dev-credentials', 'Do not create development credentials')

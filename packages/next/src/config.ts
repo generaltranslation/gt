@@ -15,7 +15,7 @@ import {
   createBadFilepathWarning,
   createGTCompilerUnresolvedWarning,
   createNextI18nConfigMismatchWarning,
-  devApiKeyIncludedInProductionError,
+  createDevApiKeyIncludedInProductionError,
   invalidCanonicalLocalesError,
   invalidLocalesError,
   projectIdMissingWarn,
@@ -47,7 +47,10 @@ import {
   cacheComponentsDevHotReloadDisabledWarning,
   cacheComponentsMissingLoadTranslationsError,
 } from './errors/cacheComponents';
-import { getRuntimeCredentials } from './setup/runtimeCredentials';
+import {
+  getDevApiKeyEnvVariable,
+  getRuntimeCredentials,
+} from './setup/runtimeCredentials';
 import { nextLocaleCookieName } from './utils/cookies';
 import { splitMiddlewareConfig } from './middleware-dir/defaultMiddlewareConfig';
 
@@ -623,7 +626,11 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
 
   // Check: dev API key should not be included in production
   if (process.env.NODE_ENV === 'production' && mergedConfig.devApiKey) {
-    throw new Error(devApiKeyIncludedInProductionError);
+    throw new Error(
+      createDevApiKeyIncludedInProductionError(
+        getDevApiKeyEnvVariable(mergedConfig.devApiKey)
+      )
+    );
   }
 
   // Check: An API key is required for runtime translation

@@ -56,6 +56,7 @@ import { getDesiredLocales } from '../setup/userInput.js';
 import {
   areCredentialsSet,
   getDevelopmentEnvNames,
+  getCredentialsEnvFileName,
   inspectCredentialsEnvFile,
 } from '../utils/credentials.js';
 import {
@@ -1361,6 +1362,7 @@ See https://www.npmjs.com/package/gt-vue`);
 
     const envFramework =
       setup.framework ?? getConfiguredFramework(existingConfig);
+    const credentialsEnvFile = getCredentialsEnvFileName(envFramework);
     // The effective project: an explicit ID replaces a configured one. The
     // framework's runtime project outranks a stale generic GT_PROJECT_ID.
     const projectId =
@@ -1416,7 +1418,7 @@ See https://www.npmjs.com/package/gt-vue`);
       (storage === 'local' && buildTool?.devCredentialsOption) ||
       '--dev-credentials';
     // Creating credentials talks to GT as the signed-in user unless an API
-    // key is set. A development key in .env.local never stands in. An
+    // key is set. A development key in the env file never stands in. An
     // obsolete stored login counts as signed out, so signing in replaces it.
     const canAuthenticate = async () =>
       Boolean(settings.apiKey) ||
@@ -1448,18 +1450,18 @@ See https://www.npmjs.com/package/gt-vue`);
             ask: async () =>
               promptConfirm({
                 message: (await canAuthenticate())
-                  ? 'Would you like to set up a project ID and hot-reload key in .env.local?'
-                  : 'Would you like to sign in to General Translation and set up a project ID and hot-reload key in .env.local?',
+                  ? `Would you like to set up a project ID and hot-reload key in ${credentialsEnvFile}?`
+                  : `Would you like to sign in to General Translation and set up a project ID and hot-reload key in ${credentialsEnvFile}?`,
                 defaultValue: true,
               }),
           })) === true;
     if (!runtimeProjectMatches && !provision) {
       session.reject(
-        `The runtime credentials in the environment belong to project ${runtimeProjectId}, not ${settings.projectId}; pass --dev-credentials to replace them in .env.local`
+        `The runtime credentials in the environment belong to project ${runtimeProjectId}, not ${settings.projectId}; pass --dev-credentials to replace them in ${credentialsEnvFile}`
       );
     }
     // An explicit ID is saved to gt.config.json when it replaces a
-    // configured one or no new credentials will record it in .env.local.
+    // configured one or no new credentials will record it in the env file.
     if (options.projectId && (existingConfig.projectId || !provision)) {
       configUpdate.projectId = options.projectId;
     }
@@ -1477,7 +1479,7 @@ See https://www.npmjs.com/package/gt-vue`);
             : 'the environment'
       );
       await withCredentialsError(() =>
-        inspectCredentialsEnvFile(cwd, { framework: envFramework })
+        inspectCredentialsEnvFile(cwd, envFramework, { checkContent: true })
       );
     }
 
