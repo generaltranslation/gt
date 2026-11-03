@@ -610,6 +610,172 @@ describe('Client_GTProvider', () => {
     }
   });
 
+  it.each([false, true])(
+    'navigates through dynamic path aliases (supported: %s)',
+    async (supportsLocaleRefresh) => {
+      process.env._GENERALTRANSLATION_PATH_REGEX = '.*';
+      process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS =
+        JSON.stringify({
+          pathConfig: {
+            '/blog/[slug]': { fr: '/article/[slug]', de: '/beitrag/[slug]' },
+          },
+        });
+      mockPathname.mockReturnValue('/fr/article/hello');
+      vi.stubGlobal('location', {
+        assign: mockAssign,
+        hash: '',
+        pathname: '/fr/article/hello',
+        reload: mockReloadBrowserPage,
+        search: '',
+      });
+      mockGetI18nConfig.mockReturnValue({
+        determineLocale: ([locale]: string[]) => locale,
+        getDefaultLocale: () => 'en',
+        getLocales: () => ['en', 'de', 'fr'],
+      });
+      const { Client_GTProvider } = await import('../client-boundary');
+      const root = createRoot(document.createElement('div'));
+      try {
+        await act(async () =>
+          root.render(
+            <Client_GTProvider
+              supportsLocaleRefresh={supportsLocaleRefresh}
+              dictionaries={{}}
+              locale='fr'
+              translations={{}}
+            >
+              content
+            </Client_GTProvider>
+          )
+        );
+        const providerProps = mockGTProvider.mock.calls.at(-1)?.[0];
+        providerProps._reload({
+          locale: 'de',
+          region: undefined,
+          enableI18n: true,
+        });
+
+        // The dynamic alias keeps its param: /fr/article/hello becomes the
+        // German alias /de/beitrag/hello, not /de/article/hello.
+        expect(mockAssign).toHaveBeenCalledOnce();
+        expect(mockAssign).toHaveBeenCalledWith('/de/beitrag/hello');
+      } finally {
+        delete process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS;
+        await act(async () => root.unmount());
+      }
+    }
+  );
+
+  it('resolves dynamic aliases under a nested basePath', async () => {
+    process.env._GENERALTRANSLATION_PATH_REGEX = '.*';
+    process.env.NEXT_PUBLIC_BASE_PATH = '/docs';
+    process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS =
+      JSON.stringify({
+        pathConfig: {
+          '/blog/[slug]': { fr: '/article/[slug]', de: '/beitrag/[slug]' },
+        },
+      });
+    mockPathname.mockReturnValue('/docs/fr/article/hello');
+    vi.stubGlobal('location', {
+      assign: mockAssign,
+      hash: '',
+      pathname: '/docs/fr/article/hello',
+      reload: mockReloadBrowserPage,
+      search: '?ref=docs',
+    });
+    mockGetI18nConfig.mockReturnValue({
+      determineLocale: ([locale]: string[]) => locale,
+      getDefaultLocale: () => 'en',
+      getLocales: () => ['en', 'de', 'fr'],
+    });
+    const { Client_GTProvider } = await import('../client-boundary');
+    const root = createRoot(document.createElement('div'));
+    try {
+      await act(async () =>
+        root.render(
+          <Client_GTProvider
+            supportsLocaleRefresh={false}
+            dictionaries={{}}
+            locale='fr'
+            translations={{}}
+          >
+            content
+          </Client_GTProvider>
+        )
+      );
+      const providerProps = mockGTProvider.mock.calls.at(-1)?.[0];
+      providerProps._reload({
+        locale: 'de',
+        region: undefined,
+        enableI18n: true,
+      });
+
+      // The basePath is stripped before matching and restored once in the
+      // navigation target.
+      expect(mockAssign).toHaveBeenCalledOnce();
+      expect(mockAssign).toHaveBeenCalledWith(
+        '/docs/de/beitrag/hello?ref=docs'
+      );
+    } finally {
+      delete process.env.NEXT_PUBLIC_BASE_PATH;
+      delete process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS;
+      await act(async () => root.unmount());
+    }
+  });
+
+  it('resolves a dynamic alias on an unprefixed default-locale path', async () => {
+    process.env._GENERALTRANSLATION_PATH_REGEX = '.*';
+    process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS =
+      JSON.stringify({
+        pathConfig: {
+          '/blog/[slug]': { en: '/tulisan/[slug]', de: '/beitrag/[slug]' },
+        },
+      });
+    mockPathname.mockReturnValue('/tulisan/hello');
+    vi.stubGlobal('location', {
+      assign: mockAssign,
+      hash: '',
+      pathname: '/tulisan/hello',
+      reload: mockReloadBrowserPage,
+      search: '',
+    });
+    mockGetI18nConfig.mockReturnValue({
+      determineLocale: ([locale]: string[]) => locale,
+      getDefaultLocale: () => 'en',
+      getLocales: () => ['en', 'de', 'fr'],
+    });
+    const { Client_GTProvider } = await import('../client-boundary');
+    const root = createRoot(document.createElement('div'));
+    try {
+      await act(async () =>
+        root.render(
+          <Client_GTProvider
+            supportsLocaleRefresh={true}
+            dictionaries={{}}
+            locale='en'
+            translations={{}}
+          >
+            content
+          </Client_GTProvider>
+        )
+      );
+      const providerProps = mockGTProvider.mock.calls.at(-1)?.[0];
+      providerProps._reload({
+        locale: 'de',
+        region: undefined,
+        enableI18n: true,
+      });
+
+      // The default-locale alias is unprefixed, so the browser pathname has no
+      // locale prefix to strip; it still resolves to the German alias.
+      expect(mockAssign).toHaveBeenCalledOnce();
+      expect(mockAssign).toHaveBeenCalledWith('/de/beitrag/hello');
+    } finally {
+      delete process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS;
+      await act(async () => root.unmount());
+    }
+  });
+
   it('keeps the Next basePath in place when switching locales', async () => {
     process.env._GENERALTRANSLATION_PATH_REGEX = '.*';
     process.env.NEXT_PUBLIC_BASE_PATH = '/docs';

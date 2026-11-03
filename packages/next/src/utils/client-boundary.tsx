@@ -22,6 +22,10 @@ import {
   defaultReferrerLocaleCookieName,
 } from './cookies';
 import { localizeHref } from '../link/localize-utils';
+import { createPathToSharedPathMap } from '../middleware-dir/createPathMatcher';
+import { getSharedPath } from '../middleware-dir/matchPath';
+import { resolveMiddlewareConfig } from '../middleware-dir/resolveMiddlewareConfig';
+import { replaceDynamicSegments } from '../middleware-dir/utils';
 import { compilePathRegex, pathnameMatchesRegex } from './pathRegex';
 
 type ClientPathConfig = Record<string, string | Record<string, string>>;
@@ -116,6 +120,51 @@ function localizeSharedPath(
   return localizeHref(sharedPath, locale, currentLocale, defaultLocale);
 }
 
+/**
+ * Resolves the target path for a locale switch by matching the current app
+ * path against the same pathConfig trie the middleware builds. This mirrors
+ * the middleware's shared-route lookup, so dynamic aliases keep their params
+ * (`/fr/article/hello` -> `/de/beitrag/hello`), and whichever alias the target
+ * locale declares is used. Returns undefined when the path is not declared in
+ * pathConfig, so the caller can keep the previous fallback behavior.
+ */
+function resolveAliasedLocaleSwitchPath(
+  appPathname: string,
+  pathnameLocale: string | undefined,
+  locale: string,
+  defaultLocale: string,
+  pathConfig: ClientPathConfig | undefined,
+  prefixDefaultLocale: boolean
+): string | undefined {
+  if (!pathConfig) return undefined;
+  const { pathToSharedPath } = createPathToSharedPathMap(
+    pathConfig,
+    prefixDefaultLocale,
+    defaultLocale
+  );
+  const match = getSharedPath(appPathname, pathToSharedPath, pathnameLocale);
+  if (!match) return undefined;
+  const localizedPaths = pathConfig[match.sharedPath];
+  const targetAlias =
+    typeof localizedPaths === 'object' && localizedPaths !== null
+      ? localizedPaths[locale]
+      : undefined;
+  let targetTemplate =
+    targetAlias !== undefined
+      ? `/${locale}${targetAlias}`
+      : match.sharedPath === '/'
+        ? `/${locale}`
+        : `/${locale}${match.sharedPath}`;
+  if (!prefixDefaultLocale && locale === defaultLocale) {
+    targetTemplate = targetTemplate.slice(locale.length + 1) || '/';
+  }
+  return replaceDynamicSegments(
+    match.matchedPathname,
+    targetTemplate,
+    match.pathTemplate
+  );
+}
+
 // withGTConfig exposes this build-time value to both middleware and client code.
 const pathRegex = compilePathRegex(process.env._GENERALTRANSLATION_PATH_REGEX);
 
@@ -197,6 +246,20 @@ export function Client_GTProvider({
             ? stripLocaleFromPathname(appPathname, rawPathLocale)
             : appPathname;
         const pathConfig = getClientPathConfig();
+        const { prefixDefaultLocale } = resolveMiddlewareConfig();
+        // Resolve the current path through the same pathConfig matcher as the
+        // middleware: this maps both static and dynamic localized aliases back
+        // to their shared route and then to the target locale's own alias.
+        const aliasedPathname = resolveAliasedLocaleSwitchPath(
+          appPathname,
+          rawPathLocale && locales.includes(rawPathLocale)
+            ? rawPathLocale
+            : undefined,
+          locale,
+          defaultLocale,
+          pathConfig,
+          prefixDefaultLocale ?? false
+        );
         // Resolve the current alias back to its shared route before switching,
         // so the target locale gets its own alias instead of a re-prefixed one
         // the middleware cannot map.
@@ -205,13 +268,15 @@ export function Client_GTProvider({
           pathConfig,
           currentPathLocale
         );
-        const localizedPathname = localizeSharedPath(
-          sharedPath,
-          locale,
-          pathConfig,
-          currentPathLocale,
-          defaultLocale
-        );
+        const localizedPathname =
+          aliasedPathname ??
+          localizeSharedPath(
+            sharedPath,
+            locale,
+            pathConfig,
+            currentPathLocale,
+            defaultLocale
+          );
         const search = globalThis.location.search;
         const hash = globalThis.location.hash;
         const targetHref = `${basePath}${localizedPathname}${search}${hash}`;
