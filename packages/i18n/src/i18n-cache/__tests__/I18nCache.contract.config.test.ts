@@ -20,7 +20,10 @@ import {
 import { GTRuntime } from 'generaltranslation/runtime';
 import { defaultCacheUrl } from 'generaltranslation/internal';
 import { I18nCache } from '../I18nCache';
-import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
+import {
+  getI18nConfig,
+  initializeI18nConfig,
+} from '../../i18n-config/singleton-operations';
 import { hashMessage } from '../../utils/hashMessage';
 import type { LookupOptions } from '../../translation-functions/types/options';
 
@@ -316,6 +319,41 @@ describe('I18nCache config contract', () => {
       targetLocale: 'fr',
     });
     expect(timeout).toBe(5000);
+  });
+
+  it('sends runtime translations with credentials set after construction', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('GT_PROJECT_ID', undefined);
+    vi.stubEnv('GT_DEV_API_KEY', undefined);
+    initConfig();
+    const runtimes: GTRuntime[] = [];
+    vi.spyOn(GTRuntime.prototype, 'translateMany').mockImplementation(
+      async function (this: GTRuntime, sources) {
+        runtimes.push(this);
+        return Object.fromEntries(
+          Object.keys(sources as Record<string, unknown>).map((hash) => [
+            hash,
+            { success: true, translation: 'Bonjour !' },
+          ])
+        );
+      } as typeof GTRuntime.prototype.translateMany
+    );
+    const cache = new I18nCache({
+      loadTranslations: async () => ({}),
+      runtimeTranslation: { metadata: { sourceLocale: 'en' } },
+    });
+    // Load the locale first so the existing cache must pick up the change
+    await cache.getLookupTranslation('fr');
+
+    const credentials = { projectId: 'project-id', devApiKey: 'dev-key' };
+    getI18nConfig().setDevCredentials(credentials);
+    cache.setDevCredentials(credentials);
+    await cache.lookupTranslationWithFallback('fr', 'Hello!', {
+      $format: 'ICU',
+    });
+
+    expect(runtimes).toHaveLength(1);
+    expect(runtimes[0]).toMatchObject(credentials);
   });
 
   it('defaults the runtime translation timeout to 12 seconds', async () => {

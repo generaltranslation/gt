@@ -21,7 +21,10 @@ export { ReadonlyConditionStore } from './condition-store/ReadonlyConditionStore
 export type { ReadonlyConditionStoreParams } from './condition-store/ReadonlyConditionStore';
 export { WritableConditionStore } from './condition-store/WritableConditionStore';
 export type { WritableConditionStoreParams } from './condition-store/WritableConditionStore';
-export type { LocaleCandidates } from './i18n-config/I18nConfig';
+export type {
+  DevCredentials,
+  LocaleCandidates,
+} from './i18n-config/I18nConfig';
 export { getI18nCache, setI18nCache } from './i18n-cache/singleton-operations';
 export { getVersionId } from './helpers/versionId';
 export { interpolateMessage } from './translation-functions/utils/interpolation/interpolateMessage';

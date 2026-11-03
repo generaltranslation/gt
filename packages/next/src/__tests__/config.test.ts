@@ -1234,24 +1234,21 @@ describe('withGTConfig', () => {
   // 10. Error cases
   // ==============================
   describe('10. Error cases', () => {
-    it('devApiKey in production throws devApiKeyIncludedInProductionError', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.NODE_ENV = 'production';
-      vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-      expect(() => withGTConfig({}, { devApiKey: 'gt-dev-xyz' })).toThrow(
-        /development API key/i
-      );
-    });
-
     it.each(['GT_DEV_API_KEY', 'NEXT_PUBLIC_GT_DEV_API_KEY'])(
-      'rejects %s in the production environment',
+      'ignores %s in production builds instead of failing them',
       async (name) => {
         const withGTConfig = await getWithGTConfig();
         process.env.NODE_ENV = 'production';
+        process.env.GT_PROJECT_ID = 'proj';
         process.env[name] = 'gtx-development-key';
 
-        expect(() => withGTConfig()).toThrow(/development API key/i);
+        const result = withGTConfig();
+
+        // Without a production key, runtime translation stays off.
+        expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe(
+          'false'
+        );
+        expect(JSON.stringify(result.env)).not.toContain('gtx-development-key');
       }
     );
 

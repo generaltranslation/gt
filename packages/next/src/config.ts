@@ -15,7 +15,6 @@ import {
   createBadFilepathWarning,
   createGTCompilerUnresolvedWarning,
   createNextI18nConfigMismatchWarning,
-  devApiKeyIncludedInProductionError,
   invalidCanonicalLocalesError,
   invalidLocalesError,
   projectIdMissingWarn,
@@ -619,11 +618,6 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     !mergedConfig.loadDictionaryEnabled // skip warn if using local dictionary
   ) {
     console.warn(projectIdMissingWarn);
-  }
-
-  // Check: dev API key should not be included in production
-  if (process.env.NODE_ENV === 'production' && mergedConfig.devApiKey) {
-    throw new Error(devApiKeyIncludedInProductionError);
   }
 
   // Check: An API key is required for runtime translation

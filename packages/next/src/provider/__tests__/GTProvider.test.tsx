@@ -63,6 +63,7 @@ describe('GTProvider', () => {
     });
     mockGetI18nConfig.mockReturnValue({
       requiresTranslation: vi.fn().mockReturnValue(true),
+      isDevHotReloadEnabled: vi.fn().mockReturnValue(false),
     });
   });
 
@@ -116,6 +117,7 @@ describe('GTProvider', () => {
   it('uses the request locale and skips cached translations when translation is not required', async () => {
     const config = {
       requiresTranslation: vi.fn().mockReturnValue(false),
+      isDevHotReloadEnabled: vi.fn().mockReturnValue(false),
     };
     mockGetI18nConfig.mockReturnValue(config);
     mockGetLocale.mockResolvedValue('en');
@@ -154,5 +156,34 @@ describe('GTProvider', () => {
         },
       },
     });
+  });
+
+  it('passes the server-only development key to the client when hot reload is on', async () => {
+    vi.stubEnv('GT_PROJECT_ID', 'project-id');
+    vi.stubEnv('GT_DEV_API_KEY', 'gtx-dev-key');
+    vi.stubEnv('NODE_ENV', 'development');
+    mockGetI18nConfig.mockReturnValue({
+      requiresTranslation: vi.fn().mockReturnValue(true),
+      isDevHotReloadEnabled: vi.fn().mockReturnValue(true),
+    });
+    const { GTProvider } = await import('../GTProvider');
+
+    const element = await GTProvider({ children: 'content' });
+
+    expect(element.props.devCredentials).toEqual({
+      projectId: 'project-id',
+      devApiKey: 'gtx-dev-key',
+    });
+  });
+
+  it('never passes a development key when hot reload is off, as in production', async () => {
+    vi.stubEnv('GT_PROJECT_ID', 'project-id');
+    vi.stubEnv('GT_DEV_API_KEY', 'gtx-dev-key');
+    vi.stubEnv('NODE_ENV', 'production');
+    const { GTProvider } = await import('../GTProvider');
+
+    const element = await GTProvider({ children: 'content' });
+
+    expect(element.props.devCredentials).toBeUndefined();
   });
 });

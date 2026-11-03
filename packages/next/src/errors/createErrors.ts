@@ -43,12 +43,6 @@ export const createUnresolvedReactVersionError = (error: Error) =>
     details: error.message,
   });
 
-export const devApiKeyIncludedInProductionError = createGtNextDiagnostic({
-  severity: 'Error',
-  whatHappened: 'Production builds cannot use a development API key',
-  fix: 'Replace it with a production API key',
-});
-
 export const createDictionarySubsetError = (id: string, functionName: string) =>
   createGtNextDiagnostic({
     severity: 'Error',

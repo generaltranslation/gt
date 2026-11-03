@@ -48,6 +48,11 @@ type RuntimeConfig = Pick<
 
 export type LocaleCandidates = string | string[] | undefined;
 
+/**
+ * Development credentials a runtime can receive after initialization.
+ */
+export type DevCredentials = { projectId: string; devApiKey: string };
+
 export class I18nConfig extends LocaleConfig {
   protected runtimeConfig: RuntimeConfig;
   private gtServicesEnabled: boolean;
@@ -149,6 +154,16 @@ export class I18nConfig extends LocaleConfig {
       this.runtimeConfig.runtimeUrl !== '' &&
       getRuntimeEnvironment() === 'development'
     );
+  }
+
+  /**
+   * Set development credentials after construction, for a runtime that
+   * receives them later than it initializes (for example, a client handed a
+   * server-only development key). No-op outside development.
+   */
+  setDevCredentials({ projectId, devApiKey }: DevCredentials): void {
+    if (getRuntimeEnvironment() !== 'development') return;
+    this.runtimeConfig = { ...this.runtimeConfig, projectId, devApiKey };
   }
 
   isGTServicesEnabled(): boolean {

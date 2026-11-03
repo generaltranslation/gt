@@ -9,7 +9,10 @@ import {
   ReactI18nCache,
 } from '@generaltranslation/react-core/pure';
 import { initializeGT } from '../initGT';
-import { initializeGTClient } from '../initGT.client';
+import {
+  applyDevCredentialsClient,
+  initializeGTClient,
+} from '../initGT.client';
 import { initializeGTServer } from '../initGT.server';
 import { getParams } from '../shared';
 
@@ -68,6 +71,35 @@ describe('initializeGT', () => {
     expect(getNextI18nCache()).toBeInstanceOf(NextI18nCache);
     expect(getI18nConfig().isDevHotReloadEnabled()).toBe(true);
     expect(process.env.GT_API_KEY).toBeUndefined();
+  });
+
+  it('enables client hot reload from the credentials GTProvider passes down', () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    // App Router keeps both server-only, so the client starts without them.
+    vi.stubEnv('GT_PROJECT_ID', undefined);
+    vi.stubEnv('GT_DEV_API_KEY', undefined);
+    vi.stubEnv('NEXT_PUBLIC_GT_PROJECT_ID', undefined);
+    vi.stubEnv('NEXT_PUBLIC_GT_DEV_API_KEY', undefined);
+    vi.stubEnv(
+      'NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS',
+      JSON.stringify({ defaultLocale: 'en', locales: ['en', 'fr'] })
+    );
+    initializeGTClient();
+    expect(getI18nConfig().isDevHotReloadEnabled()).toBe(false);
+
+    applyDevCredentialsClient({
+      projectId: 'project-id',
+      devApiKey: 'gtx-development-key',
+    });
+    const cache = getReactI18nCache();
+    expect(getI18nConfig().isDevHotReloadEnabled()).toBe(true);
+
+    // A rerender with the same credentials keeps the initialized cache.
+    applyDevCredentialsClient({
+      projectId: 'project-id',
+      devApiKey: 'gtx-development-key',
+    });
+    expect(getReactI18nCache()).toBe(cache);
   });
 
   it('does not replace an existing NextI18nCache', () => {

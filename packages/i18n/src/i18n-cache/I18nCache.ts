@@ -26,6 +26,7 @@ import { resolveDictionaryLookupOptions } from './translations-manager/utils/dic
 import { DictionarySourceNotFoundError } from './translations-manager/utils/DictionarySourceNotFoundError';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
+import type { DevCredentials } from '../i18n-config/I18nConfig';
 
 /**
  * Default translation timeout in milliseconds for a runtime translation request
@@ -149,16 +150,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
       },
     }) as SafeTranslationsLoader<TranslationValue>;
     const loadDictionary = params.loadDictionary ?? (() => Promise.resolve({}));
-    this.createTranslateMany = createTranslateManyFactory(
-      getI18nConfig().getGTClass(),
-      this.config.runtimeTranslation?.timeout ?? DEFAULT_TRANSLATION_TIMEOUT,
-      {
-        ...(this.config.modelProvider && {
-          modelProvider: this.config.modelProvider,
-        }),
-        ...this.config.runtimeTranslation?.metadata,
-      }
-    );
+    this.createTranslateMany = this.buildTranslateMany();
 
     // Setup locale-keyed caches
     const ttl = this.config.cacheExpiryTime;
@@ -186,7 +178,42 @@ class I18nCache<TranslationValue extends Translation = Translation> {
     );
   }
 
+  /**
+   * Set development credentials after construction, for a runtime that
+   * receives them later than it initializes (for example, a client handed a
+   * server-only development key). Call after I18nConfig.setDevCredentials so
+   * the runtime client picks up the same credentials. No-op outside
+   * development.
+   */
+  setDevCredentials({ projectId, devApiKey }: DevCredentials): void {
+    if (getRuntimeEnvironment() !== 'development') return;
+    const { runtimeTranslation } = this.config;
+    this.config = {
+      ...this.config,
+      projectId,
+      devApiKey,
+      runtimeTranslation: runtimeTranslation && {
+        ...runtimeTranslation,
+        metadata: { ...runtimeTranslation.metadata, projectId },
+      },
+    };
+    this.createTranslateMany = this.buildTranslateMany();
+  }
+
   // ========== Cache Factories ========== //
+
+  private buildTranslateMany(): CreateTranslateMany {
+    return createTranslateManyFactory(
+      getI18nConfig().getGTClass(),
+      this.config.runtimeTranslation?.timeout ?? DEFAULT_TRANSLATION_TIMEOUT,
+      {
+        ...(this.config.modelProvider && {
+          modelProvider: this.config.modelProvider,
+        }),
+        ...this.config.runtimeTranslation?.metadata,
+      }
+    );
+  }
 
   private createTranslationsCache(
     locale: Locale,
@@ -194,7 +221,8 @@ class I18nCache<TranslationValue extends Translation = Translation> {
   ): TranslationsCache<TranslationValue> {
     return new TranslationsCache<TranslationValue>({
       init,
-      translateMany: this.createTranslateMany(locale),
+      // Resolved per call so setDevCredentials reaches existing caches
+      translateMany: (...args) => this.createTranslateMany(locale)(...args),
       batchConfig: this.config.batchConfig,
       onMiss: (hash, translation) =>
         this.onTranslationsCacheMiss?.({ locale, hash, translation }),

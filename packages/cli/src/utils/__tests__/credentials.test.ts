@@ -42,7 +42,7 @@ describe('setCredentials', () => {
     ['gatsby', 'GATSBY_'],
     ['react', 'REACT_APP_'],
     ['redwood', 'REDWOOD_ENV_'],
-    ['next-app', 'NEXT_PUBLIC_'],
+    ['next-app', ''],
     [undefined, ''],
   ] as const)(
     'prefixes variables for %s with "%s"',
@@ -66,7 +66,7 @@ describe('setCredentials', () => {
 
     await setCredentials(
       { projectId: 'new-project', apiKey: 'gtx-dev-key' },
-      'next-app',
+      'next-pages',
       appDirectory
     );
 
@@ -535,17 +535,32 @@ describe('areCredentialsSet', () => {
     );
   });
 
-  it.each(['next-app', 'next-pages'] as const)(
-    'recognizes the public development key without a tooling key for %s',
-    (framework) => {
-      vi.stubEnv('NEXT_PUBLIC_GT_DEV_API_KEY', 'gtx-dev');
-      vi.stubEnv('GT_API_KEY', undefined);
-      vi.stubEnv('GT_DEV_API_KEY', undefined);
-      expect(areCredentialsSet({ projectId: 'project-id' }, framework)).toBe(
-        true
-      );
-    }
-  );
+  it('recognizes the public development key without a tooling key for next-pages', () => {
+    vi.stubEnv('NEXT_PUBLIC_GT_DEV_API_KEY', 'gtx-dev');
+    vi.stubEnv('GT_API_KEY', undefined);
+    vi.stubEnv('GT_DEV_API_KEY', undefined);
+    expect(areCredentialsSet({ projectId: 'project-id' }, 'next-pages')).toBe(
+      true
+    );
+  });
+
+  it('recognizes the server-only development key for next-app', () => {
+    vi.stubEnv('GT_DEV_API_KEY', 'gtx-dev');
+    vi.stubEnv('GT_API_KEY', undefined);
+    vi.stubEnv('NEXT_PUBLIC_GT_DEV_API_KEY', undefined);
+    expect(areCredentialsSet({ projectId: 'project-id' }, 'next-app')).toBe(
+      true
+    );
+  });
+
+  it('still recognizes a legacy public development key for next-app', () => {
+    vi.stubEnv('NEXT_PUBLIC_GT_DEV_API_KEY', 'gtx-dev');
+    vi.stubEnv('GT_API_KEY', undefined);
+    vi.stubEnv('GT_DEV_API_KEY', undefined);
+    expect(areCredentialsSet({ projectId: 'project-id' }, 'next-app')).toBe(
+      true
+    );
+  });
 
   it('is complete with a project and an explicit key for a server-only runtime', () => {
     expect(

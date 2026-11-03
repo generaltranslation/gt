@@ -83,10 +83,11 @@ function gitCheckFailedError(file: string, stderr: string): string {
 export type Credentials = { apiKey: string; projectId: string };
 
 // Include server-rendered frameworks with client-side development translation.
+// Next.js App Router reads unprefixed variables on the server and hands the
+// development key to the client through GTProvider, in development only.
 const FRAMEWORK_ENV_PREFIXES: Partial<
   Record<NonNullable<SupportedFrameworks>, string>
 > = {
-  'next-app': 'NEXT_PUBLIC_',
   'next-pages': 'NEXT_PUBLIC_',
   vite: 'VITE_',
   gatsby: 'GATSBY_',
@@ -108,20 +109,26 @@ export function getDevelopmentEnvNames(framework?: SupportedFrameworks) {
 /**
  * Whether the project has the framework's development key, or an explicit
  * API key for a server-only runtime. A tooling key cannot enable client-side
- * hot reload, including in Next.js App Router. `settings.projectId` already
- * resolves every framework prefix. Login is checked separately.
+ * hot reload, including in Next.js App Router, which still accepts the
+ * NEXT_PUBLIC_ key earlier versions of init wrote. `settings.projectId`
+ * already resolves every framework prefix. Login is checked separately.
  */
 export function areCredentialsSet(
   settings: Pick<Settings, 'projectId' | 'apiKey'>,
   framework?: SupportedFrameworks
 ): boolean {
   const { devApiKey } = getDevelopmentEnvNames(framework);
-  const needsPublicKey = Boolean(
-    framework && FRAMEWORK_ENV_PREFIXES[framework]
+  const devApiKeys =
+    framework === 'next-app'
+      ? [devApiKey, 'NEXT_PUBLIC_GT_DEV_API_KEY']
+      : [devApiKey];
+  const needsDevKey = Boolean(
+    framework === 'next-app' || (framework && FRAMEWORK_ENV_PREFIXES[framework])
   );
   return Boolean(
     settings.projectId &&
-    (process.env[devApiKey] || (!needsPublicKey && settings.apiKey))
+    (devApiKeys.some((name) => process.env[name]) ||
+      (!needsDevKey && settings.apiKey))
   );
 }
 

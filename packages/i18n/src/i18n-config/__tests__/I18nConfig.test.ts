@@ -149,6 +149,26 @@ describe('I18nConfig', () => {
     expect(config.isDevHotReloadEnabled()).toBe(false);
   });
 
+  it('enables dev hot reload from credentials set after construction', () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    const config = new I18nConfig();
+    expect(config.isDevHotReloadEnabled()).toBe(false);
+
+    config.setDevCredentials({ projectId: 'project-id', devApiKey: 'dev-key' });
+
+    expect(config.isDevHotReloadEnabled()).toBe(true);
+    expect(config.getProjectId()).toBe('project-id');
+  });
+
+  it('ignores credentials set after construction outside development', () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    const config = new I18nConfig();
+
+    config.setDevCredentials({ projectId: 'project-id', devApiKey: 'dev-key' });
+
+    expect(config.getProjectId()).toBeUndefined();
+  });
+
   it('stores the configured log level at initialization', () => {
     vi.stubEnv('_GENERALTRANSLATION_LOG_LEVEL', 'debug');
 

@@ -16,7 +16,11 @@ import { getCookieValue, getI18nConfig, I18nConfig } from 'gt-i18n/internal';
 import { GTProvider, type SharedGTProviderProps } from 'gt-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect } from 'react';
-import { initializeGTClient } from '../setup/initGT.client';
+import {
+  applyDevCredentialsClient,
+  initializeGTClient,
+  type DevCredentials,
+} from '../setup/initGT.client';
 import {
   defaultLocaleRoutingEnabledCookieName,
   defaultReferrerLocaleCookieName,
@@ -40,10 +44,16 @@ if (typeof window !== 'undefined') {
  */
 export function Client_GTProvider({
   supportsLocaleRefresh,
+  devCredentials,
   ...props
 }: SharedGTProviderProps & {
   supportsLocaleRefresh: boolean;
+  /** Development only: the server-only key for client hot reload. */
+  devCredentials?: DevCredentials;
 }) {
+  if (typeof window !== 'undefined' && devCredentials) {
+    applyDevCredentialsClient(devCredentials);
+  }
   const router = useRouter();
   const refreshServerComponents = useCallback(() => {
     // Older Next versions can retain a stale layout/provider after a redirect.

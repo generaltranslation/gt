@@ -1,7 +1,14 @@
-import { internalInitializeGTSRA } from '@generaltranslation/react-core/pure';
+import {
+  getReactI18nCache,
+  internalInitializeGTSRA,
+} from '@generaltranslation/react-core/pure';
+import { getI18nConfig } from 'gt-i18n/internal';
+import type { DevCredentials } from 'gt-i18n/internal';
 import { getParams } from './shared';
 import type { NextSetupI18nConfigParams } from './shared';
 import type { NextI18nCacheParams } from '../i18n-cache/NextI18nCache';
+
+export type { DevCredentials };
 
 /**
  * Initialize GT for Next.js client entrypoints.
@@ -25,4 +32,17 @@ export function initializeGTClient(
      */
     cacheExpiryTime: null,
   });
+}
+
+/**
+ * Give the client the development key the RSC GTProvider passed down. App
+ * Router keeps the key server-only (GT_DEV_API_KEY), so the client's
+ * module-load initialization ran without it. The client singletons are
+ * write-once, so this updates the existing config and cache in place.
+ */
+export function applyDevCredentialsClient(credentials: DevCredentials): void {
+  const i18nConfig = getI18nConfig();
+  if (i18nConfig.isDevHotReloadEnabled()) return;
+  i18nConfig.setDevCredentials(credentials);
+  getReactI18nCache().setDevCredentials(credentials);
 }

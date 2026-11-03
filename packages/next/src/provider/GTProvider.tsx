@@ -5,6 +5,7 @@ import { Client_GTProvider } from '../utils/client-boundary';
 import { getNextI18nCache } from '../i18n-cache/NextI18nCache';
 import { getI18nConfig } from 'gt-i18n/internal';
 import { getEnableI18n } from '../request/getEnableI18n';
+import { getRuntimeCredentials } from '../setup/runtimeCredentials';
 
 export async function GTProvider({ children }: GTProviderProps) {
   // ---------- SETUP ---------- //
@@ -14,6 +15,7 @@ export async function GTProvider({ children }: GTProviderProps) {
   const region = await getRegion();
   const enableI18n = await getEnableI18n();
   const translationRequired = i18nConfig.requiresTranslation(locale);
+  const devCredentials = getDevCredentials(i18nConfig.isDevHotReloadEnabled());
 
   // ----- FETCH TRANSLATIONS FROM CACHE ----- //
 
@@ -37,8 +39,20 @@ export async function GTProvider({ children }: GTProviderProps) {
       enableI18n={enableI18n}
       translations={translationsSnapshot}
       dictionaries={dictionariesSnapshot}
+      devCredentials={devCredentials}
     >
       {children}
     </Client_GTProvider>
   );
+}
+
+/**
+ * The server-only development key, handed to the client for hot reload.
+ * isDevHotReloadEnabled() is false outside development, so production
+ * renders never serialize a key.
+ */
+function getDevCredentials(devHotReloadEnabled: boolean) {
+  if (!devHotReloadEnabled) return undefined;
+  const { projectId, devApiKey } = getRuntimeCredentials();
+  return projectId && devApiKey ? { projectId, devApiKey } : undefined;
 }

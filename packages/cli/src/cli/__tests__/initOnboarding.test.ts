@@ -701,7 +701,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     });
   });
 
-  it('writes and reuses App Router public development credentials without a tooling key', async () => {
+  it('writes and reuses App Router server-only development credentials without a tooling key', async () => {
     vi.mocked(detectFramework).mockResolvedValue({
       name: 'next-app',
       type: 'react',
@@ -718,14 +718,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 
     await run(...args, '--project-id', 'p1');
 
-    const envFile = `NEXT_PUBLIC_GT_PROJECT_ID=p1\nNEXT_PUBLIC_GT_DEV_API_KEY=${SECRET_KEY}\n`;
+    const envFile = `GT_PROJECT_ID=p1\nGT_DEV_API_KEY=${SECRET_KEY}\n`;
     expect(fs.readFileSync(file('.env.local'), 'utf8')).toBe(envFile);
     expect(api.createProjectApiKey).toHaveBeenCalledTimes(1);
-    vi.stubEnv('NEXT_PUBLIC_GT_PROJECT_ID', 'p1');
-    vi.stubEnv('NEXT_PUBLIC_GT_DEV_API_KEY', SECRET_KEY);
-    // A stale server-only pair must not override the public runtime project.
-    vi.stubEnv('GT_PROJECT_ID', 'old-project');
-    vi.stubEnv('GT_DEV_API_KEY', 'gtx-old-key');
+    vi.stubEnv('GT_PROJECT_ID', 'p1');
+    vi.stubEnv('GT_DEV_API_KEY', SECRET_KEY);
     vi.mocked(hasLogin).mockClear();
 
     await run(...args);
@@ -741,8 +738,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       name: 'next-app',
       type: 'react',
     });
-    vi.stubEnv('NEXT_PUBLIC_GT_PROJECT_ID', 'p1');
-    vi.stubEnv('NEXT_PUBLIC_GT_DEV_API_KEY', SECRET_KEY);
+    vi.stubEnv('GT_PROJECT_ID', 'p1');
+    vi.stubEnv('GT_DEV_API_KEY', SECRET_KEY);
 
     await run(
       'init',
