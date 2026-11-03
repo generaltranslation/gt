@@ -183,15 +183,6 @@ function isProjectApiKeyPermission(
   return projectApiKeyPermissions.has(permission);
 }
 
-function createOrgOnlyPermissionError(
-  permissions: OrgApiKeyPermission[]
-): string {
-  return createDiagnosticMessage({
-    whatHappened: `${permissions.join(', ')} can only be granted to organization API keys`,
-    fix: 'Pass --org-id, or remove those permissions',
-  });
-}
-
 function parseApiKeyName(value: string): string {
   const name = value.trim();
   if (!name) throw new InvalidArgumentError(emptyApiKeyNameError);
@@ -554,7 +545,10 @@ export class BaseCLI {
         );
         if (!options.orgId && orgOnlyPermissions.length > 0) {
           return logErrorAndExit(
-            createOrgOnlyPermissionError(orgOnlyPermissions)
+            createDiagnosticMessage({
+              whatHappened: `${orgOnlyPermissions.join(', ')} can only be granted to organization API keys`,
+              fix: 'Pass --org-id, or remove those permissions',
+            })
           );
         }
         try {
