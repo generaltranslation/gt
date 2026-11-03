@@ -207,6 +207,25 @@ export type DeleteCliWizardSessionResponse = {
   message: string;
 };
 
+export const OrgApiKeyPermission = {
+  'ORG:PROJECTS:CREATE': 'org:projects:create',
+  'PROJECT:API_KEYS:READ': 'project:api_keys:read',
+  'PROJECT:API_KEYS:WRITE': 'project:api_keys:write',
+  'ORG:CONTEXT:READ': 'org:context:read',
+  'ORG:CONTEXT:WRITE': 'org:context:write',
+  'ORG:ASSETS:WRITE': 'org:assets:write',
+  'PROJECT:WRITE': 'project:write',
+  'PROJECT:CONTEXT:READ': 'project:context:read',
+  'PROJECT:CONTEXT:WRITE': 'project:context:write',
+  'PROJECT:FILES:READ': 'project:files:read',
+  'PROJECT:FILES:WRITE': 'project:files:write',
+  'PROJECT:TRANSLATIONS:GENERATE': 'project:translations:generate',
+  'PROJECT:TRANSLATIONS:ENQUEUE': 'project:translations:enqueue',
+} as const;
+
+export type OrgApiKeyPermission =
+  (typeof OrgApiKeyPermission)[keyof typeof OrgApiKeyPermission];
+
 export type WorkspacePluginTranslateData = {
   body?: {
     /**
@@ -5648,3 +5667,102 @@ export type GetCliWizardSessionResponses = {
 
 export type GetCliWizardSessionResponse =
   GetCliWizardSessionResponses[keyof GetCliWizardSessionResponses];
+
+export type CreateOrgApiKeyData = {
+  body: {
+    /**
+     * Key name, 1–255 characters after trimming.
+     */
+    name: string;
+    /**
+     * Organization and project permissions to grant. Select at least one, or omit to grant all organization API key permissions you can delegate. You must hold every selected permission. Duplicates are ignored. Write permissions do not include Read.
+     */
+    permissions?: Array<OrgApiKeyPermission>;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    orgId: string;
+  };
+  query?: never;
+  url: '/v2/orgs/{orgId}/api-keys';
+};
+
+export type CreateOrgApiKeyErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse & {
+    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource, or cannot grant a selected permission. No key is created.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_denied'
+      | 'permission_not_grantable'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
+  /**
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type CreateOrgApiKeyError =
+  CreateOrgApiKeyErrors[keyof CreateOrgApiKeyErrors];
+
+export type CreateOrgApiKeyResponses = {
+  /**
+   * Organization API key created. Each successful request creates a new key. Store the returned secret securely.
+   */
+  201: {
+    apiKey: {
+      id: string;
+      name: string;
+      key: string;
+      orgId: string;
+    };
+  };
+};
+
+export type CreateOrgApiKeyResponse =
+  CreateOrgApiKeyResponses[keyof CreateOrgApiKeyResponses];
