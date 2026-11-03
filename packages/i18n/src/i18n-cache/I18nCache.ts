@@ -645,6 +645,15 @@ class I18nCache<TranslationValue extends Content = Content> {
    * Resolve the locale key used to load/read locale caches.
    * Returns undefined when the requested locale can use source content.
    */
+  /**
+   * The locale whose catalog serves `locale`, as lookups resolve it: a
+   * dialect or alias maps to its supported locale. Undefined when `locale`
+   * needs no translation.
+   */
+  resolveTranslationLocale(locale: string): string | undefined {
+    return this._resolveCacheLocale(locale);
+  }
+
   private _resolveCacheLocale(locale: string) {
     const resolvedLocale = this._resolveLocale(locale);
     const i18nConfig = getI18nConfig();

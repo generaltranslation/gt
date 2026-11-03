@@ -185,13 +185,13 @@ export class I18nStore {
     lookup: TranslateLookup<T>,
     translationsSnapshot: Record<Locale, Record<Hash, Content>> = {}
   ): TranslateSnapshot<T> => {
+    const cache = getReactI18nCache();
+    // Snapshots are keyed like the cache, by the locale that serves a lookup.
+    const locale =
+      cache.resolveTranslationLocale(lookup.locale) ?? lookup.locale;
     return (
-      lookupTranslation(translationsSnapshot, lookup) ??
-      getReactI18nCache().lookupTranslation<T>(
-        lookup.locale,
-        lookup.message,
-        lookup.options
-      )
+      lookupTranslation(translationsSnapshot, { ...lookup, locale }) ??
+      cache.lookupTranslation<T>(lookup.locale, lookup.message, lookup.options)
     );
   };
 
