@@ -80,6 +80,7 @@
     "i18n-default-locale-override",
     "keep-json-trailing-newline",
     "locadex-handoff-url",
+    "payload-v4",
     "react-core-linter-translation-function-placement",
     "samsara-seed-prerelease",
     "shared-compiler-options-type",
