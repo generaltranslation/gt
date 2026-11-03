@@ -11,7 +11,7 @@ hoist: false
 onlyBuiltDependencies:
   - lefthook
 
-minimumReleaseAge: 2880
+minimumReleaseAge: 10080
 
 minimumReleaseAgeExclude:
   - '@generaltranslation/*'
