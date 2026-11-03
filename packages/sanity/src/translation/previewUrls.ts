@@ -1,4 +1,9 @@
-import type { SanityClient, SanityDocument } from 'sanity';
+import {
+  isReference,
+  type Reference,
+  type SanityClient,
+  type SanityDocument,
+} from 'sanity';
 import type { DocumentLocationResolvers } from 'sanity/presentation';
 import { pluginConfig } from '../adapter/core';
 import { getDocumentPublishedId } from '../utils/documentIds';
@@ -22,32 +27,22 @@ type Snapshot = Record<string, unknown>;
 /** A `select` path being read: the value reached so far and the segments left. */
 type Walk = { value: unknown; path: string[] };
 
-function isReference(value: unknown): value is { _ref: string } {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof (value as { _ref?: unknown })._ref === 'string'
-  );
-}
+// Arrays count too, so a path can step into an item by its index, as in `categories.0`.
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
 
-function waitsOnReference(
-  walk: Walk
-): walk is Walk & { value: { _ref: string } } {
+function waitsOnReference(walk: Walk): walk is Walk & { value: Reference } {
   return walk.path.length > 0 && isReference(walk.value);
 }
 
 /** Walks a path until it ends or reaches a reference that has to be read first. */
-function step({ value, path }: Walk): Walk {
-  let remaining = path;
-  while (remaining.length > 0 && !isReference(value)) {
-    const [segment, ...rest] = remaining;
-    value =
-      typeof value === 'object' && value !== null
-        ? (value as Record<string, unknown>)[segment!]
-        : undefined;
-    remaining = rest;
+function step(walk: Walk): Walk {
+  let { value } = walk;
+  for (const [index, segment] of walk.path.entries()) {
+    if (isReference(value)) return { value, path: walk.path.slice(index) };
+    value = isObject(value) ? value[segment] : undefined;
   }
-  return { value, path: remaining };
+  return { value, path: [] };
 }
 
 async function fetchPublished(
@@ -107,9 +102,10 @@ async function readSnapshots(
   const fields = selections.flatMap(({ id, select }) => {
     const document = published.get(id);
     if (!document) return [];
-    snapshots.set(id, {});
+    const snapshot: Snapshot = {};
+    snapshots.set(id, snapshot);
     return Object.entries(select).map(([key, path]) => ({
-      id,
+      snapshot,
       key,
       walk: { value: document, path: String(path).split('.') },
     }));
@@ -118,8 +114,8 @@ async function readSnapshots(
     client,
     fields.map(({ walk }) => walk)
   );
-  fields.forEach(({ id, key }, index) => {
-    snapshots.get(id)![key] = values[index];
+  fields.forEach(({ snapshot, key }, index) => {
+    snapshot[key] = values[index];
   });
   return snapshots;
 }
