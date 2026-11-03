@@ -108,6 +108,10 @@ module.exports = nextConfig;
           'const withGTConfig = require("gt-next/config").withGTConfig'
         )
       );
+      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
+        filepath,
+        expect.stringContaining('module.exports = withGTConfig(nextConfig, {})')
+      );
       expect(filesUpdated).toContain(filepath);
       expect(errors).toHaveLength(0);
       expect(warnings).toHaveLength(0);

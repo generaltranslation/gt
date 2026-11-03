@@ -131,6 +131,23 @@ export async function handleInitGT(
 
     // Find and transform the default export
     traverse(ast, {
+      AssignmentExpression(path) {
+        // CommonJS: module.exports = config
+        const { left, right } = path.node;
+        if (
+          t.isMemberExpression(left) &&
+          t.isIdentifier(left.object, { name: 'module' }) &&
+          t.isIdentifier(left.property, { name: 'exports' }) &&
+          path.parentPath.isExpressionStatement() &&
+          path.parentPath.parentPath.isProgram()
+        ) {
+          path.node.right = t.callExpression(t.identifier('withGTConfig'), [
+            right,
+            t.objectExpression([]),
+          ]);
+          path.skip();
+        }
+      },
       ExportDefaultDeclaration(path) {
         const oldExport = path.node.declaration;
 
