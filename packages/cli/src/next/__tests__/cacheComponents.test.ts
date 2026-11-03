@@ -7,7 +7,7 @@ import {
   isCacheComponentsEnabled,
   migrateToCacheComponents,
   resolveCacheComponentsSetup,
-  rewriteMovedRootFile,
+  type CacheComponentsSetup,
 } from '../cacheComponents.js';
 
 let cwd: string;
@@ -18,6 +18,28 @@ function write(file: string, content = '') {
 }
 
 const read = (file: string) => fs.readFileSync(path.join(cwd, file), 'utf8');
+const exists = (file: string) => fs.existsSync(path.join(cwd, file));
+
+const LAYOUT = `import './globals.css';
+export default function RootLayout({ children }: LayoutProps<'/'>) {
+  return <html lang="en"><body>{children}</body></html>;
+}
+`;
+
+function resolve() {
+  if (!exists('next.config.ts')) write('next.config.ts', 'export default {};');
+  return resolveCacheComponentsSetup(cwd, path.join(cwd, 'next.config.ts'));
+}
+
+async function migrate(typescript = true) {
+  const setup = resolve();
+  expect(setup?.mode).toBe('migrate');
+  return migrateToCacheComponents(
+    cwd,
+    setup as Extract<CacheComponentsSetup, { mode: 'migrate' }>,
+    typescript
+  );
+}
 
 beforeEach(() => {
   cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-cache-components-'));
@@ -47,59 +69,54 @@ describe('isCacheComponentsEnabled', () => {
 });
 
 describe('resolveCacheComponentsSetup', () => {
-  it('migrates a fresh template app', () => {
-    write('src/app/layout.tsx');
-    write('src/app/page.tsx');
-    write('src/app/globals.css');
-    write('src/app/favicon.ico');
-    expect(resolveCacheComponentsSetup(cwd)).toEqual({
-      mode: 'migrate',
-      appDir: path.join('src', 'app'),
-      layout: path.join('src', 'app', 'layout.tsx'),
-      page: path.join('src', 'app', 'page.tsx'),
-    });
+  it.each([
+    ['an existing proxy', ['app/layout.tsx', 'proxy.ts']],
+    ['an existing .mjs proxy', ['app/layout.tsx', 'proxy.mjs']],
+    ['an existing middleware', ['src/app/layout.tsx', 'src/middleware.js']],
+    ['an existing getRegion', ['app/layout.tsx', 'getRegion.ts']],
+    ['no root layout', ['app/(a)/layout.tsx', 'app/(b)/layout.tsx']],
+    ['a dynamic root segment', ['app/layout.tsx', 'app/[lang]/page.tsx']],
+  ])('asks for manual setup with %s', (_name, files) => {
+    files.forEach((file) => write(file, 'export default 1;'));
+    expect(resolve()).toMatchObject({ mode: 'manual' });
   });
 
-  it.each([
-    ['route folders', ['app/layout.tsx', 'app/page.tsx', 'app/about/page.tsx']],
-    ['other route files', ['app/layout.tsx', 'app/page.tsx', 'app/error.tsx']],
-    ['an existing proxy', ['app/layout.tsx', 'app/page.tsx', 'proxy.ts']],
-    [
-      'an existing middleware',
-      ['src/app/layout.tsx', 'src/app/page.tsx', 'src/middleware.js'],
-    ],
-    ['an existing .mjs proxy', ['app/layout.tsx', 'app/page.tsx', 'proxy.mjs']],
-    [
-      'an existing getRegion',
-      ['app/layout.tsx', 'app/page.tsx', 'getRegion.ts'],
-    ],
-    ['no root page', ['app/layout.tsx']],
-  ])('asks for manual setup with %s', (_name, files) => {
-    files.forEach((file) => write(file));
-    expect(resolveCacheComponentsSetup(cwd)).toMatchObject({
-      mode: 'manual',
-    });
+  it('asks for manual setup when typedRoutes is enabled', () => {
+    write('app/layout.tsx', LAYOUT);
+    write('next.config.ts', 'export default { typedRoutes: true };');
+    expect(resolve()).toMatchObject({ mode: 'manual' });
+  });
+
+  it('asks for manual setup when a moved file cannot be parsed', () => {
+    write('app/layout.tsx', LAYOUT);
+    write('app/about/page.tsx', 'export default (');
+    expect(resolve()).toMatchObject({ mode: 'manual' });
+  });
+
+  it('asks for manual setup when a moved MDX page has relative imports', () => {
+    write('app/layout.tsx', LAYOUT);
+    write('app/blog/page.mdx', "import Note from './note.mdx';\n\n# Blog\n");
+    expect(resolve()).toMatchObject({ mode: 'manual' });
   });
 
   it('leaves apps with custom request functions alone', () => {
     write('app/[locale]/layout.tsx');
     write('getLocale.ts');
-    expect(resolveCacheComponentsSetup(cwd)).toBeUndefined();
+    expect(resolve()).toBeUndefined();
   });
 });
 
 describe('getCacheComponentsManualFix', () => {
   it('names the src paths and the existing proxy', () => {
-    write('src/app/layout.tsx');
-    write('src/app/about/page.tsx');
+    write('src/app/layout.tsx', LAYOUT);
     write('src/proxy.ts');
-    const setup = resolveCacheComponentsSetup(cwd);
+    const setup = resolve();
     expect(setup).toMatchObject({
       mode: 'manual',
       reason: `${path.join('src', 'proxy.ts')} already exists`,
     });
     const fix = getCacheComponentsManualFix(
-      setup as Extract<typeof setup, { mode: 'manual' }>
+      setup as Extract<CacheComponentsSetup, { mode: 'manual' }>
     );
     expect(fix).toContain('src/app/[locale]');
     expect(fix).toContain('add src/getLocale.ts');
@@ -110,64 +127,37 @@ describe('getCacheComponentsManualFix', () => {
   });
 });
 
-describe('rewriteMovedRootFile', () => {
-  it('moves relative imports and typed route props one level deeper', () => {
-    const code = `import './globals.css';
-import styles from './page.module.css';
-import { Nav } from '../components/nav';
-import { Button } from '@/components/button';
-export * from './shared';
-const lazy = import('./lazy');
-export default function Layout({ children }: LayoutProps<'/'>) {}
-type Props = PageProps<'/'>;
-`;
-    expect(rewriteMovedRootFile(code)).toBe(`import '../globals.css';
-import styles from '../page.module.css';
-import { Nav } from '../../components/nav';
-import { Button } from '@/components/button';
-export * from '../shared';
-const lazy = import('../lazy');
-export default function Layout({ children }: LayoutProps<'/[locale]'>) {}
-type Props = PageProps<'/[locale]'>;
-`);
-  });
-});
-
 describe('migrateToCacheComponents', () => {
-  it('moves the root files and writes request functions and a proxy', async () => {
-    write(
-      'src/app/layout.tsx',
-      "import './globals.css';\nexport default function RootLayout({ children }: LayoutProps<'/'>) {\n  return <html lang=\"en\"><body>{children}</body></html>;\n}\n"
-    );
+  it('migrates a fresh template app', async () => {
+    write('src/app/layout.tsx', LAYOUT);
     write('src/app/page.tsx', 'export default function Page() {}\n');
+    write('src/app/globals.css');
+    write('src/app/favicon.ico');
 
-    const written = await migrateToCacheComponents(
-      cwd,
-      {
-        mode: 'migrate',
-        appDir: 'src/app',
-        layout: 'src/app/layout.tsx',
-        page: 'src/app/page.tsx',
-      },
-      true
-    );
+    const written = await migrate();
 
-    expect(written.map((file) => path.relative(cwd, file))).toEqual([
+    expect(written.map((file) => path.relative(cwd, file)).sort()).toEqual([
+      'src/app/[locale]/layout.tsx',
       'src/getLocale.ts',
       'src/getRegion.ts',
       'src/proxy.ts',
-      'src/app/[locale]/layout.tsx',
-      'src/app/[locale]/page.tsx',
     ]);
-    expect(fs.existsSync(path.join(cwd, 'src/app/layout.tsx'))).toBe(false);
-    expect(fs.existsSync(path.join(cwd, 'src/app/page.tsx'))).toBe(false);
+    expect(exists('src/app/[locale]/page.tsx')).toBe(true);
+    expect(exists('src/app/layout.tsx')).toBe(false);
+    expect(exists('src/app/globals.css')).toBe(true);
+    expect(exists('src/app/favicon.ico')).toBe(true);
+    expect(read('src/app/[locale]/layout.tsx')).toBe(
+      `import '../globals.css';
+import { getLocales } from 'gt-next';
+export default function RootLayout({ children }: LayoutProps<'/[locale]'>) {
+  return <html lang="en"><body>{children}</body></html>;
+}
 
-    const layout = read('src/app/[locale]/layout.tsx');
-    expect(layout).toMatch(
-      /^import '\.\.\/globals\.css';\nimport \{ getLocales \} from 'gt-next';\nexport default/
+export function generateStaticParams() {
+  return getLocales().map((locale) => ({ locale }));
+}
+`
     );
-    expect(layout).toContain("LayoutProps<'/[locale]'>");
-    expect(layout).toContain('export function generateStaticParams()');
     expect(read('src/getLocale.ts')).toContain(
       "import { locale } from 'next/root-params';"
     );
@@ -176,41 +166,92 @@ describe('migrateToCacheComponents', () => {
     );
   });
 
+  it('moves route folders and keeps root-only files and code folders in place', async () => {
+    write('tsconfig.json', '{"compilerOptions":{"paths":{"@/*":["./*"]}}}');
+    write('app/layout.tsx', LAYOUT);
+    write('app/not-found.tsx', 'export default function NotFound() {}\n');
+    write('app/global-error.tsx', 'export default function E() {}\n');
+    write('app/sitemap.ts', 'export default function sitemap() {}\n');
+    write('app/opengraph-image.tsx', 'export default function I() {}\n');
+    write('app/api/hello/route.ts', 'export function GET() {}\n');
+    write('app/lib/data.ts', 'export const data = 1;\n');
+    write('app/_components/nav.tsx', 'export function Nav() {}\n');
+    write('app/docs/page.mdx', '# Docs\n');
+    write(
+      'app/(marketing)/about/page.tsx',
+      `import { data } from '../../lib/data';
+import { Nav } from '@/app/_components/nav';
+export default function About(props: PageProps<'/about'>) {}
+`
+    );
+    write(
+      'app/blog/[slug]/page.tsx',
+      `import styles from './post.module.css';
+export default async function Post() {}
+`
+    );
+    write(
+      'components/links.tsx',
+      `export { default as About } from '../app/(marketing)/about/page';
+export { default as Post } from '@/app/blog/[slug]/page';
+`
+    );
+
+    await migrate();
+
+    for (const file of [
+      'app/[locale]/layout.tsx',
+      'app/[locale]/not-found.tsx',
+      'app/[locale]/(marketing)/about/page.tsx',
+      'app/[locale]/blog/[slug]/page.tsx',
+      'app/[locale]/docs/page.mdx',
+      'app/global-error.tsx',
+      'app/sitemap.ts',
+      'app/opengraph-image.tsx',
+      'app/api/hello/route.ts',
+      'app/lib/data.ts',
+      'app/_components/nav.tsx',
+    ]) {
+      expect(exists(file), file).toBe(true);
+    }
+    expect(read('app/[locale]/(marketing)/about/page.tsx')).toBe(
+      `import { data } from '../../../lib/data';
+import { Nav } from '@/app/_components/nav';
+export default function About(props: PageProps<'/[locale]/about'>) {}
+`
+    );
+    expect(read('app/[locale]/blog/[slug]/page.tsx')).toContain(
+      "from './post.module.css'"
+    );
+    expect(read('components/links.tsx')).toBe(
+      `export { default as About } from '../app/[locale]/(marketing)/about/page';
+export { default as Post } from '@/app/[locale]/blog/[slug]/page';
+`
+    );
+  });
+
   it('fails before moving user files when a target file exists', async () => {
-    write('app/layout.tsx', 'export default function RootLayout() {}\n');
+    write('app/layout.tsx', LAYOUT);
     write('app/page.tsx', 'export default function Page() {}\n');
+    const setup = resolve();
     write('proxy.ts', 'export default function proxy() {}\n');
 
     await expect(
       migrateToCacheComponents(
         cwd,
-        {
-          mode: 'migrate',
-          appDir: 'app',
-          layout: 'app/layout.tsx',
-          page: 'app/page.tsx',
-        },
+        setup as Extract<CacheComponentsSetup, { mode: 'migrate' }>,
         true
       )
     ).rejects.toThrow('EEXIST');
-    expect(fs.existsSync(path.join(cwd, 'app/layout.tsx'))).toBe(true);
-    expect(fs.existsSync(path.join(cwd, 'app/page.tsx'))).toBe(true);
+    expect(exists('app/layout.tsx')).toBe(true);
+    expect(exists('app/page.tsx')).toBe(true);
   });
 
   it('writes JavaScript files at the project root without a src directory', async () => {
     write('app/layout.jsx', 'export default function RootLayout() {}\n');
     write('app/page.jsx', 'export default function Page() {}\n');
 
-    await migrateToCacheComponents(
-      cwd,
-      {
-        mode: 'migrate',
-        appDir: 'app',
-        layout: 'app/layout.jsx',
-        page: 'app/page.jsx',
-      },
-      false
-    );
+    await migrate(false);
 
     for (const file of [
       'app/[locale]/layout.jsx',
@@ -219,7 +260,7 @@ describe('migrateToCacheComponents', () => {
       'getRegion.js',
       'proxy.js',
     ]) {
-      expect(fs.existsSync(path.join(cwd, file))).toBe(true);
+      expect(exists(file), file).toBe(true);
     }
   });
 });

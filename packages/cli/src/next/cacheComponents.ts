@@ -3,6 +3,8 @@ import path from 'node:path';
 import { parse } from '@babel/parser';
 import traverseModule from '@babel/traverse';
 import * as t from '@babel/types';
+import fg from 'fast-glob';
+import { loadConfig as loadTsconfigPaths } from 'tsconfig-paths';
 
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
@@ -10,19 +12,41 @@ const traverse = traverseModule.default || traverseModule;
 export const CACHE_COMPONENTS_DOCS_URL =
   'https://generaltranslation.com/docs/react/nextjs/cache-components';
 
+/** A rewritten file, at its path after the move (relative to the app root). */
+type Edit = { file: string; code: string };
+
 /**
  * How setup handles a Next.js config with cacheComponents enabled:
- * - migrate: a fresh-template app whose root layout and page can be moved
- *   under app/[locale] with locale-safe request functions and a proxy.
- * - manual: anything else; the root layout is left alone so the build keeps
- *   working, and a person or agent follows the Cache Components guide.
+ * - migrate: the app's routes move under app/[locale], with every import
+ *   that crosses the move rewritten, plus locale-safe request functions and
+ *   a proxy. Everything is computed before any file changes.
+ * - manual: setup cannot migrate safely; the root layout is left alone so
+ *   the build keeps working, and a person or agent follows the guide.
  */
 export type CacheComponentsSetup =
-  | { mode: 'migrate'; appDir: string; layout: string; page: string }
+  | {
+      mode: 'migrate';
+      appDir: string;
+      moves: { from: string; to: string }[];
+      edits: Edit[];
+    }
   | { mode: 'manual'; reason: string; appDir: string; proxy?: string };
 
 const SCRIPT_EXTENSION = /\.(?:[cm]?[jt]sx?)$/;
-const ROOT_FILES = ['layout', 'page'] as const;
+/** Special files that belong to the root segment and move with it. */
+const SEGMENT_FILES = new Set([
+  'layout',
+  'page',
+  'loading',
+  'error',
+  'not-found',
+  'template',
+  'default',
+  'route',
+]);
+/** Files that make a folder part of the route tree. */
+const ROUTE_FILES = new Set(['layout', 'page', 'route', 'default']);
+const IGNORED = ['**/node_modules/**', '**/.next/**', '**/.git/**', 'out/**'];
 
 function parseModule(code: string) {
   return parse(code, {
@@ -31,16 +55,23 @@ function parseModule(code: string) {
   });
 }
 
-/** Whether the Next.js config sets cacheComponents: true. */
-export function isCacheComponentsEnabled(nextConfigPath: string): boolean {
+const scriptName = (file: string) =>
+  SCRIPT_EXTENSION.test(file) ? file.replace(SCRIPT_EXTENSION, '') : undefined;
+/** Route files can also be MDX pages (pageExtensions). */
+const routeName = (file: string) =>
+  scriptName(file) ?? file.match(/^(.*)\.mdx?$/)?.[1];
+const toPosix = (file: string) => file.split(path.sep).join('/');
+
+/** Whether the Next.js config sets the flag to true. */
+function hasNextConfigFlag(nextConfigPath: string, flag: string): boolean {
   let enabled = false;
   try {
     traverse(parseModule(fs.readFileSync(nextConfigPath, 'utf8')), {
       ObjectProperty(nodePath) {
         const { key, value } = nodePath.node;
         if (
-          (t.isIdentifier(key, { name: 'cacheComponents' }) ||
-            t.isStringLiteral(key, { value: 'cacheComponents' })) &&
+          (t.isIdentifier(key, { name: flag }) ||
+            t.isStringLiteral(key, { value: flag })) &&
           t.isBooleanLiteral(value, { value: true })
         ) {
           enabled = true;
@@ -54,15 +85,62 @@ export function isCacheComponentsEnabled(nextConfigPath: string): boolean {
   return enabled;
 }
 
+/** Whether the Next.js config sets cacheComponents: true. */
+export function isCacheComponentsEnabled(nextConfigPath: string): boolean {
+  return hasNextConfigFlag(nextConfigPath, 'cacheComponents');
+}
+
+/** Wildcard path aliases from tsconfig.json or jsconfig.json. */
+function loadAliases(cwd: string) {
+  let baseUrl: string | undefined;
+  let paths: Record<string, string[]> | undefined;
+  const tsconfig = loadTsconfigPaths(cwd);
+  if (tsconfig.resultType === 'success') {
+    baseUrl = tsconfig.absoluteBaseUrl;
+    paths = tsconfig.paths;
+  } else {
+    try {
+      const { compilerOptions } = JSON.parse(
+        fs.readFileSync(path.join(cwd, 'jsconfig.json'), 'utf8')
+      );
+      baseUrl = path.resolve(cwd, compilerOptions?.baseUrl ?? '.');
+      paths = compilerOptions?.paths;
+    } catch {
+      // No aliases.
+    }
+  }
+  return Object.entries(paths ?? {}).flatMap(([pattern, [target]]) =>
+    baseUrl && pattern.endsWith('*') && target?.endsWith('*')
+      ? [
+          {
+            prefix: pattern.slice(0, -1),
+            dir: path.resolve(baseUrl, target.slice(0, -1)),
+          },
+        ]
+      : []
+  );
+}
+
+function hasRouteFile(dir: string): boolean {
+  return fs
+    .readdirSync(dir, { withFileTypes: true })
+    .some((entry) =>
+      entry.isDirectory()
+        ? entry.name !== 'node_modules' &&
+          hasRouteFile(path.join(dir, entry.name))
+        : ROUTE_FILES.has(routeName(entry.name) ?? '')
+    );
+}
+
 /**
- * Decides whether the app can be migrated to the Cache Components layout,
- * or returns undefined when a custom getLocale() already exists.
- * Only an app directory holding nothing but the root layout, the root page,
- * and non-code assets is moved, because moving routes changes URLs and
- * relative imports that setup cannot safely rewrite in a larger app.
+ * Plans the move of the app's routes under app/[locale], or returns undefined
+ * when a custom getLocale() already exists. Root-only files (api routes,
+ * metadata files, global-error, styles) and folders without routes stay
+ * where they are.
  */
 export function resolveCacheComponentsSetup(
-  cwd: string
+  cwd: string,
+  nextConfigPath: string
 ): CacheComponentsSetup | undefined {
   const findFile = (name: string) =>
     ['', 'src']
@@ -70,11 +148,7 @@ export function resolveCacheComponentsSetup(
         fs.existsSync(path.join(cwd, dir))
           ? fs
               .readdirSync(path.join(cwd, dir))
-              .filter(
-                (file) =>
-                  SCRIPT_EXTENSION.test(file) &&
-                  file.replace(SCRIPT_EXTENSION, '') === name
-              )
+              .filter((file) => scriptName(file) === name)
               .map((file) => path.join(dir, file))
           : []
       )
@@ -91,31 +165,128 @@ export function resolveCacheComponentsSetup(
     appDir,
     proxy,
   });
-  if (!fs.existsSync(path.join(cwd, appDir))) {
+  const absoluteAppDir = path.join(cwd, appDir);
+  if (!fs.existsSync(absoluteAppDir)) {
     return manual('no app directory was found');
   }
   if (proxy) return manual(`${proxy} already exists`);
   const region = findFile('getRegion');
   if (region) return manual(`${region} already exists`);
+  if (hasNextConfigFlag(nextConfigPath, 'typedRoutes')) {
+    return manual('typedRoutes would reject links to the moved routes');
+  }
 
-  const found: Partial<Record<(typeof ROOT_FILES)[number], string>> = {};
-  for (const entry of fs.readdirSync(path.join(cwd, appDir), {
-    withFileTypes: true,
-  })) {
-    if (entry.isDirectory()) {
-      return manual(`${appDir} has route segments or folders`);
-    }
-    if (!SCRIPT_EXTENSION.test(entry.name)) continue;
-    const name = entry.name.replace(SCRIPT_EXTENSION, '');
-    if (name !== 'layout' && name !== 'page') {
-      return manual(`${appDir} has other route files such as ${entry.name}`);
-    }
-    found[name] = path.join(appDir, entry.name);
+  const entries = fs.readdirSync(absoluteAppDir, { withFileTypes: true });
+  const layout = entries.find(
+    (entry) => entry.isFile() && scriptName(entry.name) === 'layout'
+  );
+  if (!layout) {
+    return manual(`${appDir} has no single root layout`);
   }
-  if (!found.layout || !found.page) {
-    return manual(`${appDir} has no root layout and page`);
+  const dynamic = entries.find(
+    (entry) => entry.isDirectory() && entry.name.startsWith('[')
+  );
+  if (dynamic) {
+    return manual(`${appDir}/${dynamic.name} is already a dynamic segment`);
   }
-  return { mode: 'migrate', appDir, layout: found.layout, page: found.page };
+
+  const moves = entries
+    .filter((entry) =>
+      entry.isDirectory()
+        ? entry.name !== 'api' &&
+          !entry.name.startsWith('_') &&
+          hasRouteFile(path.join(absoluteAppDir, entry.name))
+        : SEGMENT_FILES.has(routeName(entry.name) ?? '')
+    )
+    .map((entry) => ({
+      from: path.join(appDir, entry.name),
+      to: path.join(appDir, '[locale]', entry.name),
+    }));
+
+  /** Where an absolute path (with or without its extension) ends up. */
+  const relocate = (target: string) => {
+    for (const { from, to } of moves) {
+      const source = path.join(cwd, from);
+      const destination = path.join(cwd, to);
+      if (target === source || target.startsWith(source + path.sep)) {
+        return destination + target.slice(source.length);
+      }
+      const extension = path.extname(source);
+      if (extension && target === source.slice(0, -extension.length)) {
+        return destination.slice(0, -extension.length);
+      }
+    }
+    return target;
+  };
+
+  // MDX is not parsed, so its relative imports cannot be rewritten.
+  const mdxWithImports = fg
+    .sync(`${toPosix(appDir)}/**/*.{md,mdx}`, { cwd, ignore: IGNORED })
+    .find(
+      (file) =>
+        relocate(path.join(cwd, file)) !== path.join(cwd, file) &&
+        /^\s*(?:import|export)\b[^\n]*\bfrom\s+['"]\./m.test(
+          fs.readFileSync(path.join(cwd, file), 'utf8')
+        )
+    );
+  if (mdxWithImports) {
+    return manual(`${mdxWithImports} has relative imports`);
+  }
+
+  const aliases = loadAliases(cwd);
+  const edits: Edit[] = [];
+  const files = fg.sync('**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}', {
+    cwd,
+    absolute: true,
+    ignore: IGNORED,
+  });
+  for (const file of files) {
+    const moved = relocate(file);
+    const code = fs.readFileSync(file, 'utf8');
+    let rewritten: string;
+    try {
+      rewritten = rewriteFile(code, {
+        resolve: (specifier) => {
+          if (specifier.startsWith('.')) {
+            const original = path.resolve(path.dirname(file), specifier);
+            const target = relocate(original);
+            if (target === original && moved === file) return specifier;
+            const relative = toPosix(
+              path.relative(path.dirname(moved), target)
+            );
+            return relative.startsWith('.') ? relative : `./${relative}`;
+          }
+          const alias = aliases.find(({ prefix }) =>
+            specifier.startsWith(prefix)
+          );
+          if (!alias) return specifier;
+          const target = relocate(
+            path.join(alias.dir, specifier.slice(alias.prefix.length))
+          );
+          const relative = path.relative(alias.dir, target);
+          return relative.startsWith('..')
+            ? specifier
+            : alias.prefix + toPosix(relative);
+        },
+        typedRoutes: moved !== file,
+      });
+    } catch (error) {
+      if (moved === file) continue;
+      return manual(
+        `${path.relative(cwd, file)} could not be parsed (${String(error)})`
+      );
+    }
+    if (file === path.join(absoluteAppDir, layout.name)) {
+      if (/\bgenerateStaticParams\b/.test(code)) {
+        return manual('the root layout already exports generateStaticParams');
+      }
+      rewritten = addStaticParams(rewritten);
+    }
+    if (rewritten !== code) {
+      edits.push({ file: path.relative(cwd, moved), code: rewritten });
+    }
+  }
+  return { mode: 'migrate', appDir, moves, edits };
 }
 
 /** The steps a person or agent follows when setup cannot migrate the app. */
@@ -136,44 +307,50 @@ export function getCacheComponentsManualFix({
 }
 
 /**
- * Prefixes relative imports with ../ after a move one directory deeper, and
- * points typed LayoutProps<'/'> / PageProps<'/'> at the new route.
+ * Rewrites module specifiers with resolve(), and, for moved files, points
+ * typed LayoutProps/PageProps routes at the [locale] segment.
  */
-export function rewriteMovedRootFile(code: string): string {
+export function rewriteFile(
+  code: string,
+  {
+    resolve,
+    typedRoutes,
+  }: { resolve: (specifier: string) => string; typedRoutes: boolean }
+): string {
   const edits: { start: number; end: number; text: string }[] = [];
-  const replaceString = (node: t.StringLiteral, value: string) =>
-    edits.push({
-      start: node.start! + 1,
-      end: node.end! - 1,
-      text: value,
-    });
-  const moveSpecifier = (node: t.Node | null | undefined) => {
-    if (t.isStringLiteral(node) && node.value.startsWith('.')) {
-      replaceString(node, path.posix.join('..', node.value));
+  const replaceString = (node: t.StringLiteral, value: string) => {
+    if (value !== node.value) {
+      edits.push({ start: node.start! + 1, end: node.end! - 1, text: value });
     }
+  };
+  const visitSpecifier = (node: t.Node | null | undefined) => {
+    if (t.isStringLiteral(node)) replaceString(node, resolve(node.value));
   };
 
   traverse(parseModule(code), {
-    ImportDeclaration: ({ node }) => moveSpecifier(node.source),
-    ExportNamedDeclaration: ({ node }) => moveSpecifier(node.source),
-    ExportAllDeclaration: ({ node }) => moveSpecifier(node.source),
+    ImportDeclaration: ({ node }) => visitSpecifier(node.source),
+    ExportNamedDeclaration: ({ node }) => visitSpecifier(node.source),
+    ExportAllDeclaration: ({ node }) => visitSpecifier(node.source),
     CallExpression: ({ node }) => {
       if (
         t.isImport(node.callee) ||
         t.isIdentifier(node.callee, { name: 'require' })
       ) {
-        moveSpecifier(node.arguments[0]);
+        visitSpecifier(node.arguments[0]);
       }
     },
     TSTypeReference: ({ node }) => {
       const param = node.typeParameters?.params[0];
       if (
+        typedRoutes &&
         t.isIdentifier(node.typeName) &&
         ['LayoutProps', 'PageProps'].includes(node.typeName.name) &&
         t.isTSLiteralType(param) &&
-        t.isStringLiteral(param.literal, { value: '/' })
+        t.isStringLiteral(param.literal) &&
+        param.literal.value.startsWith('/')
       ) {
-        replaceString(param.literal, '/[locale]');
+        const route = param.literal.value;
+        replaceString(param.literal, `/[locale]${route === '/' ? '' : route}`);
       }
     },
   });
@@ -225,16 +402,18 @@ export const config = {
 `;
 
 /**
- * Moves the root layout and page under app/[locale] and adds the request
- * functions and proxy that Cache Components needs. Returns the written files.
+ * Moves the app's routes under app/[locale], applies the planned import
+ * rewrites, and adds the request functions and proxy that Cache Components
+ * needs. Returns the files it wrote.
  */
 export async function migrateToCacheComponents(
   cwd: string,
   setup: Extract<CacheComponentsSetup, { mode: 'migrate' }>,
   typescript: boolean
 ): Promise<string[]> {
-  const localeDir = path.join(setup.appDir, '[locale]');
-  await fs.promises.mkdir(path.join(cwd, localeDir), { recursive: true });
+  await fs.promises.mkdir(path.join(cwd, setup.appDir, '[locale]'), {
+    recursive: true,
+  });
 
   // New files first: an existing one fails before any user file moves.
   const written: string[] = [];
@@ -245,20 +424,16 @@ export async function migrateToCacheComponents(
     ['getRegion', GET_REGION],
     ['proxy', PROXY],
   ]) {
-    const file = path.join(sourceDir, name + extension);
-    await fs.promises.writeFile(path.join(cwd, file), content, { flag: 'wx' });
+    const file = path.join(cwd, sourceDir, name + extension);
+    await fs.promises.writeFile(file, content, { flag: 'wx' });
+    written.push(file);
+  }
+  for (const { from, to } of setup.moves) {
+    await fs.promises.rename(path.join(cwd, from), path.join(cwd, to));
+  }
+  for (const { file, code } of setup.edits) {
+    await fs.promises.writeFile(path.join(cwd, file), code);
     written.push(path.join(cwd, file));
   }
-  for (const file of [setup.layout, setup.page]) {
-    const target = path.join(localeDir, path.basename(file));
-    let code = rewriteMovedRootFile(
-      await fs.promises.readFile(path.join(cwd, file), 'utf8')
-    );
-    if (file === setup.layout) code = addStaticParams(code);
-    await fs.promises.writeFile(path.join(cwd, target), code);
-    await fs.promises.rm(path.join(cwd, file));
-    written.push(path.join(cwd, target));
-  }
-
   return written;
 }

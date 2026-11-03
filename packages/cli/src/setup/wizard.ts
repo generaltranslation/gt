@@ -144,7 +144,10 @@ Please let us know what you would like to see added at https://github.com/genera
     if (!plan.nextConfigPath) {
       session.reject('No next.config.[js|ts|mjs|mts] file found');
     } else if (isCacheComponentsEnabled(plan.nextConfigPath)) {
-      plan.cacheComponents = resolveCacheComponentsSetup(process.cwd());
+      plan.cacheComponents = resolveCacheComponentsSetup(
+        process.cwd(),
+        plan.nextConfigPath
+      );
     }
     const formatter = await detectFormatter();
     if (
@@ -184,7 +187,7 @@ async function setUpCacheComponents(
     );
     logger.step(
       chalk.green(
-        `cacheComponents is enabled, so the root layout and page moved to ${setup.appDir}/[locale] with getLocale(), getRegion(), and a proxy. See ${CACHE_COMPONENTS_DOCS_URL}`
+        `cacheComponents is enabled, so the app routes moved to ${setup.appDir}/[locale] with getLocale(), getRegion(), and a proxy. See ${CACHE_COMPONENTS_DOCS_URL}`
       )
     );
     session.step('set up Cache Components locale routing');
