@@ -20,6 +20,7 @@ beforeAll(async () => {
   ];
   mediaId = (
     await payload.create({
+      overrideAccess: true,
       collection: 'media',
       locale: 'en',
       data: { alt: 'A team meeting' },
@@ -35,6 +36,7 @@ afterAll(async () => {
 
 const readPage = (id: string | number, locale: string) =>
   payload.findByID({
+    overrideAccess: true,
     collection: 'pages',
     id,
     locale: locale as 'en',
@@ -57,6 +59,7 @@ describe('translateSite', () => {
     for (const id of pageIds)
       expect((await readPage(id, 'es')).title).toBe('HOME');
     const media = await payload.findByID({
+      overrideAccess: true,
       collection: 'media',
       id: mediaId,
       locale: 'es',
@@ -65,6 +68,7 @@ describe('translateSite', () => {
     });
     expect(media.alt).toBe('A TEAM MEETING');
     const footer = await payload.findGlobal({
+      overrideAccess: true,
       slug: 'footer',
       locale: 'es',
       fallbackLocale: false,
@@ -89,7 +93,11 @@ describe('translateSite', () => {
     const extra = await createPage(payload);
     const gt = new FakeGt();
     gt.duringTranslation = async () => {
-      await payload.delete({ collection: 'pages', id: extra.id });
+      await payload.delete({
+        overrideAccess: true,
+        collection: 'pages',
+        id: extra.id,
+      });
     };
     const result = await translateSite({ payload, gt, locales: ['es'] });
 
@@ -105,6 +113,7 @@ describe('translateSite', () => {
     const gt = new FakeGt();
     await translateSite({ payload, gt, locales: ['es'] });
     await payload.update({
+      overrideAccess: true,
       collection: 'pages',
       id: pageIds[0],
       locale: 'es',

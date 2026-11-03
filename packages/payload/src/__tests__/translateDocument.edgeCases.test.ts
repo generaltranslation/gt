@@ -27,6 +27,7 @@ afterAll(async () => {
 
 const read = (id: string | number, locale: string) =>
   payload.findByID({
+    overrideAccess: true,
     collection: 'pages',
     id,
     locale: locale as 'en',
@@ -36,7 +37,14 @@ const read = (id: string | number, locale: string) =>
   });
 
 const updateEnglish = (id: string | number, data: Record<string, unknown>) =>
-  payload.update({ collection: 'pages', id, locale: 'en', draft: true, data });
+  payload.update({
+    overrideAccess: true,
+    collection: 'pages',
+    id,
+    locale: 'en',
+    draft: true,
+    data,
+  });
 
 describe('translateDocument: edge cases', () => {
   it('reports a locale the GT project does not have, and writes nothing', async () => {
@@ -147,6 +155,7 @@ describe('translateDocument: edge cases', () => {
 
   it('sends nothing for a document with nothing to translate', async () => {
     const media = await payload.create({
+      overrideAccess: true,
       collection: 'media',
       locale: 'en',
       data: {},
@@ -166,6 +175,7 @@ describe('translateDocument: edge cases', () => {
 
   it('leaves documents with nothing to translate out of a site run', async () => {
     const media = await payload.create({
+      overrideAccess: true,
       collection: 'media',
       locale: 'en',
       data: {},

@@ -1,6 +1,6 @@
 // Reading and writing documents through Payload's Local API.
-import { createLocalReq, docAccessOperationGlobal } from 'payload';
-import type { FlattenedField, Payload, TypedUser } from 'payload';
+import { createPayloadRequest, docAccessOperationGlobal } from 'payload';
+import type { FlattenedField, Payload, User } from 'payload';
 import { hasTranslatableFields, type FieldContext } from './content/fields';
 import { createGtPayloadDiagnostic } from './diagnostics';
 import { labelText } from './labels';
@@ -8,11 +8,12 @@ import { targetKey } from './targets';
 import type { Data, TranslateTarget } from './types';
 
 // A signed-in user whose access rules the reads and writes follow. Without
-// one, Payload's Local API skips access rules, as for server code.
-export type Access = { user?: TypedUser | null };
+// one, access rules are skipped, as for server code. Payload's Local API
+// applies them by default, so skipping them is explicit.
+export type Access = { user?: User | null };
 
 const accessOptions = ({ user }: Access) =>
-  user ? { user, overrideAccess: false } : {};
+  user ? { user, overrideAccess: false } : { overrideAccess: true };
 
 export type ResolvedTarget = {
   target: TranslateTarget;
@@ -225,7 +226,8 @@ function translatableGlobals(payload: Payload): TranslateTarget[] {
 }
 
 // Every document in every collection and global with something to
-// translate, except Payload's own collections.
+// translate, except Payload's own collections. With a user, only what they
+// may edit: the rest of the site is not theirs to translate.
 export async function listSiteTargets(
   payload: Payload,
   access: Access = {}
@@ -245,7 +247,12 @@ export async function listSiteTargets(
       ...result.docs.map((doc) => ({ collection: collection.slug, id: doc.id }))
     );
   }
-  return [...targets, ...translatableGlobals(payload)];
+  const all = [...targets, ...translatableGlobals(payload)];
+  if (!access.user) return all;
+  const editable: TranslateTarget[] = [];
+  for (const target of all)
+    if (await canUpdate(payload, target, access)) editable.push(target);
+  return editable;
 }
 
 export type TargetPage = {
@@ -328,7 +335,7 @@ export async function canUpdate(
   access: Access
 ): Promise<boolean> {
   if (!access.user) return true;
-  const req = await createLocalReq({ user: access.user }, payload);
+  const req = await createPayloadRequest({ payload, user: access.user });
   // The change a translation makes: a draft where drafts are on.
   const config =
     'global' in target
@@ -362,6 +369,7 @@ export async function canUpdate(
     id: target.id,
     data,
     req,
+    slug: target.collection,
   });
   if (typeof rule === 'boolean') return rule;
   const matches = async (draft: boolean) =>
@@ -369,6 +377,8 @@ export async function canUpdate(
       await payload.find({
         collection: target.collection,
         where: { and: [{ id: { equals: target.id } }, rule] },
+        // The rule is already in the query, as in Payload's own update.
+        overrideAccess: true,
         draft,
         limit: 1,
         depth: 0,

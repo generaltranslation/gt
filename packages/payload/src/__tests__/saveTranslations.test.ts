@@ -25,6 +25,7 @@ afterAll(async () => {
 
 const read = (id: string | number, locale: string) =>
   payload.findByID({
+    overrideAccess: true,
     collection: 'pages',
     id,
     locale: locale as 'en',
@@ -36,6 +37,7 @@ const read = (id: string | number, locale: string) =>
 const versionCount = async (id: string | number) =>
   (
     await payload.findVersions({
+      overrideAccess: true,
       collection: 'pages',
       where: { parent: { equals: id } },
       limit: 0,
@@ -43,7 +45,14 @@ const versionCount = async (id: string | number) =>
   ).totalDocs;
 
 const editSpanish = (id: string | number, data: Record<string, unknown>) =>
-  payload.update({ collection: 'pages', id, locale: 'es', draft: true, data });
+  payload.update({
+    overrideAccess: true,
+    collection: 'pages',
+    id,
+    locale: 'es',
+    draft: true,
+    data,
+  });
 
 // A page whose Spanish title and SEO title were written by hand before GT.
 async function pageWithHandMadeSpanish() {
@@ -63,6 +72,7 @@ describe('saveTranslations: a document GT has translated', () => {
     await translateDocument({ payload, gt, target, locales: ['es'] });
     await editSpanish(page.id, { title: 'Página principal' });
     await payload.update({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: 'en',
@@ -136,6 +146,7 @@ describe('saveTranslations: a document GT has never seen', () => {
     expect(es.meta?.description ?? null).toBeNull();
 
     await payload.update({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: 'en',

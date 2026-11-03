@@ -1,5 +1,5 @@
-import { DefaultTemplate } from '@payloadcms/next/templates';
 import { Gutter } from '@payloadcms/ui';
+import { DefaultTemplate } from '@payloadcms/ui/rsc';
 import type { AdminViewServerProps } from 'payload';
 import React from 'react';
 import { GtTranslationsClient } from '../client/GtTranslationsClient';
@@ -18,6 +18,7 @@ export function GtTranslationsView({
       params={params}
       payload={req.payload}
       permissions={permissions}
+      req={req}
       searchParams={searchParams}
       user={req.user ?? undefined}
       visibleEntities={visibleEntities}

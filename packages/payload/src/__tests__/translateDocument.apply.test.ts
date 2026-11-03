@@ -19,6 +19,7 @@ afterAll(async () => {
 
 const read = (id: number | string, locale: string, draft = true) =>
   payload.findByID({
+    overrideAccess: true,
     collection: 'pages',
     id,
     locale: locale as 'en',
@@ -54,6 +55,7 @@ describe('translateDocument: writing translations', () => {
 
   it('saves a draft where drafts are on, and publishes nothing', async () => {
     const page = await createPage(payload);
+    const before = await read(page.id, 'es', false);
     await translateDocument({
       payload,
       gt: new FakeGt(),
@@ -62,9 +64,11 @@ describe('translateDocument: writing translations', () => {
     });
 
     expect((await read(page.id, 'es', true)).title).toBe('HOME');
+    // Publication status is per locale: the published Spanish is unchanged.
     const published = await read(page.id, 'es', false);
     expect(published.title ?? null).toBeNull();
-    expect(published._status).toBe('published');
+    expect(published._status).toBe(before._status);
+    expect((await read(page.id, 'en', false))._status).toBe('published');
   });
 
   it('writes directly where drafts are off', async () => {
@@ -77,6 +81,7 @@ describe('translateDocument: writing translations', () => {
     });
 
     const footer = await payload.findGlobal({
+      overrideAccess: true,
       slug: 'footer',
       locale: 'es',
       fallbackLocale: false,
@@ -149,11 +154,12 @@ describe('translateDocument: writing translations', () => {
   it('leaves the slug to Payload and the editor', async () => {
     const page = await createPage(payload);
     await payload.update({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: 'es',
       draft: true,
-      data: { slug: 'inicio', generateSlug: false },
+      data: { slug: 'inicio' },
     });
     await translateDocument({
       payload,
@@ -175,6 +181,7 @@ describe('translateDocument: writing translations', () => {
     });
 
     const header = await payload.findGlobal({
+      overrideAccess: true,
       slug: 'header',
       locale: 'es',
       draft: true,
@@ -198,6 +205,7 @@ describe('translateDocument: running again', () => {
     await translateDocument({ payload, gt, target, locales: ['es'] });
     // Someone clears the Spanish title in Payload; the English is unchanged.
     await payload.update({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: 'es',
@@ -223,6 +231,7 @@ describe('translateDocument: content that changed during translation', () => {
     gt.duringTranslation = async () => {
       const current = await read(page.id, 'en');
       await payload.update({
+        overrideAccess: true,
         collection: 'pages',
         id: page.id,
         locale: 'en',
@@ -261,6 +270,7 @@ describe('translateDocument: content that changed during translation', () => {
     gt.duringTranslation = async () => {
       const current = await read(page.id, 'en');
       await payload.update({
+        overrideAccess: true,
         collection: 'pages',
         id: page.id,
         locale: 'en',
@@ -290,6 +300,7 @@ describe('translateDocument: content that changed during translation', () => {
     const gt = new FakeGt();
     gt.duringTranslation = async () => {
       await payload.update({
+        overrideAccess: true,
         collection: 'pages',
         id: page.id,
         locale: 'en',
@@ -345,6 +356,7 @@ describe('translateDocument: translations that cannot be written', () => {
     const target = { collection: 'pages', id: page.id };
     await translateDocument({ payload, gt, target, locales: ['es'] });
     await payload.update({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: 'en',

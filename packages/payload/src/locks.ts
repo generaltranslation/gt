@@ -46,6 +46,8 @@ export async function acquireLock(
   try {
     await payload.create({
       collection: LOCKS_SLUG,
+      // Locks are private to this plugin; skip their deny-all access rules.
+      overrideAccess: true,
       data: { key, token, expiresAt: new Date(now + ttlMs).toISOString() },
       depth: 0,
     });

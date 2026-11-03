@@ -25,6 +25,7 @@ const DESCRIPTION =
 
 const createArticle = () =>
   payload.create({
+    overrideAccess: true,
     collection: 'articles',
     locale: 'en',
     data: {
@@ -37,6 +38,7 @@ const createArticle = () =>
 
 const read = async (id: string | number) =>
   payload.findByID({
+    overrideAccess: true,
     collection: 'articles',
     id,
     locale: 'es',

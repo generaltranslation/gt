@@ -18,6 +18,7 @@ afterAll(async () => {
 
 const read = (id: number | string, locale: string) =>
   payload.findByID({
+    overrideAccess: true,
     collection: 'pages',
     id,
     locale: locale as 'en',
@@ -29,6 +30,7 @@ const read = (id: number | string, locale: string) =>
 const versionCount = async (id: number | string) =>
   (
     await payload.findVersions({
+      overrideAccess: true,
       collection: 'pages',
       where: { parent: { equals: id } },
       limit: 0,
@@ -73,7 +75,11 @@ describe('translateDocument: failures', () => {
     const page = await createPage(payload);
     const gt = new FakeGt();
     gt.duringTranslation = async () => {
-      await payload.delete({ collection: 'pages', id: page.id });
+      await payload.delete({
+        overrideAccess: true,
+        collection: 'pages',
+        id: page.id,
+      });
     };
     const result = await translateDocument({
       payload,

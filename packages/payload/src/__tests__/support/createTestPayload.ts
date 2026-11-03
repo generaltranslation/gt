@@ -1,10 +1,10 @@
 import { sqliteAdapter } from '@payloadcms/db-sqlite';
 import {
   BlocksFeature,
-  EXPERIMENTAL_TableFeature,
+  TableFeature,
   lexicalEditor,
 } from '@payloadcms/richtext-lexical';
-import { buildConfig, getPayload, slugField } from 'payload';
+import { buildConfig, getPayload } from 'payload';
 import type { Block, CollectionConfig, Field, Payload, Plugin } from 'payload';
 
 // A link as Payload's website template defines it: a URL and a label. A new
@@ -25,17 +25,14 @@ const NESTED_BLOCK: Block = {
     {
       name: 'children',
       type: 'blocks',
-      blocks: [],
-      blockReferences: ['nested'],
+      blocks: ['nested'],
     },
     { name: 'title', type: 'text', localized: true },
   ],
 };
 const TREES: CollectionConfig = {
   slug: 'trees',
-  fields: [
-    { name: 'root', type: 'blocks', blocks: [], blockReferences: ['nested'] },
-  ],
+  fields: [{ name: 'root', type: 'blocks', blocks: ['nested'] }],
 };
 
 // Emails of users who may read notices but not update them.
@@ -149,6 +146,8 @@ export function testConfig(
                       slug: 'callout',
                       fields: [{ name: 'content', type: 'richText' }],
                     },
+                    // Defined once in the config and referenced by slug.
+                    'quote',
                   ],
                 }),
               ],
@@ -166,7 +165,14 @@ export function testConfig(
             localized: true,
             custom: { gt: { translate: false } },
           },
-          slugField({ localized: true }),
+          {
+            name: 'slug',
+            type: 'slug',
+            localized: true,
+            useAsSlug: 'title',
+            // Tests create many pages with the same title.
+            unique: false,
+          },
         ],
       },
       {
@@ -247,7 +253,7 @@ export function testConfig(
             editor: lexicalEditor({
               features: ({ defaultFeatures }) => [
                 ...defaultFeatures,
-                EXPERIMENTAL_TableFeature(),
+                TableFeature(),
               ],
             }),
           },
@@ -276,12 +282,27 @@ export function testConfig(
           {
             name: 'layout',
             type: 'blocks',
-            blocks: [],
-            blockReferences: ['quote'],
+            blocks: ['quote'],
           },
         ],
       },
       ...(recursiveBlocks ? [TREES] : []),
+      {
+        // Localized, but nothing to translate: a read-only list like the
+        // nested docs plugin's breadcrumbs, and a localized checkbox.
+        slug: 'tags',
+        fields: [
+          { name: 'name', type: 'text' },
+          {
+            name: 'breadcrumbs',
+            type: 'array',
+            localized: true,
+            admin: { readOnly: true },
+            fields: [{ name: 'label', type: 'text' }],
+          },
+          { name: 'featured', type: 'checkbox', localized: true },
+        ],
+      },
       {
         // Editors may save drafts but not change a published document.
         slug: 'gated',
@@ -293,11 +314,13 @@ export function testConfig(
         fields: [{ name: 'note', type: 'text', localized: true }],
       },
       {
-        // Readable and editable while the latest draft is marked editable.
+        // Readable by signed-in users and editable while the latest draft is
+        // marked editable.
         slug: 'memos',
         versions: { drafts: true },
         access: {
-          read: () => ({ editable: { equals: true } }),
+          read: ({ req }) =>
+            req.user ? { editable: { equals: true } } : false,
           update: () => ({ editable: { equals: true } }),
         },
         fields: [

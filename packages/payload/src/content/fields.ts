@@ -53,8 +53,6 @@ type Walked = { value: unknown; changed: boolean };
 
 // Payload adds these to rows. They identify rows and are never content.
 const ROW_FIELDS = new Set(['id', 'blockName', 'blockType']);
-// Payload's built-in slug field renders with this admin component.
-const SLUG_FIELD_COMPONENT = '@payloadcms/next/client#SlugField';
 // The SEO plugin's meta fields render with these and show these lengths.
 const SEO_LENGTHS: Record<string, number> = {
   '@payloadcms/plugin-seo/client#MetaTitleComponent': 60,
@@ -80,12 +78,6 @@ function fieldComponent(field: FlattenedField): unknown {
     'path' in component
     ? component.path
     : component;
-}
-
-function isSlugField(field: FlattenedField): boolean {
-  return (
-    field.type === 'text' && fieldComponent(field) === SLUG_FIELD_COMPONENT
-  );
 }
 
 function lengthLimit(field: FlattenedField): LengthLimit | undefined {
@@ -145,17 +137,17 @@ function needsSourceValue(
   );
 }
 
-// A blocks field's blocks, including those defined once and referenced.
+// A blocks field's blocks, resolving those defined once and referenced by
+// slug.
 function blocksOf(
   field: Extract<FlattenedField, { type: 'blocks' }>,
   ctx: FieldContext
 ): FlattenedBlock[] {
-  const references = (field.blockReferences ?? []).flatMap((ref) => {
+  return field.blocks.flatMap((ref) => {
     const block =
       typeof ref === 'string' ? ctx.blocks.find((b) => b.slug === ref) : ref;
     return block ? [block] : [];
   });
-  return [...field.blocks, ...references];
 }
 
 function blockFields(
@@ -169,25 +161,29 @@ function blockFields(
 
 function richTextBlockFields(
   field: RichTextField,
-  blockType: unknown
+  blockType: unknown,
+  ctx: FieldContext
 ): FlattenedField[] | undefined {
   const editor = field.editor as
     | { editorConfig?: { resolvedFeatureMap?: Map<string, unknown> } }
     | undefined;
   const feature = editor?.editorConfig?.resolvedFeatureMap?.get('blocks') as
     | {
+        // The feature's props as written: blocks, or slugs of blocks
+        // defined once in the config.
         sanitizedServerFeatureProps?: {
-          blocks?: Block[];
-          inlineBlocks?: Block[];
+          blocks?: (Block | string)[];
+          inlineBlocks?: (Block | string)[];
         };
       }
     | undefined;
   const props = feature?.sanitizedServerFeatureProps;
-  const config = [
-    ...(props?.blocks ?? []),
-    ...(props?.inlineBlocks ?? []),
-  ].find((b) => b.slug === blockType);
-  return config ? flattenAllFields({ fields: config.fields }) : undefined;
+  const ref = [...(props?.blocks ?? []), ...(props?.inlineBlocks ?? [])].find(
+    (b) => (typeof b === 'string' ? b : b.slug) === blockType
+  );
+  if (typeof ref === 'string')
+    return ctx.blocks.find((b) => b.slug === ref)?.flattenedFields;
+  return ref ? flattenAllFields({ fields: ref.fields }) : undefined;
 }
 
 // A group or row in a locale's own copy, rebuilt with the source's shape: the
@@ -274,8 +270,6 @@ function walkField(
       if (!localized) return { value: target, changed: false };
       if (field.hasMany)
         return walkTextList(source, target, key, visitor, lengthLimit(field));
-      // Slugs are left to Payload and the editor.
-      if (isSlugField(field)) return { value: target, changed: false };
       return walkText(source, target, key, visitor, true, lengthLimit(field));
     case 'textarea':
       return localized
@@ -317,6 +311,7 @@ function walkField(
         visitor,
         ctx
       );
+    // Includes slug fields, which are left to Payload and the editor.
     default:
       return { value: target, changed: false };
   }
@@ -530,7 +525,7 @@ function walkNode(
 ): boolean {
   const sameTarget = target && target.type === node.type ? target : undefined;
   if (node.type === 'block' && isData(node.fields)) {
-    const fields = richTextBlockFields(field, node.fields.blockType);
+    const fields = richTextBlockFields(field, node.fields.blockType, ctx);
     if (!fields) return false;
     // The locale's block only counts as the same block when it has the same
     // block type.
@@ -598,7 +593,6 @@ export function hasTranslatableFields(
     const localized = isLocalized(field, inLocaleCopy);
     switch (field.type) {
       case 'text':
-        return localized && !isSlugField(field);
       case 'textarea':
       case 'richText':
         return localized;

@@ -63,38 +63,70 @@ const TRANSLATIONS_VIEW = 'gt-payload/rsc#GtTranslationsView';
 // Also linked from the client nav link.
 const TRANSLATIONS_VIEW_PATH = '/translations';
 
-// Whether any field is localized, including named tabs and blocks defined
-// once in the config and referenced by slug.
+// Field types whose text is translated.
+const TEXT_TYPES = new Set(['text', 'textarea', 'richText']);
+
+// Fields translation leaves alone: read-only, hidden, virtual or opted out.
+function leftAlone(field: Field): boolean {
+  const admin =
+    'admin' in field
+      ? (field.admin as { readOnly?: boolean; hidden?: boolean } | undefined)
+      : undefined;
+  const custom = (field.custom ?? {}) as { gt?: { translate?: boolean } };
+  return Boolean(
+    admin?.readOnly ||
+    admin?.hidden ||
+    ('virtual' in field && field.virtual) ||
+    custom.gt?.translate === false
+  );
+}
+
+// Whether any text would be translated, by the rules translation follows:
+// text inside a localized field, including named tabs and blocks defined once
+// in the config and referenced by slug.
 function hasLocalizedField(
   fields: Field[],
   blocks: Block[],
+  inLocalized = false,
   // Blocks being checked, as a block can hold itself.
   visiting = new Set<string>()
 ): boolean {
   return fields.some((field) => {
-    if ('localized' in field && field.localized) return true;
-    if ('fields' in field && hasLocalizedField(field.fields, blocks, visiting))
-      return true;
+    if (leftAlone(field)) return false;
+    const localized =
+      inLocalized || ('localized' in field && Boolean(field.localized));
+    if (TEXT_TYPES.has(field.type)) return localized;
     if (field.type === 'tabs')
-      return field.tabs.some(
-        (tab) =>
-          ('localized' in tab && Boolean(tab.localized)) ||
-          hasLocalizedField(tab.fields, blocks, visiting)
+      return field.tabs.some((tab) =>
+        hasLocalizedField(
+          tab.fields,
+          blocks,
+          localized || ('localized' in tab && Boolean(tab.localized)),
+          visiting
+        )
       );
     if (field.type === 'blocks') {
-      const referenced = (field.blockReferences ?? []).flatMap((ref) => {
+      const fieldBlocks = field.blocks.flatMap((ref) => {
         const block =
           typeof ref === 'string' ? blocks.find((b) => b.slug === ref) : ref;
         return block ? [block] : [];
       });
-      return [...(field.blocks ?? []), ...referenced].some((block) => {
-        if (visiting.has(block.slug)) return false;
-        visiting.add(block.slug);
-        const found = hasLocalizedField(block.fields, blocks, visiting);
-        visiting.delete(block.slug);
+      return fieldBlocks.some((block) => {
+        const key = `${block.slug}|${localized}`;
+        if (visiting.has(key)) return false;
+        visiting.add(key);
+        const found = hasLocalizedField(
+          block.fields,
+          blocks,
+          localized,
+          visiting
+        );
+        visiting.delete(key);
         return found;
       });
     }
+    if ('fields' in field)
+      return hasLocalizedField(field.fields, blocks, localized, visiting);
     return false;
   });
 }
@@ -114,6 +146,39 @@ function targetLocales(
   return requested?.length
     ? requested.filter((code) => supported.includes(code))
     : supported;
+}
+
+// The locales a run translates into. Refuses, rather than quietly drops,
+// locales GT cannot translate into, so a run never does less than asked.
+function runLocales(
+  payload: Payload,
+  customMapping: CustomMapping | undefined,
+  requested: string[] | undefined
+): string[] {
+  const supported = targetLocales(payload, customMapping, undefined);
+  const unsupported = (requested ?? []).filter(
+    (code) => !supported.includes(code)
+  );
+  if (unsupported.length)
+    throw new APIError(
+      createGtPayloadDiagnostic({
+        whatHappened: 'Some requested languages cannot be translated into',
+        why: 'they are not locales in the Payload config, other than the default locale, that General Translation supports',
+        fix: 'Request only those locales',
+        details: [`Languages: ${unsupported.join(', ')}`],
+      }),
+      400
+    );
+  const locales = requested?.length ? requested : supported;
+  if (!locales.length)
+    throw new APIError(
+      createGtPayloadDiagnostic({
+        whatHappened: 'There are no languages to translate into',
+        fix: 'Add a locale General Translation supports to the Payload config',
+      }),
+      400
+    );
+  return locales;
 }
 
 // Refuses before any work when the user may not edit every document asked
@@ -179,12 +244,13 @@ function endpoints(
       method: 'post',
       handler: handler<RunBody>(async (req, body) => {
         const targets = body.site ? 'site' : (body.targets ?? []);
+        const locales = runLocales(req.payload, customMapping, body.locales);
         if (targets !== 'site') await assertCanUpdate(req, targets);
         return startRun({
           payload: req.payload,
           kind: body.kind === 'save' ? 'save' : 'translate',
           targets,
-          locales: targetLocales(req.payload, customMapping, body.locales),
+          locales,
           saveLocalEdits: body.saveLocalEdits,
           user: req.user,
         });
@@ -263,17 +329,17 @@ function withGlobalControls(
   blocks: Block[]
 ): GlobalConfig {
   if (!hasLocalizedField(global.fields, blocks)) return global;
-  const elements = global.admin?.components?.elements;
+  const edit = global.admin?.components?.edit;
   return {
     ...global,
     admin: {
       ...global.admin,
       components: {
         ...global.admin?.components,
-        elements: {
-          ...elements,
+        edit: {
+          ...edit,
           beforeDocumentControls: [
-            ...(elements?.beforeDocumentControls ?? []),
+            ...(edit?.beforeDocumentControls ?? []),
             DOCUMENT_CONTROLS,
           ],
         },
@@ -339,6 +405,7 @@ export const gtPlugin =
             gtTranslations: {
               Component: TRANSLATIONS_VIEW,
               path: TRANSLATIONS_VIEW_PATH,
+              meta: { title: 'Translations' },
             },
           },
         },

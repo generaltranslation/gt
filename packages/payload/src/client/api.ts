@@ -21,7 +21,10 @@ async function post<T>(route: string, path: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   });
   const json = (await response.json()) as T & { error?: string };
-  if (!response.ok) throw new Error(json.error ?? response.statusText);
+  if (!response.ok)
+    throw Object.assign(new Error(json.error ?? response.statusText), {
+      status: response.status,
+    });
   return json;
 }
 

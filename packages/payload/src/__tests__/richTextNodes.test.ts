@@ -23,6 +23,7 @@ beforeAll(async () => {
   payload = await createTestPayload();
   mediaId = (
     await payload.create({
+      overrideAccess: true,
       collection: 'media',
       locale: 'en',
       data: { alt: 'Photo' },
@@ -53,6 +54,7 @@ const cell = (value: string, headerState = 0) =>
 
 async function translateBody(...children: Node[]) {
   const article = await payload.create({
+    overrideAccess: true,
     collection: 'articles',
     locale: 'en',
     data: {
@@ -68,6 +70,7 @@ async function translateBody(...children: Node[]) {
     locales: ['es'],
   });
   const es = await payload.findByID({
+    overrideAccess: true,
     collection: 'articles',
     id: article.id,
     locale: 'es',

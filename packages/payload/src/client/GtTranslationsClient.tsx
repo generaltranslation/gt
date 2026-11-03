@@ -1,4 +1,5 @@
 'use client';
+import { SetStepNav } from '@payloadcms/ui';
 import React, { useState } from 'react';
 import { CoverageTable } from './CoverageTable';
 import { TranslatePanel } from './TranslatePanel';
@@ -12,20 +13,31 @@ export function GtTranslationsClient() {
       data-testid='gt-translations'
       style={{
         display: 'grid',
-        gap: 'calc(var(--base) * 2)',
-        padding: 'calc(var(--base) * 2) 0',
+        gap: 'var(--spacer-6)',
+        padding: 'var(--spacer-6) 0',
       }}
     >
       <div
         style={{
           display: 'grid',
-          gap: 'calc(var(--base) * 1.5)',
+          gap: 'var(--spacer-4)',
           maxWidth: 800,
         }}
       >
+        <SetStepNav nav={[{ label: 'Translations' }]} />
         <header>
-          <h1 style={{ margin: 0 }}>Translations</h1>
-          <p style={{ margin: 'calc(var(--base) / 3) 0 0', opacity: 0.7 }}>
+          {/* Payload 4 leaves headings unstyled; use its title tokens. */}
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 'var(--text-heading-xl-font-size)',
+              lineHeight: 'var(--text-heading-xl-line-height)',
+              fontWeight: 'var(--text-heading-xl-font-weight)',
+            }}
+          >
+            Translations
+          </h1>
+          <p style={{ margin: 'var(--spacer-1-5) 0 0', opacity: 0.7 }}>
             Translate your whole site.
           </p>
         </header>

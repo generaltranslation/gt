@@ -17,6 +17,7 @@ afterAll(async () => {
 
 it("translates from Payload's default locale and leaves it untouched", async () => {
   const page = await payload.create({
+    overrideAccess: true,
     collection: 'pages',
     locale: 'de',
     data: { title: 'Startseite', slug: 'startseite', _status: 'published' },
@@ -34,6 +35,7 @@ it("translates from Payload's default locale and leaves it untouched", async () 
   );
   const read = (locale: string) =>
     payload.findByID({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: locale as 'de',

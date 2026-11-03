@@ -33,7 +33,11 @@ export function useTranslate(options: LocaleOption[], onDone?: () => void) {
           details: formatDiagnosticErrorDetails(error),
         })
       );
-      toast.error(failure);
+      // Trying again does not help when the user may not edit the document.
+      const forbidden = (error as { status?: number } | null)?.status === 403;
+      toast.error(
+        forbidden ? "You don't have permission to edit this document." : failure
+      );
     } finally {
       setProgress(null);
       onDone?.();
