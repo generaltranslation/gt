@@ -218,8 +218,8 @@ gtPlugin({
 ```
 
 Each uploaded document is sent with its first location in its published
-version. Documents that are unpublished, or whose type has no location, are
-sent without one.
+version. A type with fixed locations sends them even for unpublished documents.
+Other unpublished documents, and types with no location, are sent without one.
 
 ## Automatic Actions
 

@@ -1,4 +1,4 @@
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 import type { DocumentPreviewStore, SanityDocument, Schema } from 'sanity';
 import type { DocumentLocationResolvers } from 'sanity/presentation';
 import { pluginConfig } from '../adapter/core';
@@ -9,6 +9,16 @@ export type PreviewUrlConfig = {
   origin: string;
   /** The `locations` given to `presentationTool({ resolve: { locations } })`; a document's first location is its page. */
   locations: DocumentLocationResolvers;
+};
+
+// Sanity's preview store retries a failed read without end, so each read gives up after this long.
+const PREVIEW_READ_TIMEOUT_MS = 10_000;
+
+export type ResolvedPreviewUrls = {
+  /** Page URL per published document id, for documents with a page. */
+  urls: Map<string, string>;
+  /** Why each document that failed has no URL. */
+  failures: unknown[];
 };
 
 /** Resolves a published document's first location the way Presentation does. */
@@ -26,11 +36,16 @@ async function resolvePreviewUrl(
       ? resolver.resolve(
           (
             await firstValueFrom(
-              previewStore.observeForPreview(
-                { _type: 'reference', _ref: getDocumentPublishedId(document) },
-                { ...type, preview: { select: resolver.select } },
-                { perspective: ['published'] }
-              )
+              previewStore
+                .observeForPreview(
+                  {
+                    _type: 'reference',
+                    _ref: getDocumentPublishedId(document),
+                  },
+                  { ...type, preview: { select: resolver.select } },
+                  { perspective: ['published'] }
+                )
+                .pipe(timeout(PREVIEW_READ_TIMEOUT_MS))
             )
           ).snapshot || null
         )
@@ -39,15 +54,16 @@ async function resolvePreviewUrl(
   return href ? new URL(href, config.origin).href : undefined;
 }
 
-/** Page URL per published document id, for documents with a page when the plugin is configured with `previewUrl`. */
+/** Page URLs of the documents when the plugin is configured with `previewUrl`; one document failing leaves the others' URLs. */
 export async function resolvePreviewUrls(
   documents: SanityDocument[],
   schema: Schema,
   previewStore: DocumentPreviewStore
-): Promise<Map<string, string>> {
+): Promise<ResolvedPreviewUrls> {
+  const resolved: ResolvedPreviewUrls = { urls: new Map(), failures: [] };
   const config = pluginConfig.getPreviewUrl();
-  if (!config) return new Map();
-  const urls = await Promise.all(
+  if (!config) return resolved;
+  const results = await Promise.allSettled(
     documents.map(
       async (document) =>
         [
@@ -56,7 +72,12 @@ export async function resolvePreviewUrls(
         ] as const
     )
   );
-  return new Map(
-    urls.flatMap(([id, url]) => (url ? [[id, url] as const] : []))
-  );
+  for (const result of results) {
+    if (result.status === 'rejected') {
+      resolved.failures.push(result.reason);
+    } else if (result.value[1]) {
+      resolved.urls.set(result.value[0], result.value[1]);
+    }
+  }
+  return resolved;
 }

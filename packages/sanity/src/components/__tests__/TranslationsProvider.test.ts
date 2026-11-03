@@ -28,13 +28,14 @@ const mocks = vi.hoisted(() => ({
   createJobs: vi.fn(),
   collectExistingTranslations: vi.fn(),
   resolvePreviewUrls: vi.fn(),
+  createDocumentPreviewStore: vi.fn(() => ({})),
 }));
 
 vi.mock('sanity', async (importOriginal) => ({
   ...(await importOriginal<typeof import('sanity')>()),
   useSchema: () => mocks.schema,
   useDocumentStore: mocks.useDocumentStore,
-  useDocumentPreviewStore: () => ({}),
+  createDocumentPreviewStore: mocks.createDocumentPreviewStore,
 }));
 vi.mock('@sanity/ui/toast', () => ({
   useToast: () => ({ push: mocks.toastPush }),
@@ -137,7 +138,7 @@ beforeEach(() => {
   vi.spyOn(console, 'error').mockImplementation(() => {});
   mocks.uploadFiles.mockResolvedValue({ uploadedFiles: [] });
   mocks.collectExistingTranslations.mockResolvedValue(new Map());
-  mocks.resolvePreviewUrls.mockResolvedValue(new Map());
+  mocks.resolvePreviewUrls.mockResolvedValue({ urls: new Map(), failures: [] });
   mocks.useDocumentStore.mockReturnValue(mocks.documentStore);
 });
 
@@ -309,9 +310,10 @@ describe('Translate All', () => {
     mocks.client = Object.assign(client, {
       config: () => ({ projectId: 'p', dataset: 'd' }),
     });
-    mocks.resolvePreviewUrls.mockResolvedValue(
-      new Map([['a', 'https://staging.acme.test/en/a']])
-    );
+    mocks.resolvePreviewUrls.mockResolvedValue({
+      urls: new Map([['a', 'https://staging.acme.test/en/a']]),
+      failures: [],
+    });
 
     const context = await renderProvider();
     await act(() => context.handleTranslateAll());
@@ -330,12 +332,30 @@ describe('Translate All', () => {
     });
   });
 
+  test('reads preview URLs through a new preview store on every run', async () => {
+    const { client } = createGroqClient([page('a', 'en')]);
+    mocks.client = Object.assign(client, {
+      config: () => ({ projectId: 'p', dataset: 'd' }),
+    });
+
+    const context = await renderProvider();
+    await act(() => context.handleTranslateAll());
+    await act(() => context.handleTranslateAll({ force: true }));
+
+    const stores = mocks.resolvePreviewUrls.mock.calls.map((call) => call[2]);
+    expect(stores).toHaveLength(2);
+    expect(stores[0]).not.toBe(stores[1]);
+  });
+
   test('uploads without preview URLs when they cannot be resolved', async () => {
     const { client } = createGroqClient([page('a', 'en')]);
     mocks.client = Object.assign(client, {
       config: () => ({ projectId: 'p', dataset: 'd' }),
     });
-    mocks.resolvePreviewUrls.mockRejectedValue(new Error('resolver threw'));
+    mocks.resolvePreviewUrls.mockResolvedValue({
+      urls: new Map(),
+      failures: [new Error('resolver threw')],
+    });
 
     const context = await renderProvider();
     await act(() => context.handleTranslateAll());
@@ -354,7 +374,7 @@ describe('Translate All', () => {
     expect(mocks.toastPush).toHaveBeenCalledWith(
       expect.objectContaining({
         title:
-          'Preview URLs could not be resolved. Translation is continuing without them.',
+          '1 preview URL(s) could not be resolved. Translation is continuing without them.',
         status: 'warning',
       })
     );

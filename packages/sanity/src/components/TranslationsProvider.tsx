@@ -9,7 +9,7 @@ import React, {
 } from 'react';
 import {
   SanityDocument,
-  useDocumentPreviewStore,
+  createDocumentPreviewStore,
   useDocumentStore,
   useSchema,
 } from 'sanity';
@@ -437,7 +437,6 @@ const TranslationsProviderContent: React.FC<
     [setPreference]
   );
   const schema = useSchema();
-  const documentPreviewStore = useDocumentPreviewStore();
   const translationContext: TranslationFunctionContext = { client, schema };
   const toast = useToast();
   const { loading: loadingSecrets, secrets } = useSecrets<Secrets>(
@@ -704,24 +703,23 @@ const TranslationsProviderContent: React.FC<
   // Preview URLs help reviewers but are not needed to translate, so a failure warns and uploads without them.
   const resolveSourcePreviewUrls = useCallback(
     async (sourceDocuments: SanityDocument[]) => {
-      try {
-        return await resolvePreviewUrls(
-          sourceDocuments,
-          schema,
-          documentPreviewStore
-        );
-      } catch (error) {
-        console.error('Could not resolve preview URLs.', error);
+      const { urls, failures } = await resolvePreviewUrls(
+        sourceDocuments,
+        schema,
+        // The Studio's shared store replays the last value it saw, which can be an outdated page.
+        createDocumentPreviewStore({ client })
+      );
+      if (failures.length > 0) {
+        console.error('Could not resolve preview URLs.', failures);
         toast.push({
-          title:
-            'Preview URLs could not be resolved. Translation is continuing without them.',
+          title: `${failures.length} preview URL(s) could not be resolved. Translation is continuing without them.`,
           status: 'warning',
           closable: true,
         });
-        return new Map<string, string>();
       }
+      return urls;
     },
-    [documentPreviewStore, schema, toast]
+    [client, schema, toast]
   );
 
   const handleTranslateAll = useCallback(

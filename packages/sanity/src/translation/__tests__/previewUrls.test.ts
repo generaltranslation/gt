@@ -1,4 +1,4 @@
-import { of } from 'rxjs';
+import { NEVER, of } from 'rxjs';
 import type { DocumentPreviewStore, SanityDocument, Schema } from 'sanity';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { pluginConfig } from '../../adapter/core';
@@ -55,7 +55,7 @@ describe('resolvePreviewUrls', () => {
     vi.spyOn(pluginConfig, 'getPreviewUrl').mockReturnValue(null);
     const { store, observeForPreview } = previewStoreFor({});
 
-    const urls = await resolvePreviewUrls(
+    const { urls } = await resolvePreviewUrls(
       [doc('pricing', 'page')],
       schema,
       store
@@ -68,15 +68,16 @@ describe('resolvePreviewUrls', () => {
   test('links a document to its first location on the origin', async () => {
     const { store } = previewStoreFor({ pricing: { slug: 'pricing' } });
 
-    const urls = await resolvePreviewUrls(
+    const resolved = await resolvePreviewUrls(
       [doc('pricing', 'page')],
       schema,
       store
     );
 
-    expect(urls).toEqual(
-      new Map([['pricing', 'https://staging.acme.test/en/pricing']])
-    );
+    expect(resolved).toEqual({
+      urls: new Map([['pricing', 'https://staging.acme.test/en/pricing']]),
+      failures: [],
+    });
   });
 
   test("selects a draft's published fields as Presentation does", async () => {
@@ -84,7 +85,7 @@ describe('resolvePreviewUrls', () => {
       pricing: { slug: 'pricing' },
     });
 
-    const urls = await resolvePreviewUrls(
+    const { urls } = await resolvePreviewUrls(
       [doc('drafts.pricing', 'page')],
       schema,
       store
@@ -104,7 +105,7 @@ describe('resolvePreviewUrls', () => {
   test('gives an unpublished document no link', async () => {
     const { store } = previewStoreFor({});
 
-    const urls = await resolvePreviewUrls(
+    const { urls } = await resolvePreviewUrls(
       [doc('drafts.pricing', 'page')],
       schema,
       store
@@ -116,7 +117,7 @@ describe('resolvePreviewUrls', () => {
   test('links a type with fixed locations without reading the document', async () => {
     const { store, observeForPreview } = previewStoreFor({});
 
-    const urls = await resolvePreviewUrls(
+    const { urls } = await resolvePreviewUrls(
       [doc('siteSettings', 'settings')],
       schema,
       store
@@ -126,10 +127,59 @@ describe('resolvePreviewUrls', () => {
     expect(observeForPreview).not.toHaveBeenCalled();
   });
 
+  test("keeps the other documents' links when one document fails", async () => {
+    vi.spyOn(pluginConfig, 'getPreviewUrl').mockReturnValue({
+      ...config,
+      locations: {
+        ...config.locations,
+        settings: {
+          select: {},
+          resolve: () => {
+            throw new Error('resolver threw');
+          },
+        },
+      },
+    });
+    const { store } = previewStoreFor({
+      pricing: { slug: 'pricing' },
+      siteSettings: {},
+    });
+
+    const resolved = await resolvePreviewUrls(
+      [doc('siteSettings', 'settings'), doc('pricing', 'page')],
+      schema,
+      store
+    );
+
+    expect(resolved.urls).toEqual(
+      new Map([['pricing', 'https://staging.acme.test/en/pricing']])
+    );
+    expect(resolved.failures).toEqual([new Error('resolver threw')]);
+  });
+
+  test('gives up on a read that never answers', async () => {
+    vi.useFakeTimers();
+    const store = {
+      observeForPreview: () => NEVER,
+    } as unknown as DocumentPreviewStore;
+
+    const resolving = resolvePreviewUrls(
+      [doc('pricing', 'page')],
+      schema,
+      store
+    );
+    await vi.advanceTimersByTimeAsync(10_000);
+    const resolved = await resolving;
+
+    expect(resolved.urls.size).toBe(0);
+    expect(resolved.failures).toHaveLength(1);
+    vi.useRealTimers();
+  });
+
   test('gives a type without locations no link', async () => {
     const { store } = previewStoreFor({ jane: { slug: 'jane' } });
 
-    const urls = await resolvePreviewUrls(
+    const { urls } = await resolvePreviewUrls(
       [doc('jane', 'author')],
       schema,
       store
