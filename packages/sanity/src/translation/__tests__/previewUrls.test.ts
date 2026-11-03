@@ -47,6 +47,14 @@ const dataset = [
   { _id: 'jane', _type: 'author', slug: { current: 'jane' } },
   { _id: 'news', _type: 'category', slug: { current: 'news' } },
   {
+    _id: 'draft-author-post',
+    _type: 'post',
+    slug: { current: 'hello' },
+    author: { _type: 'reference', _ref: 'sam' },
+    categories: [{ _key: 'a', _type: 'reference', _ref: 'news' }],
+  },
+  { _id: 'drafts.sam', _type: 'author', slug: { current: 'sam' } },
+  {
     _id: 'launch',
     _type: 'post',
     slug: { current: 'launch' },
@@ -108,14 +116,31 @@ describe('resolvePreviewUrls', () => {
   });
 
   test('follows references and array items along a select path', async () => {
-    const { urls } = await resolvePreviewUrls(
-      [doc('launch', 'post')],
-      client().client
-    );
+    const { client: sanity, fetch } = client();
+
+    const { urls } = await resolvePreviewUrls([doc('launch', 'post')], sanity);
 
     expect(urls.get('launch')).toBe(
       'https://staging.acme.test/en/news/jane/launch'
     );
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  test('reads nothing past a reference to an unpublished document', async () => {
+    const resolve = vi.fn(() => null);
+    vi.spyOn(pluginConfig, 'getPreviewUrl').mockReturnValue({
+      ...config,
+      locations: {
+        post: { select: { author: 'author.slug.current' }, resolve },
+      },
+    });
+
+    await resolvePreviewUrls(
+      [doc('draft-author-post', 'post')],
+      client().client
+    );
+
+    expect(resolve).toHaveBeenCalledWith({ author: undefined });
   });
 
   test('gives an unpublished document no link', async () => {

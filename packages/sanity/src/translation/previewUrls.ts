@@ -17,42 +17,111 @@ export type ResolvedPreviewUrls = {
   failures: unknown[];
 };
 
-type Snapshot = { _id: string } & Record<string, unknown>;
+type Snapshot = Record<string, unknown>;
 
-const ATTRIBUTE = /^[A-Za-z_][A-Za-z0-9_]*$/;
-const INDEX = /^\d+$/;
+/** A `select` path being read: the value reached so far and the segments left. */
+type Walk = { value: unknown; path: string[] };
 
-/** GROQ for a preview `select` path; like Presentation, a reference met before the path ends is followed. */
-function selectExpression(path: string): string {
-  const [attribute, ...rest] = path.split('.');
-  if (!attribute || !ATTRIBUTE.test(attribute)) {
-    throw new Error(`Unsupported preview select path "${path}"`);
-  }
-  let value = attribute;
-  while (rest[0] !== undefined && INDEX.test(rest[0])) {
-    value = `${value}[${rest.shift()}]`;
-  }
-  if (rest.length === 0) return value;
-  return `coalesce(${value}->, ${value}){"value": ${selectExpression(rest.join('.'))}}.value`;
+function isReference(value: unknown): value is { _ref: string } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as { _ref?: unknown })._ref === 'string'
+  );
 }
 
-/** One query for the selected fields of every document whose type resolves its locations. */
-function snapshotQuery(locations: DocumentLocationResolvers): string {
-  const projections = Object.entries(locations).flatMap(([type, resolver]) =>
-    'resolve' in resolver
-      ? [
-          `_type == ${JSON.stringify(type)} => {${Object.entries(
-            resolver.select
-          )
-            .map(
-              ([key, path]) =>
-                `${JSON.stringify(key)}: ${selectExpression(String(path))}`
-            )
-            .join(', ')}}`,
-        ]
-      : []
+function waitsOnReference(
+  walk: Walk
+): walk is Walk & { value: { _ref: string } } {
+  return walk.path.length > 0 && isReference(walk.value);
+}
+
+/** Walks a path until it ends or reaches a reference that has to be read first. */
+function step({ value, path }: Walk): Walk {
+  let remaining = path;
+  while (remaining.length > 0 && !isReference(value)) {
+    const [segment, ...rest] = remaining;
+    value =
+      typeof value === 'object' && value !== null
+        ? (value as Record<string, unknown>)[segment!]
+        : undefined;
+    remaining = rest;
+  }
+  return { value, path: remaining };
+}
+
+async function fetchPublished(
+  client: SanityClient,
+  ids: string[]
+): Promise<Map<string, SanityDocument>> {
+  const documents = await client.fetch<SanityDocument[]>(
+    '*[_id in $ids]',
+    { ids },
+    { perspective: 'published' }
   );
-  return `*[_id in $ids]{_id, ${projections.join(', ')}}`;
+  return new Map(documents.map((document) => [document._id, document]));
+}
+
+/** Reads each path the way Sanity's preview store does, with one fetch per level of references. */
+async function readPaths(
+  client: SanityClient,
+  walks: Walk[]
+): Promise<unknown[]> {
+  let current = walks.map(step);
+  for (;;) {
+    const ids = [
+      ...new Set(
+        current.filter(waitsOnReference).map((walk) => walk.value._ref)
+      ),
+    ];
+    if (ids.length === 0) return current.map((walk) => walk.value);
+    const documents = await fetchPublished(client, ids);
+    current = current.map((walk) =>
+      waitsOnReference(walk)
+        ? step({
+            value: documents.get(walk.value._ref) ?? null,
+            path: walk.path,
+          })
+        : walk
+    );
+  }
+}
+
+/** The selected fields of each published document whose type resolves its locations, by published id. */
+async function readSnapshots(
+  client: SanityClient,
+  documents: SanityDocument[],
+  locations: DocumentLocationResolvers
+): Promise<Map<string, Snapshot>> {
+  const selections = documents.flatMap((document) => {
+    const resolver = locations[document._type];
+    return resolver && 'resolve' in resolver
+      ? [{ id: getDocumentPublishedId(document), select: resolver.select }]
+      : [];
+  });
+  if (selections.length === 0) return new Map();
+  const published = await fetchPublished(client, [
+    ...new Set(selections.map(({ id }) => id)),
+  ]);
+  const snapshots = new Map<string, Snapshot>();
+  const fields = selections.flatMap(({ id, select }) => {
+    const document = published.get(id);
+    if (!document) return [];
+    snapshots.set(id, {});
+    return Object.entries(select).map(([key, path]) => ({
+      id,
+      key,
+      walk: { value: document, path: String(path).split('.') },
+    }));
+  });
+  const values = await readPaths(
+    client,
+    fields.map(({ walk }) => walk)
+  );
+  fields.forEach(({ id, key }, index) => {
+    snapshots.get(id)![key] = values[index];
+  });
+  return snapshots;
 }
 
 function previewUrl(
@@ -75,23 +144,9 @@ export async function resolvePreviewUrls(
   const resolved: ResolvedPreviewUrls = { urls: new Map(), failures: [] };
   const config = pluginConfig.getPreviewUrl();
   if (!config) return resolved;
-  const ids = documents
-    .filter((document) => {
-      const resolver = config.locations[document._type];
-      return resolver !== undefined && 'resolve' in resolver;
-    })
-    .map(getDocumentPublishedId);
   let snapshots: Map<string, Snapshot>;
   try {
-    const rows =
-      ids.length === 0
-        ? []
-        : await client.fetch<Snapshot[]>(
-            snapshotQuery(config.locations),
-            { ids },
-            { perspective: 'published' }
-          );
-    snapshots = new Map(rows.map((row) => [row._id, row]));
+    snapshots = await readSnapshots(client, documents, config.locations);
   } catch (error) {
     resolved.failures.push(error);
     return resolved;
