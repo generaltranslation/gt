@@ -636,6 +636,16 @@ class I18nCache<TranslationValue extends Translation = Translation> {
   }
 
   /**
+   * The locale whose catalog serves `locale`, as lookups resolve it: a
+   * dialect or alias maps to its supported locale. Undefined when `locale`
+   * needs no translation. An invalid locale is handled like a failed lookup:
+   * logged in production, thrown in development.
+   */
+  resolveTranslationLocale(locale: string): string | undefined {
+    return this.guard(undefined, () => this._resolveCacheLocale(locale));
+  }
+
+  /**
    * Resolve the locale key used to load/read locale caches.
    * Returns undefined when the requested locale can use source content.
    */

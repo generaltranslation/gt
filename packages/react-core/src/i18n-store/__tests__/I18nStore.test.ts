@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { initializeI18nConfig } from 'gt-i18n/internal';
+import { hashMessage, initializeI18nConfig } from 'gt-i18n/internal';
 import { setReactI18nCache } from '../../i18n-cache/singleton-operations';
 import { I18nStore } from '../I18nStore';
-import type { ReactI18nCache } from '../../i18n-cache/ReactI18nCache';
+import { ReactI18nCache } from '../../i18n-cache/ReactI18nCache';
 import type { TranslateLookup } from '../storeTypes';
 
 type TestGlobal = typeof globalThis & {
@@ -138,5 +138,60 @@ describe('I18nStore runtime translation failure handling', () => {
     store.translateDictionaryObject({ locale: 'fr', id: 'nav' });
 
     await vi.waitFor(() => expect(consoleError).toHaveBeenCalledTimes(1));
+  });
+});
+
+describe('I18nStore translation snapshots', () => {
+  beforeEach(resetGTGlobals);
+
+  it('reads a dialect lookup from the catalog the cache would use', () => {
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
+    setReactI18nCache(
+      new ReactI18nCache({ loadTranslations: async () => ({}) })
+    );
+    const hash = hashMessage(lookup.message, lookup.options);
+
+    expect(
+      new I18nStore().getTranslateSnapshot(
+        { ...lookup, locale: 'fr-FR' },
+        { fr: { [hash]: 'Bonjour' } }
+      )
+    ).toBe('Bonjour');
+  });
+
+  it('still reads a snapshot keyed by the raw lookup locale', () => {
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
+    setReactI18nCache(
+      new ReactI18nCache({ loadTranslations: async () => ({}) })
+    );
+    const hash = hashMessage(lookup.message, lookup.options);
+
+    // getTranslationsSnapshot('fr-FR') keys its catalog by the raw locale.
+    expect(
+      new I18nStore().getTranslateSnapshot(
+        { ...lookup, locale: 'fr-FR' },
+        { 'fr-FR': { [hash]: 'Bonjour' } }
+      )
+    ).toBe('Bonjour');
+  });
+
+  it('reads no snapshot entry for an invalid locale in production, as the cache does', () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
+    setReactI18nCache(
+      new ReactI18nCache({ loadTranslations: async () => ({}) })
+    );
+
+    try {
+      expect(
+        new I18nStore().getTranslateSnapshot(
+          { ...lookup, locale: 'not a locale!!' },
+          {}
+        )
+      ).toBeUndefined();
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });

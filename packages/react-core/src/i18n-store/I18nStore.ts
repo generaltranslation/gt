@@ -184,13 +184,19 @@ export class I18nStore {
     lookup: TranslateLookup<T>,
     translationsSnapshot: Record<Locale, Record<Hash, Translation>> = {}
   ): TranslateSnapshot<T> => {
+    const cache = getReactI18nCache();
+    const resolveSnapshot = () => {
+      // A provider's catalog may be keyed by the locale that serves a lookup,
+      // as the cache resolves it, rather than by the lookup's own locale.
+      const locale = cache.resolveTranslationLocale(lookup.locale);
+      return locale === undefined || locale === lookup.locale
+        ? undefined
+        : lookupTranslation(translationsSnapshot, { ...lookup, locale });
+    };
     return (
       lookupTranslation(translationsSnapshot, lookup) ??
-      getReactI18nCache().lookupTranslation<T>(
-        lookup.locale,
-        lookup.message,
-        lookup.options
-      )
+      resolveSnapshot() ??
+      cache.lookupTranslation<T>(lookup.locale, lookup.message, lookup.options)
     );
   };
 
