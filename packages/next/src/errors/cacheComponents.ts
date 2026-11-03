@@ -1,5 +1,8 @@
 import { createGtNextDiagnostic } from './diagnostics';
 
+const CACHE_COMPONENTS_DOCS_URL =
+  'https://generaltranslation.com/docs/react/nextjs/cache-components';
+
 // ---- WARNINGS ---- //
 export type CacheComponentsRequestFunction = 'getLocale' | 'getRegion';
 
@@ -18,10 +21,11 @@ export const createCacheComponentsMissingRequestFunctionsWarning = (
     .join(' and ');
 
   return createGtNextDiagnostic({
+    severity: 'Warning',
     whatHappened: `cacheComponents is enabled, but custom ${functionNames} ${isPlural ? 'are' : 'is'} not configured`,
-    wayOut:
-      'cacheComponents requires explicit request functions because request values cannot be inferred safely during prerendering',
+    why: 'the default request functions read headers and cookies, which Next.js does not allow while prerendering',
     fix: `Add ${fileNames} ${isPlural ? 'files' : 'file'}, or configure ${configKeys}`,
+    docsUrl: CACHE_COMPONENTS_DOCS_URL,
   });
 };
 
@@ -30,7 +34,7 @@ export const cacheComponentsNonLocalTranslationsWarning =
     severity: 'Warning',
     whatHappened:
       'cacheComponents is enabled, but translations are not stored locally',
-    wayOut: 'Prerendering may fail',
+    why: 'loading remote translations while prerendering may fail',
     fix: 'Store translations locally before building cached pages',
     docsUrl: 'https://generaltranslation.com/en-US/docs/next/guides/local-tx',
   });
@@ -40,9 +44,9 @@ export const cacheComponentsMissingLoadTranslationsError =
     severity: 'Error',
     whatHappened:
       'cacheComponents is enabled, but custom loadTranslations() is not configured',
-    wayOut:
-      'gt-next cannot safely use the default remote translation loader with Cache Components',
+    why: 'gt-next cannot safely use the default remote translation loader with Cache Components',
     fix: 'Add a loadTranslations.ts file, or configure loadTranslationsPath, and mark any dynamic loading with "use cache"',
+    docsUrl: CACHE_COMPONENTS_DOCS_URL,
   });
 
 export const cacheComponentsDevHotReloadDisabledWarning =
