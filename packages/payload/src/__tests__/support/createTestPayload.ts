@@ -4,7 +4,7 @@ import {
   TableFeature,
   lexicalEditor,
 } from '@payloadcms/richtext-lexical';
-import { buildConfig, getPayload } from 'payload';
+import { buildConfig, Forbidden, getPayload } from 'payload';
 import type { Block, CollectionConfig, Field, Payload, Plugin } from 'payload';
 
 // A link as Payload's website template defines it: a URL and a label. A new
@@ -279,6 +279,19 @@ export function testConfig(
         ],
       },
       ...(recursiveBlocks ? [TREES] : []),
+      {
+        // Refuses editors in LOCKED_OUT by throwing, as some access rules do,
+        // rather than returning false.
+        slug: 'vaults',
+        access: {
+          read: () => true,
+          update: ({ req }) => {
+            if (LOCKED_OUT.has(String(req.user?.email))) throw new Forbidden();
+            return true;
+          },
+        },
+        fields: [{ name: 'note', type: 'text', localized: true }],
+      },
       {
         // Payload's localized slug field, kept off pages: on create Payload
         // works out a unique slug for every other locale, which slows each

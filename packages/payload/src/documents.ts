@@ -1,6 +1,16 @@
 // Reading and writing documents through Payload's Local API.
-import { createPayloadRequest, docAccessOperationGlobal } from 'payload';
-import type { FlattenedField, Payload, User } from 'payload';
+import {
+  APIError,
+  createPayloadRequest,
+  docAccessOperationGlobal,
+} from 'payload';
+import type {
+  FlattenedField,
+  Payload,
+  PayloadRequest,
+  User,
+  Where,
+} from 'payload';
 import { hasTranslatableFields, type FieldContext } from './content/fields';
 import { createGtPayloadDiagnostic } from './diagnostics';
 import { labelText } from './labels';
@@ -247,12 +257,11 @@ export async function listSiteTargets(
       ...result.docs.map((doc) => ({ collection: collection.slug, id: doc.id }))
     );
   }
-  const all = [...targets, ...translatableGlobals(payload)];
-  if (!access.user) return all;
-  const editable: TranslateTarget[] = [];
-  for (const target of all)
-    if (await canUpdate(payload, target, access)) editable.push(target);
-  return editable;
+  return editableTargets(
+    payload,
+    [...targets, ...translatableGlobals(payload)],
+    access
+  );
 }
 
 export type TargetPage = {
@@ -334,21 +343,65 @@ export async function canUpdate(
   target: TranslateTarget,
   access: Access
 ): Promise<boolean> {
-  if (!access.user) return true;
+  return (await editableTargets(payload, [target], access)).length === 1;
+}
+
+// An access rule refusing outright by throwing, as Payload's Forbidden does,
+// rather than returning false.
+const refused = (error: unknown) =>
+  error instanceof APIError && error.status === 403;
+
+// The change a translation makes: a draft where drafts are on.
+const draftData = (versions: unknown) =>
+  versions && typeof versions === 'object' && 'drafts' in versions
+    ? versions.drafts
+      ? { _status: 'draft' }
+      : {}
+    : {};
+
+// The targets the user may update, as Payload's own update decides: each
+// document's update rule for that change, and a rule that depends on field
+// values met by the latest draft or, failing that, the main document.
+// Documents whose rules return the same query share its database reads, so
+// checking a whole site costs a few reads per collection, not per document.
+// A rule that refuses one document leaves only that document out.
+export async function editableTargets(
+  payload: Payload,
+  targets: TranslateTarget[],
+  access: Access
+): Promise<TranslateTarget[]> {
+  if (!access.user) return targets;
   const req = await createPayloadRequest({ payload, user: access.user });
-  // The change a translation makes: a draft where drafts are on.
-  const config =
-    'global' in target
-      ? payload.config.globals.find((g) => g.slug === target.global)
-      : payload.collections[target.collection]?.config;
-  const data =
-    config?.versions && config.versions.drafts ? { _status: 'draft' } : {};
-  if ('global' in target) {
+  const allowed = new Set<string>();
+  const byCollection = new Map<string, (string | number)[]>();
+  for (const target of targets) {
+    if ('global' in target) {
+      if (await canUpdateGlobal(payload, target.global, req))
+        allowed.add(targetKey(target));
+    } else
+      byCollection.set(target.collection, [
+        ...(byCollection.get(target.collection) ?? []),
+        target.id,
+      ]);
+  }
+  for (const [collection, ids] of byCollection) {
+    for (const id of await editableIds(payload, collection, ids, req))
+      allowed.add(targetKey({ collection, id }));
+  }
+  return targets.filter((target) => allowed.has(targetKey(target)));
+}
+
+async function canUpdateGlobal(
+  payload: Payload,
+  slug: string,
+  req: PayloadRequest
+): Promise<boolean> {
+  const globalConfig = payload.globals.config.find((g) => g.slug === slug);
+  if (!globalConfig) return false;
+  try {
     const permissions = await docAccessOperationGlobal({
-      globalConfig: payload.globals.config.find(
-        (g) => g.slug === target.global
-      )!,
-      data,
+      globalConfig,
+      data: draftData(globalConfig.versions),
       req,
     });
     const update = permissions.update as
@@ -359,31 +412,59 @@ export async function canUpdate(
       update === true ||
       (typeof update === 'object' && Boolean(update.permission))
     );
+  } catch (error) {
+    if (refused(error)) return false;
+    throw error;
   }
-  // As Payload's own update does: the update rule for that change, and a rule
-  // that depends on field values met by the latest draft or, failing that,
-  // the main document.
-  const rule = await payload.collections[
-    target.collection
-  ].config.access.update({
-    id: target.id,
-    data,
-    req,
-    slug: target.collection,
-  });
-  if (typeof rule === 'boolean') return rule;
-  const matches = async (draft: boolean) =>
-    (
-      await payload.find({
-        collection: target.collection,
-        where: { and: [{ id: { equals: target.id } }, rule] },
+}
+
+async function editableIds(
+  payload: Payload,
+  collection: string,
+  ids: (string | number)[],
+  req: PayloadRequest
+): Promise<(string | number)[]> {
+  const config = payload.collections[collection]?.config;
+  if (!config) return [];
+  const data = draftData(config.versions);
+  const editable: (string | number)[] = [];
+  // Documents whose rule is a query, grouped by that query.
+  const queries = new Map<string, { rule: Where; ids: (string | number)[] }>();
+  for (const id of ids) {
+    let rule: boolean | Where;
+    try {
+      rule = await config.access.update({ id, data, req, slug: collection });
+    } catch (error) {
+      if (refused(error)) continue;
+      throw error;
+    }
+    if (rule === true) editable.push(id);
+    else if (rule && typeof rule === 'object') {
+      const key = JSON.stringify(rule);
+      const query = queries.get(key) ?? { rule, ids: [] };
+      query.ids.push(id);
+      queries.set(key, query);
+    }
+  }
+  for (const { rule, ids: candidates } of queries.values()) {
+    // As strings: ids may arrive as "2" for a numeric id.
+    const matched = new Set<string>();
+    for (const draft of [true, false]) {
+      const pending = candidates.filter((id) => !matched.has(String(id)));
+      if (!pending.length) break;
+      const result = await payload.find({
+        collection,
+        where: { and: [{ id: { in: pending } }, rule] },
         // The rule is already in the query, as in Payload's own update.
         overrideAccess: true,
         draft,
-        limit: 1,
+        pagination: false,
         depth: 0,
         select: {},
-      })
-    ).totalDocs > 0;
-  return (await matches(true)) || (await matches(false));
+      });
+      for (const doc of result.docs) matched.add(String(doc.id));
+    }
+    editable.push(...candidates.filter((id) => matched.has(String(id))));
+  }
+  return editable;
 }

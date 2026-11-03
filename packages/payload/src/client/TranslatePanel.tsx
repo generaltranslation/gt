@@ -22,6 +22,8 @@ export function TranslatePanel({
   const route = apiRoute(config);
   const options = useLocaleOptions();
   const codes = options.filter((o) => o.supported).map((o) => o.code);
+  // No locale to translate into: nothing here can do anything.
+  const noLanguages = codes.length === 0;
   const [remembered, setSelected] = useRemembered(
     'locales',
     codes,
@@ -58,6 +60,12 @@ export function TranslatePanel({
           readOnly={busy}
           onToggle={(event) => setSaveLocalEdits(event.target.checked)}
         />
+        {noLanguages && (
+          <p style={{ margin: 0, color: 'var(--color-text-warning)' }}>
+            There are no languages to translate into. Add a locale General
+            Translation supports to your Payload config.
+          </p>
+        )}
         {blocked && (
           <p style={{ margin: 0, color: 'var(--color-text-warning)' }}>
             {blocked}
@@ -86,7 +94,7 @@ export function TranslatePanel({
           size='medium'
           margin={false}
           id='gt-save'
-          disabled={busy || Boolean(blocked)}
+          disabled={busy || Boolean(blocked) || noLanguages}
           onClick={() => void save(route, scope, codes)}
         >
           Save local edits
