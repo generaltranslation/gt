@@ -357,7 +357,7 @@ describe('Translate All', () => {
     expect(mocks.toastPush).toHaveBeenCalledWith(
       expect.objectContaining({
         title:
-          '1 preview URL(s) could not be resolved. Translation is continuing without them.',
+          'Some preview URLs could not be resolved. Translation is continuing without them.',
         status: 'warning',
       })
     );

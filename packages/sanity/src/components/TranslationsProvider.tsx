@@ -700,20 +700,20 @@ const TranslationsProviderContent: React.FC<
     async (sourceDocuments: SanityDocument[]) => {
       const { urls, failures } = await resolvePreviewUrls(
         sourceDocuments,
-        schema,
         client
       );
       if (failures.length > 0) {
         console.error('Could not resolve preview URLs.', failures);
         toast.push({
-          title: `${failures.length} preview URL(s) could not be resolved. Translation is continuing without them.`,
+          title:
+            'Some preview URLs could not be resolved. Translation is continuing without them.',
           status: 'warning',
           closable: true,
         });
       }
       return urls;
     },
-    [client, schema, toast]
+    [client, toast]
   );
 
   const handleTranslateAll = useCallback(
