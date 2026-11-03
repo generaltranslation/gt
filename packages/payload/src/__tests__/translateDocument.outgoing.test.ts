@@ -46,12 +46,31 @@ describe('translateDocument: what is sent', () => {
     ]) {
       expect(sent.some((s) => s.includes(expected))).toBe(true);
     }
-    // A select value, a code field, an opted-out field and the slug stay in Payload.
+    // A select value, a code field and an opted-out field stay in Payload.
     const everything = sent.join('\n');
     expect(everything).not.toContain('full');
     expect(everything).not.toContain('const answer');
     expect(everything).not.toContain('Reviewed by legal');
-    expect(everything).not.toContain(page.slug as string);
+  });
+
+  it("never sends Payload's slug field", async () => {
+    const post = await payload.create({
+      overrideAccess: true,
+      collection: 'posts',
+      locale: 'en',
+      data: { title: 'Hello world', slug: 'unusual-slug-text' },
+    });
+    const gt = new FakeGt();
+    await translateDocument({
+      payload,
+      gt,
+      target: { collection: 'posts', id: post.id },
+      locales: ['es'],
+    });
+
+    const sent = await sentStrings(gt);
+    expect(sent).toContain('Hello world');
+    expect(sent.join('\n')).not.toContain('unusual-slug-text');
   });
 
   it('sends rich text links and formats as tags, never the link targets', async () => {

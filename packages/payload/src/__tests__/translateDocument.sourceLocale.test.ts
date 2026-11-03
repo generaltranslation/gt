@@ -20,7 +20,7 @@ it("translates from Payload's default locale and leaves it untouched", async () 
     overrideAccess: true,
     collection: 'pages',
     locale: 'de',
-    data: { title: 'Startseite', slug: 'startseite', _status: 'published' },
+    data: { title: 'Startseite', _status: 'published' },
   });
   const gt = new FakeGt();
   await translateDocument({

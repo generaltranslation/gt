@@ -152,23 +152,36 @@ describe('translateDocument: writing translations', () => {
   });
 
   it('leaves the slug to Payload and the editor', async () => {
-    const page = await createPage(payload);
+    const post = await payload.create({
+      overrideAccess: true,
+      collection: 'posts',
+      locale: 'en',
+      data: { title: 'Hello' },
+    });
     await payload.update({
       overrideAccess: true,
-      collection: 'pages',
-      id: page.id,
+      collection: 'posts',
+      id: post.id,
       locale: 'es',
-      draft: true,
       data: { slug: 'inicio' },
     });
     await translateDocument({
       payload,
       gt: new FakeGt(),
-      target: { collection: 'pages', id: page.id },
+      target: { collection: 'posts', id: post.id },
       locales: ['es'],
     });
 
-    expect((await read(page.id, 'es')).slug).toBe('inicio');
+    const es = await payload.findByID({
+      overrideAccess: true,
+      collection: 'posts',
+      id: post.id,
+      locale: 'es',
+      fallbackLocale: false,
+      depth: 0,
+    });
+    expect(es.title).toBe('HELLO');
+    expect(es.slug).toBe('inicio');
   });
 
   it('mirrors locale-copied lists, keeping their links', async () => {

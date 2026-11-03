@@ -12,7 +12,6 @@ export async function createPage(payload: Payload) {
     locale: 'en',
     data: {
       title: 'Home',
-      slug: `home-${counter}`,
       _status: 'published',
       hero: {
         richText: richText(

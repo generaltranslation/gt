@@ -165,14 +165,6 @@ export function testConfig(
             localized: true,
             custom: { gt: { translate: false } },
           },
-          {
-            name: 'slug',
-            type: 'slug',
-            localized: true,
-            useAsSlug: 'title',
-            // Tests create many pages with the same title.
-            unique: false,
-          },
         ],
       },
       {
@@ -287,6 +279,21 @@ export function testConfig(
         ],
       },
       ...(recursiveBlocks ? [TREES] : []),
+      {
+        // Payload's localized slug field, kept off pages: on create Payload
+        // works out a unique slug for every other locale, which slows each
+        // create as a collection grows.
+        slug: 'posts',
+        fields: [
+          { name: 'title', type: 'text', localized: true },
+          {
+            name: 'slug',
+            type: 'slug',
+            localized: true,
+            useAsSlug: 'title',
+          },
+        ],
+      },
       {
         // Localized, but nothing to translate: a read-only list like the
         // nested docs plugin's breadcrumbs, and a localized checkbox.
