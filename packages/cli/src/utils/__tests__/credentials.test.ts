@@ -5,17 +5,14 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   areCredentialsSet,
-  findLegacyDevelopmentKey,
-  getCredentialsEnvFileName,
   getDevelopmentEnvNames,
   setCredentials,
 } from '../credentials.js';
 
 describe('setCredentials', () => {
   let appDirectory: string;
-  const envPath = (file = '.env.local') => path.join(appDirectory, file);
-  const readEnv = (file?: string) => fs.readFileSync(envPath(file), 'utf8');
-  const nextEnvFile = '.env.development.local';
+  const envPath = () => path.join(appDirectory, '.env.local');
+  const readEnv = () => fs.readFileSync(envPath(), 'utf8');
 
   beforeEach(() => {
     appDirectory = fs.mkdtempSync(path.join(tmpdir(), 'gt-credentials-'));
@@ -45,7 +42,8 @@ describe('setCredentials', () => {
     ['gatsby', 'GATSBY_'],
     ['react', 'REACT_APP_'],
     ['redwood', 'REDWOOD_ENV_'],
-    ['next-app', 'NEXT_PUBLIC_'],
+    // App Router keeps both server-only; gt-next hands the key to the client.
+    ['next-app', ''],
     [undefined, ''],
   ] as const)(
     'prefixes variables for %s with "%s"',
@@ -56,67 +54,29 @@ describe('setCredentials', () => {
         appDirectory
       );
 
-      expect(readEnv(getCredentialsEnvFileName(framework))).toBe(
+      expect(readEnv()).toBe(
         `${prefix}GT_PROJECT_ID=project-id\n${prefix}GT_DEV_API_KEY=gtx-api-key\n`
       );
     }
   );
 
-  it.each(['next-app', 'next-pages'] as const)(
-    'saves %s credentials to .env.development.local, which next build skips',
-    async (framework) => {
-      const existing = 'DATABASE_URL=postgres://localhost/app\n';
-      fs.writeFileSync(envPath(), existing);
-
-      await setCredentials(
-        { projectId: 'project-id', apiKey: 'gtx-api-key' },
-        framework,
-        appDirectory
-      );
-
-      expect(readEnv(nextEnvFile)).toBe(
-        'NEXT_PUBLIC_GT_PROJECT_ID=project-id\nNEXT_PUBLIC_GT_DEV_API_KEY=gtx-api-key\n'
-      );
-      expect(readEnv()).toBe(existing);
-      expect(
-        fs.readFileSync(path.join(appDirectory, '.gitignore'), 'utf8')
-      ).toBe(`${nextEnvFile}\n`);
-    }
-  );
-
-  it('finds a Next.js development key left in .env.local by an older init', async () => {
-    fs.writeFileSync(envPath(), 'NEXT_PUBLIC_GT_DEV_API_KEY=gtx-old-key\n');
-
-    await expect(
-      findLegacyDevelopmentKey('next-app', appDirectory)
-    ).resolves.toBe('NEXT_PUBLIC_GT_DEV_API_KEY');
-    // .env.local is still the right place for other frameworks.
-    await expect(
-      findLegacyDevelopmentKey(undefined, appDirectory)
-    ).resolves.toBeUndefined();
-    fs.writeFileSync(envPath(), 'NEXT_PUBLIC_GT_PROJECT_ID=p1\n');
-    await expect(
-      findLegacyDevelopmentKey('next-app', appDirectory)
-    ).resolves.toBeUndefined();
-  });
-
   it('preserves unrelated lines, comments, and the production key byte for byte', async () => {
     const existing =
       '# app settings\n\n\nDATABASE_URL=postgres://localhost/app\nexport GT_API_KEY=gtx-production-key\nNEXT_PUBLIC_GT_PROJECT_ID=old-project\nOTHER="quoted value" # trailing comment';
-    fs.writeFileSync(envPath(nextEnvFile), existing);
+    fs.writeFileSync(envPath(), existing);
 
     await setCredentials(
       { projectId: 'new-project', apiKey: 'gtx-dev-key' },
-      'next-app',
+      'next-pages',
       appDirectory
     );
 
-    expect(readEnv(nextEnvFile)).toBe(
+    expect(readEnv()).toBe(
       '# app settings\n\n\nDATABASE_URL=postgres://localhost/app\nexport GT_API_KEY=gtx-production-key\nNEXT_PUBLIC_GT_PROJECT_ID=new-project\nOTHER="quoted value" # trailing comment\nNEXT_PUBLIC_GT_DEV_API_KEY=gtx-dev-key\n'
     );
     // Outside a repository the existing file is seeded into .gitignore too.
     expect(fs.readFileSync(path.join(appDirectory, '.gitignore'), 'utf8')).toBe(
-      `${nextEnvFile}\n`
+      '.env.local\n'
     );
   });
 
@@ -144,7 +104,7 @@ describe('setCredentials', () => {
 
   it('leaves another framework prefix and same-suffix names alone', async () => {
     fs.writeFileSync(
-      envPath(nextEnvFile),
+      envPath(),
       'VITE_GT_PROJECT_ID=vite-project\nMY_GT_DEV_API_KEY=not-ours\n'
     );
 
@@ -154,7 +114,7 @@ describe('setCredentials', () => {
       appDirectory
     );
 
-    expect(readEnv(nextEnvFile)).toBe(
+    expect(readEnv()).toBe(
       'VITE_GT_PROJECT_ID=vite-project\nMY_GT_DEV_API_KEY=not-ours\nNEXT_PUBLIC_GT_PROJECT_ID=project-id\nNEXT_PUBLIC_GT_DEV_API_KEY=gtx-api-key\n'
     );
   });
@@ -576,6 +536,15 @@ describe('areCredentialsSet', () => {
     );
   });
 
+  it('recognizes the server-only development key for next-app', () => {
+    vi.stubEnv('GT_DEV_API_KEY', 'gtx-dev');
+    vi.stubEnv('NEXT_PUBLIC_GT_DEV_API_KEY', undefined);
+    expect(areCredentialsSet({ projectId: 'project-id' }, 'next-app')).toBe(
+      true
+    );
+  });
+
+  // next-app still accepts the public key earlier versions of init wrote.
   it.each(['next-app', 'next-pages'] as const)(
     'recognizes the public development key without a tooling key for %s',
     (framework) => {

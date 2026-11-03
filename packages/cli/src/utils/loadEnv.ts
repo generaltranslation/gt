@@ -1,16 +1,7 @@
 import dotenv from 'dotenv';
 
-/**
- * Env files read at startup, in order; each one after the first overrides the
- * shell. .env.development.local holds the Next.js development credentials
- * written by init (see getCredentialsEnvFileName).
- */
-export const envFiles = [
-  '.env',
-  '.env.local',
-  '.env.development.local',
-  '.env.production',
-] as const;
+/** Env files read at startup, in order; each one after the first overrides the shell. */
+export const envFiles = ['.env', '.env.local', '.env.production'] as const;
 
 /** Load executable startup env files without contaminating command stdout. */
 export function loadEnv(): void {

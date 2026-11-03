@@ -3,4 +3,4 @@
 'gt-next': patch
 ---
 
-Fix `next build` failing right after `gt init`. For Next.js projects, `gt init` now saves the development credentials to `.env.development.local`, which `next dev` loads and `next build` skips. Previously it used `.env.local`, which `next build` also loads, and gt-next rejects a development key in production builds. The CLI now reads `.env.development.local` too, and it warns when `.env.local` still has a development key from an earlier setup. gt-next's production-build error now names the variable that holds the development key and explains how to fix it.
+Fix `next build` failing right after `gt init`. For Next.js App Router, `gt init` now saves the server-only `GT_PROJECT_ID` and `GT_DEV_API_KEY` to `.env.local` instead of `NEXT_PUBLIC_` variables. gt-next reads development keys only in development and no longer fails production builds when one is present, so production bundles never include it. During `next dev`, `withGTConfig` passes the server-only key to client code for hot reload. Pages Router setups keep `NEXT_PUBLIC_GT_DEV_API_KEY`, which production builds now ignore as well.

@@ -43,25 +43,6 @@ export const createUnresolvedReactVersionError = (error: Error) =>
     details: error.message,
   });
 
-/**
- * @param envVariable - The environment variable the development key came
- * from, when it came from one.
- */
-export const createDevApiKeyIncludedInProductionError = (
-  envVariable?: string
-) =>
-  createGtNextDiagnostic({
-    severity: 'Error',
-    whatHappened: envVariable
-      ? `Production builds cannot use a development API key, and ${envVariable} is set`
-      : 'Production builds cannot use a development API key',
-    fix: envVariable
-      ? `Next.js loads .env.local for next build too, so move ${envVariable} to .env.development.local (only next dev loads it) or unset it in the build environment`
-      : 'Remove the development API key from the production configuration',
-    wayOut:
-      'For runtime translation in production, create a production API key at generaltranslation.com/dashboard and set GT_API_KEY and GT_PROJECT_ID in your hosting environment',
-  });
-
 export const createDictionarySubsetError = (id: string, functionName: string) =>
   createGtNextDiagnostic({
     severity: 'Error',

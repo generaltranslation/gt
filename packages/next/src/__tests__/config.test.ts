@@ -1234,27 +1234,48 @@ describe('withGTConfig', () => {
   // 10. Error cases
   // ==============================
   describe('10. Error cases', () => {
-    it('devApiKey in production throws devApiKeyIncludedInProductionError', async () => {
+    it('passes the server-only dev key to client code in development', async () => {
       const withGTConfig = await getWithGTConfig();
-      process.env.NODE_ENV = 'production';
+      process.env.NODE_ENV = 'development';
+      process.env.GT_PROJECT_ID = 'proj';
+      process.env.GT_DEV_API_KEY = 'gtx-development-key';
       vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-      expect(() => withGTConfig({}, { devApiKey: 'gt-dev-xyz' })).toThrow(
-        /development API key/i
-      );
+      const result = withGTConfig();
+
+      expect(result.env).toMatchObject({
+        _GENERALTRANSLATION_DEV_PROJECT_ID: 'proj',
+        _GENERALTRANSLATION_DEV_API_KEY: 'gtx-development-key',
+      });
+    });
+
+    it('does not pass a dev key to client code when hot reload is off', async () => {
+      const withGTConfig = await getWithGTConfig();
+      process.env.NODE_ENV = 'development';
+      process.env.GT_PROJECT_ID = 'proj';
+      process.env.GT_DEV_API_KEY = 'gtx-development-key';
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const result = withGTConfig({}, { runtimeUrl: null });
+
+      expect(result.env).not.toHaveProperty('_GENERALTRANSLATION_DEV_API_KEY');
     });
 
     it.each(['GT_DEV_API_KEY', 'NEXT_PUBLIC_GT_DEV_API_KEY'])(
-      'rejects %s in the production environment',
+      'ignores %s in production builds instead of failing them',
       async (name) => {
         const withGTConfig = await getWithGTConfig();
         process.env.NODE_ENV = 'production';
+        process.env.GT_PROJECT_ID = 'proj';
         process.env[name] = 'gtx-development-key';
 
-        expect(() => withGTConfig()).toThrow(/development API key/i);
-        expect(() => withGTConfig()).toThrow(
-          `${name} is set. Next.js loads .env.local for next build too, so move ${name} to .env.development.local`
+        const result = withGTConfig();
+
+        // Without a production key, runtime translation stays off.
+        expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe(
+          'false'
         );
+        expect(JSON.stringify(result.env)).not.toContain('gtx-development-key');
       }
     );
 

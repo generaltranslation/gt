@@ -12,13 +12,11 @@ import {
 
 const execFileAsync = promisify(execFile);
 
-function unsafeCredentialsEnvError(envFileName: string): string {
-  return createDiagnosticMessage({
-    whatHappened: `Cannot safely update ${envFileName}`,
-    reassurance: `The existing ${envFileName} file was not changed`,
-    fix: 'Move multiline values away from project/key assignments or set the development credentials manually, then retry',
-  });
-}
+const unsafeCredentialsEnvError = createDiagnosticMessage({
+  whatHappened: 'Cannot safely update .env.local',
+  reassurance: 'The existing .env.local file was not changed',
+  fix: 'Move multiline values away from project/key assignments or set the development credentials manually, then retry',
+});
 
 function unwritableEnvFileError(envFile: string): string {
   return createDiagnosticMessage({
@@ -85,10 +83,11 @@ function gitCheckFailedError(file: string, stderr: string): string {
 export type Credentials = { apiKey: string; projectId: string };
 
 // Include server-rendered frameworks with client-side development translation.
+// Next.js App Router reads unprefixed variables on the server and hands the
+// development key to the client through GTProvider, in development only.
 const FRAMEWORK_ENV_PREFIXES: Partial<
   Record<NonNullable<SupportedFrameworks>, string>
 > = {
-  'next-app': 'NEXT_PUBLIC_',
   'next-pages': 'NEXT_PUBLIC_',
   vite: 'VITE_',
   gatsby: 'GATSBY_',
@@ -97,36 +96,6 @@ const FRAMEWORK_ENV_PREFIXES: Partial<
   'tanstack-start': 'VITE_',
   'react-router': 'VITE_',
 };
-
-/**
- * The env file init saves development credentials to. Next.js loads
- * .env.local for `next build` too, where gt-next rejects a development key,
- * so Next.js projects get the development-only .env.development.local.
- */
-export function getCredentialsEnvFileName(
-  framework?: SupportedFrameworks
-): string {
-  return framework === 'next-app' || framework === 'next-pages'
-    ? '.env.development.local'
-    : '.env.local';
-}
-
-/**
- * The development key name when .env.local still sets it although init now
- * saves the framework's credentials elsewhere (older Next.js setups).
- */
-export async function findLegacyDevelopmentKey(
-  framework?: SupportedFrameworks,
-  cwd: string = process.cwd()
-): Promise<string | undefined> {
-  if (getCredentialsEnvFileName(framework) === '.env.local') return undefined;
-  const content = await fs.promises
-    .readFile(path.join(cwd, '.env.local'), 'utf8')
-    .catch(() => undefined);
-  if (content === undefined) return undefined;
-  const { devApiKey } = getDevelopmentEnvNames(framework);
-  return dotenv.parse(content)[devApiKey] ? devApiKey : undefined;
-}
 
 /** Names of the runtime variables init writes for this framework. */
 export function getDevelopmentEnvNames(framework?: SupportedFrameworks) {
@@ -140,20 +109,26 @@ export function getDevelopmentEnvNames(framework?: SupportedFrameworks) {
 /**
  * Whether the project has the framework's development key, or an explicit
  * API key for a server-only runtime. A tooling key cannot enable client-side
- * hot reload, including in Next.js App Router. `settings.projectId` already
- * resolves every framework prefix. Login is checked separately.
+ * hot reload, including in Next.js App Router, which still accepts the
+ * NEXT_PUBLIC_ key earlier versions of init wrote. `settings.projectId`
+ * already resolves every framework prefix. Login is checked separately.
  */
 export function areCredentialsSet(
   settings: Pick<Settings, 'projectId' | 'apiKey'>,
   framework?: SupportedFrameworks
 ): boolean {
   const { devApiKey } = getDevelopmentEnvNames(framework);
-  const needsPublicKey = Boolean(
-    framework && FRAMEWORK_ENV_PREFIXES[framework]
+  const devApiKeys =
+    framework === 'next-app'
+      ? [devApiKey, 'NEXT_PUBLIC_GT_DEV_API_KEY']
+      : [devApiKey];
+  const needsDevKey = Boolean(
+    framework === 'next-app' || (framework && FRAMEWORK_ENV_PREFIXES[framework])
   );
   return Boolean(
     settings.projectId &&
-    (process.env[devApiKey] || (!needsPublicKey && settings.apiKey))
+    (devApiKeys.some((name) => process.env[name]) ||
+      (!needsDevKey && settings.apiKey))
   );
 }
 
@@ -195,7 +170,7 @@ function upsertEnvAssignment(
 }
 
 /**
- * Where env file content lives and its mode. Follows an existing symlink so
+ * Where .env.local content lives and its mode. Follows an existing symlink so
  * its referent is replaced, never the link itself; anything but a regular
  * file (dangling link, directory) fails before any write.
  */
@@ -290,26 +265,24 @@ type CredentialsEnvFile = {
 };
 
 /**
- * Everything that must hold before credentials may be saved to the
- * framework's env file (see getCredentialsEnvFileName), so callers can fail
- * before minting a key: the path is a regular file (or a link to one) or
- * absent, and neither it nor a link's referent is tracked by Git. A referent
- * inside any worktree must already be ignored there; only the env file
- * itself gets an ignore rule added, by setCredentials.
+ * Everything that must hold before credentials may be saved to .env.local,
+ * so callers can fail before minting a key: the path is a regular file (or a
+ * link to one) or absent, and neither it nor a link's referent is tracked by
+ * Git. A referent inside any worktree must already be ignored there; only
+ * .env.local itself gets an ignore rule added, by setCredentials.
  */
 export async function inspectCredentialsEnvFile(
   cwd: string = process.cwd(),
-  framework?: SupportedFrameworks,
   /** Also checks that the framework's credentials can be saved safely. */
-  { checkContent = false }: { checkContent?: boolean } = {}
+  contentCheck?: { framework?: SupportedFrameworks }
 ): Promise<CredentialsEnvFile> {
-  const envFile = path.resolve(cwd, getCredentialsEnvFileName(framework));
+  const envFile = path.resolve(cwd, '.env.local');
   const existing = await resolveEnvFile(envFile);
-  if (existing && checkContent) {
+  if (existing && contentCheck) {
     updateCredentialsEnvContent(
       await fs.promises.readFile(existing.target, 'utf8'),
       { projectId: 'gt-preflight', apiKey: 'gt-preflight' },
-      framework
+      contentCheck.framework
     );
   }
   const exposure = await inspectGitExposure(envFile);
@@ -326,10 +299,7 @@ export async function inspectCredentialsEnvFile(
   return { envFile, existing, exposure };
 }
 
-async function appendGitignoreRule(
-  cwd: string,
-  envFileName: string
-): Promise<void> {
+async function appendGitignoreRule(cwd: string): Promise<void> {
   const gitignoreFile = path.join(cwd, '.gitignore');
   const content = await fs.promises
     .readFile(gitignoreFile, 'utf8')
@@ -340,7 +310,7 @@ async function appendGitignoreRule(
   const separator = content && !content.endsWith('\n') ? '\n' : '';
   await fs.promises.appendFile(
     gitignoreFile,
-    `${separator}${envFileName}\n`,
+    `${separator}.env.local\n`,
     'utf8'
   );
 }
@@ -354,7 +324,7 @@ async function writeEnvFileAtomically(
 ): Promise<void> {
   const temporaryPath = path.join(
     path.dirname(target),
-    `${path.basename(target)}.${randomUUID()}.tmp`
+    `.env.local.${randomUUID()}.tmp`
   );
   try {
     await fs.promises.writeFile(temporaryPath, content, {
@@ -371,9 +341,9 @@ async function writeEnvFileAtomically(
 }
 
 /**
- * Env file content with the runtime credentials set. Only the hot-reload
+ * .env.local content with the runtime credentials set. Only the hot-reload
  * key: the CLI itself acts as the signed-in user, and CI keys are created
- * deliberately rather than dropped into the env file. Other lines, comments,
+ * deliberately rather than dropped into .env.local. Other lines, comments,
  * and any GT_API_KEY are left untouched. Throws when the edit could corrupt
  * a multiline value.
  */
@@ -415,14 +385,12 @@ function updateCredentialsEnvContent(
     Object.keys(updated).length !== Object.keys(expected).length ||
     Object.entries(expected).some(([name, value]) => updated[name] !== value)
   ) {
-    throw new Error(
-      unsafeCredentialsEnvError(getCredentialsEnvFileName(framework))
-    );
+    throw new Error(unsafeCredentialsEnvError);
   }
   return updatedContent;
 }
 
-// Sets the credentials in the framework's env file
+// Sets the credentials in .env.local file
 export async function setCredentials(
   credentials: Credentials,
   framework?: SupportedFrameworks,
@@ -432,8 +400,7 @@ export async function setCredentials(
     envFile,
     existing: existingEnvFile,
     exposure,
-  } = await inspectCredentialsEnvFile(cwd, framework);
-  const envFileName = path.basename(envFile);
+  } = await inspectCredentialsEnvFile(cwd);
   // Rechecked here: the file may have changed since the setup preflight.
   const envContent = updateCredentialsEnvContent(
     existingEnvFile
@@ -446,7 +413,7 @@ export async function setCredentials(
   if (exposure === 'unignored') {
     // A rule appended to the same-directory .gitignore is the last match at
     // the deepest level, so it wins over earlier negations; verify anyway.
-    await appendGitignoreRule(cwd, envFileName);
+    await appendGitignoreRule(cwd);
     if ((await inspectGitExposure(envFile)) !== 'ignored') {
       throw new Error(unignoredEnvFileError(envFile));
     }
@@ -459,9 +426,9 @@ export async function setCredentials(
       (await fs.promises.readFile(gitignoreFile, 'utf8'))
         .trimEnd()
         .split(/\r?\n/)
-        .at(-1) !== envFileName
+        .at(-1) !== '.env.local'
     ) {
-      await appendGitignoreRule(cwd, envFileName);
+      await appendGitignoreRule(cwd);
     }
   }
 

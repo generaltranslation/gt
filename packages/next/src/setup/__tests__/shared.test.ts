@@ -45,6 +45,7 @@ describe('getParams', () => {
   });
 
   it('reads runtime credentials directly from process.env', () => {
+    process.env.NODE_ENV = 'development';
     process.env.GT_PROJECT_ID = 'project-id';
     process.env.GT_API_KEY = 'api-key';
     process.env.GT_DEV_API_KEY = 'dev-key';
@@ -68,6 +69,7 @@ describe('getParams', () => {
   });
 
   it('prefers public project and dev credentials when present', () => {
+    process.env.NODE_ENV = 'development';
     process.env.GT_PROJECT_ID = 'private-project-id';
     process.env.NEXT_PUBLIC_GT_PROJECT_ID = 'public-project-id';
     process.env.GT_DEV_API_KEY = 'private-dev-key';
@@ -77,6 +79,42 @@ describe('getParams', () => {
 
     expect(i18nConfigParams.projectId).toBe('public-project-id');
     expect(i18nConfigParams.devApiKey).toBe('public-dev-key');
+  });
+
+  it.each(['production', 'test'])(
+    'ignores development keys when NODE_ENV is %s',
+    (nodeEnv) => {
+      process.env.NODE_ENV = nodeEnv;
+      process.env.GT_PROJECT_ID = 'project-id';
+      process.env.GT_API_KEY = 'api-key';
+      process.env.GT_DEV_API_KEY = 'private-dev-key';
+      process.env.NEXT_PUBLIC_GT_DEV_API_KEY = 'public-dev-key';
+      process.env._GENERALTRANSLATION_DEV_API_KEY = 'injected-dev-key';
+
+      const { i18nConfigParams, nextI18nCacheParams } = getParams();
+
+      expect(i18nConfigParams.devApiKey).toBeUndefined();
+      expect(nextI18nCacheParams.devApiKey).toBeUndefined();
+      expect(i18nConfigParams.apiKey).toBe('api-key');
+    }
+  );
+
+  it('reads the development credentials withGTConfig passes to client code', () => {
+    // Client bundles see neither server-only variable, only the injected pair.
+    process.env.NODE_ENV = 'development';
+    process.env._GENERALTRANSLATION_DEV_PROJECT_ID = 'injected-project';
+    process.env._GENERALTRANSLATION_DEV_API_KEY = 'injected-dev-key';
+
+    const { i18nConfigParams, nextI18nCacheParams } = getParams();
+
+    expect(i18nConfigParams).toMatchObject({
+      projectId: 'injected-project',
+      devApiKey: 'injected-dev-key',
+    });
+    expect(nextI18nCacheParams).toMatchObject({
+      projectId: 'injected-project',
+      devApiKey: 'injected-dev-key',
+    });
   });
 
   it('lets the i18n cache choose the remote translation loader', () => {

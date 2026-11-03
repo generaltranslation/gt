@@ -294,9 +294,7 @@ describe('init development credentials', () => {
     expect(fs.existsSync(path.join(appDirectory, 'gt.config.json'))).toBe(
       false
     );
-    expect(
-      fs.readFileSync(path.join(appDirectory, '.env.development.local'), 'utf8')
-    ).toBe(
+    expect(fs.readFileSync(envPath(), 'utf8')).toBe(
       'NEXT_PUBLIC_GT_PROJECT_ID=p1\nNEXT_PUBLIC_GT_DEV_API_KEY=gtx-secret-development-key\n'
     );
   });
@@ -536,7 +534,7 @@ describe('init development credentials', () => {
       /Development key creation was denied for project configured-project because GT_API_KEY is set/
     );
     expect(message).toMatch(
-      /Remove GT_API_KEY from your shell and from \.env, \.env\.local, \.env\.development\.local, \.env\.production/
+      /Remove GT_API_KEY from your shell and from \.env, \.env\.local, \.env\.production/
     );
     expect(message).not.toContain('gt login');
     expect(login).not.toHaveBeenCalled();
