@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.26.12
+
+### Patch Changes
+
+- [#2600](https://github.com/generaltranslation/gt/pull/2600) [`ae3fac1`](https://github.com/generaltranslation/gt/commit/ae3fac17d59ff74c5a0c5886fcdd1f671e59746a) Thanks [@eoinest](https://github.com/eoinest)! - `gt --version`, `gt -V`, and `gt -v` now print the CLI version instead of failing with "unknown option".
+
 ## 2.26.11
 
 ### Patch Changes
