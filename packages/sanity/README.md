@@ -158,6 +158,47 @@ enqueue any translation.
 To regenerate translations and deliberately discard existing ones for a single
 run, use **Retranslate from scratch** in the Translate All dialog.
 
+## Translating From Other Locales
+
+By default only documents in `sourceLocale` can be translated. To translate a
+document written in another locale — say, a page that only exists in French —
+from the Translate dialog on that document, turn on
+`allowNonDefaultSourceLocales`:
+
+```ts
+gtPlugin({
+  // ...
+  allowNonDefaultSourceLocales: true, // off by default
+});
+```
+
+With it on, such a document's targets include `sourceLocale`.
+
+Each translation group (a `translation.metadata` document) has exactly one
+original, and every other document in it is a translation that cannot be
+translated from:
+
+- A document in no group is an original.
+- In an existing group, the `sourceLocale` document is the original, as before.
+- When gt-sanity first translates a document outside `sourceLocale`, it records
+  that document's language on the group as `gtSourceLanguage`, and that
+  document becomes the original.
+
+A group with no original — no marker and no `sourceLocale` document, or a
+marked original that was deleted — cannot be translated.
+
+**Translate All** only covers originals in `sourceLocale`. It leaves out
+originals in other locales and their translations, and reports how many of
+those originals (already marked by an earlier translation) it skipped.
+**Save Local Edits** only applies to groups whose original is in
+`sourceLocale`, and field-level localization always translates from
+`sourceLocale`.
+
+Turning `allowNonDefaultSourceLocales` off again once groups have been marked is
+not supported. gt-sanity then ignores the marker, as it did before the option
+existed, so a `sourceLocale` translation of an original in another locale is
+treated as an original and can be translated from again.
+
 ## Automatic Actions
 
 The Translate dialog on a document can refresh status, import a translation as

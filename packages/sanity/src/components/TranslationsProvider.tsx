@@ -7,10 +7,11 @@ import React, {
   useRef,
   ReactNode,
 } from 'react';
-import { SanityDocument, useSchema } from 'sanity';
+import { SanityDocument, useDocumentStore, useSchema } from 'sanity';
 import { useToast } from '@sanity/ui/toast';
 import { useClient } from '../hooks/useClient';
 import { useSecrets } from '../hooks/useSecrets';
+import { useDocumentRole } from '../hooks/useDocumentRole';
 import {
   GTFile,
   Secrets,
@@ -41,6 +42,27 @@ import {
   TRANSLATION_DOCS_FOR_PUBLISH_QUERY,
 } from '../sanity-api/publishDocuments';
 import { getLocales } from '../adapter/getLocales';
+import {
+  getDocumentTargetLocales,
+  getLocaleIdsToPoll,
+  getSelectedLocaleIds,
+} from '../utils/locales';
+import {
+  allowsNonDefaultSourceLocales,
+  EXISTING_TRANSLATIONS_BY_ORIGINAL_QUERY,
+  getDocumentLanguage,
+  isNonDefaultSourceLanguage,
+} from '../utils/translationSource';
+import {
+  checkTranslatableOriginal,
+  type DocumentRoleState,
+} from '../utils/documentRoleState';
+import {
+  getSourceLocaleSelectionQuery,
+  recheckBulkSourceDocuments,
+  selectBulkSourceDocuments,
+} from '../translation/bulkSources';
+import { createRefreshTracker } from '../utils/refreshTracker';
 import type {
   FileProperties,
   TranslationPreferences,
@@ -74,6 +96,8 @@ interface DownloadStatus {
 
 type ExistingTranslationMetadata = {
   sourceDocId: string;
+  // Only queried for originals outside the configured source locale.
+  sourceLanguage?: string;
   existingTranslations?: string[];
 };
 
@@ -89,6 +113,14 @@ export type TranslateAllOptions = {
    * asking for.
    */
   force?: boolean;
+};
+
+export type PublishTranslationsOptions = {
+  /**
+   * Publish only translations in these locales. Omitted or `null` publishes
+   * every translation of the source documents, whatever its locale.
+   */
+  localeIds?: string[] | null;
 };
 
 interface TranslationsContextType {
@@ -128,6 +160,28 @@ interface TranslationsContextType {
   // (internationalized arrays) bumping the document _rev don't orphan the
   // statuses of the version actually uploaded to GT.
   getVersionId: (document: SanityDocument) => string;
+  /**
+   * The locales a document can be translated into: for an original outside
+   * the configured source locale, every locale except its own; otherwise
+   * `locales` unchanged.
+   */
+  getTargetLocales: (document: SanityDocument) => TranslationLocale[];
+  /**
+   * The locale locale pickers leave out: the open document's language, or the
+   * configured source locale on the Translations page.
+   */
+  excludedLocale: string;
+  /**
+   * The open document's role in its translation group. `null` on the
+   * Translations page.
+   */
+  documentRole: DocumentRoleState | null;
+  /**
+   * Originals in scope written outside the configured source locale, which
+   * Translate All leaves out; each is translated from the Translate dialog on
+   * that document.
+   */
+  skippedOriginalCount: number;
 
   // Actions
   setLocales: (locales: TranslationLocale[]) => void;
@@ -147,7 +201,9 @@ interface TranslationsContextType {
     localeId: string
   ) => Promise<void>;
   handlePatchDocumentReferences: () => Promise<number>;
-  handlePublishAllTranslations: () => Promise<number>;
+  handlePublishAllTranslations: (
+    options?: PublishTranslationsOptions
+  ) => Promise<number>;
 }
 
 const TranslationsContext = createContext<TranslationsContextType | null>(null);
@@ -197,6 +253,32 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+/** The scope and source locale Translate All selects its documents from. */
+function getTranslateAllSelection() {
+  const filterConditions = pluginConfig
+    .getTranslateDocuments()
+    .map((filter) => {
+      if (filter.type && filter.documentId) {
+        return `(_type == "${filter.type}" && _id == "${filter.documentId}")`;
+      } else if (filter.type) {
+        return `_type == "${filter.type}"`;
+      } else if (filter.documentId) {
+        return `_id == "${filter.documentId}"`;
+      }
+      return null;
+    })
+    .filter(Boolean);
+
+  return {
+    scopeFilter:
+      filterConditions.length === 0
+        ? `!(_type in ["system.group"]) && !(_id in path("_.**"))`
+        : `!(_type in ["system.group"]) && !(_id in path("_.**")) && (${filterConditions.join(' || ')})`,
+    languageField: pluginConfig.getLanguageField(),
+    sourceLocale: pluginConfig.getSourceLocale(),
+  };
+}
+
 export const useTranslations = () => {
   const context = useContext(TranslationsContext);
   if (!context) {
@@ -210,12 +292,53 @@ interface TranslationsProviderProps {
   singleDocument?: SanityDocument | null;
 }
 
-export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
-  children,
-  singleDocument,
-}) => {
+/**
+ * Provides translation state and actions to the Translations page and the
+ * Translate dialog.
+ *
+ * The open document's role in its translation group is only looked up with
+ * `allowNonDefaultSourceLocales`. Without it, nothing subscribes to or reads
+ * translation groups for the role, as before the option existed. The option
+ * is fixed for the Studio's lifetime, so the rendered component never
+ * switches between the two.
+ */
+export const TranslationsProvider: React.FC<TranslationsProviderProps> = (
+  props
+) =>
+  allowsNonDefaultSourceLocales() ? (
+    <TranslationsProviderWithDocumentRole {...props} />
+  ) : (
+    <TranslationsProviderContent {...props} documentRole={null} />
+  );
+
+const TranslationsProviderWithDocumentRole: React.FC<
+  TranslationsProviderProps
+> = (props) => {
+  const client = useClient();
+  const documentStore = useDocumentStore();
+  // Looked up apart from loading documents, so it never holds up the first
+  // status refresh.
+  const documentRole = useDocumentRole({
+    documentId: props.singleDocument?._id,
+    language: props.singleDocument
+      ? getDocumentLanguage(props.singleDocument)
+      : undefined,
+    client,
+    documentStore,
+  });
+  return <TranslationsProviderContent {...props} documentRole={documentRole} />;
+};
+
+const TranslationsProviderContent: React.FC<
+  TranslationsProviderProps & { documentRole: DocumentRoleState | null }
+> = ({ children, singleDocument, documentRole }) => {
+  // Fixed for the Studio's lifetime; see TranslationsProvider.
+  const allowNonDefault = allowsNonDefaultSourceLocales();
   const [isBusy, setIsBusy] = useState(false);
   const [documents, setDocuments] = useState<SanityDocument[]>([]);
+  // Originals outside the source locale that Translate All leaves out; each is
+  // translated from the Translate dialog on that document.
+  const [skippedOriginalCount, setSkippedOriginalCount] = useState(0);
   const [locales, setLocales] = useState<TranslationLocale[]>([]);
   const [loadingDocuments, setLoadingDocuments] = useState(false);
   const [importProgress, setImportProgress] = useState<ImportProgress>({
@@ -245,6 +368,16 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     Set<string>
   >(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const pendingTranslationsRef = useRef(pendingTranslations);
+  // Changing what a refresh asks for (locales, documents, their uploaded
+  // versions, the branch) starts a new refresh while an older one may still be
+  // in flight. The tracker drops responses whose scope is no longer current, so
+  // they can't overwrite the statuses of the current one. Replaced with a new
+  // object on every change and compared by identity.
+  const refreshScopeRef = useRef({});
+  const [refreshTracker] = useState(() =>
+    createRefreshTracker(() => refreshScopeRef.current)
+  );
 
   const client = useClient();
   const { projectId, dataset } = client.config();
@@ -309,11 +442,48 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     downloadStatusRef.current = downloadStatus;
   }, [downloadStatus]);
 
+  useEffect(() => {
+    pendingTranslationsRef.current = pendingTranslations;
+  }, [pendingTranslations]);
+
   const getVersionId = useCallback(
     (document: SanityDocument) =>
       uploadedVersions.get(getDocumentPublishedId(document)) ?? document._rev,
     [uploadedVersions]
   );
+
+  const getTargetLocales = useCallback(
+    (document: SanityDocument) => {
+      if (!allowNonDefault) return locales;
+      const language = getDocumentLanguage(document);
+      return isNonDefaultSourceLanguage(language)
+        ? getDocumentTargetLocales(locales, language)
+        : locales;
+    },
+    [allowNonDefault, locales]
+  );
+
+  // Only read with `allowNonDefaultSourceLocales`: without it, every document
+  // is translated from the configured source locale.
+  const singleDocumentLanguage =
+    allowNonDefault && singleDocument
+      ? getDocumentLanguage(singleDocument)
+      : undefined;
+  const excludedLocale =
+    singleDocumentLanguage ?? pluginConfig.getSourceLocale();
+  // Only the document open in the Translate dialog can be an original outside the
+  // source locale; Translate All only picks up source-locale originals.
+  const hasNonDefaultSource =
+    allowNonDefault &&
+    documents.some((doc) =>
+      isNonDefaultSourceLanguage(getDocumentLanguage(doc))
+    );
+
+  // Declared before the effects that refresh on these changes, so a refresh
+  // started by one already runs under the new scope.
+  useEffect(() => {
+    refreshScopeRef.current = {};
+  }, [locales, documents, branchId, getVersionId]);
 
   const fetchDocuments = useCallback(async () => {
     setLoadingDocuments(true);
@@ -323,35 +493,24 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         return;
       }
 
-      const translateDocuments = pluginConfig.getTranslateDocuments();
-
-      const filterConditions = translateDocuments
-        .map((filter) => {
-          if (filter.type && filter.documentId) {
-            return `(_type == "${filter.type}" && _id == "${filter.documentId}")`;
-          } else if (filter.type) {
-            return `_type == "${filter.type}"`;
-          } else if (filter.documentId) {
-            return `_id == "${filter.documentId}"`;
-          }
-          return null;
-        })
-        .filter(Boolean);
-
-      const languageField = pluginConfig.getLanguageField();
-      const sourceLocale = pluginConfig.getSourceLocale();
-      const languageFilter = `(!defined(${languageField}) || ${languageField} == "${sourceLocale}")`;
-
-      let query;
-      if (filterConditions.length === 0) {
-        query = `*[!(_type in ["system.group"]) && !(_id in path("_.**")) && ${languageFilter}]`;
-      } else {
-        const filterQuery = filterConditions.join(' || ');
-        query = `*[!(_type in ["system.group"]) && !(_id in path("_.**")) && (${filterQuery}) && ${languageFilter}]`;
+      if (!allowNonDefault) {
+        const docs = await client.fetch(
+          getSourceLocaleSelectionQuery(getTranslateAllSelection())
+        );
+        setDocuments(dedupeDocumentsPreferDraft(docs));
+        return;
       }
 
-      const docs = await client.fetch(query);
+      // Originals outside the source locale, and translations in their
+      // groups, are left out: each such original is translated from the
+      // Translate dialog on that document.
+      const { documents: docs, skippedOriginalCount } =
+        await selectBulkSourceDocuments({
+          client,
+          ...getTranslateAllSelection(),
+        });
       setDocuments(dedupeDocumentsPreferDraft(docs));
+      setSkippedOriginalCount(skippedOriginalCount);
     } catch {
       toast.push({
         title:
@@ -362,12 +521,15 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } finally {
       setLoadingDocuments(false);
     }
-  }, [client, singleDocument]);
+  }, [allowNonDefault, client, singleDocument]);
 
   const fetchLocales = useCallback(async () => {
     if (!secrets) return;
     try {
-      const availableLocales = await getLocales(secrets);
+      const availableLocales = await getLocales(
+        secrets,
+        singleDocumentLanguage
+      );
       setLocales(availableLocales);
     } catch {
       toast.push({
@@ -377,7 +539,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         closable: true,
       });
     }
-  }, [secrets]);
+  }, [secrets, singleDocumentLanguage]);
 
   const fetchExistingTranslations = useCallback(async () => {
     if (!documents.length || !locales.length) return;
@@ -390,7 +552,9 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
 
       const documentIds = documents.map(getDocumentPublishedId);
 
-      const query = `*[
+      const query = hasNonDefaultSource
+        ? EXISTING_TRANSLATIONS_BY_ORIGINAL_QUERY
+        : `*[
         _type == 'translation.metadata' &&
         translations[language == $sourceLocale][0].value._ref in $documentIds
       ] {
@@ -409,7 +573,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       const existing = new Set<string>();
       existingMetadata.forEach((metadata) => {
         metadata.existingTranslations?.forEach((localeId: string) => {
-          if (localeId !== sourceLocale) {
+          if (localeId !== (metadata.sourceLanguage ?? sourceLocale)) {
             existing.add(
               createStableTranslationKey(
                 undefined,
@@ -431,21 +595,30 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         closable: true,
       });
     }
-  }, [documents, locales, client]);
+  }, [documents, locales, client, hasNonDefaultSource]);
 
   const serializeSourceDocuments = useCallback(
-    () =>
-      documents
+    (sourceDocuments: SanityDocument[] = documents) =>
+      sourceDocuments
         .map((doc) => {
           const { [pluginConfig.getLanguageField()]: _, ...cleanDoc } = doc;
-          const baseLanguage = pluginConfig.getSourceLocale();
           try {
             const strategy = getTranslationStrategy(doc);
+            // With `allowNonDefaultSourceLocales`, each original is serialized
+            // in its own language. Field-level (internationalized-array)
+            // documents always use the source locale.
+            const baseLanguage =
+              allowNonDefault && strategy.level === 'document'
+                ? getDocumentLanguage(doc)
+                : pluginConfig.getSourceLocale();
             return {
               info: {
                 documentId: getDocumentPublishedId(doc),
                 versionId: doc._rev,
                 fileName: getDocumentFileName(doc),
+                ...(isNonDefaultSourceLanguage(baseLanguage) && {
+                  sourceLocale: baseLanguage,
+                }),
               },
               serializedDocument: strategy.serialize(
                 cleanDoc as typeof doc,
@@ -459,7 +632,65 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
           return null;
         })
         .filter((doc) => doc !== null),
-    [documents, schema]
+    [allowNonDefault, documents, schema]
+  );
+
+  // Studio-side translations are only collected for groups whose original is
+  // in the configured source locale.
+  const getDefaultSourceDocuments = useCallback(
+    (sourceDocuments: SanityDocument[] = documents) =>
+      hasNonDefaultSource
+        ? sourceDocuments.filter(
+            (doc) => !isNonDefaultSourceLanguage(getDocumentLanguage(doc))
+          )
+        : sourceDocuments,
+    [documents, hasNonDefaultSource]
+  );
+
+  // Only a group's original is ever uploaded as a source. What is on screen
+  // may be out of date, so every upload checks its documents again first:
+  // the open document's role is looked up afresh, and a Translate All
+  // selection is run again for the documents it loaded, dropping any that are
+  // no longer originals. Returns null when nothing should be uploaded.
+  const getUploadableSources = useCallback(
+    async (
+      candidates: SanityDocument[],
+      abortTitle: string
+    ): Promise<SanityDocument[] | null> => {
+      if (singleDocument) {
+        for (const document of candidates) {
+          const check = await checkTranslatableOriginal(document, client);
+          if (!check.translatable) {
+            toast.push({
+              title: abortTitle,
+              description: check.message,
+              status: 'error',
+              closable: true,
+            });
+            return null;
+          }
+        }
+        return candidates;
+      }
+
+      const { documents: eligible, droppedCount } =
+        await recheckBulkSourceDocuments({
+          client,
+          documents: candidates,
+          ...getTranslateAllSelection(),
+        });
+      if (droppedCount > 0) {
+        toast.push({
+          title: `Skipped ${droppedCount} document(s) that are no longer the original of their translation group`,
+          description:
+            'They changed after this page loaded. Reload the page to see the current documents.',
+          status: 'warning',
+          closable: true,
+        });
+      }
+      return eligible.length > 0 ? eligible : null;
+    },
+    [client, singleDocument, toast]
   );
 
   const handleTranslateAll = useCallback(
@@ -469,6 +700,13 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       setIsBusy(true);
 
       try {
+        // Without `allowNonDefaultSourceLocales`, the loaded documents are
+        // uploaded as they are.
+        const sourceDocuments = allowNonDefault
+          ? await getUploadableSources(documents, 'Translation was not started')
+          : documents;
+        if (!sourceDocuments) return;
+
         const availableLocaleIds = locales
           .filter((locale) => locale.enabled !== false)
           .map((locale) => locale.localeId);
@@ -481,7 +719,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         if (preserveExistingTranslations && !force) {
           try {
             const captured = await captureExistingTranslations({
-              documents,
+              documents: getDefaultSourceDocuments(sourceDocuments),
               localeIds: availableLocaleIds,
               secrets,
               context: translationContext,
@@ -508,11 +746,29 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
           }
         }
 
-        const transformedDocuments = serializeSourceDocuments();
+        const transformedDocuments = serializeSourceDocuments(sourceDocuments);
+
+        // A document is never translated into its own language. Without
+        // `allowNonDefaultSourceLocales`, every document is translated into
+        // the selected locales.
+        const targetLocaleIdsByDocument = allowNonDefault
+          ? new Map(
+              sourceDocuments.map((doc) => [
+                getDocumentPublishedId(doc),
+                getSelectedLocaleIds(getTargetLocales(doc)),
+              ])
+            )
+          : null;
+        const enqueueLocaleIds =
+          targetLocaleIdsByDocument && hasNonDefaultSource
+            ? Array.from(
+                new Set([...targetLocaleIdsByDocument.values()].flat())
+              )
+            : availableLocaleIds;
 
         const uploadResult = await uploadFiles(transformedDocuments, secrets);
         await initProject(uploadResult, { timeout: 600 }, secrets);
-        await createJobs(uploadResult, availableLocaleIds, secrets, force);
+        await createJobs(uploadResult, enqueueLocaleIds, secrets, force);
 
         // Pin the _rev each file was uploaded under. GT status queries need the
         // exact uploaded versionId, and the live _rev moves on (in-place array
@@ -530,7 +786,9 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         const enqueuedStatusKeys = new Set<string>();
         const enqueuedStableKeys = new Set<string>();
         for (const { info } of transformedDocuments) {
-          for (const localeId of availableLocaleIds) {
+          for (const localeId of targetLocaleIdsByDocument?.get(
+            info.documentId
+          ) ?? availableLocaleIds) {
             enqueuedStatusKeys.add(
               createTranslationStatusKey(
                 branchId,
@@ -580,11 +838,20 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
 
         toast.push({
           title: force
-            ? `Retranslating ${documents.length} documents from scratch`
-            : `Translation tasks created for ${documents.length} documents`,
+            ? `Retranslating ${sourceDocuments.length} documents from scratch`
+            : `Translation tasks created for ${sourceDocuments.length} documents`,
           status: 'success',
           closable: true,
         });
+        if (skippedOriginalCount > 0) {
+          toast.push({
+            title: `Skipped ${skippedOriginalCount} document(s) written in a locale other than ${pluginConfig.getSourceLocale()}`,
+            description:
+              'Translate each of them from the Translate dialog on that document.',
+            status: 'info',
+            closable: true,
+          });
+        }
       } catch {
         toast.push({
           title:
@@ -607,6 +874,12 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       serializeSourceDocuments,
       uploadedVersions,
       uploadedVersionsStorageKey,
+      allowNonDefault,
+      hasNonDefaultSource,
+      getTargetLocales,
+      getDefaultSourceDocuments,
+      getUploadableSources,
+      skippedOriginalCount,
     ]
   );
 
@@ -619,7 +892,27 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         .filter((locale) => locale.enabled !== false)
         .map((locale) => locale.localeId);
 
-      const transformedDocuments = serializeSourceDocuments();
+      let sourceDocuments = documents;
+      // Without `allowNonDefaultSourceLocales`, the loaded documents are
+      // uploaded as they are.
+      if (allowNonDefault) {
+        const defaultSourceDocuments = getDefaultSourceDocuments();
+        if (defaultSourceDocuments.length === 0) {
+          toast.push({
+            title: `Local edits can only be saved for translations of ${pluginConfig.getSourceLocale()} documents`,
+            status: 'warning',
+            closable: true,
+          });
+          return;
+        }
+        const uploadable = await getUploadableSources(
+          defaultSourceDocuments,
+          'Local edits were not saved'
+        );
+        if (!uploadable) return;
+        sourceDocuments = uploadable;
+      }
+      const transformedDocuments = serializeSourceDocuments(sourceDocuments);
 
       // Seed the source files first. uploadTranslations requires the source to
       // exist, and this action exists for projects whose translations predate
@@ -628,7 +921,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       await uploadFiles(transformedDocuments, secrets);
 
       const existing = await collectExistingTranslations(
-        documents,
+        sourceDocuments,
         availableLocaleIds,
         translationContext
       );
@@ -661,7 +954,17 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } finally {
       setIsBusy(false);
     }
-  }, [secrets, documents, locales, client, schema, serializeSourceDocuments]);
+  }, [
+    secrets,
+    documents,
+    locales,
+    client,
+    schema,
+    serializeSourceDocuments,
+    allowNonDefault,
+    getDefaultSourceDocuments,
+    getUploadableSources,
+  ]);
 
   const handleImportAll = useCallback(async () => {
     if (!secrets || documents.length === 0 || !branchId) return;
@@ -669,8 +972,14 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     setIsBusy(true);
 
     try {
+      // Statuses are refreshed for the selected locales only, but a refresh
+      // started by changing the selection may not have landed yet.
+      const selectedLocaleIds = new Set(getSelectedLocaleIds(locales));
+
       const readyFiles = await getReadyFilesForImport(translationStatuses, {
         onSelectedKeys: (keys) => setImportingTranslations(new Set(keys)),
+        filterReadyFiles: (_key, status) =>
+          selectedLocaleIds.has(status.fileData.locale),
       });
 
       if (readyFiles.length === 0) {
@@ -739,6 +1048,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   }, [
     secrets,
     documents,
+    locales,
     translationStatuses,
     downloadStatus,
     translationContext,
@@ -753,7 +1063,9 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     ): Promise<Set<string>> => {
       const sourceLocale = pluginConfig.getSourceLocale();
 
-      const query = `*[
+      const query = hasNonDefaultSource
+        ? EXISTING_TRANSLATIONS_BY_ORIGINAL_QUERY
+        : `*[
       _type == 'translation.metadata' &&
       translations[language == $sourceLocale][0].value._ref in $documentIds
     ] {
@@ -773,7 +1085,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       const existing = new Set<string>();
       existingMetadata.forEach((metadata) => {
         metadata.existingTranslations?.forEach((localeId: string) => {
-          if (localeId !== sourceLocale) {
+          if (localeId !== (metadata.sourceLanguage ?? sourceLocale)) {
             existing.add(
               createStableTranslationKey(
                 branchId,
@@ -787,7 +1099,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
 
       return existing;
     },
-    [client]
+    [client, hasNonDefaultSource]
   );
 
   const handleImportMissing = useCallback(async () => {
@@ -811,6 +1123,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       const readyFiles = await getReadyFilesForImport(translationStatuses, {
         onSelectedKeys: (keys) => setImportingTranslations(new Set(keys)),
         filterReadyFiles: (_key, status) =>
+          availableLocaleIds.includes(status.fileData.locale) &&
           !existingTranslations.has(
             createStableTranslationKey(
               branchId,
@@ -912,16 +1225,36 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   const handleRefreshAll = useCallback(
     async ({ silent = false }: { silent?: boolean } = {}) => {
       if (!secrets || documents.length === 0 || !branchId) return;
+      const refresh = refreshTracker.begin();
       setIsRefreshing(true);
 
       try {
-        const availableLocaleIds = locales
-          .filter((locale) => locale.enabled !== false)
-          .map((locale) => locale.localeId);
+        // Selected locales, plus any still translating. A locale deselected
+        // mid-run keeps being polled until it reports ready, or its pending
+        // marker would never clear and Translate All would stay disabled.
+        const localeIdsByDocument = new Map(
+          documents.map((doc) => {
+            const documentId = getDocumentPublishedId(doc);
+            const versionId = getVersionId(doc);
+            return [
+              doc,
+              getLocaleIdsToPoll(getTargetLocales(doc), (localeId) =>
+                pendingTranslationsRef.current.has(
+                  createTranslationStatusKey(
+                    branchId,
+                    documentId,
+                    versionId,
+                    localeId
+                  )
+                )
+              ),
+            ] as const;
+          })
+        );
 
         const fileQueryData: FileProperties[] = [];
         for (const doc of documents) {
-          for (const localeId of availableLocaleIds) {
+          for (const localeId of localeIdsByDocument.get(doc) ?? []) {
             const documentId = getDocumentPublishedId(doc);
             fileQueryData.push({
               versionId: getVersionId(doc),
@@ -938,13 +1271,15 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
           secrets
         );
 
+        if (!refresh.isCurrent()) return;
+
         // Built here rather than inside an updater: it derives from the
         // response, not from previous state, and a state updater has to stay
         // pure — React may run it more than once.
         const newStatuses = new Map<string, TranslationStatus>();
 
         for (const doc of documents) {
-          for (const localeId of availableLocaleIds) {
+          for (const localeId of localeIdsByDocument.get(doc) ?? []) {
             const documentId = getDocumentPublishedId(doc);
             const versionId = getVersionId(doc);
             const key = createTranslationStatusKey(
@@ -1006,10 +1341,18 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
           closable: true,
         });
       } finally {
-        setIsRefreshing(false);
+        setIsRefreshing(refresh.finish());
       }
     },
-    [secrets, documents, locales, branchId, getVersionId]
+    [
+      secrets,
+      documents,
+      locales,
+      branchId,
+      getVersionId,
+      refreshTracker,
+      getTargetLocales,
+    ]
   );
 
   const handleImportDocument = useCallback(
@@ -1145,7 +1488,11 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       const result = await processBatch(
         patchTasks,
         async ({ doc, localeId }) => {
-          const sourceLocale = pluginConfig.getSourceLocale();
+          // With `allowNonDefaultSourceLocales`, each document is resolved
+          // from its own language.
+          const sourceLocale = allowNonDefault
+            ? getDocumentLanguage(doc)
+            : pluginConfig.getSourceLocale();
 
           // Skip source locale - only process translated documents
           if (localeId === sourceLocale) {
@@ -1156,7 +1503,8 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
           const translatedDoc = await findTranslatedDocumentForLocale(
             doc._id,
             localeId,
-            client
+            client,
+            sourceLocale
           );
 
           if (!translatedDoc) {
@@ -1166,7 +1514,8 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
           const resolvedDoc = await resolveRefs(
             translatedDoc,
             localeId,
-            client
+            client,
+            sourceLocale
           );
 
           if (resolvedDoc !== translatedDoc) {
@@ -1219,80 +1568,84 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     }
   }, [secrets, documents, locales, client, branchId]);
 
-  const handlePublishAllTranslations = useCallback(async () => {
-    if (!secrets || documents.length === 0) return 0;
+  const handlePublishAllTranslations = useCallback(
+    async ({ localeIds = null }: PublishTranslationsOptions = {}) => {
+      if (!secrets || documents.length === 0) return 0;
 
-    setIsBusy(true);
+      setIsBusy(true);
 
-    try {
-      const sourceDocumentIds = documents.map(getDocumentPublishedId);
-      const publishedDocumentIds = await client.fetch(
-        `*[_id in $sourceDocumentIds]._id`,
-        { sourceDocumentIds }
-      );
+      try {
+        const sourceDocumentIds = documents.map(getDocumentPublishedId);
+        const publishedDocumentIds = await client.fetch(
+          `*[_id in $sourceDocumentIds]._id`,
+          { sourceDocumentIds }
+        );
 
-      if (publishedDocumentIds.length === 0) {
+        if (publishedDocumentIds.length === 0) {
+          toast.push({
+            title:
+              'No published source documents found to publish translations for',
+            status: 'warning',
+            closable: true,
+          });
+          return 0;
+        }
+
+        const translationMetadata = await client.fetch<
+          TranslationDocumentMetadata[]
+        >(TRANSLATION_DOCS_FOR_PUBLISH_QUERY, {
+          publishedDocumentIds,
+          sourceDocumentIds,
+          localeIds,
+        });
+
+        const translationDocIds = new Set<string>();
+        translationMetadata.forEach((metadata) => {
+          metadata.translationDocs?.forEach((translation) => {
+            if (translation.docId) {
+              translationDocIds.add(translation.docId);
+            }
+          });
+        });
+
+        const publishableIds = Array.from(translationDocIds);
+
+        if (publishableIds.length === 0) {
+          toast.push({
+            title: 'No translation documents found to publish',
+            status: 'warning',
+            closable: true,
+          });
+          return 0;
+        }
+
+        const translatedDocumentIds = await publishTranslations(
+          publishableIds,
+          client
+        );
+
+        toast.push({
+          title: `Published ${translatedDocumentIds.length} translation documents`,
+          status: 'success',
+          closable: true,
+        });
+
+        return translatedDocumentIds.length;
+      } catch (error) {
+        console.error('Error publishing translations:', error);
         toast.push({
           title:
-            'No published source documents found to publish translations for',
-          status: 'warning',
+            'Translations could not be published. No unpublished source documents were changed.',
+          status: 'error',
           closable: true,
         });
         return 0;
+      } finally {
+        setIsBusy(false);
       }
-
-      const translationMetadata = await client.fetch<
-        TranslationDocumentMetadata[]
-      >(TRANSLATION_DOCS_FOR_PUBLISH_QUERY, {
-        publishedDocumentIds,
-        sourceDocumentIds,
-      });
-
-      const translationDocIds = new Set<string>();
-      translationMetadata.forEach((metadata) => {
-        metadata.translationDocs?.forEach((translation) => {
-          if (translation.docId) {
-            translationDocIds.add(translation.docId);
-          }
-        });
-      });
-
-      const publishableIds = Array.from(translationDocIds);
-
-      if (publishableIds.length === 0) {
-        toast.push({
-          title: 'No translation documents found to publish',
-          status: 'warning',
-          closable: true,
-        });
-        return 0;
-      }
-
-      const translatedDocumentIds = await publishTranslations(
-        publishableIds,
-        client
-      );
-
-      toast.push({
-        title: `Published ${translatedDocumentIds.length} translation documents`,
-        status: 'success',
-        closable: true,
-      });
-
-      return translatedDocumentIds.length;
-    } catch (error) {
-      console.error('Error publishing translations:', error);
-      toast.push({
-        title:
-          'Translations could not be published. No unpublished source documents were changed.',
-        status: 'error',
-        closable: true,
-      });
-      return 0;
-    } finally {
-      setIsBusy(false);
-    }
-  }, [secrets, documents, client, branchId]);
+    },
+    [secrets, documents, client, branchId]
+  );
 
   useEffect(() => {
     fetchDocuments();
@@ -1333,11 +1686,20 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     if (!autoRefresh || documents.length === 0 || !secrets) return;
 
     const interval = setInterval(async () => {
+      // A poll slower than the interval is still in flight; let it land
+      // rather than stacking another request behind it.
+      if (refreshTracker.isRefreshing()) return;
       await handleRefreshAll({ silent: true });
     }, 10000);
 
     return () => clearInterval(interval);
-  }, [autoRefresh, documents.length, secrets, handleRefreshAll]);
+  }, [
+    autoRefresh,
+    documents.length,
+    secrets,
+    handleRefreshAll,
+    refreshTracker,
+  ]);
 
   useEffect(() => {
     setImportedTranslations(new Set(downloadStatus.downloaded));
@@ -1372,6 +1734,10 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     secrets,
     branchId,
     getVersionId,
+    getTargetLocales,
+    excludedLocale,
+    documentRole,
+    skippedOriginalCount,
 
     // Actions
     setLocales,

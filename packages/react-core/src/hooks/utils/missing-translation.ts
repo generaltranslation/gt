@@ -6,7 +6,7 @@ import {
 import { useShouldTranslate } from '../utils';
 import { useI18nStore } from '../../i18n-store/useI18nStore';
 import { DictionaryLookup, TranslateLookup } from '../../i18n-store/storeTypes';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { Translation } from 'gt-i18n/types';
 import { useGTContext } from '../../context/context';
 
@@ -150,17 +150,25 @@ function useDevHotReloadQueue(shouldTranslate: boolean) {
     getI18nConfig().isDevHotReloadEnabled();
   const i18nStore = useI18nStore();
 
-  // No memoization bc we want to flush after every render
-  // TODO: perhaps should find a way to memoize and flush in a better way than this as it nullifies any useCallback
-  const pendingLookups = new Map<string, PendingLookup>();
+  // Persist the queue across renders so the enqueue callback keeps a stable
+  // identity. An unstable callback would change the identity of every
+  // translation function built on top of it (e.g. gt() from useGT()), which
+  // re-runs user effects that depend on it after every render.
+  const pendingLookupsRef = useRef<Map<string, PendingLookup> | null>(null);
+  if (pendingLookupsRef.current == null) {
+    pendingLookupsRef.current = new Map();
+  }
 
   // Pure react: effects run after render
+  // No dependency array: flush whatever was enqueued after every commit
   useEffect(() => {
-    if (!devHotReloadEnabled || !shouldTranslate || pendingLookups.size === 0) {
-      return;
-    }
+    const pendingLookups = pendingLookupsRef.current!;
+    if (pendingLookups.size === 0) return;
+    const lookups = Array.from(pendingLookups.values());
+    pendingLookups.clear();
+    if (!devHotReloadEnabled || !shouldTranslate) return;
 
-    pendingLookups.forEach(({ type, lookup }) => {
+    lookups.forEach(({ type, lookup }) => {
       switch (type) {
         case 'translation':
           i18nStore.translate(lookup);
@@ -173,10 +181,9 @@ function useDevHotReloadQueue(shouldTranslate: boolean) {
           break;
       }
     });
-  }, [devHotReloadEnabled, shouldTranslate, i18nStore, pendingLookups]);
+  });
 
-  // No need for useCallback b/c we want access to the pendingLookups map
-  return (key: string, pendingLookup: PendingLookup) => {
-    pendingLookups.set(key, pendingLookup);
-  };
+  return useCallback((key: string, pendingLookup: PendingLookup) => {
+    pendingLookupsRef.current!.set(key, pendingLookup);
+  }, []);
 }
