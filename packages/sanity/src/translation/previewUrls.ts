@@ -124,14 +124,20 @@ async function readSnapshots(
   return snapshots;
 }
 
+/** A document's page URL; with no snapshots, because they could not be read, only fixed locations resolve. */
 function previewUrl(
   config: PreviewUrlConfig,
-  type: string,
-  snapshot: Snapshot | null
+  document: SanityDocument,
+  snapshots: Map<string, Snapshot> | null
 ): string | undefined {
-  const resolver = config.locations[type];
-  if (!resolver) return undefined;
-  const state = 'resolve' in resolver ? resolver.resolve(snapshot) : resolver;
+  const resolver = config.locations[document._type];
+  if (!resolver || ('resolve' in resolver && !snapshots)) return undefined;
+  const state =
+    'resolve' in resolver
+      ? resolver.resolve(
+          snapshots?.get(getDocumentPublishedId(document)) ?? null
+        )
+      : resolver;
   const href = state?.locations?.[0]?.href;
   return href ? new URL(href, config.origin).href : undefined;
 }
@@ -144,18 +150,16 @@ export async function resolvePreviewUrls(
   const resolved: ResolvedPreviewUrls = { urls: new Map(), failures: [] };
   const config = pluginConfig.getPreviewUrl();
   if (!config) return resolved;
-  let snapshots: Map<string, Snapshot>;
+  let snapshots: Map<string, Snapshot> | null = null;
   try {
     snapshots = await readSnapshots(client, documents, config.locations);
   } catch (error) {
     resolved.failures.push(error);
-    return resolved;
   }
   for (const document of documents) {
-    const id = getDocumentPublishedId(document);
     try {
-      const url = previewUrl(config, document._type, snapshots.get(id) ?? null);
-      if (url) resolved.urls.set(id, url);
+      const url = previewUrl(config, document, snapshots);
+      if (url) resolved.urls.set(getDocumentPublishedId(document), url);
     } catch (error) {
       resolved.failures.push(error);
     }

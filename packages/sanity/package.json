@@ -72,7 +72,6 @@
     "jsonpath-plus": "^10.3.0",
     "jsonpointer": "^5.0.1",
     "lodash.merge": "^4.6.2",
-    "rxjs": "^7.8.2",
     "sanity-plugin-internationalized-array": "^5.1.27"
   },
   "devDependencies": {

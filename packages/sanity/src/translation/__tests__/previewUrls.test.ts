@@ -198,14 +198,17 @@ describe('resolvePreviewUrls', () => {
     expect(resolved.failures).toEqual([new Error('resolver threw')]);
   });
 
-  test('reports a failed read and links nothing', async () => {
+  test('reports a failed read and still links fixed locations', async () => {
     const { client: sanity, fetch } = client();
     fetch.mockRejectedValueOnce(new Error('network down'));
 
-    const resolved = await resolvePreviewUrls([doc('pricing', 'page')], sanity);
+    const resolved = await resolvePreviewUrls(
+      [doc('pricing', 'page'), doc('siteSettings', 'settings')],
+      sanity
+    );
 
     expect(resolved).toEqual({
-      urls: new Map(),
+      urls: new Map([['siteSettings', 'https://staging.acme.test/en']]),
       failures: [new Error('network down')],
     });
   });

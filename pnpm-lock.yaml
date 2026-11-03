@@ -1604,9 +1604,6 @@ importers:
       lodash.merge:
         specifier: ^4.6.2
         version: 4.6.2
-      rxjs:
-        specifier: ^7.8.2
-        version: 7.8.2
       sanity-plugin-internationalized-array:
         specifier: ^5.1.27
         version: 5.1.27(07e9350803da72ab7ffe82f8b8d027b2)
