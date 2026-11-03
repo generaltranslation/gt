@@ -44,6 +44,7 @@ afterEach(() => {
 
 const readPage = (id: string | number, locale: string) =>
   payload.findByID({
+    overrideAccess: true,
     collection: 'pages',
     id,
     locale: locale as 'en',
@@ -54,6 +55,7 @@ const readPage = (id: string | number, locale: string) =>
 
 const readRun = async (id: string | number) =>
   (await payload.findByID({
+    overrideAccess: true,
     collection: RUNS_SLUG,
     id,
     depth: 0,
@@ -83,7 +85,7 @@ const startPage = async (locales = ['es']) => {
 describe('runs', () => {
   it("finishes through Payload's job queue with no browser stepping it", async () => {
     const { page, run } = await startPage();
-    await payload.jobs.run();
+    await payload.jobs.run({ overrideAccess: true });
 
     expect(await readRun(run.id)).toMatchObject({ status: 'done', done: 1 });
     expect((await readPage(page.id, 'es')).title).toBe('HOME');
@@ -142,6 +144,7 @@ describe('runs', () => {
     const { page, run } = await startPage();
     await stepUntilDone(run.id);
     await payload.update({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: 'es',
@@ -263,6 +266,7 @@ describe('runs', () => {
 
   it('clears removed text only while holding the document, like other saves', async () => {
     const media = await payload.create({
+      overrideAccess: true,
       collection: 'media',
       locale: 'en',
       data: { alt: 'Photo' },
@@ -276,6 +280,7 @@ describe('runs', () => {
     });
     await stepUntilDone(first.id);
     await payload.update({
+      overrideAccess: true,
       collection: 'media',
       id: media.id,
       locale: 'en',
@@ -296,6 +301,7 @@ describe('runs', () => {
     const esAlt = async () =>
       (
         await payload.findByID({
+          overrideAccess: true,
           collection: 'media',
           id: media.id,
           locale: 'es',

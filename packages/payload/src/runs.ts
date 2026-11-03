@@ -4,7 +4,7 @@
 // panel, or Payload's job queue. A lock on the run keeps two steppers from
 // doing the same step, and a lock on each document keeps two runs from saving
 // it at once.
-import type { CollectionConfig, Payload, TaskConfig, TypedUser } from 'payload';
+import type { CollectionConfig, Payload, TaskConfig, User } from 'payload';
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
 import { createGtPayloadDiagnostic } from './diagnostics';
 import { listSiteTargets } from './documents';
@@ -119,9 +119,13 @@ const progressOf = (run: Run): RunProgress => ({
   skippedStrings: run.skippedStrings ?? 0,
 });
 
+// Runs are private bookkeeping that only this plugin touches, so its own
+// reads and writes skip the collection's deny-all access rules. Document
+// reads and writes still follow the user's.
 const readRun = async (payload: Payload, id: string | number) =>
   (await payload.findByID({
     collection: RUNS_SLUG,
+    overrideAccess: true,
     id,
     depth: 0,
   })) as unknown as Run;
@@ -129,6 +133,7 @@ const readRun = async (payload: Payload, id: string | number) =>
 const updateRun = (payload: Payload, id: string | number, data: Partial<Run>) =>
   payload.update({
     collection: RUNS_SLUG,
+    overrideAccess: true,
     id,
     data: data as Record<string, unknown>,
     depth: 0,
@@ -185,17 +190,16 @@ function tally(
   };
 }
 
-async function userOf(
-  payload: Payload,
-  run: Run
-): Promise<TypedUser | undefined> {
+async function userOf(payload: Payload, run: Run): Promise<User | undefined> {
   if (!run.startedBy) return undefined;
+  // The user who started the run, reloaded so their current access applies.
   const user = await payload.findByID({
     collection: run.startedBy.collection,
+    overrideAccess: true,
     id: run.startedBy.id,
     depth: 0,
   });
-  return { ...user, collection: run.startedBy.collection } as TypedUser;
+  return { ...user, collection: run.startedBy.collection } as User;
 }
 
 export type StartRunInput = {
@@ -205,7 +209,7 @@ export type StartRunInput = {
   targets: TranslateTarget[] | 'site';
   locales: string[];
   saveLocalEdits?: boolean;
-  user?: TypedUser | null;
+  user?: User | null;
 };
 
 // Creates a run and queues Payload's job for it.
@@ -221,6 +225,7 @@ export async function startRun({
     targets === 'site' ? await listSiteTargets(payload, { user }) : targets;
   const run = (await payload.create({
     collection: RUNS_SLUG,
+    overrideAccess: true,
     data: {
       kind,
       status: pending.length ? 'running' : 'done',
@@ -240,6 +245,7 @@ export async function startRun({
   })) as unknown as Run;
   if (pending.length)
     await payload.jobs.queue({
+      overrideAccess: true,
       task: RUN_TASK,
       input: { runId: String(run.id) },
     });
@@ -250,7 +256,7 @@ async function startNext(
   payload: Payload,
   gt: GtClient,
   run: Run,
-  user: TypedUser | undefined
+  user: User | undefined
 ): Promise<Partial<Run>> {
   const batch = run.pending.slice(0, START_BATCH);
   const pending = run.pending.slice(START_BATCH);
@@ -292,7 +298,7 @@ async function finishReady(
   payload: Payload,
   gt: GtClient,
   run: Run,
-  user: TypedUser | undefined
+  user: User | undefined
 ): Promise<Partial<Run> | null> {
   const jobIds = run.jobs.flatMap((job) => (job.jobId ? [job.jobId] : []));
   const statuses = jobIds.length ? await checkTranslation({ gt, jobIds }) : [];
@@ -443,6 +449,7 @@ async function stepHeld(
 export async function staleRuns(payload: Payload): Promise<RunProgress[]> {
   const result = await payload.find({
     collection: RUNS_SLUG,
+    overrideAccess: true,
     where: {
       and: [
         { status: { equals: 'running' } },
@@ -486,6 +493,7 @@ export function runTask(
         if (!step.progressed) await wait(JOB_WAIT_MS);
       } while (Date.now() < until);
       await payload.jobs.queue({
+        overrideAccess: true,
         task: RUN_TASK,
         input: { runId: input.runId },
       });

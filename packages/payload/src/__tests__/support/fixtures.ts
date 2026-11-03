@@ -7,11 +7,11 @@ let counter = 0;
 export async function createPage(payload: Payload) {
   counter += 1;
   return payload.create({
+    overrideAccess: true,
     collection: 'pages',
     locale: 'en',
     data: {
       title: 'Home',
-      slug: `home-${counter}`,
       _status: 'published',
       hero: {
         richText: richText(
@@ -57,6 +57,7 @@ export async function createPage(payload: Payload) {
 
 export async function setHeader(payload: Payload) {
   return payload.updateGlobal({
+    overrideAccess: true,
     slug: 'header',
     locale: 'en',
     draft: false,
@@ -71,6 +72,7 @@ export async function setHeader(payload: Payload) {
 
 export async function setFooter(payload: Payload) {
   return payload.updateGlobal({
+    overrideAccess: true,
     slug: 'footer',
     locale: 'en',
     data: {

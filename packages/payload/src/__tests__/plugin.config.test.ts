@@ -51,6 +51,20 @@ describe('gtPlugin config', () => {
     }
   });
 
+  it('adds no Translate button where nothing would be translated', async () => {
+    const config = await testConfig([gtPlugin({ client: new FakeGt() })]);
+    const tags = config.collections.find((c) => c.slug === 'tags');
+
+    expect(
+      tags?.admin.components?.edit?.beforeDocumentControls ?? []
+    ).not.toContain('gt-payload/client#GtDocumentControls');
+    expect(
+      hasTranslatableFields(tags!.flattenedFields, {
+        blocks: config.blocks ?? [],
+      })
+    ).toBe(false);
+  });
+
   it('loads a config with a block that can hold itself', async () => {
     const config = await testConfig([gtPlugin({ client: new FakeGt() })], {
       recursiveBlocks: true,

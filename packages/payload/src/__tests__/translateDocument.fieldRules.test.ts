@@ -6,8 +6,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { translateDocument, translateSite } from '../translation';
 import { createTestPayload } from './support/createTestPayload';
 import { FakeGt, readKeyedHtml } from './support/fakeGt';
-import { navRows, setHeader } from './support/fixtures';
-import { paragraph, richText, text } from './support/lexical';
+import { createPage, navRows, setHeader } from './support/fixtures';
+import { block, paragraph, richText, text } from './support/lexical';
 
 let payload: Payload;
 
@@ -21,6 +21,7 @@ afterAll(async () => {
 
 const createArticle = (data: Record<string, unknown> = {}) =>
   payload.create({
+    overrideAccess: true,
     collection: 'articles',
     locale: 'en',
     data: {
@@ -37,6 +38,7 @@ const createArticle = (data: Record<string, unknown> = {}) =>
 
 const read = (id: string | number, locale: string) =>
   payload.findByID({
+    overrideAccess: true,
     collection: 'articles',
     id,
     locale: locale as 'en',
@@ -45,7 +47,13 @@ const read = (id: string | number, locale: string) =>
   });
 
 const updateEnglish = (id: string | number, data: Record<string, unknown>) =>
-  payload.update({ collection: 'articles', id, locale: 'en', data });
+  payload.update({
+    overrideAccess: true,
+    collection: 'articles',
+    id,
+    locale: 'en',
+    data,
+  });
 
 const translate = (gt: FakeGt, id: string | number) =>
   translateDocument({
@@ -87,6 +95,7 @@ describe('translateDocument: field rules', () => {
   it('keeps a required field the language already has', async () => {
     const article = await createArticle();
     await payload.update({
+      overrideAccess: true,
       collection: 'articles',
       id: article.id,
       locale: 'es',
@@ -150,6 +159,7 @@ describe('translateDocument: field rules', () => {
 
   it('leaves out collections editors cannot edit, like search results', async () => {
     const result = await payload.create({
+      overrideAccess: true,
       collection: 'search',
       locale: 'en',
       data: { title: 'Pricing' },
@@ -179,12 +189,16 @@ describe('translateDocument: field rules', () => {
       locales: ['es', 'fr'],
     });
     await payload.updateGlobal({
+      overrideAccess: true,
       slug: 'header',
       locale: 'en',
+      // An editor publishing every language's draft.
+      publishAllLocales: true,
       data: { _status: 'published' },
     });
 
     const es = await payload.findGlobal({
+      overrideAccess: true,
       slug: 'header',
       locale: 'es',
       fallbackLocale: false,
@@ -201,6 +215,7 @@ describe('translateDocument: field rules', () => {
       promo: { headline: 'Save more', terms: 'Terms apply' },
     });
     await payload.update({
+      overrideAccess: true,
       collection: 'articles',
       id: article.id,
       locale: 'es',
@@ -223,6 +238,7 @@ describe('translateDocument: field rules', () => {
       tags: [{ label: 'Billing', code: 'BILL' }],
     });
     await payload.update({
+      overrideAccess: true,
       collection: 'articles',
       id: article.id,
       locale: 'es',
@@ -255,6 +271,7 @@ describe('translateDocument: field rules', () => {
 
   it('clears the last translatable text when the source has none left', async () => {
     const media = await payload.create({
+      overrideAccess: true,
       collection: 'media',
       locale: 'en',
       data: { alt: 'Photo' },
@@ -263,6 +280,7 @@ describe('translateDocument: field rules', () => {
     const target = { collection: 'media', id: media.id };
     await translateDocument({ payload, gt, target, locales: ['es'] });
     await payload.update({
+      overrideAccess: true,
       collection: 'media',
       id: media.id,
       locale: 'en',
@@ -271,6 +289,7 @@ describe('translateDocument: field rules', () => {
     await translateDocument({ payload, gt, target, locales: ['es'] });
 
     const es = await payload.findByID({
+      overrideAccess: true,
       collection: 'media',
       id: media.id,
       locale: 'es',
@@ -282,6 +301,7 @@ describe('translateDocument: field rules', () => {
 
   it('translates text inside a named localized tab', async () => {
     const faq = await payload.create({
+      overrideAccess: true,
       collection: 'faqs',
       locale: 'en',
       data: { content: { question: 'How much?' } },
@@ -294,6 +314,7 @@ describe('translateDocument: field rules', () => {
     });
 
     const es = await payload.findByID({
+      overrideAccess: true,
       collection: 'faqs',
       id: faq.id,
       locale: 'es',
@@ -305,6 +326,7 @@ describe('translateDocument: field rules', () => {
 
   it('includes documents whose text is only in a referenced block', async () => {
     const story = await payload.create({
+      overrideAccess: true,
       collection: 'stories',
       locale: 'en',
       data: { layout: [{ blockType: 'quote', text: 'Well said' }] },
@@ -323,5 +345,35 @@ describe('translateDocument: field rules', () => {
           d.target.id === story.id
       )
     ).toBe(true);
+  });
+
+  it('translates a rich text block referenced by slug', async () => {
+    const page = await createPage(payload);
+    await payload.update({
+      overrideAccess: true,
+      collection: 'pages',
+      id: page.id,
+      locale: 'en',
+      draft: true,
+      data: { body: richText(block('quote', { text: 'Well said' })) },
+    });
+    await translateDocument({
+      payload,
+      gt: new FakeGt(),
+      target: { collection: 'pages', id: page.id },
+      locales: ['es'],
+    });
+
+    const es = await payload.findByID({
+      overrideAccess: true,
+      collection: 'pages',
+      id: page.id,
+      locale: 'es',
+      draft: true,
+      fallbackLocale: false,
+      depth: 0,
+    });
+    const quote = es.body?.root.children[0] as { fields: { text: string } };
+    expect(quote.fields.text).toBe('WELL SAID');
   });
 });

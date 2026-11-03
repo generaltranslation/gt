@@ -13,7 +13,14 @@
 
 # gt-payload
 
-General Translation plugin for [Payload CMS](https://payloadcms.com) 3.
+General Translation plugin for [Payload CMS](https://payloadcms.com) 4.
+
+| Payload | gt-payload    |
+| ------- | ------------- |
+| 4       | 0.2 and later |
+| 3       | 0.1           |
+
+On Payload 3, install `gt-payload@^0.1`.
 
 It translates your localized fields into each locale in your Payload config,
 from a button on every document or for the whole site at once.

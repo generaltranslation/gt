@@ -47,10 +47,10 @@ packageExtensions:
   drizzle-kit@*:
     peerDependencies:
       drizzle-orm: '*'
-  '@payloadcms/ui@*':
+  '@payloadcms/ui':
     peerDependencies:
       '@types/react': '*'
-  '@payloadcms/next@*':
+  '@payloadcms/next':
     peerDependencies:
       '@types/react': '*'
   eslint-config-next@*:

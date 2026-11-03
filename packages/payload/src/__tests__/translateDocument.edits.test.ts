@@ -30,6 +30,7 @@ afterAll(async () => {
 
 const read = (id: number | string, locale: string) =>
   payload.findByID({
+    overrideAccess: true,
     collection: 'pages',
     id,
     locale: locale as 'en',
@@ -39,7 +40,14 @@ const read = (id: number | string, locale: string) =>
   });
 
 const editSpanish = (id: number | string, data: Record<string, unknown>) =>
-  payload.update({ collection: 'pages', id, locale: 'es', draft: true, data });
+  payload.update({
+    overrideAccess: true,
+    collection: 'pages',
+    id,
+    locale: 'es',
+    draft: true,
+    data,
+  });
 
 describe('translateDocument: edits made in Payload', () => {
   it('sends no edits without saveLocalEdits', async () => {
@@ -78,6 +86,7 @@ describe('translateDocument: edits made in Payload', () => {
     const translatedVersion = gt.uploadedSources.length;
     await editSpanish(page.id, { title: 'Página principal' });
     await payload.update({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: 'en',
@@ -111,6 +120,7 @@ describe('translateDocument: edits made in Payload', () => {
     await translateDocument({ payload, gt, target, locales: ['es'] });
     await editSpanish(page.id, { title: 'Página principal' });
     await payload.update({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: 'en',
@@ -215,6 +225,7 @@ describe('translateDocument: edits made in Payload', () => {
     const target = { collection: 'pages', id: page.id };
     const en = await read(page.id, 'en');
     await payload.update({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: 'en',
@@ -341,6 +352,7 @@ describe('translateDocument: edits made in Payload', () => {
     const banner = (content: Record<string, unknown>) =>
       block('banner', { content: richText(content) });
     await payload.update({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: 'en',
@@ -377,6 +389,7 @@ describe('translateDocument: edits made in Payload', () => {
       ),
     });
     await payload.update({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: 'en',
@@ -407,6 +420,7 @@ describe('translateDocument: edits made in Payload', () => {
     const body = (type: string, words: string) =>
       richText(block(type, { content: richText(paragraph(text(words))) }));
     await payload.update({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: 'en',
@@ -415,6 +429,7 @@ describe('translateDocument: edits made in Payload', () => {
     });
     await translateDocument({ payload, gt, target, locales: ['es'] });
     await payload.update({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: 'en',

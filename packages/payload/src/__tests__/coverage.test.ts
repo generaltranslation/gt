@@ -77,6 +77,7 @@ describe('siteCoverage', () => {
       locales: ['es'],
     });
     await payload.update({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: 'es',
@@ -98,6 +99,7 @@ describe('siteCoverage', () => {
       locales: ['es'],
     });
     const es = await payload.findByID({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: 'es',
@@ -106,6 +108,7 @@ describe('siteCoverage', () => {
       depth: 0,
     });
     await payload.update({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: 'es',
@@ -175,6 +178,7 @@ describe('siteCoverage', () => {
       locales: ['es'],
     });
     const es = await payload.findByID({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: 'es',
@@ -183,6 +187,7 @@ describe('siteCoverage', () => {
       depth: 0,
     });
     await payload.update({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: 'es',
@@ -218,6 +223,7 @@ describe('siteCoverage', () => {
       locales: ['es'],
     });
     const es = await payload.findByID({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: 'es',
@@ -226,6 +232,7 @@ describe('siteCoverage', () => {
       depth: 0,
     });
     await payload.update({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: 'es',

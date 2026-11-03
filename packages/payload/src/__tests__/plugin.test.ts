@@ -1,8 +1,9 @@
 // The plugin's endpoints, as the admin panel calls them: start and step runs
 // that translate or save local edits, and report coverage.
-import type { Payload, TypedUser } from 'payload';
-import { createLocalReq } from 'payload';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import type { Payload, User } from 'payload';
+import { createPayloadRequest } from 'payload';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { canUpdate, editableTargets } from '../documents';
 import type { CoveragePage } from '../coverage';
 import { gtPlugin } from '../plugin';
 import type { RunProgress, StepResult } from '../runs';
@@ -15,15 +16,16 @@ import { FakeGt } from './support/fakeGt';
 import { createPage } from './support/fixtures';
 
 let payload: Payload;
-let user: TypedUser;
+let user: User;
 const gt = new FakeGt();
 
 beforeAll(async () => {
   payload = await createTestPayload([gtPlugin({ client: gt })]);
   user = (await payload.create({
+    overrideAccess: true,
     collection: 'users',
     data: { email: 'editor@example.com', password: 'secret-password' },
-  })) as TypedUser;
+  })) as User;
 });
 
 afterAll(async () => {
@@ -39,10 +41,10 @@ async function call<T>(
     (e) => e.path === path && e.method === 'post'
   );
   if (!endpoint) throw new Error(`No endpoint ${path}`);
-  const req = await createLocalReq(
-    { user: signedIn ? user : undefined },
-    payload
-  );
+  const req = await createPayloadRequest({
+    payload,
+    user: signedIn ? user : undefined,
+  });
   req.json = async () => body;
   const response = await endpoint.handler(req);
   return { status: response.status, json: (await response.json()) as T };
@@ -50,6 +52,7 @@ async function call<T>(
 
 const read = (id: string | number, locale: string) =>
   payload.findByID({
+    overrideAccess: true,
     collection: 'pages',
     id,
     locale: locale as 'en',
@@ -103,8 +106,13 @@ describe('gtPlugin endpoints', () => {
       locales: ['es'],
     });
 
-    const pages = (await payload.find({ collection: 'pages', limit: 0 }))
-      .totalDocs;
+    const pages = (
+      await payload.find({
+        overrideAccess: true,
+        collection: 'pages',
+        limit: 0,
+      })
+    ).totalDocs;
     expect(json.total).toBeGreaterThanOrEqual(pages);
   });
 
@@ -118,6 +126,7 @@ describe('gtPlugin endpoints', () => {
     for (let i = 0; i < 5; i += 1)
       await call('/gt/runs/step', { id: translated.json.id });
     await payload.update({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: 'es',
@@ -139,16 +148,27 @@ describe('gtPlugin endpoints', () => {
     expect(gt.uploadedTranslations.at(-1)?.content).toContain('Inicio');
   });
 
-  it('leaves out locales GT cannot translate into', async () => {
-    gt.unsupportedLocales.add('xx-not-a-locale');
+  it('refuses a run with a locale GT cannot translate into, naming it', async () => {
     const page = await createPage(payload);
-    const { json } = await call<RunProgress>('/gt/runs', {
+    const { status, json } = await call<{ error: string }>('/gt/runs', {
       targets: [{ collection: 'pages', id: page.id }],
       locales: ['es', 'xx-not-a-locale'],
     });
-    for (let i = 0; i < 5; i += 1) await call('/gt/runs/step', { id: json.id });
 
-    expect((await read(page.id, 'es')).title).toBe('HOME');
+    expect(status).toBe(400);
+    expect(json.error).toContain('xx-not-a-locale');
+    expect((await read(page.id, 'es')).title ?? null).toBeNull();
+  });
+
+  it('refuses a run for the source locale', async () => {
+    const page = await createPage(payload);
+    const { status, json } = await call<{ error: string }>('/gt/runs', {
+      targets: [{ collection: 'pages', id: page.id }],
+      locales: ['en'],
+    });
+
+    expect(status).toBe(400);
+    expect(json.error).toContain('en');
   });
 
   it("reports a page of the site with each language's coverage", async () => {
@@ -175,6 +195,7 @@ describe('gtPlugin endpoints', () => {
 
   it('refuses to translate a document the user cannot update, before contacting GT', async () => {
     const notice = await payload.create({
+      overrideAccess: true,
       collection: 'notices',
       locale: 'en',
       data: { message: 'Closed today' },
@@ -193,6 +214,7 @@ describe('gtPlugin endpoints', () => {
 
   it('refuses to translate a global the user cannot update', async () => {
     await payload.updateGlobal({
+      overrideAccess: true,
       slug: 'announcement',
       locale: 'en',
       data: { message: 'Closed today' },
@@ -209,6 +231,7 @@ describe('gtPlugin endpoints', () => {
 
   it('leaves out of a site run what the user cannot update', async () => {
     const notice = await payload.create({
+      overrideAccess: true,
       collection: 'notices',
       locale: 'en',
       data: { message: 'Open late' },
@@ -218,14 +241,18 @@ describe('gtPlugin endpoints', () => {
       site: true,
       locales: ['es'],
     });
-    for (let i = 0; i < 50; i += 1) {
-      const step = (await call<StepResult>('/gt/runs/step', { id: json.id }))
-        .json;
-      if (step.progress.status === 'done') break;
-    }
+    let progress = json;
+    for (let i = 0; i < 50 && progress.status !== 'done'; i += 1)
+      progress = (await call<StepResult>('/gt/runs/step', { id: json.id })).json
+        .progress;
     LOCKED_OUT.delete(String(user.email));
 
+    // Left out, not failed: the rest of the site translates cleanly.
+    expect(progress.status).toBe('done');
+    expect(progress.failedDocuments).toBe(0);
+
     const es = await payload.findByID({
+      overrideAccess: true,
       collection: 'notices',
       id: notice.id,
       locale: 'es',
@@ -235,8 +262,71 @@ describe('gtPlugin endpoints', () => {
     expect(es.message ?? null).toBeNull();
   });
 
+  it('keeps translating the rest of the site when a rule refuses one document by throwing', async () => {
+    const vault = await payload.create({
+      overrideAccess: true,
+      collection: 'vaults',
+      locale: 'en',
+      data: { note: 'Keep out' },
+    });
+    const page = await createPage(payload);
+    LOCKED_OUT.add(String(user.email));
+    const { status, json } = await call<RunProgress>('/gt/runs', {
+      site: true,
+      locales: ['es'],
+    });
+    let progress = json;
+    for (let i = 0; i < 50 && progress.status !== 'done'; i += 1)
+      progress = (await call<StepResult>('/gt/runs/step', { id: json.id })).json
+        .progress;
+    LOCKED_OUT.delete(String(user.email));
+
+    expect(status).toBe(200);
+    expect(progress).toMatchObject({ status: 'done', failedDocuments: 0 });
+    const es = await payload.findByID({
+      overrideAccess: true,
+      collection: 'vaults',
+      id: vault.id,
+      locale: 'es',
+      fallbackLocale: false,
+      depth: 0,
+    });
+    expect(es.note ?? null).toBeNull();
+    expect((await read(page.id, 'es')).title).toBe('HOME');
+  });
+
+  it("checks a collection's query rule with a few reads, not one per document", async () => {
+    const memos = [];
+    for (let i = 0; i < 12; i += 1)
+      memos.push(
+        await payload.create({
+          overrideAccess: true,
+          collection: 'memos',
+          locale: 'en',
+          data: { editable: i % 2 === 0, note: `Memo ${i}` },
+        })
+      );
+    const targets = memos.map((m) => ({ collection: 'memos', id: m.id }));
+    const find = vi.spyOn(payload, 'find');
+    const editable = await editableTargets(payload, targets, { user });
+    const reads = find.mock.calls.length;
+    find.mockRestore();
+
+    expect(editable).toEqual(targets.filter((_, i) => i % 2 === 0));
+    expect(reads).toBeLessThanOrEqual(2);
+    // An id sent as a string still matches its numeric document.
+    expect(
+      await canUpdate(
+        payload,
+        { collection: 'memos', id: String(memos[0].id) },
+        { user }
+      )
+    ).toBe(true);
+  });
+
   it('writes nothing for a run whose starter lost access before it finished', async () => {
     const notice = await payload.create({
+      overrideAccess: true,
       collection: 'notices',
       locale: 'en',
       data: { message: 'Back soon' },
@@ -255,6 +345,7 @@ describe('gtPlugin endpoints', () => {
 
     expect(progress.failedLocales).toEqual(['es']);
     const es = await payload.findByID({
+      overrideAccess: true,
       collection: 'notices',
       id: notice.id,
       locale: 'es',
@@ -266,11 +357,13 @@ describe('gtPlugin endpoints', () => {
 
   it("checks permission against the latest draft, as Payload's own update does", async () => {
     const memo = await payload.create({
+      overrideAccess: true,
       collection: 'memos',
       locale: 'en',
       data: { editable: false, note: 'Hello', _status: 'published' },
     });
     await payload.update({
+      overrideAccess: true,
       collection: 'memos',
       id: memo.id,
       locale: 'en',
@@ -287,11 +380,13 @@ describe('gtPlugin endpoints', () => {
 
   it('lists in coverage the drafts the user can read', async () => {
     const memo = await payload.create({
+      overrideAccess: true,
       collection: 'memos',
       locale: 'en',
       data: { editable: false, note: 'Hi', _status: 'published' },
     });
     await payload.update({
+      overrideAccess: true,
       collection: 'memos',
       id: memo.id,
       locale: 'en',
@@ -313,6 +408,7 @@ describe('gtPlugin endpoints', () => {
 
   it('checks permission with the draft save translation makes, not the saved status', async () => {
     const doc = await payload.create({
+      overrideAccess: true,
       collection: 'gated',
       locale: 'en',
       data: { note: 'Hello', _status: 'published' },
@@ -327,11 +423,13 @@ describe('gtPlugin endpoints', () => {
 
   it('allows a document whose published version matches the rule though its draft does not', async () => {
     const memo = await payload.create({
+      overrideAccess: true,
       collection: 'memos',
       locale: 'en',
       data: { editable: true, note: 'Hello', _status: 'published' },
     });
     await payload.update({
+      overrideAccess: true,
       collection: 'memos',
       id: memo.id,
       locale: 'en',
@@ -348,6 +446,7 @@ describe('gtPlugin endpoints', () => {
 
   it('reports clearing removed text as failed when the starter can no longer read the document', async () => {
     const notice = await payload.create({
+      overrideAccess: true,
       collection: 'notices',
       locale: 'en',
       data: { message: 'Closed' },
@@ -360,6 +459,7 @@ describe('gtPlugin endpoints', () => {
     for (let i = 0; i < 5; i += 1)
       await call('/gt/runs/step', { id: translated.json.id });
     await payload.update({
+      overrideAccess: true,
       collection: 'notices',
       id: notice.id,
       locale: 'en',

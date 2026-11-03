@@ -17,17 +17,17 @@ const CELL: Record<
   complete: {
     text: '✓',
     title: 'Translated',
-    color: 'var(--theme-success-500)',
+    color: 'var(--color-text-success)',
   },
   partial: {
     text: 'Partly',
     title: 'Partly translated',
-    color: 'var(--theme-warning-500)',
+    color: 'var(--color-text-warning)',
   },
   empty: {
     text: '—',
     title: 'Not translated',
-    color: 'var(--theme-elevation-400)',
+    color: 'var(--color-text-tertiary)',
   },
 };
 
@@ -44,8 +44,8 @@ function editUrl(
 }
 
 const cellStyle = {
-  padding: 'calc(var(--base) / 2)',
-  borderBottom: '1px solid var(--theme-elevation-100)',
+  padding: 'var(--spacer-2)',
+  borderBottom: '1px solid var(--color-border)',
   whiteSpace: 'nowrap',
 } as const;
 
@@ -79,7 +79,7 @@ export function CoverageTable({ reloadKey }: { reloadKey: number }) {
 
   if (error)
     return (
-      <p style={{ color: 'var(--theme-error-500)' }}>
+      <p style={{ color: 'var(--color-text-danger)' }}>
         Couldn't load your content. {error}
       </p>
     );
@@ -88,7 +88,7 @@ export function CoverageTable({ reloadKey }: { reloadKey: number }) {
   return (
     <section
       data-testid='gt-coverage'
-      style={{ display: 'grid', gap: 'var(--base)' }}
+      style={{ display: 'grid', gap: 'var(--spacer-3)' }}
     >
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -116,7 +116,7 @@ export function CoverageTable({ reloadKey }: { reloadKey: number }) {
                       style={{
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: 'calc(var(--base) / 2)',
+                        gap: 'var(--spacer-2)',
                       }}
                     >
                       <Link

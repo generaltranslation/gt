@@ -22,6 +22,8 @@ export function TranslatePanel({
   const route = apiRoute(config);
   const options = useLocaleOptions();
   const codes = options.filter((o) => o.supported).map((o) => o.code);
+  // No locale to translate into: nothing here can do anything.
+  const noLanguages = codes.length === 0;
   const [remembered, setSelected] = useRemembered(
     'locales',
     codes,
@@ -42,9 +44,9 @@ export function TranslatePanel({
   return (
     <div
       data-testid='gt-translate-panel'
-      style={{ display: 'grid', gap: 'calc(var(--base) * 1.5)' }}
+      style={{ display: 'grid', gap: 'var(--spacer-4)' }}
     >
-      <section style={{ display: 'grid', gap: 'var(--base)' }}>
+      <section style={{ display: 'grid', gap: 'var(--spacer-3)' }}>
         <LocalePicker
           options={options}
           selected={selected}
@@ -58,8 +60,14 @@ export function TranslatePanel({
           readOnly={busy}
           onToggle={(event) => setSaveLocalEdits(event.target.checked)}
         />
+        {noLanguages && (
+          <p style={{ margin: 0, color: 'var(--color-text-warning)' }}>
+            There are no languages to translate into. Add a locale General
+            Translation supports to your Payload config.
+          </p>
+        )}
         {blocked && (
-          <p style={{ margin: 0, color: 'var(--theme-warning-500)' }}>
+          <p style={{ margin: 0, color: 'var(--color-text-warning)' }}>
             {blocked}
           </p>
         )}
@@ -77,21 +85,21 @@ export function TranslatePanel({
       </section>
       <section
         style={{
-          borderTop: '1px solid var(--theme-elevation-100)',
-          paddingTop: 'var(--base)',
+          borderTop: '1px solid var(--color-border)',
+          paddingTop: 'var(--spacer-3)',
         }}
       >
         <Button
           buttonStyle='secondary'
-          size='small'
+          size='medium'
           margin={false}
           id='gt-save'
-          disabled={busy || Boolean(blocked)}
+          disabled={busy || Boolean(blocked) || noLanguages}
           onClick={() => void save(route, scope, codes)}
         >
           Save local edits
         </Button>
-        <p style={{ margin: 'calc(var(--base) / 2) 0 0', opacity: 0.7 }}>
+        <p style={{ margin: 'var(--spacer-2) 0 0', opacity: 0.7 }}>
           Keeps the changes you made to translations when you translate again.
         </p>
       </section>

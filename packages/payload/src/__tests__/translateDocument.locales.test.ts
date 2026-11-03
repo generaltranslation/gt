@@ -31,6 +31,7 @@ describe('translateDocument: mapped locales', () => {
     expect(Object.keys(result.locales)).toEqual(['es']);
     expect(result.locales.es).toMatchObject({ status: 'applied' });
     const es = await payload.findByID({
+      overrideAccess: true,
       collection: 'pages',
       id: page.id,
       locale: 'es',

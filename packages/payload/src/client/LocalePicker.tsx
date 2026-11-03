@@ -28,10 +28,19 @@ export function LocalePicker({
           justifyContent: 'space-between',
         }}
       >
-        <h4 style={{ margin: 0 }}>Languages</h4>
+        <h4
+          style={{
+            margin: 0,
+            fontSize: 'var(--text-heading-small-font-size)',
+            lineHeight: 'var(--text-heading-small-line-height)',
+            fontWeight: 'var(--text-heading-small-font-weight)',
+          }}
+        >
+          Languages
+        </h4>
         <Button
-          buttonStyle='subtle'
-          size='small'
+          buttonStyle='ghost'
+          size='medium'
           margin={false}
           disabled={disabled}
           onClick={() => onChange(allSelected ? [] : available)}
@@ -43,8 +52,8 @@ export function LocalePicker({
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-          gap: 'calc(var(--base) / 4)',
-          marginTop: 'calc(var(--base) / 2)',
+          gap: 'var(--spacer-1)',
+          marginTop: 'var(--spacer-2)',
         }}
       >
         {options.map((option) => (
