@@ -7,12 +7,7 @@ import React, {
   useRef,
   ReactNode,
 } from 'react';
-import {
-  SanityDocument,
-  createDocumentPreviewStore,
-  useDocumentStore,
-  useSchema,
-} from 'sanity';
+import { SanityDocument, useDocumentStore, useSchema } from 'sanity';
 import { useToast } from '@sanity/ui/toast';
 import { useClient } from '../hooks/useClient';
 import { useSecrets } from '../hooks/useSecrets';
@@ -706,8 +701,7 @@ const TranslationsProviderContent: React.FC<
       const { urls, failures } = await resolvePreviewUrls(
         sourceDocuments,
         schema,
-        // The Studio's shared store replays the last value it saw, which can be an outdated page.
-        createDocumentPreviewStore({ client })
+        client
       );
       if (failures.length > 0) {
         console.error('Could not resolve preview URLs.', failures);
