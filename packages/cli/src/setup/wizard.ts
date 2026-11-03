@@ -20,6 +20,14 @@ import {
 import { Libraries } from '../types/libraries.js';
 import { getBuildToolSetup } from './buildTools/index.js';
 import { REACT_QUICKSTART_URL } from '../utils/constants.js';
+import {
+  CACHE_COMPONENTS_DOCS_URL,
+  getCacheComponentsManualFix,
+  isCacheComponentsEnabled,
+  migrateToCacheComponents,
+  resolveCacheComponentsSetup,
+  type CacheComponentsSetup,
+} from '../next/cacheComponents.js';
 import type { InitOptions, OnboardingSession } from './onboarding.js';
 
 /** Everything the React application setup will do, resolved before changes. */
@@ -29,6 +37,8 @@ export type ReactSetupPlan = {
   /** GT library to install, when it is not installed yet. */
   install?: string;
   nextConfigPath?: string;
+  /** Set when the Next.js config enables cacheComponents. */
+  cacheComponents?: CacheComponentsSetup;
   formatter?: Formatter;
 };
 
@@ -133,6 +143,8 @@ Please let us know what you would like to see added at https://github.com/genera
     ]);
     if (!plan.nextConfigPath) {
       session.reject('No next.config.[js|ts|mjs|mts] file found');
+    } else if (isCacheComponentsEnabled(plan.nextConfigPath)) {
+      plan.cacheComponents = resolveCacheComponentsSetup(process.cwd());
     }
     const formatter = await detectFormatter();
     if (
@@ -155,6 +167,49 @@ Please let us know what you would like to see added at https://github.com/genera
   return plan;
 }
 
+/**
+ * Applies the Cache Components setup before content is wrapped. Returns the
+ * files it wrote, and whether the root layout can still get <GTProvider>.
+ */
+async function setUpCacheComponents(
+  session: OnboardingSession,
+  setup: CacheComponentsSetup | undefined,
+  typescript: boolean
+): Promise<{ files: string[]; addGTProvider: boolean }> {
+  if (setup?.mode === 'migrate') {
+    const files = await migrateToCacheComponents(
+      process.cwd(),
+      setup,
+      typescript
+    );
+    logger.step(
+      chalk.green(
+        `cacheComponents is enabled, so the root layout and page moved to ${setup.appDir}/[locale] with getLocale(), getRegion(), and a proxy. See ${CACHE_COMPONENTS_DOCS_URL}`
+      )
+    );
+    session.step('set up Cache Components locale routing');
+    return { files, addGTProvider: true };
+  }
+  if (setup?.mode === 'manual') {
+    // <GTProvider> in a root layout outside [locale] fails the Cache
+    // Components prerender, so the layout is left for the guide's setup.
+    const fix = getCacheComponentsManualFix(setup);
+    session.humanActions.push(fix);
+    logger.warn(
+      createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Warning',
+        whatHappened:
+          'cacheComponents is enabled, so setup did not add <GTProvider> to the root layout',
+        why: setup.reason,
+        fix,
+      })
+    );
+    return { files: [], addGTProvider: false };
+  }
+  return { files: [], addGTProvider: true };
+}
+
 /** Wraps Next.js App Router content and adds withGTConfig(); installs happen first. */
 export async function executeReactSetup(
   session: OnboardingSession,
@@ -165,6 +220,12 @@ export async function executeReactSetup(
 
   const errors: string[] = [];
   const warnings: string[] = [];
+  const tsconfigPath = findFilepath(['tsconfig.json']);
+  const cacheComponents = await setUpCacheComponents(
+    session,
+    plan.cacheComponents,
+    !!tsconfigPath
+  );
   const spinner = logger.createSpinner();
   spinner.start('Wrapping JSX content with <T> tags...');
   // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
@@ -174,7 +235,7 @@ export async function executeReactSetup(
       disableIds: true,
       disableFormatting: true,
       skipTs: true,
-      addGTProvider: true,
+      addGTProvider: cacheComponents.addGTProvider,
     },
     Libraries.GT_NEXT,
     errors,
@@ -186,9 +247,11 @@ export async function executeReactSetup(
     ) + filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
   );
   if (filesUpdated.length > 0) session.step('wrapped JSX content');
+  filesUpdated.push(
+    ...cacheComponents.files.filter((file) => !filesUpdated.includes(file))
+  );
 
   // Add the withGTConfig() function to the next.config.js file
-  const tsconfigPath = findFilepath(['tsconfig.json']);
   await handleInitGT(
     plan.nextConfigPath,
     errors,

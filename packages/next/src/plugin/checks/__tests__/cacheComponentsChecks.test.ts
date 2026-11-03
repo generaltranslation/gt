@@ -39,6 +39,17 @@ describe('cacheComponentsChecks', () => {
     );
   });
 
+  it('formats the missing request functions warning as a readable diagnostic', () => {
+    expect(
+      createCacheComponentsMissingRequestFunctionsWarning([
+        'getLocale',
+        'getRegion',
+      ])
+    ).toBe(
+      'gt-next Warning: cacheComponents is enabled, but custom getLocale() and getRegion() are not configured because the default request functions read headers and cookies, which Next.js does not allow while prerendering. Add getLocale.ts and getRegion.ts files, or configure getLocalePath and getRegionPath. Learn more: https://generaltranslation.com/docs/react/nextjs/cache-components'
+    );
+  });
+
   it('only warns about the missing request function when one is configured', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
