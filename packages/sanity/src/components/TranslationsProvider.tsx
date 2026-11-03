@@ -7,7 +7,12 @@ import React, {
   useRef,
   ReactNode,
 } from 'react';
-import { SanityDocument, useDocumentStore, useSchema } from 'sanity';
+import {
+  SanityDocument,
+  useDocumentPreviewStore,
+  useDocumentStore,
+  useSchema,
+} from 'sanity';
 import { useToast } from '@sanity/ui/toast';
 import { useClient } from '../hooks/useClient';
 import { useSecrets } from '../hooks/useSecrets';
@@ -21,6 +26,7 @@ import {
 import { api, overrideConfig, pluginConfig } from '../adapter/core';
 import { getTranslationStrategy } from '../translation/strategy';
 import { uploadFiles } from '../translation/uploadFiles';
+import { resolvePreviewUrls } from '../translation/previewUrls';
 import { initProject } from '../translation/initProject';
 import { createJobs } from '../translation/createJobs';
 import { captureExistingTranslations } from '../translation/captureExistingTranslations';
@@ -431,6 +437,7 @@ const TranslationsProviderContent: React.FC<
     [setPreference]
   );
   const schema = useSchema();
+  const documentPreviewStore = useDocumentPreviewStore();
   const translationContext: TranslationFunctionContext = { client, schema };
   const toast = useToast();
   const { loading: loadingSecrets, secrets } = useSecrets<Secrets>(
@@ -598,7 +605,7 @@ const TranslationsProviderContent: React.FC<
   }, [documents, locales, client, hasNonDefaultSource]);
 
   const serializeSourceDocuments = useCallback(
-    (sourceDocuments: SanityDocument[] = documents) =>
+    (sourceDocuments: SanityDocument[], previewUrls: Map<string, string>) =>
       sourceDocuments
         .map((doc) => {
           const { [pluginConfig.getLanguageField()]: _, ...cleanDoc } = doc;
@@ -616,6 +623,7 @@ const TranslationsProviderContent: React.FC<
                 documentId: getDocumentPublishedId(doc),
                 versionId: doc._rev,
                 fileName: getDocumentFileName(doc),
+                previewUrl: previewUrls.get(getDocumentPublishedId(doc)),
                 ...(isNonDefaultSourceLanguage(baseLanguage) && {
                   sourceLocale: baseLanguage,
                 }),
@@ -632,7 +640,7 @@ const TranslationsProviderContent: React.FC<
           return null;
         })
         .filter((doc) => doc !== null),
-    [allowNonDefault, documents, schema]
+    [allowNonDefault, schema]
   );
 
   // Studio-side translations are only collected for groups whose original is
@@ -693,6 +701,29 @@ const TranslationsProviderContent: React.FC<
     [client, singleDocument, toast]
   );
 
+  // Preview URLs help reviewers but are not needed to translate, so a failure warns and uploads without them.
+  const resolveSourcePreviewUrls = useCallback(
+    async (sourceDocuments: SanityDocument[]) => {
+      try {
+        return await resolvePreviewUrls(
+          sourceDocuments,
+          schema,
+          documentPreviewStore
+        );
+      } catch (error) {
+        console.error('Could not resolve preview URLs.', error);
+        toast.push({
+          title:
+            'Preview URLs could not be resolved. Translation is continuing without them.',
+          status: 'warning',
+          closable: true,
+        });
+        return new Map<string, string>();
+      }
+    },
+    [documentPreviewStore, schema, toast]
+  );
+
   const handleTranslateAll = useCallback(
     async ({ force = false }: TranslateAllOptions = {}) => {
       if (!secrets || documents.length === 0) return;
@@ -746,7 +777,10 @@ const TranslationsProviderContent: React.FC<
           }
         }
 
-        const transformedDocuments = serializeSourceDocuments(sourceDocuments);
+        const transformedDocuments = serializeSourceDocuments(
+          sourceDocuments,
+          await resolveSourcePreviewUrls(sourceDocuments)
+        );
 
         // A document is never translated into its own language. Without
         // `allowNonDefaultSourceLocales`, every document is translated into
@@ -872,6 +906,7 @@ const TranslationsProviderContent: React.FC<
       branchId,
       preserveExistingTranslations,
       serializeSourceDocuments,
+      resolveSourcePreviewUrls,
       uploadedVersions,
       uploadedVersionsStorageKey,
       allowNonDefault,
@@ -912,7 +947,10 @@ const TranslationsProviderContent: React.FC<
         if (!uploadable) return;
         sourceDocuments = uploadable;
       }
-      const transformedDocuments = serializeSourceDocuments(sourceDocuments);
+      const transformedDocuments = serializeSourceDocuments(
+        sourceDocuments,
+        await resolveSourcePreviewUrls(sourceDocuments)
+      );
 
       // Seed the source files first. uploadTranslations requires the source to
       // exist, and this action exists for projects whose translations predate
@@ -961,6 +999,7 @@ const TranslationsProviderContent: React.FC<
     client,
     schema,
     serializeSourceDocuments,
+    resolveSourcePreviewUrls,
     allowNonDefault,
     getDefaultSourceDocuments,
     getUploadableSources,

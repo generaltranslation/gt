@@ -27,12 +27,14 @@ const mocks = vi.hoisted(() => ({
   initProject: vi.fn(),
   createJobs: vi.fn(),
   collectExistingTranslations: vi.fn(),
+  resolvePreviewUrls: vi.fn(),
 }));
 
 vi.mock('sanity', async (importOriginal) => ({
   ...(await importOriginal<typeof import('sanity')>()),
   useSchema: () => mocks.schema,
   useDocumentStore: mocks.useDocumentStore,
+  useDocumentPreviewStore: () => ({}),
 }));
 vi.mock('@sanity/ui/toast', () => ({
   useToast: () => ({ push: mocks.toastPush }),
@@ -67,6 +69,9 @@ vi.mock('../../translation/createJobs', () => ({
 }));
 vi.mock('../../translation/collectExistingTranslations', () => ({
   collectExistingTranslations: mocks.collectExistingTranslations,
+}));
+vi.mock('../../translation/previewUrls', () => ({
+  resolvePreviewUrls: mocks.resolvePreviewUrls,
 }));
 
 const { TranslationsProvider, useTranslations } =
@@ -132,6 +137,7 @@ beforeEach(() => {
   vi.spyOn(console, 'error').mockImplementation(() => {});
   mocks.uploadFiles.mockResolvedValue({ uploadedFiles: [] });
   mocks.collectExistingTranslations.mockResolvedValue(new Map());
+  mocks.resolvePreviewUrls.mockResolvedValue(new Map());
   mocks.useDocumentStore.mockReturnValue(mocks.documentStore);
 });
 
@@ -296,6 +302,62 @@ describe('Translate All', () => {
 
     expect(mocks.uploadFiles).not.toHaveBeenCalled();
     expect(mocks.createJobs).not.toHaveBeenCalled();
+  });
+
+  test("uploads each document with its page's preview URL", async () => {
+    const { client } = createGroqClient([page('a', 'en'), page('b', 'en')]);
+    mocks.client = Object.assign(client, {
+      config: () => ({ projectId: 'p', dataset: 'd' }),
+    });
+    mocks.resolvePreviewUrls.mockResolvedValue(
+      new Map([['a', 'https://staging.acme.test/en/a']])
+    );
+
+    const context = await renderProvider();
+    await act(() => context.handleTranslateAll());
+
+    const infos = Object.fromEntries(
+      mocks.uploadFiles.mock.calls[0][0].map(
+        (file: { info: { documentId: string; previewUrl?: string } }) => [
+          file.info.documentId,
+          file.info.previewUrl,
+        ]
+      )
+    );
+    expect(infos).toEqual({
+      a: 'https://staging.acme.test/en/a',
+      b: undefined,
+    });
+  });
+
+  test('uploads without preview URLs when they cannot be resolved', async () => {
+    const { client } = createGroqClient([page('a', 'en')]);
+    mocks.client = Object.assign(client, {
+      config: () => ({ projectId: 'p', dataset: 'd' }),
+    });
+    mocks.resolvePreviewUrls.mockRejectedValue(new Error('resolver threw'));
+
+    const context = await renderProvider();
+    await act(() => context.handleTranslateAll());
+
+    expect(mocks.uploadFiles).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          info: expect.objectContaining({
+            documentId: 'a',
+            previewUrl: undefined,
+          }),
+        }),
+      ],
+      { project: 'p' }
+    );
+    expect(mocks.toastPush).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title:
+          'Preview URLs could not be resolved. Translation is continuing without them.',
+        status: 'warning',
+      })
+    );
   });
 });
 

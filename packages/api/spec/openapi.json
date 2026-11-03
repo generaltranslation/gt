@@ -7854,6 +7854,16 @@
                             "formatMetadata": {
                               "type": "object",
                               "additionalProperties": {}
+                            },
+                            "metadata": {
+                              "type": "object",
+                              "properties": {
+                                "previewUrl": {
+                                  "type": "string",
+                                  "format": "uri",
+                                  "description": "Page that shows this version of the file."
+                                }
+                              }
                             }
                           },
                           "required": [
@@ -8645,6 +8655,16 @@
                             "formatMetadata": {
                               "type": "object",
                               "additionalProperties": {}
+                            },
+                            "metadata": {
+                              "type": "object",
+                              "properties": {
+                                "previewUrl": {
+                                  "type": "string",
+                                  "format": "uri",
+                                  "description": "Page that shows this version of the file."
+                                }
+                              }
                             }
                           },
                           "required": [

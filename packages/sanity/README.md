@@ -199,6 +199,28 @@ not supported. gt-sanity then ignores the marker, as it did before the option
 existed, so a `sourceLocale` translation of an original in another locale is
 treated as an original and can be translated from again.
 
+## Preview URLs
+
+To let reviewers in General Translation open a string on the page that shows
+it, give the plugin your site's origin and the same `locations` you give
+`presentationTool`:
+
+```ts
+import { resolve } from './presentation/resolve';
+
+gtPlugin({
+  // ...
+  previewUrl: {
+    origin: 'https://staging.example.com',
+    locations: resolve.locations, // as in presentationTool({ resolve })
+  },
+});
+```
+
+Each uploaded document is sent with its first location in its published
+version. Documents that are unpublished, or whose type has no location, are
+sent without one.
+
 ## Automatic Actions
 
 The Translate dialog on a document can refresh status, import a translation as
