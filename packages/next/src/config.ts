@@ -675,8 +675,12 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     _tagIds: mergedConfig._tagIds,
   };
 
-  const { type: _type, ...compilerOptions } =
-    mergedConfig.experimentalCompilerOptions || {};
+  // inlineTranslations is babel-only for now; keep it out of the SWC options
+  const {
+    type: _type,
+    inlineTranslations: _inlineTranslations,
+    ...compilerOptions
+  } = mergedConfig.experimentalCompilerOptions || {};
 
   // Read autoderive from parsingFlags (single source of truth shared with CLI)
   const rawAutoderive: boolean | { jsx?: boolean; strings?: boolean } =

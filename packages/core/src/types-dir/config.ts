@@ -47,6 +47,29 @@ export type GTCompilerOptions = {
    * gt-tanstack-start.
    */
   enableAutoJsxInjection?: boolean;
+  /**
+   * Experimental: embed translations for the given locales directly at each
+   * translation call site, so bundlers tree-shake them with unused code and
+   * those locales resolve without loading a translation file. Other locales
+   * keep loading at runtime. Only applied to production builds.
+   */
+  inlineTranslations?: GTInlineTranslationsOptions;
+};
+
+/**
+ * Options for embedding translations at build time.
+ */
+export type GTInlineTranslationsOptions = {
+  /** Locales to embed, usually the most visited ones. */
+  locales: string[];
+  /**
+   * Path to a JSON file mapping translation hash to translation for a locale.
+   * Must contain `[locale]`, for example `./public/_gt/[locale].json`.
+   * Relative paths resolve from the current working directory.
+   */
+  path?: string;
+  /** Translations keyed by locale, then by translation hash. */
+  translations?: Record<string, Record<string, unknown>>;
 };
 
 /**
