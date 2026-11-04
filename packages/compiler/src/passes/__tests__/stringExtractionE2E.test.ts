@@ -293,6 +293,79 @@ describe('msg() string extraction E2E', () => {
 });
 
 // ─────────────────────────────────────────────────────
+// msg([...]) — arrays
+// ─────────────────────────────────────────────────────
+
+describe('msg() array extraction E2E', () => {
+  const prefix = `import { msg, derive } from 'gt-next';\n`;
+
+  it('extracts each element as its own entry', () => {
+    const state = collect(prefix + `msg(["Hello", "A" + "B", \`C\`]);`);
+    expect(state.errorTracker.getErrors()).toEqual([]);
+    expect(getRuntimeContent(state).map((c) => c.message)).toEqual([
+      'Hello',
+      'AB',
+      'C',
+    ]);
+  });
+
+  it('hashes each element like a single msg() with the same options', () => {
+    const arrayState = collect(
+      prefix + `msg(["Hello", "Bye"], { $context: "nav", $maxChars: 10 });`
+    );
+    const singleState = collect(
+      prefix +
+        `msg("Hello", { $context: "nav", $maxChars: 10 });\n` +
+        `msg("Bye", { $context: "nav", $maxChars: 10 });`
+    );
+    expect(getRuntimeContent(arrayState).map((c) => c.hash)).toEqual(
+      getRuntimeContent(singleState).map((c) => c.hash)
+    );
+  });
+
+  it('suffixes $id with the element index, like the runtime', () => {
+    const state = collect(prefix + `msg(["A", "B"], { $id: "greetings" });`);
+    expect(getRuntimeContent(state).map((c) => c.id)).toEqual([
+      'greetings.0',
+      'greetings.1',
+    ]);
+  });
+
+  it('accepts an empty array', () => {
+    const state = collect(prefix + `msg([]);`);
+    expect(state.errorTracker.getErrors()).toEqual([]);
+    expect(getRuntimeContent(state)).toHaveLength(0);
+  });
+
+  it('skips arrays with derive content without an error', () => {
+    const state = collect(prefix + `msg(["A", derive(getName())]);`);
+    expect(state.errorTracker.getErrors()).toEqual([]);
+    expect(getRuntimeContent(state)).toHaveLength(0);
+  });
+
+  it('allows dynamic elements with autoderive', () => {
+    const state = collect(prefix + `msg(["A", name]);`, {
+      autoderive: true,
+    });
+    expect(state.errorTracker.getErrors()).toEqual([]);
+    expect(getRuntimeContent(state)).toHaveLength(0);
+  });
+
+  it.each([
+    ['a variable element', `msg(["A", name]);`],
+    ['a dynamic template element', 'msg(["A", `Hi ${name}`]);'],
+    ['a spread element', `msg(["A", ...rest]);`],
+    ['a nested array', `msg([["A"]]);`],
+    ['a hole', `msg([, "A"]);`],
+    ['a dynamic $context', `msg(["A"], { $context: name });`],
+  ])('rejects %s', (_label, code) => {
+    const state = collect(prefix + code);
+    expect(state.errorTracker.getErrors().length).toBeGreaterThan(0);
+    expect(getRuntimeContent(state)).toHaveLength(0);
+  });
+});
+
+// ─────────────────────────────────────────────────────
 // t() — standalone (not tagged template)
 // ─────────────────────────────────────────────────────
 
