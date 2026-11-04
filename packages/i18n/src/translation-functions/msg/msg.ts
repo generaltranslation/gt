@@ -15,7 +15,9 @@ import { RegisterableMessages } from '../types/message';
 import { encodeMsg } from './encodeMsg';
 import { msgString } from './msgString';
 import {
+  type MsgInlineTranslations,
   type InlineTranslations,
+  getInlineArrayElement,
   registerInlineTranslations,
 } from '../inline/inlineTranslations';
 
@@ -59,8 +61,8 @@ import {
  * );
  *
  * @note - Passing inline translations makes msg() impure: it registers them in
- * a module-level registry keyed by the message hash. Arrays do not support
- * inline translations.
+ * a module-level registry keyed by the message hash. For arrays, the callback
+ * returns one translation per element, and each element registers separately.
  *
  * @important Internal note: until other packages are updated to use i18n-context practices, msg cannot use any functions that use i18nCache at all!
  */
@@ -68,12 +70,12 @@ export function msg<T extends RegisterableMessages = string>(message: T): T;
 export function msg<T extends RegisterableMessages = string>(
   message: T,
   options?: GTTranslationOptions,
-  inline?: InlineTranslations<string>
+  inline?: MsgInlineTranslations
 ): T extends string ? string : string[];
 export function msg(
   message: RegisterableMessages,
   options?: GTTranslationOptions,
-  inline?: InlineTranslations<string>
+  inline?: MsgInlineTranslations
 ): RegisterableMessages {
   if (options?.$format === 'STRING') {
     return msgString(message, options, inline);
@@ -87,19 +89,23 @@ export function msg(
           $format: 'ICU',
           ...options,
         }),
-      inline
+      inline as InlineTranslations<string>
     );
   }
 
   // Handle array
   if (typeof message !== 'string') {
-    if (!options) return message;
+    if (!options && !inline) return message;
     return message.map((m, i) =>
-      msg(m, {
-        ...options,
-        // ignore if $id is an empty string or not defined
-        ...(options.$id && { $id: `${options.$id}.${i}` }),
-      })
+      msg(
+        m,
+        options && {
+          ...options,
+          // ignore if $id is an empty string or not defined
+          ...(options.$id && { $id: `${options.$id}.${i}` }),
+        },
+        getInlineArrayElement(inline, i)
+      )
     );
   }
 

@@ -63,3 +63,33 @@ export function hasRegisteredInlineTranslations(): boolean {
 export function clearRegisteredInlineTranslations(): void {
   registeredInlineTranslations.clear();
 }
+
+/**
+ * Inline translations for msg([...]) arrays: returns one translation per
+ * array element for a locale. Elements left `undefined` fall back to loaded
+ * translations.
+ */
+export type InlineArrayTranslations = (
+  locale: string
+) => (string | undefined)[] | undefined;
+
+/**
+ * Inline translations accepted by msg(): a single message or an array.
+ */
+export type MsgInlineTranslations =
+  | InlineTranslations<string>
+  | InlineArrayTranslations;
+
+/**
+ * Get the inline translations for one element of a msg([...]) array.
+ */
+export function getInlineArrayElement(
+  inline: MsgInlineTranslations | undefined,
+  index: number
+): InlineTranslations<string> | undefined {
+  if (!inline) return undefined;
+  return (locale) => {
+    const translations = (inline as InlineArrayTranslations)(locale);
+    return Array.isArray(translations) ? translations[index] : undefined;
+  };
+}

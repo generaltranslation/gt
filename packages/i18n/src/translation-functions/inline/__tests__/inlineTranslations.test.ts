@@ -104,6 +104,36 @@ describe('inline translations', () => {
       expect(m(encoded)).toBe('Bonjour {name}');
     });
 
+    it('resolves inline translations for each msg() array element', async () => {
+      const encoded = msg(['Hello', 'Loaded'], undefined, (locale) =>
+        locale === 'fr' ? ['Bonjour', undefined] : undefined
+      );
+      const m = await getMessagesInternal({ locale: 'fr', enableI18n: true });
+      expect(encoded.map((entry) => m(entry))).toEqual(['Bonjour', 'Chargé']);
+    });
+
+    it('resolves inline translations for msg() arrays with options', async () => {
+      const encoded = msg(
+        ['Hi {name}', 'Bye {name}'],
+        { name: 'Alice', $id: 'greetings' },
+        (locale) =>
+          locale === 'fr' ? ['Salut {name}', 'Au revoir {name}'] : undefined
+      );
+      const m = await getMessagesInternal({ locale: 'fr', enableI18n: true });
+      expect(encoded.map((entry) => m(entry))).toEqual([
+        'Salut Alice',
+        'Au revoir Alice',
+      ]);
+    });
+
+    it('resolves STRING inline translations for msg() arrays', async () => {
+      const encoded = msg(['A {x}', 'B'], { $format: 'STRING' }, (locale) =>
+        locale === 'fr' ? ['Un {x}', 'Deux'] : undefined
+      );
+      const m = await getMessagesInternal({ locale: 'fr', enableI18n: true });
+      expect(encoded.map((entry) => m(entry))).toEqual(['Un {x}', 'Deux']);
+    });
+
     it('falls back to loaded translations for locales msg() did not inline', async () => {
       msg('Loaded', undefined, frInline({ es: 'Cargado' }));
       const m = await getMessagesInternal({ locale: 'fr', enableI18n: true });
