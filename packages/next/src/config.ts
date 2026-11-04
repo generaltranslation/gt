@@ -659,7 +659,10 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   // Middleware options get their own env var instead of the i18n config params.
   const { middlewareConfig, otherConfig } =
     splitMiddlewareConfig(privateConfigParams);
-  const I18NConfigParams = JSON.stringify(otherConfig);
+  const I18NConfigParams = JSON.stringify(
+    withoutInlineTranslations(otherConfig)
+  );
+  const inlinedLocales = getInlinedLocales(mergedConfig);
   const clientI18NConfigParams = {
     defaultLocale: mergedConfig.defaultLocale,
     locales: mergedConfig.locales,
@@ -681,6 +684,7 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     _versionId: mergedConfig._versionId,
     _disableDevHotReload: mergedConfig._disableDevHotReload,
     _tagIds: mergedConfig._tagIds,
+    ...(inlinedLocales.length > 0 && { _inlinedLocales: inlinedLocales }),
   };
 
   const { type: _type, ...compilerOptions } =
@@ -945,4 +949,34 @@ function isDevHotReloadEnabled(config: InternalGTConfigProps): boolean {
     config.runtimeUrl !== '' &&
     process.env.NODE_ENV === 'development'
   );
+}
+
+/**
+ * Locales whose translations the compiler embeds at call sites, so the
+ * runtime can skip loading them. Embedding and skipping are one feature:
+ * only skip when the babel compiler injects, which it does in production
+ * builds only.
+ */
+function getInlinedLocales(mergedConfig: InternalGTConfigProps): string[] {
+  const compilerOptions = mergedConfig.experimentalCompilerOptions;
+  if (
+    compilerOptions?.type !== 'babel' ||
+    process.env.NODE_ENV !== 'production'
+  ) {
+    return [];
+  }
+  return compilerOptions.inlineTranslations?.locales ?? [];
+}
+
+/**
+ * Keep embedded translations (potentially large) out of runtime env vars.
+ */
+function withoutInlineTranslations<T extends object>(config: T): T {
+  const { experimentalCompilerOptions } = config as {
+    experimentalCompilerOptions?: Record<string, unknown>;
+  };
+  if (!experimentalCompilerOptions?.inlineTranslations) return config;
+  const { inlineTranslations: _inlineTranslations, ...rest } =
+    experimentalCompilerOptions;
+  return { ...config, experimentalCompilerOptions: rest };
 }

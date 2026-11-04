@@ -44,6 +44,11 @@ describe('getParams', () => {
     process.env = savedEnv;
   });
 
+  it('passes embedded locales to the i18n cache', () => {
+    updateClientConfig({ _inlinedLocales: ['fr'] });
+    expect(getParams().nextI18nCacheParams.inlinedLocales).toEqual(['fr']);
+  });
+
   it('reads runtime credentials directly from process.env', () => {
     process.env.GT_PROJECT_ID = 'project-id';
     process.env.GT_API_KEY = 'api-key';
