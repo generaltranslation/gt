@@ -12,12 +12,45 @@ export function buildInlineTranslationsFunction(
   table: InlineTranslationsTable,
   hash: string
 ): t.ArrowFunctionExpression | undefined {
-  const entries = Object.entries(table).flatMap(([locale, translations]) =>
-    Object.prototype.hasOwnProperty.call(translations, hash) &&
-    translations[hash] != null
-      ? [[locale, translations[hash]] as const]
-      : []
-  );
+  const entries = Object.entries(table).flatMap(([locale, translations]) => {
+    const translation = getTranslation(translations, hash);
+    return translation != null ? [[locale, translation] as const] : [];
+  });
+  return buildLocaleSwitch(entries);
+}
+
+/**
+ * Build `(locale) => locale === "fr" ? ["Un", undefined] : … : undefined`
+ * for msg([...]) arrays, one entry per array element. Elements missing a
+ * translation are `undefined` and fall back to loaded translations. Returns
+ * undefined when no embedded locale has a translation for any element.
+ */
+export function buildInlineArrayTranslationsFunction(
+  table: InlineTranslationsTable,
+  hashes: string[]
+): t.ArrowFunctionExpression | undefined {
+  const entries = Object.entries(table).flatMap(([locale, translations]) => {
+    const values = hashes.map((hash) => getTranslation(translations, hash));
+    return values.some((value) => value != null)
+      ? [[locale, values] as const]
+      : [];
+  });
+  return buildLocaleSwitch(entries);
+}
+
+function getTranslation(
+  translations: Record<string, unknown>,
+  hash: string
+): unknown {
+  if (!Object.prototype.hasOwnProperty.call(translations, hash)) {
+    return undefined;
+  }
+  return translations[hash] ?? undefined;
+}
+
+function buildLocaleSwitch(
+  entries: ReadonlyArray<readonly [string, unknown]>
+): t.ArrowFunctionExpression | undefined {
   if (entries.length === 0) return undefined;
 
   const body = entries.reduceRight<t.Expression>(
