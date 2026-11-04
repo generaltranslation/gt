@@ -24,26 +24,69 @@ export type ResolvedPreviewUrls = {
 
 type Snapshot = Record<string, unknown>;
 
-/** A `select` path being read: the value reached so far and the segments left. */
-type Walk = { value: unknown; path: string[] };
+/** Where a referenced document lives; `undefined` is the Studio's own dataset. */
+type Source = { projectId: string; dataset: string } | undefined;
+
+/** A `select` path being read: the value reached so far, the segments left, and the dataset the value came from. */
+type Walk = { value: unknown; path: string[]; source: Source };
 
 // Arrays count too, so a path can step into an item by its index, as in `categories.0`.
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
 
+// The reference's own fields that Sanity's preview store reads from the referenced document instead.
+const REFERENCE_LINK_FIELDS = new Set([
+  '_type',
+  '_ref',
+  '_weak',
+  '_dataset',
+  '_projectId',
+  '_strengthenOnPublish',
+]);
+
+/** Like Sanity's preview store: the reference's `_ref` reads as `_id`, and its other own fields, such as an array item's `_key`, are read in place. */
+function readsFromReference(reference: Reference, segment: string): boolean {
+  return (
+    segment === '_id' ||
+    (!REFERENCE_LINK_FIELDS.has(segment) && segment in reference)
+  );
+}
+
+/** The dataset a reference points into: its own for a cross-dataset reference, else the one it was read from. */
+function referenceSource(reference: Reference, from: Source): Source {
+  const { _projectId: projectId, _dataset: dataset } =
+    reference as Reference & {
+      _projectId?: unknown;
+      _dataset?: unknown;
+    };
+  return typeof projectId === 'string' && typeof dataset === 'string'
+    ? { projectId, dataset }
+    : from;
+}
+
 function waitsOnReference(walk: Walk): walk is Walk & { value: Reference } {
   return walk.path.length > 0 && isReference(walk.value);
 }
 
-/** Walks a path until it ends or reaches a reference that has to be read first. */
+/** Walks a path until it ends or reaches a reference whose document has to be read first. */
 function step(walk: Walk): Walk {
   let { value } = walk;
   for (const [index, segment] of walk.path.entries()) {
-    if (isReference(value)) return { value, path: walk.path.slice(index) };
+    if (isReference(value)) {
+      if (!readsFromReference(value, segment)) {
+        return { ...walk, value, path: walk.path.slice(index) };
+      }
+      value =
+        segment === '_id' ? value._ref : value[segment as keyof Reference];
+      continue;
+    }
     value = isObject(value) ? value[segment] : undefined;
   }
-  return { value, path: [] };
+  return { ...walk, value, path: [] };
 }
+
+const sourceKey = (source: Source) =>
+  source ? `${source.projectId}/${source.dataset}` : '';
 
 async function fetchPublished(
   client: SanityClient,
@@ -57,28 +100,48 @@ async function fetchPublished(
   return new Map(documents.map((document) => [document._id, document]));
 }
 
-/** Reads each path the way Sanity's preview store does, with one fetch per level of references. */
+/** Reads each path the way Sanity's preview store does, with one fetch per dataset and level of references. */
 async function readPaths(
   client: SanityClient,
   walks: Walk[]
 ): Promise<unknown[]> {
   let current = walks.map(step);
   for (;;) {
-    const ids = [
-      ...new Set(
-        current.filter(waitsOnReference).map((walk) => walk.value._ref)
-      ),
-    ];
-    if (ids.length === 0) return current.map((walk) => walk.value);
-    const documents = await fetchPublished(client, ids);
-    current = current.map((walk) =>
-      waitsOnReference(walk)
-        ? step({
-            value: documents.get(walk.value._ref) ?? null,
-            path: walk.path,
-          })
-        : walk
+    const waiting = current.filter(waitsOnReference).map((walk) => ({
+      walk,
+      source: referenceSource(walk.value, walk.source),
+    }));
+    if (waiting.length === 0) return current.map((walk) => walk.value);
+    const requests = new Map<string, { source: Source; ids: Set<string> }>();
+    for (const { walk, source } of waiting) {
+      const key = sourceKey(source);
+      const request = requests.get(key) ?? { source, ids: new Set() };
+      request.ids.add(walk.value._ref);
+      requests.set(key, request);
+    }
+    const fetched = new Map(
+      await Promise.all(
+        [...requests].map(
+          async ([key, { source, ids }]) =>
+            [
+              key,
+              await fetchPublished(
+                source ? client.withConfig(source) : client,
+                [...ids]
+              ),
+            ] as const
+        )
+      )
     );
+    current = current.map((walk) => {
+      if (!waitsOnReference(walk)) return walk;
+      const source = referenceSource(walk.value, walk.source);
+      return step({
+        value: fetched.get(sourceKey(source))?.get(walk.value._ref) ?? null,
+        path: walk.path,
+        source,
+      });
+    });
   }
 }
 
@@ -107,7 +170,11 @@ async function readSnapshots(
     return Object.entries(select).map(([key, path]) => ({
       snapshot,
       key,
-      walk: { value: document, path: String(path).split('.') },
+      walk: {
+        value: document,
+        path: String(path).split('.'),
+        source: undefined,
+      },
     }));
   });
   const values = await readPaths(
