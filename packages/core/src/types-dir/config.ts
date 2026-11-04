@@ -52,6 +52,16 @@ export type GTCompilerOptions = {
    * translation call site, so bundlers tree-shake them with unused code and
    * those locales resolve without loading a translation file. Other locales
    * keep loading at runtime. Only applied to production builds.
+   *
+   * Only call sites the compiler can resolve are embedded. These are not, and
+   * resolve from loaded translations like any other locale:
+   * - `derive()` content, and `t()`.
+   * - Translation functions passed around as values, for example the `gt`
+   *   from `useGT()` handed to a helper as a parameter. Call `useGT()` or
+   *   `getGT()` in the helper instead.
+   * - Files the compiler leaves untransformed, such as a file with a
+   *   non-extractable argument like `gt(someVar)` under `disableBuildChecks`.
+   *   Every call site in that file is skipped, including `<T>`.
    */
   inlineTranslations?: GTInlineTranslationsOptions;
 };
