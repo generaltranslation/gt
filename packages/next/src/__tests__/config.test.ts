@@ -121,6 +121,16 @@ describe('withGTConfig', () => {
       expect(result.transpilePackages).toEqual(['existing-package', 'gt-next']);
     });
 
+    it('exposes the Next.js basePath to the client locale switch', async () => {
+      const withGTConfig = await getWithGTConfig();
+
+      const result = withGTConfig({ basePath: '/docs' });
+      expect(result.env!.NEXT_PUBLIC_BASE_PATH).toBe('/docs');
+
+      const withoutBasePath = withGTConfig({});
+      expect(withoutBasePath.env!.NEXT_PUBLIC_BASE_PATH).toBeUndefined();
+    });
+
     it('preserves the user-owned Next.js i18n configuration unchanged', async () => {
       const withGTConfig = await getWithGTConfig();
       const i18n = {

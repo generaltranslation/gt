@@ -749,6 +749,11 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
       NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS: JSON.stringify(
         clientI18NConfigParams
       ),
+      // The client strips/restores the Next basePath when switching locales;
+      // expose the configured value because Next only exposes it to the router.
+      ...(internalNextConfig.basePath && {
+        NEXT_PUBLIC_BASE_PATH: internalNextConfig.basePath,
+      }),
       ...(resolvedDictionaryFilePathType && {
         _GENERALTRANSLATION_DICTIONARY_FILE_TYPE:
           resolvedDictionaryFilePathType,

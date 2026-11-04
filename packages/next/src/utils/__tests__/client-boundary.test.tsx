@@ -666,6 +666,61 @@ describe('Client_GTProvider', () => {
     }
   );
 
+  it('keeps a string-valued alias ahead of a broader shared catch-all route', async () => {
+    process.env._GENERALTRANSLATION_PATH_REGEX = '.*';
+    process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS =
+      JSON.stringify({
+        pathConfig: {
+          '/blog/[slug]': '/news/[slug]',
+          '/[...slug]': { de: '/content/[...slug]' },
+        },
+      });
+    mockPathname.mockReturnValue('/fr/news/hello');
+    vi.stubGlobal('location', {
+      assign: mockAssign,
+      hash: '',
+      pathname: '/fr/news/hello',
+      reload: mockReloadBrowserPage,
+      search: '',
+    });
+    mockGetI18nConfig.mockReturnValue({
+      determineLocale: ([locale]: string[]) => locale,
+      getDefaultLocale: () => 'en',
+      getLocales: () => ['en', 'fr', 'de'],
+    });
+    const { Client_GTProvider } = await import('../client-boundary');
+    const root = createRoot(document.createElement('div'));
+    try {
+      await act(async () =>
+        root.render(
+          <Client_GTProvider
+            supportsLocaleRefresh={true}
+            dictionaries={{}}
+            locale='fr'
+            translations={{}}
+          >
+            content
+          </Client_GTProvider>
+        )
+      );
+      const providerProps = mockGTProvider.mock.calls.at(-1)?.[0];
+      providerProps._reload({
+        locale: 'de',
+        region: undefined,
+        enableI18n: true,
+      });
+
+      // A string alias applies to every locale, so the specific /blog/[slug]
+      // route wins over the broader /[...slug] catch-all, exactly as the
+      // middleware resolves it.
+      expect(mockAssign).toHaveBeenCalledOnce();
+      expect(mockAssign).toHaveBeenCalledWith('/de/news/hello');
+    } finally {
+      delete process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS;
+      await act(async () => root.unmount());
+    }
+  });
+
   it('resolves dynamic aliases under a nested basePath', async () => {
     process.env._GENERALTRANSLATION_PATH_REGEX = '.*';
     process.env.NEXT_PUBLIC_BASE_PATH = '/docs';

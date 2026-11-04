@@ -121,6 +121,31 @@ function localizeSharedPath(
 }
 
 /**
+ * Expands the raw client `pathConfig` the way the middleware does before it
+ * builds its matcher: a string value is an alias shared by every locale, so
+ * it becomes a per-locale entry (`'/blog/[slug]': '/news/[slug]'` matches
+ * `/fr/news/hello` just like the middleware does). Object values are passed
+ * through unchanged.
+ */
+function getMatcherPathConfig(
+  pathConfig: ClientPathConfig,
+  locales: string[]
+): ClientPathConfig {
+  const matcherPathConfig: ClientPathConfig = {};
+  for (const [sharedPath, localizedPaths] of Object.entries(pathConfig)) {
+    if (typeof localizedPaths === 'string') {
+      const alias = localizedPaths === '' ? '/' : localizedPaths;
+      matcherPathConfig[sharedPath] = Object.fromEntries(
+        locales.map((locale) => [locale, alias])
+      );
+    } else {
+      matcherPathConfig[sharedPath] = localizedPaths;
+    }
+  }
+  return matcherPathConfig;
+}
+
+/**
  * Resolves the target path for a locale switch by matching the current app
  * path against the same pathConfig trie the middleware builds. This mirrors
  * the middleware's shared-route lookup, so dynamic aliases keep their params
@@ -133,28 +158,37 @@ function resolveAliasedLocaleSwitchPath(
   pathnameLocale: string | undefined,
   locale: string,
   defaultLocale: string,
+  locales: string[],
   pathConfig: ClientPathConfig | undefined,
   prefixDefaultLocale: boolean
 ): string | undefined {
   if (!pathConfig) return undefined;
   const { pathToSharedPath } = createPathToSharedPathMap(
-    pathConfig,
+    getMatcherPathConfig(pathConfig, locales),
     prefixDefaultLocale,
     defaultLocale
   );
   const match = getSharedPath(appPathname, pathToSharedPath, pathnameLocale);
   if (!match) return undefined;
   const localizedPaths = pathConfig[match.sharedPath];
-  const targetAlias =
-    typeof localizedPaths === 'object' && localizedPaths !== null
-      ? localizedPaths[locale]
-      : undefined;
-  let targetTemplate =
-    targetAlias !== undefined
-      ? `/${locale}${targetAlias}`
-      : match.sharedPath === '/'
-        ? `/${locale}`
-        : `/${locale}${match.sharedPath}`;
+  // A string value is one alias shared by every locale, matching what
+  // `getLocalizedPath()` in the middleware returns for it.
+  let targetTemplate: string;
+  if (typeof localizedPaths === 'string') {
+    targetTemplate =
+      localizedPaths === '' ? `/${locale}` : `/${locale}${localizedPaths}`;
+  } else {
+    const targetAlias =
+      typeof localizedPaths === 'object' && localizedPaths !== null
+        ? localizedPaths[locale]
+        : undefined;
+    targetTemplate =
+      targetAlias !== undefined
+        ? `/${locale}${targetAlias}`
+        : match.sharedPath === '/'
+          ? `/${locale}`
+          : `/${locale}${match.sharedPath}`;
+  }
   if (!prefixDefaultLocale && locale === defaultLocale) {
     targetTemplate = targetTemplate.slice(locale.length + 1) || '/';
   }
@@ -257,6 +291,7 @@ export function Client_GTProvider({
             : undefined,
           locale,
           defaultLocale,
+          locales,
           pathConfig,
           prefixDefaultLocale ?? false
         );
