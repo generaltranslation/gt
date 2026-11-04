@@ -152,6 +152,27 @@ describe('resolvePreviewUrls', () => {
     expect(urls.size).toBe(0);
   });
 
+  test('gives an unpublished document no link when its resolver ignores a missing document', async () => {
+    vi.spyOn(pluginConfig, 'getPreviewUrl').mockReturnValue({
+      ...config,
+      locations: {
+        page: {
+          select: { slug: 'slug.current' },
+          resolve: (doc) => ({
+            locations: [{ title: 'Page', href: `/en/${doc?.slug}` }],
+          }),
+        },
+      },
+    });
+
+    const { urls } = await resolvePreviewUrls(
+      [doc('drafts.unpublished', 'page')],
+      client().client
+    );
+
+    expect(urls.size).toBe(0);
+  });
+
   test('links a type with fixed locations without reading the document', async () => {
     const { client: sanity, fetch } = client();
 
@@ -178,7 +199,7 @@ describe('resolvePreviewUrls', () => {
       ...config,
       locations: {
         ...config.locations,
-        settings: {
+        post: {
           select: {},
           resolve: () => {
             throw new Error('resolver threw');
@@ -188,7 +209,7 @@ describe('resolvePreviewUrls', () => {
     });
 
     const resolved = await resolvePreviewUrls(
-      [doc('siteSettings', 'settings'), doc('pricing', 'page')],
+      [doc('launch', 'post'), doc('pricing', 'page')],
       client().client
     );
 

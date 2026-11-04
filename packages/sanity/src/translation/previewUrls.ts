@@ -120,21 +120,22 @@ async function readSnapshots(
   return snapshots;
 }
 
-/** A document's page URL; with no snapshots, because they could not be read, only fixed locations resolve. */
+/** A document's page URL; a resolver runs only on its published version's fields, so without them only fixed locations resolve. */
 function previewUrl(
   config: PreviewUrlConfig,
   document: SanityDocument,
   snapshots: Map<string, Snapshot> | null
 ): string | undefined {
   const resolver = config.locations[document._type];
-  if (!resolver || ('resolve' in resolver && !snapshots)) return undefined;
-  const state =
-    'resolve' in resolver
-      ? resolver.resolve(
-          snapshots?.get(getDocumentPublishedId(document)) ?? null
-        )
-      : resolver;
-  const href = state?.locations?.[0]?.href;
+  if (!resolver) return undefined;
+  let href: string | undefined;
+  if ('resolve' in resolver) {
+    const snapshot = snapshots?.get(getDocumentPublishedId(document));
+    if (!snapshot) return undefined;
+    href = resolver.resolve(snapshot)?.locations?.[0]?.href;
+  } else {
+    href = resolver.locations?.[0]?.href;
+  }
   return href ? new URL(href, config.origin).href : undefined;
 }
 

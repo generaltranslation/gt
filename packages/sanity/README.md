@@ -202,20 +202,32 @@ treated as an original and can be translated from again.
 ## Preview URLs
 
 To let reviewers in General Translation open a string on the page that shows
-it, give the plugin your site's origin and the same `locations` you give
-`presentationTool`:
+it, give the plugin your site's origin and the page of each document type, in
+the same shape as `presentationTool`'s `resolve.locations` (the Presentation
+tool itself is not required):
 
 ```ts
-import { resolve } from './presentation/resolve';
+import { defineLocations } from 'sanity/presentation';
 
 gtPlugin({
   // ...
   previewUrl: {
     origin: 'https://staging.example.com',
-    locations: resolve.locations, // as in presentationTool({ resolve })
+    locations: {
+      page: defineLocations({
+        select: { slug: 'slug.current' },
+        resolve: (doc) => ({
+          locations: [{ title: 'Page', href: `/${doc?.slug}` }],
+        }),
+      }),
+      // Shared content links to a page that shows it.
+      siteSettings: { locations: [{ title: 'Home', href: '/' }] },
+    },
   },
 });
 ```
+
+Studios that use Presentation can pass the same `resolve.locations`.
 
 Each uploaded document is sent with its first location in its published
 version. A type with fixed locations sends them even for unpublished documents.
