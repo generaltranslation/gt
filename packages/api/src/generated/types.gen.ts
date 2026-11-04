@@ -83,10 +83,10 @@ export type ApiVersion = (typeof ApiVersion)[keyof typeof ApiVersion];
 
 export const FileFormat = {
   GTJSON: 'GTJSON',
-  MDX: 'MDX',
   JSON: 'JSON',
   YAML: 'YAML',
   MD: 'MD',
+  MDX: 'MDX',
   TS: 'TS',
   JS: 'JS',
   HTML: 'HTML',
@@ -108,6 +108,16 @@ export const FileFormat = {
 } as const;
 
 export type FileFormat = (typeof FileFormat)[keyof typeof FileFormat];
+
+export const DataFormat = {
+  JSX: 'JSX',
+  ICU: 'ICU',
+  I18NEXT: 'I18NEXT',
+  STRING: 'STRING',
+  ICU_TREE: 'ICU_TREE',
+} as const;
+
+export type DataFormat = (typeof DataFormat)[keyof typeof DataFormat];
 
 /**
  * Number of `results` in total and by `status`.
@@ -134,16 +144,6 @@ export type JsonValue =
   | {
       [key: string]: JsonValue | null;
     };
-
-export const DataFormat = {
-  JSX: 'JSX',
-  ICU: 'ICU',
-  I18NEXT: 'I18NEXT',
-  STRING: 'STRING',
-  ICU_TREE: 'ICU_TREE',
-} as const;
-
-export type DataFormat = (typeof DataFormat)[keyof typeof DataFormat];
 
 export type Branch = {
   id: string;
@@ -216,12 +216,12 @@ export type RuntimeTranslationRequest = {
 };
 
 /**
- * Marks the source as a whole document in this file format. Send the document as a string.
+ * Marks the source as a whole document in this file format. Send the document as a string, with `dataFormat` `STRING` and without `maxChars` or `sourceCode`.
  */
 export const RuntimeFileFormat = { MD: 'MD', MDX: 'MDX' } as const;
 
 /**
- * Marks the source as a whole document in this file format. Send the document as a string.
+ * Marks the source as a whole document in this file format. Send the document as a string, with `dataFormat` `STRING` and without `maxChars` or `sourceCode`.
  */
 export type RuntimeFileFormat =
   (typeof RuntimeFileFormat)[keyof typeof RuntimeFileFormat];
@@ -238,6 +238,25 @@ export const ProjectApiKeyPermission = {
 
 export type ProjectApiKeyPermission =
   (typeof ProjectApiKeyPermission)[keyof typeof ProjectApiKeyPermission];
+
+export const OrgApiKeyPermission = {
+  'ORG:PROJECTS:CREATE': 'org:projects:create',
+  'PROJECT:API_KEYS:READ': 'project:api_keys:read',
+  'PROJECT:API_KEYS:WRITE': 'project:api_keys:write',
+  'ORG:CONTEXT:READ': 'org:context:read',
+  'ORG:CONTEXT:WRITE': 'org:context:write',
+  'ORG:ASSETS:WRITE': 'org:assets:write',
+  'PROJECT:WRITE': 'project:write',
+  'PROJECT:CONTEXT:READ': 'project:context:read',
+  'PROJECT:CONTEXT:WRITE': 'project:context:write',
+  'PROJECT:FILES:READ': 'project:files:read',
+  'PROJECT:FILES:WRITE': 'project:files:write',
+  'PROJECT:TRANSLATIONS:GENERATE': 'project:translations:generate',
+  'PROJECT:TRANSLATIONS:ENQUEUE': 'project:translations:enqueue',
+} as const;
+
+export type OrgApiKeyPermission =
+  (typeof OrgApiKeyPermission)[keyof typeof OrgApiKeyPermission];
 
 export type ContextGroup = {
   id: string;
@@ -2038,7 +2057,7 @@ export type GetFileStatusResponses = {
       fileName: string;
       sourceLocale: string;
       fileFormat: FileFormat;
-      dataFormat: string | null;
+      dataFormat: DataFormat | null;
       createdAt: string;
       updatedAt: string;
       locales: Array<string>;
@@ -2408,7 +2427,7 @@ export type QueryFilesResponses = {
       /**
        * Present when `status` is `found`.
        */
-      dataFormat?: string | null;
+      dataFormat?: DataFormat | null;
       /**
        * Present when `status` is `found`.
        */
@@ -2572,9 +2591,13 @@ export type QueryFilesContentResponses = {
        */
       fileName?: string;
       /**
-       * Base64 file content when `status` is `ready`; `null` when `pending`; absent when `not_found`.
+       * Base64 file content when `status` is `ready`, except `null` when the file is too large to return inline, in which case fetch it from `downloadUrl`; `null` when `pending`; absent when `not_found`.
        */
       data?: string | null;
+      /**
+       * Signed URL that serves the raw file for 15 minutes; present when `status` is `ready` and `data` is `null`, and for media files.
+       */
+      downloadUrl?: string;
       metadata?: JsonObject;
       fileFormat?: FileFormat & unknown;
     }>;
@@ -2691,9 +2714,13 @@ export type GetFileContentResponses = {
      */
     fileName?: string;
     /**
-     * Base64 file content; `null` exactly when `status` is `pending`.
+     * Base64 file content; `null` when `status` is `pending`, or when the file is too large to return inline, in which case fetch it from `downloadUrl`.
      */
     data: string | null;
+    /**
+     * Signed URL that serves the raw file for 15 minutes; present when `status` is `ready` and `data` is `null`, and for media files.
+     */
+    downloadUrl?: string;
     metadata?: JsonObject;
     fileFormat?: FileFormat & unknown;
   };
@@ -2838,36 +2865,9 @@ export type UploadSourceFilesData = {
      */
     data: Array<{
       source: {
-        /**
-         * Base64-encoded file content.
-         */
-        content: string;
         fileName: string;
-        fileFormat:
-          | 'GTJSON'
-          | 'MDX'
-          | 'JSON'
-          | 'YAML'
-          | 'MD'
-          | 'TS'
-          | 'JS'
-          | 'HTML'
-          | 'TXT'
-          | 'PO'
-          | 'POT'
-          | 'TWILIO_CONTENT_JSON'
-          | 'LOTTIE'
-          | 'SVG'
-          | 'XCSTRINGS'
-          | 'DOT_STRINGS'
-          | 'DOT_STRINGSDICT'
-          | 'ANDROID_STRINGS'
-          | 'SRT'
-          | 'RESX'
-          | 'PNG'
-          | 'JPEG'
-          | 'MP4';
-        dataFormat?: string;
+        fileFormat: FileFormat;
+        dataFormat?: DataFormat;
         locale: string;
         fileId?: string;
         versionId?: string;
@@ -2877,7 +2877,31 @@ export type UploadSourceFilesData = {
         formatMetadata?: {
           [key: string]: unknown;
         };
-      };
+        metadata?: {
+          /**
+           * Page that shows this version of the file.
+           */
+          previewUrl?: string;
+        };
+      } & (
+        | {
+            /**
+             * Base64-encoded file content.
+             */
+            content: string;
+          }
+        | {
+            /**
+             * A file already PUT to the URL from Create file uploads, in place of `content`; required for files over 4MB.
+             */
+            upload: {
+              /**
+               * SHA-256 of the file's bytes, as 64 lowercase hex characters.
+               */
+              sha256: string;
+            };
+          }
+      );
     }>;
     /**
      * Default locale for files in this request; each file's own locale takes precedence. Defaults to the project's default locale, which the upload does not change.
@@ -3007,36 +3031,9 @@ export type UploadTranslationsData = {
      */
     data: Array<{
       source: {
-        /**
-         * Base64-encoded file content.
-         */
-        content: string;
         fileName: string;
-        fileFormat:
-          | 'GTJSON'
-          | 'MDX'
-          | 'JSON'
-          | 'YAML'
-          | 'MD'
-          | 'TS'
-          | 'JS'
-          | 'HTML'
-          | 'TXT'
-          | 'PO'
-          | 'POT'
-          | 'TWILIO_CONTENT_JSON'
-          | 'LOTTIE'
-          | 'SVG'
-          | 'XCSTRINGS'
-          | 'DOT_STRINGS'
-          | 'DOT_STRINGSDICT'
-          | 'ANDROID_STRINGS'
-          | 'SRT'
-          | 'RESX'
-          | 'PNG'
-          | 'JPEG'
-          | 'MP4';
-        dataFormat?: string;
+        fileFormat: FileFormat;
+        dataFormat?: DataFormat;
         locale: string;
         fileId?: string;
         versionId?: string;
@@ -3046,64 +3043,51 @@ export type UploadTranslationsData = {
         formatMetadata?: {
           [key: string]: unknown;
         };
-      };
-      translations: Array<{
-        /**
-         * Base64-encoded translation content.
-         */
-        content: string;
-        fileName: string;
-        fileFormat:
-          | 'GTJSON'
-          | 'MDX'
-          | 'JSON'
-          | 'YAML'
-          | 'MD'
-          | 'TS'
-          | 'JS'
-          | 'HTML'
-          | 'TXT'
-          | 'PO'
-          | 'POT'
-          | 'TWILIO_CONTENT_JSON'
-          | 'LOTTIE'
-          | 'SVG'
-          | 'XCSTRINGS'
-          | 'DOT_STRINGS'
-          | 'DOT_STRINGSDICT'
-          | 'ANDROID_STRINGS'
-          | 'SRT'
-          | 'RESX'
-          | 'PNG'
-          | 'JPEG'
-          | 'MP4';
-        dataFormat?: string;
-        locale: string;
-        transformFormat?:
-          | 'GTJSON'
-          | 'MDX'
-          | 'JSON'
-          | 'YAML'
-          | 'MD'
-          | 'TS'
-          | 'JS'
-          | 'HTML'
-          | 'TXT'
-          | 'PO'
-          | 'POT'
-          | 'TWILIO_CONTENT_JSON'
-          | 'LOTTIE'
-          | 'SVG'
-          | 'XCSTRINGS'
-          | 'DOT_STRINGS'
-          | 'DOT_STRINGSDICT'
-          | 'ANDROID_STRINGS'
-          | 'SRT'
-          | 'RESX'
-          | 'PNG'
-          | 'JPEG'
-          | 'MP4';
-      }>;
+      } & (
+        | {
+            /**
+             * Base64-encoded file content.
+             */
+            content: string;
+          }
+        | {
+            /**
+             * A file already PUT to the URL from Create file uploads, in place of `content`; required for files over 4MB.
+             */
+            upload: {
+              /**
+               * SHA-256 of the file's bytes, as 64 lowercase hex characters.
+               */
+              sha256: string;
+            };
+          }
+      );
+      translations: Array<
+        {
+          fileName: string;
+          fileFormat: FileFormat & unknown;
+          dataFormat?: DataFormat;
+          locale: string;
+        } & (
+          | {
+              /**
+               * Base64-encoded translation content.
+               */
+              content: string;
+            }
+          | {
+              /**
+               * A file already PUT to the URL from Create file uploads, in place of `content`; required for files over 4MB.
+               */
+              upload: {
+                /**
+                 * SHA-256 of the file's bytes, as 64 lowercase hex characters.
+                 */
+                sha256: string;
+              };
+            }
+        )
+      >;
     }>;
   };
   headers: {
@@ -3222,6 +3206,139 @@ export type UploadTranslationsResponses = {
 
 export type UploadTranslationsResponse =
   UploadTranslationsResponses[keyof UploadTranslationsResponses];
+
+export type CreateFileUploadsData = {
+  body: {
+    /**
+     * 1–100 files; each sha256 may appear once.
+     */
+    files: Array<{
+      fileFormat: FileFormat;
+      /**
+       * File size in bytes: at most 2000000000 for PNG, JPEG and MP4, and 100000000 for other formats.
+       */
+      size: number;
+      /**
+       * SHA-256 of the file's bytes, as 64 lowercase hex characters.
+       */
+      sha256: string;
+    }>;
+  };
+  headers: {
+    /**
+     * API contract version. Must be `2026-10-08.v1` or later; requests without it or with an older version return 400.
+     */
+    'gt-api-version': ApiVersion;
+  };
+  path: {
+    projectId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/files/uploads';
+};
+
+export type CreateFileUploadsErrors = {
+  /**
+   * The request is malformed or failed validation, including a repeated sha256 or a size over the limit. No URL is issued.
+   */
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'api_version_too_old';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
+  /**
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type CreateFileUploadsError =
+  CreateFileUploadsErrors[keyof CreateFileUploadsErrors];
+
+export type CreateFileUploadsResponses = {
+  /**
+   * Upload target for each file, in request order.
+   */
+  200: {
+    /**
+     * One result per file, in order.
+     */
+    files: Array<{
+      /**
+       * SHA-256 of the file's bytes, as 64 lowercase hex characters.
+       */
+      sha256: string;
+      /**
+       * `exists` when the project already stores these bytes, so the PUT is skipped; `upload_required` otherwise.
+       */
+      status: 'exists' | 'upload_required';
+      /**
+       * Present when `status` is `upload_required`. Register the file through Upload source files or Upload translations within 24 hours; later, the upload may be deleted.
+       */
+      upload?: {
+        /**
+         * Presigned URL to PUT the file bytes to.
+         */
+        url: string;
+        /**
+         * Headers the PUT must send exactly as given.
+         */
+        headers: {
+          'x-amz-checksum-sha256': string;
+        };
+        /**
+         * The PUT must start before this ISO 8601 time.
+         */
+        expiresAt: string;
+      };
+    }>;
+  };
+};
+
+export type CreateFileUploadsResponse =
+  CreateFileUploadsResponses[keyof CreateFileUploadsResponses];
 
 export type ListBranchesData = {
   body?: never;
@@ -3773,30 +3890,7 @@ export type TranslateFilesData = {
       fileId: string;
       versionId: string;
       fileName?: string;
-      transformFormat?:
-        | 'GTJSON'
-        | 'MDX'
-        | 'JSON'
-        | 'YAML'
-        | 'MD'
-        | 'TS'
-        | 'JS'
-        | 'HTML'
-        | 'TXT'
-        | 'PO'
-        | 'POT'
-        | 'TWILIO_CONTENT_JSON'
-        | 'LOTTIE'
-        | 'SVG'
-        | 'XCSTRINGS'
-        | 'DOT_STRINGS'
-        | 'DOT_STRINGSDICT'
-        | 'ANDROID_STRINGS'
-        | 'SRT'
-        | 'RESX'
-        | 'PNG'
-        | 'JPEG'
-        | 'MP4';
+      transformFormat?: FileFormat;
     }>;
     /**
      * Locales to translate into; the project's current locales when omitted. They are added to the project's current locales; the project default locale is unchanged.
@@ -5480,6 +5574,105 @@ export type ListOrgsResponses = {
 };
 
 export type ListOrgsResponse = ListOrgsResponses[keyof ListOrgsResponses];
+
+export type CreateOrgApiKeyData = {
+  body: {
+    /**
+     * Key name, 1–255 characters after trimming.
+     */
+    name: string;
+    /**
+     * Organization and project permissions to grant. Select at least one, or omit to grant all organization API key permissions you can delegate. You must hold every selected permission. Duplicates are ignored. Write permissions do not include Read.
+     */
+    permissions?: Array<OrgApiKeyPermission>;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    orgId: string;
+  };
+  query?: never;
+  url: '/v2/orgs/{orgId}/api-keys';
+};
+
+export type CreateOrgApiKeyErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse & {
+    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource, or cannot grant a selected permission. No key is created.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_denied'
+      | 'permission_not_grantable'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
+  /**
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type CreateOrgApiKeyError =
+  CreateOrgApiKeyErrors[keyof CreateOrgApiKeyErrors];
+
+export type CreateOrgApiKeyResponses = {
+  /**
+   * Organization API key created. Each successful request creates a new key. Store the returned secret securely.
+   */
+  201: {
+    apiKey: {
+      id: string;
+      name: string;
+      key: string;
+      orgId: string;
+    };
+  };
+};
+
+export type CreateOrgApiKeyResponse =
+  CreateOrgApiKeyResponses[keyof CreateOrgApiKeyResponses];
 
 export type CreateProjectData = {
   body: {
