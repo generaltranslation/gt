@@ -365,3 +365,158 @@ fn skips_t_with_derive_children() {
   );
   assert!(!output.contains("_translations"), "{output}");
 }
+
+// ===== hash options the plugin can't hash statically ===== //
+
+/// ICU hash of "Hello" with `$requiresReview: true`
+const HELLO_REVIEWED: &str = "85e9a084da2d5e49";
+
+/// Distinct translations for the plain, reviewed, and custom-hash entries, so
+/// a test can tell which entry an embedded callback came from.
+fn hello_variants() -> serde_json::Value {
+  translations(
+    &["fr"],
+    serde_json::json!({
+      "fr": {
+        HELLO: "Plain Bonjour",
+        HELLO_REVIEWED: "Reviewed Bonjour",
+        "custom": "Custom Bonjour",
+      },
+    }),
+  )
+}
+
+#[test]
+fn skips_gt_calls_with_a_non_literal_hash() {
+  let output = transform(
+    r#"
+      import { useGT } from 'gt-next';
+      const gt = useGT();
+      const hash = 'custom';
+      gt("Hello", { $_hash: hash });
+    "#,
+    hello_variants(),
+  );
+  assert!(!output.contains("Bonjour"), "{output}");
+}
+
+#[test]
+fn uses_a_literal_hash_on_gt_calls() {
+  let output = transform(
+    r#"
+      import { useGT } from 'gt-next';
+      const gt = useGT();
+      gt("Hello", { $_hash: "custom" });
+    "#,
+    hello_variants(),
+  );
+  assert!(output.contains("\"Custom Bonjour\""), "{output}");
+  assert!(!output.contains("Plain Bonjour"), "{output}");
+}
+
+#[test]
+fn skips_msg_calls_with_requires_review() {
+  for code in [
+    r#"import { msg } from 'gt-next'; msg("Hello", { $requiresReview: true });"#,
+    r#"import { msg } from 'gt-next'; msg(["Hello"], { $requiresReview: true });"#,
+  ] {
+    let output = transform(code, hello_variants());
+    assert!(!output.contains("Bonjour"), "{output}");
+  }
+}
+
+#[test]
+fn embeds_msg_calls_with_requires_review_false() {
+  let output = transform(
+    r#"import { msg } from 'gt-next'; msg("Hello", { $requiresReview: false });"#,
+    hello_variants(),
+  );
+  assert!(output.contains("\"Plain Bonjour\""), "{output}");
+}
+
+#[test]
+fn skips_msg_calls_with_quoted_metadata_keys() {
+  let output = transform(
+    r#"import { msg } from 'gt-next'; msg("Hello", { '$context': 'greeting' });"#,
+    hello_variants(),
+  );
+  assert!(!output.contains("Bonjour"), "{output}");
+}
+
+#[test]
+fn skips_msg_and_gt_calls_with_non_literal_context() {
+  let output = transform(
+    r#"
+      import { useGT, msg } from 'gt-next';
+      const gt = useGT();
+      const context = 'greeting';
+      gt("Hello", { $context: context });
+      msg("Hello", { $context: context });
+      msg("Hello", { $context });
+    "#,
+    hello_variants(),
+  );
+  assert!(!output.contains("Bonjour"), "{output}");
+}
+
+// ===== <T> with a user-supplied _hash ===== //
+
+#[test]
+fn embeds_translations_for_t_with_a_static_hash() {
+  for code in [
+    r#"import { T } from 'gt-next'; export const el = <T _hash="custom">Hello world</T>;"#,
+    r#"import { T } from 'gt-next'; export const el = <T _hash={'custom'}>Hello world</T>;"#,
+  ] {
+    let output = transform(code, hello_variants());
+    assert!(
+      output.contains(r#"_translations={(locale)=>locale === "fr" ? "Custom Bonjour" : undefined}"#),
+      "{output}"
+    );
+  }
+}
+
+#[test]
+fn keeps_counter_alignment_after_t_with_a_static_hash() {
+  let output = transform(
+    r#"
+      import { T } from 'gt-next';
+      export const a = <T _hash="custom">Hello world</T>;
+      export const b = <T>Hello world</T>;
+    "#,
+    translations(
+      &["fr"],
+      serde_json::json!({
+        "fr": { "custom": "Custom Bonjour", JSX_HELLO_WORLD: "Bonjour le monde" },
+      }),
+    ),
+  );
+  assert!(output.contains("\"Custom Bonjour\""), "{output}");
+  assert!(output.contains(&format!("_hash=\"{JSX_HELLO_WORLD}\"")), "{output}");
+  assert!(output.contains("\"Bonjour le monde\""), "{output}");
+}
+
+#[test]
+fn skips_t_with_a_dynamic_hash() {
+  let output = transform(
+    r#"
+      import { T } from 'gt-next';
+      const hash = 'custom';
+      export const el = <T _hash={hash}>Hello world</T>;
+    "#,
+    hello_variants(),
+  );
+  assert!(!output.contains("_translations"), "{output}");
+}
+
+#[test]
+fn keeps_an_existing_translations_prop_on_t_with_a_static_hash() {
+  let output = transform(
+    r#"
+      import { T } from 'gt-next';
+      export const el = <T _hash="custom" _translations={mine}>Hello world</T>;
+    "#,
+    hello_variants(),
+  );
+  assert!(!output.contains("Custom Bonjour"), "{output}");
+  assert!(output.contains("_translations={mine}"), "{output}");
+}
