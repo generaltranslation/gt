@@ -172,6 +172,17 @@ export const TranslationView = () => {
       // Check preconditions
       if (isImporting || !documentId || !versionId) return;
       if (autoOnly && !autoImport) return;
+      // A document that stopped being its group's original must not import,
+      // nor publish what its group now treats as the source.
+      if (
+        allowNonDefault &&
+        !(
+          documentRole?.status === 'resolved' &&
+          documentRole.role.kind === 'original'
+        )
+      ) {
+        return;
+      }
 
       // Find translations ready to import (any configured locale, not just
       // the ones currently selected for translation)
@@ -213,6 +224,8 @@ export const TranslationView = () => {
     },
     [
       autoImport,
+      allowNonDefault,
+      documentRole,
       isImporting,
       documentId,
       versionId,

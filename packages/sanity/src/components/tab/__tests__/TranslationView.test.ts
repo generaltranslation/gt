@@ -218,6 +218,64 @@ describe('TranslationView role gating', () => {
   });
 });
 
+describe('TranslationView automatic import', () => {
+  const frKey = 'b:page:r1:fr';
+
+  /** Renders with fr still translating, then completes it, as a status refresh would. */
+  async function completeFrWhileOpen(documentRole: DocumentRoleState) {
+    setTranslations({
+      language: 'en',
+      preserveExistingTranslations: false,
+      documentRole,
+    });
+    const importedTranslations = new Set<string>();
+    Object.assign(translations.current, {
+      autoImport: true,
+      autoPublish: true,
+      importedTranslations,
+      translationStatuses: new Map([[frKey, { isReady: false }]]),
+      // Like the provider, mark the import done so the effect settles.
+      handleImportDocument: vi.fn(async () => {
+        importedTranslations.add(frKey);
+      }),
+    });
+    await renderView();
+    translations.current = {
+      ...translations.current,
+      translationStatuses: new Map([[frKey, { isReady: true }]]),
+    };
+    await renderView();
+  }
+
+  test('imports and publishes a translation that completes on an original', async () => {
+    await completeFrWhileOpen({
+      status: 'resolved',
+      role: { kind: 'original', language: 'en' },
+    });
+
+    expect(translations.current.handleImportDocument).toHaveBeenCalledWith(
+      'page',
+      'r1',
+      'fr'
+    );
+    expect(
+      translations.current.handlePublishAllTranslations
+    ).toHaveBeenCalled();
+  });
+
+  test('does nothing once the document is no longer an original', async () => {
+    await completeFrWhileOpen({
+      status: 'resolved',
+      role: { kind: 'translation', language: 'en', originalLanguage: 'fr' },
+    });
+
+    expect(translations.current.handleImportDocument).not.toHaveBeenCalled();
+    expect(
+      translations.current.handlePublishAllTranslations
+    ).not.toHaveBeenCalled();
+  });
+});
+
 describe('TranslationView without allowNonDefaultSourceLocales', () => {
   beforeEach(() => {
     vi.spyOn(pluginConfig, 'getAllowNonDefaultSourceLocales').mockReturnValue(
