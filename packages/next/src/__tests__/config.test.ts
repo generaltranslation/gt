@@ -1626,7 +1626,8 @@ describe('withGTConfig', () => {
             experimentalCompilerOptions: { type: 'babel', inlineTranslations },
           }
         );
-        expect(getClientConfig(result)._inlinedLocales).toEqual(['fr', 'es']);
+        // es has no translations to embed, so it keeps loading
+        expect(getClientConfig(result)._inlinedLocales).toEqual(['fr']);
       });
 
       it('keeps embedded translations out of the runtime config', async () => {
@@ -1657,13 +1658,40 @@ describe('withGTConfig', () => {
         expect(getClientConfig(result)).not.toHaveProperty('_inlinedLocales');
       });
 
-      it('does not skip loading when the babel compiler is not used', async () => {
+      it('exposes the embedded locales in SWC production builds', async () => {
         process.env.NODE_ENV = 'production';
         const withGTConfig = await getWithGTConfig();
         const result = withGTConfig(
           {},
           {
             experimentalCompilerOptions: { type: 'swc', inlineTranslations },
+          }
+        );
+        expect(getClientConfig(result)._inlinedLocales).toEqual(['fr']);
+      });
+
+      it('does not skip loading without a compiler', async () => {
+        process.env.NODE_ENV = 'production';
+        const withGTConfig = await getWithGTConfig();
+        const result = withGTConfig(
+          {},
+          {
+            experimentalCompilerOptions: { type: 'none', inlineTranslations },
+          }
+        );
+        expect(getClientConfig(result)).not.toHaveProperty('_inlinedLocales');
+      });
+
+      it('does not skip loading when no locale has translations', async () => {
+        process.env.NODE_ENV = 'production';
+        const withGTConfig = await getWithGTConfig();
+        const result = withGTConfig(
+          {},
+          {
+            experimentalCompilerOptions: {
+              type: 'babel',
+              inlineTranslations: { locales: ['fr'] },
+            },
           }
         );
         expect(getClientConfig(result)).not.toHaveProperty('_inlinedLocales');

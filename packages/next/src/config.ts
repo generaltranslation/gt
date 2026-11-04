@@ -954,18 +954,17 @@ function isDevHotReloadEnabled(config: InternalGTConfigProps): boolean {
 /**
  * Locales whose translations the compiler embeds at call sites, so the
  * runtime can skip loading them. Embedding and skipping are one feature:
- * only skip when the babel compiler injects, which it does in production
- * builds only.
+ * only skip when a compiler injects (babel or SWC, production builds only),
+ * and only for locales that actually have translations to embed.
  */
 function getInlinedLocales(mergedConfig: InternalGTConfigProps): string[] {
   const compilerOptions = mergedConfig.experimentalCompilerOptions;
-  if (
-    compilerOptions?.type !== 'babel' ||
-    process.env.NODE_ENV !== 'production'
-  ) {
+  if (compilerOptions?.type !== 'babel' && compilerOptions?.type !== 'swc') {
     return [];
   }
-  return compilerOptions.inlineTranslations?.locales ?? [];
+  return (
+    resolveInlineTranslations(compilerOptions.inlineTranslations)?.locales ?? []
+  );
 }
 
 /**
