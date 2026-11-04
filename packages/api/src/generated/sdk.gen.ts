@@ -14,6 +14,9 @@ import type {
   CreateContextGroupData,
   CreateContextGroupErrors,
   CreateContextGroupResponses,
+  CreateOrgApiKeyData,
+  CreateOrgApiKeyErrors,
+  CreateOrgApiKeyResponses,
   CreateProjectApiKeyData,
   CreateProjectApiKeyErrors,
   CreateProjectApiKeyResponses,
@@ -1581,3 +1584,25 @@ export const getCliWizardSession = <ThrowOnError extends boolean = false>(
     GetCliWizardSessionErrors,
     ThrowOnError
   >({ url: '/cli/wizard/{sessionId}', ...options });
+
+/**
+ * Create an Organization API key
+ *
+ * Create an Organization API key. Requires `org:api_keys:write`; API keys cannot create organization API keys.
+ */
+export const createOrgApiKey = <ThrowOnError extends boolean = false>(
+  options: Options<CreateOrgApiKeyData, ThrowOnError>
+) =>
+  options.client.post<
+    CreateOrgApiKeyResponses,
+    CreateOrgApiKeyErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v2/orgs/{orgId}/api-keys',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
