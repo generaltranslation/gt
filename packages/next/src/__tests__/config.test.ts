@@ -346,6 +346,99 @@ describe('withGTConfig', () => {
       );
     });
 
+    describe('swc inlineTranslations', () => {
+      function getSwcOptions(result: NextConfig) {
+        const plugins = result.experimental!.swcPlugins as [
+          string,
+          Record<string, unknown>,
+        ][];
+        expect(plugins).toHaveLength(1);
+        return plugins[0][1];
+      }
+
+      it('passes explicit translations to the SWC plugin in production', async () => {
+        process.env.NODE_ENV = 'production';
+        const withGTConfig = await getWithGTConfig();
+        const result = withGTConfig(
+          {},
+          {
+            experimentalCompilerOptions: {
+              type: 'swc',
+              inlineTranslations: {
+                locales: ['fr', 'es', 'de'],
+                translations: { fr: { a: 'Bonjour' }, es: { a: 'Hola' } },
+              },
+            },
+          }
+        );
+        expect(getSwcOptions(result).inlineTranslations).toEqual({
+          locales: ['fr', 'es'],
+          translations: { fr: { a: 'Bonjour' }, es: { a: 'Hola' } },
+        });
+      });
+
+      it('reads locale files from a [locale] path template', async () => {
+        process.env.NODE_ENV = 'production';
+        vi.mocked(fs.existsSync).mockImplementation((filepath) =>
+          String(filepath).endsWith(path.join('_gt', 'fr.json'))
+        );
+        vi.mocked(fs.readFileSync).mockImplementation((filepath) =>
+          String(filepath).endsWith(path.join('_gt', 'fr.json'))
+            ? JSON.stringify({ a: 'Bonjour' })
+            : '{}'
+        );
+        const withGTConfig = await getWithGTConfig();
+        const result = withGTConfig(
+          {},
+          {
+            experimentalCompilerOptions: {
+              type: 'swc',
+              inlineTranslations: {
+                locales: ['fr', 'es'],
+                path: './public/_gt/[locale].json',
+              },
+            },
+          }
+        );
+        expect(getSwcOptions(result).inlineTranslations).toEqual({
+          locales: ['fr'],
+          translations: { fr: { a: 'Bonjour' } },
+        });
+      });
+
+      it('does not pass inline translations outside production builds', async () => {
+        const withGTConfig = await getWithGTConfig();
+        const result = withGTConfig(
+          {},
+          {
+            experimentalCompilerOptions: {
+              type: 'swc',
+              inlineTranslations: {
+                locales: ['fr'],
+                translations: { fr: { a: 'Bonjour' } },
+              },
+            },
+          }
+        );
+        expect(getSwcOptions(result)).not.toHaveProperty('inlineTranslations');
+      });
+
+      it('omits inline translations when no locale has translations', async () => {
+        process.env.NODE_ENV = 'production';
+        const withGTConfig = await getWithGTConfig();
+        const result = withGTConfig(
+          {},
+          {
+            experimentalCompilerOptions: {
+              type: 'swc',
+              inlineTranslations: { locales: ['fr'] },
+            },
+          }
+        );
+        expect(getSwcOptions(result)).not.toHaveProperty('inlineTranslations');
+      });
+    });
+
     it('has empty swcPlugins array in experimental', async () => {
       const withGTConfig = await getWithGTConfig();
       const result = withGTConfig();
