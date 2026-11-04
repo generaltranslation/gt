@@ -196,11 +196,12 @@ interface TranslationsContextType {
   handleImportAll: () => Promise<void>;
   handleImportMissing: () => Promise<void>;
   handleRefreshAll: (options?: { silent?: boolean }) => Promise<void>;
+  /** Resolves `true` when the translation was imported; failures are reported, not thrown. */
   handleImportDocument: (
     documentId: string,
     versionId: string,
     localeId: string
-  ) => Promise<void>;
+  ) => Promise<boolean>;
   handlePatchDocumentReferences: () => Promise<number>;
   handlePublishAllTranslations: (
     options?: PublishTranslationsOptions
@@ -1387,8 +1388,12 @@ const TranslationsProviderContent: React.FC<
   );
 
   const handleImportDocument = useCallback(
-    async (documentId: string, versionId: string, localeId: string) => {
-      if (!secrets) return;
+    async (
+      documentId: string,
+      versionId: string,
+      localeId: string
+    ): Promise<boolean> => {
+      if (!secrets) return false;
 
       const key = createTranslationStatusKey(
         branchId,
@@ -1404,7 +1409,7 @@ const TranslationsProviderContent: React.FC<
           status: 'warning',
           closable: true,
         });
-        return;
+        return false;
       }
 
       const document = documents.find(
@@ -1417,7 +1422,7 @@ const TranslationsProviderContent: React.FC<
           status: 'error',
           closable: true,
         });
-        return;
+        return false;
       }
 
       try {
@@ -1466,6 +1471,7 @@ const TranslationsProviderContent: React.FC<
               status: 'success',
               closable: true,
             });
+            return true;
           } catch (importError) {
             console.error('Failed to import translation:', importError);
             toast.push({
@@ -1489,6 +1495,7 @@ const TranslationsProviderContent: React.FC<
           closable: true,
         });
       }
+      return false;
     },
     [secrets, documents, translationContext, translationStatuses, branchId]
   );
