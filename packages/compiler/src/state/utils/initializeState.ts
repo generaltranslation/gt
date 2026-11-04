@@ -10,6 +10,7 @@ import { ScopeTracker } from '../ScopeTracker';
 import { Logger } from '../Logger';
 import { ErrorTracker } from '../ErrorTracker';
 import { GT_OTHER_FUNCTIONS } from '../../utils/constants/gt/constants';
+import { loadInlineTranslations } from '../../transform/injection/inline-translations/loadInlineTranslations';
 
 const DEFAULT_SETTINGS: PluginSettings = {
   logLevel: 'warn',
@@ -64,8 +65,16 @@ export function initializeState(
     autoderive: _a,
     devHotReload: _b,
     legacyGtReactImportSource: _c,
+    inlineTranslations,
     ...restOptions
   } = options;
+
+  // Embedded translations are a production optimization; dev builds keep
+  // loading (and hot reloading) translations at runtime
+  const inlineTranslationsTable =
+    process.env.NODE_ENV === 'production'
+      ? loadInlineTranslations(inlineTranslations)
+      : undefined;
 
   const settings: PluginSettings = {
     ...DEFAULT_SETTINGS,
@@ -74,6 +83,7 @@ export function initializeState(
     legacyGtReactImportSource,
     devHotReload,
     ...restOptions,
+    inlineTranslationsTable,
     filename,
   };
 

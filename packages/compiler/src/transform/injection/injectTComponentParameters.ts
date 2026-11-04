@@ -2,6 +2,7 @@ import * as t from '@babel/types';
 import { getObjectPropertyFromObjectExpression } from '../../utils/parsing/getObjectPropertyFromObjectExpression';
 import { TransformState } from '../../state/types';
 import { createErrorLocation } from '../../utils/errors';
+import { injectInlineTranslationsProp } from './inline-translations/injectInlineTranslations';
 
 /**
  * Inject parameters into a T component
@@ -40,6 +41,20 @@ export function injectTComponentParameters(
         createErrorLocation(callExpr)
     );
     return;
+  }
+
+  // Embed translations for the configured locales
+  if (
+    !getObjectPropertyFromObjectExpression(
+      callExpr.arguments[1],
+      '_translations'
+    )
+  ) {
+    injectInlineTranslationsProp(
+      callExpr.arguments[1],
+      translationJsx.hash,
+      state
+    );
   }
 
   // If already has hash set then skip
