@@ -1,4 +1,4 @@
-import { GT } from 'generaltranslation';
+import { GeneralTranslation } from 'generaltranslation';
 import type { CustomMapping } from 'generaltranslation/types';
 import type {
   Block,
@@ -182,7 +182,7 @@ function runLocales(
 }
 
 // Refuses before any work when the user may not edit every document asked
-// for, as GT's work spends the project's usage.
+// for, as GeneralTranslation's work spends the project's usage.
 async function assertCanUpdate(
   req: SignedInRequest,
   targets: TranslateTarget[]
@@ -358,7 +358,7 @@ export const gtPlugin =
     if (!config.localization) return config;
     let built: GtClient | undefined = options.client;
     const client = (payload: Payload) =>
-      (built ??= new GT({
+      (built ??= new GeneralTranslation({
         projectId: options.projectId ?? process.env.GT_PROJECT_ID,
         apiKey: options.apiKey ?? process.env.GT_API_KEY,
         sourceLocale: payload.config.localization

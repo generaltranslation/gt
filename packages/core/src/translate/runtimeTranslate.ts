@@ -1,190 +1,73 @@
 import {
   createApiClient,
-  translate as translateEndpoint,
+  ErrorCode,
+  translateContent,
   type JsonObject,
   type JsonValue,
   type RuntimeTranslationResponse,
-  type TranslateData,
+  type TranslateContentData,
 } from '@generaltranslation/api';
 import { isMessageTree } from '@generaltranslation/icu';
-import {
-  resolveCanonicalLocale,
-  standardizeLocale,
-} from '@generaltranslation/format';
 import type {
   Content,
   GTProp,
   JsxChildren,
   JsxElement,
 } from '@generaltranslation/format/types';
-import type {
-  TranslateConfig,
-  TranslateManyResult,
-  TranslationError,
-  TranslationRequestConfig,
-  TranslationResult,
-} from '../types';
+import type { TranslateManyResult, TranslationResult } from '../types';
 import type {
   EntryMetadata,
   TranslateManyEntry,
   TranslateOptions,
 } from '../types-dir/api/entry';
+import type { GTRuntime } from '../runtime';
+import { apiVersionHeaders, resolveServiceLocale } from '../apiClient';
 import { libraryDefaultLocale } from '../settings/settings';
 import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
-import {
-  noApiKeyProvidedError,
-  noProjectIdProvidedError,
-  noTargetLocaleProvidedError,
-} from '../logging/errors';
-import { gtInstanceLogger } from '../logging/logger';
-import { createDiagnosticMessage } from '../logging/diagnostics';
+import { noTargetLocaleProvidedError } from '../logging/errors';
 import { hashSource } from '../id';
-import {
-  isModelProvider,
-  supportedModelProviders,
-} from '../adapter/modelProvider';
-import { fetchWithTimeout } from './utils/fetchWithTimeout';
+import { validateModelProvider } from './modelProvider';
 import { unwrapApiResult } from './utils/unwrapApiResult';
 
-type TranslateFunctionName = 'translate' | 'translateMany';
-type TranslateDefaults = Partial<
-  Pick<TranslateOptions, 'sourceLocale' | 'targetLocale'>
->;
-
-/**
- * @internal
- * Credential/provider errors are reported before the project error, and both
- * before any locale validation. GT/GTRuntime share this ordering.
- */
-export function validateAuth<
-  T extends Pick<TranslateConfig, 'apiKey' | 'userTokenProvider' | 'projectId'>,
->(
-  functionName: string,
-  config: T
-): asserts config is T & { projectId: string } {
-  const errors: string[] = [];
-  if (!config.apiKey && !config.userTokenProvider) {
-    errors.push(noApiKeyProvidedError(functionName));
-  }
-  if (!config.projectId) {
-    errors.push(noProjectIdProvidedError(functionName));
-  }
-  if (errors.length) {
-    throw new Error(errors.join('\n'));
-  }
-}
-
-/**
- * @internal
- *
- * Shared preparation for every translation surface (classes and the tooling
- * facade): normalize the string shorthand, validate auth, require a target
- * locale, default the source locale and canonicalize both for the wire.
- *
- * @param defaults - Instance defaults supplied by GT/GTRuntime. Facade calls pass none.
- */
-function prepareTranslation(
-  functionName: TranslateFunctionName,
-  options: string | TranslateOptions,
-  config: TranslateConfig,
-  defaults: TranslateDefaults = {}
-): {
-  options: TranslateOptions & { sourceLocale: string };
-  config: TranslationRequestConfig;
-} {
-  if (typeof options === 'string') {
-    options = { targetLocale: options };
-  }
-
-  validateAuth(functionName, config);
-
-  const targetLocale = options?.targetLocale || defaults.targetLocale;
-  if (!targetLocale) {
-    const error = noTargetLocaleProvidedError(functionName);
-    gtInstanceLogger.error(error);
-    throw new Error(error);
-  }
-
-  const { customMapping, ...requestConfig } = config;
-  // Mapping resolves aliases; standardization also canonicalizes configured
-  // spellings such as en-us before they cross the service boundary.
-  const resolveServiceLocale = (locale: string) =>
-    standardizeLocale(resolveCanonicalLocale(locale, customMapping));
-
-  return {
-    options: {
-      ...options,
-      targetLocale: resolveServiceLocale(targetLocale),
-      sourceLocale: resolveServiceLocale(
-        options?.sourceLocale || defaults.sourceLocale || libraryDefaultLocale
-      ),
-    },
-    config: requestConfig,
-  };
-}
-
-/**
- * @internal
- * Translates a single entry with explicit configuration and optional locale defaults.
- */
-export async function translate(
-  source: TranslateManyEntry,
-  options: string | TranslateOptions,
-  config: TranslateConfig,
-  defaults?: TranslateDefaults
-): Promise<TranslationResult | TranslationError> {
-  const prepared = prepareTranslation('translate', options, config, defaults);
-  const results = await executeTranslationBatch(
-    [source],
-    prepared.options,
-    prepared.config
-  );
-  return results[0];
-}
-
-/**
- * @internal
- * Translates multiple entries in one request with explicit configuration.
- * Returns an array for array input and a record for record input.
- */
-export async function translateMany(
-  sources: TranslateManyEntry[],
-  options: string | TranslateOptions,
-  config: TranslateConfig,
-  defaults?: TranslateDefaults
-): Promise<TranslateManyResult>;
-export async function translateMany(
-  sources: Record<string, TranslateManyEntry>,
-  options: string | TranslateOptions,
-  config: TranslateConfig,
-  defaults?: TranslateDefaults
-): Promise<Record<string, TranslationResult>>;
-export async function translateMany(
-  sources: TranslateManyEntry[] | Record<string, TranslateManyEntry>,
-  options: string | TranslateOptions,
-  config: TranslateConfig,
-  defaults?: TranslateDefaults
-): Promise<TranslateManyResult | Record<string, TranslationResult>>;
-export async function translateMany(
-  sources: TranslateManyEntry[] | Record<string, TranslateManyEntry>,
-  options: string | TranslateOptions,
-  config: TranslateConfig,
-  defaults?: TranslateDefaults
-): Promise<TranslateManyResult | Record<string, TranslationResult>> {
-  const prepared = prepareTranslation(
-    'translateMany',
-    options,
-    config,
-    defaults
-  );
-  return await executeTranslationBatch(
-    sources,
-    prepared.options,
-    prepared.config
-  );
-}
-
 type RuntimeTranslationResult = RuntimeTranslationResponse[string];
+type RuntimeRequests = TranslateContentData['body']['requests'];
+
+// The API rejects translate request bodies over 4MB.
+const MAX_REQUEST_BYTES = 4_000_000;
+
+const byteLength = (value: unknown) =>
+  new TextEncoder().encode(JSON.stringify(value)).byteLength;
+
+/**
+ * Splits `requests` into groups whose request body, `envelope` plus the
+ * group's entries, stays within the API's limit. An entry too large on its own
+ * is sent alone, and the API rejects it.
+ */
+function splitRequests(
+  requests: RuntimeRequests,
+  envelope: Omit<TranslateContentData['body'], 'requests'>
+): RuntimeRequests[] {
+  const emptyBytes = byteLength({ ...envelope, requests: {} });
+  const groups: RuntimeRequests[] = [];
+  let group: RuntimeRequests = {};
+  let groupBytes = emptyBytes;
+  for (const [hash, request] of Object.entries(requests)) {
+    // Each entry adds `"hash":{...}` and a separating comma.
+    const entryBytes = byteLength({ [hash]: request }) - 2 + 1;
+    if (
+      groupBytes + entryBytes > MAX_REQUEST_BYTES &&
+      Object.keys(group).length > 0
+    ) {
+      groups.push(group);
+      group = {};
+      groupBytes = emptyBytes;
+    }
+    group[hash] = request;
+    groupBytes += entryBytes;
+  }
+  groups.push(group);
+  return groups;
+}
 
 function isJsonObject(value: JsonValue | undefined): value is JsonObject {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -272,44 +155,30 @@ function toTranslationResult(
   return {
     success: false,
     error: 'Invalid translation returned',
-    code: 500,
+    code: ErrorCode.INTERNAL_ERROR,
   };
 }
 
 /**
  * @internal
- *
- * Translates multiple entries in a single API request for better performance.
- * This function batches multiple translation requests together and sends them
- * to the GT translation API in one call.
- *
- * @param requests - The entries to translate. Can be an array (entries are hashed and results returned in order) or a record keyed by hash (skips hash calculation, returns a record).
- * @param globalMetadata - The metadata for the translation.
- * @param config - The configuration for the translation, including transport settings such as `fetch`, `apiVersion` and `timeoutMs`.
- * @returns The results of the translation. An array if requests was an array, a record if requests was a record.
+ * Translates entries for a `GTRuntime`, in as many requests as the API's
+ * request size limit needs.
  */
-async function executeTranslationBatch<
-  T extends TranslateManyEntry[] | Record<string, TranslateManyEntry>,
->(
-  requests: T,
-  globalMetadata: {
-    targetLocale: string;
-    sourceLocale: string;
-  } & TranslateOptions,
-  config: TranslationRequestConfig
-): Promise<
-  T extends TranslateManyEntry[]
-    ? TranslateManyResult
-    : Record<string, TranslationResult>
->;
-async function executeTranslationBatch(
+export async function translateEntries(
+  runtime: GTRuntime,
+  functionName: 'translate' | 'translateMany',
   requests: TranslateManyEntry[] | Record<string, TranslateManyEntry>,
-  globalMetadata: {
-    targetLocale: string;
-    sourceLocale: string;
-  } & TranslateOptions,
-  config: TranslationRequestConfig
+  options: string | TranslateOptions,
+  timeoutMs?: number
 ): Promise<TranslateManyResult | Record<string, TranslationResult>> {
+  const globalMetadata =
+    typeof options === 'string' ? { targetLocale: options } : options;
+  if (!globalMetadata?.targetLocale) {
+    throw new Error(noTargetLocaleProvidedError(functionName));
+  }
+  validateModelProvider(globalMetadata.modelProvider);
+  const { customMapping, defaultLocale } = runtime.localeConfig;
+
   const isArray = Array.isArray(requests);
 
   // normalize and map from requests to requests record
@@ -344,50 +213,44 @@ async function executeTranslationBatch(
     };
   }
 
-  if (
-    globalMetadata.modelProvider !== undefined &&
-    !isModelProvider(globalMetadata.modelProvider)
-  ) {
-    throw new Error(
-      createDiagnosticMessage({
-        source: 'generaltranslation',
-        severity: 'Error',
-        whatHappened: 'The configured model provider is not supported',
-        details: String(globalMetadata.modelProvider),
-        fix: `Use one of: ${supportedModelProviders.join(', ')}`,
-      })
-    );
-  }
-
-  // Translation deliberately has no generic network/5xx/429 retries and owns
-  // its timeout through fetchWithTimeout, so the SDK timer is disabled.
   const client = createApiClient({
-    apiKey: config.apiKey,
-    apiVersion: config.apiVersion,
-    userTokenProvider: config.userTokenProvider,
-    baseUrl: config.baseUrl || defaultRuntimeApiUrl,
-    fetch: (input, init) =>
-      fetchWithTimeout(input, init ?? {}, config.timeoutMs, config.fetch),
-    projectId: config.projectId,
+    apiKey: runtime.apiKey,
+    userTokenProvider: runtime.userTokenProvider,
+    baseUrl: runtime.baseUrl || defaultRuntimeApiUrl,
+    // Translation requests are not retried.
     retryPolicy: 'none',
-    timeoutMs: false,
+    timeoutMs,
   });
-  const body = {
-    requests: requestsObject,
-    targetLocale: globalMetadata.targetLocale,
-    sourceLocale: globalMetadata.sourceLocale,
-    metadata: {
-      ...globalMetadata,
-      modelProvider: globalMetadata.modelProvider,
-    },
-  } satisfies TranslateData['body'];
-  const result = await translateEndpoint({ body, client });
-  const runtimeResponse = unwrapApiResult(result);
+  const envelope = {
+    targetLocale: resolveServiceLocale(
+      globalMetadata.targetLocale,
+      customMapping
+    ),
+    sourceLocale: resolveServiceLocale(
+      globalMetadata.sourceLocale || defaultLocale || libraryDefaultLocale,
+      customMapping
+    ),
+    metadata: { modelProvider: globalMetadata.modelProvider },
+  } satisfies Omit<TranslateContentData['body'], 'requests'>;
+  const responses = await Promise.all(
+    splitRequests(requestsObject, envelope).map(async (requests) =>
+      unwrapApiResult(
+        await translateContent({
+          body: { ...envelope, requests },
+          client,
+          headers: apiVersionHeaders(),
+          path: { projectId: runtime.projectId },
+        })
+      )
+    )
+  );
   const response: Record<string, TranslationResult> = Object.fromEntries(
-    Object.entries(runtimeResponse).map(([hash, translationResult]) => [
-      hash,
-      toTranslationResult(translationResult),
-    ])
+    responses.flatMap(({ translations }) =>
+      Object.entries(translations).map(([hash, translationResult]) => [
+        hash,
+        toTranslationResult(translationResult),
+      ])
+    )
   );
 
   // If input was an array, map the record response back to an array in input order
@@ -397,7 +260,7 @@ async function executeTranslationBatch(
         response[hash] ?? {
           success: false,
           error: 'No translation returned',
-          code: 500,
+          code: ErrorCode.INTERNAL_ERROR,
         }
     );
   }
