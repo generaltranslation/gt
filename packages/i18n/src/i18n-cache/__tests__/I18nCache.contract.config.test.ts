@@ -347,7 +347,6 @@ describe('I18nCache config contract', () => {
 
     const credentials = { projectId: 'project-id', devApiKey: 'dev-key' };
     getI18nConfig().setDevCredentials(credentials);
-    cache.setDevCredentials(credentials);
     await cache.lookupTranslationWithFallback('fr', 'Hello!', {
       $format: 'ICU',
     });

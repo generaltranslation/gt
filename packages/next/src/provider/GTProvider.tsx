@@ -48,11 +48,13 @@ export async function GTProvider({ children }: GTProviderProps) {
 
 /**
  * The server-only development key, handed to the client for hot reload.
- * isDevHotReloadEnabled() is false outside development, so production
- * renders never serialize a key.
+ * Checks process.env.NODE_ENV directly so Next.js removes this branch from
+ * production builds and never serializes a key.
  */
 function getDevCredentials(devHotReloadEnabled: boolean) {
-  if (!devHotReloadEnabled) return undefined;
+  if (process.env.NODE_ENV !== 'development' || !devHotReloadEnabled) {
+    return undefined;
+  }
   const { projectId, devApiKey } = getRuntimeCredentials();
   return projectId && devApiKey ? { projectId, devApiKey } : undefined;
 }

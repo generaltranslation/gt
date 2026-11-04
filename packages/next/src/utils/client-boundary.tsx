@@ -51,7 +51,11 @@ export function Client_GTProvider({
   /** Development only: the server-only key for client hot reload. */
   devCredentials?: DevCredentials;
 }) {
-  if (typeof window !== 'undefined' && devCredentials) {
+  if (
+    process.env.NODE_ENV === 'development' &&
+    typeof window !== 'undefined' &&
+    devCredentials
+  ) {
     applyDevCredentialsClient(devCredentials);
   }
   const router = useRouter();

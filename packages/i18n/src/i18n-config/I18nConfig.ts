@@ -159,7 +159,9 @@ export class I18nConfig extends LocaleConfig {
   /**
    * Set development credentials after construction, for a runtime that
    * receives them later than it initializes (for example, a client handed a
-   * server-only development key). No-op outside development.
+   * server-only development key). I18nCache reads these on each runtime
+   * translation request, so this is the only place to set them. No-op outside
+   * development.
    */
   setDevCredentials({ projectId, devApiKey }: DevCredentials): void {
     if (getRuntimeEnvironment() !== 'development') return;

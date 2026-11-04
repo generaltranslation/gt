@@ -1,7 +1,4 @@
-import {
-  getReactI18nCache,
-  internalInitializeGTSRA,
-} from '@generaltranslation/react-core/pure';
+import { internalInitializeGTSRA } from '@generaltranslation/react-core/pure';
 import { getI18nConfig } from 'gt-i18n/internal';
 import type { DevCredentials } from 'gt-i18n/internal';
 import { getParams } from './shared';
@@ -38,11 +35,12 @@ export function initializeGTClient(
  * Give the client the development key the RSC GTProvider passed down. App
  * Router keeps the key server-only (GT_DEV_API_KEY), so the client's
  * module-load initialization ran without it. The client singletons are
- * write-once, so this updates the existing config and cache in place.
+ * write-once, so this updates the existing config in place; the cache reads
+ * the config on each runtime translation request.
  */
 export function applyDevCredentialsClient(credentials: DevCredentials): void {
+  if (process.env.NODE_ENV !== 'development') return;
   const i18nConfig = getI18nConfig();
   if (i18nConfig.isDevHotReloadEnabled()) return;
   i18nConfig.setDevCredentials(credentials);
-  getReactI18nCache().setDevCredentials(credentials);
 }
