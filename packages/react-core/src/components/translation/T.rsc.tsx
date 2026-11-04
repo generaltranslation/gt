@@ -18,6 +18,7 @@ async function RscT({
   _enableI18n,
   // TODO: don't expose to consumer, this should be thru an internal path
   _renderPreparedT = renderPreparedT,
+  _translations,
   ...params
 }: ResolvedTProps): Promise<ReactNode> {
   const locale = _locale;
@@ -52,13 +53,15 @@ async function RscT({
     targetJsxChildren = await i18nCache.lookupTranslationWithFallback(
       locale,
       prepared.sourceJsxChildren,
-      prepared.targetOptions
+      prepared.targetOptions,
+      _translations
     );
   } else {
     const lookupTranslation = await i18nCache.getLookupTranslation(locale);
     targetJsxChildren = lookupTranslation(
       prepared.sourceJsxChildren,
-      prepared.targetOptions
+      prepared.targetOptions,
+      _translations
     );
   }
 

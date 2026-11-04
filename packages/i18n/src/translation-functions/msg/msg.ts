@@ -14,6 +14,10 @@ import { hashMessage } from '../../utils/hashMessage';
 import { RegisterableMessages } from '../types/message';
 import { encodeMsg } from './encodeMsg';
 import { msgString } from './msgString';
+import {
+  type InlineTranslations,
+  registerInlineTranslations,
+} from '../inline/inlineTranslations';
 
 /**
  * Registers a message to be translated. Returns the message unchanged if no options are provided.
@@ -47,18 +51,45 @@ import { msgString } from './msgString';
  * // "Hello, Alice!" id: "greetings.0"
  * // "Hello, Bob!" id: "greetings.1"
  *
+ * @example - Inline translations (usually injected at build time)
+ * // Registers the embedded translations under the message hash so m() can
+ * // resolve them without loading the locale's translations.
+ * const message = msg('Hello', undefined, (locale) =>
+ *   locale === 'fr' ? 'Bonjour' : undefined
+ * );
+ *
+ * @note - Passing inline translations makes msg() impure: it registers them in
+ * a module-level registry keyed by the message hash. Arrays do not support
+ * inline translations.
+ *
  * @important Internal note: until other packages are updated to use i18n-context practices, msg cannot use any functions that use i18nCache at all!
  */
 export function msg<T extends RegisterableMessages = string>(message: T): T;
 export function msg<T extends RegisterableMessages = string>(
   message: T,
-  options?: GTTranslationOptions
+  options?: GTTranslationOptions,
+  inline?: InlineTranslations<string>
 ): T extends string ? string : string[];
 export function msg(
   message: RegisterableMessages,
-  options?: GTTranslationOptions
+  options?: GTTranslationOptions,
+  inline?: InlineTranslations<string>
 ): RegisterableMessages {
-  if (options?.$format === 'STRING') return msgString(message, options);
+  if (options?.$format === 'STRING') {
+    return msgString(message, options, inline);
+  }
+
+  // Register inline translations so m() can resolve them by hash
+  if (inline && typeof message === 'string') {
+    registerInlineTranslations(
+      options?.$_hash ||
+        hashMessage(message, {
+          $format: 'ICU',
+          ...options,
+        }),
+      inline
+    );
+  }
 
   // Handle array
   if (typeof message !== 'string') {

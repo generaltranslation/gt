@@ -45,7 +45,8 @@ describe('RscT', () => {
       expect.objectContaining({
         $format: 'JSX',
         $locale: 'fr',
-      })
+      }),
+      undefined
     );
   });
 

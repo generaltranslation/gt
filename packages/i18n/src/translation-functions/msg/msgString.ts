@@ -2,6 +2,10 @@ import type { GTTranslationOptions } from '../types/options';
 import type { RegisterableMessages } from '../types/message';
 import { hashStringMessage } from '../../utils/hashStringMessage';
 import { encodeMsg } from './encodeMsg';
+import {
+  type InlineTranslations,
+  registerInlineTranslations,
+} from '../inline/inlineTranslations';
 
 /**
  * Registers one or more literal STRING messages without applying ICU
@@ -15,11 +19,13 @@ export function msgString<T extends RegisterableMessages = string>(
 ): T;
 export function msgString<T extends RegisterableMessages = string>(
   message: T,
-  options?: GTTranslationOptions
+  options?: GTTranslationOptions,
+  inline?: InlineTranslations<string>
 ): T extends string ? string : string[];
 export function msgString(
   message: RegisterableMessages,
-  options?: GTTranslationOptions
+  options?: GTTranslationOptions,
+  inline?: InlineTranslations<string>
 ): RegisterableMessages {
   if (typeof message !== 'string') {
     if (!options) return message;
@@ -30,10 +36,15 @@ export function msgString(
       })
     );
   }
-  if (!options) return message;
+  if (!options && !inline) return message;
 
   const stringOptions = { ...options, $format: 'STRING' as const };
   const $_hash = hashStringMessage(message, stringOptions);
+
+  // Register inline translations so m() can resolve them by hash
+  if (inline) registerInlineTranslations($_hash, inline);
+
+  if (!options) return message;
   return encodeMsg(message, {
     ...stringOptions,
     $_hash,
