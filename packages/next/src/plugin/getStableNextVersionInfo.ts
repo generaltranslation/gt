@@ -8,6 +8,7 @@ import {
   ROOT_PARAM_STABILITY,
   STABLE_TURBO_CONFIG_VERSION,
   SWC_PLUGIN_SUPPORT,
+  SWC_PLUGIN_WASM_FILES,
 } from './constants';
 import { nodeRequire } from './nodeCompat';
 
@@ -113,6 +114,23 @@ export const swcPluginCompatible = comparePackageVersion(
   getNextVersion(),
   SWC_PLUGIN_SUPPORT
 );
+
+/**
+ * Pick the SWC plugin wasm built for the Next.js version's plugin runner.
+ *
+ * @param nextVersion - The Next.js version to pick a wasm file for.
+ * @returns The wasm file name in gt-next's dist directory.
+ */
+export function getSwcPluginWasmFileName(nextVersion: string): string {
+  return comparePackageVersion(
+    nextVersion,
+    SWC_PLUGIN_WASM_FILES.current.minNextVersion
+  )
+    ? SWC_PLUGIN_WASM_FILES.current.fileName
+    : SWC_PLUGIN_WASM_FILES.legacy.fileName;
+}
+
+export const swcPluginWasmFileName = getSwcPluginWasmFileName(getNextVersion());
 
 // disable babel plugin if using react <= 16
 export const babelPluginCompatible = comparePackageVersion(
