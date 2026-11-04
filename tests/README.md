@@ -18,6 +18,7 @@ dependencies, so no manual linking or per-app install is required.
 | `next-latest-locale-switch-no-routing`     | Latest Next.js without routing  | `gt-next`           |
 | `next-latest-locale-switch-routing`        | Latest Next.js locale routing   | `gt-next`           |
 | `next-pages-router`                        | Next.js Pages Router            | `gt-next`           |
+| `next-inline-translations`                 | Next.js inline translations SSR | `gt-next`           |
 | `tanstack-start`                           | TanStack Start                  | `gt-tanstack-start` |
 | `gt-node-express`                          | Express                         | `gt-node`           |
 | `react-native`                             | Expo + React Native             | `gt-react-native`   |
