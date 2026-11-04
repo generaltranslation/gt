@@ -28,6 +28,7 @@ vi.mock('../../../fs/findFilepath.js', () => ({
 vi.mock('../../../workflows/upload.js', () => ({
   runUploadFilesWorkflow: vi.fn(async () => ({
     branchData: { currentBranch: { id: 'branch-id' } },
+    uploadedFiles: [],
   })),
 }));
 vi.mock('../../../workflows/publish.js', () => ({
@@ -61,7 +62,11 @@ vi.mock('node:fs', () => ({
   readFileSync: mockFs.readFileSync,
 }));
 vi.mock('../../../fs/determineFramework/index.js', () => ({
-  determineLibrary: vi.fn(() => ({ library: 'base', additionalModules: [] })),
+  determineLibraryForCLI: vi.fn(() => ({
+    library: 'base',
+    additionalModules: [],
+    directlyDeclaresVue: false,
+  })),
 }));
 
 import { readFile, readBinaryFileBase64 } from '../../../fs/findFilepath.js';
@@ -71,7 +76,7 @@ import { createFileMapping } from '../../../formats/files/fileMapping.js';
 import { logger } from '../../../console/logger.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { logErrorAndExit } from '../../../console/logging.js';
-import { configureApiClient } from '../../../utils/api.js';
+import { configureCustomMapping } from '../../../utils/api.js';
 
 function setMockFiles(files: Record<string, string>) {
   (vi as unknown).__mockFiles = files;
@@ -165,6 +170,35 @@ describe('upload - Twilio Content JSON', () => {
     expect(call.files[0].source.fileFormat).toBe('TWILIO_CONTENT_JSON');
     expect(runPublishWorkflow).toHaveBeenCalledTimes(1);
     expect(vi.mocked(runPublishWorkflow).mock.calls[0][2]).toBe('branch-id');
+  });
+
+  it('publishes only the files the upload saved', async () => {
+    setMockFiles({
+      'twilio/saved.json': JSON.stringify({ body: 'Saved' }),
+      'twilio/failed.json': JSON.stringify({ body: 'Failed' }),
+    });
+    vi.mocked(runUploadFilesWorkflow).mockImplementationOnce(
+      async ({ files }) => ({
+        branchData: {
+          currentBranch: { id: 'branch-id', name: 'main' },
+          incomingBranch: null,
+          checkedOutBranch: null,
+        },
+        uploadedFiles: files
+          .filter((file) => file.source.fileName === 'twilio/saved.json')
+          .map((file) => ({ ...file.source, branchId: 'branch-id' })),
+      })
+    );
+
+    await uploadWithFiles(
+      { twilioContentJson: ['twilio/saved.json', 'twilio/failed.json'] },
+      makeSettings({ options: {} })
+    );
+
+    const [publishedFiles] = vi.mocked(runPublishWorkflow).mock.calls[0];
+    expect(publishedFiles.map((file) => file.fileName)).toEqual([
+      'twilio/saved.json',
+    ]);
   });
 
   it('should use fileMapping for Twilio Content JSON files (no composite)', async () => {
@@ -764,20 +798,14 @@ describe('upload - Apple .xcstrings catalogs', () => {
     vi.mocked(createFileMapping).mockReturnValue({
       french: { [CATALOG]: CATALOG },
     });
-    configureApiClient({
-      baseUrl: 'https://api.example.com',
-      customMapping: { french: { code: 'fr' } },
-    });
+    configureCustomMapping({ french: { code: 'fr' } });
     try {
       await uploadWithFiles(
         { xcstrings: [CATALOG] },
         makeSettings({ locales: ['french'], options: {} })
       );
     } finally {
-      configureApiClient({
-        baseUrl: 'https://api.example.com',
-        customMapping: {},
-      });
+      configureCustomMapping({});
     }
 
     expect(logErrorAndExit).not.toHaveBeenCalled();

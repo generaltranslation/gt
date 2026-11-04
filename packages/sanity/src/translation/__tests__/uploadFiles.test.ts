@@ -1,181 +1,254 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ApiError, ErrorCode } from 'generaltranslation/api';
+import type { ProjectHandle } from 'generaltranslation';
+import type { GTFile } from '../../types';
+import { uploadFiles } from '../uploadFiles';
 
-const uploadSourceFiles = vi.fn();
+const flags = vi.hoisted(() => ({ allowNonDefaultSourceLocales: true }));
 
-vi.mock('../../adapter/core', async () => {
-  const actual =
-    await vi.importActual<typeof import('../../adapter/core')>(
-      '../../adapter/core'
-    );
+const api = vi.hoisted(() => ({
+  uploadSourceFiles: vi.fn<ProjectHandle['uploadSourceFiles']>(),
+  get: vi.fn(),
+  update: vi.fn(),
+}));
+
+vi.mock('../../adapter/core', () => ({
+  gt: { defaultLocale: 'en' },
+  projectFor: () => api,
+}));
+vi.mock('../../utils/translationSource', () => ({
+  allowsNonDefaultSourceLocales: () => flags.allowNonDefaultSourceLocales,
+}));
+
+const document = {
+  info: { documentId: 'doc-1', versionId: 'rev-1' } as GTFile,
+  serializedDocument: { content: '<p>Hi</p>' },
+} as Parameters<typeof uploadFiles>[0][number];
+
+function uploadResult(status: 'succeeded' | 'failed') {
   return {
-    ...actual,
-    gt: { sourceLocale: 'en' },
-    api: {
-      uploadSourceFiles: (...args: unknown[]) => uploadSourceFiles(...args),
+    summary: {
+      total: 1,
+      succeeded: status === 'succeeded' ? 1 : 0,
+      failed: status === 'failed' ? 1 : 0,
     },
-    overrideConfig: vi.fn(),
-  };
-});
+    results: [
+      {
+        branchId: 'branch-1',
+        fileId: 'doc-1',
+        versionId: 'rev-1',
+        fileName: 'sanity/doc-1',
+        fileFormat: 'HTML',
+        status,
+      },
+    ],
+  } as Awaited<ReturnType<ProjectHandle['uploadSourceFiles']>>;
+}
 
-const { uploadFiles } = await import('../uploadFiles');
-const { pluginConfig } = await import('../../adapter/core');
+describe('uploadFiles project default locale', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
 
-const serializedDocument = (content: string) => ({
-  name: 'doc',
-  content,
-});
+  it('sets the project default locale when it differs from the source locale', async () => {
+    vi.mocked(api.uploadSourceFiles).mockResolvedValue(
+      uploadResult('succeeded')
+    );
+    vi.mocked(api.get).mockResolvedValue({
+      defaultLocale: 'fr',
+    } as Awaited<ReturnType<ProjectHandle['get']>>);
 
-beforeEach(() => {
-  uploadSourceFiles.mockReset();
-  uploadSourceFiles.mockResolvedValue({ uploadedFiles: [] });
-  // Feature tests run with the option on; flag-off tests turn it off.
-  vi.spyOn(pluginConfig, 'getAllowNonDefaultSourceLocales').mockReturnValue(
-    true
-  );
-});
+    await uploadFiles([document], null);
 
-afterEach(() => {
-  vi.restoreAllMocks();
-});
+    expect(api.update).toHaveBeenCalledWith({ defaultLocale: 'en' });
+  });
 
-describe('uploadFiles', () => {
-  test('sends each file in its own language with the default request-level source locale', async () => {
-    await uploadFiles(
-      [
-        {
-          info: { documentId: 'page', versionId: 'r1', sourceLocale: 'en' },
-          serializedDocument: serializedDocument('<p>Hello</p>'),
-        },
-        {
-          info: { documentId: 'page-fr', versionId: 'r2', sourceLocale: 'fr' },
-          serializedDocument: serializedDocument('<p>Bonjour</p>'),
-        },
-      ],
-      null
+  it('leaves the project alone when its default locale already matches', async () => {
+    vi.mocked(api.uploadSourceFiles).mockResolvedValue(
+      uploadResult('succeeded')
+    );
+    vi.mocked(api.get).mockResolvedValue({
+      defaultLocale: 'en',
+    } as Awaited<ReturnType<ProjectHandle['get']>>);
+
+    await uploadFiles([document], null);
+
+    expect(api.get).toHaveBeenCalledTimes(1);
+    expect(api.update).not.toHaveBeenCalled();
+  });
+
+  it('warns and keeps the upload when the key cannot update the project', async () => {
+    const result = uploadResult('succeeded');
+    vi.mocked(api.uploadSourceFiles).mockResolvedValue(result);
+    vi.mocked(api.get).mockResolvedValue({
+      defaultLocale: 'fr',
+    } as Awaited<ReturnType<ProjectHandle['get']>>);
+    vi.mocked(api.update).mockRejectedValueOnce(
+      new ApiError('Forbidden', 403, ErrorCode.PERMISSION_MISSING)
     );
 
-    expect(uploadSourceFiles).toHaveBeenCalledTimes(1);
-    const [files, options] = uploadSourceFiles.mock.calls[0];
-    expect(options).toEqual({ sourceLocale: 'en' });
+    await expect(uploadFiles([document], null)).resolves.toBe(result);
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining("project's default locale was not updated")
+    );
+  });
+
+  it('propagates other project update errors', async () => {
+    vi.mocked(api.uploadSourceFiles).mockResolvedValue(
+      uploadResult('succeeded')
+    );
+    vi.mocked(api.get).mockResolvedValue({
+      defaultLocale: 'fr',
+    } as Awaited<ReturnType<ProjectHandle['get']>>);
+    vi.mocked(api.update).mockRejectedValueOnce(
+      new ApiError('Server error', 500)
+    );
+
+    await expect(uploadFiles([document], null)).rejects.toThrow('Server error');
+  });
+
+  it('propagates a 403 that is not a missing permission', async () => {
+    vi.mocked(api.uploadSourceFiles).mockResolvedValue(
+      uploadResult('succeeded')
+    );
+    vi.mocked(api.get).mockResolvedValue({
+      defaultLocale: 'fr',
+    } as Awaited<ReturnType<ProjectHandle['get']>>);
+    vi.mocked(api.update).mockRejectedValueOnce(
+      new ApiError('IP not allowed', 403, ErrorCode.IP_NOT_ALLOWED)
+    );
+
+    await expect(uploadFiles([document], null)).rejects.toThrow(
+      'IP not allowed'
+    );
+  });
+
+  it('leaves the project alone when no document was saved', async () => {
+    vi.mocked(api.uploadSourceFiles).mockResolvedValue(uploadResult('failed'));
+
+    await uploadFiles([document], null);
+
+    expect(api.get).not.toHaveBeenCalled();
+    expect(api.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('uploadFiles ID limits', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.mocked(api.get).mockResolvedValue({
+      defaultLocale: 'en',
+    } as Awaited<ReturnType<ProjectHandle['get']>>);
+  });
+
+  it('fails a document whose ID is too long and uploads the others', async () => {
+    // Like GT's request validation: one over-long file ID fails the request.
+    vi.mocked(api.uploadSourceFiles).mockImplementation(async (files) => {
+      if (files.some(({ source }) => source.fileId!.length > 64))
+        throw new ApiError('Bad request', 400);
+      return {
+        summary: { total: files.length, succeeded: files.length, failed: 0 },
+        results: files.map(({ source }) => ({
+          branchId: 'branch-1',
+          fileId: source.fileId!,
+          versionId: source.versionId!,
+          fileName: source.fileName,
+          fileFormat: source.fileFormat,
+          status: 'succeeded' as const,
+        })),
+      };
+    });
+    const longId = 'd'.repeat(65);
+    const long = {
+      ...document,
+      info: { documentId: longId, versionId: 'rev-2' } as GTFile,
+    };
+
+    const result = await uploadFiles([document, long], null);
+
+    expect(result.summary).toEqual({ total: 2, succeeded: 1, failed: 1 });
     expect(
-      files.map(
-        (file: { source: { fileId: string; locale: string } }) =>
-          `${file.source.fileId}:${file.source.locale}`
-      )
-    ).toEqual(['page:en', 'page-fr:fr']);
+      result.results.map(({ fileId, status, error }) => ({
+        fileId,
+        status,
+        error,
+      }))
+    ).toEqual([
+      { fileId: 'doc-1', status: 'succeeded', error: undefined },
+      {
+        fileId: longId,
+        status: 'failed',
+        error:
+          'The document ID is longer than 64 characters, which General Translation cannot store',
+      },
+    ]);
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining(longId));
+  });
+});
+
+describe('uploadFiles source locales and preview URLs', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    flags.allowNonDefaultSourceLocales = true;
+    vi.mocked(api.uploadSourceFiles).mockResolvedValue(uploadResult('failed'));
   });
 
-  test('uses the configured source locale for files without one', async () => {
-    await uploadFiles(
-      [
-        {
-          info: { documentId: 'page', versionId: 'r1' },
-          serializedDocument: serializedDocument('<p>Hello</p>'),
-        },
-      ],
+  const upload = (...infos: GTFile[]) =>
+    uploadFiles(
+      infos.map((info) => ({ ...document, info })),
       null
     );
+  const sentSources = () =>
+    vi.mocked(api.uploadSourceFiles).mock.calls[0][0].map(({ source }) => ({
+      fileId: source.fileId,
+      locale: source.locale,
+      metadata: source.metadata,
+    }));
 
-    expect(uploadSourceFiles).toHaveBeenCalledWith(
-      [
-        {
-          source: {
-            content: '<p>Hello</p>',
-            fileName: 'sanity/page',
-            fileId: 'page',
-            fileFormat: 'HTML',
-            locale: 'en',
-            versionId: 'r1',
-          },
-        },
-      ],
-      { sourceLocale: 'en' }
-    );
-  });
-
-  test("sends a document's page as its version's preview URL", async () => {
-    await uploadFiles(
-      [
-        {
-          info: {
-            documentId: 'page',
-            versionId: 'r1',
-            previewUrl: 'https://staging.acme.test/en/page',
-          },
-          serializedDocument: serializedDocument('<p>Hello</p>'),
-        },
-      ],
-      null
+  it('sends each file in its own language with the default request-level source locale', async () => {
+    await upload(
+      { documentId: 'page', versionId: 'r1' },
+      { documentId: 'page-fr', versionId: 'r2', sourceLocale: 'fr' }
     );
 
-    expect(uploadSourceFiles.mock.calls[0][0][0].source.metadata).toEqual({
-      previewUrl: 'https://staging.acme.test/en/page',
+    expect(sentSources()).toEqual([
+      { fileId: 'page', locale: 'en', metadata: undefined },
+      { fileId: 'page-fr', locale: 'fr', metadata: undefined },
+    ]);
+    expect(vi.mocked(api.uploadSourceFiles).mock.calls[0][1]).toEqual({
+      sourceLocale: 'en',
     });
   });
 
-  test('sends no metadata for a document without a page', async () => {
-    await uploadFiles(
-      [
-        {
-          info: { documentId: 'page', versionId: 'r1' },
-          serializedDocument: serializedDocument('<p>Hello</p>'),
-        },
-      ],
-      null
-    );
+  it('sends every file in the configured source locale without allowNonDefaultSourceLocales', async () => {
+    flags.allowNonDefaultSourceLocales = false;
 
-    expect(uploadSourceFiles.mock.calls[0][0][0].source.metadata).toBe(
-      undefined
-    );
-  });
-});
+    await upload({
+      documentId: 'page-fr',
+      versionId: 'r2',
+      sourceLocale: 'fr',
+    });
 
-describe('uploadFiles without allowNonDefaultSourceLocales', () => {
-  beforeEach(() => {
-    vi.spyOn(pluginConfig, 'getAllowNonDefaultSourceLocales').mockReturnValue(
-      false
-    );
+    expect(sentSources()).toEqual([
+      { fileId: 'page-fr', locale: 'en', metadata: undefined },
+    ]);
   });
 
-  test('sends every file in the configured source locale, as before the option', async () => {
-    await uploadFiles(
-      [
-        {
-          info: { documentId: 'page', versionId: 'r1' },
-          serializedDocument: serializedDocument('<p>Hello</p>'),
-        },
-        {
-          info: { documentId: 'page-fr', versionId: 'r2', sourceLocale: 'fr' },
-          serializedDocument: serializedDocument('<p>Bonjour</p>'),
-        },
-      ],
-      null
-    );
+  it("sends a document's page as its version's preview URL", async () => {
+    await upload({
+      documentId: 'page',
+      versionId: 'r1',
+      previewUrl: 'https://staging.acme.test/en/page',
+    });
 
-    expect(uploadSourceFiles).toHaveBeenCalledWith(
-      [
-        {
-          source: {
-            content: '<p>Hello</p>',
-            fileName: 'sanity/page',
-            fileId: 'page',
-            fileFormat: 'HTML',
-            locale: 'en',
-            versionId: 'r1',
-          },
-        },
-        {
-          source: {
-            content: '<p>Bonjour</p>',
-            fileName: 'sanity/page-fr',
-            fileId: 'page-fr',
-            fileFormat: 'HTML',
-            locale: 'en',
-            versionId: 'r2',
-          },
-        },
-      ],
-      { sourceLocale: 'en' }
-    );
+    expect(sentSources()).toEqual([
+      {
+        fileId: 'page',
+        locale: 'en',
+        metadata: { previewUrl: 'https://staging.acme.test/en/page' },
+      },
+    ]);
   });
 });

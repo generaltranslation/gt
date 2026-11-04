@@ -7,10 +7,10 @@ import { readFileContent } from '../../../fs/fileContent.js';
 import { parseJson } from '../../json/parseJson.js';
 import parseYaml from '../../yaml/parseYaml.js';
 import sanitizeFileContent from '../../../utils/sanitizeFileContent.js';
-import { determineLibrary } from '../../../fs/determineFramework/index.js';
+import { determineLibraryForCLI } from '../../../fs/determineFramework/index.js';
 import { isValidMdx } from '../../../utils/validateMdx.js';
 import { hashStringSync, hashVersionId } from '../../../utils/hash.js';
-import { configureApiClient } from '../../../utils/api.js';
+import { configureCustomMapping } from '../../../utils/api.js';
 import type { Settings } from '../../../types/index.js';
 
 const aggregateTestFiles = (settings: Partial<Settings>) =>
@@ -44,7 +44,7 @@ const mockGetRelative = vi.mocked(getRelative);
 const mockParseJson = vi.mocked(parseJson);
 const mockParseYaml = vi.mocked(parseYaml);
 const mockSanitizeFileContent = vi.mocked(sanitizeFileContent);
-const mockDetermineLibrary = vi.mocked(determineLibrary);
+const mockDetermineLibrary = vi.mocked(determineLibraryForCLI);
 const mockIsValidMdx = vi.mocked(isValidMdx);
 
 describe('aggregateFiles - Empty File Handling', () => {
@@ -59,6 +59,7 @@ describe('aggregateFiles - Empty File Handling', () => {
     mockDetermineLibrary.mockReturnValue({
       library: 'next-intl',
       additionalModules: [],
+      directlyDeclaresVue: false,
     });
 
     // Mock parseJson to return empty string for empty/null content, valid content otherwise
@@ -94,6 +95,7 @@ describe('aggregateFiles - Empty File Handling', () => {
       mockDetermineLibrary.mockReturnValueOnce({
         library: 'base',
         additionalModules: [],
+        directlyDeclaresVue: false,
       });
 
       const settings = {
@@ -1073,10 +1075,7 @@ describe('aggregateFiles - Apple .xcstrings catalogs', () => {
   });
 
   afterEach(() => {
-    configureApiClient({
-      baseUrl: 'https://api.example.com',
-      customMapping: {},
-    });
+    configureCustomMapping({});
   });
 
   it('stops the run before anything is uploaded when a catalog sourceLanguage does not match defaultLocale', async () => {
@@ -1099,10 +1098,7 @@ describe('aggregateFiles - Apple .xcstrings catalogs', () => {
   });
 
   it('accepts a defaultLocale alias whose canonical tag is the catalog sourceLanguage', async () => {
-    configureApiClient({
-      baseUrl: 'https://api.example.com',
-      customMapping: { french: { code: 'fr' } },
-    });
+    configureCustomMapping({ french: { code: 'fr' } });
     const settings = settingsFor(
       { '/full/path/App/Localizable.xcstrings': catalog('fr') },
       'french'

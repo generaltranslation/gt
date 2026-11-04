@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest';
 import { getSerialized, getValidFields, toPlainText } from '../helpers';
 import { documentLevelArticle, findByClass, getHTMLNode } from './utils';
 
-const serialized = getSerialized(documentLevelArticle, 'document');
+const serialized = getSerialized(documentLevelArticle);
 const docTree = getHTMLNode(serialized).body.children[0];
 
 test('Global test of working doc-level functionality and snapshot match', () => {

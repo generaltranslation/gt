@@ -1,24 +1,28 @@
-import { api, overrideConfig, pluginConfig } from '../adapter/core';
+import type { ProjectHandle } from 'generaltranslation';
+import { pluginConfig, projectFor } from '../adapter/core';
 import type { Secrets } from '../types';
+import { succeededResults } from '../utils/batchResults';
 
 export async function initProject(
-  uploadResult: Awaited<ReturnType<typeof api.uploadSourceFiles>>,
+  uploadResult: Awaited<ReturnType<ProjectHandle['uploadSourceFiles']>>,
   options: { timeout?: number },
   secrets: Secrets
 ): Promise<boolean> {
-  overrideConfig(secrets);
+  const project = projectFor(secrets);
   // Calculate timeout once for setup fetching
   // Accept number or numeric string, default to 600s
   const timeoutVal =
     options?.timeout !== undefined ? Number(options.timeout) : 600;
   const setupTimeoutSeconds = Number.isFinite(timeoutVal) ? timeoutVal : 600;
 
-  const setupResult = await api.setupProject(uploadResult.uploadedFiles, {
-    locales: pluginConfig.getLocales(),
-  });
+  // A null job means the project context is already current.
+  const { job: setupJob } = await project.generateProjectContext(
+    succeededResults(uploadResult),
+    { locales: pluginConfig.getLocales() }
+  );
 
-  if (setupResult.status === 'queued') {
-    const { complete, jobs } = await api.awaitJobs([setupResult.setupJobId], {
+  if (setupJob) {
+    const { complete, jobs } = await project.awaitJobs([setupJob.id], {
       pollingIntervalSeconds: 2,
       timeoutSeconds: setupTimeoutSeconds,
     });
@@ -35,7 +39,7 @@ export async function initProject(
     } else if (job?.status === 'failed') {
       // eslint-disable-next-line no-console
       console.log(
-        `Setup failed — proceeding without setup (${job.error?.message ?? 'Unknown error'})`
+        `Setup failed — proceeding without setup (${job.error ?? 'Unknown error'})`
       );
     } else {
       // eslint-disable-next-line no-console

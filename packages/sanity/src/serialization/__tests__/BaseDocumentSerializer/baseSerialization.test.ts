@@ -26,7 +26,7 @@ import {
  * METADATA PRESENCE
  */
 describe('Has all required metadata', () => {
-  const serialized = getSerialized(documentLevelArticle, 'document');
+  const serialized = getSerialized(documentLevelArticle);
   const docTree = getHTMLNode(serialized);
   test('Contains metadata field containing document id', () => {
     const idMetaTag = Array.from(docTree.head.children).find(
@@ -69,8 +69,6 @@ test('Custom serialization should manifest at all levels', () => {
   const serializer = BaseDocumentSerializer(schema);
   const serialized = serializer.serializeDocument(
     documentLevelArticle,
-    'document',
-    'en',
     defaultStopTypes,
     addedCustomSerializers
   );
@@ -93,7 +91,7 @@ test('Custom serialization should manifest at all levels', () => {
 });
 
 test('Fields marked "localize: false" should not be serialized', () => {
-  const serialized = getSerialized(documentLevelArticle, 'document');
+  const serialized = getSerialized(documentLevelArticle);
   const docTree = getHTMLNode(serialized).body.children[0];
   //"meta" is localize: false field
   const meta = findByClass(docTree.children, 'meta');
@@ -102,7 +100,7 @@ test('Fields marked "localize: false" should not be serialized', () => {
 });
 
 test('Expect default stop types to be absent', () => {
-  const serialized = getSerialized(documentLevelArticle, 'document');
+  const serialized = getSerialized(documentLevelArticle);
   const docTree = getHTMLNode(serialized).body.children[0];
   //"hidden" is boolean field
   const hidden = findByClass(docTree.children, 'hidden');
@@ -115,8 +113,6 @@ test('Expect custom stop types to be absent at all levels', () => {
   const serializer = BaseDocumentSerializer(schema);
   const serialized = serializer.serializeDocument(
     documentLevelArticle,
-    'document',
-    'en',
     customStopTypes,
     customSerializers
   );
@@ -146,7 +142,7 @@ test('Unhandled inline objects and annotations should not hinder translation flo
     ...documentLevelArticle,
     ...annotationAndInlineBlocks,
   };
-  const serialized = getSerialized(inlineDocument, 'document');
+  const serialized = getSerialized(inlineDocument);
   const docTree = getHTMLNode(serialized).body.children[0];
   const arrayField = findByClass(docTree.children, 'content');
 
@@ -182,8 +178,6 @@ test('Handled inline objects should be accurately represented per serializer', (
   const serializer = BaseDocumentSerializer(schema);
   const serialized = serializer.serializeDocument(
     inlineDocument,
-    'document',
-    'en',
     defaultStopTypes,
     addedCustomSerializers
   );
@@ -223,8 +217,6 @@ test('Handled annotations should be accurately represented per serializer', () =
   const serializer = BaseDocumentSerializer(schema);
   const serialized = serializer.serializeDocument(
     inlineDocument,
-    'document',
-    'en',
     defaultStopTypes,
     addedCustomSerializers
   );
@@ -256,7 +248,7 @@ test('Handled annotations should be accurately represented per serializer', () =
  * STYLE TAGS
  */
 test('Serialized content should preserve style tags from Portable Text', () => {
-  const serialized = getSerialized(documentLevelArticle, 'document');
+  const serialized = getSerialized(documentLevelArticle);
   const docTree = getHTMLNode(serialized).body.children[0];
   const arrayField = findByClass(docTree.children, 'content');
   const blockH1 = documentLevelArticle.content.find(
@@ -277,8 +269,7 @@ test('Serialized content should preserve style tags from Portable Text', () => {
 
 test('Content with anonymous inline objects serializes all fields, at any depth', () => {
   const serialized = BaseDocumentSerializer(inlineSchema).serializeDocument(
-    inlineDocumentLevelArticle,
-    'document'
+    inlineDocumentLevelArticle
   );
   const docTree = getHTMLNode(serialized).body.children[0];
   const tabs = findByClass(docTree.children, 'tabs')!.children[0];
@@ -319,7 +310,7 @@ test('Content with anonymous inline objects serializes all fields, at any depth'
  * LIST ITEMS
  */
 test('Serialized content should preserve list style and depth from Portable text', () => {
-  const serialized = getSerialized(documentLevelArticle, 'document');
+  const serialized = getSerialized(documentLevelArticle);
   const docTree = getHTMLNode(serialized).body.children[0];
   const arrayField = findByClass(docTree.children, 'content');
   const listItem = documentLevelArticle.content.find(
@@ -343,7 +334,7 @@ test('Serialized content should preserve list style and depth from Portable text
 });
 
 test('Values in a field are not repeated (indicating serializers are stateless)', () => {
-  const serialized = getSerialized(documentLevelArticle, 'document');
+  const serialized = getSerialized(documentLevelArticle);
   const docTree = getHTMLNode(serialized).body.children[0];
   const HTMLList = findByClass(docTree.children, 'tags');
   const tags = documentLevelArticle.tags;

@@ -11,7 +11,7 @@ import {
   type XcstringsCatalog,
 } from '../parseXcstrings.js';
 import { logger } from '../../../console/logger.js';
-import { configureApiClient } from '../../../utils/api.js';
+import { configureCustomMapping } from '../../../utils/api.js';
 
 vi.mock('../../../console/logger.js');
 
@@ -62,10 +62,7 @@ describe('mergeXcstringsLocale', () => {
 
   afterEach(() => {
     rmSync(tmpDir, { recursive: true, force: true });
-    configureApiClient({
-      baseUrl: 'https://api.example.com',
-      customMapping: {},
-    });
+    configureCustomMapping({});
   });
 
   /** Writes `catalogContent` to the temp catalog and merges `downloaded` into it. */
@@ -389,10 +386,7 @@ describe('mergeXcstringsLocale', () => {
   });
 
   it('keys the catalog by the canonical tag a custom mapping gives a differently cased locale', () => {
-    configureApiClient({
-      baseUrl: 'https://api.example.com',
-      customMapping: { 'pt-br': { code: 'pt-BR' } },
-    });
+    configureCustomMapping({ 'pt-br': { code: 'pt-BR' } });
     const content = JSON.stringify({
       sourceLanguage: 'en',
       strings: { greeting: { localizations: { en: unit('Hello') } } },
@@ -418,10 +412,7 @@ describe('mergeXcstringsLocale', () => {
   });
 
   it('keys the catalog by the canonical tag a custom mapping aliases the locale to', () => {
-    configureApiClient({
-      baseUrl: 'https://api.example.com',
-      customMapping: { 'brand-french': { code: 'fr-CA' } },
-    });
+    configureCustomMapping({ 'brand-french': { code: 'fr-CA' } });
     const content = JSON.stringify({
       sourceLanguage: 'en',
       strings: { greeting: { localizations: { en: unit('Hello') } } },

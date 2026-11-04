@@ -9,12 +9,13 @@ vi.mock('../../config/generateSettings.js', () => ({
   generateSettings: vi.fn(),
 }));
 
-vi.mock('../../utils/api.js', () => ({
-  api: {
-    createOrgApiKey: vi.fn(),
-    createProjectApiKey: vi.fn(),
-  },
-  configureApiClient: vi.fn(),
+const api = vi.hoisted(() => ({
+  createOrgApiKey: vi.fn(),
+  createProjectApiKey: vi.fn(),
+}));
+vi.mock('generaltranslation', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('generaltranslation')>()),
+  GeneralTranslation: (await import('./forwardingGT.js')).forwardingGT(api),
 }));
 
 vi.mock('../../console/logging.js', () => ({
@@ -47,7 +48,7 @@ vi.mock('../../console/logger.js', () => ({
 import { BaseCLI } from '../base.js';
 import { UserAuthError } from '../../auth/errors.js';
 import { generateSettings } from '../../config/generateSettings.js';
-import { api, configureApiClient } from '../../utils/api.js';
+import { GeneralTranslation } from 'generaltranslation';
 import { logger } from '../../console/logger.js';
 
 const settings = {
@@ -214,9 +215,11 @@ describe('api-key create', () => {
       'project:files:read',
     ]);
 
-    expect(configureApiClient).toHaveBeenCalledWith({
+    expect(GeneralTranslation).toHaveBeenCalledTimes(1);
+    expect(GeneralTranslation).toHaveBeenCalledWith({
       baseUrl: 'https://api.example.com',
       userTokenProvider,
+      localeConfig: {},
     });
     expect(api.createOrgApiKey).toHaveBeenCalledWith('org-1', {
       name: 'CI',

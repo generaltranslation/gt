@@ -1,6 +1,6 @@
 import { logErrorAndExit } from '../../console/logging.js';
 import { logger } from '../../console/logger.js';
-import type { ApiClient } from '../../utils/api.js';
+import type { ProjectHandle } from 'generaltranslation';
 import type { Settings } from '../../types/index.js';
 import chalk from 'chalk';
 import {
@@ -9,9 +9,12 @@ import {
   getCheckedOutBranches,
 } from '../../git/branches.js';
 import { BranchData } from '../../types/branch.js';
-import { ApiError } from 'generaltranslation/errors';
+import { ApiError, ErrorCode } from 'generaltranslation/api';
 
-type BranchStepClient = Pick<ApiClient, 'queryBranchData' | 'createBranch'>;
+type BranchStepClient = Pick<
+  ProjectHandle,
+  'listBranches' | 'createBranch' | 'updateBranch'
+>;
 type BranchStepSettings = Pick<Settings, 'branchOptions'>;
 
 // Step 1: Resolve the current branch id & update API with branch information
@@ -91,13 +94,24 @@ export class BranchStep {
       useDefaultBranch = false;
     }
 
-    const branchData = await this.gt.queryBranchData({
-      branchNames: [
-        ...(current ? [current.currentBranchName] : []),
-        ...incoming,
-        ...checkedOut,
-      ],
-    });
+    // At most 7 names (current, 5 incoming, 1 checked out): under the 20-name
+    // filter cap and the default page size, so one page answers each query.
+    const branchNames = [
+      ...(current ? [current.currentBranchName] : []),
+      ...incoming,
+      ...checkedOut,
+    ];
+    const [namedBranches, defaultBranches] = await Promise.all([
+      // An empty name filter would list every branch.
+      branchNames.length > 0
+        ? this.gt.listBranches({ name: branchNames })
+        : { items: [] },
+      this.gt.listBranches({ isDefault: 'true' }),
+    ]);
+    const branchData = {
+      branches: namedBranches.items,
+      defaultBranch: defaultBranches.items[0] ?? null,
+    };
 
     if (useDefaultBranch) {
       if (autoDetectFailed) {
@@ -106,11 +120,10 @@ export class BranchStep {
         );
       }
       if (!branchData.defaultBranch) {
-        const createBranchResult = await this.gt.createBranch({
-          branchName: detectedDefaultBranchName,
-          defaultBranch: true,
-        });
-        this.branchData.currentBranch = createBranchResult.branch;
+        this.branchData.currentBranch = await this.resolveDefaultBranch(
+          detectedDefaultBranchName,
+          null
+        );
       } else {
         this.branchData.currentBranch = branchData.defaultBranch;
       }
@@ -125,13 +138,18 @@ export class BranchStep {
       );
       if (!currentBranch) {
         try {
-          const createBranchResult = await this.gt.createBranch({
-            branchName: current.currentBranchName,
-            defaultBranch: current.defaultBranch,
-          });
-          this.branchData.currentBranch = createBranchResult.branch;
+          this.branchData.currentBranch = current.defaultBranch
+            ? await this.resolveDefaultBranch(
+                current.currentBranchName,
+                branchData.defaultBranch
+              )
+            : await this.createBranch(current.currentBranchName, false);
         } catch (error) {
-          if (!(error instanceof ApiError) || error.code !== 403) throw error;
+          if (
+            !(error instanceof ApiError) ||
+            error.code !== ErrorCode.PLAN_FEATURE_UNAVAILABLE
+          )
+            throw error;
 
           logger.warn(
             'To enable translation branching, upgrade your plan. Falling back to default branch.'
@@ -139,11 +157,10 @@ export class BranchStep {
           if (branchData.defaultBranch) {
             this.branchData.currentBranch = branchData.defaultBranch;
           } else {
-            const createBranchResult = await this.gt.createBranch({
-              branchName: detectedDefaultBranchName,
-              defaultBranch: true,
-            });
-            this.branchData.currentBranch = createBranchResult.branch;
+            this.branchData.currentBranch = await this.resolveDefaultBranch(
+              detectedDefaultBranchName,
+              null
+            );
           }
         }
       } else {
@@ -189,5 +206,40 @@ export class BranchStep {
     this.spinner.stop(chalk.green('Branch information resolved successfully'));
 
     return this.branchData;
+  }
+
+  /** Renaming the existing default branch preserves its identity and files. */
+  private async resolveDefaultBranch(
+    name: string,
+    defaultBranch: { id: string; name: string } | null
+  ): Promise<{ id: string; name: string }> {
+    if (defaultBranch) {
+      return await this.gt.updateBranch(defaultBranch.id, { name });
+    }
+    const {
+      items: [existing],
+    } = await this.gt.listBranches({ name: [name] });
+    const branch = existing ?? (await this.createBranch(name, true));
+    return branch.isDefault
+      ? branch
+      : await this.gt.updateBranch(branch.id, { isDefault: true });
+  }
+
+  /** A concurrent run can create the branch after the lookup; `already_exists` reuses it. */
+  private async createBranch(name: string, isDefault: boolean) {
+    try {
+      return (await this.gt.createBranch({ name, isDefault })).branch;
+    } catch (error) {
+      if (
+        !(error instanceof ApiError) ||
+        error.code !== ErrorCode.ALREADY_EXISTS
+      )
+        throw error;
+      const {
+        items: [existing],
+      } = await this.gt.listBranches({ name: [name] });
+      if (!existing) throw error;
+      return existing;
+    }
   }
 }

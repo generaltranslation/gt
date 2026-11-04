@@ -55,7 +55,7 @@ describe('resolveTargetLocales', () => {
 });
 
 function locale(localeId: string, enabled?: boolean): TranslationLocale {
-  return { localeId, description: localeId, enabled };
+  return { localeId, enabled };
 }
 
 describe('getSelectedLocaleIds', () => {

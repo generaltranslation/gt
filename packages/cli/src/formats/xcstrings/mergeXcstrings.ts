@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import { logger } from '../../console/logger.js';
-import { api } from '../../utils/api.js';
+import { resolveCanonicalLocale } from '../../utils/api.js';
 import {
   parseXcstringsCatalog,
   serializeXcstringsSlice,
@@ -24,7 +24,7 @@ export function mergeXcstringsLocale(
   locale: string,
   inputPath: string
 ): string {
-  const canonicalLocale = api.resolveCanonicalLocale(locale);
+  const canonicalLocale = resolveCanonicalLocale(locale);
   const catalog = parseXcstringsCatalog(fs.readFileSync(inputPath, 'utf8'));
   const downloaded = parseXcstringsCatalog(downloadedContent);
 

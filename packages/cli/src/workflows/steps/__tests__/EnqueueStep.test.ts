@@ -15,7 +15,7 @@ vi.mock('../../../console/logger.js', () => ({
 
 describe('EnqueueStep', () => {
   const gt = {
-    enqueueFiles: vi.fn(),
+    translateFiles: vi.fn(),
   };
 
   const settings = {
@@ -35,11 +35,59 @@ describe('EnqueueStep', () => {
 
     expect(result).toEqual({
       jobData: {},
-      locales: ['es'],
       message: 'No files need to be enqueued',
     });
-    expect(gt.enqueueFiles).not.toHaveBeenCalled();
+    expect(gt.translateFiles).not.toHaveBeenCalled();
     expect(spinner.start).not.toHaveBeenCalled();
     expect(spinner.stop).not.toHaveBeenCalled();
+  });
+
+  it('keys file translation jobs by job ID and ignores other job types', async () => {
+    gt.translateFiles.mockResolvedValue({
+      jobs: [
+        {
+          id: 'job-1',
+          status: 'queued',
+          subject: {
+            type: 'file_translation',
+            branchId: 'branch-id',
+            fileId: 'file-id',
+            versionId: 'version-id',
+            locale: 'es',
+          },
+        },
+        { id: 'job-2', status: 'queued', subject: { type: 'search_index' } },
+      ],
+    });
+    const files = [
+      {
+        branchId: 'branch-id',
+        fileId: 'file-id',
+        versionId: 'version-id',
+        fileName: 'messages.json',
+        fileFormat: 'JSON' as const,
+      },
+    ];
+    const step = new EnqueueStep(gt, settings, true);
+
+    const result = await step.run(files);
+
+    expect(gt.translateFiles).toHaveBeenCalledWith(files, {
+      sourceLocale: 'en',
+      targetLocales: ['es'],
+      modelProvider: undefined,
+      force: true,
+    });
+    expect(result.jobData).toEqual({
+      'job-1': {
+        fileId: 'file-id',
+        versionId: 'version-id',
+        branchId: 'branch-id',
+        targetLocale: 'es',
+      },
+    });
+    expect(result.message).toBe(
+      'Successfully enqueued 1 file translation jobs'
+    );
   });
 });

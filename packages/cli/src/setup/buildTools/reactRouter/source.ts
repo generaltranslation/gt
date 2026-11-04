@@ -2,7 +2,7 @@
 // change for an app it cannot configure.
 import path from 'node:path';
 import * as t from '@babel/types';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { Libraries } from '../../../types/libraries.js';
 import {
   getPackageJson,
