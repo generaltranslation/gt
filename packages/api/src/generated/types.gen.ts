@@ -2531,6 +2531,12 @@ export type UploadSourceFilesData = {
         formatMetadata?: {
           [key: string]: unknown;
         };
+        metadata?: {
+          /**
+           * Page that shows this version of the file.
+           */
+          previewUrl?: string;
+        };
       };
     }>;
     sourceLocale?: string;
@@ -2807,6 +2813,12 @@ export type UploadTranslationsData = {
         incomingBranchId?: string;
         formatMetadata?: {
           [key: string]: unknown;
+        };
+        metadata?: {
+          /**
+           * Page that shows this version of the file.
+           */
+          previewUrl?: string;
         };
       };
       translations: Array<{
