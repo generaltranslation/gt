@@ -34,6 +34,7 @@ import { isValidLocale, standardizeLocale } from '@generaltranslation/format';
 import {
   localeRefreshSupported,
   rootParamStability,
+  swcPluginWasmFileName,
   turboConfigStable,
 } from './plugin/getStableNextVersionInfo';
 import { distDir, nodeRequire } from './plugin/nodeCompat';
@@ -350,11 +351,11 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   if (mergedConfig.experimentalCompilerOptions?.type === 'swc') {
     try {
       if (turboPackEnabled) {
-        const absolutePath = path.resolve(distDir, './gt_swc_plugin.wasm');
+        const absolutePath = path.resolve(distDir, swcPluginWasmFileName);
         resolvedWasmFilePath =
           './' + path.relative(process.cwd(), absolutePath).replace(/\\/g, '/');
       } else {
-        resolvedWasmFilePath = path.resolve(distDir, './gt_swc_plugin.wasm');
+        resolvedWasmFilePath = path.resolve(distDir, swcPluginWasmFileName);
       }
     } catch (error) {
       console.error(
