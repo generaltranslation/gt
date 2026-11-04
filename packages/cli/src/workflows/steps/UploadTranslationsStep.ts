@@ -125,7 +125,6 @@ export class UploadTranslationsStep {
           `${uploadedFile.fileId}:${uploadedFile.versionId}`
         );
         const dataFormat = localFile?.dataFormat;
-        const transformFormat = localFile?.transformFormat;
         return {
           branchId: uploadedFile.branchId,
           fileId: uploadedFile.fileId,
@@ -133,7 +132,6 @@ export class UploadTranslationsStep {
           fileName: uploadedFile.fileName,
           fileFormat: uploadedFile.fileFormat,
           ...(dataFormat && { dataFormat }),
-          ...(transformFormat && { transformFormat }),
           locale: uploadedFile.locale,
         };
       });

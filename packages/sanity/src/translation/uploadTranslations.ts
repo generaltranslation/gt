@@ -52,10 +52,8 @@ export async function uploadTranslations(
       translations: translations.map(({ locale, content }) => ({
         content,
         fileName: resolveFileName(info),
-        fileId: info.documentId,
         fileFormat: 'HTML' as const,
         locale,
-        versionId: info.versionId || undefined,
       })),
     }))
   );

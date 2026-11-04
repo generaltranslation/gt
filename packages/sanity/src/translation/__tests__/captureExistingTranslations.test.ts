@@ -63,11 +63,14 @@ beforeEach(() => {
   // Echo every translation as saved unless a test says otherwise.
   uploadTranslations.mockImplementation(
     async (
-      files: Array<{ translations: Array<{ fileId: string; locale: string }> }>
+      files: Array<{
+        source: { fileId: string };
+        translations: Array<{ locale: string }>;
+      }>
     ) => {
-      const results = files.flatMap((file) =>
-        file.translations.map(({ fileId, locale }) => ({
-          fileId,
+      const results = files.flatMap(({ source, translations }) =>
+        translations.map(({ locale }) => ({
+          fileId: source.fileId,
           locale,
           status: 'succeeded',
         }))
