@@ -155,3 +155,27 @@ describe('inline translations', () => {
     });
   });
 });
+
+describe('inline translations registry', () => {
+  afterEach(() => {
+    resetGTGlobals();
+    vi.resetModules();
+  });
+
+  it('is shared between separately evaluated copies of the module', async () => {
+    // Bundlers such as Next.js evaluate gt-i18n once per server layer (RSC and
+    // SSR), so msg() and m() can run against different module instances.
+    vi.resetModules();
+    const rscCopy = await import('../inlineTranslations');
+    vi.resetModules();
+    const ssrCopy = await import('../inlineTranslations');
+    expect(ssrCopy).not.toBe(rscCopy);
+
+    const inline = (locale: string) =>
+      locale === 'fr' ? 'Bonjour' : undefined;
+    rscCopy.registerInlineTranslations('hash-1', inline);
+
+    expect(ssrCopy.hasRegisteredInlineTranslations()).toBe(true);
+    expect(ssrCopy.getRegisteredInlineTranslations('hash-1')).toBe(inline);
+  });
+});
