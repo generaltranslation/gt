@@ -1,29 +1,53 @@
-import type { GetFileInfoResponse } from 'generaltranslation/api';
-import type { FileToUpload } from 'generaltranslation/types';
+import type {
+  FileReference,
+  FileToUpload,
+  MoveMapping,
+} from 'generaltranslation/types';
+import {
+  createDiagnosticMessage,
+  formatDiagnosticErrorDetails,
+} from 'generaltranslation/diagnostics';
 import { logger } from '../../console/logger.js';
 import { recordWarning } from '../../state/translateWarnings.js';
 import {
   clearOrphanedFileNames,
   recordOrphanedFileNames,
 } from '../../state/orphanedFileNames.js';
-import type { ApiClient } from '../../utils/api.js';
+import type { ProjectHandle } from 'generaltranslation';
 import type { Settings } from '../../types/index.js';
 import chalk from 'chalk';
 import { BranchData } from '../../types/branch.js';
-import type { FileReference, OrphanedFile } from 'generaltranslation/types';
+import {
+  ApiError,
+  ErrorCode,
+  type ListBranchFilesResponse,
+} from 'generaltranslation/api';
 
-type MoveMapping = {
-  oldFileId: string;
-  newFileId: string;
-  newFileName: string;
-};
+function createDefaultLocaleNotUpdatedWarning(
+  defaultLocale: string,
+  error: ApiError
+): string {
+  return createDiagnosticMessage({
+    source: 'gt',
+    severity: 'Warning',
+    whatHappened: `The project's default locale was not updated to ${defaultLocale}`,
+    why: 'the API key lacks the project settings permission project:write',
+    reassurance: 'Your files were uploaded',
+    fix: 'Update the default locale in the dashboard, or use a key with project:write',
+    details: formatDiagnosticErrorDetails(error),
+  });
+}
+
+type OrphanedFile = ListBranchFilesResponse['items'][number];
 
 type UploadSourcesClient = Pick<
-  ApiClient,
-  | 'queryFileData'
-  | 'getOrphanedFiles'
-  | 'processFileMoves'
+  ProjectHandle,
+  | 'queryFiles'
+  | 'listBranchFiles'
+  | 'moveFiles'
   | 'uploadSourceFiles'
+  | 'get'
+  | 'update'
 >;
 type UploadSourcesSettings = Pick<Settings, 'defaultLocale'>;
 
@@ -70,6 +94,24 @@ export class UploadSourcesStep {
     return moves;
   }
 
+  /** The branch's files that are not among the local files (renamed or removed). */
+  private async listOrphanedFiles(
+    branchId: string,
+    localFiles: FileToUpload[]
+  ): Promise<OrphanedFile[]> {
+    const localFileIds = new Set(localFiles.map((f) => f.fileId));
+    const orphanedFiles: OrphanedFile[] = [];
+    let cursor: string | undefined;
+    do {
+      const page = await this.gt.listBranchFiles(branchId, { cursor });
+      orphanedFiles.push(
+        ...page.items.filter((file) => !localFileIds.has(file.fileId))
+      );
+      cursor = page.nextCursor ?? undefined;
+    } while (cursor);
+    return orphanedFiles;
+  }
+
   async run({
     files,
     branchData,
@@ -90,30 +132,26 @@ export class UploadSourcesStep {
     );
 
     // Query file data and orphaned files in parallel
-    const [fileData, orphanedFilesResult] = await Promise.all([
-      this.gt.queryFileData({
-        sourceFiles: files.map((f) => ({
+    const [fileData, orphanedFiles] = await Promise.all([
+      this.gt.queryFiles(
+        files.map((f) => ({
           fileId: f.fileId,
           versionId: f.versionId,
           branchId: f.branchId ?? currentBranchId,
-        })),
-      }),
-      this.gt.getOrphanedFiles(
-        currentBranchId,
-        files.map((f) => f.fileId)
+        }))
       ),
+      this.listOrphanedFiles(currentBranchId, files),
     ]);
 
     // Renamed and removed files, for localizing Mintlify redirects later
-    recordOrphanedFileNames(
-      orphanedFilesResult.orphanedFiles.map((orphan) => orphan.fileName)
-    );
+    recordOrphanedFileNames(orphanedFiles.map((orphan) => orphan.fileName));
 
     // Detect file moves
-    const moves = this.detectMoves(files, orphanedFilesResult.orphanedFiles);
+    const moves = this.detectMoves(files, orphanedFiles);
 
     // Track successfully moved files
     let successfullyMovedFileIds = new Set<string>();
+    let failedMoves = 0;
 
     // Process moves if any were detected
     if (moves.length > 0) {
@@ -121,49 +159,44 @@ export class UploadSourcesStep {
         `Detected ${moves.length} moved file${moves.length !== 1 ? 's' : ''}, preserving translations...`
       );
 
-      const moveResult = await this.gt.processFileMoves(moves, {
+      const moveResult = await this.gt.moveFiles(moves, {
         branchId: currentBranchId,
       });
 
       // Only track files where the move actually succeeded
       successfullyMovedFileIds = new Set(
-        moveResult.results.filter((r) => r.success).map((r) => r.newFileId)
+        moveResult.results
+          .filter((r) => r.status === 'succeeded')
+          .map((r) => r.newFileId)
       );
 
-      const failed = moveResult.summary.failed;
+      failedMoves = moveResult.summary.failed;
 
-      if (failed > 0) {
+      if (failedMoves > 0) {
         logger.warn(
-          `Failed to migrate ${failed} moved file${failed !== 1 ? 's' : ''}`
+          `Failed to migrate ${failedMoves} moved file${failedMoves !== 1 ? 's' : ''}`
         );
         for (const r of moveResult.results) {
-          if (!r.success) {
+          if (r.status === 'failed') {
             const move = moves.find((m) => m.newFileId === r.newFileId);
-            recordWarning(
-              'failed_move',
-              move?.newFileName ?? r.newFileId,
-              r.error ?? 'Unknown error'
-            );
+            const name = move?.newFileName ?? r.newFileId;
+            const reason = r.error ?? 'Unknown error';
+            logger.warn(`Failed to migrate moved file ${name}: ${reason}`);
+            recordWarning('failed_move', name, reason);
           }
         }
       }
     }
 
-    // Build a map of branch:fileId:versionId to fileData
-    const fileDataMap = new Map<
-      string,
-      GetFileInfoResponse['sourceFiles'][number]
-    >();
-    fileData.sourceFiles?.forEach((f) => {
-      fileDataMap.set(`${f.branchId}:${f.fileId}:${f.versionId}`, f);
-    });
-
-    // Build a list of files that need to be uploaded
+    // Build a list of files that need to be uploaded; results follow the
+    // selector order, so a found result means that file version exists
     const filesToUpload: FileToUpload[] = [];
     const filesToSkipUpload: FileToUpload[] = [];
-    files.forEach((f) => {
-      const key = `${f.branchId ?? currentBranchId}:${f.fileId}:${f.versionId}`;
-      if (fileDataMap.has(key) || successfullyMovedFileIds.has(f.fileId)) {
+    files.forEach((f, index) => {
+      if (
+        fileData.results[index]?.status === 'found' ||
+        successfullyMovedFileIds.has(f.fileId)
+      ) {
         filesToSkipUpload.push(f);
       } else {
         filesToUpload.push(f);
@@ -188,14 +221,27 @@ export class UploadSourcesStep {
       files.map((f) => [`${f.fileId}:${f.versionId}`, f])
     );
 
-    const result: FileReference[] = response.uploadedFiles.map(
-      (uploadedFile) => {
+    // Only saved files continue to tagging, setup, enqueueing and publishing.
+    const failedUploads = response.results.filter((r) => r.status === 'failed');
+    if (failedUploads.length > 0) {
+      logger.warn(
+        `Failed to upload ${failedUploads.length} file${failedUploads.length !== 1 ? 's' : ''}`
+      );
+      for (const r of failedUploads) {
+        const reason = r.error ?? 'Unknown error';
+        logger.warn(`Failed to upload ${r.fileName}: ${reason}`);
+        recordWarning('failed_upload', r.fileName, reason);
+      }
+    }
+
+    const result: FileReference[] = response.results
+      .filter((r) => r.status === 'succeeded')
+      .map((uploadedFile) => {
         const localFile = localFileMap.get(
           `${uploadedFile.fileId}:${uploadedFile.versionId}`
         );
         return {
-          branchId:
-            uploadedFile.branchId ?? localFile?.branchId ?? currentBranchId,
+          branchId: uploadedFile.branchId,
           fileId: uploadedFile.fileId,
           versionId: uploadedFile.versionId,
           fileName: uploadedFile.fileName,
@@ -203,8 +249,7 @@ export class UploadSourcesStep {
           dataFormat: localFile?.dataFormat,
           transformFormat: localFile?.transformFormat,
         };
-      }
-    );
+      });
 
     // Merge files that were already uploaded into the result
     result.push(
@@ -220,8 +265,49 @@ export class UploadSourcesStep {
       }))
     );
 
-    const moveMsg = moves.length > 0 ? ` (${moves.length} moved)` : '';
-    this.spinner.stop(chalk.green(`Files uploaded successfully${moveMsg}`));
+    // Source uploads do not update the project's default locale.
+    if (result.length > 0) {
+      const project = await this.gt.get();
+      if (project.defaultLocale !== this.settings.defaultLocale) {
+        try {
+          await this.gt.update({
+            defaultLocale: this.settings.defaultLocale,
+          });
+        } catch (error) {
+          // A key without project:write can still upload and translate files.
+          if (
+            !(error instanceof ApiError) ||
+            error.code !== ErrorCode.PERMISSION_MISSING
+          )
+            throw error;
+          logger.warn(
+            createDefaultLocaleNotUpdatedWarning(
+              this.settings.defaultLocale,
+              error
+            )
+          );
+          recordWarning(
+            'failed_project_update',
+            'Default locale',
+            `The API key lacks project:write, so it stays ${project.defaultLocale}`
+          );
+        }
+      }
+    }
+
+    const moveMsg =
+      moves.length > 0
+        ? ` (${successfullyMovedFileIds.size} moved${failedMoves > 0 ? `, ${failedMoves} move${failedMoves !== 1 ? 's' : ''} failed` : ''})`
+        : '';
+    if (failedUploads.length > 0 || failedMoves > 0) {
+      this.spinner.stop(
+        chalk.yellow(
+          `Uploaded ${filesToUpload.length - failedUploads.length} of ${filesToUpload.length} files${moveMsg}`
+        )
+      );
+    } else {
+      this.spinner.stop(chalk.green(`Files uploaded successfully${moveMsg}`));
+    }
 
     return result;
   }

@@ -18,7 +18,7 @@ import {
   getConfiguredLocaleProperties,
   replaceLocalePlaceholders,
 } from '../utils.js';
-import { api } from '../../utils/api.js';
+import { resolveCanonicalLocale } from '../../utils/api.js';
 import {
   applyStructuralTransforms,
   unapplyStructuralTransforms,
@@ -60,10 +60,10 @@ export function mergeJson(
   const useCanonicalLocaleKeys =
     options?.experimentalCanonicalLocaleKeys ?? false;
   const canonicalDefaultLocale = useCanonicalLocaleKeys
-    ? api.resolveCanonicalLocale(defaultLocale)
+    ? resolveCanonicalLocale(defaultLocale)
     : defaultLocale;
   const canonicalLocaleOrder = useCanonicalLocaleKeys
-    ? localeOrder.map((locale) => api.resolveCanonicalLocale(locale))
+    ? localeOrder.map((locale) => resolveCanonicalLocale(locale))
     : localeOrder;
 
   if (jsonSchema.structuralTransform && jsonSchema.composite) {
@@ -176,7 +176,7 @@ export function mergeJson(
         // 2. Track all array indecies to remove (will be overwritten)
         const targetItemsToRemove = findMatchingItemArray(
           useCanonicalLocaleKeys
-            ? api.resolveCanonicalLocale(target.targetLocale)
+            ? resolveCanonicalLocale(target.targetLocale)
             : target.targetLocale,
           sourceObjectOptions,
           sourceObjectPointer,
@@ -237,7 +237,7 @@ export function mergeJson(
           const { identifyingLocaleProperty: targetLocaleKeyProperty } =
             getSourceObjectOptionsArray(
               useCanonicalLocaleKeys
-                ? api.resolveCanonicalLocale(target.targetLocale)
+                ? resolveCanonicalLocale(target.targetLocale)
                 : target.targetLocale,
               sourceObjectPointer,
               sourceObjectOptions
@@ -355,7 +355,7 @@ export function mergeJson(
         // 2. Find the source item for the target locale
         const matchingTargetItem = findMatchingItemObject(
           useCanonicalLocaleKeys
-            ? api.resolveCanonicalLocale(target.targetLocale)
+            ? resolveCanonicalLocale(target.targetLocale)
             : target.targetLocale,
           sourceObjectPointer,
           sourceObjectOptions,

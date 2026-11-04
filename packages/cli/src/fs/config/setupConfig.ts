@@ -8,7 +8,7 @@ import { FilesOptions, SupportedFrameworks } from '../../types/index.js';
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
-} from 'generaltranslation/internal';
+} from 'generaltranslation/diagnostics';
 import { GT_CONFIG_SCHEMA_URL } from '../../utils/constants.js';
 
 export type SetupConfigUpdate = {

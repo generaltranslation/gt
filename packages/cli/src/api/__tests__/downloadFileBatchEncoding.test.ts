@@ -4,17 +4,16 @@ import * as path from 'node:path';
 import os from 'node:os';
 import { downloadFileBatch } from '../downloadFileBatch.js';
 import { createMockSettings } from '../__mocks__/settings.js';
-import { api } from '../../utils/api.js';
 import type { FileStatusTracker } from '../../workflows/steps/PollJobsStep.js';
 
 // Writes to a real temporary directory rather than a mocked `fs`: the point of
 // this path is the bytes that land on disk, which a mocked writer cannot show.
+const api = vi.hoisted(() => ({
+  queryFilesContent: vi.fn(),
+}));
 vi.mock('../../utils/api.js', () => ({
-  api: {
-    downloadFileBatch: vi.fn(),
-    resolveAliasLocale: vi.fn((locale: string) => locale),
-    resolveCanonicalLocale: vi.fn((locale: string) => locale),
-  },
+  createClients: () => ({ project: api }),
+  resolveCanonicalLocale: (locale: string) => locale,
 }));
 
 vi.mock('../../console/logger.js', () => ({
@@ -125,9 +124,10 @@ describe('downloadFileBatch - source file encodings', () => {
     } as unknown as FileStatusTracker;
 
     // Text formats arrive already decoded to a UTF-8 string from core.
-    vi.mocked(api.downloadFileBatch).mockResolvedValue({
-      files: [
+    vi.mocked(api.queryFilesContent).mockResolvedValue({
+      results: [
         {
+          status: 'ready',
           branchId: 'branch1',
           fileId: 'file1',
           versionId: 'version1',
@@ -136,7 +136,7 @@ describe('downloadFileBatch - source file encodings', () => {
           data: translatedBody,
         },
       ],
-    } as unknown as Awaited<ReturnType<typeof api.downloadFileBatch>>);
+    } as unknown as Awaited<ReturnType<typeof api.queryFilesContent>>);
 
     const result = await downloadFileBatch(
       fileTracker,

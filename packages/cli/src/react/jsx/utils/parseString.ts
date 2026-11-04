@@ -20,7 +20,7 @@ import {
 import traverseModule from '@babel/traverse';
 import { DECLARE_VAR_FUNCTION } from '../../jsx/utils/constants.js';
 import { GTLibrary, GT_LIBRARIES } from '../../../types/libraries.js';
-import { declareVar } from 'generaltranslation/internal';
+import { declareVar } from 'generaltranslation';
 import { isStaticExpression } from '../evaluateJsx.js';
 import generateModule from '@babel/generator';
 // Handle CommonJS/ESM interop
