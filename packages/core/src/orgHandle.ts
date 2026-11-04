@@ -1,6 +1,7 @@
 import {
   createOrgApiKey,
   createProject,
+  ErrorCode,
   upsertAssets,
   type CreateOrgApiKeyData,
   type CreateOrgApiKeyResponse,
@@ -49,10 +50,16 @@ export class OrgHandle {
       headers: apiVersionHeaders(),
       path: { orgId: this.orgId },
     };
-    return writeInBatches(assets, UPSERT_ASSETS_BATCH_SIZE, async (batch) =>
-      unwrapApiResult(
-        await upsertAssets({ ...request, body: { assets: batch } })
-      )
+    return writeInBatches(
+      assets,
+      UPSERT_ASSETS_BATCH_SIZE,
+      async (batch) =>
+        unwrapApiResult(
+          await upsertAssets({ ...request, body: { assets: batch } })
+        ),
+      ({ fileName }, { error, code = ErrorCode.INTERNAL_ERROR }) => [
+        { fileName, status: 'failed' as const, error, code },
+      ]
     );
   }
 

@@ -1,6 +1,8 @@
 import {
   API_VERSION,
+  ApiError,
   createApiClient,
+  ErrorCode,
   processBatches,
   type ApiVersion,
   type BatchWriteSummary,
@@ -56,17 +58,60 @@ type BatchWriteResponse<Result> = {
   results: Result[];
 };
 
-/** @internal Sends `items` in batches of at most `batchSize`; summaries add up and results keep request order. */
+/** @internal Why a whole batch failed, in the shape of a failed result. */
+export type BatchFailure = { error: string; code?: ErrorCode };
+
+const errorCodes = new Set<string>(Object.values(ErrorCode));
+
+function batchFailure(reason: unknown): BatchFailure {
+  const code =
+    reason instanceof ApiError && errorCodes.has(reason.code ?? '')
+      ? (reason.code as ErrorCode)
+      : undefined;
+  return {
+    error: reason instanceof Error ? reason.message : String(reason),
+    ...(code && { code }),
+  };
+}
+
+/**
+ * @internal
+ * Sends `items` in batches of at most `batchSize`; summaries add up and
+ * results keep request order. The API saves the batches that succeed, so when
+ * only some batches fail, each item of a failed batch is reported through
+ * `failed(item, failure)`; the error is thrown only when every batch fails.
+ */
 export async function writeInBatches<Item, Result>(
   items: readonly Item[],
   batchSize: number,
-  write: (batch: Item[]) => Promise<BatchWriteResponse<Result>>
+  write: (batch: Item[]) => Promise<BatchWriteResponse<Result>>,
+  failed: (item: Item, failure: BatchFailure) => Result[]
 ): Promise<BatchWriteResponse<Result>> {
-  const responses = await processBatches(
+  const settled = await processBatches(
     items,
-    async (batch) => [await write(batch)],
+    async (batch) => [
+      await write(batch).then(
+        (response) => ({ response }),
+        (reason: unknown) => ({ batch, reason })
+      ),
+    ],
     { batchSize }
   );
+  const rejected = settled.flatMap((outcome) =>
+    'reason' in outcome ? [outcome] : []
+  );
+  if (rejected.length > 0 && rejected.length === settled.length) {
+    throw rejected[0].reason;
+  }
+  const responses = settled.map((outcome): BatchWriteResponse<Result> => {
+    if ('response' in outcome) return outcome.response;
+    const failure = batchFailure(outcome.reason);
+    const results = outcome.batch.flatMap((item) => failed(item, failure));
+    return {
+      summary: { total: results.length, succeeded: 0, failed: results.length },
+      results,
+    };
+  });
   const total = (key: keyof BatchWriteSummary) =>
     responses.reduce((sum, response) => sum + response.summary[key], 0);
   return {
