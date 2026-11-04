@@ -100,10 +100,19 @@ async function fetchPublished(
   return new Map(documents.map((document) => [document._id, document]));
 }
 
-/** Reads each path the way Sanity's preview store does, with one fetch per dataset and level of references. */
+// The value of a path that went through a dataset that could not be read.
+const UNREADABLE = Symbol('unreadable');
+
+/**
+ * Reads each path the way Sanity's preview store does, with one fetch per
+ * dataset and level of references. A dataset that cannot be read, such as one
+ * the Studio's token has no access to, leaves only the paths through it
+ * `UNREADABLE`, and its error in `failures`.
+ */
 async function readPaths(
   client: SanityClient,
-  walks: Walk[]
+  walks: Walk[],
+  failures: unknown[]
 ): Promise<unknown[]> {
   let current = walks.map(step);
   for (;;) {
@@ -119,25 +128,36 @@ async function readPaths(
       request.ids.add(walk.value._ref);
       requests.set(key, request);
     }
-    const fetched = new Map(
+    const fetched = new Map<
+      string,
+      Map<string, SanityDocument> | typeof UNREADABLE
+    >(
       await Promise.all(
-        [...requests].map(
-          async ([key, { source, ids }]) =>
-            [
+        [...requests].map(async ([key, { source, ids }]) => {
+          try {
+            return [
               key,
               await fetchPublished(
                 source ? client.withConfig(source) : client,
                 [...ids]
               ),
-            ] as const
-        )
+            ] as const;
+          } catch (error) {
+            failures.push(error);
+            return [key, UNREADABLE] as const;
+          }
+        })
       )
     );
     current = current.map((walk) => {
       if (!waitsOnReference(walk)) return walk;
       const source = referenceSource(walk.value, walk.source);
+      const documents = fetched.get(sourceKey(source));
+      if (documents === UNREADABLE) {
+        return { value: UNREADABLE, path: [], source };
+      }
       return step({
-        value: fetched.get(sourceKey(source))?.get(walk.value._ref) ?? null,
+        value: documents?.get(walk.value._ref) ?? null,
         path: walk.path,
         source,
       });
@@ -145,11 +165,16 @@ async function readPaths(
   }
 }
 
-/** The selected fields of each published document whose type resolves its locations, by published id. */
+/**
+ * The selected fields of each published document whose type resolves its
+ * locations, by published id. A document with a field that could not be read
+ * gets no snapshot, so its resolver never sees a partial selection.
+ */
 async function readSnapshots(
   client: SanityClient,
   documents: SanityDocument[],
-  locations: DocumentLocationResolvers
+  locations: DocumentLocationResolvers,
+  failures: unknown[]
 ): Promise<Map<string, Snapshot>> {
   const selections = documents.flatMap((document) => {
     const resolver = locations[document._type];
@@ -168,6 +193,7 @@ async function readSnapshots(
     const snapshot: Snapshot = {};
     snapshots.set(id, snapshot);
     return Object.entries(select).map(([key, path]) => ({
+      id,
       snapshot,
       key,
       walk: {
@@ -179,10 +205,12 @@ async function readSnapshots(
   });
   const values = await readPaths(
     client,
-    fields.map(({ walk }) => walk)
+    fields.map(({ walk }) => walk),
+    failures
   );
-  fields.forEach(({ snapshot, key }, index) => {
-    snapshot[key] = values[index];
+  fields.forEach(({ id, snapshot, key }, index) => {
+    if (values[index] === UNREADABLE) snapshots.delete(id);
+    else snapshot[key] = values[index];
   });
   return snapshots;
 }
@@ -216,7 +244,12 @@ export async function resolvePreviewUrls(
   if (!config) return resolved;
   let snapshots: Map<string, Snapshot> | null = null;
   try {
-    snapshots = await readSnapshots(client, documents, config.locations);
+    snapshots = await readSnapshots(
+      client,
+      documents,
+      config.locations,
+      resolved.failures
+    );
   } catch (error) {
     resolved.failures.push(error);
   }

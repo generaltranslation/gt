@@ -186,6 +186,47 @@ describe('resolvePreviewUrls', () => {
     });
   });
 
+  test('keeps the links a failed remote dataset read does not affect', async () => {
+    const local = createGroqClient([
+      ...dataset,
+      {
+        _id: 'remote-post',
+        _type: 'post',
+        slug: { current: 'remote' },
+        author: {
+          _type: 'crossDatasetReference',
+          _ref: 'remote-jane',
+          _projectId: 'other-project',
+          _dataset: 'authors',
+        },
+        categories: [{ _key: 'a', _type: 'reference', _ref: 'news' }],
+      },
+    ]);
+    const denied = new Error('Not allowed to read dataset authors');
+    const remote = { fetch: vi.fn().mockRejectedValue(denied) };
+    const sanity = {
+      ...local.client,
+      withConfig: () => remote,
+    } as unknown as SanityClient;
+
+    const resolved = await resolvePreviewUrls(
+      [
+        doc('remote-post', 'post'),
+        doc('pricing', 'page'),
+        doc('launch', 'post'),
+      ],
+      sanity
+    );
+
+    expect(resolved).toEqual({
+      urls: new Map([
+        ['pricing', 'https://staging.acme.test/en/pricing'],
+        ['launch', 'https://staging.acme.test/en/news/jane/launch'],
+      ]),
+      failures: [denied],
+    });
+  });
+
   test('reads nothing past a reference to an unpublished document', async () => {
     const resolve = vi.fn(() => null);
     vi.spyOn(pluginConfig, 'getPreviewUrl').mockReturnValue({
