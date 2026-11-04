@@ -25,18 +25,24 @@ import { findLocalBiome, formatFiles } from '../postProcess.js';
 let root: string;
 let originalCwd: string;
 
-/** Installs a fake biome command that marks each file it formats. */
+/** Installs a fake Biome entry point that marks each file it formats. */
 function installFakeBiome(dir: string) {
-  const bin = path.join(dir, 'node_modules', '.bin', 'biome');
+  const bin = path.join(
+    dir,
+    'node_modules',
+    '@biomejs',
+    'biome',
+    'bin',
+    'biome'
+  );
   fs.mkdirSync(path.dirname(bin), { recursive: true });
+  // Not executable and no shebang: it must run through Node, as on Windows.
   fs.writeFileSync(
     bin,
-    `#!/usr/bin/env node
-const fs = require('node:fs');
+    `const fs = require('node:fs');
 for (const a of process.argv.slice(4)) fs.appendFileSync(a, '// biome\\n');
 `
   );
-  fs.chmodSync(bin, 0o755);
   return bin;
 }
 
@@ -72,7 +78,7 @@ describe('findLocalBiome', () => {
 });
 
 describe('formatFiles with biome', () => {
-  it('runs the project’s Biome instead of npx', async () => {
+  it('runs the project’s Biome with Node instead of npx', async () => {
     const bin = installFakeBiome(root);
     const file = path.join(root, 'page.tsx');
     fs.writeFileSync(file, 'export {};\n');
@@ -81,8 +87,8 @@ describe('formatFiles with biome', () => {
     await formatFiles([file], 'biome');
 
     expect(spawnSpy).toHaveBeenCalledTimes(1);
-    expect(spawnSpy.mock.calls[0][0]).toBe(bin);
-    expect(spawnSpy.mock.calls[0][1]).toEqual(['format', '--write', file]);
+    expect(spawnSpy.mock.calls[0][0]).toBe(process.execPath);
+    expect(spawnSpy.mock.calls[0][1]).toEqual([bin, 'format', '--write', file]);
     expect(fs.readFileSync(file, 'utf-8')).toBe('export {};\n// biome\n');
     expect(logger.warn).not.toHaveBeenCalled();
   });

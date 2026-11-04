@@ -8,18 +8,34 @@ import { logger } from '../console/logger.js';
 export type Formatter = 'prettier' | 'biome' | 'eslint';
 
 /**
- * Finds the project's installed Biome command, searching node_modules/.bin from
- * cwd upward the way npx does, so a monorepo root install is found too.
+ * Finds the project's installed Biome entry point, a Node.js script, searching
+ * node_modules from cwd upward like Node resolution, so a monorepo root install
+ * is found too.
  */
 export function findLocalBiome(cwd: string = process.cwd()): string | null {
   let dir = path.resolve(cwd);
   while (true) {
-    const bin = path.join(dir, 'node_modules', '.bin', 'biome');
+    const bin = path.join(
+      dir,
+      'node_modules',
+      '@biomejs',
+      'biome',
+      'bin',
+      'biome'
+    );
     if (fs.existsSync(bin)) return bin;
     const parent = path.dirname(dir);
     if (parent === dir) return null;
     dir = parent;
   }
+}
+
+/**
+ * The Node.js executable that runs Biome's entry point. In the standalone
+ * binary, process.execPath is the gt binary itself, so use node from PATH.
+ */
+function nodeExecutable(): string {
+  return process.versions.bun ? 'node' : process.execPath;
 }
 
 export async function detectFormatter(): Promise<Formatter | null> {
@@ -92,10 +108,11 @@ export async function formatFiles(
       logger.message(chalk.dim('Cleaning up with biome...'));
       try {
         await new Promise<void>((resolve) => {
-          const args = ['format', '--write', ...filesUpdated];
+          const args = [biome, 'format', '--write', ...filesUpdated];
 
           // Formatter output is diagnostics; keep stdout free for commands' data.
-          const child = spawn(biome, args, {
+          // Running the script with Node works on every OS, unlike .bin shims.
+          const child = spawn(nodeExecutable(), args, {
             stdio: ['ignore', process.stderr, 'inherit'],
           });
 
