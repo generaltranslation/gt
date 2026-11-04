@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   API_VERSION,
   createBranch,
+  createFileUploads,
   createProject,
   createProjectApiKey,
   getProject,
@@ -11,6 +12,7 @@ import {
   moveFiles,
   overwriteTranslations,
   publishFiles,
+  putFileUpload,
   queryFiles,
   queryFilesContent,
   translateFiles,
@@ -18,11 +20,14 @@ import {
   uploadTranslations,
   upsertAssets,
 } from '@generaltranslation/api';
+import { sha256 } from '@noble/hashes/sha2.js';
+import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 import { GeneralTranslation } from '../index';
 
 vi.mock('@generaltranslation/api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@generaltranslation/api')>()),
   createBranch: vi.fn(),
+  createFileUploads: vi.fn(),
   createProject: vi.fn(),
   createProjectApiKey: vi.fn(),
   getProject: vi.fn(),
@@ -32,6 +37,7 @@ vi.mock('@generaltranslation/api', async (importOriginal) => ({
   moveFiles: vi.fn(),
   overwriteTranslations: vi.fn(),
   publishFiles: vi.fn(),
+  putFileUpload: vi.fn(),
   queryFiles: vi.fn(),
   queryFilesContent: vi.fn(),
   translateFiles: vi.fn(),
@@ -879,6 +885,196 @@ describe.sequential('GeneralTranslation project and organization operations', ()
     }
     expect(requests.map(({ jobs }) => jobs.length)).toEqual([100, 1]);
     expect(results.map(({ id }) => id)).toEqual(ids);
+  });
+
+  describe('files over the inline limit', () => {
+    const large = '{"a":"' + 'x'.repeat(4_000_000) + '"}';
+    const hashOf = (text: string) => bytesToHex(sha256(utf8ToBytes(text)));
+    const source = (content: string) => ({
+      content,
+      fileName: 'messages.json',
+      fileFormat: 'JSON' as const,
+      locale: 'en-US',
+    });
+    const presigned = {
+      url: 'https://bucket.example.com/staged',
+      headers: { 'x-amz-checksum-sha256': 'checksum' },
+      expiresAt: '2026-11-05T00:00:00.000Z',
+    };
+
+    beforeEach(() => {
+      vi.mocked(uploadSourceFiles).mockResolvedValue(result(succeeded([])));
+      vi.mocked(uploadTranslations).mockResolvedValue(result(succeeded([])));
+      vi.mocked(createFileUploads).mockImplementation((({
+        body,
+      }: {
+        body: { files: { sha256: string }[] };
+      }) =>
+        Promise.resolve(
+          result({
+            files: body.files.map(({ sha256: hash }) => ({
+              sha256: hash,
+              status: 'upload_required' as const,
+              upload: presigned,
+            })),
+          })
+        )) as never);
+    });
+
+    it('PUTs a large source through createFileUploads and sends a reference to it', async () => {
+      await configuredProject().uploadSourceFiles([{ source: source(large) }]);
+
+      expect(bodyOf(createFileUploads)).toEqual({
+        files: [
+          {
+            sha256: hashOf(large),
+            fileFormat: 'JSON',
+            size: large.length,
+          },
+        ],
+      });
+      expect(putFileUpload).toHaveBeenCalledOnce();
+      const [upload, bytes, options] = vi.mocked(putFileUpload).mock.calls[0];
+      expect([upload, options]).toEqual([presigned, { timeoutMs: undefined }]);
+      // Comparing the hash: deep-equal on 4MB of bytes takes seconds.
+      expect(bytesToHex(sha256(bytes))).toBe(hashOf(large));
+      expect(bodyOf(uploadSourceFiles).data).toEqual([
+        {
+          source: {
+            fileName: 'messages.json',
+            fileFormat: 'JSON',
+            locale: 'en-US',
+            upload: { sha256: hashOf(large) },
+          },
+        },
+      ]);
+    });
+
+    it('PUTs at most four files at a time', async () => {
+      let inFlight = 0;
+      let maxInFlight = 0;
+      vi.mocked(putFileUpload).mockImplementation(async () => {
+        maxInFlight = Math.max(maxInFlight, ++inFlight);
+        await new Promise((resolve) => setTimeout(resolve, 1));
+        inFlight--;
+      });
+      const files = Array.from({ length: 6 }, (_, index) => ({
+        source: { ...source(large + index), fileName: `${index}.json` },
+      }));
+
+      await configuredProject().uploadSourceFiles(files);
+
+      expect(putFileUpload).toHaveBeenCalledTimes(6);
+      expect(maxInFlight).toBe(4);
+    });
+
+    it('requests each group of upload URLs right before its PUTs', async () => {
+      const events: string[] = [];
+      vi.mocked(createFileUploads).mockImplementation((async ({
+        body,
+      }: {
+        body: { files: { sha256: string }[] };
+      }) => {
+        events.push(`create ${body.files.length}`);
+        return result({
+          files: body.files.map(({ sha256: hash }) => ({
+            sha256: hash,
+            status: 'upload_required' as const,
+            upload: presigned,
+          })),
+        });
+      }) as never);
+      vi.mocked(putFileUpload).mockImplementation(async () => {
+        events.push('put');
+      });
+      const files = Array.from({ length: 6 }, (_, index) => ({
+        source: { ...source(large + index), fileName: `${index}.json` },
+      }));
+
+      await configuredProject().uploadSourceFiles(files);
+
+      expect(events).toEqual([
+        'create 4',
+        'put',
+        'put',
+        'put',
+        'put',
+        'create 2',
+        'put',
+        'put',
+      ]);
+    });
+
+    it('skips the PUT for bytes the project already stores', async () => {
+      vi.mocked(createFileUploads).mockResolvedValue(
+        result({
+          files: [{ sha256: hashOf(large), status: 'exists' as const }],
+        })
+      );
+
+      await configuredProject().uploadSourceFiles([{ source: source(large) }]);
+
+      expect(putFileUpload).not.toHaveBeenCalled();
+      expect(bodyOf(uploadSourceFiles).data).toEqual([
+        {
+          source: expect.objectContaining({
+            upload: { sha256: hashOf(large) },
+          }),
+        },
+      ]);
+    });
+
+    it('keeps every other file of a translation upload inline, in place', async () => {
+      await configuredProject().uploadTranslations([
+        {
+          source: source('{}'),
+          translations: [
+            { ...source('{"a":"b"}'), locale: 'es' },
+            { ...source(large), locale: 'fr' },
+          ],
+        },
+      ]);
+
+      const [{ source: sent, translations }] = bodyOf(uploadTranslations)
+        .data as {
+        source: Record<string, unknown>;
+        translations: Record<string, unknown>[];
+      }[];
+      expect(sent).toMatchObject({ content: btoa('{}') });
+      expect(translations).toEqual([
+        expect.objectContaining({ locale: 'es', content: btoa('{"a":"b"}') }),
+        expect.objectContaining({
+          locale: 'fr',
+          upload: { sha256: hashOf(large) },
+        }),
+      ]);
+      expect(translations[1]).not.toHaveProperty('content');
+    });
+
+    it('uploads files once inline content would push a request past the body limit', async () => {
+      const files = Array.from({ length: 30 }, (_, index) =>
+        source(`${index}`.padEnd(3_900_000, 'x'))
+      );
+
+      await configuredProject().uploadSourceFiles(
+        files.map((file) => ({ source: file }))
+      );
+
+      const sent = bodyOf(uploadSourceFiles).data as {
+        source: { content?: string };
+      }[];
+      const inline = sent.filter(({ source: file }) => 'content' in file);
+      const inlineLength = inline.reduce(
+        (sum, { source: file }) => sum + file.content!.length,
+        0
+      );
+      expect(inline.length).toBeGreaterThan(0);
+      expect(inline.length).toBeLessThan(files.length);
+      expect(inlineLength).toBeLessThanOrEqual(90 * 1024 * 1024);
+      expect(vi.mocked(putFileUpload)).toHaveBeenCalledTimes(
+        files.length - inline.length
+      );
+    });
   });
 
   it('creates a project under the organization with a canonical default locale', async () => {

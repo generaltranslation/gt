@@ -1,18 +1,19 @@
-import type { DataFormat } from '@generaltranslation/format/types';
-import { FileFormat, type FormatMetadata } from './file';
+import type {
+  UploadSourceFilesData,
+  UploadTranslationsData,
+} from '@generaltranslation/api';
 
-export type FileUpload = {
-  branchId?: string; // optional branch id. If not provided, will use the default branch.
-  incomingBranchId?: string; // optional branch id to use for incoming translations
-  checkedOutBranchId?: string; // optional branch id to use for checked out translations
+type WithContent<File> = Omit<File, 'content' | 'upload'> & {
+  /** Text, or base64 for binary formats; files over 4MB are uploaded through `createFileUploads`. */
   content: string;
-  fileName: string;
-  fileFormat: FileFormat;
-  // Optional output format requested for generated translations.
-  transformFormat?: FileFormat;
-  dataFormat?: DataFormat;
-  locale: string;
-  formatMetadata?: FormatMetadata;
-  versionId?: string; // Optional versionId. Only use this if you know what you are doing.
-  fileId?: string; // Optional fileId. Only use this if you know what you are doing.
 };
+
+/** A source file to upload. */
+export type FileUpload = WithContent<
+  UploadSourceFilesData['body']['data'][number]['source']
+>;
+
+/** A translation of an uploaded source file, in the format it is saved in. */
+export type TranslationUpload = WithContent<
+  UploadTranslationsData['body']['data'][number]['translations'][number]
+>;
