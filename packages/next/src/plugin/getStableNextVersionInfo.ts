@@ -7,6 +7,9 @@ import {
   LOCALE_REFRESH_SUPPORT,
   ROOT_PARAM_STABILITY,
   STABLE_TURBO_CONFIG_VERSION,
+  SWC_PLUGIN_CURRENT_ABI_SUPPORT,
+  SWC_PLUGIN_CURRENT_WASM,
+  SWC_PLUGIN_LEGACY_WASM,
   SWC_PLUGIN_SUPPORT,
 } from './constants';
 import { nodeRequire } from './nodeCompat';
@@ -113,6 +116,20 @@ export const swcPluginCompatible = comparePackageVersion(
   getNextVersion(),
   SWC_PLUGIN_SUPPORT
 );
+
+/**
+ * Pick the SWC plugin build whose swc_core ABI matches a Next.js version.
+ *
+ * @param nextVersion - The installed Next.js version.
+ * @returns The wasm file name, relative to the gt-next dist directory.
+ */
+export function getSwcPluginWasmFileName(nextVersion: string): string {
+  return comparePackageVersion(nextVersion, SWC_PLUGIN_CURRENT_ABI_SUPPORT)
+    ? SWC_PLUGIN_CURRENT_WASM
+    : SWC_PLUGIN_LEGACY_WASM;
+}
+
+export const swcPluginWasmFileName = getSwcPluginWasmFileName(getNextVersion());
 
 // disable babel plugin if using react <= 16
 export const babelPluginCompatible = comparePackageVersion(
