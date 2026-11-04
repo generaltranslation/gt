@@ -1,4 +1,4 @@
-import { GT } from 'generaltranslation';
+import { GeneralTranslation } from 'generaltranslation';
 import { configureApiClient } from './api';
 
 export { api } from './api';
@@ -16,7 +16,7 @@ import { SECRETS_NAMESPACE } from '../utils/shared';
 import type { PortableTextHtmlComponents } from '@portabletext/to-html';
 import type { CustomDeserializers } from '../serialization/types';
 import type { PreviewUrlConfig } from '../translation/previewUrls';
-export const gt = new GT();
+export const gt = new GeneralTranslation();
 
 /**
  * Built-in defaults for the automatic actions.

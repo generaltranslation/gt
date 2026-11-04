@@ -37,9 +37,12 @@ export function encodeFileContent(
   return isBinaryFileFormat(fileFormat) ? content : encode(content);
 }
 
+/** Content without a file format decodes as text. */
 export function decodeFileContent(
   content: string,
-  fileFormat: FileFormat
+  fileFormat?: FileFormat
 ): string {
-  return isBinaryFileFormat(fileFormat) ? content : decode(content);
+  return fileFormat && isBinaryFileFormat(fileFormat)
+    ? content
+    : decode(content);
 }

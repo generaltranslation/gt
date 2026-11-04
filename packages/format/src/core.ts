@@ -28,14 +28,7 @@ import { _resolveCanonicalLocale } from './locales/resolveCanonicalLocale';
 import type { CustomMapping, FormatVariables } from './types';
 import type { StringFormat } from './types-dir/jsx/content';
 
-export {
-  LocaleConfig,
-  type LocaleConfigConstructorParams,
-} from './LocaleConfig';
-export {
-  getRegionProperties,
-  type CustomRegionMapping,
-} from './locales/getRegionProperties';
+export { getRegionProperties } from './locales/getRegionProperties';
 
 type LocalesOption = {
   locales?: string | string[];

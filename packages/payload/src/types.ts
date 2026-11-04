@@ -1,11 +1,11 @@
-import type { GT } from 'generaltranslation';
+import type { GeneralTranslation } from 'generaltranslation';
 
 // A Payload document or part of one, as the Local API returns it.
 export type Data = Record<string, unknown>;
 
 // The GT SDK calls the plugin makes.
 export type GtClient = Pick<
-  GT,
+  GeneralTranslation,
   | 'uploadSourceFiles'
   | 'enqueueFiles'
   | 'awaitJobs'
