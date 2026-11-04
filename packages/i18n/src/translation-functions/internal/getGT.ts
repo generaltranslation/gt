@@ -6,6 +6,7 @@ import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
 import { createLookupOptions } from './helpers';
 import type { StringFormat } from '@generaltranslation/format/types';
 import { getWritableConditionStore } from '../../condition-store/singleton-operations';
+import type { InlineTranslations } from '../inline/inlineTranslations';
 
 export type Message = TranslationMetadata & {
   message: string;
@@ -68,6 +69,7 @@ export async function getGTInternal(
    * Registers a message at build time and resolves its translation at runtime.
    * @param {string} message - The message to translate
    * @param {GTTranslationOptions} options - The options for the translation
+   * @param {InlineTranslations<string>} inline - Translations embedded at the call site, checked before loaded translations
    * @returns The translated message
    *
    * @example
@@ -82,7 +84,8 @@ export async function getGTInternal(
    */
   const gt: GTFunctionType = (
     message: string,
-    options: GTTranslationOptions = {}
+    options: GTTranslationOptions = {},
+    inline?: InlineTranslations<string>
   ) => {
     const targetLocale = enableI18n
       ? (options.$locale ?? locale)
@@ -94,7 +97,7 @@ export async function getGTInternal(
     );
 
     // Lookup translation
-    const translation = lookupTranslation(message, lookupOptions);
+    const translation = lookupTranslation(message, lookupOptions, inline);
 
     // Dev hot reload (fire and forget, will be available in a later lookup)
     if (devHotReloadEnabled && translation == null) {

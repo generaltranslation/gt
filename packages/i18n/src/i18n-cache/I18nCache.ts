@@ -26,6 +26,12 @@ import { resolveDictionaryLookupOptions } from './translations-manager/utils/dic
 import { DictionarySourceNotFoundError } from './translations-manager/utils/DictionarySourceNotFoundError';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
+import { hashMessage } from '../utils/hashMessage';
+import {
+  type InlineTranslations,
+  getRegisteredInlineTranslations,
+  hasRegisteredInlineTranslations,
+} from '../translation-functions/inline/inlineTranslations';
 
 /**
  * Default translation timeout in milliseconds for a runtime translation request
@@ -37,11 +43,13 @@ const DEFAULT_TRANSLATION_TIMEOUT = 12_000; // 12 seconds
  * @template U - The type of the translation (default: Content)
  * @param {U} message - The message to get the translation for
  * @param {LookupOptions} [options] - The options for the translation
+ * @param {InlineTranslations} [inline] - Translations embedded at the call site, checked before the cache
  * @returns {U | undefined} The translation for the given message and options or undefined if the translation is not found
  */
 type TranslationResolver<U extends Content = Content> = <T extends U = U>(
   message: T,
-  options?: LookupOptions
+  options?: LookupOptions,
+  inline?: InlineTranslations<T>
 ) => T | undefined;
 
 type DictionaryResolver = (id: string) => DictionaryEntry | undefined;
@@ -455,7 +463,8 @@ class I18nCache<TranslationValue extends Content = Content> {
   lookupTranslation<T extends TranslationValue = TranslationValue>(
     locale: string,
     message: T,
-    options: LookupOptions
+    options: LookupOptions,
+    inline?: InlineTranslations<T>
   ): T | undefined {
     return this.guard<T | undefined>(undefined, () => {
       // Validate
@@ -465,10 +474,18 @@ class I18nCache<TranslationValue extends Content = Content> {
       // Early return if in default locale
       if (!translationLocale) return message;
 
-      // Get the translation from the locale cache
-      return this.translations
-        .get(translationLocale)
-        ?.get({ message, options: lookupOptions });
+      // Get the translation from the call site, then the locale cache
+      return (
+        resolveInlineTranslation(
+          translationLocale,
+          message,
+          lookupOptions,
+          inline
+        ) ??
+        this.translations
+          .get(translationLocale)
+          ?.get({ message, options: lookupOptions })
+      );
     });
   }
 
@@ -481,11 +498,41 @@ class I18nCache<TranslationValue extends Content = Content> {
   >(
     locale: string,
     message: T,
-    options: LookupOptions
+    options: LookupOptions,
+    inline?: InlineTranslations<T>
   ): Promise<T | undefined> {
     return this.guardAsync<T | undefined>(undefined, () =>
-      this.lookupTranslationWithFallbackResolved(locale, message, options)
+      this.lookupTranslationWithFallbackResolved(
+        locale,
+        message,
+        options,
+        inline
+      )
     );
+  }
+
+  /**
+   * Resolve only the translation embedded at the call site (or registered by
+   * msg()) for a locale. Returns the message for the default locale and
+   * undefined when nothing was embedded for the locale.
+   */
+  lookupInlineTranslation<T extends TranslationValue = TranslationValue>(
+    locale: string,
+    message: T,
+    options: LookupOptions,
+    inline?: InlineTranslations<T>
+  ): T | undefined {
+    return this.guard<T | undefined>(undefined, () => {
+      const { translationLocale, options: lookupOptions } =
+        this.resolveLookupParams(locale, options);
+      if (!translationLocale) return message;
+      return resolveInlineTranslation(
+        translationLocale,
+        message,
+        lookupOptions,
+        inline
+      );
+    });
   }
 
   /**
@@ -552,7 +599,8 @@ class I18nCache<TranslationValue extends Content = Content> {
         // Create translation resolver
         const lookupTranslation: TranslationResolver<TranslationValue> = (
           message,
-          lookupOptions: LookupOptions = {} as LookupOptions
+          lookupOptions: LookupOptions = {} as LookupOptions,
+          inline
         ) =>
           this.guard(undefined, () => {
             const { translationLocale, options } = this.resolveLookupParams(
@@ -569,8 +617,15 @@ class I18nCache<TranslationValue extends Content = Content> {
                 ? asyncBoundaryTxCache
                 : this.translations.get(translationLocale);
 
-            // Get the translation
-            return txCache?.get({ message, options });
+            // Get the translation from the call site, then the locale cache
+            return (
+              resolveInlineTranslation(
+                translationLocale,
+                message,
+                options,
+                inline
+              ) ?? txCache?.get({ message, options })
+            );
           });
 
         Object.assign(lookupTranslation, { prefetchEntries });
@@ -684,12 +739,28 @@ class I18nCache<TranslationValue extends Content = Content> {
 
   private async lookupTranslationWithFallbackResolved<
     T extends TranslationValue = TranslationValue,
-  >(locale: string, message: T, options: LookupOptions): Promise<T> {
+  >(
+    locale: string,
+    message: T,
+    options: LookupOptions,
+    inline?: InlineTranslations<T>
+  ): Promise<T> {
     const { translationLocale, options: lookupOptions } =
       this.resolveLookupParams(locale, options);
 
     if (!translationLocale) {
       return message;
+    }
+
+    // Embedded translations skip loading the locale entirely
+    const inlineTranslation = resolveInlineTranslation(
+      translationLocale,
+      message,
+      lookupOptions,
+      inline
+    );
+    if (inlineTranslation != null) {
+      return inlineTranslation;
     }
 
     const txCache = await this.translations.getOrLoad(translationLocale);
@@ -705,6 +776,27 @@ class I18nCache<TranslationValue extends Content = Content> {
 export { I18nCache };
 
 // ===== Helper Functions ===== //
+
+/**
+ * Resolve a translation embedded at the call site, falling back to one
+ * registered by msg() under the message hash.
+ */
+function resolveInlineTranslation<T extends Translation>(
+  translationLocale: string,
+  message: T,
+  options: LookupOptions,
+  inline?: InlineTranslations<T>
+): T | undefined {
+  if (inline) {
+    const translation = inline(translationLocale);
+    if (translation != null) return translation;
+  }
+  if (!hasRegisteredInlineTranslations()) return undefined;
+  const registered = getRegisteredInlineTranslations(
+    hashMessage(message, options)
+  );
+  return registered?.(translationLocale) as T | undefined;
+}
 
 /**
  * Validate constructor params: log warnings for suspicious configs and throw
