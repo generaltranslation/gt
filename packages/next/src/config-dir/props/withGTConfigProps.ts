@@ -99,8 +99,8 @@ export type BaseWithGTConfigProps = MiddlewareConfig & {
 export type withGTConfigProps = BaseWithGTConfigProps & {
   /** Use GT_API_KEY instead. */
   apiKey?: never;
-  /** Use NEXT_PUBLIC_GT_DEV_API_KEY or GT_DEV_API_KEY instead. */
+  /** Use GT_API_KEY instead. */
   devApiKey?: never;
-  /** Use NEXT_PUBLIC_GT_PROJECT_ID or GT_PROJECT_ID instead. */
+  /** Use GT_PROJECT_ID instead. */
   projectId?: never;
 };

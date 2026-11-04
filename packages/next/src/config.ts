@@ -764,13 +764,13 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
         requestFunctionPaths.getRegion ? 'true' : 'false',
       _GENERALTRANSLATION_DISABLE_INVALID_LOCALE_WARNING:
         mergedConfig.disableInvalidLocaleWarning?.toString() || 'false',
-      // Development only: hands the server-only dev key (GT_DEV_API_KEY) to
-      // client code for hot reload. `next build` never sets these, so
-      // production bundles get no key.
+      // Development only: exposes GT_PROJECT_ID and GT_API_KEY to client code
+      // for hot reload. `next build` never sets these, so production bundles
+      // get no key.
       ...(isDevHotReloadEnabled(mergedConfig) &&
         !mergedConfig._disableDevHotReload && {
-          _GENERALTRANSLATION_DEV_PROJECT_ID: mergedConfig.projectId,
-          _GENERALTRANSLATION_DEV_API_KEY: mergedConfig.devApiKey,
+          GT_PROJECT_ID: mergedConfig.projectId,
+          GT_API_KEY: mergedConfig.devApiKey,
         }),
       // nextConfig.env intentionally makes this available to client-boundary.tsx.
       ...(mergedConfig.pathRegex !== undefined && {

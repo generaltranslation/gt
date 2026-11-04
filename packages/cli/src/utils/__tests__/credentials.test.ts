@@ -42,8 +42,6 @@ describe('setCredentials', () => {
     ['gatsby', 'GATSBY_'],
     ['react', 'REACT_APP_'],
     ['redwood', 'REDWOOD_ENV_'],
-    // App Router keeps both server-only; gt-next hands the key to the client.
-    ['next-app', ''],
     [undefined, ''],
   ] as const)(
     'prefixes variables for %s with "%s"',
@@ -59,6 +57,24 @@ describe('setCredentials', () => {
       );
     }
   );
+
+  it('writes GT_PROJECT_ID and GT_API_KEY for next-app', async () => {
+    fs.writeFileSync(
+      envPath(),
+      'GT_API_KEY=gtx-old-key\nNEXT_PUBLIC_GT_PROJECT_ID=old-project\n'
+    );
+
+    await setCredentials(
+      { projectId: 'project-id', apiKey: 'gtx-api-key' },
+      'next-app',
+      appDirectory
+    );
+
+    // gt-next prefers these over the legacy NEXT_PUBLIC_ names.
+    expect(readEnv()).toBe(
+      'GT_API_KEY=gtx-api-key\nNEXT_PUBLIC_GT_PROJECT_ID=old-project\nGT_PROJECT_ID=project-id\n'
+    );
+  });
 
   it('preserves unrelated lines, comments, and the production key byte for byte', async () => {
     const existing =
@@ -536,8 +552,8 @@ describe('areCredentialsSet', () => {
     );
   });
 
-  it('recognizes the server-only development key for next-app', () => {
-    vi.stubEnv('GT_DEV_API_KEY', 'gtx-dev');
+  it('recognizes GT_API_KEY as the development key for next-app', () => {
+    vi.stubEnv('GT_API_KEY', 'gtx-api-key');
     vi.stubEnv('NEXT_PUBLIC_GT_DEV_API_KEY', undefined);
     expect(areCredentialsSet({ projectId: 'project-id' }, 'next-app')).toBe(
       true
@@ -563,9 +579,9 @@ describe('areCredentialsSet', () => {
     ).toBe(true);
   });
 
+  // Not next-app: there GT_API_KEY is also the development key.
   it.each([
     'vite',
-    'next-app',
     'next-pages',
     'gatsby',
     'react',

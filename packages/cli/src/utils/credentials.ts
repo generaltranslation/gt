@@ -83,8 +83,8 @@ function gitCheckFailedError(file: string, stderr: string): string {
 export type Credentials = { apiKey: string; projectId: string };
 
 // Include server-rendered frameworks with client-side development translation.
-// Next.js App Router reads unprefixed variables on the server and hands the
-// development key to the client through GTProvider, in development only.
+// Next.js App Router reads GT_PROJECT_ID and GT_API_KEY instead; gt-next
+// exposes them to client code in development only.
 const FRAMEWORK_ENV_PREFIXES: Partial<
   Record<NonNullable<SupportedFrameworks>, string>
 > = {
@@ -99,6 +99,9 @@ const FRAMEWORK_ENV_PREFIXES: Partial<
 
 /** Names of the runtime variables init writes for this framework. */
 export function getDevelopmentEnvNames(framework?: SupportedFrameworks) {
+  if (framework === 'next-app') {
+    return { projectId: 'GT_PROJECT_ID', devApiKey: 'GT_API_KEY' };
+  }
   const prefix = (framework && FRAMEWORK_ENV_PREFIXES[framework]) ?? '';
   return {
     projectId: `${prefix}GT_PROJECT_ID`,
@@ -109,8 +112,8 @@ export function getDevelopmentEnvNames(framework?: SupportedFrameworks) {
 /**
  * Whether the project has the framework's development key, or an explicit
  * API key for a server-only runtime. A tooling key cannot enable client-side
- * hot reload, including in Next.js App Router, which still accepts the
- * NEXT_PUBLIC_ key earlier versions of init wrote. `settings.projectId`
+ * hot reload. Next.js App Router uses GT_API_KEY for both, and still accepts
+ * the NEXT_PUBLIC_ key earlier versions of init wrote. `settings.projectId`
  * already resolves every framework prefix. Login is checked separately.
  */
 export function areCredentialsSet(
@@ -122,9 +125,7 @@ export function areCredentialsSet(
     framework === 'next-app'
       ? [devApiKey, 'NEXT_PUBLIC_GT_DEV_API_KEY']
       : [devApiKey];
-  const needsDevKey = Boolean(
-    framework === 'next-app' || (framework && FRAMEWORK_ENV_PREFIXES[framework])
-  );
+  const needsDevKey = Boolean(framework && FRAMEWORK_ENV_PREFIXES[framework]);
   return Boolean(
     settings.projectId &&
     (devApiKeys.some((name) => process.env[name]) ||
@@ -343,9 +344,10 @@ async function writeEnvFileAtomically(
 /**
  * .env.local content with the runtime credentials set. Only the hot-reload
  * key: the CLI itself acts as the signed-in user, and CI keys are created
- * deliberately rather than dropped into .env.local. Other lines, comments,
- * and any GT_API_KEY are left untouched. Throws when the edit could corrupt
- * a multiline value.
+ * deliberately rather than dropped into .env.local. Other lines and comments
+ * are left untouched, as is GT_API_KEY except in Next.js App Router, which
+ * uses it as the development key. Throws when the edit could corrupt a
+ * multiline value.
  */
 function updateCredentialsEnvContent(
   envContent: string,

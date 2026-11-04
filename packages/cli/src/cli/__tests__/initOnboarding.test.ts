@@ -701,7 +701,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     });
   });
 
-  it('writes and reuses App Router server-only development credentials without a tooling key', async () => {
+  it('writes and reuses App Router GT_PROJECT_ID and GT_API_KEY credentials', async () => {
     vi.mocked(detectFramework).mockResolvedValue({
       name: 'next-app',
       type: 'react',
@@ -718,12 +718,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 
     await run(...args, '--project-id', 'p1');
 
-    // No NEXT_PUBLIC_ key, so next build has nothing to inline or reject.
-    const envFile = `GT_PROJECT_ID=p1\nGT_DEV_API_KEY=${SECRET_KEY}\n`;
+    // No NEXT_PUBLIC_ key; gt-next exposes these to the client in dev only.
+    const envFile = `GT_PROJECT_ID=p1\nGT_API_KEY=${SECRET_KEY}\n`;
     expect(fs.readFileSync(file('.env.local'), 'utf8')).toBe(envFile);
     expect(api.createProjectApiKey).toHaveBeenCalledTimes(1);
     vi.stubEnv('GT_PROJECT_ID', 'p1');
-    vi.stubEnv('GT_DEV_API_KEY', SECRET_KEY);
+    vi.stubEnv('GT_API_KEY', SECRET_KEY);
     vi.mocked(hasLogin).mockClear();
 
     await run(...args);
