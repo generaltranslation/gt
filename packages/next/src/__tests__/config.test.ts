@@ -19,6 +19,7 @@ const mockVersionInfo = vi.hoisted(() => ({
   turboConfigStable: true,
   localeRefreshSupported: true,
   swcPluginCompatible: true,
+  swcPluginWasmFileName: 'gt_swc_plugin.wasm',
   babelPluginCompatible: true,
 }));
 
