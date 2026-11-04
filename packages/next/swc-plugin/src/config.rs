@@ -1,5 +1,36 @@
 use crate::logging::LogLevel;
 use serde::Deserialize;
+use std::collections::HashMap;
+
+/// Translations to embed for one locale, keyed by translation hash
+pub type LocaleTranslations = HashMap<String, serde_json::Value>;
+
+/// Experimental: translations to embed at each translation call site.
+/// gt-next resolves the locale files before passing them to the plugin, since
+/// the wasm plugin cannot reliably read from disk.
+#[derive(Deserialize, Debug, Default, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct InlineTranslationsConfig {
+  /// Locales to embed, in output order
+  #[serde(default)]
+  pub locales: Vec<String>,
+  /// Translations keyed by locale, then by translation hash
+  #[serde(default)]
+  pub translations: HashMap<String, LocaleTranslations>,
+}
+
+impl InlineTranslationsConfig {
+  /// Resolve to (locale, translations) pairs in `locales` order, dropping
+  /// locales without translations
+  pub fn into_table(self) -> Vec<(String, LocaleTranslations)> {
+    let mut translations = self.translations;
+    self
+      .locales
+      .into_iter()
+      .filter_map(|locale| translations.remove(&locale).map(|entries| (locale, entries)))
+      .collect()
+  }
+}
 
 // For plugin configuration and settings
 #[derive(Debug)]
@@ -16,6 +47,8 @@ pub struct PluginSettings {
   pub autoderive_jsx: bool,
   /// When true, bare variables/calls in template literals and concatenations are allowed
   pub autoderive_strings: bool,
+  /// Experimental: translations to embed at call sites, as (locale, translations) pairs
+  pub inline_translations: Vec<(String, LocaleTranslations)>,
 }
 
 impl PluginSettings {
@@ -27,6 +60,7 @@ impl PluginSettings {
       disable_build_checks,
       autoderive_jsx,
       autoderive_strings,
+      inline_translations: Vec::new(),
     }
   }
 }
@@ -47,6 +81,8 @@ pub struct PluginConfig {
   pub autoderive_jsx: bool,
   #[serde(default)]
   pub autoderive_strings: bool,
+  #[serde(default)]
+  pub inline_translations: Option<InlineTranslationsConfig>,
 }
 
 impl Default for PluginConfig {
@@ -58,6 +94,7 @@ impl Default for PluginConfig {
       disable_build_checks: false,
       autoderive_jsx: false,
       autoderive_strings: false,
+      inline_translations: None,
     }
   }
 }

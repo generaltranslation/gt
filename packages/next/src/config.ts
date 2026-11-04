@@ -51,6 +51,7 @@ import {
 import { getRuntimeCredentials } from './setup/runtimeCredentials';
 import { nextLocaleCookieName } from './utils/cookies';
 import { splitMiddlewareConfig } from './middleware-dir/defaultMiddlewareConfig';
+import { resolveInlineTranslations } from './plugin/resolveInlineTranslations';
 
 type AutoderiveConfig = boolean | { jsx?: boolean; strings?: boolean };
 
@@ -681,10 +682,11 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     _tagIds: mergedConfig._tagIds,
   };
 
-  // inlineTranslations is babel-only for now; keep it out of the SWC options
+  // The SWC plugin cannot read locale files, so inline translations are
+  // resolved here and passed as data
   const {
     type: _type,
-    inlineTranslations: _inlineTranslations,
+    inlineTranslations,
     ...compilerOptions
   } = mergedConfig.experimentalCompilerOptions || {};
 
@@ -700,10 +702,17 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
       ? rawAutoderive
       : (rawAutoderive.strings ?? false);
 
+  const swcInlineTranslations =
+    mergedConfig.experimentalCompilerOptions?.type === 'swc'
+      ? resolveInlineTranslations(inlineTranslations)
+      : undefined;
   const swcPluginOptions: Record<string, unknown> = {
     ...compilerOptions,
     autoderiveJsx,
     autoderiveStrings,
+    ...(swcInlineTranslations && {
+      inlineTranslations: swcInlineTranslations,
+    }),
   };
 
   const swcPluginEntry: [string, Record<string, unknown>] | null =
