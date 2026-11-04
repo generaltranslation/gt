@@ -1,4 +1,6 @@
 import { readFileSync } from 'node:fs';
+import { createServer, type RequestListener } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { setFlagsFromString } from 'node:v8';
 import { runInNewContext } from 'node:vm';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -7,6 +9,7 @@ import { awaitJobs } from '../wrappers/awaitJobs';
 import { createBatches, processBatches } from '../wrappers/batch';
 import { API_VERSION, createApiClient } from '../wrappers/client';
 import { ApiError, isTransientApiError } from '../wrappers/errors';
+import { fetchFileDownload } from '../wrappers/fileDownloads';
 import { putFileUpload } from '../wrappers/fileUploads';
 import { paginate } from '../wrappers/paginate';
 import { listProjects, pluginInfo, queryJobs } from '../generated/sdk.gen';
@@ -917,6 +920,94 @@ describe('putFileUpload', () => {
     await expect(
       putFileUpload(upload, new Uint8Array([1]))
     ).rejects.toMatchObject({ name: 'ApiError', status: 403 });
+  });
+});
+
+describe('fetchFileDownload', () => {
+  const downloadUrl = 'https://bucket.example.com/file?X-Amz-Signature=sig';
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('reads the bytes without API credentials', async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(new Response(new Uint8Array([1, 2, 3])));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(fetchFileDownload(downloadUrl)).resolves.toEqual(
+      new Uint8Array([1, 2, 3])
+    );
+    const request = new Request(...fetchMock.mock.calls[0]!);
+    expect(request.method).toBe('GET');
+    expect(request.url).toBe(downloadUrl);
+    expect(request.headers.has('authorization')).toBe(false);
+  });
+
+  it('throws an ApiError with the HTTP status when storage rejects the GET', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(new Response(null, { status: 403 }))
+    );
+
+    await expect(fetchFileDownload(downloadUrl)).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 403,
+    });
+  });
+
+  // A mocked Response ignores the abort signal, so these use a real server.
+  async function serve(handler: RequestListener) {
+    const server = createServer(handler);
+    await new Promise<void>((resolve) => server.listen(0, resolve));
+    const { port } = server.address() as AddressInfo;
+    return {
+      url: `http://127.0.0.1:${port}/file`,
+      close: () =>
+        new Promise((resolve) => {
+          server.closeAllConnections();
+          server.close(resolve);
+        }),
+    };
+  }
+
+  it('times out a body that stalls after the headers', async () => {
+    const server = await serve((_request, response) => {
+      response.writeHead(200, { 'content-length': '2' });
+      response.write('a');
+    });
+    try {
+      await expect(
+        fetchFileDownload(server.url, { timeoutMs: 100, retryPolicy: 'none' })
+      ).rejects.toThrow('Request timed out after 100ms');
+    } finally {
+      await server.close();
+    }
+  });
+
+  it('retries a connection that drops mid-body', async () => {
+    let attempts = 0;
+    const server = await serve((_request, response) => {
+      attempts += 1;
+      response.writeHead(200, { 'content-length': '2' });
+      if (attempts === 1) {
+        response.flushHeaders();
+        response.write('a', () => response.destroy());
+      } else {
+        response.end('ab');
+      }
+    });
+    try {
+      await expect(fetchFileDownload(server.url)).resolves.toEqual(
+        new TextEncoder().encode('ab')
+      );
+      expect(attempts).toBe(2);
+    } finally {
+      await server.close();
+    }
   });
 });
 

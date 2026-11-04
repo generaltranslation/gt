@@ -42,6 +42,22 @@ export function decodeBytes(base64: string): Uint8Array<ArrayBuffer> {
   return Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
 }
 
+/** The base64 encoding of `bytes`. */
+export function encodeBytes(bytes: Uint8Array): string {
+  if (typeof Buffer !== 'undefined') {
+    // Node.js path.
+    return Buffer.from(bytes).toString('base64');
+  }
+  // Browser path, in chunks so large files stay within argument limits.
+  let binary = '';
+  for (let start = 0; start < bytes.length; start += 0x8000) {
+    binary += String.fromCharCode(
+      ...Array.from(bytes.subarray(start, start + 0x8000))
+    );
+  }
+  return btoa(binary);
+}
+
 /** The number of bytes a padded base64 string encodes. */
 export function decodedByteLength(base64: string): number {
   const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0;

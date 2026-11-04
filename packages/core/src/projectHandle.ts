@@ -1,8 +1,10 @@
 import {
+  ApiError,
   awaitJobs,
   createBranch,
   createProjectApiKey,
   DEFAULT_BATCH_SIZE,
+  fetchFileDownload,
   generateProjectContext,
   getFileContent,
   getFileStatus,
@@ -86,10 +88,38 @@ import type {
   FileUpload,
   TranslationUpload,
 } from './types-dir/api/uploadFiles';
-import { decodeFileContent } from './utils/base64';
+import { decodeFileContent, encodeBytes } from './utils/base64';
 
 // The server accepts at most 25 moves per request.
 const MOVE_FILES_BATCH_SIZE = 25;
+
+// Bounds the bytes held in memory while reading files from download URLs.
+const PARALLEL_FILE_DOWNLOADS = 4;
+
+/**
+ * The API returns a file too large to inline as `data: null` and a signed
+ * `downloadUrl`; this reads it so `data` holds the base64 content either way.
+ * On a 403, `refresh` reads the result again for a new URL, once.
+ */
+async function withDownloadedData<
+  Result extends { data?: string | null; downloadUrl?: string },
+>(
+  result: Result,
+  timeoutMs?: number,
+  refresh?: () => Promise<Result>
+): Promise<Result> {
+  if (result.data !== null || !result.downloadUrl) return result;
+  try {
+    const bytes = await fetchFileDownload(result.downloadUrl, { timeoutMs });
+    return { ...result, data: encodeBytes(bytes) };
+  } catch (error) {
+    // Signed URLs expire after 15 minutes, so a queued download can outlive its URL.
+    if (!refresh || !(error instanceof ApiError && error.status === 403)) {
+      throw error;
+    }
+    return withDownloadedData(await refresh(), timeoutMs);
+  }
+}
 
 /**
  * Project and file operations, plus runtime translation, for one project: the
@@ -790,15 +820,18 @@ export class ProjectHandle extends GTRuntime {
     options: { timeout?: number } = {}
   ): Promise<GetFileContentResponse> {
     const request = this.request(options.timeout);
-    const result = unwrapApiResult(
-      await getFileContent({
-        ...request,
-        path: { ...request.path, fileId },
-        query: {
-          ...query,
-          locale: query.locale && this.resolveServiceLocale(query.locale),
-        },
-      })
+    const result = await withDownloadedData(
+      unwrapApiResult(
+        await getFileContent({
+          ...request,
+          path: { ...request.path, fileId },
+          query: {
+            ...query,
+            locale: query.locale && this.resolveServiceLocale(query.locale),
+          },
+        })
+      ),
+      options.timeout
     );
     const decoded = {
       ...result,
@@ -821,8 +854,8 @@ export class ProjectHandle extends GTRuntime {
     files: QueryFilesContentData['body']['files'],
     options: { timeout?: number } = {}
   ): Promise<QueryFilesContentResponse> {
-    const results = await this.queryEachSelector(files, (distinct) =>
-      processBatches(distinct, async (batch) => {
+    const readSelectors = (selectors: typeof files) =>
+      processBatches(selectors, async (batch) => {
         const response = unwrapApiResult(
           await queryFilesContent({
             ...this.request(options.timeout),
@@ -830,8 +863,26 @@ export class ProjectHandle extends GTRuntime {
           })
         );
         return response.results;
-      })
-    );
+      });
+    const results = await this.queryEachSelector(files, async (distinct) => {
+      const distinctResults = await readSelectors(distinct);
+      return processBatches(
+        distinctResults.map((result, index) => ({
+          result,
+          selector: distinct[index],
+        })),
+        (batch) =>
+          Promise.all(
+            batch.map(({ result, selector }) =>
+              withDownloadedData(result, options.timeout, async () => {
+                const [fresh] = await readSelectors([selector]);
+                return fresh;
+              })
+            )
+          ),
+        { batchSize: PARALLEL_FILE_DOWNLOADS, parallel: false }
+      );
+    });
     return {
       results: results.map((result) => ({
         ...result,
