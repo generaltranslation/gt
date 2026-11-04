@@ -78,9 +78,12 @@ import { validateModelProvider } from './translate/modelProvider';
 import type { MoveMapping } from './translate/moveFiles';
 import type { PublishFileEntry } from './translate/publishFiles';
 import { unwrapApiResult } from './translate/utils/unwrapApiResult';
-import { validateFileFormatTransforms } from './translate/utils/validateFileFormatTransform';
-import type { FileUpload } from './types-dir/api/uploadFiles';
-import { decodeFileContent, encodeFileContent } from './utils/base64';
+import { stageFileContents } from './translate/stageFileContents';
+import type {
+  FileUpload,
+  TranslationUpload,
+} from './types-dir/api/uploadFiles';
+import { decodeFileContent } from './utils/base64';
 
 // The server accepts at most 25 moves per request.
 const MOVE_FILES_BATCH_SIZE = 25;
@@ -827,15 +830,21 @@ export class ProjectHandle extends GTRuntime {
   ): Promise<UploadSourceFilesResponse> {
     const sourceLocale =
       options.sourceLocale ?? this.localeConfig.defaultLocale;
-    return writeInBatches(files, DEFAULT_BATCH_SIZE, async (batch) =>
-      unwrapApiResult(
+    return writeInBatches(files, DEFAULT_BATCH_SIZE, async (batch) => {
+      const request = this.request(options.timeout);
+      const contents = await stageFileContents(
+        request,
+        batch.map(({ source }) => source),
+        options.timeout
+      );
+      return unwrapApiResult(
         await uploadSourceFiles({
-          ...this.request(options.timeout),
+          ...request,
           body: {
-            data: batch.map(({ source }) => ({
+            data: batch.map(({ source: { content: _, ...source } }, index) => ({
               source: {
                 ...source,
-                content: encodeFileContent(source.content, source.fileFormat),
+                ...contents[index],
                 locale: this.resolveServiceLocale(source.locale),
               },
             })),
@@ -844,8 +853,8 @@ export class ProjectHandle extends GTRuntime {
             }),
           },
         })
-      )
-    );
+      );
+    });
   }
 
   /**
@@ -857,36 +866,47 @@ export class ProjectHandle extends GTRuntime {
    * @returns The summary and one result per translation, in request order.
    */
   async uploadTranslations(
-    files: { source: FileUpload; translations: FileUpload[] }[],
+    files: { source: FileUpload; translations: TranslationUpload[] }[],
     options: { timeout?: number } = {}
   ): Promise<UploadTranslationsResponse> {
-    validateFileFormatTransforms(files.map(({ source }) => source));
     const response = await writeInBatches(
       files,
       DEFAULT_BATCH_SIZE,
-      async (batch) =>
-        unwrapApiResult(
+      async (batch) => {
+        const request = this.request(options.timeout);
+        const contents = await stageFileContents(
+          request,
+          batch.flatMap(({ source, translations }) => [
+            source,
+            ...translations,
+          ]),
+          options.timeout
+        );
+        let next = 0;
+        return unwrapApiResult(
           await uploadTranslations({
-            ...this.request(options.timeout),
+            ...request,
             body: {
-              data: batch.map(({ source, translations }) => ({
-                source: {
-                  ...source,
-                  content: encodeFileContent(source.content, source.fileFormat),
-                  locale: this.resolveServiceLocale(source.locale),
-                },
-                translations: translations.map((translation) => ({
-                  ...translation,
-                  locale: this.resolveServiceLocale(translation.locale),
-                  content: encodeFileContent(
-                    translation.content,
-                    translation.fileFormat
+              data: batch.map(
+                ({ source: { content: _, ...source }, translations }) => ({
+                  source: {
+                    ...source,
+                    ...contents[next++],
+                    locale: this.resolveServiceLocale(source.locale),
+                  },
+                  translations: translations.map(
+                    ({ content: _, ...translation }) => ({
+                      ...translation,
+                      ...contents[next++],
+                      locale: this.resolveServiceLocale(translation.locale),
+                    })
                   ),
-                })),
-              })),
+                })
+              ),
             },
           })
-        )
+        );
+      }
     );
     return {
       ...response,

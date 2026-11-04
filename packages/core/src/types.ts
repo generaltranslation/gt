@@ -47,7 +47,10 @@ export type {
 
 export type { Updates } from './types-dir/api/enqueueFiles';
 export type { FileToUpload } from './types-dir/api/file';
-export type { FileUpload } from './types-dir/api/uploadFiles';
+export type {
+  FileUpload,
+  TranslationUpload,
+} from './types-dir/api/uploadFiles';
 export type { FileReference } from './types-dir/api/file';
 export type { PublishFileEntry } from './translate/publishFiles';
 export type { FileFormat } from './types-dir/api/file';
