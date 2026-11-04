@@ -23,6 +23,7 @@ import {
 // Mock dependencies
 const api = vi.hoisted(() => ({
   queryFilesContent: vi.fn(),
+  fetchFileDownload: vi.fn(),
 }));
 vi.mock('../../utils/api.js', () => ({
   createClients: () => ({ project: api }),
@@ -35,6 +36,8 @@ vi.mock('fs', () => ({
   readFileSync: vi.fn(),
   promises: {
     writeFile: vi.fn(),
+    rename: vi.fn(),
+    rm: vi.fn(),
   },
 }));
 
@@ -462,6 +465,98 @@ describe('downloadFileBatch', () => {
     expect(result.retryable).toEqual([files[0]]);
     expect(result.failed).toEqual([files[1]]);
     expect(fs.promises.writeFile).not.toHaveBeenCalled();
+  });
+
+  describe('media served through a signed URL', () => {
+    const files = createBatchedFiles(1, { outputPath: '/output/video.mp4' });
+    const mediaResult = {
+      results: [
+        {
+          status: 'ready' as const,
+          branchId: 'branch-1',
+          fileId: 'file-1',
+          versionId: 'version-1',
+          locale: 'en',
+          fileFormat: 'MP4' as FileFormat,
+          data: null,
+          downloadUrl: 'https://bucket.example.com/video',
+          fileName: 'video.mp4',
+          metadata: {},
+        },
+      ],
+    };
+
+    it('streams the file to its output path through a sibling file', async () => {
+      vi.mocked(api.queryFilesContent).mockResolvedValue(mediaResult);
+      setupFileSystemMocks();
+      api.fetchFileDownload.mockResolvedValue(
+        new Response(new Uint8Array([1, 2, 3])).body
+      );
+
+      const result = await downloadFileBatch(
+        createMockFileTracker(files),
+        files,
+        createMockSettings()
+      );
+
+      expect(result.successful).toEqual(files);
+      expect(api.fetchFileDownload).toHaveBeenCalledWith(
+        'https://bucket.example.com/video'
+      );
+      const [partialPath, content] = vi.mocked(fs.promises.writeFile).mock
+        .calls[0]!;
+      expect(partialPath).toBe('/output/video.mp4.part');
+      expect(
+        new Uint8Array(
+          await new Response(content as ReadableStream).arrayBuffer()
+        )
+      ).toEqual(new Uint8Array([1, 2, 3]));
+      expect(fs.promises.rename).toHaveBeenCalledWith(
+        '/output/video.mp4.part',
+        '/output/video.mp4'
+      );
+      // Without metadata the file is not read back into memory to be hashed.
+      expect(getDownloadedMeta().has('/output/video.mp4')).toBe(false);
+    });
+
+    it('keeps the last file and requests the file again when the download is cut off', async () => {
+      vi.mocked(api.queryFilesContent).mockResolvedValue(mediaResult);
+      setupFileSystemMocks({ writeFileError: new TypeError('terminated') });
+      api.fetchFileDownload.mockResolvedValue(
+        new Response(new Uint8Array([1, 2, 3])).body
+      );
+
+      const result = await downloadFileBatch(
+        createMockFileTracker(files),
+        files,
+        createMockSettings()
+      );
+
+      expect(result.retryable).toEqual(files);
+      expect(result.failed).toHaveLength(0);
+      expect(fs.promises.rename).not.toHaveBeenCalled();
+      expect(fs.promises.rm).toHaveBeenCalledWith('/output/video.mp4.part', {
+        force: true,
+      });
+    });
+
+    it('requests the file again when its URL is rejected', async () => {
+      vi.mocked(api.queryFilesContent).mockResolvedValue(mediaResult);
+      setupFileSystemMocks();
+      api.fetchFileDownload.mockRejectedValue(
+        new ApiError('File download failed with HTTP 403', 403)
+      );
+
+      const result = await downloadFileBatch(
+        createMockFileTracker(files),
+        files,
+        createMockSettings()
+      );
+
+      expect(result.retryable).toEqual(files);
+      expect(result.failed).toHaveLength(0);
+      expect(fs.promises.writeFile).not.toHaveBeenCalled();
+    });
   });
 
   it('marks the batch retryable after a transient read failure', async () => {

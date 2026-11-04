@@ -11,6 +11,7 @@ import {
 } from '../wrappers/batch';
 import { API_VERSION, createApiClient } from '../wrappers/client';
 import { ApiError, isTransientApiError } from '../wrappers/errors';
+import { fetchFileDownload } from '../wrappers/fileDownloads';
 import { putFileUpload } from '../wrappers/fileUploads';
 import { paginate } from '../wrappers/paginate';
 import { listProjects, pluginInfo, queryJobs } from '../generated/sdk.gen';
@@ -921,6 +922,45 @@ describe('putFileUpload', () => {
     await expect(
       putFileUpload(upload, new Uint8Array([1]))
     ).rejects.toMatchObject({ name: 'ApiError', status: 403 });
+  });
+});
+
+describe('fetchFileDownload', () => {
+  const downloadUrl = 'https://bucket.example.com/file?X-Amz-Signature=sig';
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('streams the file without API credentials', async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(new Response(new Uint8Array([1, 2, 3])));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const stream = await fetchFileDownload(downloadUrl);
+
+    expect(new Uint8Array(await new Response(stream).arrayBuffer())).toEqual(
+      new Uint8Array([1, 2, 3])
+    );
+    const request = new Request(...fetchMock.mock.calls[0]!);
+    expect(request.method).toBe('GET');
+    expect(request.url).toBe(downloadUrl);
+    expect(request.headers.has('authorization')).toBe(false);
+  });
+
+  it('throws an ApiError with the HTTP status when storage rejects the GET', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(new Response(null, { status: 403 }))
+    );
+
+    await expect(fetchFileDownload(downloadUrl)).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 403,
+    });
   });
 });
 
