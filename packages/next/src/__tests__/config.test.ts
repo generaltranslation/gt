@@ -868,7 +868,7 @@ describe('withGTConfig', () => {
     it('GT_PROJECT_ID enables services but is not serialized', async () => {
       const withGTConfig = await getWithGTConfig();
       process.env.GT_PROJECT_ID = 'my-project';
-      process.env.GT_DEV_API_KEY = 'dev-key-value';
+      process.env.GT_API_KEY = 'dev-key-value';
 
       const result = withGTConfig();
       const params = parseConfigParams(result);
@@ -890,11 +890,11 @@ describe('withGTConfig', () => {
       expect(params.apiKey).toBeUndefined();
     });
 
-    it('GT_DEV_API_KEY in development enables services but is not serialized', async () => {
+    it('GT_API_KEY in development enables services but is not serialized as devApiKey', async () => {
       const withGTConfig = await getWithGTConfig();
       process.env.NODE_ENV = 'development';
       process.env.GT_PROJECT_ID = 'proj';
-      process.env.GT_DEV_API_KEY = 'dev-key-value';
+      process.env.GT_API_KEY = 'dev-key-value';
 
       const result = withGTConfig();
       const params = parseConfigParams(result);
@@ -932,7 +932,7 @@ describe('withGTConfig', () => {
       const withGTConfig = await getWithGTConfig();
       process.env.NODE_ENV = 'development';
       process.env.GT_PROJECT_ID = 'proj';
-      process.env.GT_DEV_API_KEY = 'not-prefixed';
+      process.env.GT_API_KEY = 'not-prefixed';
 
       const result = withGTConfig();
       const params = parseConfigParams(result);
@@ -1138,7 +1138,7 @@ describe('withGTConfig', () => {
     it('preserves configured locale spellings when GT services are enabled', async () => {
       const withGTConfig = await getWithGTConfig();
       process.env.GT_PROJECT_ID = 'proj';
-      process.env.GT_DEV_API_KEY = 'gt-dev-abc';
+      process.env.GT_API_KEY = 'gt-dev-abc';
       vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       const result = withGTConfig(
@@ -1183,7 +1183,7 @@ describe('withGTConfig', () => {
     it('enabled: default runtimeUrl + dev apiKey + projectId', async () => {
       const withGTConfig = await getWithGTConfig();
       process.env.NODE_ENV = 'development';
-      process.env.GT_DEV_API_KEY = 'gt-dev-abc';
+      process.env.GT_API_KEY = 'gt-dev-abc';
       process.env.GT_PROJECT_ID = 'proj';
       vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -1234,28 +1234,35 @@ describe('withGTConfig', () => {
   // 10. Error cases
   // ==============================
   describe('10. Error cases', () => {
-    it.each(['GT_DEV_API_KEY', 'NEXT_PUBLIC_GT_DEV_API_KEY'])(
-      'ignores %s in production builds instead of failing them',
-      async (name) => {
-        const withGTConfig = await getWithGTConfig();
-        process.env.NODE_ENV = 'production';
-        process.env.GT_PROJECT_ID = 'proj';
-        process.env[name] = 'gtx-development-key';
+    it('ignores NEXT_PUBLIC_GT_DEV_API_KEY in production builds instead of failing them', async () => {
+      const withGTConfig = await getWithGTConfig();
+      process.env.NODE_ENV = 'production';
+      process.env.GT_PROJECT_ID = 'proj';
+      process.env.NEXT_PUBLIC_GT_DEV_API_KEY = 'gtx-development-key';
 
-        const result = withGTConfig();
+      const result = withGTConfig();
 
-        // Without a production key, runtime translation stays off.
-        expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe(
-          'false'
-        );
-        expect(JSON.stringify(result.env)).not.toContain('gtx-development-key');
-      }
-    );
+      // Without GT_API_KEY, runtime translation stays off.
+      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('false');
+      expect(JSON.stringify(result.env)).not.toContain('gtx-development-key');
+    });
+
+    it('never exposes GT_API_KEY to client code', async () => {
+      const withGTConfig = await getWithGTConfig();
+      process.env.NODE_ENV = 'development';
+      process.env.GT_PROJECT_ID = 'proj';
+      process.env.GT_API_KEY = 'gtx-api-key';
+
+      const result = withGTConfig();
+
+      // GTProvider passes it as a prop instead.
+      expect(JSON.stringify(result.env)).not.toContain('gtx-api-key');
+    });
 
     it('invalid locales + GT services enabled throws invalidLocalesError', async () => {
       const withGTConfig = await getWithGTConfig();
       process.env.GT_PROJECT_ID = 'proj';
-      process.env.GT_DEV_API_KEY = 'gt-dev-abc';
+      process.env.GT_API_KEY = 'gt-dev-abc';
       vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       expect(() =>
@@ -1332,7 +1339,7 @@ describe('withGTConfig', () => {
 
     it('NOT set when devApiKey present', async () => {
       const withGTConfig = await getWithGTConfig();
-      process.env.GT_DEV_API_KEY = 'gt-dev-abc';
+      process.env.GT_API_KEY = 'gt-dev-abc';
       vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       const result = withGTConfig();
@@ -1405,7 +1412,7 @@ describe('withGTConfig', () => {
     it('warns when cacheComponents disables active dev hot reload translation', async () => {
       const withGTConfig = await getWithGTConfig();
       process.env.GT_PROJECT_ID = 'project-id';
-      process.env.GT_DEV_API_KEY = 'dev-key';
+      process.env.GT_API_KEY = 'dev-key';
       const resolvedPath = require('path').resolve('./loadTranslations.ts');
       vi.mocked(fs.existsSync).mockImplementation((p) => p === resolvedPath);
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});

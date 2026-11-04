@@ -32,15 +32,14 @@ export function initializeGTClient(
 }
 
 /**
- * Give the client the development key the RSC GTProvider passed down. App
- * Router keeps the key server-only (GT_DEV_API_KEY), so the client's
- * module-load initialization ran without it. The client singletons are
+ * Give the client the development credentials the RSC GTProvider passed down.
+ * GT_PROJECT_ID and GT_API_KEY are not visible to client code, so the client's
+ * module-load initialization ran without them (or with legacy NEXT_PUBLIC_
+ * values, which the server's GT_* values outrank). The client singletons are
  * write-once, so this updates the existing config in place; the cache reads
  * the config on each runtime translation request.
  */
 export function applyDevCredentialsClient(credentials: DevCredentials): void {
   if (process.env.NODE_ENV !== 'development') return;
-  const i18nConfig = getI18nConfig();
-  if (i18nConfig.isDevHotReloadEnabled()) return;
-  i18nConfig.setDevCredentials(credentials);
+  getI18nConfig().setDevCredentials(credentials);
 }

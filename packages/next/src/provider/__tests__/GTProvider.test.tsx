@@ -158,9 +158,9 @@ describe('GTProvider', () => {
     });
   });
 
-  it('passes the server-only development key to the client when hot reload is on', async () => {
+  it('passes GT_PROJECT_ID and GT_API_KEY to the client when hot reload is on', async () => {
     vi.stubEnv('GT_PROJECT_ID', 'project-id');
-    vi.stubEnv('GT_DEV_API_KEY', 'gtx-dev-key');
+    vi.stubEnv('GT_API_KEY', 'gtx-dev-key');
     vi.stubEnv('NODE_ENV', 'development');
     mockGetI18nConfig.mockReturnValue({
       requiresTranslation: vi.fn().mockReturnValue(true),
@@ -178,7 +178,7 @@ describe('GTProvider', () => {
 
   it('never passes a development key when hot reload is off, as in production', async () => {
     vi.stubEnv('GT_PROJECT_ID', 'project-id');
-    vi.stubEnv('GT_DEV_API_KEY', 'gtx-dev-key');
+    vi.stubEnv('GT_API_KEY', 'gtx-dev-key');
     vi.stubEnv('NODE_ENV', 'production');
     const { GTProvider } = await import('../GTProvider');
 

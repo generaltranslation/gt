@@ -50,7 +50,6 @@ describe('initializeGT', () => {
     vi.stubEnv('NODE_ENV', 'development');
     vi.stubEnv('GT_PROJECT_ID', undefined);
     vi.stubEnv('GT_API_KEY', undefined);
-    vi.stubEnv('GT_DEV_API_KEY', undefined);
     vi.stubEnv('NEXT_PUBLIC_GT_PROJECT_ID', 'project-id');
     vi.stubEnv('NEXT_PUBLIC_GT_DEV_API_KEY', 'gtx-development-key');
     vi.stubEnv(
@@ -75,9 +74,9 @@ describe('initializeGT', () => {
 
   it('enables client hot reload from the credentials GTProvider passes down', () => {
     vi.stubEnv('NODE_ENV', 'development');
-    // App Router keeps both server-only, so the client starts without them.
+    // GT_PROJECT_ID and GT_API_KEY are not visible to client code.
     vi.stubEnv('GT_PROJECT_ID', undefined);
-    vi.stubEnv('GT_DEV_API_KEY', undefined);
+    vi.stubEnv('GT_API_KEY', undefined);
     vi.stubEnv('NEXT_PUBLIC_GT_PROJECT_ID', undefined);
     vi.stubEnv('NEXT_PUBLIC_GT_DEV_API_KEY', undefined);
     vi.stubEnv(
