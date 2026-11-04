@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Button, Dialog, Flex, Stack, Text } from '@sanity/ui';
 import { useTranslations } from '../TranslationsProvider';
+import { SelectedLocalesNote } from './SelectedLocalesNote';
 
 interface ImportMissingDialogProps {
   isOpen: boolean;
@@ -40,6 +41,7 @@ export const ImportMissingDialog: React.FC<ImportMissingDialogProps> = ({
             Import only the missing translations (translations that are ready
             but haven't been imported to Sanity yet)?
           </Text>
+          <SelectedLocalesNote />
           <Text size={1} muted>
             This will check existing translation metadata and only import
             translations that don't already exist in your dataset.

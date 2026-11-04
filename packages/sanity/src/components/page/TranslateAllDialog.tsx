@@ -10,6 +10,7 @@ import {
   Text,
 } from '@sanity/ui';
 import { useTranslations } from '../TranslationsProvider';
+import { SelectedLocalesNote } from './SelectedLocalesNote';
 
 interface TranslateAllDialogProps {
   isOpen: boolean;
@@ -61,6 +62,7 @@ export const TranslateAllDialog: React.FC<TranslateAllDialogProps> = ({
               Are you sure you want to create translations for all{' '}
               {documents.length} documents?
             </Text>
+            <SelectedLocalesNote />
             <Text size={1} muted>
               This will submit all documents to General Translation for
               processing.
