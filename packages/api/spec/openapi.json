@@ -167,10 +167,10 @@
         "type": "string",
         "enum": [
           "GTJSON",
-          "MDX",
           "JSON",
           "YAML",
           "MD",
+          "MDX",
           "TS",
           "JS",
           "HTML",
@@ -190,6 +190,10 @@
           "JPEG",
           "MP4"
         ]
+      },
+      "DataFormat": {
+        "type": "string",
+        "enum": ["JSX", "ICU", "I18NEXT", "STRING", "ICU_TREE"]
       },
       "BatchWriteSummary": {
         "type": "object",
@@ -258,10 +262,6 @@
             }
           }
         ]
-      },
-      "DataFormat": {
-        "type": "string",
-        "enum": ["JSX", "ICU", "I18NEXT", "STRING", "ICU_TREE"]
       },
       "Branch": {
         "type": "object",
@@ -437,11 +437,29 @@
       "RuntimeFileFormat": {
         "type": "string",
         "enum": ["MD", "MDX"],
-        "description": "Marks the source as a whole document in this file format. Send the document as a string."
+        "description": "Marks the source as a whole document in this file format. Send the document as a string, with `dataFormat` `STRING` and without `maxChars` or `sourceCode`."
       },
       "ProjectApiKeyPermission": {
         "type": "string",
         "enum": [
+          "project:write",
+          "project:context:read",
+          "project:context:write",
+          "project:files:read",
+          "project:files:write",
+          "project:translations:generate",
+          "project:translations:enqueue"
+        ]
+      },
+      "OrgApiKeyPermission": {
+        "type": "string",
+        "enum": [
+          "org:projects:create",
+          "project:api_keys:read",
+          "project:api_keys:write",
+          "org:context:read",
+          "org:context:write",
+          "org:assets:write",
           "project:write",
           "project:context:read",
           "project:context:write",
@@ -8052,7 +8070,14 @@
                           "$ref": "#/components/schemas/FileFormat"
                         },
                         "dataFormat": {
-                          "type": ["string", "null"]
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/DataFormat"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "createdAt": {
                           "type": "string",
@@ -9522,7 +9547,14 @@
                             ]
                           },
                           "dataFormat": {
-                            "type": ["string", "null"],
+                            "anyOf": [
+                              {
+                                "$ref": "#/components/schemas/DataFormat"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
                             "description": "Present when `status` is `found`."
                           },
                           "createdAt": {
@@ -10034,7 +10066,11 @@
                           },
                           "data": {
                             "type": ["string", "null"],
-                            "description": "Base64 file content when `status` is `ready`; `null` when `pending`; absent when `not_found`."
+                            "description": "Base64 file content when `status` is `ready`, except `null` when the file is too large to return inline, in which case fetch it from `downloadUrl`; `null` when `pending`; absent when `not_found`."
+                          },
+                          "downloadUrl": {
+                            "type": "string",
+                            "description": "Signed URL that serves the raw file for 15 minutes; present when `status` is `ready` and `data` is `null`, and for media files."
                           },
                           "metadata": {
                             "$ref": "#/components/schemas/JsonObject"
@@ -10509,7 +10545,11 @@
                     },
                     "data": {
                       "type": ["string", "null"],
-                      "description": "Base64 file content; `null` exactly when `status` is `pending`."
+                      "description": "Base64 file content; `null` when `status` is `pending`, or when the file is too large to return inline, in which case fetch it from `downloadUrl`."
+                    },
+                    "downloadUrl": {
+                      "type": "string",
+                      "description": "Signed URL that serves the raw file for 15 minutes; present when `status` is `ready` and `data` is `null`, and for media files."
                     },
                     "metadata": {
                       "$ref": "#/components/schemas/JsonObject"
@@ -11438,86 +11478,100 @@
                       "type": "object",
                       "properties": {
                         "source": {
-                          "type": "object",
-                          "properties": {
-                            "content": {
-                              "type": "string",
-                              "examples": ["eyJncmVldGluZyI6IkhlbGxvIn0="],
-                              "description": "Base64-encoded file content."
-                            },
-                            "fileName": {
-                              "type": "string",
-                              "minLength": 1,
-                              "examples": ["locales/en/common.json"]
-                            },
-                            "fileFormat": {
-                              "type": "string",
-                              "enum": [
-                                "GTJSON",
-                                "MDX",
-                                "JSON",
-                                "YAML",
-                                "MD",
-                                "TS",
-                                "JS",
-                                "HTML",
-                                "TXT",
-                                "PO",
-                                "POT",
-                                "TWILIO_CONTENT_JSON",
-                                "LOTTIE",
-                                "SVG",
-                                "XCSTRINGS",
-                                "DOT_STRINGS",
-                                "DOT_STRINGSDICT",
-                                "ANDROID_STRINGS",
-                                "SRT",
-                                "RESX",
-                                "PNG",
-                                "JPEG",
-                                "MP4"
-                              ]
-                            },
-                            "dataFormat": {
-                              "type": "string"
-                            },
-                            "locale": {
-                              "type": "string",
-                              "minLength": 1,
-                              "examples": ["en"]
-                            },
-                            "fileId": {
-                              "type": "string",
-                              "minLength": 1,
-                              "maxLength": 64
-                            },
-                            "versionId": {
-                              "type": "string",
-                              "minLength": 1,
-                              "maxLength": 255
-                            },
-                            "branchId": {
-                              "type": "string",
-                              "minLength": 1
-                            },
-                            "checkedOutBranchId": {
-                              "type": "string",
-                              "minLength": 1
-                            },
-                            "incomingBranchId": {
-                              "type": "string",
-                              "minLength": 1
-                            },
-                            "formatMetadata": {
+                          "allOf": [
+                            {
                               "type": "object",
-                              "additionalProperties": {}
+                              "properties": {
+                                "fileName": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "examples": ["locales/en/common.json"]
+                                },
+                                "fileFormat": {
+                                  "$ref": "#/components/schemas/FileFormat"
+                                },
+                                "dataFormat": {
+                                  "$ref": "#/components/schemas/DataFormat"
+                                },
+                                "locale": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "examples": ["en"]
+                                },
+                                "fileId": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 64
+                                },
+                                "versionId": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 255
+                                },
+                                "branchId": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "checkedOutBranchId": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "incomingBranchId": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "formatMetadata": {
+                                  "type": "object",
+                                  "additionalProperties": {}
+                                },
+                                "metadata": {
+                                  "type": "object",
+                                  "properties": {
+                                    "previewUrl": {
+                                      "type": "string",
+                                      "format": "uri",
+                                      "description": "Page that shows this version of the file."
+                                    }
+                                  }
+                                }
+                              },
+                              "required": ["fileName", "fileFormat", "locale"]
+                            },
+                            {
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "content": {
+                                      "type": "string",
+                                      "examples": [
+                                        "eyJncmVldGluZyI6IkhlbGxvIn0="
+                                      ],
+                                      "description": "Base64-encoded file content."
+                                    }
+                                  },
+                                  "required": ["content"]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "upload": {
+                                      "type": "object",
+                                      "properties": {
+                                        "sha256": {
+                                          "type": "string",
+                                          "pattern": "^[0-9a-f]{64}$",
+                                          "description": "SHA-256 of the file's bytes, as 64 lowercase hex characters."
+                                        }
+                                      },
+                                      "required": ["sha256"],
+                                      "description": "A file already PUT to the URL from Create file uploads, in place of `content`; required for files over 4MB."
+                                    }
+                                  },
+                                  "required": ["upload"]
+                                }
+                              ]
                             }
-                          },
-                          "required": [
-                            "content",
-                            "fileName",
-                            "fileFormat",
-                            "locale"
                           ]
                         }
                       },
@@ -11529,6 +11583,7 @@
                   },
                   "sourceLocale": {
                     "type": "string",
+                    "minLength": 1,
                     "description": "Default locale for files in this request; each file's own locale takes precedence. Defaults to the project's default locale, which the upload does not change."
                   }
                 },
@@ -12092,173 +12147,160 @@
                       "type": "object",
                       "properties": {
                         "source": {
-                          "type": "object",
-                          "properties": {
-                            "content": {
-                              "type": "string",
-                              "examples": ["eyJncmVldGluZyI6IkhlbGxvIn0="],
-                              "description": "Base64-encoded file content."
-                            },
-                            "fileName": {
-                              "type": "string",
-                              "minLength": 1,
-                              "examples": ["locales/en/common.json"]
-                            },
-                            "fileFormat": {
-                              "type": "string",
-                              "enum": [
-                                "GTJSON",
-                                "MDX",
-                                "JSON",
-                                "YAML",
-                                "MD",
-                                "TS",
-                                "JS",
-                                "HTML",
-                                "TXT",
-                                "PO",
-                                "POT",
-                                "TWILIO_CONTENT_JSON",
-                                "LOTTIE",
-                                "SVG",
-                                "XCSTRINGS",
-                                "DOT_STRINGS",
-                                "DOT_STRINGSDICT",
-                                "ANDROID_STRINGS",
-                                "SRT",
-                                "RESX",
-                                "PNG",
-                                "JPEG",
-                                "MP4"
-                              ]
-                            },
-                            "dataFormat": {
-                              "type": "string"
-                            },
-                            "locale": {
-                              "type": "string",
-                              "minLength": 1,
-                              "examples": ["en"]
-                            },
-                            "fileId": {
-                              "type": "string",
-                              "minLength": 1,
-                              "maxLength": 64
-                            },
-                            "versionId": {
-                              "type": "string",
-                              "minLength": 1,
-                              "maxLength": 255
-                            },
-                            "branchId": {
-                              "type": "string",
-                              "minLength": 1
-                            },
-                            "checkedOutBranchId": {
-                              "type": "string",
-                              "minLength": 1
-                            },
-                            "incomingBranchId": {
-                              "type": "string",
-                              "minLength": 1
-                            },
-                            "formatMetadata": {
+                          "allOf": [
+                            {
                               "type": "object",
-                              "additionalProperties": {}
+                              "properties": {
+                                "fileName": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "examples": ["locales/en/common.json"]
+                                },
+                                "fileFormat": {
+                                  "$ref": "#/components/schemas/FileFormat"
+                                },
+                                "dataFormat": {
+                                  "$ref": "#/components/schemas/DataFormat"
+                                },
+                                "locale": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "examples": ["en"]
+                                },
+                                "fileId": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 64
+                                },
+                                "versionId": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 255
+                                },
+                                "branchId": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "checkedOutBranchId": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "incomingBranchId": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "formatMetadata": {
+                                  "type": "object",
+                                  "additionalProperties": {}
+                                }
+                              },
+                              "required": ["fileName", "fileFormat", "locale"]
+                            },
+                            {
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "content": {
+                                      "type": "string",
+                                      "examples": [
+                                        "eyJncmVldGluZyI6IkhlbGxvIn0="
+                                      ],
+                                      "description": "Base64-encoded file content."
+                                    }
+                                  },
+                                  "required": ["content"]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "upload": {
+                                      "type": "object",
+                                      "properties": {
+                                        "sha256": {
+                                          "type": "string",
+                                          "pattern": "^[0-9a-f]{64}$",
+                                          "description": "SHA-256 of the file's bytes, as 64 lowercase hex characters."
+                                        }
+                                      },
+                                      "required": ["sha256"],
+                                      "description": "A file already PUT to the URL from Create file uploads, in place of `content`; required for files over 4MB."
+                                    }
+                                  },
+                                  "required": ["upload"]
+                                }
+                              ]
                             }
-                          },
-                          "required": [
-                            "content",
-                            "fileName",
-                            "fileFormat",
-                            "locale"
                           ]
                         },
                         "translations": {
                           "type": "array",
                           "items": {
-                            "type": "object",
-                            "properties": {
-                              "content": {
-                                "type": "string",
-                                "examples": ["eyJncmVldGluZyI6IkhvbGEifQ=="],
-                                "description": "Base64-encoded translation content."
+                            "allOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "fileName": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "examples": ["locales/es/common.json"]
+                                  },
+                                  "fileFormat": {
+                                    "allOf": [
+                                      {
+                                        "$ref": "#/components/schemas/FileFormat"
+                                      },
+                                      {
+                                        "description": "The translation's format, saved as sent: the source's format or a supported conversion from it (POT to PO)."
+                                      }
+                                    ]
+                                  },
+                                  "dataFormat": {
+                                    "$ref": "#/components/schemas/DataFormat"
+                                  },
+                                  "locale": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "examples": ["es"]
+                                  }
+                                },
+                                "required": ["fileName", "fileFormat", "locale"]
                               },
-                              "fileName": {
-                                "type": "string",
-                                "minLength": 1,
-                                "examples": ["locales/es/common.json"]
-                              },
-                              "fileFormat": {
-                                "type": "string",
-                                "enum": [
-                                  "GTJSON",
-                                  "MDX",
-                                  "JSON",
-                                  "YAML",
-                                  "MD",
-                                  "TS",
-                                  "JS",
-                                  "HTML",
-                                  "TXT",
-                                  "PO",
-                                  "POT",
-                                  "TWILIO_CONTENT_JSON",
-                                  "LOTTIE",
-                                  "SVG",
-                                  "XCSTRINGS",
-                                  "DOT_STRINGS",
-                                  "DOT_STRINGSDICT",
-                                  "ANDROID_STRINGS",
-                                  "SRT",
-                                  "RESX",
-                                  "PNG",
-                                  "JPEG",
-                                  "MP4"
-                                ]
-                              },
-                              "dataFormat": {
-                                "type": "string"
-                              },
-                              "locale": {
-                                "type": "string",
-                                "minLength": 1,
-                                "examples": ["es"]
-                              },
-                              "transformFormat": {
-                                "type": "string",
-                                "enum": [
-                                  "GTJSON",
-                                  "MDX",
-                                  "JSON",
-                                  "YAML",
-                                  "MD",
-                                  "TS",
-                                  "JS",
-                                  "HTML",
-                                  "TXT",
-                                  "PO",
-                                  "POT",
-                                  "TWILIO_CONTENT_JSON",
-                                  "LOTTIE",
-                                  "SVG",
-                                  "XCSTRINGS",
-                                  "DOT_STRINGS",
-                                  "DOT_STRINGSDICT",
-                                  "ANDROID_STRINGS",
-                                  "SRT",
-                                  "RESX",
-                                  "PNG",
-                                  "JPEG",
-                                  "MP4"
+                              {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "content": {
+                                        "type": "string",
+                                        "examples": [
+                                          "eyJncmVldGluZyI6IkhvbGEifQ=="
+                                        ],
+                                        "description": "Base64-encoded translation content."
+                                      }
+                                    },
+                                    "required": ["content"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "upload": {
+                                        "type": "object",
+                                        "properties": {
+                                          "sha256": {
+                                            "type": "string",
+                                            "pattern": "^[0-9a-f]{64}$",
+                                            "description": "SHA-256 of the file's bytes, as 64 lowercase hex characters."
+                                          }
+                                        },
+                                        "required": ["sha256"],
+                                        "description": "A file already PUT to the URL from Create file uploads, in place of `content`; required for files over 4MB."
+                                      }
+                                    },
+                                    "required": ["upload"]
+                                  }
                                 ]
                               }
-                            },
-                            "required": [
-                              "content",
-                              "fileName",
-                              "fileFormat",
-                              "locale"
                             ]
                           },
                           "minItems": 1
@@ -12778,6 +12820,479 @@
                         "code": {
                           "type": "string",
                           "enum": ["unavailable"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Files"]
+      }
+    },
+    "/v2/projects/{projectId}/files/uploads": {
+      "post": {
+        "operationId": "createFileUploads",
+        "summary": "Create file uploads",
+        "description": "Get presigned URLs to PUT 1–100 files (media up to 2GB, others 100MB) for Upload source files or translations; files over 4MB must use one. Requires `project:files:write`.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "UserBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "required": true,
+            "name": "projectId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/ApiVersion"
+            },
+            "required": true,
+            "description": "API contract version. Must be `2026-10-08.v1` or later; requests without it or with an older version return 400.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fileFormat": {
+                          "$ref": "#/components/schemas/FileFormat"
+                        },
+                        "size": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2000000000,
+                          "description": "File size in bytes: at most 2000000000 for PNG, JPEG and MP4, and 100000000 for other formats."
+                        },
+                        "sha256": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{64}$",
+                          "description": "SHA-256 of the file's bytes, as 64 lowercase hex characters."
+                        }
+                      },
+                      "required": ["fileFormat", "size", "sha256"]
+                    },
+                    "minItems": 1,
+                    "maxItems": 100,
+                    "description": "1–100 files; each sha256 may appear once."
+                  }
+                },
+                "required": ["files"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Upload target for each file, in request order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "files": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "sha256": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f]{64}$",
+                            "description": "SHA-256 of the file's bytes, as 64 lowercase hex characters."
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": ["exists", "upload_required"],
+                            "description": "`exists` when the project already stores these bytes, so the PUT is skipped; `upload_required` otherwise."
+                          },
+                          "upload": {
+                            "type": "object",
+                            "properties": {
+                              "url": {
+                                "type": "string",
+                                "description": "Presigned URL to PUT the file bytes to."
+                              },
+                              "headers": {
+                                "type": "object",
+                                "properties": {
+                                  "x-amz-checksum-sha256": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["x-amz-checksum-sha256"],
+                                "description": "Headers the PUT must send exactly as given."
+                              },
+                              "expiresAt": {
+                                "type": "string",
+                                "description": "The PUT must start before this ISO 8601 time."
+                              }
+                            },
+                            "required": ["url", "headers", "expiresAt"],
+                            "description": "Present when `status` is `upload_required`. Register the file through Upload source files or Upload translations within 24 hours; later, the upload may be deleted."
+                          }
+                        },
+                        "required": ["sha256", "status"]
+                      },
+                      "description": "One result per file, in order."
+                    }
+                  },
+                  "required": ["files"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed or failed validation, including a repeated sha256 or a size over the limit. No URL is issued.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "invalid_request": {
+                    "summary": "invalid_request",
+                    "value": {
+                      "error": "The request is malformed or failed validation, including a repeated sha256 or a size over the limit. No URL is issued.",
+                      "code": "invalid_request"
+                    }
+                  },
+                  "api_version_unsupported": {
+                    "summary": "api_version_unsupported",
+                    "value": {
+                      "error": "The gt-api-version header does not name a known API version.",
+                      "code": "api_version_unsupported"
+                    }
+                  },
+                  "user_ip_missing": {
+                    "summary": "user_ip_missing",
+                    "value": {
+                      "error": "A dashboard-actor token must send the user's IP address header.",
+                      "code": "user_ip_missing"
+                    }
+                  },
+                  "api_version_too_old": {
+                    "summary": "api_version_too_old",
+                    "value": {
+                      "error": "This route requires a newer gt-api-version. The error names the first version that serves it.",
+                      "code": "api_version_too_old"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "invalid_request",
+                            "api_version_unsupported",
+                            "user_ip_missing",
+                            "api_version_too_old"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication is missing or invalid.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "unauthenticated": {
+                    "summary": "unauthenticated",
+                    "value": {
+                      "error": "Authentication is missing or invalid.",
+                      "code": "unauthenticated"
+                    }
+                  },
+                  "api_key_invalid": {
+                    "summary": "api_key_invalid",
+                    "value": {
+                      "error": "The API key is not recognized. It may be mistyped, revoked, or rotated.",
+                      "code": "api_key_invalid"
+                    }
+                  },
+                  "token_invalid": {
+                    "summary": "token_invalid",
+                    "value": {
+                      "error": "The access token is invalid or expired. Sign in again.",
+                      "code": "token_invalid"
+                    }
+                  },
+                  "super_user_grant_revoked": {
+                    "summary": "super_user_grant_revoked",
+                    "value": {
+                      "error": "The super-user access grant behind this token is no longer active.",
+                      "code": "super_user_grant_revoked"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unauthenticated",
+                            "api_key_invalid",
+                            "token_invalid",
+                            "super_user_grant_revoked"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller is authenticated but not allowed to perform this operation or access the requested resource.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "scope_missing": {
+                    "summary": "scope_missing",
+                    "value": {
+                      "error": "The user token lacks an OAuth scope this operation requires. The error names the scope.",
+                      "code": "scope_missing"
+                    }
+                  },
+                  "ip_not_allowed": {
+                    "summary": "ip_not_allowed",
+                    "value": {
+                      "error": "The caller's IP address is blocked by the credential's access policy.",
+                      "code": "ip_not_allowed"
+                    }
+                  },
+                  "permission_missing": {
+                    "summary": "permission_missing",
+                    "value": {
+                      "error": "The credential lacks a permission this operation requires. The error names the permission.",
+                      "code": "permission_missing"
+                    }
+                  },
+                  "target_inaccessible": {
+                    "summary": "target_inaccessible",
+                    "value": {
+                      "error": "The target project or organization does not exist, or the credential cannot access it.",
+                      "code": "target_inaccessible"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "scope_missing",
+                            "ip_not_allowed",
+                            "permission_missing",
+                            "target_inaccessible"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request, or the data it would return, exceeds a size or item limit.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "payload_too_large": {
+                    "summary": "payload_too_large",
+                    "value": {
+                      "error": "The request, or the data it would return, exceeds a size or item limit.",
+                      "code": "payload_too_large"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["payload_too_large"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "unsupported_media_type": {
+                    "summary": "unsupported_media_type",
+                    "value": {
+                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "code": "unsupported_media_type"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["unsupported_media_type"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. The rate limit was exceeded.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "rate_limited": {
+                    "summary": "rate_limited",
+                    "value": {
+                      "error": "Too many requests. The rate limit was exceeded.",
+                      "code": "rate_limited"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["rate_limited"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected server error occurred.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "internal_error": {
+                    "summary": "internal_error",
+                    "value": {
+                      "error": "An unexpected server error occurred.",
+                      "code": "internal_error"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["internal_error"]
                         }
                       }
                     }
@@ -15135,32 +15650,7 @@
                           "type": "string"
                         },
                         "transformFormat": {
-                          "type": "string",
-                          "enum": [
-                            "GTJSON",
-                            "MDX",
-                            "JSON",
-                            "YAML",
-                            "MD",
-                            "TS",
-                            "JS",
-                            "HTML",
-                            "TXT",
-                            "PO",
-                            "POT",
-                            "TWILIO_CONTENT_JSON",
-                            "LOTTIE",
-                            "SVG",
-                            "XCSTRINGS",
-                            "DOT_STRINGS",
-                            "DOT_STRINGSDICT",
-                            "ANDROID_STRINGS",
-                            "SRT",
-                            "RESX",
-                            "PNG",
-                            "JPEG",
-                            "MP4"
-                          ]
+                          "$ref": "#/components/schemas/FileFormat"
                         }
                       },
                       "required": ["fileId", "versionId"]
@@ -15172,12 +15662,14 @@
                   "targetLocales": {
                     "type": "array",
                     "items": {
-                      "type": "string"
+                      "type": "string",
+                      "minLength": 1
                     },
                     "description": "Locales to translate into; the project's current locales when omitted. They are added to the project's current locales; the project default locale is unchanged."
                   },
                   "sourceLocale": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   },
                   "force": {
                     "type": "boolean",
@@ -15844,7 +16336,8 @@
                   "locales": {
                     "type": "array",
                     "items": {
-                      "type": "string"
+                      "type": "string",
+                      "minLength": 1
                     }
                   },
                   "force": {
@@ -17378,6 +17871,7 @@
                 "properties": {
                   "defaultLocale": {
                     "type": "string",
+                    "minLength": 1,
                     "description": "Source locale for the project."
                   },
                   "cdnEnabled": {
@@ -22062,6 +22556,448 @@
         "tags": ["Organizations"]
       }
     },
+    "/v2/orgs/{orgId}/api-keys": {
+      "post": {
+        "operationId": "createOrgApiKey",
+        "x-internal": true,
+        "tags": ["Organizations"],
+        "summary": "Create an Organization API key",
+        "description": "Create an Organization API key. Requires `org:api_keys:write`; API keys cannot create organization API keys.",
+        "security": [
+          {
+            "UserBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "required": true,
+            "name": "orgId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/ApiVersion"
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255,
+                    "examples": ["CI"],
+                    "description": "Key name, 1–255 characters after trimming."
+                  },
+                  "permissions": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/OrgApiKeyPermission"
+                    },
+                    "minItems": 1,
+                    "description": "Organization and project permissions to grant. Select at least one, or omit to grant all organization API key permissions you can delegate. You must hold every selected permission. Duplicates are ignored. Write permissions do not include Read."
+                  }
+                },
+                "required": ["name"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Organization API key created. Each successful request creates a new key. Store the returned secret securely.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "apiKey": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "key": {
+                          "type": "string"
+                        },
+                        "orgId": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id", "name", "key", "orgId"]
+                    }
+                  },
+                  "required": ["apiKey"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed or failed validation.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "invalid_request": {
+                    "summary": "invalid_request",
+                    "value": {
+                      "error": "The request is malformed or failed validation.",
+                      "code": "invalid_request"
+                    }
+                  },
+                  "api_version_unsupported": {
+                    "summary": "api_version_unsupported",
+                    "value": {
+                      "error": "The gt-api-version header does not name a known API version.",
+                      "code": "api_version_unsupported"
+                    }
+                  },
+                  "user_ip_missing": {
+                    "summary": "user_ip_missing",
+                    "value": {
+                      "error": "A dashboard-actor token must send the user's IP address header.",
+                      "code": "user_ip_missing"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "invalid_request",
+                            "api_version_unsupported",
+                            "user_ip_missing"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication is missing or invalid.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "unauthenticated": {
+                    "summary": "unauthenticated",
+                    "value": {
+                      "error": "Authentication is missing or invalid.",
+                      "code": "unauthenticated"
+                    }
+                  },
+                  "api_key_invalid": {
+                    "summary": "api_key_invalid",
+                    "value": {
+                      "error": "The API key is not recognized. It may be mistyped, revoked, or rotated.",
+                      "code": "api_key_invalid"
+                    }
+                  },
+                  "token_invalid": {
+                    "summary": "token_invalid",
+                    "value": {
+                      "error": "The access token is invalid or expired. Sign in again.",
+                      "code": "token_invalid"
+                    }
+                  },
+                  "super_user_grant_revoked": {
+                    "summary": "super_user_grant_revoked",
+                    "value": {
+                      "error": "The super-user access grant behind this token is no longer active.",
+                      "code": "super_user_grant_revoked"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unauthenticated",
+                            "api_key_invalid",
+                            "token_invalid",
+                            "super_user_grant_revoked"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller is authenticated but not allowed to perform this operation or access the requested resource, or cannot grant a selected permission. No key is created.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "scope_missing": {
+                    "summary": "scope_missing",
+                    "value": {
+                      "error": "The user token lacks an OAuth scope this operation requires. The error names the scope.",
+                      "code": "scope_missing"
+                    }
+                  },
+                  "ip_not_allowed": {
+                    "summary": "ip_not_allowed",
+                    "value": {
+                      "error": "The caller's IP address is blocked by the credential's access policy.",
+                      "code": "ip_not_allowed"
+                    }
+                  },
+                  "permission_denied": {
+                    "summary": "permission_denied",
+                    "value": {
+                      "error": "The caller is authenticated but not allowed to perform this operation or access the requested resource, or cannot grant a selected permission. No key is created.",
+                      "code": "permission_denied"
+                    }
+                  },
+                  "permission_not_grantable": {
+                    "summary": "permission_not_grantable",
+                    "value": {
+                      "error": "A requested permission cannot be granted to a project API key by this caller.",
+                      "code": "permission_not_grantable"
+                    }
+                  },
+                  "permission_missing": {
+                    "summary": "permission_missing",
+                    "value": {
+                      "error": "The credential lacks a permission this operation requires. The error names the permission.",
+                      "code": "permission_missing"
+                    }
+                  },
+                  "target_inaccessible": {
+                    "summary": "target_inaccessible",
+                    "value": {
+                      "error": "The target project or organization does not exist, or the credential cannot access it.",
+                      "code": "target_inaccessible"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "scope_missing",
+                            "ip_not_allowed",
+                            "permission_denied",
+                            "permission_not_grantable",
+                            "permission_missing",
+                            "target_inaccessible"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request, or the data it would return, exceeds a size or item limit.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "payload_too_large": {
+                    "summary": "payload_too_large",
+                    "value": {
+                      "error": "The request, or the data it would return, exceeds a size or item limit.",
+                      "code": "payload_too_large"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["payload_too_large"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "unsupported_media_type": {
+                    "summary": "unsupported_media_type",
+                    "value": {
+                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "code": "unsupported_media_type"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["unsupported_media_type"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. The rate limit was exceeded.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "rate_limited": {
+                    "summary": "rate_limited",
+                    "value": {
+                      "error": "Too many requests. The rate limit was exceeded.",
+                      "code": "rate_limited"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["rate_limited"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected server error occurred.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "internal_error": {
+                    "summary": "internal_error",
+                    "value": {
+                      "error": "An unexpected server error occurred.",
+                      "code": "internal_error"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["internal_error"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v2/orgs/{orgId}/projects": {
       "post": {
         "operationId": "createProject",
@@ -22110,6 +23046,7 @@
                   },
                   "defaultLocale": {
                     "type": "string",
+                    "minLength": 1,
                     "examples": ["en"],
                     "description": "Source locale for the project."
                   },

@@ -14,6 +14,12 @@ import type {
   CreateContextGroupData,
   CreateContextGroupErrors,
   CreateContextGroupResponses,
+  CreateFileUploadsData,
+  CreateFileUploadsErrors,
+  CreateFileUploadsResponses,
+  CreateOrgApiKeyData,
+  CreateOrgApiKeyErrors,
+  CreateOrgApiKeyResponses,
   CreateProjectApiKeyData,
   CreateProjectApiKeyErrors,
   CreateProjectApiKeyResponses,
@@ -639,6 +645,31 @@ export const uploadTranslations = <ThrowOnError extends boolean = false>(
   });
 
 /**
+ * Create file uploads
+ *
+ * Get presigned URLs to PUT 1–100 files (media up to 2GB, others 100MB) for Upload source files or translations; files over 4MB must use one. Requires `project:files:write`.
+ */
+export const createFileUploads = <ThrowOnError extends boolean = false>(
+  options: Options<CreateFileUploadsData, ThrowOnError>
+) =>
+  options.client.post<
+    CreateFileUploadsResponses,
+    CreateFileUploadsErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects/{projectId}/files/uploads',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
  * List branches
  *
  * List the project's branches ordered by ID, each marked with whether it is the project's default branch. Requires `project:files:read`.
@@ -1062,6 +1093,28 @@ export const listOrgs = <ThrowOnError extends boolean = false>(
     ],
     url: '/v2/orgs',
     ...options,
+  });
+
+/**
+ * Create an Organization API key
+ *
+ * Create an Organization API key. Requires `org:api_keys:write`; API keys cannot create organization API keys.
+ */
+export const createOrgApiKey = <ThrowOnError extends boolean = false>(
+  options: Options<CreateOrgApiKeyData, ThrowOnError>
+) =>
+  options.client.post<
+    CreateOrgApiKeyResponses,
+    CreateOrgApiKeyErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v2/orgs/{orgId}/api-keys',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
   });
 
 /**
