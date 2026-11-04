@@ -21,14 +21,30 @@ lto = true
 opt-level = "s" # Optimize for size
 strip = "symbols" # Strip debug symbols
 
+# Next.js only loads SWC plugins built against an swc_core version its plugin
+# runner accepts, so the plugin is built once per runner generation and gt-next
+# picks the wasm that matches the installed Next.js version:
+# - swc-v79 (default): Next.js >= 16.4 (plugin runner 34)
+# - swc-v49: Next.js 16.1 - 16.3
+# Build exactly one: `--no-default-features --features swc-v49` for the latter.
+[features]
+default = ["swc-v79"]
+swc-v49 = ["dep:swc_core_v49", "dep:swc_common_v18"]
+swc-v79 = ["dep:swc_core_v79", "dep:swc_common_v26"]
+
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-swc_core = { version = "49.0.0", features = ["ecma_plugin_transform"] }
 sha2 = "0.10"
-
-# Force exact swc_common version to match Next.js
-swc_common = "=18.0.0"
+swc_core_v49 = { package = "swc_core", version = "49.0.0", features = [
+  "ecma_plugin_transform",
+], optional = true }
+swc_core_v79 = { package = "swc_core", version = "79.0.0", features = [
+  "ecma_plugin_transform",
+], optional = true }
+# Force the exact swc_common versions Next.js ships with each swc_core
+swc_common_v18 = { package = "swc_common", version = "=18.0.0", optional = true }
+swc_common_v26 = { package = "swc_common", version = "=26.0.0", optional = true }
 
 # .cargo/config.toml defines few alias to build plugin.
 # cargo build-wasip1 generates wasm32-wasip1 binary

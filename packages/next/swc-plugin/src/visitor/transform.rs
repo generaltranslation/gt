@@ -2349,7 +2349,7 @@ mod tests {
         },
         children: vec![JSXElementChild::JSXText(JSXText {
           span: DUMMY_SP,
-          value: Atom::new("Hello world"),
+          value: Atom::new("Hello world").into(),
           raw: Atom::new("Hello world"),
         })],
         closing: Some(JSXClosingElement {
@@ -2545,7 +2545,7 @@ mod tests {
           attrs: vec![], self_closing: false, type_args: None,
         },
         children: vec![
-          JSXElementChild::JSXText(JSXText { span: DUMMY_SP, value: Atom::new("Hello "), raw: Atom::new("Hello ") }),
+          JSXElementChild::JSXText(JSXText { span: DUMMY_SP, value: Atom::new("Hello ").into(), raw: Atom::new("Hello ") }),
           JSXElementChild::JSXExprContainer(JSXExprContainer {
             span: DUMMY_SP,
             expr: JSXExpr::Expr(Box::new(Expr::Ident(Ident { span: DUMMY_SP, sym: Atom::new("name"), optional: false, ctxt: SyntaxContext::empty() }))),
@@ -2790,7 +2790,7 @@ mod tests {
       let mut element2 = create_jsx_element("T", vec![]);
       element2.children = vec![JSXElementChild::JSXText(JSXText {
         span: DUMMY_SP,
-        value: Atom::new("Hello"),
+        value: Atom::new("Hello").into(),
         raw: Atom::new("Hello"),
       })];
 
