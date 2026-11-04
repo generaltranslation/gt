@@ -4,7 +4,7 @@ use crate::config::PluginSettings;
 use crate::logging::{LogLevel, Logger};
 use crate::visitor::errors::create_dynamic_function_warning;
 use crate::visitor::expr_utils::{
-  create_spread_options_call_expr, create_string_prop, extract_id_and_context_from_options, extract_string_from_expr, get_string_prop_from_expr, has_prop, inject_new_args, validate_derive,
+  create_spread_options_call_expr, create_string_prop, extract_id_and_context_from_options, extract_string_from_expr, get_string_prop_from_expr, has_prop, has_static_hash_options, inject_new_args, validate_derive,
 };
 use swc_core::{
   common::SyntaxContext,
@@ -17,6 +17,7 @@ use crate::visitor::analysis::{
 };
 use crate::config::LocaleTranslations;
 use crate::visitor::expr_utils::contains_derive_call;
+use crate::visitor::jsx_utils::extract_attribute_from_jsx_attr;
 use crate::visitor::inline_translations::{
   build_inline_array_translations_fn, build_inline_translations_fn, undefined_expr,
 };
@@ -97,26 +98,30 @@ impl TransformVisitor {
         let hash_value = translation_jsx.hash.clone();
         let hash_attr = TransformVisitor::create_attr(&element, &hash_value, "_hash");
         element.opening.attrs.push(hash_attr);
-
-        // Embed translations for the configured locales. An empty hash means
-        // derive content (or <Static>), which is not supported.
-        if !hash_value.is_empty() && !TransformVisitor::determine_has_attr(&element, "_translations") {
-          if let Some(inline) = build_inline_translations_fn(
-            &self.settings.inline_translations,
-            &hash_value,
-            element.opening.span,
-          ) {
-            element.opening.attrs.push(TransformVisitor::create_expr_attr(
-              &element,
-              inline,
-              "_translations",
-            ));
-          }
-        }
+        self.inject_translations_attr(&mut element, &hash_value);
       }
+    } else if let Some(hash_value) = extract_attribute_from_jsx_attr(&element, "_hash") {
+      // A static user-supplied _hash is what the runtime looks up. It takes no
+      // part in the counter, so it is read here instead.
+      self.inject_translations_attr(&mut element, &hash_value);
     }
 
     element
+  }
+
+  /// Embed translations for the configured locales as a `_translations` prop.
+  /// An empty hash means derive content (or <Static>), which is not supported.
+  /// An existing `_translations` prop is kept.
+  fn inject_translations_attr(&self, element: &mut JSXElement, hash_value: &str) {
+    if hash_value.is_empty() || TransformVisitor::determine_has_attr(element, "_translations") {
+      return;
+    }
+    if let Some(inline) =
+      build_inline_translations_fn(&self.settings.inline_translations, hash_value, element.opening.span)
+    {
+      let attr = TransformVisitor::create_expr_attr(element, inline, "_translations");
+      element.opening.attrs.push(attr);
+    }
   }
 
   /// Inject content array on translation function call
@@ -162,10 +167,14 @@ impl TransformVisitor {
 
         // Embed translations for the configured locales. A user-supplied
         // $_hash wins over the computed one, matching the runtime lookup.
-        let hash = options
-          .and_then(|options| get_string_prop_from_expr(options.expr.as_ref(), "$_hash"))
-          .unwrap_or(translation_hash);
-        self.append_inline_translations_arg(&mut modified_call_expr, &hash);
+        // Options the plugin can't hash statically (a non-literal $_hash,
+        // $requiresReview, quoted metadata keys) are left without a callback.
+        if has_static_hash_options(options) {
+          let hash = options
+            .and_then(|options| get_string_prop_from_expr(options.expr.as_ref(), "$_hash"))
+            .unwrap_or(translation_hash);
+          self.append_inline_translations_arg(&mut modified_call_expr, &hash);
+        }
 
         return Some(modified_call_expr);
       }
@@ -821,6 +830,9 @@ pub fn validate_string_literal_or_derive(&self,expr: &Expr, errors: &mut Vec<Str
 
     let message = call_expr.args[0].expr.as_ref();
     let options = call_expr.args.get(1);
+    if !has_static_hash_options(options) {
+      return None;
+    }
     let (_, _, _, _, has_derive_context) = extract_id_and_context_from_options(options);
     if has_derive_context {
       return None;

@@ -218,6 +218,50 @@ pub fn get_string_prop_from_expr(expr: &Expr, key: &str) -> Option<String> {
   })
 }
 
+/// Whether every hash-relevant option of a translation call is a static
+/// literal that the plugin hashes the same way as the runtime. Inline
+/// translations are only embedded when this holds: otherwise the embedded
+/// entry could belong to a different hash than the one the runtime looks up.
+pub fn has_static_hash_options(options: Option<&ExprOrSpread>) -> bool {
+  let Some(options) = options else {
+    return true;
+  };
+  if options.spread.is_some() {
+    return false;
+  }
+  let Expr::Object(obj) = options.expr.as_ref() else {
+    return false;
+  };
+  obj.props.iter().all(|prop| {
+    let PropOrSpread::Prop(prop) = prop else {
+      return false;
+    };
+    match prop.as_ref() {
+      Prop::KeyValue(kv) => match &kv.key {
+        PropName::Ident(ident) => is_static_hash_option(ident.sym.as_ref(), &kv.value),
+        // Only identifier keys are read when hashing, so a quoted metadata
+        // key would be hashed differently than at runtime
+        PropName::Str(str_lit) => !str_lit.value.to_string_lossy().starts_with('$'),
+        PropName::Num(_) | PropName::BigInt(_) => true,
+        PropName::Computed(_) => false,
+      },
+      Prop::Shorthand(ident) => !ident.sym.starts_with('$'),
+      _ => false,
+    }
+  })
+}
+
+fn is_static_hash_option(key: &str, value: &Expr) -> bool {
+  match key {
+    "$_hash" => matches!(value, Expr::Lit(Lit::Str(_))),
+    "$context" | "$format" => extract_string_from_expr(value).is_some(),
+    "$maxChars" => extract_number_from_expr(value).is_some(),
+    // The runtime hashes `requiresReview: true`, which the plugin doesn't model
+    "$requiresReview" => matches!(value, Expr::Lit(Lit::Bool(Bool { value: false, .. }))),
+    _ => true,
+  }
+}
+
 pub fn has_prop(props: &[PropOrSpread], key: &str) -> bool {
   props.iter().any(|prop| {
     if let PropOrSpread::Prop(p) = prop {
