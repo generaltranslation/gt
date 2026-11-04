@@ -1,9 +1,26 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import { spawn } from 'node:child_process';
 import chalk from 'chalk';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { logger } from '../console/logger.js';
 
 export type Formatter = 'prettier' | 'biome' | 'eslint';
+
+/**
+ * Finds the project's installed Biome command, searching node_modules/.bin from
+ * cwd upward the way npx does, so a monorepo root install is found too.
+ */
+export function findLocalBiome(cwd: string = process.cwd()): string | null {
+  let dir = path.resolve(cwd);
+  while (true) {
+    const bin = path.join(dir, 'node_modules', '.bin', 'biome');
+    if (fs.existsSync(bin)) return bin;
+    const parent = path.dirname(dir);
+    if (parent === dir) return null;
+    dir = parent;
+  }
+}
 
 export async function detectFormatter(): Promise<Formatter | null> {
   // Try Prettier
@@ -22,31 +39,20 @@ export async function detectFormatter(): Promise<Formatter | null> {
     // ESLint is optional.
   }
 
-  // Try Biome
-  try {
-    return await new Promise<Formatter | null>((resolve) => {
-      const child = spawn('npx', ['@biomejs/biome', '--version'], {
-        stdio: 'ignore',
-      });
-
-      child.on('error', () => {
-        resolve(null);
-      });
-
-      child.on('close', (code: number) => {
-        if (code === 0) {
-          resolve('biome');
-        } else {
-          resolve(null);
-        }
-      });
-    });
-  } catch {
-    // Biome is optional.
-  }
+  // Try Biome, only if the project has it installed. Never download it.
+  if (findLocalBiome()) return 'biome';
 
   return null;
 }
+
+const biomeNotInstalledWarning = createDiagnosticMessage({
+  source: 'gt',
+  severity: 'Warning',
+  whatHappened: 'Could not format the files changed by setup with Biome',
+  reassurance: 'Setup finished; only formatting was skipped',
+  details: '@biomejs/biome is not installed in this project',
+  fix: 'Install @biomejs/biome, or run your formatter on the changed files',
+});
 
 export async function formatFiles(
   filesUpdated: string[],
@@ -78,18 +84,18 @@ export async function formatFiles(
     }
 
     if (detectedFormatter === 'biome') {
+      const biome = findLocalBiome();
+      if (!biome) {
+        logger.warn(biomeNotInstalledWarning);
+        return;
+      }
       logger.message(chalk.dim('Cleaning up with biome...'));
       try {
         await new Promise<void>((resolve) => {
-          const args = [
-            '@biomejs/biome',
-            'format',
-            '--write',
-            ...filesUpdated.map((file) => file),
-          ];
+          const args = ['format', '--write', ...filesUpdated];
 
           // Formatter output is diagnostics; keep stdout free for commands' data.
-          const child = spawn('npx', args, {
+          const child = spawn(biome, args, {
             stdio: ['ignore', process.stderr, 'inherit'],
           });
 
