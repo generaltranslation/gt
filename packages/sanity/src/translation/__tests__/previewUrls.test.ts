@@ -126,6 +126,107 @@ describe('resolvePreviewUrls', () => {
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 
+  test("reads a reference's own fields, such as an array item's _key, without following it", async () => {
+    vi.spyOn(pluginConfig, 'getPreviewUrl').mockReturnValue({
+      ...config,
+      locations: {
+        post: {
+          select: { section: 'categories.0._key', slug: 'slug.current' },
+          resolve: (doc) =>
+            doc && {
+              locations: [
+                { title: 'Post', href: `/en/${doc.slug}#${doc.section}` },
+              ],
+            },
+        },
+      },
+    });
+    const { client: sanity, fetch } = client();
+
+    const { urls } = await resolvePreviewUrls([doc('launch', 'post')], sanity);
+
+    expect(urls.get('launch')).toBe('https://staging.acme.test/en/launch#a');
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  test('reads a cross-dataset reference from its own dataset', async () => {
+    const local = createGroqClient([
+      ...dataset,
+      { _id: 'remote-jane', _type: 'author', slug: { current: 'local-jane' } },
+      {
+        _id: 'remote-post',
+        _type: 'post',
+        slug: { current: 'remote' },
+        author: {
+          _type: 'crossDatasetReference',
+          _ref: 'remote-jane',
+          _projectId: 'other-project',
+          _dataset: 'authors',
+        },
+        categories: [{ _key: 'a', _type: 'reference', _ref: 'news' }],
+      },
+    ]);
+    const remote = createGroqClient([
+      { _id: 'remote-jane', _type: 'author', slug: { current: 'jane' } },
+    ]);
+    const withConfig = vi.fn(() => remote.client);
+    const sanity = { ...local.client, withConfig } as unknown as SanityClient;
+
+    const { urls } = await resolvePreviewUrls(
+      [doc('remote-post', 'post')],
+      sanity
+    );
+
+    expect(urls.get('remote-post')).toBe(
+      'https://staging.acme.test/en/news/jane/remote'
+    );
+    expect(withConfig).toHaveBeenCalledWith({
+      projectId: 'other-project',
+      dataset: 'authors',
+    });
+  });
+
+  test('keeps the links a failed remote dataset read does not affect', async () => {
+    const local = createGroqClient([
+      ...dataset,
+      {
+        _id: 'remote-post',
+        _type: 'post',
+        slug: { current: 'remote' },
+        author: {
+          _type: 'crossDatasetReference',
+          _ref: 'remote-jane',
+          _projectId: 'other-project',
+          _dataset: 'authors',
+        },
+        categories: [{ _key: 'a', _type: 'reference', _ref: 'news' }],
+      },
+    ]);
+    const denied = new Error('Not allowed to read dataset authors');
+    const remote = { fetch: vi.fn().mockRejectedValue(denied) };
+    const sanity = {
+      ...local.client,
+      withConfig: () => remote,
+    } as unknown as SanityClient;
+
+    const resolved = await resolvePreviewUrls(
+      [
+        doc('remote-post', 'post'),
+        doc('pricing', 'page'),
+        doc('launch', 'post'),
+      ],
+      sanity
+    );
+
+    expect(resolved).toEqual({
+      urls: new Map([
+        ['pricing', 'https://staging.acme.test/en/pricing'],
+        ['launch', 'https://staging.acme.test/en/news/jane/launch'],
+      ]),
+      failures: [denied],
+    });
+  });
+
   test('reads nothing past a reference to an unpublished document', async () => {
     const resolve = vi.fn(() => null);
     vi.spyOn(pluginConfig, 'getPreviewUrl').mockReturnValue({
