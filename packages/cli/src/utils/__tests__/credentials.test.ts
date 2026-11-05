@@ -38,7 +38,6 @@ describe('setCredentials', () => {
   });
 
   it.each([
-    ['next-pages', 'NEXT_PUBLIC_'],
     ['gatsby', 'GATSBY_'],
     ['react', 'REACT_APP_'],
     ['redwood', 'REDWOOD_ENV_'],
@@ -58,37 +57,40 @@ describe('setCredentials', () => {
     }
   );
 
-  it('writes GT_PROJECT_ID and GT_API_KEY for next-app', async () => {
-    fs.writeFileSync(
-      envPath(),
-      'GT_API_KEY=gtx-old-key\nNEXT_PUBLIC_GT_PROJECT_ID=old-project\n'
-    );
+  it.each(['next-app', 'next-pages'] as const)(
+    'writes GT_PROJECT_ID and GT_API_KEY for %s',
+    async (framework) => {
+      fs.writeFileSync(
+        envPath(),
+        'GT_API_KEY=gtx-old-key\nNEXT_PUBLIC_GT_PROJECT_ID=old-project\n'
+      );
 
-    await setCredentials(
-      { projectId: 'project-id', apiKey: 'gtx-api-key' },
-      'next-app',
-      appDirectory
-    );
+      await setCredentials(
+        { projectId: 'project-id', apiKey: 'gtx-api-key' },
+        framework,
+        appDirectory
+      );
 
-    // gt-next prefers these over the legacy NEXT_PUBLIC_ names.
-    expect(readEnv()).toBe(
-      'GT_API_KEY=gtx-api-key\nNEXT_PUBLIC_GT_PROJECT_ID=old-project\nGT_PROJECT_ID=project-id\n'
-    );
-  });
+      // gt-next prefers these over the legacy NEXT_PUBLIC_ names.
+      expect(readEnv()).toBe(
+        'GT_API_KEY=gtx-api-key\nNEXT_PUBLIC_GT_PROJECT_ID=old-project\nGT_PROJECT_ID=project-id\n'
+      );
+    }
+  );
 
   it('preserves unrelated lines, comments, and the production key byte for byte', async () => {
     const existing =
-      '# app settings\n\n\nDATABASE_URL=postgres://localhost/app\nexport GT_API_KEY=gtx-production-key\nNEXT_PUBLIC_GT_PROJECT_ID=old-project\nOTHER="quoted value" # trailing comment';
+      '# app settings\n\n\nDATABASE_URL=postgres://localhost/app\nexport GT_API_KEY=gtx-production-key\nGATSBY_GT_PROJECT_ID=old-project\nOTHER="quoted value" # trailing comment';
     fs.writeFileSync(envPath(), existing);
 
     await setCredentials(
       { projectId: 'new-project', apiKey: 'gtx-dev-key' },
-      'next-pages',
+      'gatsby',
       appDirectory
     );
 
     expect(readEnv()).toBe(
-      '# app settings\n\n\nDATABASE_URL=postgres://localhost/app\nexport GT_API_KEY=gtx-production-key\nNEXT_PUBLIC_GT_PROJECT_ID=new-project\nOTHER="quoted value" # trailing comment\nNEXT_PUBLIC_GT_DEV_API_KEY=gtx-dev-key\n'
+      '# app settings\n\n\nDATABASE_URL=postgres://localhost/app\nexport GT_API_KEY=gtx-production-key\nGATSBY_GT_PROJECT_ID=new-project\nOTHER="quoted value" # trailing comment\nGATSBY_GT_DEV_API_KEY=gtx-dev-key\n'
     );
     // Outside a repository the existing file is seeded into .gitignore too.
     expect(fs.readFileSync(path.join(appDirectory, '.gitignore'), 'utf8')).toBe(
@@ -126,12 +128,12 @@ describe('setCredentials', () => {
 
     await setCredentials(
       { projectId: 'project-id', apiKey: 'gtx-api-key' },
-      'next-pages',
+      'gatsby',
       appDirectory
     );
 
     expect(readEnv()).toBe(
-      'VITE_GT_PROJECT_ID=vite-project\nMY_GT_DEV_API_KEY=not-ours\nNEXT_PUBLIC_GT_PROJECT_ID=project-id\nNEXT_PUBLIC_GT_DEV_API_KEY=gtx-api-key\n'
+      'VITE_GT_PROJECT_ID=vite-project\nMY_GT_DEV_API_KEY=not-ours\nGATSBY_GT_PROJECT_ID=project-id\nGATSBY_GT_DEV_API_KEY=gtx-api-key\n'
     );
   });
 
@@ -552,15 +554,18 @@ describe('areCredentialsSet', () => {
     );
   });
 
-  it('recognizes GT_API_KEY as the development key for next-app', () => {
-    vi.stubEnv('GT_API_KEY', 'gtx-api-key');
-    vi.stubEnv('NEXT_PUBLIC_GT_DEV_API_KEY', undefined);
-    expect(areCredentialsSet({ projectId: 'project-id' }, 'next-app')).toBe(
-      true
-    );
-  });
+  it.each(['next-app', 'next-pages'] as const)(
+    'recognizes GT_API_KEY as the development key for %s',
+    (framework) => {
+      vi.stubEnv('GT_API_KEY', 'gtx-api-key');
+      vi.stubEnv('NEXT_PUBLIC_GT_DEV_API_KEY', undefined);
+      expect(areCredentialsSet({ projectId: 'project-id' }, framework)).toBe(
+        true
+      );
+    }
+  );
 
-  // next-app still accepts the public key earlier versions of init wrote.
+  // Next.js still accepts the public key earlier versions of init wrote.
   it.each(['next-app', 'next-pages'] as const)(
     'recognizes the public development key without a tooling key for %s',
     (framework) => {
@@ -579,10 +584,9 @@ describe('areCredentialsSet', () => {
     ).toBe(true);
   });
 
-  // Not next-app: there GT_API_KEY is also the development key.
+  // Not Next.js: there GT_API_KEY is also the development key.
   it.each([
     'vite',
-    'next-pages',
     'gatsby',
     'react',
     'redwood',

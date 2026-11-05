@@ -123,8 +123,8 @@ export const projectIdMissingWarn = createGtNextDiagnostic({
 });
 
 export const APIKeyMissingWarn = createGtNextPluginDiagnostic({
-  whatHappened: 'Runtime translation needs a development API key',
-  fix: 'Find your development API key at generaltranslation.com/dashboard, or set runtimeUrl to an empty string to disable runtime translation',
+  whatHappened: 'Runtime translation needs an API key',
+  fix: 'Set GT_API_KEY in your environment (run `npx gt init` to create one), or set runtimeUrl to an empty string to disable runtime translation',
 });
 
 export const standardizedCanonicalLocalesWarning = (locales: string[]) =>

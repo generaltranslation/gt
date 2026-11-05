@@ -390,7 +390,7 @@ describe('init and configure onboarding', () => {
       files: { gt: { output: path.join('public/_gt', '[locale].json') } },
     });
     expect(fs.readFileSync(file('.env.local'), 'utf8')).toBe(
-      `NEXT_PUBLIC_GT_PROJECT_ID=p1\nNEXT_PUBLIC_GT_DEV_API_KEY=${SECRET_KEY}\n`
+      `GT_PROJECT_ID=p1\nGT_API_KEY=${SECRET_KEY}\n`
     );
     expect(installPackage).not.toHaveBeenCalled();
   });
@@ -1156,7 +1156,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       );
       expect(readConfig().framework).toBe('next-pages');
       expect(fs.readFileSync(file('.env.local'), 'utf8')).toContain(
-        'NEXT_PUBLIC_GT_PROJECT_ID=p1\n'
+        'GT_PROJECT_ID=p1\n'
       );
     });
 
