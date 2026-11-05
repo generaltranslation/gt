@@ -434,10 +434,9 @@ export const noProjectIdError = (dashboardUrl: string): string =>
   createDiagnosticMessage({
     source: 'gt',
     severity: 'Error',
-    whatHappened:
-      'No project ID was found, and translating needs a General Translation project',
-    fix: 'Run `npx gt init --live-translations` (Vite, React Router or TanStack Start with local storage) or `npx gt init --dev-credentials` (CDN storage or other apps) to sign in and create a project',
-    wayOut: `You can also copy your project ID from ${dashboardUrl} into gt.config.json as projectId, pass --project-id, or set GT_PROJECT_ID`,
+    whatHappened: 'No project ID was found',
+    fix: 'Pass --project-id, add projectId to gt.config.json, or set the GT_PROJECT_ID environment variable',
+    wayOut: `Find your project ID, or create a project, in the dashboard (${dashboardUrl})`,
   });
 export const noVersionIdError = `No version ID was found. Pass --version-id or add _versionId to gt.config.json.`;
 export const invalidConfigurationError = `The files configuration cannot be used for this operation. Provide a valid download configuration or set --publish true to upload translations to the CDN.`;

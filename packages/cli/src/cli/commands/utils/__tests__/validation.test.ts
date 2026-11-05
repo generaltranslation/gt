@@ -13,28 +13,16 @@ describe('hasValidCredentials', () => {
     vi.clearAllMocks();
   });
 
-  it('points to sign-in and the dashboard when no project ID is found', () => {
+  it('points to the dashboard when no project ID is found', () => {
     const settings = {
       dashboardUrl: 'https://dash.example.com',
     } as Settings;
 
     expect(hasValidCredentials(settings)).toBe(false);
 
-    const message = vi.mocked(logger.error).mock.calls[0]?.[0];
-    expect(message).toMatch(
-      /^gt Error: No project ID was found, and translating needs a General Translation project\. /
+    expect(vi.mocked(logger.error).mock.calls[0]?.[0]).toBe(
+      'gt Error: No project ID was found. Pass --project-id, add projectId to gt.config.json, or set the GT_PROJECT_ID environment variable. Find your project ID, or create a project, in the dashboard (https://dash.example.com)'
     );
-    expect(message).toContain(
-      '`npx gt init --live-translations` (Vite, React Router or TanStack Start with local storage)'
-    );
-    expect(message).toContain(
-      '`npx gt init --dev-credentials` (CDN storage or other apps)'
-    );
-    expect(message).toContain(
-      'copy your project ID from https://dash.example.com into gt.config.json'
-    );
-    expect(message).toContain('--project-id');
-    expect(message).toContain('GT_PROJECT_ID');
   });
 
   it('accepts a configured project ID', () => {
