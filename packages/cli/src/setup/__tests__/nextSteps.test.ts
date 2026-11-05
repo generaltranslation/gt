@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getInitNextSteps } from '../nextSteps.js';
+import { getInitNextSteps, quoteShellArgument } from '../nextSteps.js';
 
 const context = {
   framework: 'vite',
@@ -32,7 +32,18 @@ describe('getInitNextSteps', () => {
 
   it('quotes a custom config path for the shell', () => {
     expect(translateStep("my app's gt.json")).toContain(
-      "npx gt translate --config 'my app'\\''s gt.json'"
+      `npx gt translate --config ${quoteShellArgument("my app's gt.json")}\``
     );
+  });
+});
+
+describe('quoteShellArgument', () => {
+  it.each([
+    ['linux', 'config/custom.json', 'config/custom.json'],
+    ['darwin', "my app's gt.json", "'my app'\\''s gt.json'"],
+    ['win32', 'config\\custom.json', 'config\\custom.json'],
+    ['win32', 'my app\\gt.json', '"my app\\gt.json"'],
+  ] as const)('quotes for %s: %s', (platform, value, quoted) => {
+    expect(quoteShellArgument(value, platform)).toBe(quoted);
   });
 });

@@ -55,7 +55,18 @@ export function getInitNextSteps({
   ];
 }
 
-function quoteShellArgument(value: string): string {
+/**
+ * Quotes a path for the shell the person most likely uses: POSIX single
+ * quotes, or double quotes on Windows, where Command Prompt keeps single
+ * quotes in the argument and paths cannot contain double quotes.
+ */
+export function quoteShellArgument(
+  value: string,
+  platform: NodeJS.Platform = process.platform
+): string {
+  if (platform === 'win32') {
+    return /^[\w@%+=:,./\\-]+$/.test(value) ? value : `"${value}"`;
+  }
   return /^[\w@%+=:,./-]+$/.test(value)
     ? value
     : `'${value.replace(/'/g, `'\\''`)}'`;
