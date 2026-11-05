@@ -4,6 +4,7 @@ import { warnUntrackedMessageTagSync } from '../../../../../console/index.js';
 import type { ParsingConfig, ParsingOutput } from '../types.js';
 import { formatLocation } from './diagnostics.js';
 import { processMessage } from './processMessage.js';
+import { processMsgCall } from './processMsgCall.js';
 import type { TagOptions } from './types.js';
 
 /** Follows `const gt = useGT()` / `const gt = await getGT()` to the gt binding. */
@@ -34,21 +35,23 @@ export function processHookReference(
 }
 
 /**
- * Processes every use of a t/gt binding. `options` is set when the binding is
- * a configured tag, as in `const save = gt({ context })`.
+ * Processes every use of a t/gt/msg binding. `options` is set when the binding
+ * is a configured tag, as in `const save = gt({ context })`. `isMsg` also
+ * extracts literal calls, as in `msg('Save')`.
  */
 export function processTagBinding(
   binding: Binding,
   options: TagOptions | undefined,
   config: ParsingConfig,
-  output: ParsingOutput
+  output: ParsingOutput,
+  isMsg = false
 ): void {
   for (const violation of binding.constantViolations) {
     warnUntrackedTag(violation.node, config, output);
   }
   // Exported declarations count as references, so they warn below.
   for (const ref of binding.referencePaths) {
-    processTagReference(ref, options, config, output);
+    processTagReference(ref, options, config, output, isMsg);
   }
 }
 
@@ -56,7 +59,8 @@ function processTagReference(
   ref: NodePath,
   configuredOptions: TagOptions | undefined,
   config: ParsingConfig,
-  output: ParsingOutput
+  output: ParsingOutput,
+  isMsg: boolean
 ): void {
   const parent = ref.parentPath;
   // `typeof gt` in a type has no runtime use.
@@ -77,17 +81,19 @@ function processTagReference(
       processMessage(outer, parent.node.arguments, config, output);
       return;
     }
+    // msg('Save')
+    if (isMsg && processMsgCall(parent, config, output)) return;
     // const save = gt({ ...options })
     const alias = getConstAliasBinding(outer, parent.node);
     if (alias) {
-      processTagBinding(alias, parent.node.arguments, config, output);
+      processTagBinding(alias, parent.node.arguments, config, output, isMsg);
       return;
     }
   }
   // const translate = gt
   const alias = getConstAliasBinding(parent, ref.node);
   if (alias) {
-    processTagBinding(alias, configuredOptions, config, output);
+    processTagBinding(alias, configuredOptions, config, output, isMsg);
     return;
   }
   warnUntrackedTag(ref.node, config, output);

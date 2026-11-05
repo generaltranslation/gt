@@ -13,7 +13,7 @@ import wireFormatCases from '../../../../../../test-fixtures/icu-tree-wire-forma
 vi.mock('../../../fs/matchFiles.js', () => ({ matchFiles: vi.fn() }));
 
 const UNSTABLE_HELPERS =
-  't, useGT, getGT, plural, selectordinal, select, number, date, part, derive, n';
+  't, msg, useGT, getGT, plural, selectordinal, select, number, date, part, derive, n';
 
 // The fixtures' free variables, typed as in fixtureParity.test.ts: the CLI
 // skips an undeclared value, since TypeScript types it any.
@@ -106,6 +106,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
   // `gt` in each fixture template becomes the tag under test.
   const forms: Record<string, (template: string) => string> = {
     t: (template) => template.replace(/^gt/, 't'),
+    msg: (template) => template.replace(/^gt/, 'msg'),
     useGT: (template) =>
       `export function Component() {\n  const gt = useGT();\n  return ${template};\n}`,
     getGT: (template) =>
@@ -676,6 +677,101 @@ describe('createInlineUpdates: unstable tagged templates', () => {
         '6',
         '9',
       ]);
+    });
+  });
+
+  describe('msg', () => {
+    it('extracts a literal call as literal text', async () => {
+      const result = await extract(`
+        import { msg } from 'gt-react/unstable';
+        msg('Save');
+        msg(\`Hello {name}\`);
+        msg('');
+      `);
+
+      expect(result.warnings).toEqual([]);
+      expect(result.updates).toHaveLength(2);
+      expect(
+        treeUpdates(result).map((u) => [u.source, u.metadata.hash])
+      ).toEqual([
+        [['Save'], hashSource({ source: ['Save'], dataFormat: 'ICU_TREE' })],
+        [
+          ['Hello {name}'],
+          hashSource({ source: ['Hello {name}'], dataFormat: 'ICU_TREE' }),
+        ],
+      ]);
+    });
+
+    it('extracts tagged and options forms like t', async () => {
+      const result = await extract(`
+        import { msg } from 'gt-react/unstable';
+        msg\`Save\`;
+        msg({ context: 'button' })\`Save\`;
+      `);
+
+      expect(result.warnings).toEqual([]);
+      expect(treeUpdates(result).map((u) => u.metadata.hash)).toEqual([
+        hashSource({ source: ['Save'], dataFormat: 'ICU_TREE' }),
+        hashSource({
+          source: ['Save'],
+          dataFormat: 'ICU_TREE',
+          context: 'button',
+        }),
+      ]);
+    });
+
+    it('follows aliases and configured tags', async () => {
+      const result = await extract(`
+        import { msg as message } from 'gt-react/unstable';
+        const mm = message;
+        mm('Hi');
+        mm\`Bye\`;
+        const save = mm({ context: 'button' });
+        save\`Save\`;
+      `);
+
+      expect(result.warnings).toEqual([]);
+      expect(
+        treeUpdates(result).map((u) => [u.source, u.metadata.context])
+      ).toEqual([
+        [['Hi'], undefined],
+        [['Bye'], undefined],
+        [['Save'], 'button'],
+      ]);
+    });
+
+    it('warns about a call it cannot extract', async () => {
+      const result = await extract(`
+        import { msg } from 'gt-react/unstable';
+        msg(label);
+        msg('a', 'b');
+        msg(\`Hi \${name}\`);
+        msg();
+      `);
+
+      expect(treeUpdates(result)).toEqual([]);
+      const skipped = result.warnings.filter((w) =>
+        w.includes('Skipped a msg() call')
+      );
+      expect(skipped.map((w) => w.match(/\((\d+):\d+\)/)?.[1])).toEqual([
+        '3',
+        '4',
+        '5',
+        '6',
+      ]);
+    });
+
+    it('does not extract m() calls', async () => {
+      const result = await extract(`
+        import { msg, useMessages } from 'gt-react/unstable';
+        export function Component({ label }) {
+          const m = useMessages();
+          return [m(msg('Save')), m('Other'), m(label)];
+        }
+      `);
+
+      expect(result.warnings).toEqual([]);
+      expect(result.updates.map((u) => u.source)).toEqual([['Save']]);
     });
   });
 

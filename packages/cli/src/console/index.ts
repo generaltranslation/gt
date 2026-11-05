@@ -193,9 +193,23 @@ export const warnUntrackedMessageTagSync = (
     file,
     createDiagnosticMessage({
       whatHappened:
-        'Could not follow this use of an unstable translation function (t, gt, useGT, or getGT)',
+        'Could not follow this use of an unstable translation function (t, msg, gt, useGT, or getGT)',
       why: 'it is passed, exported, reassigned, or accessed as an object, so the messages it translates cannot be found statically',
       fix: 'Call it directly (as a tagged template for t and gt), or alias a gt with const',
+    }),
+    location
+  );
+
+export const warnNonLiteralMsgCallSync = (
+  file: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    createDiagnosticMessage({
+      whatHappened: 'Skipped a msg() call',
+      why: 'its argument is not a single string literal, so the message cannot be extracted',
+      fix: "Pass a string literal, as in msg('Save'), or write the message as a tagged msg`...` template",
     }),
     location
   );

@@ -33,6 +33,26 @@ ruleTester.run('unstable-static-branch', unstableStaticBranch, {
   ],
   invalid: [
     {
+      // Branches inside a deferred msg template are checked too
+      code: `import { msg, plural, select } from 'gt-react/unstable';
+msg\`\${plural({ count }, { other: \`\${count} items\` })}\`;
+msg({ context: 'role' })\`\${select({ role }, { admin: label, other: 'everyone' })}\`;`,
+      errors: [
+        {
+          messageId: 'needsPart',
+          suggestions: [
+            {
+              messageId: 'wrapInPart',
+              output: `import { msg, plural, select, part } from 'gt-react/unstable';
+msg\`\${plural({ count }, { other: part\`\${count} items\` })}\`;
+msg({ context: 'role' })\`\${select({ role }, { admin: label, other: 'everyone' })}\`;`,
+            },
+          ],
+        },
+        { messageId: 'notStatic' },
+      ],
+    },
+    {
       // A template with values: wrap it in part and import part
       code: `import { t, plural, n } from 'gt-react/unstable';
 t\`\${plural({ count }, { one: 'One', other: \`\${count} items\` })}\`;`,
