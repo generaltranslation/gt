@@ -57,7 +57,6 @@ describe('initializeGT', () => {
 
     expect(getParams().nextI18nCacheParams).toMatchObject({
       projectId: 'project-id',
-      devApiKey: 'gtx-development-key',
       apiKey: 'gtx-development-key',
     });
     initializeGTServer();

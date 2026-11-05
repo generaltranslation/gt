@@ -936,7 +936,7 @@ describe('withGTConfig', () => {
       expect(params.apiKey).toBeUndefined();
     });
 
-    it('GT_API_KEY in development enables services but is not serialized as devApiKey', async () => {
+    it('GT_API_KEY in development enables services but is not serialized', async () => {
       const withGTConfig = await getWithGTConfig();
       process.env.NODE_ENV = 'development';
       process.env.GT_PROJECT_ID = 'proj';
@@ -946,17 +946,6 @@ describe('withGTConfig', () => {
       const params = parseConfigParams(result);
 
       expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('true');
-      expect(params.devApiKey).toBeUndefined();
-    });
-
-    it('GT_API_KEY in development is not serialized', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.NODE_ENV = 'development';
-      process.env.GT_API_KEY = 'api-key-value';
-
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
       expect(params.apiKey).toBeUndefined();
     });
 
@@ -969,7 +958,7 @@ describe('withGTConfig', () => {
       const result = withGTConfig();
       const params = parseConfigParams(result);
 
-      expect(params.devApiKey).toBeUndefined();
+      expect(params.apiKey).toBeUndefined();
       expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('true');
     });
   });

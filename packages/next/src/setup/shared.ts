@@ -22,7 +22,7 @@ export function getParams(): {
     'NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS',
     process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS
   );
-  const { projectId, devApiKey, apiKey } = getRuntimeCredentials();
+  const { projectId, apiKey } = getRuntimeCredentials();
 
   // I18nConfigParams
   const i18nConfigParams: NextSetupI18nConfigParams = {
@@ -32,7 +32,6 @@ export function getParams(): {
     localeMatcher: clientConfig.localeMatcher,
     runtimeUrl: clientConfig.runtimeUrl,
     projectId,
-    devApiKey,
     apiKey,
     cacheUrl: clientConfig.cacheUrl,
     _disableDevHotReload: clientConfig._disableDevHotReload,
@@ -45,7 +44,6 @@ export function getParams(): {
   const timeout = clientConfig.renderSettings?.timeout;
   const nextI18nCacheParams: NextI18nCacheParams = {
     apiKey,
-    devApiKey,
     projectId,
     runtimeUrl: clientConfig.runtimeUrl,
     cacheUrl: clientConfig.cacheUrl,

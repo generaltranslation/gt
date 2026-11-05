@@ -52,12 +52,10 @@ describe('getParams', () => {
 
     const { i18nConfigParams, nextI18nCacheParams } = getParams();
 
-    // In development, GT_API_KEY is also the hot-reload key.
     expect(i18nConfigParams).toMatchObject({
       localeMatcher: 'lookup',
       projectId: 'project-id',
       apiKey: 'api-key',
-      devApiKey: 'api-key',
       cacheUrl: 'https://cache.example.com',
       localeCookieName: 'custom-locale',
       enableI18nCookieName: 'custom-enable-i18n',
@@ -65,7 +63,6 @@ describe('getParams', () => {
     expect(nextI18nCacheParams).toMatchObject({
       projectId: 'project-id',
       apiKey: 'api-key',
-      devApiKey: 'api-key',
       cacheExpiryTime: 12345,
     });
   });
@@ -78,7 +75,7 @@ describe('getParams', () => {
     const { i18nConfigParams } = getParams();
 
     expect(i18nConfigParams.projectId).toBeUndefined();
-    expect(i18nConfigParams.devApiKey).toBeUndefined();
+    expect(i18nConfigParams.apiKey).toBeUndefined();
   });
 
   it('does not read GT_DEV_API_KEY', () => {
@@ -88,11 +85,11 @@ describe('getParams', () => {
 
     const { i18nConfigParams } = getParams();
 
-    expect(i18nConfigParams.devApiKey).toBeUndefined();
+    expect(i18nConfigParams.apiKey).toBeUndefined();
   });
 
   it.each(['production', 'test'])(
-    'reads no development key when NODE_ENV is %s',
+    'passes GT_API_KEY to the server runtime when NODE_ENV is %s',
     (nodeEnv) => {
       process.env.NODE_ENV = nodeEnv;
       process.env.GT_PROJECT_ID = 'project-id';
@@ -100,9 +97,8 @@ describe('getParams', () => {
 
       const { i18nConfigParams, nextI18nCacheParams } = getParams();
 
-      expect(i18nConfigParams.devApiKey).toBeUndefined();
-      expect(nextI18nCacheParams.devApiKey).toBeUndefined();
       expect(i18nConfigParams.apiKey).toBe('api-key');
+      expect(nextI18nCacheParams.apiKey).toBe('api-key');
     }
   );
 

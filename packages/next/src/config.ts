@@ -53,8 +53,9 @@ import { createGtNextPluginDiagnostic } from './errors/diagnostics';
 
 type RuntimeCredentialProps = {
   apiKey?: string;
-  devApiKey?: string;
   projectId?: string;
+  // Not a credential anymore, but a gt.config.json can still contain one.
+  devApiKey?: string;
 };
 
 type InternalGTConfigProps = BaseWithGTConfigProps &
@@ -228,13 +229,12 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
 
   // ---------- LOAD ENVIRONMENT VARIABLES ---------- //
 
-  const { projectId, apiKey, devApiKey } = getRuntimeCredentials();
+  const { projectId, apiKey } = getRuntimeCredentials();
 
   // conditionally add environment variables to config
   const envConfig: Partial<InternalGTConfigProps> = {
     ...(projectId ? { projectId } : {}),
     ...(apiKey ? { apiKey } : {}),
-    ...(devApiKey ? { devApiKey } : {}),
   };
 
   // ---------- CHECK FOR CONFIG CONFLICTS ---------- //
@@ -429,8 +429,9 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   // Check if using Services
   const gtRuntimeTranslationEnabled = !!(
     mergedConfig.runtimeUrl === defaultWithGTConfigProps.runtimeUrl &&
-    ((process.env.NODE_ENV === 'production' && mergedConfig.apiKey) ||
-      (process.env.NODE_ENV === 'development' && mergedConfig.devApiKey))
+    (process.env.NODE_ENV === 'production' ||
+      process.env.NODE_ENV === 'development') &&
+    mergedConfig.apiKey
   );
   const gtRemoteCacheEnabled = !!(
     mergedConfig.cacheUrl === defaultWithGTConfigProps.cacheUrl &&
@@ -565,7 +566,7 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   if (
     mergedConfig.projectId && // must have projectId for this check to matter anyways
     mergedConfig.runtimeUrl &&
-    !(mergedConfig.apiKey || mergedConfig.devApiKey) &&
+    !mergedConfig.apiKey &&
     process.env.NODE_ENV === 'development'
   ) {
     console.warn(APIKeyMissingWarn);
@@ -705,7 +706,7 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
       ...(isDevHotReloadEnabled(mergedConfig) &&
         !mergedConfig._disableDevHotReload && {
           GT_PROJECT_ID: mergedConfig.projectId,
-          GT_API_KEY: mergedConfig.devApiKey,
+          GT_API_KEY: mergedConfig.apiKey,
         }),
       // nextConfig.env intentionally makes this available to client-boundary.tsx.
       ...(mergedConfig.pathRegex !== undefined && {
@@ -867,7 +868,7 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
 
 function isDevHotReloadEnabled(config: InternalGTConfigProps): boolean {
   return (
-    !!config.devApiKey &&
+    !!config.apiKey &&
     !!config.projectId &&
     config.runtimeUrl !== null &&
     config.runtimeUrl !== '' &&
