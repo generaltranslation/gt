@@ -242,6 +242,8 @@ export type OnboardingEvent =
       url?: string;
       /** Manual steps setup could not do, for needs_human_action. */
       actions?: string[];
+      /** What to do next once setup succeeded, e.g. marking content for translation. */
+      nextSteps?: string[];
       missingOptions?: string[];
       error?: string;
     };
@@ -372,7 +374,7 @@ export class OnboardingSession {
 }
 
 export type OnboardingOutcome =
-  | { outcome: 'success' }
+  | { outcome: 'success'; nextSteps?: string[] }
   | { outcome: 'needs_human_action'; url: string };
 
 function partialSetupWarning(session: OnboardingSession): string {
@@ -416,6 +418,9 @@ export async function runOnboarding(
       ...(session.humanActions.length > 0 && {
         actions: session.humanActions,
       }),
+      ...(result.outcome === 'success' &&
+        result.nextSteps !== undefined &&
+        result.nextSteps.length > 0 && { nextSteps: result.nextSteps }),
     });
   } catch (error) {
     const message =

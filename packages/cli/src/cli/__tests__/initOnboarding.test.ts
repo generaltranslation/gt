@@ -393,6 +393,43 @@ describe('init and configure onboarding', () => {
       `GT_PROJECT_ID=p1\nGT_API_KEY=${SECRET_KEY}\n`
     );
     expect(installPackage).not.toHaveBeenCalled();
+    // The Pages Router is left to its quickstart, so there are no next steps.
+    expect(logger.endCommand).toHaveBeenCalledTimes(1);
+    expect(logger.endCommand).not.toHaveBeenCalledWith(
+      expect.stringContaining('Next steps:')
+    );
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'https://generaltranslation.com/docs/react/nextjs-pages-router-quickstart'
+      )
+    );
+  });
+
+  it('lists the provider first when setup does not add it to the app', async () => {
+    vi.mocked(detectFramework).mockResolvedValue({
+      name: 'vite',
+      type: 'react',
+    });
+
+    await run(
+      'init',
+      '--no-interactive',
+      '--defaults',
+      '--react-setup',
+      '--framework',
+      'react',
+      '--locales',
+      'fr',
+      '--no-dev-credentials'
+    );
+
+    expect(installPackage).not.toHaveBeenCalled();
+    expect(logger.endCommand).toHaveBeenCalledTimes(1);
+    expect(logger.endCommand).toHaveBeenCalledWith(
+      expect.stringContaining(
+        '\nNext steps:\n1. Add <GTProvider> from gt-react to the root of your app'
+      )
+    );
   });
 
   it('detects the declared package manager without prompting before the first install', async () => {
@@ -562,10 +599,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
           'installed gt',
         ],
       });
+      const nextSteps = [
+        'Wrap the text you want translated in <T>, or translate strings with useGT(); both come from gt-react (see https://generaltranslation.com/docs/react/react-router-quickstart)',
+        'Add <LocaleSelector /> from gt-react so visitors can switch language',
+        'Run `npx gt translate` to translate your content into es, fr and save them to ./app/_gt',
+        'Start your dev server and switch language',
+      ];
+      expect(events().at(-1)?.nextSteps).toEqual(nextSteps);
+      // One Done!, at the end, followed by the same numbered steps.
+      expect(logger.endCommand).toHaveBeenCalledTimes(1);
       expect(logger.endCommand).toHaveBeenCalledWith(
-        expect.stringContaining(
-          'https://generaltranslation.com/docs/react/react-router-quickstart'
+        expect.stringMatching(
+          /^Done! Setup did not mark any content for translation/
         )
+      );
+      expect(vi.mocked(logger.endCommand).mock.calls[0][0]).toContain(
+        `\nNext steps:\n${nextSteps.map((step, i) => `${i + 1}. ${step}`).join('\n')}`
       );
     });
   });
@@ -575,6 +624,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       useFreshApp({
         name: 'example-app',
         packageManager: 'pnpm@10.20.0',
+        scripts: { dev: 'vite dev' },
         dependencies: { '@tanstack/react-start': '*', react: '*' },
         devDependencies: { vite: '*' },
       });
@@ -652,6 +702,13 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           'installed gt',
         ],
       });
+      expect(events().at(-1)?.nextSteps).toEqual([
+        'Wrap the text you want translated in <T>, or translate strings with useGT(); both come from gt-tanstack-start (see https://generaltranslation.com/docs/react/tanstack-start/setup)',
+        'Add <LocaleSelector /> from gt-tanstack-start so visitors can switch language',
+        'Run `npx gt translate` to translate your content into es, fr and save them to ./src/_gt',
+        'Start the dev server with `pnpm dev` and switch language',
+      ]);
+      expect(logger.endCommand).toHaveBeenCalledTimes(1);
       expect(logger.endCommand).toHaveBeenCalledWith(
         expect.stringContaining(
           'https://generaltranslation.com/docs/react/tanstack-start/setup'
@@ -847,6 +904,72 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       ]);
       expectAppUnchanged();
     });
+  });
+
+  describe('React Native', () => {
+    const expoPackageJson = {
+      name: 'example-app',
+      dependencies: {
+        expo: '*',
+        'expo-router': '*',
+        react: '*',
+        'react-native': '*',
+      },
+    };
+
+    beforeEach(() => {
+      useFreshApp(expoPackageJson);
+      vi.mocked(detectFramework).mockResolvedValue({
+        name: 'react-native',
+        type: 'react-native',
+      });
+    });
+
+    it.each([
+      ['with --defaults', ['--defaults']],
+      ['with a --framework override', ['--defaults', '--framework', 'react']],
+      ['with a configured React framework', ['--defaults']],
+    ])(
+      'stops %s before any change and links the React Native quickstart',
+      async (caseName, args) => {
+        const configContents = JSON.stringify({ framework: 'react' });
+        if (caseName === 'with a configured React framework') {
+          fs.writeFileSync(file('gt.config.json'), configContents);
+        }
+        const before = fs.readdirSync(appDirectory).sort();
+
+        await expect(
+          run(
+            'init',
+            ...args,
+            '--locales',
+            'fr',
+            'es',
+            '--no-dev-credentials',
+            '--no-interactive'
+          )
+        ).rejects.toThrow(
+          'The setup wizard cannot set up React Native or Expo apps yet'
+        );
+
+        expect(logging.logErrorAndExit).toHaveBeenCalledWith(
+          expect.stringMatching(
+            /Nothing was changed[\s\S]*https:\/\/generaltranslation\.com\/docs\/react\/react-native-quickstart/
+          )
+        );
+        for (const prompt of prompts) expect(prompt).not.toHaveBeenCalled();
+        expect(installPackage).not.toHaveBeenCalled();
+        expect(fs.readdirSync(appDirectory).sort()).toEqual(before);
+        expect(
+          JSON.parse(fs.readFileSync(file('package.json'), 'utf8'))
+        ).toEqual(expoPackageJson);
+        if (caseName === 'with a configured React framework') {
+          expect(fs.readFileSync(file('gt.config.json'), 'utf8')).toBe(
+            configContents
+          );
+        }
+      }
+    );
   });
 
   it('writes and reuses App Router GT_PROJECT_ID and GT_API_KEY credentials', async () => {

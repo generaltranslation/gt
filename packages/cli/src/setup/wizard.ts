@@ -18,8 +18,8 @@ import {
   getReactFrameworkLibrary,
 } from './frameworkUtils.js';
 import { Libraries } from '../types/libraries.js';
-import { getBuildToolSetup } from './buildTools/index.js';
-import { REACT_QUICKSTART_URL } from '../utils/constants.js';
+import { getBuildToolSetup, getSetupDocsUrl } from './buildTools/index.js';
+import { NEXT_PAGES_QUICKSTART_URL } from '../utils/constants.js';
 import type { InitOptions, OnboardingSession } from './onboarding.js';
 
 /** Everything the React application setup will do, resolved before changes. */
@@ -38,15 +38,12 @@ const cancelledMessage =
 /** The framework was chosen, but the wizard leaves its app setup to a person. */
 export type SkippedReactSetup = { framework: 'next-pages'; skipped: true };
 
-const PAGES_ROUTER_QUICKSTART_URL =
-  'https://generaltranslation.com/docs/react/nextjs-pages-router-quickstart';
-
 /**
  * The wizard cannot wire the Pages Router yet, so it leaves the app (and its
  * dependencies) unchanged and reports the quickstart as a manual step.
  */
 function skipPagesRouterSetup(session: OnboardingSession): SkippedReactSetup {
-  const fix = `Install gt-next and wire your app by following the Next.js Pages Router quickstart: ${PAGES_ROUTER_QUICKSTART_URL}`;
+  const fix = `Install gt-next and wire your app by following the Next.js Pages Router quickstart: ${NEXT_PAGES_QUICKSTART_URL}`;
   session.humanActions.push(fix);
   logger.warn(
     createDiagnosticMessage({
@@ -57,7 +54,7 @@ function skipPagesRouterSetup(session: OnboardingSession): SkippedReactSetup {
       reassurance:
         'It still sets up gt.config.json and your local translation files',
       fix: 'Install gt-next and wire your app by following the Next.js Pages Router quickstart',
-      docsUrl: PAGES_ROUTER_QUICKSTART_URL,
+      docsUrl: NEXT_PAGES_QUICKSTART_URL,
     })
   );
   return { framework: 'next-pages', skipped: true };
@@ -88,7 +85,7 @@ export async function resolveReactSetup(
     recommended: true,
     ask: async () => {
       const answer = await promptConfirm({
-        message: `Would you like to install ${library} and ${initializer ? `configure ${initializer}` : 'add the GTProvider'}? See the docs for more information: ${buildTool?.docsUrl ?? REACT_QUICKSTART_URL}`,
+        message: `Would you like to install ${library} and ${initializer ? `configure ${initializer}` : 'add the GTProvider'}? See the docs for more information: ${getSetupDocsUrl(detected.name)}`,
         defaultValue: true,
       });
       // A prompted opt-in gets a last warning; flags and defaults already chose.
@@ -191,7 +188,7 @@ Please let us know what you would like to see added at https://github.com/genera
   return plan;
 }
 
-/** Wraps Next.js App Router content and adds withGTConfig(); installs happen first. */
+/** Adds GTProvider and withGTConfig() to a Next.js App Router app; installs happen first. */
 export async function executeReactSetup(
   session: OnboardingSession,
   plan: ReactSetupPlan,
@@ -202,8 +199,8 @@ export async function executeReactSetup(
   const errors: string[] = [];
   const warnings: string[] = [];
   const spinner = logger.createSpinner();
-  spinner.start('Wrapping JSX content with <T> tags...');
-  // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
+  spinner.start('Adding GTProvider to the root layout...');
+  // Add GTProvider to the root layout; content is never wrapped in <T>
   const { filesUpdated } = await wrapContentNext(
     {
       ...options,
@@ -221,7 +218,8 @@ export async function executeReactSetup(
       `Success! Updated ${chalk.bold.cyan(filesUpdated.length)} files:\n`
     ) + filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
   );
-  if (filesUpdated.length > 0) session.step('wrapped JSX content');
+  if (filesUpdated.length > 0)
+    session.step('added GTProvider to the root layout');
 
   // Add the withGTConfig() function to the next.config.js file
   const tsconfigPath = findFilepath(['tsconfig.json']);

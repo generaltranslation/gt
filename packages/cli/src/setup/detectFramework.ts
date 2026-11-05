@@ -1,4 +1,4 @@
-import { FrameworkObject } from '../types/index.js';
+import { FrameworkObject, ReactNativeFrameworkObject } from '../types/index.js';
 import { isPackageInstalled } from '../utils/packageJson.js';
 import { searchForPackageJson } from '../utils/packageJson.js';
 import fs from 'node:fs';
@@ -10,7 +10,7 @@ import path from 'node:path';
  * Detects the frontend framework used in the current project.
  *
  * Analyzes the project structure and dependencies to identify the framework.
- * Detection order: Mintlify → Next.js (App/Pages Router) → Gatsby → RedwoodJS → TanStack Start → React Router → Vite → React.
+ * Detection order: Mintlify → Next.js (App/Pages Router) → Gatsby → RedwoodJS → TanStack Start → React Router → React Native (Expo or bare) → Vite → React.
  *
  * For Next.js projects, further determines whether it uses App Router or Pages Router
  * by checking for the presence of `app/` or `pages/` directories.
@@ -18,10 +18,13 @@ import path from 'node:path';
  * @returns A promise resolving to a FrameworkObject containing:
  *   - `name`: The detected framework identifier (e.g., 'next-app', 'gatsby', 'react')
  *             or undefined if no framework is detected
- *   - `type`: The framework category (currently only 'react' for React-based frameworks)
+ *   - `type`: The framework category: 'react' for React-based web frameworks,
+ *             or 'react-native' for Expo and bare React Native apps
  */
 export async function detectFramework(): Promise<
-  FrameworkObject | { name: undefined; type?: undefined }
+  | FrameworkObject
+  | ReactNativeFrameworkObject
+  | { name: undefined; type?: undefined }
 > {
   const packageJson = await searchForPackageJson();
 
@@ -74,6 +77,15 @@ export async function detectFramework(): Promise<
   // Detect @react-router/dev (not react-router) since plain Vite apps can install react-router
   if (isPackageInstalled('@react-router/dev', packageJson, false, true)) {
     return { name: 'react-router', type: 'react' };
+  }
+
+  // Expo and React Native apps also depend on react, so check them before
+  // the generic Vite and React checks
+  if (
+    isPackageInstalled('expo', packageJson, false, true) ||
+    isPackageInstalled('react-native', packageJson, false, true)
+  ) {
+    return { name: 'react-native', type: 'react-native' };
   }
 
   // Check for Vite
