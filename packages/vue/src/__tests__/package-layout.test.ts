@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import {
   existsSync,
   mkdirSync,
@@ -12,8 +12,13 @@ import {
 } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
+import { promisify } from 'node:util';
 import { describe, expect, it } from 'vitest';
 import * as gtVue from '../index';
+
+// Async so the vitest worker keeps answering RPC while tsc, pnpm and tsdown
+// run; a blocking call on a loaded CI runner trips its 60s RPC timeout.
+const run = promisify(execFile);
 
 const sourceDirectories = [
   '__tests__',
@@ -60,7 +65,7 @@ describe('gt-vue package layout', () => {
     );
   });
 
-  it('accepts React rich-wire literals through TranslationCatalog', () => {
+  it('accepts React rich-wire literals through TranslationCatalog', async () => {
     const packageRoot = fileURLToPath(new URL('../..', import.meta.url));
     const fixtureDirectory = mkdtempSync(
       join(packageRoot, '.gt-vue-typecheck-')
@@ -93,29 +98,25 @@ describe('gt-vue package layout', () => {
     );
 
     try {
-      execFileSync(
-        process.execPath,
-        [
-          join(packageRoot, 'node_modules/typescript/bin/tsc'),
-          '--noEmit',
-          '--strict',
-          '--skipLibCheck',
-          '--module',
-          'ESNext',
-          '--moduleResolution',
-          'Bundler',
-          '--target',
-          'ES2022',
-          fixture,
-        ],
-        { stdio: 'pipe' }
-      );
+      await run(process.execPath, [
+        join(packageRoot, 'node_modules/typescript/bin/tsc'),
+        '--noEmit',
+        '--strict',
+        '--skipLibCheck',
+        '--module',
+        'ESNext',
+        '--moduleResolution',
+        'Bundler',
+        '--target',
+        'ES2022',
+        fixture,
+      ]);
     } finally {
       rmSync(fixtureDirectory, { force: true, recursive: true });
     }
   }, 30_000);
 
-  it('publishes documented T metadata props and compiler aliases', () => {
+  it('publishes documented T metadata props and compiler aliases', async () => {
     const packageRoot = fileURLToPath(new URL('../..', import.meta.url));
     const fixtureDirectory = mkdtempSync(
       join(packageRoot, '.gt-vue-typecheck-')
@@ -155,29 +156,25 @@ describe('gt-vue package layout', () => {
     );
 
     try {
-      execFileSync(
-        process.execPath,
-        [
-          join(packageRoot, 'node_modules/typescript/bin/tsc'),
-          '--noEmit',
-          '--strict',
-          '--skipLibCheck',
-          '--module',
-          'ESNext',
-          '--moduleResolution',
-          'Bundler',
-          '--target',
-          'ES2022',
-          fixture,
-        ],
-        { stdio: 'pipe' }
-      );
+      await run(process.execPath, [
+        join(packageRoot, 'node_modules/typescript/bin/tsc'),
+        '--noEmit',
+        '--strict',
+        '--skipLibCheck',
+        '--module',
+        'ESNext',
+        '--moduleResolution',
+        'Bundler',
+        '--target',
+        'ES2022',
+        fixture,
+      ]);
     } finally {
       rmSync(fixtureDirectory, { force: true, recursive: true });
     }
   }, 30_000);
 
-  it('publishes server-safe SPA guards and tree-shakes non-SPA consumers', () => {
+  it('publishes server-safe SPA guards and tree-shakes non-SPA consumers', async () => {
     const packageRoot = fileURLToPath(new URL('../..', import.meta.url));
     const fixtureDirectory = mkdtempSync(
       join(packageRoot, '.gt-vue-tree-shaking-')
@@ -192,20 +189,21 @@ describe('gt-vue package layout', () => {
     mkdirSync(join(nodeModulesDirectory, '@generaltranslation'));
 
     try {
-      execFileSync(
+      await run(
         process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm',
         ['pack', '--pack-destination', packDirectory],
-        { cwd: packageRoot, stdio: 'pipe' }
+        { cwd: packageRoot }
       );
       const archive = readdirSync(packDirectory).find((file) =>
         file.endsWith('.tgz')
       );
       expect(archive).toBeDefined();
-      execFileSync(
-        'tar',
-        ['-xzf', join(packDirectory, archive!), '-C', unpackDirectory],
-        { stdio: 'pipe' }
-      );
+      await run('tar', [
+        '-xzf',
+        join(packDirectory, archive!),
+        '-C',
+        unpackDirectory,
+      ]);
 
       for (const [name, target] of [
         ['gt-vue', join(unpackDirectory, 'package')],
@@ -251,24 +249,21 @@ describe('gt-vue package layout', () => {
           `,
         ],
       ] as const) {
-        expect(() =>
-          execFileSync(
-            process.execPath,
-            moduleFormat === 'ESM'
-              ? ['--input-type=module', '--eval', script]
-              : ['--eval', script],
-            { cwd: fixtureDirectory, stdio: 'pipe' }
-          )
-        ).not.toThrow();
+        await run(
+          process.execPath,
+          moduleFormat === 'ESM'
+            ? ['--input-type=module', '--eval', script]
+            : ['--eval', script],
+          { cwd: fixtureDirectory }
+        );
       }
 
-      expect(() =>
-        execFileSync(
-          process.execPath,
-          [
-            '--input-type=module',
-            '--eval',
-            `
+      await run(
+        process.execPath,
+        [
+          '--input-type=module',
+          '--eval',
+          `
               import { createRequire } from 'node:module';
               import { createSSRApp, h } from 'vue';
               import { renderToString } from 'vue/server-renderer';
@@ -296,10 +291,9 @@ describe('gt-vue package layout', () => {
               const html = await renderToString(createSSRApp(Root).use(esmPlugin));
               if (!html.includes('Shared component source')) process.exit(1);
             `,
-          ],
-          { cwd: fixtureDirectory, stdio: 'pipe' }
-        )
-      ).not.toThrow();
+        ],
+        { cwd: fixtureDirectory }
+      );
 
       const esmPackageSource = readFileSync(
         join(unpackDirectory, 'package', 'dist', 'index.mjs'),
@@ -333,7 +327,7 @@ describe('gt-vue package layout', () => {
           `export { ${exportName} } from 'gt-vue';\n`
         );
 
-        execFileSync(
+        await run(
           process.execPath,
           [
             join(packageRoot, 'node_modules/tsdown/dist/run.mjs'),
@@ -346,7 +340,7 @@ describe('gt-vue package layout', () => {
             '--logLevel',
             'silent',
           ],
-          { cwd: fixtureDirectory, stdio: 'pipe' }
+          { cwd: fixtureDirectory }
         );
 
         const bundledFile = readdirSync(consumerOutputDirectory).find((file) =>
