@@ -430,6 +430,8 @@ export const noLocalesError = `No target locales were found. Add locales to gt.c
 export const noDefaultLocaleError = `No default locale was found. Add defaultLocale to gt.config.json or pass it with --default-locale.`;
 export const noFilesError = `The files configuration is missing or invalid. Check the files section in gt.config.json and try again.`;
 export const noSourceFileError = `No source translation file was found. Check your translations directory and default locale configuration.`;
+// TODO: add a CLI command that finds or creates a project for the signed-in
+// user and prints its ID (e.g. `gt project list`), and name it in this error.
 export const noProjectIdError = (dashboardUrl: string): string =>
   createDiagnosticMessage({
     source: 'gt',
