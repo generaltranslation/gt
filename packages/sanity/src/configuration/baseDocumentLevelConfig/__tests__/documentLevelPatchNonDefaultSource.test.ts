@@ -130,6 +130,30 @@ describe('documentLevelPatch from a non-default original', () => {
     expect(metadataIn(dataset)).toHaveLength(0);
   });
 
+  test('never patches the original when its group also records it under the target locale', async () => {
+    const group = metadataDoc(
+      'translation.metadata.page-fr',
+      [
+        ['fr', 'page-fr'],
+        ['de', 'page-fr'],
+      ],
+      { gtSourceLanguage: 'fr' }
+    );
+    const { client, create, patch } = createGroqClient([frOriginal, group]);
+
+    await expect(
+      documentLevelPatch(
+        { documentId: 'page-fr' },
+        translated('Hallo'),
+        'de',
+        client
+      )
+    ).rejects.toThrow(/source document as its de entry/);
+
+    expect(create).not.toHaveBeenCalled();
+    expect(patch).not.toHaveBeenCalled();
+  });
+
   test('refuses to translate from a translation', async () => {
     const group = metadataDoc(
       'translation.metadata.page-fr',

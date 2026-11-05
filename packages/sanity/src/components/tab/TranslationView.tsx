@@ -164,6 +164,18 @@ export const TranslationView = () => {
     pendingTranslations.has(statusKeyFor(locale.localeId))
   );
 
+  // The latest role, read again after awaited imports: the callback's own
+  // closure keeps the role from when it started.
+  const documentRoleRef = useRef(documentRole);
+  documentRoleRef.current = documentRole;
+  // The role is only looked up with `allowNonDefaultSourceLocales`.
+  const isVerifiedOriginal = useCallback(
+    (role: typeof documentRole) =>
+      !allowNonDefault ||
+      (role?.status === 'resolved' && role.role.kind === 'original'),
+    [allowNonDefault]
+  );
+
   // Unified import functionality
   const handleImportTranslations = useCallback(
     async (options: { autoOnly?: boolean } = {}) => {
@@ -172,6 +184,9 @@ export const TranslationView = () => {
       // Check preconditions
       if (isImporting || !documentId || !versionId) return;
       if (autoOnly && !autoImport) return;
+      // A document that stopped being its group's original must not import,
+      // nor publish what its group now treats as the source.
+      if (!isVerifiedOriginal(documentRoleRef.current)) return;
 
       // Find translations ready to import (any configured locale, not just
       // the ones currently selected for translation)
@@ -194,9 +209,35 @@ export const TranslationView = () => {
         // Import sequentially: internationalized-array imports patch this same
         // document in place, so concurrent locale imports would overwrite each
         // other and only the last locale would survive.
+        let allImported = true;
         for (const locale of readyTranslations) {
-          await handleImportDocument(documentId, versionId, locale.localeId);
+          allImported =
+            (await handleImportDocument(
+              documentId,
+              versionId,
+              locale.localeId
+            )) && allImported;
         }
+        // A rejected import (for example because the group's original
+        // changed) or a role change during the imports must not lead to
+        // patching or publishing the group's documents.
+        if (!allImported) {
+          const skipped = [
+            autoPatchReferences && 'patching references',
+            autoPublish && 'publishing',
+          ].filter(Boolean);
+          if (skipped.length > 0) {
+            toast.push({
+              title: `Skipped ${skipped.join(' and ')} because a translation could not be imported`,
+              description:
+                'Click Import All to try again; this runs once every translation imports.',
+              status: 'warning',
+              closable: true,
+            });
+          }
+          return;
+        }
+        if (!isVerifiedOriginal(documentRoleRef.current)) return;
 
         // Auto patch document references if enabled
         if (autoPatchReferences) {
@@ -213,6 +254,7 @@ export const TranslationView = () => {
     },
     [
       autoImport,
+      isVerifiedOriginal,
       isImporting,
       documentId,
       versionId,

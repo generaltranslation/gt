@@ -21,6 +21,7 @@ import {
 import { api, overrideConfig, pluginConfig } from '../adapter/core';
 import { getTranslationStrategy } from '../translation/strategy';
 import { uploadFiles } from '../translation/uploadFiles';
+import { resolvePreviewUrls } from '../translation/previewUrls';
 import { initProject } from '../translation/initProject';
 import { createJobs } from '../translation/createJobs';
 import { captureExistingTranslations } from '../translation/captureExistingTranslations';
@@ -195,11 +196,12 @@ interface TranslationsContextType {
   handleImportAll: () => Promise<void>;
   handleImportMissing: () => Promise<void>;
   handleRefreshAll: (options?: { silent?: boolean }) => Promise<void>;
+  /** Resolves `true` when the translation was imported; failures are reported, not thrown. */
   handleImportDocument: (
     documentId: string,
     versionId: string,
     localeId: string
-  ) => Promise<void>;
+  ) => Promise<boolean>;
   handlePatchDocumentReferences: () => Promise<number>;
   handlePublishAllTranslations: (
     options?: PublishTranslationsOptions
@@ -598,7 +600,7 @@ const TranslationsProviderContent: React.FC<
   }, [documents, locales, client, hasNonDefaultSource]);
 
   const serializeSourceDocuments = useCallback(
-    (sourceDocuments: SanityDocument[] = documents) =>
+    (sourceDocuments: SanityDocument[], previewUrls: Map<string, string>) =>
       sourceDocuments
         .map((doc) => {
           const { [pluginConfig.getLanguageField()]: _, ...cleanDoc } = doc;
@@ -616,6 +618,7 @@ const TranslationsProviderContent: React.FC<
                 documentId: getDocumentPublishedId(doc),
                 versionId: doc._rev,
                 fileName: getDocumentFileName(doc),
+                previewUrl: previewUrls.get(getDocumentPublishedId(doc)),
                 ...(isNonDefaultSourceLanguage(baseLanguage) && {
                   sourceLocale: baseLanguage,
                 }),
@@ -632,7 +635,7 @@ const TranslationsProviderContent: React.FC<
           return null;
         })
         .filter((doc) => doc !== null),
-    [allowNonDefault, documents, schema]
+    [allowNonDefault, schema]
   );
 
   // Studio-side translations are only collected for groups whose original is
@@ -693,6 +696,27 @@ const TranslationsProviderContent: React.FC<
     [client, singleDocument, toast]
   );
 
+  // Preview URLs help reviewers but are not needed to translate, so a failure warns and uploads without them.
+  const resolveSourcePreviewUrls = useCallback(
+    async (sourceDocuments: SanityDocument[]) => {
+      const { urls, failures } = await resolvePreviewUrls(
+        sourceDocuments,
+        client
+      );
+      if (failures.length > 0) {
+        console.error('Could not resolve preview URLs.', failures);
+        toast.push({
+          title:
+            'Some preview URLs could not be resolved. Translation is continuing without them.',
+          status: 'warning',
+          closable: true,
+        });
+      }
+      return urls;
+    },
+    [client, toast]
+  );
+
   const handleTranslateAll = useCallback(
     async ({ force = false }: TranslateAllOptions = {}) => {
       if (!secrets || documents.length === 0) return;
@@ -746,7 +770,10 @@ const TranslationsProviderContent: React.FC<
           }
         }
 
-        const transformedDocuments = serializeSourceDocuments(sourceDocuments);
+        const transformedDocuments = serializeSourceDocuments(
+          sourceDocuments,
+          await resolveSourcePreviewUrls(sourceDocuments)
+        );
 
         // A document is never translated into its own language. Without
         // `allowNonDefaultSourceLocales`, every document is translated into
@@ -872,6 +899,7 @@ const TranslationsProviderContent: React.FC<
       branchId,
       preserveExistingTranslations,
       serializeSourceDocuments,
+      resolveSourcePreviewUrls,
       uploadedVersions,
       uploadedVersionsStorageKey,
       allowNonDefault,
@@ -912,7 +940,10 @@ const TranslationsProviderContent: React.FC<
         if (!uploadable) return;
         sourceDocuments = uploadable;
       }
-      const transformedDocuments = serializeSourceDocuments(sourceDocuments);
+      const transformedDocuments = serializeSourceDocuments(
+        sourceDocuments,
+        await resolveSourcePreviewUrls(sourceDocuments)
+      );
 
       // Seed the source files first. uploadTranslations requires the source to
       // exist, and this action exists for projects whose translations predate
@@ -961,6 +992,7 @@ const TranslationsProviderContent: React.FC<
     client,
     schema,
     serializeSourceDocuments,
+    resolveSourcePreviewUrls,
     allowNonDefault,
     getDefaultSourceDocuments,
     getUploadableSources,
@@ -1356,8 +1388,12 @@ const TranslationsProviderContent: React.FC<
   );
 
   const handleImportDocument = useCallback(
-    async (documentId: string, versionId: string, localeId: string) => {
-      if (!secrets) return;
+    async (
+      documentId: string,
+      versionId: string,
+      localeId: string
+    ): Promise<boolean> => {
+      if (!secrets) return false;
 
       const key = createTranslationStatusKey(
         branchId,
@@ -1373,7 +1409,7 @@ const TranslationsProviderContent: React.FC<
           status: 'warning',
           closable: true,
         });
-        return;
+        return false;
       }
 
       const document = documents.find(
@@ -1386,7 +1422,7 @@ const TranslationsProviderContent: React.FC<
           status: 'error',
           closable: true,
         });
-        return;
+        return false;
       }
 
       try {
@@ -1435,6 +1471,7 @@ const TranslationsProviderContent: React.FC<
               status: 'success',
               closable: true,
             });
+            return true;
           } catch (importError) {
             console.error('Failed to import translation:', importError);
             toast.push({
@@ -1458,6 +1495,7 @@ const TranslationsProviderContent: React.FC<
           closable: true,
         });
       }
+      return false;
     },
     [secrets, documents, translationContext, translationStatuses, branchId]
   );

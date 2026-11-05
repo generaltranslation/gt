@@ -34,6 +34,7 @@ export async function uploadFiles(
           (allowNonDefault ? info.sourceLocale : undefined) ??
           defaultSourceLocale,
         versionId: info.versionId || undefined,
+        metadata: info.previewUrl ? { previewUrl: info.previewUrl } : undefined,
       },
     })),
     {

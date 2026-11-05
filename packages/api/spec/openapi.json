@@ -419,6 +419,24 @@
           }
         },
         "required": ["message"]
+      },
+      "OrgApiKeyPermission": {
+        "type": "string",
+        "enum": [
+          "org:projects:create",
+          "project:api_keys:read",
+          "project:api_keys:write",
+          "org:context:read",
+          "org:context:write",
+          "org:assets:write",
+          "project:write",
+          "project:context:read",
+          "project:context:write",
+          "project:files:read",
+          "project:files:write",
+          "project:translations:generate",
+          "project:translations:enqueue"
+        ]
       }
     },
     "parameters": {}
@@ -7854,6 +7872,16 @@
                             "formatMetadata": {
                               "type": "object",
                               "additionalProperties": {}
+                            },
+                            "metadata": {
+                              "type": "object",
+                              "properties": {
+                                "previewUrl": {
+                                  "type": "string",
+                                  "format": "uri",
+                                  "description": "Page that shows this version of the file."
+                                }
+                              }
                             }
                           },
                           "required": [
@@ -8645,6 +8673,16 @@
                             "formatMetadata": {
                               "type": "object",
                               "additionalProperties": {}
+                            },
+                            "metadata": {
+                              "type": "object",
+                              "properties": {
+                                "previewUrl": {
+                                  "type": "string",
+                                  "format": "uri",
+                                  "description": "Page that shows this version of the file."
+                                }
+                              }
                             }
                           },
                           "required": [
@@ -16003,6 +16041,448 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/orgs/{orgId}/api-keys": {
+      "post": {
+        "operationId": "createOrgApiKey",
+        "x-internal": true,
+        "tags": ["Organizations"],
+        "summary": "Create an Organization API key",
+        "description": "Create an Organization API key. Requires `org:api_keys:write`; API keys cannot create organization API keys.",
+        "security": [
+          {
+            "UserBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "required": true,
+            "name": "orgId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/ApiVersion"
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255,
+                    "examples": ["CI"],
+                    "description": "Key name, 1–255 characters after trimming."
+                  },
+                  "permissions": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/OrgApiKeyPermission"
+                    },
+                    "minItems": 1,
+                    "description": "Organization and project permissions to grant. Select at least one, or omit to grant all organization API key permissions you can delegate. You must hold every selected permission. Duplicates are ignored. Write permissions do not include Read."
+                  }
+                },
+                "required": ["name"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Organization API key created. Each successful request creates a new key. Store the returned secret securely.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "apiKey": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "key": {
+                          "type": "string"
+                        },
+                        "orgId": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id", "name", "key", "orgId"]
+                    }
+                  },
+                  "required": ["apiKey"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed or failed validation.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "invalid_request": {
+                    "summary": "invalid_request",
+                    "value": {
+                      "error": "The request is malformed or failed validation.",
+                      "code": "invalid_request"
+                    }
+                  },
+                  "api_version_unsupported": {
+                    "summary": "api_version_unsupported",
+                    "value": {
+                      "error": "The gt-api-version header does not name a known API version.",
+                      "code": "api_version_unsupported"
+                    }
+                  },
+                  "user_ip_missing": {
+                    "summary": "user_ip_missing",
+                    "value": {
+                      "error": "A dashboard-actor token must send the user's IP address header.",
+                      "code": "user_ip_missing"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "invalid_request",
+                            "api_version_unsupported",
+                            "user_ip_missing"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication is missing or invalid.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "unauthenticated": {
+                    "summary": "unauthenticated",
+                    "value": {
+                      "error": "Authentication is missing or invalid.",
+                      "code": "unauthenticated"
+                    }
+                  },
+                  "api_key_invalid": {
+                    "summary": "api_key_invalid",
+                    "value": {
+                      "error": "The API key is not recognized. It may be mistyped, revoked, or rotated.",
+                      "code": "api_key_invalid"
+                    }
+                  },
+                  "token_invalid": {
+                    "summary": "token_invalid",
+                    "value": {
+                      "error": "The access token is invalid or expired. Sign in again.",
+                      "code": "token_invalid"
+                    }
+                  },
+                  "super_user_grant_revoked": {
+                    "summary": "super_user_grant_revoked",
+                    "value": {
+                      "error": "The super-user access grant behind this token is no longer active.",
+                      "code": "super_user_grant_revoked"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unauthenticated",
+                            "api_key_invalid",
+                            "token_invalid",
+                            "super_user_grant_revoked"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller is authenticated but not allowed to perform this operation or access the requested resource, or cannot grant a selected permission. No key is created.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "scope_missing": {
+                    "summary": "scope_missing",
+                    "value": {
+                      "error": "The user token lacks an OAuth scope this operation requires. The error names the scope.",
+                      "code": "scope_missing"
+                    }
+                  },
+                  "ip_not_allowed": {
+                    "summary": "ip_not_allowed",
+                    "value": {
+                      "error": "The caller's IP address is blocked by the credential's access policy.",
+                      "code": "ip_not_allowed"
+                    }
+                  },
+                  "permission_denied": {
+                    "summary": "permission_denied",
+                    "value": {
+                      "error": "The caller is authenticated but not allowed to perform this operation or access the requested resource, or cannot grant a selected permission. No key is created.",
+                      "code": "permission_denied"
+                    }
+                  },
+                  "permission_not_grantable": {
+                    "summary": "permission_not_grantable",
+                    "value": {
+                      "error": "A requested permission cannot be granted to a project API key by this caller.",
+                      "code": "permission_not_grantable"
+                    }
+                  },
+                  "permission_missing": {
+                    "summary": "permission_missing",
+                    "value": {
+                      "error": "The credential lacks a permission this operation requires. The error names the permission.",
+                      "code": "permission_missing"
+                    }
+                  },
+                  "target_inaccessible": {
+                    "summary": "target_inaccessible",
+                    "value": {
+                      "error": "The target project or organization does not exist, or the credential cannot access it.",
+                      "code": "target_inaccessible"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "scope_missing",
+                            "ip_not_allowed",
+                            "permission_denied",
+                            "permission_not_grantable",
+                            "permission_missing",
+                            "target_inaccessible"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request, or the data it would return, exceeds a size or item limit.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "payload_too_large": {
+                    "summary": "payload_too_large",
+                    "value": {
+                      "error": "The request, or the data it would return, exceeds a size or item limit.",
+                      "code": "payload_too_large"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["payload_too_large"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "unsupported_media_type": {
+                    "summary": "unsupported_media_type",
+                    "value": {
+                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "code": "unsupported_media_type"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["unsupported_media_type"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. The rate limit was exceeded.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "rate_limited": {
+                    "summary": "rate_limited",
+                    "value": {
+                      "error": "Too many requests. The rate limit was exceeded.",
+                      "code": "rate_limited"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["rate_limited"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected server error occurred.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "internal_error": {
+                    "summary": "internal_error",
+                    "value": {
+                      "error": "An unexpected server error occurred.",
+                      "code": "internal_error"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["internal_error"]
+                        }
+                      }
+                    }
+                  ]
                 }
               },
               "text/html": {

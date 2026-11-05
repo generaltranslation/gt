@@ -48,6 +48,8 @@ export type GTFile = {
    * configured source locale. Omitted means the configured source locale.
    */
   sourceLocale?: string;
+  /** Page on the site that shows this version of the document. */
+  previewUrl?: string;
 };
 
 export interface Adapter {

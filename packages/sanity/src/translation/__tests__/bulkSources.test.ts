@@ -89,6 +89,25 @@ describe('Translate All document selection', () => {
     });
   });
 
+  test('leaves out a marked original whose language was changed to the source locale', async () => {
+    const dataset = [
+      page('a', 'en'),
+      // The group records c-fr as its fr original, but c-fr is now tagged en.
+      page('c-fr', 'en'),
+      page('c-de', 'de'),
+      metadataDoc(
+        'm-c',
+        [
+          ['fr', 'c-fr'],
+          ['de', 'c-de'],
+        ],
+        { gtSourceLanguage: 'fr' }
+      ),
+    ];
+
+    expect((await selectBulkSources(dataset)).ids).toEqual(['a']);
+  });
+
   test('selects exactly the source-locale documents when nothing is marked', async () => {
     const dataset = [
       page('a', 'en'),
@@ -220,6 +239,20 @@ describe('rechecking a Translate All selection before upload', () => {
       page('a', 'en'),
       page('drafts.b-en', 'en'),
     ]);
+    expect(await result).toEqual({
+      documents: [page('a', 'en')],
+      droppedCount: 1,
+    });
+  });
+
+  test('drops a marked original whose language changed to the source locale', async () => {
+    const dataset = [
+      page('a', 'en'),
+      page('c-fr', 'en'),
+      metadataDoc('m-c', [['fr', 'c-fr']], { gtSourceLanguage: 'fr' }),
+    ];
+
+    const { result } = recheck(dataset, [page('a', 'en'), page('c-fr', 'en')]);
     expect(await result).toEqual({
       documents: [page('a', 'en')],
       droppedCount: 1,

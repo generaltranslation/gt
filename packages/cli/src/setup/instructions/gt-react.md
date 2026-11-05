@@ -95,4 +95,4 @@ const locale = useLocale(); // "en-US"
 
 ## Quickstart
 
-See <https://generaltranslation.com/docs/react.md>
+See <https://generaltranslation.com/docs/react/react-quickstart.md>

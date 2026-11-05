@@ -75,4 +75,33 @@ describe('detectFramework', () => {
       type: 'react',
     });
   });
+
+  it('detects an Expo app as React Native instead of plain React', async () => {
+    writePackageJson({
+      dependencies: {
+        expo: '~58.0.22',
+        'expo-router': '~58.0.29',
+        react: '19.3.0',
+        'react-native': '0.88.1',
+        'react-native-web': '~0.21.4',
+      },
+    });
+
+    await expect(detectFramework()).resolves.toEqual({
+      name: 'react-native',
+      type: 'react-native',
+    });
+  });
+
+  it('detects a bare React Native app as React Native', async () => {
+    writePackageJson({
+      dependencies: { react: '19.3.0', 'react-native': '0.88.1' },
+      devDependencies: { '@react-native/metro-config': '0.88.1' },
+    });
+
+    await expect(detectFramework()).resolves.toEqual({
+      name: 'react-native',
+      type: 'react-native',
+    });
+  });
 });
