@@ -64,7 +64,7 @@ export function hasValidCredentials(
   settings: Settings
 ): settings is Settings & { projectId: string } {
   if (!settings.projectId) {
-    logger.error(noProjectIdError(settings.dashboardUrl));
+    logger.error(noProjectIdError(settings.dashboardUrl, settings.config));
     return false;
   }
   return true;

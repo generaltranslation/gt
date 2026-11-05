@@ -781,6 +781,26 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       );
     });
 
+    it('keeps a custom config path in the next step', async () => {
+      fs.mkdirSync(file('.gt'));
+      await run(
+        'init',
+        '--defaults',
+        '--no-interactive',
+        '--locales',
+        'fr',
+        '--config',
+        '.gt/gt.config.json'
+      );
+
+      expect(fs.existsSync(file('.gt/gt.config.json'))).toBe(true);
+      expect(
+        messages().some((message) =>
+          message.includes(`${nextStep} --config .gt/gt.config.json`)
+        )
+      ).toBe(true);
+    });
+
     it('keeps the recommended answer when a project already resolves', async () => {
       vi.stubEnv('VITE_GT_PROJECT_ID', 'p1');
 

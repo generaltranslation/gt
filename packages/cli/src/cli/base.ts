@@ -24,7 +24,7 @@ import {
   promptGlobPatterns,
 } from '../console/logging.js';
 import { logger } from '../console/logger.js';
-import { lottieTranslateError } from '../console/index.js';
+import { lottieTranslateError, setupCommand } from '../console/index.js';
 import { parseGlobPatterns } from '../console/promptParsing.js';
 import path from 'node:path';
 import {
@@ -1688,7 +1688,7 @@ See https://www.npmjs.com/package/gt-vue`);
     } else if (!settings.projectId) {
       // Without a project, the first `gt translate` fails; name the way in.
       logger.message(
-        `${chalk.dim('To translate, sign in and create a project:')} ${chalk.cyan(`npx gt init ${credentialsOption}`)} ${chalk.dim('(or set GT_PROJECT_ID and GT_API_KEY from')} ${chalk.cyan(settings.dashboardUrl)}${chalk.dim(')')}`
+        `${chalk.dim('To translate, sign in and create a project:')} ${chalk.cyan(setupCommand(credentialsOption, configFilepath))} ${chalk.dim('(or set GT_PROJECT_ID and GT_API_KEY from')} ${chalk.cyan(settings.dashboardUrl)}${chalk.dim(')')}`
       );
     }
   }
