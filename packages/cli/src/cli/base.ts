@@ -1,9 +1,9 @@
 import { Argument, Command, InvalidArgumentError, Option } from 'commander';
-import { ProjectApiKeyPermission } from 'generaltranslation/api';
 import {
-  DEFAULT_TRANSLATIONS_DIR,
-  REACT_QUICKSTART_URL,
-} from '../utils/constants.js';
+  OrgApiKeyPermission,
+  ProjectApiKeyPermission,
+} from 'generaltranslation/api';
+import { DEFAULT_TRANSLATIONS_DIR } from '../utils/constants.js';
 import {
   applySetupConfig,
   mergeSetupConfig,
@@ -45,6 +45,8 @@ import {
   resolveReactSetup,
   type ReactSetupPlan,
 } from '../setup/wizard.js';
+import { formatInitNextSteps, getInitNextSteps } from '../setup/nextSteps.js';
+import { getPackageManager } from '../utils/packageManager.js';
 import {
   isPackageInstalled,
   searchForPackageJson,
@@ -62,7 +64,10 @@ import {
   resolveDevelopmentProject,
   signInForSetup,
 } from '../setup/developmentCredentials.js';
-import { exitIfUnsupportedSetupTarget } from '../setup/setupTarget.js';
+import {
+  exitIfUnsupportedSetupTarget,
+  reactNativeSetupError,
+} from '../setup/setupTarget.js';
 import {
   asRecord,
   attachConfigureFlags,
@@ -137,11 +142,12 @@ import { resolveConfig } from '../config/resolveConfig.js';
 import { loadConfig, withJsonExtension } from '../fs/config/loadConfig.js';
 import {
   getBuildToolSetup,
+  getSetupDocsUrl,
   type ManualAction,
   type SetupResult,
 } from '../setup/buildTools/index.js';
 import { manifestDirectlyDeclaresGTVue } from '@generaltranslation/vue-extractor/integration';
-import { api } from '../utils/api.js';
+import { api, configureApiClient } from '../utils/api.js';
 import { handleApiCommand, type ApiCommandOptions } from './commands/api.js';
 
 const ID_COMPATIBILITY_WARNING_COMMANDS = new Set([
@@ -169,6 +175,16 @@ const emptyApiKeyNameError = createDiagnosticMessage({
   whatHappened: 'The key name cannot be empty',
   fix: 'Pass a non-empty value with --name',
 });
+
+const projectApiKeyPermissions = new Set<string>(
+  Object.values(ProjectApiKeyPermission)
+);
+
+function isProjectApiKeyPermission(
+  permission: OrgApiKeyPermission
+): permission is ProjectApiKeyPermission {
+  return projectApiKeyPermissions.has(permission);
+}
 
 function parseApiKeyName(value: string): string {
   const name = value.trim();
@@ -494,38 +510,75 @@ export class BaseCLI {
   protected setupApiKeyCommands(): void {
     const apiKeyCommand = this.program
       .command('api-key')
-      .description('Manage API keys for the configured project');
+      .description(
+        'Manage API keys for the configured project or an organization'
+      );
 
     attachSharedFlags(
       apiKeyCommand
         .command('create')
         .description(
-          'Create a project API key with the requested permissions and print it once'
+          'Create a project API key, or an organization API key with --org-id, with the requested permissions and print it once'
         )
         .requiredOption('--name <name>', 'Key name', parseApiKeyName)
+        .option(
+          '--org-id <orgId>',
+          'Create an organization API key for this organization instead (requires gt login)'
+        )
         // Validated before any request; the server grants the requested set
         // all-or-nothing, so omitting permissions would delegate everything.
         .addOption(
           new Option('--permission <permissions...>', 'Permissions to grant')
-            .choices(Object.values(ProjectApiKeyPermission))
+            .choices(Object.values(OrgApiKeyPermission))
             .makeOptionMandatory()
         )
     ).action(
       async (
         options: SharedFlags & {
           name: string;
-          permission: ProjectApiKeyPermission[];
+          orgId?: string;
+          permission: OrgApiKeyPermission[];
         }
       ) => {
+        const projectPermissions = options.permission.filter(
+          isProjectApiKeyPermission
+        );
+        const orgOnlyPermissions = options.permission.filter(
+          (permission) => !isProjectApiKeyPermission(permission)
+        );
+        if (!options.orgId && orgOnlyPermissions.length > 0) {
+          return logErrorAndExit(
+            createDiagnosticMessage({
+              whatHappened: `${orgOnlyPermissions.join(', ')} can only be granted to organization API keys`,
+              fix: 'Pass --org-id, or remove those permissions',
+            })
+          );
+        }
         try {
           const settings = await generateSettings(options);
-          if (!hasValidCredentials(settings)) return exitSync(1);
-          const { apiKey } = await api.createProjectApiKey(settings.projectId, {
-            name: options.name,
-            permissions: options.permission,
-          });
+          let key: string;
+          if (options.orgId) {
+            // No API key can create organization keys, so always send the
+            // signed-in user's token, even when an API key is configured.
+            configureApiClient({
+              baseUrl: settings.baseUrl,
+              userTokenProvider: settings.userTokenProvider,
+            });
+            const { apiKey } = await api.createOrgApiKey(options.orgId, {
+              name: options.name,
+              permissions: options.permission,
+            });
+            key = apiKey.key;
+          } else {
+            if (!hasValidCredentials(settings)) return exitSync(1);
+            const { apiKey } = await api.createProjectApiKey(
+              settings.projectId,
+              { name: options.name, permissions: projectPermissions }
+            );
+            key = apiKey.key;
+          }
           // Raw stdout: the secret is shown once and never reaches the log file.
-          process.stdout.write(`${apiKey.key}\n`);
+          process.stdout.write(`${key}\n`);
         } catch (error) {
           return logErrorAndExit(
             error instanceof UserAuthError
@@ -887,6 +940,10 @@ export class BaseCLI {
       displaySetupHeader(session, 'Running setup wizard...');
 
       const detected = await detectFramework();
+      // Stop before any change rather than set React Native up as web React.
+      if (detected.type === 'react-native') {
+        throw new OnboardingError(reactNativeSetupError);
+      }
       const reactDetected = detected.type === 'react' ? detected : undefined;
       if (options.framework && !reactDetected) {
         session.reject(
@@ -963,7 +1020,7 @@ export class BaseCLI {
         options.framework ??
         configured ??
         detected.name;
-      await this.handleInitCommand(session, options, {
+      const nextSteps = await this.handleInitCommand(session, options, {
         configFilepath,
         framework,
         saveFramework: Boolean(reactSetup || options.framework),
@@ -971,6 +1028,10 @@ export class BaseCLI {
         keepAppSource: !reactSetup,
       });
 
+      if (nextSteps) {
+        logger.endCommand(formatInitNextSteps(nextSteps));
+        return { outcome: 'success', nextSteps };
+      }
       logger.endCommand(
         'Done! Check out our docs for more information on how to use General Translation: https://generaltranslation.com/docs'
       );
@@ -1007,10 +1068,11 @@ export class BaseCLI {
       session.defaults = options.defaults ?? false;
       const detected = await detectFramework();
       const configFilepath = setupConfigPath(options);
-      // Detection only picks env names here; it is not saved.
+      // Detection only picks env names here; it is not saved. React Native
+      // keeps the generic React env names configure has always written.
       const framework =
         getConfiguredFramework(readSetupConfig(configFilepath)) ??
-        detected.name;
+        (detected.type === 'react-native' ? 'react' : detected.name);
       await this.handleInitCommand(session, options, {
         configFilepath,
         framework,
@@ -1112,7 +1174,7 @@ See https://www.npmjs.com/package/gt-vue`);
       /** Init without the React setup never changes application source. */
       keepAppSource?: boolean;
     }
-  ): Promise<void> {
+  ): Promise<string[] | undefined> {
     const { configFilepath, reactSetup } = setup;
     const buildTool = getBuildToolSetup(setup.framework);
     const cwd = process.cwd();
@@ -1467,11 +1529,7 @@ See https://www.npmjs.com/package/gt-vue`);
         );
       }
       await executeReactSetup(session, reactSetup, options);
-      logger.endCommand(
-        `Done! Since this wizard is experimental, please review the changes and make modifications as needed.
-\nNext step: start internationalizing! See the docs for more information: ${buildTool?.docsUrl ?? REACT_QUICKSTART_URL}`
-      );
-      logger.startCommand('Setting up project config...');
+      logger.step('Setting up project config...');
     }
 
     const reportManualAction = ({ whatHappened, fix }: ManualAction) => {
@@ -1630,5 +1688,28 @@ See https://www.npmjs.com/package/gt-vue`);
       );
       logger.message(productionRuntimeKeyGuidance(settings.dashboardUrl));
     }
+
+    if (!reactSetup) return undefined;
+    // The React setup configures the app entry but never marks content for
+    // translation, so what is left is reported as next steps.
+    const devPackageManager =
+      packageManager ??
+      (await getPackageManager(cwd, options.packageManager, true).catch(
+        () => undefined
+      ));
+    const scripts = asRecord(reactSetup.packageJson.scripts);
+    return getInitNextSteps({
+      framework: reactSetup.framework,
+      configuredAppEntry:
+        reactSetup.framework === 'next-app' || buildTool !== undefined,
+      docsUrl: getSetupDocsUrl(reactSetup.framework),
+      locales: resolvedLocales,
+      configFilepath,
+      translationsDir: storage === 'local' ? translationsDir : undefined,
+      devCommand:
+        typeof scripts?.dev === 'string'
+          ? `${devPackageManager?.runScriptCommand ?? 'npm run'} dev`
+          : undefined,
+    });
   }
 }

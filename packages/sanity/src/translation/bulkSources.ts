@@ -70,9 +70,14 @@ export function getSourceLocaleSelectionQuery({
   return `*[${scopeFilter} && ${getLanguageFilter(languageField, sourceLocale)}]`;
 }
 
-/** The Translate All selection when the dataset has marked groups. */
+/**
+ * The Translate All selection when the dataset has marked groups. Leaves out
+ * originals of groups marked with another locale even when the document is now
+ * tagged with the source locale: the group still records it in its original
+ * language, so its translations could not be imported. Requires `$sourceLocale`.
+ */
 function getMarkedSelectionFilter(scopeFilter: string, languageFilter: string) {
-  return `${scopeFilter} && ${languageFilter} && !(_id in ${MARKED_TRANSLATION_IDS})`;
+  return `${scopeFilter} && ${languageFilter} && !(_id in ${MARKED_TRANSLATION_IDS}) && !(_id in ${NON_DEFAULT_ORIGINAL_IDS})`;
 }
 
 /**
@@ -166,7 +171,7 @@ export async function recheckBulkSourceDocuments<T extends { _id: string }>({
       scopeFilter,
       getLanguageFilter(languageField, sourceLocale)
     )} && _id in $ids]._id`,
-    { ids }
+    { ids, sourceLocale }
   );
   const eligible = new Set(eligibleIds.map(getPublishedId));
   const kept = documents.filter((document) =>

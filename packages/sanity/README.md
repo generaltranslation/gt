@@ -199,6 +199,40 @@ not supported. gt-sanity then ignores the marker, as it did before the option
 existed, so a `sourceLocale` translation of an original in another locale is
 treated as an original and can be translated from again.
 
+## Preview URLs
+
+To let reviewers in General Translation open a string on the page that shows
+it, give the plugin your site's origin and the page of each document type, in
+the same shape as `presentationTool`'s `resolve.locations` (the Presentation
+tool itself is not required):
+
+```ts
+import { defineLocations } from 'sanity/presentation';
+
+gtPlugin({
+  // ...
+  previewUrl: {
+    origin: 'https://staging.example.com',
+    locations: {
+      page: defineLocations({
+        select: { slug: 'slug.current' },
+        resolve: (doc) => ({
+          locations: [{ title: 'Page', href: `/${doc?.slug}` }],
+        }),
+      }),
+      // Shared content links to a page that shows it.
+      siteSettings: { locations: [{ title: 'Home', href: '/' }] },
+    },
+  },
+});
+```
+
+Studios that use Presentation can pass the same `resolve.locations`.
+
+Each uploaded document is sent with its first location in its published
+version. A type with fixed locations sends them even for unpublished documents.
+Other unpublished documents, and types with no location, are sent without one.
+
 ## Automatic Actions
 
 The Translate dialog on a document can refresh status, import a translation as
