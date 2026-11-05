@@ -422,6 +422,48 @@ module.exports = withGTConfig.withGTConfig({}, {});
       expect(filesUpdated).toHaveLength(0);
     });
 
+    it.each([
+      [
+        'a helper',
+        `function makeConfig() {
+  const { withGTConfig } = require('gt-next/config');
+  return withGTConfig({}, {});
+}
+
+module.exports = makeConfig();
+`,
+      ],
+      [
+        'the exported function',
+        `module.exports = () => {
+  const withGTConfig = require('gt-next/config').withGTConfig;
+  return withGTConfig({}, {});
+};
+`,
+      ],
+      [
+        'an aliased local',
+        `module.exports = () => {
+  const { withGTConfig: withGT } = require('gt-next/config');
+  return withGT({}, {});
+};
+`,
+      ],
+    ])(
+      'does not wrap a config that loads withGTConfig inside %s',
+      async (_name, code) => {
+        const filepath = '/test/next.config.js';
+        const { errors, warnings, filesUpdated } = createTestArrays();
+
+        vi.mocked(fs.promises.readFile).mockResolvedValue(code);
+
+        await handleInitGT(filepath, errors, warnings, filesUpdated, {});
+
+        expect(vi.mocked(fs.promises.writeFile)).not.toHaveBeenCalled();
+        expect(filesUpdated).toHaveLength(0);
+      }
+    );
+
     it('does not wrap a CommonJS config that already calls withGTConfig', async () => {
       const filepath = '/test/next.config.js';
       const { errors, warnings, filesUpdated } = createTestArrays();

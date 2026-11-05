@@ -42,7 +42,7 @@ export async function handleInitGT(
     // Check if withGTConfig is already imported/required
     let hasGTConfig = false;
     let hasModuleExports = false;
-    // Local name of an existing withGTConfig function binding, if any
+    // Local name of an existing top-level withGTConfig function binding
     let gtConfigName: string | undefined;
     traverse(ast, {
       AssignmentExpression(path) {
@@ -85,7 +85,9 @@ export async function handleInitGT(
                   ) {
                     if (prop.key.name === 'withGTConfig') {
                       hasGTConfig = true;
-                      gtConfigName = prop.value.name;
+                      if (path.parentPath.isProgram()) {
+                        gtConfigName = prop.value.name;
+                      }
                     }
                   }
                 });
@@ -105,7 +107,7 @@ export async function handleInitGT(
                 t.isIdentifier(dec.init.property, { name: 'withGTConfig' })
               ) {
                 hasGTConfig = true;
-                gtConfigName = dec.id.name;
+                if (path.parentPath.isProgram()) gtConfigName = dec.id.name;
               }
             }
           }
@@ -115,20 +117,19 @@ export async function handleInitGT(
 
     // Return early if withGTConfig is already present. An earlier gt init
     // could require it in a CommonJS config without ever using it; only that
-    // unreferenced function binding gets module.exports wrapped below.
-    let gtConfigReferenced = false;
+    // top-level, unreferenced function binding gets module.exports wrapped
+    // below. A binding that cannot be found is never treated as unused.
+    let gtConfigUnused = false;
     traverse(ast, {
       Program(path) {
-        gtConfigReferenced = Boolean(
-          gtConfigName && path.scope.getBinding(gtConfigName)?.referenced
-        );
+        const binding = gtConfigName
+          ? path.scope.getBinding(gtConfigName)
+          : undefined;
+        gtConfigUnused = binding !== undefined && !binding.referenced;
         path.stop();
       },
     });
-    if (
-      hasGTConfig &&
-      !(gtConfigName && hasModuleExports && !gtConfigReferenced)
-    ) {
+    if (hasGTConfig && !(gtConfigUnused && hasModuleExports)) {
       return;
     }
     const wrapperName = gtConfigName ?? 'withGTConfig';
