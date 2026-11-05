@@ -436,7 +436,7 @@ export const noProjectIdError = (dashboardUrl: string): string =>
     severity: 'Error',
     whatHappened:
       'No project ID was found, and translating needs a General Translation project',
-    fix: 'Run `npx gt init --live-translations` (Vite, React Router or TanStack Start) or `npx gt init --dev-credentials` (other apps) to sign in and create a project',
+    fix: 'Run `npx gt init --live-translations` (Vite, React Router or TanStack Start with local storage) or `npx gt init --dev-credentials` (CDN storage or other apps) to sign in and create a project',
     wayOut: `You can also copy your project ID from ${dashboardUrl} into gt.config.json as projectId, pass --project-id, or set GT_PROJECT_ID`,
   });
 export const noVersionIdError = `No version ID was found. Pass --version-id or add _versionId to gt.config.json.`;

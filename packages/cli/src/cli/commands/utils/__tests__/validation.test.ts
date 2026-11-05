@@ -24,8 +24,12 @@ describe('hasValidCredentials', () => {
     expect(message).toMatch(
       /^gt Error: No project ID was found, and translating needs a General Translation project\. /
     );
-    expect(message).toContain('npx gt init --live-translations');
-    expect(message).toContain('npx gt init --dev-credentials');
+    expect(message).toContain(
+      '`npx gt init --live-translations` (Vite, React Router or TanStack Start with local storage)'
+    );
+    expect(message).toContain(
+      '`npx gt init --dev-credentials` (CDN storage or other apps)'
+    );
     expect(message).toContain(
       'copy your project ID from https://dash.example.com into gt.config.json'
     );
