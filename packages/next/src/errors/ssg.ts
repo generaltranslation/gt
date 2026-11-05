@@ -8,7 +8,7 @@ export const noLocalesCouldBeDeterminedWarning = createGtNextDiagnostic({
   wayOut: 'gt-next will fall back to the default locale',
   fix: 'If you use SSG, configure locale resolution',
   docsUrl:
-    'https://generaltranslation.com/en/docs/next/guides/ssg#ssg-custom-get-locale',
+    'https://generaltranslation.com/en-US/docs/react/nextjs/app-router-static-site-generation#no-locale-could-be-determined',
 });
 
 export const withGTStaticPropsLocaleRoutingError = createGtNextDiagnostic({
