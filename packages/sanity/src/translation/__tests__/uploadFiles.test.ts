@@ -92,6 +92,42 @@ describe('uploadFiles', () => {
       { sourceLocale: 'en' }
     );
   });
+
+  test("sends a document's page as its version's preview URL", async () => {
+    await uploadFiles(
+      [
+        {
+          info: {
+            documentId: 'page',
+            versionId: 'r1',
+            previewUrl: 'https://staging.acme.test/en/page',
+          },
+          serializedDocument: serializedDocument('<p>Hello</p>'),
+        },
+      ],
+      null
+    );
+
+    expect(uploadSourceFiles.mock.calls[0][0][0].source.metadata).toEqual({
+      previewUrl: 'https://staging.acme.test/en/page',
+    });
+  });
+
+  test('sends no metadata for a document without a page', async () => {
+    await uploadFiles(
+      [
+        {
+          info: { documentId: 'page', versionId: 'r1' },
+          serializedDocument: serializedDocument('<p>Hello</p>'),
+        },
+      ],
+      null
+    );
+
+    expect(uploadSourceFiles.mock.calls[0][0][0].source.metadata).toBe(
+      undefined
+    );
+  });
 });
 
 describe('uploadFiles without allowNonDefaultSourceLocales', () => {

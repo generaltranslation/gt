@@ -1,5 +1,19 @@
 # gtx-cli
 
+## 2.27.0
+
+### Patch Changes
+
+- Updated dependencies [[`c460193`](https://github.com/generaltranslation/gt/commit/c46019337dda8440a7174d783ad94a0f9b15f79a)]:
+  - gt@2.27.0
+
+## 2.26.12
+
+### Patch Changes
+
+- Updated dependencies [[`ae3fac1`](https://github.com/generaltranslation/gt/commit/ae3fac17d59ff74c5a0c5886fcdd1f671e59746a)]:
+  - gt@2.26.12
+
 ## 2.26.11
 
 ### Patch Changes

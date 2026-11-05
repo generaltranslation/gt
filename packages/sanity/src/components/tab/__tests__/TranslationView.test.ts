@@ -218,6 +218,112 @@ describe('TranslationView role gating', () => {
   });
 });
 
+describe('TranslationView automatic import', () => {
+  const frKey = 'b:page:r1:fr';
+
+  /** Renders with fr still translating, then completes it, as a status refresh would. */
+  async function completeFrWhileOpen(
+    documentRole: DocumentRoleState,
+    importDocument: () => Promise<boolean> = async () => true
+  ) {
+    setTranslations({
+      language: 'en',
+      preserveExistingTranslations: false,
+      documentRole,
+    });
+    const importedTranslations = new Set<string>();
+    Object.assign(translations.current, {
+      autoImport: true,
+      autoPatchReferences: true,
+      autoPublish: true,
+      importedTranslations,
+      translationStatuses: new Map([[frKey, { isReady: false }]]),
+      // Like the provider, mark the import done so the effect settles.
+      handleImportDocument: vi.fn(async () => {
+        importedTranslations.add(frKey);
+        return importDocument();
+      }),
+    });
+    await renderView();
+    translations.current = {
+      ...translations.current,
+      translationStatuses: new Map([[frKey, { isReady: true }]]),
+    };
+    await renderView();
+  }
+
+  test('imports and publishes a translation that completes on an original', async () => {
+    await completeFrWhileOpen({
+      status: 'resolved',
+      role: { kind: 'original', language: 'en' },
+    });
+
+    expect(translations.current.handleImportDocument).toHaveBeenCalledWith(
+      'page',
+      'r1',
+      'fr'
+    );
+    expect(
+      translations.current.handlePatchDocumentReferences
+    ).toHaveBeenCalled();
+    expect(
+      translations.current.handlePublishAllTranslations
+    ).toHaveBeenCalled();
+  });
+
+  test('neither patches references nor publishes after a rejected import', async () => {
+    await completeFrWhileOpen(
+      { status: 'resolved', role: { kind: 'original', language: 'en' } },
+      async () => false
+    );
+
+    expect(translations.current.handleImportDocument).toHaveBeenCalled();
+    expect(
+      translations.current.handlePatchDocumentReferences
+    ).not.toHaveBeenCalled();
+    expect(document.body.textContent).toContain(
+      'Skipped patching references and publishing because a translation could not be imported'
+    );
+    expect(
+      translations.current.handlePublishAllTranslations
+    ).not.toHaveBeenCalled();
+  });
+
+  test('does not publish when the document stops being an original during the import', async () => {
+    let finishImport: (imported: boolean) => void = () => {};
+    await completeFrWhileOpen(
+      { status: 'resolved', role: { kind: 'original', language: 'en' } },
+      () => new Promise((resolve) => (finishImport = resolve))
+    );
+    translations.current = {
+      ...translations.current,
+      documentRole: {
+        status: 'resolved',
+        role: { kind: 'translation', language: 'en', originalLanguage: 'fr' },
+      },
+    };
+    await renderView();
+    await act(async () => finishImport(true));
+
+    expect(translations.current.handleImportDocument).toHaveBeenCalledTimes(1);
+    expect(
+      translations.current.handlePublishAllTranslations
+    ).not.toHaveBeenCalled();
+  });
+
+  test('does nothing once the document is no longer an original', async () => {
+    await completeFrWhileOpen({
+      status: 'resolved',
+      role: { kind: 'translation', language: 'en', originalLanguage: 'fr' },
+    });
+
+    expect(translations.current.handleImportDocument).not.toHaveBeenCalled();
+    expect(
+      translations.current.handlePublishAllTranslations
+    ).not.toHaveBeenCalled();
+  });
+});
+
 describe('TranslationView without allowNonDefaultSourceLocales', () => {
   beforeEach(() => {
     vi.spyOn(pluginConfig, 'getAllowNonDefaultSourceLocales').mockReturnValue(

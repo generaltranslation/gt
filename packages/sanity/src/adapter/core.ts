@@ -15,6 +15,7 @@ import type {
 import { SECRETS_NAMESPACE } from '../utils/shared';
 import type { PortableTextHtmlComponents } from '@portabletext/to-html';
 import type { CustomDeserializers } from '../serialization/types';
+import type { PreviewUrlConfig } from '../translation/previewUrls';
 export const gt = new GT();
 
 /**
@@ -68,6 +69,7 @@ export class GTConfig {
   fieldLevelDocuments: TranslateDocumentFilter[];
   preferences: TranslationPreferences;
   allowNonDefaultSourceLocales: boolean = false;
+  previewUrl: PreviewUrlConfig | null;
 
   private static instance: GTConfig;
   constructor(
@@ -88,7 +90,8 @@ export class GTConfig {
     translationLevel: FieldLevelTranslationMode = 'document',
     fieldLevelDocuments: TranslateDocumentFilter[] = [],
     preferences: TranslationPreferences = DEFAULT_TRANSLATION_PREFERENCES,
-    allowNonDefaultSourceLocales: boolean = false
+    allowNonDefaultSourceLocales: boolean = false,
+    previewUrl: PreviewUrlConfig | null = null
   ) {
     this.secretsNamespace = secretsNamespace;
     this.languageField = languageField;
@@ -108,6 +111,7 @@ export class GTConfig {
     this.fieldLevelDocuments = fieldLevelDocuments;
     this.preferences = preferences;
     this.allowNonDefaultSourceLocales = allowNonDefaultSourceLocales;
+    this.previewUrl = previewUrl;
   }
 
   static getInstance() {
@@ -150,7 +154,8 @@ export class GTConfig {
     translationLevel: FieldLevelTranslationMode = 'document',
     fieldLevelDocuments: TranslateDocumentFilter[] = [],
     preferences: TranslationPreferences = DEFAULT_TRANSLATION_PREFERENCES,
-    allowNonDefaultSourceLocales: boolean = false
+    allowNonDefaultSourceLocales: boolean = false,
+    previewUrl: PreviewUrlConfig | null = null
   ) {
     this.secretsNamespace = secretsNamespace;
     this.languageField = languageField;
@@ -170,6 +175,7 @@ export class GTConfig {
     this.fieldLevelDocuments = fieldLevelDocuments;
     this.preferences = preferences;
     this.allowNonDefaultSourceLocales = allowNonDefaultSourceLocales;
+    this.previewUrl = previewUrl;
   }
 
   getSecretsNamespace() {
@@ -228,6 +234,9 @@ export class GTConfig {
   getAllowNonDefaultSourceLocales() {
     // Only an explicit `true` turns it on.
     return this.allowNonDefaultSourceLocales === true;
+  }
+  getPreviewUrl() {
+    return this.previewUrl;
   }
 }
 export const pluginConfig = GTConfig.getInstance();
