@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Settings } from '../../../../types/index.js';
 
 vi.mock('../../../../console/logger.js', () => ({
@@ -66,6 +66,10 @@ describe('hasValidCredentials', () => {
 });
 
 describe('setupCommand', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('omits the root config, which setup finds on its own', () => {
     expect(setupCommand('--dev-credentials', 'gt.config.json')).toBe(
       'npx gt init --dev-credentials'
@@ -79,8 +83,16 @@ describe('setupCommand', () => {
   });
 
   it('quotes a config path that the shell would split or expand', () => {
-    expect(setupCommand('--dev-credentials', 'my config/$gt.json')).toBe(
-      'npx gt init --dev-credentials --config "my config/\\$gt.json"'
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin');
+    expect(setupCommand('--dev-credentials', "my config/$gt's.json")).toBe(
+      `npx gt init --dev-credentials --config 'my config/$gt'\\''s.json'`
+    );
+  });
+
+  it('double-quotes a config path with spaces on Windows', () => {
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('win32');
+    expect(setupCommand('--dev-credentials', 'my config/gt.json')).toBe(
+      'npx gt init --dev-credentials --config "my config/gt.json"'
     );
   });
 });

@@ -445,9 +445,12 @@ export function setupConfigPathArgument(
     .split(path.sep)
     .join('/');
   if (relative === 'gt.config.json') return undefined;
-  return /^[\w./@-]+$/.test(relative)
-    ? relative
-    : `"${relative.replace(/(["\\$`])/g, '\\$1')}"`;
+  if (/^[\w./@-]+$/.test(relative)) return relative;
+  // Windows shells have no shared escape, so a plain double-quoted path is
+  // the closest fit; POSIX single quotes expand nothing.
+  return process.platform === 'win32'
+    ? `"${relative}"`
+    : `'${relative.replaceAll("'", "'\\''")}'`;
 }
 
 /** `npx gt init <option>`, keeping a config outside the root gt.config.json. */
