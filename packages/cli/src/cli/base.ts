@@ -48,6 +48,8 @@ import {
   resolveReactSetup,
   type ReactSetupPlan,
 } from '../setup/wizard.js';
+import { formatInitNextSteps, getInitNextSteps } from '../setup/nextSteps.js';
+import { getPackageManager } from '../utils/packageManager.js';
 import {
   isPackageInstalled,
   searchForPackageJson,
@@ -1020,7 +1022,7 @@ export class BaseCLI {
         options.framework ??
         configured ??
         detected.name;
-      await this.handleInitCommand(session, options, {
+      const nextSteps = await this.handleInitCommand(session, options, {
         configFilepath,
         framework,
         saveFramework: Boolean(reactSetup || options.framework),
@@ -1028,6 +1030,10 @@ export class BaseCLI {
         keepAppSource: !reactSetup,
       });
 
+      if (nextSteps) {
+        logger.endCommand(formatInitNextSteps(nextSteps));
+        return { outcome: 'success', nextSteps };
+      }
       logger.endCommand(
         'Done! Check out our docs for more information on how to use General Translation: https://generaltranslation.com/docs'
       );
@@ -1170,7 +1176,7 @@ See https://www.npmjs.com/package/gt-vue`);
       /** Init without the React setup never changes application source. */
       keepAppSource?: boolean;
     }
-  ): Promise<void> {
+  ): Promise<string[] | undefined> {
     const { configFilepath, reactSetup } = setup;
     const buildTool = getBuildToolSetup(setup.framework);
     const cwd = process.cwd();
@@ -1525,11 +1531,7 @@ See https://www.npmjs.com/package/gt-vue`);
         );
       }
       await executeReactSetup(session, reactSetup, options);
-      logger.endCommand(
-        `Done! Since this wizard is experimental, please review the changes and make modifications as needed.
-\nNext step: start internationalizing! See the docs for more information: ${buildTool?.docsUrl ?? REACT_QUICKSTART_URL}`
-      );
-      logger.startCommand('Setting up project config...');
+      logger.step('Setting up project config...');
     }
 
     const reportManualAction = ({ whatHappened, fix }: ManualAction) => {
@@ -1688,5 +1690,28 @@ See https://www.npmjs.com/package/gt-vue`);
       );
       logger.message(productionRuntimeKeyGuidance(settings.dashboardUrl));
     }
+
+    if (!reactSetup) return undefined;
+    // The React setup configures the app entry but never marks content for
+    // translation, so what is left is reported as next steps.
+    const devPackageManager =
+      packageManager ??
+      (await getPackageManager(cwd, options.packageManager, true).catch(
+        () => undefined
+      ));
+    const scripts = asRecord(reactSetup.packageJson.scripts);
+    return getInitNextSteps({
+      framework: reactSetup.framework,
+      configuredAppEntry:
+        reactSetup.framework === 'next-app' || buildTool !== undefined,
+      docsUrl: buildTool?.docsUrl ?? REACT_QUICKSTART_URL,
+      locales: resolvedLocales,
+      configFilepath,
+      translationsDir: storage === 'local' ? translationsDir : undefined,
+      devCommand:
+        typeof scripts?.dev === 'string'
+          ? `${devPackageManager?.runScriptCommand ?? 'npm run'} dev`
+          : undefined,
+    });
   }
 }

@@ -155,7 +155,7 @@ Please let us know what you would like to see added at https://github.com/genera
   return plan;
 }
 
-/** Wraps Next.js App Router content and adds withGTConfig(); installs happen first. */
+/** Adds GTProvider and withGTConfig() to a Next.js App Router app; installs happen first. */
 export async function executeReactSetup(
   session: OnboardingSession,
   plan: ReactSetupPlan,
@@ -166,8 +166,8 @@ export async function executeReactSetup(
   const errors: string[] = [];
   const warnings: string[] = [];
   const spinner = logger.createSpinner();
-  spinner.start('Wrapping JSX content with <T> tags...');
-  // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
+  spinner.start('Adding GTProvider to the root layout...');
+  // Add GTProvider to the root layout; content is never wrapped in <T>
   const { filesUpdated } = await wrapContentNext(
     {
       ...options,
@@ -185,7 +185,8 @@ export async function executeReactSetup(
       `Success! Updated ${chalk.bold.cyan(filesUpdated.length)} files:\n`
     ) + filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
   );
-  if (filesUpdated.length > 0) session.step('wrapped JSX content');
+  if (filesUpdated.length > 0)
+    session.step('added GTProvider to the root layout');
 
   // Add the withGTConfig() function to the next.config.js file
   const tsconfigPath = findFilepath(['tsconfig.json']);
