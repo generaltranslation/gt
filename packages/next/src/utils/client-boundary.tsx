@@ -21,6 +21,8 @@ import {
   defaultLocaleRoutingEnabledCookieName,
   defaultReferrerLocaleCookieName,
 } from './cookies';
+import { localizeHref } from '../link/localize-utils';
+import { resolveMiddlewareConfig } from '../middleware-dir/resolveMiddlewareConfig';
 import { compilePathRegex, pathnameMatchesRegex } from './pathRegex';
 
 // withGTConfig exposes this build-time value to both middleware and client code.
@@ -45,6 +47,7 @@ export function Client_GTProvider({
   supportsLocaleRefresh: boolean;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const refreshServerComponents = useCallback(() => {
     // Older Next versions can retain a stale layout/provider after a redirect.
     if (!supportsLocaleRefresh) {
@@ -84,12 +87,28 @@ export function Client_GTProvider({
           return;
         }
       }
+      if (localeRoutingApplies && locale !== defaultLocale) {
+        // Go straight to the target URL, as <Link locale> would, instead of
+        // refreshing the current URL and following the middleware's redirect.
+        const href = getLocaleSwitchHref(pathname, locale, i18nConfig);
+        if (href && supportsLocaleRefresh) {
+          router.push(href);
+          return;
+        }
+      }
 
       refreshServerComponents();
     },
-    [refreshServerComponents, reloadBrowserPage]
+    [
+      pathname,
+      refreshServerComponents,
+      reloadBrowserPage,
+      router,
+      supportsLocaleRefresh,
+    ]
   );
   usePathCheck({
+    pathname,
     reloadBrowserPage,
     refreshServerComponents,
     locale: props.locale,
@@ -103,20 +122,20 @@ export function Client_GTProvider({
  * TODO: optimize this hook
  */
 function usePathCheck({
+  pathname,
   reloadBrowserPage,
   refreshServerComponents,
   locale,
   referrerLocaleCookieName = defaultReferrerLocaleCookieName,
   localeRoutingEnabledCookieName = defaultLocaleRoutingEnabledCookieName,
 }: {
+  pathname: string;
   reloadBrowserPage: () => void;
   refreshServerComponents: () => void;
   locale: string;
   referrerLocaleCookieName?: string;
   localeRoutingEnabledCookieName?: string;
 }) {
-  const pathname = usePathname();
-
   useEffect(() => {
     // Track the referrer locale for middleware
     const i18nConfig = getI18nConfig();
@@ -163,6 +182,43 @@ function usePathCheck({
     reloadBrowserPage,
     refreshServerComponents,
   ]);
+}
+
+/**
+ * Returns the URL to switch the current page to a non-default locale, or
+ * `undefined` when the switch should be left to the middleware: when the URL
+ * would not change, or when localized aliases, route overrides, or per-locale
+ * routes could make the middleware choose a different URL.
+ */
+function getLocaleSwitchHref(
+  pathname: string,
+  locale: string,
+  i18nConfig: I18nConfig
+): string | undefined {
+  const { pathConfig, routeOverrides, localeRoutes } =
+    resolveMiddlewareConfig();
+  if (
+    [pathConfig, routeOverrides, localeRoutes].some(
+      (config) => Object.keys(config).length > 0
+    )
+  ) {
+    return undefined;
+  }
+  const [, firstSegment = '', ...rest] = pathname.split('/');
+  const sharedPath = i18nConfig.determineLocale(
+    [firstSegment],
+    i18nConfig.getLocales()
+  )
+    ? `/${rest.join('/')}`
+    : pathname;
+  const { search, hash } = globalThis.location;
+  const href = localizeHref(
+    `${sharedPath}${search}${hash}`,
+    locale,
+    locale,
+    i18nConfig.getDefaultLocale()
+  );
+  return href === `${pathname}${search}${hash}` ? undefined : href;
 }
 
 function resolvePathLocale(

@@ -8,6 +8,7 @@ const {
   mockGTProvider,
   mockInitializeGTClient,
   mockPathname,
+  mockPush,
   mockRefreshServerComponents,
   mockReloadBrowserPage,
 } = vi.hoisted(() => ({
@@ -17,6 +18,7 @@ const {
   ),
   mockInitializeGTClient: vi.fn(),
   mockPathname: vi.fn(),
+  mockPush: vi.fn(),
   mockRefreshServerComponents: vi.fn(),
   mockReloadBrowserPage: vi.fn(),
 }));
@@ -34,7 +36,10 @@ vi.mock('gt-react', () => ({
 
 vi.mock('next/navigation', () => ({
   usePathname: mockPathname,
-  useRouter: () => ({ refresh: mockRefreshServerComponents }),
+  useRouter: () => ({
+    push: mockPush,
+    refresh: mockRefreshServerComponents,
+  }),
 }));
 
 vi.mock('../../setup/initGT.client', () => ({
@@ -65,6 +70,7 @@ describe('Client_GTProvider', () => {
 
   afterEach(() => {
     delete process.env._GENERALTRANSLATION_PATH_REGEX;
+    delete process.env._GENERALTRANSLATION_MIDDLEWARE_CONFIG;
     document.cookie =
       'generaltranslation.locale-routing-enabled=;max-age=0;path=/';
     vi.unstubAllGlobals();
@@ -77,8 +83,10 @@ describe('Client_GTProvider', () => {
       process.env._GENERALTRANSLATION_PATH_REGEX = '.*';
       mockPathname.mockReturnValue('/fr-FR');
       vi.stubGlobal('location', {
+        hash: '',
         pathname: '/fr-FR',
         reload: mockReloadBrowserPage,
+        search: '',
       });
       mockGetI18nConfig.mockReturnValue({
         determineLocale: ([locale]: string[]) => locale,
@@ -104,11 +112,15 @@ describe('Client_GTProvider', () => {
         const providerProps = mockGTProvider.mock.calls.at(-1)?.[0];
         expect(providerProps).not.toHaveProperty('supportsLocaleRefresh');
         expect(providerProps).toMatchObject(conditions);
-        // The client cannot know whether middleware will accept or reject German.
+        // A non-default switch navigates straight to the target locale's URL
+        // when the router can refresh, and keeps the reload fallback otherwise.
         providerProps._reload({ ...conditions, locale: 'de-DE' });
-        expect(mockRefreshServerComponents).toHaveBeenCalledTimes(
-          supportsLocaleRefresh ? 1 : 0
-        );
+        if (supportsLocaleRefresh) {
+          expect(mockPush).toHaveBeenCalledExactlyOnceWith('/de-DE');
+        } else {
+          expect(mockPush).not.toHaveBeenCalled();
+        }
+        expect(mockRefreshServerComponents).not.toHaveBeenCalled();
         expect(mockReloadBrowserPage).toHaveBeenCalledTimes(
           supportsLocaleRefresh ? 0 : 1
         );
@@ -435,5 +447,88 @@ describe('Client_GTProvider', () => {
     expect(mockRefreshServerComponents).toHaveBeenCalledOnce();
 
     await act(async () => root.unmount());
+  });
+  describe('switching to a non-default locale', () => {
+    async function switchLocale(
+      pathname: string,
+      locale: string,
+      { currentLocale = 'en', search = '', hash = '' } = {}
+    ) {
+      process.env._GENERALTRANSLATION_PATH_REGEX = '.*';
+      mockPathname.mockReturnValue(pathname);
+      vi.stubGlobal('location', {
+        hash,
+        pathname,
+        reload: mockReloadBrowserPage,
+        search,
+      });
+      const locales = ['en', 'de', 'fr'];
+      mockGetI18nConfig.mockReturnValue({
+        determineLocale: ([candidate]: string[]) =>
+          locales.includes(candidate) ? candidate : undefined,
+        getDefaultLocale: () => 'en',
+        getLocales: () => locales,
+      });
+      const { Client_GTProvider } = await import('../client-boundary');
+      const root = createRoot(document.createElement('div'));
+      await act(async () =>
+        root.render(
+          <Client_GTProvider
+            supportsLocaleRefresh={true}
+            dictionaries={{}}
+            locale={currentLocale}
+            translations={{}}
+          >
+            content
+          </Client_GTProvider>
+        )
+      );
+      mockGTProvider.mock.calls
+        .at(-1)?.[0]
+        ._reload({ locale, region: undefined, enableI18n: true });
+      await act(async () => root.unmount());
+    }
+
+    it('navigates to the localized URL, keeping search and hash', async () => {
+      await switchLocale('/courses', 'de', {
+        search: '?tab=syllabus',
+        hash: '#section',
+      });
+
+      expect(mockPush).toHaveBeenCalledExactlyOnceWith(
+        '/de/courses?tab=syllabus#section'
+      );
+      expect(mockRefreshServerComponents).not.toHaveBeenCalled();
+    });
+
+    it('replaces the current locale prefix', async () => {
+      await switchLocale('/fr/courses', 'de', { currentLocale: 'fr' });
+
+      expect(mockPush).toHaveBeenCalledExactlyOnceWith('/de/courses');
+    });
+
+    it('refreshes in place when the URL would not change', async () => {
+      await switchLocale('/de/courses', 'de', { currentLocale: 'de' });
+
+      expect(mockPush).not.toHaveBeenCalled();
+      expect(mockRefreshServerComponents).toHaveBeenCalledOnce();
+    });
+
+    it.each([
+      ['pathConfig', { pathConfig: { '/about': { de: '/uber-uns' } } }],
+      ['routeOverrides', { routeOverrides: { de: ['/legal'] } }],
+      ['localeRoutes', { localeRoutes: { de: ['/courses'] } }],
+    ])(
+      'leaves the target URL to the middleware when %s is configured',
+      async (_name, middlewareConfig) => {
+        process.env._GENERALTRANSLATION_MIDDLEWARE_CONFIG =
+          JSON.stringify(middlewareConfig);
+
+        await switchLocale('/fr/courses', 'de', { currentLocale: 'fr' });
+
+        expect(mockPush).not.toHaveBeenCalled();
+        expect(mockRefreshServerComponents).toHaveBeenCalledOnce();
+      }
+    );
   });
 });
