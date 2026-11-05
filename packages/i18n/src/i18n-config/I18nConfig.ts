@@ -1,10 +1,10 @@
-import {
-  LocaleConfig,
-  type LocaleConfigConstructorParams,
-} from '@generaltranslation/format';
+import type { LocaleConfigConstructorParams } from '@generaltranslation/format';
+import { LocaleConfigBase } from '@generaltranslation/format/internal';
 import type { CustomMapping } from '@generaltranslation/format/types';
-import { GTRuntime } from 'generaltranslation/runtime';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import {
+  GTRuntimeBase,
+  libraryDefaultLocale,
+} from 'generaltranslation/internal';
 import type { GTConfig } from '../config/types';
 import {
   getLoadTranslationsType,
@@ -48,7 +48,9 @@ type RuntimeConfig = Pick<
 
 export type LocaleCandidates = string | string[] | undefined;
 
-export class I18nConfig extends LocaleConfig {
+// Builds on LocaleConfigBase and GTRuntimeBase so /unstable entries, which
+// reference I18nConfig, do not bundle the ICU message parser.
+export class I18nConfig extends LocaleConfigBase {
   protected runtimeConfig: RuntimeConfig;
   private gtServicesEnabled: boolean;
   private logLevel: GeneralTranslationLogLevel;
@@ -90,7 +92,7 @@ export class I18nConfig extends LocaleConfig {
    *
    * TODO: keep a cache to avoid creating new instances unnecessarily.
    */
-  getGTClass(locale?: string): GTRuntime {
+  getGTClass(locale?: string): GTRuntimeBase {
     return this.getGTClassClean(
       locale ? this.resolveLocale(locale) : undefined
     );
@@ -163,7 +165,7 @@ export class I18nConfig extends LocaleConfig {
    * Create a GT instance without resolving the target locale first.
    */
   private getGTClassClean(locale?: string) {
-    return new GTRuntime({
+    return new GTRuntimeBase({
       sourceLocale: this.getDefaultLocale(),
       targetLocale: locale,
       locales: this.getLocales(),
@@ -175,16 +177,16 @@ export class I18nConfig extends LocaleConfig {
     });
   }
 
-  private getLocaleConfig(config?: I18nConfigParams): LocaleConfig {
+  private getLocaleConfig(config?: I18nConfigParams): LocaleConfigBase {
     if (!config || !hasI18nConfigParams(config)) {
       return this;
     }
-    return new LocaleConfig(getLocaleResolverConfigParams(config));
+    return new LocaleConfigBase(getLocaleResolverConfigParams(config));
   }
 
   private determineSupportedLocaleWithConfig(
     candidates: LocaleCandidates,
-    localeConfig: LocaleConfig
+    localeConfig: LocaleConfigBase
   ): string | undefined {
     if (
       candidates == null ||

@@ -5,6 +5,7 @@ import {
   getI18nConfig,
   interpolateMessage,
   isEncodedTranslationOptions,
+  withIcuHash,
 } from 'gt-i18n/internal';
 import type {
   GTFunctionType,
@@ -202,9 +203,11 @@ function createGT(state: GTState): GTFunctionType {
     let translation: string | undefined;
     if (config.requiresTranslation(locale)) {
       const cache = getI18nCache();
-      translation = cache.lookupTranslation(locale, message, lookupOptions) as
-        | string
-        | undefined;
+      translation = cache.lookupTranslation(
+        locale,
+        message,
+        withIcuHash(message, lookupOptions)
+      ) as string | undefined;
     }
 
     return interpolateMessage({

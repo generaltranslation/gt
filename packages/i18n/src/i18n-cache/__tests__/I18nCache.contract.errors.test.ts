@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { GTRuntime } from 'generaltranslation/runtime';
+import { GTRuntimeBase } from 'generaltranslation/internal';
 import { I18nCache } from '../I18nCache';
 import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
 import { hashMessage } from '../../utils/hashMessage';
@@ -201,7 +201,7 @@ describe('I18nCache error contract', () => {
     'runtime translateMany rejection resolves undefined in production, rejects in development ($name)',
     async ({ env }) => {
       if (env) vi.stubEnv('NODE_ENV', env);
-      vi.spyOn(GTRuntime.prototype, 'translateMany').mockRejectedValue(
+      vi.spyOn(GTRuntimeBase.prototype, 'translateMany').mockRejectedValue(
         new Error('API down')
       );
       const cache = createCache({
@@ -226,12 +226,12 @@ describe('I18nCache error contract', () => {
   );
 
   it('runtime translateMany success:false entry resolves undefined in production', async () => {
-    vi.spyOn(GTRuntime.prototype, 'translateMany').mockResolvedValue({
+    vi.spyOn(GTRuntimeBase.prototype, 'translateMany').mockResolvedValue({
       [expectedHash]: {
         success: false,
         error: new Error('nope'),
       },
-    } as unknown as Awaited<ReturnType<GTRuntime['translateMany']>>);
+    } as unknown as Awaited<ReturnType<GTRuntimeBase['translateMany']>>);
     const cache = createCache({
       loadTranslations: vi.fn().mockResolvedValue({}),
       runtimeTranslation: {},

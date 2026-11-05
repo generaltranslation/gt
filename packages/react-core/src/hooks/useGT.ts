@@ -1,5 +1,9 @@
 import { useCallback } from 'react';
-import { createLookupOptions, interpolateMessage } from 'gt-i18n/internal';
+import {
+  createLookupOptions,
+  interpolateMessage,
+  withIcuHash,
+} from 'gt-i18n/internal';
 import { useTranslationConditions } from './utils';
 import type { GTFunctionType, GTTranslationOptions } from 'gt-i18n/types';
 import type { StringFormat } from '@generaltranslation/format/types';
@@ -11,11 +15,24 @@ import {
 
 // ===== Hook ===== //
 
+// The tracked resolver hashes without the ICU parser, so a compiler message
+// that needs ICU indexing carries its hash.
+function withCompilerHash(entry: Message): Message {
+  const { $_hash } = withIcuHash(entry.message, {
+    ...entry,
+    $format: entry.$format ?? 'ICU',
+  });
+  return $_hash === entry.$_hash ? entry : { ...entry, $_hash };
+}
+
 export function useGT(_messages?: Message[]): GTFunctionType {
   const { locale, shouldTranslate } = useTranslationConditions();
   const defaultLocale = useDefaultLocale();
   const resolveTranslation = useTrackedTranslationResolver(
-    _messages,
+    // Compiler messages are only looked up for dev hot reload.
+    process.env.NODE_ENV !== 'production' && shouldTranslate
+      ? _messages?.map(withCompilerHash)
+      : _messages,
     locale,
     shouldTranslate
   );
@@ -42,7 +59,7 @@ export function useGT(_messages?: Message[]): GTFunctionType {
       const translation = resolveTranslation({
         locale: lookupOptions.$locale,
         message,
-        options: lookupOptions,
+        options: withIcuHash(message, lookupOptions),
       });
 
       return interpolateMessage({

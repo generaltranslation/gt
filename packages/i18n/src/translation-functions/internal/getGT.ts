@@ -4,6 +4,7 @@ import { GTTranslationOptions, TranslationMetadata } from '../types/options';
 import { GTFunctionType } from '../types/functions';
 import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
 import { createLookupOptions } from './helpers';
+import { withIcuHash } from '../../utils/hashIcuMessage';
 import type { StringFormat } from '@generaltranslation/format/types';
 import { getWritableConditionStore } from '../../condition-store/singleton-operations';
 
@@ -56,10 +57,10 @@ export async function getGTInternal(
     await lookupTranslation.prefetchEntries(
       _messages?.map(({ message, ...options }) => ({
         message,
-        options: {
+        options: withIcuHash(message, {
           $format: 'ICU',
           ...options,
-        },
+        }),
       })) ?? []
     );
   }
@@ -87,10 +88,9 @@ export async function getGTInternal(
     const targetLocale = enableI18n
       ? (options.$locale ?? locale)
       : getI18nConfig().getDefaultLocale();
-    const lookupOptions = createLookupOptions<StringFormat>(
-      targetLocale,
-      options,
-      'ICU'
+    const lookupOptions = withIcuHash(
+      message,
+      createLookupOptions<StringFormat>(targetLocale, options, 'ICU')
     );
 
     // Lookup translation

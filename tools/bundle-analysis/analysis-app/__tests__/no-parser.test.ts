@@ -57,44 +57,37 @@ describe('gt-i18n/unstable bundle', () => {
 
 describe('framework /unstable bundles', () => {
   it.each([
-    ['gt-react/unstable (react-server)', 'gt-react.ts', ['react-server']],
-    ['gt-node/unstable', 'gt-node.ts', ['node']],
-  ])('%s does not include the ICU string parser', (_, fixture, conditions) =>
-    expectParser(fixture, conditions, false)
-  );
-
-  // Known leaks, both static chains into @generaltranslation/icu/parser:
-  // A: I18nConfig extends LocaleConfig, whose formatMessage method calls
-  //    _formatMessageICU; class methods are never tree-shaken.
-  // B: gt-i18n hashMessage -> generaltranslation/internal indexVars ->
-  //    traverseIcu -> parse, via getTranslateListenerKey (react-core tracked
-  //    resolver) or TranslationsCache.getCacheKey.
-  // These assert the parser IS bundled, so a broken build still fails and a
-  // fix flips them; once both chains are cut, move them to the list above.
-  it.each([
-    // A + B
     ['@generaltranslation/react-core/unstable', 'react-core.ts', ['browser']],
-    // A + B
     ['gt-react/unstable (client)', 'gt-react.ts', ['browser']],
-    // A + B
+    ['gt-react/unstable (react-server)', 'gt-react.ts', ['react-server']],
     ['gt-next/unstable (client)', 'gt-next.ts', ['browser']],
-    // A + B
     ['gt-next/unstable (ssr)', 'gt-next.ts', ['node']],
-    // A + B
     ['gt-next/unstable (react-server)', 'gt-next.ts', ['react-server']],
-    // A + B
     ['gt-next/unstable/server', 'gt-next-server.ts', ['react-server']],
-    // A + B
+    ['gt-node/unstable', 'gt-node.ts', ['node']],
     ['gt-react-native/unstable', 'gt-react-native.ts', ['react-native']],
-    // A + B
     [
       'gt-tanstack-start/unstable (client)',
       'gt-tanstack-start.ts',
       ['browser'],
     ],
-    // A + B
     ['gt-tanstack-start/unstable (server)', 'gt-tanstack-start.ts', ['node']],
-  ])('%s still includes the ICU string parser', (_, fixture, conditions) =>
-    expectParser(fixture, conditions, true)
+  ])('%s does not include the ICU string parser', (_, fixture, conditions) =>
+    expectParser(fixture, conditions, false)
   );
+});
+
+// Legacy root entries format ICU messages, so they must keep the parser.
+describe('legacy root bundles', () => {
+  it.each([
+    [
+      '@generaltranslation/format',
+      join(packagesDir, 'format/dist/index.mjs'),
+      undefined,
+    ],
+    ['gt-react (client)', join(fixturesDir, 'gt-react-root.ts'), ['browser']],
+  ])('%s includes the ICU string parser', async (_, entry, conditions) => {
+    const code = await bundle(entry, conditions);
+    expect(code).toContain(PARSER_MARKER);
+  });
 });

@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GT, LocaleConfig } from '../index';
+import { GTRuntime } from '../runtime';
+import { GTRuntimeBase } from '../runtimeBase';
 import type { TranslateManyEntry } from '../types';
 
 const numberValue = 1234.56;
@@ -302,6 +304,30 @@ describe('LocaleConfig', () => {
     const result = localeConfig.formatCurrency(numberValue, 'EUR', 'brand-fr');
 
     expect(result).toBe(formatCurrencyWithIntl('fr-FR'));
+  });
+});
+
+describe('formatMessage', () => {
+  it.each([
+    ['GT', GT],
+    ['GTRuntime', GTRuntime],
+  ])('%s formats ICU messages', (_, Runtime) => {
+    const gt = new Runtime({ targetLocale: 'en-US' });
+
+    expect(
+      gt.formatMessage('Hello {name}', { variables: { name: 'Ana' } })
+    ).toBe('Hello Ana');
+  });
+
+  it('GTRuntimeBase throws on ICU messages and passes STRING through', () => {
+    const gt = new GTRuntimeBase({ targetLocale: 'en-US' });
+
+    expect(() =>
+      gt.formatMessage('Hello {name}', { variables: { name: 'Ana' } })
+    ).toThrow(/ICU message formatting needs the LocaleConfig/);
+    expect(gt.formatMessage('Hello {name}', { dataFormat: 'STRING' })).toBe(
+      'Hello {name}'
+    );
   });
 });
 

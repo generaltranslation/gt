@@ -6,7 +6,7 @@
  * validation/ directory and translations-loaders/ internals can be
  * restructured or inlined without breaking behavior. Do not import or mock
  * i18n-cache internals here; the only stubbed boundaries are global fetch,
- * console, env, and GTRuntime.prototype.translateMany.
+ * console, env, and GTRuntimeBase.prototype.translateMany.
  */
 import {
   describe,
@@ -17,8 +17,7 @@ import {
   afterEach,
   type MockInstance,
 } from 'vitest';
-import { GTRuntime } from 'generaltranslation/runtime';
-import { defaultCacheUrl } from 'generaltranslation/internal';
+import { defaultCacheUrl, GTRuntimeBase } from 'generaltranslation/internal';
 import { I18nCache } from '../I18nCache';
 import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
 import { hashMessage } from '../../utils/hashMessage';
@@ -58,7 +57,7 @@ function succeedTranslateMany(
   translate: (hash: string, source: unknown) => string
 ) {
   return vi
-    .spyOn(GTRuntime.prototype, 'translateMany')
+    .spyOn(GTRuntimeBase.prototype, 'translateMany')
     .mockImplementation(async (sources) =>
       Object.fromEntries(
         Object.entries(sources as Record<string, { source: unknown }>).map(
@@ -277,7 +276,7 @@ describe('I18nCache config contract', () => {
     $requiresReview: true,
   };
 
-  it('passes runtimeTranslation timeout and metadata through to GTRuntime.translateMany', async () => {
+  it('passes runtimeTranslation timeout and metadata through to GTRuntimeBase.translateMany', async () => {
     const translateManySpy = succeedTranslateMany(() => 'Bonjour {name} !');
     const cache = new I18nCache({
       loadTranslations: async () => ({}),

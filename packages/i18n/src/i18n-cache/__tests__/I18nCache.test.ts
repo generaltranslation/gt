@@ -697,6 +697,33 @@ describe('I18nCache', () => {
     });
   });
 
+  it('lookupDictionaryWithFallback() runtime translates an entry containing _gt_', async () => {
+    const source = 'Hello {_gt_, select, other {World}}';
+    const cache = createCache({
+      dictionary: { greeting: source },
+      loadDictionary: vi.fn().mockResolvedValue({}),
+      runtimeTranslation: {},
+    });
+    mockTranslateMany.mockImplementation(async (entries) =>
+      Object.fromEntries(
+        Object.keys(entries).map((hash) => [
+          hash,
+          {
+            success: true,
+            translation: 'Bonjour {_gt_, select, other {World}}',
+          },
+        ])
+      )
+    );
+
+    await expect(
+      cache.lookupDictionaryWithFallback('fr', 'greeting')
+    ).resolves.toEqual({
+      entry: 'Bonjour {_gt_, select, other {World}}',
+      options: {},
+    });
+  });
+
   it('lookupDictionaryWithFallback() throws when source dictionary entry is missing', async () => {
     const cache = createCache({
       dictionary: {

@@ -23,6 +23,7 @@ import type {
   DictionaryObject,
 } from './translations-manager/DictionaryCache';
 import { resolveDictionaryLookupOptions } from './translations-manager/utils/dictionary-helpers';
+import { hashMessageSource } from '../utils/hashMessage';
 import { DictionarySourceNotFoundError } from './translations-manager/utils/DictionarySourceNotFoundError';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
@@ -407,10 +408,21 @@ class I18nCache<TranslationValue extends Content = Content> {
     id: string,
     sourceEntry: DictionaryEntry
   ): Promise<string> {
+    const options = resolveDictionaryLookupOptions(sourceEntry.options);
     const translation = await this.lookupTranslationWithFallbackResolved(
       locale,
       sourceEntry.entry as TranslationValue,
-      resolveDictionaryLookupOptions(sourceEntry.options)
+      // shortcut: hashed without indexing _gt_ variables, which this shared
+      // cache can't do without loading the ICU parser; derive/declareVar don't
+      // reach dictionaries, so only a hand-written {_gt_, ...} entry keys
+      // differently. Precompute the hash at the dictionary APIs if that changes.
+      {
+        ...options,
+        $_hash:
+          typeof options.$_hash === 'string'
+            ? options.$_hash
+            : hashMessageSource(sourceEntry.entry as TranslationValue, options),
+      }
     );
     if (typeof translation !== 'string') {
       throw new Error(

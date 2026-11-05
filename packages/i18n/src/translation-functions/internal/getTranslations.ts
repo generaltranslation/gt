@@ -4,6 +4,7 @@ import { TranslationVariables } from '../types/options';
 import { TFunctionType } from '../types/functions';
 import { renderDictionaryEntry } from './renderDictionaryEntry';
 import { renderDictionaryObject } from './renderDictionaryObject';
+import { withIcuHash } from '../../utils/hashIcuMessage';
 import { resolveDictionaryLookupOptions } from '../../i18n-cache/translations-manager/utils/dictionary-helpers';
 import type { DictionaryObjectTranslation } from '../types/functions';
 import { getWritableConditionStore } from '../../condition-store/singleton-operations';
@@ -82,7 +83,10 @@ export async function getTranslationsInternal({
     );
     const target =
       targetEntry?.entry ??
-      lookupTranslation(sourceEntry.entry, dictionaryOptions);
+      lookupTranslation(
+        sourceEntry.entry,
+        withIcuHash(sourceEntry.entry, dictionaryOptions)
+      );
     return renderDictionaryEntry({
       sourceLocale,
       targetLocale: targetLocale,
@@ -115,7 +119,10 @@ export async function getTranslationsInternal({
       sourceObject,
       targetObject,
       translate: (sourceEntry, dictionaryOptions) =>
-        lookupTranslation(sourceEntry.entry, dictionaryOptions),
+        lookupTranslation(
+          sourceEntry.entry,
+          withIcuHash(sourceEntry.entry, dictionaryOptions)
+        ),
     });
   };
 

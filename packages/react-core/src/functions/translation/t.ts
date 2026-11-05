@@ -2,6 +2,7 @@ import {
   createLookupOptions,
   getRuntimeEnvironment,
   interpolateMessage,
+  withIcuHash,
 } from 'gt-i18n/internal';
 import type { GTTranslationOptions } from 'gt-i18n/types';
 import type { LookupOptionsFor } from 'gt-i18n/internal/types';
@@ -74,7 +75,7 @@ export function resolveStringContent(
   const translation = i18nCache.lookupTranslation(
     lookupOptions.$locale,
     content,
-    lookupOptions
+    withIcuHash(content, lookupOptions)
   );
   return interpolateMessage({
     source: content,

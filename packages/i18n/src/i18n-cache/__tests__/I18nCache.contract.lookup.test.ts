@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { GTRuntime } from 'generaltranslation/runtime';
+import { GTRuntimeBase } from 'generaltranslation/internal';
 import { I18nCache } from '../I18nCache';
 import type { TranslationsCacheMissEvent } from '../I18nCache';
 import { hashMessage } from '../../utils/hashMessage';
@@ -15,7 +15,7 @@ import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
  * plus the protected onTranslationsCacheMiss hook) and stable helpers
  * (hashMessage, initializeI18nConfig). Do not import from or mock internal
  * module paths; runtime translation is observed by spying on
- * GTRuntime.prototype.translateMany.
+ * GTRuntimeBase.prototype.translateMany.
  */
 
 const message = 'Hello {name}!';
@@ -70,7 +70,7 @@ function createCache(overrides: Record<string, unknown> = {}) {
 
 function spyOnTranslateMany() {
   return vi
-    .spyOn(GTRuntime.prototype, 'translateMany')
+    .spyOn(GTRuntimeBase.prototype, 'translateMany')
     .mockResolvedValue({} as never);
 }
 

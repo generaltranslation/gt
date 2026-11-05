@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { GTRuntime } from 'generaltranslation/runtime';
+import { GTRuntimeBase } from 'generaltranslation/internal';
 import { I18nCache } from '../I18nCache';
 import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
 import { hashMessage } from '../../utils/hashMessage';
@@ -244,13 +244,13 @@ describe('I18nCache expiry contract', () => {
     const unknownOptions: LookupOptions = { $format: 'ICU' };
     const unknownHash = hashMessage(unknownMessage, unknownOptions);
     const translateManySpy = vi
-      .spyOn(GTRuntime.prototype, 'translateMany')
+      .spyOn(GTRuntimeBase.prototype, 'translateMany')
       .mockResolvedValue({
         [unknownHash]: {
           success: true,
           translation: 'Message inconnu',
         },
-      } as Awaited<ReturnType<GTRuntime['translateMany']>>);
+      } as Awaited<ReturnType<GTRuntimeBase['translateMany']>>);
     const cache = createCache({
       loadTranslations: vi.fn().mockResolvedValue({}),
       runtimeTranslation: {},

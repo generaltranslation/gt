@@ -54,4 +54,5 @@ export { createGlobalSingleton } from './globals/createGlobalSingleton';
 export type { GlobalSingleton } from './globals/createGlobalSingleton';
 export { getRuntimeEnvironment } from './utils/getRuntimeEnvironment';
 export { hashMessage } from './utils/hashMessage';
+export { hashIcuMessage, withIcuHash } from './utils/hashIcuMessage';
 export { getCookieValue, parseAcceptLanguage } from './utils/request';

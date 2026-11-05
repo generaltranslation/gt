@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { LocaleConfig } from '../LocaleConfig';
+import { LocaleConfigBase } from '../LocaleConfigBase';
 import type { CustomMapping } from '../types';
 
 describe('LocaleConfig', () => {
@@ -47,6 +48,57 @@ describe('LocaleConfig', () => {
 
     expect(JSON.stringify(config)).toBe(serializedBeforeResolution);
     expect(Object.keys(config)).not.toContain('resolutionScope');
+  });
+
+  it('formats ICU messages', () => {
+    expect(
+      new LocaleConfig().formatMessage('Hello {name}', 'en-US', {
+        variables: { name: 'Ana' },
+      })
+    ).toBe('Hello Ana');
+  });
+
+  it('keeps the same own keys as a LocaleConfigBase', () => {
+    expect(Object.keys(new LocaleConfig())).toEqual(
+      Object.keys(new LocaleConfigBase())
+    );
+  });
+});
+
+describe('LocaleConfigBase', () => {
+  it('formats ICU messages with an injected messageFormatter', () => {
+    const messageFormatter = vi.fn(() => 'formatted');
+    const config = new LocaleConfigBase({
+      defaultLocale: 'fr',
+      messageFormatter,
+    });
+
+    expect(
+      config.formatMessage('Hello {name}', undefined, {
+        variables: { name: 'Ana' },
+      })
+    ).toBe('formatted');
+    expect(messageFormatter).toHaveBeenCalledWith(
+      'Hello {name}',
+      ['fr', 'en'],
+      { name: 'Ana' }
+    );
+  });
+
+  it('throws on ICU messages without a messageFormatter', () => {
+    expect(() =>
+      new LocaleConfigBase().formatMessage('Hello {name}', 'en-US', {
+        variables: { name: 'Ana' },
+      })
+    ).toThrow(/ICU message formatting needs the LocaleConfig/);
+  });
+
+  it('passes STRING messages through without a messageFormatter', () => {
+    expect(
+      new LocaleConfigBase().formatMessage('Hello {name}', 'en-US', {
+        dataFormat: 'STRING',
+      })
+    ).toBe('Hello {name}');
   });
 });
 

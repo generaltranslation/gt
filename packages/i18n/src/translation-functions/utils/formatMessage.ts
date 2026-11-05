@@ -5,7 +5,10 @@ import {
   getI18nConfig,
   isI18nConfigInitialized,
 } from '../../i18n-config/singleton-operations';
-import { formatMessage as formatUnconfiguredMessage } from '@generaltranslation/format';
+import {
+  LocaleConfig,
+  formatMessage as formatUnconfiguredMessage,
+} from '@generaltranslation/format';
 
 /**
  * Given an encoded message and variables, formats the message.
@@ -30,11 +33,18 @@ export function formatMessage(
         dataFormat,
       });
     }
-    return getI18nConfig().formatMessage(encodedMsg, undefined, {
-      variables,
-      locales,
-      dataFormat,
-    });
+    // I18nConfig cannot format ICU (it omits the parser for /unstable), so
+    // format with a LocaleConfig that resolves the same aliases and fallbacks.
+    const { defaultLocale, customMapping } = getI18nConfig();
+    return new LocaleConfig({ defaultLocale, customMapping }).formatMessage(
+      encodedMsg,
+      undefined,
+      {
+        variables,
+        locales,
+        dataFormat,
+      }
+    );
   } catch {
     logger.warn(createInterpolationFailureMessage(encodedMsg));
     return encodedMsg;

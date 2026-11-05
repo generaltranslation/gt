@@ -2,6 +2,7 @@ import { getI18nCache } from '../../i18n-cache/singleton-operations';
 import { getI18nConfig } from '../../i18n-config/singleton-operations';
 import { NormalizedLookupOptions, LookupOptionsFor } from '../types/options';
 import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
+import { withIcuHash } from '../../utils/hashIcuMessage';
 import type {
   DataFormat,
   JsxChildren,
@@ -73,7 +74,10 @@ export function resolveStringContent(
   options: LookupOptionsFor<StringFormat> = {}
 ): StringContent | undefined {
   const i18nCache = getI18nCache();
-  const lookupOptions = createLookupOptions(locale, options, 'STRING');
+  const lookupOptions = withIcuHash(
+    content,
+    createLookupOptions(locale, options, 'STRING')
+  );
   const translation = i18nCache.lookupTranslation(
     lookupOptions.$locale,
     content,
@@ -97,7 +101,10 @@ export function resolveStringContentWithFallback(
   options: LookupOptionsFor<StringFormat> = {}
 ): StringContent {
   const i18nCache = getI18nCache();
-  const lookupOptions = createLookupOptions(locale, options, 'STRING');
+  const lookupOptions = withIcuHash(
+    content,
+    createLookupOptions(locale, options, 'STRING')
+  );
   const translation = i18nCache.lookupTranslation(
     lookupOptions.$locale,
     content,
@@ -122,7 +129,10 @@ export async function resolveStringContentWithRuntimeFallback(
   options: LookupOptionsFor<StringFormat> = {}
 ): Promise<StringContent> {
   const i18nCache = getI18nCache();
-  const lookupOptions = createLookupOptions(locale, options, 'STRING');
+  const lookupOptions = withIcuHash(
+    content,
+    createLookupOptions(locale, options, 'STRING')
+  );
   const translation = await i18nCache.lookupTranslationWithFallback(
     lookupOptions.$locale,
     content,
@@ -148,7 +158,10 @@ export async function prefetchStringContentWithRuntimeFallback(
   options: LookupOptionsFor<StringFormat> = {}
 ): Promise<void> {
   const i18nCache = getI18nCache();
-  const lookupOptions = createLookupOptions(locale, options, 'STRING');
+  const lookupOptions = withIcuHash(
+    content,
+    createLookupOptions(locale, options, 'STRING')
+  );
   await i18nCache.lookupTranslationWithFallback(
     lookupOptions.$locale,
     content,

@@ -12,6 +12,7 @@ export type {
   DiagnosticSeverity,
 } from './logging/diagnostics';
 export { libraryDefaultLocale } from './settings/settings';
+export { GTRuntimeBase } from './runtimeBase';
 export type { RuntimeTranslateManyOptions } from './types-dir/api/entry';
 export { pluralForms, isAcceptedPluralForm } from './settings/plurals';
 export {
