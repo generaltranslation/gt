@@ -17,10 +17,12 @@ export function addRuntimeCredentials<T extends RuntimeCredentials>(
   };
 }
 
+// In development, GT_API_KEY doubles as the hot-reload key.
 function getRuntimeCredentials(): RuntimeCredentials {
+  const apiKey = process.env.GT_API_KEY;
   return {
     projectId: process.env.GT_PROJECT_ID,
-    apiKey: process.env.GT_API_KEY,
-    devApiKey: process.env.GT_DEV_API_KEY,
+    apiKey,
+    devApiKey: process.env.NODE_ENV === 'development' ? apiKey : undefined,
   };
 }

@@ -43,13 +43,10 @@ describe('initializeGT', () => {
     resetI18nGlobals();
   });
 
-  it('enables server development hot reload with only public runtime credentials', () => {
+  it('enables server development hot reload with GT_PROJECT_ID and GT_API_KEY', () => {
     vi.stubEnv('NODE_ENV', 'development');
-    vi.stubEnv('GT_PROJECT_ID', undefined);
-    vi.stubEnv('GT_API_KEY', undefined);
-    vi.stubEnv('GT_DEV_API_KEY', undefined);
-    vi.stubEnv('NEXT_PUBLIC_GT_PROJECT_ID', 'project-id');
-    vi.stubEnv('NEXT_PUBLIC_GT_DEV_API_KEY', 'gtx-development-key');
+    vi.stubEnv('GT_PROJECT_ID', 'project-id');
+    vi.stubEnv('GT_API_KEY', 'gtx-development-key');
     vi.stubEnv(
       'NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS',
       JSON.stringify({
@@ -61,13 +58,12 @@ describe('initializeGT', () => {
     expect(getParams().nextI18nCacheParams).toMatchObject({
       projectId: 'project-id',
       devApiKey: 'gtx-development-key',
-      apiKey: undefined,
+      apiKey: 'gtx-development-key',
     });
     initializeGTServer();
 
     expect(getNextI18nCache()).toBeInstanceOf(NextI18nCache);
     expect(getI18nConfig().isDevHotReloadEnabled()).toBe(true);
-    expect(process.env.GT_API_KEY).toBeUndefined();
   });
 
   it('does not replace an existing NextI18nCache', () => {

@@ -41,7 +41,6 @@ describe('setCredentials', () => {
     ['gatsby', 'GATSBY_'],
     ['react', 'REACT_APP_'],
     ['redwood', 'REDWOOD_ENV_'],
-    [undefined, ''],
   ] as const)(
     'prefixes variables for %s with "%s"',
     async (framework, prefix) => {
@@ -57,13 +56,10 @@ describe('setCredentials', () => {
     }
   );
 
-  it.each(['next-app', 'next-pages'] as const)(
+  it.each(['next-app', 'next-pages', undefined] as const)(
     'writes GT_PROJECT_ID and GT_API_KEY for %s',
     async (framework) => {
-      fs.writeFileSync(
-        envPath(),
-        'GT_API_KEY=gtx-old-key\nNEXT_PUBLIC_GT_PROJECT_ID=old-project\n'
-      );
+      fs.writeFileSync(envPath(), 'GT_API_KEY=gtx-old-key\n');
 
       await setCredentials(
         { projectId: 'project-id', apiKey: 'gtx-api-key' },
@@ -71,9 +67,8 @@ describe('setCredentials', () => {
         appDirectory
       );
 
-      // gt-next prefers these over the legacy NEXT_PUBLIC_ names.
       expect(readEnv()).toBe(
-        'GT_API_KEY=gtx-api-key\nNEXT_PUBLIC_GT_PROJECT_ID=old-project\nGT_PROJECT_ID=project-id\n'
+        'GT_API_KEY=gtx-api-key\nGT_PROJECT_ID=project-id\n'
       );
     }
   );
@@ -101,7 +96,7 @@ describe('setCredentials', () => {
   it('replaces stale duplicates so a rerun leaves exactly one assignment each', async () => {
     fs.writeFileSync(
       envPath(),
-      'GT_DEV_API_KEY=stale-1\nKEEP=1\nGT_DEV_API_KEY=stale-2\n'
+      'GT_API_KEY=stale-1\nKEEP=1\nGT_API_KEY=stale-2\n'
     );
 
     await setCredentials(
@@ -116,7 +111,7 @@ describe('setCredentials', () => {
     );
 
     expect(readEnv()).toBe(
-      'GT_DEV_API_KEY=gtx-second\nKEEP=1\nGT_PROJECT_ID=project-id\n'
+      'GT_API_KEY=gtx-second\nKEEP=1\nGT_PROJECT_ID=project-id\n'
     );
   });
 
@@ -139,11 +134,11 @@ describe('setCredentials', () => {
 
   it.each([
     'OTHER="first\nGT_PROJECT_ID=embedded\nlast"\n',
-    'OTHER="first\nGT_DEV_API_KEY=embedded\nlast"\n',
+    'OTHER="first\nGT_API_KEY=embedded\nlast"\n',
     'GT_PROJECT_ID="old\nproject"\n',
     // A later duplicate hides the multiline value from dotenv's parsed map.
     'GT_PROJECT_ID="old\nproject"\nGT_PROJECT_ID=stale\n',
-    'GT_DEV_API_KEY="old\nkey"\nGT_DEV_API_KEY=stale\n',
+    'GT_API_KEY="old\nkey"\nGT_API_KEY=stale\n',
     "GT_PROJECT_ID='old\nproject'\nGT_PROJECT_ID=stale\n",
     'GT_PROJECT_ID="a\\"\nGT_PROJECT_ID=b\nc"\nGT_PROJECT_ID=stale\n',
   ])(
@@ -173,7 +168,7 @@ describe('setCredentials', () => {
     );
 
     expect(readEnv()).toBe(
-      `${existing}GT_PROJECT_ID=project-id\nGT_DEV_API_KEY=gtx-api-key\n`
+      `${existing}GT_PROJECT_ID=project-id\nGT_API_KEY=gtx-api-key\n`
     );
   });
 
@@ -187,7 +182,7 @@ describe('setCredentials', () => {
     );
 
     expect(readEnv()).toBe(
-      'GT_PROJECT_ID=project-id\nKEEP=1\nGT_DEV_API_KEY=gtx-api-key\n'
+      'GT_PROJECT_ID=project-id\nKEEP=1\nGT_API_KEY=gtx-api-key\n'
     );
   });
 
@@ -302,7 +297,7 @@ describe('setCredentials', () => {
 
   describe('in a Git repository', () => {
     const existing = 'KEEP=1\n';
-    const written = `${existing}GT_PROJECT_ID=project-id\nGT_DEV_API_KEY=gtx-api-key\n`;
+    const written = `${existing}GT_PROJECT_ID=project-id\nGT_API_KEY=gtx-api-key\n`;
     const gitignorePath = () => path.join(appDirectory, '.gitignore');
     const write = () =>
       setCredentials(
@@ -542,7 +537,7 @@ describe('areCredentialsSet', () => {
     });
     expect(getDevelopmentEnvNames(undefined)).toEqual({
       projectId: 'GT_PROJECT_ID',
-      devApiKey: 'GT_DEV_API_KEY',
+      devApiKey: 'GT_API_KEY',
     });
   });
 
@@ -558,20 +553,6 @@ describe('areCredentialsSet', () => {
     'recognizes GT_API_KEY as the development key for %s',
     (framework) => {
       vi.stubEnv('GT_API_KEY', 'gtx-api-key');
-      vi.stubEnv('NEXT_PUBLIC_GT_DEV_API_KEY', undefined);
-      expect(areCredentialsSet({ projectId: 'project-id' }, framework)).toBe(
-        true
-      );
-    }
-  );
-
-  // Next.js still accepts the public key earlier versions of init wrote.
-  it.each(['next-app', 'next-pages'] as const)(
-    'recognizes the public development key without a tooling key for %s',
-    (framework) => {
-      vi.stubEnv('NEXT_PUBLIC_GT_DEV_API_KEY', 'gtx-dev');
-      vi.stubEnv('GT_API_KEY', undefined);
-      vi.stubEnv('GT_DEV_API_KEY', undefined);
       expect(areCredentialsSet({ projectId: 'project-id' }, framework)).toBe(
         true
       );
@@ -584,7 +565,7 @@ describe('areCredentialsSet', () => {
     ).toBe(true);
   });
 
-  // Not Next.js: there GT_API_KEY is also the development key.
+  // Prefixed frameworks need their own development key.
   it.each([
     'vite',
     'gatsby',
@@ -605,7 +586,7 @@ describe('areCredentialsSet', () => {
   );
 
   it('is incomplete without a project ID even when a key exists', () => {
-    vi.stubEnv('GT_DEV_API_KEY', 'gtx-dev');
+    vi.stubEnv('GT_API_KEY', 'gtx-dev');
     expect(areCredentialsSet({ apiKey: 'gtx-prod' })).toBe(false);
     expect(areCredentialsSet({})).toBe(false);
   });

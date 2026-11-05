@@ -239,9 +239,7 @@ describe('init and configure onboarding', () => {
         gt: { output: path.join('public/i18n', '[locale].json') },
       },
     });
-    expect(prompted.env).toBe(
-      `GT_PROJECT_ID=p2\nGT_DEV_API_KEY=${SECRET_KEY}\n`
-    );
+    expect(prompted.env).toBe(`GT_PROJECT_ID=p2\nGT_API_KEY=${SECRET_KEY}\n`);
   });
 
   it.each([
@@ -801,11 +799,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   it('lets configure match an unsaved detected framework to its development key', async () => {
     vi.mocked(detectFramework).mockResolvedValue({
-      name: 'next-app',
+      name: 'gatsby',
       type: 'react',
     });
-    vi.stubEnv('NEXT_PUBLIC_GT_PROJECT_ID', 'p1');
-    vi.stubEnv('NEXT_PUBLIC_GT_DEV_API_KEY', SECRET_KEY);
+    vi.stubEnv('GATSBY_GT_PROJECT_ID', 'p1');
+    vi.stubEnv('GATSBY_GT_DEV_API_KEY', SECRET_KEY);
 
     await run(
       'init',
@@ -960,7 +958,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   it('reuses existing development credentials instead of minting another key', async () => {
     vi.stubEnv('GT_PROJECT_ID', 'p1');
-    vi.stubEnv('GT_DEV_API_KEY', 'gtx-existing-dev-key');
+    vi.stubEnv('GT_API_KEY', 'gtx-existing-dev-key');
 
     await run(
       'init',
@@ -1165,7 +1163,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
     it('only reuses runtime credentials that belong to the selected project', async () => {
       vi.stubEnv('GT_PROJECT_ID', 'p1');
-      vi.stubEnv('GT_DEV_API_KEY', 'gtx-p1-key');
+      vi.stubEnv('GT_API_KEY', 'gtx-p1-key');
       const args = [
         'configure',
         ...local,
@@ -1186,7 +1184,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         expect.anything()
       );
       expect(fs.readFileSync(file('.env.local'), 'utf8')).toBe(
-        `GT_PROJECT_ID=p2\nGT_DEV_API_KEY=${SECRET_KEY}\n`
+        `GT_PROJECT_ID=p2\nGT_API_KEY=${SECRET_KEY}\n`
       );
     });
 

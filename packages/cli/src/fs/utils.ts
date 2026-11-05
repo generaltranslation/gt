@@ -1,7 +1,6 @@
 export function resolveProjectId(): string | undefined {
   const CANDIDATES = [
-    process.env.GT_PROJECT_ID, // any server side, Remix
-    process.env.NEXT_PUBLIC_GT_PROJECT_ID, // Next.js
+    process.env.GT_PROJECT_ID, // Next.js, any server side, Remix
     process.env.VITE_GT_PROJECT_ID, // Vite
     process.env.REACT_APP_GT_PROJECT_ID, // Create React App
     process.env.REDWOOD_ENV_GT_PROJECT_ID, // RedwoodJS

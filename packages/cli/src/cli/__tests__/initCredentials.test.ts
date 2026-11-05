@@ -178,7 +178,7 @@ describe('init development credentials', () => {
       permissions: ['project:translations:generate'],
     });
     expect(fs.readFileSync(envPath(), 'utf8')).toBe(
-      'GT_PROJECT_ID=p2\nGT_DEV_API_KEY=gtx-secret-development-key\n'
+      'GT_PROJECT_ID=p2\nGT_API_KEY=gtx-secret-development-key\n'
     );
     expect(loggedOutput()).not.toContain('gtx-secret-development-key');
     expect(logger.endCommand).toHaveBeenCalledWith(
@@ -309,20 +309,6 @@ describe('init development credentials', () => {
     expect(vi.mocked(login).mock.invocationCallOrder[0]).toBeLessThan(
       vi.mocked(api.listProjects).mock.invocationCallOrder[0]
     );
-  });
-
-  it('reuses a configured development runtime key without signing in', async () => {
-    vi.stubEnv('GT_PROJECT_ID', 'p1');
-    vi.stubEnv('GT_DEV_API_KEY', 'gtx-existing-dev-key');
-    vi.mocked(hasLogin).mockResolvedValue(false);
-
-    await runInit();
-
-    // Setup creates nothing remotely here, so it needs no GT sign-in.
-    expect(login).not.toHaveBeenCalled();
-    expect(api.listProjects).not.toHaveBeenCalled();
-    expect(api.createProjectApiKey).not.toHaveBeenCalled();
-    expect(fs.existsSync(envPath())).toBe(false);
   });
 
   it('skips provisioning for an explicit production key with a configured project', async () => {
@@ -672,7 +658,7 @@ describe('init development credentials', () => {
       await runInit();
 
       expect(fs.readFileSync(envPath(), 'utf8')).toBe(
-        'KEEP=1\nGT_PROJECT_ID=p2\nGT_DEV_API_KEY=gtx-secret-development-key\n'
+        'KEEP=1\nGT_PROJECT_ID=p2\nGT_API_KEY=gtx-secret-development-key\n'
       );
       expect(
         fs.readFileSync(path.join(appDirectory, '.gitignore'), 'utf8')
