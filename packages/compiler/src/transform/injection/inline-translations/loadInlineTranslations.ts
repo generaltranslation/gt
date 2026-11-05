@@ -5,11 +5,15 @@ import type { GTInlineTranslationsOptions } from 'generaltranslation/types';
 /**
  * Translations to embed, keyed by locale, then by translation hash.
  */
-export type InlineTranslationsTable = Record<string, Record<string, unknown>>;
+export type InlineTranslationsTable = NonNullable<
+  GTInlineTranslationsOptions['translations']
+>;
 
 const LOCALE_PLACEHOLDER = '[locale]';
 
-// Shared across files so each locale file is read once per build
+// Shared across files so each locale file is read once per build. Keyed by the
+// files' modification times so a later build in the same process (watch mode,
+// repeated builds) picks up edited translations.
 const tableCache = new Map<string, InlineTranslationsTable>();
 
 /**
@@ -25,7 +29,13 @@ export function loadInlineTranslations(
 
   const cacheKey = options.translations
     ? undefined
-    : JSON.stringify([options.locales, options.path]);
+    : JSON.stringify([
+        options.locales,
+        options.path,
+        options.locales.map((locale) =>
+          getLocaleFileMtime(options.path, locale)
+        ),
+      ]);
   if (cacheKey && tableCache.has(cacheKey)) return tableCache.get(cacheKey);
 
   const table: InlineTranslationsTable = {};
@@ -40,15 +50,29 @@ export function loadInlineTranslations(
   return result;
 }
 
+function resolveLocaleFilePath(
+  pathTemplate: string | undefined,
+  locale: string
+): string | undefined {
+  if (!pathTemplate?.includes(LOCALE_PLACEHOLDER)) return undefined;
+  return path.resolve(pathTemplate.split(LOCALE_PLACEHOLDER).join(locale));
+}
+
+function getLocaleFileMtime(
+  pathTemplate: string | undefined,
+  locale: string
+): number | null {
+  const filePath = resolveLocaleFilePath(pathTemplate, locale);
+  if (!filePath) return null;
+  return fs.statSync(filePath, { throwIfNoEntry: false })?.mtimeMs ?? null;
+}
+
 function readLocaleFile(
   pathTemplate: string | undefined,
   locale: string
 ): Record<string, unknown> | undefined {
-  if (!pathTemplate?.includes(LOCALE_PLACEHOLDER)) return undefined;
-  const filePath = path.resolve(
-    pathTemplate.split(LOCALE_PLACEHOLDER).join(locale)
-  );
-  if (!fs.existsSync(filePath)) return undefined;
+  const filePath = resolveLocaleFilePath(pathTemplate, locale);
+  if (!filePath || !fs.existsSync(filePath)) return undefined;
   const parsed: unknown = JSON.parse(fs.readFileSync(filePath, 'utf8'));
   if (parsed == null || typeof parsed !== 'object' || Array.isArray(parsed)) {
     return undefined;

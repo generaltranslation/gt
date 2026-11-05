@@ -33,7 +33,7 @@ export function injectMsgParameters(
   if (callExpr.arguments.length > 2) return;
   if (
     callExpr.arguments.length === 2 &&
-    !t.isExpression(callExpr.arguments[1])
+    !hasStaticOptions(callExpr.arguments[1])
   ) {
     return;
   }
@@ -47,6 +47,22 @@ export function injectMsgParameters(
     callExpr.arguments.push(t.identifier('undefined'));
   }
   callExpr.arguments.push(inline);
+}
+
+/**
+ * msg() hashes its options at runtime, so only embed when every option that
+ * feeds the hash is visible here: no options, `undefined`, or an object literal
+ * without spreads. Options from a variable or spread could carry `$context` and
+ * select another entry than the one embedded.
+ */
+function hasStaticOptions(
+  options: t.CallExpression['arguments'][number]
+): boolean {
+  if (t.isIdentifier(options, { name: 'undefined' })) return true;
+  return (
+    t.isObjectExpression(options) &&
+    options.properties.every((property) => !t.isSpreadElement(property))
+  );
 }
 
 function buildMsgInline(

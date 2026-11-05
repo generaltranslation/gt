@@ -137,6 +137,69 @@ describe('inlineTranslations plugin option', () => {
     );
   });
 
+  it.each([
+    ['a variable', 'msg("Open", options)'],
+    ['a spread', 'msg("Open", { ...options })'],
+  ])(
+    'does not embed msg() translations when options come from %s',
+    async (_label, call) => {
+      const output = await transformWithPlugin(
+        {
+          inlineTranslations: {
+            locales: ['fr'],
+            translations: { fr: { [icuHash('Open')]: 'Ouvrir' } },
+          },
+        },
+        `
+          import { msg } from 'gt-react';
+          const options = { $context: 'state' };
+          export const label = ${call};
+        `
+      );
+      expect(output).not.toContain('Ouvrir');
+    }
+  );
+
+  it('re-reads a locale file edited between builds', async () => {
+    const hash = await getGtHash();
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-inline-'));
+    const file = path.join(dir, 'fr.json');
+    const options = {
+      inlineTranslations: {
+        locales: ['fr'],
+        path: path.join(dir, '[locale].json'),
+      },
+    };
+    fs.writeFileSync(file, JSON.stringify({ [hash]: 'Bonjour le monde' }));
+    await transformWithPlugin(options, USEGT_CODE);
+
+    fs.writeFileSync(file, JSON.stringify({ [hash]: 'Salut le monde' }));
+    const later = new Date(Date.now() + 5000);
+    fs.utimesSync(file, later, later);
+    const output = await transformWithPlugin(options, USEGT_CODE);
+    expect(output).toContain('"Salut le monde"');
+    expect(output).not.toContain('"Bonjour le monde"');
+  });
+
+  it('does not embed translations in standalone t() calls', async () => {
+    const code = `
+      import { t } from 'gt-react';
+      t("Hello world");
+    `;
+    const hash = await getHash(code, /"\$_hash": "([^"]+)"/);
+    const output = await transformWithPlugin(
+      {
+        inlineTranslations: {
+          locales: ['fr'],
+          translations: { fr: { [hash]: 'Bonjour le monde' } },
+        },
+      },
+      code
+    );
+    expect(output).toContain(hash);
+    expect(output).not.toContain('Bonjour le monde');
+  });
+
   it('does not embed translations outside production builds', async () => {
     vi.stubEnv('NODE_ENV', 'development');
     const hash = await getGtHash();
