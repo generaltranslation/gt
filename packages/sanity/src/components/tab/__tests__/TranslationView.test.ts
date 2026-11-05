@@ -281,6 +281,9 @@ describe('TranslationView automatic import', () => {
     expect(
       translations.current.handlePatchDocumentReferences
     ).not.toHaveBeenCalled();
+    expect(document.body.textContent).toContain(
+      'Skipped patching references and publishing because a translation could not be imported'
+    );
     expect(
       translations.current.handlePublishAllTranslations
     ).not.toHaveBeenCalled();

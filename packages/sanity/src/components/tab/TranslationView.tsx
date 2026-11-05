@@ -221,9 +221,23 @@ export const TranslationView = () => {
         // A rejected import (for example because the group's original
         // changed) or a role change during the imports must not lead to
         // patching or publishing the group's documents.
-        if (!allImported || !isVerifiedOriginal(documentRoleRef.current)) {
+        if (!allImported) {
+          const skipped = [
+            autoPatchReferences && 'patching references',
+            autoPublish && 'publishing',
+          ].filter(Boolean);
+          if (skipped.length > 0) {
+            toast.push({
+              title: `Skipped ${skipped.join(' and ')} because a translation could not be imported`,
+              description:
+                'Click Import All to try again; this runs once every translation imports.',
+              status: 'warning',
+              closable: true,
+            });
+          }
           return;
         }
+        if (!isVerifiedOriginal(documentRoleRef.current)) return;
 
         // Auto patch document references if enabled
         if (autoPatchReferences) {
