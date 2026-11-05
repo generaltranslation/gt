@@ -1,5 +1,5 @@
 import { PassThrough } from 'node:stream';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const clack = vi.hoisted(() => ({
   text: vi.fn(),
@@ -41,6 +41,11 @@ describe('logging prompts', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+    vi.stubEnv('GT_LOG_FORMAT', 'default');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it('searches locales through Clack autocomplete, ranking exact codes first', async () => {

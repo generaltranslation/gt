@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Button, Dialog, Flex, Stack, Text } from '@sanity/ui';
 import { useTranslations } from '../TranslationsProvider';
+import { SelectedLocalesNote } from './SelectedLocalesNote';
 
 interface ImportAllDialogProps {
   isOpen: boolean;
@@ -40,6 +41,7 @@ export const ImportAllDialog: React.FC<ImportAllDialogProps> = ({
             Are you sure you want to import translations for all{' '}
             {documents.length} documents?
           </Text>
+          <SelectedLocalesNote />
           <Text size={1} muted>
             This will download and apply translated content to your documents.
             Note that this will overwrite any existing translations!

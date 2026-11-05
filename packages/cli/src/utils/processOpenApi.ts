@@ -6,6 +6,7 @@ import remarkFrontmatter from 'remark-frontmatter';
 import YAML, { isMap, isScalar } from 'yaml';
 import type { Root, Content, Yaml } from 'mdast';
 import { logger } from '../console/logger.js';
+import { stringifyJson } from '../fs/stringifyJson.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import { Settings } from '../types/index.js';
 
@@ -331,7 +332,7 @@ function rewriteDocsJsonOpenApi(
   visitNode(json, undefined);
 
   if (!changed) return null;
-  return { changed, content: JSON.stringify(json, null, 2) };
+  return { changed, content: stringifyJson(json, content) };
 }
 
 function stripLocaleFromOpenApiPage(value: string, locale: string): string {

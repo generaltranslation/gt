@@ -16,6 +16,7 @@ import {
 } from '../utils/constants.js';
 import { resolveProjectId } from '../fs/utils.js';
 import { createUserTokenProvider } from '../auth/oauth.js';
+import { resolveCliApiKey } from '../auth/cliApiKey.js';
 import crypto from 'node:crypto';
 import { execSync } from 'node:child_process';
 import path from 'node:path';
@@ -221,7 +222,8 @@ export async function generateSettings(
   mergedOptions.baseUrl = resolveApiBaseUrl(mergedOptions.baseUrl);
 
   // The API client prefers apiKey when both are set; the provider is lazy.
-  mergedOptions.apiKey = mergedOptions.apiKey || process.env.GT_API_KEY;
+  mergedOptions.apiKey =
+    mergedOptions.apiKey || (await resolveCliApiKey(mergedOptions.baseUrl));
   mergedOptions.userTokenProvider = createUserTokenProvider({
     baseUrl: mergedOptions.baseUrl,
   });

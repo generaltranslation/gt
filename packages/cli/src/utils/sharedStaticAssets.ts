@@ -12,6 +12,7 @@ import { escapeHtmlInTextNodes, normalizeCJKCharacters } from 'gt-remark';
 import type { Settings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import { TEMPLATE_FILE_NAME } from './constants.js';
+import { batchProcess, FILE_IO_CONCURRENCY } from './batchProcess.js';
 
 type MdxAssetNode = {
   type?: string;
@@ -404,8 +405,9 @@ export default async function processSharedStaticAssets(settings: Settings) {
   const resolved = settings.files?.resolvedPaths || {};
   const mdFiles = [...(resolved.mdx || []), ...(resolved.md || [])];
 
-  await Promise.all(
-    mdFiles.map(async (filePath) => {
+  await batchProcess(
+    mdFiles,
+    async (filePath) => {
       // only rewrite existing files
       const exists = await fs.promises
         .stat(filePath)
@@ -421,6 +423,7 @@ export default async function processSharedStaticAssets(settings: Settings) {
       if (changed) {
         await fs.promises.writeFile(filePath, out, 'utf8');
       }
-    })
+    },
+    FILE_IO_CONCURRENCY
   );
 }

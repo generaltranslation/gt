@@ -1,5 +1,19 @@
 # @generaltranslation/api
 
+## 0.5.6
+
+### Patch Changes
+
+- [#2604](https://github.com/generaltranslation/gt/pull/2604) [`c460193`](https://github.com/generaltranslation/gt/commit/c46019337dda8440a7174d783ad94a0f9b15f79a) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Add `--org-id <orgId>` to `gt api-key create` to create an organization API key instead of a project key. It always uses your `gt login` session, even when an API key is configured, because API keys cannot create organization keys. `--permission` now also accepts organization permissions such as `org:context:read`, `org:projects:create`, and `project:api_keys:write`; passing one without `--org-id` fails before any request. Project keys are unchanged.
+
+  The SDK adds `createOrgApiKey` and the `OrgApiKeyPermission` enum, and the shared API adapter adds `createOrgApiKey`.
+
+## 0.5.5
+
+### Patch Changes
+
+- [#2520](https://github.com/generaltranslation/gt/pull/2520) [`4f31fef`](https://github.com/generaltranslation/gt/commit/4f31fef6e125a84243980ed2ea9d48bd3561c77d) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Abort timed-out requests reliably. `createTimeoutFetch` now passes its abort signal to `fetch` in the request init as well as on the copied `Request`, so the `timeoutMs` timeout fires in Node even if garbage collection runs while the request is pending, and custom `fetch` implementations that read only `request.signal` still see it. The timeout aborts with its own `Request timed out after <ms>ms` error, so a custom `fetch` that rejects with its own error after the timeout keeps that error.
+
 ## 0.5.4
 
 ### Patch Changes

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CutoffFormatConstructor } from './CutoffFormat';
+import { CutoffFormatConstructor } from '../CutoffFormat';
 
 describe('CutoffFormatConstructor', () => {
   describe('constructor', () => {

@@ -67,6 +67,27 @@ function isCompanionMetadataFile(
   return allFilePaths.includes(sourceFilePath);
 }
 
+/**
+ * Warns and records a skipped file when its content does not parse as JSON or
+ * YAML, so the caller can leave the file out of the upload.
+ */
+export function isUnparsableFile(
+  content: string,
+  relativePath: string,
+  format: 'JSON' | 'YAML'
+): boolean {
+  try {
+    if (format === 'JSON') JSON.parse(content);
+    else YAML.parse(content);
+    return false;
+  } catch {
+    const reason = `${format} file is not parsable`;
+    logger.warn(`Skipping ${relativePath}: ${reason}`);
+    recordWarning('skipped_file', relativePath, reason);
+    return true;
+  }
+}
+
 export async function aggregateFiles(
   settings: Settings
 ): Promise<{ files: FileToUpload[]; publishMap: Map<string, boolean> }> {
@@ -113,19 +134,11 @@ export async function aggregateFiles(
         const content = readFile(filePath);
         const relativePath = getRelative(filePath);
 
-        // Pre-validate JSON parseability
-        if (!skipValidation?.json) {
-          try {
-            JSON.parse(content);
-          } catch {
-            logger.warn(`Skipping ${relativePath}: JSON file is not parsable`);
-            recordWarning(
-              'skipped_file',
-              relativePath,
-              'JSON file is not parsable'
-            );
-            return null;
-          }
+        if (
+          !skipValidation?.json &&
+          isUnparsableFile(content, relativePath, 'JSON')
+        ) {
+          return null;
         }
 
         // Resolve $ref before parsing if configured
@@ -226,19 +239,11 @@ export async function aggregateFiles(
         const content = readFile(filePath);
         const relativePath = getRelative(filePath);
 
-        // Pre-validate YAML parseability
-        if (!skipValidation?.yaml) {
-          try {
-            YAML.parse(content);
-          } catch {
-            logger.warn(`Skipping ${relativePath}: YAML file is not parsable`);
-            recordWarning(
-              'skipped_file',
-              relativePath,
-              'YAML file is not parsable'
-            );
-            return null;
-          }
+        if (
+          !skipValidation?.yaml &&
+          isUnparsableFile(content, relativePath, 'YAML')
+        ) {
+          return null;
         }
 
         const { content: parsedYaml, fileFormat } = parseYaml(
@@ -320,19 +325,11 @@ export async function aggregateFiles(
         const content = readFile(filePath);
         const relativePath = getRelative(filePath);
 
-        // Pre-validate JSON parseability
-        if (!skipValidation?.json) {
-          try {
-            JSON.parse(content);
-          } catch {
-            logger.warn(`Skipping ${relativePath}: JSON file is not parsable`);
-            recordWarning(
-              'skipped_file',
-              relativePath,
-              'JSON file is not parsable'
-            );
-            return null;
-          }
+        if (
+          !skipValidation?.json &&
+          isUnparsableFile(content, relativePath, 'JSON')
+        ) {
+          return null;
         }
 
         const parsedJson = parseJson(

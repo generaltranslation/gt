@@ -3,6 +3,7 @@ import path from 'node:path';
 import YAML from 'yaml';
 import type { Settings, TransformOptions } from '../../../types/index.js';
 import type { JSONValue } from '../../../types/data/json.js';
+import { stringifyJson } from '../../../fs/stringifyJson.js';
 import { getRelative } from '../../../fs/findFilepath.js';
 import {
   INDEX_PAGE,
@@ -62,7 +63,8 @@ export function keepUntranslatedPagePaths(
   for (const filePath of settings.files.resolvedPaths.json ?? []) {
     const schema = validateJsonSchema(options, filePath);
     if (!schema?.composite || !isIncluded(filePath)) continue;
-    const json = JSON.parse(fs.readFileSync(filePath, 'utf8')) as JSONValue;
+    const content = fs.readFileSync(filePath, 'utf8');
+    const json = JSON.parse(content) as JSONValue;
     const dir = path.dirname(filePath);
     // Match entries the way mergeJson wrote them: same structural transforms
     // and the same locale keys.
@@ -132,7 +134,7 @@ export function keepUntranslatedPagePaths(
           schema.composite
         );
       }
-      fs.writeFileSync(filePath, JSON.stringify(json, null, 2));
+      fs.writeFileSync(filePath, stringifyJson(json, content));
     }
   }
 

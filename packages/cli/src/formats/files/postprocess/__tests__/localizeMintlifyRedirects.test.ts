@@ -304,6 +304,20 @@ describe('localizeMintlifyRedirects', () => {
     expect(readRedirects('config/redirects.json')).toHaveLength(3);
   });
 
+  it('keeps the trailing newline convention of the redirects file', async () => {
+    setup({ $ref: './redirects.json' });
+    page('new');
+    const redirects = [{ source: '/docs/old', destination: '/docs/new' }];
+
+    write('redirects.json', `${JSON.stringify(redirects, null, 2)}\n`);
+    await run(removed('old'));
+    expect(read('redirects.json')).toMatch(/\]\n$/);
+
+    write('redirects.json', JSON.stringify(redirects, null, 2));
+    await run(removed('old'));
+    expect(read('redirects.json')).toMatch(/\]$/);
+  });
+
   it('follows a chain of $ref files to the redirects array', async () => {
     setup({ $ref: './config/redirects.json' });
     writeJson('config/redirects.json', { $ref: './generated/redirects.json' });

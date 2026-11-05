@@ -12,7 +12,8 @@ import { getPublishedId } from '../../../utils/documentIds';
 
 const SYSTEM_FIELDS = ['_id', '_rev', '_updatedAt', 'language'];
 
-const isSystemField = (field: string) => SYSTEM_FIELDS.includes(field);
+const isSystemField = (field: string) =>
+  SYSTEM_FIELDS.includes(field) || field === pluginConfig.getLanguageField();
 
 export async function patchI18nDoc(
   sourceDocumentId: string,

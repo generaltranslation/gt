@@ -3,6 +3,7 @@ import { logger } from '../console/logger.js';
 import chalk from 'chalk';
 import path from 'node:path';
 import fs from 'node:fs';
+import { stringifyJson } from '../fs/stringifyJson.js';
 import { exitSync } from '../console/logging.js';
 import { PACKAGE_VERSION } from '../generated/version.js';
 
@@ -49,9 +50,13 @@ export async function updatePackageJson(
   cwd: string = process.cwd()
 ) {
   try {
+    const packageJsonPath = path.join(cwd, 'package.json');
+    const original = fs.existsSync(packageJsonPath)
+      ? await fs.promises.readFile(packageJsonPath, 'utf8')
+      : undefined;
     await fs.promises.writeFile(
-      path.join(cwd, 'package.json'),
-      JSON.stringify(packageJson, null, 2)
+      packageJsonPath,
+      stringifyJson(packageJson, original)
     );
   } catch (error) {
     logger.error(chalk.red('Error updating package.json: ' + String(error)));

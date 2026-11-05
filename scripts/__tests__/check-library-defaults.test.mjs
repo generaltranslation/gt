@@ -7,7 +7,7 @@ import {
   isWithinVariableDeclaration,
   normalizeRepositoryPath,
   validateRepository,
-} from './check-library-defaults.mjs';
+} from '../check-library-defaults.mjs';
 
 const temporaryRoots = [];
 

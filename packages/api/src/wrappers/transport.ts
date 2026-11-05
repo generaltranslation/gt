@@ -30,17 +30,19 @@ export function createTimeoutFetch({
     const forwardAbort = () => controller.abort(request.signal.reason);
     if (request.signal.aborted) forwardAbort();
     else request.signal.addEventListener('abort', forwardAbort, { once: true });
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    // fetch rejects with the abort reason, so only our own timeout reads as one.
+    const timeoutError = new Error(`Request timed out after ${timeoutMs}ms`);
+    const timeoutId = setTimeout(
+      () => controller.abort(timeoutError),
+      timeoutMs
+    );
 
     try {
-      return await fetchImplementation(
-        new Request(request, { signal: controller.signal })
-      );
-    } catch (error) {
-      if (controller.signal.aborted && !request.signal.aborted) {
-        throw new Error(`Request timed out after ${timeoutMs}ms`);
-      }
-      throw error;
+      // Custom fetches may read only request.signal, but Node's fetch follows a copied Request's signal only weakly, so pass it in init too.
+      const timedRequest = new Request(request, { signal: controller.signal });
+      return await fetchImplementation(timedRequest, {
+        signal: controller.signal,
+      });
     } finally {
       clearTimeout(timeoutId);
       request.signal.removeEventListener('abort', forwardAbort);

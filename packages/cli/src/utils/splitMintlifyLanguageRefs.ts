@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { logger } from '../console/logger.js';
+import { stringifyJson } from '../fs/stringifyJson.js';
 import { Settings, JsonSchema, SourceObjectOptions } from '../types/index.js';
 import type { RefMap } from './resolveMintlifyRefs.js';
 import { validateJsonSchema } from '../formats/json/utils.js';
@@ -41,9 +42,11 @@ export async function splitMintlifyLanguageRefs(
     const { filePath: compositeFilePath, splitConfig } = targetFile;
     if (!fs.existsSync(compositeFilePath)) return;
 
+    let fileContent: string;
     let fileJson: unknown;
     try {
-      fileJson = JSON.parse(fs.readFileSync(compositeFilePath, 'utf-8'));
+      fileContent = fs.readFileSync(compositeFilePath, 'utf-8');
+      fileJson = JSON.parse(fileContent);
     } catch {
       return;
     }
@@ -72,7 +75,7 @@ export async function splitMintlifyLanguageRefs(
     // (e.g., when all refs are inside language entries, not top-level)
     fs.writeFileSync(
       compositeFilePath,
-      JSON.stringify(fileJson, null, 2),
+      stringifyJson(fileJson, fileContent),
       'utf-8'
     );
   } finally {
@@ -493,7 +496,13 @@ function writeJsonFile(filePath: string, data: unknown): void {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
+  let original: string | undefined;
+  try {
+    original = fs.readFileSync(filePath, 'utf-8');
+  } catch {
+    // New file
+  }
+  fs.writeFileSync(filePath, stringifyJson(data, original), 'utf-8');
 }
 
 /**

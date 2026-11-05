@@ -5,11 +5,21 @@ import { BaseDocumentMerger } from '../../serialization/BaseDocumentMerger';
 
 import { findLatestDraft } from '../utils/findLatestDraft';
 import { requireSourceDocument } from '../utils/requireSourceDocument';
-import { createI18nDocAndPatchMetadata } from './helpers/createI18nDocAndPatchMetadata';
+import {
+  createI18nDocAndPatchMetadata,
+  sourceEntryDiagnostic,
+} from './helpers/createI18nDocAndPatchMetadata';
 import { getOrCreateTranslationMetadata } from './helpers/getOrCreateTranslationMetadata';
 import { patchI18nDoc } from './helpers/patchI18nDoc';
 import type { GTFile } from '../../types';
+import { getPublishedId } from '../../utils/documentIds';
 import { pluginConfig } from '../../adapter/core';
+import {
+  allowsNonDefaultSourceLocales,
+  getDocumentLanguage,
+  isNonDefaultSourceLanguage,
+} from '../../utils/translationSource';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 
 type TranslationReference = {
   language?: string;
@@ -26,8 +36,6 @@ export const documentLevelPatch = async (
   languageField: string = 'language',
   mergeWithTargetLocale: boolean = false
 ): Promise<void> => {
-  const baseLanguage = pluginConfig.getSourceLocale();
-
   //this is the document that will serve as the translated doc
   let i18nDoc: SanityDocument | undefined;
 
@@ -43,6 +51,22 @@ export const documentLevelPatch = async (
     client
   );
 
+  // With `allowNonDefaultSourceLocales`, the document being translated is its
+  // group's original, written in its own language (untagged documents are in
+  // the configured source locale). Otherwise it is always treated as written
+  // in the configured source locale.
+  const allowNonDefault = allowsNonDefaultSourceLocales();
+  const baseLanguage = allowNonDefault
+    ? getDocumentLanguage(baseDoc)
+    : pluginConfig.getSourceLocale();
+  if (
+    allowNonDefault &&
+    isNonDefaultSourceLanguage(baseLanguage) &&
+    localeId === baseLanguage
+  ) {
+    throw new Error(sameLanguageDiagnostic(docInfo.documentId, localeId));
+  }
+
   /* first, check our metadata to see if a translated document exists
    * if no metadata exists, we create it atomically
    */
@@ -56,9 +80,7 @@ export const documentLevelPatch = async (
   //the id of the translated document should be on the metadata if it exists
   const translations =
     translationMetadata.translations as TranslationReference[];
-  const i18nDocId = translations.find(
-    (translation) => translation.language === localeId
-  )?.value?._ref;
+  const i18nDocId = targetDocumentId(translations, localeId, docInfo);
 
   if (i18nDocId) {
     //get draft or published
@@ -113,9 +135,11 @@ export const documentLevelPatch = async (
     );
     const freshTranslations =
       freshTranslationMetadata.translations as TranslationReference[];
-    const freshI18nDocId = freshTranslations.find(
-      (translation) => translation.language === localeId
-    )?.value?._ref;
+    const freshI18nDocId = targetDocumentId(
+      freshTranslations,
+      localeId,
+      docInfo
+    );
 
     const freshI18nDoc = freshI18nDocId
       ? await findLatestDraft(freshI18nDocId, client)
@@ -153,3 +177,30 @@ export const documentLevelPatch = async (
     );
   }
 };
+
+/** The group's document for `localeId`; a group that records the source itself there would have the import overwrite the original. */
+function targetDocumentId(
+  translations: TranslationReference[],
+  localeId: string,
+  docInfo: GTFile
+): string | undefined {
+  const id = translations.find(
+    (translation) => translation.language === localeId
+  )?.value?._ref;
+  const sourceId = getPublishedId(docInfo.documentId);
+  if (id && getPublishedId(id) === sourceId) {
+    throw new Error(sourceEntryDiagnostic(localeId, sourceId));
+  }
+  return id;
+}
+
+function sameLanguageDiagnostic(documentId: string, localeId: string): string {
+  return createDiagnosticMessage({
+    source: 'gt-sanity',
+    severity: 'Error',
+    whatHappened: `Skipped importing a ${localeId} translation`,
+    why: `the document it would be written to is the ${localeId} original it was translated from`,
+    fix: 'Translate into locales other than the original document language',
+    details: [`Document ID: ${getPublishedId(documentId)}`],
+  });
+}

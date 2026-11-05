@@ -15,7 +15,6 @@ import {
   createBadFilepathWarning,
   createGTCompilerUnresolvedWarning,
   createNextI18nConfigMismatchWarning,
-  devApiKeyIncludedInProductionError,
   invalidCanonicalLocalesError,
   invalidLocalesError,
   projectIdMissingWarn,
@@ -35,6 +34,7 @@ import {
   rootParamStability,
   turboConfigStable,
 } from './plugin/getStableNextVersionInfo';
+import { distDir, nodeRequire } from './plugin/nodeCompat';
 import { validateCompiler } from './config-dir/utils/validateCompiler';
 import {
   REQUEST_FUNCTION_ALIASES,
@@ -366,11 +366,11 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   if (mergedConfig.experimentalCompilerOptions?.type === 'swc') {
     try {
       if (turboPackEnabled) {
-        const absolutePath = path.resolve(__dirname, './gt_swc_plugin.wasm');
+        const absolutePath = path.resolve(distDir, './gt_swc_plugin.wasm');
         resolvedWasmFilePath =
           './' + path.relative(process.cwd(), absolutePath).replace(/\\/g, '/');
       } else {
-        resolvedWasmFilePath = path.resolve(__dirname, './gt_swc_plugin.wasm');
+        resolvedWasmFilePath = path.resolve(distDir, './gt_swc_plugin.wasm');
       }
     } catch (error) {
       console.error(
@@ -620,11 +620,6 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     console.warn(projectIdMissingWarn);
   }
 
-  // Check: dev API key should not be included in production
-  if (process.env.NODE_ENV === 'production' && mergedConfig.devApiKey) {
-    throw new Error(devApiKeyIncludedInProductionError);
-  }
-
   // Check: An API key is required for runtime translation
   if (
     mergedConfig.projectId && // must have projectId for this check to matter anyways
@@ -769,6 +764,14 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
         requestFunctionPaths.getRegion ? 'true' : 'false',
       _GENERALTRANSLATION_DISABLE_INVALID_LOCALE_WARNING:
         mergedConfig.disableInvalidLocaleWarning?.toString() || 'false',
+      // Development only: exposes GT_PROJECT_ID and GT_API_KEY to client code
+      // for hot reload. `next build` never sets these, so production bundles
+      // get no key.
+      ...(isDevHotReloadEnabled(mergedConfig) &&
+        !mergedConfig._disableDevHotReload && {
+          GT_PROJECT_ID: mergedConfig.projectId,
+          GT_API_KEY: mergedConfig.devApiKey,
+        }),
       // nextConfig.env intentionally makes this available to client-boundary.tsx.
       ...(mergedConfig.pathRegex !== undefined && {
         _GENERALTRANSLATION_PATH_REGEX: mergedConfig.pathRegex,
@@ -814,9 +817,9 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
         // Try to load GT compiler if available
         if (mergedConfig.experimentalCompilerOptions?.type === 'babel') {
           try {
-            const {
-              webpack: gtUnplugin,
-            } = require('@generaltranslation/compiler');
+            const { webpack: gtUnplugin } = nodeRequire(
+              '@generaltranslation/compiler'
+            );
             webpackConfig.plugins.unshift(
               gtUnplugin({
                 ...mergedConfig.experimentalCompilerOptions,

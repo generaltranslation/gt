@@ -1,5 +1,37 @@
 # gt-sanity
 
+## 4.0.32
+
+### Patch Changes
+
+- Updated dependencies [[`c460193`](https://github.com/generaltranslation/gt/commit/c46019337dda8440a7174d783ad94a0f9b15f79a)]:
+  - generaltranslation@9.5.9
+
+## 4.0.31
+
+### Patch Changes
+
+- [#2581](https://github.com/generaltranslation/gt/pull/2581) [`b2fbea2`](https://github.com/generaltranslation/gt/commit/b2fbea2d25d05ca318b1c38264aff5a78dd86fbd) Thanks [@eoinest](https://github.com/eoinest)! - Add the opt-in `allowNonDefaultSourceLocales` option (off by default) to translate documents written in a locale other than `sourceLocale` from the Translate dialog on that document. Each translation group has one original; gt-sanity records it on the group's metadata (`gtSourceLanguage`) when it is not in `sourceLocale`, and translations of a group cannot be translated from. Translate All still only covers originals in `sourceLocale`. With the option off, gt-sanity behaves as before.
+
+## 4.0.30
+
+### Patch Changes
+
+- [#2567](https://github.com/generaltranslation/gt/pull/2567) [`40b3939`](https://github.com/generaltranslation/gt/commit/40b3939e8e25f42e6c82d08678b060627a206d16) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add a locale selector to the Translations page. Translate All, Import All, Import Missing, Save Local Edits, Patch References, and Publish Translations now act only on the selected locales, and each confirm dialog lists them.
+
+## 4.0.29
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.5.8
+
+## 4.0.28
+
+### Patch Changes
+
+- [#2517](https://github.com/generaltranslation/gt/pull/2517) [`7c6547c`](https://github.com/generaltranslation/gt/commit/7c6547cc95f15ab5e5f0c5ac3635df945de378f9) Thanks [@ruymon](https://github.com/ruymon)! - Re-importing a translation no longer overwrites a custom `languageField` (for example `locale`) with the source document's value.
+
 ## 4.0.27
 
 ### Patch Changes
