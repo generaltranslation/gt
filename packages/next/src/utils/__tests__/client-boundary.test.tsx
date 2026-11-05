@@ -216,6 +216,35 @@ describe('Client_GTProvider', () => {
     }
   );
 
+  it('renders children while the pathname suspends', async () => {
+    // Under Cache Components, usePathname() suspends during prerendering of
+    // dynamic routes that have no generateStaticParams.
+    mockPathname.mockImplementation(() => {
+      throw new Promise(() => {});
+    });
+    const { Client_GTProvider } = await import('../client-boundary');
+    const container = document.createElement('div');
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <Client_GTProvider
+          supportsLocaleRefresh={true}
+          dictionaries={{}}
+          locale='en-GB'
+          translations={{}}
+        >
+          content
+        </Client_GTProvider>
+      );
+    });
+
+    expect(container.textContent).toBe('content');
+    expect(mockRefreshServerComponents).not.toHaveBeenCalled();
+
+    await act(async () => root.unmount());
+  });
+
   it('does not refresh excluded paths when the routing cookie is stale', async () => {
     const { Client_GTProvider } = await import('../client-boundary');
     const container = document.createElement('div');
