@@ -22,7 +22,12 @@ describe('getSwcPluginWasmFileName', () => {
   it.each([
     ['16.1.0', 'gt_swc_plugin_legacy.wasm'],
     ['16.3.8', 'gt_swc_plugin_legacy.wasm'],
+    ['16.4.0-canary.0', 'gt_swc_plugin_legacy.wasm'],
+    ['16.4.0-canary.14', 'gt_swc_plugin_legacy.wasm'],
+    ['16.4.0-canary.15', 'gt_swc_plugin.wasm'],
+    ['16.4.0-rc.0', 'gt_swc_plugin.wasm'],
     ['16.4.0', 'gt_swc_plugin.wasm'],
+    ['16.3.9-canary.3', 'gt_swc_plugin_legacy.wasm'],
     ['16.4.2', 'gt_swc_plugin.wasm'],
     ['16.5.0-canary.40', 'gt_swc_plugin.wasm'],
     ['17.0.0', 'gt_swc_plugin.wasm'],

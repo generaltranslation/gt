@@ -122,12 +122,18 @@ export const swcPluginCompatible = comparePackageVersion(
  * @returns The wasm file name in gt-next's dist directory.
  */
 export function getSwcPluginWasmFileName(nextVersion: string): string {
-  return comparePackageVersion(
-    nextVersion,
-    SWC_PLUGIN_WASM_FILES.current.minNextVersion
-  )
-    ? SWC_PLUGIN_WASM_FILES.current.fileName
-    : SWC_PLUGIN_WASM_FILES.legacy.fileName;
+  const { current, legacy } = SWC_PLUGIN_WASM_FILES;
+  const [release, prerelease] = nextVersion.split('-', 2);
+  // Canaries of the first supported release predate the plugin runner switch
+  const canary = prerelease?.match(/^canary\.(\d+)$/);
+  if (release === current.minNextVersion && canary) {
+    return Number(canary[1]) >= current.minCanary
+      ? current.fileName
+      : legacy.fileName;
+  }
+  return comparePackageVersion(release, current.minNextVersion)
+    ? current.fileName
+    : legacy.fileName;
 }
 
 export const swcPluginWasmFileName = getSwcPluginWasmFileName(getNextVersion());
