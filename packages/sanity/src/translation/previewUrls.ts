@@ -4,30 +4,31 @@ import {
   type SanityClient,
   type SanityDocument,
 } from 'sanity';
+import type {
+  DocumentLocationResolverObject,
+  DocumentLocationsState,
+} from 'sanity/presentation';
 import { pluginConfig } from '../adapter/core';
 
 /** `published` for a source upload; `drafts` at import, where the written translation is usually still a draft. */
 type Perspective = 'published' | 'drafts';
 
-export type PreviewLocation = { title: string; href: string };
-
-/** Like a Presentation location resolver, with the Sanity language id of the page being linked as the second argument. */
-export type PreviewUrlResolver = {
-  select: Record<string, string>;
+/** Presentation's location resolver, with the Sanity language id of the page being linked as the second argument. */
+export type PreviewUrlResolver = Omit<
+  DocumentLocationResolverObject,
+  'resolve'
+> & {
   resolve: (
-    document: Record<string, unknown> | null,
+    document: Parameters<DocumentLocationResolverObject['resolve']>[0],
     context: { language: string }
-  ) => { locations?: PreviewLocation[] } | null | undefined;
+  ) => ReturnType<DocumentLocationResolverObject['resolve']>;
 };
 
 export type PreviewUrlConfig = {
   /** Origin of the site that shows the documents, e.g. `https://staging.example.com`. */
   origin: string;
   /** Locations by document type, as given to `presentationTool({ resolve: { locations } })`; a document's first location is its page. */
-  locations: Record<
-    string,
-    PreviewUrlResolver | { locations?: PreviewLocation[] }
-  >;
+  locations: Record<string, PreviewUrlResolver | DocumentLocationsState>;
 };
 
 /** A document whose page is wanted, by published id, and the language of that page. */
@@ -254,8 +255,8 @@ function previewUrl(
   if ('resolve' in resolver) {
     const snapshot = snapshots?.get(target.id);
     if (!snapshot) return undefined;
-    href = resolver.resolve(snapshot, { language: target.language })
-      ?.locations?.[0]?.href;
+    const state = resolver.resolve(snapshot, { language: target.language });
+    href = state ? state.locations?.[0]?.href : undefined;
   } else {
     href = resolver.locations?.[0]?.href;
   }

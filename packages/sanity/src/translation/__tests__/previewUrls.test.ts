@@ -1,4 +1,5 @@
 import type { SanityClient } from 'sanity';
+import { defineLocations } from 'sanity/presentation';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { pluginConfig } from '../../adapter/core';
 import { createGroqClient } from '../../utils/__tests__/groqClient';
@@ -132,6 +133,28 @@ describe('resolvePreviewUrls', () => {
       'https://staging.acme.test/en/draft-pricing',
       'https://staging.acme.test/en/new',
     ]);
+  });
+
+  test("accepts Presentation's defineLocations resolvers as they are", async () => {
+    const presentationConfig: PreviewUrlConfig = {
+      origin: 'https://staging.acme.test',
+      locations: {
+        page: defineLocations({
+          select: { slug: 'slug.current' },
+          resolve: (doc) => ({
+            locations: [{ title: 'Page', href: `/en/${doc?.slug}` }],
+          }),
+        }),
+      },
+    };
+    vi.spyOn(pluginConfig, 'getPreviewUrl').mockReturnValue(presentationConfig);
+
+    const { urls } = await resolvePreviewUrls(
+      [target('pricing', 'page')],
+      client().client
+    );
+
+    expect(urls).toEqual(['https://staging.acme.test/en/pricing']);
   });
 
   test("passes each target's language to the resolver", async () => {
