@@ -28,6 +28,7 @@ const mocks = vi.hoisted(() => ({
   createJobs: vi.fn(),
   collectExistingTranslations: vi.fn(),
   resolvePreviewUrls: vi.fn(),
+  updateTranslationPreviewUrls: vi.fn(),
 }));
 
 vi.mock('sanity', async (importOriginal) => ({
@@ -71,6 +72,9 @@ vi.mock('../../translation/collectExistingTranslations', () => ({
 }));
 vi.mock('../../translation/previewUrls', () => ({
   resolvePreviewUrls: mocks.resolvePreviewUrls,
+}));
+vi.mock('../../translation/updatePreviewUrls', () => ({
+  updateTranslationPreviewUrls: mocks.updateTranslationPreviewUrls,
 }));
 
 const { TranslationsProvider, useTranslations } =
@@ -136,7 +140,8 @@ beforeEach(() => {
   vi.spyOn(console, 'error').mockImplementation(() => {});
   mocks.uploadFiles.mockResolvedValue({ uploadedFiles: [] });
   mocks.collectExistingTranslations.mockResolvedValue(new Map());
-  mocks.resolvePreviewUrls.mockResolvedValue({ urls: new Map(), failures: [] });
+  mocks.resolvePreviewUrls.mockResolvedValue({ urls: [], failures: [] });
+  mocks.updateTranslationPreviewUrls.mockResolvedValue([]);
   mocks.useDocumentStore.mockReturnValue(mocks.documentStore);
 });
 
@@ -449,6 +454,44 @@ describe('without allowNonDefaultSourceLocales', () => {
       expect.objectContaining({ status: 'error' })
     );
     expectOnlyOriginalQueries(fetch);
+  });
+
+  test('Patch References resends the preview URL of each translation whose references it repoints', async () => {
+    useClient([
+      page('post-en', 'en'),
+      {
+        ...page('post-fr', 'fr'),
+        link: { _type: 'reference', _ref: 'cat-en' },
+      },
+      page('cat-en', 'en'),
+      page('cat-fr', 'fr'),
+      metadataDoc('m-post', [
+        ['en', 'post-en'],
+        ['fr', 'post-fr'],
+      ]),
+      metadataDoc('m-cat', [
+        ['en', 'cat-en'],
+        ['fr', 'cat-fr'],
+      ]),
+    ]);
+
+    const context = await renderProvider(page('post-en', 'en'));
+    await act(async () => {
+      await context.handlePatchDocumentReferences();
+    });
+
+    expect(mocks.updateTranslationPreviewUrls).toHaveBeenCalledTimes(1);
+    expect(mocks.updateTranslationPreviewUrls).toHaveBeenCalledWith(
+      [
+        {
+          written: { id: 'post-fr', type: 'page' },
+          file: { branchId: undefined, fileId: 'post-en', versionId: 'r1' },
+          language: 'fr',
+        },
+      ],
+      mocks.client,
+      { project: 'p' }
+    );
   });
 
   test('Patch References reads groups through their source-locale entry only', async () => {

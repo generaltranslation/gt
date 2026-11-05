@@ -22,7 +22,10 @@ import { api, overrideConfig, pluginConfig } from '../adapter/core';
 import { getTranslationStrategy } from '../translation/strategy';
 import { uploadFiles } from '../translation/uploadFiles';
 import { resolvePreviewUrls } from '../translation/previewUrls';
-import { updateTranslationPreviewUrls } from '../translation/updatePreviewUrls';
+import {
+  updateTranslationPreviewUrls,
+  type ImportedTranslation,
+} from '../translation/updatePreviewUrls';
 import { initProject } from '../translation/initProject';
 import { createJobs } from '../translation/createJobs';
 import { captureExistingTranslations } from '../translation/captureExistingTranslations';
@@ -1628,7 +1631,7 @@ const TranslationsProviderContent: React.FC<
 
           if (resolvedDoc !== translatedDoc) {
             await commitResolvedRefs(translatedDoc, resolvedDoc, client);
-            return { patched: true, doc: translatedDoc, localeId };
+            return { patched: true, doc: translatedDoc, localeId, source: doc };
           }
           return { patched: false, doc: translatedDoc, localeId };
         },
@@ -1660,6 +1663,34 @@ const TranslationsProviderContent: React.FC<
         closable: true,
       });
 
+      // A page URL read through a reference changes once the reference points
+      // at the translated document. One request per source document, so a
+      // document edited since its upload fails only its own update.
+      const patchedBySource = new Map<string, ImportedTranslation[]>();
+      for (const item of result.successfulItems) {
+        const { source } = item;
+        if (!source) continue;
+        const fileId = getDocumentPublishedId(source);
+        patchedBySource.set(fileId, [
+          ...(patchedBySource.get(fileId) ?? []),
+          {
+            written: {
+              id: getDocumentPublishedId(item.doc),
+              type: item.doc._type,
+            },
+            file: { branchId, fileId, versionId: getVersionId(source) },
+            language: item.localeId,
+          },
+        ]);
+      }
+      const previewUrlFailures: unknown[] = [];
+      for (const translations of patchedBySource.values()) {
+        previewUrlFailures.push(
+          ...(await updateTranslationPreviewUrls(translations, client, secrets))
+        );
+      }
+      warnTranslationPreviewUrlFailures(previewUrlFailures);
+
       return patchedCount;
     } catch (error) {
       console.error('Error patching document references:', error);
@@ -1674,7 +1705,15 @@ const TranslationsProviderContent: React.FC<
       setIsBusy(false);
       setImportProgress({ current: 0, total: 0, isImporting: false });
     }
-  }, [secrets, documents, locales, client, branchId]);
+  }, [
+    secrets,
+    documents,
+    locales,
+    client,
+    branchId,
+    getVersionId,
+    warnTranslationPreviewUrlFailures,
+  ]);
 
   const handlePublishAllTranslations = useCallback(
     async ({ localeIds = null }: PublishTranslationsOptions = {}) => {
