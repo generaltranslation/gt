@@ -430,7 +430,15 @@ export const noLocalesError = `No target locales were found. Add locales to gt.c
 export const noDefaultLocaleError = `No default locale was found. Add defaultLocale to gt.config.json or pass it with --default-locale.`;
 export const noFilesError = `The files configuration is missing or invalid. Check the files section in gt.config.json and try again.`;
 export const noSourceFileError = `No source translation file was found. Check your translations directory and default locale configuration.`;
-export const noProjectIdError = `No project ID was found. Pass --project-id, add projectId to gt.config.json, or set the GT_PROJECT_ID environment variable.`;
+export const noProjectIdError = (dashboardUrl: string): string =>
+  createDiagnosticMessage({
+    source: 'gt',
+    severity: 'Error',
+    whatHappened:
+      'No project ID was found, and translating needs a General Translation project',
+    fix: 'Run `npx gt init --live-translations` (Vite, React Router or TanStack Start) or `npx gt init --dev-credentials` (other apps) to sign in and create a project',
+    wayOut: `You can also copy your project ID from ${dashboardUrl} into gt.config.json as projectId, pass --project-id, or set GT_PROJECT_ID`,
+  });
 export const noVersionIdError = `No version ID was found. Pass --version-id or add _versionId to gt.config.json.`;
 export const invalidConfigurationError = `The files configuration cannot be used for this operation. Provide a valid download configuration or set --publish true to upload translations to the CDN.`;
 export const lottieTranslateError = `Lottie translations are processed asynchronously, so the translate command cannot complete them in one run. Use the stage and download flow instead:\n  1. Stage the files for translation: npx gt stage\n  2. Fetch the finished translations: npx gt download\nTranslations that are still processing are skipped, so re-run npx gt download until all of them have been downloaded.`;

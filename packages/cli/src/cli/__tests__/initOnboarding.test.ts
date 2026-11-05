@@ -701,6 +701,103 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     });
   });
 
+  describe('Vite project setup under --defaults', () => {
+    const projectQuestion =
+      'Translating requires a General Translation project';
+    const nextStep = 'npx gt init --live-translations';
+    const messages = () =>
+      vi.mocked(logger.message).mock.calls.map(([message]) => String(message));
+
+    beforeEach(() => {
+      useFreshApp({
+        name: 'example-app',
+        packageManager: 'pnpm@10.20.0',
+        dependencies: { react: '*', 'react-dom': '*' },
+        devDependencies: { vite: '*' },
+      });
+      vi.mocked(detectFramework).mockResolvedValue({
+        name: 'vite',
+        type: 'react',
+      });
+      fs.writeFileSync(
+        file('index.html'),
+        '<script type="module" src="/src/main.tsx"></script>\n'
+      );
+      fs.mkdirSync(file('src'));
+      fs.writeFileSync(file('src/main.tsx'), '// app');
+      for (const name of ['VITE_GT_PROJECT_ID', 'VITE_GT_DEV_API_KEY']) {
+        vi.stubEnv(name, undefined);
+      }
+    });
+
+    it('asks to set up a project in a terminal when none resolves', async () => {
+      vi.mocked(hasLogin).mockResolvedValue(false);
+      vi.mocked(logging.promptConfirm).mockResolvedValue(false);
+
+      await run('init', '--defaults', '--locales', 'fr');
+
+      expect(logging.promptConfirm).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: `${projectQuestion}. Would you like to sign in and set one up now, with live development translations?`,
+          defaultValue: false,
+        })
+      );
+      expect(login).not.toHaveBeenCalled();
+      expect(api.createProjectApiKey).not.toHaveBeenCalled();
+      expect(fs.existsSync(file('.env.local'))).toBe(false);
+      expect(readConfig().projectId).toBeUndefined();
+      expect(messages().some((message) => message.includes(nextStep))).toBe(
+        true
+      );
+    });
+
+    it('sets up the project when the person accepts', async () => {
+      vi.mocked(logging.promptConfirm).mockImplementation(async ({ message }) =>
+        message.startsWith(projectQuestion)
+      );
+      vi.mocked(logging.promptSelect).mockResolvedValue(projects[1]);
+
+      await run('init', '--defaults', '--locales', 'fr');
+
+      expect(fs.readFileSync(file('.env.local'), 'utf8')).toBe(
+        `VITE_GT_PROJECT_ID=p2\nVITE_GT_DEV_API_KEY=${SECRET_KEY}\n`
+      );
+      expect(messages().some((message) => message.includes(nextStep))).toBe(
+        false
+      );
+    });
+
+    it('creates nothing and prints the next step without a terminal', async () => {
+      await run('init', '--defaults', '--no-interactive', '--locales', 'fr');
+
+      for (const prompt of prompts) expect(prompt).not.toHaveBeenCalled();
+      expect(hasLogin).not.toHaveBeenCalled();
+      expect(api.listProjects).not.toHaveBeenCalled();
+      expect(api.createProject).not.toHaveBeenCalled();
+      expect(api.createProjectApiKey).not.toHaveBeenCalled();
+      expect(fs.existsSync(file('.env.local'))).toBe(false);
+      expect(messages().some((message) => message.includes(nextStep))).toBe(
+        true
+      );
+    });
+
+    it('keeps the recommended answer when a project already resolves', async () => {
+      vi.stubEnv('VITE_GT_PROJECT_ID', 'p1');
+
+      await run('init', '--defaults', '--locales', 'fr');
+
+      expect(logging.promptConfirm).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining('live development translations'),
+        })
+      );
+      expect(api.createProjectApiKey).not.toHaveBeenCalled();
+      expect(messages().some((message) => message.includes(nextStep))).toBe(
+        false
+      );
+    });
+  });
+
   it('writes and reuses App Router GT_PROJECT_ID and GT_API_KEY credentials', async () => {
     vi.mocked(detectFramework).mockResolvedValue({
       name: 'next-app',
