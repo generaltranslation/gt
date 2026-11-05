@@ -847,11 +847,30 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       });
     });
 
-    it('adds <GTProvider> when the app already has a custom getLocale()', async () => {
+    it('leaves the root layout alone with only a custom getLocale()', async () => {
       useNextApp(true);
       fs.writeFileSync(
         file('getLocale.ts'),
         'export default async () => "en";'
+      );
+
+      await init();
+
+      expect(fs.readFileSync(file('app/layout.tsx'), 'utf8')).toBe(layout);
+      expect(events().at(-1)).toMatchObject({
+        outcome: 'needs_human_action',
+      });
+    });
+
+    it('adds <GTProvider> when the app has custom getLocale() and getRegion()', async () => {
+      useNextApp(true);
+      fs.writeFileSync(
+        file('getLocale.ts'),
+        'export default async () => "en";'
+      );
+      fs.writeFileSync(
+        file('getRegion.ts'),
+        'export default async () => undefined;'
       );
 
       await init();

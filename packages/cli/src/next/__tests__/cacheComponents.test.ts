@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
-  hasCustomGetLocale,
+  hasCustomRequestFunctions,
   isCacheComponentsEnabled,
 } from '../cacheComponents.js';
 
@@ -31,6 +31,16 @@ describe('isCacheComponentsEnabled', () => {
       true,
     ],
     ['CommonJS', 'module.exports = { "cacheComponents": true };', true],
+    [
+      'a named value',
+      'const cacheComponents = true;\nexport default { cacheComponents };',
+      true,
+    ],
+    [
+      'an environment check',
+      "export default { cacheComponents: process.env.CC === '1' };",
+      true,
+    ],
     ['disabled', 'export default { cacheComponents: false };', false],
     ['missing', 'export default {};', false],
     ['unparsable', 'export default {', false],
@@ -42,14 +52,17 @@ describe('isCacheComponentsEnabled', () => {
   });
 });
 
-describe('hasCustomGetLocale', () => {
+describe('hasCustomRequestFunctions', () => {
   it.each([
-    ['in the project root', 'getLocale.ts', true],
-    ['in src', 'src/getLocale.js', true],
-    ['missing', 'getRegion.ts', false],
-    ['nested elsewhere', 'lib/getLocale.ts', false],
-  ])('%s', (_name, file, expected) => {
-    write(file);
-    expect(hasCustomGetLocale(cwd)).toBe(expected);
+    ['both in the project root', ['getLocale.ts', 'getRegion.ts'], true],
+    ['both in src', ['src/getLocale.js', 'src/getRegion.js'], true],
+    ['split across root and src', ['getLocale.ts', 'src/getRegion.ts'], true],
+    ['only getLocale', ['getLocale.ts'], false],
+    ['only getRegion', ['src/getRegion.ts'], false],
+    ['extensions gt-next ignores', ['getLocale.mjs', 'getRegion.tsx'], false],
+    ['nested elsewhere', ['lib/getLocale.ts', 'lib/getRegion.ts'], false],
+  ])('%s', (_name, files, expected) => {
+    files.forEach((file) => write(file));
+    expect(hasCustomRequestFunctions(cwd)).toBe(expected);
   });
 });

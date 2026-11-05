@@ -22,7 +22,7 @@ import { getBuildToolSetup, getSetupDocsUrl } from './buildTools/index.js';
 import {
   CACHE_COMPONENTS_DOCS_URL,
   CACHE_COMPONENTS_SETUP_STEP,
-  hasCustomGetLocale,
+  hasCustomRequestFunctions,
   isCacheComponentsEnabled,
 } from '../next/cacheComponents.js';
 import type { InitOptions, OnboardingSession } from './onboarding.js';
@@ -35,7 +35,7 @@ export type ReactSetupPlan = {
   install?: string;
   nextConfigPath?: string;
   /**
-   * cacheComponents is enabled without a custom getLocale(), so <GTProvider>
+   * cacheComponents is enabled without custom getLocale() and getRegion(), so <GTProvider>
    * waits for the Cache Components guide's app/[locale] setup.
    */
   cacheComponents?: boolean;
@@ -146,7 +146,7 @@ Please let us know what you would like to see added at https://github.com/genera
     } else {
       plan.cacheComponents =
         isCacheComponentsEnabled(plan.nextConfigPath) &&
-        !hasCustomGetLocale(process.cwd());
+        !hasCustomRequestFunctions(process.cwd());
     }
     const formatter = await detectFormatter();
     if (

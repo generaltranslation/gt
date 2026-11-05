@@ -14,9 +14,11 @@ export const CACHE_COMPONENTS_DOCS_URL =
 export const CACHE_COMPONENTS_SETUP_STEP =
   'Follow the Cache Components guide to move your routes under app/[locale], add getLocale and getRegion files and a proxy, then add <GTProvider> to the [locale] layout';
 
-const SCRIPT_EXTENSION = /\.(?:[cm]?[jt]sx?)$/;
-
-/** Whether the Next.js config sets cacheComponents: true. */
+/**
+ * Whether the Next.js config may enable cacheComponents. Any value other than
+ * a literal false counts, because a missed setting leaves a failing build
+ * while a false positive only leaves the layout for the guide.
+ */
 export function isCacheComponentsEnabled(nextConfigPath: string): boolean {
   let enabled = false;
   try {
@@ -30,7 +32,7 @@ export function isCacheComponentsEnabled(nextConfigPath: string): boolean {
         if (
           (t.isIdentifier(key, { name: 'cacheComponents' }) ||
             t.isStringLiteral(key, { value: 'cacheComponents' })) &&
-          t.isBooleanLiteral(value, { value: true })
+          !t.isBooleanLiteral(value, { value: false })
         ) {
           enabled = true;
           nodePath.stop();
@@ -43,19 +45,17 @@ export function isCacheComponentsEnabled(nextConfigPath: string): boolean {
   return enabled;
 }
 
-/** Whether the app already has a custom getLocale() in its root or src/. */
-export function hasCustomGetLocale(cwd: string): boolean {
-  return ['', 'src'].some((dir) => {
-    const absDir = path.join(cwd, dir);
-    return (
-      fs.existsSync(absDir) &&
-      fs
-        .readdirSync(absDir)
-        .some(
-          (file) =>
-            SCRIPT_EXTENSION.test(file) &&
-            file.replace(SCRIPT_EXTENSION, '') === 'getLocale'
-        )
-    );
-  });
+/**
+ * Whether the app has the custom getLocale() and getRegion() files gt-next
+ * loads (.ts or .js, in the project root or src/). GTProvider awaits both, and
+ * their defaults read headers and cookies.
+ */
+export function hasCustomRequestFunctions(cwd: string): boolean {
+  return ['getLocale', 'getRegion'].every((name) =>
+    ['', 'src'].some((dir) =>
+      ['.ts', '.js'].some((extension) =>
+        fs.existsSync(path.join(cwd, dir, `${name}${extension}`))
+      )
+    )
+  );
 }
