@@ -701,6 +701,72 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     });
   });
 
+  describe('React Native', () => {
+    const expoPackageJson = {
+      name: 'example-app',
+      dependencies: {
+        expo: '*',
+        'expo-router': '*',
+        react: '*',
+        'react-native': '*',
+      },
+    };
+
+    beforeEach(() => {
+      useFreshApp(expoPackageJson);
+      vi.mocked(detectFramework).mockResolvedValue({
+        name: 'react-native',
+        type: 'react-native',
+      });
+    });
+
+    it.each([
+      ['with --defaults', ['--defaults']],
+      ['with a --framework override', ['--defaults', '--framework', 'react']],
+      ['with a configured React framework', ['--defaults']],
+    ])(
+      'stops %s before any change and links the React Native quickstart',
+      async (caseName, args) => {
+        const configContents = JSON.stringify({ framework: 'react' });
+        if (caseName === 'with a configured React framework') {
+          fs.writeFileSync(file('gt.config.json'), configContents);
+        }
+        const before = fs.readdirSync(appDirectory).sort();
+
+        await expect(
+          run(
+            'init',
+            ...args,
+            '--locales',
+            'fr',
+            'es',
+            '--no-dev-credentials',
+            '--no-interactive'
+          )
+        ).rejects.toThrow(
+          'The setup wizard cannot set up React Native or Expo apps yet'
+        );
+
+        expect(logging.logErrorAndExit).toHaveBeenCalledWith(
+          expect.stringMatching(
+            /Nothing was changed[\s\S]*https:\/\/generaltranslation\.com\/docs\/react\/react-native-quickstart/
+          )
+        );
+        for (const prompt of prompts) expect(prompt).not.toHaveBeenCalled();
+        expect(installPackage).not.toHaveBeenCalled();
+        expect(fs.readdirSync(appDirectory).sort()).toEqual(before);
+        expect(
+          JSON.parse(fs.readFileSync(file('package.json'), 'utf8'))
+        ).toEqual(expoPackageJson);
+        if (caseName === 'with a configured React framework') {
+          expect(fs.readFileSync(file('gt.config.json'), 'utf8')).toBe(
+            configContents
+          );
+        }
+      }
+    );
+  });
+
   it('writes and reuses App Router GT_PROJECT_ID and GT_API_KEY credentials', async () => {
     vi.mocked(detectFramework).mockResolvedValue({
       name: 'next-app',

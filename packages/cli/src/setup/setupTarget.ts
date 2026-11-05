@@ -24,6 +24,16 @@ const electronSetupError = createDiagnosticMessage({
   docsUrl: 'https://generaltranslation.com/docs/react',
 });
 
+/** Init stops with this before setting a React Native app up as web React. */
+export const reactNativeSetupError = createDiagnosticMessage({
+  source: 'gt',
+  severity: 'Error',
+  whatHappened: 'The setup wizard cannot set up React Native or Expo apps yet',
+  reassurance: 'Nothing was changed',
+  fix: 'Follow the React Native quickstart, then run `npx gt translate`',
+  docsUrl: 'https://generaltranslation.com/docs/react/react-native-quickstart',
+});
+
 /**
  * Whether workspace package patterns name packages besides the root itself.
  * A single app may list only '.' (or nothing, keeping pnpm settings there).
