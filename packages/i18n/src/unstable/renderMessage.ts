@@ -37,6 +37,24 @@ export type LookupTreeTranslation = (
   options: MessageTreeLookupOptions
 ) => unknown;
 
+/** A tree's catalog key: the precomputed `$_hash`, or the hash of the tree. */
+export function hashMessageTree(
+  tree: MessageTree,
+  { context, maxChars, requiresReview, $_hash }: MessageTreeMetadata
+): string {
+  // Hashed here, without gt-i18n's hashMessage, which loads the ICU parser.
+  return (
+    $_hash ??
+    hashSource({
+      source: tree,
+      dataFormat: 'ICU_TREE',
+      context,
+      maxChars,
+      requiresReview,
+    })
+  );
+}
+
 /**
  * Renders a source tree in `locale`, using a loaded translated tree when one
  * exists, and the source otherwise.
@@ -49,16 +67,12 @@ export function renderMessage(
   lookupTranslation: LookupTreeTranslation
 ): string {
   const defaultLocale = getI18nConfig().getDefaultLocale();
-  // Hashed here, without gt-i18n's hashMessage, which loads the ICU parser.
-  const hash =
-    $_hash ??
-    hashSource({
-      source: tree,
-      dataFormat: 'ICU_TREE',
-      context,
-      maxChars,
-      requiresReview,
-    });
+  const hash = hashMessageTree(tree, {
+    context,
+    maxChars,
+    requiresReview,
+    $_hash,
+  });
   const options: MessageTreeLookupOptions = {
     $format: 'ICU_TREE',
     $locale: locale,

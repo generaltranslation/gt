@@ -5,6 +5,8 @@
 export {
   date,
   derive,
+  mFallback,
+  msg,
   n,
   number,
   part,
@@ -12,8 +14,11 @@ export {
   select,
   selectordinal,
   useGT,
+  useMessages,
   type Fragment,
   type GT,
   type GTOptions,
+  type M,
+  type Msg,
   type Placeholder,
 } from '@generaltranslation/react-core/unstable';

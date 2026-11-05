@@ -1,5 +1,5 @@
 import { getServerConditionStore } from '../setup/initializeGT.server';
-import { createUnstableGetGT } from './getGT';
+import { createUnstableGetGT, createUnstableGetMessages } from './getGT';
 
 /**
  * Return a tagged-template GT for the current request locale once its
@@ -7,5 +7,13 @@ import { createUnstableGetGT } from './getGT';
  * components, use `useGT()`.
  */
 export const getGT = /* @__PURE__ */ createUnstableGetGT(
+  getServerConditionStore
+);
+
+/**
+ * Return an m, which renders messages from msg(), for the current request
+ * locale once its translations load. In components, use `useMessages()`.
+ */
+export const getMessages = /* @__PURE__ */ createUnstableGetMessages(
   getServerConditionStore
 );

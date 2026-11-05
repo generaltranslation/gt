@@ -3,10 +3,12 @@ import 'server-only';
 import { initializeGTServer } from './setup/initGT.server';
 initializeGTServer();
 
-export { useGT } from './unstable/getGT';
+export { useGT, useMessages } from './unstable/getGT';
 export {
   date,
   derive,
+  mFallback,
+  msg,
   n,
   number,
   part,
@@ -16,5 +18,7 @@ export {
   type Fragment,
   type GT,
   type GTOptions,
+  type M,
+  type Msg,
   type Placeholder,
 } from 'gt-i18n/unstable';

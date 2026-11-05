@@ -6,7 +6,8 @@ import {
 } from 'gt-i18n/internal';
 import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createUnstableGetGT } from '../getGT';
+import { msg } from 'gt-i18n/unstable';
+import { createUnstableGetGT, createUnstableGetMessages } from '../getGT';
 
 type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
 
@@ -42,5 +43,15 @@ describe('createUnstableGetGT', () => {
 
     store = createStore('en');
     expect((await getGT())`Save`).toBe('Save');
+  });
+
+  it('returns an m bound to the store locale at call time', async () => {
+    let store = createStore('fr');
+    const getMessages = createUnstableGetMessages(() => store);
+
+    expect((await getMessages())(msg('Save'))).toBe('Enregistrer');
+
+    store = createStore('en');
+    expect((await getMessages())(msg('Save'))).toBe('Save');
   });
 });

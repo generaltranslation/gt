@@ -5,7 +5,8 @@ import {
   setI18nCache,
 } from 'gt-i18n/internal';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getGT, useGT } from '../getGT';
+import { msg } from 'gt-i18n/unstable';
+import { getGT, getMessages, useGT, useMessages } from '../getGT';
 
 const { mockGetRequestConditions } = vi.hoisted(() => ({
   mockGetRequestConditions: vi.fn(),
@@ -49,6 +50,14 @@ describe('gt-next unstable getGT', () => {
 
     expect(gt`Save`).toBe('Enregistrer');
     expect(rscGT`Save`).toBe('Enregistrer');
+  });
+
+  it('renders msg() messages with the request locale', async () => {
+    const m = await getMessages();
+    const rscM = await useMessages();
+
+    expect(m(msg('Save'))).toBe('Enregistrer');
+    expect(rscM(msg('Save'))).toBe('Enregistrer');
   });
 
   it('renders the source when the request disables i18n', async () => {

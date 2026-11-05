@@ -198,7 +198,7 @@ describe.sequential('gt-tanstack-start package exports', () => {
     );
   });
 
-  it('loads the tagged getGT from both unstable entrypoints', () => {
+  it('loads the tagged getGT and getMessages from both unstable entrypoints', () => {
     for (const conditions of [[], ['--conditions=browser']]) {
       node([
         ...conditions,
@@ -211,6 +211,9 @@ describe.sequential('gt-tanstack-start package exports', () => {
           assert.equal(typeof unstable.getGT, 'function');
           assert.equal(typeof unstable.plural, 'function');
           assert.equal(typeof unstable.useGT, 'function');
+          assert.equal(typeof unstable.getMessages, 'function');
+          assert.equal(typeof unstable.useMessages, 'function');
+          assert.equal(typeof unstable.msg, 'function');
           // TanStack Start renders on the server, and t is SPA only.
           assert.equal(unstable.t, undefined);
         `,

@@ -25,6 +25,7 @@ export function isUnstableGTImportSource(source: string): boolean {
  */
 export const UNSTABLE_GT_HELPER_NAMES = [
   't',
+  'msg',
   'useGT',
   'getGT',
   'plural',

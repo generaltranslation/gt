@@ -43,6 +43,8 @@ describe('gt-node package exports', () => {
         assert.equal(unstable.t, undefined);
         assert.equal(typeof unstable.getGT, 'function');
         assert.equal(typeof unstable.plural, 'function');
+        assert.equal(typeof unstable.getMessages, 'function');
+        assert.equal(typeof unstable.msg, 'function');
       `,
     ]);
   });
@@ -53,10 +55,13 @@ describe('gt-node package exports', () => {
       '-e',
       `
         import assert from 'node:assert/strict';
-        import { derive, getGT } from 'gt-node/unstable';
+        import { derive, getGT, getMessages, mFallback, msg } from 'gt-node/unstable';
 
         assert.equal(typeof getGT, 'function');
         assert.equal(typeof derive, 'function');
+        assert.equal(typeof getMessages, 'function');
+        assert.equal(typeof msg, 'function');
+        assert.equal(typeof mFallback, 'function');
       `,
     ]);
   });

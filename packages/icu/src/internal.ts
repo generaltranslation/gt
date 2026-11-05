@@ -12,3 +12,4 @@ export type {
 } from './tree/buildMessageTree';
 export { FALLBACK_BRANCH_KEY } from './settings/syntax';
 export { findConflictingFormat } from './convert/convert';
+export { forEachPlaceholder } from './tree/walk';
