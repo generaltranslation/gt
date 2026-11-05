@@ -142,15 +142,19 @@ async function resolveNewProject(
   if (orgs.length === 0) {
     throw new OnboardingError(noAccessibleOrgError(settings.dashboardUrl));
   }
+  // The CLI has no other way to look up organization IDs, so a run that
+  // needs --org-id lists the ones this account can use.
+  const orgList = orgs.map((org) => `${org.name} (${org.id})`).join(', ');
   if (options.orgId && !orgs.some((org) => org.id === options.orgId)) {
     session.reject(
-      `--org-id ${options.orgId} is not an accessible organization`
+      `--org-id ${options.orgId} is not an accessible organization; use one of ${orgList}`
     );
   }
   const orgId = await session.answer('--org-id', {
     explicit: options.orgId,
     // One organization is not a choice between options.
     configured: orgs.length === 1 ? orgs[0].id : undefined,
+    hint: `Accessible organizations for --org-id: ${orgList}`,
     ask: () =>
       promptSelect({
         message: 'Which organization should own the new project?',
@@ -172,7 +176,9 @@ async function resolveNewProject(
 
 /**
  * Records project inputs a noninteractive run is missing, before signing in,
- * so it never waits for approval only to fail on a missing flag.
+ * so it never waits for approval only to fail on a missing flag. --org-id is
+ * the exception: whether it is needed depends on the account's organizations,
+ * so its failure comes after sign-in and lists them.
  */
 export function checkDevelopmentProjectInputs(
   session: OnboardingSession,

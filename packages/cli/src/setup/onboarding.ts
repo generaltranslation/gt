@@ -274,6 +274,8 @@ export class OnboardingSession {
   readonly humanActions: string[] = [];
   private readonly missing = new Set<string>();
   private readonly invalid: string[] = [];
+  /** Accepted values for missing options, printed with the failure. */
+  private readonly hints: string[] = [];
   private reported = false;
 
   constructor(
@@ -297,12 +299,15 @@ export class OnboardingSession {
       configured,
       recommended,
       fallback,
+      hint,
       ask,
     }: {
       explicit?: T;
       configured?: T;
       recommended?: T;
       fallback?: T;
+      /** The values the option accepts, when they are not discoverable. */
+      hint?: string;
       ask: () => Promise<T>;
     }
   ): Promise<T | undefined> {
@@ -311,12 +316,13 @@ export class OnboardingSession {
     if (this.defaults && recommended !== undefined) return recommended;
     if (this.interactive) return ask();
     if (fallback !== undefined) return fallback;
-    this.require(option);
+    this.require(option, hint);
     return undefined;
   }
 
-  require(option: string): void {
+  require(option: string, hint?: string): void {
     this.missing.add(option);
+    if (hint) this.hints.push(hint);
   }
 
   reject(problem: string): void {
@@ -336,7 +342,7 @@ export class OnboardingSession {
             ? `Setup needs these options: ${missingOptions.join(', ')}`
             : 'Setup received invalid options',
         reassurance: 'No project files were changed',
-        details: this.invalid,
+        details: [...this.invalid, ...this.hints],
         fix: this.defaults
           ? 'Pass the options (see --help), or rerun in an interactive terminal'
           : 'Pass the options (see --help), add --defaults to accept the recommended local choices, or rerun in an interactive terminal',
