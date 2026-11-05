@@ -35,16 +35,51 @@ export type ReactSetupPlan = {
 const cancelledMessage =
   'Operation cancelled. You can re-run this wizard with: npx gt init';
 
+/** The framework was chosen, but the wizard leaves its app setup to a person. */
+export type SkippedReactSetup = { framework: 'next-pages'; skipped: true };
+
+const PAGES_ROUTER_QUICKSTART_URL =
+  'https://generaltranslation.com/docs/react/nextjs-pages-router-quickstart';
+
+/**
+ * The wizard cannot wire the Pages Router yet, so it leaves the app (and its
+ * dependencies) unchanged and reports the quickstart as a manual step.
+ */
+function skipPagesRouterSetup(session: OnboardingSession): SkippedReactSetup {
+  const fix = `Install gt-next and wire your app by following the Next.js Pages Router quickstart: ${PAGES_ROUTER_QUICKSTART_URL}`;
+  session.humanActions.push(fix);
+  logger.warn(
+    createDiagnosticMessage({
+      source: 'gt',
+      severity: 'Warning',
+      whatHappened: 'Setup will not install gt-next or wire it into your app',
+      why: 'the wizard cannot configure the Next.js Pages Router yet',
+      reassurance:
+        'It still sets up gt.config.json and your local translation files',
+      fix: 'Install gt-next and wire your app by following the Next.js Pages Router quickstart',
+      docsUrl: PAGES_ROUTER_QUICKSTART_URL,
+    })
+  );
+  return { framework: 'next-pages', skipped: true };
+}
+
 /**
  * Resolves whether and how to set up the React application. Returns
- * undefined when the setup is declined or an answer is still missing.
+ * undefined when the setup is declined or an answer is still missing, and
+ * a skipped setup for frameworks the wizard cannot configure.
  */
 export async function resolveReactSetup(
   session: OnboardingSession,
   options: InitOptions,
   detected: ReactFrameworkObject,
   configuredFramework?: SupportedReactFrameworks
-): Promise<ReactSetupPlan | undefined> {
+): Promise<ReactSetupPlan | SkippedReactSetup | undefined> {
+  if (
+    options.reactSetup !== false &&
+    (options.framework ?? configuredFramework ?? detected.name) === 'next-pages'
+  ) {
+    return skipPagesRouterSetup(session);
+  }
   const library = getReactFrameworkLibrary(detected);
   const buildTool = getBuildToolSetup(detected.name);
   const initializer = buildTool?.initializer;
@@ -109,6 +144,7 @@ Please let us know what you would like to see added at https://github.com/genera
     return exitSync(0);
   }
   if (!framework) return undefined;
+  if (framework === 'next-pages') return skipPagesRouterSetup(session);
 
   const packageJson = await getPackageJson();
   if (!packageJson) {
