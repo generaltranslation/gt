@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { awaitJobs } from '../wrappers/awaitJobs';
 import { createBatches, processBatches } from '../wrappers/batch';
 import { API_VERSION, createApiClient } from '../wrappers/client';
+import type { ApiClientConfig } from '../wrappers/client';
 import { ApiError, isTransientApiError } from '../wrappers/errors';
 import { fetchFileDownload } from '../wrappers/fileDownloads';
 import { putFileUpload } from '../wrappers/fileUploads';
@@ -785,6 +786,219 @@ describe('createApiClient errors', () => {
   });
 });
 
+describe('createApiClient compression', () => {
+  const largeBody = { text: 'x'.repeat(32 * 1024) };
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function gunzip(bytes: ArrayBuffer): Promise<string> {
+    return new Response(
+      new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))
+    ).text();
+  }
+
+  /** Records each request's encoding and raw body, answering with `responses` in turn. */
+  function recordingClient(
+    responses: Response[] = [],
+    config: Partial<ApiClientConfig> = {}
+  ) {
+    const requests: { encoding: string | null; body: ArrayBuffer }[] = [];
+    const client = createApiClient({
+      baseUrl: 'https://example.com',
+      retryPolicy: 'none',
+      fetch: async (input) => {
+        const request = new Request(input);
+        requests.push({
+          encoding: request.headers.get('Content-Encoding'),
+          body: await request.arrayBuffer(),
+        });
+        return responses.shift() ?? Response.json({});
+      },
+      ...config,
+    });
+    const post = (body: unknown, headers: Record<string, string> = {}) =>
+      client.post({
+        url: '/test',
+        body,
+        headers: { 'Content-Type': 'application/json', ...headers },
+      });
+    return { post, requests };
+  }
+
+  it('gzips a body of at least 32 KiB and keeps its Content-Type', async () => {
+    let contentType: string | null = null;
+    let body = new ArrayBuffer(0);
+    const client = createApiClient({
+      baseUrl: 'https://example.com',
+      fetch: async (input) => {
+        const request = new Request(input);
+        contentType = request.headers.get('Content-Type');
+        expect(request.headers.get('Content-Encoding')).toBe('gzip');
+        body = await request.arrayBuffer();
+        return Response.json({});
+      },
+    });
+
+    await client.post({
+      url: '/test',
+      body: largeBody,
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    expect(contentType).toBe('application/json');
+    expect(body.byteLength).toBeLessThan(1024);
+    expect(JSON.parse(await gunzip(body))).toEqual(largeBody);
+  });
+
+  it('sends a body under 32 KiB as is', async () => {
+    const { post, requests } = recordingClient();
+    await post({ value: 'small' });
+    expect(requests[0]!.encoding).toBeNull();
+    expect(new TextDecoder().decode(requests[0]!.body)).toBe(
+      '{"value":"small"}'
+    );
+  });
+
+  it('leaves a body that already has a Content-Encoding alone', async () => {
+    const { post, requests } = recordingClient();
+    await post(largeBody, { 'Content-Encoding': 'identity' });
+    expect(requests[0]!.encoding).toBe('identity');
+    expect(new TextDecoder().decode(requests[0]!.body)).toBe(
+      JSON.stringify(largeBody)
+    );
+  });
+
+  it('sends plain bodies when compression is false or CompressionStream is missing', async () => {
+    const disabled = recordingClient([], { compression: false });
+    await disabled.post(largeBody);
+    vi.stubGlobal('CompressionStream', undefined);
+    const unsupported = recordingClient();
+    await unsupported.post(largeBody);
+
+    expect(disabled.requests[0]!.encoding).toBeNull();
+    expect(unsupported.requests[0]!.encoding).toBeNull();
+  });
+
+  it('compresses once and retries with the same gzipped bytes', async () => {
+    let compressions = 0;
+    vi.stubGlobal(
+      'CompressionStream',
+      class extends CompressionStream {
+        constructor(format: CompressionFormat) {
+          super(format);
+          compressions++;
+        }
+      }
+    );
+    const { post, requests } = recordingClient(
+      [new Response(null, { status: 429, headers: { 'Retry-After': '0' } })],
+      { retryPolicy: 'exponential' }
+    );
+
+    await post(largeBody);
+
+    expect(compressions).toBe(1);
+    expect(requests.map((request) => request.encoding)).toEqual([
+      'gzip',
+      'gzip',
+    ]);
+    expect(requests[1]!.body).toEqual(requests[0]!.body);
+  });
+
+  it.each([
+    ['415', () => new Response(null, { status: 415 })],
+    [
+      '400 invalid_content_encoding',
+      () =>
+        Response.json({ code: 'invalid_content_encoding' }, { status: 400 }),
+    ],
+  ])('resends the uncompressed body once after a %s', async (_, rejection) => {
+    const { post, requests } = recordingClient([rejection(), rejection()]);
+
+    const result = await post(largeBody);
+
+    expect(result.response.status).toBe(rejection().status);
+    expect(requests.map((request) => request.encoding)).toEqual(['gzip', null]);
+    expect(new TextDecoder().decode(requests[1]!.body)).toBe(
+      JSON.stringify(largeBody)
+    );
+  });
+
+  it('does not read or compress the body once the caller aborted', async () => {
+    let compressions = 0;
+    vi.stubGlobal(
+      'CompressionStream',
+      class extends CompressionStream {
+        constructor(format: CompressionFormat) {
+          super(format);
+          compressions++;
+        }
+      }
+    );
+    const reason = new Error('caller gave up');
+    const controller = new AbortController();
+    controller.abort(reason);
+    const fetchMock = vi.fn<typeof fetch>();
+    const client = createApiClient({
+      baseUrl: 'https://example.com',
+      fetch: fetchMock,
+    });
+
+    await expect(
+      client.post({
+        url: '/test',
+        body: largeBody,
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+      })
+    ).resolves.toMatchObject({ error: reason });
+    expect(compressions).toBe(0);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('stops compressing when the caller aborts mid-compression', async () => {
+    const reason = new Error('caller gave up');
+    const controller = new AbortController();
+    vi.stubGlobal(
+      'CompressionStream',
+      class extends CompressionStream {
+        constructor(format: CompressionFormat) {
+          super(format);
+          controller.abort(reason);
+        }
+      }
+    );
+    const fetchMock = vi.fn<typeof fetch>();
+    const client = createApiClient({
+      baseUrl: 'https://example.com',
+      fetch: fetchMock,
+    });
+
+    await expect(
+      client.post({
+        url: '/test',
+        body: largeBody,
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+      })
+    ).resolves.toMatchObject({ error: reason });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('does not resend after a 400 with another code', async () => {
+    const { post, requests } = recordingClient([
+      Response.json({ code: 'invalid_request' }, { status: 400 }),
+    ]);
+
+    const result = await post(largeBody);
+
+    expect(result.response.status).toBe(400);
+    expect(requests).toHaveLength(1);
+  });
+});
+
 describe('isTransientApiError', () => {
   it.each([
     ['internal_error', 500],
@@ -860,6 +1074,20 @@ describe('putFileUpload', () => {
     expect(new Uint8Array(await request.arrayBuffer())).toEqual(
       new Uint8Array([1, 2, 3])
     );
+  });
+
+  it('never gzips the bytes', async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(new Response(null, { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    const bytes = new Uint8Array(64 * 1024);
+
+    await putFileUpload(upload, bytes);
+
+    const request = new Request(...fetchMock.mock.calls[0]!);
+    expect(request.headers.has('content-encoding')).toBe(false);
+    expect(new Uint8Array(await request.arrayBuffer())).toEqual(bytes);
   });
 
   it('PUTs through the given fetch and retry policy', async () => {
