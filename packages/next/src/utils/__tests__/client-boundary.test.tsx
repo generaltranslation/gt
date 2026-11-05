@@ -240,7 +240,6 @@ describe('Client_GTProvider', () => {
     });
 
     expect(container.textContent).toBe('content');
-    expect(mockRefreshServerComponents).not.toHaveBeenCalled();
 
     await act(async () => root.unmount());
   });

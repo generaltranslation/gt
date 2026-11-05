@@ -91,9 +91,7 @@ export function Client_GTProvider({
   );
   return (
     <>
-      {/* usePathname() is request data under Cache Components. Reading it in
-          its own Suspense boundary keeps the provider's children prerenderable
-          on dynamic routes without generateStaticParams. */}
+      {/* usePathname() is request data under Cache Components */}
       <Suspense fallback={null}>
         <PathCheck
           reloadBrowserPage={reloadBrowserPage}
@@ -106,17 +104,12 @@ export function Client_GTProvider({
   );
 }
 
-function PathCheck(props: Parameters<typeof usePathCheck>[0]) {
-  usePathCheck(props);
-  return null;
-}
-
 /**
  * Synchronizes server content if the URL locale does not match the selected
  * locale.
- * TODO: optimize this hook
+ * TODO: optimize this component
  */
-function usePathCheck({
+function PathCheck({
   reloadBrowserPage,
   refreshServerComponents,
   locale,
@@ -177,6 +170,7 @@ function usePathCheck({
     reloadBrowserPage,
     refreshServerComponents,
   ]);
+  return null;
 }
 
 function resolvePathLocale(
