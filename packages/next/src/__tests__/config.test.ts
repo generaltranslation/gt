@@ -1670,6 +1670,31 @@ describe('withGTConfig', () => {
         expect(getClientConfig(result)._inlinedLocales).toEqual(['fr']);
       });
 
+      it('does not skip loading when a Babel config replaces SWC', async () => {
+        process.env.NODE_ENV = 'production';
+        vi.mocked(fs.existsSync).mockImplementation(
+          (filepath) => filepath === '.babelrc'
+        );
+        const withGTConfig = await getWithGTConfig();
+        const swcOptions = {
+          experimentalCompilerOptions: {
+            type: 'swc' as const,
+            inlineTranslations,
+          },
+        };
+        expect(
+          getClientConfig(withGTConfig({}, swcOptions))._inlinedLocales
+        ).toBeUndefined();
+        expect(
+          getClientConfig(
+            withGTConfig(
+              { experimental: { forceSwcTransforms: true } },
+              swcOptions
+            )
+          )._inlinedLocales
+        ).toEqual(['fr']);
+      });
+
       it('does not skip loading without a compiler', async () => {
         process.env.NODE_ENV = 'production';
         const withGTConfig = await getWithGTConfig();
