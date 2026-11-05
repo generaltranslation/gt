@@ -1,49 +1,58 @@
 import { describe, expect, it } from 'vitest';
-import { getInitNextSteps, quoteShellArgument } from '../nextSteps.js';
-
-const context = {
-  framework: 'vite',
-  configuredAppEntry: true,
-  docsUrl: 'https://example.com/docs',
-  locales: ['fr', 'es'],
-} as const;
-
-function translateStep(configFilepath: string): string | undefined {
-  return getInitNextSteps({ ...context, configFilepath }).find((step) =>
-    step.startsWith('Run `npx gt translate')
-  );
-}
+import { getInitNextSteps, getTranslateInstruction } from '../nextSteps.js';
 
 describe('getInitNextSteps', () => {
-  it.each(['gt.config.json', './gt.config.json'])(
-    'omits --config for the default %s',
-    (configFilepath) => {
-      expect(translateStep(configFilepath)).toBe(
-        'Run `npx gt translate` to translate your content into fr, es'
-      );
-    }
-  );
-
-  it('names a custom config in the translate command', () => {
-    expect(translateStep('config/custom.json')).toBe(
+  it('names a custom config in the translate step', () => {
+    const steps = getInitNextSteps({
+      framework: 'vite',
+      configuredAppEntry: true,
+      docsUrl: 'https://example.com/docs',
+      locales: ['fr', 'es'],
+      configFilepath: 'config/custom.json',
+    });
+    expect(steps).toContain(
       'Run `npx gt translate --config config/custom.json` to translate your content into fr, es'
-    );
-  });
-
-  it('quotes a custom config path for the shell', () => {
-    expect(translateStep("my app's gt.json")).toContain(
-      `npx gt translate --config ${quoteShellArgument("my app's gt.json")}\``
     );
   });
 });
 
-describe('quoteShellArgument', () => {
+describe('getTranslateInstruction', () => {
+  it.each(['gt.config.json', './gt.config.json'])(
+    'omits --config for the default %s',
+    (configFilepath) => {
+      expect(getTranslateInstruction(configFilepath)).toBe(
+        'Run `npx gt translate`'
+      );
+    }
+  );
+
   it.each([
-    ['linux', 'config/custom.json', 'config/custom.json'],
-    ['darwin', "my app's gt.json", "'my app'\\''s gt.json'"],
-    ['win32', 'config\\custom.json', 'config\\custom.json'],
-    ['win32', 'my app\\gt.json', '"my app\\gt.json"'],
-  ] as const)('quotes for %s: %s', (platform, value, quoted) => {
-    expect(quoteShellArgument(value, platform)).toBe(quoted);
-  });
+    ['linux', 'config/custom.json'],
+    ['darwin', 'custom.gt.config.json'],
+    ['win32', 'config\\custom.json'],
+  ] as const)(
+    'puts a literal %s path in the command: %s',
+    (platform, configFilepath) => {
+      expect(getTranslateInstruction(configFilepath, platform)).toBe(
+        `Run \`npx gt translate --config ${configFilepath}\``
+      );
+    }
+  );
+
+  // Spaces, quotes, $, `, % and \ (outside Windows) mean different things
+  // to POSIX shells, Command Prompt and PowerShell.
+  it.each([
+    ['linux', "my app's gt.json"],
+    ['linux', 'config\\custom.json'],
+    ['win32', 'config/$schema.json'],
+    ['win32', 'my app\\gt.json'],
+    ['win32', '%APPDATA%.json'],
+  ] as const)(
+    'names a %s path the shell would change outside the command: %s',
+    (platform, configFilepath) => {
+      expect(getTranslateInstruction(configFilepath, platform)).toBe(
+        `Run \`npx gt translate\` with --config set to your config file (${configFilepath})`
+      );
+    }
+  );
 });

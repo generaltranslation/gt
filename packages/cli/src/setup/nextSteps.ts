@@ -35,11 +35,6 @@ export function getInitNextSteps({
   const destination = translationsDir
     ? ` and save them to ${translationsDir}`
     : '';
-  // gt translate reads gt.config.json from the working directory by default.
-  const configFlag =
-    path.resolve(configFilepath) === path.resolve('gt.config.json')
-      ? ''
-      : ` --config ${quoteShellArgument(configFilepath)}`;
   return [
     ...(configuredAppEntry
       ? []
@@ -48,7 +43,7 @@ export function getInitNextSteps({
         ]),
     `Wrap the text you want translated in <T>, or translate strings with useGT(); both come from ${library} (see ${docsUrl})`,
     `Add <LocaleSelector /> from ${library} so visitors can switch language`,
-    `Run \`npx gt translate${configFlag}\` to translate your content into ${locales.join(', ')}${destination}`,
+    `${getTranslateInstruction(configFilepath)} to translate your content into ${locales.join(', ')}${destination}`,
     devCommand
       ? `Start the dev server with \`${devCommand}\` and switch language`
       : 'Start your dev server and switch language',
@@ -56,20 +51,23 @@ export function getInitNextSteps({
 }
 
 /**
- * Quotes a path for the shell the person most likely uses: POSIX single
- * quotes, or double quotes on Windows, where Command Prompt keeps single
- * quotes in the argument and paths cannot contain double quotes.
+ * gt translate reads gt.config.json from the working directory by default,
+ * so another config is named with --config. A path goes into the command
+ * only when POSIX shells, Command Prompt and PowerShell all read it
+ * literally; no quoting works the same in all of them, so any other path is
+ * named outside the command.
  */
-export function quoteShellArgument(
-  value: string,
+export function getTranslateInstruction(
+  configFilepath: string,
   platform: NodeJS.Platform = process.platform
 ): string {
-  if (platform === 'win32') {
-    return /^[\w@%+=:,./\\-]+$/.test(value) ? value : `"${value}"`;
+  if (path.resolve(configFilepath) === path.resolve('gt.config.json')) {
+    return 'Run `npx gt translate`';
   }
-  return /^[\w@%+=:,./-]+$/.test(value)
-    ? value
-    : `'${value.replace(/'/g, `'\\''`)}'`;
+  const literal = platform === 'win32' ? /^[\w./\\:+=-]+$/ : /^[\w./:+=-]+$/;
+  return literal.test(configFilepath)
+    ? `Run \`npx gt translate --config ${configFilepath}\``
+    : `Run \`npx gt translate\` with --config set to your config file (${configFilepath})`;
 }
 
 /** The final wizard message: one Done!, then the numbered next steps. */
