@@ -1,4 +1,3 @@
-import path from 'node:path';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { BRANCH_COMPONENT } from '../react/jsx/utils/constants.js';
 import {
@@ -431,48 +430,14 @@ export const noLocalesError = `No target locales were found. Add locales to gt.c
 export const noDefaultLocaleError = `No default locale was found. Add defaultLocale to gt.config.json or pass it with --default-locale.`;
 export const noFilesError = `The files configuration is missing or invalid. Check the files section in gt.config.json and try again.`;
 export const noSourceFileError = `No source translation file was found. Check your translations directory and default locale configuration.`;
-
-/**
- * The config path for a setup command, relative to the working directory;
- * undefined for the root gt.config.json, which setup finds on its own.
- */
-export function setupConfigPathArgument(
-  configPath: string | undefined
-): string | undefined {
-  if (!configPath) return undefined;
-  const relative = path
-    .relative(process.cwd(), path.resolve(configPath))
-    .split(path.sep)
-    .join('/');
-  if (relative === 'gt.config.json') return undefined;
-  if (/^[\w./@-]+$/.test(relative)) return relative;
-  // Windows shells have no shared escape, so a plain double-quoted path is
-  // the closest fit; POSIX single quotes expand nothing.
-  return process.platform === 'win32'
-    ? `"${relative}"`
-    : `'${relative.replaceAll("'", "'\\''")}'`;
-}
-
-/** `npx gt init <option>`, keeping a config outside the root gt.config.json. */
-export function setupCommand(
-  option: string,
-  configPath: string | undefined
-): string {
-  const config = setupConfigPathArgument(configPath);
-  return `npx gt init ${option}${config ? ` --config ${config}` : ''}`;
-}
-
-export const noProjectIdError = (
-  dashboardUrl: string,
-  configPath: string | undefined
-): string =>
+export const noProjectIdError = (dashboardUrl: string): string =>
   createDiagnosticMessage({
     source: 'gt',
     severity: 'Error',
     whatHappened:
       'No project ID was found, and translating needs a General Translation project',
-    fix: `Run \`${setupCommand('--live-translations', configPath)}\` (Vite, React Router or TanStack Start with local storage) or \`${setupCommand('--dev-credentials', configPath)}\` (CDN storage or other apps) to sign in and create a project`,
-    wayOut: `You can also copy your project ID from ${dashboardUrl} into ${setupConfigPathArgument(configPath) ?? 'gt.config.json'} as projectId, pass --project-id, or set GT_PROJECT_ID`,
+    fix: 'Run `npx gt init --live-translations` (Vite, React Router or TanStack Start with local storage) or `npx gt init --dev-credentials` (CDN storage or other apps) to sign in and create a project',
+    wayOut: `You can also copy your project ID from ${dashboardUrl} into gt.config.json as projectId, pass --project-id, or set GT_PROJECT_ID`,
   });
 export const noVersionIdError = `No version ID was found. Pass --version-id or add _versionId to gt.config.json.`;
 export const invalidConfigurationError = `The files configuration cannot be used for this operation. Provide a valid download configuration or set --publish true to upload translations to the CDN.`;

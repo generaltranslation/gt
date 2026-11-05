@@ -21,7 +21,7 @@ import {
   promptGlobPatterns,
 } from '../console/logging.js';
 import { logger } from '../console/logger.js';
-import { lottieTranslateError, setupCommand } from '../console/index.js';
+import { lottieTranslateError } from '../console/index.js';
 import { parseGlobPatterns } from '../console/promptParsing.js';
 import path from 'node:path';
 import {
@@ -1445,17 +1445,11 @@ See https://www.npmjs.com/package/gt-vue`);
       (credentialsOption === '--live-translations'
         ? await session.answer('--live-translations', {
             explicit: options.liveTranslations ?? options.devCredentials,
-            // Translating needs a project, so interactive defaults still ask
-            // when none resolves. Noninteractive defaults never create one.
-            recommended:
-              settings.projectId || !session.interactive ? false : undefined,
-            ask: async () =>
+            recommended: false,
+            ask: () =>
               promptConfirm({
-                message: settings.projectId
-                  ? 'Would you like to set up live development translations? This requires signing in or an API key.'
-                  : (await canAuthenticate())
-                    ? 'Translating requires a General Translation project. Would you like to set one up now, with live development translations?'
-                    : 'Translating requires a General Translation project. Would you like to sign in and set one up now, with live development translations?',
+                message:
+                  'Would you like to set up live development translations? This requires signing in or an API key.',
                 defaultValue: false,
               }),
           })
@@ -1693,11 +1687,6 @@ See https://www.npmjs.com/package/gt-vue`);
         )
       );
       logger.message(productionRuntimeKeyGuidance(settings.dashboardUrl));
-    } else if (!settings.projectId) {
-      // Without a project, the first `gt translate` fails; name the way in.
-      logger.message(
-        `${chalk.dim('To translate, sign in and create a project:')} ${chalk.cyan(setupCommand(credentialsOption, configFilepath))} ${chalk.dim('(or set GT_PROJECT_ID and GT_API_KEY from')} ${chalk.cyan(settings.dashboardUrl)}${chalk.dim(')')}`
-      );
     }
 
     if (!reactSetup) return undefined;
