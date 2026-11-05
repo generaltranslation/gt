@@ -1698,6 +1698,7 @@ See https://www.npmjs.com/package/gt-vue`);
         reactSetup.framework === 'next-app' || buildTool !== undefined,
       docsUrl: buildTool?.docsUrl ?? REACT_QUICKSTART_URL,
       locales: resolvedLocales,
+      configFilepath,
       translationsDir: storage === 'local' ? translationsDir : undefined,
       devCommand:
         typeof scripts?.dev === 'string'

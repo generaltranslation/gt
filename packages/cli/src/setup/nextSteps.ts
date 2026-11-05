@@ -1,3 +1,4 @@
+import path from 'node:path';
 import type { SupportedReactFrameworks } from '../types/index.js';
 import { getReactFrameworkLibrary } from './frameworkUtils.js';
 
@@ -8,6 +9,8 @@ export type InitNextStepsContext = {
   /** Setup guide for the framework. */
   docsUrl: string;
   locales: string[];
+  /** The config setup wrote; named in the translate command unless default. */
+  configFilepath: string;
   /** Set when translations are stored locally. */
   translationsDir?: string;
   /** The command that starts the dev server, when the app has a dev script. */
@@ -24,6 +27,7 @@ export function getInitNextSteps({
   configuredAppEntry,
   docsUrl,
   locales,
+  configFilepath,
   translationsDir,
   devCommand,
 }: InitNextStepsContext): string[] {
@@ -31,6 +35,11 @@ export function getInitNextSteps({
   const destination = translationsDir
     ? ` and save them to ${translationsDir}`
     : '';
+  // gt translate reads gt.config.json from the working directory by default.
+  const configFlag =
+    path.resolve(configFilepath) === path.resolve('gt.config.json')
+      ? ''
+      : ` --config ${quoteShellArgument(configFilepath)}`;
   return [
     ...(configuredAppEntry
       ? []
@@ -39,11 +48,17 @@ export function getInitNextSteps({
         ]),
     `Wrap the text you want translated in <T>, or translate strings with useGT(); both come from ${library} (see ${docsUrl})`,
     `Add <LocaleSelector /> from ${library} so visitors can switch language`,
-    `Run \`npx gt translate\` to translate your content into ${locales.join(', ')}${destination}`,
+    `Run \`npx gt translate${configFlag}\` to translate your content into ${locales.join(', ')}${destination}`,
     devCommand
       ? `Start the dev server with \`${devCommand}\` and switch language`
       : 'Start your dev server and switch language',
   ];
+}
+
+function quoteShellArgument(value: string): string {
+  return /^[\w@%+=:,./-]+$/.test(value)
+    ? value
+    : `'${value.replace(/'/g, `'\\''`)}'`;
 }
 
 /** The final wizard message: one Done!, then the numbered next steps. */
