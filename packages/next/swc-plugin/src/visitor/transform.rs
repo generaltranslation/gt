@@ -102,8 +102,17 @@ impl TransformVisitor {
       }
     } else if let Some(hash_value) = extract_attribute_from_jsx_attr(&element, "_hash") {
       // A static user-supplied _hash is what the runtime looks up. It takes no
-      // part in the counter, so it is read here instead.
-      self.inject_translations_attr(&mut element, &hash_value);
+      // part in the counter, so it is read here instead. A spread or `$_hash`
+      // prop can change the hash the runtime uses, so skip those.
+      let hash_may_change = TransformVisitor::determine_has_attr(&element, "$_hash")
+        || element
+          .opening
+          .attrs
+          .iter()
+          .any(|attr| matches!(attr, JSXAttrOrSpread::SpreadElement(_)));
+      if !hash_may_change {
+        self.inject_translations_attr(&mut element, &hash_value);
+      }
     }
 
     element

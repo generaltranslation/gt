@@ -509,6 +509,18 @@ fn skips_t_with_a_dynamic_hash() {
 }
 
 #[test]
+fn skips_t_when_props_can_override_a_static_hash() {
+  for code in [
+    r#"import { T } from 'gt-next'; export const el = <T _hash="custom" {...overrides}>Hello world</T>;"#,
+    r#"import { T } from 'gt-next'; export const el = <T {...overrides} _hash="custom">Hello world</T>;"#,
+    r#"import { T } from 'gt-next'; export const el = <T _hash="custom" $_hash="other">Hello world</T>;"#,
+  ] {
+    let output = transform(code, hello_variants());
+    assert!(!output.contains("_translations"), "{output}");
+  }
+}
+
+#[test]
 fn keeps_an_existing_translations_prop_on_t_with_a_static_hash() {
   let output = transform(
     r#"
