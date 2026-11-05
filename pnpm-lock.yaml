@@ -2784,6 +2784,9 @@ importers:
       '@generaltranslation/icu':
         specifier: workspace:*
         version: link:../../../packages/icu
+      '@generaltranslation/react-core':
+        specifier: workspace:*
+        version: link:../../../packages/react-core
       '@types/d3-hierarchy':
         specifier: ^3.1.7
         version: 3.1.7
@@ -2802,6 +2805,21 @@ importers:
       gt-i18n:
         specifier: workspace:*
         version: link:../../../packages/i18n
+      gt-next:
+        specifier: workspace:*
+        version: link:../../../packages/next
+      gt-node:
+        specifier: workspace:*
+        version: link:../../../packages/node
+      gt-react:
+        specifier: workspace:*
+        version: link:../../../packages/react
+      gt-react-native:
+        specifier: workspace:*
+        version: link:../../../packages/react-native
+      gt-tanstack-start:
+        specifier: workspace:*
+        version: link:../../../packages/tanstack-start
       playwright-core:
         specifier: ^1.64.1
         version: 1.64.1
