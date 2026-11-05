@@ -5,7 +5,7 @@ export const envFiles = ['.env', '.env.local', '.env.production'] as const;
 
 let envFileApiKey: string | undefined;
 
-/** The GT_API_KEY value an env file supplied, if it replaced the shell's. */
+/** The GT_API_KEY value an env file supplied, when the shell set none. */
 export function getEnvFileApiKey(): string | undefined {
   return envFileApiKey;
 }
@@ -24,7 +24,10 @@ export function loadEnv(): void {
   } finally {
     console.log = log;
   }
-  envFileApiKey =
-    process.env.GT_API_KEY !== shellApiKey ? process.env.GT_API_KEY : undefined;
   /* eslint-enable no-console */
+  // An env file's GT_API_KEY is the app's runtime key, so an explicit shell or
+  // CI key keeps priority for the CLI.
+  if (shellApiKey !== undefined) process.env.GT_API_KEY = shellApiKey;
+  envFileApiKey =
+    shellApiKey === undefined ? process.env.GT_API_KEY : undefined;
 }

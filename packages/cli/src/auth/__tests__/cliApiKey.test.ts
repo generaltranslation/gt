@@ -47,11 +47,16 @@ describe('resolveCliApiKey', () => {
     await expect(resolveCliApiKey(baseUrl)).resolves.toBe('gtx-runtime');
   });
 
-  it('keeps a shell GT_API_KEY authoritative', async () => {
-    vi.stubEnv('GT_API_KEY', 'gtx-ci');
-    loadEnv();
+  it.each([true, false])(
+    'keeps a shell GT_API_KEY over the .env.local one (signed in: %s)',
+    async (signedIn) => {
+      vi.mocked(hasLogin).mockResolvedValue(signedIn);
+      vi.stubEnv('GT_API_KEY', 'gtx-ci');
+      fs.writeFileSync('.env.local', 'GT_API_KEY=gtx-runtime\n');
+      loadEnv();
 
-    await expect(resolveCliApiKey(baseUrl)).resolves.toBe('gtx-ci');
-    expect(hasLogin).not.toHaveBeenCalled();
-  });
+      await expect(resolveCliApiKey(baseUrl)).resolves.toBe('gtx-ci');
+      expect(hasLogin).not.toHaveBeenCalled();
+    }
+  );
 });
