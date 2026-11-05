@@ -18,8 +18,7 @@ import {
   getReactFrameworkLibrary,
 } from './frameworkUtils.js';
 import { Libraries } from '../types/libraries.js';
-import { getBuildToolSetup } from './buildTools/index.js';
-import { REACT_QUICKSTART_URL } from '../utils/constants.js';
+import { getBuildToolSetup, getSetupDocsUrl } from './buildTools/index.js';
 import type { InitOptions, OnboardingSession } from './onboarding.js';
 
 /** Everything the React application setup will do, resolved before changes. */
@@ -53,7 +52,7 @@ export async function resolveReactSetup(
     recommended: true,
     ask: async () => {
       const answer = await promptConfirm({
-        message: `Would you like to install ${library} and ${initializer ? `configure ${initializer}` : 'add the GTProvider'}? See the docs for more information: ${buildTool?.docsUrl ?? REACT_QUICKSTART_URL}`,
+        message: `Would you like to install ${library} and ${initializer ? `configure ${initializer}` : 'add the GTProvider'}? See the docs for more information: ${getSetupDocsUrl(detected.name)}`,
         defaultValue: true,
       });
       // A prompted opt-in gets a last warning; flags and defaults already chose.

@@ -3,10 +3,7 @@ import {
   OrgApiKeyPermission,
   ProjectApiKeyPermission,
 } from 'generaltranslation/api';
-import {
-  DEFAULT_TRANSLATIONS_DIR,
-  REACT_QUICKSTART_URL,
-} from '../utils/constants.js';
+import { DEFAULT_TRANSLATIONS_DIR } from '../utils/constants.js';
 import {
   applySetupConfig,
   mergeSetupConfig,
@@ -145,6 +142,7 @@ import { resolveConfig } from '../config/resolveConfig.js';
 import { loadConfig, withJsonExtension } from '../fs/config/loadConfig.js';
 import {
   getBuildToolSetup,
+  getSetupDocsUrl,
   type ManualAction,
   type SetupResult,
 } from '../setup/buildTools/index.js';
@@ -1704,7 +1702,7 @@ See https://www.npmjs.com/package/gt-vue`);
       framework: reactSetup.framework,
       configuredAppEntry:
         reactSetup.framework === 'next-app' || buildTool !== undefined,
-      docsUrl: buildTool?.docsUrl ?? REACT_QUICKSTART_URL,
+      docsUrl: getSetupDocsUrl(reactSetup.framework),
       locales: resolvedLocales,
       configFilepath,
       translationsDir: storage === 'local' ? translationsDir : undefined,
