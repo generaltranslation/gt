@@ -29,6 +29,9 @@ minimumReleaseAgeExclude:
   - gt-react-native
   - 'react'
   - 'react-dom'
+  # gt-payload pins Payload 4 betas, which publish faster than the age limit allows.
+  - payload
+  - '@payloadcms/*'
 
 catalog:
   '@babel/core': ^7.28.4
