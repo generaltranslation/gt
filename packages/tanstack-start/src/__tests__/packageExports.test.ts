@@ -206,12 +206,13 @@ describe.sequential('gt-tanstack-start package exports', () => {
         '-e',
         `
           import assert from 'node:assert/strict';
-          import { getGT, plural, t, useGT } from 'gt-tanstack-start/unstable';
+          import * as unstable from 'gt-tanstack-start/unstable';
 
-          assert.equal(typeof getGT, 'function');
-          assert.equal(typeof plural, 'function');
-          assert.equal(typeof t, 'function');
-          assert.equal(typeof useGT, 'function');
+          assert.equal(typeof unstable.getGT, 'function');
+          assert.equal(typeof unstable.plural, 'function');
+          assert.equal(typeof unstable.useGT, 'function');
+          // TanStack Start renders on the server, and t is SPA only.
+          assert.equal(unstable.t, undefined);
         `,
       ]);
     }

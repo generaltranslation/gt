@@ -12,7 +12,6 @@ const runtimeEntryNames = [
   'hooks',
   'pure',
   'unstable',
-  'unstable-rsc',
 ];
 // Each public entrypoint is emitted as a thin re-export barrel in both module
 // formats, plus a type declaration for each format.
@@ -70,15 +69,13 @@ describe('@generaltranslation/react-core package exports', () => {
           const hooks = require('@generaltranslation/react-core/hooks');
           const componentsRsc = require('@generaltranslation/react-core/components-rsc');
           const unstable = require('@generaltranslation/react-core/unstable');
-          const unstableRsc = require('@generaltranslation/react-core/unstable-rsc');
 
           assert.equal(typeof pure.msg, 'function');
           assert.equal(typeof components.T, 'function');
           assert.equal(typeof hooks.useGT, 'function');
           assert.equal(typeof componentsRsc.Branch, 'function');
           assert.equal(typeof unstable.useGT, 'function');
-          assert.equal(unstable.t, unstableRsc.t);
-          assert.equal(unstableRsc.useGT, undefined);
+          assert.equal(typeof unstable.t, 'function');
         `,
     ]);
   });
@@ -94,18 +91,15 @@ describe('@generaltranslation/react-core package exports', () => {
           import { useGT } from '@generaltranslation/react-core/hooks';
           import { Branch } from '@generaltranslation/react-core/components-rsc';
           import * as unstable from '@generaltranslation/react-core/unstable';
-          import * as unstableRsc from '@generaltranslation/react-core/unstable-rsc';
 
           assert.equal(typeof msg, 'function');
           assert.equal(typeof T, 'function');
           assert.equal(typeof useGT, 'function');
           assert.equal(typeof Branch, 'function');
-          assert.deepEqual(
-            Object.keys(unstable).sort(),
-            [...Object.keys(unstableRsc), 'useGT'].sort()
-          );
-          assert.equal(typeof unstableRsc.plural, 'function');
-          assert.equal(typeof unstableRsc.derive, 'function');
+          assert.equal(typeof unstable.t, 'function');
+          assert.equal(typeof unstable.useGT, 'function');
+          assert.equal(typeof unstable.plural, 'function');
+          assert.equal(typeof unstable.derive, 'function');
         `,
     ]);
   });

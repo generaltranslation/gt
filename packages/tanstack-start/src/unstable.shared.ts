@@ -7,7 +7,6 @@ export {
   plural,
   select,
   selectordinal,
-  t,
   useGT,
   type Fragment,
   type GT,

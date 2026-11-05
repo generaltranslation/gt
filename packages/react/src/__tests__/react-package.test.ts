@@ -254,10 +254,14 @@ describe('gt-react package exports', () => {
 
           // gt-react-native/unstable is checked against the same surface.
           assert.deepEqual(Object.keys(client).sort(), Object.keys(core).sort());
-          assert.deepEqual(Object.keys(client).sort(), Object.keys(rsc).sort());
+          // t is client-rendered (SPA) only, so server components lack it.
+          assert.deepEqual(
+            Object.keys(client).filter((name) => name !== 't').sort(),
+            Object.keys(rsc).sort()
+          );
           assert.equal(typeof client.useGT, 'function');
           assert.equal(typeof client.t, 'function');
-          assert.equal(client.t, rsc.t);
+          assert.equal(rsc.t, undefined);
           assert.notEqual(client.useGT, rsc.useGT);
         `,
     ]);

@@ -12,7 +12,6 @@ const UNSTABLE_GT_IMPORT_SOURCES = [
   'gt-react-native/unstable',
   'gt-node/unstable',
   '@generaltranslation/react-core/unstable',
-  '@generaltranslation/react-core/unstable-rsc',
 ] as const;
 
 export function isUnstableGTImportSource(source: string): boolean {

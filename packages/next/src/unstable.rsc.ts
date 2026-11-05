@@ -17,4 +17,4 @@ export {
   type GT,
   type GTOptions,
   type Placeholder,
-} from '@generaltranslation/react-core/unstable-rsc';
+} from 'gt-i18n/unstable';

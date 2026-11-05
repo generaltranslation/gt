@@ -4,7 +4,7 @@ import { setReadonlyConditionStore } from '../../condition-store/singleton-opera
 import type { ReactI18nCache } from '../../i18n-cache/ReactI18nCache';
 import { setReactI18nCache } from '../../i18n-cache/singleton-operations';
 import { initializeI18nConfig } from '../../setup/i18nConfig';
-import { t } from '../t.shared';
+import { t } from '../t';
 
 type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
 
@@ -60,23 +60,50 @@ describe('react-core/unstable t', () => {
     expect(t`Save`).toBe('Save');
   });
 
-  it('rejects module-level calls in server-rendered apps', () => {
+  it('works at module level in an SPA, before any request scope', () => {
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] }, 'SPA');
+    setConditions('fr');
+
+    // A module-level constant, evaluated once at import time.
+    const label = t`Save`;
+    expect(label).toBe('Enregistrer');
+  });
+
+  it('rejects every call in server-rendered apps in development', () => {
+    vi.stubEnv('NODE_ENV', 'development');
     initializeI18nConfig(
       { defaultLocale: 'en', locales: ['en', 'fr'] },
       'server-render'
     );
+    setConditions('fr');
+
+    try {
+      expect(() => t`Save`).toThrow(/only available in client-rendered/);
+      expect(() => t({ context: 'button' })`Save`).toThrow(/Message: "Save"/);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it('logs and renders the source in server-rendered apps in production', () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    initializeI18nConfig(
+      { defaultLocale: 'en', locales: ['en', 'fr'] },
+      'server-render'
+    );
+    setConditions('fr');
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     try {
-      // Outside development the rule logs; reading the missing store then throws.
-      expect(() => t`Save`).toThrow(/ConditionStore is unavailable/);
-      expect(() => t({ context: 'button' })`Save`).toThrow();
+      expect(t`Save`).toBe('Save');
+      expect(t({ context: 'button' })`Save`).toBe('Save');
       expect(error).toHaveBeenCalledTimes(2);
       expect(error).toHaveBeenCalledWith(
-        expect.stringContaining('Message: "Save"')
+        expect.stringContaining('use useGT()')
       );
     } finally {
       error.mockRestore();
+      vi.unstubAllEnvs();
     }
   });
 });

@@ -17,7 +17,6 @@ const repoRoot = resolve(packageRoot, '../..');
 
 const entrypoints = [
   'packages/react-core/src/components-rsc.ts',
-  'packages/react-core/src/unstable-rsc.ts',
   'packages/react/src/index.rsc.ts',
   'packages/react/src/unstable.rsc.ts',
   'packages/next/src/index.server.ts',
@@ -36,8 +35,6 @@ const workspaceSourceMap: Record<string, string> = {
   '@generaltranslation/react-core/pure': 'packages/react-core/src/pure.ts',
   '@generaltranslation/react-core/components-rsc':
     'packages/react-core/src/components-rsc.ts',
-  '@generaltranslation/react-core/unstable-rsc':
-    'packages/react-core/src/unstable-rsc.ts',
   'gt-react/unstable': 'packages/react/src/unstable.rsc.ts',
 };
 
