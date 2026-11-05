@@ -43,10 +43,25 @@ export type GTFile = {
   documentId: string;
   versionId?: string;
   fileName?: string;
+  /**
+   * Language the document is written in, when it is an original outside the
+   * configured source locale. Omitted means the configured source locale.
+   */
+  sourceLocale?: string;
+  /** Page on the site that shows this version of the document. */
+  previewUrl?: string;
 };
 
 export interface Adapter {
-  getLocales: (secrets: Secrets | null) => Promise<TranslationLocale[]>;
+  /**
+   * @param sourceLanguage - language of the document being translated, when
+   *   known. An original outside the configured source locale is also offered
+   *   the configured source locale as a target.
+   */
+  getLocales: (
+    secrets: Secrets | null,
+    sourceLanguage?: string
+  ) => Promise<TranslationLocale[]>;
   getTranslationTask: (
     document: GTFile,
     secrets: Secrets | null

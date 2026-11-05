@@ -15,7 +15,6 @@ import {
   createBadFilepathWarning,
   createGTCompilerUnresolvedWarning,
   createNextI18nConfigMismatchWarning,
-  devApiKeyIncludedInProductionError,
   invalidCanonicalLocalesError,
   invalidLocalesError,
   projectIdMissingWarn,
@@ -621,11 +620,6 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     console.warn(projectIdMissingWarn);
   }
 
-  // Check: dev API key should not be included in production
-  if (process.env.NODE_ENV === 'production' && mergedConfig.devApiKey) {
-    throw new Error(devApiKeyIncludedInProductionError);
-  }
-
   // Check: An API key is required for runtime translation
   if (
     mergedConfig.projectId && // must have projectId for this check to matter anyways
@@ -770,6 +764,14 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
         requestFunctionPaths.getRegion ? 'true' : 'false',
       _GENERALTRANSLATION_DISABLE_INVALID_LOCALE_WARNING:
         mergedConfig.disableInvalidLocaleWarning?.toString() || 'false',
+      // Development only: exposes GT_PROJECT_ID and GT_API_KEY to client code
+      // for hot reload. `next build` never sets these, so production bundles
+      // get no key.
+      ...(isDevHotReloadEnabled(mergedConfig) &&
+        !mergedConfig._disableDevHotReload && {
+          GT_PROJECT_ID: mergedConfig.projectId,
+          GT_API_KEY: mergedConfig.devApiKey,
+        }),
       // nextConfig.env intentionally makes this available to client-boundary.tsx.
       ...(mergedConfig.pathRegex !== undefined && {
         _GENERALTRANSLATION_PATH_REGEX: mergedConfig.pathRegex,

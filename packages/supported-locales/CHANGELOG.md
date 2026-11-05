@@ -1,5 +1,12 @@
 # @generaltranslation/supported-locales
 
+## 2.1.45
+
+### Patch Changes
+
+- Updated dependencies [[`c460193`](https://github.com/generaltranslation/gt/commit/c46019337dda8440a7174d783ad94a0f9b15f79a)]:
+  - generaltranslation@9.5.9
+
 ## 2.1.45-samsara.0
 
 ### Patch Changes

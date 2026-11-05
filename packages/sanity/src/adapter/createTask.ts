@@ -2,6 +2,7 @@ import type { Adapter, GTFile, GTSerializedDocument, Secrets } from '../types';
 import { getTranslationTask } from './getTranslationTask';
 import { api, gt, overrideConfig } from './core';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
+import { allowsNonDefaultSourceLocales } from '../utils/translationSource';
 
 // note: this function is used to create a new translation task
 // uploads files & calls the getTranslationTask function
@@ -23,7 +24,13 @@ export const createTask: Adapter['createTask'] = async (
           fileName,
           fileId: documentInfo.documentId,
           fileFormat: 'HTML',
-          locale: gt.sourceLocale || libraryDefaultLocale,
+          // Per-file locale with a default request-level `sourceLocale`; see
+          // uploadFiles and generaltranslation/gt-cloud#5620.
+          locale:
+            (allowsNonDefaultSourceLocales()
+              ? (serializedDocument.sourceLocale ?? documentInfo.sourceLocale)
+              : undefined) ??
+            (gt.sourceLocale || libraryDefaultLocale),
           versionId: documentInfo.versionId || undefined,
         },
       },

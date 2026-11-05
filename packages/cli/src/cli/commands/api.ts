@@ -11,6 +11,7 @@ import {
 } from 'generaltranslation/diagnostics';
 import { resolveApiBaseUrl } from '../../utils/apiBaseUrl.js';
 import { createUserTokenProvider } from '../../auth/oauth.js';
+import { resolveCliApiKey } from '../../auth/cliApiKey.js';
 import { resolveConfig } from '../../config/resolveConfig.js';
 import { exitSync } from '../../console/logging.js';
 import { loadConfig, withJsonExtension } from '../../fs/config/loadConfig.js';
@@ -377,7 +378,7 @@ export async function handleApiCommand(
     typeof config.baseUrl === 'string' ? config.baseUrl : undefined
   );
   const client = createApiClient({
-    apiKey: options.apiKey ?? process.env.GT_API_KEY,
+    apiKey: options.apiKey ?? (await resolveCliApiKey(baseUrl)),
     userTokenProvider: createUserTokenProvider({ baseUrl }),
     baseUrl,
     fetch: dependencies.fetch,

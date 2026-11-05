@@ -295,7 +295,7 @@ describe('init development credentials', () => {
       false
     );
     expect(fs.readFileSync(envPath(), 'utf8')).toBe(
-      'NEXT_PUBLIC_GT_PROJECT_ID=p1\nNEXT_PUBLIC_GT_DEV_API_KEY=gtx-secret-development-key\n'
+      'GT_PROJECT_ID=p1\nGT_API_KEY=gtx-secret-development-key\n'
     );
   });
 

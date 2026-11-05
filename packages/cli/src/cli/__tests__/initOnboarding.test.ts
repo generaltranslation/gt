@@ -390,7 +390,7 @@ describe('init and configure onboarding', () => {
       files: { gt: { output: path.join('public/_gt', '[locale].json') } },
     });
     expect(fs.readFileSync(file('.env.local'), 'utf8')).toBe(
-      `NEXT_PUBLIC_GT_PROJECT_ID=p1\nNEXT_PUBLIC_GT_DEV_API_KEY=${SECRET_KEY}\n`
+      `GT_PROJECT_ID=p1\nGT_API_KEY=${SECRET_KEY}\n`
     );
     expect(installPackage).not.toHaveBeenCalled();
   });
@@ -766,7 +766,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     });
   });
 
-  it('writes and reuses App Router public development credentials without a tooling key', async () => {
+  it('writes and reuses App Router GT_PROJECT_ID and GT_API_KEY credentials', async () => {
     vi.mocked(detectFramework).mockResolvedValue({
       name: 'next-app',
       type: 'react',
@@ -783,14 +783,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
     await run(...args, '--project-id', 'p1');
 
-    const envFile = `NEXT_PUBLIC_GT_PROJECT_ID=p1\nNEXT_PUBLIC_GT_DEV_API_KEY=${SECRET_KEY}\n`;
+    // No NEXT_PUBLIC_ key; gt-next exposes these to the client in dev only.
+    const envFile = `GT_PROJECT_ID=p1\nGT_API_KEY=${SECRET_KEY}\n`;
     expect(fs.readFileSync(file('.env.local'), 'utf8')).toBe(envFile);
     expect(api.createProjectApiKey).toHaveBeenCalledTimes(1);
-    vi.stubEnv('NEXT_PUBLIC_GT_PROJECT_ID', 'p1');
-    vi.stubEnv('NEXT_PUBLIC_GT_DEV_API_KEY', SECRET_KEY);
-    // A stale server-only pair must not override the public runtime project.
-    vi.stubEnv('GT_PROJECT_ID', 'old-project');
-    vi.stubEnv('GT_DEV_API_KEY', 'gtx-old-key');
+    vi.stubEnv('GT_PROJECT_ID', 'p1');
+    vi.stubEnv('GT_API_KEY', SECRET_KEY);
     vi.mocked(hasLogin).mockClear();
 
     await run(...args);
@@ -1223,7 +1221,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       );
       expect(readConfig().framework).toBe('next-pages');
       expect(fs.readFileSync(file('.env.local'), 'utf8')).toContain(
-        'NEXT_PUBLIC_GT_PROJECT_ID=p1\n'
+        'GT_PROJECT_ID=p1\n'
       );
     });
 

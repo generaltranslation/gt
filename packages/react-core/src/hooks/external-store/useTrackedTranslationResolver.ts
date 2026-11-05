@@ -67,7 +67,7 @@ export function useTrackedTranslationResolver(
   usePreloadCompilerLookups(messages, trackedKeysRef, locale, shouldTranslate);
 
   // (tx hot reload) Subscribe to translation updates
-  useSubscribeToTrackedLookups(
+  const trackedLookupsVersion = useSubscribeToTrackedLookups(
     trackedKeysRef,
     i18nStore.subscribeToTranslationEvents,
     getTranslateListenerKey
@@ -100,7 +100,14 @@ export function useTrackedTranslationResolver(
       }
       return translation;
     },
-    [i18nStore, translationsSnapshot, onMissingTranslation, devHotReloadEnabled]
+    // trackedLookupsVersion: change identity when a tracked translation arrives
+    [
+      i18nStore,
+      translationsSnapshot,
+      onMissingTranslation,
+      devHotReloadEnabled,
+      trackedLookupsVersion,
+    ]
   );
 }
 

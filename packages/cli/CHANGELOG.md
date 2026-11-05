@@ -35,6 +35,34 @@
   - @generaltranslation/svelte-extractor@0.1.0-samsara.0
   - @generaltranslation/supported-locales@2.1.45-samsara.0
 
+## 2.27.0
+
+### Minor Changes
+
+- [#2604](https://github.com/generaltranslation/gt/pull/2604) [`c460193`](https://github.com/generaltranslation/gt/commit/c46019337dda8440a7174d783ad94a0f9b15f79a) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Add `--org-id <orgId>` to `gt api-key create` to create an organization API key instead of a project key. It always uses your `gt login` session, even when an API key is configured, because API keys cannot create organization keys. `--permission` now also accepts organization permissions such as `org:context:read`, `org:projects:create`, and `project:api_keys:write`; passing one without `--org-id` fails before any request. Project keys are unchanged.
+
+  The SDK adds `createOrgApiKey` and the `OrgApiKeyPermission` enum, and the shared API adapter adds `createOrgApiKey`.
+
+### Patch Changes
+
+- Updated dependencies [[`c460193`](https://github.com/generaltranslation/gt/commit/c46019337dda8440a7174d783ad94a0f9b15f79a)]:
+  - generaltranslation@9.5.9
+  - @generaltranslation/python-extractor@0.2.64
+  - @generaltranslation/supported-locales@2.1.45
+  - @generaltranslation/vue-extractor@0.1.23
+
+## 2.26.12
+
+### Patch Changes
+
+- [#2600](https://github.com/generaltranslation/gt/pull/2600) [`ae3fac1`](https://github.com/generaltranslation/gt/commit/ae3fac17d59ff74c5a0c5886fcdd1f671e59746a) Thanks [@eoinest](https://github.com/eoinest)! - `gt --version`, `gt -V`, and `gt -v` now print the CLI version instead of failing with "unknown option".
+
+## 2.26.11
+
+### Patch Changes
+
+- [#2532](https://github.com/generaltranslation/gt/pull/2532) [`de29049`](https://github.com/generaltranslation/gt/commit/de29049fa16e7c4f60c4cf2baf1a83def5168479) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Keep the trailing newline of JSON files the CLI rewrites in place, such as `redirects.json`, `docs.json`, `gt.config.json`, and `package.json`, and end JSON files the CLI generates, such as `gt-lock.json`, with a newline
+
 ## 2.26.10
 
 ### Patch Changes

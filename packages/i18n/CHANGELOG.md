@@ -15,6 +15,13 @@
   - generaltranslation@10.0.0-samsara.0
   - @generaltranslation/format@1.0.0-samsara.1
 
+## 1.0.40
+
+### Patch Changes
+
+- Updated dependencies [[`c460193`](https://github.com/generaltranslation/gt/commit/c46019337dda8440a7174d783ad94a0f9b15f79a)]:
+  - generaltranslation@9.5.9
+
 ## 1.0.39
 
 ### Patch Changes

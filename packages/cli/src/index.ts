@@ -9,9 +9,11 @@ import { Libraries, isPythonLibrary } from './types/libraries.js';
 import { VueCLI } from './cli/vue.js';
 import { SvelteCLI } from './cli/svelte.js';
 import { logger } from './console/logger.js';
+import { registerVersionOption } from './cli/version.js';
 
 export function main(program: Command) {
   program.name('gt');
+  registerVersionOption(program);
 
   // Framework detection can log before the command is known, so keep startup
   // diagnostics off stdout; the first BaseCLI preAction hook then selects the

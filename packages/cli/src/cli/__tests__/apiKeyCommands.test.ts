@@ -11,8 +11,10 @@ vi.mock('../../config/generateSettings.js', () => ({
 
 vi.mock('../../utils/api.js', () => ({
   api: {
+    createOrgApiKey: vi.fn(),
     createProjectApiKey: vi.fn(),
   },
+  configureApiClient: vi.fn(),
 }));
 
 vi.mock('../../console/logging.js', () => ({
@@ -45,7 +47,7 @@ vi.mock('../../console/logger.js', () => ({
 import { BaseCLI } from '../base.js';
 import { UserAuthError } from '../../auth/errors.js';
 import { generateSettings } from '../../config/generateSettings.js';
-import { api } from '../../utils/api.js';
+import { api, configureApiClient } from '../../utils/api.js';
 import { logger } from '../../console/logger.js';
 
 const settings = {
@@ -168,13 +170,62 @@ describe('api-key create', () => {
     ],
     [
       ['--name', 'CI', '--permission', 'project:files:read', 'org:admin'],
-      /argument 'org:admin' is invalid\. Allowed choices are project:write, .*project:translations:enqueue\./,
+      /argument 'org:admin' is invalid\. Allowed choices are org:projects:create, .*project:translations:enqueue\./,
+    ],
+    [
+      [
+        '--name',
+        'CI',
+        '--permission',
+        'project:files:read',
+        'org:context:read',
+        'project:api_keys:write',
+      ],
+      'org:context:read, project:api_keys:write can only be granted to organization API keys. Pass --org-id, or remove those permissions.',
     ],
   ])('rejects %j before any request', async (args, message) => {
     await expect(run(args)).rejects.toThrow(message);
     expect(generateSettings).not.toHaveBeenCalled();
     expect(api.createProjectApiKey).not.toHaveBeenCalled();
     expect(stdout).not.toHaveBeenCalled();
+  });
+
+  it('creates an org key with --org-id using the signed-in user, not a configured API key', async () => {
+    const userTokenProvider = {
+      getAccessToken: vi.fn(),
+      refreshAccessToken: vi.fn(),
+    };
+    vi.mocked(generateSettings).mockResolvedValue({
+      apiKey: 'gtx-api-key',
+      baseUrl: 'https://api.example.com',
+      userTokenProvider,
+    } as unknown as Settings);
+    vi.mocked(api.createOrgApiKey).mockResolvedValue({
+      apiKey: { id: 'key-id', name: 'CI', key: SECRET, orgId: 'org-1' },
+    });
+
+    await run([
+      '--name',
+      'CI',
+      '--org-id',
+      'org-1',
+      '--permission',
+      'org:context:read',
+      'project:files:read',
+    ]);
+
+    expect(configureApiClient).toHaveBeenCalledWith({
+      baseUrl: 'https://api.example.com',
+      userTokenProvider,
+    });
+    expect(api.createOrgApiKey).toHaveBeenCalledWith('org-1', {
+      name: 'CI',
+      permissions: ['org:context:read', 'project:files:read'],
+    });
+    expect(api.createProjectApiKey).not.toHaveBeenCalled();
+    expect(logger.error).not.toHaveBeenCalled();
+    expect(stdout).toHaveBeenCalledTimes(1);
+    expect(stdout).toHaveBeenCalledWith(`${SECRET}\n`);
   });
 
   it('requires a project ID before creating a key', async () => {

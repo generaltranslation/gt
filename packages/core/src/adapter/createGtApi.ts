@@ -1,6 +1,7 @@
 import {
   createApiClient,
   createBranch,
+  createOrgApiKey,
   createProject,
   createProjectApiKey,
   createTag,
@@ -28,6 +29,7 @@ import {
   type ApiClientConfig,
   type AwaitJobsOptions,
   type CreateBranchData,
+  type CreateOrgApiKeyData,
   type CreateProjectApiKeyData,
   type CreateProjectData,
   type CreateTagData,
@@ -475,6 +477,19 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
       return unwrapApiResult(
         await createProjectApiKey({
           path: { projectId },
+          body,
+          client: getClient(),
+        })
+      );
+    },
+
+    async createOrgApiKey(
+      orgId: CreateOrgApiKeyData['path']['orgId'],
+      body: CreateOrgApiKeyData['body']
+    ) {
+      return unwrapApiResult(
+        await createOrgApiKey({
+          path: { orgId },
           body,
           client: getClient(),
         })
