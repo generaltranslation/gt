@@ -5,8 +5,13 @@ export const SWC_PLUGIN_SUPPORT = '16.1.0';
 // Next.js only loads SWC plugins built against an swc_core its plugin runner
 // accepts, so dist ships one wasm per runner generation.
 export const SWC_PLUGIN_WASM_FILES = {
-  // Next.js >= 16.4 (plugin runner 34, swc_core 79)
-  current: { minNextVersion: '16.4.0', fileName: 'gt_swc_plugin.wasm' },
+  // Next.js >= 16.4 (plugin runner 34, swc_core 79). Runner 34 landed in
+  // 16.4.0-canary.15; earlier 16.4 canaries still need the legacy build.
+  current: {
+    minNextVersion: '16.4.0',
+    minCanary: 15,
+    fileName: 'gt_swc_plugin.wasm',
+  },
   // Next.js 16.1 - 16.3 (swc_core 49)
   legacy: { fileName: 'gt_swc_plugin_legacy.wasm' },
 } as const;
