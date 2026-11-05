@@ -68,28 +68,15 @@ describe('getParams', () => {
     });
   });
 
-  it('prefers GT_PROJECT_ID and GT_API_KEY over the legacy public names', () => {
-    process.env.NODE_ENV = 'development';
-    process.env.GT_PROJECT_ID = 'project-id';
-    process.env.NEXT_PUBLIC_GT_PROJECT_ID = 'legacy-project-id';
-    process.env.GT_API_KEY = 'api-key';
-    process.env.NEXT_PUBLIC_GT_DEV_API_KEY = 'legacy-dev-key';
-
-    const { i18nConfigParams } = getParams();
-
-    expect(i18nConfigParams.projectId).toBe('project-id');
-    expect(i18nConfigParams.devApiKey).toBe('api-key');
-  });
-
-  it('still reads the legacy public credentials in development', () => {
+  it('does not read the NEXT_PUBLIC_ credentials earlier setups used', () => {
     process.env.NODE_ENV = 'development';
     process.env.NEXT_PUBLIC_GT_PROJECT_ID = 'legacy-project-id';
     process.env.NEXT_PUBLIC_GT_DEV_API_KEY = 'legacy-dev-key';
 
     const { i18nConfigParams } = getParams();
 
-    expect(i18nConfigParams.projectId).toBe('legacy-project-id');
-    expect(i18nConfigParams.devApiKey).toBe('legacy-dev-key');
+    expect(i18nConfigParams.projectId).toBeUndefined();
+    expect(i18nConfigParams.devApiKey).toBeUndefined();
   });
 
   it('does not read GT_DEV_API_KEY', () => {
@@ -108,7 +95,6 @@ describe('getParams', () => {
       process.env.NODE_ENV = nodeEnv;
       process.env.GT_PROJECT_ID = 'project-id';
       process.env.GT_API_KEY = 'api-key';
-      process.env.NEXT_PUBLIC_GT_DEV_API_KEY = 'legacy-dev-key';
 
       const { i18nConfigParams, nextI18nCacheParams } = getParams();
 

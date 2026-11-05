@@ -82,9 +82,10 @@ function gitCheckFailedError(file: string, stderr: string): string {
 
 export type Credentials = { apiKey: string; projectId: string };
 
-// Include server-rendered frameworks with client-side development translation.
-// Next.js reads GT_PROJECT_ID and GT_API_KEY instead; gt-next exposes them
-// to client code in development only.
+// Frameworks whose client code only sees prefixed variables; init writes the
+// development key under that prefix. Everything else, including Next.js, reads
+// GT_PROJECT_ID and GT_API_KEY (gt-next exposes them to client code in
+// development only).
 const FRAMEWORK_ENV_PREFIXES: Partial<
   Record<NonNullable<SupportedFrameworks>, string>
 > = {
@@ -98,41 +99,31 @@ const FRAMEWORK_ENV_PREFIXES: Partial<
 
 /** Names of the runtime variables init writes for this framework. */
 export function getDevelopmentEnvNames(framework?: SupportedFrameworks) {
-  if (isNextFramework(framework)) {
-    return { projectId: 'GT_PROJECT_ID', devApiKey: 'GT_API_KEY' };
-  }
-  const prefix = (framework && FRAMEWORK_ENV_PREFIXES[framework]) ?? '';
-  return {
-    projectId: `${prefix}GT_PROJECT_ID`,
-    devApiKey: `${prefix}GT_DEV_API_KEY`,
-  };
+  const prefix = framework && FRAMEWORK_ENV_PREFIXES[framework];
+  return prefix
+    ? {
+        projectId: `${prefix}GT_PROJECT_ID`,
+        devApiKey: `${prefix}GT_DEV_API_KEY`,
+      }
+    : { projectId: 'GT_PROJECT_ID', devApiKey: 'GT_API_KEY' };
 }
 
 /**
- * Whether the project has the framework's development key, or an explicit
- * API key for a server-only runtime. A tooling key cannot enable client-side
- * hot reload. Next.js uses GT_API_KEY for both, and still accepts the
- * NEXT_PUBLIC_ key earlier versions of init wrote. `settings.projectId`
- * already resolves every framework prefix. Login is checked separately.
+ * Whether the project has the framework's development key, or GT_API_KEY
+ * where that is the runtime key. A tooling key cannot enable client-side hot
+ * reload in a prefixed framework. `settings.projectId` already resolves every
+ * framework prefix. Login is checked separately.
  */
 export function areCredentialsSet(
   settings: Pick<Settings, 'projectId' | 'apiKey'>,
   framework?: SupportedFrameworks
 ): boolean {
   const { devApiKey } = getDevelopmentEnvNames(framework);
-  const devApiKeys = isNextFramework(framework)
-    ? [devApiKey, 'NEXT_PUBLIC_GT_DEV_API_KEY']
-    : [devApiKey];
   const needsDevKey = Boolean(framework && FRAMEWORK_ENV_PREFIXES[framework]);
   return Boolean(
     settings.projectId &&
-    (devApiKeys.some((name) => process.env[name]) ||
-      (!needsDevKey && settings.apiKey))
+    (process.env[devApiKey] || (!needsDevKey && settings.apiKey))
   );
-}
-
-function isNextFramework(framework?: SupportedFrameworks): boolean {
-  return framework === 'next-app' || framework === 'next-pages';
 }
 
 function assignedName(line: string): string | undefined {
@@ -344,12 +335,11 @@ async function writeEnvFileAtomically(
 }
 
 /**
- * .env.local content with the runtime credentials set. Only the hot-reload
+ * .env.local content with the runtime credentials set. Only the runtime
  * key: the CLI itself acts as the signed-in user, and CI keys are created
  * deliberately rather than dropped into .env.local. Other lines and comments
- * are left untouched, as is GT_API_KEY except in Next.js, which
- * uses it as the development key. Throws when the edit could corrupt a
- * multiline value.
+ * are left untouched, as is GT_API_KEY in frameworks that use a prefixed
+ * development key. Throws when the edit could corrupt a multiline value.
  */
 function updateCredentialsEnvContent(
   envContent: string,

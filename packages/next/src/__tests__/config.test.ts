@@ -914,20 +914,6 @@ describe('withGTConfig', () => {
       expect(params.apiKey).toBeUndefined();
     });
 
-    it('public development credentials enable services without GT_API_KEY and are not serialized', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.NODE_ENV = 'development';
-      process.env.NEXT_PUBLIC_GT_PROJECT_ID = 'proj';
-      process.env.NEXT_PUBLIC_GT_DEV_API_KEY = 'public-dev-key-value';
-
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      expect(process.env.GT_API_KEY).toBeUndefined();
-      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('true');
-      expect(params.devApiKey).toBeUndefined();
-    });
-
     it('does not parse key prefixes', async () => {
       const withGTConfig = await getWithGTConfig();
       process.env.NODE_ENV = 'development';
@@ -1259,19 +1245,6 @@ describe('withGTConfig', () => {
       const result = withGTConfig({}, { runtimeUrl: null });
 
       expect(result.env).not.toHaveProperty('GT_API_KEY');
-    });
-
-    it('ignores NEXT_PUBLIC_GT_DEV_API_KEY in production builds instead of failing them', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.NODE_ENV = 'production';
-      process.env.GT_PROJECT_ID = 'proj';
-      process.env.NEXT_PUBLIC_GT_DEV_API_KEY = 'gtx-development-key';
-
-      const result = withGTConfig();
-
-      // Without GT_API_KEY, runtime translation stays off.
-      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('false');
-      expect(JSON.stringify(result.env)).not.toContain('gtx-development-key');
     });
 
     it('never exposes GT_API_KEY to client code in production builds', async () => {
