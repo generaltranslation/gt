@@ -25,6 +25,11 @@ type DerivePlaceholder = {
   readonly [PLACEHOLDER]: 'derive';
   readonly value: string;
 };
+// Text known only at runtime, which tx translates as part of the message.
+type DynPlaceholder = {
+  readonly [PLACEHOLDER]: 'dyn';
+  readonly value: string;
+};
 // A helper's value is named, like plural({ count }, ...), or passed directly,
 // like plural(count, ...), which leaves `name` undefined: an anonymous `_gt_N`.
 type NumberPlaceholder = {
@@ -39,22 +44,30 @@ type DatePlaceholder = {
   readonly value: Primitive;
   readonly options?: Intl.DateTimeFormatOptions;
 };
-type ChoicePlaceholder = {
+type ChoicePlaceholder<UsesDyn extends boolean = boolean> = {
   readonly [PLACEHOLDER]: MessageTreeChoiceKind;
   readonly name: string | undefined;
   readonly value: Primitive;
   readonly branches: Readonly<Record<string, Branch | undefined>>;
+  readonly [USES_DYN]?: UsesDyn;
 };
 // Type-only: whether a fragment uses `n`, so places where ICU has no
 // plural count can reject it. No runtime object has this key.
 // shortcut: a value annotated as plain `Fragment` loses the flag and is checked
 // only at runtime; infer the type from part`...` to keep the check.
 declare const USES_PLURAL_COUNT: unique symbol;
-export type Fragment<UsesPluralCount extends boolean = boolean> = {
+// Type-only, the same way: whether a part or branch holds dyn() text, so gt,
+// t and msg can reject it wherever it is nested.
+declare const USES_DYN: unique symbol;
+export type Fragment<
+  UsesPluralCount extends boolean = boolean,
+  UsesDyn extends boolean = boolean,
+> = {
   readonly [PLACEHOLDER]: 'fragment';
   readonly strings: readonly string[];
   readonly holes: readonly unknown[];
   readonly [USES_PLURAL_COUNT]?: UsesPluralCount;
+  readonly [USES_DYN]?: UsesDyn;
 };
 export type Placeholder =
   | DerivePlaceholder
@@ -85,6 +98,11 @@ type OneKey<O> = keyof O extends never
     : O;
 // `n`, or a part that uses it.
 type PluralCountHole = typeof n | Fragment<true>;
+// dyn() text, or a part or plural/select that holds it.
+type DynHole =
+  | DynPlaceholder
+  | Fragment<boolean, true>
+  | ChoicePlaceholder<true>;
 /**
  * ICU has a plural count only inside a plural or selectordinal branch, so a
  * message (`AllowsPluralCount` false) rejects `n` and fragments that
@@ -94,7 +112,7 @@ type CheckHole<H, AllowsPluralCount extends boolean> = H extends PluralCountHole
   ? AllowsPluralCount extends true
     ? H
     : 'n, the plural count, only works inside a plural or selectordinal branch'
-  : H extends Placeholder | HoleValue
+  : H extends Placeholder | DynPlaceholder | HoleValue
     ? H
     : H extends Date
       ? DateHoleError
@@ -107,11 +125,21 @@ type CheckHole<H, AllowsPluralCount extends boolean> = H extends PluralCountHole
               ? H
               : DateHoleError
         : 'placeholder is not a value, ${{ name }}, or an unstable helper';
+/**
+ * dyn() text has no catalog translation, so only tx, which translates at
+ * runtime, accepts it. Distributes, so `flag ? dyn(text) : ''` is rejected too.
+ */
+type RejectDyn<H, AllowsPluralCount extends boolean> = H extends DynHole
+  ? 'dyn() text is translated at runtime, so it only works in tx'
+  : CheckHole<H, AllowsPluralCount>;
 export type CheckHoles<
   H extends readonly unknown[],
   AllowsPluralCount extends boolean = false,
+  AllowsDyn extends boolean = false,
 > = {
-  [I in keyof H]: CheckHole<H[I], AllowsPluralCount>;
+  [I in keyof H]: AllowsDyn extends true
+    ? CheckHole<H[I], AllowsPluralCount>
+    : RejectDyn<H[I], AllowsPluralCount>;
 };
 // Distributes, so a hole like `flag ? n : 'none'` may be a PluralCountHole.
 type MayBe<T, U> = T extends U ? true : false;
@@ -119,6 +147,11 @@ type MayBe<T, U> = T extends U ? true : false;
 type SomeHoleIs<H extends readonly unknown[], U> = true extends {
   [I in keyof H]: MayBe<H[I], U>;
 }[number]
+  ? true
+  : false;
+type SomeBranchIs<B, U> = true extends {
+  [K in keyof B]: MayBe<B[K], U>;
+}[keyof B]
   ? true
   : false;
 
@@ -286,7 +319,7 @@ export function plural<
 >(
   value: number | bigint | OneKey<O>,
   branches: CheckBranches<B, PluralCategory | Other, ExactPluralKey>
-): Placeholder {
+): ChoicePlaceholder<SomeBranchIs<B, DynHole>> {
   return choice('plural', value, branches as Record<string, Branch>);
 }
 
@@ -296,7 +329,7 @@ export function selectordinal<
 >(
   value: number | bigint | OneKey<O>,
   branches: CheckBranches<B, PluralCategory | Other, ExactPluralKey>
-): Placeholder {
+): ChoicePlaceholder<SomeBranchIs<B, DynHole>> {
   return choice('selectordinal', value, branches as Record<string, Branch>);
 }
 
@@ -309,7 +342,7 @@ export function select<
 >(
   value: A extends string ? A : OneKey<A>,
   branches: SelectBranches<B, SelectValue<A>>
-): Placeholder {
+): ChoicePlaceholder<SomeBranchIs<B, DynHole>> {
   // SelectBranches is only an error message when the call fails to type-check.
   return choice('select', value, branches as Record<string, Branch>);
 }
@@ -334,8 +367,8 @@ export function date<const O extends Record<string, Date | number>>(
 /** Branch text that contains placeholders, written like a gt message. */
 export function part<const H extends readonly unknown[]>(
   strings: TemplateStringsArray,
-  ...holes: CheckHoles<H, true>
-): Fragment<SomeHoleIs<H, PluralCountHole>> {
+  ...holes: CheckHoles<H, true, true>
+): Fragment<SomeHoleIs<H, PluralCountHole>, SomeHoleIs<H, DynHole>> {
   return { [PLACEHOLDER]: 'fragment', strings, holes };
 }
 
@@ -357,7 +390,20 @@ export function derive<const T extends string>(
   return { [PLACEHOLDER]: 'derive', value };
 }
 
-export function isPlaceholder(value: unknown): value is Placeholder {
+/**
+ * Text known only at runtime, like a database value, which tx translates as
+ * part of the message in one request: `` tx`${dyn(greeting)}, ${{ name }}!` ``.
+ * gt, t and msg render from the catalog, which has no translation for such
+ * text, so their types reject it. Each distinct text is its own message, and
+ * it is sent for translation.
+ */
+export function dyn(text: string): DynPlaceholder {
+  return { [PLACEHOLDER]: 'dyn', value: text };
+}
+
+export function isPlaceholder(
+  value: unknown
+): value is Placeholder | DynPlaceholder {
   return typeof value === 'object' && value !== null && PLACEHOLDER in value;
 }
 
@@ -398,11 +444,11 @@ export function getVariable(hole: unknown): [name: string, value: unknown] {
   return [keys[0], (hole as Record<string, unknown>)[keys[0]]];
 }
 
-function choice(
+function choice<UsesDyn extends boolean>(
   kind: ChoicePlaceholder[typeof PLACEHOLDER],
   value: unknown,
   branches: Record<string, Branch | undefined>
-): Placeholder {
+): ChoicePlaceholder<UsesDyn> {
   const [name, v] = entry(value);
   return { [PLACEHOLDER]: kind, name, value: v, branches };
 }

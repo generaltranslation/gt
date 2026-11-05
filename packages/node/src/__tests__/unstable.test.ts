@@ -2,7 +2,7 @@ import { hashSource } from 'generaltranslation/id';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { initializeGT } from '../setup/initializeGT';
 import { withGT } from '../setup/withGT';
-import { getGT, getMessages, msg } from '../unstable';
+import { getGT, getMessages, msg, tx } from '../unstable';
 
 type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
 
@@ -40,5 +40,10 @@ describe.sequential('gt-node/unstable', () => {
     expect(await withGT('fr', async () => (await getMessages())(save))).toBe(
       'Save'
     );
+  });
+
+  it('translates with tx inside withGT()', async () => {
+    expect(await withGT('fr', () => tx`Save`)).toBe('Enregistrer');
+    expect(await withGT('en', () => tx`Save`)).toBe('Save');
   });
 });

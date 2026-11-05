@@ -63,24 +63,13 @@ export function renderMessage(
   tree: MessageTree,
   values: Record<string, unknown>,
   locale: string,
-  { context, maxChars, requiresReview, $_hash }: MessageTreeMetadata,
+  metadata: MessageTreeMetadata,
   lookupTranslation: LookupTreeTranslation
 ): string {
+  const { maxChars } = metadata;
   const defaultLocale = getI18nConfig().getDefaultLocale();
-  const hash = hashMessageTree(tree, {
-    context,
-    maxChars,
-    requiresReview,
-    $_hash,
-  });
-  const options: MessageTreeLookupOptions = {
-    $format: 'ICU_TREE',
-    $locale: locale,
-    $context: context,
-    $maxChars: maxChars,
-    $requiresReview: requiresReview,
-    $_hash: hash,
-  };
+  const options = createMessageTreeLookupOptions(tree, locale, metadata);
+  const hash = options.$_hash;
   const translation = lookupTreeTranslation(
     lookupTranslation(tree, options),
     locale,
@@ -108,6 +97,23 @@ export function renderMessage(
         locales: getI18nConfig().resolveCanonicalLocale(outputLocale),
         maxChars,
       });
+}
+
+/** The lookup options of a tree in `locale`, hashing it unless `$_hash` is set. */
+export function createMessageTreeLookupOptions(
+  tree: MessageTree,
+  locale: string,
+  metadata: MessageTreeMetadata
+): MessageTreeLookupOptions {
+  const { context, maxChars, requiresReview } = metadata;
+  return {
+    $format: 'ICU_TREE',
+    $locale: locale,
+    $context: context,
+    $maxChars: maxChars,
+    $requiresReview: requiresReview,
+    $_hash: hashMessageTree(tree, metadata),
+  };
 }
 
 function createTranslationFormatWarning(

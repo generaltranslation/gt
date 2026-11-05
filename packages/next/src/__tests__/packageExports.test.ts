@@ -257,6 +257,13 @@ describe('gt-next package exports', () => {
             // No global sync locale store backs a t tag in gt-next.
             assert.equal(unstable.t, undefined);
             assert.equal(typeof unstable[${JSON.stringify(messagesExport)}], 'function');
+            // tx, and dyn for its runtime text, are server-only.
+            assert.equal(typeof unstable.tx, ${JSON.stringify(
+              unstableEntry === 'gt-next/unstable/server'
+                ? 'function'
+                : 'undefined'
+            )});
+            assert.equal(typeof unstable.dyn, typeof unstable.tx);
             assert.equal(getI18nCache(), cache);
             assert.deepEqual(getI18nCache().lookupTranslation('fr', ['Save'], { $format: 'ICU_TREE', $_hash: 'save' }), tree);
           `,

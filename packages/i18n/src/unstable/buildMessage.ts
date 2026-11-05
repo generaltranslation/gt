@@ -58,6 +58,8 @@ function toTreeHole(
         strings: hole.strings,
         holes: hole.holes.map((nested) => toTreeHole(nested, values)),
       };
+    // dyn() text joins the message like derive() text; tx translates it in context.
+    case 'dyn':
     case 'derive':
       // Derived text is static, so it reads as if written in the template.
       return { kind: 'fragment', strings: [hole.value], holes: [] };
