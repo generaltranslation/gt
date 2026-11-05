@@ -5,6 +5,7 @@ const IDEMPOTENT_METHODS = new Set(['GET', 'HEAD', 'OPTIONS', 'PUT', 'DELETE']);
 // queryFiles and queryFilesContent only read, so they retry like idempotent methods.
 const READ_ONLY_POST_PATHNAME =
   /\/v2\/projects\/[^/]+\/files(?:\/content)?\/query$/;
+const COMPRESSION_THRESHOLD_BYTES = 32 * 1024;
 export const DEFAULT_TIMEOUT_MS = 60_000;
 // setTimeout runs a longer delay, Infinity included, after 1ms.
 const MAX_TIMER_DELAY_MS = 2 ** 31 - 1;
@@ -122,6 +123,57 @@ function retryDelay(
   return (
     INITIAL_DELAY_MS * (retryPolicy === 'linear' ? attempt + 1 : 2 ** attempt)
   );
+}
+
+/**
+ * Gzips request bodies of at least 32 KiB. If the server rejects the encoding
+ * (415, or 400 `invalid_content_encoding`), resends the uncompressed request once.
+ */
+export function createCompressingFetch(
+  fetchImplementation: typeof fetch
+): typeof fetch {
+  return async (input, init) => {
+    const request = new Request(input, init);
+    // Wrappers below read the caller's signal from init (see callerSignal).
+    const signal = callerSignal(input, init) ?? request.signal;
+    if (
+      request.body === null ||
+      request.headers.has('Content-Encoding') ||
+      typeof globalThis.CompressionStream !== 'function'
+    ) {
+      return fetchImplementation(request, { signal });
+    }
+    signal.throwIfAborted();
+    const bytes = await request.clone().arrayBuffer();
+    if (bytes.byteLength < COMPRESSION_THRESHOLD_BYTES) {
+      return fetchImplementation(request, { signal });
+    }
+
+    const body = await new Response(
+      new Blob([bytes])
+        .stream()
+        .pipeThrough(new CompressionStream('gzip'), { signal })
+    ).arrayBuffer();
+    const headers = new Headers(request.headers);
+    headers.set('Content-Encoding', 'gzip');
+    // A caller-set length describes the uncompressed body; undici rejects it.
+    headers.delete('Content-Length');
+    const response = await fetchImplementation(
+      new Request(request, { method: request.method, body, headers }),
+      { signal }
+    );
+
+    if (response.status !== 415 && response.status !== 400) return response;
+    if (response.status === 400) {
+      const error: { code?: unknown } | undefined = await response
+        .clone()
+        .json()
+        .catch(() => undefined);
+      if (error?.code !== 'invalid_content_encoding') return response;
+    }
+    await response.body?.cancel();
+    return fetchImplementation(request, { signal });
+  };
 }
 
 export function createRetryingFetch({
