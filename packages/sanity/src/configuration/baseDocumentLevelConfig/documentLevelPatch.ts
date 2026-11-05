@@ -5,7 +5,10 @@ import { BaseDocumentMerger } from '../../serialization/BaseDocumentMerger';
 
 import { findLatestDraft } from '../utils/findLatestDraft';
 import { requireSourceDocument } from '../utils/requireSourceDocument';
-import { createI18nDocAndPatchMetadata } from './helpers/createI18nDocAndPatchMetadata';
+import {
+  createI18nDocAndPatchMetadata,
+  sourceEntryDiagnostic,
+} from './helpers/createI18nDocAndPatchMetadata';
 import { getOrCreateTranslationMetadata } from './helpers/getOrCreateTranslationMetadata';
 import { patchI18nDoc } from './helpers/patchI18nDoc';
 import type { GTFile } from '../../types';
@@ -77,9 +80,7 @@ export const documentLevelPatch = async (
   //the id of the translated document should be on the metadata if it exists
   const translations =
     translationMetadata.translations as TranslationReference[];
-  const i18nDocId = translations.find(
-    (translation) => translation.language === localeId
-  )?.value?._ref;
+  const i18nDocId = targetDocumentId(translations, localeId, docInfo);
 
   if (i18nDocId) {
     //get draft or published
@@ -134,9 +135,11 @@ export const documentLevelPatch = async (
     );
     const freshTranslations =
       freshTranslationMetadata.translations as TranslationReference[];
-    const freshI18nDocId = freshTranslations.find(
-      (translation) => translation.language === localeId
-    )?.value?._ref;
+    const freshI18nDocId = targetDocumentId(
+      freshTranslations,
+      localeId,
+      docInfo
+    );
 
     const freshI18nDoc = freshI18nDocId
       ? await findLatestDraft(freshI18nDocId, client)
@@ -174,6 +177,22 @@ export const documentLevelPatch = async (
     );
   }
 };
+
+/** The group's document for `localeId`; a group that records the source itself there would have the import overwrite the original. */
+function targetDocumentId(
+  translations: TranslationReference[],
+  localeId: string,
+  docInfo: GTFile
+): string | undefined {
+  const id = translations.find(
+    (translation) => translation.language === localeId
+  )?.value?._ref;
+  const sourceId = getPublishedId(docInfo.documentId);
+  if (id && getPublishedId(id) === sourceId) {
+    throw new Error(sourceEntryDiagnostic(localeId, sourceId));
+  }
+  return id;
+}
 
 function sameLanguageDiagnostic(documentId: string, localeId: string): string {
   return createDiagnosticMessage({

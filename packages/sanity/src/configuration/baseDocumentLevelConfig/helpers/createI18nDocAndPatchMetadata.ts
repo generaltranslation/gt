@@ -35,16 +35,7 @@ export async function createI18nDocAndPatchMetadata(
     (existingLocaleKey?.value as { _ref?: string } | undefined)?._ref ===
       publishedSourceDocumentId
   ) {
-    throw new Error(
-      createDiagnosticMessage({
-        source: 'gt-sanity',
-        severity: 'Error',
-        whatHappened: `Skipped importing a ${localeId} translation`,
-        why: `the translation group already records the source document as its ${localeId} entry`,
-        fix: 'Translate into locales other than the original document language',
-        details: [`Document ID: ${publishedSourceDocumentId}`],
-      })
-    );
+    throw new Error(sourceEntryDiagnostic(localeId, publishedSourceDocumentId));
   }
   const operation = existingLocaleKey ? 'replace' : 'after';
   const location = existingLocaleKey
@@ -110,4 +101,19 @@ export async function createI18nDocAndPatchMetadata(
       ])
     )
     .commit();
+}
+
+/** The import error for a group that records the source document under the target locale. */
+export function sourceEntryDiagnostic(
+  localeId: string,
+  publishedSourceDocumentId: string
+): string {
+  return createDiagnosticMessage({
+    source: 'gt-sanity',
+    severity: 'Error',
+    whatHappened: `Skipped importing a ${localeId} translation`,
+    why: `the translation group already records the source document as its ${localeId} entry`,
+    fix: 'Translate into locales other than the original document language',
+    details: [`Document ID: ${publishedSourceDocumentId}`],
+  });
 }
