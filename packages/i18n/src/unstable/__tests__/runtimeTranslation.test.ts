@@ -33,7 +33,7 @@ describe('gt-i18n/unstable runtime translation', () => {
     initializeI18nConfig({
       defaultLocale: 'en',
       locales: ['en', 'fr'],
-      devApiKey: 'dev-key',
+      apiKey: 'dev-key',
       projectId: 'project-id',
     });
     const cache = new I18nCache({ loadTranslations: async () => ({}) });
@@ -74,7 +74,7 @@ describe('gt-i18n/unstable runtime translation', () => {
     initializeI18nConfig({
       defaultLocale: 'en',
       locales: ['en', 'fr'],
-      devApiKey: 'dev-key',
+      apiKey: 'dev-key',
       projectId: 'project-id',
     });
     // Expires at once, so a reload would leave this GT's cache behind.

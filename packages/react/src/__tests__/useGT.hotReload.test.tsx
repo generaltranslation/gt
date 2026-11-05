@@ -61,7 +61,7 @@ describe('useGT dev hot reload', () => {
     initializeGT({
       defaultLocale: 'en',
       locales: ['en', 'fr'],
-      devApiKey: 'gtx-dev-test',
+      apiKey: 'gtx-dev-test',
       projectId: 'test-project',
     });
     element = document.createElement('div');

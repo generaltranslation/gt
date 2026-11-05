@@ -34,7 +34,6 @@ function setup({ enableI18n = true } = {}) {
   initializeI18nConfig({
     defaultLocale: 'en',
     locales: ['en', 'fr'],
-    devApiKey: 'dev-key',
     projectId: 'project-id',
   });
   setI18nCache(
