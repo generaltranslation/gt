@@ -65,7 +65,10 @@ import {
   resolveDevelopmentProject,
   signInForSetup,
 } from '../setup/developmentCredentials.js';
-import { exitIfUnsupportedSetupTarget } from '../setup/setupTarget.js';
+import {
+  exitIfUnsupportedSetupTarget,
+  reactNativeSetupError,
+} from '../setup/setupTarget.js';
 import {
   asRecord,
   attachConfigureFlags,
@@ -937,6 +940,10 @@ export class BaseCLI {
       displaySetupHeader(session, 'Running setup wizard...');
 
       const detected = await detectFramework();
+      // Stop before any change rather than set React Native up as web React.
+      if (detected.type === 'react-native') {
+        throw new OnboardingError(reactNativeSetupError);
+      }
       const reactDetected = detected.type === 'react' ? detected : undefined;
       if (options.framework && !reactDetected) {
         session.reject(
@@ -1057,10 +1064,11 @@ export class BaseCLI {
       session.defaults = options.defaults ?? false;
       const detected = await detectFramework();
       const configFilepath = setupConfigPath(options);
-      // Detection only picks env names here; it is not saved.
+      // Detection only picks env names here; it is not saved. React Native
+      // keeps the generic React env names configure has always written.
       const framework =
         getConfiguredFramework(readSetupConfig(configFilepath)) ??
-        detected.name;
+        (detected.type === 'react-native' ? 'react' : detected.name);
       await this.handleInitCommand(session, options, {
         configFilepath,
         framework,
