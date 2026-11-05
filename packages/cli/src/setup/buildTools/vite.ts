@@ -1,6 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { DEFAULT_VITE_TRANSLATIONS_DIR } from '../../utils/constants.js';
+import {
+  DEFAULT_VITE_TRANSLATIONS_DIR,
+  REACT_SPA_QUICKSTART_URL,
+} from '../../utils/constants.js';
 import {
   inspectViteSPA,
   setupViteSPA,
@@ -17,6 +20,7 @@ export const viteSetup: BuildToolSetup = {
   initializer: 'initializeGTSPA',
   ownsLoader: true,
   skipsGTInstall: (isUsingGT) => isUsingGT,
+  docsUrl: REACT_SPA_QUICKSTART_URL,
   devCredentialsOption: '--live-translations',
   async preflight(appDirectory) {
     await inspectViteSPA(appDirectory);
