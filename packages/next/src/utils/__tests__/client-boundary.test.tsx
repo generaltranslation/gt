@@ -408,6 +408,56 @@ describe('Client_GTProvider', () => {
     await act(async () => root.unmount());
   });
 
+  it('renders the provider while usePathname() suspends, then runs the path check', async () => {
+    process.env._GENERALTRANSLATION_PATH_REGEX = '.*';
+    mockGetI18nConfig.mockReturnValue({
+      determineLocale: ([locale]: string[]) => locale,
+      getDefaultLocale: () => 'en',
+      getLocales: () => ['en', 'en-GB', 'fr'],
+    });
+    document.cookie = 'generaltranslation.referrer-locale=;max-age=0;path=/';
+    // Under Cache Components, usePathname() suspends until request time.
+    let resolvePathname!: (pathname: string) => void;
+    const pathname = new Promise<string>((resolve) => {
+      resolvePathname = resolve;
+    });
+    mockPathname.mockImplementation(() => React.use(pathname));
+    const { Client_GTProvider } = await import('../client-boundary');
+    const container = document.createElement('div');
+    const root = createRoot(container);
+
+    try {
+      await act(async () => {
+        root.render(
+          <Client_GTProvider
+            supportsLocaleRefresh={true}
+            dictionaries={{}}
+            locale='en-GB'
+            translations={{}}
+          >
+            content
+          </Client_GTProvider>
+        );
+      });
+
+      expect(container.textContent).toBe('content');
+      expect(document.cookie).not.toContain(
+        'generaltranslation.referrer-locale=en-GB'
+      );
+      expect(mockRefreshServerComponents).not.toHaveBeenCalled();
+
+      await act(async () => resolvePathname('/fr'));
+
+      expect(container.textContent).toBe('content');
+      expect(document.cookie).toContain(
+        'generaltranslation.referrer-locale=en-GB'
+      );
+      expect(mockRefreshServerComponents).toHaveBeenCalledOnce();
+    } finally {
+      await act(async () => root.unmount());
+    }
+  });
+
   it('refreshes server content without locale routing', async () => {
     document.cookie =
       'generaltranslation.locale-routing-enabled=;max-age=0;path=/';
