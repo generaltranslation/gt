@@ -64,8 +64,9 @@ describe('useTranslations dev hot reload', () => {
 
     function Group() {
       const t = useTranslations();
-      const direct = t.obj('group').title as string;
-      const memoized = useMemo(() => t.obj('group').title as string, [t]);
+      const title = () => (t.obj('group') as { title: string }).title;
+      const direct = title();
+      const memoized = useMemo(() => title(), [t]);
       return <span>{`${direct}|${memoized}`}</span>;
     }
 
