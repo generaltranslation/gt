@@ -187,7 +187,7 @@ export function useSetLocale(): (locale: string) => Promise<void> {
 }
 
 function createGT(state: GTState): GTFunctionType {
-  return (message, options = {}) => {
+  return (message, options = {}, inline) => {
     // Read the revision so template calls re-run after async cache updates.
     void state.revision;
     const config = getI18nConfig();
@@ -202,9 +202,12 @@ function createGT(state: GTState): GTFunctionType {
     let translation: string | undefined;
     if (config.requiresTranslation(locale)) {
       const cache = getI18nCache();
-      translation = cache.lookupTranslation(locale, message, lookupOptions) as
-        | string
-        | undefined;
+      // Translations embedded at the call site win over loaded translations
+      translation =
+        cache.lookupInlineTranslation(locale, message, lookupOptions, inline) ??
+        (cache.lookupTranslation(locale, message, lookupOptions) as
+          | string
+          | undefined);
     }
 
     return interpolateMessage({
