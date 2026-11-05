@@ -1,0 +1,141 @@
+{
+  "2f7614194b30b269": "Informe de una baliza averiada a la oficina del puerto.",
+  "7a542150e2f132e8": {
+    "t": "span",
+    "i": 1,
+    "c": "El atlas lo mantienen cartógrafos voluntarios."
+  },
+  "c5e3c0aed806d1a4": {
+    "t": "h1",
+    "i": 1,
+    "c": "Atlas de faros"
+  },
+  "91fa6e5e8a549597": "Portada del atlas",
+  "02e1f7a8e5564bec": "Abrir la guía del puerto",
+  "488defd997244a42": "Leer el registro de señales",
+  "de3b8102ea65147c": "Leer los avisos del puerto",
+  "c01396a4b7c75c68": "Edición de la guía del puerto para la travesía de invierno.",
+  "1614eb9a429bba2b": "Las tasas de fondeo no se cobran a los buques de rescate.",
+  "1ca2d3c56eb45b98": [
+    {
+      "t": "h2",
+      "i": 1,
+      "c": "Guía del puerto para capitanes prudentes"
+    },
+    {
+      "t": "p",
+      "i": 2,
+      "c": [
+        "La guía se imprimió por primera vez en ",
+        {
+          "i": 3,
+          "k": "_gt_n_3",
+          "v": "n"
+        },
+        "."
+      ]
+    },
+    {
+      "t": "p",
+      "i": 4,
+      "c": [
+        "La redactaron los guardianes de la ",
+        {
+          "t": "em",
+          "i": 5,
+          "c": "costa norte"
+        },
+        "."
+      ]
+    }
+  ],
+  "b75e910819132640": "El muelle norte está cerrado por reparaciones.",
+  "4dd97d142f7b9599": "El práctico {pilot} recibe a cada ferry al amanecer.",
+  "dc1a8fb3e47ec682": "¡Bienvenido a bordo, {traveler}!",
+  "0f82ab45be785eea": "Mapas dibujados a mano y verificados por marineros.",
+  "0b1b597c32477308": "Los avisos de niebla se publican en el muelle.",
+  "6f85251079d9d9cd": "Las tablas de mareas se actualizan cada mañana al amanecer.",
+  "72d5b2b493077458": "Tu farol está encendido, {name}.",
+  "ac3d32d3424ecd81": {
+    "t": "p",
+    "i": 1,
+    "c": [
+      "Bienvenida a bordo, ",
+      {
+        "i": 2,
+        "k": "_gt_value_2",
+        "v": "v"
+      },
+      ". El atlas registra",
+      " ",
+      {
+        "t": "b",
+        "i": 3,
+        "c": [
+          {
+            "i": 4,
+            "k": "_gt_n_4",
+            "v": "n"
+          },
+          " islas costeras"
+        ]
+      },
+      " ",
+      "y a cada ",
+      {
+        "t": "i",
+        "i": 5,
+        "c": "farero"
+      },
+      " que las cuida."
+    ]
+  },
+  "da1bb78d9dad069a": {
+    "t": "Plural",
+    "i": 1,
+    "d": {
+      "b": {
+        "one": {
+          "t": "p",
+          "i": 2,
+          "c": "Un barco pesquero está amarrado esta noche."
+        },
+        "other": {
+          "t": "p",
+          "i": 2,
+          "c": "Varios barcos pesqueros están amarrados esta noche."
+        }
+      },
+      "t": "p"
+    }
+  },
+  "d63716aca0356aeb": [
+    "Aviso actual: ",
+    {
+      "t": "Derive",
+      "i": 1,
+      "c": "Temporada de vigilancia de tormentas"
+    }
+  ],
+  "d19e4245fe8bf3e6": "Tres destellos cortos indican que el canal está despejado.",
+  "25a1cddada121287": [
+    {
+      "t": "h2",
+      "i": 1,
+      "c": "Registro de señales de la guardia nocturna"
+    },
+    {
+      "t": "p",
+      "i": 2,
+      "c": [
+        "Las entradas las escribe ",
+        {
+          "i": 3,
+          "k": "_gt_value_3",
+          "v": "v"
+        },
+        " después de cada revisión del farol."
+      ]
+    }
+  ]
+}

@@ -73,7 +73,14 @@ export function createEsmDeclarationStubsPlugin(
   };
 }
 
-export function createTsdownConfig(entry: string[], deps?: UserConfig['deps']) {
+/**
+ * CJS (with declarations) and ESM configs for the same entries. Name entries
+ * with a record when two entry files share a base name.
+ */
+export function createTsdownConfig(
+  entry: string[] | Record<string, string>,
+  deps?: UserConfig['deps']
+) {
   return [
     {
       entry,

@@ -85,6 +85,16 @@
         "types": "./dist/components-rsc.d.mts",
         "default": "./dist/components-rsc.mjs"
       }
+    },
+    "./internal/experimental": {
+      "require": {
+        "types": "./dist/experimental/internal.d.ts",
+        "default": "./dist/experimental/internal.cjs"
+      },
+      "import": {
+        "types": "./dist/experimental/internal.d.mts",
+        "default": "./dist/experimental/internal.mjs"
+      }
     }
   },
   "keywords": [

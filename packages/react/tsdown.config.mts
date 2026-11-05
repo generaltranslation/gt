@@ -26,24 +26,39 @@ const contextDeps = {
   alwaysBundle: [/^@generaltranslation\/format\//, /^generaltranslation\//],
 };
 
-const entries = [
-  'src/index.rsc.ts',
-  'src/index.client.ts',
-  'src/index.server.ts',
-  'src/index.types.ts',
-  'src/macros.ts',
-];
+// Output name → source. The experimental entries (locale twins) re-export
+// the regular entry of the same runtime and add their twin versions. They
+// have no 'use client' directive, so the use-client boundary plugin keeps
+// that regular entry external (`../index.client.mjs`) instead of bundling a
+// second copy of it.
+const namedEntries: Record<string, string> = {
+  'index.rsc': 'src/index.rsc.ts',
+  'index.client': 'src/index.client.ts',
+  'index.server': 'src/index.server.ts',
+  'index.types': 'src/index.types.ts',
+  macros: 'src/macros.ts',
+  'experimental/index.rsc': 'src/experimental/index.rsc.ts',
+  'experimental/index.client': 'src/experimental/index.client.ts',
+  'experimental/index.server': 'src/experimental/index.server.ts',
+  'experimental/index.types': 'src/experimental/index.types.ts',
+};
+const entries = Object.values(namedEntries);
 
-// src/index.types.ts only backs the exports map's "types" conditions; its
-// declaration outputs are published but its runtime bundles are unreachable,
-// so they are deleted after each build.
-const typesOnlyEntry = 'src/index.types.ts';
+// The types entries only back the exports map's "types" conditions; their
+// declaration outputs are published but their runtime bundles are
+// unreachable, so they are deleted after each build.
+const typesOnlyEntries = new Set(['index.types', 'experimental/index.types']);
 
 export default defineConfig(
   withPackageChecks(
-    entries.flatMap((entry, index) => {
-      const entryDeps = entry.startsWith('src/index.') ? contextDeps : deps;
-      const [cjsConfig, esmConfig] = createTsdownConfig([entry], entryDeps);
+    Object.entries(namedEntries).flatMap(([name, entry], index) => {
+      const entryDeps = /^(experimental\/)?index\./.test(name)
+        ? contextDeps
+        : deps;
+      const [cjsConfig, esmConfig] = createTsdownConfig(
+        { [name]: entry },
+        entryDeps
+      );
 
       return [
         {
@@ -59,10 +74,10 @@ export default defineConfig(
               outputExtension: '.cjs',
             }),
           ],
-          ...(entry === typesOnlyEntry && {
+          ...(typesOnlyEntries.has(name) && {
             onSuccess: createRemoveRuntimeArtifactsHook(process.cwd(), 'dist', [
-              'index.types.cjs',
-              'index.types.cjs.map',
+              `${name}.cjs`,
+              `${name}.cjs.map`,
             ]),
           }),
         },
@@ -79,10 +94,10 @@ export default defineConfig(
               outputExtension: '.mjs',
             }),
           ],
-          ...(entry === typesOnlyEntry && {
+          ...(typesOnlyEntries.has(name) && {
             onSuccess: createRemoveRuntimeArtifactsHook(process.cwd(), 'dist', [
-              'index.types.mjs',
-              'index.types.mjs.map',
+              `${name}.mjs`,
+              `${name}.mjs.map`,
             ]),
           }),
         },

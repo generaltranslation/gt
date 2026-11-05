@@ -1,0 +1,141 @@
+{
+  "2f7614194b30b269": "Signalez une balise en panne à la capitainerie.",
+  "7a542150e2f132e8": {
+    "t": "span",
+    "i": 1,
+    "c": "L’atlas est tenu à jour par des cartographes bénévoles."
+  },
+  "c5e3c0aed806d1a4": {
+    "t": "h1",
+    "i": 1,
+    "c": "Atlas des phares"
+  },
+  "91fa6e5e8a549597": "Page d’accueil de l’atlas",
+  "02e1f7a8e5564bec": "Ouvrir le guide du port",
+  "488defd997244a42": "Lire le journal des signaux",
+  "de3b8102ea65147c": "Lire les avis du port",
+  "c01396a4b7c75c68": "Édition du guide du port pour la traversée d’hiver.",
+  "1614eb9a429bba2b": "Les droits de mouillage sont supprimés pour les navires de sauvetage.",
+  "1ca2d3c56eb45b98": [
+    {
+      "t": "h2",
+      "i": 1,
+      "c": "Guide du port pour capitaines prudents"
+    },
+    {
+      "t": "p",
+      "i": 2,
+      "c": [
+        "Le guide a été imprimé pour la première fois en ",
+        {
+          "i": 3,
+          "k": "_gt_n_3",
+          "v": "n"
+        },
+        "."
+      ]
+    },
+    {
+      "t": "p",
+      "i": 4,
+      "c": [
+        "Il a été rédigé par les gardiens de la ",
+        {
+          "t": "em",
+          "i": 5,
+          "c": "côte nord"
+        },
+        "."
+      ]
+    }
+  ],
+  "b75e910819132640": "La jetée nord est fermée pour travaux.",
+  "4dd97d142f7b9599": "Le pilote {pilot} accueille chaque ferry à l’aube.",
+  "dc1a8fb3e47ec682": "Bienvenue à bord, {traveler} !",
+  "0f82ab45be785eea": "Cartes dessinées à la main et vérifiées par des marins.",
+  "0b1b597c32477308": "Les avis de brouillard sont affichés sur la jetée.",
+  "6f85251079d9d9cd": "Les horaires des marées sont mis à jour chaque matin à l’aube.",
+  "72d5b2b493077458": "Votre lanterne est allumée, {name}.",
+  "ac3d32d3424ecd81": {
+    "t": "p",
+    "i": 1,
+    "c": [
+      "Bienvenue à bord, ",
+      {
+        "i": 2,
+        "k": "_gt_value_2",
+        "v": "v"
+      },
+      ". L’atlas recense",
+      " ",
+      {
+        "t": "b",
+        "i": 3,
+        "c": [
+          {
+            "i": 4,
+            "k": "_gt_n_4",
+            "v": "n"
+          },
+          " îles côtières"
+        ]
+      },
+      " ",
+      "et chaque ",
+      {
+        "t": "i",
+        "i": 5,
+        "c": "gardien de phare"
+      },
+      " qui les entretient."
+    ]
+  },
+  "da1bb78d9dad069a": {
+    "t": "Plural",
+    "i": 1,
+    "d": {
+      "b": {
+        "one": {
+          "t": "p",
+          "i": 2,
+          "c": "Un bateau de pêche est amarré ce soir."
+        },
+        "other": {
+          "t": "p",
+          "i": 2,
+          "c": "Plusieurs bateaux de pêche sont amarrés ce soir."
+        }
+      },
+      "t": "p"
+    }
+  },
+  "d63716aca0356aeb": [
+    "Avis actuel : ",
+    {
+      "t": "Derive",
+      "i": 1,
+      "c": "Saison de veille des tempêtes"
+    }
+  ],
+  "d19e4245fe8bf3e6": "Trois éclats brefs signifient que le chenal est libre.",
+  "25a1cddada121287": [
+    {
+      "t": "h2",
+      "i": 1,
+      "c": "Journal des signaux de la veille de nuit"
+    },
+    {
+      "t": "p",
+      "i": 2,
+      "c": [
+        "Les entrées sont rédigées par ",
+        {
+          "i": 3,
+          "k": "_gt_value_3",
+          "v": "v"
+        },
+        " après chaque contrôle de la lanterne."
+      ]
+    }
+  ]
+}

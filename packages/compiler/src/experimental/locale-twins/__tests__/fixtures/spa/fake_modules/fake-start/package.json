@@ -1,0 +1,6 @@
+{
+  "name": "fake-start",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "client.js"
+}

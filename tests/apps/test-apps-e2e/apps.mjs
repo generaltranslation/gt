@@ -141,6 +141,76 @@ export const apps = Object.freeze({
     command: 'pnpm --filter gt-test-esbuild-react dev',
     readyPath: '/',
   },
+  // Locale twins (experimental.splitting: 'locale-twins'): production builds,
+  // tested by e2e/twins.spec.ts. See servers/locale-twins-spa-server.mjs and
+  // servers/locale-twins-tanstack-server.mjs.
+  'vite-react-twins': {
+    packageName: 'gt-test-vite-react-twins',
+    entryPackage: 'gt-react',
+    kind: 'react-twins',
+    baseURL: 'http://127.0.0.1:4180',
+    command:
+      'pnpm --filter gt-test-vite-react-twins build && node tests/apps/test-apps-e2e/servers/locale-twins-spa-server.mjs --app tests/apps/vite-react-twins --port 4180 --mode static',
+    readyPath: '/',
+    twins: {
+      appDir: 'tests/apps/vite-react-twins',
+      clientDir: 'dist',
+      translationsDir: 'src/_gt',
+      serving: 'static',
+      lazyRoute: '/harbor-guide',
+    },
+  },
+  'vite-react-twins-server': {
+    packageName: 'gt-test-vite-react-twins',
+    entryPackage: 'gt-react',
+    kind: 'react-twins',
+    baseURL: 'http://127.0.0.1:4181',
+    command:
+      'pnpm --filter gt-test-vite-react-twins build && node tests/apps/test-apps-e2e/servers/locale-twins-spa-server.mjs --app tests/apps/vite-react-twins --port 4181 --mode server-helper',
+    readyPath: '/',
+    twins: {
+      appDir: 'tests/apps/vite-react-twins',
+      clientDir: 'dist',
+      translationsDir: 'src/_gt',
+      serving: 'server-helper',
+      lazyRoute: '/harbor-guide',
+    },
+  },
+  'vite7-react-twins': {
+    packageName: 'gt-test-vite7-react-twins',
+    entryPackage: 'gt-react',
+    kind: 'react-twins',
+    baseURL: 'http://127.0.0.1:4182',
+    command:
+      'pnpm --filter gt-test-vite7-react-twins build && node tests/apps/test-apps-e2e/servers/locale-twins-spa-server.mjs --app tests/apps/vite7-react-twins --port 4182 --mode static',
+    readyPath: '/',
+    twins: {
+      appDir: 'tests/apps/vite7-react-twins',
+      clientDir: 'dist',
+      translationsDir: 'src/_gt',
+      serving: 'static',
+      lazyRoute: '/harbor-guide',
+    },
+  },
+  'tanstack-start-twins': {
+    packageName: 'gt-test-tanstack-start-twins',
+    entryPackage: 'gt-tanstack-start',
+    kind: 'tanstack-twins',
+    baseURL: 'http://127.0.0.1:4183',
+    command:
+      'pnpm --filter gt-test-tanstack-start-twins build && node tests/apps/test-apps-e2e/servers/locale-twins-tanstack-server.mjs --app tests/apps/tanstack-start-twins --port 4183 --mismatch-control',
+    readyPath: '/',
+    twins: {
+      appDir: 'tests/apps/tanstack-start-twins',
+      clientDir: 'dist/client',
+      translationsDir: 'src/_gt',
+      serving: 'tanstack',
+      lazyRoute: '/harbor-guide',
+      clientOnlyRoute: '/signal-log',
+      loaderRoute: '/harbor-notices',
+      mismatchControlParam: '__gt_twin_locale',
+    },
+  },
   'gt-node-express': {
     packageName: 'gt-test-node-express',
     entryPackage: 'gt-node',

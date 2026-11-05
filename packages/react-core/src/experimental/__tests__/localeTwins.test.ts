@@ -1,0 +1,172 @@
+/**
+ * Locale twin clients resolve stripped content from the twin registry, source
+ * locale included, and never ship or load a translations snapshot.
+ */
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { hashMessage } from 'gt-i18n/internal';
+import {
+  GtInternalRegisterLocaleTwin,
+  getLocaleTwinCacheParams,
+  initializeLocaleTwins,
+} from 'gt-i18n/internal/experimental';
+import type { GTConfig } from 'generaltranslation/types';
+import { ReactI18nCache } from '../../i18n-cache/ReactI18nCache';
+import { setReactI18nCache } from '../../i18n-cache/singleton-operations';
+import { setReadonlyConditionStore } from '../../condition-store/singleton-operations';
+import {
+  initializeI18nConfig,
+  type ReactI18nConfigParams,
+} from '../../setup/i18nConfig';
+import { getTranslationsSnapshot } from '../../functions/helpers/getTranslationsSnapshot';
+import { t } from '../functions/t';
+
+type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
+
+const HASH = '0123456789abcdef';
+
+const TWINS_CONFIG: ReactI18nConfigParams & Pick<GTConfig, 'experimental'> = {
+  defaultLocale: 'en',
+  locales: ['en', 'fr'],
+  experimental: { splitting: 'locale-twins' },
+};
+
+/** What the experimental initializeGT* functions do. */
+function setup(locale: string, config = TWINS_CONFIG, enableI18n = true) {
+  initializeI18nConfig(config, 'SPA');
+  initializeLocaleTwins(config);
+  setReadonlyConditionStore({
+    getLocale: () => locale,
+    getRegion: () => undefined,
+    getEnableI18n: () => enableI18n,
+    setLocale: () => {},
+    setRegion: () => {},
+    setEnableI18n: () => {},
+  });
+  const loadTranslations = vi.fn(async () => ({ [HASH]: 'Bonjour {name}' }));
+  setReactI18nCache(
+    new ReactI18nCache(getLocaleTwinCacheParams({ loadTranslations }))
+  );
+  return { loadTranslations };
+}
+
+function register(locale: string, entries: Record<string, unknown>) {
+  GtInternalRegisterLocaleTwin(JSON.stringify({ l: locale, e: entries }));
+}
+
+describe('locale twins in react-core functions', () => {
+  beforeEach(() => {
+    Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
+    vi.stubGlobal('window', globalThis);
+    vi.stubGlobal('document', {});
+  });
+
+  afterEach(() => {
+    Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('t() renders stripped source-locale text from the registry', () => {
+    register('en', { [HASH]: 'Hello {name}' });
+    setup('en');
+
+    expect(t('', { name: 'Ada', $_hash: HASH })).toBe('Hello Ada');
+  });
+
+  it('t() renders a translation from the registry', () => {
+    register('fr', { [HASH]: 'Bonjour {name}' });
+    setup('fr');
+
+    expect(t('', { name: 'Ada', $_hash: HASH })).toBe('Bonjour Ada');
+  });
+
+  // A translation missing from the twin is the source text, formatted in the
+  // source locale like a server cache miss (French "one" covers 0)
+  it('t() formats a source fallback in the source locale', () => {
+    GtInternalRegisterLocaleTwin(
+      JSON.stringify({
+        l: 'fr',
+        e: { [HASH]: '{n, plural, one {# boat} other {# boats}}' },
+        s: [HASH],
+      })
+    );
+    setup('fr');
+
+    expect(t('', { n: 0, $_hash: HASH })).toBe('0 boats');
+  });
+
+  // With i18n disabled the served twins are the default locale's (source
+  // text), whatever the locale preference
+  it('t() renders the default locale twin when i18n is disabled', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    register('en', { [HASH]: 'Total: {n, number}' });
+    setup('fr', TWINS_CONFIG, false);
+
+    expect(t('', { n: 1234.5, $_hash: HASH })).toBe('Total: 1,234.5');
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('getTranslationsSnapshot() loads nothing on a locale twin client', async () => {
+    register('fr', { [HASH]: 'Bonjour {name}' });
+    const { loadTranslations } = setup('fr');
+
+    await expect(getTranslationsSnapshot('fr')).resolves.toEqual({ fr: {} });
+    expect(loadTranslations).not.toHaveBeenCalled();
+  });
+
+  // Content the compiler cannot hash (a tagged template the macro left in
+  // place, a call whose options are spread) renders as source on the server
+  // and on the twin client alike, so the server HTML hydrates
+  describe('content without a compile-time hash', () => {
+    const SOURCE_TRANSLATIONS = {
+      [hashMessage('Hello {0}', { $format: 'ICU' })]: 'Bonjour {0}',
+      [hashMessage('Hello Ada', { $format: 'STRING' })]: 'Bonjour Ada',
+      [hashMessage('Hello', { $format: 'ICU' })]: 'Bonjour',
+    };
+
+    function renderAll() {
+      const options = [{ $context: 'greeting' }] as const;
+      return [t`Hello ${'Ada'}`, t`Hello`, t('Hello', ...options)];
+    }
+
+    it('renders source on the server', async () => {
+      vi.unstubAllGlobals();
+      // What every server bundle module with a GT import does
+      GtInternalRegisterLocaleTwin();
+      initializeI18nConfig(TWINS_CONFIG, 'SPA');
+      initializeLocaleTwins(TWINS_CONFIG);
+      setReadonlyConditionStore({
+        getLocale: () => 'fr',
+        getRegion: () => undefined,
+        getEnableI18n: () => true,
+        setLocale: () => {},
+        setRegion: () => {},
+        setEnableI18n: () => {},
+      });
+      const cache = new ReactI18nCache({
+        loadTranslations: async () => SOURCE_TRANSLATIONS,
+      });
+      setReactI18nCache(cache);
+      await getTranslationsSnapshot('fr');
+
+      expect(renderAll()).toEqual(['Hello Ada', 'Hello', 'Hello']);
+    });
+
+    it('renders source on a locale twin client', () => {
+      register('fr', { [HASH]: 'Bonjour {name}' });
+      setup('fr');
+
+      expect(renderAll()).toEqual(['Hello Ada', 'Hello', 'Hello']);
+    });
+  });
+
+  it('getTranslationsSnapshot() still loads the locale on the server', async () => {
+    vi.unstubAllGlobals();
+    const { loadTranslations } = setup('fr');
+
+    await expect(getTranslationsSnapshot('fr')).resolves.toEqual({
+      fr: { [HASH]: 'Bonjour {name}' },
+    });
+    expect(loadTranslations).toHaveBeenCalledWith('fr');
+  });
+});

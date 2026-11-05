@@ -11,7 +11,9 @@ The compiler uses a **4-pass Babel pipeline** on `.tsx/.jsx/.ts/.js` files:
 3. **Collection Pass** — Collects translation data, computes hashes, validates usage
 4. **Injection Pass** — Injects hashes and metadata into the AST
 
-Entry point: `src/index.ts` (creates the unplugin).
+An optional **5 Runtime Translate Pass** (dev hot reload) follows.
+
+Entry point: `src/index.ts` (creates the unplugin). The experimental entry point `src/experimental/index.ts` (`@generaltranslation/compiler/experimental`) creates its own plugin with `src/experimental/createGTUnpluginFactory.ts`, a copy of the regular factory (keep the two in sync) that adds the locale twins passes; see [Locale twins](#locale-twins-experimental).
 
 ## Code Organization
 
@@ -29,7 +31,9 @@ src/
 │   ├── jsx-insertion/    # JSX auto-insertion logic + rules doc
 │   ├── collection/
 │   └── injection/
+├── transform/            # AST edits used by the passes
 ├── state/                # State management classes
+├── experimental/         # Locale twins (experimental): pass, stripping, post-build engine, Vite hooks
 └── utils/                # Stateless helpers
 ```
 
@@ -59,6 +63,35 @@ Key flags in `PluginConfig` (`src/config.ts`):
 
 Can be set via `gt.config.json` under `files.gt.parsingFlags.enableAutoJsxInjection`.
 
+## Locale twins (experimental)
+
+Opt-in translation splitting strategy, published only from `@generaltranslation/compiler/experimental`: `experimental.splitting: 'locale-twins'` in gt.config.json, or the `splitting` / `localeTwins` plugin options, resolved once at plugin creation by `resolveLocaleTwinsSettings` in `src/experimental/config.ts`. Every client chunk that carries entries is emitted once per locale, so a visitor downloads one locale's entries for the pages they visit. Vocabulary: _locale twin_, _twinned chunk_, _shared chunk_, _attribution_, _unattributed entry_. The shared contract (placeholder format, filled table, manifest) lives in `packages/core/src/experimental/locale-twins/` (`generaltranslation/internal/experimental`); the runtime registry and the SPA document/bootstrap/server helper live in `packages/i18n/src/experimental/locale-twins/` (`gt-i18n/internal/experimental`).
+
+**Every locale twin file lives under `src/experimental/`; the regular plugin has no locale twin code, seam or import source.** The experimental plugin reuses the regular passes by composing over them:
+
+- `experimental/createGTUnpluginFactory.ts`: the regular factory of `src/index.ts` (config loading, pass pipeline, debug manifest; keep in sync) with a `PluginExtension` that decides per transform (`beginTransform`, returning the module's `LocaleTwinCollector` and an `afterInjection` hook that reports whether it changed the AST and whether to skip the dev hot reload pass), runs at the end of a build (`buildEnd`), and adds Vite hooks (`vite`). Its `transformInclude` is `experimental/utils/moduleId.ts` (source modules with a Vite query such as `?tsr-split=component` included; asset queries, virtual modules, `.d.ts` and `node_modules` skipped).
+- `experimental/utils/importSourceAliases.ts`: during the regular passes, the module's `gt-react/experimental` and `gt-tanstack-start/experimental` imports read as `gt-react` and `gt-tanstack-start`, so the regular compiler handles them unchanged. The original sources are restored before Pass 4b (which reads them) and before code generation.
+- `experimental/passes/collectionPass.ts` and `injectionPass.ts` wrap the regular passes. After the regular collection visits a call or tagged template, `processing/collection/observeCallExpression.ts` (and `observeTaggedTemplateExpression.ts`) record what it registered in the collector: an entry with a hash (`add`), or one hashed only at runtime (`addRuntimeHashed`). They follow the regular dispatch (keep in sync). `transform/findTextSites.ts` finds where a `<T>`'s text sits, mirroring the regular `constructJsxChildren` (keep in sync). The injection wrapper records the `message` of each prefetch item the regular pass injects into `useGT()`/`getGT()`. The collection wrapper also rejects `void`/`!`/`~`/`typeof` unary children inside `<T>` (`checkUnaryChildren`), which the regular compiler records as the number they apply to and a locale twin would render.
+
+`src/experimental/index.ts` builds the extension with `createLocaleTwinsPlugin` (`experimental/locale-twins/createLocaleTwinsPlugin.ts`), which owns every locale twins decision of the plugin: whether a transform runs the pass, the pass itself and the unattributed-entry records, the end-of-build warning, and the Vite hooks. It also defaults `autoJsxImportSource` to `gt-react/experimental`. Locale twins need Vite: with any other bundler (`meta.framework`), the plugin warns once and never runs the pass.
+
+Two halves:
+
+- **Transform (per module, Pass 4b, `experimental/passes/localeTwinsPass.ts`).** Runs only in production Vite builds (not `vite dev`: `isDevServerTransform` in `experimental/utils/bundlerEnvironment.ts`), in client and server environments alike (the server's placeholder stays inert, but its `msg()` hashes keep SSR consistent with the client), and only with `compileTimeHash`, so `compileTimeHash: false` attributes nothing. The module's entries come from its `LocaleTwinCollector`. Inserts one `GtInternalRegisterLocaleTwin("__GT_LOCALE_TWIN__:<hashes>:<base64url sources>")` call after the imports, imported from the module's `/experimental` GT source (`getLocaleTwinRegistrationImportSource` in `experimental/utils/importSources.ts`: only `gt-react/experimental` and `gt-tanstack-start/experimental`. gt-i18n, gt-next and the regular entry points are not registration sources, because their translation functions read only whole-locale translations. A call (`gt()`, `msg()`, `t()`, `<T>`) bound to a regular entry point, directly or through the `useGT()`/`getGT()` call that created it, stays unattributed with reason `importSource`, even in a module that also imports an `/experimental` entry point). A module with such an import but no attributed entries gets `GtInternalRegisterLocaleTwin()` without a placeholder: it tells the runtime that compiled code ran (so a missing compiler plugin is reported). It also injects `$_hash` into attributed `msg()` calls. In client production builds only (`isClientProductionBuild`) it also blanks attributed source text to `""` (`experimental/transform/stripSourceText.ts`), keeping every element, prop and variable so GT JSX indices are unchanged. Entries it cannot attribute keep their text (they render in the source locale) and are collected per module id into one build warning and the build report's `unattributed` list (`experimental/utils/unattributedEntries.ts`).
+- **Build (after the client output is written, `experimental/locale-twins/`).** `generateLocaleTwins.ts` is the pure engine: seed (files with a placeholder) plus closure (files that reference a twinned file), per-locale fill and rename, per-locale version, source maps, manifest, report. `writeLocaleTwins.ts` is the Node-side runner (reads `[locale].json`, writes twins and `gt-locale-twins.json` into the outDir, rewrites SPA HTML via `spaDocument.ts`, and writes `gt-locale-twins-report.json` to `<root>/node_modules/.cache/gt/`, out of the public outDir). Original twinned files stay in the outDir with their unfilled placeholders (the next build reads them for idempotency); no served document references them. Diagnostics are in `buildDiagnostics.ts` and `diagnostics.ts`, created with `createCompilerDiagnostic`.
+
+Vite integration is `experimental/locale-twins/vite/localeTwinsViteHooks.ts` (built by `createLocaleTwinsPlugin`), which the experimental factory assigns to the plugin's **only** `vite:` key. unplugin `Object.assign`s that object over the generic hooks, so a hook defined there replaces the generic one of the same name: the generic end-of-build work runs through `finishBuild` (called from the generic `buildEnd` and via `onBuildEnd`), and `configResolved` work goes through `onConfigResolved`. Add every new Vite hook inside `createLocaleTwinsViteHooks`. The hooks:
+
+- `buildEnd` records the module graph and `outputOptions` adds the default vendor chunk (`vite/vendorChunk.ts`: Rolldown `codeSplitting.groups` on Vite 8, `manualChunks` on Vite 7), client environment of a build only, skipped with a warning when the user configured chunking. Both run on the same plugin instance on purpose: TanStack Start loads the Vite config once per environment (`builder.sharedPlugins`), creating extra plugin instances that never see the graph.
+- `buildStart` watches the non-default locales' translation files (client consumer of `vite build`), so `vite build --watch` regenerates twins after a translation edit.
+- `writeBundle` (`order: 'post'`) runs the engine for the client consumer of `vite build` only.
+- `resolveId`/`load` serve `virtual:gt-locale-twins-manifest` (`vite/manifestModule.ts`): server environments read the client build's manifest, everything else gets `null`. Types: `src/experimental/locale-twins-manifest.d.ts`, copied to `dist/experimental/` and published as `@generaltranslation/compiler/experimental/locale-twins-manifest`.
+- `configureServer` prints the dev notice; `vite dev` never runs Pass 4b, strips or twins.
+
+gt.config.json and `files.gt.output` resolve against `process.cwd()` captured at plugin creation, not Vite's `root`.
+
+The user guide for this feature is maintained outside this repo (docs site); keep option names and file names there in sync when they change.
+
 ## Testing
 
 ```sh
@@ -70,6 +103,8 @@ Test suites in `src/passes/__tests__/`:
 - `jsxInsertionPass.test.ts` — core JSX insertion behavior
 - `jsxInsertionE2E.test.ts` — end-to-end pipeline tests
 - `jsxInsertionEdgeCases.test.ts` — edge cases and regressions
+
+Locale twins: `src/experimental/__tests__/localeTwins*.test.ts` (transform), `importSources.test.ts` (the experimental plugin compiles `/experimental` imports and split route modules like the regular plugin compiles regular ones), `utils/__tests__/moduleId.test.ts` (its `transformInclude`), `packageExports.test.ts` (the `/experimental` entry, and no locale twin code reachable from the regular one), `src/experimental/locale-twins/__tests__/generateLocaleTwins.test.ts` (engine) and `viteBuild.test.ts` (real Vite 8 and Vite 7 builds of `__tests__/fixtures/spa` through `buildFixture.ts`, which loads the config once per environment like TanStack Start). Build the workspace dependencies first: `pnpm turbo run build --filter='@generaltranslation/compiler^...'`.
 
 ## Important Invariants
 
