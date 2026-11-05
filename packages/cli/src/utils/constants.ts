@@ -3,7 +3,13 @@ import { hashStringSync } from './hash.js';
 export const GT_DASHBOARD_URL = 'https://dash.generaltranslation.com';
 
 export const REACT_QUICKSTART_URL =
-  'https://generaltranslation.com/docs/react/tutorials/quickstart';
+  'https://generaltranslation.com/docs/react/react-quickstart';
+export const NEXT_APP_QUICKSTART_URL =
+  'https://generaltranslation.com/docs/react/nextjs-quickstart';
+export const NEXT_PAGES_QUICKSTART_URL =
+  'https://generaltranslation.com/docs/react/nextjs-pages-router-quickstart';
+export const REACT_SPA_QUICKSTART_URL =
+  'https://generaltranslation.com/docs/react/react-spa-quickstart';
 
 export const GT_CONFIG_SCHEMA_URL = 'https://assets.gtx.dev/config-schema.json';
 
