@@ -41,12 +41,14 @@ export async function handleInitGT(
 
     // Check if withGTConfig is already imported/required, and whether it is used
     let hasGTConfig = false;
-    let callsGTConfig = false;
     let hasModuleExports = false;
+    // Local names withGTConfig is bound to, and every function name called
+    const gtConfigNames = new Set(['withGTConfig']);
+    const calledNames = new Set<string>();
     traverse(ast, {
       CallExpression(path) {
-        if (t.isIdentifier(path.node.callee, { name: 'withGTConfig' })) {
-          callsGTConfig = true;
+        if (t.isIdentifier(path.node.callee)) {
+          calledNames.add(path.node.callee.name);
         }
       },
       AssignmentExpression(path) {
@@ -84,7 +86,10 @@ export async function handleInitGT(
                     t.isIdentifier(prop.key) &&
                     t.isIdentifier(prop.value)
                   ) {
-                    if (prop.key.name === 'withGTConfig') hasGTConfig = true;
+                    if (prop.key.name === 'withGTConfig') {
+                      hasGTConfig = true;
+                      gtConfigNames.add(prop.value.name);
+                    }
                   }
                 });
               }
@@ -113,6 +118,9 @@ export async function handleInitGT(
     // Return early if withGTConfig is already present. An earlier gt init
     // could require it in a CommonJS config without wrapping module.exports,
     // so that export is still wrapped below.
+    const callsGTConfig = [...gtConfigNames].some((name) =>
+      calledNames.has(name)
+    );
     if (hasGTConfig && (callsGTConfig || !hasModuleExports)) {
       return;
     }
