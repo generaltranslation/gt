@@ -18,6 +18,10 @@ import type { CustomMapping, FileToUpload } from 'generaltranslation/types';
 import { parseTypedLocale } from './promptParsing.js';
 import { getFilteredLocaleOptions } from './localeOptions.js';
 import {
+  fitLocaleOptionLabel,
+  getLocalePromptMaxItems,
+} from './localePromptLayout.js';
+import {
   getInlineElementsLabel,
   type InlineLibrary,
 } from '../types/libraries.js';
@@ -165,20 +169,36 @@ type LocalePromptContext = {
  * Clack keeps the focused option while it still matches a new search, so
  * typing `fr` could leave `af` (Afrikaans) focused. Refocus the top-ranked
  * option whenever the search changes.
+ *
+ * Labels are truncated to one row and `maxItems` is read on every render, so
+ * the prompt never grows taller than the terminal. `chrome` lists the lines
+ * Clack draws around the options for the current search.
  */
-function searchableLocaleOptions(
-  getOptions: (query: string, selected: string[]) => Option<string>[]
+function searchableLocalePrompt(
+  getOptions: (query: string, selected: string[]) => Option<string>[],
+  chrome: (query: string) => string[]
 ) {
   let lastQuery = '';
-  return function (this: LocalePromptContext) {
-    const query = this.userInput ?? '';
-    if (query !== lastQuery) {
-      lastQuery = query;
-      this.focusedValue = undefined;
-    }
-    return getOptions(query, this.selectedValues ?? []);
+  return {
+    options(this: LocalePromptContext) {
+      const query = this.userInput ?? '';
+      if (query !== lastQuery) {
+        lastQuery = query;
+        this.focusedValue = undefined;
+      }
+      return getOptions(query, this.selectedValues ?? []).map((option) =>
+        fitLocaleOptionLabel(option, query)
+      );
+    },
+    get maxItems() {
+      return getLocalePromptMaxItems(chrome(lastQuery));
+    },
   };
 }
+
+// The search row as Clack draws it, with the cursor and a match count.
+const searchRow = (query: string, placeholder: string) =>
+  `│  Search: ${query || placeholder}█ (999 matches)`;
 
 /**
  * Searchable locale options: supported locales ranked by the query, the
@@ -235,13 +255,26 @@ export async function promptLocale({
   defaultValue?: string;
   customMapping?: CustomMapping;
 }) {
+  const placeholder = 'Type to search locales';
+  const prompt = searchableLocalePrompt(
+    (query) => getLocalePromptOptions(query, [], customMapping),
+    (query) => [
+      '│',
+      `◆  ${message}`,
+      '│',
+      searchRow(query, placeholder),
+      '│  ↑/↓ to select • Enter: confirm • Type: to search',
+      '└',
+    ]
+  );
   const result = await autocomplete<string>({
     message,
-    placeholder: 'Type to search locales',
+    placeholder,
     initialValue: defaultValue,
-    options: searchableLocaleOptions((query) =>
-      getLocalePromptOptions(query, [], customMapping)
-    ),
+    options: prompt.options,
+    get maxItems() {
+      return prompt.maxItems;
+    },
     // Enter with no matching option submits nothing; keep asking.
     validate: (value) => (value ? undefined : noLocaleSelectedError),
   });
@@ -259,20 +292,35 @@ export async function promptLocaleList({
   required?: boolean;
   customMapping?: CustomMapping;
 }) {
-  const result = await autocompleteMultiselect<string>({
-    message,
-    placeholder: 'Type to search, Tab or Space to select',
-    initialValues: defaultValue,
-    required,
+  const placeholder = 'Type to search, Tab or Space to select';
+  const prompt = searchableLocalePrompt(
     // Clack only preselects defaults present in the first options list, so
     // keep custom default tags listed even before they are selected.
-    options: searchableLocaleOptions((query, selected) =>
+    (query, selected) =>
       getLocalePromptOptions(
         query,
         [...(defaultValue ?? []), ...selected],
         customMapping
-      )
-    ),
+      ),
+    (query) => [
+      '│',
+      `◆  ${message}`,
+      '',
+      searchRow(query, placeholder),
+      ...(required ? ['│  Please select at least one item'] : []),
+      '│  ↑/↓ to navigate • Space/Tab: select • Enter: confirm • Type: to search',
+      '└',
+    ]
+  );
+  const result = await autocompleteMultiselect<string>({
+    message,
+    placeholder,
+    initialValues: defaultValue,
+    required,
+    options: prompt.options,
+    get maxItems() {
+      return prompt.maxItems;
+    },
   });
   return exitIfCancelled(result);
 }
