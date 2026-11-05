@@ -43,14 +43,14 @@ export const baseDocumentLevelConfig = {
       ...(sourceLocale && { sourceLocale }),
     };
   },
-  importTranslation: (
+  importTranslation: async (
     docInfo: Parameters<ImportTranslation>[0],
     localeId: Parameters<ImportTranslation>[1],
     document: Parameters<ImportTranslation>[2],
     context: Parameters<ImportTranslation>[3],
     mergeWithTargetLocale: boolean = false
   ): Promise<void> => {
-    return importDocument(
+    await importDocument(
       docInfo,
       localeId,
       document,

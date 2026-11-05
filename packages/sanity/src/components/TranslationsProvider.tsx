@@ -22,6 +22,7 @@ import { api, overrideConfig, pluginConfig } from '../adapter/core';
 import { getTranslationStrategy } from '../translation/strategy';
 import { uploadFiles } from '../translation/uploadFiles';
 import { resolvePreviewUrls } from '../translation/previewUrls';
+import { updateTranslationPreviewUrls } from '../translation/updatePreviewUrls';
 import { initProject } from '../translation/initProject';
 import { createJobs } from '../translation/createJobs';
 import { captureExistingTranslations } from '../translation/captureExistingTranslations';
@@ -599,6 +600,16 @@ const TranslationsProviderContent: React.FC<
     }
   }, [documents, locales, client, hasNonDefaultSource]);
 
+  // With `allowNonDefaultSourceLocales`, each original is in its own language.
+  // Field-level (internationalized-array) documents always use the source locale.
+  const getSourceLanguage = useCallback(
+    (doc: SanityDocument) =>
+      allowNonDefault && getTranslationStrategy(doc).level === 'document'
+        ? getDocumentLanguage(doc)
+        : pluginConfig.getSourceLocale(),
+    [allowNonDefault]
+  );
+
   const serializeSourceDocuments = useCallback(
     (sourceDocuments: SanityDocument[], previewUrls: Map<string, string>) =>
       sourceDocuments
@@ -606,13 +617,7 @@ const TranslationsProviderContent: React.FC<
           const { [pluginConfig.getLanguageField()]: _, ...cleanDoc } = doc;
           try {
             const strategy = getTranslationStrategy(doc);
-            // With `allowNonDefaultSourceLocales`, each original is serialized
-            // in its own language. Field-level (internationalized-array)
-            // documents always use the source locale.
-            const baseLanguage =
-              allowNonDefault && strategy.level === 'document'
-                ? getDocumentLanguage(doc)
-                : pluginConfig.getSourceLocale();
+            const baseLanguage = getSourceLanguage(doc);
             return {
               info: {
                 documentId: getDocumentPublishedId(doc),
@@ -635,7 +640,7 @@ const TranslationsProviderContent: React.FC<
           return null;
         })
         .filter((doc) => doc !== null),
-    [allowNonDefault, schema]
+    [getSourceLanguage, schema]
   );
 
   // Studio-side translations are only collected for groups whose original is
@@ -699,9 +704,29 @@ const TranslationsProviderContent: React.FC<
   // Preview URLs help reviewers but are not needed to translate, so a failure warns and uploads without them.
   const resolveSourcePreviewUrls = useCallback(
     async (sourceDocuments: SanityDocument[]) => {
-      const { urls, failures } = await resolvePreviewUrls(
-        sourceDocuments,
+      const targets = sourceDocuments.flatMap((doc) => {
+        try {
+          return [
+            {
+              id: getDocumentPublishedId(doc),
+              type: doc._type,
+              language: getSourceLanguage(doc),
+            },
+          ];
+        } catch {
+          // A document without a strategy is not serialized, so it needs no URL.
+          return [];
+        }
+      });
+      const { urls: resolvedUrls, failures } = await resolvePreviewUrls(
+        targets,
         client
+      );
+      const urls = new Map(
+        targets.flatMap(({ id }, index) => {
+          const url = resolvedUrls[index];
+          return url ? [[id, url] as const] : [];
+        })
       );
       if (failures.length > 0) {
         console.error('Could not resolve preview URLs.', failures);
@@ -714,7 +739,22 @@ const TranslationsProviderContent: React.FC<
       }
       return urls;
     },
-    [client, toast]
+    [client, getSourceLanguage, toast]
+  );
+
+  // Like source preview URLs, a failure warns and leaves the imported translations as they are.
+  const warnTranslationPreviewUrlFailures = useCallback(
+    (failures: unknown[]) => {
+      if (failures.length === 0) return;
+      console.error('Could not store translation preview URLs.', failures);
+      toast.push({
+        title:
+          'Some preview URLs could not be stored. The translations were imported without them.',
+        status: 'warning',
+        closable: true,
+      });
+    },
+    [toast]
   );
 
   const handleTranslateAll = useCallback(
@@ -1064,6 +1104,7 @@ const TranslationsProviderContent: React.FC<
         status: result.successCount > 0 ? 'success' : 'error',
         closable: true,
       });
+      warnTranslationPreviewUrlFailures(result.previewUrlFailures);
     } catch (error) {
       console.error('Error importing translations:', error);
       toast.push({
@@ -1085,6 +1126,7 @@ const TranslationsProviderContent: React.FC<
     downloadStatus,
     translationContext,
     branchId,
+    warnTranslationPreviewUrlFailures,
   ]);
 
   const getExistingTranslations = useCallback(
@@ -1216,6 +1258,7 @@ const TranslationsProviderContent: React.FC<
         status: result.successCount > 0 ? 'success' : 'error',
         closable: true,
       });
+      warnTranslationPreviewUrlFailures(result.previewUrlFailures);
     } catch (error) {
       console.error('Error importing missing translations:', error);
       toast.push({
@@ -1238,6 +1281,7 @@ const TranslationsProviderContent: React.FC<
     translationContext,
     getExistingTranslations,
     branchId,
+    warnTranslationPreviewUrlFailures,
   ]);
 
   const handleGetBranchId = useCallback(
@@ -1445,13 +1489,32 @@ const TranslationsProviderContent: React.FC<
               versionId: document._rev,
             };
 
-            await importDocument(
+            const written = await importDocument(
               docInfo,
               localeId,
               downloadedFiles[0].data,
               translationContext,
               false
             );
+            if (written) {
+              warnTranslationPreviewUrlFailures(
+                await updateTranslationPreviewUrls(
+                  [
+                    {
+                      written,
+                      file: {
+                        branchId: status.fileData.branchId,
+                        fileId: status.fileData.fileId,
+                        versionId: status.fileData.versionId,
+                      },
+                      language: localeId,
+                    },
+                  ],
+                  translationContext.client,
+                  secrets
+                )
+              );
+            }
 
             setDownloadStatus((prev) => ({
               ...prev,
@@ -1497,7 +1560,14 @@ const TranslationsProviderContent: React.FC<
       }
       return false;
     },
-    [secrets, documents, translationContext, translationStatuses, branchId]
+    [
+      secrets,
+      documents,
+      translationContext,
+      translationStatuses,
+      branchId,
+      warnTranslationPreviewUrlFailures,
+    ]
   );
 
   const handlePatchDocumentReferences = useCallback(async () => {

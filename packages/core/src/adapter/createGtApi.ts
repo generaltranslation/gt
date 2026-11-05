@@ -23,6 +23,7 @@ import {
   processFileMoves,
   publishFiles,
   submitUserEditDiffs,
+  updateFiles,
   uploadAssets,
   uploadSourceFiles,
   uploadTranslations,
@@ -43,6 +44,7 @@ import {
   type ProcessFileMovesData,
   type PublishFilesData,
   type SubmitUserEditDiffsData,
+  type UpdateFilesData,
   type UploadAssetsData,
   type UploadSourceFilesData,
   type UploadTranslationsData,
@@ -409,6 +411,34 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
           client: getClient(),
         })
       );
+    },
+
+    /** Updates source files, or their translations when a file names a locale; each request of up to 100 files writes all or nothing. */
+    async updateFiles(
+      files: UpdateFilesData['body']['files'],
+      options: { timeout?: number } = {}
+    ) {
+      const { projectId } = getConfig();
+      if (!projectId) {
+        throw new Error('Project ID is required to update files');
+      }
+      const updated = await processBatches(files, async (batch) => {
+        const response = unwrapApiResult(
+          await updateFiles({
+            body: {
+              files: batch.map((file) =>
+                file.locale === undefined
+                  ? file
+                  : { ...file, locale: resolveServiceLocale(file.locale) }
+              ),
+            },
+            path: { projectId },
+            client: getClient(options.timeout),
+          })
+        );
+        return response.files.map(aliasUploadedFileLocale);
+      });
+      return { files: updated };
     },
 
     async submitUserEditDiffs(

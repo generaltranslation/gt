@@ -309,7 +309,7 @@ describe('Translate All', () => {
       config: () => ({ projectId: 'p', dataset: 'd' }),
     });
     mocks.resolvePreviewUrls.mockResolvedValue({
-      urls: new Map([['a', 'https://staging.acme.test/en/a']]),
+      urls: ['https://staging.acme.test/en/a', undefined],
       failures: [],
     });
 
@@ -328,6 +328,13 @@ describe('Translate All', () => {
       a: 'https://staging.acme.test/en/a',
       b: undefined,
     });
+    expect(mocks.resolvePreviewUrls).toHaveBeenCalledWith(
+      [
+        { id: 'a', type: 'page', language: 'en' },
+        { id: 'b', type: 'page', language: 'en' },
+      ],
+      mocks.client
+    );
   });
 
   test('uploads without preview URLs when they cannot be resolved', async () => {
@@ -336,7 +343,7 @@ describe('Translate All', () => {
       config: () => ({ projectId: 'p', dataset: 'd' }),
     });
     mocks.resolvePreviewUrls.mockResolvedValue({
-      urls: new Map(),
+      urls: [],
       failures: [new Error('resolver threw')],
     });
 

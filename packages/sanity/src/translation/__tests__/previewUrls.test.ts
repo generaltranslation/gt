@@ -1,4 +1,4 @@
-import type { SanityClient, SanityDocument } from 'sanity';
+import type { SanityClient } from 'sanity';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { pluginConfig } from '../../adapter/core';
 import { createGroqClient } from '../../utils/__tests__/groqClient';
@@ -37,8 +37,11 @@ const config: PreviewUrlConfig = {
   },
 };
 
-const doc = (_id: string, _type: string) =>
-  ({ _id, _type }) as unknown as SanityDocument;
+const target = (id: string, type: string, language = 'en-US') => ({
+  id,
+  type,
+  language,
+});
 
 const dataset = [
   { _id: 'pricing', _type: 'page', slug: { current: 'pricing' } },
@@ -81,33 +84,36 @@ describe('resolvePreviewUrls', () => {
     vi.spyOn(pluginConfig, 'getPreviewUrl').mockReturnValue(null);
     const { client: sanity, fetch } = client();
 
-    const { urls } = await resolvePreviewUrls([doc('pricing', 'page')], sanity);
+    const { urls } = await resolvePreviewUrls(
+      [target('pricing', 'page')],
+      sanity
+    );
 
-    expect(urls.size).toBe(0);
+    expect(urls).toEqual([undefined]);
     expect(fetch).not.toHaveBeenCalled();
   });
 
   test('links a document to its first location on the origin', async () => {
     const resolved = await resolvePreviewUrls(
-      [doc('pricing', 'page')],
+      [target('pricing', 'page')],
       client().client
     );
 
     expect(resolved).toEqual({
-      urls: new Map([['pricing', 'https://staging.acme.test/en/pricing']]),
+      urls: ['https://staging.acme.test/en/pricing'],
       failures: [],
     });
   });
 
-  test("links a draft by its published version's fields", async () => {
+  test("reads a document's published version", async () => {
     const { client: sanity, fetch } = client();
 
     const { urls } = await resolvePreviewUrls(
-      [doc('drafts.pricing', 'page')],
+      [target('pricing', 'page')],
       sanity
     );
 
-    expect(urls.get('pricing')).toBe('https://staging.acme.test/en/pricing');
+    expect(urls).toEqual(['https://staging.acme.test/en/pricing']);
     expect(fetch).toHaveBeenCalledWith(
       expect.any(String),
       { ids: ['pricing'] },
@@ -115,14 +121,58 @@ describe('resolvePreviewUrls', () => {
     );
   });
 
+  test('reads drafts in the drafts perspective, so an unpublished translation gets its own page', async () => {
+    const { urls } = await resolvePreviewUrls(
+      [target('pricing', 'page'), target('unpublished', 'page')],
+      client().client,
+      'drafts'
+    );
+
+    expect(urls).toEqual([
+      'https://staging.acme.test/en/draft-pricing',
+      'https://staging.acme.test/en/new',
+    ]);
+  });
+
+  test("passes each target's language to the resolver", async () => {
+    vi.spyOn(pluginConfig, 'getPreviewUrl').mockReturnValue({
+      ...config,
+      locations: {
+        page: {
+          select: { slug: 'slug.current' },
+          resolve: (doc, { language }) =>
+            doc && {
+              locations: [
+                {
+                  title: 'Page',
+                  href: `/${language.slice(0, 2)}/${String(doc.slug)}`,
+                },
+              ],
+            },
+        },
+      },
+    });
+
+    const { urls } = await resolvePreviewUrls(
+      [target('pricing', 'page', 'es-ES'), target('pricing', 'page', 'fr-FR')],
+      client().client
+    );
+
+    expect(urls).toEqual([
+      'https://staging.acme.test/es/pricing',
+      'https://staging.acme.test/fr/pricing',
+    ]);
+  });
+
   test('follows references and array items along a select path', async () => {
     const { client: sanity, fetch } = client();
 
-    const { urls } = await resolvePreviewUrls([doc('launch', 'post')], sanity);
-
-    expect(urls.get('launch')).toBe(
-      'https://staging.acme.test/en/news/jane/launch'
+    const { urls } = await resolvePreviewUrls(
+      [target('launch', 'post')],
+      sanity
     );
+
+    expect(urls).toEqual(['https://staging.acme.test/en/news/jane/launch']);
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 
@@ -143,9 +193,12 @@ describe('resolvePreviewUrls', () => {
     });
     const { client: sanity, fetch } = client();
 
-    const { urls } = await resolvePreviewUrls([doc('launch', 'post')], sanity);
+    const { urls } = await resolvePreviewUrls(
+      [target('launch', 'post')],
+      sanity
+    );
 
-    expect(urls.get('launch')).toBe('https://staging.acme.test/en/launch#a');
+    expect(urls).toEqual(['https://staging.acme.test/en/launch#a']);
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
@@ -173,13 +226,11 @@ describe('resolvePreviewUrls', () => {
     const sanity = { ...local.client, withConfig } as unknown as SanityClient;
 
     const { urls } = await resolvePreviewUrls(
-      [doc('remote-post', 'post')],
+      [target('remote-post', 'post')],
       sanity
     );
 
-    expect(urls.get('remote-post')).toBe(
-      'https://staging.acme.test/en/news/jane/remote'
-    );
+    expect(urls).toEqual(['https://staging.acme.test/en/news/jane/remote']);
     expect(withConfig).toHaveBeenCalledWith({
       projectId: 'other-project',
       dataset: 'authors',
@@ -211,18 +262,19 @@ describe('resolvePreviewUrls', () => {
 
     const resolved = await resolvePreviewUrls(
       [
-        doc('remote-post', 'post'),
-        doc('pricing', 'page'),
-        doc('launch', 'post'),
+        target('remote-post', 'post'),
+        target('pricing', 'page'),
+        target('launch', 'post'),
       ],
       sanity
     );
 
     expect(resolved).toEqual({
-      urls: new Map([
-        ['pricing', 'https://staging.acme.test/en/pricing'],
-        ['launch', 'https://staging.acme.test/en/news/jane/launch'],
-      ]),
+      urls: [
+        undefined,
+        'https://staging.acme.test/en/pricing',
+        'https://staging.acme.test/en/news/jane/launch',
+      ],
       failures: [denied],
     });
   });
@@ -237,20 +289,23 @@ describe('resolvePreviewUrls', () => {
     });
 
     await resolvePreviewUrls(
-      [doc('draft-author-post', 'post')],
+      [target('draft-author-post', 'post')],
       client().client
     );
 
-    expect(resolve).toHaveBeenCalledWith({ author: undefined });
+    expect(resolve).toHaveBeenCalledWith(
+      { author: undefined },
+      { language: 'en-US' }
+    );
   });
 
   test('gives an unpublished document no link', async () => {
     const { urls } = await resolvePreviewUrls(
-      [doc('drafts.unpublished', 'page')],
+      [target('unpublished', 'page')],
       client().client
     );
 
-    expect(urls.size).toBe(0);
+    expect(urls).toEqual([undefined]);
   });
 
   test('gives an unpublished document no link when its resolver ignores a missing document', async () => {
@@ -267,32 +322,32 @@ describe('resolvePreviewUrls', () => {
     });
 
     const { urls } = await resolvePreviewUrls(
-      [doc('drafts.unpublished', 'page')],
+      [target('unpublished', 'page')],
       client().client
     );
 
-    expect(urls.size).toBe(0);
+    expect(urls).toEqual([undefined]);
   });
 
   test('links a type with fixed locations without reading the document', async () => {
     const { client: sanity, fetch } = client();
 
     const { urls } = await resolvePreviewUrls(
-      [doc('siteSettings', 'settings')],
+      [target('siteSettings', 'settings')],
       sanity
     );
 
-    expect(urls.get('siteSettings')).toBe('https://staging.acme.test/en');
+    expect(urls).toEqual(['https://staging.acme.test/en']);
     expect(fetch).not.toHaveBeenCalled();
   });
 
   test('gives a type without locations no link', async () => {
     const { urls } = await resolvePreviewUrls(
-      [doc('jane', 'author')],
+      [target('jane', 'author')],
       client().client
     );
 
-    expect(urls.size).toBe(0);
+    expect(urls).toEqual([undefined]);
   });
 
   test("keeps the other documents' links when one document fails", async () => {
@@ -310,13 +365,14 @@ describe('resolvePreviewUrls', () => {
     });
 
     const resolved = await resolvePreviewUrls(
-      [doc('launch', 'post'), doc('pricing', 'page')],
+      [target('launch', 'post'), target('pricing', 'page')],
       client().client
     );
 
-    expect(resolved.urls).toEqual(
-      new Map([['pricing', 'https://staging.acme.test/en/pricing']])
-    );
+    expect(resolved.urls).toEqual([
+      undefined,
+      'https://staging.acme.test/en/pricing',
+    ]);
     expect(resolved.failures).toEqual([new Error('resolver threw')]);
   });
 
@@ -325,12 +381,12 @@ describe('resolvePreviewUrls', () => {
     fetch.mockRejectedValueOnce(new Error('network down'));
 
     const resolved = await resolvePreviewUrls(
-      [doc('pricing', 'page'), doc('siteSettings', 'settings')],
+      [target('pricing', 'page'), target('siteSettings', 'settings')],
       sanity
     );
 
     expect(resolved).toEqual({
-      urls: new Map([['siteSettings', 'https://staging.acme.test/en']]),
+      urls: [undefined, 'https://staging.acme.test/en'],
       failures: [new Error('network down')],
     });
   });

@@ -4,21 +4,39 @@ import {
   type SanityClient,
   type SanityDocument,
 } from 'sanity';
-import type { DocumentLocationResolvers } from 'sanity/presentation';
 import { pluginConfig } from '../adapter/core';
-import { getDocumentPublishedId } from '../utils/documentIds';
+
+/** `published` for a source upload; `drafts` at import, where the written translation is usually still a draft. */
+type Perspective = 'published' | 'drafts';
+
+export type PreviewLocation = { title: string; href: string };
+
+/** Like a Presentation location resolver, with the Sanity language id of the page being linked as the second argument. */
+export type PreviewUrlResolver = {
+  select: Record<string, string>;
+  resolve: (
+    document: Record<string, unknown> | null,
+    context: { language: string }
+  ) => { locations?: PreviewLocation[] } | null | undefined;
+};
 
 export type PreviewUrlConfig = {
   /** Origin of the site that shows the documents, e.g. `https://staging.example.com`. */
   origin: string;
-  /** The `locations` given to `presentationTool({ resolve: { locations } })`; a document's first location is its page. */
-  locations: DocumentLocationResolvers;
+  /** Locations by document type, as given to `presentationTool({ resolve: { locations } })`; a document's first location is its page. */
+  locations: Record<
+    string,
+    PreviewUrlResolver | { locations?: PreviewLocation[] }
+  >;
 };
 
+/** A document whose page is wanted, by published id, and the language of that page. */
+export type PreviewUrlTarget = { id: string; type: string; language: string };
+
 export type ResolvedPreviewUrls = {
-  /** Page URL per published document id, for documents with a page. */
-  urls: Map<string, string>;
-  /** Why the documents that failed have no URL. */
+  /** Each target's page URL, in target order; `undefined` for a target without a page. */
+  urls: (string | undefined)[];
+  /** Why the targets that failed have no URL. */
   failures: unknown[];
 };
 
@@ -88,14 +106,15 @@ function step(walk: Walk): Walk {
 const sourceKey = (source: Source) =>
   source ? `${source.projectId}/${source.dataset}` : '';
 
-async function fetchPublished(
+async function fetchDocuments(
   client: SanityClient,
-  ids: string[]
+  ids: string[],
+  perspective: Perspective
 ): Promise<Map<string, SanityDocument>> {
   const documents = await client.fetch<SanityDocument[]>(
     '*[_id in $ids]',
     { ids },
-    { perspective: 'published' }
+    { perspective }
   );
   return new Map(documents.map((document) => [document._id, document]));
 }
@@ -112,6 +131,7 @@ const UNREADABLE = Symbol('unreadable');
 async function readPaths(
   client: SanityClient,
   walks: Walk[],
+  perspective: Perspective,
   failures: unknown[]
 ): Promise<unknown[]> {
   let current = walks.map(step);
@@ -137,9 +157,10 @@ async function readPaths(
           try {
             return [
               key,
-              await fetchPublished(
+              await fetchDocuments(
                 source ? client.withConfig(source) : client,
-                [...ids]
+                [...ids],
+                perspective
               ),
             ] as const;
           } catch (error) {
@@ -166,29 +187,34 @@ async function readPaths(
 }
 
 /**
- * The selected fields of each published document whose type resolves its
- * locations, by published id. A document with a field that could not be read
- * gets no snapshot, so its resolver never sees a partial selection.
+ * The selected fields of each target whose type resolves its locations, by
+ * published id. A document with a field that could not be read gets no
+ * snapshot, so its resolver never sees a partial selection.
  */
 async function readSnapshots(
   client: SanityClient,
-  documents: SanityDocument[],
-  locations: DocumentLocationResolvers,
+  targets: PreviewUrlTarget[],
+  locations: PreviewUrlConfig['locations'],
+  perspective: Perspective,
   failures: unknown[]
 ): Promise<Map<string, Snapshot>> {
-  const selections = documents.flatMap((document) => {
-    const resolver = locations[document._type];
-    return resolver && 'resolve' in resolver
-      ? [{ id: getDocumentPublishedId(document), select: resolver.select }]
-      : [];
-  });
-  if (selections.length === 0) return new Map();
-  const published = await fetchPublished(client, [
-    ...new Set(selections.map(({ id }) => id)),
-  ]);
+  const selections = new Map(
+    targets.flatMap(({ id, type }) => {
+      const resolver = locations[type];
+      return resolver && 'resolve' in resolver
+        ? [[id, resolver.select] as const]
+        : [];
+    })
+  );
+  if (selections.size === 0) return new Map();
+  const documents = await fetchDocuments(
+    client,
+    [...selections.keys()],
+    perspective
+  );
   const snapshots = new Map<string, Snapshot>();
-  const fields = selections.flatMap(({ id, select }) => {
-    const document = published.get(id);
+  const reads = [...selections].flatMap(([id, select]) => {
+    const document = documents.get(id);
     if (!document) return [];
     const snapshot: Snapshot = {};
     snapshots.set(id, snapshot);
@@ -205,61 +231,71 @@ async function readSnapshots(
   });
   const values = await readPaths(
     client,
-    fields.map(({ walk }) => walk),
+    reads.map(({ walk }) => walk),
+    perspective,
     failures
   );
-  fields.forEach(({ id, snapshot, key }, index) => {
+  reads.forEach(({ id, snapshot, key }, index) => {
     if (values[index] === UNREADABLE) snapshots.delete(id);
     else snapshot[key] = values[index];
   });
   return snapshots;
 }
 
-/** A document's page URL; a resolver runs only on its published version's fields, so without them only fixed locations resolve. */
+/** A target's page URL; a resolver runs only on the document's fields, so without them only fixed locations resolve. */
 function previewUrl(
   config: PreviewUrlConfig,
-  document: SanityDocument,
+  target: PreviewUrlTarget,
   snapshots: Map<string, Snapshot> | null
 ): string | undefined {
-  const resolver = config.locations[document._type];
+  const resolver = config.locations[target.type];
   if (!resolver) return undefined;
   let href: string | undefined;
   if ('resolve' in resolver) {
-    const snapshot = snapshots?.get(getDocumentPublishedId(document));
+    const snapshot = snapshots?.get(target.id);
     if (!snapshot) return undefined;
-    href = resolver.resolve(snapshot)?.locations?.[0]?.href;
+    href = resolver.resolve(snapshot, { language: target.language })
+      ?.locations?.[0]?.href;
   } else {
     href = resolver.locations?.[0]?.href;
   }
   return href ? new URL(href, config.origin).href : undefined;
 }
 
-/** Page URLs of the documents' published versions when the plugin is configured with `previewUrl`; one document failing leaves the others' URLs. */
+/**
+ * Page URLs of the targets when the plugin is configured with `previewUrl`,
+ * read from each document's version in `perspective`; one target failing
+ * leaves the others' URLs.
+ */
 export async function resolvePreviewUrls(
-  documents: SanityDocument[],
-  client: SanityClient
+  targets: PreviewUrlTarget[],
+  client: SanityClient,
+  perspective: Perspective = 'published'
 ): Promise<ResolvedPreviewUrls> {
-  const resolved: ResolvedPreviewUrls = { urls: new Map(), failures: [] };
+  const resolved: ResolvedPreviewUrls = {
+    urls: targets.map(() => undefined),
+    failures: [],
+  };
   const config = pluginConfig.getPreviewUrl();
   if (!config) return resolved;
   let snapshots: Map<string, Snapshot> | null = null;
   try {
     snapshots = await readSnapshots(
       client,
-      documents,
+      targets,
       config.locations,
+      perspective,
       resolved.failures
     );
   } catch (error) {
     resolved.failures.push(error);
   }
-  for (const document of documents) {
+  targets.forEach((target, index) => {
     try {
-      const url = previewUrl(config, document, snapshots);
-      if (url) resolved.urls.set(getDocumentPublishedId(document), url);
+      resolved.urls[index] = previewUrl(config, target, snapshots);
     } catch (error) {
       resolved.failures.push(error);
     }
-  }
+  });
   return resolved;
 }

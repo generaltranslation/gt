@@ -10,6 +10,7 @@ import {
   listProjects,
   publishFiles,
   submitUserEditDiffs,
+  updateFiles,
   uploadTranslations,
 } from '@generaltranslation/api';
 import type {
@@ -30,6 +31,7 @@ vi.mock('@generaltranslation/api', async (importOriginal) => ({
   listProjects: vi.fn(),
   publishFiles: vi.fn(),
   submitUserEditDiffs: vi.fn(),
+  updateFiles: vi.fn(),
   uploadTranslations: vi.fn(),
 }));
 
@@ -427,6 +429,86 @@ describe.sequential('createGtApiAdapter', () => {
       localContent: '{}',
       locale: 'es-ES',
     });
+  });
+
+  it('updates files in the configured project, mapping translation locales in both directions', async () => {
+    vi.mocked(updateFiles).mockResolvedValue(
+      result({
+        files: [
+          {
+            branchId: 'branch-id',
+            fileId: 'page',
+            versionId: 'v1',
+            metadata: { previewUrl: 'https://example.com/page' },
+          },
+          {
+            branchId: 'branch-id',
+            fileId: 'page',
+            versionId: 'v1',
+            locale: 'es-ES',
+            metadata: { previewUrl: 'https://example.com/es/page' },
+          },
+        ],
+      }) as never
+    );
+    const adapter = createGtApiAdapter();
+    adapter.configure({
+      baseUrl: 'https://api.example.com',
+      projectId: 'project-id',
+      customMapping,
+    });
+
+    await expect(
+      adapter.updateFiles([
+        {
+          fileId: 'page',
+          versionId: 'v1',
+          metadata: { previewUrl: 'https://example.com/page' },
+        },
+        {
+          fileId: 'page',
+          versionId: 'v1',
+          locale: 'target',
+          metadata: { previewUrl: 'https://example.com/es/page' },
+        },
+      ])
+    ).resolves.toEqual({
+      files: [
+        {
+          branchId: 'branch-id',
+          fileId: 'page',
+          versionId: 'v1',
+          metadata: { previewUrl: 'https://example.com/page' },
+        },
+        {
+          branchId: 'branch-id',
+          fileId: 'page',
+          versionId: 'v1',
+          locale: 'target',
+          metadata: { previewUrl: 'https://example.com/es/page' },
+        },
+      ],
+    });
+    expect(updateFiles).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: { projectId: 'project-id' },
+        body: {
+          files: [
+            {
+              fileId: 'page',
+              versionId: 'v1',
+              metadata: { previewUrl: 'https://example.com/page' },
+            },
+            {
+              fileId: 'page',
+              versionId: 'v1',
+              locale: 'es-ES',
+              metadata: { previewUrl: 'https://example.com/es/page' },
+            },
+          ],
+        },
+      })
+    );
   });
 
   it('maps file-info locales in both directions', async () => {
