@@ -50,6 +50,22 @@ export function loadInlineTranslations(
   return result;
 }
 
+/**
+ * Locale files embedded translations are read from, for registering them as
+ * build dependencies so watch rebuilds pick up edited translations.
+ */
+export function getInlineTranslationsFiles(
+  options: GTInlineTranslationsOptions | undefined
+): string[] {
+  if (!options) return [];
+  return options.locales.flatMap((locale) => {
+    // Explicit translations win, so only file-backed locales are dependencies
+    if (options.translations?.[locale]) return [];
+    const filePath = resolveLocaleFilePath(options.path, locale);
+    return filePath && fs.existsSync(filePath) ? [filePath] : [];
+  });
+}
+
 function resolveLocaleFilePath(
   pathTemplate: string | undefined,
   locale: string

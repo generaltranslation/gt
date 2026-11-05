@@ -181,6 +181,49 @@ describe('inlineTranslations plugin option', () => {
     expect(output).not.toContain('"Bonjour le monde"');
   });
 
+  it('registers locale files as watch dependencies', async () => {
+    const hash = await getGtHash();
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-inline-'));
+    const file = path.join(dir, 'fr.json');
+    fs.writeFileSync(file, JSON.stringify({ [hash]: 'Bonjour le monde' }));
+    const watched: string[] = [];
+    await transformWithPlugin(
+      {
+        inlineTranslations: {
+          locales: ['fr', 'de'],
+          path: path.join(dir, '[locale].json'),
+        },
+      },
+      USEGT_CODE,
+      (watchedFile) => watched.push(watchedFile)
+    );
+    expect(watched).toEqual([file]);
+  });
+
+  it('watches file-backed locales next to explicit translations', async () => {
+    const hash = await getGtHash();
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-inline-'));
+    const frFile = path.join(dir, 'fr.json');
+    fs.writeFileSync(frFile, JSON.stringify({ [hash]: 'Bonjour le monde' }));
+    fs.writeFileSync(
+      path.join(dir, 'es.json'),
+      JSON.stringify({ [hash]: 'Hola' })
+    );
+    const watched: string[] = [];
+    await transformWithPlugin(
+      {
+        inlineTranslations: {
+          locales: ['fr', 'es'],
+          path: path.join(dir, '[locale].json'),
+          translations: { es: { [hash]: 'Hola mundo' } },
+        },
+      },
+      USEGT_CODE,
+      (watchedFile) => watched.push(watchedFile)
+    );
+    expect(watched).toEqual([frFile]);
+  });
+
   it('does not embed translations in standalone t() calls', async () => {
     const code = `
       import { t } from 'gt-react';
