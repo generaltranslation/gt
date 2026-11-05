@@ -385,6 +385,43 @@ module.exports = withGT({}, {});
       expect(filesUpdated).toHaveLength(0);
     });
 
+    it('wraps an unused aliased withGTConfig with its local name', async () => {
+      const filepath = '/test/next.config.js';
+      const { errors, warnings, filesUpdated } = createTestArrays();
+
+      const code = `const { withGTConfig: withGT } = require('gt-next/config');
+
+module.exports = {};
+`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
+      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
+
+      await handleInitGT(filepath, errors, warnings, filesUpdated, {});
+
+      const written = vi.mocked(fs.promises.writeFile).mock
+        .calls[0][1] as string;
+      expect(written).toContain('module.exports = withGT({}, {})');
+      expect(written).not.toContain('withGTConfig(');
+    });
+
+    it('does not wrap a config that uses the gt-next/config namespace', async () => {
+      const filepath = '/test/next.config.js';
+      const { errors, warnings, filesUpdated } = createTestArrays();
+
+      const code = `const withGTConfig = require('gt-next/config');
+
+module.exports = withGTConfig.withGTConfig({}, {});
+`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
+
+      await handleInitGT(filepath, errors, warnings, filesUpdated, {});
+
+      expect(vi.mocked(fs.promises.writeFile)).not.toHaveBeenCalled();
+      expect(filesUpdated).toHaveLength(0);
+    });
+
     it('does not wrap a CommonJS config that already calls withGTConfig', async () => {
       const filepath = '/test/next.config.js';
       const { errors, warnings, filesUpdated } = createTestArrays();

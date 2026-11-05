@@ -39,18 +39,12 @@ export async function handleInitGT(
       tsconfigJson,
     });
 
-    // Check if withGTConfig is already imported/required, and whether it is used
+    // Check if withGTConfig is already imported/required
     let hasGTConfig = false;
     let hasModuleExports = false;
-    // Local names withGTConfig is bound to, and every function name called
-    const gtConfigNames = new Set(['withGTConfig']);
-    const calledNames = new Set<string>();
+    // Local name of an existing withGTConfig function binding, if any
+    let gtConfigName: string | undefined;
     traverse(ast, {
-      CallExpression(path) {
-        if (t.isIdentifier(path.node.callee)) {
-          calledNames.add(path.node.callee.name);
-        }
-      },
       AssignmentExpression(path) {
         if (isTopLevelModuleExports(path)) hasModuleExports = true;
       },
@@ -58,7 +52,10 @@ export async function handleInitGT(
         if (path.node.source.value === 'gt-next/config') {
           path.node.specifiers.forEach((spec) => {
             if (t.isImportSpecifier(spec)) {
-              if (spec.local.name === 'withGTConfig') hasGTConfig = true;
+              if (spec.local.name === 'withGTConfig') {
+                hasGTConfig = true;
+                gtConfigName = spec.local.name;
+              }
             }
           });
         }
@@ -88,7 +85,7 @@ export async function handleInitGT(
                   ) {
                     if (prop.key.name === 'withGTConfig') {
                       hasGTConfig = true;
-                      gtConfigNames.add(prop.value.name);
+                      gtConfigName = prop.value.name;
                     }
                   }
                 });
@@ -108,6 +105,7 @@ export async function handleInitGT(
                 t.isIdentifier(dec.init.property, { name: 'withGTConfig' })
               ) {
                 hasGTConfig = true;
+                gtConfigName = dec.id.name;
               }
             }
           }
@@ -116,14 +114,24 @@ export async function handleInitGT(
     });
 
     // Return early if withGTConfig is already present. An earlier gt init
-    // could require it in a CommonJS config without wrapping module.exports,
-    // so that export is still wrapped below.
-    const callsGTConfig = [...gtConfigNames].some((name) =>
-      calledNames.has(name)
-    );
-    if (hasGTConfig && (callsGTConfig || !hasModuleExports)) {
+    // could require it in a CommonJS config without ever using it; only that
+    // unreferenced function binding gets module.exports wrapped below.
+    let gtConfigReferenced = false;
+    traverse(ast, {
+      Program(path) {
+        gtConfigReferenced = Boolean(
+          gtConfigName && path.scope.getBinding(gtConfigName)?.referenced
+        );
+        path.stop();
+      },
+    });
+    if (
+      hasGTConfig &&
+      !(gtConfigName && hasModuleExports && !gtConfigReferenced)
+    ) {
       return;
     }
+    const wrapperName = gtConfigName ?? 'withGTConfig';
 
     if (!hasGTConfig)
       ast.program.body.unshift(
@@ -155,7 +163,7 @@ export async function handleInitGT(
       AssignmentExpression(path) {
         // CommonJS: module.exports = config
         if (isTopLevelModuleExports(path)) {
-          path.node.right = t.callExpression(t.identifier('withGTConfig'), [
+          path.node.right = t.callExpression(t.identifier(wrapperName), [
             path.node.right,
             t.objectExpression([]),
           ]);
@@ -209,7 +217,7 @@ export async function handleInitGT(
           );
         }
 
-        path.node.declaration = t.callExpression(t.identifier('withGTConfig'), [
+        path.node.declaration = t.callExpression(t.identifier(wrapperName), [
           exportExpression,
           t.objectExpression([]),
         ]);
