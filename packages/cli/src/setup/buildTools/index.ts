@@ -1,4 +1,9 @@
 import type { SupportedReactFrameworks } from '../../types/index.js';
+import {
+  NEXT_APP_QUICKSTART_URL,
+  NEXT_PAGES_QUICKSTART_URL,
+  REACT_QUICKSTART_URL,
+} from '../../utils/constants.js';
 import { reactRouterSetup } from './reactRouter/index.js';
 import { tanstackStartSetup } from './tanstackStart/index.js';
 import { viteSetup } from './vite.js';
@@ -61,4 +66,19 @@ export function getBuildToolSetup(
   framework?: string
 ): BuildToolSetup | undefined {
   return BUILD_TOOL_SETUPS.find((setup) => setup.framework === framework);
+}
+
+/** Quickstarts for frameworks set up without a build-tool hook. */
+const FRAMEWORK_DOCS_URLS: Partial<Record<string, string>> = {
+  'next-app': NEXT_APP_QUICKSTART_URL,
+  'next-pages': NEXT_PAGES_QUICKSTART_URL,
+} satisfies Partial<Record<SupportedReactFrameworks, string>>;
+
+/** The setup guide the wizard links for a framework. */
+export function getSetupDocsUrl(framework?: string): string {
+  return (
+    getBuildToolSetup(framework)?.docsUrl ??
+    (framework && FRAMEWORK_DOCS_URLS[framework]) ??
+    REACT_QUICKSTART_URL
+  );
 }
