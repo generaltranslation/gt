@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { parse } from '@babel/parser';
 import generateModule from '@babel/generator';
-import traverseModule from '@babel/traverse';
+import traverseModule, { type NodePath } from '@babel/traverse';
 
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
@@ -39,9 +39,19 @@ export async function handleInitGT(
       tsconfigJson,
     });
 
-    // Check if withGTConfig is already imported/required
+    // Check if withGTConfig is already imported/required, and whether it is used
     let hasGTConfig = false;
+    let callsGTConfig = false;
+    let hasModuleExports = false;
     traverse(ast, {
+      CallExpression(path) {
+        if (t.isIdentifier(path.node.callee, { name: 'withGTConfig' })) {
+          callsGTConfig = true;
+        }
+      },
+      AssignmentExpression(path) {
+        if (isTopLevelModuleExports(path)) hasModuleExports = true;
+      },
       ImportDeclaration(path) {
         if (path.node.source.value === 'gt-next/config') {
           path.node.specifiers.forEach((spec) => {
@@ -100,49 +110,45 @@ export async function handleInitGT(
       },
     });
 
-    // Return early if withGTConfig is already present
-    if (hasGTConfig) {
+    // Return early if withGTConfig is already present. An earlier gt init
+    // could require it in a CommonJS config without wrapping module.exports,
+    // so that export is still wrapped below.
+    if (hasGTConfig && (callsGTConfig || !hasModuleExports)) {
       return;
     }
 
-    ast.program.body.unshift(
-      cjsEnabled
-        ? t.variableDeclaration('const', [
-            t.variableDeclarator(
-              t.identifier('withGTConfig'),
-              t.memberExpression(
-                t.callExpression(t.identifier('require'), [
-                  t.stringLiteral('gt-next/config'),
-                ]),
-                t.identifier('withGTConfig')
-              )
-            ),
-          ])
-        : t.importDeclaration(
-            [
-              t.importSpecifier(
+    if (!hasGTConfig)
+      ast.program.body.unshift(
+        cjsEnabled
+          ? t.variableDeclaration('const', [
+              t.variableDeclarator(
                 t.identifier('withGTConfig'),
-                t.identifier('withGTConfig')
+                t.memberExpression(
+                  t.callExpression(t.identifier('require'), [
+                    t.stringLiteral('gt-next/config'),
+                  ]),
+                  t.identifier('withGTConfig')
+                )
               ),
-            ],
-            t.stringLiteral('gt-next/config')
-          )
-    );
+            ])
+          : t.importDeclaration(
+              [
+                t.importSpecifier(
+                  t.identifier('withGTConfig'),
+                  t.identifier('withGTConfig')
+                ),
+              ],
+              t.stringLiteral('gt-next/config')
+            )
+      );
 
     // Find and transform the default export
     traverse(ast, {
       AssignmentExpression(path) {
         // CommonJS: module.exports = config
-        const { left, right } = path.node;
-        if (
-          t.isMemberExpression(left) &&
-          t.isIdentifier(left.object, { name: 'module' }) &&
-          t.isIdentifier(left.property, { name: 'exports' }) &&
-          path.parentPath.isExpressionStatement() &&
-          path.parentPath.parentPath.isProgram()
-        ) {
+        if (isTopLevelModuleExports(path)) {
           path.node.right = t.callExpression(t.identifier('withGTConfig'), [
-            right,
+            path.node.right,
             t.objectExpression([]),
           ]);
           path.skip();
@@ -229,4 +235,18 @@ export async function handleInitGT(
     logger.error(`Error parsing file ${filepath}: ${error}`);
     errors.push(`Failed to parse ${filepath}: ${error}`);
   }
+}
+
+/** Whether the assignment is a top-level `module.exports = ...` statement. */
+function isTopLevelModuleExports(
+  path: NodePath<t.AssignmentExpression>
+): boolean {
+  const { left } = path.node;
+  return (
+    t.isMemberExpression(left) &&
+    t.isIdentifier(left.object, { name: 'module' }) &&
+    t.isIdentifier(left.property, { name: 'exports' }) &&
+    path.parentPath.isExpressionStatement() &&
+    path.parentPath.parentPath.isProgram()
+  );
 }
