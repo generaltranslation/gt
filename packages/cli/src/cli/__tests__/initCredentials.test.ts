@@ -437,7 +437,7 @@ describe('init development credentials', () => {
         'New App'
       )
     ).rejects.toThrow(
-      /Setup needs these options: --org-id[\s\S]*Accessible organizations for --org-id: Acme \(o1\), Beta \(o2\)/
+      /Setup needs these options: --org-id[\s\S]*Accessible organizations for --org-id:\n {2}- Acme \(o1\)\n {2}- Beta \(o2\)/
     );
     // Only the sign-in reveals how many organizations there are.
     expect(login).toHaveBeenCalledTimes(1);
@@ -463,7 +463,7 @@ describe('init development credentials', () => {
         'New App'
       )
     ).rejects.toThrow(
-      '--org-id o3 is not an accessible organization; use one of Acme (o1), Beta (o2)'
+      '--org-id o3 is not an accessible organization; use one of:\n  - Acme (o1)\n  - Beta (o2)'
     );
     expect(api.createProject).not.toHaveBeenCalled();
   });

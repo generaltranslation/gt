@@ -143,18 +143,18 @@ async function resolveNewProject(
     throw new OnboardingError(noAccessibleOrgError(settings.dashboardUrl));
   }
   // The CLI has no other way to look up organization IDs, so a run that
-  // needs --org-id lists the ones this account can use.
-  const orgList = orgs.map((org) => `${org.name} (${org.id})`).join(', ');
+  // needs --org-id lists the ones this account can use, one per line.
+  const orgList = orgs.map((org) => `\n  - ${org.name} (${org.id})`).join('');
   if (options.orgId && !orgs.some((org) => org.id === options.orgId)) {
     session.reject(
-      `--org-id ${options.orgId} is not an accessible organization; use one of ${orgList}`
+      `--org-id ${options.orgId} is not an accessible organization; use one of:${orgList}`
     );
   }
   const orgId = await session.answer('--org-id', {
     explicit: options.orgId,
     // One organization is not a choice between options.
     configured: orgs.length === 1 ? orgs[0].id : undefined,
-    hint: `Accessible organizations for --org-id: ${orgList}`,
+    hint: `Accessible organizations for --org-id:${orgList}`,
     ask: () =>
       promptSelect({
         message: 'Which organization should own the new project?',
