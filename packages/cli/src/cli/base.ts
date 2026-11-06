@@ -1702,6 +1702,7 @@ See https://www.npmjs.com/package/gt-vue`);
       framework: reactSetup.framework,
       configuredAppEntry:
         reactSetup.framework === 'next-app' || buildTool !== undefined,
+      cacheComponents: reactSetup.cacheComponents,
       docsUrl: getSetupDocsUrl(reactSetup.framework),
       locales: resolvedLocales,
       configFilepath,

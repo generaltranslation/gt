@@ -794,6 +794,105 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     );
   });
 
+  describe('Next.js App Router with cacheComponents', () => {
+    const layout = `export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return <html lang="en"><body>{children}</body></html>;
+}
+`;
+
+    function useNextApp(cacheComponents: boolean) {
+      useFreshApp({
+        name: 'example-app',
+        dependencies: { next: '*', 'gt-next': '*' },
+        devDependencies: { gt: '*' },
+      });
+      vi.mocked(detectFramework).mockResolvedValue({
+        name: 'next-app',
+        type: 'react',
+      });
+      fs.writeFileSync(
+        file('next.config.ts'),
+        `const nextConfig = { cacheComponents: ${cacheComponents} };\nexport default nextConfig;\n`
+      );
+      fs.mkdirSync(file('app'));
+      fs.writeFileSync(file('app/layout.tsx'), layout);
+    }
+
+    const init = () =>
+      run(
+        'init',
+        '--json',
+        '--defaults',
+        '--locales',
+        'fr',
+        '--no-dev-credentials'
+      );
+
+    it('leaves the root layout alone and links the Cache Components guide', async () => {
+      useNextApp(true);
+
+      await init();
+
+      expect(fs.readFileSync(file('app/layout.tsx'), 'utf8')).toBe(layout);
+      expect(fs.readFileSync(file('next.config.ts'), 'utf8')).toContain(
+        'withGTConfig(nextConfig'
+      );
+      expect(events().at(-1)).toMatchObject({
+        outcome: 'needs_human_action',
+        actions: [
+          expect.stringContaining(
+            'https://generaltranslation.com/docs/react/nextjs/cache-components'
+          ),
+        ],
+      });
+    });
+
+    it('leaves the root layout alone with only a custom getLocale()', async () => {
+      useNextApp(true);
+      fs.writeFileSync(
+        file('getLocale.ts'),
+        'export default async () => "en";'
+      );
+
+      await init();
+
+      expect(fs.readFileSync(file('app/layout.tsx'), 'utf8')).toBe(layout);
+      expect(events().at(-1)).toMatchObject({
+        outcome: 'needs_human_action',
+      });
+    });
+
+    it('adds <GTProvider> when the app has custom getLocale() and getRegion()', async () => {
+      useNextApp(true);
+      fs.writeFileSync(
+        file('getLocale.ts'),
+        'export default async () => "en";'
+      );
+      fs.writeFileSync(
+        file('getRegion.ts'),
+        'export default async () => undefined;'
+      );
+
+      await init();
+
+      expect(fs.readFileSync(file('app/layout.tsx'), 'utf8')).toContain(
+        '<GTProvider>'
+      );
+      expect(events().at(-1)).toMatchObject({ outcome: 'success' });
+    });
+
+    it('adds <GTProvider> when cacheComponents is off', async () => {
+      useNextApp(false);
+
+      await init();
+
+      expect(fs.readFileSync(file('app/layout.tsx'), 'utf8')).toContain(
+        '<GTProvider>'
+      );
+      expect(events().at(-1)).toMatchObject({ outcome: 'success' });
+    });
+  });
+
   it('writes and reuses App Router GT_PROJECT_ID and GT_API_KEY credentials', async () => {
     vi.mocked(detectFramework).mockResolvedValue({
       name: 'next-app',

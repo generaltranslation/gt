@@ -19,6 +19,12 @@ import {
 } from './frameworkUtils.js';
 import { Libraries } from '../types/libraries.js';
 import { getBuildToolSetup, getSetupDocsUrl } from './buildTools/index.js';
+import {
+  CACHE_COMPONENTS_DOCS_URL,
+  CACHE_COMPONENTS_SETUP_STEP,
+  hasCustomRequestFunctions,
+  isCacheComponentsEnabled,
+} from '../next/cacheComponents.js';
 import type { InitOptions, OnboardingSession } from './onboarding.js';
 
 /** Everything the React application setup will do, resolved before changes. */
@@ -28,6 +34,11 @@ export type ReactSetupPlan = {
   /** GT library to install, when it is not installed yet. */
   install?: string;
   nextConfigPath?: string;
+  /**
+   * cacheComponents is enabled without custom getLocale() and getRegion(), so <GTProvider>
+   * waits for the Cache Components guide's app/[locale] setup.
+   */
+  cacheComponents?: boolean;
   formatter?: Formatter;
 };
 
@@ -132,6 +143,10 @@ Please let us know what you would like to see added at https://github.com/genera
     ]);
     if (!plan.nextConfigPath) {
       session.reject('No next.config.[js|ts|mjs|mts] file found');
+    } else {
+      plan.cacheComponents =
+        isCacheComponentsEnabled(plan.nextConfigPath) &&
+        !hasCustomRequestFunctions(process.cwd());
     }
     const formatter = await detectFormatter();
     if (
@@ -164,28 +179,33 @@ export async function executeReactSetup(
 
   const errors: string[] = [];
   const warnings: string[] = [];
-  const spinner = logger.createSpinner();
-  spinner.start('Adding GTProvider to the root layout...');
-  // Add GTProvider to the root layout; content is never wrapped in <T>
-  const { filesUpdated } = await wrapContentNext(
-    {
-      ...options,
-      disableIds: true,
-      disableFormatting: true,
-      skipTs: true,
-      addGTProvider: true,
-    },
-    Libraries.GT_NEXT,
-    errors,
-    warnings
-  );
-  spinner.stop(
-    chalk.green(
-      `Success! Updated ${chalk.bold.cyan(filesUpdated.length)} files:\n`
-    ) + filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
-  );
-  if (filesUpdated.length > 0)
-    session.step('added GTProvider to the root layout');
+  const filesUpdated: string[] = [];
+  // With cacheComponents, <GTProvider> in the root layout fails the prerender.
+  if (!plan.cacheComponents) {
+    const spinner = logger.createSpinner();
+    spinner.start('Adding GTProvider to the root layout...');
+    // Add GTProvider to the root layout; content is never wrapped in <T>
+    const wrapped = await wrapContentNext(
+      {
+        ...options,
+        disableIds: true,
+        disableFormatting: true,
+        skipTs: true,
+        addGTProvider: true,
+      },
+      Libraries.GT_NEXT,
+      errors,
+      warnings
+    );
+    filesUpdated.push(...wrapped.filesUpdated);
+    spinner.stop(
+      chalk.green(
+        `Success! Updated ${chalk.bold.cyan(filesUpdated.length)} files:\n`
+      ) + filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
+    );
+    if (filesUpdated.length > 0)
+      session.step('added GTProvider to the root layout');
+  }
 
   // Add the withGTConfig() function to the next.config.js file
   const tsconfigPath = findFilepath(['tsconfig.json']);
@@ -220,6 +240,23 @@ export async function executeReactSetup(
     chalk.green(`Added withGTConfig() to your ${plan.nextConfigPath} file.`)
   );
   session.step(`added withGTConfig() to ${plan.nextConfigPath}`);
+
+  if (plan.cacheComponents) {
+    session.humanActions.push(
+      `${CACHE_COMPONENTS_SETUP_STEP} (see ${CACHE_COMPONENTS_DOCS_URL})`
+    );
+    logger.warn(
+      createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Warning',
+        whatHappened:
+          'cacheComponents is enabled, so setup did not add <GTProvider> to the root layout',
+        why: 'Cache Components apps must read the locale from the URL instead of headers and cookies',
+        fix: CACHE_COMPONENTS_SETUP_STEP,
+        docsUrl: CACHE_COMPONENTS_DOCS_URL,
+      })
+    );
+  }
 
   if (plan.formatter) await formatFiles(filesUpdated, plan.formatter);
 }
