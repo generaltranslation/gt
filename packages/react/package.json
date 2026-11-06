@@ -118,12 +118,25 @@
         "types": "./dist/macros.d.mts",
         "default": "./dist/macros.mjs"
       }
+    },
+    "./paths": {
+      "require": {
+        "types": "./dist/paths.d.cts",
+        "default": "./dist/paths.cjs"
+      },
+      "import": {
+        "types": "./dist/paths.d.mts",
+        "default": "./dist/paths.mjs"
+      }
     }
   },
   "typesVersions": {
     "*": {
       "macros": [
         "./dist/macros.d.cts"
+      ],
+      "paths": [
+        "./dist/paths.d.cts"
       ]
     }
   },

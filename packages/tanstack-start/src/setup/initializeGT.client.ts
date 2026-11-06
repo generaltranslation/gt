@@ -20,10 +20,10 @@ export function initializeGT(config: InitializeGTParams): void {
       ? {
           ...config,
           _reload: ({ locale }: { locale: string }) => {
-            const pathname = getPathnameForLocale(
-              window.location.pathname,
-              locale
-            );
+            const pathname = getPathnameForLocale({
+              pathname: window.location.pathname,
+              locale,
+            });
             const destination = new URL(window.location.href);
             destination.pathname = pathname;
             window.location.assign(destination.href);
