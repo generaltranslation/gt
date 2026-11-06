@@ -7,7 +7,9 @@ export async function setupLocadex(
   settings: Settings,
   { openBrowser = true }: { openBrowser?: boolean } = {}
 ): Promise<string> {
-  const urlToOpen = `${settings.dashboardUrl}/api/integrations/github/start?returnTo=%2Fproject%2Flocadex`;
+  // No returnTo: the dashboard reads /project/<segment> as a project ID, and
+  // the route already returns to the dashboard home.
+  const urlToOpen = `${settings.dashboardUrl}/api/integrations/github/start`;
   if (openBrowser) {
     await import('open').then((open) =>
       open.default(urlToOpen, {
