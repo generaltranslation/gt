@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { logger } from '../../console/logger.js';
 import { stringifyJson } from '../stringifyJson.js';
+import { fromWindowsSerializedPath } from '../paths.js';
 import type { Settings } from '../../types/index.js';
 
 const GT_LOCK_FILE = 'gt-lock.json';
@@ -211,6 +212,42 @@ export type EntryMap = Map<string, DownloadedVersionEntry>;
 
 export function buildEntryMap(entries: DownloadedVersionEntry[]): EntryMap {
   return new Map(entries.map((e) => [e.fileId, e]));
+}
+
+/**
+ * Looks up an entry in entryMap. First attempts direct O(1) fileId lookup.
+ * If not found and a portablePath is provided, attempts fallback by matching
+ * entry.fileName (converting Windows-serialized paths to portable POSIX).
+ *
+ * If multiple entries match the portablePath fallback, returns undefined
+ * to prevent ambiguous aliasing.
+ */
+export function findLockfileEntry(
+  entryMap: EntryMap,
+  fileId: string,
+  portablePath?: string
+): DownloadedVersionEntry | undefined {
+  const direct = entryMap.get(fileId);
+  if (direct) return direct;
+
+  if (!portablePath) return undefined;
+
+  const targetPath = portablePath;
+  let matchedEntry: DownloadedVersionEntry | undefined;
+
+  for (const entry of entryMap.values()) {
+    if (!entry.fileName) continue;
+    const normalizedEntryFileName = fromWindowsSerializedPath(entry.fileName);
+    if (normalizedEntryFileName === targetPath) {
+      if (matchedEntry) {
+        // Ambiguous match (multiple entries with the same normalized fileName)
+        return undefined;
+      }
+      matchedEntry = entry;
+    }
+  }
+
+  return matchedEntry;
 }
 
 /**

@@ -6,7 +6,7 @@ import {
 import { SUPPORTED_FILE_EXTENSIONS } from '../files/supportedFiles.js';
 import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig.js';
 import path from 'node:path';
-import { getRelative } from '../../fs/findFilepath.js';
+import { fromWindowsSerializedPath, getRelative } from '../../fs/paths.js';
 import {
   getConfiguredLocaleProperties,
   replaceLocalePlaceholders,
@@ -177,4 +177,48 @@ export function createFileMapping(
   }
 
   return fileMapping;
+}
+
+export type PathRepresentation =
+  | 'portable'
+  | 'host-native'
+  | 'windows-serialized';
+
+/**
+ * Resolves translated output path from FileMapping using an explicit source representation.
+ * Prevents guessing whether backslashes are Windows separators or POSIX filename characters.
+ *
+ * @param fileMapping - The generated FileMapping
+ * @param locale - Target locale
+ * @param sourcePath - Source file path
+ * @param representation - Explicit input format ('portable', 'host-native', or 'windows-serialized')
+ */
+export function lookupFileMapping(
+  fileMapping: FileMapping,
+  locale: string,
+  sourcePath: string,
+  representation: PathRepresentation = 'portable'
+): string | undefined {
+  const mapping = fileMapping[locale];
+  if (!mapping) return undefined;
+
+  let lookupKey = sourcePath;
+
+  if (representation === 'host-native') {
+    lookupKey = getRelative(sourcePath);
+  } else if (representation === 'windows-serialized') {
+    lookupKey = fromWindowsSerializedPath(sourcePath);
+  }
+
+  // 1. Primary lookup
+  if (mapping[lookupKey]) {
+    return mapping[lookupKey];
+  }
+
+  // 2. Fallback for windows-serialized in case the path was already portable
+  if (representation === 'windows-serialized' && mapping[sourcePath]) {
+    return mapping[sourcePath];
+  }
+
+  return undefined;
 }

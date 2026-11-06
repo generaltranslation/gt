@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import path from 'node:path';
-import { createFileMapping } from '../fileMapping.js';
+import { createFileMapping, lookupFileMapping } from '../fileMapping.js';
 import { TEMPLATE_FILE_NAME } from '../../../utils/constants.js';
-import { getRelative } from '../../../fs/findFilepath.js';
+import { getRelative } from '../../../fs/paths.js';
 
 describe('createFileMapping', () => {
   it('uses a relative output path for GTJSON template files', () => {
@@ -194,5 +194,80 @@ describe('createFileMapping', () => {
       );
       expect(mapping['fr-CA'][getRelative(jsonSource)]).toBe('i18n/fr-CA.json');
     });
+
+    it('produces POSIX mapping keys across platforms', () => {
+      const source = path.resolve('nested/docs/intro.mdx');
+      const placeholder = path.resolve('i18n/[locale]/nested/docs/intro.mdx');
+      const mapping = createFileMapping(
+        { mdx: [source] },
+        { mdx: [placeholder] },
+        {},
+        {},
+        ['ja'],
+        'en'
+      );
+      const keys = Object.keys(mapping.ja);
+      expect(keys).toContain('nested/docs/intro.mdx');
+      expect(keys.some((k) => k.includes('\\'))).toBe(false);
+    });
+  });
+});
+
+describe('lookupFileMapping', () => {
+  const fakeMapping = {
+    es: {
+      'public/locales/en.json': 'public/locales/es.json',
+      'docs/guide.mdx': 'i18n/es/docs/guide.mdx',
+    },
+  };
+
+  it('resolves output path with explicit portable representation', () => {
+    const res = lookupFileMapping(
+      fakeMapping,
+      'es',
+      'docs/guide.mdx',
+      'portable'
+    );
+    expect(res).toBe('i18n/es/docs/guide.mdx');
+  });
+
+  it('resolves legacy Windows serialized paths with explicit windows-serialized representation', () => {
+    const res = lookupFileMapping(
+      fakeMapping,
+      'es',
+      'public\\locales\\en.json',
+      'windows-serialized'
+    );
+    expect(res).toBe('public/locales/es.json');
+  });
+
+  it('resolves host-native absolute paths with explicit host-native representation', () => {
+    const absPath = path.resolve('public/locales/en.json');
+    const res = lookupFileMapping(fakeMapping, 'es', absPath, 'host-native');
+    expect(res).toBe('public/locales/es.json');
+  });
+
+  it('preserves literal backslashes in POSIX filenames when using portable representation', () => {
+    const mappingWithBackslash = {
+      es: {
+        'docs/strange\\name.mdx': 'i18n/es/docs/strange\\name.mdx',
+      },
+    };
+    const res = lookupFileMapping(
+      mappingWithBackslash,
+      'es',
+      'docs/strange\\name.mdx',
+      'portable'
+    );
+    expect(res).toBe('i18n/es/docs/strange\\name.mdx');
+  });
+
+  it('returns undefined when locale or key is missing', () => {
+    expect(
+      lookupFileMapping(fakeMapping, 'fr', 'docs/guide.mdx')
+    ).toBeUndefined();
+    expect(
+      lookupFileMapping(fakeMapping, 'es', 'missing.json')
+    ).toBeUndefined();
   });
 });

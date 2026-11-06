@@ -166,10 +166,7 @@ function splitAnchor(url: string): [string, string] {
 function pageUrl(fileName: string): string {
   const relative = getRelative(fileName);
   return normalizeUrl(
-    relative
-      .slice(0, relative.length - path.extname(relative).length)
-      .split(path.sep)
-      .join('/')
+    relative.slice(0, relative.length - path.extname(relative).length)
   );
 }
 

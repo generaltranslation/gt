@@ -19,13 +19,14 @@ import {
   readLockfile,
   writeLockfile,
   findOrCreateEntry,
+  findLockfileEntry,
 } from '../fs/config/downloadedVersions.js';
 import { recordDownloaded, recordRemerged } from '../state/recentDownloads.js';
 import { recordWarning } from '../state/translateWarnings.js';
 import type { FileStatusTracker } from '../workflows/steps/PollJobsStep.js';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import { hasNonIdentityFileFormatTransformForType } from '../formats/files/transformFormat.js';
-import { getRelative } from '../fs/findFilepath.js';
+import { getRelative, isSameFilePath } from '../fs/findFilepath.js';
 import { encodeFileContent } from '../fs/fileContent.js';
 import {
   getInlineElementsLabel,
@@ -169,8 +170,8 @@ function shouldSkipSourceFormatMerge(
 
     const transformedSourcePaths = options.files.resolvedPaths[fileType] || [];
     if (
-      transformedSourcePaths.some(
-        (sourcePath) => getRelative(sourcePath) === inputPath
+      transformedSourcePaths.some((sourcePath) =>
+        isSameFilePath(sourcePath, inputPath)
       )
     ) {
       return true;
@@ -287,7 +288,7 @@ export async function downloadFileBatch(
           fs.mkdirSync(dir, { recursive: true });
         }
         // If a local translation already exists for the same source version, skip overwrite
-        const existingEntry = entryMap.get(fileId);
+        const existingEntry = findLockfileEntry(entryMap, fileId, inputPath);
         const downloadedTranslation =
           existingEntry?.versionId === versionId
             ? existingEntry.translations[locale]
