@@ -745,14 +745,14 @@ const TranslationsProviderContent: React.FC<
     [client, getSourceLanguage, toast]
   );
 
-  // Like source preview URLs, a failure warns and leaves the imported translations as they are.
+  // Like source preview URLs, a failure warns and leaves the translations as they are.
   const warnTranslationPreviewUrlFailures = useCallback(
     (failures: unknown[]) => {
       if (failures.length === 0) return;
       console.error('Could not store translation preview URLs.', failures);
       toast.push({
         title:
-          'Some preview URLs could not be stored. The translations were imported without them.',
+          'Some preview URLs could not be stored. The translations were saved without them.',
         status: 'warning',
         closable: true,
       });

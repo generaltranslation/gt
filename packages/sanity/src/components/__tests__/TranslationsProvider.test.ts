@@ -263,6 +263,50 @@ describe('Save Local Edits', () => {
       { project: 'p' }
     );
   });
+
+  test('saves the translations and warns when a preview URL cannot be stored', async () => {
+    const { client } = createGroqClient([page('page-en', 'en')]);
+    mocks.client = Object.assign(client, {
+      config: () => ({ projectId: 'p', dataset: 'd' }),
+    });
+    mocks.collectExistingTranslations.mockResolvedValue(
+      new Map([
+        [
+          'page-en',
+          [
+            {
+              locale: 'fr',
+              content: 'page-fr',
+              document: { id: 'page-fr', type: 'page' },
+            },
+          ],
+        ],
+      ])
+    );
+    mocks.uploadTranslations.mockResolvedValue({
+      uploadedFiles: [{ fileId: 'page-en', locale: 'fr' }],
+    });
+    mocks.updateTranslationPreviewUrls.mockResolvedValue([
+      new Error('API unavailable'),
+    ]);
+
+    const context = await renderProvider(page('page-en', 'en'));
+    await act(() => context.handleUploadExistingTranslations());
+
+    expect(mocks.toastPush).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'success' })
+    );
+    expect(mocks.toastPush).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title:
+          'Some preview URLs could not be stored. The translations were saved without them.',
+        status: 'warning',
+      })
+    );
+    expect(mocks.toastPush).not.toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'error' })
+    );
+  });
 });
 
 describe('Translate All', () => {
