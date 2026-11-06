@@ -263,6 +263,9 @@ describe('gt-react package exports', () => {
           assert.equal(typeof client.t, 'function');
           assert.equal(rsc.t, undefined);
           assert.notEqual(client.useGT, rsc.useGT);
+          assert.equal(typeof client.useMessages, 'function');
+          assert.notEqual(client.useMessages, rsc.useMessages);
+          assert.equal(client.msg, rsc.msg);
         `,
     ]);
   });

@@ -1,2 +1,2 @@
 export * from './unstable.shared';
-export { getGT } from './unstable/getGT.client';
+export { getGT, getMessages } from './unstable/getGT.client';

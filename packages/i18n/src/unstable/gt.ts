@@ -37,28 +37,46 @@ export type CreateGTParams = {
   lookupTranslation?: LookupTreeTranslation;
 };
 
+/** Renders a built tree, as a GT or an m does. */
+export type RenderTree = (
+  tree: MessageTree,
+  values: Record<string, unknown>,
+  options: MessageTreeMetadata
+) => string;
+
 /**
- * Creates a GT that resolves translations synchronously from the I18nCache.
- * The locale must already be loaded (see getGT) for translations to apply.
+ * The render path shared by createGT and createMessages: resolves the locale,
+ * looks up the tree's translation and renders it.
  */
-export function createGT({
+export function createRenderTree({
   getLocale,
   getEnableI18n,
   lookupTranslation = withDevHotReload((message, options) =>
     getI18nCache().lookupTranslation(options.$locale, message, options)
   ),
-}: CreateGTParams): GT {
+}: CreateGTParams): RenderTree {
+  return (tree, values, options) => {
+    const enabled = getEnableI18n?.() ?? true;
+    const locale = enabled ? getLocale() : getI18nConfig().getDefaultLocale();
+    // Disabled skips every lookup, including custom ones with default-locale entries.
+    const lookup = enabled ? lookupTranslation : () => undefined;
+    return renderMessage(tree, values, locale, options, lookup);
+  };
+}
+
+/**
+ * Creates a GT that resolves translations synchronously from the I18nCache.
+ * The locale must already be loaded (see getGT) for translations to apply.
+ */
+export function createGT(params: CreateGTParams): GT {
+  const renderTree = createRenderTree(params);
   const render = (
     options: GTOptions & Pick<MessageTreeMetadata, '$_hash'>,
     strings: TemplateStringsArray,
     holes: unknown[]
   ): string => {
     const { tree, values } = buildMessage(strings, holes);
-    const enabled = getEnableI18n?.() ?? true;
-    const locale = enabled ? getLocale() : getI18nConfig().getDefaultLocale();
-    // Disabled skips every lookup, including custom ones with default-locale entries.
-    const lookup = enabled ? lookupTranslation : () => undefined;
-    return renderMessage(tree, values, locale, options, lookup);
+    return renderTree(tree, values, options);
   };
   const gt = (first: TemplateStringsArray | GTOptions, ...holes: unknown[]) =>
     isTemplateStringsArray(first)
@@ -69,18 +87,26 @@ export function createGT({
 }
 
 /** Loads the locale's translations, then returns a GT bound to that locale. */
-export async function getGT({
+export async function getGT(conditions: {
+  locale: string;
+  enableI18n: boolean;
+}): Promise<GT> {
+  return createGT(await loadCreateGTParams(conditions));
+}
+
+/** Loads the locale's translations, then returns params bound to that locale. */
+export async function loadCreateGTParams({
   locale,
   enableI18n,
 }: {
   locale: string;
   enableI18n: boolean;
-}): Promise<GT> {
+}): Promise<CreateGTParams> {
   const cache = getI18nCache();
   const boundLocale = enableI18n ? locale : getI18nConfig().getDefaultLocale();
   // Keeps the loaded locale even after its cache entry expires.
   const lookupTranslation = await cache.getLookupTranslation(boundLocale);
-  return createGT({
+  return {
     getLocale: () => locale,
     getEnableI18n: () => enableI18n,
     lookupTranslation: withDevHotReload(lookupTranslation, (message, options) =>
@@ -90,7 +116,7 @@ export async function getGT({
         ? lookupTranslation.prefetchEntries([{ message, options }])
         : translateMiss(message, options)
     ),
-  });
+  };
 }
 
 function translateMiss(
@@ -132,6 +158,8 @@ export const t: GT = /* @__PURE__ */ createGT({
   getEnableI18n: () => getWritableConditionStore().getEnableI18n(),
 });
 
-function isTemplateStringsArray(value: unknown): value is TemplateStringsArray {
+export function isTemplateStringsArray(
+  value: unknown
+): value is TemplateStringsArray {
   return Array.isArray(value) && 'raw' in value;
 }

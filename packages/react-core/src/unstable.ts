@@ -4,9 +4,12 @@
 
 export { t } from './unstable/t';
 export { useGT } from './unstable/useGT';
+export { useMessages } from './unstable/useMessages';
 export {
   date,
   derive,
+  mFallback,
+  msg,
   n,
   number,
   part,
@@ -16,5 +19,7 @@ export {
   type Fragment,
   type GT,
   type GTOptions,
+  type M,
+  type Msg,
   type Placeholder,
 } from 'gt-i18n/unstable';

@@ -218,13 +218,25 @@ describe('gt-next package exports', () => {
   `)}`;
 
   distUnstableIt.each([
-    ['client', ['--conditions=browser'], 'gt-next', 'gt-next/unstable'],
-    ['server', [], 'gt-next', 'gt-next/unstable'],
-    ['rsc', [], distFile('index.rsc.mjs'), distFile('unstable.rsc.mjs')],
-    ['/server', [], 'gt-next/server', 'gt-next/unstable/server'],
+    [
+      'client',
+      ['--conditions=browser'],
+      'gt-next',
+      'gt-next/unstable',
+      'useMessages',
+    ],
+    ['server', [], 'gt-next', 'gt-next/unstable', 'useMessages'],
+    [
+      'rsc',
+      [],
+      distFile('index.rsc.mjs'),
+      distFile('unstable.rsc.mjs'),
+      'useMessages',
+    ],
+    ['/server', [], 'gt-next/server', 'gt-next/unstable/server', 'getMessages'],
   ])(
     'keeps the %s root cache when the unstable entry loads later',
-    (_runtime, conditions, rootEntry, unstableEntry) => {
+    (_runtime, conditions, rootEntry, unstableEntry, messagesExport) => {
       const result = spawnSync(
         process.execPath,
         [
@@ -244,6 +256,7 @@ describe('gt-next package exports', () => {
 
             // No global sync locale store backs a t tag in gt-next.
             assert.equal(unstable.t, undefined);
+            assert.equal(typeof unstable[${JSON.stringify(messagesExport)}], 'function');
             assert.equal(getI18nCache(), cache);
             assert.deepEqual(getI18nCache().lookupTranslation('fr', ['Save'], { $format: 'ICU_TREE', $_hash: 'save' }), tree);
           `,

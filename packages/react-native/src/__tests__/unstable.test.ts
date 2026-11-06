@@ -12,6 +12,7 @@ describe('gt-react-native/unstable', () => {
         .sort()
     );
     expect(unstable.useGT).toBe(reactCoreUnstable.useGT);
+    expect(unstable.useMessages).toBe(reactCoreUnstable.useMessages);
   });
 
   it('publishes ./unstable with the React Native source convention', async () => {

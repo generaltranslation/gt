@@ -6,8 +6,11 @@ import { createConditionStoreSingleton } from 'gt-i18n/internal';
 import type { Content } from 'generaltranslation/types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ServerGTProvider } from '../provider/ServerGTProvider';
-import { useGT } from '../unstable';
-import { useGT as useRscGT } from '../unstable.rsc';
+import { msg, useGT, useMessages } from '../unstable';
+import {
+  useGT as useRscGT,
+  useMessages as useRscMessages,
+} from '../unstable.rsc';
 
 vi.mock('react', async (importOriginal) => {
   const react = await importOriginal<typeof import('react')>();
@@ -33,10 +36,20 @@ function Hello() {
   return <span>{gt`Hello, ${{ name }}!`}</span>;
 }
 
-function renderHello(translations: Record<string, Record<string, Content>>) {
+const helloMessage = msg`Hello, ${{ name }}!`;
+
+function HelloMessage() {
+  const m = useMessages();
+  return <span>{m(helloMessage)}</span>;
+}
+
+function renderHello(
+  translations: Record<string, Record<string, Content>>,
+  Component = Hello
+) {
   return renderToStaticMarkup(
     <ServerGTProvider locale='fr' translations={translations}>
-      <Hello />
+      <Component />
     </ServerGTProvider>
   );
 }
@@ -54,6 +67,15 @@ describe('gt-react/unstable', () => {
     );
   });
 
+  it('renders msg() messages with the provider translation through useMessages()', () => {
+    internalInitializeGTSRA({ defaultLocale: 'en', locales: ['en', 'fr'] });
+
+    expect(renderHello({}, HelloMessage)).toBe('<span>Hello, Ada!</span>');
+    expect(
+      renderHello({ fr: { [helloHash]: frenchHello } }, HelloMessage)
+    ).toBe('<span>Bonjour, Ada !</span>');
+  });
+
   it('binds the RSC useGT() to the condition store locale', async () => {
     internalInitializeGTSRA({
       defaultLocale: 'en',
@@ -69,7 +91,9 @@ describe('gt-react/unstable', () => {
     >[0]);
 
     const gt = await useRscGT();
+    const m = await useRscMessages();
 
     expect(gt`Hello, ${{ name }}!`).toBe('Bonjour, Ada !');
+    expect(m(helloMessage)).toBe('Bonjour, Ada !');
   });
 });
