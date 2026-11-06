@@ -33,6 +33,8 @@ export { HTML_CONTENT_PROPS } from './types';
 
 export type {
   Content,
+  ContentByFormat,
+  ContentFor,
   CustomMapping,
   CustomRegionMapping,
   DataFormat,

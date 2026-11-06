@@ -14,3 +14,9 @@ export type HashMetadata = {
   dataFormat?: DataFormat;
   fileFormat?: RuntimeFileFormat;
 };
+
+/** The metadata a message tree is hashed with. */
+export type MessageTreeHashMetadata = Pick<
+  HashMetadata,
+  'context' | 'maxChars' | 'requiresReview'
+>;
