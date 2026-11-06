@@ -1,4 +1,6 @@
 export { getGT, getMessages } from './unstable/getGT';
+export { tx } from './unstable/tx';
+export { dyn } from 'gt-i18n/unstable/internal';
 export {
   date,
   derive,
