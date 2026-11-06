@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.27.2
+
+### Patch Changes
+
+- [#2662](https://github.com/generaltranslation/gt/pull/2662) [`bc88c3f`](https://github.com/generaltranslation/gt/commit/bc88c3f850e75d38e1459ae6ad612c1da0917813) Thanks [@pie575](https://github.com/pie575)! - Show server-provided translation failure reasons, including insufficient credit details, in CLI errors and the translation summary. Display readable inline catalog names instead of the internal template filename.
+
 ## 2.27.1
 
 ### Patch Changes
