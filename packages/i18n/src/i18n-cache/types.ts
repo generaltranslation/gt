@@ -34,7 +34,6 @@ export type I18nCacheConstructorParams =
      * disables expiry, and a number sets an explicit TTL.
      */
     cacheExpiryTime?: number | null;
-    devApiKey?: string;
     loadTranslations?: TranslationsLoader;
     batchConfig?: TranslationBatchConfig;
     runtimeTranslation?: RuntimeTranslationConfig;
@@ -45,7 +44,6 @@ export type I18nCacheConstructorParams =
  */
 export type I18nCacheConfig = {
   projectId?: string;
-  devApiKey?: string;
   apiKey?: string;
   runtimeUrl?: string | null;
   modelProvider?: string;

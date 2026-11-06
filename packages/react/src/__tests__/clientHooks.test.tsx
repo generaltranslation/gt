@@ -121,7 +121,7 @@ describe('client hooks', () => {
       initializeGT({
         defaultLocale: 'en',
         locales: ['en', 'fr'],
-        devApiKey: 'gtx-dev-test',
+        apiKey: 'gtx-dev-test',
         projectId: 'test-project',
       });
     });

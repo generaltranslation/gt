@@ -32,7 +32,10 @@ it('skips the GT compiler and warns when it is not installed', () => {
     experimentalCompilerOptions: { type: 'babel' },
   });
 
-  expect(plugins.map((plugin) => plugin.name)).toEqual(['gt-tanstack-start']);
+  expect(plugins.map((plugin) => plugin.name)).toEqual([
+    'gt-tanstack-start',
+    'gt-react',
+  ]);
   const warnOnce = vi.fn();
   const configResolved = plugins[0].configResolved;
   if (typeof configResolved !== 'function') {

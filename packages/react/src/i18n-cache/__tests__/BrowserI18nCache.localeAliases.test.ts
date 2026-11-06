@@ -38,7 +38,7 @@ describe('BrowserI18nCache locale persistence', () => {
         locales: ['en-US', locale],
         customMapping: aliases ? { 'en-gb': { code: 'en-GB' } } : {},
         projectId: 'test-project',
-        devApiKey: 'test-key',
+        apiKey: 'test-key',
       });
       const loadTranslations = vi.fn(async () => ({ existing: 'Built text' }));
       const cache = new RuntimeTranslationCache({ loadTranslations });

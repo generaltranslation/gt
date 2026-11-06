@@ -70,7 +70,7 @@ describe('getTranslationApiType', () => {
       'uses the GT runtime API when default URL credentials are present',
       {
         projectId: 'test-project',
-        devApiKey: 'test-key',
+        apiKey: 'test-key',
         runtimeUrl: defaultRuntimeApiUrl,
       },
       TranslationApiType.GT,

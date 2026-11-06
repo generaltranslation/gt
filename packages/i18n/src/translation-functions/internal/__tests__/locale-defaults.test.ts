@@ -15,7 +15,7 @@ import { tx, txInternal } from '../tx';
 const message = 'Hello {name}!';
 const icuHash = (source: string, $context?: string) =>
   hashContent(source, { $format: 'ICU', ...($context && { $context }) });
-const devHotReload = { devApiKey: 'dev-key', projectId: 'project-id' };
+const devHotReload = { apiKey: 'dev-key', projectId: 'project-id' };
 
 /** Registers a cache for en → fr (plus config overrides) with fr as the current locale */
 function setup(

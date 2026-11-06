@@ -6,31 +6,19 @@ describe('runtime credentials', () => {
     vi.unstubAllEnvs();
   });
 
-  it('uses GT_API_KEY as the development key in development', () => {
-    vi.stubEnv('NODE_ENV', 'development');
+  it('reads GT_PROJECT_ID and GT_API_KEY, not GT_DEV_API_KEY', () => {
     vi.stubEnv('GT_PROJECT_ID', 'env-project-id');
-    vi.stubEnv('GT_API_KEY', 'env-api-key');
+    vi.stubEnv('GT_API_KEY', undefined);
     vi.stubEnv('GT_DEV_API_KEY', 'env-dev-api-key');
 
     expect(addRuntimeCredentials({})).toMatchObject({
       projectId: 'env-project-id',
-      apiKey: 'env-api-key',
-      devApiKey: 'env-api-key',
+      apiKey: undefined,
     });
+
+    vi.stubEnv('GT_API_KEY', 'env-api-key');
+    expect(addRuntimeCredentials({}).apiKey).toBe('env-api-key');
   });
-
-  it.each(['production', 'test'])(
-    'reads no development key when NODE_ENV is %s',
-    (nodeEnv) => {
-      vi.stubEnv('NODE_ENV', nodeEnv);
-      vi.stubEnv('GT_API_KEY', 'env-api-key');
-
-      expect(addRuntimeCredentials({})).toMatchObject({
-        apiKey: 'env-api-key',
-        devApiKey: undefined,
-      });
-    }
-  );
 
   it('keeps explicitly supplied credentials over the environment', () => {
     vi.stubEnv('GT_PROJECT_ID', 'env-project-id');
@@ -41,12 +29,10 @@ describe('runtime credentials', () => {
       addRuntimeCredentials({
         projectId: 'explicit-project-id',
         apiKey: 'explicit-api-key',
-        devApiKey: 'explicit-dev-api-key',
       })
     ).toMatchObject({
       projectId: 'explicit-project-id',
       apiKey: 'explicit-api-key',
-      devApiKey: 'explicit-dev-api-key',
     });
   });
 
@@ -57,7 +43,6 @@ describe('runtime credentials', () => {
     expect(addRuntimeCredentials({})).toMatchObject({
       projectId: undefined,
       apiKey: undefined,
-      devApiKey: undefined,
     });
   });
 

@@ -15,7 +15,13 @@
   ],
   "peerDependencies": {
     "react": ">=18.0.0",
-    "react-dom": ">=18.0.0"
+    "react-dom": ">=18.0.0",
+    "vite": ">=6.0.0"
+  },
+  "peerDependenciesMeta": {
+    "vite": {
+      "optional": true
+    }
   },
   "dependencies": {
     "generaltranslation": "workspace:*",
@@ -53,7 +59,8 @@
     "@types/react-dom": ">=18.0.0 <20.0.0",
     "jsdom": "^26.1.0",
     "tsdown": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vite": "^7.1.7"
   },
   "exports": {
     ".": {
@@ -174,6 +181,16 @@
       "import": {
         "types": "./dist/macros.d.mts",
         "default": "./dist/macros.mjs"
+      }
+    },
+    "./vite": {
+      "require": {
+        "types": "./dist/vite.d.cts",
+        "default": "./dist/vite.cjs"
+      },
+      "import": {
+        "types": "./dist/vite.d.mts",
+        "default": "./dist/vite.mjs"
       }
     },
     "./unstable": {

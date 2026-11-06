@@ -58,8 +58,8 @@ The files in `src/_gt/` are hand-written in this example so language switching w
 
 To preview translations as you edit (instead of relying on the committed files), follow [Developing with SPA translations](https://generaltranslation.com/docs/react/guides/developing-spa-translations). In short:
 
-1. The GT compiler is already wired into `vite.config.ts` with `vite as gtCompiler` from `@generaltranslation/compiler`.
-2. Run `npx gt init` and opt into live development translations. It signs in when needed, selects or creates a project, and writes `VITE_GT_PROJECT_ID` and `VITE_GT_DEV_API_KEY` to `.env.local`. The key grants only `project:translations:generate`. `src/index.ts` already forwards these variables to `initializeGTSPA`.
+1. The GT compiler is already wired into `vite.config.ts` with `vite as gtCompiler` from `@generaltranslation/compiler`, next to `gtReact()` from `gt-react/vite`.
+2. Run `npx gt init` and opt into live development translations. It signs in when needed, selects or creates a project, and writes `GT_PROJECT_ID` and `GT_API_KEY` to `.env.local`. The key grants only `project:translations:generate`. `gtReact()` passes both to `gt-react`: the project ID always, and the key only during `pnpm dev`, so `pnpm build` output never contains it.
 3. Run `pnpm dev` and switch to a non-default locale. When you edit translatable content, the compiler registers the change and `gt-react` requests an updated development translation.
 
 To create a runtime key manually for an existing project, sign in with `npx gt login`, then run:
@@ -68,7 +68,7 @@ To create a runtime key manually for an existing project, sign in with `npx gt l
 npx gt api-key create --project-id <your-project-id> --name "Local development" --permission project:translations:generate
 ```
 
-Copy `.env.example` to `.env.local` and set the project ID and printed key. Only expose generate-only runtime keys in browser code; never expose keys with management or file permissions, and do not commit `.env.local`.
+Copy `.env.example` to `.env.local` and set `GT_PROJECT_ID` and `GT_API_KEY` to the project ID and printed key. The dev server exposes the key to the browser, so use only generate-only runtime keys; never use keys with management or file permissions, and do not commit `.env.local`.
 
 ## How this differs from vite-create-app
 
