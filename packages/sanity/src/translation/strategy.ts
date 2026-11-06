@@ -22,13 +22,14 @@ export type SanityTranslationAdapter = {
     schema: Schema,
     baseLanguage: string
   ) => SerializedDocument;
+  /** Writes the translation and returns the published id of the document it is in, if any. */
   patch: (
     docInfo: GTFile,
     deserialized: SanityDocument,
     localeId: string,
     client: SanityClient,
     mergeWithTargetLocale?: boolean
-  ) => Promise<void>;
+  ) => Promise<string | undefined>;
 };
 
 const documentAdapter: SanityTranslationAdapter = {

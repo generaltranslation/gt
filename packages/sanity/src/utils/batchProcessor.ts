@@ -109,20 +109,24 @@ export async function processImportBatch(
   successCount: number;
   failureCount: number;
   successfulImports: string[];
+  /** The document each successful import was written to, by item key. */
+  writtenDocuments: Map<string, { id: string; type: string }>;
   failedItems: { item: ImportBatchItem; error: unknown }[];
 }> {
   const successfulImports: string[] = [];
+  const writtenDocuments = new Map<string, { id: string; type: string }>();
 
   const result = await processBatch(
     items,
     async (item: ImportBatchItem) => {
-      await importDocument(
+      const written = await importDocument(
         item.docInfo,
         item.locale,
         item.data,
         item.translationContext,
         false
       );
+      if (written) writtenDocuments.set(item.key, written);
       return item.key;
     },
     {
@@ -154,5 +158,6 @@ export async function processImportBatch(
   return {
     ...result,
     successfulImports,
+    writtenDocuments,
   };
 }

@@ -1614,6 +1614,145 @@ export type WorkspacePluginInfoResponses = {
 export type WorkspacePluginInfoResponse =
   WorkspacePluginInfoResponses[keyof WorkspacePluginInfoResponses];
 
+export type UpdateFilesData = {
+  /**
+   * An absent field keeps its stored value. `null` clears a nullable field or removes a map entry; other fields reject `null`. In batches and imports, items match stored items by natural key, stored items absent from the batch are untouched, and nothing else is deleted. A blank CSV cell counts as absent.
+   */
+  body: {
+    /**
+     * 1–100 source files or translations; each branch, file, version and locale may appear once.
+     */
+    files: Array<{
+      fileId: string;
+      /**
+       * Branch ID. Defaults to the project default branch.
+       */
+      branchId?: string;
+      /**
+       * Source version ID.
+       */
+      versionId: string;
+      /**
+       * Translation locale. Omit to update the source file.
+       */
+      locale?: string;
+      metadata: {
+        /**
+         * Page that shows this version of the file.
+         */
+        previewUrl?: string | null;
+      };
+    }>;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    projectId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/files';
+};
+
+export type UpdateFilesErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse & {
+    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * A translation does not exist. Nothing is written.
+   */
+  404: ErrorResponse & {
+    code?: 'source_file_not_found' | 'not_found';
+  };
+  /**
+   * A source file version belongs to an integration, which owns its metadata. Nothing is written.
+   */
+  409: ErrorResponse & {
+    code?: 'integration_managed_file';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
+  /**
+   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   */
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type UpdateFilesError = UpdateFilesErrors[keyof UpdateFilesErrors];
+
+export type UpdateFilesResponses = {
+  /**
+   * Each file after the update, in request order. Repeating a request is safe.
+   */
+  200: {
+    /**
+     * Each file after the update, in request order.
+     */
+    files: Array<{
+      branchId: string;
+      fileId: string;
+      versionId: string;
+      /**
+       * Translation locale as stored. Absent for a source file.
+       */
+      locale?: string;
+      metadata: {
+        /**
+         * Page that shows this version of the file.
+         */
+        previewUrl?: string | null;
+      };
+    }>;
+  };
+};
+
+export type UpdateFilesResponse =
+  UpdateFilesResponses[keyof UpdateFilesResponses];
+
 export type GetProjectInfoData = {
   body?: never;
   headers?: {
