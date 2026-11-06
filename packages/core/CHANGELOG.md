@@ -1,5 +1,14 @@
 # generaltranslation
 
+## 9.5.10
+
+### Patch Changes
+
+- [#2653](https://github.com/generaltranslation/gt/pull/2653) [`e1c64a3`](https://github.com/generaltranslation/gt/commit/e1c64a3c27c7a05ffeb81eb2d04ace795d0c3ab5) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - `previewUrl` resolvers now get the Sanity language id of the page as a second argument, `resolve(doc, { language })`, so each locale links to its own page. Imported translations send their page as their preview URL, resolved from the document they were written to. Adds `updateFiles` to the API client and adapter for updating source files and translations.
+
+- Updated dependencies [[`e1c64a3`](https://github.com/generaltranslation/gt/commit/e1c64a3c27c7a05ffeb81eb2d04ace795d0c3ab5)]:
+  - @generaltranslation/api@0.5.7
+
 ## 9.5.9
 
 ### Patch Changes

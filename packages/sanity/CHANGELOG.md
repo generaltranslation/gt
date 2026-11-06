@@ -1,5 +1,23 @@
 # gt-sanity
 
+## 4.0.33
+
+### Patch Changes
+
+- [#2653](https://github.com/generaltranslation/gt/pull/2653) [`e1c64a3`](https://github.com/generaltranslation/gt/commit/e1c64a3c27c7a05ffeb81eb2d04ace795d0c3ab5) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - `previewUrl` resolvers now get the Sanity language id of the page as a second argument, `resolve(doc, { language })`, so each locale links to its own page. Imported translations send their page as their preview URL, resolved from the document they were written to. Adds `updateFiles` to the API client and adapter for updating source files and translations.
+
+- [#2627](https://github.com/generaltranslation/gt/pull/2627) [`9abfcf9`](https://github.com/generaltranslation/gt/commit/9abfcf9ae2fc0b16f79d4d054305f341129bf1a2) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - With `allowNonDefaultSourceLocales`, a document that stopped being its translation group's original no longer gets translations written over it or published from it:
+  - Importing never patches the original's own draft, even when its group records the original under the target locale too.
+  - Translate All leaves out an original whose language was changed to the source locale; its group still records it in its original language, so its translations could not be imported.
+  - Automatic import, and the reference patching and publishing after it, run only while the open document is verified as its group's original.
+
+- [#2605](https://github.com/generaltranslation/gt/pull/2605) [`e3a7269`](https://github.com/generaltranslation/gt/commit/e3a72690b797d2bc924d230dd2fe3e3c7f260fce) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add a `previewUrl` option that sends General Translation the page each source document is shown on, so reviewers can open a string where it appears. Set `origin` to your site and `locations` to each document type's page, in the shape of `presentationTool`'s `resolve.locations` (the Presentation tool itself is not required); each document links to its first location in its published version.
+
+- [#2656](https://github.com/generaltranslation/gt/pull/2656) [`7a04ae5`](https://github.com/generaltranslation/gt/commit/7a04ae500ec2f4c840cc1ccf5838cac0261527bb) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Save Local Edits now sends each uploaded translation's page as its preview URL, so translations made before `previewUrl` was set get preview links without re-importing them.
+
+- Updated dependencies [[`e1c64a3`](https://github.com/generaltranslation/gt/commit/e1c64a3c27c7a05ffeb81eb2d04ace795d0c3ab5)]:
+  - generaltranslation@9.5.10
+
 ## 4.0.32
 
 ### Patch Changes
