@@ -1017,6 +1017,21 @@ const TranslationsProviderContent: React.FC<
         status: count > 0 ? 'success' : 'warning',
         closable: true,
       });
+      warnTranslationPreviewUrlFailures(
+        await updateTranslationPreviewUrls(
+          withTranslations.flatMap(({ info, translations }) =>
+            info.versionId
+              ? translations.map(({ locale, document }) => ({
+                  written: document,
+                  file: { fileId: info.documentId, versionId: info.versionId },
+                  language: locale,
+                }))
+              : []
+          ),
+          client,
+          secrets
+        )
+      );
     } catch (error) {
       console.error('Error uploading existing translations:', error);
       toast.push({
@@ -1039,6 +1054,7 @@ const TranslationsProviderContent: React.FC<
     allowNonDefault,
     getDefaultSourceDocuments,
     getUploadableSources,
+    warnTranslationPreviewUrlFailures,
   ]);
 
   const handleImportAll = useCallback(async () => {

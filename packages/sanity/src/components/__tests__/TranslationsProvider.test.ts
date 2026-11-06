@@ -227,6 +227,42 @@ describe('Save Local Edits', () => {
       { project: 'p' }
     );
   });
+
+  test('sends the preview URL of each translation it uploads', async () => {
+    const { client } = createGroqClient([page('page-en', 'en')]);
+    mocks.client = Object.assign(client, {
+      config: () => ({ projectId: 'p', dataset: 'd' }),
+    });
+    mocks.collectExistingTranslations.mockResolvedValue(
+      new Map([
+        [
+          'page-en',
+          [
+            {
+              locale: 'fr',
+              content: 'page-fr',
+              document: { id: 'page-fr', type: 'page' },
+            },
+          ],
+        ],
+      ])
+    );
+
+    const context = await renderProvider(page('page-en', 'en'));
+    await act(() => context.handleUploadExistingTranslations());
+
+    expect(mocks.updateTranslationPreviewUrls).toHaveBeenCalledWith(
+      [
+        {
+          written: { id: 'page-fr', type: 'page' },
+          file: { fileId: 'page-en', versionId: 'r1' },
+          language: 'fr',
+        },
+      ],
+      mocks.client,
+      { project: 'p' }
+    );
+  });
 });
 
 describe('Translate All', () => {
