@@ -22,19 +22,20 @@ import {
   defaultReferrerLocaleCookieName,
 } from './cookies';
 import { localizeHref } from '../link/localize-utils';
-import { createPathToSharedPathMap } from '../middleware-dir/createPathMatcher';
+import {
+  createPathToSharedPathMap,
+  type PathConfig,
+} from '../middleware-dir/createPathMatcher';
 import { getSharedPath } from '../middleware-dir/matchPath';
 import { resolveMiddlewareConfig } from '../middleware-dir/resolveMiddlewareConfig';
 import { replaceDynamicSegments } from '../middleware-dir/utils';
 import { compilePathRegex, pathnameMatchesRegex } from './pathRegex';
 
-type ClientPathConfig = Record<string, string | Record<string, string>>;
-
 /**
  * Reads the `pathConfig` shared with the client at build time, if localized
  * path aliases are configured. Absent in apps that don't use aliases.
  */
-function getClientPathConfig(): ClientPathConfig | undefined {
+function getPathConfig(): PathConfig | undefined {
   if (typeof window === 'undefined') return undefined;
   try {
     const params = JSON.parse(
@@ -81,7 +82,7 @@ function stripBasePath(pathname: string, basePath: string): string {
  */
 function resolveSharedPath(
   appPath: string,
-  pathConfig: ClientPathConfig | undefined,
+  pathConfig: PathConfig | undefined,
   sourceLocale: string
 ): string {
   if (!pathConfig) return appPath;
@@ -106,7 +107,7 @@ function resolveSharedPath(
 function localizeSharedPath(
   sharedPath: string,
   locale: string,
-  pathConfig: ClientPathConfig | undefined,
+  pathConfig: PathConfig | undefined,
   currentLocale: string,
   defaultLocale: string
 ): string {
@@ -128,10 +129,10 @@ function localizeSharedPath(
  * through unchanged.
  */
 function getMatcherPathConfig(
-  pathConfig: ClientPathConfig,
+  pathConfig: PathConfig,
   locales: string[]
-): ClientPathConfig {
-  const matcherPathConfig: ClientPathConfig = {};
+): PathConfig {
+  const matcherPathConfig: PathConfig = {};
   for (const [sharedPath, localizedPaths] of Object.entries(pathConfig)) {
     if (typeof localizedPaths === 'string') {
       const alias = localizedPaths === '' ? '/' : localizedPaths;
@@ -159,7 +160,7 @@ function resolveAliasedLocaleSwitchPath(
   locale: string,
   defaultLocale: string,
   locales: string[],
-  pathConfig: ClientPathConfig | undefined,
+  pathConfig: PathConfig | undefined,
   prefixDefaultLocale: boolean
 ): string | undefined {
   if (!pathConfig) return undefined;
@@ -279,7 +280,7 @@ export function Client_GTProvider({
           rawPathLocale && locales.includes(rawPathLocale)
             ? stripLocaleFromPathname(appPathname, rawPathLocale)
             : appPathname;
-        const pathConfig = getClientPathConfig();
+        const pathConfig = getPathConfig();
         const { prefixDefaultLocale } = resolveMiddlewareConfig();
         // Resolve the current path through the same pathConfig matcher as the
         // middleware: this maps both static and dynamic localized aliases back
