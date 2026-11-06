@@ -6,7 +6,7 @@
  * Reports parse errors but does not auto-fix.
  */
 
-import { parse } from '@generaltranslation/icu';
+import { parse } from '@generaltranslation/icu/parser';
 
 /**
  * Returns null if the string is valid ICU, or an error message if not.

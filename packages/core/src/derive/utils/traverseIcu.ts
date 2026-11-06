@@ -3,7 +3,7 @@ import {
   TYPE,
   type MessageFormatElement,
   type ParserOptions,
-} from '@generaltranslation/icu';
+} from '@generaltranslation/icu/parser';
 
 type TraverseIcuOptions = ParserOptions & {
   recurseIntoVisited?: boolean;

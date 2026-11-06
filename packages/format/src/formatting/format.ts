@@ -1,7 +1,7 @@
 import { FormatVariables } from '../types';
 import { intlCache } from '../cache/IntlCache';
 import { libraryDefaultLocale } from '../settings/settings';
-import { formatMessage } from '@generaltranslation/icu';
+import { formatMessage } from '@generaltranslation/icu/parser';
 
 type FormatParams<Value, Options> = {
   value: Value;
@@ -23,11 +23,7 @@ export function _formatMessageICU(
   locales: string | string[] = libraryDefaultLocale,
   variables: FormatVariables = {}
 ): string {
-  // Preserve the previous IntlMessageFormat wrapper behavior for truthy
-  // non-string arguments such as booleans and Dates.
-  return (
-    (formatMessage(message, locales, variables) as unknown)?.toString() ?? ''
-  );
+  return formatMessage(message, locales, variables);
 }
 
 /**

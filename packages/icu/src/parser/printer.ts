@@ -3,7 +3,7 @@
  * See THIRD_PARTY_NOTICES.md.
  */
 
-import { SKELETON_TYPE, TYPE } from './types';
+import { SKELETON_TYPE, TYPE } from '../types-dir/ast';
 import { isAsciiLetter, isTagNameCharacter } from './tag';
 import type {
   DateElement,
@@ -12,7 +12,7 @@ import type {
   NumberElement,
   SelectElement,
   TimeElement,
-} from './types';
+} from '../types-dir/ast';
 
 type SimpleFormatStyle = NonNullable<
   (DateElement | TimeElement | NumberElement)['style']

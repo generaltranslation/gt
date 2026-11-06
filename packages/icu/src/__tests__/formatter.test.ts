@@ -4,8 +4,8 @@
  * intl-messageformat is BSD-3-Clause licensed. See ../../THIRD_PARTY_NOTICES.md.
  */
 
-import { describe, expect, expectTypeOf, it, vi } from 'vitest';
-import { formatMessage } from '../index';
+import { describe, expect, it, vi } from 'vitest';
+import { formatMessage } from '../parser';
 
 describe('formatMessage', () => {
   it('interpolates direct arguments without dropping zero', () => {
@@ -17,30 +17,28 @@ describe('formatMessage', () => {
     ).toBe('Hi Ada, count: 0');
   });
 
+  // Plain values format like a template literal, as in formatMessageTree.
   it.each([
-    [false, ''],
+    [false, 'false'],
     [null, ''],
     [undefined, ''],
-    [true, true],
-    [0n, ''],
-    [123n, 123n],
-  ])('formats direct argument %s', (value, expected) => {
+    [true, 'true'],
+    [0n, '0'],
+    [123n, '123'],
+    [new Date(0), String(new Date(0))],
+  ])('formats direct argument %s as text', (value, expected) => {
     expect(formatMessage('{value}', 'en', { value })).toBe(expected);
+    expect(formatMessage('before {value} after', 'en', { value })).toBe(
+      `before ${expected} after`
+    );
   });
 
-  it('exposes the formatter parts return type honestly', () => {
-    expectTypeOf(formatMessage('{value}', 'en', { value: true })).toBeUnknown();
-  });
-
-  it('preserves non-string values as parts like intl-messageformat', () => {
-    const date = new Date(0);
+  it('keeps rich values as parts', () => {
+    const element = { type: 'b' };
     expect(
-      formatMessage('before {value} after', 'en', { value: true })
-    ).toEqual(['before ', true, ' after']);
-    expect(
-      formatMessage('before {value} after', 'en', { value: date })
-    ).toEqual(['before ', date, ' after']);
-    expect(formatMessage('{value}', 'en', { value: date })).toBe(date);
+      formatMessage('before {value} after', 'en', { value: element })
+    ).toEqual(['before ', element, ' after']);
+    expect(formatMessage('{value}', 'en', { value: element })).toBe(element);
   });
 
   it('requires every referenced variable', () => {

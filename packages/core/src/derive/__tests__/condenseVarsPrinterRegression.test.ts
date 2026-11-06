@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatMessage, parse } from '@generaltranslation/icu';
+import { formatMessage, parse } from '@generaltranslation/icu/parser';
 import { condenseVars } from '../condenseVars';
 
 // Pins representative serialized output used transiently by condenseVars
