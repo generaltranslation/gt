@@ -1,5 +1,24 @@
 # @generaltranslation/compiler
 
+## 1.4.0-samsara.0
+
+### Minor Changes
+
+- f3ed76d: Inject compile-time `$_hash` values into statically analyzable `/unstable` tagged templates (`t`, `useGT()`, `getGT()`), so the runtime skips hashing them. Templates using `derive()` or other non-static values are left for the runtime to hash. The list of unstable import sources now lives in `generaltranslation/internal`.
+- 07209de: The CLI extracts deferred `msg` messages imported from an `/unstable` entry as message trees. `` msg`...` `` and `` msg({ context, maxChars, requiresReview })`...` `` are extracted like `t`, including aliases, configured tags, and `derive()` variants. `msg('Save')`, or a template literal without values, uploads the literal text as the tree `['Save']`; any other `msg()` argument is skipped with a warning. Calls to the `m` function from `useMessages()` / `getMessages()` are not extracted. The compiler injects `$_hash` into static `` msg`...` `` templates, as it does for `t`.
+
+### Patch Changes
+
+- Updated dependencies [22b6915]
+- Updated dependencies [f3ed76d]
+- Updated dependencies [4b6ea22]
+- Updated dependencies [cc73381]
+- Updated dependencies [726168a]
+- Updated dependencies [040ea63]
+  - generaltranslation@10.0.0-samsara.1
+  - @generaltranslation/format@1.0.0-samsara.2
+  - @generaltranslation/icu@0.2.0-samsara.1
+
 ## 1.3.66
 
 ### Patch Changes

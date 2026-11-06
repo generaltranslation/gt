@@ -1,5 +1,28 @@
 # gt-i18n
 
+## 2.0.0-samsara.1
+
+### Minor Changes
+
+- 5ccf4ef: Add deferred messages to `gt-i18n/unstable`. `msg` registers a message to translate later: `msg('Save')` returns the string unchanged, typed as the literal `'Save'`, and `` msg`Save` `` without values or options returns `'Save'`. A template with values or options (`` msg`Hello, ${{ name }}!` ``, `` msg({ context: 'button' })`Save` ``) returns a `Msg`: a plain object with the message tree, its hash and options, and the values as captured, so `date()`, `number()` and the other helpers work as in `t`. A `Msg` can be passed from a server component to a client component; React serializes its dates and bigints. `mFallback` renders messages untranslated for code without i18n. `gt-i18n/unstable/internal` adds `createMessages` and `getMessages`, which return an `m` (type `M`) that renders a `Msg` with its captured values, which per-call values override, through the same lookup as `t`. `m` checks a `Msg`'s shape, since it can come from props or storage, and throws for an object that is not one. A string, including legacy `msg()` output, is literal text with the same hash as `` t`...` `` of that text; ICU syntax such as `{`, `#` and `'` stays as written. `null` and `undefined` are returned unchanged.
+- cc73381: Add experimental `gt-i18n/unstable` and `gt-i18n/unstable/internal` entries. Their API may change in any minor release and is not covered by semver. `t` is a tagged template (`` t`Hello, ${{ name }}!` `` or `` t({ context })`Save` ``) that builds a message tree from the template, hashes it with `hashSource`, and formats loaded tree translations without the ICU string parser. Helpers `plural`, `selectordinal`, `select`, `number`, `date`, `part`, `derive`, and `n` are exported from `gt-i18n/unstable`; framework packages use `createGT` and `getGT` from `gt-i18n/unstable/internal`. Missing tree translations render the source message and, in dev hot reload, are sent for runtime translation like string and JSX messages. Template text is always literal, including ICU syntax such as `#`. A bare value (`` t`Hi ${name}` ``) is an anonymous variable and `${{ name }}` a named one; either renders like a template literal (`true` as `'true'`, `12n` as `'12'`, `null` and `undefined` as nothing), and a `Date` is a type error that points to `date()`; helpers take either form, as in `plural({ count }, ...)` or `plural(count, ...)`. Plural and select branches are strings, or `part` templates when they hold placeholders, and a plain template literal with values in a branch is a type error; `n` is the count of the nearest plural (`` part`${n} items` ``). `derive()` inlines static text chosen in code; its argument must be typed as a string literal or a union of them, so the CLI can read every variant from the type.
+
+  `Content` from `@generaltranslation/format/types` and `generaltranslation/types` replaces the `Translation` type, which `gt-i18n/types` no longer exports. Loaded catalogs, translation loaders, and the translations passed to React Core providers, gt-react-native's `LocaleTranslations`, and gt-svelte's `loadTranslations()` and `<GTProvider>` can hold message trees alongside string and JSX entries. Translation lookups and runtime translation take message trees with `$format: 'ICU_TREE'`, like any other format.
+
+- e6ef0c0: Add an experimental tagged `tx` to `/unstable` entries for runtime translation: `` await tx`Hello, ${{ name }}!` `` or `` await tx({ context: 'button' })`Save` ``. It builds and hashes the message tree like `getGT()`, sends a missing translation for runtime translation and waits for it, then renders through the same path, so validation, fallbacks, and warnings match. It renders the source when i18n is disabled or the locale needs no translation. Like other runtime lookups, a failed request renders the source in production and throws in development. `gt-next/unstable/server` exports `tx` for the request locale, and `gt-node/unstable` exports `tx` for the current `withGT()` locale. Framework packages build it with `createTx()` from `gt-i18n/unstable/internal`, which also exports a `tx` bound to the condition store. Both entries also export `dyn()` for text known only at runtime, such as a database value: `` await tx`${dyn(greeting)}, ${{ name }}!` `` translates the greeting with the sentence in one request, while `name` stays a variable. `dyn()` also works inside `part` branches of `tx` messages; `gt`, `t`, and `msg` reject it at the type level because they render from the catalog. The plain `tx(string)` on root entries is unchanged.
+
+### Patch Changes
+
+- Updated dependencies [22b6915]
+- Updated dependencies [f3ed76d]
+- Updated dependencies [4b6ea22]
+- Updated dependencies [cc73381]
+- Updated dependencies [726168a]
+- Updated dependencies [040ea63]
+  - generaltranslation@10.0.0-samsara.1
+  - @generaltranslation/format@1.0.0-samsara.2
+  - @generaltranslation/icu@0.2.0-samsara.1
+
 ## 2.0.0-samsara.0
 
 ### Major Changes

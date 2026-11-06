@@ -1,5 +1,37 @@
 # @generaltranslation/react-core
 
+## 12.0.0-samsara.1
+
+### Minor Changes
+
+- c5275b4: Add experimental opt-in `/unstable` entries for tagged-template message trees from `gt-i18n/unstable`. Each entry exports the `plural`, `selectordinal`, `select`, `number`, `date`, `part`, and `derive` helpers, `n` for the plural count, and the `GT`, `GTOptions`, `Placeholder`, and `Fragment` types. The `t` tag is only for client-rendered (SPA) apps, so only `gt-react/unstable` and `@generaltranslation/react-core/unstable` export it; server-rendered apps use `useGT()` in components and `getGT()` on the server. Root entries are unchanged. `/unstable` entries may change in any minor release and are not covered by semver.
+  - `@generaltranslation/react-core/unstable`: `useGT()` returns a GT bound to the render locale. It reads translations like the legacy `useGT()`: the provider's translations, then the translation cache, and in dev hot reload it sends misses for runtime translation and re-renders when they arrive. `t` works only in client-rendered (SPA) apps, where module-level calls work too; in a server-rendered app every call throws in development and renders the source with an error in production. Messages render untranslated when i18n is disabled or the requested locale needs no translation.
+  - `gt-react/unstable` and `gt-react-native/unstable`: the react-core client surface, without `t` in React Native. `gt-react/unstable` resolves to an RSC variant under `react-server`, where `useGT()` waits for the request locale's translations and `t` is not exported.
+  - `gt-next/unstable` resolves under the same conditions as `gt-next` and exports `useGT()` instead of `t`. `gt-next/unstable/server` exports an async `getGT()` for the request locale.
+  - `gt-tanstack-start/unstable` adds an async `getGT()` bound to the request on the server and to the browser locale in the browser. It exports no `t`, since TanStack Start renders on the server.
+  - `gt-node/unstable`: an async `getGT()` for the current `withGT()` locale.
+
+- 5ccf4ef: Add deferred messages to the `/unstable` entries. Each entry exports `msg`, `mFallback` and the `M` and `Msg` types from `gt-i18n/unstable`, plus an `m` beside each `GT`: `useMessages()` wherever `useGT()` is exported (react-core, gt-react, gt-react-native, gt-next and gt-tanstack-start, with the gt-react and gt-next RSC variants waiting for the request locale's translations), and an async `getMessages()` wherever `getGT()` is (`gt-next/unstable/server`, `gt-node/unstable` and `gt-tanstack-start/unstable`). ``m(msg`...`)`` renders the message in the bound locale like `useGT()` and `getGT()` do.
+
+### Patch Changes
+
+- cc73381: Add experimental `gt-i18n/unstable` and `gt-i18n/unstable/internal` entries. Their API may change in any minor release and is not covered by semver. `t` is a tagged template (`` t`Hello, ${{ name }}!` `` or `` t({ context })`Save` ``) that builds a message tree from the template, hashes it with `hashSource`, and formats loaded tree translations without the ICU string parser. Helpers `plural`, `selectordinal`, `select`, `number`, `date`, `part`, `derive`, and `n` are exported from `gt-i18n/unstable`; framework packages use `createGT` and `getGT` from `gt-i18n/unstable/internal`. Missing tree translations render the source message and, in dev hot reload, are sent for runtime translation like string and JSX messages. Template text is always literal, including ICU syntax such as `#`. A bare value (`` t`Hi ${name}` ``) is an anonymous variable and `${{ name }}` a named one; either renders like a template literal (`true` as `'true'`, `12n` as `'12'`, `null` and `undefined` as nothing), and a `Date` is a type error that points to `date()`; helpers take either form, as in `plural({ count }, ...)` or `plural(count, ...)`. Plural and select branches are strings, or `part` templates when they hold placeholders, and a plain template literal with values in a branch is a type error; `n` is the count of the nearest plural (`` part`${n} items` ``). `derive()` inlines static text chosen in code; its argument must be typed as a string literal or a union of them, so the CLI can read every variant from the type.
+
+  `Content` from `@generaltranslation/format/types` and `generaltranslation/types` replaces the `Translation` type, which `gt-i18n/types` no longer exports. Loaded catalogs, translation loaders, and the translations passed to React Core providers, gt-react-native's `LocaleTranslations`, and gt-svelte's `loadTranslations()` and `<GTProvider>` can hold message trees alongside string and JSX entries. Translation lookups and runtime translation take message trees with `$format: 'ICU_TREE'`, like any other format.
+
+- 040ea63: From `main` (react-core 11.4.17): keep the `gt` function from `useGT()` (and the dictionary hooks built on the same dev hot reload queue) stable across renders in development, so effects that list it as a dependency no longer re-run after every render. Its identity still changes when a hot-reloaded translation arrives (#2554).
+- Updated dependencies [22b6915]
+- Updated dependencies [f3ed76d]
+- Updated dependencies [4b6ea22]
+- Updated dependencies [5ccf4ef]
+- Updated dependencies [cc73381]
+- Updated dependencies [726168a]
+- Updated dependencies [040ea63]
+- Updated dependencies [e6ef0c0]
+  - generaltranslation@10.0.0-samsara.1
+  - @generaltranslation/format@1.0.0-samsara.2
+  - gt-i18n@2.0.0-samsara.1
+
 ## 12.0.0-samsara.0
 
 ### Major Changes
