@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  createFileUploads,
   createProject,
   createProjectApiKey,
   downloadFiles,
@@ -9,10 +10,15 @@ import {
   listOrgs,
   listProjects,
   publishFiles,
+  putFileUpload,
   submitUserEditDiffs,
   updateFiles,
+  uploadSourceFileReferences,
+  uploadSourceFiles,
   uploadTranslations,
 } from '@generaltranslation/api';
+import { sha256 } from '@noble/hashes/sha2.js';
+import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 import type {
   PublishFilesData,
   SubmitUserEditDiffsData,
@@ -21,6 +27,7 @@ import { createGtApiAdapter } from '../createGtApi';
 
 vi.mock('@generaltranslation/api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@generaltranslation/api')>()),
+  createFileUploads: vi.fn(),
   createProject: vi.fn(),
   createProjectApiKey: vi.fn(),
   downloadFiles: vi.fn(),
@@ -30,8 +37,11 @@ vi.mock('@generaltranslation/api', async (importOriginal) => ({
   listOrgs: vi.fn(),
   listProjects: vi.fn(),
   publishFiles: vi.fn(),
+  putFileUpload: vi.fn(),
   submitUserEditDiffs: vi.fn(),
   updateFiles: vi.fn(),
+  uploadSourceFileReferences: vi.fn(),
+  uploadSourceFiles: vi.fn(),
   uploadTranslations: vi.fn(),
 }));
 
@@ -572,5 +582,182 @@ describe.sequential('createGtApiAdapter', () => {
       sourceLocale: 'source',
       locales: ['target'],
     });
+  });
+});
+
+describe.sequential('createGtApiAdapter uploadSourceFiles', () => {
+  // One byte over the legacy route's 20MB inline limit.
+  const largeContent = 'a'.repeat(20_000_001);
+  const largeHash = bytesToHex(sha256(utf8ToBytes(largeContent)));
+  const presigned = {
+    url: 'https://bucket.example.com/staged',
+    headers: { 'x-amz-checksum-sha256': 'checksum' },
+    expiresAt: '2026-11-07T00:00:00.000Z',
+  };
+  const small = {
+    content: '{"a":"A"}',
+    fileName: 'en.json',
+    fileFormat: 'JSON' as const,
+    locale: 'source',
+  };
+  const large = {
+    content: largeContent,
+    fileName: '__INTERNAL_GT_TEMPLATE_NAME__',
+    fileFormat: 'GTJSON' as const,
+    locale: 'source',
+    formatMetadata: { hash: { sourceCode: {} } },
+  };
+  const uploaded = (fileName: string, fileFormat: 'JSON' | 'GTJSON') => ({
+    branchId: 'branch-id',
+    fileId: `${fileName}-id`,
+    versionId: 'version-id',
+    fileName,
+    fileFormat,
+  });
+
+  function configuredAdapter(withProjectId = true) {
+    const adapter = createGtApiAdapter();
+    adapter.configure({
+      baseUrl: 'https://api.example.com',
+      ...(withProjectId && { projectId: 'project-id' }),
+      customMapping,
+    });
+    return adapter;
+  }
+
+  beforeEach(() => {
+    vi.resetAllMocks();
+    vi.mocked(uploadSourceFiles).mockResolvedValue(
+      result({
+        uploadedFiles: [{ ...uploaded('en.json', 'JSON'), locale: 'en-US' }],
+        count: 1,
+        message: 'Uploaded files',
+      }) as never
+    );
+    vi.mocked(createFileUploads).mockResolvedValue(
+      result({
+        files: [
+          { sha256: largeHash, status: 'upload_required', upload: presigned },
+        ],
+      }) as never
+    );
+    vi.mocked(uploadSourceFileReferences).mockResolvedValue(
+      result({
+        summary: { total: 1, succeeded: 1, failed: 0 },
+        results: [
+          {
+            ...uploaded('__INTERNAL_GT_TEMPLATE_NAME__', 'GTJSON'),
+            status: 'succeeded',
+          },
+        ],
+      }) as never
+    );
+  });
+
+  it('sends a file over the inline limit by reference and the rest inline', async () => {
+    const response = await configuredAdapter().uploadSourceFiles(
+      [{ source: large }, { source: small }],
+      { sourceLocale: 'source' }
+    );
+
+    expect(uploadSourceFiles).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: {
+          data: [
+            {
+              source: {
+                ...small,
+                content: btoa(small.content),
+                locale: 'en-US',
+              },
+            },
+          ],
+          sourceLocale: 'en-US',
+        },
+      })
+    );
+    expect(createFileUploads).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: { projectId: 'project-id' },
+        body: {
+          files: [
+            {
+              sha256: largeHash,
+              fileFormat: 'GTJSON',
+              size: largeContent.length,
+            },
+          ],
+        },
+      })
+    );
+    const [putTarget, putBytes] = vi.mocked(putFileUpload).mock.calls[0]!;
+    expect(putTarget).toBe(presigned);
+    expect(bytesToHex(sha256(putBytes))).toBe(largeHash);
+    const { content: _content, ...largeSource } = large;
+    expect(uploadSourceFileReferences).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: { projectId: 'project-id' },
+        body: {
+          data: [
+            {
+              source: {
+                ...largeSource,
+                locale: 'en-US',
+                upload: { sha256: largeHash },
+              },
+            },
+          ],
+          sourceLocale: 'en-US',
+        },
+      })
+    );
+    expect(response.uploadedFiles).toEqual([
+      { ...uploaded('en.json', 'JSON'), locale: 'source' },
+      uploaded('__INTERNAL_GT_TEMPLATE_NAME__', 'GTJSON'),
+    ]);
+  });
+
+  it('skips the PUT when the project already stores the bytes', async () => {
+    vi.mocked(createFileUploads).mockResolvedValue(
+      result({ files: [{ sha256: largeHash, status: 'exists' }] }) as never
+    );
+
+    await configuredAdapter().uploadSourceFiles([{ source: large }], {
+      sourceLocale: 'source',
+    });
+
+    expect(putFileUpload).not.toHaveBeenCalled();
+    expect(uploadSourceFiles).not.toHaveBeenCalled();
+    expect(uploadSourceFileReferences).toHaveBeenCalledOnce();
+  });
+
+  it('throws when the API reports the referenced file as failed', async () => {
+    vi.mocked(uploadSourceFileReferences).mockResolvedValue(
+      result({
+        summary: { total: 1, succeeded: 0, failed: 1 },
+        results: [
+          {
+            ...uploaded('__INTERNAL_GT_TEMPLATE_NAME__', 'GTJSON'),
+            status: 'failed',
+            error: 'uploaded file is larger than 150MB',
+          },
+        ],
+      }) as never
+    );
+
+    await expect(
+      configuredAdapter().uploadSourceFiles([{ source: large }], {
+        sourceLocale: 'source',
+      })
+    ).rejects.toThrow('uploaded file is larger than 150MB');
+  });
+
+  it('keeps every file inline without a configured project ID', async () => {
+    await configuredAdapter(false).uploadSourceFiles([{ source: large }], {
+      sourceLocale: 'source',
+    });
+
+    expect(createFileUploads).not.toHaveBeenCalled();
+    expect(uploadSourceFiles).toHaveBeenCalledOnce();
   });
 });

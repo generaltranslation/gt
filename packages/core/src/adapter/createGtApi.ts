@@ -1,6 +1,7 @@
 import {
   createApiClient,
   createBranch,
+  createFileUploads,
   createOrgApiKey,
   createProject,
   createProjectApiKey,
@@ -22,9 +23,11 @@ import {
   processBatches,
   processFileMoves,
   publishFiles,
+  putFileUpload,
   submitUserEditDiffs,
   updateFiles,
   uploadAssets,
+  uploadSourceFileReferences,
   uploadSourceFiles,
   uploadTranslations,
   type ApiClientConfig,
@@ -47,8 +50,11 @@ import {
   type UpdateFilesData,
   type UploadAssetsData,
   type UploadSourceFilesData,
+  type UploadSourceFilesResponse,
   type UploadTranslationsData,
 } from '@generaltranslation/api';
+import { sha256 } from '@noble/hashes/sha2.js';
+import { bytesToHex } from '@noble/hashes/utils.js';
 import {
   resolveAliasLocale,
   resolveCanonicalLocale,
@@ -66,10 +72,89 @@ import {
   translate as translateWithConfig,
   translateMany as translateManyWithConfig,
 } from '../translate/runtimeTranslate';
-import { decodeFileContent, encodeFileContent } from '../utils/base64';
+import {
+  decodeBytes,
+  decodedByteLength,
+  decodeFileContent,
+  encodeFileContent,
+} from '../utils/base64';
 import { unwrapApiResult } from '../translate/utils/unwrapApiResult';
 import { validateFileFormatTransforms } from '../translate/utils/validateFileFormatTransform';
 import { isModelProvider, supportedModelProviders } from './modelProvider';
+
+// The legacy upload route rejects inline content over 20MB per file, and
+// Cloudflare rejects request bodies over 100MB.
+const MAX_LEGACY_INLINE_FILE_BYTES = 20_000_000;
+const MAX_INLINE_REQUEST_BYTES = 90 * 1024 * 1024;
+
+function jsonByteLength(value: unknown): number {
+  return value === undefined
+    ? 0
+    : new TextEncoder().encode(JSON.stringify(value)).byteLength;
+}
+
+/** PUTs a source file's bytes to storage unless the project already has them, then uploads it by reference; `formatMetadata` still travels in the request body. */
+async function uploadSourceFileReference(
+  {
+    content,
+    ...source
+  }: UploadSourceFilesData['body']['data'][number]['source'],
+  options: {
+    client: ReturnType<typeof createApiClient>;
+    projectId: string;
+    sourceLocale: string;
+    timeoutMs?: number;
+  }
+): Promise<UploadSourceFilesResponse['uploadedFiles'][number]> {
+  const { client, projectId, sourceLocale, timeoutMs } = options;
+  const bytes = decodeBytes(content);
+  const hash = bytesToHex(sha256(bytes));
+  const {
+    files: [created],
+  } = unwrapApiResult(
+    await createFileUploads({
+      client,
+      path: { projectId },
+      body: {
+        files: [
+          {
+            sha256: hash,
+            fileFormat: source.fileFormat,
+            size: bytes.byteLength,
+          },
+        ],
+      },
+    })
+  );
+  if (created?.upload) {
+    await putFileUpload(created.upload, bytes, { timeoutMs });
+  }
+
+  const {
+    results: [result],
+  } = unwrapApiResult(
+    await uploadSourceFileReferences({
+      client,
+      path: { projectId },
+      body: {
+        data: [{ source: { ...source, upload: { sha256: hash } } }],
+        sourceLocale,
+      },
+    })
+  );
+  if (result?.status !== 'succeeded') {
+    throw new Error(
+      createDiagnosticMessage({
+        source: 'generaltranslation',
+        severity: 'Error',
+        whatHappened: `Source file \`${source.fileName}\` could not be uploaded`,
+        details: result?.error,
+      })
+    );
+  }
+  const { status: _status, error: _error, code: _code, ...uploaded } = result;
+  return uploaded;
+}
 
 async function collect<T>(iterable: AsyncIterable<T>): Promise<T[]> {
   const items: T[] = [];
@@ -647,6 +732,7 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
       };
     },
 
+    /** Sends each file inline while it and its request fit the legacy route's limits, otherwise PUTs its bytes to storage and uploads a reference to them. */
     async uploadSourceFiles(
       files: Array<{
         source: UploadSourceFilesData['body']['data'][number]['source'];
@@ -654,23 +740,54 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
       options: { sourceLocale: string; timeout?: number }
     ) {
       const sourceLocale = resolveServiceLocale(options.sourceLocale);
+      const { projectId } = getConfig();
       const result = await processBatches(files, async (batch) => {
-        const response = unwrapApiResult(
-          await uploadSourceFiles({
-            body: {
-              data: batch.map(({ source }) => ({
-                source: {
-                  ...source,
-                  content: encodeFileContent(source.content, source.fileFormat),
-                  locale: resolveServiceLocale(source.locale),
-                },
-              })),
-              sourceLocale,
+        const client = getClient(options.timeout);
+        let inlineBytes = 0;
+        const sources = batch.map(({ source }) => {
+          const content = encodeFileContent(source.content, source.fileFormat);
+          const size = content.length + jsonByteLength(source.formatMetadata);
+          const inline =
+            !projectId ||
+            (decodedByteLength(content) <= MAX_LEGACY_INLINE_FILE_BYTES &&
+              inlineBytes + size <= MAX_INLINE_REQUEST_BYTES);
+          if (inline) inlineBytes += size;
+          return {
+            inline,
+            source: {
+              ...source,
+              content,
+              locale: resolveServiceLocale(source.locale),
             },
-            client: getClient(options.timeout),
-          })
-        );
-        return response.uploadedFiles.map(aliasUploadedFileLocale);
+          };
+        });
+
+        const inlineSources = sources.filter(({ inline }) => inline);
+        const uploaded =
+          inlineSources.length > 0
+            ? unwrapApiResult(
+                await uploadSourceFiles({
+                  body: {
+                    data: inlineSources.map(({ source }) => ({ source })),
+                    sourceLocale,
+                  },
+                  client,
+                })
+              ).uploadedFiles
+            : [];
+        // One at a time, so only one large file's bytes are held at once.
+        for (const { inline, source } of sources) {
+          if (inline) continue;
+          uploaded.push(
+            await uploadSourceFileReference(source, {
+              client,
+              projectId: projectId!,
+              sourceLocale,
+              timeoutMs: options.timeout,
+            })
+          );
+        }
+        return uploaded.map(aliasUploadedFileLocale);
       });
 
       return { uploadedFiles: result };
