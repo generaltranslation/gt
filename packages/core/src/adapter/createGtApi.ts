@@ -103,10 +103,9 @@ async function uploadSourceFileReference(
     client: ReturnType<typeof createApiClient>;
     projectId: string;
     sourceLocale: string;
-    timeoutMs?: number;
   }
 ): Promise<UploadSourceFilesResponse['uploadedFiles'][number]> {
-  const { client, projectId, sourceLocale, timeoutMs } = options;
+  const { client, projectId, sourceLocale } = options;
   const bytes = decodeBytes(content);
   const hash = bytesToHex(sha256(bytes));
   const {
@@ -127,7 +126,7 @@ async function uploadSourceFileReference(
     })
   );
   if (created?.upload) {
-    await putFileUpload(created.upload, bytes, { timeoutMs });
+    await putFileUpload(created.upload, bytes);
   }
 
   const {
@@ -783,7 +782,6 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
               client,
               projectId: projectId!,
               sourceLocale,
-              timeoutMs: options.timeout,
             })
           );
         }

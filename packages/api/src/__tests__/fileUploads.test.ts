@@ -93,8 +93,8 @@ describe('putFileUpload', () => {
     );
   });
 
-  it('gives each attempt one more second per 256 KiB of the file', async () => {
-    vi.useFakeTimers();
+  it('times out when the presigned URL expires', async () => {
+    vi.useFakeTimers({ now: Date.parse(upload.expiresAt) - 2000 });
     vi.stubGlobal(
       'fetch',
       vi.fn<typeof fetch>(
@@ -106,14 +106,13 @@ describe('putFileUpload', () => {
       )
     );
 
-    const put = putFileUpload(upload, new Uint8Array(2 * 256 * 1024), {
-      timeoutMs: 100,
+    const put = putFileUpload(upload, new Uint8Array([1]), {
       retryPolicy: 'none',
     });
     const settled = expect(put).rejects.toThrow(
-      'Request timed out after 2100ms'
+      'Request timed out after 2000ms'
     );
-    await vi.advanceTimersByTimeAsync(2100);
+    await vi.advanceTimersByTimeAsync(2000);
     await settled;
   });
 

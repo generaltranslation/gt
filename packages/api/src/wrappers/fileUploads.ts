@@ -8,17 +8,12 @@ import { ApiError } from './errors';
 import {
   createRetryingFetch,
   createTimeoutFetch,
-  DEFAULT_TIMEOUT_MS,
   type RetryPolicy,
 } from './transport';
 
 // shortcut: hand-written from the 2026-10-08.v1 contract because this SDK's spec
 // stops at 2026-03-06.v1; replace with the generated operations once it moves on.
 const FILE_UPLOADS_API_VERSION = '2026-10-08.v1';
-
-// Each attempt gets one extra second per 256 KiB, so slow connections can
-// finish large files.
-const MIN_UPLOAD_BYTES_PER_SECOND = 256 * 1024;
 
 export type PresignedFileUpload = {
   url: string;
@@ -91,20 +86,17 @@ export function uploadSourceFileReferences(options: {
 
 /**
  * PUTs a file's bytes to a presigned URL from `createFileUploads`. The URL
- * authorizes the request, so it carries no API credentials. Each attempt's
- * timeout is `timeoutMs` (default `DEFAULT_TIMEOUT_MS`) plus one second per
- * 256 KiB of `bytes`.
+ * authorizes the request, so it carries no API credentials, and the PUT times
+ * out when the URL expires.
  */
 export async function putFileUpload(
   upload: PresignedFileUpload,
   bytes: Uint8Array<ArrayBuffer>,
-  options: { timeoutMs?: number; retryPolicy?: RetryPolicy } = {}
+  options: { retryPolicy?: RetryPolicy } = {}
 ): Promise<void> {
   const fetch = createRetryingFetch({
     fetch: createTimeoutFetch({
-      timeoutMs:
-        (options.timeoutMs ?? DEFAULT_TIMEOUT_MS) +
-        Math.ceil(bytes.byteLength / MIN_UPLOAD_BYTES_PER_SECOND) * 1000,
+      timeoutMs: Math.max(Date.parse(upload.expiresAt) - Date.now(), 0),
     }),
     retryPolicy: options.retryPolicy,
   });
