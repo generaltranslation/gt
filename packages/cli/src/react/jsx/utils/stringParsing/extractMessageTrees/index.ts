@@ -6,6 +6,7 @@ import type { GTLibrary } from '../../../../../types/libraries.js';
 import {
   INLINE_TRANSLATION_HOOK,
   INLINE_TRANSLATION_HOOK_ASYNC,
+  MSG_REGISTRATION_FUNCTION,
   T_REGISTRATION_FUNCTION,
 } from '../../constants.js';
 import { loadTypeScript } from '../../typeChecker.js';
@@ -18,10 +19,12 @@ import { getImportedName } from './imports.js';
 const traverse = traverseModule.default || traverseModule;
 
 /**
- * Extracts tagged-template messages written with the unstable `t`, `useGT()`,
- * and `getGT()` APIs as message tree updates (`dataFormat: 'ICU_TREE'`).
+ * Extracts tagged-template messages written with the unstable `t`, `msg`,
+ * `useGT()`, and `getGT()` APIs as message tree updates
+ * (`dataFormat: 'ICU_TREE'`).
  *
- * Supports t`...`, t({ ...options })`...`, and the same forms on a
+ * Supports t`...`, t({ ...options })`...`, the same forms on `msg` plus
+ * msg('literal'), and the same forms on a
  * `const gt = useGT()` / `const gt = await getGT()` result, including const
  * aliases (`const tr = gt`) and configured tags (`const save = gt({ ... })`).
  * Messages that are not statically analyzable are skipped with a warning, and
@@ -97,8 +100,17 @@ export async function extractMessageTrees(
         const importedName = getImportedName(specifier);
         const binding = path.scope.getBinding(specifier.local.name);
         if (!binding) continue;
-        if (importedName === T_REGISTRATION_FUNCTION) {
-          processTagBinding(binding, undefined, config, output);
+        if (
+          importedName === T_REGISTRATION_FUNCTION ||
+          importedName === MSG_REGISTRATION_FUNCTION
+        ) {
+          processTagBinding(
+            binding,
+            undefined,
+            config,
+            output,
+            importedName === MSG_REGISTRATION_FUNCTION
+          );
         } else if (
           importedName === INLINE_TRANSLATION_HOOK ||
           importedName === INLINE_TRANSLATION_HOOK_ASYNC

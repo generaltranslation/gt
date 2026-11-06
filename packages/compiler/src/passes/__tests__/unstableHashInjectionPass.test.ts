@@ -4,7 +4,7 @@ import { transformWithPlugin } from '../../__tests__/transformWithPlugin';
 import wireFormatCases from '../../../../../test-fixtures/icu-tree-wire-format.json';
 
 const UNSTABLE_HELPERS =
-  't, useGT, getGT, plural, selectordinal, select, number, date, part, derive, n';
+  't, msg, useGT, getGT, plural, selectordinal, select, number, date, part, derive, n';
 
 // The fixtures' free variables, as local values like fixtureParity.test.ts:
 // only a provably primitive value is hashed as an unnamed variable.
@@ -33,6 +33,7 @@ describe('unstableHashInjectionPass', () => {
   // `gt` in each fixture template becomes the tag under test.
   const forms: Record<string, (template: string) => string> = {
     t: (template) => `${template.replace(/^gt/, 't')};`,
+    msg: (template) => `${template.replace(/^gt/, 'msg')};`,
     useGT: (template) =>
       `export function Component() {\n  const gt = useGT();\n  return ${template};\n}`,
     getGT: (template) =>
@@ -68,6 +69,14 @@ describe('unstableHashInjectionPass', () => {
     expect(output).toContain(
       `t({ context: 'button', $_hash: "${button}" })\`Save\``
     );
+  });
+
+  it('rewrites a msg tag and leaves a msg literal call untouched', async () => {
+    const save = hashSource({ source: ['Save'], dataFormat: 'ICU_TREE' });
+    const output = await compile("msg`Save`;\nmsg('Save');");
+    expect(output).toContain(`msg({ $_hash: "${save}" })\`Save\``);
+    expect(output).toContain("msg('Save');");
+    expect(await compile("msg('Save');")).toBeNull();
   });
 
   it.each([
