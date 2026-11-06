@@ -47,6 +47,7 @@ Turbo tasks: `build`, `test`, `lint`, `lint:fix`, `format`, `format:fix`, `trans
 | `gt-next`                               | `packages/next`              | Next.js integration (server/client split, SWC plugin, middleware) |
 | `gt-node`                               | `packages/node`              | Node.js backend translation utilities                             |
 | `gt-react-native`                       | `packages/react-native`      | React Native i18n with native module support                      |
+| `gt-react-router`                       | `packages/react-router`      | React Router framework mode integration                           |
 | `gt-tanstack-start`                     | `packages/tanstack-start`    | TanStack Start integration                                        |
 | `gt-sanity`                             | `packages/sanity`            | Sanity CMS plugin                                                 |
 | `gt-payload`                            | `packages/payload`           | Payload CMS plugin                                                |
@@ -98,7 +99,7 @@ Turbo tasks: `build`, `test`, `lint`, `lint:fix`, `format`, `format:fix`, `trans
 
 Load only the relevant file for the area being changed:
 
-- React, Next.js, React Native, or TanStack Start packages: `.claude/rules/react-packages.md`
+- React, Next.js, React Native, React Router, or TanStack Start packages: `.claude/rules/react-packages.md`
 - Core i18n packages: `.claude/rules/core.md`
 - Compiler or build plugin code: `.claude/rules/compiler.md` and `packages/compiler/AGENTS.md`
 - CLI packages: `.claude/rules/cli.md`
