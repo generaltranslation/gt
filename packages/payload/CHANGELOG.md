@@ -1,5 +1,12 @@
 # gt-payload
 
+## 0.1.4
+
+### Patch Changes
+
+- Updated dependencies [[`e1c64a3`](https://github.com/generaltranslation/gt/commit/e1c64a3c27c7a05ffeb81eb2d04ace795d0c3ab5)]:
+  - generaltranslation@9.5.10
+
 ## 0.1.3
 
 ### Patch Changes

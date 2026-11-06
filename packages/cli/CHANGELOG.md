@@ -1,5 +1,28 @@
 # gtx-cli
 
+## 2.27.1
+
+### Patch Changes
+
+- [#2637](https://github.com/generaltranslation/gt/pull/2637) [`c18b328`](https://github.com/generaltranslation/gt/commit/c18b3284c1a7cd9d6e3884a9ed35abfe6ee36b30) Thanks [@eoinest](https://github.com/eoinest)! - `gt init` now detects Expo and React Native apps instead of setting them up as plain React. It stops before changing anything and links the React Native quickstart. Previously it installed `gt-react`, wrote a loader that Metro can't bundle, and saved `REACT_APP_` env names that Expo never loads.
+
+- [#2599](https://github.com/generaltranslation/gt/pull/2599) [`f3c2c34`](https://github.com/generaltranslation/gt/commit/f3c2c343edb5a2e11cc8120513564095fc491979) Thanks [@eoinest](https://github.com/eoinest)! - Fix `next build` failing right after `gt init`. For Next.js (App Router and Pages Router), `gt init` now saves `GT_PROJECT_ID` and `GT_API_KEY` to `.env.local` instead of `NEXT_PUBLIC_` variables, so one key works in development and production. gt-next no longer fails production builds when a development key is present, and no longer reads `GT_DEV_API_KEY`. `NEXT_PUBLIC_GT_PROJECT_ID` and `NEXT_PUBLIC_GT_DEV_API_KEY` still work, and the `GT_*` names take precedence.
+  - During `next dev`, `withGTConfig` exposes `GT_PROJECT_ID` and `GT_API_KEY` to client code for hot reload, so whatever key `GT_API_KEY` holds reaches the browser in development. Production builds never include it. To keep the key out of the browser in development, set `runtimeUrl: ''` in `withGTConfig`, which turns off runtime translation.
+  - With `GT_API_KEY` in `.env.local`, a local `next build` or `next start` now uses it for runtime translation, the same as a production deployment with `GT_API_KEY` set.
+  - The `gt` CLI prefers your login over a `GT_API_KEY` that comes from an env file, because that key is the app's runtime key. A `GT_API_KEY` set in the shell or CI still takes precedence.
+
+- [#2640](https://github.com/generaltranslation/gt/pull/2640) [`b90cb80`](https://github.com/generaltranslation/gt/commit/b90cb8012c05262ce6669d31d67cf62c6a1bcf43) Thanks [@eoinest](https://github.com/eoinest)! - Fix docs links that pointed to retired or missing pages. The `gt init` setup wizard now links to the quickstart for your framework (Next.js App Router, Next.js Pages Router, Vite, or React) instead of a retired tutorial that redirected to the React overview. The links in the generated AI instruction files no longer 404, and the gt-next "No locale could be determined" warning now links to the App Router static site generation guide.
+
+- [#2643](https://github.com/generaltranslation/gt/pull/2643) [`7fbf1fa`](https://github.com/generaltranslation/gt/commit/7fbf1fa6955150868eec6bcf085005d4cbe0c78e) Thanks [@eoinest](https://github.com/eoinest)! - Make `gt translate` failures easier to act on. The no-project-ID error now points to the dashboard to find or create a project, and sign-in failures lead with the `gt login` fix instead of a generic send error.
+
+- [#2639](https://github.com/generaltranslation/gt/pull/2639) [`69e313d`](https://github.com/generaltranslation/gt/commit/69e313d1f508a850012f6163327f2a139fd4c86e) Thanks [@eoinest](https://github.com/eoinest)! - `gt init` now ends with a single `Done!` followed by numbered next steps for your framework: wrap content in `<T>` or use `useGT()`, add `<LocaleSelector />`, run `npx gt translate`, and start the dev server. It states that setup did not mark any content for translation, and the `--json` result lists the same steps in a new `nextSteps` field. The Next.js App Router spinner and completed step now say they add `GTProvider` instead of claiming to wrap content in `<T>`.
+
+- Updated dependencies [[`e1c64a3`](https://github.com/generaltranslation/gt/commit/e1c64a3c27c7a05ffeb81eb2d04ace795d0c3ab5)]:
+  - generaltranslation@9.5.10
+  - @generaltranslation/python-extractor@0.2.65
+  - @generaltranslation/supported-locales@2.1.46
+  - @generaltranslation/vue-extractor@0.1.24
+
 ## 2.27.0
 
 ### Minor Changes

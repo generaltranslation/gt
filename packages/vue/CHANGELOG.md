@@ -1,5 +1,13 @@
 # gt-vue
 
+## 0.1.25
+
+### Patch Changes
+
+- Updated dependencies [[`e1c64a3`](https://github.com/generaltranslation/gt/commit/e1c64a3c27c7a05ffeb81eb2d04ace795d0c3ab5)]:
+  - generaltranslation@9.5.10
+  - gt-i18n@1.0.41
+
 ## 0.1.24
 
 ### Patch Changes
