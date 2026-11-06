@@ -1,5 +1,52 @@
 # gt-next
 
+## 12.0.0-samsara.1
+
+### Major Changes
+
+- b32ce03: Next.js and gt-node read credentials only from `GT_PROJECT_ID` and `GT_API_KEY`. In development, `GT_API_KEY` is also the hot-reload key.
+  - gt-next no longer reads `NEXT_PUBLIC_GT_PROJECT_ID` or `NEXT_PUBLIC_GT_DEV_API_KEY`. Rename them to `GT_PROJECT_ID` and `GT_API_KEY`, or rerun `npx gt init`.
+  - gt-node no longer reads `GT_DEV_API_KEY`. Rename it to `GT_API_KEY`. Passing `devApiKey` to `initializeGT()` still works.
+  - `gt init` saves `GT_PROJECT_ID` and `GT_API_KEY` for every framework without a client env prefix, and no longer accepts a `NEXT_PUBLIC_GT_DEV_API_KEY` or `NEXT_PUBLIC_GT_PROJECT_ID` as existing Next.js credentials. Frameworks with a client env prefix, such as Vite, still use `<PREFIX>GT_DEV_API_KEY` for now.
+
+### Minor Changes
+
+- c5275b4: Add experimental opt-in `/unstable` entries for tagged-template message trees from `gt-i18n/unstable`. Each entry exports the `plural`, `selectordinal`, `select`, `number`, `date`, `part`, and `derive` helpers, `n` for the plural count, and the `GT`, `GTOptions`, `Placeholder`, and `Fragment` types. The `t` tag is only for client-rendered (SPA) apps, so only `gt-react/unstable` and `@generaltranslation/react-core/unstable` export it; server-rendered apps use `useGT()` in components and `getGT()` on the server. Root entries are unchanged. `/unstable` entries may change in any minor release and are not covered by semver.
+  - `@generaltranslation/react-core/unstable`: `useGT()` returns a GT bound to the render locale. It reads translations like the legacy `useGT()`: the provider's translations, then the translation cache, and in dev hot reload it sends misses for runtime translation and re-renders when they arrive. `t` works only in client-rendered (SPA) apps, where module-level calls work too; in a server-rendered app every call throws in development and renders the source with an error in production. Messages render untranslated when i18n is disabled or the requested locale needs no translation.
+  - `gt-react/unstable` and `gt-react-native/unstable`: the react-core client surface, without `t` in React Native. `gt-react/unstable` resolves to an RSC variant under `react-server`, where `useGT()` waits for the request locale's translations and `t` is not exported.
+  - `gt-next/unstable` resolves under the same conditions as `gt-next` and exports `useGT()` instead of `t`. `gt-next/unstable/server` exports an async `getGT()` for the request locale.
+  - `gt-tanstack-start/unstable` adds an async `getGT()` bound to the request on the server and to the browser locale in the browser. It exports no `t`, since TanStack Start renders on the server.
+  - `gt-node/unstable`: an async `getGT()` for the current `withGT()` locale.
+
+- 5ccf4ef: Add deferred messages to the `/unstable` entries. Each entry exports `msg`, `mFallback` and the `M` and `Msg` types from `gt-i18n/unstable`, plus an `m` beside each `GT`: `useMessages()` wherever `useGT()` is exported (react-core, gt-react, gt-react-native, gt-next and gt-tanstack-start, with the gt-react and gt-next RSC variants waiting for the request locale's translations), and an async `getMessages()` wherever `getGT()` is (`gt-next/unstable/server`, `gt-node/unstable` and `gt-tanstack-start/unstable`). ``m(msg`...`)`` renders the message in the bound locale like `useGT()` and `getGT()` do.
+- e6ef0c0: Add an experimental tagged `tx` to `/unstable` entries for runtime translation: `` await tx`Hello, ${{ name }}!` `` or `` await tx({ context: 'button' })`Save` ``. It builds and hashes the message tree like `getGT()`, sends a missing translation for runtime translation and waits for it, then renders through the same path, so validation, fallbacks, and warnings match. It renders the source when i18n is disabled or the locale needs no translation. Like other runtime lookups, a failed request renders the source in production and throws in development. `gt-next/unstable/server` exports `tx` for the request locale, and `gt-node/unstable` exports `tx` for the current `withGT()` locale. Framework packages build it with `createTx()` from `gt-i18n/unstable/internal`, which also exports a `tx` bound to the condition store. Both entries also export `dyn()` for text known only at runtime, such as a database value: `` await tx`${dyn(greeting)}, ${{ name }}!` `` translates the greeting with the sentence in one request, while `name` stays a variable. `dyn()` also works inside `part` branches of `tx` messages; `gt`, `t`, and `msg` reject it at the type level because they render from the catalog. The plain `tx(string)` on root entries is unchanged.
+
+### Patch Changes
+
+- f3c2c34: Fix `next build` failing right after `gt init`. For Next.js (App Router and Pages Router), `gt init` now saves `GT_PROJECT_ID` and `GT_API_KEY` to `.env.local` instead of `NEXT_PUBLIC_` variables, so one key works in development and production. gt-next no longer fails production builds when a development key is present, and no longer reads `GT_DEV_API_KEY`. `NEXT_PUBLIC_GT_PROJECT_ID` and `NEXT_PUBLIC_GT_DEV_API_KEY` still work, and the `GT_*` names take precedence.
+  - During `next dev`, `withGTConfig` exposes `GT_PROJECT_ID` and `GT_API_KEY` to client code for hot reload, so whatever key `GT_API_KEY` holds reaches the browser in development. Production builds never include it. To keep the key out of the browser in development, set `runtimeUrl: ''` in `withGTConfig`, which turns off runtime translation.
+  - With `GT_API_KEY` in `.env.local`, a local `next build` or `next start` now uses it for runtime translation, the same as a production deployment with `GT_API_KEY` set.
+  - The `gt` CLI prefers your login over a `GT_API_KEY` that comes from an env file, because that key is the app's runtime key. A `GT_API_KEY` set in the shell or CI still takes precedence.
+
+- Updated dependencies [22b6915]
+- Updated dependencies [f3ed76d]
+- Updated dependencies [4b6ea22]
+- Updated dependencies [c5275b4]
+- Updated dependencies [5ccf4ef]
+- Updated dependencies [5ccf4ef]
+- Updated dependencies [cc73381]
+- Updated dependencies [726168a]
+- Updated dependencies [040ea63]
+- Updated dependencies [040ea63]
+- Updated dependencies [07209de]
+- Updated dependencies [e6ef0c0]
+  - generaltranslation@10.0.0-samsara.1
+  - @generaltranslation/compiler@1.4.0-samsara.0
+  - @generaltranslation/format@1.0.0-samsara.2
+  - @generaltranslation/react-core@12.0.0-samsara.1
+  - gt-react@12.0.0-samsara.1
+  - gt-i18n@2.0.0-samsara.1
+
 ## 12.0.0-samsara.0
 
 ### Major Changes

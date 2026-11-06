@@ -1,5 +1,26 @@
 # @generaltranslation/react-core-linter
 
+## 0.2.0-samsara.2
+
+### Minor Changes
+
+- 899526b: Add the `unstable-static-branch` rule, enabled in the recommended config. It reports a `plural`, `selectordinal`, or `select` branch from an `/unstable` entry that is not static text or `part`...``: a plain template literal with values renders them as text, so the message never matches a translation, and a branch read from a variable cannot be extracted. Its editor suggestion wraps the template in `part` and adds the import.
+
+### Patch Changes
+
+- 726168a: Move the ICU string parser to `@generaltranslation/icu/parser`. The root entry no longer exports `parse`, `formatMessage`, `printAST`, the syntax-tree types, `TYPE`, or `SKELETON_TYPE`; import them from `@generaltranslation/icu/parser` instead. `formatMessage` now parses to a message tree and formats it exactly like `formatMessageTree`, with the same types. This changes how plain values render in ICU strings, including through `formatMessage` in `@generaltranslation/format` and `generaltranslation` and the string API built on them: they format like a template literal, so `true` is `'true'`, `false` is `'false'`, and bigints and Dates in a plain `{value}` are text (`null` and `undefined` stay empty). Previously intl-messageformat's rules kept `true`, bigints and Dates as parts, which the string API joined with commas, as in `'before ,true, after'`.
+
+  The root entry now ships without the parser and works with message trees, a compact JSON form of a message where text is a string, `#` is `0`, and each placeholder is a tuple such as `['count', 'plural', { one: [0, ' file'], other: [0, ' files'] }]`. It adds `formatMessageTree` for formatting them (plain values, Dates included, format as text, like a template literal, so the result is typed `string` unless a value is rich, such as a React element or a tag formatter's result), and `validateMessageTree` and `isMessageTree` for checking untrusted trees against the `MessageTree` type. The new `@generaltranslation/icu/internal` entry, shared by General Translation packages and not a public API, holds `buildMessageTree` for building canonical trees from template parts (template text is always literal, including `#`; a `pound` hole is the plural count) and `findConflictingFormat` for finding a variable with two formats ICU spells the same way, which a translation cannot tell apart. The new `@generaltranslation/icu/convert` entry converts ICU strings to message trees with `icuToMessageTree` and prints trees as ICU with `messageTreeToIcu`; printing writes Intl options as an ICU skeleton such as `::currency/USD` (or the named `percent` style) that `icuToMessageTree` reads back as the same format, so every ICU string it reads prints back, leaves out tree-only options with no ICU spelling (such as `timeZone`), and `icuToMessageTree(icu, { source })` restores those from the tree the string was printed from.
+
+- Updated dependencies [22b6915]
+- Updated dependencies [f3ed76d]
+- Updated dependencies [4b6ea22]
+- Updated dependencies [cc73381]
+- Updated dependencies [726168a]
+- Updated dependencies [040ea63]
+  - generaltranslation@10.0.0-samsara.1
+  - @generaltranslation/icu@0.2.0-samsara.1
+
 ## 0.2.0-samsara.1
 
 ### Minor Changes

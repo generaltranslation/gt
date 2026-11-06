@@ -1,5 +1,23 @@
 # gt-sanity
 
+## 4.0.33-samsara.0
+
+### Patch Changes
+
+- 9abfcf9: With `allowNonDefaultSourceLocales`, a document that stopped being its translation group's original no longer gets translations written over it or published from it:
+  - Importing never patches the original's own draft, even when its group records the original under the target locale too.
+  - Translate All leaves out an original whose language was changed to the source locale; its group still records it in its original language, so its translations could not be imported.
+  - Automatic import, and the reference patching and publishing after it, run only while the open document is verified as its group's original.
+
+- e3a7269: Add a `previewUrl` option that sends General Translation the page each source document is shown on, so reviewers can open a string where it appears. Set `origin` to your site and `locations` to each document type's page, in the shape of `presentationTool`'s `resolve.locations` (the Presentation tool itself is not required); each document links to its first location in its published version.
+- Updated dependencies [22b6915]
+- Updated dependencies [f3ed76d]
+- Updated dependencies [4b6ea22]
+- Updated dependencies [cc73381]
+- Updated dependencies [726168a]
+- Updated dependencies [040ea63]
+  - generaltranslation@10.0.0-samsara.1
+
 ## 4.0.32
 
 ### Patch Changes

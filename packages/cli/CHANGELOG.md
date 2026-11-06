@@ -1,5 +1,50 @@
 # gtx-cli
 
+## 3.0.0-samsara.2
+
+### Major Changes
+
+- b32ce03: Next.js and gt-node read credentials only from `GT_PROJECT_ID` and `GT_API_KEY`. In development, `GT_API_KEY` is also the hot-reload key.
+  - gt-next no longer reads `NEXT_PUBLIC_GT_PROJECT_ID` or `NEXT_PUBLIC_GT_DEV_API_KEY`. Rename them to `GT_PROJECT_ID` and `GT_API_KEY`, or rerun `npx gt init`.
+  - gt-node no longer reads `GT_DEV_API_KEY`. Rename it to `GT_API_KEY`. Passing `devApiKey` to `initializeGT()` still works.
+  - `gt init` saves `GT_PROJECT_ID` and `GT_API_KEY` for every framework without a client env prefix, and no longer accepts a `NEXT_PUBLIC_GT_DEV_API_KEY` or `NEXT_PUBLIC_GT_PROJECT_ID` as existing Next.js credentials. Frameworks with a client env prefix, such as Vite, still use `<PREFIX>GT_DEV_API_KEY` for now.
+
+### Minor Changes
+
+- 22b6915: The CLI extracts tagged-template messages written with the unstable API (`t`, `useGT()`, and `getGT()` imported from an `/unstable` entry such as `gt-react/unstable` or `gt-i18n/unstable`) as message trees. It supports `` t`...` `` and `` t({ context, maxChars, requiresReview })`...` ``, bare values as anonymous variables, `${{ name }}` variables, the `plural`, `selectordinal`, `select`, `number`, `date`, `part`, and `derive` helpers, and `n` for the plural count. It reads `derive()` variants and whether a bare value, or a helper value passed without a name, is a plain value from TypeScript types, using the project's `typescript` package (an optional peer dependency; TypeScript 6 and earlier, or 7.1 and later, since 7.0 has no compiler API) and the nearest tsconfig that includes the file; a `derive()` argument must be typed as a string literal or a union of them. A `Date` is a plain value only as a helper's value, as in `date(due)`; a bare `Date` is skipped, since it needs `date()` to be formatted. Without `strictNullChecks`, TypeScript hides `undefined`, which `derive()` renders as no text, so the empty variant is extracted too. A branch template literal with values that is not `part`...``skips the message, since the runtime would render the values as text. It hashes each tree with`hashSource`and uploads it as an`ICU_TREE` entry in the GTJSON file. A message that cannot be analyzed statically is skipped with a warning. Imports from the unstable entries no longer reach the legacy string and JSX extractors.
+
+  `Updates`, now derived from `ContentByFormat`, and `GTJsonFormatMetadata` accept `ICU_TREE` message tree entries.
+
+- 040ea63: From `main` (gt 2.27.0): `gt --version`, `gt -V`, and `gt -v` print the CLI version instead of failing with "unknown option" (#2600). `gt api-key create --org-id <orgId>` creates an organization API key with your `gt login` session, even when an API key is configured, and `--permission` accepts organization permissions such as `org:context:read`; passing one without `--org-id` fails before any request (#2604).
+- 07209de: The CLI extracts deferred `msg` messages imported from an `/unstable` entry as message trees. `` msg`...` `` and `` msg({ context, maxChars, requiresReview })`...` `` are extracted like `t`, including aliases, configured tags, and `derive()` variants. `msg('Save')`, or a template literal without values, uploads the literal text as the tree `['Save']`; any other `msg()` argument is skipped with a warning. Calls to the `m` function from `useMessages()` / `getMessages()` are not extracted. The compiler injects `$_hash` into static `` msg`...` `` templates, as it does for `t`.
+
+### Patch Changes
+
+- f3ed76d: Inject compile-time `$_hash` values into statically analyzable `/unstable` tagged templates (`t`, `useGT()`, `getGT()`), so the runtime skips hashing them. Templates using `derive()` or other non-static values are left for the runtime to hash. The list of unstable import sources now lives in `generaltranslation/internal`.
+- 4b6ea22: Message trees are a data format: `DataFormat` adds `'ICU_TREE'`, and `ContentByFormat` and `ContentFor` in `@generaltranslation/format/types` map each data format to its content, and `Content` covers every data format, message trees included. `hashSource` in `generaltranslation/id` hashes a message tree passed with `dataFormat: 'ICU_TREE'` like any other source, with its `context`, `maxChars` and `requiresReview`; object key order is ignored, and the format in the hashed data keeps tree keys apart from string and JSX keys. The API contract and runtime translation accept `ICU_TREE`.
+- 726168a: Move the ICU string parser to `@generaltranslation/icu/parser`. The root entry no longer exports `parse`, `formatMessage`, `printAST`, the syntax-tree types, `TYPE`, or `SKELETON_TYPE`; import them from `@generaltranslation/icu/parser` instead. `formatMessage` now parses to a message tree and formats it exactly like `formatMessageTree`, with the same types. This changes how plain values render in ICU strings, including through `formatMessage` in `@generaltranslation/format` and `generaltranslation` and the string API built on them: they format like a template literal, so `true` is `'true'`, `false` is `'false'`, and bigints and Dates in a plain `{value}` are text (`null` and `undefined` stay empty). Previously intl-messageformat's rules kept `true`, bigints and Dates as parts, which the string API joined with commas, as in `'before ,true, after'`.
+
+  The root entry now ships without the parser and works with message trees, a compact JSON form of a message where text is a string, `#` is `0`, and each placeholder is a tuple such as `['count', 'plural', { one: [0, ' file'], other: [0, ' files'] }]`. It adds `formatMessageTree` for formatting them (plain values, Dates included, format as text, like a template literal, so the result is typed `string` unless a value is rich, such as a React element or a tag formatter's result), and `validateMessageTree` and `isMessageTree` for checking untrusted trees against the `MessageTree` type. The new `@generaltranslation/icu/internal` entry, shared by General Translation packages and not a public API, holds `buildMessageTree` for building canonical trees from template parts (template text is always literal, including `#`; a `pound` hole is the plural count) and `findConflictingFormat` for finding a variable with two formats ICU spells the same way, which a translation cannot tell apart. The new `@generaltranslation/icu/convert` entry converts ICU strings to message trees with `icuToMessageTree` and prints trees as ICU with `messageTreeToIcu`; printing writes Intl options as an ICU skeleton such as `::currency/USD` (or the named `percent` style) that `icuToMessageTree` reads back as the same format, so every ICU string it reads prints back, leaves out tree-only options with no ICU spelling (such as `timeZone`), and `icuToMessageTree(icu, { source })` restores those from the tree the string was printed from.
+
+- f3c2c34: Fix `next build` failing right after `gt init`. For Next.js (App Router and Pages Router), `gt init` now saves `GT_PROJECT_ID` and `GT_API_KEY` to `.env.local` instead of `NEXT_PUBLIC_` variables, so one key works in development and production. gt-next no longer fails production builds when a development key is present, and no longer reads `GT_DEV_API_KEY`. `NEXT_PUBLIC_GT_PROJECT_ID` and `NEXT_PUBLIC_GT_DEV_API_KEY` still work, and the `GT_*` names take precedence.
+  - During `next dev`, `withGTConfig` exposes `GT_PROJECT_ID` and `GT_API_KEY` to client code for hot reload, so whatever key `GT_API_KEY` holds reaches the browser in development. Production builds never include it. To keep the key out of the browser in development, set `runtimeUrl: ''` in `withGTConfig`, which turns off runtime translation.
+  - With `GT_API_KEY` in `.env.local`, a local `next build` or `next start` now uses it for runtime translation, the same as a production deployment with `GT_API_KEY` set.
+  - The `gt` CLI prefers your login over a `GT_API_KEY` that comes from an env file, because that key is the app's runtime key. A `GT_API_KEY` set in the shell or CI still takes precedence.
+
+- Updated dependencies [22b6915]
+- Updated dependencies [f3ed76d]
+- Updated dependencies [4b6ea22]
+- Updated dependencies [cc73381]
+- Updated dependencies [726168a]
+- Updated dependencies [040ea63]
+  - generaltranslation@10.0.0-samsara.1
+  - @generaltranslation/format@1.0.0-samsara.2
+  - @generaltranslation/icu@0.2.0-samsara.1
+  - @generaltranslation/python-extractor@0.2.65-samsara.0
+  - @generaltranslation/supported-locales@2.1.46-samsara.0
+  - @generaltranslation/svelte-extractor@0.1.0-samsara.2
+  - @generaltranslation/vue-extractor@0.1.24-samsara.0
+
 ## 3.0.0-samsara.1
 
 ### Patch Changes

@@ -1,5 +1,19 @@
 # gtx-cli
 
+## 3.0.0-samsara.2
+
+### Patch Changes
+
+- Updated dependencies [22b6915]
+- Updated dependencies [f3ed76d]
+- Updated dependencies [4b6ea22]
+- Updated dependencies [726168a]
+- Updated dependencies [f3c2c34]
+- Updated dependencies [b32ce03]
+- Updated dependencies [040ea63]
+- Updated dependencies [07209de]
+  - gt@3.0.0-samsara.2
+
 ## 3.0.0-samsara.1
 
 ### Patch Changes
