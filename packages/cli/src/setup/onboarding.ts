@@ -518,6 +518,10 @@ export function describeDefaults(
   if (framework?.type !== 'react') {
     return `Files saved locally in ${translationsDir}`;
   }
+  // The wizard leaves Pages Router apps to the quickstart (resolveReactSetup).
+  if (framework.name === 'next-pages') {
+    return `${getFrameworkDisplayName(framework)}, no app changes (follow the Pages Router quickstart)`;
+  }
   const library = getReactFrameworkLibrary(framework);
   const setup = buildTool?.initializer ?? 'GTProvider';
   return `${library} & ${setup}, ${getFrameworkDisplayName(framework)}, Files saved locally in ${translationsDir}`;
