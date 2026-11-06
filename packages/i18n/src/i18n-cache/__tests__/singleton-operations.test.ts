@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { I18nCache } from '../I18nCache';
-import type { Translation } from '../translations-manager/utils/types/translation-data';
+import type { Content } from '@generaltranslation/format/types';
 
 type TestGlobal = typeof globalThis & {
   __generaltranslation?: {
@@ -19,8 +19,8 @@ function resetI18nCacheGlobal() {
   }
 }
 
-function createCacheStub(): I18nCache<Translation> {
-  return {} as I18nCache<Translation>;
+function createCacheStub(): I18nCache<Content> {
+  return {} as I18nCache<Content>;
 }
 
 describe('i18n cache singleton operations', () => {

@@ -4,7 +4,7 @@ import {
 } from '@generaltranslation/format';
 import { TranslationsLoader } from './types';
 import { defaultCacheUrl } from 'generaltranslation/internal';
-import { Translation } from '../utils/types/translation-data';
+import type { Content } from '@generaltranslation/format/types';
 import type { CustomMapping } from '@generaltranslation/format/types';
 
 /**
@@ -46,7 +46,7 @@ export function createRemoteTranslationLoader(
     if (!response.ok) {
       throw new Error(`Failed to load translations from ${url}`);
     }
-    return (await response.json()) as Record<string, Translation>;
+    return (await response.json()) as Record<string, Content>;
   };
 
   return loader;

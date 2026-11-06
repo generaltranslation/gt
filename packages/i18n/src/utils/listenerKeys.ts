@@ -1,8 +1,8 @@
 import type { LookupOptions } from '../translation-functions/types/options';
-import type { Translation } from '../types';
+import type { Content } from '@generaltranslation/format/types';
 import { hashMessage } from './hashMessage';
 
-export type TranslateListenerLookup<T extends Translation = Translation> =
+export type TranslateListenerLookup<T extends Content = Content> =
   | {
       locale: string;
       message: T;
@@ -18,7 +18,7 @@ export type DictionaryListenerLookup = {
   id: string;
 };
 
-export function getTranslateListenerKey<T extends Translation>(
+export function getTranslateListenerKey<T extends Content>(
   lookup: TranslateListenerLookup<T>
 ): string {
   const hash =

@@ -4,7 +4,7 @@ import type {
 } from 'gt-i18n/internal/types';
 import { getI18nConfig, I18nCache } from 'gt-i18n/internal';
 import type { HtmlTagOptions } from './types';
-import type { Translation } from 'gt-i18n/types';
+import type { Content } from 'generaltranslation/types';
 
 type LocalStorageTranslationCache =
   import('./LocalStorageTranslationCache').LocalStorageTranslationCache;
@@ -29,7 +29,7 @@ export type BrowserI18nCacheParams = I18nCacheConstructorParams & {
 /**
  * I18nCache implementation for Browser.
  */
-export class BrowserI18nCache extends I18nCache<Translation> {
+export class BrowserI18nCache extends I18nCache<Content> {
   /** Whether dev hot reload JSX (Suspense-based <T>) is active */
   private _devHotReloadJsx = false;
 
@@ -97,7 +97,7 @@ function wrapLoaderWithLocalStorage(
     const cache = await getOrCreateLocalStorageCache(localStorageCaches, {
       locale,
       projectId,
-      init: loaderTranslations as Record<string, Translation>,
+      init: loaderTranslations as Record<string, Content>,
     });
     return cache.getInternalCache();
   };
@@ -107,7 +107,7 @@ function getOrCreateLocalStorageCache(
   params: {
     locale: string;
     projectId: string;
-    init?: Record<string, Translation>;
+    init?: Record<string, Content>;
   }
 ): Promise<LocalStorageTranslationCache> {
   // `||=` saves the first promise for this locale, so concurrent calls reuse one cache instance.

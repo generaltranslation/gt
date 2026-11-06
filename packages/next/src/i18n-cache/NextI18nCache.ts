@@ -5,7 +5,8 @@ import {
   type I18nCache,
 } from 'gt-i18n/internal';
 import type { Locale } from 'gt-i18n/internal/types';
-import type { Dictionary, Translation } from 'gt-i18n/types';
+import type { Dictionary } from 'gt-i18n/types';
+import type { Content } from '@generaltranslation/format/types';
 import { ReactI18nCache, type ReactI18nCacheParams } from 'gt-react';
 import { getDictionary } from '../dictionary/getDictionary';
 import { resolveDictionaryLoader } from '../resolvers/resolveDictionaryLoader';
@@ -15,7 +16,7 @@ export function getNextI18nCache(): NextI18nCache {
 }
 
 export function setNextI18nCache(i18nCache: NextI18nCache): void {
-  setI18nCache(i18nCache as I18nCache<Translation>);
+  setI18nCache(i18nCache as I18nCache<Content>);
 }
 
 export type NextI18nCacheParams = ReactI18nCacheParams;
