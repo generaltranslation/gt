@@ -5,7 +5,7 @@
 
 import { resolveLocale } from './locale';
 import { libraryDefaultLocale } from '../settings/settings';
-import { FALLBACK_BRANCH_KEY } from '../settings/syntax';
+import { FALLBACK_BRANCH_KEY, isPluralCategoryKey } from '../settings/syntax';
 import type {
   ExtendedNumberFormatOptions,
   MessageVariables,
@@ -394,9 +394,7 @@ function toPluralRulesNumber(value: PluralValue): number {
 }
 
 function hasPluralCategoryOption(options: Record<string, unknown>): boolean {
-  return Object.keys(options).some(
-    (selector) => selector !== FALLBACK_BRANCH_KEY && selector[0] !== '='
-  );
+  return Object.keys(options).some(isPluralCategoryKey);
 }
 
 function ownOption<T>(options: Record<string, T>, key: string): T | undefined {

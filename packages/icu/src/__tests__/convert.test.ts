@@ -425,6 +425,81 @@ describe('icuToMessageTree with a source', () => {
     );
   });
 
+  it('accepts leaving out the plural categories the locale does not have', () => {
+    // Japanese has only `other`, so `one` and its `name` go.
+    const source: MessageTree = [
+      [
+        'n',
+        'plural',
+        { one: ['Only ', ['name'], "'s file"], other: [0, ' files'] },
+      ],
+    ];
+    expect(
+      icuToMessageTree('{n, plural, other {#件のファイル}}', {
+        source,
+        locale: 'ja',
+      })
+    ).toEqual([['n', 'plural', { other: [0, '件のファイル'] }]]);
+    // Ordinals use the locale's ordinal categories, and a variable may sit
+    // deeper in the left-out branch.
+    const nested: MessageTree = [
+      [
+        'n',
+        'selectordinal',
+        {
+          one: [['role', 'select', { admin: ['by ', ['name']], other: '' }]],
+          other: [0, 'th'],
+        },
+      ],
+    ];
+    expect(
+      icuToMessageTree('{n, selectordinal, other {#.}}', {
+        source: nested,
+        locale: 'ja',
+      })
+    ).toEqual([['n', 'selectordinal', { other: [0, '.'] }]]);
+  });
+
+  it.each<[string, MessageTree, string, string | undefined]>([
+    [
+      'is in a category the locale has (French has one)',
+      [['n', 'plural', { one: ['by ', ['name']], other: [0] }]],
+      '{n, plural, other {#}}',
+      'fr',
+    ],
+    [
+      'is in a left-out category, without a locale',
+      [['n', 'plural', { one: ['by ', ['name']], other: [0] }]],
+      '{n, plural, other {#}}',
+      undefined,
+    ],
+    [
+      'is used outside the left-out category',
+      [['name'], ': ', ['n', 'plural', { one: ['by ', ['name']], other: [0] }]],
+      '{n, plural, other {#}}',
+      'ja',
+    ],
+    [
+      'is in an exact branch, which every locale has',
+      [['n', 'plural', { '=0': ['None by ', ['name']], other: [0] }]],
+      '{n, plural, other {#}}',
+      'ja',
+    ],
+    [
+      'is in a select branch, which every locale has',
+      [['role', 'select', { admin: ['Admin ', ['name']], other: 'User' }]],
+      '{role, select, other {User}}',
+      'ja',
+    ],
+  ])(
+    'rejects a missing variable that %s',
+    (_name, source, translation, locale) => {
+      expect(() => icuToMessageTree(translation, { source, locale })).toThrow(
+        '"name" is missing from the translation'
+      );
+    }
+  );
+
   it('rejects a changed plural offset or plural kind', () => {
     const source: MessageTree = [['n', 'plural', { other: [0] }]];
     expect(() =>

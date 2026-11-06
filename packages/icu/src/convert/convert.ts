@@ -4,15 +4,18 @@ import {
   createConflictingSourceFormatsError,
   createTranslationMismatchError,
 } from '../errors/convertErrors';
+import { isPluralCategoryKey } from '../settings/syntax';
 import { normalizeTree } from '../tree/canonical';
 import type {
   DateTimeNode,
   MessageTree,
   NumberNode,
+  PluralNode,
 } from '../tree/messageTree';
 import { collectVariables, formatKey, variableKey } from '../tree/variables';
 import {
   forEachPlaceholder,
+  isBranchingNode,
   isFormattedNode,
   mapPlaceholders,
 } from '../tree/walk';
@@ -26,6 +29,12 @@ export type IcuToMessageTreeOptions = {
    * variables.
    */
   source?: MessageTree;
+  /**
+   * The locale of the string, when it translates `source`. Plural
+   * categories the locale does not have, like `one` in Japanese, may be left
+   * out, together with the variables only they use.
+   */
+  locale?: string;
 };
 
 /**
@@ -45,14 +54,19 @@ export type IcuToMessageTreeOptions = {
  *
  * Throws a `SyntaxError` for an invalid ICU string, and an `Error` when the
  * string uses a variable the source does not, misses one, or changes its
- * kind or plural offset.
+ * kind or plural offset. With a `locale`, a variable may be missing when the
+ * source uses it only in plural categories that locale does not have:
+ *
+ *   const source = [['n', 'plural', { one: ['Only ', ['name']], other: [0, ' files'] }]];
+ *   icuToMessageTree('{n, plural, other {#件}}', { source, locale: 'ja' });
+ *   // [['n', 'plural', { other: [0, '件'] }]]
  */
 export function icuToMessageTree(
   icu: string,
-  { source }: IcuToMessageTreeOptions = {}
+  { source, locale }: IcuToMessageTreeOptions = {}
 ): MessageTree {
   const tree = toMessageTree(parse(icu));
-  return normalizeTree(source ? restoreFormats(tree, source) : tree);
+  return normalizeTree(source ? restoreFormats(tree, source, locale) : tree);
 }
 
 /**
@@ -113,7 +127,11 @@ function formatSlot(node: NumberNode | DateTimeNode): string {
   return JSON.stringify([variableKey(node), printAST(fromMessageTree([node]))]);
 }
 
-function restoreFormats(tree: MessageTree, source: MessageTree): MessageTree {
+function restoreFormats(
+  tree: MessageTree,
+  source: MessageTree,
+  locale: string | undefined
+): MessageTree {
   // Restoring by spelling needs one format per spelling in the source.
   const conflict = findConflictingFormat(source);
   if (conflict !== undefined) {
@@ -134,7 +152,10 @@ function restoreFormats(tree: MessageTree, source: MessageTree): MessageTree {
         : `"${node[0]}" does not exist in the source`
     );
   }
-  for (const [key, node] of sourceVariables) {
+  const requiredVariables = locale
+    ? collectVariables(withLocaleCategories(source, locale))
+    : sourceVariables;
+  for (const [key, node] of requiredVariables) {
     if (!translationVariables.has(key)) {
       problems.push(`"${node[0]}" is missing from the translation`);
     }
@@ -172,3 +193,34 @@ function restoreFormats(tree: MessageTree, source: MessageTree): MessageTree {
 }
 
 type FormatStyle = (NumberNode | DateTimeNode)[2];
+
+/**
+ * The source without the plural category branches the locale has no use for,
+ * which its translation leaves out (per CLDR, a language uses only its own
+ * categories, and every value without one falls back to `other`).
+ */
+function withLocaleCategories(
+  source: MessageTree,
+  locale: string
+): MessageTree {
+  const cardinal = pluralCategories(locale, 'cardinal');
+  const ordinal = pluralCategories(locale, 'ordinal');
+  return mapPlaceholders(source, (node) => {
+    if (!isBranchingNode(node) || node[1] === 'select') return node;
+    const [name, kind, branches, ...rest] = node as PluralNode;
+    const categories = kind === 'plural' ? cardinal : ordinal;
+    const kept = Object.entries(branches).filter(
+      ([key]) => !isPluralCategoryKey(key) || categories.has(key)
+    );
+    return [name, kind, Object.fromEntries(kept), ...rest];
+  });
+}
+
+function pluralCategories(
+  locale: string,
+  type: Intl.PluralRuleType
+): Set<string> {
+  return new Set(
+    new Intl.PluralRules(locale, { type }).resolvedOptions().pluralCategories
+  );
+}
