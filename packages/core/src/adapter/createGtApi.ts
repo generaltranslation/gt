@@ -82,7 +82,8 @@ import { unwrapApiResult } from '../translate/utils/unwrapApiResult';
 import { validateFileFormatTransforms } from '../translate/utils/validateFileFormatTransform';
 import { isModelProvider, supportedModelProviders } from './modelProvider';
 
-// The legacy upload route rejects inline content over 20MB per file, and
+// Which files stay on the legacy upload route; the rest go by reference. The
+// route's frozen contract rejects inline content over 20MB per file, and
 // Cloudflare rejects request bodies over 100MB.
 const MAX_LEGACY_INLINE_FILE_BYTES = 20_000_000;
 const MAX_INLINE_REQUEST_BYTES = 90 * 1024 * 1024;
