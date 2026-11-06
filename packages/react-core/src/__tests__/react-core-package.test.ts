@@ -6,7 +6,13 @@ import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
-const runtimeEntryNames = ['components', 'components-rsc', 'hooks', 'pure'];
+const runtimeEntryNames = [
+  'components',
+  'components-rsc',
+  'hooks',
+  'pure',
+  'unstable',
+];
 // Each public entrypoint is emitted as a thin re-export barrel in both module
 // formats, plus a type declaration for each format.
 const entryArtifacts = runtimeEntryNames
@@ -62,11 +68,14 @@ describe('@generaltranslation/react-core package exports', () => {
           const components = require('@generaltranslation/react-core/components');
           const hooks = require('@generaltranslation/react-core/hooks');
           const componentsRsc = require('@generaltranslation/react-core/components-rsc');
+          const unstable = require('@generaltranslation/react-core/unstable');
 
           assert.equal(typeof pure.msg, 'function');
           assert.equal(typeof components.T, 'function');
           assert.equal(typeof hooks.useGT, 'function');
           assert.equal(typeof componentsRsc.Branch, 'function');
+          assert.equal(typeof unstable.useGT, 'function');
+          assert.equal(typeof unstable.t, 'function');
         `,
     ]);
   });
@@ -81,11 +90,16 @@ describe('@generaltranslation/react-core package exports', () => {
           import { T } from '@generaltranslation/react-core/components';
           import { useGT } from '@generaltranslation/react-core/hooks';
           import { Branch } from '@generaltranslation/react-core/components-rsc';
+          import * as unstable from '@generaltranslation/react-core/unstable';
 
           assert.equal(typeof msg, 'function');
           assert.equal(typeof T, 'function');
           assert.equal(typeof useGT, 'function');
           assert.equal(typeof Branch, 'function');
+          assert.equal(typeof unstable.t, 'function');
+          assert.equal(typeof unstable.useGT, 'function');
+          assert.equal(typeof unstable.plural, 'function');
+          assert.equal(typeof unstable.derive, 'function');
         `,
     ]);
   });
