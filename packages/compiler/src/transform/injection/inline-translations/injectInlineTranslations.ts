@@ -15,7 +15,7 @@ export function injectInlineTranslationsArgument(
 ): void {
   const table = state.settings.inlineTranslationsTable;
   if (!table || !hash || callExpr.arguments.length !== 2) return;
-  if (canSpreadOverrideHash(callExpr.arguments[1])) return;
+  if (canOptionsReplaceHash(callExpr.arguments[1])) return;
 
   const inline = buildInlineTranslationsFunction(table, hash);
   if (inline) callExpr.arguments.push(inline);
@@ -42,18 +42,26 @@ export function injectInlineTranslationsProp(
 
 /**
  * Whether the hash the runtime reads could differ from the one embedded: a
- * spread after the last $_hash can replace it at runtime.
+ * spread or computed key after the last $_hash can replace it at runtime, and
+ * of repeated $_hash keys the runtime keeps the last while the hash is read
+ * from the first.
  */
-function canSpreadOverrideHash(options: t.Node | undefined): boolean {
+function canOptionsReplaceHash(options: t.Node | undefined): boolean {
   if (!t.isObjectExpression(options)) return true;
-  let spreadAfterHash = false;
+  let hashKeys = 0;
+  let replaceableAfterHash = false;
   for (const prop of options.properties) {
-    if (t.isSpreadElement(prop)) spreadAfterHash = true;
-    else if (t.isObjectProperty(prop) && isHashKey(prop.key)) {
-      spreadAfterHash = false;
+    if (t.isObjectProperty(prop) && !prop.computed && isHashKey(prop.key)) {
+      hashKeys++;
+      replaceableAfterHash = false;
+    } else if (
+      t.isSpreadElement(prop) ||
+      ((t.isObjectProperty(prop) || t.isObjectMethod(prop)) && prop.computed)
+    ) {
+      replaceableAfterHash = true;
     }
   }
-  return spreadAfterHash;
+  return hashKeys > 1 || replaceableAfterHash;
 }
 
 function isHashKey(key: t.ObjectProperty['key']): boolean {

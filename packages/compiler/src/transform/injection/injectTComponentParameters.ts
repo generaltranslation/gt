@@ -44,12 +44,15 @@ export function injectTComponentParameters(
   }
 
   // Embed translations for the configured locales
-  if (!getObjectPropertyFromObjectExpression(callExpr.arguments[1], 'inline')) {
-    injectInlineTranslationsProp(
-      callExpr.arguments[1],
-      translationJsx.hash,
-      state
-    );
+  const runtimeHash = getRuntimeHash(
+    callExpr.arguments[1],
+    translationJsx.hash
+  );
+  if (
+    runtimeHash &&
+    !getObjectPropertyFromObjectExpression(callExpr.arguments[1], 'inline')
+  ) {
+    injectInlineTranslationsProp(callExpr.arguments[1], runtimeHash, state);
   }
 
   // If already has hash set then skip
@@ -64,4 +67,20 @@ export function injectTComponentParameters(
       t.stringLiteral(translationJsx.hash)
     )
   );
+}
+
+/**
+ * The hash the runtime looks up ($_hash, then _hash, then the computed hash),
+ * or undefined when it can't be known at build time.
+ */
+function getRuntimeHash(
+  props: t.ObjectExpression,
+  computedHash: string
+): string | undefined {
+  if (getObjectPropertyFromObjectExpression(props, '$_hash')) return undefined;
+  const hashProp = getObjectPropertyFromObjectExpression(props, '_hash');
+  if (!hashProp) return computedHash;
+  return t.isObjectProperty(hashProp) && t.isStringLiteral(hashProp.value)
+    ? hashProp.value.value
+    : undefined;
 }

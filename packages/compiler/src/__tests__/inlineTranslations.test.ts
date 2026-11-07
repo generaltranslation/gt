@@ -311,6 +311,19 @@ describe('inlineTranslations in gt.config.json', () => {
         }
       );
 
+      it.each([
+        ['a computed key', '{ $_hash: "custom", [key]: "other" }'],
+        ['a repeated $_hash', '{ $_hash: "custom", $_hash: "other" }'],
+      ])('skips gt() calls whose $_hash %s can replace', async (_, options) => {
+        const output = await transformWithPlugin(
+          customOptions(),
+          `import { useGT } from 'gt-react';
+           const gt = useGT();
+           gt("Hello world", ${options});`
+        );
+        expect(output ?? '').not.toContain('(locale) =>');
+      });
+
       it('embeds when $_hash comes after the spread', async () => {
         const output = await transformWithPlugin(
           customOptions(),
@@ -331,6 +344,30 @@ describe('inlineTranslations in gt.config.json', () => {
            gt("Hello world", { ...options });`
         );
         expect(output).toContain('"Bonjour le monde"');
+      });
+
+      it('embeds <T> under a literal _hash, which the runtime looks up', async () => {
+        const output = await transformWithPlugin(
+          customOptions(),
+          `import { jsx } from 'react/jsx-runtime';
+           import { T } from 'gt-react';
+           export const el = jsx(T, { children: "Hello world", _hash: "custom" });`
+        );
+        expect(output).toContain(
+          'inline: (locale) => locale === "fr" ? "Perso" : undefined'
+        );
+      });
+
+      it('skips <T> with a $_hash prop, which the runtime prefers', async () => {
+        const output = await transformWithPlugin(
+          inlineOptions(['fr'], {
+            fr: { [JSX_HELLO_WORLD]: 'Bonjour le monde' },
+          }),
+          `import { jsx } from 'react/jsx-runtime';
+           import { T } from 'gt-react';
+           export const el = jsx(T, { children: "Hello world", $_hash: "custom" });`
+        );
+        expect(output ?? '').not.toContain('inline:');
       });
 
       it('skips <T> with spread props', async () => {
