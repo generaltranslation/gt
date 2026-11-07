@@ -57,6 +57,7 @@ vi.mock('../provider/GTProvider', () => ({
 }));
 
 vi.mock('gt-react', () => mockComponents);
+vi.mock('gt-react/client-entry', () => mockComponents);
 
 describe('rsc component wrappers', () => {
   beforeEach(() => {
