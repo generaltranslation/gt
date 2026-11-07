@@ -2,6 +2,7 @@
  * Configuration types for the GT Babel plugin
  */
 
+import type { InlineTranslationsTable } from './transform/injection/inline-translations/loadInlineTranslations';
 import type {
   GTCompilerOptions,
   GTConfig as SharedGTConfig,
@@ -60,6 +61,8 @@ export interface PluginSettings {
   _debugHashManifest: boolean;
   /** Dev hot reload: inject runtime translate calls and enable Suspense-based <T> */
   devHotReload: { strings: boolean; jsx: boolean };
+  /** Resolved translations to embed at call sites, keyed by locale then hash */
+  inlineTranslationsTable?: InlineTranslationsTable;
 }
 
 /**

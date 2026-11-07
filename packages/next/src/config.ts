@@ -29,6 +29,7 @@ import {
   standardizeLocale,
 } from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
+import type { GTOutputFileConfig } from 'generaltranslation/types';
 import {
   localeRefreshSupported,
   rootParamStability,
@@ -50,13 +51,14 @@ import {
 import { getRuntimeCredentials } from './setup/runtimeCredentials';
 import { nextLocaleCookieName } from './utils/cookies';
 import { splitMiddlewareConfig } from './middleware-dir/defaultMiddlewareConfig';
+import { resolveInlineTranslations } from './plugin/resolveInlineTranslations';
 
 type AutoderiveConfig = boolean | { jsx?: boolean; strings?: boolean };
 
 type ConfigFileShape = {
   customMapping?: CustomMapping;
   files?: {
-    gt?: {
+    gt?: Pick<GTOutputFileConfig, 'output' | 'inlineTranslations'> & {
       parsingFlags?: {
         autoderive?: AutoderiveConfig;
       };
@@ -226,6 +228,7 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   // ---------- LOAD GT CONFIG FILE ---------- //
 
   let loadedConfig: Partial<InternalGTConfigProps> = {};
+  let loadedConfigPath: string | undefined;
   try {
     let configPath: string | undefined;
     if (props.config) {
@@ -242,6 +245,7 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     if (typeof configPath === 'string' && fs.existsSync(configPath)) {
       const fileContent = fs.readFileSync(configPath, 'utf-8');
       loadedConfig = JSON.parse(fileContent);
+      loadedConfigPath = configPath;
     }
   } catch (error) {
     console.error('Error reading GT config file:', error);
@@ -690,10 +694,19 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
       ? rawAutoderive
       : (rawAutoderive.strings ?? false);
 
+  const swcInlineTranslations =
+    mergedConfig.experimentalCompilerOptions?.type === 'swc'
+      ? resolveInlineTranslations(loadedConfig.files?.gt, {
+          distDir: internalNextConfig.distDir,
+        })
+      : undefined;
   const swcPluginOptions: Record<string, unknown> = {
     ...compilerOptions,
     autoderiveJsx,
     autoderiveStrings,
+    ...(swcInlineTranslations && {
+      inlineTranslations: swcInlineTranslations,
+    }),
   };
 
   const swcPluginEntry: [string, Record<string, unknown>] | null =
@@ -825,6 +838,8 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
               gtUnplugin({
                 ...mergedConfig.experimentalCompilerOptions,
                 autoJsxImportSource: 'gt-next',
+                // The compiler only finds a root gt.config.json on its own
+                ...(loadedConfigPath && { gtConfig: loadedConfig }),
               })
             );
           } catch (e) {
