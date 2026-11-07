@@ -122,10 +122,23 @@
                 "translations/[locale].json"
               ]
             },
-            "msgOutput": {
-              "type": "string",
-              "description": "Experimental: output path pattern with [locale] placeholder for a copy of each translations file that keeps only msg() and useMessages()/getMessages() entries. Apps that embed translations at build time can load it for embedded locales.",
-              "examples": ["public/i18n/[locale].msg.json"]
+            "inlineTranslations": {
+              "type": "object",
+              "description": "Experimental: embed translations for the given locales at build time",
+              "properties": {
+                "locales": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "Locales to embed, usually the most visited ones"
+                },
+                "msgOutput": {
+                  "type": "string",
+                  "description": "Output path pattern with [locale] placeholder for a copy of each embedded locale's translations file that keeps only msg() and useMessages()/getMessages() entries, which are never embedded",
+                  "examples": ["public/i18n/[locale].msg.json"]
+                }
+              },
+              "required": ["locales"],
+              "additionalProperties": false
             },
             "parsingFlags": {
               "type": "object",

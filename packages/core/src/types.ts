@@ -42,6 +42,7 @@ export type { HashMetadata } from './id/types';
 export type { PluralType } from './settings/plurals';
 export type {
   GTCompilerOptions,
+  GTInlineTranslationsOptions,
   GTConfig,
   GTFilesConfig,
   GTOutputFileConfig,

@@ -49,10 +49,26 @@ export type GTCompilerOptions = {
   enableAutoJsxInjection?: boolean;
 };
 
+/**
+ * Experimental: embed translations for the given locales at build time.
+ */
+export type GTInlineTranslationsOptions = {
+  /** Locales to embed, usually the most visited ones. */
+  locales: string[];
+  /**
+   * Output path with a `[locale]` placeholder for a copy of each embedded
+   * locale's translations file that keeps only `msg()` and
+   * `useMessages()`/`getMessages()` entries, which are never embedded, for
+   * example `public/_gt/[locale].msg.json`.
+   */
+  msgOutput?: string;
+};
+
 /** Configuration for generated GT translation files. */
 export type GTOutputFileConfig = {
   output?: string;
   publish?: boolean;
+  inlineTranslations?: GTInlineTranslationsOptions;
   parsingFlags?: GTParsingFlags;
   /** @deprecated Use `parsingFlags.includeSourceCodeContext` instead. */
   includeSourceCodeContext?: boolean;

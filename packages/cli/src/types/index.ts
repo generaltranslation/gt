@@ -1,7 +1,10 @@
 import type { CustomMapping } from '@generaltranslation/format/types';
 import type { UserTokenProvider } from 'generaltranslation/api';
 import type { ModelProvider } from 'generaltranslation/internal';
-import type { FileFormat } from 'generaltranslation/types';
+import type {
+  FileFormat,
+  GTInlineTranslationsOptions,
+} from 'generaltranslation/types';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import {
   ParsingConfigOptions,
@@ -228,13 +231,7 @@ export type FilesOptions = {
 } & {
   gt?: {
     output: string; // Output glob: /path/[locale].json
-    /**
-     * Experimental: output glob (/path/[locale].msg.json) for a copy of each
-     * translations file that keeps only msg() and useMessages()/getMessages()
-     * entries. Apps that embed translations at build time can load it for
-     * embedded locales.
-     */
-    msgOutput?: string;
+    inlineTranslations?: GTInlineTranslationsOptions; // Experimental: locales embedded at build time
     publish?: boolean; // if true, publish gtjson translations to the CDN
     parsingFlags?: Partial<GTParsingFlags>; // Flags for parsing inline content
     /**
@@ -273,7 +270,7 @@ export type Settings = {
     parsingFlags: ParseFlagsByFileType;
     gtJson: {
       publish?: boolean; // if true, publish gtjson translations to the CDN
-      msgOutput?: string; // Absolute files.gt.msgOutput path containing [locale]
+      inlineTranslations?: GTInlineTranslationsOptions; // msgOutput resolved to an absolute path
       parsingFlags: GTParsingFlags; // Flags for parsing inline content
       /**
        * @deprecated
