@@ -290,7 +290,13 @@ describe.sequential('runtime translation requests', () => {
   it('splits requests over the 4MB body limit and merges their results', async () => {
     const bodies: { bytes: number; hashes: string[] }[] = [];
     fetchMock.mockImplementation(async (input, init) => {
-      const text = await new Request(input, init).text();
+      const request = new Request(input, init);
+      // The 4MB limit applies to the decompressed body.
+      const text = await (request.headers.get('Content-Encoding') === 'gzip'
+        ? new Response(
+            request.body!.pipeThrough(new DecompressionStream('gzip'))
+          ).text()
+        : request.text());
       const { requests } = JSON.parse(text) as {
         requests: Record<string, unknown>;
       };
@@ -319,7 +325,11 @@ describe.sequential('runtime translation requests', () => {
       options
     );
 
-    expect(bodies.map(({ hashes }) => hashes)).toEqual([['a', 'b'], ['c']]);
+    // Batches are sent concurrently, so they can arrive in either order.
+    expect(bodies.map(({ hashes }) => hashes).sort()).toEqual([
+      ['a', 'b'],
+      ['c'],
+    ]);
     for (const { bytes } of bodies)
       expect(bytes).toBeLessThanOrEqual(4_000_000);
     expect(result).toEqual(
