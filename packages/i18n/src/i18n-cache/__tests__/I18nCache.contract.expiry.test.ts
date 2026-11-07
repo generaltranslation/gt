@@ -94,95 +94,6 @@ describe('I18nCache expiry contract', () => {
     );
   });
 
-  it('cacheExpiryTime: null never expires translations or dictionaries', async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
-    const loadTranslations = vi
-      .fn()
-      .mockResolvedValue({ [expectedHash]: translatedString });
-    const loadDictionary = vi.fn().mockResolvedValue({ greeting: 'Bonjour' });
-    const cache = createCache({
-      cacheExpiryTime: null,
-      loadTranslations,
-      dictionary: { greeting: 'Hello' },
-      loadDictionary,
-    });
-
-    await cache.loadTranslations('fr');
-    await cache.loadDictionary('fr');
-
-    vi.advanceTimersByTime(999_999_999);
-
-    expect(cache.lookupTranslation('fr', message, lookupOptions)).toBe(
-      translatedString
-    );
-    expect(cache.lookupDictionary('fr', 'greeting')).toEqual({
-      entry: 'Bonjour',
-      options: {},
-    });
-
-    // Re-loading does not hit the loaders again
-    await cache.loadTranslations('fr');
-    await cache.loadDictionary('fr');
-    expect(loadTranslations).toHaveBeenCalledTimes(1);
-    expect(loadDictionary).toHaveBeenCalledTimes(1);
-  });
-
-  it('expires loaded dictionaries after the default TTL and reloads on demand', async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
-    const loadDictionary = vi
-      .fn()
-      .mockResolvedValueOnce({ greeting: 'Bonjour' })
-      .mockResolvedValueOnce({ greeting: 'Salut' });
-    const cache = createCache({
-      dictionary: { greeting: 'Hello' },
-      loadDictionary,
-    });
-
-    // Two loads within the TTL share one loader call
-    await cache.loadDictionary('fr');
-    await cache.loadDictionary('fr');
-    expect(loadDictionary).toHaveBeenCalledTimes(1);
-    expect(cache.lookupDictionary('fr', 'greeting')).toEqual({
-      entry: 'Bonjour',
-      options: {},
-    });
-
-    // Past the default TTL: sync lookups miss
-    vi.advanceTimersByTime(DEFAULT_TTL + 1);
-    expect(cache.lookupDictionary('fr', 'greeting')).toBeUndefined();
-
-    const reloaded = await cache.loadDictionary('fr');
-    expect(loadDictionary).toHaveBeenCalledTimes(2);
-    expect(reloaded).toEqual({ greeting: 'Salut' });
-    expect(cache.lookupDictionary('fr', 'greeting')).toEqual({
-      entry: 'Salut',
-      options: {},
-    });
-  });
-
-  it('never expires the default-locale source dictionary', async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
-    const loadDictionary = vi.fn().mockResolvedValue({ greeting: 'Bonjour' });
-    const cache = createCache({
-      dictionary: { greeting: 'Hello' },
-      loadDictionary,
-    });
-
-    vi.advanceTimersByTime(999_999_999);
-
-    expect(cache.lookupDictionary('en', 'greeting')).toEqual({
-      entry: 'Hello',
-      options: {},
-    });
-    await expect(cache.loadDictionary('en')).resolves.toEqual({
-      greeting: 'Hello',
-    });
-    expect(loadDictionary).not.toHaveBeenCalled();
-  });
-
   it('starts the TTL when the load resolves, not when it starts', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
@@ -213,32 +124,6 @@ describe('I18nCache expiry contract', () => {
     expect(
       cache.lookupTranslation('fr', message, lookupOptions)
     ).toBeUndefined();
-  });
-
-  it('deduplicates concurrent loads for the same locale', async () => {
-    const loadTranslations = vi
-      .fn()
-      .mockResolvedValue({ [expectedHash]: translatedString });
-    const loadDictionary = vi.fn().mockResolvedValue({ greeting: 'Bonjour' });
-    const cache = createCache({
-      loadTranslations,
-      dictionary: { greeting: 'Hello' },
-      loadDictionary,
-    });
-
-    const [translationsA, translationsB] = await Promise.all([
-      cache.loadTranslations('fr'),
-      cache.loadTranslations('fr'),
-    ]);
-    const [dictionaryA, dictionaryB] = await Promise.all([
-      cache.loadDictionary('fr'),
-      cache.loadDictionary('fr'),
-    ]);
-
-    expect(loadTranslations).toHaveBeenCalledTimes(1);
-    expect(loadDictionary).toHaveBeenCalledTimes(1);
-    expect(translationsA).toEqual(translationsB);
-    expect(dictionaryA).toEqual(dictionaryB);
   });
 
   it('deduplicates concurrent runtime-translation misses for the same message', async () => {

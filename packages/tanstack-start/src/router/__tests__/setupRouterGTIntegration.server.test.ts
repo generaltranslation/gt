@@ -22,7 +22,11 @@ vi.mock('@generaltranslation/react-core/pure', async (importOriginal) => ({
     typeof import('@generaltranslation/react-core/pure')
   >()),
   getTranslationsSnapshot: vi.fn(async () => ({ hello: 'bonjour' })),
-  getReactI18nCache: () => ({ loadDictionary: mockLoadDictionary }),
+}));
+
+vi.mock('gt-i18n/internal', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('gt-i18n/internal')>()),
+  getDictionaryManager: () => ({ loadDictionary: mockLoadDictionary }),
 }));
 
 vi.mock('@tanstack/react-start/server', () => ({

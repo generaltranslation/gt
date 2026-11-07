@@ -1,10 +1,13 @@
-import type { InternalGTProviderProps } from '@generaltranslation/react-core/components';
+import type {
+  DictionaryProviderProps,
+  InternalGTProviderProps,
+} from '@generaltranslation/react-core/components';
 import { BrowserConditionStoreParams } from '../condition-store/BrowserConditionStore';
 
 /**
  * We force the user to pass translations so they can be synchronously accessed
  *
- * - {@link InternalGTProviderProps} - requires translations and dictionaries
+ * - {@link InternalGTProviderProps} - requires translations
  * - {@link BrowserConditionStoreParams} - requires locale
  */
 export type SharedGTProviderProps = Omit<
@@ -16,7 +19,12 @@ export type SharedGTProviderProps = Omit<
   | 'setRegion'
   | 'setEnableI18n'
 > &
-  Omit<BrowserConditionStoreParams, 'locale'> & {
+  Omit<BrowserConditionStoreParams, 'locale'> &
+  // shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
+  Pick<
+    DictionaryProviderProps,
+    'dictionaries' | 'onMissingDictionaryEntry' | 'onMissingDictionaryObj'
+  > & {
     locale: string;
     /**
      * @internal Whether to save the locale, region and enableI18n to their
