@@ -30,20 +30,6 @@ export async function requireSourceDocument(
   return doc;
 }
 
-/**
- * Resolves a document that must already exist, without the revision lookup.
- */
-export async function requireLatestDraft(
-  documentId: string,
-  client: SanityClient
-): Promise<SanityDocument> {
-  const doc = await findLatestDraft(documentId, client);
-  if (!doc) {
-    throw new Error(missingDocumentDiagnostic(documentId));
-  }
-  return doc;
-}
-
 function missingDocumentDiagnostic(documentId: string): string {
   return createDiagnosticMessage({
     source: 'gt-sanity',

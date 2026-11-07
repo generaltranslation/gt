@@ -102,7 +102,6 @@ describe('createUpdates', () => {
     const patterns = ['src/entry.tsx'];
     const parsingFlags = {
       includeSourceCodeContext: true,
-      legacyGtReactImportSource: 'custom-gt-react',
     } as GTParsingFlags;
     const parsingOptions = {
       conditionNames: ['source', 'import'],

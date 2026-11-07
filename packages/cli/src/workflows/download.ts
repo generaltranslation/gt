@@ -1,8 +1,8 @@
 import path from 'node:path';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { Settings } from '../types/index.js';
-import { api } from '../utils/api.js';
-import { EnqueueFilesResult } from 'generaltranslation/types';
+import { createClients } from '../utils/api.js';
+import type { EnqueueFilesResult } from './steps/EnqueueStep.js';
 import { clearLocaleDirs } from '../fs/clearLocaleDirs.js';
 import {
   FileStatusTracker,
@@ -10,7 +10,7 @@ import {
 } from './steps/PollJobsStep.js';
 import { DownloadTranslationsStep } from './steps/DownloadStep.js';
 import { BranchData } from '../types/branch.js';
-import { branchResolutionError } from '../console/index.js';
+import { branchResolutionError, noProjectIdError } from '../console/index.js';
 import { logErrorAndExit } from '../console/logging.js';
 import { logger } from '../console/logger.js';
 import { recordWarning } from '../state/translateWarnings.js';
@@ -67,9 +67,11 @@ export async function runDownloadWorkflow({
   forceRetranslation?: boolean;
   forceDownload?: boolean;
 }): Promise<boolean> {
+  const { project } = createClients(options);
+  if (!project) throw new Error(noProjectIdError(options.dashboardUrl));
   if (!branchData) {
     // Run the branch step
-    const branchStep = new BranchStep(api, options);
+    const branchStep = new BranchStep(project, options);
     const branchResult = await branchStep.run();
     if (!branchResult) {
       return logErrorAndExit(branchResolutionError);
@@ -100,7 +102,7 @@ export async function runDownloadWorkflow({
   // Step 1: Poll translation jobs if jobData exists
   let pollTimedOut = false;
   if (jobData) {
-    const pollStep = new PollTranslationJobsStep(api, inlineLibrary);
+    const pollStep = new PollTranslationJobsStep(project, inlineLibrary);
     const pollResult = await pollStep.run({
       fileTracker,
       fileQueryData,
@@ -169,7 +171,7 @@ export async function runDownloadWorkflow({
 
   // Step 2: Download translations
   const downloadStep = new DownloadTranslationsStep(
-    api,
+    project,
     settingsForBranch,
     inlineLibrary
   );

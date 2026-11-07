@@ -15,20 +15,20 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const localeIds = async (sourceLanguage?: string) =>
-  (await getLocales(null, sourceLanguage)).map((locale) => locale.localeId);
+const localeIds = (sourceLanguage?: string) =>
+  getLocales(sourceLanguage).map((locale) => locale.localeId);
 
 describe('getLocales', () => {
-  test('offers only the configured targets by default', async () => {
-    expect(await localeIds()).toEqual(['fr', 'de']);
+  test('offers only the configured targets by default', () => {
+    expect(localeIds()).toEqual(['fr', 'de']);
   });
 
-  test('offers only the configured targets for a source-locale original', async () => {
-    expect(await localeIds('en')).toEqual(['fr', 'de']);
+  test('offers only the configured targets for a source-locale original', () => {
+    expect(localeIds('en')).toEqual(['fr', 'de']);
   });
 
-  test('also offers the source locale for an original in another locale', async () => {
-    expect(await localeIds('fr')).toEqual(['en', 'fr', 'de']);
+  test('also offers the source locale for an original in another locale', () => {
+    expect(localeIds('fr')).toEqual(['en', 'fr', 'de']);
   });
 });
 
@@ -39,9 +39,9 @@ describe('getLocales without allowNonDefaultSourceLocales', () => {
     );
   });
 
-  test('offers only the configured targets, whatever the document language', async () => {
-    expect(await localeIds()).toEqual(['fr', 'de']);
-    expect(await localeIds('en')).toEqual(['fr', 'de']);
-    expect(await localeIds('fr')).toEqual(['fr', 'de']);
+  test('offers only the configured targets, whatever the document language', () => {
+    expect(localeIds()).toEqual(['fr', 'de']);
+    expect(localeIds('en')).toEqual(['fr', 'de']);
+    expect(localeIds('fr')).toEqual(['fr', 'de']);
   });
 });

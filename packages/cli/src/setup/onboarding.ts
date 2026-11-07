@@ -3,7 +3,7 @@ import { Command, Option, type CommanderError } from 'commander';
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
-} from 'generaltranslation/internal';
+} from 'generaltranslation/diagnostics';
 import findFilepath from '../fs/findFilepath.js';
 import { withJsonExtension } from '../fs/config/loadConfig.js';
 import { logger } from '../console/logger.js';

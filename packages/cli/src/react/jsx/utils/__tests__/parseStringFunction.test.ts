@@ -3246,7 +3246,7 @@ describe('parseStrings', () => {
 
     it('should autoderive t() with template literal interpolation', () => {
       const code = `
-        import { t } from 'gt-react/browser';
+        import { t } from 'gt-react';
         const name = "John";
         t(\`Hello, \${name}\`);
       `;
@@ -3260,7 +3260,7 @@ describe('parseStrings', () => {
 
     it('should autoderive t() with concatenation', () => {
       const code = `
-        import { t } from 'gt-react/browser';
+        import { t } from 'gt-react';
         const name = "John";
         t("Hello, " + name);
       `;

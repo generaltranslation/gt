@@ -1,15 +1,16 @@
-import type { Adapter, Secrets } from '../types';
-import { gt, pluginConfig } from './core';
+import type { TranslationLocale } from '../types';
+import { pluginConfig } from './core';
 import { allowsNonDefaultSourceLocales } from '../utils/translationSource';
 
-// note: this function is used to get the available locales for a project
-export const getLocales: Adapter['getLocales'] = async (
-  _secrets: Secrets | null,
-  sourceLanguage?: string
-) => {
-  // With `allowNonDefaultSourceLocales`, an original written in another
-  // locale is translated into the configured source locale too, so it is
-  // offered as a target for that original only.
+/**
+ * The plugin's target locales, all enabled.
+ *
+ * @param sourceLanguage - Language of the document being translated, when
+ *   known. With `allowNonDefaultSourceLocales`, an original written in another
+ *   locale is translated into the configured source locale too, so it is
+ *   offered as a target for that original only.
+ */
+export const getLocales = (sourceLanguage?: string): TranslationLocale[] => {
   const sourceLocale = pluginConfig.getSourceLocale();
   const localeIds =
     allowsNonDefaultSourceLocales() &&
@@ -19,7 +20,6 @@ export const getLocales: Adapter['getLocales'] = async (
       : pluginConfig.getLocales();
   return localeIds.map((locale: string) => ({
     localeId: locale,
-    description: gt.getLocaleProperties(locale).name,
     enabled: true,
   }));
 };

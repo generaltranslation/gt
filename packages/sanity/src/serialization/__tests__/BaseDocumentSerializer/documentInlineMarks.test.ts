@@ -5,17 +5,14 @@ import { docWithInlineMarks, findByClass, getHTMLNode, schema } from './utils';
 import { attachGTData } from '../../data';
 import { BaseDocumentSerializer } from '../../serialize/index';
 import { customSerializers } from '../../BaseSerializationConfig';
-import { TranslationLevel } from '../../types';
 import { defaultStopTypes } from '../../BaseSerializationConfig';
 import merge from 'lodash.merge';
 import { PortableTextHtmlComponents } from '@portabletext/to-html';
 
-function serialize(document: SanityDocument, level: TranslationLevel) {
+function serialize(document: SanityDocument) {
   const serializer = BaseDocumentSerializer(schema);
   return serializer.serializeDocument(
     document,
-    level,
-    'en',
     defaultStopTypes,
     merge(customSerializers, {
       marks: {
@@ -28,8 +25,8 @@ function serialize(document: SanityDocument, level: TranslationLevel) {
   );
 }
 
-const serialized = serialize(docWithInlineMarks, 'document');
-const deserialized = getDeserialized(docWithInlineMarks, 'document');
+const serialized = serialize(docWithInlineMarks);
+const deserialized = getDeserialized(docWithInlineMarks);
 const docTree = getHTMLNode(serialized).body.children[0];
 
 test('Global test of working doc-level functionality and snapshot match', () => {

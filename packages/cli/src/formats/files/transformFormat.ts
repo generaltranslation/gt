@@ -84,6 +84,9 @@ const FILE_FORMAT_EXTENSIONS = {
   XCSTRINGS: 'xcstrings',
   SRT: 'srt',
   RESX: 'resx',
+  PNG: 'png',
+  JPEG: 'jpg',
+  MP4: 'mp4',
 } as const satisfies Record<FileFormat, string>;
 
 /**

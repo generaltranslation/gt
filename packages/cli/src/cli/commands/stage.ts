@@ -7,7 +7,7 @@ import {
 } from '../../types/index.js';
 import { runStageFilesWorkflow } from '../../workflows/stage.js';
 import { writeStagedEntries } from '../../fs/config/downloadedVersions.js';
-import type { EnqueueFilesResult } from 'generaltranslation/types';
+import type { EnqueueFilesResult } from '../../workflows/steps/EnqueueStep.js';
 import updateConfig from '../../fs/config/updateConfig.js';
 import { FileTranslationData } from '../../workflows/download.js';
 import { BranchData } from '../../types/branch.js';
@@ -63,17 +63,24 @@ export async function handleStage(
   let jobData: EnqueueFilesResult | undefined;
   let branchData: BranchData | undefined;
   if (allFiles.length > 0) {
-    const { branchData: branchDataResult, enqueueResult } =
-      await runStageFilesWorkflow({
-        files: allFiles,
-        options,
-        settings,
-        inlineLibrary,
-      });
+    const {
+      branchData: branchDataResult,
+      enqueueResult,
+      uploadedFiles,
+    } = await runStageFilesWorkflow({
+      files: allFiles,
+      options,
+      settings,
+      inlineLibrary,
+    });
     jobData = enqueueResult;
     branchData = branchDataResult;
 
-    fileVersionData = convertToFileTranslationData(allFiles);
+    // Files whose upload failed are not staged, downloaded or published
+    const uploadedFileIds = new Set(uploadedFiles.map((file) => file.fileId));
+    fileVersionData = convertToFileTranslationData(
+      allFiles.filter((file) => uploadedFileIds.has(file.fileId))
+    );
 
     // Write staged entries to the lockfile
     if (stage) {
@@ -89,18 +96,19 @@ export async function handleStage(
     const templateData = allFiles.find(
       (file) => file.fileId === TEMPLATE_FILE_ID
     );
-    if (settings.omitConfigIds) {
-      // Remove persisted config IDs only after staging has succeeded, so
-      // failed and empty runs keep the previous pinned version/branch state
-      await updateConfig(settings.config, {
-        _versionId: null,
-        _branchId: null,
-      });
-    } else if (templateData?.versionId) {
-      await updateConfig(settings.config, {
-        _versionId: templateData.versionId,
-        _branchId: branchData.currentBranch.id,
-      });
+    // Keep the template's pinned version when its upload fails.
+    if (!templateData || uploadedFileIds.has(templateData.fileId)) {
+      if (settings.omitConfigIds) {
+        await updateConfig(settings.config, {
+          _versionId: null,
+          _branchId: null,
+        });
+      } else if (templateData?.versionId) {
+        await updateConfig(settings.config, {
+          _versionId: templateData.versionId,
+          _branchId: branchData.currentBranch.id,
+        });
+      }
     }
   }
 
