@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   API_VERSION,
+  ApiError,
   createBranch,
   createFileUploads,
   createProject,
   createProjectApiKey,
+  ErrorCode,
   getProject,
   listBranches,
   listOrgs,
@@ -807,6 +809,54 @@ describe.sequential('GeneralTranslation project and organization operations', ()
     await expect(request.json()).resolves.toEqual({
       name: 'main',
       isDefault: true,
+    });
+  });
+
+  describe('a batch that fails', () => {
+    const moves = Array.from({ length: 26 }, (_, i) => ({
+      oldFileId: `item-${i}`,
+      newFileId: `item-${i}-new`,
+      newFileName: `item-${i}.json`,
+    }));
+    const rejected = new ApiError(
+      'Bad request',
+      400,
+      ErrorCode.INVALID_REQUEST
+    );
+
+    it('reports its items as failed when another batch succeeds', async () => {
+      vi.mocked(moveFiles)
+        .mockResolvedValueOnce(
+          result(
+            succeeded(
+              moves.slice(0, 25).map(({ oldFileId, newFileId }) => ({
+                oldFileId,
+                newFileId,
+                status: 'succeeded' as const,
+              }))
+            )
+          )
+        )
+        .mockRejectedValueOnce(rejected);
+
+      const response = await account().project('project-id').moveFiles(moves);
+
+      expect(response.summary).toEqual({ total: 26, succeeded: 25, failed: 1 });
+      expect(response.results[25]).toEqual({
+        oldFileId: 'item-25',
+        newFileId: 'item-25-new',
+        status: 'failed',
+        error: 'Bad request',
+        code: 'invalid_request',
+      });
+    });
+
+    it('is thrown when every batch fails', async () => {
+      vi.mocked(moveFiles).mockRejectedValue(rejected);
+
+      await expect(
+        account().project('project-id').moveFiles(moves)
+      ).rejects.toBe(rejected);
     });
   });
 

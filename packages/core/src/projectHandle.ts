@@ -391,13 +391,19 @@ export class ProjectHandle extends GTRuntime {
         })
       );
     }
-    return writeInBatches(moves, MOVE_FILES_BATCH_SIZE, async (batch) =>
-      unwrapApiResult(
-        await moveFiles({
-          ...this.request(options.timeout),
-          body: { branchId: options.branchId, moves: batch },
-        })
-      )
+    return writeInBatches(
+      moves,
+      MOVE_FILES_BATCH_SIZE,
+      async (batch) =>
+        unwrapApiResult(
+          await moveFiles({
+            ...this.request(options.timeout),
+            body: { branchId: options.branchId, moves: batch },
+          })
+        ),
+      ({ oldFileId, newFileId }, failure) => [
+        { oldFileId, newFileId, status: 'failed' as const, ...failure },
+      ]
     );
   }
 
@@ -610,7 +616,17 @@ export class ProjectHandle extends GTRuntime {
               })),
             },
           })
-        )
+        ),
+      ({ fileId, versionId, branchId }, failure) => [
+        {
+          fileId,
+          versionId,
+          branchId: branchId ?? '',
+          status: 'failed' as const,
+          ...failure,
+          translations: [],
+        },
+      ]
     );
     return {
       ...response,
@@ -663,7 +679,17 @@ export class ProjectHandle extends GTRuntime {
               ),
             },
           })
-        )
+        ),
+      ({ branchId = '', versionId, fileId, locale }, failure) => [
+        {
+          branchId,
+          versionId,
+          fileId,
+          locale,
+          status: 'failed' as const,
+          ...failure,
+        },
+      ]
     );
     return {
       ...response,
@@ -863,37 +889,56 @@ export class ProjectHandle extends GTRuntime {
   ): Promise<UploadSourceFilesResponse> {
     const sourceLocale =
       options.sourceLocale ?? this.localeConfig.defaultLocale;
-    return writeInBatches(files, DEFAULT_BATCH_SIZE, async (batch) => {
-      const request = this.request(options.timeout);
-      const contents = await stageFileContents(
-        request,
-        batch.map(({ source }) => source)
-      );
-      return unwrapApiResult(
-        await uploadSourceFiles({
-          ...request,
-          body: {
-            data: batch.map(
-              (
-                {
-                  source: { content: _, formatMetadata: _metadata, ...source },
-                },
-                index
-              ) => ({
-                source: {
-                  ...source,
-                  ...contents[index],
-                  locale: this.resolveServiceLocale(source.locale),
-                },
-              })
-            ),
-            ...(sourceLocale !== undefined && {
-              sourceLocale: this.resolveServiceLocale(sourceLocale),
-            }),
-          },
-        })
-      );
-    });
+    return writeInBatches(
+      files,
+      DEFAULT_BATCH_SIZE,
+      async (batch) => {
+        const request = this.request(options.timeout);
+        const contents = await stageFileContents(
+          request,
+          batch.map(({ source }) => source)
+        );
+        return unwrapApiResult(
+          await uploadSourceFiles({
+            ...request,
+            body: {
+              data: batch.map(
+                (
+                  {
+                    source: {
+                      content: _,
+                      formatMetadata: _metadata,
+                      ...source
+                    },
+                  },
+                  index
+                ) => ({
+                  source: {
+                    ...source,
+                    ...contents[index],
+                    locale: this.resolveServiceLocale(source.locale),
+                  },
+                })
+              ),
+              ...(sourceLocale !== undefined && {
+                sourceLocale: this.resolveServiceLocale(sourceLocale),
+              }),
+            },
+          })
+        );
+      },
+      ({ source }, failure) => [
+        {
+          branchId: source.branchId ?? '',
+          fileId: source.fileId ?? '',
+          versionId: source.versionId ?? '',
+          fileName: source.fileName,
+          fileFormat: source.fileFormat,
+          status: 'failed' as const,
+          ...failure,
+        },
+      ]
+    );
   }
 
   /**
@@ -950,7 +995,18 @@ export class ProjectHandle extends GTRuntime {
             },
           })
         );
-      }
+      },
+      ({ source, translations }, failure) =>
+        translations.map(({ fileName, fileFormat, locale }) => ({
+          branchId: source.branchId ?? '',
+          fileId: source.fileId ?? '',
+          versionId: source.versionId ?? '',
+          fileName,
+          fileFormat,
+          locale: this.resolveServiceLocale(locale),
+          status: 'failed' as const,
+          ...failure,
+        }))
     );
     return {
       ...response,
