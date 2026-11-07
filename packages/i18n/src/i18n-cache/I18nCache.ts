@@ -27,11 +27,7 @@ import { DictionarySourceNotFoundError } from './translations-manager/utils/Dict
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
 import { hashMessage } from '../utils/hashMessage';
-import {
-  type InlineTranslations,
-  getRegisteredInlineTranslations,
-  hasRegisteredInlineTranslations,
-} from '../translation-functions/inline/inlineTranslations';
+import type { InlineTranslations } from '../translation-functions/inline/inlineTranslations';
 
 /**
  * Default translation timeout in milliseconds for a runtime translation request
@@ -122,6 +118,11 @@ class I18nCache<TranslationValue extends Translation = Translation> {
    * Creates a locale-bound translateMany for runtime translation
    */
   private createTranslateMany: CreateTranslateMany;
+
+  /**
+   * Inline translations registered by msg(), keyed by message hash
+   */
+  private inlineTranslations = new Map<string, InlineTranslations>();
 
   /**
    * Creates an instance of I18nCache.
@@ -478,7 +479,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
 
       // Get the translation from the call site, then the locale cache
       return (
-        resolveInlineTranslation(
+        this.resolveInlineTranslation(
           translationLocale,
           message,
           lookupOptions,
@@ -528,7 +529,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
       const { translationLocale, options: lookupOptions } =
         this.resolveLookupParams(locale, options);
       if (!translationLocale) return message;
-      return resolveInlineTranslation(
+      return this.resolveInlineTranslation(
         translationLocale,
         message,
         lookupOptions,
@@ -621,7 +622,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
 
             // Get the translation from the call site, then the locale cache
             return (
-              resolveInlineTranslation(
+              this.resolveInlineTranslation(
                 translationLocale,
                 message,
                 options,
@@ -755,7 +756,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
     }
 
     // Embedded translations skip loading the locale entirely
-    const inlineTranslation = resolveInlineTranslation(
+    const inlineTranslation = this.resolveInlineTranslation(
       translationLocale,
       message,
       lookupOptions,
@@ -773,32 +774,40 @@ class I18nCache<TranslationValue extends Translation = Translation> {
     }
     return translation;
   }
+
+  /**
+   * Register inline translations for a message hash.
+   * Used by msg(), whose message is resolved later by m() without the call site.
+   */
+  registerInlineTranslations(hash: string, inline: InlineTranslations): void {
+    this.inlineTranslations.set(hash, inline);
+  }
+
+  /**
+   * Resolve a translation embedded at the call site, falling back to one
+   * registered by msg() under the message hash.
+   */
+  private resolveInlineTranslation<T extends Translation>(
+    translationLocale: string,
+    message: T,
+    options: LookupOptions,
+    inline?: InlineTranslations<T>
+  ): T | undefined {
+    if (inline) {
+      const translation = inline(translationLocale);
+      if (translation != null) return translation;
+    }
+    if (this.inlineTranslations.size === 0) return undefined;
+    const registered = this.inlineTranslations.get(
+      hashMessage(message, options)
+    );
+    return registered?.(translationLocale) as T | undefined;
+  }
 }
 
 export { I18nCache };
 
 // ===== Helper Functions ===== //
-
-/**
- * Resolve a translation embedded at the call site, falling back to one
- * registered by msg() under the message hash.
- */
-function resolveInlineTranslation<T extends Translation>(
-  translationLocale: string,
-  message: T,
-  options: LookupOptions,
-  inline?: InlineTranslations<T>
-): T | undefined {
-  if (inline) {
-    const translation = inline(translationLocale);
-    if (translation != null) return translation;
-  }
-  if (!hasRegisteredInlineTranslations()) return undefined;
-  const registered = getRegisteredInlineTranslations(
-    hashMessage(message, options)
-  );
-  return registered?.(translationLocale) as T | undefined;
-}
 
 /**
  * Validate constructor params: log warnings for suspicious configs and throw
