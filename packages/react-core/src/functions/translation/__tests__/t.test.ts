@@ -75,6 +75,15 @@ describe('t', () => {
       expect(t('Hello', {}, () => undefined)).toBe('Bonjour');
     });
 
+    it('ignores the callback for a $locale that does not need translation', () => {
+      resetGTGlobals();
+      setup('fr');
+      lookupTranslation.mockImplementation((_locale, message) => message);
+      const inline = vi.fn(() => 'Bonjour');
+      expect(t('Hello', { $locale: 'en' }, inline)).toBe('Hello');
+      expect(inline).not.toHaveBeenCalled();
+    });
+
     it('ignores the callback when translation is not required', () => {
       const inline = vi.fn(() => 'Bonjour');
       expect(t('Hello', {}, inline)).toBe('Hello');

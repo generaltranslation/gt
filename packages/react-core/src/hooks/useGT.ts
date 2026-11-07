@@ -1,5 +1,9 @@
 import { useCallback } from 'react';
-import { createLookupOptions, interpolateMessage } from 'gt-i18n/internal';
+import {
+  createLookupOptions,
+  getI18nConfig,
+  interpolateMessage,
+} from 'gt-i18n/internal';
 import { useTranslationConditions } from './utils';
 import type {
   GTFunctionType,
@@ -47,7 +51,9 @@ export function useGT(_messages?: RegisteredMessage[]): GTFunctionType {
 
       // Translations embedded at the call site win over loaded translations
       const translation =
-        inline?.(lookupOptions.$locale) ??
+        (getI18nConfig().requiresTranslation(lookupOptions.$locale)
+          ? inline?.(lookupOptions.$locale)
+          : undefined) ??
         resolveTranslation({
           locale: lookupOptions.$locale,
           content: message,
