@@ -26,12 +26,12 @@ export function registerStandaloneTranslation({
   format?: string;
   injectHash?: boolean;
 }): void {
-  hash ??= hashStringContent({
-    content,
-    context,
-    maxChars,
-    requiresReview,
-    format,
+  hash ??= hashSource({
+    source: content,
+    ...(context && { context }),
+    ...(maxChars != null && { maxChars }),
+    ...(requiresReview === true && { requiresReview: true }),
+    dataFormat: (format || 'ICU') as DataFormat,
   });
 
   state.stringCollector.pushRuntimeOnlyContent({
@@ -53,30 +53,5 @@ export function registerStandaloneTranslation({
   const counterId = state.stringCollector.incrementCounter();
   state.stringCollector.setTranslationHash(counterId, {
     hash,
-  });
-}
-
-/**
- * Hash a string message the same way the runtime does for gt() and msg().
- */
-export function hashStringContent({
-  content,
-  context,
-  maxChars,
-  requiresReview,
-  format,
-}: {
-  content: string;
-  context?: string;
-  maxChars?: number;
-  requiresReview?: boolean;
-  format?: string;
-}): string {
-  return hashSource({
-    source: content,
-    ...(context && { context }),
-    ...(maxChars != null && { maxChars }),
-    ...(requiresReview === true && { requiresReview: true }),
-    dataFormat: (format || 'ICU') as DataFormat,
   });
 }

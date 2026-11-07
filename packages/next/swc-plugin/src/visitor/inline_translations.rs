@@ -28,40 +28,6 @@ pub fn build_inline_translations_fn(
   build_locale_switch(entries, span)
 }
 
-/// Callback for msg([...]) arrays: one entry per element, `undefined` for
-/// elements without a translation. None when no embedded locale has a
-/// translation for any element.
-pub fn build_inline_array_translations_fn(
-  table: &[(String, LocaleTranslations)],
-  hashes: &[String],
-  span: Span,
-) -> Option<Expr> {
-  let entries: Vec<(&str, Expr)> = table
-    .iter()
-    .filter_map(|(locale, translations)| {
-      let values: Vec<Option<&serde_json::Value>> =
-        hashes.iter().map(|hash| get_translation(translations, hash)).collect();
-      if values.iter().all(Option::is_none) {
-        return None;
-      }
-      let elems = values
-        .into_iter()
-        .map(|value| {
-          Some(ExprOrSpread {
-            spread: None,
-            expr: Box::new(match value {
-              Some(value) => json_to_expr(value, span),
-              None => undefined_expr(span),
-            }),
-          })
-        })
-        .collect();
-      Some((locale.as_str(), Expr::Array(ArrayLit { span, elems })))
-    })
-    .collect();
-  build_locale_switch(entries, span)
-}
-
 fn get_translation<'a>(translations: &'a LocaleTranslations, hash: &str) -> Option<&'a serde_json::Value> {
   translations.get(hash).filter(|value| !value.is_null())
 }

@@ -19,25 +19,6 @@ export function buildInlineTranslationsFunction(
   return buildLocaleSwitch(entries);
 }
 
-/**
- * Build `(locale) => locale === "fr" ? ["Un", undefined] : … : undefined`
- * for msg([...]) arrays, one entry per array element. Elements missing a
- * translation are `undefined` and fall back to loaded translations. Returns
- * undefined when no embedded locale has a translation for any element.
- */
-export function buildInlineArrayTranslationsFunction(
-  table: InlineTranslationsTable,
-  hashes: string[]
-): t.ArrowFunctionExpression | undefined {
-  const entries = Object.entries(table).flatMap(([locale, translations]) => {
-    const values = hashes.map((hash) => getTranslation(translations, hash));
-    return values.some((value) => value != null)
-      ? [[locale, values] as const]
-      : [];
-  });
-  return buildLocaleSwitch(entries);
-}
-
 function getTranslation(
   translations: Record<string, unknown>,
   hash: string
