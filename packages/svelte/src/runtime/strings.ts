@@ -140,9 +140,7 @@ export function useLocaleProperties(locale?: string): {
       if (cached?.locale !== resolvedLocale) {
         cached = {
           locale: resolvedLocale,
-          properties: getI18nConfig()
-            .getGTClass()
-            .getLocaleProperties(resolvedLocale),
+          properties: getI18nConfig().getLocaleProperties(resolvedLocale),
         };
       }
       return cached.properties;
@@ -200,7 +198,7 @@ function createGT(state: GTState): GTFunctionType {
     );
 
     let translation: string | undefined;
-    if (config.requiresTranslation(locale)) {
+    if (config.requiresTranslation({ locale })) {
       const cache = getI18nCache();
       translation = cache.lookupTranslation(locale, message, lookupOptions) as
         | string

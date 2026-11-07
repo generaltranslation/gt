@@ -209,9 +209,7 @@ function validateStringProperty(
   const errors: string[] = [];
 
   // Get the property
-  const property =
-    getObjectPropertyFromObjectExpression(args, name) ||
-    getObjectPropertyFromObjectExpression(args, '$' + name);
+  const property = getObjectPropertyFromObjectExpression(args, name);
   if (!property) {
     return { errors };
   }
@@ -296,9 +294,7 @@ function validateNumberProperty(
   const errors: string[] = [];
 
   // Get the property
-  const property =
-    getObjectPropertyFromObjectExpression(args, name) ||
-    getObjectPropertyFromObjectExpression(args, '$' + name);
+  const property = getObjectPropertyFromObjectExpression(args, name);
   if (!property) {
     return { errors };
   }
@@ -389,9 +385,7 @@ function validateBooleanProperty(
   const errors: string[] = [];
 
   // Get the property
-  const property =
-    getObjectPropertyFromObjectExpression(args, name) ||
-    getObjectPropertyFromObjectExpression(args, '$' + name);
+  const property = getObjectPropertyFromObjectExpression(args, name);
   if (!property) {
     return { errors };
   }

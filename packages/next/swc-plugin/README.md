@@ -50,9 +50,10 @@ import { withGTConfig } from 'gt-next/config';
 const nextConfig = {};
 
 export default withGTConfig(nextConfig, {
-  swcPluginOptions: {
+  experimentalCompilerOptions: {
+    type: 'swc',
     logLevel: 'silent', // 'silent' | 'error' | 'warn' | 'info' | 'debug'
-    compileTimeHash: false, // Enable compile-time hash generation
+    compileTimeHash: true, // Enable compile-time hash generation
   },
 });
 ```
@@ -60,7 +61,7 @@ export default withGTConfig(nextConfig, {
 ## Options
 
 - `logLevel`: Control warning output level (default: `'warn'`)
-- `compileTimeHash`: Generate hash attributes at compile time (default: `false`)
+- `compileTimeHash`: Generate hash attributes at compile time (default: `true`)
 
 ## Example
 

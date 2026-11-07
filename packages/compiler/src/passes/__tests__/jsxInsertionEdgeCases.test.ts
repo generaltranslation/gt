@@ -438,7 +438,7 @@ describe('jsxInsertionPass edge cases', () => {
     it('GtInternalTranslateJsx already in tree — skip', () => {
       const code = `
         import { jsx } from 'react/jsx-runtime';
-        import { GtInternalTranslateJsx } from 'gt-react/browser';
+        import { GtInternalTranslateJsx } from 'gt-react';
         jsx("div", { children: jsx(GtInternalTranslateJsx, { children: "Hello" }) });
       `;
       const { gtTranslateCalls } = transform(code);
@@ -449,7 +449,7 @@ describe('jsxInsertionPass edge cases', () => {
     it('GtInternalVar already in tree — skip', () => {
       const code = `
         import { jsx, jsxs } from 'react/jsx-runtime';
-        import { GtInternalTranslateJsx, GtInternalVar } from 'gt-react/browser';
+        import { GtInternalTranslateJsx, GtInternalVar } from 'gt-react';
         jsxs("div", { children: ["Hello ", jsx(GtInternalVar, { children: name })] });
       `;
       const { gtTranslateCalls } = transform(code);
@@ -492,20 +492,6 @@ describe('jsxInsertionPass edge cases', () => {
       expect(gtImports).toHaveLength(1);
     });
 
-    it('injects import from gt-react/browser with legacy flag', () => {
-      const code = `
-        import { jsx } from 'react/jsx-runtime';
-        jsx("div", { children: "Hello" });
-      `;
-      const { imports } = transform(code, {
-        legacyGtReactImportSource: true,
-      });
-      const gtImports = imports.filter(
-        (i) => i.source.value === 'gt-react/browser'
-      );
-      expect(gtImports).toHaveLength(1);
-    });
-
     it('injects import from a configured source', () => {
       const code = `
         import { jsx } from 'react/jsx-runtime';
@@ -520,14 +506,12 @@ describe('jsxInsertionPass edge cases', () => {
 
     it('does not inject duplicate import when already imported', () => {
       const code = `
-        import { GtInternalTranslateJsx, GtInternalVar } from 'gt-react/browser';
+        import { GtInternalTranslateJsx, GtInternalVar } from 'gt-react';
         import { jsx } from 'react/jsx-runtime';
         jsx("div", { children: "Hello" });
       `;
       const { imports } = transform(code);
-      const gtImports = imports.filter(
-        (i) => i.source.value === 'gt-react/browser'
-      );
+      const gtImports = imports.filter((i) => i.source.value === 'gt-react');
       expect(gtImports).toHaveLength(1); // no duplicate
     });
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GTRuntime } from 'generaltranslation/runtime';
+import type { GTIntl } from '@generaltranslation/format';
 import { NextURL } from 'next/dist/server/web/next-url';
 import { parseAcceptLanguage } from 'gt-i18n/internal';
 import {
@@ -214,14 +214,13 @@ function inDefaultLocalePaths(
 export function getLocaleFromRequest(
   req: NextRequest,
   defaultLocale: string,
-  approvedLocales: string[],
   localeRouting: boolean,
   prefixDefaultLocale: boolean,
   defaultLocalePaths: PathMatcher,
   referrerLocaleCookieName: string,
   localeCookieName: string,
   resetLocaleCookieName: string,
-  gt: GTRuntime,
+  gt: GTIntl,
   enableSmartRouting = true
 ): {
   userLocale: string;
@@ -242,10 +241,7 @@ export function getLocaleFromRequest(
       unstandardizedPathnameLocale &&
       gt.isValidLocale(unstandardizedPathnameLocale)
     ) {
-      pathnameLocale = gt.determineLocale(
-        unstandardizedPathnameLocale,
-        approvedLocales
-      );
+      pathnameLocale = gt.determineLocale(unstandardizedPathnameLocale);
       if (pathnameLocale) candidates.push(pathnameLocale);
     }
   }
@@ -292,7 +288,7 @@ export function getLocaleFromRequest(
     (!preferDefaultLocale || cookieLocale?.value) // skip this condition when preferDefaultLocale is true and first request (no cookieLocale)
   ) {
     const referrerLocale = referrerLocaleCookie.value;
-    if (gt.determineLocale([referrerLocale], approvedLocales)) {
+    if (gt.determineLocale([referrerLocale])) {
       candidates.push(referrerLocale);
     }
   }
@@ -308,8 +304,7 @@ export function getLocaleFromRequest(
   // determine userLocale
   const userLocale =
     gt.determineLocale(
-      candidates.filter((locale) => gt.isValidLocale(locale)),
-      approvedLocales
+      candidates.filter((locale) => gt.isValidLocale(locale))
     ) || defaultLocale;
 
   return {

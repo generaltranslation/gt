@@ -9,53 +9,43 @@ import {
 } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { defaultRuntimeApiUrl } from 'generaltranslation/internal';
+import { GTRuntime } from 'generaltranslation/runtime';
 import { GTProvider, initializeGT, useGT } from '../index.client';
 import type { GTFunctionType } from 'gt-i18n/types';
 
 type TestGlobal = typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean };
 
 /**
- * Stubs the runtime translation API. Records every requested source string and
+ * Stubs runtime translation. Records every requested source string and
  * answers with `translations[source]` once `responsesReleased` resolves.
+ * jsdom's AbortSignal cannot reach Node's Request, so the stub replaces
+ * `GTRuntime.translateMany` rather than `fetch`.
  */
 function stubRuntimeApi(
   translations: Record<string, string> = {},
   responsesReleased: Promise<void> = Promise.resolve()
 ) {
   const requestedSources: string[] = [];
-  vi.stubGlobal(
-    'fetch',
-    async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = input instanceof Request ? input.url : String(input);
-      if (!url.startsWith(defaultRuntimeApiUrl)) {
-        return Response.json({});
-      }
-      const body =
-        input instanceof Request ? await input.text() : String(init?.body);
-      const { requests } = JSON.parse(body) as {
-        requests: Record<string, { source: string }>;
-      };
-      const entries = Object.entries(requests);
-      requestedSources.push(...entries.map(([, { source }]) => source));
-      await responsesReleased;
-      return Response.json(
-        Object.fromEntries(
-          entries
-            .filter(([, { source }]) => source in translations)
-            .map(([hash, { source }]) => [
-              hash,
-              {
-                success: true,
-                translation: translations[source],
-                locale: 'fr',
-                dataFormat: 'ICU',
-              },
-            ])
-        )
-      );
-    }
-  );
+  vi.spyOn(GTRuntime.prototype, 'translateMany').mockImplementation((async (
+    requests: Record<string, { source: string }>
+  ) => {
+    const entries = Object.entries(requests);
+    requestedSources.push(...entries.map(([, { source }]) => source));
+    await responsesReleased;
+    return Object.fromEntries(
+      entries
+        .filter(([, { source }]) => source in translations)
+        .map(([hash, { source }]) => [
+          hash,
+          {
+            success: true,
+            translation: translations[source],
+            locale: 'fr',
+            dataFormat: 'ICU',
+          },
+        ])
+    );
+  }) as never);
   return requestedSources;
 }
 

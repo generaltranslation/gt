@@ -1,5 +1,5 @@
 import { isValidLocale } from '@generaltranslation/format';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import logger from '../logs/logger';
 import type { I18nConfigParams } from './I18nConfig';
 
