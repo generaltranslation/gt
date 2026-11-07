@@ -1,5 +1,13 @@
 # generaltranslation
 
+## 10.0.0-samsara.2
+
+### Patch Changes
+
+- Updated dependencies [b2aaf5e]
+  - @generaltranslation/icu@0.2.0-samsara.2
+  - @generaltranslation/format@1.0.0-samsara.3
+
 ## 10.0.0-samsara.1
 
 ### Minor Changes

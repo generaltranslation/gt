@@ -1,5 +1,13 @@
 # gt-vue
 
+## 0.1.25-samsara.1
+
+### Patch Changes
+
+- generaltranslation@10.0.0-samsara.2
+- @generaltranslation/format@1.0.0-samsara.3
+- gt-i18n@2.0.0-samsara.2
+
 ## 0.1.25-samsara.0
 
 ### Patch Changes

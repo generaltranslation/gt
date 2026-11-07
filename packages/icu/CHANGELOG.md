@@ -1,5 +1,11 @@
 # @generaltranslation/icu
 
+## 0.2.0-samsara.2
+
+### Patch Changes
+
+- b2aaf5e: `icuToMessageTree(translation, { source, locale })` takes the translation's locale. Following CLDR, a translation uses only its locale's plural categories, so it may leave out a category the locale does not have, such as `one` in Japanese, together with variables the source uses only there. Categories come from `Intl.PluralRules` (ordinal categories for `selectordinal`). A variable used anywhere else, including in an exact `=N` branch, a `select` branch, or a category the locale has, must still appear, and without `locale` every source variable is still required.
+
 ## 0.2.0-samsara.1
 
 ### Minor Changes
