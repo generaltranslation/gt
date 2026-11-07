@@ -86,6 +86,7 @@ import { getDocumentFileName } from '../utils/fileNames';
 import {
   existingTranslationsUploadToasts,
   filterUploadedDocuments,
+  succeededResults,
 } from '../utils/batchResults';
 import {
   getPreferencesStorageKey,
@@ -1032,15 +1033,29 @@ const TranslationsProviderContent: React.FC<
       )) {
         toast.push({ ...params, closable: true });
       }
+      // Preview URLs are stored all or nothing, so a translation that failed
+      // to upload would keep the saved ones from getting theirs.
+      const uploaded = new Set(
+        (response ? succeededResults(response) : []).map(
+          ({ fileId, locale }) => `${fileId}:${locale}`
+        )
+      );
       warnTranslationPreviewUrlFailures(
         await updateTranslationPreviewUrls(
           withTranslations.flatMap(({ info, translations }) =>
             info.versionId
-              ? translations.map(({ locale, document }) => ({
-                  written: document,
-                  file: { fileId: info.documentId, versionId: info.versionId },
-                  language: locale,
-                }))
+              ? translations
+                  .filter(({ locale }) =>
+                    uploaded.has(`${info.documentId}:${locale}`)
+                  )
+                  .map(({ locale, document }) => ({
+                    written: document,
+                    file: {
+                      fileId: info.documentId,
+                      versionId: info.versionId,
+                    },
+                    language: locale,
+                  }))
               : []
           ),
           client,

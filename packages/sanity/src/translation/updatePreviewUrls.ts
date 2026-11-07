@@ -1,5 +1,5 @@
 import type { SanityClient } from 'sanity';
-import { api, overrideConfig, pluginConfig } from '../adapter/core';
+import { pluginConfig, projectFor } from '../adapter/core';
 import type { Secrets } from '../types';
 import { resolvePreviewUrls } from './previewUrls';
 
@@ -37,8 +37,7 @@ export async function updateTranslationPreviewUrls(
   });
   if (files.length === 0) return failures;
   try {
-    overrideConfig(secrets);
-    await api.updateFiles(files);
+    await projectFor(secrets).updateFiles(files);
   } catch (error) {
     failures.push(error);
   }

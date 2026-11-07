@@ -30,7 +30,7 @@ export async function runPublishWorkflow(
       }));
     if (allFileRefs.length === 0) return true;
     const { project } = createClients(settings);
-    if (!project) throw new Error(noProjectIdError);
+    if (!project) throw new Error(noProjectIdError(settings.dashboardUrl));
     const publishStep = new PublishStep(project);
     return await publishStep.run(allFileRefs);
   } catch (error) {

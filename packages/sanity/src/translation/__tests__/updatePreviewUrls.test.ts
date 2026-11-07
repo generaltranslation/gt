@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { createGroqClient } from '../../utils/__tests__/groqClient';
 
 const updateFiles = vi.fn();
-const overrideConfig = vi.fn();
+const projectFor = vi.fn((_secrets: unknown) => ({ updateFiles }));
 
 vi.mock('../../adapter/core', async () => {
   const actual =
@@ -12,8 +12,7 @@ vi.mock('../../adapter/core', async () => {
     );
   return {
     ...actual,
-    api: { updateFiles: (...args: unknown[]) => updateFiles(...args) },
-    overrideConfig: (...args: unknown[]) => overrideConfig(...args),
+    projectFor: (secrets: unknown) => projectFor(secrets),
   };
 });
 
@@ -37,7 +36,7 @@ const imported = (id: string, language: string) => ({
 beforeEach(() => {
   updateFiles.mockReset();
   updateFiles.mockResolvedValue({ files: [] });
-  overrideConfig.mockReset();
+  projectFor.mockClear();
   vi.spyOn(pluginConfig, 'getPreviewUrl').mockReturnValue({
     origin: 'https://staging.acme.test',
     locations: {
@@ -70,7 +69,7 @@ describe('updateTranslationPreviewUrls', () => {
     );
 
     expect(failures).toEqual([]);
-    expect(overrideConfig).toHaveBeenCalledWith(secrets);
+    expect(projectFor).toHaveBeenCalledWith(secrets);
     expect(updateFiles).toHaveBeenCalledWith([
       {
         branchId: 'branch',

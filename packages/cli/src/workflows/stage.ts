@@ -55,7 +55,7 @@ export async function runStageFilesWorkflow({
     const timeoutMs = calculateTimeoutMs(options.timeout);
 
     const { project } = createClients(settings);
-    if (!project) throw new Error(noProjectIdError);
+    if (!project) throw new Error(noProjectIdError(settings.dashboardUrl));
 
     // Create workflow with steps
     const branchStep = new BranchStep(project, settings);
@@ -113,7 +113,10 @@ export async function runStageFilesWorkflow({
     return logErrorAndExit(
       error instanceof UserAuthError
         ? error.message
-        : workflowFailureMessage('Files could not be sent for translation.', error)
+        : workflowFailureMessage(
+            'Files could not be sent for translation.',
+            error
+          )
     );
   }
 }

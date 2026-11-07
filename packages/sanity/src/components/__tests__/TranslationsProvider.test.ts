@@ -253,7 +253,7 @@ describe('Save Local Edits', () => {
     );
   });
 
-  test('sends the preview URL of each translation it uploads', async () => {
+  test('sends the preview URL of each translation it uploads, leaving out a failed one', async () => {
     const { client } = createGroqClient([page('page-en', 'en')]);
     mocks.client = Object.assign(client, {
       config: () => ({ projectId: 'p', dataset: 'd' }),
@@ -268,10 +268,22 @@ describe('Save Local Edits', () => {
               content: 'page-fr',
               document: { id: 'page-fr', type: 'page' },
             },
+            {
+              locale: 'de',
+              content: 'page-de',
+              document: { id: 'page-de', type: 'page' },
+            },
           ],
         ],
       ])
     );
+    mocks.uploadTranslations.mockResolvedValue({
+      summary: { total: 2, succeeded: 1, failed: 1 },
+      results: [
+        { status: 'succeeded', fileId: 'page-en', locale: 'fr' },
+        { status: 'failed', fileId: 'page-en', locale: 'de' },
+      ],
+    });
 
     const context = await renderProvider(page('page-en', 'en'));
     await act(() => context.handleUploadExistingTranslations());
@@ -309,7 +321,8 @@ describe('Save Local Edits', () => {
       ])
     );
     mocks.uploadTranslations.mockResolvedValue({
-      uploadedFiles: [{ fileId: 'page-en', locale: 'fr' }],
+      summary: { total: 1, succeeded: 1, failed: 0 },
+      results: [{ status: 'succeeded', fileId: 'page-en', locale: 'fr' }],
     });
     mocks.updateTranslationPreviewUrls.mockResolvedValue([
       new Error('API unavailable'),
