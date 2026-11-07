@@ -44,12 +44,7 @@ export function injectTComponentParameters(
   }
 
   // Embed translations for the configured locales
-  if (
-    !getObjectPropertyFromObjectExpression(
-      callExpr.arguments[1],
-      '_translations'
-    )
-  ) {
+  if (!getObjectPropertyFromObjectExpression(callExpr.arguments[1], 'inline')) {
     injectInlineTranslationsProp(
       callExpr.arguments[1],
       translationJsx.hash,

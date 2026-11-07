@@ -98,7 +98,7 @@ impl TransformVisitor {
         let hash_value = translation_jsx.hash.clone();
         let hash_attr = TransformVisitor::create_attr(&element, &hash_value, "_hash");
         element.opening.attrs.push(hash_attr);
-        self.inject_translations_attr(&mut element, &hash_value);
+        self.inject_inline_attr(&mut element, &hash_value);
       }
     } else if let Some(hash_value) = extract_attribute_from_jsx_attr(&element, "_hash") {
       // A static user-supplied _hash is what the runtime looks up. It takes no
@@ -111,24 +111,24 @@ impl TransformVisitor {
           .iter()
           .any(|attr| matches!(attr, JSXAttrOrSpread::SpreadElement(_)));
       if !hash_may_change {
-        self.inject_translations_attr(&mut element, &hash_value);
+        self.inject_inline_attr(&mut element, &hash_value);
       }
     }
 
     element
   }
 
-  /// Embed translations for the configured locales as a `_translations` prop.
+  /// Embed translations for the configured locales as an `inline` prop.
   /// An empty hash means derive content (or <Static>), which is not supported.
-  /// An existing `_translations` prop is kept.
-  fn inject_translations_attr(&self, element: &mut JSXElement, hash_value: &str) {
-    if hash_value.is_empty() || TransformVisitor::determine_has_attr(element, "_translations") {
+  /// An existing `inline` prop is kept.
+  fn inject_inline_attr(&self, element: &mut JSXElement, hash_value: &str) {
+    if hash_value.is_empty() || TransformVisitor::determine_has_attr(element, "inline") {
       return;
     }
     if let Some(inline) =
       build_inline_translations_fn(&self.settings.inline_translations, hash_value, element.opening.span)
     {
-      let attr = TransformVisitor::create_expr_attr(element, inline, "_translations");
+      let attr = TransformVisitor::create_expr_attr(element, inline, "inline");
       element.opening.attrs.push(attr);
     }
   }
