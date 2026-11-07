@@ -10,20 +10,22 @@ import {
 } from 'generaltranslation/diagnostics';
 
 /**
- * Write `files.gt.msgOutput` for each locale: a copy of the locale's
- * translations file that keeps only entries extracted from msg() and
- * useMessages()/getMessages(). Reads the translations file from disk, so it
- * also covers locales whose download was skipped because nothing changed.
+ * Write `files.gt.inlineTranslations.msgOutput` for each embedded locale: a
+ * copy of the locale's translations file that keeps only entries extracted
+ * from msg() and useMessages()/getMessages(). Reads the translations file from
+ * disk, so it also covers locales whose download was skipped because nothing
+ * changed.
  */
 export async function writeMessageTranslations(
   settings: Settings
 ): Promise<void> {
-  const msgOutput = settings.files.gtJson.msgOutput;
+  const inlineTranslations = settings.files.gtJson.inlineTranslations;
   const gtOutput = settings.files.placeholderPaths.gt;
   const messageHashes = getMessageHashes();
-  if (!msgOutput || !gtOutput || !messageHashes) return;
+  if (!inlineTranslations?.msgOutput || !gtOutput || !messageHashes) return;
+  const { locales, msgOutput } = inlineTranslations;
 
-  for (const locale of settings.locales) {
+  for (const locale of locales) {
     const translationsPath = resolveLocaleFiles({ gt: gtOutput }, locale).gt;
     const messagesPath = resolveLocaleFiles({ gt: msgOutput }, locale).gt;
     if (!translationsPath || !messagesPath) continue;

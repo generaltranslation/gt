@@ -11,12 +11,15 @@ import {
 
 let dir: string;
 
-function settings(msgOutput: string | undefined): Settings {
+function settings(
+  msgOutput: string | undefined,
+  locales = ['fr', 'es']
+): Settings {
   return {
-    locales: ['fr', 'es'],
+    locales: ['fr', 'es', 'de'],
     files: {
       placeholderPaths: { gt: path.join(dir, '[locale].json') },
-      gtJson: { msgOutput, parsingFlags: {} },
+      gtJson: { inlineTranslations: { locales, msgOutput }, parsingFlags: {} },
     },
   } as unknown as Settings;
 }
@@ -64,7 +67,17 @@ describe('writeMessageTranslations', () => {
     expect(readJson('fr.msg.json')).toEqual({ a: 'Bonjour' });
   });
 
-  test('does nothing without files.gt.msgOutput', async () => {
+  test('skips locales that are not embedded', async () => {
+    fs.writeFileSync(path.join(dir, 'de.json'), '{"a":"Hallo"}');
+    recordMessageHashes(['a']);
+    await writeMessageTranslations(
+      settings(path.join(dir, '[locale].msg.json'), ['fr'])
+    );
+    expect(readJson('fr.msg.json')).toEqual({ a: 'Bonjour' });
+    expect(fs.existsSync(path.join(dir, 'de.msg.json'))).toBe(false);
+  });
+
+  test('does nothing without files.gt.inlineTranslations.msgOutput', async () => {
     recordMessageHashes(['a']);
     await writeMessageTranslations(settings(undefined));
     expect(fs.readdirSync(dir)).toEqual(['fr.json']);

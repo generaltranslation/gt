@@ -81,6 +81,7 @@ export type {
   GTCompilerOptions,
   GTConfig,
   GTFilesConfig,
+  GTInlineTranslationsOptions,
   GTOutputFileConfig,
   GTParsingFlags,
 } from './types-dir/config';

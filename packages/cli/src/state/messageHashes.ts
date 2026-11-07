@@ -4,8 +4,8 @@
  *
  * The compiler can embed translations for gt() and <T> at their call sites,
  * but msg() strings are resolved later by m(), away from the call site, so
- * they still have to be loaded. `files.gt.msgOutput` writes these entries to
- * a separate file per locale that apps can load for embedded locales.
+ * they still have to be loaded. `files.gt.inlineTranslations.msgOutput`
+ * writes these entries to a separate file per embedded locale.
  */
 let messageHashes: Set<string> | undefined;
 
