@@ -374,9 +374,7 @@ export async function handleApiCommand(
   const config = options.config
     ? loadConfig(withJsonExtension(options.config))
     : (resolveConfig(process.cwd())?.config ?? {});
-  const baseUrl = resolveApiBaseUrl(
-    typeof config.baseUrl === 'string' ? config.baseUrl : undefined
-  );
+  const baseUrl = resolveApiBaseUrl(config.baseUrl);
   const client = createApiClient({
     apiKey: options.apiKey ?? (await resolveCliApiKey(baseUrl)),
     userTokenProvider: createUserTokenProvider({ baseUrl }),

@@ -636,7 +636,9 @@ export const GTConfigFileSchema = v.pipe(
     ),
     apiKey: v.optional(
       v.pipe(
-        v.never(),
+        v.never(
+          'Remove the API key from this file and set the GT_API_KEY environment variable'
+        ),
         v.metadata({
           description: v.getDescription(GTConfigSchema.entries.apiKey.wrapped),
         })
@@ -699,6 +701,18 @@ export const GTConfigFileSchema = v.pipe(
         v.description(
           'Custom version ID to use for translations. Should be unique'
         )
+      )
+    ),
+    tag: v.optional(
+      v.pipe(
+        v.string(),
+        v.description('Tag for translation runs, as --tag <value> sets')
+      )
+    ),
+    tagMessage: v.optional(
+      v.pipe(
+        v.string(),
+        v.description('Message for the tag, as --message sets')
       )
     ),
     files: v.optional(FilesOptionsSchema),
@@ -776,6 +790,13 @@ export const GTConfigFileSchema = v.pipe(
     ],
   })
 );
+
+/**
+ * The file as the CLI loads it. Unknown top-level keys pass, because the file
+ * is shared with other tools, and generateSettings warns about them; editors
+ * still flag them through the strict JSON Schema.
+ */
+export const GTConfigFileLoadSchema = v.looseObject(GTConfigFileSchema.entries);
 
 /** Subschemas used in several places, emitted once under $defs in the JSON Schema. */
 export const GTConfigFileSchemaDefinitions = {

@@ -530,6 +530,14 @@
       "type": "string",
       "description": "Custom version ID to use for translations. Should be unique"
     },
+    "tag": {
+      "type": "string",
+      "description": "Tag for translation runs, as --tag <value> sets"
+    },
+    "tagMessage": {
+      "type": "string",
+      "description": "Message for the tag, as --message sets"
+    },
     "sharedStaticAssets": {
       "type": "object",
       "properties": {

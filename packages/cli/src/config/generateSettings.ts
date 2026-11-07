@@ -1,10 +1,10 @@
+import { displayProjectId, logErrorAndExit } from '../console/logging.js';
 import {
-  displayProjectId,
-  exitSync,
-  logErrorAndExit,
-  warnApiKeyInConfig,
-} from '../console/logging.js';
-import { loadConfig, withJsonExtension } from '../fs/config/loadConfig.js';
+  type GTConfigFile,
+  loadConfig,
+  parseConfig,
+  withJsonExtension,
+} from '../fs/config/loadConfig.js';
 import { FilesOptions, JsonSchema, Settings } from '../types/index.js';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { resolveFiles } from '../fs/config/parseFilesConfig.js';
@@ -22,6 +22,8 @@ import path from 'node:path';
 import fs from 'node:fs';
 import chalk from 'chalk';
 import { resolveConfig } from './resolveConfig.js';
+import { GTConfigFileSchema } from './schema.js';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { configureCustomMapping } from '../utils/api.js';
 import { resolveApiBaseUrl } from '../utils/apiBaseUrl.js';
 import { generatePreset } from './optionPresets.js';
@@ -72,13 +74,6 @@ type GenerateSettingsInput = Partial<Omit<Settings, 'tag'>> & {
   [key: string]: unknown;
 };
 
-function hasConfiguredTranslationFiles(files: unknown): boolean {
-  if (!files || typeof files !== 'object' || Array.isArray(files)) {
-    return false;
-  }
-  return Object.keys(files).some((key) => key !== 'gt');
-}
-
 /**
  * Generates settings from any
  * @param flags - The CLI flags to generate settings from
@@ -97,19 +92,22 @@ export async function generateSettings(
   }
 ): Promise<Settings> {
   // Load config file
-  let gtConfig: GenerateSettingsInput = {};
+  let gtConfig: GTConfigFile = {};
 
   if (flags.config) {
     flags.config = withJsonExtension(flags.config);
   }
   if (options?.resolvedConfig) {
-    gtConfig = options.resolvedConfig as GenerateSettingsInput;
+    gtConfig = parseConfig(
+      options.resolvedConfig,
+      flags.config ?? 'gt.config.json'
+    );
   } else if (flags.config) {
     gtConfig = loadConfig(flags.config);
   } else {
     const config = resolveConfig(cwd);
     if (config) {
-      gtConfig = config.config as GenerateSettingsInput;
+      gtConfig = config.config;
       flags.config = config.path;
     } else {
       if (options?.requireConfig) {
@@ -121,11 +119,22 @@ export async function generateSettings(
     }
   }
 
-  // Warn if apiKey is present in gt.config.json
-  if (gtConfig.apiKey) {
-    warnApiKeyInConfig(flags.config ?? 'gt.config.json');
-    exitSync(1);
+  const unknownKeys = Object.keys(gtConfig).filter(
+    (key) => !(key in GTConfigFileSchema.entries)
+  );
+  if (unknownKeys.length > 0) {
+    logger.warn(
+      createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Warning',
+        whatHappened: `${flags.config ?? 'gt.config.json'} has keys the CLI does not read`,
+        reassurance: 'The CLI ignores them',
+        details: unknownKeys,
+        fix: 'Fix their spelling, or remove them if no other tool reads them',
+      })
+    );
   }
+
   const projectIdEnv = resolveProjectId();
   // Resolve mismatched projectIds
   if (
@@ -181,7 +190,7 @@ export async function generateSettings(
   const mergedOptions: Settings = { ...gtConfig, ...flags } as Settings;
 
   if (
-    !hasConfiguredTranslationFiles(mergedOptions.files) &&
+    !Object.keys(mergedOptions.files ?? {}).some((key) => key !== 'gt') &&
     !['package.json', 'pyproject.toml', 'requirements.txt', 'setup.py'].some(
       (file) => fs.existsSync(path.join(cwd, file))
     )
@@ -241,15 +250,6 @@ export async function generateSettings(
   mergedOptions.stageTranslations = mergedOptions.stageTranslations ?? false;
 
   // Top-level default for whether translated files require approval before use.
-  // Effective policy is hash-changing, so reject anything but a real boolean.
-  if (
-    mergedOptions.requiresReview !== undefined &&
-    typeof mergedOptions.requiresReview !== 'boolean'
-  ) {
-    logErrorAndExit(
-      'requiresReview in gt.config.json must be a boolean. Use files.<type>.requiresReview for glob-scoped overrides.'
-    );
-  }
   mergedOptions.requiresReview = mergedOptions.requiresReview ?? false;
 
   // Add publish — only set if explicitly configured or passed via flag.
@@ -405,10 +405,10 @@ export async function generateSettings(
   }
 
   // Resolve tag:
-  // --tag (bare) or -m without --tag: try git SHA, fall back to random hex
-  // --tag <value>: use as-is
+  // --tag (bare), or a message without a tag: try git SHA, fall back to random hex
+  // --tag <value> or a config tag: use as-is
   // No flags: no tag
-  if (flags.tag === true || (!flags.tag && mergedOptions.tagMessage)) {
+  if (flags.tag === true || (!mergedOptions.tag && mergedOptions.tagMessage)) {
     try {
       mergedOptions.tag = execSync('git rev-parse --short HEAD', {
         encoding: 'utf-8',

@@ -335,9 +335,13 @@ export function checkMonorepoVersionConsistency(
 ): void {
   const cwd = process.cwd();
 
-  // Check if skipped via config; an explicit --config replaces discovery.
-  const config = configPath
-    ? loadConfig(withJsonExtension(configPath))
+  // Check if skipped via config; an explicit --config replaces discovery. It
+  // may not exist yet, as when `gt init --config` is about to create it.
+  const explicitPath = configPath && withJsonExtension(configPath);
+  const config = explicitPath
+    ? fs.existsSync(explicitPath)
+      ? loadConfig(explicitPath)
+      : undefined
     : resolveConfig(cwd)?.config;
   if (config?.skipVersionCheck) return;
 
