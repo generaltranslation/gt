@@ -17,6 +17,10 @@ vi.mock('../../../fs/matchFiles.js', () => ({
 }));
 
 const FIXTURE = path.join(__dirname, '__fixtures__/message-hashes/page.tsx');
+const HELPER_FIXTURE = path.join(
+  __dirname,
+  '__fixtures__/message-hashes-helper/page.tsx'
+);
 
 const parsingOptions: ParsingConfigOptions = {
   conditionNames: ['browser', 'module', 'import', 'require', 'default'],
@@ -51,6 +55,21 @@ describe('message hashes', () => {
       ].sort()
     );
     expect(getMessageHashes()?.has(icuHash('Inline string'))).toBe(false);
+  });
+
+  test('records a helper called with m() after gt()', async () => {
+    const { matchFiles } = await import('../../../fs/matchFiles.js');
+    vi.mocked(matchFiles).mockReturnValue([HELPER_FIXTURE]);
+
+    const result = await createInlineUpdates(
+      Libraries.GT_NEXT,
+      false,
+      undefined,
+      {},
+      parsingOptions
+    );
+    expect(result.errors).toHaveLength(0);
+    expect([...(getMessageHashes() ?? [])]).toEqual([icuHash('Helper text')]);
   });
 
   test('is undefined until something is extracted', () => {
