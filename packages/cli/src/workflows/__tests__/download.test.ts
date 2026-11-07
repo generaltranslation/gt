@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { JobResult } from 'generaltranslation/api';
 import type { Settings } from '../../types/index.js';
+import { logger } from '../../console/logger.js';
+import { displayTranslateSummary } from '../../console/displayTranslateSummary.js';
+import { clearWarnings, getWarnings } from '../../state/translateWarnings.js';
+import { TEMPLATE_FILE_NAME } from '../../utils/constants.js';
 import { clearLocaleDirs } from '../../fs/clearLocaleDirs.js';
 import { api } from '../../utils/api.js';
 import { downloadFileBatch } from '../../api/downloadFileBatch.js';
@@ -24,6 +29,7 @@ vi.mock('../../fs/clearLocaleDirs.js', () => ({
 vi.mock('../../utils/api.js', () => ({
   api: {
     queryFileData: vi.fn(),
+    awaitJobs: vi.fn(),
     resolveAliasLocale: vi.fn((locale: string) => locale),
   },
 }));
@@ -61,6 +67,7 @@ describe('runDownloadWorkflow', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    clearWarnings();
     vi.mocked(downloadFileBatch).mockResolvedValue({
       successful: [],
       failed: [],
@@ -127,5 +134,180 @@ describe('runDownloadWorkflow', () => {
     expect(downloadSettings).not.toBe(settings);
     expect(settings._branchId).toBeUndefined();
     expect(inlineLibrary).toBe('gt-vue');
+  });
+
+  const billingError =
+    "Your account's credit balance is insufficient to complete this request. " +
+    'Please add more usage credits to your account or configure auto-reload to reload your balance.\n' +
+    '  Available: $5.99\n  Estimated: $27.86';
+
+  function enqueueLocales(locales: string[]) {
+    return {
+      jobData: Object.fromEntries(
+        locales.map((locale) => [
+          `job-${locale}`,
+          {
+            sourceFileId: 'source-1',
+            fileId: 'file-1',
+            versionId: 'version-1',
+            branchId: 'branch-1',
+            targetLocale: locale,
+            projectId: 'project-1',
+            force: false,
+          },
+        ])
+      ),
+      locales,
+      message: 'enqueued',
+    };
+  }
+
+  it.each(['poll', 'final'] as const)(
+    'shows the billing error from %s job statuses in both error output and the summary',
+    async (delivery) => {
+      const jobs = [
+        { jobId: 'job-nb', status: 'failed', error: { message: billingError } },
+      ] satisfies JobResult[];
+      vi.mocked(api.awaitJobs).mockImplementation(async (_jobIds, options) => {
+        if (delivery === 'poll') options?.onPoll?.(jobs);
+        return { complete: true, jobs };
+      });
+
+      const result = await runDownloadWorkflow({
+        fileVersionData: {
+          'file-1': { versionId: 'version-1', fileName: TEMPLATE_FILE_NAME },
+        },
+        jobData: enqueueLocales(['nb']),
+        branchData,
+        locales: ['nb'],
+        timeoutDuration: 1,
+        resolveOutputPath: (_sourcePath, locale) => `messages/${locale}.json`,
+        options: settings,
+        forceRetranslation: true,
+      });
+
+      expect(result).toBe(false);
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.stringContaining(billingError)
+      );
+      expect(getWarnings()).toEqual([
+        {
+          category: 'failed_translation',
+          fileName: '<React Elements>',
+          reason: expect.stringContaining(
+            `Failed to translate for locale nb. Details: ${billingError}`
+          ),
+        },
+      ]);
+      displayTranslateSummary();
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining(billingError)
+      );
+      expect(logger.error).not.toHaveBeenCalledWith(
+        expect.stringContaining(TEMPLATE_FILE_NAME)
+      );
+      expect(logger.warn).not.toHaveBeenCalledWith(
+        expect.stringContaining(TEMPLATE_FILE_NAME)
+      );
+      expect(clearLocaleDirs).not.toHaveBeenCalled();
+      expect(downloadFileBatch).not.toHaveBeenCalled();
+    }
+  );
+
+  it.each([null, '', '   '])(
+    'reports the locale and file when the server reason is %j',
+    async (message) => {
+      vi.mocked(api.awaitJobs).mockImplementation(async (_jobIds, options) => {
+        options?.onPoll?.([
+          { jobId: 'job-nb', status: 'failed', error: { message } },
+        ]);
+        return {
+          complete: true,
+          jobs: [{ jobId: 'job-nb', status: 'failed' }],
+        };
+      });
+
+      await runDownloadWorkflow({
+        fileVersionData,
+        jobData: enqueueLocales(['nb']),
+        branchData,
+        locales: ['nb'],
+        timeoutDuration: 1,
+        resolveOutputPath: (_sourcePath, locale) => `messages/${locale}.json`,
+        options: settings,
+        forceRetranslation: true,
+      });
+
+      expect(getWarnings()).toEqual([
+        {
+          category: 'failed_translation',
+          fileName: 'messages/en.json',
+          reason: 'Failed to translate for locale nb.',
+        },
+      ]);
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'messages/en.json: Failed to translate for locale nb.'
+        )
+      );
+    }
+  );
+
+  it('keeps the failure reason while downloading only successful locales', async () => {
+    const jobs = [
+      { jobId: 'job-nb', status: 'failed', error: { message: billingError } },
+      { jobId: 'job-fr', status: 'completed' },
+    ] satisfies JobResult[];
+    vi.mocked(api.awaitJobs).mockImplementation(async (_jobIds, options) => {
+      options?.onPoll?.(jobs);
+      return { complete: true, jobs };
+    });
+    vi.mocked(api.queryFileData).mockResolvedValue({
+      translatedFiles: [
+        {
+          branchId: 'branch-1',
+          fileId: 'file-1',
+          versionId: 'version-1',
+          locale: 'fr',
+          completedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ],
+    });
+
+    await runDownloadWorkflow({
+      fileVersionData: {
+        'file-1': { versionId: 'version-1', fileName: TEMPLATE_FILE_NAME },
+      },
+      jobData: enqueueLocales(['fr', 'nb']),
+      branchData,
+      locales: ['fr', 'nb'],
+      timeoutDuration: 1,
+      resolveOutputPath: (_sourcePath, locale) => `messages/${locale}.json`,
+      options: settings,
+      inlineLibrary: 'gt-vue',
+      forceRetranslation: true,
+    });
+
+    expect(getWarnings()).toEqual([
+      {
+        category: 'failed_translation',
+        fileName: '<Vue Elements>',
+        reason: expect.stringContaining(billingError),
+      },
+    ]);
+    expect(api.queryFileData).toHaveBeenCalledExactlyOnceWith({
+      translatedFiles: [
+        {
+          branchId: 'branch-1',
+          fileId: 'file-1',
+          versionId: 'version-1',
+          locale: 'fr',
+        },
+      ],
+    });
+    expect(downloadFileBatch).toHaveBeenCalledTimes(1);
+    expect([...vi.mocked(clearLocaleDirs).mock.calls[0][0]]).toEqual([
+      'messages/fr.json',
+    ]);
   });
 });

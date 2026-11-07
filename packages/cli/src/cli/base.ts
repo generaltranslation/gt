@@ -3,10 +3,7 @@ import {
   OrgApiKeyPermission,
   ProjectApiKeyPermission,
 } from 'generaltranslation/api';
-import {
-  DEFAULT_TRANSLATIONS_DIR,
-  REACT_QUICKSTART_URL,
-} from '../utils/constants.js';
+import { DEFAULT_TRANSLATIONS_DIR } from '../utils/constants.js';
 import {
   applySetupConfig,
   mergeSetupConfig,
@@ -48,6 +45,8 @@ import {
   resolveReactSetup,
   type ReactSetupPlan,
 } from '../setup/wizard.js';
+import { formatInitNextSteps, getInitNextSteps } from '../setup/nextSteps.js';
+import { getPackageManager } from '../utils/packageManager.js';
 import {
   isPackageInstalled,
   searchForPackageJson,
@@ -65,7 +64,10 @@ import {
   resolveDevelopmentProject,
   signInForSetup,
 } from '../setup/developmentCredentials.js';
-import { exitIfUnsupportedSetupTarget } from '../setup/setupTarget.js';
+import {
+  exitIfUnsupportedSetupTarget,
+  reactNativeSetupError,
+} from '../setup/setupTarget.js';
 import {
   asRecord,
   attachConfigureFlags,
@@ -140,6 +142,7 @@ import { resolveConfig } from '../config/resolveConfig.js';
 import { loadConfig, withJsonExtension } from '../fs/config/loadConfig.js';
 import {
   getBuildToolSetup,
+  getSetupDocsUrl,
   type ManualAction,
   type SetupResult,
 } from '../setup/buildTools/index.js';
@@ -937,6 +940,10 @@ export class BaseCLI {
       displaySetupHeader(session, 'Running setup wizard...');
 
       const detected = await detectFramework();
+      // Stop before any change rather than set React Native up as web React.
+      if (detected.type === 'react-native') {
+        throw new OnboardingError(reactNativeSetupError);
+      }
       const reactDetected = detected.type === 'react' ? detected : undefined;
       if (options.framework && !reactDetected) {
         session.reject(
@@ -1013,7 +1020,7 @@ export class BaseCLI {
         options.framework ??
         configured ??
         detected.name;
-      await this.handleInitCommand(session, options, {
+      const nextSteps = await this.handleInitCommand(session, options, {
         configFilepath,
         framework,
         saveFramework: Boolean(reactSetup || options.framework),
@@ -1021,6 +1028,10 @@ export class BaseCLI {
         keepAppSource: !reactSetup,
       });
 
+      if (nextSteps) {
+        logger.endCommand(formatInitNextSteps(nextSteps));
+        return { outcome: 'success', nextSteps };
+      }
       logger.endCommand(
         'Done! Check out our docs for more information on how to use General Translation: https://generaltranslation.com/docs'
       );
@@ -1057,10 +1068,11 @@ export class BaseCLI {
       session.defaults = options.defaults ?? false;
       const detected = await detectFramework();
       const configFilepath = setupConfigPath(options);
-      // Detection only picks env names here; it is not saved.
+      // Detection only picks env names here; it is not saved. React Native
+      // keeps the generic React env names configure has always written.
       const framework =
         getConfiguredFramework(readSetupConfig(configFilepath)) ??
-        detected.name;
+        (detected.type === 'react-native' ? 'react' : detected.name);
       await this.handleInitCommand(session, options, {
         configFilepath,
         framework,
@@ -1162,7 +1174,7 @@ See https://www.npmjs.com/package/gt-vue`);
       /** Init without the React setup never changes application source. */
       keepAppSource?: boolean;
     }
-  ): Promise<void> {
+  ): Promise<string[] | undefined> {
     const { configFilepath, reactSetup } = setup;
     const buildTool = getBuildToolSetup(setup.framework);
     const cwd = process.cwd();
@@ -1517,11 +1529,7 @@ See https://www.npmjs.com/package/gt-vue`);
         );
       }
       await executeReactSetup(session, reactSetup, options);
-      logger.endCommand(
-        `Done! Since this wizard is experimental, please review the changes and make modifications as needed.
-\nNext step: start internationalizing! See the docs for more information: ${buildTool?.docsUrl ?? REACT_QUICKSTART_URL}`
-      );
-      logger.startCommand('Setting up project config...');
+      logger.step('Setting up project config...');
     }
 
     const reportManualAction = ({ whatHappened, fix }: ManualAction) => {
@@ -1679,5 +1687,28 @@ See https://www.npmjs.com/package/gt-vue`);
       );
       logger.message(productionRuntimeKeyGuidance(settings.dashboardUrl));
     }
+
+    if (!reactSetup) return undefined;
+    // The React setup configures the app entry but never marks content for
+    // translation, so what is left is reported as next steps.
+    const devPackageManager =
+      packageManager ??
+      (await getPackageManager(cwd, options.packageManager, true).catch(
+        () => undefined
+      ));
+    const scripts = asRecord(reactSetup.packageJson.scripts);
+    return getInitNextSteps({
+      framework: reactSetup.framework,
+      configuredAppEntry:
+        reactSetup.framework === 'next-app' || buildTool !== undefined,
+      docsUrl: getSetupDocsUrl(reactSetup.framework),
+      locales: resolvedLocales,
+      configFilepath,
+      translationsDir: storage === 'local' ? translationsDir : undefined,
+      devCommand:
+        typeof scripts?.dev === 'string'
+          ? `${devPackageManager?.runScriptCommand ?? 'npm run'} dev`
+          : undefined,
+    });
   }
 }

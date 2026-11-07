@@ -33,6 +33,20 @@
   - A site-wide run by a signed-in user covers only the documents they may edit, instead of reporting the rest as failed. This also applies to `translateSite` and `saveSiteTranslations` with a `user`.
   - A run that asks for a locale General Translation cannot translate into, or one outside the Payload config, is refused with a 400 naming it, instead of quietly translating less than asked.
 
+## 0.1.5
+
+### Patch Changes
+
+- Updated dependencies [[`b3c3647`](https://github.com/generaltranslation/gt/commit/b3c3647239a6c44c3549e722b7001b83624865f8)]:
+  - generaltranslation@9.5.11
+
+## 0.1.4
+
+### Patch Changes
+
+- Updated dependencies [[`e1c64a3`](https://github.com/generaltranslation/gt/commit/e1c64a3c27c7a05ffeb81eb2d04ace795d0c3ab5)]:
+  - generaltranslation@9.5.10
+
 ## 0.1.3-samsara.0
 
 ### Patch Changes

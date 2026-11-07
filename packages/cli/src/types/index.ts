@@ -145,6 +145,11 @@ export type FrameworkObject =
       type: 'react';
     };
 export type ReactFrameworkObject = Extract<FrameworkObject, { type: 'react' }>;
+/** Detected so setup can stop; the wizard cannot set React Native up yet. */
+export type ReactNativeFrameworkObject = {
+  name: 'react-native';
+  type: 'react-native';
+};
 
 export type FrameworkType = FrameworkObject['type'];
 

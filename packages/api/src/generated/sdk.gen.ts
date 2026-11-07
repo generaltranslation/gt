@@ -161,6 +161,9 @@ import type {
   UpdateContextGroupData,
   UpdateContextGroupErrors,
   UpdateContextGroupResponses,
+  UpdateFilesData,
+  UpdateFilesErrors,
+  UpdateFilesResponses,
   UpdateProjectInfoData,
   UpdateProjectInfoErrors,
   UpdateProjectInfoResponses,
@@ -425,6 +428,27 @@ export const workspacePluginInfo = <ThrowOnError extends boolean = false>(
   >({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v1/integrations/workspace-plugin/info',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Update files
+ *
+ * Update 1–100 source files or translations in one atomic batch. Requires `project:files:write`.
+ */
+export const updateFiles = <ThrowOnError extends boolean = false>(
+  options: Options<UpdateFilesData, ThrowOnError>
+) =>
+  options.client.patch<UpdateFilesResponses, UpdateFilesErrors, ThrowOnError>({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects/{projectId}/files',
     ...options,
     headers: {
       'Content-Type': 'application/json',

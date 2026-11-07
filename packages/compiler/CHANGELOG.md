@@ -28,6 +28,20 @@
   - @generaltranslation/format@1.0.0-samsara.2
   - @generaltranslation/icu@0.2.0-samsara.1
 
+## 1.3.68
+
+### Patch Changes
+
+- Updated dependencies [[`b3c3647`](https://github.com/generaltranslation/gt/commit/b3c3647239a6c44c3549e722b7001b83624865f8)]:
+  - generaltranslation@9.5.11
+
+## 1.3.67
+
+### Patch Changes
+
+- Updated dependencies [[`e1c64a3`](https://github.com/generaltranslation/gt/commit/e1c64a3c27c7a05ffeb81eb2d04ace795d0c3ab5)]:
+  - generaltranslation@9.5.10
+
 ## 1.3.66
 
 ### Patch Changes

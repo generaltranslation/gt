@@ -1,3 +1,4 @@
+import { UserAuthError } from '../auth/errors.js';
 import { logCollectedFiles, logErrorAndExit } from '../console/logging.js';
 import { branchResolutionError, withOriginalError } from '../console/index.js';
 import { logger } from '../console/logger.js';
@@ -100,11 +101,14 @@ export async function runStageFilesWorkflow({
 
     return { branchData, enqueueResult };
   } catch (error) {
+    // A sign-in failure is already a complete diagnostic that names `gt login`.
     return logErrorAndExit(
-      withOriginalError(
-        'Files could not be sent for translation. Check the files, branch configuration, and API credentials, then try again.',
-        error
-      )
+      error instanceof UserAuthError
+        ? error.message
+        : withOriginalError(
+            'Files could not be sent for translation. Check the files, branch configuration, and API credentials, then try again.',
+            error
+          )
     );
   }
 }

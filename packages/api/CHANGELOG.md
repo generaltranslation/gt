@@ -1,10 +1,22 @@
 # @generaltranslation/api
 
+## 0.6.0
+
+### Minor Changes
+
+- [#2661](https://github.com/generaltranslation/gt/pull/2661) [`b3c3647`](https://github.com/generaltranslation/gt/commit/b3c3647239a6c44c3549e722b7001b83624865f8) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Source files over the upload route's inline limit (20MB, or more than a request can carry with their `formatMetadata`) are uploaded straight to storage, content and `formatMetadata` both, and sent by reference, so `gt stage` and `gt translate` no longer fail with 413 on large files or large source-code context. `@generaltranslation/api` adds `createFileUploads`, `putFileUpload`, and `uploadSourceFileReferences`.
+
 ## 0.6.0-samsara.0
 
 ### Minor Changes
 
 - 4b6ea22: Message trees are a data format: `DataFormat` adds `'ICU_TREE'`, and `ContentByFormat` and `ContentFor` in `@generaltranslation/format/types` map each data format to its content, and `Content` covers every data format, message trees included. `hashSource` in `generaltranslation/id` hashes a message tree passed with `dataFormat: 'ICU_TREE'` like any other source, with its `context`, `maxChars` and `requiresReview`; object key order is ignored, and the format in the hashed data keeps tree keys apart from string and JSX keys. The API contract and runtime translation accept `ICU_TREE`.
+
+## 0.5.7
+
+### Patch Changes
+
+- [#2653](https://github.com/generaltranslation/gt/pull/2653) [`e1c64a3`](https://github.com/generaltranslation/gt/commit/e1c64a3c27c7a05ffeb81eb2d04ace795d0c3ab5) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - `previewUrl` resolvers now get the Sanity language id of the page as a second argument, `resolve(doc, { language })`, so each locale links to its own page. Imported translations send their page as their preview URL, resolved from the document they were written to. Adds `updateFiles` to the API client and adapter for updating source files and translations.
 
 ## 0.5.6
 
