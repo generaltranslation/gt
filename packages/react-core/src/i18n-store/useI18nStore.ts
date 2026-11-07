@@ -1,4 +1,3 @@
-import { Dictionary, Locale } from 'gt-i18n/internal/types';
 import { useGTContext } from '../context/context';
 import { I18nStore } from './I18nStore';
 import { getI18nStore } from './singleton-operations';
@@ -7,6 +6,11 @@ import {
   isGlobalTranslationsSnapshotInitialized,
   TranslationsSnapshot,
 } from '../translations-snapshot/singleton-operations';
+import {
+  getGlobalDictionariesSnapshot,
+  isGlobalDictionariesSnapshotInitialized,
+  DictionariesSnapshot,
+} from '../dictionaries-snapshot/singleton-operations';
 
 export function useI18nStore(): I18nStore {
   const context = useGTContext();
@@ -24,7 +28,13 @@ export function useTranslationsSnapshot(): TranslationsSnapshot {
   }
 }
 
-export function useDictionariesSnapshot(): Record<Locale, Dictionary> {
+export function useDictionariesSnapshot(): DictionariesSnapshot {
   const context = useGTContext();
-  return context?.dictionariesSnapshot || {};
+  if (context?.dictionariesSnapshot) {
+    return context.dictionariesSnapshot;
+  } else if (isGlobalDictionariesSnapshotInitialized()) {
+    return getGlobalDictionariesSnapshot();
+  } else {
+    return {};
+  }
 }
