@@ -1,12 +1,21 @@
 /**
- * The inlineTranslations option embeds translations for the configured
- * locales as a callback argument at each translation call site.
+ * gt.config.json's files.gt.inlineTranslations embeds translations for the
+ * configured locales as a callback argument at each translation call site.
  */
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi,
+} from 'vitest';
 import { transformWithPlugin } from './transformWithPlugin';
+import type { GTUnpluginOptions } from '../index';
 import { clearInlineTranslationsCache } from '../transform/injection/inline-translations/loadInlineTranslations';
 import { hashSource } from 'generaltranslation/id';
 
@@ -39,7 +48,42 @@ async function getHash(code: string, pattern: RegExp): Promise<string> {
 const getGtHash = () => getHash(USEGT_CODE, /"\$_hash": "([^"]+)"/);
 const getTHash = () => getHash(T_COMPONENT_CODE, /_hash: "([^"]+)"/);
 
-describe('inlineTranslations plugin option', () => {
+function createOutputDir(
+  translations: Record<string, Record<string, unknown>> = {}
+): string {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-inline-'));
+  onTestFinished(() => fs.rmSync(dir, { recursive: true, force: true }));
+  for (const [locale, entries] of Object.entries(translations)) {
+    fs.writeFileSync(path.join(dir, `${locale}.json`), JSON.stringify(entries));
+  }
+  return dir;
+}
+
+function gtConfigOptions(
+  locales: string[],
+  outputDir: string | undefined
+): GTUnpluginOptions {
+  return {
+    gtConfig: {
+      files: {
+        gt: {
+          ...(outputDir && { output: path.join(outputDir, '[locale].json') }),
+          inlineTranslations: { locales },
+        },
+      },
+    },
+  };
+}
+
+/** Options embedding `locales`, with `translations` written to files.gt.output. */
+function inlineOptions(
+  locales: string[],
+  translations: Record<string, Record<string, unknown>>
+): GTUnpluginOptions {
+  return gtConfigOptions(locales, createOutputDir(translations));
+}
+
+describe('inlineTranslations in gt.config.json', () => {
   beforeEach(() => {
     vi.stubEnv('NODE_ENV', 'production');
     clearInlineTranslationsCache();
@@ -52,15 +96,10 @@ describe('inlineTranslations plugin option', () => {
   it('appends an inline translations callback to gt() calls', async () => {
     const hash = await getGtHash();
     const output = await transformWithPlugin(
-      {
-        inlineTranslations: {
-          locales: ['fr', 'es'],
-          translations: {
-            fr: { [hash]: 'Bonjour le monde' },
-            es: { [hash]: 'Hola mundo' },
-          },
-        },
-      },
+      inlineOptions(['fr', 'es'], {
+        fr: { [hash]: 'Bonjour le monde' },
+        es: { [hash]: 'Hola mundo' },
+      }),
       USEGT_CODE
     );
     expect(output).toContain(
@@ -71,15 +110,10 @@ describe('inlineTranslations plugin option', () => {
   it('only embeds the configured locales', async () => {
     const hash = await getGtHash();
     const output = await transformWithPlugin(
-      {
-        inlineTranslations: {
-          locales: ['fr'],
-          translations: {
-            fr: { [hash]: 'Bonjour le monde' },
-            es: { [hash]: 'Hola mundo' },
-          },
-        },
-      },
+      inlineOptions(['fr'], {
+        fr: { [hash]: 'Bonjour le monde' },
+        es: { [hash]: 'Hola mundo' },
+      }),
       USEGT_CODE
     );
     expect(output).toContain('"Bonjour le monde"');
@@ -89,12 +123,7 @@ describe('inlineTranslations plugin option', () => {
   it('adds an inline prop to <T>', async () => {
     const hash = await getTHash();
     const output = await transformWithPlugin(
-      {
-        inlineTranslations: {
-          locales: ['fr'],
-          translations: { fr: { [hash]: 'Bonjour le monde' } },
-        },
-      },
+      inlineOptions(['fr'], { fr: { [hash]: 'Bonjour le monde' } }),
       T_COMPONENT_CODE
     );
     expect(output).toContain(
@@ -104,31 +133,16 @@ describe('inlineTranslations plugin option', () => {
 
   it('skips call sites without embedded translations', async () => {
     const output = await transformWithPlugin(
-      {
-        inlineTranslations: {
-          locales: ['fr'],
-          translations: { fr: { 'other-hash': 'Autre' } },
-        },
-      },
+      inlineOptions(['fr'], { fr: { 'other-hash': 'Autre' } }),
       USEGT_CODE
     );
     expect(output).not.toContain('(locale) =>');
   });
 
-  it('reads locale files from a [locale] path template', async () => {
+  it('skips locales without a translations file', async () => {
     const hash = await getGtHash();
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-inline-'));
-    fs.writeFileSync(
-      path.join(dir, 'fr.json'),
-      JSON.stringify({ [hash]: 'Bonjour le monde' })
-    );
     const output = await transformWithPlugin(
-      {
-        inlineTranslations: {
-          locales: ['fr', 'de'],
-          path: path.join(dir, '[locale].json'),
-        },
-      },
+      inlineOptions(['fr', 'de'], { fr: { [hash]: 'Bonjour le monde' } }),
       USEGT_CODE
     );
     expect(output).toContain(
@@ -136,17 +150,19 @@ describe('inlineTranslations plugin option', () => {
     );
   });
 
+  it('does nothing without files.gt.output', async () => {
+    const output = await transformWithPlugin(
+      gtConfigOptions(['fr'], undefined),
+      USEGT_CODE
+    );
+    expect(output).not.toContain('(locale) =>');
+  });
+
   it('re-reads a locale file edited between builds', async () => {
     const hash = await getGtHash();
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-inline-'));
+    const dir = createOutputDir({ fr: { [hash]: 'Bonjour le monde' } });
     const file = path.join(dir, 'fr.json');
-    const options = {
-      inlineTranslations: {
-        locales: ['fr'],
-        path: path.join(dir, '[locale].json'),
-      },
-    };
-    fs.writeFileSync(file, JSON.stringify({ [hash]: 'Bonjour le monde' }));
+    const options = gtConfigOptions(['fr'], dir);
     await transformWithPlugin(options, USEGT_CODE);
 
     fs.writeFileSync(file, JSON.stringify({ [hash]: 'Salut le monde' }));
@@ -159,45 +175,14 @@ describe('inlineTranslations plugin option', () => {
 
   it('registers locale files as watch dependencies', async () => {
     const hash = await getGtHash();
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-inline-'));
-    const file = path.join(dir, 'fr.json');
-    fs.writeFileSync(file, JSON.stringify({ [hash]: 'Bonjour le monde' }));
+    const dir = createOutputDir({ fr: { [hash]: 'Bonjour le monde' } });
     const watched: string[] = [];
     await transformWithPlugin(
-      {
-        inlineTranslations: {
-          locales: ['fr', 'de'],
-          path: path.join(dir, '[locale].json'),
-        },
-      },
+      gtConfigOptions(['fr', 'de'], dir),
       USEGT_CODE,
       (watchedFile) => watched.push(watchedFile)
     );
-    expect(watched).toEqual([file]);
-  });
-
-  it('watches file-backed locales next to explicit translations', async () => {
-    const hash = await getGtHash();
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-inline-'));
-    const frFile = path.join(dir, 'fr.json');
-    fs.writeFileSync(frFile, JSON.stringify({ [hash]: 'Bonjour le monde' }));
-    fs.writeFileSync(
-      path.join(dir, 'es.json'),
-      JSON.stringify({ [hash]: 'Hola' })
-    );
-    const watched: string[] = [];
-    await transformWithPlugin(
-      {
-        inlineTranslations: {
-          locales: ['fr', 'es'],
-          path: path.join(dir, '[locale].json'),
-          translations: { es: { [hash]: 'Hola mundo' } },
-        },
-      },
-      USEGT_CODE,
-      (watchedFile) => watched.push(watchedFile)
-    );
-    expect(watched).toEqual([frFile]);
+    expect(watched).toEqual([path.join(dir, 'fr.json')]);
   });
 
   it('appends an inline translations callback to standalone t() calls', async () => {
@@ -207,12 +192,7 @@ describe('inlineTranslations plugin option', () => {
     `;
     const hash = await getHash(code, /"\$_hash": "([^"]+)"/);
     const output = await transformWithPlugin(
-      {
-        inlineTranslations: {
-          locales: ['fr'],
-          translations: { fr: { [hash]: 'Bonjour le monde' } },
-        },
-      },
+      inlineOptions(['fr'], { fr: { [hash]: 'Bonjour le monde' } }),
       code
     );
     expect(output).toContain(
@@ -224,12 +204,7 @@ describe('inlineTranslations plugin option', () => {
     vi.stubEnv('NODE_ENV', 'development');
     const hash = await getGtHash();
     const output = await transformWithPlugin(
-      {
-        inlineTranslations: {
-          locales: ['fr'],
-          translations: { fr: { [hash]: 'Bonjour le monde' } },
-        },
-      },
+      inlineOptions(['fr'], { fr: { [hash]: 'Bonjour le monde' } }),
       USEGT_CODE
     );
     expect(output).not.toContain('Bonjour le monde');
@@ -243,7 +218,7 @@ describe('inlineTranslations plugin option', () => {
 
     it('skips gt() calls with derive content', async () => {
       const output = await transformWithPlugin(
-        { inlineTranslations: { locales: ['fr'], translations } },
+        inlineOptions(['fr'], translations),
         `import { useGT, derive } from 'gt-react';
          const gt = useGT();
          gt(\`Hello \${derive(getName())}\`);`
@@ -253,7 +228,7 @@ describe('inlineTranslations plugin option', () => {
 
     it('skips <T> with <Derive> children', async () => {
       const output = await transformWithPlugin(
-        { inlineTranslations: { locales: ['fr'], translations } },
+        inlineOptions(['fr'], translations),
         `import { jsx, jsxs } from 'react/jsx-runtime';
          import { T, Derive } from 'gt-react';
          export const el = jsxs(T, { children: ["Hello ", jsx(Derive, { children: getName() })] });`
@@ -270,15 +245,10 @@ describe('inlineTranslations plugin option', () => {
 
     it('keeps locale order from the config', async () => {
       const output = await transformWithPlugin(
-        {
-          inlineTranslations: {
-            locales: ['es', 'fr'],
-            translations: {
-              fr: { [HELLO_WORLD]: 'Bonjour le monde' },
-              es: { [HELLO_WORLD]: 'Hola mundo' },
-            },
-          },
-        },
+        inlineOptions(['es', 'fr'], {
+          fr: { [HELLO_WORLD]: 'Bonjour le monde' },
+          es: { [HELLO_WORLD]: 'Hola mundo' },
+        }),
         USEGT_CODE
       );
       expect(output).toContain(
@@ -293,14 +263,9 @@ describe('inlineTranslations plugin option', () => {
 
     it('embeds translations for gt() calls with options', async () => {
       const output = await transformWithPlugin(
-        {
-          inlineTranslations: {
-            locales: ['fr'],
-            translations: {
-              fr: { [icuHash('Hi {name}', 'greeting')]: 'Salut {name}' },
-            },
-          },
-        },
+        inlineOptions(['fr'], {
+          fr: { [icuHash('Hi {name}', 'greeting')]: 'Salut {name}' },
+        }),
         `import { useGT } from 'gt-react';
          const gt = useGT();
          gt("Hi {name}", { name: user, $context: "greeting" });`
@@ -312,12 +277,7 @@ describe('inlineTranslations plugin option', () => {
 
     it('uses a user-supplied hash for gt() calls', async () => {
       const output = await transformWithPlugin(
-        {
-          inlineTranslations: {
-            locales: ['fr'],
-            translations: { fr: { custom: 'Perso' } },
-          },
-        },
+        inlineOptions(['fr'], { fr: { custom: 'Perso' } }),
         `import { useGT } from 'gt-react';
          const gt = useGT();
          gt("Hello world", { $_hash: "custom" });`
@@ -329,14 +289,9 @@ describe('inlineTranslations plugin option', () => {
 
     it('embeds JSX children objects for <T>', async () => {
       const output = await transformWithPlugin(
-        {
-          inlineTranslations: {
-            locales: ['fr'],
-            translations: {
-              fr: { [JSX_HELLO_WORLD]: ['Bonjour ', { c: 'monde', i: 1 }] },
-            },
-          },
-        },
+        inlineOptions(['fr'], {
+          fr: { [JSX_HELLO_WORLD]: ['Bonjour ', { c: 'monde', i: 1 }] },
+        }),
         T_COMPONENT_CODE
       );
       expect(output).toContain('locale === "fr" ? ["Bonjour ", {');
@@ -345,7 +300,7 @@ describe('inlineTranslations plugin option', () => {
 
     it('skips <T> without embedded translations', async () => {
       const output = await transformWithPlugin(
-        { inlineTranslations: { locales: ['fr'], translations: { fr: {} } } },
+        inlineOptions(['fr'], { fr: {} }),
         T_COMPONENT_CODE
       );
       expect(output).toContain('_hash: "');
@@ -355,12 +310,7 @@ describe('inlineTranslations plugin option', () => {
     it('never embeds translations in msg() calls', async () => {
       // msg() strings load from the msg()-only translations file instead
       const output = await transformWithPlugin(
-        {
-          inlineTranslations: {
-            locales: ['fr'],
-            translations: { fr: { [icuHash('Hello')]: 'Bonjour' } },
-          },
-        },
+        inlineOptions(['fr'], { fr: { [icuHash('Hello')]: 'Bonjour' } }),
         `import { msg } from 'gt-react';
          export const a = msg("Hello");
          export const b = msg("Hello", { $id: "greeting" });`
@@ -370,14 +320,9 @@ describe('inlineTranslations plugin option', () => {
 
     it('skips gt() calls with a derive $context', async () => {
       const output = await transformWithPlugin(
-        {
-          inlineTranslations: {
-            locales: ['fr'],
-            translations: {
-              fr: { [HELLO_WORLD]: 'Bonjour le monde' },
-            },
-          },
-        },
+        inlineOptions(['fr'], {
+          fr: { [HELLO_WORLD]: 'Bonjour le monde' },
+        }),
         `import { useGT, derive } from 'gt-react';
          const gt = useGT();
          gt("Hello world", { $context: derive(getContext()) });`
