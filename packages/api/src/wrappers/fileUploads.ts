@@ -1,15 +1,7 @@
 import type { CreateFileUploadsResponse } from '../generated';
+import type { ApiClientConfig } from './client';
 import { ApiError } from './errors';
-import {
-  createRetryingFetch,
-  createTimeoutFetch,
-  DEFAULT_TIMEOUT_MS,
-  type RetryPolicy,
-} from './transport';
-
-// Each attempt gets one extra second per 256 KiB, so slow connections can
-// finish large files.
-const MIN_UPLOAD_BYTES_PER_SECOND = 256 * 1024;
+import { createRetryingFetch, createTimeoutFetch } from './transport';
 
 export type PresignedFileUpload = NonNullable<
   CreateFileUploadsResponse['files'][number]['upload']
@@ -17,24 +9,17 @@ export type PresignedFileUpload = NonNullable<
 
 /**
  * PUTs a file's bytes to a presigned URL from `createFileUploads`. The URL
- * authorizes the request, so it carries no API credentials. Each attempt's
- * timeout is `timeoutMs` (default `DEFAULT_TIMEOUT_MS`) plus one second per
- * 256 KiB of `bytes`; `false` disables it.
+ * authorizes the request, so `fetch` must not add API credentials. The whole
+ * PUT, retries and their backoff included, times out when the URL expires.
  */
 export async function putFileUpload(
   upload: PresignedFileUpload,
   bytes: Uint8Array<ArrayBuffer>,
-  options: { timeoutMs?: number | false; retryPolicy?: RetryPolicy } = {}
+  options: Pick<ApiClientConfig, 'fetch' | 'retryPolicy'> = {}
 ): Promise<void> {
-  const fetch = createRetryingFetch({
-    fetch: createTimeoutFetch({
-      timeoutMs:
-        options.timeoutMs === false
-          ? false
-          : (options.timeoutMs ?? DEFAULT_TIMEOUT_MS) +
-            Math.ceil(bytes.byteLength / MIN_UPLOAD_BYTES_PER_SECOND) * 1000,
-    }),
-    retryPolicy: options.retryPolicy,
+  const fetch = createTimeoutFetch({
+    fetch: createRetryingFetch(options),
+    timeoutMs: Math.max(Date.parse(upload.expiresAt) - Date.now(), 0),
   });
   const response = await fetch(upload.url, {
     method: 'PUT',
