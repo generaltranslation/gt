@@ -72,6 +72,20 @@ describe('message hashes', () => {
     expect([...(getMessageHashes() ?? [])]).toEqual([icuHash('Helper text')]);
   });
 
+  test('stays undefined when the scan finds no inline content', async () => {
+    const { matchFiles } = await import('../../../fs/matchFiles.js');
+    vi.mocked(matchFiles).mockReturnValue([]);
+
+    await createInlineUpdates(
+      Libraries.GT_NEXT,
+      false,
+      undefined,
+      {},
+      parsingOptions
+    );
+    expect(getMessageHashes()).toBeUndefined();
+  });
+
   test('is undefined until something is extracted', () => {
     expect(getMessageHashes()).toBeUndefined();
   });

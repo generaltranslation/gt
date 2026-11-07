@@ -229,12 +229,15 @@ export async function createInlineUpdates(
 
   // Post processing steps:
   await calculateHashes(updates);
-  // Before dedupe, which keeps one update per hash regardless of its source
-  recordMessageHashes(
-    messageUpdates.flatMap((update) =>
-      update.metadata.hash ? [update.metadata.hash] : []
-    )
-  );
+  // Before dedupe, which keeps one update per hash regardless of its source.
+  // A scan that found nothing leaves the state unset so message files are kept.
+  if (updates.length > 0) {
+    recordMessageHashes(
+      messageUpdates.flatMap((update) =>
+        update.metadata.hash ? [update.metadata.hash] : []
+      )
+    );
+  }
   dedupeUpdates(updates);
   linkDeriveUpdates(updates);
 
