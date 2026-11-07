@@ -177,3 +177,15 @@ export const babelCompilerTurbopackUnavailableWarning =
 export const disablingCompileTimeHashWarning = `gt-next (plugin): Compile-time hash is disabled. Compiler optimizations are inactive.`;
 
 export const swcPluginCompatibilityChangeWarning = `gt-next (plugin): As of gt-next@6.12.4, SWC plugin support is disabled for Next.js versions prior to ${SWC_PLUGIN_SUPPORT}. Update to the latest version of Next.js.`;
+
+export const createInlineTranslationsShardsWarning = (
+  dir: string,
+  error: unknown
+) =>
+  createGtNextPluginDiagnostic({
+    severity: 'Warning',
+    whatHappened: `Embedded translations could not be written to ${dir}`,
+    why: 'Builds read them from there, so a build will fail; servers do not need them',
+    fix: 'Make the Next.js distDir writable during next build',
+    details: String(error),
+  });

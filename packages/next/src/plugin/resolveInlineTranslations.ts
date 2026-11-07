@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import type { GTOutputFileConfig } from 'generaltranslation/types';
 import { nodeRequire } from './nodeCompat';
+import { createInlineTranslationsShardsWarning } from '../errors/createErrors';
 
 type CompilerFileHelpers = Pick<
   typeof import('@generaltranslation/compiler'),
@@ -74,10 +75,16 @@ export function resolveInlineTranslations(
     );
   }
 
-  if (!fs.existsSync(target)) {
-    writeShards(shardsRoot, target, files, compiler.readTranslationsFile);
+  // next start also loads the config, possibly on a read-only filesystem, and
+  // needs no shards; a build fails in the SWC plugin when they are missing
+  try {
+    if (!fs.existsSync(target)) {
+      writeShards(shardsRoot, target, files, compiler.readTranslationsFile);
+    }
+    removeStaleShards(shardsRoot, contentHash);
+  } catch (error) {
+    console.warn(createInlineTranslationsShardsWarning(dir, error));
   }
-  removeStaleShards(shardsRoot, contentHash);
 
   return {
     locales: files.map(({ locale }) => locale),
@@ -132,9 +139,10 @@ function writeShards(
 function groupByShard(
   translations: Record<string, unknown>
 ): Record<string, Record<string, unknown>> {
-  const shards: Record<string, Record<string, unknown>> = {};
+  // Prototype-less, so a hash such as `__proto__` is stored like any other
+  const shards: Record<string, Record<string, unknown>> = Object.create(null);
   for (const [hash, value] of Object.entries(translations)) {
-    (shards[getShardKey(hash)] ??= {})[hash] = value;
+    (shards[getShardKey(hash)] ??= Object.create(null))[hash] = value;
   }
   return shards;
 }
