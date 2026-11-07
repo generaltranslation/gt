@@ -7,7 +7,7 @@ use crate::visitor::expr_utils::{
   create_spread_options_call_expr, create_string_prop, extract_id_and_context_from_options, extract_string_from_expr, get_string_prop_from_expr, has_prop, has_static_hash_options, inject_new_args, validate_derive,
 };
 use swc_core::{
-  common::SyntaxContext,
+  common::{Span, SyntaxContext},
   ecma::{ast::*, atoms::Atom},
 };
 
@@ -15,7 +15,7 @@ use crate::visitor::analysis::{
   is_branch_name, is_derive_name, is_translation_component_name,
   is_translation_function_name, is_variable_component_name,
 };
-use crate::config::LocaleTranslations;
+use crate::inline_shards::ShardedTranslations;
 use crate::visitor::jsx_utils::extract_attribute_from_jsx_attr;
 use crate::visitor::inline_translations::build_inline_translations_fn;
 
@@ -64,8 +64,8 @@ impl TransformVisitor {
   }
 
   /// Experimental: set the translations to embed at call sites
-  pub fn with_inline_translations(mut self, table: Vec<(String, LocaleTranslations)>) -> Self {
-    self.settings.inline_translations = table;
+  pub fn with_inline_translations(mut self, inline_translations: Option<ShardedTranslations>) -> Self {
+    self.settings.inline_translations = inline_translations;
     self
   }
 
@@ -125,9 +125,7 @@ impl TransformVisitor {
     if hash_value.is_empty() || TransformVisitor::determine_has_attr(element, "inline") {
       return;
     }
-    if let Some(inline) =
-      build_inline_translations_fn(&self.settings.inline_translations, hash_value, element.opening.span)
-    {
+    if let Some(inline) = self.build_inline_translations(hash_value, element.opening.span) {
       let attr = TransformVisitor::create_expr_attr(element, inline, "inline");
       element.opening.attrs.push(attr);
     }
@@ -810,14 +808,17 @@ pub fn validate_string_literal_or_derive(&self,expr: &Expr, errors: &mut Vec<Str
     if hash.is_empty() || call_expr.args.len() != 2 || call_expr.args[1].spread.is_some() {
       return;
     }
-    if let Some(inline) =
-      build_inline_translations_fn(&self.settings.inline_translations, hash, call_expr.span)
-    {
+    if let Some(inline) = self.build_inline_translations(hash, call_expr.span) {
       call_expr.args.push(ExprOrSpread {
         spread: None,
         expr: Box::new(inline),
       });
     }
+  }
+
+  fn build_inline_translations(&self, hash: &str, span: Span) -> Option<Expr> {
+    let source = self.settings.inline_translations.as_ref()?;
+    build_inline_translations_fn(&source.table_for(hash), hash, span)
   }
 
   /// Check whether a JSX element has an attribute

@@ -7,7 +7,11 @@
 #![allow(clippy::expect_used)]
 
 use crate::config::PluginConfig;
-use crate::transform_program;
+use crate::inline_shards::shard_key;
+use crate::transform_program_in;
+use std::collections::BTreeMap;
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use swc_core::common::{sync::Lrc, FileName, SourceMap};
 use swc_core::ecma::ast::{EsVersion, Program};
 use swc_core::ecma::codegen::{text_writer::JsWriter, Config, Emitter};
@@ -22,7 +26,75 @@ const HI_NAME_GREETING: &str = "38c4f65da6af0191";
 /// JSX hash of <T>Hello world</T>
 const JSX_HELLO_WORLD: &str = "ebc5c5a5022c5050";
 
+static NEXT_DIR: AtomicUsize = AtomicUsize::new(0);
+
+/// A temporary working directory removed on drop
+struct TempCwd(PathBuf);
+
+impl TempCwd {
+  fn new() -> Self {
+    let id = NEXT_DIR.fetch_add(1, Ordering::Relaxed);
+    let path = std::env::temp_dir().join(format!("gt-swc-inline-{}-{id}", std::process::id()));
+    std::fs::create_dir_all(&path).expect("temp dir");
+    Self(path)
+  }
+}
+
+impl Drop for TempCwd {
+  fn drop(&mut self) {
+    let _ = std::fs::remove_dir_all(&self.0);
+  }
+}
+
+const SHARD_DIR: &str = ".next/cache/gt/inline/test";
+
+/// Write `{ locales, translations }` as shards the way gt-next does and return
+/// the plugin option pointing at them
+fn write_shards(cwd: &Path, inline_translations: &serde_json::Value) -> serde_json::Value {
+  let mut shards: BTreeMap<(String, String), serde_json::Map<String, serde_json::Value>> = BTreeMap::new();
+  if let Some(locales) = inline_translations["translations"].as_object() {
+    for (locale, entries) in locales {
+      for (hash, value) in entries.as_object().expect("translations object") {
+        shards
+          .entry((locale.clone(), shard_key(hash).to_string()))
+          .or_default()
+          .insert(hash.clone(), value.clone());
+      }
+    }
+  }
+  // Like gt-next, write every shard key for every locale, empty or not
+  let keys = (0..=255u8).map(|byte| format!("{byte:02x}")).chain(std::iter::once("_".to_string()));
+  let locales: Vec<String> = inline_translations["locales"]
+    .as_array()
+    .map(|locales| locales.iter().filter_map(|locale| locale.as_str().map(String::from)).collect())
+    .unwrap_or_default();
+  for key in keys {
+    for locale in &locales {
+      let dir = cwd.join(SHARD_DIR).join(locale);
+      std::fs::create_dir_all(&dir).expect("shard dir");
+      let entries = shards.remove(&(locale.clone(), key.clone())).unwrap_or_default();
+      std::fs::write(dir.join(format!("{key}.json")), serde_json::to_vec(&entries).expect("json")).expect("shard");
+    }
+  }
+  std::fs::create_dir_all(cwd.join(SHARD_DIR)).expect("shard dir");
+  serde_json::json!({
+    "locales": inline_translations["locales"],
+    "dir": SHARD_DIR,
+    "contentHash": "test",
+  })
+}
+
 fn transform(code: &str, inline_translations: serde_json::Value) -> String {
+  let cwd = TempCwd::new();
+  let option = if inline_translations.is_null() {
+    serde_json::Value::Null
+  } else {
+    write_shards(&cwd.0, &inline_translations)
+  };
+  transform_with_option(code, option, &cwd.0)
+}
+
+fn transform_with_option(code: &str, inline_translations: serde_json::Value, cwd: &Path) -> String {
   let config: PluginConfig = serde_json::from_value(serde_json::json!({
     "compileTimeHash": true,
     "logLevel": "silent",
@@ -44,7 +116,7 @@ fn transform(code: &str, inline_translations: serde_json::Value) -> String {
   )
   .expect("valid test source");
 
-  let program = transform_program(Program::Module(module), config, None);
+  let program = transform_program_in(Program::Module(module), config, None, cwd);
 
   let mut buf = vec![];
   {
@@ -457,4 +529,62 @@ fn keeps_an_existing_inline_prop_on_t_with_a_static_hash() {
   );
   assert!(!output.contains("Custom Bonjour"), "{output}");
   assert!(output.contains("inline={mine}"), "{output}");
+}
+
+// ===== shard files ===== //
+
+#[test]
+#[should_panic(expected = "cannot read embedded translations")]
+fn fails_the_build_when_the_shard_dir_is_missing() {
+  let cwd = TempCwd::new();
+  transform_with_option(
+    USEGT_CODE,
+    serde_json::json!({ "locales": ["fr"], "dir": "missing", "contentHash": "x" }),
+    &cwd.0,
+  );
+}
+
+#[test]
+#[should_panic(expected = "cannot read embedded translations")]
+fn fails_the_build_when_a_shard_is_unparsable() {
+  let cwd = TempCwd::new();
+  let option = write_shards(
+    &cwd.0,
+    &translations(&["fr"], serde_json::json!({ "fr": { HELLO_WORLD: "Bonjour le monde" } })),
+  );
+  std::fs::write(cwd.0.join(SHARD_DIR).join("fr").join(format!("{}.json", shard_key(HELLO_WORLD))), "{")
+    .expect("corrupt shard");
+  transform_with_option(USEGT_CODE, option, &cwd.0);
+}
+
+#[test]
+#[should_panic(expected = "cannot read embedded translations")]
+fn fails_the_build_when_a_shard_is_missing() {
+  let cwd = TempCwd::new();
+  let option = write_shards(
+    &cwd.0,
+    &translations(&["fr"], serde_json::json!({ "fr": { HELLO_WORLD: "Bonjour le monde" } })),
+  );
+  std::fs::remove_file(cwd.0.join(SHARD_DIR).join("fr").join(format!("{}.json", shard_key(HELLO_WORLD))))
+    .expect("remove shard");
+  transform_with_option(USEGT_CODE, option, &cwd.0);
+}
+
+#[test]
+fn reads_hashes_from_different_shards() {
+  let output = transform(
+    r#"
+      import { useGT } from 'gt-next';
+      const gt = useGT();
+      gt("Hello world");
+      gt("Hello");
+    "#,
+    translations(
+      &["fr"],
+      serde_json::json!({ "fr": { HELLO_WORLD: "Bonjour le monde", HELLO: "Bonjour" } }),
+    ),
+  );
+  assert_ne!(shard_key(HELLO_WORLD), shard_key(HELLO));
+  assert!(output.contains(r#"locale === "fr" ? "Bonjour le monde""#), "{output}");
+  assert!(output.contains(r#"locale === "fr" ? "Bonjour""#), "{output}");
 }

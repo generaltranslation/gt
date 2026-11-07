@@ -4,6 +4,7 @@ import path from 'path';
 import type { NextConfig } from 'next';
 import { BABEL_PLUGIN_SUPPORT } from '../plugin/constants';
 import { nextLocaleCookieName } from '../utils/cookies';
+import { resolveInlineTranslations } from '../plugin/resolveInlineTranslations';
 
 // ---- Mocks ---- //
 
@@ -24,6 +25,17 @@ const mockVersionInfo = vi.hoisted(() => ({
 }));
 
 vi.mock('../plugin/getStableNextVersionInfo', () => mockVersionInfo);
+
+vi.mock('../plugin/resolveInlineTranslations', async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import('../plugin/resolveInlineTranslations')
+    >();
+  return {
+    ...actual,
+    resolveInlineTranslations: vi.fn(actual.resolveInlineTranslations),
+  };
+});
 
 // ---- Helpers ---- //
 
@@ -383,18 +395,27 @@ describe('withGTConfig', () => {
         );
       }
 
-      it('reads the embedded locales from files.gt.output in production', async () => {
+      it('passes the shard options for files.gt in production', async () => {
         process.env.NODE_ENV = 'production';
-        mockConfigFiles({ fr: { a: 'Bonjour' }, es: { a: 'Hola' } });
+        mockConfigFiles({});
+        const shards = {
+          locales: ['fr'],
+          dir: 'out/cache/gt/inline/h',
+          contentHash: 'h',
+        };
+        vi.mocked(resolveInlineTranslations).mockReturnValueOnce(shards);
         const withGTConfig = await getWithGTConfig();
         const result = withGTConfig(
-          {},
+          { distDir: 'out' },
           { experimentalCompilerOptions: { type: 'swc' } }
         );
-        expect(getSwcOptions(result).inlineTranslations).toEqual({
-          locales: ['fr', 'es'],
-          translations: { fr: { a: 'Bonjour' }, es: { a: 'Hola' } },
-        });
+        expect(resolveInlineTranslations).toHaveBeenCalledWith(
+          expect.objectContaining({
+            inlineTranslations: { locales: ['fr', 'es', 'de'] },
+          }),
+          { distDir: 'out' }
+        );
+        expect(getSwcOptions(result).inlineTranslations).toEqual(shards);
       });
 
       it('does not pass inline translations outside production builds', async () => {

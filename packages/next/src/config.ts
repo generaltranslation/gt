@@ -696,7 +696,9 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
 
   const swcInlineTranslations =
     mergedConfig.experimentalCompilerOptions?.type === 'swc'
-      ? resolveInlineTranslations(loadedConfig.files?.gt)
+      ? resolveInlineTranslations(loadedConfig.files?.gt, {
+          distDir: internalNextConfig.distDir,
+        })
       : undefined;
   const swcPluginOptions: Record<string, unknown> = {
     ...compilerOptions,

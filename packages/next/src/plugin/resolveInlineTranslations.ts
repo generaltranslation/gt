@@ -1,54 +1,156 @@
+import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import type { GTOutputFileConfig } from 'generaltranslation/types';
+import { nodeRequire } from './nodeCompat';
 
-const LOCALE_PLACEHOLDER = '[locale]';
+type CompilerFileHelpers = Pick<
+  typeof import('@generaltranslation/compiler'),
+  'readTranslationsFile' | 'resolveInlineTranslationsFiles'
+>;
+
+const SHARD_FORMAT_VERSION = '1';
+const SHARDS_DIR = path.join('cache', 'gt', 'inline');
+const TEMP_PREFIX = '.tmp-';
+const STALE_TEMP_MS = 60 * 60 * 1000;
+const FALLBACK_SHARD_KEY = '_';
+// Every key is written for every locale, so the plugin can treat a missing shard as an error
+const SHARD_KEYS = [
+  ...Array.from({ length: 256 }, (_, byte) =>
+    byte.toString(16).padStart(2, '0')
+  ),
+  FALLBACK_SHARD_KEY,
+];
 
 /**
- * Translations resolved for the SWC plugin, which receives them as plugin
- * options. Mirrors @generaltranslation/compiler's loadInlineTranslations().
+ * Plugin options pointing the SWC plugin at the shard files holding the
+ * translations to embed. `dir` is relative to the working directory, which
+ * the plugin reads through the WASI `/cwd` mount.
  */
 export type ResolvedInlineTranslations = {
   locales: string[];
-  translations: Record<string, Record<string, unknown>>;
+  dir: string;
+  contentHash: string;
 };
 
 /**
- * Read the translations to embed for `files.gt.inlineTranslations.locales`
- * from the translation files at `files.gt.output`. Locales without a
- * translations file are dropped. Returns undefined outside production builds,
- * matching the babel compiler.
+ * Shard key for a translation hash: its first two lowercase hex characters,
+ * or `_` otherwise. Must match the SWC plugin's `shard_key`.
  */
-export function resolveInlineTranslations(
-  gtFiles: Pick<GTOutputFileConfig, 'output' | 'inlineTranslations'> | undefined
-): ResolvedInlineTranslations | undefined {
-  if (process.env.NODE_ENV !== 'production') return undefined;
-  const requestedLocales = gtFiles?.inlineTranslations?.locales ?? [];
-  if (requestedLocales.length === 0) return undefined;
-
-  const translations: Record<string, Record<string, unknown>> = {};
-  for (const locale of requestedLocales) {
-    const localeTranslations = readLocaleFile(gtFiles?.output, locale);
-    if (localeTranslations) translations[locale] = localeTranslations;
-  }
-
-  const locales = requestedLocales.filter((locale) => locale in translations);
-  if (locales.length === 0) return undefined;
-  return { locales, translations };
+export function getShardKey(hash: string): string {
+  return /^[0-9a-f]{2}/.test(hash) ? hash.slice(0, 2) : FALLBACK_SHARD_KEY;
 }
 
-function readLocaleFile(
-  pathTemplate: string | undefined,
-  locale: string
-): Record<string, unknown> | undefined {
-  if (!pathTemplate?.includes(LOCALE_PLACEHOLDER)) return undefined;
-  const filePath = path.resolve(
-    pathTemplate.split(LOCALE_PLACEHOLDER).join(locale)
-  );
-  if (!fs.existsSync(filePath)) return undefined;
-  const parsed: unknown = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  if (parsed == null || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    return undefined;
+/**
+ * Write the translations to embed for `files.gt.inlineTranslations.locales`
+ * as shard files under `<distDir>/cache/gt/inline/<contentHash>` and return
+ * the plugin options. Locales without a translations file are dropped.
+ * Returns undefined outside production builds, matching the babel compiler.
+ */
+export function resolveInlineTranslations(
+  gtFiles:
+    | Pick<GTOutputFileConfig, 'output' | 'inlineTranslations'>
+    | undefined,
+  { distDir = '.next' }: { distDir?: string } = {}
+): ResolvedInlineTranslations | undefined {
+  if (process.env.NODE_ENV !== 'production') return undefined;
+  if (!gtFiles?.inlineTranslations?.locales.length) return undefined;
+
+  const compiler = nodeRequire(
+    '@generaltranslation/compiler'
+  ) as CompilerFileHelpers;
+  const files = compiler.resolveInlineTranslationsFiles(gtFiles);
+  if (files.length === 0) return undefined;
+
+  const cwd = process.cwd();
+  const shardsRoot = path.resolve(cwd, distDir, SHARDS_DIR);
+  const contentHash = hashContent(files);
+  const target = path.join(shardsRoot, contentHash);
+  const dir = path.relative(cwd, target);
+  // The plugin can only read inside the working directory
+  if (dir.startsWith('..') || path.isAbsolute(dir)) {
+    throw new Error(
+      `gt-next: cannot embed translations because distDir (${distDir}) is outside the working directory (${cwd}).`
+    );
   }
-  return parsed as Record<string, unknown>;
+
+  if (!fs.existsSync(target)) {
+    writeShards(shardsRoot, target, files, compiler.readTranslationsFile);
+  }
+  removeStaleShards(shardsRoot, contentHash);
+
+  return {
+    locales: files.map(({ locale }) => locale),
+    dir: dir.split(path.sep).join('/'),
+    contentHash,
+  };
+}
+
+function hashContent(files: { locale: string; filePath: string }[]): string {
+  const hash = crypto.createHash('sha256').update(SHARD_FORMAT_VERSION);
+  for (const { locale, filePath } of files) {
+    const file = fs.readFileSync(filePath);
+    hash.update(`\0${locale}\0${file.length}\0`).update(file);
+  }
+  return hash.digest('hex').slice(0, 16);
+}
+
+/**
+ * Builds the shards in a private temp directory and renames it into place, so
+ * a complete `target` is the only state other build workers can observe.
+ */
+function writeShards(
+  shardsRoot: string,
+  target: string,
+  files: { locale: string; filePath: string }[],
+  readTranslationsFile: CompilerFileHelpers['readTranslationsFile']
+): void {
+  fs.mkdirSync(shardsRoot, { recursive: true });
+  const temp = fs.mkdtempSync(path.join(shardsRoot, TEMP_PREFIX));
+  try {
+    for (const { locale, filePath } of files) {
+      const localeDir = path.join(temp, locale);
+      fs.mkdirSync(localeDir);
+      const shards = groupByShard(readTranslationsFile(filePath) ?? {});
+      for (const key of SHARD_KEYS) {
+        fs.writeFileSync(
+          path.join(localeDir, `${key}.json`),
+          JSON.stringify(shards[key] ?? {})
+        );
+      }
+    }
+    try {
+      fs.renameSync(temp, target);
+    } catch (error) {
+      if (!fs.existsSync(target)) throw error;
+    }
+  } finally {
+    fs.rmSync(temp, { recursive: true, force: true });
+  }
+}
+
+function groupByShard(
+  translations: Record<string, unknown>
+): Record<string, Record<string, unknown>> {
+  const shards: Record<string, Record<string, unknown>> = {};
+  for (const [hash, value] of Object.entries(translations)) {
+    (shards[getShardKey(hash)] ??= {})[hash] = value;
+  }
+  return shards;
+}
+
+/**
+ * Removes shard directories for other translation content, and temp
+ * directories old enough that their writer must have died.
+ */
+function removeStaleShards(shardsRoot: string, contentHash: string): void {
+  for (const entry of fs.readdirSync(shardsRoot)) {
+    if (entry === contentHash) continue;
+    const full = path.join(shardsRoot, entry);
+    if (entry.startsWith(TEMP_PREFIX)) {
+      const stat = fs.statSync(full, { throwIfNoEntry: false });
+      if (!stat || Date.now() - stat.mtimeMs < STALE_TEMP_MS) continue;
+    }
+    fs.rmSync(full, { recursive: true, force: true });
+  }
 }
