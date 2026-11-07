@@ -31,13 +31,6 @@ export function getI18nCache<U extends Content = Content>():
 }
 
 /**
- * Whether the I18nCache singleton has been initialized
- */
-export function isI18nCacheInitialized(): boolean {
-  return i18nCacheSingleton.isInitialized();
-}
-
-/**
  * Configure the singleton instance of I18nCache
  * @param config - The configuration for the I18nCache
  *

@@ -26,7 +26,6 @@ import { resolveDictionaryLookupOptions } from './translations-manager/utils/dic
 import { DictionarySourceNotFoundError } from './translations-manager/utils/DictionarySourceNotFoundError';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
-import type { InlineTranslations } from '../translation-functions/inline/inlineTranslations';
 
 /**
  * Default translation timeout in milliseconds for a runtime translation request
@@ -115,11 +114,6 @@ class I18nCache<TranslationValue extends Content = Content> {
   private createTranslateMany: CreateTranslateMany;
 
   /**
-   * Locales whose translations are embedded at build time
-   */
-  private inlinedLocales: Locale[];
-
-  /**
    * Creates an instance of I18nCache.
    * TODO: resolve gtConfig from just file path
    * @param params - The parameters for the I18nCache constructor
@@ -179,16 +173,6 @@ class I18nCache<TranslationValue extends Content = Content> {
       load: async (locale) =>
         this.createDictionaryCache(locale, await loadDictionary(locale)),
     });
-
-    // Embedded locales never load translations: their caches start empty,
-    // never expire, and are filled by msg() registrations, the server
-    // snapshot, and runtime translation
-    this.inlinedLocales = params.inlinedLocales ?? [];
-    for (const locale of this.inlinedLocales) {
-      this.translations.set(locale, this.createTranslationsCache(locale, {}), {
-        expiresAt: -1,
-      });
-    }
 
     // The default locale's source dictionary is provided synchronously and
     // never expires
@@ -715,23 +699,6 @@ class I18nCache<TranslationValue extends Content = Content> {
       translation = await txCache.miss({ message, options: lookupOptions });
     }
     return translation;
-  }
-
-  /**
-   * Register translations embedded at a msg() call site. msg() messages are
-   * resolved later by m(), which has no access to the call site, so the
-   * translations are stored in each embedded locale's cache under the
-   * message hash. From there they resolve like loaded translations and reach
-   * the client through the translations snapshot.
-   */
-  registerInlineTranslations(hash: Hash, inline: InlineTranslations): void {
-    for (const locale of this.inlinedLocales) {
-      const translation = inline(locale);
-      if (translation == null) continue;
-      this.translations.get(locale)?.update({
-        [hash]: translation as TranslationValue,
-      });
-    }
   }
 }
 

@@ -3,7 +3,7 @@ import {
   getRuntimeEnvironment,
   interpolateMessage,
 } from 'gt-i18n/internal';
-import type { GTTranslationOptions } from 'gt-i18n/types';
+import type { GTTranslationOptions, InlineTranslations } from 'gt-i18n/types';
 import type { LookupOptionsFor } from 'gt-i18n/internal/types';
 import { getI18nConfig } from '../../setup/i18nConfig';
 import {
@@ -19,6 +19,7 @@ import { createDiagnosticMessage } from 'generaltranslation/internal';
  * Translate a message
  * @param {string} message - The message to translate.
  * @param {GTTranslationOptions} [options] - The options for the translation.
+ * @param {InlineTranslations<string>} [inline] - Translations embedded at the call site, checked before loaded translations. Usually injected at build time.
  * @returns {string} The translated message.
  *
  * @example
@@ -41,11 +42,13 @@ export const t: StringOrTemplateSyncResolutionFunction = (
   //  t("Hello, {name}!", { name: "John" })
   if (typeof messageOrStrings === 'string') {
     const options = values.at(0) as GTTranslationOptions | undefined;
+    const inline = values.at(1) as InlineTranslations<string> | undefined;
     const locale = options?.$locale ?? getLocale();
     return resolveStringContent(
       locale,
       messageOrStrings,
-      createLookupOptions(locale, options ?? {}, 'ICU')
+      createLookupOptions(locale, options ?? {}, 'ICU'),
+      inline
     );
   }
 
@@ -58,7 +61,8 @@ export const t: StringOrTemplateSyncResolutionFunction = (
 export function resolveStringContent(
   locale: string,
   content: StringContent,
-  options: LookupOptionsFor<StringFormat> = {}
+  options: LookupOptionsFor<StringFormat> = {},
+  inline?: InlineTranslations<string>
 ): StringContent {
   const i18nCache = getReactI18nCache();
   const defaultLocale = getI18nConfig().getDefaultLocale();
@@ -71,11 +75,10 @@ export function resolveStringContent(
   }
 
   const lookupOptions = createLookupOptions(locale, options, 'ICU');
-  const translation = i18nCache.lookupTranslation(
-    lookupOptions.$locale,
-    content,
-    lookupOptions
-  );
+  // Translations embedded at the call site win over loaded translations
+  const translation =
+    inline?.(lookupOptions.$locale) ??
+    i18nCache.lookupTranslation(lookupOptions.$locale, content, lookupOptions);
   return interpolateMessage({
     source: content,
     target: translation,
@@ -226,7 +229,11 @@ function getLocale(): string {
  */
 interface StringOrTemplateSyncResolutionFunction {
   (strings: TemplateStringsArray, ...values: unknown[]): string;
-  (message: string, options?: GTTranslationOptions): string;
+  (
+    message: string,
+    options?: GTTranslationOptions,
+    inline?: InlineTranslations<string>
+  ): string;
 }
 
 /**
