@@ -13,11 +13,5 @@ const nextConfig: NextConfig = {
 const compilerType = process.env.GT_TEST_COMPILER === 'babel' ? 'babel' : 'swc';
 
 export default withGTConfig(nextConfig, {
-  experimentalCompilerOptions: {
-    type: compilerType,
-    inlineTranslations: {
-      locales: ['fr'],
-      path: './translations/[locale].json',
-    },
-  },
+  experimentalCompilerOptions: { type: compilerType },
 });

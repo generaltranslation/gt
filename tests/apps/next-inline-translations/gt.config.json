@@ -4,7 +4,10 @@
   "files": {
     "gt": {
       "output": "translations/[locale].json",
-      "msgOutput": "translations/[locale].msg.json"
+      "inlineTranslations": {
+        "locales": ["fr"],
+        "msgOutput": "translations/[locale].msg.json"
+      }
     }
   }
 }

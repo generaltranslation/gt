@@ -1605,29 +1605,6 @@ describe('withGTConfig', () => {
       expect(parsed.devApiKey).toBeUndefined();
     });
 
-    it('keeps embedded translations out of the runtime config', async () => {
-      process.env.NODE_ENV = 'production';
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig(
-        {},
-        {
-          experimentalCompilerOptions: {
-            type: 'babel',
-            inlineTranslations: {
-              locales: ['fr'],
-              translations: { fr: { abc: 'Bonjour' } },
-            },
-          },
-        }
-      );
-      expect(
-        parseConfigParams(result).experimentalCompilerOptions
-      ).not.toHaveProperty('inlineTranslations');
-      expect(result.env!._GENERALTRANSLATION_I18N_CONFIG_PARAMS).not.toContain(
-        'Bonjour'
-      );
-    });
-
     it('limits client config params to runtime fields', async () => {
       const withGTConfig = await getWithGTConfig();
       vi.mocked(fs.existsSync).mockImplementation((filepath) =>

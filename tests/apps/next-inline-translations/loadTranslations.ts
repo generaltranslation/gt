@@ -1,6 +1,6 @@
-// fr translations are embedded at build time (next.config.ts), so only its
+// fr translations are embedded at build time (gt.config.json), so only its
 // msg() strings load at runtime, from the file the CLI writes with
-// files.gt.msgOutput
+// files.gt.inlineTranslations.msgOutput
 const EMBEDDED_LOCALES = ['fr'];
 
 export default async function loadTranslations(locale: string) {

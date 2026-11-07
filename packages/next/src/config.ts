@@ -659,9 +659,7 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   // Middleware options get their own env var instead of the i18n config params.
   const { middlewareConfig, otherConfig } =
     splitMiddlewareConfig(privateConfigParams);
-  const I18NConfigParams = JSON.stringify(
-    withoutInlineTranslations(otherConfig)
-  );
+  const I18NConfigParams = JSON.stringify(otherConfig);
   const clientI18NConfigParams = {
     defaultLocale: mergedConfig.defaultLocale,
     locales: mergedConfig.locales,
@@ -947,17 +945,4 @@ function isDevHotReloadEnabled(config: InternalGTConfigProps): boolean {
     config.runtimeUrl !== '' &&
     process.env.NODE_ENV === 'development'
   );
-}
-
-/**
- * Keep embedded translations (potentially large) out of runtime env vars.
- */
-function withoutInlineTranslations<T extends object>(config: T): T {
-  const { experimentalCompilerOptions } = config as {
-    experimentalCompilerOptions?: Record<string, unknown>;
-  };
-  if (!experimentalCompilerOptions?.inlineTranslations) return config;
-  const { inlineTranslations: _inlineTranslations, ...rest } =
-    experimentalCompilerOptions;
-  return { ...config, experimentalCompilerOptions: rest };
 }
