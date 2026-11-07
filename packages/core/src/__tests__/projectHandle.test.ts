@@ -674,6 +674,158 @@ describe.sequential('GeneralTranslation project and organization operations', ()
     ]);
   });
 
+  it('reads a file the API serves only through its download URL', async () => {
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockImplementation(async () => new Response(png));
+    vi.stubGlobal('fetch', fetchMock);
+    const urlOnly = {
+      status: 'ready' as const,
+      fileId: 'video-id',
+      locale: 'es-ES',
+      data: null,
+      downloadUrl: 'https://bucket.example.com/video?X-Amz-Signature=sig',
+      fileFormat: 'PNG' as const,
+    };
+    const pending = {
+      status: 'pending' as const,
+      fileId: 'pending-id',
+      data: null,
+    };
+    vi.mocked(queryFilesContent).mockResolvedValue(
+      result({ results: [urlOnly, pending] })
+    );
+
+    try {
+      const { results } = await configuredProject().queryFilesContent([
+        { fileId: 'video-id', locale: 'es-ES' },
+        { fileId: 'pending-id', locale: 'es-ES' },
+      ]);
+
+      expect(results.map(({ data }) => data)).toEqual([
+        Buffer.from(png).toString('base64'),
+        null,
+      ]);
+      const request = new Request(...fetchMock.mock.calls[0]!);
+      expect(request.url).toBe(urlOnly.downloadUrl);
+      expect(request.headers.has('authorization')).toBe(false);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  describe('download URLs', () => {
+    const urlOnly = (
+      fileId: string,
+      downloadUrl = `https://bucket.example.com/${fileId}`
+    ) => ({
+      status: 'ready' as const,
+      fileId,
+      data: null,
+      downloadUrl,
+      fileFormat: 'JSON' as const,
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('downloads a file once for identical selectors', async () => {
+      const fetchMock = vi
+        .fn<typeof fetch>()
+        .mockImplementation(async () => new Response('{}'));
+      vi.stubGlobal('fetch', fetchMock);
+      vi.mocked(queryFilesContent).mockResolvedValue(
+        result({ results: [urlOnly('file-id')] })
+      );
+
+      const { results } = await configuredProject().queryFilesContent([
+        { fileId: 'file-id' },
+        { fileId: 'file-id' },
+      ]);
+
+      expect(fetchMock).toHaveBeenCalledOnce();
+      expect(results.map(({ data }) => data)).toEqual(['{}', '{}']);
+    });
+
+    it('downloads at most four files at a time', async () => {
+      let inFlight = 0;
+      let maxInFlight = 0;
+      vi.stubGlobal(
+        'fetch',
+        vi.fn<typeof fetch>().mockImplementation(async () => {
+          maxInFlight = Math.max(maxInFlight, ++inFlight);
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          inFlight -= 1;
+          return new Response('{}');
+        })
+      );
+      const ids = Array.from({ length: 9 }, (_, index) => `file-${index}`);
+      vi.mocked(queryFilesContent).mockResolvedValue(
+        result({ results: ids.map((id) => urlOnly(id)) })
+      );
+
+      const { results } = await configuredProject().queryFilesContent(
+        ids.map((fileId) => ({ fileId }))
+      );
+
+      expect(maxInFlight).toBe(4);
+      expect(results.every(({ data }) => data === '{}')).toBe(true);
+    });
+
+    it('reads a new URL once when storage rejects an expired one', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn<typeof fetch>()
+          .mockImplementation(async (input) =>
+            new Request(input).url.endsWith('expired')
+              ? new Response(null, { status: 403 })
+              : new Response('{}')
+          )
+      );
+      vi.mocked(queryFilesContent)
+        .mockResolvedValueOnce(
+          result({
+            results: [
+              urlOnly('fresh-id'),
+              urlOnly('stale-id', 'https://bucket.example.com/expired'),
+            ],
+          })
+        )
+        .mockResolvedValueOnce(result({ results: [urlOnly('stale-id')] }));
+
+      const { results } = await configuredProject().queryFilesContent([
+        { fileId: 'fresh-id' },
+        { fileId: 'stale-id' },
+      ]);
+
+      expect(results.map(({ data }) => data)).toEqual(['{}', '{}']);
+      expect(bodyOf(queryFilesContent, 1)).toEqual({
+        files: [{ fileId: 'stale-id' }],
+      });
+    });
+
+    it('rejects when the new URL is rejected too', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn<typeof fetch>()
+          .mockImplementation(async () => new Response(null, { status: 403 }))
+      );
+      vi.mocked(queryFilesContent).mockResolvedValue(
+        result({ results: [urlOnly('file-id')] })
+      );
+
+      await expect(
+        configuredProject().queryFilesContent([{ fileId: 'file-id' }])
+      ).rejects.toMatchObject({ name: 'ApiError', status: 403 });
+      expect(queryFilesContent).toHaveBeenCalledTimes(2);
+    });
+  });
+
   it("uploads fonts to the scope's organization without a project lookup", async () => {
     vi.mocked(upsertAssets).mockResolvedValue(result(succeeded([])));
     const font = { assetType: 'FONT' as const, content: 'x', fileName: 'f' };

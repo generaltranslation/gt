@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   decode,
+  decodeBytes,
   decodeFileContent,
   encode,
+  encodeBytes,
   encodeFileContent,
 } from '../base64';
 
@@ -196,6 +198,21 @@ Last line`;
       ).toBe(withBom);
       bufferGlobal.Buffer = undefined;
       expect(decode(encode(withBom))).toBe(withBom);
+    });
+
+    it('encodes bytes larger than one chunk without Buffer (Browser)', () => {
+      expect(typeof originalBuffer).toBe('function');
+      const bytes = Uint8Array.from(
+        { length: 70_000 },
+        (_, index) => index % 251
+      );
+      bufferGlobal.Buffer = undefined;
+      const encoded = encodeBytes(bytes);
+      const decoded = decodeBytes(encoded);
+      bufferGlobal.Buffer = originalBuffer;
+
+      expect(encoded).toBe(encodeBytes(bytes));
+      expect(decoded).toEqual(bytes);
     });
   });
 });
