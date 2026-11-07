@@ -85,6 +85,25 @@ describe('gt-vue SPA runtime', () => {
     expect(browser.cookies.get('generaltranslation.locale')).toBe('fr-CA');
   });
 
+  it.each([
+    [undefined, 'en-GB'],
+    ['lookup', 'fr'],
+  ] as const)(
+    'resolves a bare language with localeMatcher %s',
+    async (localeMatcher, expected) => {
+      installBrowser('generaltranslation.locale=en');
+
+      const plugin = await initializeGTSPA({
+        defaultLocale: 'fr',
+        locales: ['en-GB'],
+        localeMatcher,
+        loadTranslations: vi.fn(async () => ({})),
+      });
+
+      expect(plugin.getLocale()).toBe(expected);
+    }
+  );
+
   it('preserves configured locale spelling for catalog file loading', async () => {
     const browser = installBrowser('generaltranslation.locale=fr');
     const loadTranslations = vi.fn(async () => ({}));

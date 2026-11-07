@@ -138,6 +138,56 @@ describe('I18nConfig', () => {
     ).toBe('en');
   });
 
+  it('resolves locales with the configured localeMatcher, including one-off overrides', () => {
+    const config = new I18nConfig({
+      defaultLocale: 'en-GB',
+      localeMatcher: 'lookup',
+    });
+
+    expect(config.localeMatcher).toBe('lookup');
+    expect(config.determineSupportedLocale('en')).toBeUndefined();
+    expect(
+      config.determineSupportedLocale('fr', { locales: ['fr-FR'] })
+    ).toBeUndefined();
+    expect(
+      new I18nConfig({ defaultLocale: 'en-GB' }).determineLocale('en')
+    ).toBe('en-GB');
+  });
+
+  it('applies a one-off localeMatcher override on its own to the configured locales', () => {
+    const bestFit = new I18nConfig({ defaultLocale: 'fr', locales: ['en-GB'] });
+    expect(
+      bestFit.determineSupportedLocale('en', { localeMatcher: 'lookup' })
+    ).toBeUndefined();
+    expect(
+      bestFit.resolveSupportedLocale('en', { localeMatcher: 'lookup' })
+    ).toBe('fr');
+
+    const lookup = new I18nConfig({
+      defaultLocale: 'fr',
+      locales: ['en-GB'],
+      localeMatcher: 'lookup',
+    });
+    expect(
+      lookup.determineSupportedLocale('en', { localeMatcher: 'best fit' })
+    ).toBe('en-GB');
+  });
+
+  it.each([false, true])(
+    'rejects an invalid localeMatcher with services=%s',
+    (services) => {
+      expect(
+        () =>
+          new I18nConfig({
+            localeMatcher: 'fuzzy' as never,
+            ...(services
+              ? { projectId: 'test-project' }
+              : { cacheUrl: null, runtimeUrl: null }),
+          })
+      ).toThrow('Invalid I18nConfig localeMatcher');
+    }
+  );
+
   it('sends the dev API key as the runtime API key when no API key is set', () => {
     vi.stubEnv('GT_API_KEY', '');
     const runtime = (params: { apiKey?: string; devApiKey?: string }) =>

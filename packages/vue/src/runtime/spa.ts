@@ -93,15 +93,18 @@ export function resetGTSPAForTests(): void {
 async function createSPARuntime(
   options: InitializeGTSPAOptions
 ): Promise<GTRuntime> {
-  const { customMapping, locales, ...createOptions } = options;
-  const { determineLocale, resolveCanonicalLocale } =
+  const { customMapping, locales, localeMatcher, ...createOptions } = options;
+  const { GTIntl, isValidLocale, resolveCanonicalLocale, standardizeLocale } =
     await import('@generaltranslation/format');
   const resolveFormattingLocale = (locale: string): string => {
     const canonicalLocale = resolveCanonicalLocale(locale, customMapping);
-    return (
-      determineLocale(canonicalLocale, [canonicalLocale]) ?? canonicalLocale
-    );
+    return isValidLocale(canonicalLocale)
+      ? standardizeLocale(canonicalLocale)
+      : canonicalLocale;
   };
+  const intl = new GTIntl({ localeMatcher });
+  const determineLocale = (locale: string, approvedLocales: string[]) =>
+    intl.determineLocale(locale, { approvedLocales });
   const runtime = createGTRuntime(createOptions, {
     pinLocale: true,
     reloadDocument: () => window.location.reload(),

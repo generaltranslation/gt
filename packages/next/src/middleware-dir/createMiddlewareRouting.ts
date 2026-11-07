@@ -51,7 +51,11 @@ export function createMiddlewareRouting({
   const locales = Array.from(
     new Set([defaultLocale, ...(i18nConfig.locales || [])])
   );
-  const gt = new GTIntl({ locales, customMapping: i18nConfig.customMapping });
+  const gt = new GTIntl({
+    locales,
+    customMapping: i18nConfig.customMapping,
+    localeMatcher: i18nConfig.localeMatcher,
+  });
   // Route entries repeat locale keys. Resolve each key once per factory instead
   // of rebuilding the full locale-resolution index for every route/locale pair.
   const resolvedConfigLocales = new Map<string, string>();

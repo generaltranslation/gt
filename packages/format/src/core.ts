@@ -9,8 +9,8 @@ import {
   _selectRelativeTimeUnit,
 } from './formatting/format';
 import { intlCache } from './cache/IntlCache';
+import { GTIntl } from './GTIntl';
 import type { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
-import { _determineLocale } from './locales/determineLocale';
 import { _getLocaleDirection } from './locales/getLocaleDirection';
 import { _getLocaleEmoji } from './locales/getLocaleEmoji';
 import {
@@ -447,7 +447,10 @@ export function determineLocale(
   approvedLocales: string[] | undefined = [],
   customMapping: CustomMapping | undefined = undefined
 ): string | undefined {
-  return _determineLocale(locales, approvedLocales, customMapping);
+  return new GTIntl({
+    locales: approvedLocales,
+    customMapping,
+  }).determineLocale(locales);
 }
 
 /**
