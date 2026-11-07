@@ -15,12 +15,7 @@ export function getPluralBranch<T>(
   locales: string[],
   branches: Record<string, T>
 ) {
-  let branchName = '';
-  let branch = null;
-  if (typeof n === 'number' && !branch && branches) {
-    const pluralForms = Object.keys(branches).filter(isAcceptedPluralForm);
-    branchName = getPluralForm(n, pluralForms, locales);
-  }
-  if (branchName && !branch) branch = branches[branchName];
-  return branch;
+  const pluralForms = Object.keys(branches).filter(isAcceptedPluralForm);
+  const branchName = getPluralForm(n, pluralForms, locales);
+  return branchName ? branches[branchName] : null;
 }

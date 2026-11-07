@@ -34,7 +34,8 @@ export type CreateBrowserConditionStoreParams = Omit<
 export function createOrUpdateBrowserConditionStore(
   config: CreateBrowserConditionStoreParams
 ) {
-  const locale = determineLocale(config);
+  // updateLocale() and the constructor resolve these candidates once.
+  const locale = getLocaleCandidates(config);
   const region = determineRegion(config);
   const enableI18n = determineEnableI18n(config);
 
@@ -57,18 +58,17 @@ export function createOrUpdateBrowserConditionStore(
   return conditionStore;
 }
 
-function determineLocale({
+function getLocaleCandidates({
   _getLocale: getLocale,
   locale,
-}: CreateBrowserConditionStoreParams): string {
-  const i18nConfig = getI18nConfig();
+}: CreateBrowserConditionStoreParams): string[] {
   const candidates = [];
   if (locale) {
     candidates.push(...(Array.isArray(locale) ? locale : [locale]));
   }
   if (getLocale) candidates.push(getLocale());
-  candidates.push(...readBrowserLocale(i18nConfig.getLocaleCookieName()));
-  return i18nConfig.resolveSupportedLocale(candidates);
+  candidates.push(...readBrowserLocale(getI18nConfig().getLocaleCookieName()));
+  return candidates;
 }
 
 function determineRegion({
