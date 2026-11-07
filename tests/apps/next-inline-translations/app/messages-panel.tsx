@@ -1,26 +1,20 @@
 'use client';
 
-import { useMessages } from 'gt-next';
-import { compiledGreeting, compiledSteps } from './compiled-messages';
+import { useGT, useMessages } from 'gt-next';
 import { greeting, steps } from './messages';
 
 export function MessagesPanel() {
+  const gt = useGT();
   const m = useMessages();
 
   return (
     <section>
+      {/* Embedded by the compiler from translations/fr.json */}
+      <p data-testid='embedded'>{gt('Embedded string')}</p>
       <p data-testid='greeting'>{m(greeting)}</p>
       <ol>
         {steps.map((step) => (
           <li key={step} data-testid='step'>
-            {m(step)}
-          </li>
-        ))}
-      </ol>
-      <p data-testid='compiled-greeting'>{m(compiledGreeting)}</p>
-      <ol>
-        {compiledSteps.map((step) => (
-          <li key={step} data-testid='compiled-step'>
             {m(step)}
           </li>
         ))}

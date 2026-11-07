@@ -1605,122 +1605,27 @@ describe('withGTConfig', () => {
       expect(parsed.devApiKey).toBeUndefined();
     });
 
-    describe('inlineTranslations', () => {
-      const inlineTranslations = {
-        locales: ['fr', 'es'],
-        translations: { fr: { abc: 'Bonjour' } },
-      };
-
-      function getClientConfig(result: NextConfig) {
-        return JSON.parse(
-          result.env!.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS!
-        );
-      }
-
-      it('exposes the embedded locales to the runtime in babel production builds', async () => {
-        process.env.NODE_ENV = 'production';
-        const withGTConfig = await getWithGTConfig();
-        const result = withGTConfig(
-          {},
-          {
-            experimentalCompilerOptions: { type: 'babel', inlineTranslations },
-          }
-        );
-        // es has no translations to embed, so it keeps loading
-        expect(getClientConfig(result)._inlinedLocales).toEqual(['fr']);
-      });
-
-      it('keeps embedded translations out of the runtime config', async () => {
-        process.env.NODE_ENV = 'production';
-        const withGTConfig = await getWithGTConfig();
-        const result = withGTConfig(
-          {},
-          {
-            experimentalCompilerOptions: { type: 'babel', inlineTranslations },
-          }
-        );
-        expect(
-          parseConfigParams(result).experimentalCompilerOptions
-        ).not.toHaveProperty('inlineTranslations');
-        expect(
-          result.env!._GENERALTRANSLATION_I18N_CONFIG_PARAMS
-        ).not.toContain('Bonjour');
-      });
-
-      it('does not skip loading in development builds', async () => {
-        const withGTConfig = await getWithGTConfig();
-        const result = withGTConfig(
-          {},
-          {
-            experimentalCompilerOptions: { type: 'babel', inlineTranslations },
-          }
-        );
-        expect(getClientConfig(result)).not.toHaveProperty('_inlinedLocales');
-      });
-
-      it('exposes the embedded locales in SWC production builds', async () => {
-        process.env.NODE_ENV = 'production';
-        const withGTConfig = await getWithGTConfig();
-        const result = withGTConfig(
-          {},
-          {
-            experimentalCompilerOptions: { type: 'swc', inlineTranslations },
-          }
-        );
-        expect(getClientConfig(result)._inlinedLocales).toEqual(['fr']);
-      });
-
-      it('does not skip loading when a Babel config replaces SWC', async () => {
-        process.env.NODE_ENV = 'production';
-        vi.mocked(fs.existsSync).mockImplementation(
-          (filepath) => filepath === '.babelrc'
-        );
-        const withGTConfig = await getWithGTConfig();
-        const swcOptions = {
+    it('keeps embedded translations out of the runtime config', async () => {
+      process.env.NODE_ENV = 'production';
+      const withGTConfig = await getWithGTConfig();
+      const result = withGTConfig(
+        {},
+        {
           experimentalCompilerOptions: {
-            type: 'swc' as const,
-            inlineTranslations,
-          },
-        };
-        expect(
-          getClientConfig(withGTConfig({}, swcOptions))._inlinedLocales
-        ).toBeUndefined();
-        expect(
-          getClientConfig(
-            withGTConfig(
-              { experimental: { forceSwcTransforms: true } },
-              swcOptions
-            )
-          )._inlinedLocales
-        ).toEqual(['fr']);
-      });
-
-      it('does not skip loading without a compiler', async () => {
-        process.env.NODE_ENV = 'production';
-        const withGTConfig = await getWithGTConfig();
-        const result = withGTConfig(
-          {},
-          {
-            experimentalCompilerOptions: { type: 'none', inlineTranslations },
-          }
-        );
-        expect(getClientConfig(result)).not.toHaveProperty('_inlinedLocales');
-      });
-
-      it('does not skip loading when no locale has translations', async () => {
-        process.env.NODE_ENV = 'production';
-        const withGTConfig = await getWithGTConfig();
-        const result = withGTConfig(
-          {},
-          {
-            experimentalCompilerOptions: {
-              type: 'babel',
-              inlineTranslations: { locales: ['fr'] },
+            type: 'babel',
+            inlineTranslations: {
+              locales: ['fr'],
+              translations: { fr: { abc: 'Bonjour' } },
             },
-          }
-        );
-        expect(getClientConfig(result)).not.toHaveProperty('_inlinedLocales');
-      });
+          },
+        }
+      );
+      expect(
+        parseConfigParams(result).experimentalCompilerOptions
+      ).not.toHaveProperty('inlineTranslations');
+      expect(result.env!._GENERALTRANSLATION_I18N_CONFIG_PARAMS).not.toContain(
+        'Bonjour'
+      );
     });
 
     it('limits client config params to runtime fields', async () => {

@@ -65,8 +65,6 @@ export function getParams(): {
     },
     // loader
     loadTranslations: createLoadTranslations(),
-    // locales embedded at build time skip loading translations
-    inlinedLocales: clientConfig._inlinedLocales,
   };
 
   return {

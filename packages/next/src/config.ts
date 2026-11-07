@@ -662,7 +662,6 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   const I18NConfigParams = JSON.stringify(
     withoutInlineTranslations(otherConfig)
   );
-  const inlinedLocales = getInlinedLocales(mergedConfig, internalNextConfig);
   const clientI18NConfigParams = {
     defaultLocale: mergedConfig.defaultLocale,
     locales: mergedConfig.locales,
@@ -684,7 +683,6 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     _versionId: mergedConfig._versionId,
     _disableDevHotReload: mergedConfig._disableDevHotReload,
     _tagIds: mergedConfig._tagIds,
-    ...(inlinedLocales.length > 0 && { _inlinedLocales: inlinedLocales }),
   };
 
   const { type: _type, ...compilerOptions } =
@@ -948,47 +946,6 @@ function isDevHotReloadEnabled(config: InternalGTConfigProps): boolean {
     config.runtimeUrl !== null &&
     config.runtimeUrl !== '' &&
     process.env.NODE_ENV === 'development'
-  );
-}
-
-// Babel config files that make Next compile with Babel instead of SWC
-const BABEL_CONFIG_FILES = [
-  '.babelrc',
-  '.babelrc.json',
-  '.babelrc.js',
-  '.babelrc.cjs',
-  '.babelrc.mjs',
-  'babel.config.js',
-  'babel.config.json',
-  'babel.config.cjs',
-  'babel.config.mjs',
-];
-
-/**
- * Locales whose translations the compiler embeds at call sites, so the
- * runtime can skip loading them. Embedding and skipping are one feature:
- * only skip when a compiler injects (babel or SWC, production builds only),
- * and only for locales that actually have translations to embed.
- */
-function getInlinedLocales(
-  mergedConfig: InternalGTConfigProps,
-  nextConfig: NextConfig
-): string[] {
-  const compilerOptions = mergedConfig.experimentalCompilerOptions;
-  if (compilerOptions?.type !== 'babel' && compilerOptions?.type !== 'swc') {
-    return [];
-  }
-  // With a Babel config, Next compiles with Babel instead of SWC unless
-  // forceSwcTransforms is set, so the SWC plugin never embeds anything
-  if (
-    compilerOptions.type === 'swc' &&
-    !nextConfig.experimental?.forceSwcTransforms &&
-    BABEL_CONFIG_FILES.some((file) => fs.existsSync(file))
-  ) {
-    return [];
-  }
-  return (
-    resolveInlineTranslations(compilerOptions.inlineTranslations)?.locales ?? []
   );
 }
 

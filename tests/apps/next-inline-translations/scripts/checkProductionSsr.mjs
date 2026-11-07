@@ -1,6 +1,7 @@
-// Checks the server-rendered HTML of a production build for inline
-// translations registered by module-level msg() calls. `next dev` bundles the
-// server differently, so this has to run against `next build` output.
+// Checks a production build that embeds fr translations at call sites and
+// loads only fr's msg() strings at runtime (translations/fr.msg.json, via
+// loadTranslations.ts). `next dev` doesn't embed, so this has to run against
+// `next build` output.
 import { spawn } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
@@ -13,24 +14,21 @@ const cases = [
   {
     locale: 'fr',
     expected: [
-      'Salutation intégrée',
+      // Embedded by the compiler from translations/fr.json
+      'Chaîne intégrée',
+      // Loaded from translations/fr.msg.json
+      'Salutation message',
       'Première étape',
       'Deuxième étape',
-      // Embedded by the compiler from translations/fr.json
-      'Salutation compilée',
-      'Première étape compilée',
-      'Deuxième étape compilée',
     ],
   },
   {
     locale: 'en',
     expected: [
-      'Inline greeting',
+      'Embedded string',
+      'Message greeting',
       'First step',
       'Second step',
-      'Compiled greeting',
-      'Compiled first step',
-      'Compiled second step',
     ],
   },
 ];
@@ -89,18 +87,28 @@ try {
     }
   }
 
-  // msg() in a module only the server imports never registers on the client,
-  // so the client resolves it from the GTProvider translations snapshot. The
-  // client component renders the message itself, so the RSC payload only
-  // contains the translation if the snapshot carries it.
-  const rscPayload = await fetchPage('fr', '/server-only', { RSC: '1' });
-  if (!rscPayload.includes('Salutation serveur')) {
-    failed = true;
-    console.error(
-      '[fr] translations snapshot is missing the server-only msg() string'
-    );
-  } else {
-    console.log('[fr] translations snapshot has the server-only msg() string');
+  // The client resolves msg() strings from the translations snapshot
+  // GTProvider sends, including msg() from a module only the server imports.
+  // The RSC payload only carries client component props and that snapshot,
+  // so it shows what the client received.
+  const pageRsc = await fetchPage('fr', '/', { RSC: '1' });
+  const serverOnlyRsc = await fetchPage('fr', '/server-only', { RSC: '1' });
+  const snapshotChecks = [
+    ['has msg() strings', pageRsc.includes('Salutation message')],
+    [
+      'has the server-only msg() string',
+      serverOnlyRsc.includes('Salutation serveur'),
+    ],
+    // Only the msg()-only file loads, not the full fr.json
+    ['leaves out embedded strings', !pageRsc.includes('Chaîne intégrée')],
+  ];
+  for (const [label, ok] of snapshotChecks) {
+    if (ok) {
+      console.log(`[fr] translations snapshot ${label}`);
+    } else {
+      failed = true;
+      console.error(`[fr] translations snapshot check failed: ${label}`);
+    }
   }
 } catch (error) {
   failed = true;

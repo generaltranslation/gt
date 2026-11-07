@@ -1,4 +1,10 @@
 {
   "defaultLocale": "en",
-  "locales": ["fr"]
+  "locales": ["fr"],
+  "files": {
+    "gt": {
+      "output": "translations/[locale].json",
+      "msgOutput": "translations/[locale].msg.json"
+    }
+  }
 }

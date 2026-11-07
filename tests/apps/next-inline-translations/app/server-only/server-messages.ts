@@ -1,5 +1,5 @@
 import { msg } from 'gt-next';
 
-export const serverGreeting = msg('Server greeting', undefined, (locale) =>
-  locale === 'fr' ? 'Salutation serveur' : undefined
-);
+// Only a server page imports this module, so the client resolves it from the
+// translations snapshot GTProvider sends
+export const serverGreeting = msg('Server greeting');
