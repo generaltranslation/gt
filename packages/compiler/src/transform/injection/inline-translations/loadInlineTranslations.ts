@@ -39,8 +39,8 @@ export function loadInlineTranslations(
   if (cached?.mtimes === mtimes) return cached.table;
 
   const table: InlineTranslationsTable = {};
-  for (const locale of locales) {
-    const translations = readLocaleFile(output, locale);
+  for (const { locale, filePath } of resolveInlineTranslationsFiles(gtFiles)) {
+    const translations = readTranslationsFile(filePath);
     if (translations) table[locale] = translations;
   }
 
@@ -59,11 +59,38 @@ export function loadInlineTranslations(
 export function getInlineTranslationsFiles(
   gtFiles: GTOutputFileConfig | undefined
 ): string[] {
+  return resolveInlineTranslationsFiles(gtFiles).map(
+    ({ filePath }) => filePath
+  );
+}
+
+/**
+ * The `files.gt.output` file of each embedded locale that exists, in
+ * `files.gt.inlineTranslations.locales` order. Paths resolve from the working
+ * directory.
+ */
+export function resolveInlineTranslationsFiles(
+  gtFiles: GTOutputFileConfig | undefined
+): { locale: string; filePath: string }[] {
   const locales = gtFiles?.inlineTranslations?.locales ?? [];
   return locales.flatMap((locale) => {
     const filePath = resolveLocaleFilePath(gtFiles?.output, locale);
-    return filePath && fs.existsSync(filePath) ? [filePath] : [];
+    return filePath && fs.existsSync(filePath) ? [{ locale, filePath }] : [];
   });
+}
+
+/**
+ * A translations file's entries keyed by hash, or undefined when it is not a
+ * JSON object.
+ */
+export function readTranslationsFile(
+  filePath: string
+): Record<string, unknown> | undefined {
+  const parsed: unknown = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  if (parsed == null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return undefined;
+  }
+  return parsed as Record<string, unknown>;
 }
 
 function resolveLocaleFilePath(
@@ -81,19 +108,6 @@ function getLocaleFileMtime(
   const filePath = resolveLocaleFilePath(pathTemplate, locale);
   if (!filePath) return null;
   return fs.statSync(filePath, { throwIfNoEntry: false })?.mtimeMs ?? null;
-}
-
-function readLocaleFile(
-  pathTemplate: string | undefined,
-  locale: string
-): Record<string, unknown> | undefined {
-  const filePath = resolveLocaleFilePath(pathTemplate, locale);
-  if (!filePath || !fs.existsSync(filePath)) return undefined;
-  const parsed: unknown = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  if (parsed == null || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    return undefined;
-  }
-  return parsed as Record<string, unknown>;
 }
 
 /**
