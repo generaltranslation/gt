@@ -15,7 +15,7 @@ function resetGTGlobals() {
 
 const lookupTranslation = vi.fn();
 
-function setup() {
+function setup(locale = 'en') {
   initializeI18nConfig(
     {
       defaultLocale: 'en',
@@ -24,7 +24,7 @@ function setup() {
     'SPA'
   );
   setReadonlyConditionStore({
-    getLocale: () => 'en',
+    getLocale: () => locale,
     getRegion: () => undefined,
     getEnableI18n: () => true,
     setLocale: () => {},
@@ -52,6 +52,33 @@ describe('t', () => {
 
     expect(lookupTranslation).toHaveBeenCalledWith('en', 'hello, brian', {
       $format: 'STRING',
+    });
+  });
+
+  describe('inline translations', () => {
+    const frInline = (locale: string) =>
+      locale === 'fr' ? 'Salut, {name} !' : undefined;
+
+    it('uses the translation embedded at the call site', () => {
+      resetGTGlobals();
+      setup('fr');
+      expect(t('Hello, {name}!', { name: 'Alice' }, frInline)).toBe(
+        'Salut, Alice !'
+      );
+      expect(lookupTranslation).not.toHaveBeenCalled();
+    });
+
+    it('falls back to loaded translations for other locales', () => {
+      resetGTGlobals();
+      setup('fr');
+      lookupTranslation.mockReturnValue('Bonjour');
+      expect(t('Hello', {}, () => undefined)).toBe('Bonjour');
+    });
+
+    it('ignores the callback when translation is not required', () => {
+      const inline = vi.fn(() => 'Bonjour');
+      expect(t('Hello', {}, inline)).toBe('Hello');
+      expect(inline).not.toHaveBeenCalled();
     });
   });
 });

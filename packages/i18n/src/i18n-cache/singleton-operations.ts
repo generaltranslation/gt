@@ -1,7 +1,7 @@
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { createGlobalSingleton } from '../globals/createGlobalSingleton';
-import type { I18nCache } from './I18nCache';
-import type { Translation } from './translations-manager/utils/types/translation-data';
+import { I18nCache } from './I18nCache';
+import { Translation } from './translations-manager/utils/types/translation-data';
 
 const i18nCacheSingleton = createGlobalSingleton<I18nCache>({
   namespace: 'i18n',
@@ -28,13 +28,6 @@ export function getI18nCache<U extends Translation = Translation>():
   | I18nCache<U>
   | I18nCache<Translation> {
   return i18nCacheSingleton.get();
-}
-
-/**
- * Whether the I18nCache singleton has been initialized
- */
-export function isI18nCacheInitialized(): boolean {
-  return i18nCacheSingleton.isInitialized();
 }
 
 /**

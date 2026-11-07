@@ -9,11 +9,7 @@ export type {
 } from './translation-functions/types/functions';
 export type { RegisterableMessages } from './translation-functions/types/message';
 export type { Message } from './translation-functions/internal/getGT';
-export type {
-  InlineTranslations,
-  InlineArrayTranslations,
-  MsgInlineTranslations,
-} from './translation-functions/inline/inlineTranslations';
+export type { InlineTranslations } from './translation-functions/inline/inlineTranslations';
 export type {
   TranslationVariables,
   GTTranslationOptions,

@@ -14,12 +14,6 @@ import { hashMessage } from '../../utils/hashMessage';
 import { RegisterableMessages } from '../types/message';
 import { encodeMsg } from './encodeMsg';
 import { msgString } from './msgString';
-import {
-  type MsgInlineTranslations,
-  type InlineTranslations,
-  getInlineArrayElement,
-  registerInlineTranslations,
-} from '../inline/inlineTranslations';
 
 /**
  * Registers a message to be translated. Returns the message unchanged if no options are provided.
@@ -53,61 +47,28 @@ import {
  * // "Hello, Alice!" id: "greetings.0"
  * // "Hello, Bob!" id: "greetings.1"
  *
- * @example - Inline translations (usually injected at build time)
- * // Registers the embedded translations under the message hash so m() can
- * // resolve them without loading the locale's translations.
- * const message = msg('Hello', undefined, (locale) =>
- *   locale === 'fr' ? 'Bonjour' : undefined
- * );
- *
- * @note - Passing inline translations makes msg() impure: it stores them in the
- * I18nCache for each embedded locale (`inlinedLocales`) under the message
- * hash, and warns and does nothing before GT is initialized. For arrays, the
- * callback returns one translation per element, and each element registers
- * separately.
- *
- * @important Internal note: until other packages are updated to use i18n-context practices, msg cannot require an initialized i18nCache. It only registers inline translations when the cache already exists.
+ * @important Internal note: until other packages are updated to use i18n-context practices, msg cannot use any functions that use i18nCache at all!
  */
 export function msg<T extends RegisterableMessages = string>(message: T): T;
 export function msg<T extends RegisterableMessages = string>(
   message: T,
-  options?: GTTranslationOptions,
-  inline?: MsgInlineTranslations
+  options?: GTTranslationOptions
 ): T extends string ? string : string[];
 export function msg(
   message: RegisterableMessages,
-  options?: GTTranslationOptions,
-  inline?: MsgInlineTranslations
+  options?: GTTranslationOptions
 ): RegisterableMessages {
-  if (options?.$format === 'STRING') {
-    return msgString(message, options, inline);
-  }
-
-  // Register inline translations so m() can resolve them by hash
-  if (inline && typeof message === 'string') {
-    registerInlineTranslations(
-      options?.$_hash ||
-        hashMessage(message, {
-          $format: 'ICU',
-          ...options,
-        }),
-      inline as InlineTranslations<string>
-    );
-  }
+  if (options?.$format === 'STRING') return msgString(message, options);
 
   // Handle array
   if (typeof message !== 'string') {
-    if (!options && !inline) return message;
+    if (!options) return message;
     return message.map((m, i) =>
-      msg(
-        m,
-        options && {
-          ...options,
-          // ignore if $id is an empty string or not defined
-          ...(options.$id && { $id: `${options.$id}.${i}` }),
-        },
-        getInlineArrayElement(inline, i)
-      )
+      msg(m, {
+        ...options,
+        // ignore if $id is an empty string or not defined
+        ...(options.$id && { $id: `${options.$id}.${i}` }),
+      })
     );
   }
 
