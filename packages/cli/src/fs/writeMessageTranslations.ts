@@ -24,6 +24,18 @@ export async function writeMessageTranslations(
   const messageHashes = getMessageHashes();
   if (!inlineTranslations?.msgOutput || !gtOutput || !messageHashes) return;
   const { locales, msgOutput } = inlineTranslations;
+  const invalidReason = getInvalidMsgOutputReason(msgOutput, gtOutput);
+  if (invalidReason) {
+    logger.warn(
+      createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Warning',
+        whatHappened: `Did not write files.gt.inlineTranslations.msgOutput (${msgOutput})`,
+        why: invalidReason,
+      })
+    );
+    return;
+  }
 
   for (const locale of locales) {
     const translationsPath = resolveLocaleFiles({ gt: gtOutput }, locale).gt;
@@ -55,4 +67,17 @@ export async function writeMessageTranslations(
     }
     await saveJSON(messagesPath, messages);
   }
+}
+
+function getInvalidMsgOutputReason(
+  msgOutput: string,
+  gtOutput: string
+): string | undefined {
+  if (!msgOutput.includes('[locale]')) {
+    return 'It must include [locale], or every locale would overwrite the same file';
+  }
+  if (msgOutput === gtOutput) {
+    return 'It is the same path as files.gt.output, so it would overwrite the full translations';
+  }
+  return undefined;
 }
