@@ -5,7 +5,7 @@ import {
   warnApiKeyInConfig,
 } from '../console/logging.js';
 import { loadConfig, withJsonExtension } from '../fs/config/loadConfig.js';
-import { FilesOptions, Settings } from '../types/index.js';
+import { FilesOptions, JsonSchema, Settings } from '../types/index.js';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { resolveFiles } from '../fs/config/parseFilesConfig.js';
 import { validateSettings } from './validateSettings.js';
@@ -347,10 +347,12 @@ export async function generateSettings(
       for (const fileGlob of Object.keys(mergedOptions.options.jsonSchema)) {
         const jsonSchema = mergedOptions.options.jsonSchema[fileGlob];
         if (jsonSchema.preset) {
+          // Either side may set include or composite; validateJsonSchema
+          // rejects the merged result when both end up set.
           mergedOptions.options.jsonSchema[fileGlob] = {
             ...generatePreset(jsonSchema.preset, 'json'),
             ...jsonSchema,
-          };
+          } as JsonSchema;
         }
       }
     }
