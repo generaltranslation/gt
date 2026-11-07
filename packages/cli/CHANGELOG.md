@@ -1,5 +1,17 @@
 # gtx-cli
 
+## 3.0.0-samsara.4
+
+### Patch Changes
+
+- cf23e00: From `main` (gt 2.27.1–2.27.2): `gt init` detects Expo and React Native apps and stops before changing anything, with a link to the React Native quickstart (#2637); it ends with one `Done!` and numbered next steps for your framework, also listed in the `--json` result's `nextSteps` (#2639), and links to your framework's quickstart (#2640). `gt translate` points to the dashboard when the project ID is missing and leads sign-in failures with the `gt login` fix (#2643). Translation failures show the server's reason, including insufficient credits, in CLI errors and the summary, and inline catalogs show readable names instead of the internal template filename (#2662).
+- Updated dependencies [cf23e00]
+  - generaltranslation@10.0.0-samsara.3
+  - @generaltranslation/python-extractor@0.2.67-samsara.0
+  - @generaltranslation/supported-locales@2.1.48-samsara.0
+  - @generaltranslation/svelte-extractor@0.1.0-samsara.4
+  - @generaltranslation/vue-extractor@0.1.26-samsara.0
+
 ## 3.0.0-samsara.3
 
 ### Patch Changes
