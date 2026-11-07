@@ -134,7 +134,6 @@ class I18nCache<TranslationValue extends Translation = Translation> {
       cacheExpiryTime: params.cacheExpiryTime,
       batchConfig: params.batchConfig,
       runtimeTranslation: params.runtimeTranslation,
-      _versionId: params._versionId,
     };
 
     // Create cache miss handlers
@@ -210,15 +209,6 @@ class I18nCache<TranslationValue extends Translation = Translation> {
       runtimeTranslate: (id, sourceEntry) =>
         this.translateDictionaryEntry(locale, id, sourceEntry),
     });
-  }
-
-  // ========== Getters and Setters ========== //
-
-  /**
-   * Get the version ID
-   */
-  getVersionId(): string | undefined {
-    return this.config._versionId;
   }
 
   // ========== Translation Updates ========== //

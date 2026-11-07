@@ -34,6 +34,7 @@ export type I18nConfigParams = Pick<
   | 'runtimeUrl'
   | '_disableDevHotReload'
   | '_tagIds'
+  | '_versionId'
 >;
 
 type RuntimeConfig = Pick<
@@ -44,6 +45,7 @@ type RuntimeConfig = Pick<
   | 'runtimeUrl'
   | '_disableDevHotReload'
   | '_tagIds'
+  | '_versionId'
 >;
 
 export type LocaleCandidates = string | string[] | undefined;
@@ -63,6 +65,7 @@ export class I18nConfig extends LocaleConfig {
       runtimeUrl: params.runtimeUrl,
       _disableDevHotReload: params._disableDevHotReload,
       _tagIds: params._tagIds,
+      _versionId: params._versionId,
     };
     this.gtServicesEnabled = gtServicesEnabled;
     this.logLevel = getGeneralTranslationLogLevel();
@@ -82,6 +85,10 @@ export class I18nConfig extends LocaleConfig {
 
   getProjectId(): string | undefined {
     return this.runtimeConfig.projectId;
+  }
+
+  getVersionId(): string | undefined {
+    return this.runtimeConfig._versionId;
   }
 
   /**

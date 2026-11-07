@@ -1,4 +1,4 @@
-import { getI18nCache } from '../i18n-cache/singleton-operations';
+import { getI18nConfig } from '../i18n-config/singleton-operations';
 
 /**
  * Get the version ID for the current source
@@ -9,6 +9,5 @@ import { getI18nCache } from '../i18n-cache/singleton-operations';
  * console.log(versionId); // 'abc123'
  */
 export function getVersionId() {
-  const i18nCache = getI18nCache();
-  return i18nCache.getVersionId();
+  return getI18nConfig().getVersionId();
 }
