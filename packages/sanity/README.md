@@ -204,34 +204,48 @@ treated as an original and can be translated from again.
 To let reviewers in General Translation open a string on the page that shows
 it, give the plugin your site's origin and the page of each document type, in
 the same shape as `presentationTool`'s `resolve.locations` (the Presentation
-tool itself is not required):
+tool itself is not required). `resolve` also gets the Sanity language id of the
+page being linked, so it can build each locale's URL:
 
 ```ts
-import { defineLocations } from 'sanity/presentation';
-
 gtPlugin({
   // ...
   previewUrl: {
     origin: 'https://staging.example.com',
     locations: {
-      page: defineLocations({
+      page: {
         select: { slug: 'slug.current' },
-        resolve: (doc) => ({
-          locations: [{ title: 'Page', href: `/${doc?.slug}` }],
+        resolve: (doc, { language }) => ({
+          locations: [
+            { title: 'Page', href: localizedPath(language, doc?.slug) },
+          ],
         }),
-      }),
+      },
       // Shared content links to a page that shows it.
-      siteSettings: { locations: [{ title: 'Home', href: '/' }] },
+      siteSettings: {
+        select: {},
+        resolve: (_doc, { language }) => ({
+          locations: [{ title: 'Home', href: localizedPath(language, '') }],
+        }),
+      },
     },
   },
 });
 ```
 
-Studios that use Presentation can pass the same `resolve.locations`.
+`localizedPath` stands for your own routing, such as `es-ES` to `/es/...`. Studios
+that use Presentation can pass the same `resolve.locations`; resolvers that
+ignore the language link every locale to the same page.
 
-Each uploaded document is sent with its first location in its published
-version. A type with fixed locations sends them even for unpublished documents.
-Other unpublished documents, and types with no location, are sent without one.
+Each uploaded source document is sent with its first location, resolved from
+its published version in its own language. When a translation is imported, its
+page is resolved from the document it was written to (the translated document
+for document-level types, the same document for field-level types), in the
+target language, and stored in General Translation as that translation's
+preview URL. That document is usually still a draft, so it is read with drafts
+included. A type with fixed locations always links them. Other unpublished
+source documents, and types with no location, get no URL. Failing to resolve or
+store a URL warns and never stops an upload or import.
 
 ## Automatic Actions
 

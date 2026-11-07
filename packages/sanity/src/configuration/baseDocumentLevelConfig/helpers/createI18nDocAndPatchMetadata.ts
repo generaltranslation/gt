@@ -17,7 +17,7 @@ export async function createI18nDocAndPatchMetadata(
   translationMetadata: SanityDocumentLike,
   sourceDocumentId: string,
   languageField: string = 'language'
-): Promise<void> {
+): Promise<string> {
   const publishedSourceDocumentId = getPublishedId(sourceDocumentId);
   translatedDoc[languageField] = localeId;
   const translations = translationMetadata.translations as Record<
@@ -101,6 +101,7 @@ export async function createI18nDocAndPatchMetadata(
       ])
     )
     .commit();
+  return _ref;
 }
 
 /** The import error for a group that records the source document under the target locale. */

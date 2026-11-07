@@ -22,6 +22,8 @@ import { getTranslationStrategy } from './strategy';
 export type ExistingTranslation = {
   locale: string;
   content: string;
+  /** The document the translation is stored in, by published id and type. */
+  document: { id: string; type: string };
 };
 
 type TranslationMetadataRow = {
@@ -82,7 +84,11 @@ export async function collectExistingTranslations(
         localeId,
         'internationalizedArray'
       );
-      translations.push({ locale: localeId, content: serialized.content });
+      translations.push({
+        locale: localeId,
+        content: serialized.content,
+        document: { id: getDocumentPublishedId(doc), type: doc._type },
+      });
     }
     if (translations.length > 0) {
       existing.set(getDocumentPublishedId(doc), translations);
@@ -188,7 +194,14 @@ async function collectDocumentLevelTranslations(
         sourceLocale,
         'document'
       );
-      translations.push({ locale: localeId, content: serialized.content });
+      translations.push({
+        locale: localeId,
+        content: serialized.content,
+        document: {
+          id: getDocumentPublishedId(translatedDoc),
+          type: translatedDoc._type,
+        },
+      });
     }
     if (translations.length > 0) {
       existing.set(sourceDocId, translations);
