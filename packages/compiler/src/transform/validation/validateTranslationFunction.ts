@@ -49,90 +49,10 @@ export function validateTranslationFunction(
     return { errors };
   }
 
-  const { content, contentHasAutoderive } = resolveMessageExpression(
-    callExprPath.get('arguments')[0] as NodePath<t.Expression>,
-    state,
-    errors
-  );
-  if (errors.length > 0) {
-    return { errors };
-  }
-
-  return {
-    ...validateTranslationOptions(callExprPath, state, errors, {
-      contentHasAutoderive,
-    }),
-    content,
-  };
-}
-
-/**
- * Validate msg([...]) with an array of messages
- * - every element must be a statically resolvable string expression
- * - second argument is validated the same way as validateTranslationFunction
- * - any derive content (explicit or autoderive) sets hasDeriveContext
- */
-export function validateMsgArrayFunction(
-  callExprPath: NodePath<t.CallExpression>,
-  state: TransformState
-): {
-  errors: string[];
-  contents?: string[];
-  context?: string;
-  hash?: string;
-  id?: string;
-  maxChars?: number;
-  format?: string;
-  requiresReview?: boolean;
-  hasDeriveContext?: boolean;
-} {
-  const errors: string[] = [];
-  const arrayPath = callExprPath.get(
-    'arguments'
-  )[0] as NodePath<t.ArrayExpression>;
-  const contents: string[] = [];
-  let contentHasAutoderive = false;
-  for (const elementPath of arrayPath.get('elements')) {
-    if (!elementPath.isExpression()) {
-      errors.push(
-        'msg() arrays must only contain string literals or derive() calls. Variable content is not allowed.'
-      );
-      return { errors };
-    }
-    const element = resolveMessageExpression(elementPath, state, errors);
-    if (errors.length > 0) {
-      return { errors };
-    }
-    if (element.content === undefined) {
-      contentHasAutoderive = true;
-    } else {
-      contents.push(element.content);
-    }
-  }
-
-  const options = validateTranslationOptions(callExprPath, state, errors, {
-    contentHasAutoderive,
-  });
-  return {
-    ...options,
-    contents: options.hasDeriveContext ? undefined : contents,
-    hasDeriveContext:
-      options.hasDeriveContext || contentHasAutoderive || undefined,
-  };
-}
-
-/**
- * Resolve a message expression to a static string.
- * Pushes errors for variable content. Returns undefined content for derive
- * content (explicit derive() or autoderive), which has no compile-time hash.
- */
-function resolveMessageExpression(
-  expressionPath: NodePath<t.Expression>,
-  state: TransformState,
-  errors: string[]
-): { content?: string; contentHasAutoderive: boolean } {
   // Try to resolve the expression to a static string (handles concat, nested templates, etc.)
-  const resolvedStaticExpression = resolveStaticExpression(expressionPath);
+  const resolvedStaticExpression = resolveStaticExpression(
+    callExprPath.get('arguments')[0] as NodePath<t.Expression>
+  );
   // TODO: until we implement derivation, we will only need to check the first value
   const content = resolvedStaticExpression.values?.[0];
   const resolutionErrors = getResolutionErrorMessages(
@@ -141,23 +61,20 @@ function resolveMessageExpression(
   );
 
   if (resolutionErrors.length > 0) {
-    errors.push(...resolutionErrors);
-    return { contentHasAutoderive: false };
+    return { errors: resolutionErrors };
   }
 
   if (content === undefined && !state.settings.autoderive.strings) {
     // Not a static expression — check if it contains a derive() function invocation
-    const deriveErrors: string[] = [];
-    validateDerive(expressionPath.node, state, deriveErrors);
-    if (deriveErrors.length > 0) {
-      errors.push(...deriveErrors);
+    validateDerive(callExpr.arguments[0], state, errors);
+    if (errors.length > 0) {
       errors.push(
         ...getResolutionErrorMessages(resolvedStaticExpression.errors)
       );
       errors.push(
         'registration function must use a string literal or derive() call as the first argument. Variable content is not allowed.'
       );
-      return { contentHasAutoderive: false };
+      return { errors };
     }
   }
 
@@ -165,32 +82,9 @@ function resolveMessageExpression(
   // instead of passing that information outside of this function.
   // We skip hash gen with autoderive, derive in content, and derive in $context. This flag is being
   // reused for all 3 cases.
-  return {
-    content,
-    contentHasAutoderive:
-      state.settings.autoderive.strings && content === undefined,
-  };
-}
+  const contentHasAutoderive =
+    state.settings.autoderive.strings && content === undefined;
 
-/**
- * Validate the options (second) argument of a string registration function
- */
-function validateTranslationOptions(
-  callExprPath: NodePath<t.CallExpression>,
-  state: TransformState,
-  errors: string[],
-  { contentHasAutoderive }: { contentHasAutoderive: boolean }
-): {
-  errors: string[];
-  context?: string;
-  hash?: string;
-  id?: string;
-  maxChars?: number;
-  format?: string;
-  requiresReview?: boolean;
-  hasDeriveContext?: boolean;
-} {
-  const callExpr = callExprPath.node;
   // Validate second argument
   let context: string | undefined;
   let id: string | undefined;
@@ -202,6 +96,7 @@ function validateTranslationOptions(
   if (callExpr.arguments.length === 1) {
     return {
       errors,
+      content,
       hasDeriveContext: contentHasAutoderive || undefined,
     };
   }
@@ -258,6 +153,7 @@ function validateTranslationOptions(
 
   return {
     errors,
+    content,
     context,
     id,
     hash,

@@ -49,13 +49,18 @@ export type GTCompilerOptions = {
   enableAutoJsxInjection?: boolean;
   /**
    * Experimental: embed translations for the given locales directly at each
-   * translation call site, so bundlers tree-shake them with unused code and
-   * those locales resolve without loading a translation file. Other locales
-   * keep loading at runtime. Only applied to production builds.
+   * `gt()`, `t()`, and `<T>` call site, so bundlers tree-shake them with
+   * unused code. Other locales keep loading at runtime. Only applied to
+   * production builds.
+   *
+   * `msg()` strings are resolved by `m()` away from their call site, so they
+   * are never embedded. For embedded locales, have your `loadTranslations`
+   * load the msg()-only file the CLI writes with `files.gt.msgOutput` instead
+   * of the full translations file.
    *
    * Only call sites the compiler can resolve are embedded. These are not, and
    * resolve from loaded translations like any other locale:
-   * - `derive()` content, and `t()`.
+   * - `derive()` content.
    * - Translation functions passed around as values, for example the `gt`
    *   from `useGT()` handed to a helper as a parameter. Call `useGT()` or
    *   `getGT()` in the helper instead.

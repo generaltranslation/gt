@@ -12,7 +12,6 @@ import {
   GT_OTHER_FUNCTIONS,
 } from '../../utils/constants/gt/constants';
 import {
-  validateMsgArrayFunction,
   validateTranslationFunction,
   validateUseMessagesCallback,
   validateUseTranslationsCallback,
@@ -78,11 +77,7 @@ export function processCallExpression(
       canonicalName === GT_OTHER_FUNCTIONS.msg
     ) {
       // msg() is runtime-only content; it must not advance the injection counter.
-      if (t.isArrayExpression(callExpr.arguments[0])) {
-        handleMsgArray(callExprPath, state);
-      } else {
-        handleStandaloneTranslation(callExprPath, state, { injectHash: false });
-      }
+      handleStandaloneTranslation(callExprPath, state, { injectHash: false });
     } else if (
       type === 'generaltranslation' &&
       canonicalName === GT_OTHER_FUNCTIONS.t
@@ -328,39 +323,5 @@ function handleStandaloneTranslation(
     requiresReview: params.requiresReview,
     format: params.format,
     injectHash,
-  });
-}
-
-/**
- * Handle msg([...]) with an array of messages.
- * Each element registers as its own runtime-only entry with id `${id}.${index}`,
- * matching the runtime, which registers each element separately.
- */
-function handleMsgArray(
-  callExprPath: NodePath<t.CallExpression>,
-  state: TransformState
-) {
-  const params = validateMsgArrayFunction(callExprPath, state);
-  state.errorTracker.addErrors(params.errors);
-  if (params.errors.length > 0 || params.contents === undefined) {
-    return;
-  }
-
-  // Skip derive content
-  if (params.hasDeriveContext) {
-    return;
-  }
-
-  params.contents.forEach((content, index) => {
-    registerStandaloneTranslation({
-      state,
-      content,
-      id: params.id ? `${params.id}.${index}` : undefined,
-      context: params.context,
-      maxChars: params.maxChars,
-      requiresReview: params.requiresReview,
-      format: params.format,
-      injectHash: false,
-    });
   });
 }

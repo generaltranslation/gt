@@ -16,7 +16,6 @@ const icuHash = (source: string, context?: string) =>
 // Same hashes the SWC plugin tests pin (packages/next/swc-plugin/src/inline_translations_tests.rs)
 const HELLO_WORLD = '05a87bce151d258b';
 const JSX_HELLO_WORLD = 'ebc5c5a5022c5050';
-const STRING_HELLO = 'c6e2133cd6d89e5d';
 
 const T_COMPONENT_CODE = `
   import { jsx } from 'react/jsx-runtime';
@@ -137,29 +136,6 @@ describe('inlineTranslations plugin option', () => {
     );
   });
 
-  it.each([
-    ['a variable', 'msg("Open", options)'],
-    ['a spread', 'msg("Open", { ...options })'],
-  ])(
-    'does not embed msg() translations when options come from %s',
-    async (_label, call) => {
-      const output = await transformWithPlugin(
-        {
-          inlineTranslations: {
-            locales: ['fr'],
-            translations: { fr: { [icuHash('Open')]: 'Ouvrir' } },
-          },
-        },
-        `
-          import { msg } from 'gt-react';
-          const options = { $context: 'state' };
-          export const label = ${call};
-        `
-      );
-      expect(output).not.toContain('Ouvrir');
-    }
-  );
-
   it('re-reads a locale file edited between builds', async () => {
     const hash = await getGtHash();
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-inline-'));
@@ -224,7 +200,7 @@ describe('inlineTranslations plugin option', () => {
     expect(watched).toEqual([frFile]);
   });
 
-  it('does not embed translations in standalone t() calls', async () => {
+  it('appends an inline translations callback to standalone t() calls', async () => {
     const code = `
       import { t } from 'gt-react';
       t("Hello world");
@@ -239,8 +215,9 @@ describe('inlineTranslations plugin option', () => {
       },
       code
     );
-    expect(output).toContain(hash);
-    expect(output).not.toContain('Bonjour le monde');
+    expect(output).toContain(
+      '(locale) => locale === "fr" ? "Bonjour le monde" : undefined'
+    );
   });
 
   it('does not embed translations outside production builds', async () => {
@@ -258,70 +235,6 @@ describe('inlineTranslations plugin option', () => {
     expect(output).not.toContain('Bonjour le monde');
   });
 
-  describe('msg()', () => {
-    it('injects an inline translations callback after an undefined options argument', async () => {
-      const output = await transformWithPlugin(
-        {
-          inlineTranslations: {
-            locales: ['fr'],
-            translations: { fr: { [icuHash('Hello')]: 'Bonjour' } },
-          },
-        },
-        `import { msg } from 'gt-react';
-         export const a = msg('Hello');`
-      );
-      expect(output).toContain(
-        'msg(\'Hello\', undefined, (locale) => locale === "fr" ? "Bonjour" : undefined)'
-      );
-    });
-
-    it('hashes msg() options the same way as the runtime', async () => {
-      const output = await transformWithPlugin(
-        {
-          inlineTranslations: {
-            locales: ['fr'],
-            translations: {
-              fr: { [icuHash('Hi {name}', 'greeting')]: 'Salut {name}' },
-            },
-          },
-        },
-        `import { msg } from 'gt-react';
-         export const a = msg('Hi {name}', { name: 'x', $context: 'greeting' });`
-      );
-      expect(output).toContain(
-        '(locale) => locale === "fr" ? "Salut {name}" : undefined'
-      );
-    });
-
-    it('injects per-element translations for msg() arrays', async () => {
-      const output = await transformWithPlugin(
-        {
-          inlineTranslations: {
-            locales: ['fr', 'es'],
-            translations: {
-              fr: { [icuHash('One')]: 'Un', [icuHash('Two')]: 'Deux' },
-              es: { [icuHash('Two')]: 'Dos' },
-            },
-          },
-        },
-        `import { msg } from 'gt-react';
-         export const a = msg(['One', 'Two']);`
-      );
-      expect(output).toContain(
-        '(locale) => locale === "fr" ? ["Un", "Deux"] : locale === "es" ? [undefined, "Dos"] : undefined'
-      );
-    });
-
-    it('no longer rejects msg() arrays', async () => {
-      const output = await transformWithPlugin(
-        undefined,
-        `import { msg } from 'gt-react';
-         export const a = msg(['One', 'Two'], { $id: 'nums' });`
-      );
-      expect(output).not.toContain('(locale) =>');
-    });
-  });
-
   describe('derive (not supported)', () => {
     // null output means the file was left untouched
     const translations = {
@@ -334,16 +247,6 @@ describe('inlineTranslations plugin option', () => {
         `import { useGT, derive } from 'gt-react';
          const gt = useGT();
          gt(\`Hello \${derive(getName())}\`);`
-      );
-      expect(output ?? '').not.toContain('(locale) =>');
-    });
-
-    it('skips msg() calls with derive content', async () => {
-      const output = await transformWithPlugin(
-        { inlineTranslations: { locales: ['fr'], translations } },
-        `import { msg, derive } from 'gt-react';
-         export const a = msg(\`Hello \${derive(getName())}\`);
-         export const b = msg(['Hello world', derive(getName())]);`
       );
       expect(output ?? '').not.toContain('(locale) =>');
     });
@@ -449,33 +352,8 @@ describe('inlineTranslations plugin option', () => {
       expect(output).not.toContain('inline:');
     });
 
-    it('hashes STRING format msg() calls', async () => {
-      const output = await transformWithPlugin(
-        {
-          inlineTranslations: {
-            locales: ['fr'],
-            translations: { fr: { [STRING_HELLO]: 'Bonjour' } },
-          },
-        },
-        `import { msg } from 'gt-react';
-         export const a = msg("Hello", { $format: "STRING" });`
-      );
-      expect(output).toContain(
-        '(locale) => locale === "fr" ? "Bonjour" : undefined'
-      );
-    });
-
-    it('leaves msg() untouched without embedded translations', async () => {
-      const output = await transformWithPlugin(
-        { inlineTranslations: { locales: ['fr'], translations: { fr: {} } } },
-        `import { msg } from 'gt-react';
-         export const a = msg(["One", "Two"], { $id: "nums" });
-         export const b = msg("Hello");`
-      );
-      expect(output ?? '').not.toContain('(locale) =>');
-    });
-
-    it('ignores msg() from other packages', async () => {
+    it('never embeds translations in msg() calls', async () => {
+      // msg() strings load from the msg()-only translations file instead
       const output = await transformWithPlugin(
         {
           inlineTranslations: {
@@ -483,29 +361,26 @@ describe('inlineTranslations plugin option', () => {
             translations: { fr: { [icuHash('Hello')]: 'Bonjour' } },
           },
         },
-        `import { msg } from 'other';
-         export const a = msg("Hello");`
+        `import { msg } from 'gt-react';
+         export const a = msg("Hello");
+         export const b = msg("Hello", { $id: "greeting" });`
       );
       expect(output ?? '').not.toContain('(locale) =>');
     });
 
-    it('skips gt() and msg() calls with a derive $context', async () => {
+    it('skips gt() calls with a derive $context', async () => {
       const output = await transformWithPlugin(
         {
           inlineTranslations: {
             locales: ['fr'],
             translations: {
-              fr: {
-                [HELLO_WORLD]: 'Bonjour le monde',
-                [icuHash('Hello')]: 'Bonjour',
-              },
+              fr: { [HELLO_WORLD]: 'Bonjour le monde' },
             },
           },
         },
-        `import { useGT, msg, derive } from 'gt-react';
+        `import { useGT, derive } from 'gt-react';
          const gt = useGT();
-         gt("Hello world", { $context: derive(getContext()) });
-         export const c = msg("Hello", { $context: derive(getContext()) });`
+         gt("Hello world", { $context: derive(getContext()) });`
       );
       expect(output ?? '').not.toContain('(locale) =>');
     });
