@@ -66,6 +66,13 @@ describe('inline translations', () => {
       expect(inline).not.toHaveBeenCalled();
     });
 
+    it('passes the configured spelling of an equivalent locale to the callback', async () => {
+      const gt = await getGTInternal({ locale: 'fr', enableI18n: true });
+      expect(
+        gt('Hello', { $locale: 'fr-FR' }, frInline({ fr: 'Bonjour' }))
+      ).toBe('Bonjour');
+    });
+
     it('passes the target locale to the callback', async () => {
       const gt = await getGTInternal({ locale: 'fr', enableI18n: true });
       const inline = vi.fn(() => 'Bonjour');

@@ -2,7 +2,10 @@ import { getI18nCache } from '../../i18n-cache/singleton-operations';
 import { getI18nConfig } from '../../i18n-config/singleton-operations';
 import { NormalizedLookupOptions, LookupOptionsFor } from '../types/options';
 import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
-import type { InlineTranslations } from '../inline/inlineTranslations';
+import {
+  lookupInlineTranslation,
+  type InlineTranslations,
+} from '../inline/inlineTranslations';
 import type {
   DataFormat,
   JsxChildren,
@@ -102,9 +105,7 @@ export function resolveStringContentWithFallback(
   const lookupOptions = createLookupOptions(locale, options, 'STRING');
   // Translations embedded at the call site win over loaded translations
   const translation =
-    (getI18nConfig().requiresTranslation(lookupOptions.$locale)
-      ? inline?.(lookupOptions.$locale)
-      : undefined) ??
+    lookupInlineTranslation(inline, lookupOptions.$locale) ??
     i18nCache.lookupTranslation(lookupOptions.$locale, content, lookupOptions);
   return interpolateMessage({
     source: content,

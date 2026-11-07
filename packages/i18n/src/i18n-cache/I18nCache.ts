@@ -638,22 +638,7 @@ class I18nCache<TranslationValue extends Content = Content> {
    * Returns undefined when the requested locale can use source content.
    */
   private _resolveCacheLocale(locale: string) {
-    const resolvedLocale = this._resolveLocale(locale);
-    const i18nConfig = getI18nConfig();
-    if (i18nConfig.requiresTranslation(resolvedLocale)) {
-      return resolvedLocale;
-    }
-
-    // Explicit translation lookups may request a dialect outside the supported
-    // app locales. Preserve that existing fallback independently of routing.
-    const aliasLocale = i18nConfig.resolveAliasLocale(
-      i18nConfig.standardizeLocale(locale)
-    );
-    if (i18nConfig.requiresTranslation(aliasLocale)) {
-      return aliasLocale;
-    }
-
-    return undefined;
+    return getI18nConfig().resolveTranslationLocale(locale);
   }
 
   private resolveLookupParams(locale: string, options: LookupOptions) {

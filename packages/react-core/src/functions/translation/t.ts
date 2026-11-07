@@ -2,6 +2,7 @@ import {
   createLookupOptions,
   getRuntimeEnvironment,
   interpolateMessage,
+  lookupInlineTranslation,
 } from 'gt-i18n/internal';
 import type { GTTranslationOptions, InlineTranslations } from 'gt-i18n/types';
 import type { LookupOptionsFor } from 'gt-i18n/internal/types';
@@ -77,9 +78,7 @@ export function resolveStringContent(
   const lookupOptions = createLookupOptions(locale, options, 'ICU');
   // Translations embedded at the call site win over loaded translations
   const translation =
-    (getI18nConfig().requiresTranslation(lookupOptions.$locale)
-      ? inline?.(lookupOptions.$locale)
-      : undefined) ??
+    lookupInlineTranslation(inline, lookupOptions.$locale) ??
     i18nCache.lookupTranslation(lookupOptions.$locale, content, lookupOptions);
   return interpolateMessage({
     source: content,

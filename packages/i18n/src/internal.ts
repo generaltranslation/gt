@@ -13,6 +13,7 @@ export {
   GtInternalRuntimeTranslateJsx,
 } from './translation-functions/internal/runtime-translate';
 export { createLookupOptions } from './translation-functions/internal/helpers';
+export { lookupInlineTranslation } from './translation-functions/inline/inlineTranslations';
 export { renderDictionaryEntry } from './translation-functions/internal/renderDictionaryEntry';
 export { renderDictionaryObject } from './translation-functions/internal/renderDictionaryObject';
 export { I18nCache } from './i18n-cache/I18nCache';
