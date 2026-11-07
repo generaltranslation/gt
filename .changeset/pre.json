@@ -85,6 +85,7 @@
     "gt-i18n-unstable-messages",
     "gt-i18n-unstable",
     "i18n-default-locale-override",
+    "icu-dropped-plural-category-variables",
     "icu-parser-subpath",
     "linter-unstable-static-branch",
     "locadex-handoff-url",

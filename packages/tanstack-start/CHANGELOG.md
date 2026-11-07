@@ -1,5 +1,15 @@
 # gt-tanstack-start
 
+## 12.0.0-samsara.2
+
+### Patch Changes
+
+- @generaltranslation/compiler@1.4.0-samsara.1
+- generaltranslation@10.0.0-samsara.2
+- gt-i18n@2.0.0-samsara.2
+- gt-react@12.0.0-samsara.2
+- @generaltranslation/react-core@12.0.0-samsara.2
+
 ## 12.0.0-samsara.1
 
 ### Minor Changes

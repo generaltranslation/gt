@@ -1,5 +1,12 @@
 # gt-node
 
+## 2.0.0-samsara.2
+
+### Patch Changes
+
+- generaltranslation@10.0.0-samsara.2
+- gt-i18n@2.0.0-samsara.2
+
 ## 2.0.0-samsara.1
 
 ### Major Changes
