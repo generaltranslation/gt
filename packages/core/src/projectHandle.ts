@@ -20,6 +20,7 @@ import {
   setTag,
   translateFiles,
   updateBranch,
+  updateFiles,
   updateProject,
   uploadSourceFiles,
   uploadTranslations,
@@ -56,6 +57,8 @@ import {
   type TranslateFilesResponse,
   type UpdateBranchData,
   type UpdateBranchResponse,
+  type UpdateFilesData,
+  type UpdateFilesResponse,
   type UpdateProjectData,
   type UpdateProjectResponse,
   type UploadSourceFilesResponse,
@@ -811,6 +814,36 @@ export class ProjectHandle extends GTRuntime {
         }),
       })),
     };
+  }
+
+  /**
+   * Updates source files, or their translations when a file names a locale,
+   * such as a version's preview URL. Each request of up to 100 files writes all
+   * or nothing; a failed request throws.
+   *
+   * @param files - The file versions and translations to update.
+   * @returns The updated files, in request order.
+   */
+  async updateFiles(
+    files: UpdateFilesData['body']['files'],
+    options: { timeout?: number } = {}
+  ): Promise<UpdateFilesResponse> {
+    const updated = await processBatches(files, async (batch) => {
+      const response = unwrapApiResult(
+        await updateFiles({
+          ...this.request(options.timeout),
+          body: {
+            files: batch.map((file) =>
+              file.locale === undefined
+                ? file
+                : { ...file, locale: this.resolveServiceLocale(file.locale) }
+            ),
+          },
+        })
+      );
+      return response.files.map((file) => this.aliasLocale(file));
+    });
+    return { files: updated };
   }
 
   // -------------- Upload Methods -------------- //

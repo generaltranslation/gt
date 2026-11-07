@@ -16,6 +16,7 @@ import {
   queryFiles,
   queryFilesContent,
   translateFiles,
+  updateFiles,
   uploadSourceFiles,
   uploadTranslations,
   upsertAssets,
@@ -41,6 +42,7 @@ vi.mock('@generaltranslation/api', async (importOriginal) => ({
   queryFiles: vi.fn(),
   queryFilesContent: vi.fn(),
   translateFiles: vi.fn(),
+  updateFiles: vi.fn(),
   uploadSourceFiles: vi.fn(),
   uploadTranslations: vi.fn(),
   upsertAssets: vi.fn(),
@@ -885,6 +887,80 @@ describe.sequential('GeneralTranslation project and organization operations', ()
     }
     expect(requests.map(({ jobs }) => jobs.length)).toEqual([100, 1]);
     expect(results.map(({ id }) => id)).toEqual(ids);
+  });
+
+  it('updates files in the project, mapping translation locales in both directions', async () => {
+    vi.mocked(updateFiles).mockResolvedValue(
+      result({
+        files: [
+          {
+            branchId: 'branch-id',
+            fileId: 'page',
+            versionId: 'v1',
+            metadata: { previewUrl: 'https://example.com/page' },
+          },
+          {
+            branchId: 'branch-id',
+            fileId: 'page',
+            versionId: 'v1',
+            locale: 'es-ES',
+            metadata: { previewUrl: 'https://example.com/es/page' },
+          },
+        ],
+      }) as never
+    );
+
+    await expect(
+      configuredProject().updateFiles([
+        {
+          fileId: 'page',
+          versionId: 'v1',
+          metadata: { previewUrl: 'https://example.com/page' },
+        },
+        {
+          fileId: 'page',
+          versionId: 'v1',
+          locale: 'target',
+          metadata: { previewUrl: 'https://example.com/es/page' },
+        },
+      ])
+    ).resolves.toEqual({
+      files: [
+        {
+          branchId: 'branch-id',
+          fileId: 'page',
+          versionId: 'v1',
+          metadata: { previewUrl: 'https://example.com/page' },
+        },
+        {
+          branchId: 'branch-id',
+          fileId: 'page',
+          versionId: 'v1',
+          locale: 'target',
+          metadata: { previewUrl: 'https://example.com/es/page' },
+        },
+      ],
+    });
+    expect(updateFiles).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: { projectId: 'project-id' },
+        body: {
+          files: [
+            {
+              fileId: 'page',
+              versionId: 'v1',
+              metadata: { previewUrl: 'https://example.com/page' },
+            },
+            {
+              fileId: 'page',
+              versionId: 'v1',
+              locale: 'es-ES',
+              metadata: { previewUrl: 'https://example.com/es/page' },
+            },
+          ],
+        },
+      })
+    );
   });
 
   describe('files over the inline limit', () => {
