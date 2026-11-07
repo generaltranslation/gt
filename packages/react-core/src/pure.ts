@@ -36,11 +36,3 @@ export { getI18nConfig, initializeI18nConfig } from './setup/i18nConfig';
 export { getReadonlyConditionStore } from './condition-store/singleton-operations';
 export type { ReactI18nConfigParams as I18nConfigParams } from './setup/i18nConfig';
 export type { OnMissingTranslation } from './hooks/utils/missing-translation';
-
-// ===== Compat: dictionary (key-based) API ===== //
-export { CompatStore } from './compat/CompatStore';
-export type {
-  DictionaryLookup,
-  OnMissingDictionaryObj,
-  OnMissingDictionaryEntry,
-} from './compat/types';

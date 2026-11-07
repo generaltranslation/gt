@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { DictionaryProvider } from '@generaltranslation/react-core/components';
+import { DictionaryProvider } from '@generaltranslation/react-core/compat';
 
 // The root provider imports react-native, which vitest cannot parse.
 vi.mock('../../provider/GTProvider', () => ({ GTProvider: vi.fn() }));

@@ -115,6 +115,10 @@
                 "message": "RSC-safe modules must not import the hooks entry; import from @generaltranslation/react-core/components-rsc or pure helpers instead."
               },
               {
+                "name": "@generaltranslation/react-core/compat",
+                "message": "RSC-safe modules must not import the compat entry; it exports context-backed hooks and components."
+              },
+              {
                 "name": "react",
                 "importNames": [
                   "createContext",

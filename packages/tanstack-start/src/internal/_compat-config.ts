@@ -1,4 +1,4 @@
-import type { DictionaryConfig } from 'gt-i18n/internal';
+import type { DictionaryConfig } from 'gt-i18n/internal/compat';
 
 /**
  * Replaced at build time by the gt-tanstack-start Vite plugin with the app's

@@ -7,6 +7,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const runtimeEntryNames = [
+  'compat',
   'components',
   'components-rsc',
   'hooks',

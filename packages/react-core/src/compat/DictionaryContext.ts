@@ -1,8 +1,5 @@
-import {
-  createGlobalSingleton,
-  type Locale,
-  type Dictionary,
-} from 'gt-i18n/internal';
+import { createGlobalSingleton, type Locale } from 'gt-i18n/internal';
+import type { Dictionary } from 'gt-i18n/internal/compat';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { createContext, useContext, type Context } from 'react';
 import type { CompatStore } from './CompatStore';
