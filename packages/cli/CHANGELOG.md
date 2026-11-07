@@ -1,5 +1,17 @@
 # gtx-cli
 
+## 2.27.3
+
+### Patch Changes
+
+- [#2661](https://github.com/generaltranslation/gt/pull/2661) [`b3c3647`](https://github.com/generaltranslation/gt/commit/b3c3647239a6c44c3549e722b7001b83624865f8) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Source files over the upload route's inline limit (20MB, or more than a request can carry with their `formatMetadata`) are uploaded straight to storage, content and `formatMetadata` both, and sent by reference, so `gt stage` and `gt translate` no longer fail with 413 on large files or large source-code context. `@generaltranslation/api` adds `createFileUploads`, `putFileUpload`, and `uploadSourceFileReferences`.
+
+- Updated dependencies [[`b3c3647`](https://github.com/generaltranslation/gt/commit/b3c3647239a6c44c3549e722b7001b83624865f8)]:
+  - generaltranslation@9.5.11
+  - @generaltranslation/python-extractor@0.2.66
+  - @generaltranslation/supported-locales@2.1.47
+  - @generaltranslation/vue-extractor@0.1.25
+
 ## 2.27.2
 
 ### Patch Changes

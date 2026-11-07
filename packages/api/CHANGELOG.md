@@ -1,5 +1,11 @@
 # @generaltranslation/api
 
+## 0.6.0
+
+### Minor Changes
+
+- [#2661](https://github.com/generaltranslation/gt/pull/2661) [`b3c3647`](https://github.com/generaltranslation/gt/commit/b3c3647239a6c44c3549e722b7001b83624865f8) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Source files over the upload route's inline limit (20MB, or more than a request can carry with their `formatMetadata`) are uploaded straight to storage, content and `formatMetadata` both, and sent by reference, so `gt stage` and `gt translate` no longer fail with 413 on large files or large source-code context. `@generaltranslation/api` adds `createFileUploads`, `putFileUpload`, and `uploadSourceFileReferences`.
+
 ## 0.5.7
 
 ### Patch Changes
