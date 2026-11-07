@@ -56,10 +56,9 @@ async function fetchPage(locale, path = '/', headers = {}) {
   return response.text();
 }
 
-// Drops scripts, whose RSC payload carries GTProvider's translation snapshot,
-// so only rendered markup is checked
-const fetchRenderedHtml = async (locale) =>
-  (await fetchPage(locale)).replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
+// Matches text rendered as an element's content (`>text<`), which the RSC
+// payload's copy of GTProvider's translation snapshot never is
+const isRendered = (html, text) => html.includes(`>${text}<`);
 
 async function waitForServer() {
   for (let attempt = 0; attempt < 120; attempt++) {
@@ -78,8 +77,8 @@ let failed = false;
 try {
   await waitForServer();
   for (const { locale, expected } of cases) {
-    const html = await fetchRenderedHtml(locale);
-    const missing = expected.filter((text) => !html.includes(text));
+    const html = await fetchPage(locale);
+    const missing = expected.filter((text) => !isRendered(html, text));
     if (missing.length) {
       failed = true;
       console.error(
