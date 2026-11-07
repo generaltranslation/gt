@@ -1,4 +1,4 @@
-import type { Translation } from '../../i18n-cache/translations-manager/utils/types/translation-data';
+import type { Content } from '@generaltranslation/format/types';
 
 /**
  * Callback that returns a translation embedded at the call site for a locale.
@@ -18,6 +18,6 @@ import type { Translation } from '../../i18n-cache/translations-manager/utils/ty
  *   locale === 'fr' ? 'Bonjour' : locale === 'es' ? 'Hola' : undefined
  * );
  */
-export type InlineTranslations<T extends Translation = Translation> = (
+export type InlineTranslations<T extends Content = Content> = (
   locale: string
 ) => T | undefined;
