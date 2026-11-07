@@ -2193,34 +2193,6 @@ importers:
         specifier: ^5
         version: 5.7.3
 
-  tests/apps/next-inline-translations:
-    dependencies:
-      gt-next:
-        specifier: workspace:*
-        version: link:../../../packages/next
-      next:
-        specifier: 16.2.9
-        version: 16.2.9(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.57.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(sass@1.77.4)
-      react:
-        specifier: 19.2.4
-        version: 19.2.4
-      react-dom:
-        specifier: 19.2.4
-        version: 19.2.4(react@19.2.4)
-    devDependencies:
-      '@types/node':
-        specifier: ^20
-        version: 20.19.17
-      '@types/react':
-        specifier: ^19
-        version: 19.2.14
-      '@types/react-dom':
-        specifier: ^19
-        version: 19.3.0(@types/react@19.2.14)
-      typescript:
-        specifier: ^5
-        version: 5.9.3
-
   tests/apps/next-latest-locale-switch-no-routing:
     dependencies:
       gt-next:
@@ -28059,7 +28031,7 @@ snapshots:
       tinyglobby: 0.2.17
       yargs: 17.7.2
 
-  '@react-native/community-cli-plugin@0.81.1(@react-native-community/cli@20.0.0(bufferutil@4.0.9)(typescript@5.9.3))(@react-native/metro-config@0.81.1(@babel/core@7.29.0))(bufferutil@4.0.9)':
+  '@react-native/community-cli-plugin@0.81.1(@react-native-community/cli@20.0.0(bufferutil@4.0.9)(typescript@5.9.3))(@react-native/metro-config@0.81.1(@babel/core@7.29.0)(bufferutil@4.0.9))(bufferutil@4.0.9)':
     dependencies:
       '@react-native/dev-middleware': 0.81.1(bufferutil@4.0.9)
       debug: 4.4.3(supports-color@5.5.0)
@@ -28070,13 +28042,13 @@ snapshots:
       semver: 7.8.5
     optionalDependencies:
       '@react-native-community/cli': 20.0.0(bufferutil@4.0.9)(typescript@5.9.3)
-      '@react-native/metro-config': 0.81.1(@babel/core@7.29.0)
+      '@react-native/metro-config': 0.81.1(@babel/core@7.29.0)(bufferutil@4.0.9)
     transitivePeerDependencies:
       - bufferutil
       - supports-color
       - utf-8-validate
 
-  '@react-native/community-cli-plugin@0.81.5(@react-native-community/cli@20.0.0(bufferutil@4.0.9)(typescript@5.7.3))(@react-native/metro-config@0.81.1(@babel/core@7.29.0))(bufferutil@4.0.9)':
+  '@react-native/community-cli-plugin@0.81.5(@react-native-community/cli@20.0.0(bufferutil@4.0.9)(typescript@5.7.3))(@react-native/metro-config@0.81.1(@babel/core@7.29.0)(bufferutil@4.0.9))(bufferutil@4.0.9)':
     dependencies:
       '@react-native/dev-middleware': 0.81.5(bufferutil@4.0.9)
       debug: 4.4.3(supports-color@5.5.0)
@@ -28087,7 +28059,7 @@ snapshots:
       semver: 7.8.5
     optionalDependencies:
       '@react-native-community/cli': 20.0.0(bufferutil@4.0.9)(typescript@5.7.3)
-      '@react-native/metro-config': 0.81.1(@babel/core@7.29.0)
+      '@react-native/metro-config': 0.81.1(@babel/core@7.29.0)(bufferutil@4.0.9)
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -28200,7 +28172,7 @@ snapshots:
       - supports-color
     optional: true
 
-  '@react-native/metro-config@0.81.1(@babel/core@7.29.0)':
+  '@react-native/metro-config@0.81.1(@babel/core@7.29.0)(bufferutil@4.0.9)':
     dependencies:
       '@react-native/js-polyfills': 0.81.1
       '@react-native/metro-babel-transformer': 0.81.1(@babel/core@7.29.0)
@@ -28208,7 +28180,9 @@ snapshots:
       metro-runtime: 0.83.6
     transitivePeerDependencies:
       - '@babel/core'
+      - bufferutil
       - supports-color
+      - utf-8-validate
     optional: true
 
   '@react-native/normalize-colors@0.81.1': {}
@@ -31175,10 +31149,6 @@ snapshots:
   '@types/react-dom@19.2.3(@types/react@19.2.17)':
     dependencies:
       '@types/react': 19.2.17
-
-  '@types/react-dom@19.3.0(@types/react@19.2.14)':
-    dependencies:
-      '@types/react': 19.2.14
 
   '@types/react-dom@19.3.0(@types/react@19.3.0)':
     dependencies:
@@ -39670,7 +39640,7 @@ snapshots:
       '@jest/create-cache-key-function': 29.7.0
       '@react-native/assets-registry': 0.81.1
       '@react-native/codegen': 0.81.1(@babel/core@7.29.0)
-      '@react-native/community-cli-plugin': 0.81.1(@react-native-community/cli@20.0.0(bufferutil@4.0.9)(typescript@5.9.3))(@react-native/metro-config@0.81.1(@babel/core@7.29.0))(bufferutil@4.0.9)
+      '@react-native/community-cli-plugin': 0.81.1(@react-native-community/cli@20.0.0(bufferutil@4.0.9)(typescript@5.9.3))(@react-native/metro-config@0.81.1(@babel/core@7.29.0)(bufferutil@4.0.9))(bufferutil@4.0.9)
       '@react-native/gradle-plugin': 0.81.1
       '@react-native/js-polyfills': 0.81.1
       '@react-native/normalize-colors': 0.81.1
@@ -39717,7 +39687,7 @@ snapshots:
       '@jest/create-cache-key-function': 29.7.0
       '@react-native/assets-registry': 0.81.5
       '@react-native/codegen': 0.81.5(@babel/core@7.29.0)
-      '@react-native/community-cli-plugin': 0.81.5(@react-native-community/cli@20.0.0(bufferutil@4.0.9)(typescript@5.7.3))(@react-native/metro-config@0.81.1(@babel/core@7.29.0))(bufferutil@4.0.9)
+      '@react-native/community-cli-plugin': 0.81.5(@react-native-community/cli@20.0.0(bufferutil@4.0.9)(typescript@5.7.3))(@react-native/metro-config@0.81.1(@babel/core@7.29.0)(bufferutil@4.0.9))(bufferutil@4.0.9)
       '@react-native/gradle-plugin': 0.81.5
       '@react-native/js-polyfills': 0.81.5
       '@react-native/normalize-colors': 0.81.5
