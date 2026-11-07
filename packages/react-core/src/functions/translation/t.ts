@@ -77,7 +77,9 @@ export function resolveStringContent(
   const lookupOptions = createLookupOptions(locale, options, 'ICU');
   // Translations embedded at the call site win over loaded translations
   const translation =
-    inline?.(lookupOptions.$locale) ??
+    (getI18nConfig().requiresTranslation(lookupOptions.$locale)
+      ? inline?.(lookupOptions.$locale)
+      : undefined) ??
     i18nCache.lookupTranslation(lookupOptions.$locale, content, lookupOptions);
   return interpolateMessage({
     source: content,
