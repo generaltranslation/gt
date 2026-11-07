@@ -49,7 +49,7 @@ export async function saveLocalEdits(settings: Settings): Promise<boolean> {
   if (!fileRefs.length) return true;
 
   const { project } = createClients(settings);
-  if (!project) throw new Error(noProjectIdError);
+  if (!project) throw new Error(noProjectIdError(settings.dashboardUrl));
   const branchStep = new BranchStep(project, settings);
   const branchResult = await branchStep.run();
   if (!branchResult) {

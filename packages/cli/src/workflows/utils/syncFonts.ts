@@ -25,7 +25,7 @@ export async function syncFonts(settings: Settings): Promise<void> {
     return;
   }
   try {
-    if (!project) throw new Error(noProjectIdError);
+    if (!project) throw new Error(noProjectIdError(settings.dashboardUrl));
     const { orgId } = await project.get();
     const { summary, results } = await account.org(orgId).upsertAssets(fonts);
     if (summary.succeeded > 0) {

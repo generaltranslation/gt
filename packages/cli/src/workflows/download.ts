@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { Settings } from '../types/index.js';
 import { createClients } from '../utils/api.js';
 import type { EnqueueFilesResult } from './steps/EnqueueStep.js';
@@ -68,7 +68,7 @@ export async function runDownloadWorkflow({
   forceDownload?: boolean;
 }): Promise<boolean> {
   const { project } = createClients(options);
-  if (!project) throw new Error(noProjectIdError);
+  if (!project) throw new Error(noProjectIdError(options.dashboardUrl));
   if (!branchData) {
     // Run the branch step
     const branchStep = new BranchStep(project, options);

@@ -50,7 +50,7 @@ export async function runUploadFilesWorkflow({
     await syncFonts(options);
 
     const { project } = createClients(options);
-    if (!project) throw new Error(noProjectIdError);
+    if (!project) throw new Error(noProjectIdError(options.dashboardUrl));
 
     // Create workflow steps
     const branchStep = new BranchStep(project, options);

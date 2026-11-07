@@ -46,7 +46,7 @@ export async function runEnqueueWorkflow({
     await syncFonts(settings);
 
     const { project } = createClients(settings);
-    if (!project) throw new Error(noProjectIdError);
+    if (!project) throw new Error(noProjectIdError(settings.dashboardUrl));
 
     // Create workflow with steps
     const branchStep = new BranchStep(project, settings);

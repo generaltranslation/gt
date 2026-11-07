@@ -250,7 +250,7 @@ export async function downloadFileBatch(
   let results: QueryFilesContentResponse['results'];
   try {
     const { project } = createClients(options);
-    if (!project) throw new Error(noProjectIdError);
+    if (!project) throw new Error(noProjectIdError(options.dashboardUrl));
     ({ results } = await project.queryFilesContent(files));
   } catch (error) {
     logger.error(

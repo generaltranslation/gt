@@ -309,7 +309,8 @@ describe('Save Local Edits', () => {
       ])
     );
     mocks.uploadTranslations.mockResolvedValue({
-      uploadedFiles: [{ fileId: 'page-en', locale: 'fr' }],
+      summary: { total: 1, succeeded: 1, failed: 0 },
+      results: [{ status: 'succeeded', fileId: 'page-en', locale: 'fr' }],
     });
     mocks.updateTranslationPreviewUrls.mockResolvedValue([
       new Error('API unavailable'),

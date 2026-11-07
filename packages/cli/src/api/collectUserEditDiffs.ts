@@ -87,7 +87,7 @@ export async function collectAndSendUserEditDiffs(
 ): Promise<UserEditDiffResults> {
   if (!settings.files) return { saved: [], failed: [] };
   const { project } = createClients(settings);
-  if (!project) throw new Error(noProjectIdError);
+  if (!project) throw new Error(noProjectIdError(settings.dashboardUrl));
 
   const { resolvedPaths, placeholderPaths, transformPaths, transformFormats } =
     settings.files;
