@@ -31,8 +31,13 @@ export type CreateFileUploadsResponse = {
 
 export type SourceFileReference = Omit<
   UploadSourceFilesData['body']['data'][number]['source'],
-  'content'
-> & { upload: { sha256: string } };
+  'content' | 'formatMetadata'
+> & {
+  upload: { sha256: string };
+  formatMetadata?:
+    | { content: Record<string, unknown> }
+    | { upload: { sha256: string } };
+};
 
 export type UploadSourceFileReferencesResponse = {
   summary: { total: number; succeeded: number; failed: number };

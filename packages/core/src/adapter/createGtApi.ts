@@ -38,6 +38,7 @@ import {
   type CreateProjectData,
   type CreateTagData,
   type DownloadFilesData,
+  type FileFormat,
   type EnqueueFileTranslationsData,
   type GenerateProjectContextData,
   type GetBranchInfoData,
@@ -94,10 +95,11 @@ function jsonByteLength(value: unknown): number {
     : new TextEncoder().encode(JSON.stringify(value)).byteLength;
 }
 
-/** PUTs a source file's bytes to storage unless the project already has them, then uploads it by reference; `formatMetadata` still travels in the request body. */
+/** PUTs a source file's bytes, and its formatMetadata when it has any, to storage unless the project already has them, then uploads it by reference to both. */
 async function uploadSourceFileReference(
   {
     content,
+    formatMetadata,
     ...source
   }: UploadSourceFilesData['body']['data'][number]['source'],
   options: {
@@ -107,28 +109,35 @@ async function uploadSourceFileReference(
   }
 ): Promise<UploadSourceFilesResponse['uploadedFiles'][number]> {
   const { client, projectId, sourceLocale } = options;
-  const bytes = decodeBytes(content);
-  const hash = bytesToHex(sha256(bytes));
-  const {
-    files: [created],
-  } = unwrapApiResult(
+  const stage = (bytes: Uint8Array<ArrayBuffer>, fileFormat: FileFormat) => ({
+    bytes,
+    fileFormat,
+    sha256: bytesToHex(sha256(bytes)),
+  });
+  const file = stage(decodeBytes(content), source.fileFormat);
+  const metadata =
+    formatMetadata &&
+    stage(new TextEncoder().encode(JSON.stringify(formatMetadata)), 'JSON');
+  const staged = metadata ? [file, metadata] : [file];
+  const { files: created } = unwrapApiResult(
     await createFileUploads({
       client,
       path: { projectId },
       body: {
-        files: [
-          {
-            sha256: hash,
-            fileFormat: source.fileFormat,
-            size: bytes.byteLength,
-          },
-        ],
+        files: staged.map(({ sha256: hash, fileFormat, bytes }) => ({
+          sha256: hash,
+          fileFormat,
+          size: bytes.byteLength,
+        })),
       },
     })
   );
-  if (created?.upload) {
-    await putFileUpload(created.upload, bytes);
-  }
+  await Promise.all(
+    created.map(({ sha256: hash, upload }) => {
+      const bytes = staged.find((item) => item.sha256 === hash)?.bytes;
+      return upload && bytes && putFileUpload(upload, bytes);
+    })
+  );
 
   const {
     results: [result],
@@ -137,7 +146,17 @@ async function uploadSourceFileReference(
       client,
       path: { projectId },
       body: {
-        data: [{ source: { ...source, upload: { sha256: hash } } }],
+        data: [
+          {
+            source: {
+              ...source,
+              upload: { sha256: file.sha256 },
+              ...(metadata && {
+                formatMetadata: { upload: { sha256: metadata.sha256 } },
+              }),
+            },
+          },
+        ],
         sourceLocale,
       },
     })

@@ -607,6 +607,9 @@ describe.sequential('createGtApiAdapter uploadSourceFiles', () => {
     locale: 'source',
     formatMetadata: { hash: { sourceCode: {} } },
   };
+  const metadataBytes = utf8ToBytes(JSON.stringify(large.formatMetadata));
+  const metadataHash = bytesToHex(sha256(metadataBytes));
+  const metadataPresigned = { ...presigned, url: `${presigned.url}/metadata` };
   const uploaded = (fileName: string, fileFormat: 'JSON' | 'GTJSON') => ({
     branchId: 'branch-id',
     fileId: `${fileName}-id`,
@@ -638,6 +641,11 @@ describe.sequential('createGtApiAdapter uploadSourceFiles', () => {
       result({
         files: [
           { sha256: largeHash, status: 'upload_required', upload: presigned },
+          {
+            sha256: metadataHash,
+            status: 'upload_required',
+            upload: metadataPresigned,
+          },
         ],
       }) as never
     );
@@ -654,7 +662,7 @@ describe.sequential('createGtApiAdapter uploadSourceFiles', () => {
     );
   });
 
-  it('sends a file over the inline limit by reference and the rest inline', async () => {
+  it('sends a file over the inline limit and its formatMetadata by reference, and the rest inline', async () => {
     const response = await configuredAdapter().uploadSourceFiles(
       [{ source: large }, { source: small }],
       { sourceLocale: 'source' }
@@ -686,14 +694,31 @@ describe.sequential('createGtApiAdapter uploadSourceFiles', () => {
               fileFormat: 'GTJSON',
               size: largeContent.length,
             },
+            {
+              sha256: metadataHash,
+              fileFormat: 'JSON',
+              size: metadataBytes.byteLength,
+            },
           ],
         },
       })
     );
-    const [putTarget, putBytes] = vi.mocked(putFileUpload).mock.calls[0]!;
-    expect(putTarget).toBe(presigned);
-    expect(bytesToHex(sha256(putBytes))).toBe(largeHash);
-    const { content: _content, ...largeSource } = large;
+    expect(
+      vi
+        .mocked(putFileUpload)
+        .mock.calls.map(([target, bytes]) => [
+          target,
+          bytesToHex(sha256(bytes)),
+        ])
+    ).toEqual([
+      [presigned, largeHash],
+      [metadataPresigned, metadataHash],
+    ]);
+    const {
+      content: _content,
+      formatMetadata: _metadata,
+      ...largeSource
+    } = large;
     expect(uploadSourceFileReferences).toHaveBeenCalledWith(
       expect.objectContaining({
         path: { projectId: 'project-id' },
@@ -704,6 +729,7 @@ describe.sequential('createGtApiAdapter uploadSourceFiles', () => {
                 ...largeSource,
                 locale: 'en-US',
                 upload: { sha256: largeHash },
+                formatMetadata: { upload: { sha256: metadataHash } },
               },
             },
           ],
@@ -719,7 +745,12 @@ describe.sequential('createGtApiAdapter uploadSourceFiles', () => {
 
   it('skips the PUT when the project already stores the bytes', async () => {
     vi.mocked(createFileUploads).mockResolvedValue(
-      result({ files: [{ sha256: largeHash, status: 'exists' }] }) as never
+      result({
+        files: [
+          { sha256: largeHash, status: 'exists' },
+          { sha256: metadataHash, status: 'exists' },
+        ],
+      }) as never
     );
 
     await configuredAdapter().uploadSourceFiles([{ source: large }], {
@@ -729,6 +760,29 @@ describe.sequential('createGtApiAdapter uploadSourceFiles', () => {
     expect(putFileUpload).not.toHaveBeenCalled();
     expect(uploadSourceFiles).not.toHaveBeenCalled();
     expect(uploadSourceFileReferences).toHaveBeenCalledOnce();
+  });
+
+  it('uploads only the content of a file without formatMetadata', async () => {
+    const { formatMetadata: _metadata, ...withoutMetadata } = large;
+    vi.mocked(createFileUploads).mockResolvedValue(
+      result({
+        files: [
+          { sha256: largeHash, status: 'upload_required', upload: presigned },
+        ],
+      }) as never
+    );
+
+    await configuredAdapter().uploadSourceFiles([{ source: withoutMetadata }], {
+      sourceLocale: 'source',
+    });
+
+    expect(
+      vi.mocked(createFileUploads).mock.calls[0]![0].body.files
+    ).toHaveLength(1);
+    expect(
+      vi.mocked(uploadSourceFileReferences).mock.calls[0]![0].body.data[0]!
+        .source
+    ).not.toHaveProperty('formatMetadata');
   });
 
   it('throws when the API reports the referenced file as failed', async () => {
