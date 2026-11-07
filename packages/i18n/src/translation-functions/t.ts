@@ -5,11 +5,13 @@ import {
 import { GTTranslationOptions } from './types/options';
 import { getDefaultLocale } from '../helpers/locale';
 import { getWritableConditionStore } from '../condition-store/singleton-operations';
+import type { InlineTranslations } from './inline/inlineTranslations';
 
 /**
  * Translate a message
  * @param {string} message - The message to translate.
  * @param options - The options for the translation.
+ * @param inline - Translations embedded at the call site, checked before loaded translations. Usually injected at build time.
  * @returns The translated message.
  */
 export const t: StringOrTemplateSyncResolutionFunction = (
@@ -18,14 +20,17 @@ export const t: StringOrTemplateSyncResolutionFunction = (
 ) => {
   if (typeof messageOrStrings === 'string') {
     const options = values.at(0) as GTTranslationOptions | undefined;
+    const inline = values.at(1) as InlineTranslations<string> | undefined;
     const conditionStore = getWritableConditionStore();
     const locale = conditionStore.getEnableI18n()
       ? (options?.$locale ?? conditionStore.getLocale())
       : getDefaultLocale();
-    return resolveStringContentWithFallback(locale, messageOrStrings, {
-      $format: 'ICU',
-      ...options,
-    });
+    return resolveStringContentWithFallback(
+      locale,
+      messageOrStrings,
+      { $format: 'ICU', ...options },
+      inline
+    );
   }
 
   return handleTaggedTemplateLiteralTranslation(messageOrStrings, values);
@@ -91,7 +96,11 @@ function extractInterpolatableValues(
 
 interface StringOrTemplateSyncResolutionFunction {
   (strings: TemplateStringsArray, ...values: unknown[]): string;
-  (message: string, options?: GTTranslationOptions): string;
+  (
+    message: string,
+    options?: GTTranslationOptions,
+    inline?: InlineTranslations<string>
+  ): string;
 }
 
 export type TemplateSyncResolutionFunction = (

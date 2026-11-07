@@ -1,7 +1,15 @@
 import { useCallback } from 'react';
-import { createLookupOptions, interpolateMessage } from 'gt-i18n/internal';
+import {
+  createLookupOptions,
+  interpolateMessage,
+  lookupInlineTranslation,
+} from 'gt-i18n/internal';
 import { useTranslationConditions } from './utils';
-import type { GTFunctionType, GTTranslationOptions } from 'gt-i18n/types';
+import type {
+  GTFunctionType,
+  GTTranslationOptions,
+  InlineTranslations,
+} from 'gt-i18n/types';
 import type { StringFormat } from '@generaltranslation/format/types';
 import { useDefaultLocale } from './i18n-config';
 import {
@@ -24,7 +32,11 @@ export function useGT(_messages?: Message[]): GTFunctionType {
    * gt() string translation callback
    */
   return useCallback(
-    (message: string, options: GTTranslationOptions = {}) => {
+    (
+      message: string,
+      options: GTTranslationOptions = {},
+      inline?: InlineTranslations<string>
+    ) => {
       const lookupOptions = createLookupOptions<StringFormat>(
         options.$locale ?? locale,
         options,
@@ -39,11 +51,14 @@ export function useGT(_messages?: Message[]): GTFunctionType {
         });
       }
 
-      const translation = resolveTranslation({
-        locale: lookupOptions.$locale,
-        message,
-        options: lookupOptions,
-      });
+      // Translations embedded at the call site win over loaded translations
+      const translation =
+        lookupInlineTranslation(inline, lookupOptions.$locale) ??
+        resolveTranslation({
+          locale: lookupOptions.$locale,
+          message,
+          options: lookupOptions,
+        });
 
       return interpolateMessage({
         source: message,
