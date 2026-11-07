@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { GT } from 'generaltranslation';
+import type { GeneralTranslation } from 'generaltranslation';
 import type { FileReference } from 'generaltranslation/types';
 import { filterFilesForEnqueue } from '../filterFilesForEnqueue.js';
 
@@ -34,7 +34,7 @@ describe('filterFilesForEnqueue', () => {
     });
 
     const result = await filterFilesForEnqueue({
-      gt: gt as unknown as GT,
+      gt: gt as unknown as GeneralTranslation,
       files: [file],
       locales: ['es', 'fr'],
     });
@@ -71,7 +71,7 @@ describe('filterFilesForEnqueue', () => {
     });
 
     const result = await filterFilesForEnqueue({
-      gt: gt as unknown as GT,
+      gt: gt as unknown as GeneralTranslation,
       files: [file],
       locales: ['es', 'fr'],
     });
@@ -82,7 +82,7 @@ describe('filterFilesForEnqueue', () => {
 
   it('does not query status when force is enabled', async () => {
     const result = await filterFilesForEnqueue({
-      gt: gt as unknown as GT,
+      gt: gt as unknown as GeneralTranslation,
       files: [file],
       locales: ['es'],
       force: true,
@@ -97,7 +97,7 @@ describe('filterFilesForEnqueue', () => {
     gt.queryFileData.mockRejectedValue(new Error('query failed'));
 
     const result = await filterFilesForEnqueue({
-      gt: gt as unknown as GT,
+      gt: gt as unknown as GeneralTranslation,
       files: [file],
       locales: ['es'],
     });

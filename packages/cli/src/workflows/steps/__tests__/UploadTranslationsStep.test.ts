@@ -11,7 +11,7 @@ import {
   type DownloadedVersionEntry,
 } from '../../../fs/config/downloadedVersions.js';
 import { hashStringSync } from '../../../utils/hash.js';
-import type { GT } from 'generaltranslation';
+import type { GeneralTranslation } from 'generaltranslation';
 import type { Settings } from '../../../types/index.js';
 import type { FileToUpload } from 'generaltranslation/types';
 
@@ -152,7 +152,7 @@ describe('UploadTranslationsStep', () => {
     });
 
     const step = new UploadTranslationsStep(
-      mockGt as unknown as GT,
+      mockGt as unknown as GeneralTranslation,
       mockSettings
     );
     const result = await step.run({ files });
@@ -184,7 +184,7 @@ describe('UploadTranslationsStep', () => {
     });
 
     const step = new UploadTranslationsStep(
-      mockGt as unknown as GT,
+      mockGt as unknown as GeneralTranslation,
       mockSettings
     );
     await step.run({ files: [withTranslations, withoutTranslations] });
@@ -197,7 +197,7 @@ describe('UploadTranslationsStep', () => {
 
   it('skips the upload entirely when no files have translations', async () => {
     const step = new UploadTranslationsStep(
-      mockGt as unknown as GT,
+      mockGt as unknown as GeneralTranslation,
       mockSettings
     );
     const result = await step.run({
@@ -227,7 +227,7 @@ describe('UploadTranslationsStep', () => {
     });
 
     const step = new UploadTranslationsStep(
-      mockGt as unknown as GT,
+      mockGt as unknown as GeneralTranslation,
       mockSettings
     );
     await step.run({
@@ -261,7 +261,7 @@ describe('UploadTranslationsStep', () => {
     });
 
     const step = new UploadTranslationsStep(
-      mockGt as unknown as GT,
+      mockGt as unknown as GeneralTranslation,
       mockSettings
     );
     await step.run({
@@ -284,7 +284,7 @@ describe('UploadTranslationsStep', () => {
     ]);
 
     const step = new UploadTranslationsStep(
-      mockGt as unknown as GT,
+      mockGt as unknown as GeneralTranslation,
       mockSettings
     );
     const result = await step.run({
@@ -307,7 +307,7 @@ describe('UploadTranslationsStep', () => {
     });
 
     const step = new UploadTranslationsStep(
-      mockGt as unknown as GT,
+      mockGt as unknown as GeneralTranslation,
       mockSettings
     );
     await step.run({
@@ -349,7 +349,7 @@ describe('UploadTranslationsStep', () => {
     });
 
     const step = new UploadTranslationsStep(
-      mockGt as unknown as GT,
+      mockGt as unknown as GeneralTranslation,
       mockSettings
     );
     await step.run({ files });
@@ -385,7 +385,7 @@ describe('UploadTranslationsStep', () => {
     });
 
     const step = new UploadTranslationsStep(
-      mockGt as unknown as GT,
+      mockGt as unknown as GeneralTranslation,
       mockSettings
     );
     const result = await step.run({ files });

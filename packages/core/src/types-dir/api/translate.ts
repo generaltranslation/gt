@@ -1,12 +1,5 @@
+import type { ErrorCode } from '@generaltranslation/api';
 import type { ContentFor, DataFormat } from '@generaltranslation/format/types';
-
-/**
- * TranslationResultReference is used to store the reference for a translation result.
- */
-export type TranslationResultReference = {
-  id?: string;
-  hash: string;
-};
 
 /**
  * TypedResult is a union type that represents the different types of translations that can be returned.
@@ -20,12 +13,12 @@ export type TypedResult = {
 }[DataFormat];
 
 /**
- * RequestError is a type that represents an error that occurred during a translation request.
+ * A translation that failed. `code` is the API's error code; new codes may appear.
  */
 export type TranslationError = {
   success: false;
   error: string;
-  code: number;
+  code: ErrorCode | (string & {});
 };
 
 /**

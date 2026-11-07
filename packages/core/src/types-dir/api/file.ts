@@ -10,14 +10,17 @@ export type { FileFormat };
  * base64-encoded, so the usual UTF-8 encode/decode steps are skipped and the
  * bytes reach the API unaltered.
  *
- * LOTTIE qualifies because it is a zip bundle. Apple's `.strings` and
+ * LOTTIE qualifies because it is a zip bundle, and PNG, JPEG and MP4 are media. Apple's `.strings` and
  * `.stringsdict` do not: they are text in whichever encoding Xcode wrote, and
  * the client decodes that to UTF-8 before upload and restores it on write, so
  * only the client ever handles their bytes.
  */
-export const BINARY_FILE_FORMATS: ReadonlySet<FileFormat> = new Set<FileFormat>(
-  ['LOTTIE']
-);
+const BINARY_FILE_FORMATS: ReadonlySet<FileFormat> = new Set<FileFormat>([
+  'LOTTIE',
+  'PNG',
+  'JPEG',
+  'MP4',
+]);
 
 /**
  * Whether a file format's content is carried as base64 end-to-end rather than
@@ -69,22 +72,6 @@ export type FileReference = {
   fileName: string;
   fileFormat: FileFormat;
   // Optional output format requested for generated translations.
-  transformFormat?: FileFormat;
-  dataFormat?: DataFormat;
-};
-
-/**
- * File reference object structure for referencing files.
- * @see {@link FileReference}
- * @property {string} [branchId] - The ID of the branch of the file
- */
-export type FileReferenceIds = Omit<
-  FileReference,
-  'branchId' | 'fileName' | 'fileFormat' | 'dataFormat'
-> & {
-  branchId?: string;
-  fileName?: string;
-  fileFormat?: FileFormat;
   transformFormat?: FileFormat;
   dataFormat?: DataFormat;
 };

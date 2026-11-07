@@ -118,16 +118,6 @@
         "default": "./dist/types.mjs"
       }
     },
-    "./errors": {
-      "require": {
-        "types": "./dist/errors.d.cts",
-        "default": "./dist/errors.cjs"
-      },
-      "import": {
-        "types": "./dist/errors.d.mts",
-        "default": "./dist/errors.mjs"
-      }
-    },
     "./diagnostics": {
       "require": {
         "types": "./dist/diagnostics.d.cts",

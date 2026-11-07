@@ -5,3 +5,5 @@ export function getCachedPluralRules(
 ): Intl.PluralRules {
   return intlCache.get('PluralRules', locales);
 }
+
+export { snapshotLocaleConfig } from './localeConfig';

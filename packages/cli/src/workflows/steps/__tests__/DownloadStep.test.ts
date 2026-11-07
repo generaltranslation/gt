@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import path from 'node:path';
-import type { GT } from 'generaltranslation';
+import type { GeneralTranslation } from 'generaltranslation';
 import type { Settings } from '../../../types/index.js';
 import { downloadFileBatch } from '../../../api/downloadFileBatch.js';
 import { logger } from '../../../console/logger.js';
@@ -64,7 +64,7 @@ describe('DownloadTranslationsStep', () => {
     };
 
     const step = new DownloadTranslationsStep(
-      mockGt as unknown as GT,
+      mockGt as unknown as GeneralTranslation,
       mockSettings as Settings
     );
     const success = await step.run({
@@ -157,7 +157,7 @@ describe('DownloadTranslationsStep review gating', () => {
 
     const fileTracker = makeTracker(fileName);
     const step = new DownloadTranslationsStep(
-      mockGt as unknown as GT,
+      mockGt as unknown as GeneralTranslation,
       makeSettings(reviewPaths)
     );
     const success = await step.run({
