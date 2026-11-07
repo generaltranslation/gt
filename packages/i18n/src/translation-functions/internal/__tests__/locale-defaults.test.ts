@@ -95,7 +95,7 @@ describe('translation function locale defaults', () => {
       {
         defaultLocale: 'en',
         locales: ['en', 'fr'],
-        devApiKey: 'dev-key',
+        apiKey: 'dev-key',
         projectId: 'project-id',
       },
       {
@@ -131,7 +131,7 @@ describe('translation function locale defaults', () => {
       {
         defaultLocale: 'en',
         locales: ['en', 'fr'],
-        devApiKey: 'dev-key',
+        apiKey: 'dev-key',
         projectId: 'project-id',
       },
       {
@@ -156,7 +156,7 @@ describe('translation function locale defaults', () => {
       {
         defaultLocale: 'en',
         locales: ['en', 'fr'],
-        devApiKey: 'dev-key',
+        apiKey: 'dev-key',
         projectId: 'project-id',
       },
       {

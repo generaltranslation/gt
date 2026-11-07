@@ -171,28 +171,16 @@ describe('I18nConfig', () => {
     ).toBe('en-GB');
   });
 
-  it('sends the dev API key as the runtime API key when no API key is set', () => {
-    vi.stubEnv('GT_API_KEY', '');
-    const runtime = (params: { apiKey?: string; devApiKey?: string }) =>
-      new I18nConfig({
-        projectId: 'project',
-        ...params,
-      }).getTranslationRuntime();
-
-    expect(runtime({ devApiKey: 'dev-key' }).apiKey).toBe('dev-key');
-    expect(runtime({ apiKey: 'key', devApiKey: 'dev-key' }).apiKey).toBe('key');
-  });
-
-  it('prefers the GT_API_KEY environment variable over the dev API key', () => {
+  it('prefers apiKey over the GT_API_KEY environment variable', () => {
     vi.stubEnv('GT_API_KEY', 'env-key');
-    const runtime = (params: { apiKey?: string; devApiKey?: string }) =>
+    const runtime = (params: { apiKey?: string }) =>
       new I18nConfig({
         projectId: 'project',
         ...params,
       }).getTranslationRuntime();
 
-    expect(runtime({ devApiKey: 'dev-key' }).apiKey).toBe('env-key');
-    expect(runtime({ apiKey: 'key', devApiKey: 'dev-key' }).apiKey).toBe('key');
+    expect(runtime({}).apiKey).toBe('env-key');
+    expect(runtime({ apiKey: 'key' }).apiKey).toBe('key');
   });
 
   it('builds a translation runtime only with a projectId and an API key', () => {
@@ -217,11 +205,11 @@ describe('I18nConfig', () => {
     });
   });
 
-  it('enables dev hot reload with dev credentials, a project id, and development environment', () => {
+  it('enables dev hot reload with an API key, a project id, and development environment', () => {
     vi.stubEnv('NODE_ENV', 'development');
 
     const config = new I18nConfig({
-      devApiKey: 'dev-key',
+      apiKey: 'dev-key',
       projectId: 'project-id',
     });
 
@@ -232,7 +220,7 @@ describe('I18nConfig', () => {
     vi.stubEnv('NODE_ENV', 'development');
 
     const config = new I18nConfig({
-      devApiKey: 'dev-key',
+      apiKey: 'dev-key',
       projectId: 'project-id',
       _disableDevHotReload: true,
     });
@@ -251,7 +239,7 @@ describe('I18nConfig', () => {
 
   it.each([
     {
-      name: 'missing dev API key',
+      name: 'missing API key',
       environment: 'development',
       config: {
         projectId: 'project-id',
@@ -261,14 +249,14 @@ describe('I18nConfig', () => {
       name: 'missing project id',
       environment: 'development',
       config: {
-        devApiKey: 'dev-key',
+        apiKey: 'dev-key',
       },
     },
     {
       name: 'disabled runtime URL',
       environment: 'development',
       config: {
-        devApiKey: 'dev-key',
+        apiKey: 'dev-key',
         projectId: 'project-id',
         runtimeUrl: null,
       },
@@ -277,7 +265,7 @@ describe('I18nConfig', () => {
       name: 'production environment',
       environment: 'production',
       config: {
-        devApiKey: 'dev-key',
+        apiKey: 'dev-key',
         projectId: 'project-id',
       },
     },

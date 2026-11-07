@@ -6,6 +6,8 @@ const originalNodeEnv = process.env.NODE_ENV;
 describe('runtime credentials', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
     process.env.NODE_ENV = originalNodeEnv;
   });
 
@@ -16,7 +18,7 @@ describe('runtime credentials', () => {
 
     expect(addRuntimeCredentials({})).toMatchObject({
       projectId: 'vite-project-id',
-      devApiKey: 'vite-dev-api-key',
+      apiKey: 'vite-dev-api-key',
     });
   });
 
@@ -28,22 +30,45 @@ describe('runtime credentials', () => {
     expect(
       addRuntimeCredentials({
         projectId: 'explicit-project-id',
-        devApiKey: 'explicit-dev-api-key',
+        apiKey: 'explicit-api-key',
       })
     ).toMatchObject({
       projectId: 'explicit-project-id',
-      devApiKey: 'explicit-dev-api-key',
+      apiKey: 'explicit-api-key',
     });
   });
 
-  it('does not read the dev api key outside development', () => {
+  it('does not read the Vite key outside development', () => {
     process.env.NODE_ENV = 'production';
     vi.stubEnv('VITE_GT_PROJECT_ID', 'vite-project-id');
     vi.stubEnv('VITE_GT_DEV_API_KEY', 'vite-dev-api-key');
 
     expect(addRuntimeCredentials({})).toMatchObject({
       projectId: 'vite-project-id',
-      devApiKey: undefined,
+      apiKey: undefined,
     });
+  });
+
+  it('ignores an explicit API key in production browser code and warns', () => {
+    process.env.NODE_ENV = 'production';
+    vi.stubGlobal('window', {});
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    expect(
+      addRuntimeCredentials({ projectId: 'project-id', apiKey: 'leaked-key' })
+    ).toMatchObject({ projectId: 'project-id', apiKey: undefined });
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('An API key reached production browser code')
+    );
+  });
+
+  it('keeps an explicit API key on a production server', () => {
+    process.env.NODE_ENV = 'production';
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    expect(addRuntimeCredentials({ apiKey: 'server-key' }).apiKey).toBe(
+      'server-key'
+    );
+    expect(warn).not.toHaveBeenCalled();
   });
 });

@@ -49,7 +49,7 @@ function createCache(overrides: Record<string, unknown> = {}) {
     defaultLocale = 'en',
     locales = ['en', 'fr', 'es'],
     projectId,
-    devApiKey,
+    apiKey,
     ...cacheOverrides
   } = overrides;
   resetGTGlobals();
@@ -57,7 +57,7 @@ function createCache(overrides: Record<string, unknown> = {}) {
     defaultLocale: defaultLocale as string,
     locales: locales as string[],
     projectId: projectId as string | undefined,
-    devApiKey: devApiKey as string | undefined,
+    apiKey: apiKey as string | undefined,
   });
 
   return new TestI18nCache({
@@ -65,7 +65,7 @@ function createCache(overrides: Record<string, unknown> = {}) {
       .fn()
       .mockResolvedValue({ [expectedHash]: translatedString }),
     projectId: projectId as string | undefined,
-    devApiKey: devApiKey as string | undefined,
+    apiKey: apiKey as string | undefined,
     ...cacheOverrides,
   });
 }
@@ -262,7 +262,7 @@ describe('I18nCache contract: lookup API', () => {
     } as never);
     const cache = createCache({
       projectId: 'test-project',
-      devApiKey: 'gtx-dev-key',
+      apiKey: 'gtx-dev-key',
       loadTranslations: vi.fn().mockResolvedValue({}),
     });
 
@@ -290,7 +290,7 @@ describe('I18nCache contract: lookup API', () => {
     } as never);
     const cache = createCache({
       projectId: 'test-project',
-      devApiKey: 'gtx-dev-key',
+      apiKey: 'gtx-dev-key',
       loadTranslations: vi.fn().mockResolvedValue({}),
     });
 
@@ -314,7 +314,7 @@ describe('I18nCache contract: lookup API', () => {
     const translateManySpy = spyOnTranslateMany();
     const cache = createCache({
       projectId: 'test-project',
-      devApiKey: 'gtx-dev-key',
+      apiKey: 'gtx-dev-key',
     });
 
     const resolver = await cache.getLookupTranslation('fr');

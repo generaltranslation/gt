@@ -105,7 +105,6 @@ class I18nCache<TranslationValue extends Content = Content> {
 
     this.config = {
       projectId: params.projectId,
-      devApiKey: params.devApiKey,
       apiKey: params.apiKey,
       runtimeUrl: params.runtimeUrl,
       modelProvider: params.modelProvider,
@@ -468,11 +467,11 @@ function validateCacheParams(params: I18nCacheConstructorParams): void {
           })
       );
     }
-    if (!params.devApiKey && !params.apiKey) {
+    if (!params.apiKey) {
       logger.warn(
         'I18nCache: ' +
           createDiagnosticMessage({
-            whatHappened: 'Runtime translation needs devApiKey or apiKey',
+            whatHappened: 'Runtime translation needs an apiKey',
             fix: 'Add credentials to the I18nCache config or disable runtime translation',
           })
       );

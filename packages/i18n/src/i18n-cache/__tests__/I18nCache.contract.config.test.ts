@@ -108,7 +108,7 @@ describe('I18nCache config contract', () => {
       'Runtime translation needs a projectId'
     );
     expect(String(warnings[1][0])).toContain(
-      'Runtime translation needs devApiKey or apiKey'
+      'Runtime translation needs an apiKey'
     );
   });
 

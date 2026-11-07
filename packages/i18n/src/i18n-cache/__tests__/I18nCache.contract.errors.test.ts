@@ -209,7 +209,7 @@ describe('I18nCache error contract', () => {
     await expect(
       cache.lookupTranslationWithFallback('fr', message, lookupOptions)
     ).rejects.toThrow(
-      "gt-i18n Error: Runtime translation needs an API key. Set `apiKey` (or `devApiKey` in development) in your framework's GT configuration or the GT_API_KEY environment variable, or disable runtime translation."
+      "gt-i18n Error: Runtime translation needs an API key. Set `apiKey` in your framework's GT configuration or the GT_API_KEY environment variable, or disable runtime translation."
     );
     expect(fetchMock).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
