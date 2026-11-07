@@ -18,3 +18,8 @@ export function isArgumentName(name: string): boolean {
 
 /** The plural or select branch used when no other branch matches. */
 export const FALLBACK_BRANCH_KEY = 'other';
+
+/** A plural key named for a locale's category, like `one`: not `other` or an exact `=N`. */
+export function isPluralCategoryKey(key: string): boolean {
+  return key !== FALLBACK_BRANCH_KEY && key[0] !== '=';
+}
