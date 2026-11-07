@@ -1,5 +1,5 @@
 import { compileScript, compileTemplate, parse } from '@vue/compiler-sfc';
-import type { JsxChildren } from '@generaltranslation/format/types';
+import type { JsxChildren } from '@generaltranslation/format';
 import { describe, expect, it } from 'vitest';
 import { extractFromVueSource } from './testVueCompiler.js';
 

@@ -1,6 +1,8 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import type { ScopedConditionStoreInterface } from 'gt-i18n/internal/types';
-import { getI18nConfig } from 'gt-i18n/internal';
+import {
+  getI18nConfig,
+  type ScopedConditionStoreInterface,
+} from 'gt-i18n/internal';
 
 type Store = {
   locale: string;

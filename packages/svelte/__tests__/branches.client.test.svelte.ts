@@ -1,10 +1,6 @@
 import { flushSync, mount, unmount } from 'svelte';
 import { afterEach, describe, expect, it } from 'vitest';
-import type {
-  Content,
-  JsxChild,
-  JsxElement,
-} from '@generaltranslation/format/types';
+import type { Content, JsxChild, JsxElement } from '@generaltranslation/format';
 import BranchElements from './fixtures/BranchElements.svelte';
 import Harness from './fixtures/Harness.svelte';
 import { hashesOf, setupGT } from './helpers';

@@ -3,8 +3,8 @@ import {
   getI18nConfig as getBaseI18nConfig,
   I18nConfig,
   setI18nConfig as setBaseI18nConfig,
+  type I18nConfigParams as BaseI18nConfigParams,
 } from 'gt-i18n/internal';
-import type { I18nConfigParams as BaseI18nConfigParams } from 'gt-i18n/internal/types';
 import {
   defaultEnableI18nCookieName,
   defaultLocaleCookieName,

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { analyzeSvelteSource } from '@generaltranslation/svelte-extractor';
 import { parse } from 'svelte/compiler';
-import type { Content } from '@generaltranslation/format/types';
+import type { Content } from '@generaltranslation/format';
 import { initializeGT } from '../src/runtime/config';
 
 /** Hashes of every `<T>` in a fixture, in source order. */

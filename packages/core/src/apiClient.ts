@@ -8,8 +8,8 @@ import {
 import {
   resolveCanonicalLocale,
   standardizeLocale,
+  type CustomMapping,
 } from '@generaltranslation/format';
-import type { CustomMapping } from '@generaltranslation/format/types';
 import { defaultBaseUrl } from './settings/settingsUrls';
 import type { GTAccountConfig, GTProjectConfig } from './clientConfig';
 

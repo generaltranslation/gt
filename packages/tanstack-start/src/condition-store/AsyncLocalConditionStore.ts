@@ -1,6 +1,6 @@
 import { getRequest } from '@tanstack/react-start/server';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
+import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal';
 import { resolveRequestConditions } from '../functions/requestConditions';
 import type { InitializeGTParams } from '../types/InitializeGTParams';
 

@@ -23,9 +23,7 @@ export { WritableConditionStore } from './condition-store/WritableConditionStore
 export type { WritableConditionStoreParams } from './condition-store/WritableConditionStore';
 export type { LocaleCandidates } from './i18n-config/I18nConfig';
 export { getI18nCache, setI18nCache } from './i18n-cache/singleton-operations';
-export { getVersionId } from './helpers/versionId';
 export { interpolateMessage } from './translation-functions/utils/interpolation/interpolateMessage';
-export { isEncodedTranslationOptions } from './translation-functions/utils/isEncodedTranslationOptions';
 export { extractVariables } from './utils/extractVariables';
 export {
   getDictionaryListenerKey,
@@ -54,4 +52,28 @@ export { createGlobalSingleton } from './globals/createGlobalSingleton';
 export type { GlobalSingleton } from './globals/createGlobalSingleton';
 export { getRuntimeEnvironment } from './utils/getRuntimeEnvironment';
 export { hashMessage } from './utils/hashMessage';
-export { getCookieValue, parseAcceptLanguage } from './utils/request';
+export { parseAcceptLanguage } from './utils/request';
+
+export type {
+  I18nCacheConstructorParams,
+  I18nCacheConfig,
+  LocaleResolverConfig,
+  ReadonlyConditionStoreInterface,
+  WritableConditionStoreInterface,
+  ScopedConditionStoreInterface,
+  AsyncReadonlyConditionStoreInterface,
+  DictionaryConfig,
+} from './i18n-cache/types';
+export type { TranslationsLoader } from './i18n-cache/translations-manager/translations-loaders/types';
+export type { DictionaryLoader } from './i18n-cache/translations-manager/DictionaryCache';
+export type {
+  DictionaryLookupOptions,
+  LookupOptions,
+  NormalizedLookupOptions,
+  TranslationMetadata,
+  TranslationOptions,
+} from './translation-functions/types/options';
+export type {
+  Hash,
+  Locale,
+} from './i18n-cache/translations-manager/TranslationsCache';

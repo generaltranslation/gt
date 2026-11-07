@@ -54,10 +54,6 @@
     "./project": {
       "types": "./dist/project.d.ts",
       "import": "./dist/project.js"
-    },
-    "./types": {
-      "types": "./dist/types.d.ts",
-      "import": "./dist/types.js"
     }
   },
   "files": [

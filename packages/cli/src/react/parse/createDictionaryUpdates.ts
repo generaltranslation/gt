@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'os';
 import { build, BuildOptions } from 'esbuild-wasm';
-import { Updates } from 'generaltranslation/types';
+import { Updates } from 'generaltranslation';
 import flattenDictionary from '../utils/flattenDictionary.js';
 import loadJSON from '../../fs/loadJSON.js';
 import { hashSource } from 'generaltranslation/id';

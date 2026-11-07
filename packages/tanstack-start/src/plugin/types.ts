@@ -1,4 +1,4 @@
-import type { GTCompilerOptions } from 'generaltranslation/types';
+import type { GTCompilerOptions } from 'generaltranslation';
 import type { InitializeGTParams } from '../types/InitializeGTParams';
 
 /** Mirrors gt-next's withGTConfig experimentalCompilerOptions. */

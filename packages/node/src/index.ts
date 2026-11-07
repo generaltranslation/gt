@@ -12,3 +12,14 @@ export {
   getLocales,
   getVersionId,
 } from 'gt-i18n';
+
+export type {
+  GTFunctionType,
+  GTTranslationOptions,
+  MFunctionType,
+  RuntimeTranslationOptions,
+  TFunctionType,
+} from 'gt-i18n';
+export type { InitializeGTParams } from './setup/types';
+export type { GTConfig } from 'generaltranslation';
+export type { TranslationsLoader } from 'gt-i18n/internal';

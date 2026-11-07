@@ -1,7 +1,5 @@
-import {
-  decodeOptions,
-  isEncodedTranslationOptions,
-} from 'gt-i18n/internal/string';
+import { decodeOptions } from 'gt-i18n';
+import { isEncodedTranslationOptions } from 'gt-i18n/internal/string';
 import {
   translateString,
   type InternalStringOptions,

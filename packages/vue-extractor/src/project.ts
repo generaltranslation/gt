@@ -9,7 +9,6 @@ export { extractFromVueProject } from './internal/project/extractFromVueProject.
 export { mergeVueProjectExtraction } from './internal/project/mergeVueProjectExtraction.js';
 export type {
   VueProjectExtractionOptions,
-  VueProjectInspection,
   VueProjectExtractionOutput,
   VueProjectExtractionResult,
 } from './types.js';

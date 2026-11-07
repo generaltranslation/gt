@@ -1,8 +1,8 @@
 import { useEffect, useMemo, type ReactNode } from 'react';
 import { I18nStore } from '../i18n-store/I18nStore';
-import type { Dictionary } from 'gt-i18n/types';
-import type { Content } from '@generaltranslation/format/types';
-import type { Locale, Hash } from 'gt-i18n/internal/types';
+import type { Dictionary } from 'gt-i18n';
+import type { Locale, Hash } from 'gt-i18n/internal';
+import type { Content } from '@generaltranslation/format';
 import { getGTContext } from './context';
 import type {
   OnMissingDictionaryEntry,

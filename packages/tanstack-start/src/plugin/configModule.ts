@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { GTConfig } from 'generaltranslation/types';
+import type { GTConfig } from 'generaltranslation';
 import {
   createConfigReadError,
   createInvalidExportError,

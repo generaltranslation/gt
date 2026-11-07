@@ -10,7 +10,7 @@ import { createFileMapping } from '../formats/files/fileMapping.js';
 import { getGitUnifiedDiff } from '../utils/gitDiff.js';
 import { createClients } from '../utils/api.js';
 import { noProjectIdError } from '../console/index.js';
-import { FileReference, isBinaryFileFormat } from 'generaltranslation/types';
+import { FileReference, isBinaryFileFormat } from 'generaltranslation';
 import type {
   FileFormat,
   OverwriteTranslationsData,

@@ -11,9 +11,8 @@ import {
   type DownloadedVersionEntry,
 } from '../../../fs/config/downloadedVersions.js';
 import { hashStringSync } from '../../../utils/hash.js';
-import type { GeneralTranslation } from 'generaltranslation';
+import type { GeneralTranslation, FileToUpload } from 'generaltranslation';
 import type { Settings } from '../../../types/index.js';
-import type { FileToUpload } from 'generaltranslation/types';
 import {
   clearWarnings,
   getWarnings,

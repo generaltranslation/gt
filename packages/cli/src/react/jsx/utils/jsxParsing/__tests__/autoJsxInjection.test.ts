@@ -16,10 +16,10 @@ import { parse } from '@babel/parser';
 import traverse, { NodePath } from '@babel/traverse';
 import { parseTranslationComponent } from '../parseJsx.js';
 import { ParsingConfigOptions } from '../../../../../types/parsing.js';
-import { Updates } from 'generaltranslation/types';
+import { Updates } from 'generaltranslation';
 import { hashSource } from 'generaltranslation/id';
 import { Libraries } from '../../../../../types/libraries.js';
-import type { JsxChild } from '@generaltranslation/format/types';
+import type { JsxChild } from '@generaltranslation/format';
 import { getPathsAndAliases } from '../../getPathsAndAliases.js';
 import {
   ensureTAndVarImported,

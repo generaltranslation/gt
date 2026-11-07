@@ -1,6 +1,10 @@
 import { logger } from '../../console/logger.js';
 import { recordWarning } from '../../state/translateWarnings.js';
-import type { ProjectHandle } from 'generaltranslation';
+import type {
+  ProjectHandle,
+  FileReference,
+  FileToUpload,
+} from 'generaltranslation';
 import { Settings } from '../../types/index.js';
 import chalk from 'chalk';
 import {
@@ -10,7 +14,6 @@ import {
   type EntryMap,
 } from '../../fs/config/downloadedVersions.js';
 import { hashStringSync } from '../../utils/hash.js';
-import type { FileReference, FileToUpload } from 'generaltranslation/types';
 
 type UploadTranslationsInput = {
   files: {

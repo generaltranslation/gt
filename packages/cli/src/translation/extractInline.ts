@@ -1,8 +1,8 @@
 import {
   planVueExtraction,
-  type InlineExtractionOutput,
   type PrimaryInlineExtractor,
 } from '@generaltranslation/vue-extractor/integration';
+import type { InlineExtractionOutput } from '@generaltranslation/vue-extractor/project';
 import { planSvelteExtraction } from '@generaltranslation/svelte-extractor/integration';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import type { InlineLibrary } from '../types/libraries.js';

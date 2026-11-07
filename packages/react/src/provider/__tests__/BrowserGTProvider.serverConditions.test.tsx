@@ -7,18 +7,15 @@ import { useLocale, useSetLocale } from '@generaltranslation/react-core/hooks';
 import { BrowserGTProvider } from '../BrowserGTProvider';
 
 // Keep the real provider/context, isolating only translation-cache work.
-vi.mock(
-  '@generaltranslation/react-core/components',
-  async (importOriginal) => ({
-    ...(await importOriginal<
-      typeof import('@generaltranslation/react-core/components')
-    >()),
-    I18nStore: class {
-      updateTranslations() {}
-      updateDictionaries() {}
-    },
-  })
-);
+vi.mock('@generaltranslation/react-core/pure', async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import('@generaltranslation/react-core/pure')
+  >()),
+  I18nStore: class {
+    updateTranslations() {}
+    updateDictionaries() {}
+  },
+}));
 
 function Counter() {
   const [count, setCount] = useState(0);

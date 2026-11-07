@@ -3,10 +3,10 @@ import {
   getI18nConfig,
   setI18nCache,
   type I18nCache,
+  type Locale,
 } from 'gt-i18n/internal';
-import type { Locale } from 'gt-i18n/internal/types';
-import type { Dictionary } from 'gt-i18n/types';
-import type { Content } from '@generaltranslation/format/types';
+import type { Dictionary } from 'gt-i18n';
+import type { Content } from '@generaltranslation/format';
 import {
   ReactI18nCache,
   type ReactI18nCacheParams,
