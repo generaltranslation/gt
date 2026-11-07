@@ -12,7 +12,7 @@ use crate::visitor::TransformVisitor;
 use crate::{
   config::PluginConfig,
   visitor::{
-    analysis::{is_msg_name, is_translation_function_callback, is_translation_function_name},
+    analysis::{is_translation_function_callback, is_translation_function_name},
     errors::create_dynamic_content_warning,
     expr_utils::{get_callee_expr_function_name, is_allowed_dynamic_content},
   },
@@ -310,12 +310,6 @@ impl Fold for TransformVisitor {
           if let Some(modified_call_expr) =
             self.inject_hash_attributes_on_translation_function_call(&call_expr)
           {
-            return modified_call_expr.fold_children_with(self);
-          }
-        }
-        // Detect msg() calls (inline translations only)
-        else if is_msg_name(&original_name) {
-          if let Some(modified_call_expr) = self.inject_inline_translations_on_msg_call(&call_expr) {
             return modified_call_expr.fold_children_with(self);
           }
         }

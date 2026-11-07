@@ -3,9 +3,11 @@ import * as t from '@babel/types';
 import { validateTranslationFunction } from '../validation/validateTranslationFunction';
 import { injectHashIntoTranslationOptions } from './injectHashIntoTranslationOptions';
 import { NodePath } from '@babel/traverse';
+import { injectInlineTranslationsArgument } from './inline-translations/injectInlineTranslations';
 
 /**
- * Injects $_hash into standalone t() invocations.
+ * Injects $_hash and the inline translations callback into standalone t()
+ * invocations.
  */
 export function injectStandaloneTFunctionParameters(
   callExprPath: NodePath<t.CallExpression>,
@@ -26,6 +28,7 @@ export function injectStandaloneTFunctionParameters(
   // even when the call already has $_hash.
   const counterId = state.stringCollector.incrementCounter();
   if (params.hash !== undefined) {
+    injectInlineTranslationsArgument(callExpr, params.hash, state);
     return;
   }
 
@@ -38,4 +41,5 @@ export function injectStandaloneTFunctionParameters(
   }
 
   injectHashIntoTranslationOptions(callExpr, translationHash.hash);
+  injectInlineTranslationsArgument(callExpr, translationHash.hash, state);
 }

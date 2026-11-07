@@ -19,11 +19,6 @@ const HELLO_WORLD: &str = "05a87bce151d258b";
 const HELLO: &str = "3cdffbf6452b553c";
 /// ICU hash of "Hi {name}" with context "greeting"
 const HI_NAME_GREETING: &str = "38c4f65da6af0191";
-/// ICU hashes of "One" and "Two"
-const ONE: &str = "96a93e38f1e950da";
-const TWO: &str = "7c70e98c5cdb173f";
-/// STRING hash of "Hello"
-const STRING_HELLO: &str = "c6e2133cd6d89e5d";
 /// JSX hash of <T>Hello world</T>
 const JSX_HELLO_WORLD: &str = "ebc5c5a5022c5050";
 
@@ -219,97 +214,18 @@ fn skips_t_without_embedded_translations() {
 // ===== msg() ===== //
 
 #[test]
-fn injects_msg_callbacks_after_an_undefined_options_argument() {
+fn never_embeds_translations_in_msg_calls() {
+  // msg() strings load from the msg()-only translations file instead
   let output = transform(
     r#"
       import { msg } from 'gt-next';
       export const a = msg("Hello");
+      export const b = msg("Hello", { $id: "greeting" });
     "#,
     translations(&["fr"], serde_json::json!({ "fr": { HELLO: "Bonjour" } })),
-  );
-  assert!(
-    output.contains(r#"msg("Hello", undefined, (locale)=>locale === "fr" ? "Bonjour" : undefined)"#),
-    "{output}"
-  );
-}
-
-#[test]
-fn hashes_msg_options_the_same_way_as_the_runtime() {
-  let output = transform(
-    r#"
-      import { msg } from 'gt-next';
-      export const a = msg("Hi {name}", { name: "x", $context: "greeting" });
-    "#,
-    translations(&["fr"], serde_json::json!({ "fr": { HI_NAME_GREETING: "Salut {name}" } })),
-  );
-  assert!(output.contains(r#"(locale)=>locale === "fr" ? "Salut {name}" : undefined"#), "{output}");
-}
-
-#[test]
-fn hashes_string_format_msg_calls() {
-  let output = transform(
-    r#"
-      import { msg } from 'gt-next';
-      export const a = msg("Hello", { $format: "STRING" });
-    "#,
-    translations(&["fr"], serde_json::json!({ "fr": { STRING_HELLO: "Bonjour" } })),
-  );
-  assert!(output.contains(r#"(locale)=>locale === "fr" ? "Bonjour" : undefined"#), "{output}");
-}
-
-#[test]
-fn injects_per_element_translations_for_msg_arrays() {
-  let output = transform(
-    r#"
-      import { msg } from 'gt-next';
-      export const a = msg(["One", "Two"]);
-    "#,
-    translations(
-      &["fr", "es"],
-      serde_json::json!({
-        "fr": { ONE: "Un", TWO: "Deux" },
-        "es": { TWO: "Dos" },
-      }),
-    ),
-  );
-  assert!(
-    output.contains(
-      r#"(locale)=>locale === "fr" ? [
-        "Un",
-        "Deux"
-    ] : locale === "es" ? [
-        undefined,
-        "Dos"
-    ] : undefined"#
-    ),
-    "{output}"
-  );
-}
-
-#[test]
-fn leaves_msg_untouched_without_embedded_translations() {
-  let output = transform(
-    r#"
-      import { msg } from 'gt-next';
-      export const a = msg(["One", "Two"], { $id: "nums" });
-      export const b = msg("Hello");
-    "#,
-    translations(&["fr"], serde_json::json!({ "fr": {} })),
   );
   assert!(!output.contains("(locale)=>"), "{output}");
   assert!(output.contains(r#"msg("Hello")"#), "{output}");
-}
-
-#[test]
-fn ignores_msg_from_other_packages() {
-  let output = transform(
-    r#"
-      import { msg } from 'other';
-      export const a = msg("Hello");
-    "#,
-    translations(&["fr"], serde_json::json!({ "fr": { HELLO: "Bonjour" } })),
-  );
-  assert!(!output.contains("(locale)=>"), "{output}");
 }
 
 // ===== derive (not supported) ===== //
@@ -336,20 +252,6 @@ fn skips_gt_calls_with_derive_context() {
       gt("Hello world", { $context: derive(getContext()) });
     "#,
     translations(&["fr"], serde_json::json!({ "fr": { HELLO_WORLD: "Bonjour le monde" } })),
-  );
-  assert!(!output.contains("(locale)=>"), "{output}");
-}
-
-#[test]
-fn skips_msg_calls_with_derive_content() {
-  let output = transform(
-    r#"
-      import { msg, derive } from 'gt-next';
-      export const a = msg(`Hello ${derive(getName())}`);
-      export const b = msg(["Hello", derive(getName())]);
-      export const c = msg("Hello", { $context: derive(getContext()) });
-    "#,
-    translations(&["fr"], serde_json::json!({ "fr": { HELLO: "Bonjour" } })),
   );
   assert!(!output.contains("(locale)=>"), "{output}");
 }
@@ -415,44 +317,41 @@ fn uses_a_literal_hash_on_gt_calls() {
 }
 
 #[test]
-fn skips_msg_calls_with_requires_review() {
-  for code in [
-    r#"import { msg } from 'gt-next'; msg("Hello", { $requiresReview: true });"#,
-    r#"import { msg } from 'gt-next'; msg(["Hello"], { $requiresReview: true });"#,
-  ] {
-    let output = transform(code, hello_variants());
-    assert!(!output.contains("Bonjour"), "{output}");
-  }
-}
-
-#[test]
-fn embeds_msg_calls_with_requires_review_false() {
+fn skips_gt_calls_with_requires_review() {
   let output = transform(
-    r#"import { msg } from 'gt-next'; msg("Hello", { $requiresReview: false });"#,
-    hello_variants(),
-  );
-  assert!(output.contains("\"Plain Bonjour\""), "{output}");
-}
-
-#[test]
-fn skips_msg_calls_with_quoted_metadata_keys() {
-  let output = transform(
-    r#"import { msg } from 'gt-next'; msg("Hello", { '$context': 'greeting' });"#,
+    r#"import { useGT } from 'gt-next'; const gt = useGT(); gt("Hello", { $requiresReview: true });"#,
     hello_variants(),
   );
   assert!(!output.contains("Bonjour"), "{output}");
 }
 
 #[test]
-fn skips_msg_and_gt_calls_with_non_literal_context() {
+fn embeds_gt_calls_with_requires_review_false() {
+  let output = transform(
+    r#"import { useGT } from 'gt-next'; const gt = useGT(); gt("Hello", { $requiresReview: false });"#,
+    hello_variants(),
+  );
+  assert!(output.contains("\"Plain Bonjour\""), "{output}");
+}
+
+#[test]
+fn skips_gt_calls_with_quoted_metadata_keys() {
+  let output = transform(
+    r#"import { useGT } from 'gt-next'; const gt = useGT(); gt("Hello", { '$context': 'greeting' });"#,
+    hello_variants(),
+  );
+  assert!(!output.contains("Bonjour"), "{output}");
+}
+
+#[test]
+fn skips_gt_calls_with_non_literal_context() {
   let output = transform(
     r#"
-      import { useGT, msg } from 'gt-next';
+      import { useGT } from 'gt-next';
       const gt = useGT();
       const context = 'greeting';
       gt("Hello", { $context: context });
-      msg("Hello", { $context: context });
-      msg("Hello", { $context });
+      gt("Hello", { $context });
     "#,
     hello_variants(),
   );

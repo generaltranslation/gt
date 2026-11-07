@@ -30,11 +30,6 @@ pub fn is_derive_name(name: &Atom) -> bool {
   matches!(name.as_ref(), "derive")
 }
 
-/// Check if a name is msg (message registration)
-pub fn is_msg_name(name: &Atom) -> bool {
-  matches!(name.as_ref(), "msg")
-}
-
 #[cfg(test)]
 mod tests {
   use super::*;

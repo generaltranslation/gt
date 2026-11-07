@@ -12,15 +12,12 @@ use swc_core::{
 };
 
 use crate::visitor::analysis::{
-  is_branch_name, is_derive_name, is_msg_name, is_translation_component_name,
+  is_branch_name, is_derive_name, is_translation_component_name,
   is_translation_function_name, is_variable_component_name,
 };
 use crate::config::LocaleTranslations;
-use crate::visitor::expr_utils::contains_derive_call;
 use crate::visitor::jsx_utils::extract_attribute_from_jsx_attr;
-use crate::visitor::inline_translations::{
-  build_inline_array_translations_fn, build_inline_translations_fn, undefined_expr,
-};
+use crate::visitor::inline_translations::build_inline_translations_fn;
 
 /// Main transformation visitor for the SWC plugin
 pub struct TransformVisitor {
@@ -340,7 +337,6 @@ impl TransformVisitor {
                 || is_branch_name(&original_name)
                 || is_translation_function_name(&original_name)
                 || is_derive_name(&original_name)
-                || is_msg_name(&original_name)
               {
                 self
                   .import_tracker
@@ -819,90 +815,6 @@ pub fn validate_string_literal_or_derive(&self,expr: &Expr, errors: &mut Vec<Str
         expr: Box::new(inline),
       });
     }
-  }
-
-  /// Inject the inline translations callback into msg() invocations:
-  /// msg(message, options, (locale) => …).
-  ///
-  /// msg() does not take part in the injection counter, so hashes are computed
-  /// here. Derive content (derive(), autoderive, derive $context) is not
-  /// supported: its hash is only known per resolved variant at runtime, so
-  /// those calls are left untouched. Mirrors
-  /// @generaltranslation/compiler's injectMsgParameters.
-  pub fn inject_inline_translations_on_msg_call(&self, call_expr: &CallExpr) -> Option<CallExpr> {
-    if self.settings.inline_translations.is_empty() || call_expr.args.is_empty() || call_expr.args.len() > 2 {
-      return None;
-    }
-    if call_expr.args.iter().any(|arg| arg.spread.is_some()) {
-      return None;
-    }
-
-    let message = call_expr.args[0].expr.as_ref();
-    let options = call_expr.args.get(1);
-    if !has_static_hash_options(options) {
-      return None;
-    }
-    let (_, _, _, _, has_derive_context) = extract_id_and_context_from_options(options);
-    if has_derive_context {
-      return None;
-    }
-    let user_hash = options.and_then(|options| get_string_prop_from_expr(options.expr.as_ref(), "$_hash"));
-
-    let inline = match message {
-      Expr::Array(array) => {
-        // A user-supplied $_hash would be shared by every element, so skip it
-        if user_hash.is_some() {
-          return None;
-        }
-        let mut hashes = Vec::with_capacity(array.elems.len());
-        for element in &array.elems {
-          let element = element.as_ref()?;
-          if element.spread.is_some() {
-            return None;
-          }
-          hashes.push(self.calculate_msg_hash(element.expr.as_ref(), options)?);
-        }
-        build_inline_array_translations_fn(&self.settings.inline_translations, &hashes, call_expr.span)?
-      }
-      _ => {
-        let hash = match user_hash {
-          Some(hash) => hash,
-          None => self.calculate_msg_hash(message, options)?,
-        };
-        build_inline_translations_fn(&self.settings.inline_translations, &hash, call_expr.span)?
-      }
-    };
-
-    let mut args = call_expr.args.clone();
-    if args.len() == 1 {
-      args.push(ExprOrSpread {
-        spread: None,
-        expr: Box::new(undefined_expr(call_expr.span)),
-      });
-    }
-    args.push(ExprOrSpread {
-      spread: None,
-      expr: Box::new(inline),
-    });
-    Some(CallExpr {
-      args,
-      ..call_expr.clone()
-    })
-  }
-
-  /// Hash a static msg() message (string literal or template literal without
-  /// expressions). None for derive or any other dynamic content.
-  fn calculate_msg_hash(&self, message: &Expr, options: Option<&ExprOrSpread>) -> Option<String> {
-    let is_static = match message {
-      Expr::Lit(Lit::Str(_)) => true,
-      Expr::Tpl(tpl) => tpl.exprs.is_empty(),
-      _ => false,
-    };
-    if !is_static || contains_derive_call(message) {
-      return None;
-    }
-    let (hash, _) = self.calculate_string_hash(message, options);
-    hash.filter(|hash| !hash.is_empty())
   }
 
   /// Check whether a JSX element has an attribute
