@@ -4,6 +4,8 @@ import { setI18nCache } from '../../../i18n-cache/singleton-operations';
 import { initializeI18nConfig } from '../../../i18n-config/singleton-operations';
 import { hashMessage } from '../../../utils/hashMessage';
 import { getGTInternal } from '../../internal/getGT';
+import { setWritableConditionStore } from '../../../condition-store/singleton-operations';
+import { t } from '../../t';
 
 type TestGlobal = typeof globalThis & {
   __generaltranslation?: unknown;
@@ -69,6 +71,33 @@ describe('inline translations', () => {
       const inline = vi.fn(() => 'Bonjour');
       gt('Hello', { $locale: 'es' }, inline);
       expect(inline).toHaveBeenCalledWith('es');
+    });
+  });
+
+  describe('t()', () => {
+    function setLocale(locale: string) {
+      setWritableConditionStore({
+        getLocale: () => locale,
+        getEnableI18n: () => true,
+      });
+    }
+
+    it('uses the inline translation for the locale', () => {
+      setLocale('fr');
+      expect(
+        t(
+          'Hello, {name}!',
+          { name: 'Alice' },
+          frInline({ fr: 'Salut, {name} !' })
+        )
+      ).toBe('Salut, Alice !');
+    });
+
+    it('ignores the callback for a $locale that does not need translation', () => {
+      setLocale('fr');
+      const inline = vi.fn(() => 'Bonjour');
+      expect(t('Hello', { $locale: 'en' }, inline)).toBe('Hello');
+      expect(inline).not.toHaveBeenCalled();
     });
   });
 });
