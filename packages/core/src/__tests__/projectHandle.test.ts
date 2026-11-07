@@ -934,8 +934,8 @@ describe.sequential('GeneralTranslation project and organization operations', ()
         ],
       });
       expect(putFileUpload).toHaveBeenCalledOnce();
-      const [upload, bytes, options] = vi.mocked(putFileUpload).mock.calls[0];
-      expect([upload, options]).toEqual([presigned, { timeoutMs: undefined }]);
+      const [upload, bytes] = vi.mocked(putFileUpload).mock.calls[0];
+      expect(upload).toEqual(presigned);
       // Comparing the hash: deep-equal on 4MB of bytes takes seconds.
       expect(bytesToHex(sha256(bytes))).toBe(hashOf(large));
       expect(bodyOf(uploadSourceFiles).data).toEqual([
@@ -948,6 +948,64 @@ describe.sequential('GeneralTranslation project and organization operations', ()
           },
         },
       ]);
+    });
+
+    it('sends formatMetadata inline as content while the file fits', async () => {
+      const formatMetadata = { keyedMetadata: { a: { context: 'Greeting' } } };
+
+      await configuredProject().uploadSourceFiles([
+        { source: { ...source('{"a":"A"}'), formatMetadata } },
+      ]);
+
+      expect(createFileUploads).not.toHaveBeenCalled();
+      expect(bodyOf(uploadSourceFiles).data[0].source).toMatchObject({
+        formatMetadata: { content: formatMetadata },
+      });
+    });
+
+    it("PUTs a large source's formatMetadata as JSON and sends a reference to it too", async () => {
+      const formatMetadata = { keyedMetadata: { a: { context: 'Greeting' } } };
+      const metadataJson = JSON.stringify(formatMetadata);
+
+      await configuredProject().uploadSourceFiles([
+        { source: { ...source(large), formatMetadata } },
+      ]);
+
+      expect(bodyOf(createFileUploads)).toEqual({
+        files: [
+          { sha256: hashOf(large), fileFormat: 'JSON', size: large.length },
+          {
+            sha256: hashOf(metadataJson),
+            fileFormat: 'JSON',
+            size: metadataJson.length,
+          },
+        ],
+      });
+      expect(putFileUpload).toHaveBeenCalledTimes(2);
+      expect(bodyOf(uploadSourceFiles).data[0].source).toMatchObject({
+        upload: { sha256: hashOf(large) },
+        formatMetadata: { upload: { sha256: hashOf(metadataJson) } },
+      });
+    });
+
+    it("leaves a translation upload's source without formatMetadata", async () => {
+      await configuredProject().uploadTranslations([
+        {
+          source: { ...source('{"a":"A"}'), formatMetadata: { a: {} } },
+          translations: [
+            {
+              content: '{"a":"B"}',
+              fileName: 'messages.json',
+              fileFormat: 'JSON',
+              locale: 'fr',
+            },
+          ],
+        },
+      ]);
+
+      expect(bodyOf(uploadTranslations).data[0].source).not.toHaveProperty(
+        'formatMetadata'
+      );
     });
 
     it('PUTs at most four files at a time', async () => {

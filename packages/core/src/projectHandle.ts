@@ -834,20 +834,26 @@ export class ProjectHandle extends GTRuntime {
       const request = this.request(options.timeout);
       const contents = await stageFileContents(
         request,
-        batch.map(({ source }) => source),
-        options.timeout
+        batch.map(({ source }) => source)
       );
       return unwrapApiResult(
         await uploadSourceFiles({
           ...request,
           body: {
-            data: batch.map(({ source: { content: _, ...source } }, index) => ({
-              source: {
-                ...source,
-                ...contents[index],
-                locale: this.resolveServiceLocale(source.locale),
-              },
-            })),
+            data: batch.map(
+              (
+                {
+                  source: { content: _, formatMetadata: _metadata, ...source },
+                },
+                index
+              ) => ({
+                source: {
+                  ...source,
+                  ...contents[index],
+                  locale: this.resolveServiceLocale(source.locale),
+                },
+              })
+            ),
             ...(sourceLocale !== undefined && {
               sourceLocale: this.resolveServiceLocale(sourceLocale),
             }),
@@ -874,13 +880,15 @@ export class ProjectHandle extends GTRuntime {
       DEFAULT_BATCH_SIZE,
       async (batch) => {
         const request = this.request(options.timeout);
+        // A translation upload never takes its source's formatMetadata.
         const contents = await stageFileContents(
           request,
-          batch.flatMap(({ source, translations }) => [
-            source,
-            ...translations,
-          ]),
-          options.timeout
+          batch.flatMap(
+            ({ source: { formatMetadata: _, ...source }, translations }) => [
+              source,
+              ...translations,
+            ]
+          )
         );
         let next = 0;
         return unwrapApiResult(
@@ -888,7 +896,10 @@ export class ProjectHandle extends GTRuntime {
             ...request,
             body: {
               data: batch.map(
-                ({ source: { content: _, ...source }, translations }) => ({
+                ({
+                  source: { content: _, formatMetadata: _metadata, ...source },
+                  translations,
+                }) => ({
                   source: {
                     ...source,
                     ...contents[next++],
