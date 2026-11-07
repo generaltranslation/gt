@@ -15,6 +15,7 @@ export function injectInlineTranslationsArgument(
 ): void {
   const table = state.settings.inlineTranslationsTable;
   if (!table || !hash || callExpr.arguments.length !== 2) return;
+  if (canSpreadOverrideHash(callExpr.arguments[1])) return;
 
   const inline = buildInlineTranslationsFunction(table, hash);
   if (inline) callExpr.arguments.push(inline);
@@ -30,9 +31,34 @@ export function injectInlineTranslationsProp(
 ): void {
   const table = state.settings.inlineTranslationsTable;
   if (!table || !hash) return;
+  // A spread could carry its own _hash or inline prop
+  if (props.properties.some((prop) => t.isSpreadElement(prop))) return;
 
   const inline = buildInlineTranslationsFunction(table, hash);
   if (inline) {
     props.properties.push(t.objectProperty(t.identifier('inline'), inline));
   }
+}
+
+/**
+ * Whether the hash the runtime reads could differ from the one embedded: a
+ * spread after the last $_hash can replace it at runtime.
+ */
+function canSpreadOverrideHash(options: t.Node | undefined): boolean {
+  if (!t.isObjectExpression(options)) return true;
+  let spreadAfterHash = false;
+  for (const prop of options.properties) {
+    if (t.isSpreadElement(prop)) spreadAfterHash = true;
+    else if (t.isObjectProperty(prop) && isHashKey(prop.key)) {
+      spreadAfterHash = false;
+    }
+  }
+  return spreadAfterHash;
+}
+
+function isHashKey(key: t.ObjectProperty['key']): boolean {
+  return (
+    (t.isIdentifier(key) && key.name === '$_hash') ||
+    (t.isStringLiteral(key) && key.value === '$_hash')
+  );
 }

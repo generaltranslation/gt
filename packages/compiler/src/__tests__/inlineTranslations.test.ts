@@ -287,6 +287,65 @@ describe('inlineTranslations in gt.config.json', () => {
       );
     });
 
+    describe('spreads', () => {
+      const customOptions = () =>
+        inlineOptions(['fr'], { fr: { custom: 'Perso' } });
+
+      it.each([
+        [
+          'gt',
+          `import { useGT } from 'gt-react';
+         const gt = useGT();
+         gt("Hello world", { $_hash: "custom", ...overrides });`,
+        ],
+        [
+          't',
+          `import { t } from 'gt-react';
+         t("Hello world", { $_hash: "custom", ...overrides });`,
+        ],
+      ])(
+        'skips %s() calls whose $_hash a later spread can replace',
+        async (_, code) => {
+          const output = await transformWithPlugin(customOptions(), code);
+          expect(output ?? '').not.toContain('(locale) =>');
+        }
+      );
+
+      it('embeds when $_hash comes after the spread', async () => {
+        const output = await transformWithPlugin(
+          customOptions(),
+          `import { useGT } from 'gt-react';
+           const gt = useGT();
+           gt("Hello world", { ...overrides, $_hash: "custom" });`
+        );
+        expect(output).toContain(
+          '(locale) => locale === "fr" ? "Perso" : undefined'
+        );
+      });
+
+      it('embeds under the computed hash appended after a spread', async () => {
+        const output = await transformWithPlugin(
+          inlineOptions(['fr'], { fr: { [HELLO_WORLD]: 'Bonjour le monde' } }),
+          `import { useGT } from 'gt-react';
+           const gt = useGT();
+           gt("Hello world", { ...options });`
+        );
+        expect(output).toContain('"Bonjour le monde"');
+      });
+
+      it('skips <T> with spread props', async () => {
+        const output = await transformWithPlugin(
+          inlineOptions(['fr'], {
+            fr: { [JSX_HELLO_WORLD]: 'Bonjour le monde' },
+          }),
+          `import { jsx } from 'react/jsx-runtime';
+           import { T } from 'gt-react';
+           export const el = jsx(T, { ...props, children: "Hello world" });`
+        );
+        expect(output ?? '').not.toContain('inline:');
+      });
+    });
+
     it('embeds JSX children objects for <T>', async () => {
       const output = await transformWithPlugin(
         inlineOptions(['fr'], {
