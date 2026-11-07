@@ -1,5 +1,7 @@
-import { createDiagnosticMessage } from 'generaltranslation/internal';
-import { createGlobalSingleton } from '../../globals/createGlobalSingleton';
+import {
+  getI18nCache,
+  isI18nCacheInitialized,
+} from '../../i18n-cache/singleton-operations';
 import type { Translation } from '../../i18n-cache/translations-manager/utils/types/translation-data';
 
 /**
@@ -24,70 +26,23 @@ export type InlineTranslations<T extends Translation = Translation> = (
 ) => T | undefined;
 
 /**
- * Registry of inline translations, keyed by message hash.
+ * Register inline translations for a message hash on the I18nCache.
  *
- * `msg()` registers into this registry because the message it encodes is
- * resolved later by `m()`, which has no access to the original call site.
+ * `msg()` registers because the message it encodes is resolved later by
+ * `m()`, which has no access to the original call site. The cache is a global
+ * singleton, so registrations are shared across bundle layers (Next.js
+ * evaluates gt-i18n once per server layer).
  *
- * The registry lives on `globalThis` rather than in module scope. Bundlers can
- * evaluate gt-i18n more than once (Next.js bundles server code into separate
- * RSC and SSR layers), and a module-level `msg()` evaluated by one copy must
- * be visible to `m()` in another.
- */
-const inlineTranslationsRegistry = createGlobalSingleton<
-  Map<string, InlineTranslations>
->({
-  namespace: 'i18n',
-  key: 'inlineTranslationsRegistry',
-  source: 'gt-i18n',
-  notInitialized: () =>
-    createDiagnosticMessage({
-      source: 'gt-i18n',
-      severity: 'Error',
-      whatHappened: 'Cannot read the inline translations registry',
-    }),
-});
-
-function getRegistry(): Map<string, InlineTranslations> {
-  if (!inlineTranslationsRegistry.isInitialized()) {
-    inlineTranslationsRegistry.set(new Map());
-  }
-  return inlineTranslationsRegistry.get();
-}
-
-/**
- * Register inline translations for a message hash.
+ * Does nothing before GT is initialized, so module-level `msg()` calls must
+ * run after initialization (gt-next initializes on import, and SPAs import
+ * the app after `initializeGTSPA()`).
  */
 export function registerInlineTranslations(
   hash: string,
   translations: InlineTranslations
 ): void {
-  getRegistry().set(hash, translations);
-}
-
-/**
- * Get the inline translations registered for a message hash.
- */
-export function getRegisteredInlineTranslations(
-  hash: string
-): InlineTranslations | undefined {
-  return getRegistry().get(hash);
-}
-
-/**
- * Whether any inline translations are registered. Lets lookups skip hashing
- * when the registry is empty.
- */
-export function hasRegisteredInlineTranslations(): boolean {
-  return getRegistry().size > 0;
-}
-
-/**
- * Remove all registered inline translations.
- * Testing only.
- */
-export function clearRegisteredInlineTranslations(): void {
-  getRegistry().clear();
+  if (!isI18nCacheInitialized()) return;
+  getI18nCache().registerInlineTranslations(hash, translations);
 }
 
 /**

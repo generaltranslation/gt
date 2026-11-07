@@ -6,7 +6,6 @@ import { hashMessage } from '../../../utils/hashMessage';
 import { getGTInternal } from '../../internal/getGT';
 import { getMessagesInternal } from '../../internal/getMessages';
 import { msg } from '../../msg/msg';
-import { clearRegisteredInlineTranslations } from '../inlineTranslations';
 
 type TestGlobal = typeof globalThis & {
   __generaltranslation?: unknown;
@@ -24,7 +23,6 @@ describe('inline translations', () => {
 
   beforeEach(() => {
     resetGTGlobals();
-    clearRegisteredInlineTranslations();
     initializeI18nConfig({
       defaultLocale: 'en',
       locales: ['en', 'fr', 'es'],
@@ -37,7 +35,6 @@ describe('inline translations', () => {
 
   afterEach(() => {
     resetGTGlobals();
-    clearRegisteredInlineTranslations();
   });
 
   describe('gt()', () => {
@@ -156,26 +153,55 @@ describe('inline translations', () => {
   });
 });
 
-describe('inline translations registry', () => {
+describe('msg() inline translations registry', () => {
+  beforeEach(() => {
+    resetGTGlobals();
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
+  });
+
   afterEach(() => {
     resetGTGlobals();
     vi.resetModules();
   });
 
-  it('is shared between separately evaluated copies of the module', async () => {
+  it('ignores inline translations passed before GT is initialized', async () => {
+    const loadTranslations = vi.fn().mockResolvedValue({});
+    expect(() =>
+      msg('Hello', undefined, frInline({ fr: 'Bonjour' }))
+    ).not.toThrow();
+
+    setI18nCache(new I18nCache({ loadTranslations }));
+    const m = await getMessagesInternal({ locale: 'fr', enableI18n: true });
+    expect(m('Hello')).toBe('Hello');
+  });
+
+  it('keeps registrations when GT is initialized again', async () => {
+    setI18nCache(new I18nCache({ loadTranslations: vi.fn() }));
+    const encoded = msg('Hello', undefined, frInline({ fr: 'Bonjour' }));
+
+    setI18nCache(new I18nCache({ loadTranslations: vi.fn() }));
+    const m = await getMessagesInternal({ locale: 'fr', enableI18n: true });
+    expect(m(encoded)).toBe('Bonjour');
+  });
+
+  it('is shared between separately evaluated copies of gt-i18n', async () => {
     // Bundlers such as Next.js evaluate gt-i18n once per server layer (RSC and
     // SSR), so msg() and m() can run against different module instances.
+    setI18nCache(new I18nCache({ loadTranslations: vi.fn() }));
     vi.resetModules();
-    const rscCopy = await import('../inlineTranslations');
+    const rscCopy = await import('../../msg/msg');
     vi.resetModules();
-    const ssrCopy = await import('../inlineTranslations');
-    expect(ssrCopy).not.toBe(rscCopy);
+    const ssrCopy = await import('../../internal/getMessages');
 
-    const inline = (locale: string) =>
-      locale === 'fr' ? 'Bonjour' : undefined;
-    rscCopy.registerInlineTranslations('hash-1', inline);
-
-    expect(ssrCopy.hasRegisteredInlineTranslations()).toBe(true);
-    expect(ssrCopy.getRegisteredInlineTranslations('hash-1')).toBe(inline);
+    const encoded = rscCopy.msg(
+      'Hello',
+      undefined,
+      frInline({ fr: 'Bonjour' })
+    );
+    const m = await ssrCopy.getMessagesInternal({
+      locale: 'fr',
+      enableI18n: true,
+    });
+    expect(m(encoded)).toBe('Bonjour');
   });
 });
