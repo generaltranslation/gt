@@ -19,9 +19,12 @@ const repoRoot = resolve(packageRoot, '../..');
 const entrypoints = [
   'packages/react-core/src/components-rsc.ts',
   'packages/react/src/index.rsc.ts',
+  'packages/react/src/compat.rsc.ts',
   'packages/react/src/unstable.rsc.ts',
   'packages/next/src/index.server.ts',
   'packages/next/src/server.ts',
+  'packages/next/src/compat.rsc.ts',
+  'packages/next/src/compat/server.ts',
   'packages/next/src/unstable.rsc.ts',
   'packages/next/src/unstable/server.ts',
   ...listSourceFiles('packages/next/src/server-dir'),
@@ -33,6 +36,7 @@ const entrypoints = [
 const workspaceSourceMap: Record<string, string> = {
   '#context-server': 'packages/react/src/index.server.ts',
   'gt-react': 'packages/react/src/index.rsc.ts',
+  'gt-react/compat': 'packages/react/src/compat.rsc.ts',
   '@generaltranslation/react-core/pure': 'packages/react-core/src/pure.ts',
   '@generaltranslation/react-core/components-rsc':
     'packages/react-core/src/components-rsc.ts',
@@ -209,7 +213,11 @@ function formatViolations(violations: Violation[]): string {
 
 // ===== Built output scan ===== //
 
-const serverArtifacts = ['dist/index.server.js', 'dist/server.js'];
+const serverArtifacts = [
+  'dist/index.server.js',
+  'dist/server.js',
+  'dist/compat/server.js',
+];
 
 function buildPackage(): void {
   if (process.env.npm_execpath) {

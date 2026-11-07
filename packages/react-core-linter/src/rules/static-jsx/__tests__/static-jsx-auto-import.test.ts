@@ -162,6 +162,66 @@ describe('static-jsx auto-fix should respect aliased Var import', () => {
   });
 });
 
+describe('static-jsx auto-fix skips compat and type-only imports', () => {
+  ruleTester.run(
+    'adds Var to the native import after a compat import',
+    staticJsx,
+    {
+      valid: [],
+      invalid: [
+        {
+          code: `
+          import { useTranslations } from 'gt-react/compat';
+          import type { GTProviderProps } from 'gt-react';
+          import { T } from 'gt-react';
+          function Component({ name }) {
+            return <T>{name}</T>;
+          }
+        `,
+          options: [{ libs: ['gt-react'] }],
+          errors: [{ messageId: 'dynamicContent' }],
+          output: `
+          import { useTranslations } from 'gt-react/compat';
+          import type { GTProviderProps } from 'gt-react';
+          import { T, Var } from 'gt-react';
+          function Component({ name }) {
+            return <T><Var>{name}</Var></T>;
+          }
+        `,
+        },
+      ],
+    }
+  );
+
+  ruleTester.run(
+    'adds Branch to the native import after a compat import',
+    staticJsx,
+    {
+      valid: [],
+      invalid: [
+        {
+          code: `
+          import { useTranslations } from 'gt-next/compat';
+          import { T } from 'gt-next';
+          function Component({ cond }) {
+            return <T>{cond ? "yes" : "no"}</T>;
+          }
+        `,
+          options: [{ libs: ['gt-next'] }],
+          errors: [{ messageId: 'dynamicContent' }],
+          output: `
+          import { useTranslations } from 'gt-next/compat';
+          import { T, Branch } from 'gt-next';
+          function Component({ cond }) {
+            return <T><Branch branch={cond} true="yes">no</Branch></T>;
+          }
+        `,
+        },
+      ],
+    }
+  );
+});
+
 describe('static-jsx auto-fix skips the core package import', () => {
   ruleTester.run(
     'adds Var to the React import after a core import',

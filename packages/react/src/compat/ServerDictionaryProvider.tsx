@@ -13,10 +13,7 @@ import { useMemo, useRef } from 'react';
  * the translate call on the server to persist translations.
  */
 export function ServerDictionaryProvider(
-  props: Omit<
-    DictionaryProviderProps,
-    'compatStore' | 'onMissingDictionaryEntry' | 'onMissingDictionaryObj'
-  >
+  props: Omit<DictionaryProviderProps, 'compatStore'>
 ) {
   const compatStoreRef = useRef<CompatStore | null>(null);
   if (compatStoreRef.current == null) {

@@ -70,6 +70,16 @@
         "default": "./dist/index.mjs"
       }
     },
+    "./compat": {
+      "require": {
+        "types": "./dist/compat.d.cts",
+        "default": "./dist/compat.cjs"
+      },
+      "import": {
+        "types": "./dist/compat.d.mts",
+        "default": "./dist/compat.mjs"
+      }
+    },
     "./internal": {
       "require": {
         "types": "./dist/internal.d.cts",

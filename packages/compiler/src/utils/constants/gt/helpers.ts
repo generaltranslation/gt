@@ -24,8 +24,6 @@ export function isGTFunction(name: string): name is GT_ALL_FUNCTIONS {
   return [
     'useGT',
     'getGT',
-    'useTranslations',
-    'getTranslations',
     'useMessages',
     'getMessages',
     'msg',
@@ -33,8 +31,6 @@ export function isGTFunction(name: string): name is GT_ALL_FUNCTIONS {
     'derive',
     'useGT_callback',
     'getGT_callback',
-    'useTranslations_callback',
-    'getTranslations_callback',
     'useMessages_callback',
     'getMessages_callback',
     'T',
@@ -63,14 +59,7 @@ export function isGTFunction(name: string): name is GT_ALL_FUNCTIONS {
 export function isGTFunctionWithCallbacks(
   name: string
 ): name is GT_FUNCTIONS_WITH_CALLBACKS {
-  return [
-    'useGT',
-    'getGT',
-    'useTranslations',
-    'getTranslations',
-    'useMessages',
-    'getMessages',
-  ].includes(name);
+  return ['useGT', 'getGT', 'useMessages', 'getMessages'].includes(name);
 }
 
 /**
@@ -145,8 +134,6 @@ export function isTranslationFunctionCallback(
   return [
     'useGT_callback',
     'getGT_callback',
-    'useTranslations_callback',
-    'getTranslations_callback',
     'useMessages_callback',
     'getMessages_callback',
   ].includes(name);

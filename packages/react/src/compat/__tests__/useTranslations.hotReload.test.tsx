@@ -3,7 +3,8 @@ import { act, useMemo } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GTRuntime } from 'generaltranslation/runtime';
-import { GTProvider, initializeGT, useTranslations } from '../index.client';
+import { initializeGT } from '../../index.client';
+import { GTProvider, useTranslations } from '../../compat.client';
 
 type TestGlobal = typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean };
 

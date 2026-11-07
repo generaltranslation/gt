@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { GTProvider } from 'gt-next';
+import { GTProvider } from 'gt-next/compat';
 import { getLocale } from 'gt-next/server';
 import './globals.css';
 

@@ -110,7 +110,8 @@ gtTanstackStart({
   runtimeTranslation: { timeout: 5000 },
   // Files, relative to the working directory. By default the plugin uses
   // dictionary.(ts|js|json) and loadDictionary.(ts|js) in the app root or
-  // src/, and src/loadTranslations.* before files.gt.output.
+  // src/ (bundled only when you import gt-tanstack-start/compat), and
+  // src/loadTranslations.* before files.gt.output.
   dictionary: 'src/i18n/dictionary.ts',
   loadDictionaryPath: 'src/i18n/loadDictionary.ts',
   loadTranslationsPath: 'src/i18n/loadTranslations.ts',
@@ -141,7 +142,7 @@ export default function Page() {
 
 ## Translating outside components
 
-In components, use `<T>` and hooks such as `useGT()`. In route loaders, `head` data and server functions, use `getGT()`, `getMessages()`, `getTranslations()` and `getLocale()`. Loaders run on the server for the first request and in the browser on client navigation, so these functions work on both sides:
+In components, use `<T>` and hooks such as `useGT()`. In route loaders, `head` data and server functions, use `getGT()`, `getMessages()` and `getLocale()`. Loaders run on the server for the first request and in the browser on client navigation, so these functions work on both sides:
 
 ```tsx
 import { createFileRoute } from '@tanstack/react-router';
@@ -157,6 +158,32 @@ export const Route = createFileRoute('/pricing')({
 ```
 
 Don't call them in components, which should use hooks, or at module scope, where the server would reuse one visitor's locale for every later request. The `translation-function-placement` rule in [`@generaltranslation/react-core-linter`](https://www.npmjs.com/package/@generaltranslation/react-core-linter) reports both.
+
+## Dictionaries
+
+The dictionary (key-based) API lives in `gt-tanstack-start/compat`. Import `setupRouterGTIntegration()` from there instead of `gt-tanstack-start`, then use `useTranslations()` in components and `getTranslations()` in loaders, `head` data and server functions:
+
+```tsx
+// src/router.tsx
+import { setupRouterGTIntegration } from 'gt-tanstack-start/compat';
+
+export function getRouter() {
+  const router = createRouter({ routeTree });
+  setupRouterGTIntegration({ router });
+  return router;
+}
+```
+
+```tsx
+import { useTranslations } from 'gt-tanstack-start/compat';
+
+function Greeting() {
+  const t = useTranslations('page');
+  return <p>{t('greeting')}</p>;
+}
+```
+
+It also loads the request locale's dictionary during SSR and hydrates it on the client, with the translations.
 
 ## SPA mode
 

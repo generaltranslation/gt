@@ -1,9 +1,11 @@
-import type { Dictionary } from 'gt-i18n';
-import { createGlobalSingleton, type Locale } from 'gt-i18n/internal';
+import {
+  createGlobalSingleton,
+  type Locale,
+  type Dictionary,
+} from 'gt-i18n/internal';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { createContext, useContext, type Context } from 'react';
 import type { CompatStore } from './CompatStore';
-import { getCompatStore } from './singleton-operations';
 import type { OnMissingDictionaryEntry, OnMissingDictionaryObj } from './types';
 
 export type DictionaryContextType = {
@@ -50,15 +52,17 @@ export function getDictionaryContext(): Context<
   return dictionaryContextSingleton.get();
 }
 
-const EMPTY_DICTIONARIES_SNAPSHOT: Record<Locale, Dictionary> = {};
+const missingDictionaryProviderError = createDiagnosticMessage({
+  source: '@generaltranslation/react-core',
+  severity: 'Error',
+  whatHappened:
+    'useTranslations() was called outside a GTProvider from a /compat entry',
+  why: 'only the /compat GTProvider supplies the dictionaries useTranslations() reads',
+  fix: "Render GTProvider from your GT package's /compat entry, such as 'gt-react/compat', 'gt-next/compat' or 'gt-react-native/compat', instead of the one from the package root. In gt-tanstack-start, call setupRouterGTIntegration({ router }) from 'gt-tanstack-start/compat'",
+});
 
 export function useDictionaryContext(): DictionaryContextType {
   const context = useContext(getDictionaryContext());
-  // shortcut: R5 compat glue, removed in R6 when GTProvider/initializeGT stop accepting dictionaries
-  return (
-    context ?? {
-      dictionariesSnapshot: EMPTY_DICTIONARIES_SNAPSHOT,
-      compatStore: getCompatStore(),
-    }
-  );
+  if (!context) throw new Error(missingDictionaryProviderError);
+  return context;
 }
