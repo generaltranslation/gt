@@ -31,7 +31,8 @@ export const _isValidLocale = (
   locale = getCustomLocaleCode(customMapping, locale) || locale;
 
   try {
-    const localeObject = intlCache.get('Locale', locale);
+    // Not cached: request-controlled tags reach this, and caching them grows without bound.
+    const localeObject = new Intl.Locale(locale);
     const { language, region, script } = localeObject;
     const partCount = 1 + Number(Boolean(region)) + Number(Boolean(script));
     // Legacy tags can expand subtags (sh -> sr-Latn, cnr -> sr-ME). Validate
