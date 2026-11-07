@@ -22,6 +22,7 @@ import { SUPPORTED_FILE_EXTENSIONS } from '../../formats/files/supportedFiles.js
 import { hasNonIdentityFileFormatTransformForType } from '../../formats/files/transformFormat.js';
 import { getRelative } from '../../fs/findFilepath.js';
 import type { InlineLibrary } from '../../types/libraries.js';
+import { writeMessageTranslations } from '../../fs/writeMessageTranslations.js';
 
 // Downloads translations that were completed
 export async function handleTranslate(
@@ -63,6 +64,9 @@ export async function handleTranslate(
       forceRetranslation: options.force,
       forceDownload: options.forceDownload || options.force, // if force is true should also force download
     });
+
+    // Translations for msg() and m(), for apps that embed the rest at build time
+    await writeMessageTranslations(settings);
 
     // Publish/unpublish files after translations are downloaded
     if (publishMap && branchData?.currentBranch.id) {

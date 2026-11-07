@@ -245,6 +245,7 @@ export type Settings = {
     parsingFlags: ParseFlagsByFileType;
     gtJson: {
       publish?: boolean; // if true, publish gtjson translations to the CDN
+      msgOutput?: string; // Absolute files.gt.msgOutput path containing [locale]
       parsingFlags: ResolvedGTParsingFlags; // Flags for parsing inline content
     };
   };

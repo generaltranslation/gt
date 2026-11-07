@@ -114,6 +114,15 @@ export const GTOutputFileConfigSchema = pipe(
         examples(['public/i18n/[locale].json', 'translations/[locale].json'])
       )
     ),
+    msgOutput: optional(
+      pipe(
+        string(),
+        description(
+          'Experimental: output path pattern with [locale] placeholder for a copy of each translations file that keeps only msg() and useMessages()/getMessages() entries. Apps that embed translations at build time can load it for embedded locales.'
+        ),
+        examples(['public/i18n/[locale].msg.json'])
+      )
+    ),
     publish: optionalDescribed(
       boolean(),
       'Publish GT translation files to the CDN'
