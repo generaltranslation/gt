@@ -195,6 +195,9 @@ export function resolveFiles(
       >;
       return {
         publish: files.gt?.publish,
+        ...(files.gt?.msgOutput && {
+          msgOutput: path.resolve(cwd, files.gt.msgOutput),
+        }),
         parsingFlags: {
           ...GT_PARSING_FLAGS_DEFAULT,
           ...rawGtFlags,

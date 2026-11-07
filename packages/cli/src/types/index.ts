@@ -228,6 +228,13 @@ export type FilesOptions = {
 } & {
   gt?: {
     output: string; // Output glob: /path/[locale].json
+    /**
+     * Experimental: output glob (/path/[locale].msg.json) for a copy of each
+     * translations file that keeps only msg() and useMessages()/getMessages()
+     * entries. Apps that embed translations at build time can load it for
+     * embedded locales.
+     */
+    msgOutput?: string;
     publish?: boolean; // if true, publish gtjson translations to the CDN
     parsingFlags?: Partial<GTParsingFlags>; // Flags for parsing inline content
     /**
@@ -266,6 +273,7 @@ export type Settings = {
     parsingFlags: ParseFlagsByFileType;
     gtJson: {
       publish?: boolean; // if true, publish gtjson translations to the CDN
+      msgOutput?: string; // Absolute files.gt.msgOutput path containing [locale]
       parsingFlags: GTParsingFlags; // Flags for parsing inline content
       /**
        * @deprecated

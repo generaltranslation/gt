@@ -29,9 +29,23 @@ import {
   ensureTAndVarImported,
   autoInsertJsxComponents,
 } from '../jsx/utils/jsxParsing/autoInsertion.js';
-import { INTERNAL_TRANSLATION_COMPONENT } from '../jsx/utils/constants.js';
+import {
+  INLINE_MESSAGE_HOOK,
+  INLINE_MESSAGE_HOOK_ASYNC,
+  INTERNAL_TRANSLATION_COMPONENT,
+  MSG_REGISTRATION_FUNCTION,
+} from '../jsx/utils/constants.js';
+import { recordMessageHashes } from '../../state/messageHashes.js';
 import traverseModule from '@babel/traverse';
 const traverse = traverseModule.default || traverseModule;
+
+// Entries these return are resolved away from their call site, so the
+// compiler can't embed them (see state/messageHashes.ts)
+const MESSAGE_FUNCTIONS = new Set([
+  MSG_REGISTRATION_FUNCTION,
+  INLINE_MESSAGE_HOOK,
+  INLINE_MESSAGE_HOOK_ASYNC,
+]);
 
 export async function createInlineUpdates(
   pkg: GTLibrary,
@@ -41,6 +55,7 @@ export async function createInlineUpdates(
   parsingOptions: ParsingConfigOptions
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   const updates: Updates = [];
+  const messageUpdates: Updates = [];
 
   const errors: string[] = [];
   const warnings: Set<string> = new Set();
@@ -77,6 +92,7 @@ export async function createInlineUpdates(
       originalName,
       path,
     } of inlineTranslationPaths) {
+      const firstUpdate = updates.length;
       parseStrings(
         name,
         originalName,
@@ -96,6 +112,9 @@ export async function createInlineUpdates(
         },
         { updates, errors, warnings }
       );
+      if (MESSAGE_FUNCTIONS.has(originalName)) {
+        messageUpdates.push(...updates.slice(firstUpdate));
+      }
     }
 
     // Parse <T> components — PASS 1: user-written T
@@ -199,6 +218,12 @@ export async function createInlineUpdates(
 
   // Post processing steps:
   await calculateHashes(updates);
+  // Before dedupe, which keeps one update per hash regardless of its source
+  recordMessageHashes(
+    messageUpdates.flatMap((update) =>
+      update.metadata.hash ? [update.metadata.hash] : []
+    )
+  );
   dedupeUpdates(updates);
   linkDeriveUpdates(updates);
 
