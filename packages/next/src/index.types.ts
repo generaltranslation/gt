@@ -45,6 +45,7 @@ import {
 } from 'gt-react';
 import { GTProvider as _GTProvider } from 'gt-react';
 import type { GTTranslationOptions, RuntimeTranslationOptions } from 'gt-react';
+import type { GTFunctionType } from 'gt-i18n/types';
 import type { StringFormat } from '@generaltranslation/format/types';
 import {
   msg,
@@ -424,9 +425,7 @@ export function isLocaleSupported(_: unknown): boolean {
  * </>);
  *
  */
-export const useGT: (
-  _messages?: Messages
-) => (message: string, options?: GTTranslationOptions) => string = () => {
+export const useGT: (_messages?: Messages) => GTFunctionType = () => {
   throw new Error(typesFileError);
 };
 
