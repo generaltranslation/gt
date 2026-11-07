@@ -11,6 +11,11 @@ import {
   getTranslations,
 } from 'gt-i18n/internal';
 import { getLocale, getRegion } from 'gt-i18n';
+import {
+  initializeReactI18nCache,
+  internalInitializeGTSRA,
+  type ReactInitializeGTParams,
+} from '@generaltranslation/react-core/pure';
 import { use } from 'react';
 
 // ===== Error for client components ===== //
@@ -121,7 +126,10 @@ export {
 } from '@generaltranslation/react-core/pure';
 
 // ===== Setup ===== //
-export { internalInitializeGTSRA as initializeGT } from '@generaltranslation/react-core/pure';
+export function initializeGT(config: ReactInitializeGTParams): void {
+  internalInitializeGTSRA(config);
+  initializeReactI18nCache(config);
+}
 
 // ===== Types ===== //
 export type {

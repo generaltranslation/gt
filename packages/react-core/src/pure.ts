@@ -47,6 +47,7 @@ export {
   internalInitializeGTSRA,
   type ReactInitializeGTParams,
 } from './setup/initializeGTSRA';
+export { initializeReactI18nCache } from './i18n-cache/initializeReactI18nCache';
 
 export {
   ReactI18nCache,
