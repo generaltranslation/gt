@@ -1,7 +1,10 @@
 import type { CustomMapping } from '@generaltranslation/format/types';
 import type { UserTokenProvider } from 'generaltranslation/api';
 import type { ModelProvider } from 'generaltranslation/internal';
-import type { FileFormat } from 'generaltranslation/types';
+import type {
+  FileFormat,
+  GTInlineTranslationsOptions,
+} from 'generaltranslation/types';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import {
   ParsingConfigOptions,
@@ -233,6 +236,7 @@ export type FilesOptions = {
 } & {
   gt?: {
     output: string; // Output glob: /path/[locale].json
+    inlineTranslations?: GTInlineTranslationsOptions; // Experimental: locales embedded at build time
     publish?: boolean; // if true, publish gtjson translations to the CDN
     parsingFlags?: Partial<GTParsingFlags>; // Flags for parsing inline content
     /**
@@ -271,6 +275,7 @@ export type Settings = {
     parsingFlags: ParseFlagsByFileType;
     gtJson: {
       publish?: boolean; // if true, publish gtjson translations to the CDN
+      inlineTranslations?: GTInlineTranslationsOptions; // msgOutput resolved to an absolute path
       parsingFlags: GTParsingFlags; // Flags for parsing inline content
       /**
        * @deprecated

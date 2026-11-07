@@ -193,8 +193,17 @@ export function resolveFiles(
         string,
         unknown
       >;
+      const inlineTranslations = files.gt?.inlineTranslations;
       return {
         publish: files.gt?.publish,
+        ...(inlineTranslations && {
+          inlineTranslations: {
+            ...inlineTranslations,
+            ...(inlineTranslations.msgOutput && {
+              msgOutput: path.resolve(cwd, inlineTranslations.msgOutput),
+            }),
+          },
+        }),
         parsingFlags: {
           ...GT_PARSING_FLAGS_DEFAULT,
           ...rawGtFlags,

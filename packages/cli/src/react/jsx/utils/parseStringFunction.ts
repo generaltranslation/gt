@@ -40,9 +40,9 @@ const resolveImportPathCache = new Map<string, string | null>();
 /**
  * Cache for processed functions to avoid re-parsing the same files.
  * Key: `${filePath}::${functionName}::${argIndex}`
- * Value: boolean indicating whether the function was found and processed
+ * Value: the updates processing the function produced
  */
-const processFunctionCache = new Map<string, boolean>();
+const processFunctionCache = new Map<string, ParsingOutput['updates']>();
 
 /**
  * Clears all caches. Useful for testing or when file system changes.
@@ -324,7 +324,10 @@ function processFunctionInFile(
 ): void {
   // Check cache first to avoid redundant parsing
   const cacheKey = `${filePath}::${functionName}::${argIndex}`;
-  if (processFunctionCache.has(cacheKey)) {
+  const cachedUpdates = processFunctionCache.get(cacheKey);
+  if (cachedUpdates) {
+    // Replayed so every caller sees them, for example both gt and m passing the same helper
+    output.updates.push(...cachedUpdates);
     return;
   }
 
@@ -333,6 +336,7 @@ function processFunctionInFile(
     return;
   }
   state.visited.add(filePath);
+  const firstUpdate = output.updates.length;
 
   try {
     const code = fs.readFileSync(filePath, 'utf8');
@@ -436,11 +440,11 @@ function processFunctionInFile(
     }
 
     // Mark this function search as processed in the cache
-    processFunctionCache.set(cacheKey, found);
+    processFunctionCache.set(cacheKey, output.updates.slice(firstUpdate));
   } catch {
     // Silently skip files that can't be parsed or accessed
     // Still mark as processed to avoid retrying failed parses
-    processFunctionCache.set(cacheKey, false);
+    processFunctionCache.set(cacheKey, []);
   }
 }
 
