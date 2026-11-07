@@ -6,9 +6,9 @@ import { createNextMiddleware } from '../createNextMiddleware';
 import {
   createPathMatcher,
   createPathToSharedPathMap,
-  getSharedPath,
   type PathConfig,
-} from '../utils';
+} from '../createPathMatcher';
+import { getSharedPath } from '../matchPath';
 
 beforeEach(() => {
   vi.stubEnv(

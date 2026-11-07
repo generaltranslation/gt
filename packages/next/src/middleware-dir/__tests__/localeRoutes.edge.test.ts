@@ -4,7 +4,7 @@ import { NextRequest } from 'next/server';
 import {
   defaultLocaleCookieName,
   defaultResetLocaleCookieName,
-} from '@generaltranslation/react-core/pure';
+} from 'gt-i18n/internal/cookies';
 import { defaultLocaleHeaderName } from '../../utils/headers';
 import { createNextMiddleware } from '../createNextMiddleware';
 

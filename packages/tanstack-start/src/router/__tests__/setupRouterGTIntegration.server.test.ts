@@ -14,9 +14,15 @@ const { mockConditionStore, mockLoadDictionary } = vi.hoisted(() => ({
 
 vi.mock('gt-react', () => ({
   GTProvider: () => null,
+  initializeGT: vi.fn(),
+}));
+
+vi.mock('@generaltranslation/react-core/pure', async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import('@generaltranslation/react-core/pure')
+  >()),
   getTranslationsSnapshot: vi.fn(async () => ({ hello: 'bonjour' })),
   getReactI18nCache: () => ({ loadDictionary: mockLoadDictionary }),
-  initializeGT: vi.fn(),
 }));
 
 vi.mock('@tanstack/react-start/server', () => ({

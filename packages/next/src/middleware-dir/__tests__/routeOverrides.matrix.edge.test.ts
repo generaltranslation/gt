@@ -1,11 +1,9 @@
 // @vitest-environment edge-runtime
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { NextRequest } from 'next/server';
-import {
-  createNextMiddleware,
-  type RouteOverrides,
-} from '../createNextMiddleware';
-import type { PathConfig } from '../utils';
+import { createNextMiddleware } from '../createNextMiddleware';
+import type { RouteOverrides } from '../types';
+import type { PathConfig } from '../createPathMatcher';
 
 const DEFAULT_LOCALE = 'en';
 const LOCALE_HEADER = 'x-generaltranslation-locale';

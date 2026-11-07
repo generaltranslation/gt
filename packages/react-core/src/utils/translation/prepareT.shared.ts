@@ -2,7 +2,7 @@ import { addGTIdentifier } from '../internal/addGTIdentifier';
 import { removeInjectedT } from '../internal/removeInjectedT';
 import { writeChildrenAsObjects } from '../internal/writeChildrenAsObjects';
 import type { JsxTranslationOptions as JsxLookupOptions } from 'gt-i18n/types';
-import type { JsxChildren } from 'generaltranslation/types';
+import type { JsxChildren } from '@generaltranslation/format/types';
 import type { ReactNode } from 'react';
 import type { RenderPreparedTParams } from '../rendering/renderPreparedT.shared';
 import type { TaggedChildren } from '../types';

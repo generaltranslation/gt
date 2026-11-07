@@ -1,7 +1,8 @@
 import { SanityDocument } from 'sanity';
 import { expect, test } from 'vitest';
 import { getDeserialized } from '../helpers';
-import { docWithInlineMarks, findByClass, getHTMLNode, schema } from './utils';
+import { docWithInlineMarks, findByClass, getHTMLNode } from './utils';
+import schema from '../__fixtures__/schema';
 import { attachGTData } from '../../data';
 import { BaseDocumentSerializer } from '../../serialize/index';
 import { customSerializers } from '../../BaseSerializationConfig';

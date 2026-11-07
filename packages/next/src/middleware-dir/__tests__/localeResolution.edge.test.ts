@@ -2,11 +2,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { GTIntl } from '@generaltranslation/format';
-import {
-  createPathMatcher,
-  getLocaleFromRequest,
-  type PathMatcher,
-} from '../utils';
+import { createPathMatcher, type PathMatcher } from '../createPathMatcher';
+import { getLocaleFromRequest } from '../utils';
 
 // ---- Cookie Constants ----
 const LOCALE_COOKIE = 'generaltranslation.locale';

@@ -1,7 +1,5 @@
 import { normalizePathname, stripTrailingSlashes } from './pathname';
 
-export { normalizePathname };
-
 export type PathConfig = {
   [key: string]: string | { [key: string]: string };
 };

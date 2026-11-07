@@ -9,7 +9,7 @@ import {
   getCheckedOutBranches,
 } from '../../git/branches.js';
 import { BranchData } from '../../types/branch.js';
-import { ApiError, ErrorCode } from 'generaltranslation/api';
+import { ApiError, ErrorCode } from '@generaltranslation/api';
 
 type BranchStepClient = Pick<
   ProjectHandle,

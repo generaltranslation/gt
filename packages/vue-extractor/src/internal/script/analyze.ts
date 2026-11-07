@@ -74,8 +74,6 @@ import {
   readPropertyKey,
 } from './syntax.js';
 
-export type { VueScriptAnalysis, VueScriptAnalysisStats } from './model.js';
-
 const traverse = traverseModule.default || traverseModule;
 
 const staticBindingResults = new WeakMap<

@@ -1,8 +1,8 @@
 import open from 'open';
 import * as oidc from 'openid-client';
-import type { UserTokenProvider } from 'generaltranslation/api';
+import type { UserTokenProvider } from '@generaltranslation/api';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import { GT_DASHBOARD_URL } from '../utils/constants.js';
+import { defaultDashboardUrl } from 'generaltranslation/internal';
 import { resolveApiBaseUrl } from '../utils/apiBaseUrl.js';
 import { logger } from '../console/logger.js';
 import {
@@ -205,7 +205,7 @@ function parseTokens(
 }
 
 function getAuthBaseUrl(): string {
-  return (process.env.GT_AUTH_URL ?? `${GT_DASHBOARD_URL}/api/auth`).replace(
+  return (process.env.GT_AUTH_URL ?? `${defaultDashboardUrl}/api/auth`).replace(
     /\/$/,
     ''
   );

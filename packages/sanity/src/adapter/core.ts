@@ -1,9 +1,5 @@
-import {
-  GeneralTranslation,
-  GTIntl,
-  type LocaleConfig,
-  type ProjectHandle,
-} from 'generaltranslation';
+import { GeneralTranslation, type ProjectHandle } from 'generaltranslation';
+import { GTIntl, type LocaleConfig } from '@generaltranslation/format';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import type { Secrets } from '../types';
 import type {

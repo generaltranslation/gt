@@ -25,10 +25,9 @@ import { _isValidLocale, _standardizeLocale } from './locales/isValidLocale';
 import { _requiresTranslation } from './locales/requiresTranslation';
 import { _resolveAliasLocale } from './locales/resolveAliasLocale';
 import { _resolveCanonicalLocale } from './locales/resolveCanonicalLocale';
-import type { CustomMapping, FormatVariables } from './types';
+import type { CustomMapping } from './locales/customLocaleMapping';
+import type { FormatVariables } from './types';
 import type { StringFormat } from './types-dir/jsx/content';
-
-export { getRegionProperties } from './locales/getRegionProperties';
 
 type LocalesOption = {
   locales?: string | string[];

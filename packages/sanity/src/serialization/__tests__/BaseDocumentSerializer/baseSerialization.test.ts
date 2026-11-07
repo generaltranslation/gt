@@ -18,9 +18,9 @@ import {
   findByClass,
   getHTMLNode,
   inlineDocumentLevelArticle,
-  inlineSchema,
-  schema,
 } from './utils';
+import inlineSchema from '../__fixtures__/inlineSchema';
+import schema from '../__fixtures__/schema';
 
 /*
  * METADATA PRESENCE

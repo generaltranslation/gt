@@ -1,5 +1,5 @@
 // Fitting translated plain text into field character limits.
-import { GTIntl } from 'generaltranslation';
+import { GTIntl } from '@generaltranslation/format';
 import type { LengthLimit } from './content/fields';
 import type { GtClient } from './types';
 

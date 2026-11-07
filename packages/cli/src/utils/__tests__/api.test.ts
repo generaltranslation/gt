@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { UserTokenProvider } from 'generaltranslation/api';
+import type { UserTokenProvider } from '@generaltranslation/api';
 import {
   configureCustomMapping,
   createClients,

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { ApiError, ErrorCode } from 'generaltranslation/api';
+import { ApiError, ErrorCode } from '@generaltranslation/api';
 import { describeApiError, workflowFailureMessage } from '../index.js';
-import { GT_DASHBOARD_URL } from '../../utils/constants.js';
+import { defaultDashboardUrl } from 'generaltranslation/internal';
 
 describe('describeApiError', () => {
   it.each([
@@ -27,7 +27,7 @@ describe('describeApiError', () => {
   it('links the dashboard for billing', () => {
     expect(
       describeApiError(new ApiError('m', 402, ErrorCode.CREDITS_INSUFFICIENT))
-    ).toContain(GT_DASHBOARD_URL);
+    ).toContain(defaultDashboardUrl);
   });
 
   it.each([
