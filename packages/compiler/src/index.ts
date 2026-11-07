@@ -352,3 +352,8 @@ export const vite = gtUnplugin.vite;
 export const rollup = gtUnplugin.rollup;
 export const rspack = gtUnplugin.rspack;
 export const esbuild = gtUnplugin.esbuild;
+// For gt-next, which writes the embedded translations for its SWC plugin
+export {
+  readTranslationsFile,
+  resolveInlineTranslationsFiles,
+} from './transform/injection/inline-translations/loadInlineTranslations';
