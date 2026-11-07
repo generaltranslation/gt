@@ -203,24 +203,24 @@ function withLocaleCategories(
   source: MessageTree,
   locale: string
 ): MessageTree {
-  const cardinal = pluralCategories(locale, 'cardinal');
-  const ordinal = pluralCategories(locale, 'ordinal');
+  // Built only for a plural that has category keys, since most messages have none.
+  const categories = new Map<Intl.PluralRuleType, Set<string>>();
+  const localeHas = (type: Intl.PluralRuleType, key: string) => {
+    let set = categories.get(type);
+    if (!set) {
+      const rules = new Intl.PluralRules(locale, { type });
+      set = new Set(rules.resolvedOptions().pluralCategories);
+      categories.set(type, set);
+    }
+    return set.has(key);
+  };
   return mapPlaceholders(source, (node) => {
     if (!isBranchingNode(node) || node[1] === 'select') return node;
     const [name, kind, branches, ...rest] = node as PluralNode;
-    const categories = kind === 'plural' ? cardinal : ordinal;
+    const type = kind === 'plural' ? 'cardinal' : 'ordinal';
     const kept = Object.entries(branches).filter(
-      ([key]) => !isPluralCategoryKey(key) || categories.has(key)
+      ([key]) => !isPluralCategoryKey(key) || localeHas(type, key)
     );
     return [name, kind, Object.fromEntries(kept), ...rest];
   });
-}
-
-function pluralCategories(
-  locale: string,
-  type: Intl.PluralRuleType
-): Set<string> {
-  return new Set(
-    new Intl.PluralRules(locale, { type }).resolvedOptions().pluralCategories
-  );
 }
