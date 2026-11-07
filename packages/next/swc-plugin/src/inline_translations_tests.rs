@@ -182,14 +182,14 @@ fn uses_a_user_supplied_hash_for_gt_calls() {
 // ===== <T> ===== //
 
 #[test]
-fn adds_a_translations_prop_to_t() {
+fn adds_an_inline_prop_to_t() {
   let output = transform(
     T_CODE,
     translations(&["fr"], serde_json::json!({ "fr": { JSX_HELLO_WORLD: "Bonjour le monde" } })),
   );
   assert!(output.contains(&format!("_hash=\"{JSX_HELLO_WORLD}\"")), "{output}");
   assert!(
-    output.contains(r#"_translations={(locale)=>locale === "fr" ? "Bonjour le monde" : undefined}"#),
+    output.contains(r#"inline={(locale)=>locale === "fr" ? "Bonjour le monde" : undefined}"#),
     "{output}"
   );
 }
@@ -213,7 +213,7 @@ fn embeds_jsx_children_objects_for_t() {
 fn skips_t_without_embedded_translations() {
   let output = transform(T_CODE, translations(&["fr"], serde_json::json!({ "fr": {} })));
   assert!(output.contains("_hash="), "{output}");
-  assert!(!output.contains("_translations"), "{output}");
+  assert!(!output.contains("inline={"), "{output}");
 }
 
 // ===== msg() ===== //
@@ -363,7 +363,7 @@ fn skips_t_with_derive_children() {
     "#,
     translations(&["fr"], serde_json::json!({ "fr": { JSX_HELLO_WORLD: "Bonjour le monde" } })),
   );
-  assert!(!output.contains("_translations"), "{output}");
+  assert!(!output.contains("inline={"), "{output}");
 }
 
 // ===== hash options the plugin can't hash statically ===== //
@@ -469,7 +469,7 @@ fn embeds_translations_for_t_with_a_static_hash() {
   ] {
     let output = transform(code, hello_variants());
     assert!(
-      output.contains(r#"_translations={(locale)=>locale === "fr" ? "Custom Bonjour" : undefined}"#),
+      output.contains(r#"inline={(locale)=>locale === "fr" ? "Custom Bonjour" : undefined}"#),
       "{output}"
     );
   }
@@ -505,7 +505,7 @@ fn skips_t_with_a_dynamic_hash() {
     "#,
     hello_variants(),
   );
-  assert!(!output.contains("_translations"), "{output}");
+  assert!(!output.contains("inline={"), "{output}");
 }
 
 #[test]
@@ -516,19 +516,19 @@ fn skips_t_when_props_can_override_a_static_hash() {
     r#"import { T } from 'gt-next'; export const el = <T _hash="custom" $_hash="other">Hello world</T>;"#,
   ] {
     let output = transform(code, hello_variants());
-    assert!(!output.contains("_translations"), "{output}");
+    assert!(!output.contains("inline={"), "{output}");
   }
 }
 
 #[test]
-fn keeps_an_existing_translations_prop_on_t_with_a_static_hash() {
+fn keeps_an_existing_inline_prop_on_t_with_a_static_hash() {
   let output = transform(
     r#"
       import { T } from 'gt-next';
-      export const el = <T _hash="custom" _translations={mine}>Hello world</T>;
+      export const el = <T _hash="custom" inline={mine}>Hello world</T>;
     "#,
     hello_variants(),
   );
   assert!(!output.contains("Custom Bonjour"), "{output}");
-  assert!(output.contains("_translations={mine}"), "{output}");
+  assert!(output.contains("inline={mine}"), "{output}");
 }

@@ -87,7 +87,7 @@ describe('inlineTranslations plugin option', () => {
     expect(output).not.toContain('Hola mundo');
   });
 
-  it('adds a _translations prop to <T>', async () => {
+  it('adds an inline prop to <T>', async () => {
     const hash = await getTHash();
     const output = await transformWithPlugin(
       {
@@ -99,7 +99,7 @@ describe('inlineTranslations plugin option', () => {
       T_COMPONENT_CODE
     );
     expect(output).toContain(
-      '_translations: (locale) => locale === "fr" ? "Bonjour le monde" : undefined'
+      'inline: (locale) => locale === "fr" ? "Bonjour le monde" : undefined'
     );
   });
 
@@ -355,7 +355,7 @@ describe('inlineTranslations plugin option', () => {
          import { T, Derive } from 'gt-react';
          export const el = jsxs(T, { children: ["Hello ", jsx(Derive, { children: getName() })] });`
       );
-      expect(output ?? '').not.toContain('_translations');
+      expect(output ?? '').not.toContain('inline:');
     });
   });
 
@@ -446,7 +446,7 @@ describe('inlineTranslations plugin option', () => {
         T_COMPONENT_CODE
       );
       expect(output).toContain('_hash: "');
-      expect(output).not.toContain('_translations');
+      expect(output).not.toContain('inline:');
     });
 
     it('hashes STRING format msg() calls', async () => {
