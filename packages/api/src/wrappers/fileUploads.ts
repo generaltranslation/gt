@@ -5,11 +5,8 @@ import type {
   UploadSourceFilesData,
 } from '../generated/types.gen';
 import { ApiError } from './errors';
-import {
-  createRetryingFetch,
-  createTimeoutFetch,
-  type RetryPolicy,
-} from './transport';
+import type { ApiClientConfig } from './client';
+import { createRetryingFetch, createTimeoutFetch } from './transport';
 
 // shortcut: hand-written from the 2026-10-08.v1 contract because this SDK's spec
 // stops at 2026-03-06.v1; replace with the generated operations once it moves on.
@@ -91,19 +88,17 @@ export function uploadSourceFileReferences(options: {
 
 /**
  * PUTs a file's bytes to a presigned URL from `createFileUploads`. The URL
- * authorizes the request, so it carries no API credentials, and the PUT times
- * out when the URL expires.
+ * authorizes the request, so `fetch` must not add API credentials. The whole
+ * PUT, retries and their backoff included, times out when the URL expires.
  */
 export async function putFileUpload(
   upload: PresignedFileUpload,
   bytes: Uint8Array<ArrayBuffer>,
-  options: { retryPolicy?: RetryPolicy } = {}
+  options: Pick<ApiClientConfig, 'fetch' | 'retryPolicy'> = {}
 ): Promise<void> {
-  const fetch = createRetryingFetch({
-    fetch: createTimeoutFetch({
-      timeoutMs: Math.max(Date.parse(upload.expiresAt) - Date.now(), 0),
-    }),
-    retryPolicy: options.retryPolicy,
+  const fetch = createTimeoutFetch({
+    fetch: createRetryingFetch(options),
+    timeoutMs: Math.max(Date.parse(upload.expiresAt) - Date.now(), 0),
   });
   const response = await fetch(upload.url, {
     method: 'PUT',

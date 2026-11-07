@@ -106,9 +106,11 @@ async function uploadSourceFileReference(
     client: ReturnType<typeof createApiClient>;
     projectId: string;
     sourceLocale: string;
+    // The configured fetch, not the client's, which would send API credentials to storage.
+    storageTransport: Pick<ApiClientConfig, 'fetch' | 'retryPolicy'>;
   }
 ): Promise<UploadSourceFilesResponse['uploadedFiles'][number]> {
-  const { client, projectId, sourceLocale } = options;
+  const { client, projectId, sourceLocale, storageTransport } = options;
   const stage = (bytes: Uint8Array<ArrayBuffer>, fileFormat: FileFormat) => ({
     bytes,
     fileFormat,
@@ -135,7 +137,7 @@ async function uploadSourceFileReference(
   await Promise.all(
     created.map(({ sha256: hash, upload }) => {
       const bytes = staged.find((item) => item.sha256 === hash)?.bytes;
-      return upload && bytes && putFileUpload(upload, bytes);
+      return upload && bytes && putFileUpload(upload, bytes, storageTransport);
     })
   );
 
@@ -759,7 +761,7 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
       options: { sourceLocale: string; timeout?: number }
     ) {
       const sourceLocale = resolveServiceLocale(options.sourceLocale);
-      const { projectId } = getConfig();
+      const { projectId, fetch, retryPolicy } = getConfig();
       const result = await processBatches(files, async (batch) => {
         const client = getClient(options.timeout);
         let inlineBytes = 0;
@@ -802,6 +804,7 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
               client,
               projectId: projectId!,
               sourceLocale,
+              storageTransport: { fetch, retryPolicy },
             })
           );
         }

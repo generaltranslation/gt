@@ -618,10 +618,15 @@ describe.sequential('createGtApiAdapter uploadSourceFiles', () => {
     fileFormat,
   });
 
+  const storageFetch = vi.fn<typeof fetch>();
+
   function configuredAdapter(withProjectId = true) {
     const adapter = createGtApiAdapter();
     adapter.configure({
       baseUrl: 'https://api.example.com',
+      apiKey: 'api-key',
+      fetch: storageFetch,
+      retryPolicy: 'none',
       ...(withProjectId && { projectId: 'project-id' }),
       customMapping,
     });
@@ -713,6 +718,13 @@ describe.sequential('createGtApiAdapter uploadSourceFiles', () => {
     ).toEqual([
       [presigned, largeHash],
       [metadataPresigned, metadataHash],
+    ]);
+    // The raw configured fetch, so storage never sees the API key.
+    expect(
+      vi.mocked(putFileUpload).mock.calls.map(([, , transport]) => transport)
+    ).toEqual([
+      { fetch: storageFetch, retryPolicy: 'none' },
+      { fetch: storageFetch, retryPolicy: 'none' },
     ]);
     const {
       content: _content,
