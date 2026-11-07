@@ -18,7 +18,7 @@ async function RscT({
   _enableI18n,
   // TODO: don't expose to consumer, this should be thru an internal path
   _renderPreparedT = renderPreparedT,
-  _translations,
+  inline,
   ...params
 }: ResolvedTProps): Promise<ReactNode> {
   const locale = _locale;
@@ -46,7 +46,7 @@ async function RscT({
 
   // Translations embedded at the call site win over loaded translations
   const targetJsxChildren =
-    _translations?.(locale) ??
+    inline?.(locale) ??
     (await lookupTargetJsxChildren(
       locale,
       prepared.sourceJsxChildren,
