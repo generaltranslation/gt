@@ -1,5 +1,12 @@
 # @generaltranslation/python-extractor
 
+## 0.2.67-samsara.0
+
+### Patch Changes
+
+- Updated dependencies [cf23e00]
+  - generaltranslation@10.0.0-samsara.3
+
 ## 0.2.66
 
 ### Patch Changes

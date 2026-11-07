@@ -1,5 +1,12 @@
 # @generaltranslation/compiler
 
+## 1.4.0-samsara.2
+
+### Patch Changes
+
+- Updated dependencies [cf23e00]
+  - generaltranslation@10.0.0-samsara.3
+
 ## 1.4.0-samsara.1
 
 ### Patch Changes
