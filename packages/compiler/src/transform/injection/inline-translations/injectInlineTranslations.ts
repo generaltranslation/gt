@@ -21,7 +21,7 @@ export function injectInlineTranslationsArgument(
 }
 
 /**
- * Add the `_translations` prop to a <T> jsx invocation's props object.
+ * Add the `inline` prop to a <T> jsx invocation's props object.
  */
 export function injectInlineTranslationsProp(
   props: t.ObjectExpression,
@@ -33,8 +33,6 @@ export function injectInlineTranslationsProp(
 
   const inline = buildInlineTranslationsFunction(table, hash);
   if (inline) {
-    props.properties.push(
-      t.objectProperty(t.identifier('_translations'), inline)
-    );
+    props.properties.push(t.objectProperty(t.identifier('inline'), inline));
   }
 }
