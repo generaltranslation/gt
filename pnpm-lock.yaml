@@ -2214,6 +2214,34 @@ importers:
         specifier: ^5
         version: 5.7.3
 
+  tests/apps/next-inline-translations:
+    dependencies:
+      gt-next:
+        specifier: workspace:*
+        version: link:../../../packages/next
+      next:
+        specifier: 16.2.9
+        version: 16.2.9(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.64.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(sass@1.77.4)
+      react:
+        specifier: 19.2.4
+        version: 19.2.4
+      react-dom:
+        specifier: 19.2.4
+        version: 19.2.4(react@19.2.4)
+    devDependencies:
+      '@types/node':
+        specifier: ^20
+        version: 20.19.17
+      '@types/react':
+        specifier: ^19
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: ^19
+        version: 19.3.0(@types/react@19.2.14)
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+
   tests/apps/next-latest-locale-switch-no-routing:
     dependencies:
       gt-next:
@@ -31238,6 +31266,10 @@ snapshots:
   '@types/react-dom@19.2.3(@types/react@19.2.17)':
     dependencies:
       '@types/react': 19.2.17
+
+  '@types/react-dom@19.3.0(@types/react@19.2.14)':
+    dependencies:
+      '@types/react': 19.2.14
 
   '@types/react-dom@19.3.0(@types/react@19.2.7)':
     dependencies:
