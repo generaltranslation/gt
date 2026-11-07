@@ -5,9 +5,8 @@ import type { GTOutputFileConfig } from 'generaltranslation/types';
 const LOCALE_PLACEHOLDER = '[locale]';
 
 /**
- * Translations resolved for the SWC plugin, which cannot reliably read files
- * from its wasm sandbox. Mirrors @generaltranslation/compiler's
- * loadInlineTranslations().
+ * Translations resolved for the SWC plugin, which receives them as plugin
+ * options. Mirrors @generaltranslation/compiler's loadInlineTranslations().
  */
 export type ResolvedInlineTranslations = {
   locales: string[];

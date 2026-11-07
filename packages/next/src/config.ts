@@ -694,8 +694,6 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
       ? rawAutoderive
       : (rawAutoderive.strings ?? false);
 
-  // The SWC plugin cannot read locale files, so inline translations are
-  // resolved here and passed as data
   const swcInlineTranslations =
     mergedConfig.experimentalCompilerOptions?.type === 'swc'
       ? resolveInlineTranslations(loadedConfig.files?.gt)
