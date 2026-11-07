@@ -9,10 +9,13 @@ export type InlineTranslationsTable = Record<string, Record<string, unknown>>;
 
 const LOCALE_PLACEHOLDER = '[locale]';
 
-// Shared across files so each locale file is read once per build. Keyed by the
-// files' modification times so a later build in the same process (watch mode,
-// repeated builds) picks up edited translations.
-const tableCache = new Map<string, InlineTranslationsTable>();
+// Shared across files so each locale file is read once per build. One entry per
+// configuration, replaced when the files' modification times change, so a later
+// build in the same process (watch mode) picks up edits without keeping old tables.
+const tableCache = new Map<
+  string,
+  { mtimes: string; table: InlineTranslationsTable }
+>();
 
 /**
  * Read the translations to embed for `files.gt.inlineTranslations.locales`
@@ -28,13 +31,12 @@ export function loadInlineTranslations(
   const output = gtFiles?.output;
   if (locales.length === 0 || !output) return undefined;
 
-  const cacheKey = JSON.stringify([
-    locales,
-    output,
-    locales.map((locale) => getLocaleFileMtime(output, locale)),
-  ]);
+  const cacheKey = JSON.stringify([locales, output]);
+  const mtimes = JSON.stringify(
+    locales.map((locale) => getLocaleFileMtime(output, locale))
+  );
   const cached = tableCache.get(cacheKey);
-  if (cached) return cached;
+  if (cached?.mtimes === mtimes) return cached.table;
 
   const table: InlineTranslationsTable = {};
   for (const locale of locales) {
@@ -42,8 +44,11 @@ export function loadInlineTranslations(
     if (translations) table[locale] = translations;
   }
 
-  if (Object.keys(table).length === 0) return undefined;
-  tableCache.set(cacheKey, table);
+  if (Object.keys(table).length === 0) {
+    tableCache.delete(cacheKey);
+    return undefined;
+  }
+  tableCache.set(cacheKey, { mtimes, table });
   return table;
 }
 
