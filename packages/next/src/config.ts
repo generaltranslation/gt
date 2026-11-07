@@ -30,6 +30,7 @@ import {
   standardizeLocale,
 } from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
+import type { GTOutputFileConfig } from 'generaltranslation/types';
 import {
   localeRefreshSupported,
   rootParamStability,
@@ -58,7 +59,7 @@ type AutoderiveConfig = boolean | { jsx?: boolean; strings?: boolean };
 type ConfigFileShape = {
   customMapping?: CustomMapping;
   files?: {
-    gt?: {
+    gt?: Pick<GTOutputFileConfig, 'output' | 'inlineTranslations'> & {
       parsingFlags?: {
         autoderive?: AutoderiveConfig;
       };
@@ -682,13 +683,8 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     _tagIds: mergedConfig._tagIds,
   };
 
-  // The SWC plugin cannot read locale files, so inline translations are
-  // resolved here and passed as data
-  const {
-    type: _type,
-    inlineTranslations,
-    ...compilerOptions
-  } = mergedConfig.experimentalCompilerOptions || {};
+  const { type: _type, ...compilerOptions } =
+    mergedConfig.experimentalCompilerOptions || {};
 
   // Read autoderive from parsingFlags (single source of truth shared with CLI)
   const rawAutoderive: boolean | { jsx?: boolean; strings?: boolean } =
@@ -702,9 +698,11 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
       ? rawAutoderive
       : (rawAutoderive.strings ?? false);
 
+  // The SWC plugin cannot read locale files, so inline translations are
+  // resolved here and passed as data
   const swcInlineTranslations =
     mergedConfig.experimentalCompilerOptions?.type === 'swc'
-      ? resolveInlineTranslations(inlineTranslations)
+      ? resolveInlineTranslations(loadedConfig.files?.gt)
       : undefined;
   const swcPluginOptions: Record<string, unknown> = {
     ...compilerOptions,

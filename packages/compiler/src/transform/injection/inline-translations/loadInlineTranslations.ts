@@ -1,13 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { GTInlineTranslationsOptions } from 'generaltranslation/types';
+import type { GTOutputFileConfig } from 'generaltranslation/types';
 
 /**
  * Translations to embed, keyed by locale, then by translation hash.
  */
-export type InlineTranslationsTable = NonNullable<
-  GTInlineTranslationsOptions['translations']
->;
+export type InlineTranslationsTable = Record<string, Record<string, unknown>>;
 
 const LOCALE_PLACEHOLDER = '[locale]';
 
@@ -17,37 +15,36 @@ const LOCALE_PLACEHOLDER = '[locale]';
 const tableCache = new Map<string, InlineTranslationsTable>();
 
 /**
- * Resolve the translations to embed from the plugin options.
+ * Read the translations to embed for `files.gt.inlineTranslations.locales`
+ * from the translation files at `files.gt.output`.
  *
- * Explicit `translations` win over files read from `path`. Locales without
- * translations are skipped, so those locales keep loading at runtime.
+ * Locales without a translations file are skipped, so those locales keep
+ * loading at runtime.
  */
 export function loadInlineTranslations(
-  options: GTInlineTranslationsOptions | undefined
+  gtFiles: GTOutputFileConfig | undefined
 ): InlineTranslationsTable | undefined {
-  if (!options || options.locales.length === 0) return undefined;
+  const locales = gtFiles?.inlineTranslations?.locales ?? [];
+  const output = gtFiles?.output;
+  if (locales.length === 0 || !output) return undefined;
 
-  const cacheKey = options.translations
-    ? undefined
-    : JSON.stringify([
-        options.locales,
-        options.path,
-        options.locales.map((locale) =>
-          getLocaleFileMtime(options.path, locale)
-        ),
-      ]);
-  if (cacheKey && tableCache.has(cacheKey)) return tableCache.get(cacheKey);
+  const cacheKey = JSON.stringify([
+    locales,
+    output,
+    locales.map((locale) => getLocaleFileMtime(output, locale)),
+  ]);
+  const cached = tableCache.get(cacheKey);
+  if (cached) return cached;
 
   const table: InlineTranslationsTable = {};
-  for (const locale of options.locales) {
-    const translations =
-      options.translations?.[locale] ?? readLocaleFile(options.path, locale);
+  for (const locale of locales) {
+    const translations = readLocaleFile(output, locale);
     if (translations) table[locale] = translations;
   }
 
-  const result = Object.keys(table).length > 0 ? table : undefined;
-  if (cacheKey && result) tableCache.set(cacheKey, result);
-  return result;
+  if (Object.keys(table).length === 0) return undefined;
+  tableCache.set(cacheKey, table);
+  return table;
 }
 
 /**
@@ -55,13 +52,11 @@ export function loadInlineTranslations(
  * build dependencies so watch rebuilds pick up edited translations.
  */
 export function getInlineTranslationsFiles(
-  options: GTInlineTranslationsOptions | undefined
+  gtFiles: GTOutputFileConfig | undefined
 ): string[] {
-  if (!options) return [];
-  return options.locales.flatMap((locale) => {
-    // Explicit translations win, so only file-backed locales are dependencies
-    if (options.translations?.[locale]) return [];
-    const filePath = resolveLocaleFilePath(options.path, locale);
+  const locales = gtFiles?.inlineTranslations?.locales ?? [];
+  return locales.flatMap((locale) => {
+    const filePath = resolveLocaleFilePath(gtFiles?.output, locale);
     return filePath && fs.existsSync(filePath) ? [filePath] : [];
   });
 }

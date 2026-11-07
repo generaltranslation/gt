@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import type { GTInlineTranslationsOptions } from 'generaltranslation/types';
+import type { GTOutputFileConfig } from 'generaltranslation/types';
 
 const LOCALE_PLACEHOLDER = '[locale]';
 
@@ -15,24 +15,25 @@ export type ResolvedInlineTranslations = {
 };
 
 /**
- * Resolve inline translations for the SWC plugin. Explicit `translations`
- * win over files read from `path`. Locales without translations are dropped.
- * Returns undefined outside production builds, matching the babel compiler.
+ * Read the translations to embed for `files.gt.inlineTranslations.locales`
+ * from the translation files at `files.gt.output`. Locales without a
+ * translations file are dropped. Returns undefined outside production builds,
+ * matching the babel compiler.
  */
 export function resolveInlineTranslations(
-  options: GTInlineTranslationsOptions | undefined
+  gtFiles: Pick<GTOutputFileConfig, 'output' | 'inlineTranslations'> | undefined
 ): ResolvedInlineTranslations | undefined {
   if (process.env.NODE_ENV !== 'production') return undefined;
-  if (!options || options.locales.length === 0) return undefined;
+  const requestedLocales = gtFiles?.inlineTranslations?.locales ?? [];
+  if (requestedLocales.length === 0) return undefined;
 
   const translations: Record<string, Record<string, unknown>> = {};
-  for (const locale of options.locales) {
-    const localeTranslations =
-      options.translations?.[locale] ?? readLocaleFile(options.path, locale);
+  for (const locale of requestedLocales) {
+    const localeTranslations = readLocaleFile(gtFiles?.output, locale);
     if (localeTranslations) translations[locale] = localeTranslations;
   }
 
-  const locales = options.locales.filter((locale) => locale in translations);
+  const locales = requestedLocales.filter((locale) => locale in translations);
   if (locales.length === 0) return undefined;
   return { locales, translations };
 }

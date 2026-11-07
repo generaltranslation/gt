@@ -65,7 +65,6 @@ export function initializeState(
     autoderive: _a,
     devHotReload: _b,
     legacyGtReactImportSource: _c,
-    inlineTranslations,
     ...restOptions
   } = options;
 
@@ -73,7 +72,7 @@ export function initializeState(
   // loading (and hot reloading) translations at runtime
   const inlineTranslationsTable =
     process.env.NODE_ENV === 'production'
-      ? loadInlineTranslations(inlineTranslations)
+      ? loadInlineTranslations(gtConfig?.files?.gt)
       : undefined;
 
   const settings: PluginSettings = {

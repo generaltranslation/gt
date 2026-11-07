@@ -232,7 +232,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         // they change (webpack does not track files read outside the loader)
         if (state.settings.inlineTranslationsTable) {
           for (const file of getInlineTranslationsFiles(
-            resolvedOptions.inlineTranslations
+            resolvedOptions.gtConfig?.files?.gt
           )) {
             this.addWatchFile(file);
           }
