@@ -228,6 +228,7 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   // ---------- LOAD GT CONFIG FILE ---------- //
 
   let loadedConfig: Partial<InternalGTConfigProps> = {};
+  let loadedConfigPath: string | undefined;
   try {
     let configPath: string | undefined;
     if (props.config) {
@@ -244,6 +245,7 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     if (typeof configPath === 'string' && fs.existsSync(configPath)) {
       const fileContent = fs.readFileSync(configPath, 'utf-8');
       loadedConfig = JSON.parse(fileContent);
+      loadedConfigPath = configPath;
     }
   } catch (error) {
     console.error('Error reading GT config file:', error);
@@ -836,6 +838,8 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
               gtUnplugin({
                 ...mergedConfig.experimentalCompilerOptions,
                 autoJsxImportSource: 'gt-next',
+                // The compiler only finds a root gt.config.json on its own
+                ...(loadedConfigPath && { gtConfig: loadedConfig }),
               })
             );
           } catch (e) {

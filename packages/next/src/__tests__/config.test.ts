@@ -1874,6 +1874,54 @@ describe('withGTConfig', () => {
       compilerWebpackSpy.mockRestore();
     });
 
+    it('passes a gt.config.json from a custom path to the webpack compiler', async () => {
+      const gtConfig = {
+        files: { gt: { inlineTranslations: { locales: ['fr'] } } },
+      };
+      vi.mocked(fs.existsSync).mockImplementation(
+        (filepath) => filepath === './config/gt.json'
+      );
+      vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify(gtConfig));
+      const compiler = require('@generaltranslation/compiler');
+      const compilerWebpackSpy = vi
+        .spyOn(compiler, 'webpack')
+        .mockReturnValue({});
+      const withGTConfig = await getWithGTConfig();
+      const result = withGTConfig(
+        {},
+        {
+          config: './config/gt.json',
+          experimentalCompilerOptions: { type: 'babel' },
+        }
+      );
+
+      runWebpack(result, makeWebpackConfig());
+
+      expect(compilerWebpackSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ gtConfig })
+      );
+      compilerWebpackSpy.mockRestore();
+    });
+
+    it('lets the webpack compiler find gt.config.json when none was loaded', async () => {
+      const compiler = require('@generaltranslation/compiler');
+      const compilerWebpackSpy = vi
+        .spyOn(compiler, 'webpack')
+        .mockReturnValue({});
+      const withGTConfig = await getWithGTConfig();
+      const result = withGTConfig(
+        {},
+        { experimentalCompilerOptions: { type: 'babel' } }
+      );
+
+      runWebpack(result, makeWebpackConfig());
+
+      expect(compilerWebpackSpy.mock.calls[0][0]).not.toHaveProperty(
+        'gtConfig'
+      );
+      compilerWebpackSpy.mockRestore();
+    });
+
     it('returns webpack config object', async () => {
       const withGTConfig = await getWithGTConfig();
       const result = withGTConfig();
