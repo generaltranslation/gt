@@ -33,13 +33,7 @@ export {
 export { useLocaleSelector, useRegionSelector } from './hooks/selectors';
 
 // ===== Functions ===== //
-export {
-  createRenderPipeline,
-  getFormatLocales,
-  getReactI18nCache,
-  getTranslationsSnapshot,
-  setReactI18nCache,
-} from '@generaltranslation/react-core/pure';
+export { getTranslationsSnapshot } from '@generaltranslation/react-core/pure';
 export {
   decodeMsg,
   decodeOptions,
@@ -62,10 +56,6 @@ export type {
   GTTranslationOptions,
   RuntimeTranslationOptions,
 } from 'gt-i18n/types';
-export type {
-  RenderPipeline,
-  RenderPreparedT,
-} from '@generaltranslation/react-core/pure';
 export type { GTProviderProps } from './provider/GTProvider';
 export type { GetLocaleParams } from './utils/getLocale';
 export type { ReactInitializeGTParams as InitializeGTParams } from '@generaltranslation/react-core/pure';

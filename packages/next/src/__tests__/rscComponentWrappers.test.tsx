@@ -4,9 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const { mockComponents, mockGetRequestConditions } = vi.hoisted(() => ({
   mockComponents: {
     Branch: vi.fn(),
-    createRenderPipeline: vi.fn(() => ({
-      renderPreparedT: vi.fn(),
-    })),
     Currency: vi.fn(),
     DateTime: vi.fn(),
     Derive: vi.fn(),
@@ -14,7 +11,6 @@ const { mockComponents, mockGetRequestConditions } = vi.hoisted(() => ({
     LocaleSelector: vi.fn(),
     Num: vi.fn(),
     Plural: vi.fn(),
-    ReactI18nCache: class {},
     RelativeTime: vi.fn(),
     RscT: vi.fn(),
     useDefaultLocale: vi.fn(),

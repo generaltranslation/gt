@@ -102,17 +102,8 @@ export {
 } from 'gt-i18n';
 export { derive, declareVar, decodeVars } from 'generaltranslation';
 export {
-  getFormatLocales,
-  getReactI18nCache,
   getTranslationsSnapshot,
-  createRenderPipeline,
-  setReactI18nCache,
   t,
-} from '@generaltranslation/react-core/pure';
-
-export type {
-  RenderPipeline,
-  RenderPreparedT,
 } from '@generaltranslation/react-core/pure';
 
 export type { SharedGTProviderProps } from './provider/GTProviderProps';
@@ -124,13 +115,3 @@ export type {
   GTTranslationOptions,
   RuntimeTranslationOptions,
 } from 'gt-i18n/types';
-export type {
-  SyncResolutionFunction,
-  SyncResolutionFunctionWithFallback,
-} from 'gt-i18n/types';
-
-// ===== Singletons ===== //
-export {
-  ReactI18nCache,
-  type ReactI18nCacheParams,
-} from '@generaltranslation/react-core/pure';
