@@ -247,11 +247,10 @@ describe('withGTConfig', () => {
       const result = withGTConfig();
       const params = parseConfigParams(result);
 
-      expect(params.experimentalCompilerOptions).toMatchObject({
+      // The compilers default the other options.
+      expect(params.experimentalCompilerOptions).toEqual({
         type: 'none',
-        logLevel: 'warn',
         compileTimeHash: true,
-        disableBuildChecks: false,
       });
     });
 
@@ -425,6 +424,17 @@ describe('withGTConfig', () => {
       expect(() => withGTConfig()).toThrow(
         /gt-next \(plugin\) Error: \.\/gt\.config\.json could not be read as JSON.*Details: Unexpected token/
       );
+    });
+
+    it('accepts a typed customMapping with undefined properties', async () => {
+      const withGTConfig = await getWithGTConfig();
+
+      expect(() =>
+        withGTConfig(
+          {},
+          { customMapping: { cn: { code: 'zh', name: undefined } } }
+        )
+      ).not.toThrow();
     });
 
     it.each([
@@ -1363,24 +1373,12 @@ describe('withGTConfig', () => {
   // 11. Cache expiry defaults
   // ==============================
   describe('11. Cache expiry defaults', () => {
-    it('60000ms when: remote translations, no devApiKey, no explicit cacheExpiryTime', async () => {
+    it('leaves cacheExpiryTime unset so gt-i18n applies its default', async () => {
       const withGTConfig = await getWithGTConfig();
 
       const result = withGTConfig();
       const params = parseConfigParams(result);
 
-      expect(params.cacheExpiryTime).toBe(60000);
-    });
-
-    it('NOT set when devApiKey present', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.GT_API_KEY = 'gt-dev-abc';
-      vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      // cacheExpiryTime should remain undefined (not defaulted)
       expect(params.cacheExpiryTime).toBeUndefined();
     });
 
@@ -1391,24 +1389,6 @@ describe('withGTConfig', () => {
       const params = parseConfigParams(result);
 
       expect(params.cacheExpiryTime).toBe(30000);
-    });
-
-    it('NOT set when loadTranslationsType === custom', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const resolvedPath = require('path').resolve('./loadTranslations.ts');
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === resolvedPath) return true;
-        return false;
-      });
-
-      const result = withGTConfig(
-        {},
-        { loadTranslationsPath: './loadTranslations.ts' }
-      );
-      const params = parseConfigParams(result);
-
-      // loadTranslationsType is 'custom' so cacheExpiryTime should not be defaulted
-      expect(params.cacheExpiryTime).toBeUndefined();
     });
 
     it('0 when cacheComponents is enabled', async () => {
@@ -1793,6 +1773,27 @@ describe('withGTConfig', () => {
           enableAutoJsxInjection: true,
           autoJsxImportSource: 'gt-next',
         })
+      );
+      compilerWebpackSpy.mockRestore();
+    });
+
+    it('leaves automatic JSX injection to gt.config.json when unset', async () => {
+      const compiler = require('@generaltranslation/compiler');
+      const compilerWebpackSpy = vi
+        .spyOn(compiler, 'webpack')
+        .mockReturnValue({});
+      const withGTConfig = await getWithGTConfig();
+      const result = withGTConfig(
+        {},
+        { experimentalCompilerOptions: { type: 'babel' } }
+      );
+
+      runWebpack(result, makeWebpackConfig());
+
+      // A present key, even undefined, would override the compiler's
+      // files.gt.parsingFlags.enableAutoJsxInjection.
+      expect(compilerWebpackSpy.mock.calls[0][0]).not.toHaveProperty(
+        'enableAutoJsxInjection'
       );
       compilerWebpackSpy.mockRestore();
     });

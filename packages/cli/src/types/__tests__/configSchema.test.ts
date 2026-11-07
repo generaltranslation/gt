@@ -9,6 +9,7 @@ import {
   GTConfigFileSchema,
   GTConfigFileSchemaDefinitions,
 } from '../../config/schema.js';
+import { GT_CONFIG_SCHEMA_URL } from '../../utils/constants.js';
 
 const schema = JSON.parse(fs.readFileSync(configJsonSchemaPath, 'utf8'));
 const validate = new Ajv({ strict: false, validateFormats: false }).compile(
@@ -16,6 +17,10 @@ const validate = new Ajv({ strict: false, validateFormats: false }).compile(
 );
 
 describe('GT config JSON Schema', () => {
+  it('is published at GT_CONFIG_SCHEMA_URL', () => {
+    expect(schema.$id).toBe(GT_CONFIG_SCHEMA_URL);
+  });
+
   it('matches the schema generated from GTConfigFileSchema', () => {
     expect(
       generateConfigJsonSchema(

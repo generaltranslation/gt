@@ -320,7 +320,8 @@
                   "properties": {
                     "whitespace": {
                       "enum": ["condense", "preserve"],
-                      "type": "string"
+                      "type": "string",
+                      "description": "How Vue normalizes whitespace between template children"
                     },
                     "delimiters": {
                       "type": "array",
@@ -335,7 +336,8 @@
                         }
                       ],
                       "minItems": 2,
-                      "additionalItems": false
+                      "additionalItems": false,
+                      "description": "Replaces Vue's default {{ and }} interpolation delimiters"
                     }
                   },
                   "required": [],
