@@ -37,7 +37,9 @@ export const ErrorCode = {
   DRIVE_ACCOUNT_NOT_CONNECTED: 'drive_account_not_connected',
   FILE_TOO_LARGE: 'file_too_large',
   GOOGLE_ACCOUNT_NOT_LINKED: 'google_account_not_linked',
+  INTEGRATION_MANAGED_FILE: 'integration_managed_file',
   INTEGRATION_NOT_CONNECTED: 'integration_not_connected',
+  INVALID_CONTENT_ENCODING: 'invalid_content_encoding',
   IP_NOT_ALLOWED: 'ip_not_allowed',
   LAYOUT_NOT_SUPPORTED: 'layout_not_supported',
   LOCALE_NOT_ALLOWED: 'locale_not_allowed',
@@ -56,6 +58,7 @@ export const ErrorCode = {
   TARGET_LOCALES_MISSING: 'target_locales_missing',
   TOKEN_INVALID: 'token_invalid',
   TRANSLATION_NOT_READY: 'translation_not_ready',
+  UNSUPPORTED_CONTENT_ENCODING: 'unsupported_content_encoding',
   UPLOAD_INCOMPLETE: 'upload_incomplete',
   USAGE_LIMIT_REACHED: 'usage_limit_reached',
   USER_IP_MISSING: 'user_ip_missing',
@@ -357,6 +360,7 @@ export type WorkspacePluginTranslateErrors = {
   400: ErrorResponse & {
     code?:
       | 'invalid_request'
+      | 'invalid_content_encoding'
       | 'drive_account_not_connected'
       | 'cdn_not_enabled'
       | 'target_locales_missing'
@@ -408,10 +412,10 @@ export type WorkspacePluginTranslateErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -486,7 +490,7 @@ export type WorkspacePluginStatusErrors = {
    * The request is malformed or failed validation.
    */
   400: ErrorResponse & {
-    code?: 'invalid_request';
+    code?: 'invalid_request' | 'invalid_content_encoding';
   };
   /**
    * Authentication is missing or invalid.
@@ -522,10 +526,10 @@ export type WorkspacePluginStatusErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -600,7 +604,11 @@ export type PluginInfoErrors = {
    * The request is malformed or failed validation.
    */
   400: ErrorResponse & {
-    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
   };
   /**
    * Authentication is missing or invalid.
@@ -636,10 +644,10 @@ export type PluginInfoErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -838,7 +846,11 @@ export type PluginLayoutErrors = {
    * The request is malformed or failed validation.
    */
   400: ErrorResponse & {
-    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
   };
   /**
    * Authentication is missing or invalid.
@@ -878,10 +890,10 @@ export type PluginLayoutErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -1075,6 +1087,7 @@ export type PluginSyncErrors = {
   400: ErrorResponse & {
     code?:
       | 'invalid_request'
+      | 'invalid_content_encoding'
       | 'api_version_unsupported'
       | 'user_ip_missing'
       | 'content_empty';
@@ -1113,10 +1126,10 @@ export type PluginSyncErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -1248,7 +1261,11 @@ export type PluginImportTranslationsErrors = {
    * The request is malformed or failed validation.
    */
   400: ErrorResponse & {
-    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
   };
   /**
    * Authentication is missing or invalid.
@@ -1290,10 +1307,10 @@ export type PluginImportTranslationsErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * A translation is still running for the requested locale. Retry once it finishes.
@@ -1390,6 +1407,7 @@ export type PluginEnqueueErrors = {
   400: ErrorResponse & {
     code?:
       | 'invalid_request'
+      | 'invalid_content_encoding'
       | 'api_version_unsupported'
       | 'user_ip_missing'
       | 'source_file_not_found'
@@ -1447,10 +1465,10 @@ export type PluginEnqueueErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -1522,7 +1540,11 @@ export type PluginStatusErrors = {
    * The request is malformed or failed validation.
    */
   400: ErrorResponse & {
-    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
   };
   /**
    * Authentication is missing or invalid.
@@ -1558,10 +1580,10 @@ export type PluginStatusErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -1647,7 +1669,11 @@ export type PluginDownloadErrors = {
    * The request is malformed or failed validation.
    */
   400: ErrorResponse & {
-    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
   };
   /**
    * Authentication is missing or invalid.
@@ -1687,10 +1713,10 @@ export type PluginDownloadErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -1846,7 +1872,7 @@ export type WorkspacePluginInfoErrors = {
    * The request is malformed or failed validation.
    */
   400: ErrorResponse & {
-    code?: 'invalid_request';
+    code?: 'invalid_request' | 'invalid_content_encoding';
   };
   /**
    * Authentication is missing or invalid.
@@ -1871,10 +1897,10 @@ export type WorkspacePluginInfoErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -2105,6 +2131,7 @@ export type OverwriteTranslationsErrors = {
   400: ErrorResponse & {
     code?:
       | 'invalid_request'
+      | 'invalid_content_encoding'
       | 'api_version_unsupported'
       | 'user_ip_missing'
       | 'api_version_too_old';
@@ -2136,10 +2163,10 @@ export type OverwriteTranslationsErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -2220,6 +2247,7 @@ export type MoveFilesErrors = {
   400: ErrorResponse & {
     code?:
       | 'invalid_request'
+      | 'invalid_content_encoding'
       | 'api_version_unsupported'
       | 'user_ip_missing'
       | 'api_version_too_old';
@@ -2257,10 +2285,10 @@ export type MoveFilesErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -2345,6 +2373,7 @@ export type QueryFilesErrors = {
   400: ErrorResponse & {
     code?:
       | 'invalid_request'
+      | 'invalid_content_encoding'
       | 'api_version_unsupported'
       | 'user_ip_missing'
       | 'api_version_too_old';
@@ -2376,10 +2405,10 @@ export type QueryFilesErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -2507,6 +2536,7 @@ export type QueryFilesContentErrors = {
   400: ErrorResponse & {
     code?:
       | 'invalid_request'
+      | 'invalid_content_encoding'
       | 'api_version_unsupported'
       | 'user_ip_missing'
       | 'api_version_too_old';
@@ -2538,10 +2568,10 @@ export type QueryFilesContentErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -2761,6 +2791,7 @@ export type PublishFilesErrors = {
   400: ErrorResponse & {
     code?:
       | 'invalid_request'
+      | 'invalid_content_encoding'
       | 'api_version_unsupported'
       | 'user_ip_missing'
       | 'cdn_not_enabled'
@@ -2799,10 +2830,10 @@ export type PublishFilesErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -2858,6 +2889,149 @@ export type PublishFilesResponses = {
 export type PublishFilesResponse =
   PublishFilesResponses[keyof PublishFilesResponses];
 
+export type UpdateFilesData = {
+  /**
+   * An absent field keeps its stored value. `null` clears a nullable field or removes a map entry; other fields reject `null`. In batches and imports, items match stored items by natural key, stored items absent from the batch are untouched, and nothing else is deleted. A blank CSV cell counts as absent.
+   */
+  body: {
+    /**
+     * 1–100 source files or translations; each branch, file, version and locale may appear once.
+     */
+    files: Array<{
+      fileId: string;
+      /**
+       * Branch ID. Defaults to the project default branch.
+       */
+      branchId?: string;
+      /**
+       * Source version ID.
+       */
+      versionId: string;
+      /**
+       * Translation locale. Omit to update the source file.
+       */
+      locale?: string;
+      metadata: {
+        /**
+         * Page that shows this version of the file.
+         */
+        previewUrl?: string | null;
+      };
+    }>;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    projectId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/files';
+};
+
+export type UpdateFilesErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * A translation does not exist. Nothing is written.
+   */
+  404: ErrorResponse & {
+    code?: 'source_file_not_found' | 'not_found';
+  };
+  /**
+   * A source file version belongs to an integration, which owns its metadata. Nothing is written.
+   */
+  409: ErrorResponse & {
+    code?: 'integration_managed_file';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
+  /**
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
+   */
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type UpdateFilesError = UpdateFilesErrors[keyof UpdateFilesErrors];
+
+export type UpdateFilesResponses = {
+  /**
+   * Each file after the update, in request order. Repeating a request is safe.
+   */
+  200: {
+    /**
+     * Each file after the update, in request order.
+     */
+    files: Array<{
+      branchId: string;
+      fileId: string;
+      versionId: string;
+      /**
+       * Translation locale as stored. Absent for a source file.
+       */
+      locale?: string;
+      metadata: {
+        /**
+         * Page that shows this version of the file.
+         */
+        previewUrl?: string | null;
+      };
+    }>;
+  };
+};
+
+export type UpdateFilesResponse =
+  UpdateFilesResponses[keyof UpdateFilesResponses];
+
 export type UploadSourceFilesData = {
   body: {
     /**
@@ -2874,15 +3048,32 @@ export type UploadSourceFilesData = {
         branchId?: string;
         checkedOutBranchId?: string;
         incomingBranchId?: string;
-        formatMetadata?: {
-          [key: string]: unknown;
-        };
         metadata?: {
           /**
            * Page that shows this version of the file.
            */
-          previewUrl?: string;
+          previewUrl?: string | null;
         };
+        formatMetadata?:
+          | {
+              /**
+               * The metadata as a JSON object.
+               */
+              content: {
+                [key: string]: unknown;
+              };
+            }
+          | {
+              /**
+               * A JSON object file already PUT to the URL from Create file uploads, for metadata too large to send in the request.
+               */
+              upload: {
+                /**
+                 * SHA-256 of the file's bytes, as 64 lowercase hex characters.
+                 */
+                sha256: string;
+              };
+            };
       } & (
         | {
             /**
@@ -2928,6 +3119,7 @@ export type UploadSourceFilesErrors = {
   400: ErrorResponse & {
     code?:
       | 'invalid_request'
+      | 'invalid_content_encoding'
       | 'api_version_unsupported'
       | 'user_ip_missing'
       | 'file_too_large'
@@ -2967,10 +3159,10 @@ export type UploadSourceFilesErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -3040,9 +3232,6 @@ export type UploadTranslationsData = {
         branchId?: string;
         checkedOutBranchId?: string;
         incomingBranchId?: string;
-        formatMetadata?: {
-          [key: string]: unknown;
-        };
       } & (
         | {
             /**
@@ -3110,6 +3299,7 @@ export type UploadTranslationsErrors = {
   400: ErrorResponse & {
     code?:
       | 'invalid_request'
+      | 'invalid_content_encoding'
       | 'api_version_unsupported'
       | 'user_ip_missing'
       | 'file_too_large'
@@ -3149,10 +3339,10 @@ export type UploadTranslationsErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -3215,7 +3405,7 @@ export type CreateFileUploadsData = {
     files: Array<{
       fileFormat: FileFormat;
       /**
-       * File size in bytes: at most 2000000000 for PNG, JPEG and MP4, and 100000000 for other formats.
+       * File size in bytes: at most 2000000000 for PNG, JPEG and MP4, and 150000000 for other formats.
        */
       size: number;
       /**
@@ -3244,6 +3434,7 @@ export type CreateFileUploadsErrors = {
   400: ErrorResponse & {
     code?:
       | 'invalid_request'
+      | 'invalid_content_encoding'
       | 'api_version_unsupported'
       | 'user_ip_missing'
       | 'api_version_too_old';
@@ -3275,10 +3466,10 @@ export type CreateFileUploadsErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -3470,6 +3661,7 @@ export type CreateBranchErrors = {
   400: ErrorResponse & {
     code?:
       | 'invalid_request'
+      | 'invalid_content_encoding'
       | 'api_version_unsupported'
       | 'user_ip_missing'
       | 'api_version_too_old';
@@ -3508,10 +3700,10 @@ export type CreateBranchErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -3574,7 +3766,11 @@ export type UpdateBranchErrors = {
    * The request is malformed or failed validation.
    */
   400: ErrorResponse & {
-    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
   };
   /**
    * Authentication is missing or invalid.
@@ -3615,10 +3811,10 @@ export type UpdateBranchErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -3797,6 +3993,7 @@ export type SetTagErrors = {
   400: ErrorResponse & {
     code?:
       | 'invalid_request'
+      | 'invalid_content_encoding'
       | 'api_version_unsupported'
       | 'user_ip_missing'
       | 'api_version_too_old';
@@ -3834,10 +4031,10 @@ export type SetTagErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -3924,6 +4121,7 @@ export type TranslateFilesErrors = {
   400: ErrorResponse & {
     code?:
       | 'invalid_request'
+      | 'invalid_content_encoding'
       | 'api_version_unsupported'
       | 'user_ip_missing'
       | 'cdn_not_enabled'
@@ -3976,10 +4174,10 @@ export type TranslateFilesErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -4078,6 +4276,7 @@ export type GenerateProjectContextErrors = {
   400: ErrorResponse & {
     code?:
       | 'invalid_request'
+      | 'invalid_content_encoding'
       | 'api_version_unsupported'
       | 'user_ip_missing'
       | 'api_version_too_old';
@@ -4115,10 +4314,10 @@ export type GenerateProjectContextErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -4253,6 +4452,7 @@ export type TranslateContentErrors = {
   400: ErrorResponse & {
     code?:
       | 'invalid_request'
+      | 'invalid_content_encoding'
       | 'api_version_unsupported'
       | 'user_ip_missing'
       | 'api_version_too_old';
@@ -4303,10 +4503,10 @@ export type TranslateContentErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -4460,6 +4660,7 @@ export type UpdateProjectErrors = {
   400: ErrorResponse & {
     code?:
       | 'invalid_request'
+      | 'invalid_content_encoding'
       | 'api_version_unsupported'
       | 'user_ip_missing'
       | 'api_version_too_old';
@@ -4497,10 +4698,10 @@ export type UpdateProjectErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -4571,7 +4772,11 @@ export type CreateProjectApiKeyErrors = {
    * The request is malformed or failed validation.
    */
   400: ErrorResponse & {
-    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
   };
   /**
    * Authentication is missing or invalid.
@@ -4608,10 +4813,10 @@ export type CreateProjectApiKeyErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -5066,7 +5271,11 @@ export type ReorderContextGroupErrors = {
    * The request is malformed or failed validation.
    */
   400: ErrorResponse & {
-    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
   };
   /**
    * Authentication is missing or invalid.
@@ -5101,10 +5310,10 @@ export type ReorderContextGroupErrors = {
     code?: 'payload_too_large' | 'response_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -5387,6 +5596,7 @@ export type QueryJobsErrors = {
   400: ErrorResponse & {
     code?:
       | 'invalid_request'
+      | 'invalid_content_encoding'
       | 'api_version_unsupported'
       | 'user_ip_missing'
       | 'api_version_too_old';
@@ -5418,10 +5628,10 @@ export type QueryJobsErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -5604,7 +5814,11 @@ export type CreateOrgApiKeyErrors = {
    * The request is malformed or failed validation.
    */
   400: ErrorResponse & {
-    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
   };
   /**
    * Authentication is missing or invalid.
@@ -5635,10 +5849,10 @@ export type CreateOrgApiKeyErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -5707,7 +5921,11 @@ export type CreateProjectErrors = {
    * The request is malformed or failed validation.
    */
   400: ErrorResponse & {
-    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
   };
   /**
    * Authentication is missing or invalid.
@@ -5742,10 +5960,10 @@ export type CreateProjectErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -5911,7 +6129,11 @@ export type CreateContextGroupErrors = {
    * The request is malformed or failed validation.
    */
   400: ErrorResponse & {
-    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
   };
   /**
    * Authentication is missing or invalid.
@@ -5946,10 +6168,10 @@ export type CreateContextGroupErrors = {
     code?: 'payload_too_large' | 'response_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -6175,7 +6397,11 @@ export type UpdateContextGroupErrors = {
    * The request is malformed or failed validation.
    */
   400: ErrorResponse & {
-    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
   };
   /**
    * Authentication is missing or invalid.
@@ -6206,10 +6432,10 @@ export type UpdateContextGroupErrors = {
     code?: 'payload_too_large' | 'response_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -6395,7 +6621,11 @@ export type UpsertContextGlossaryErrors = {
    * The request is malformed or failed validation, including a keyword repeated within the batch. The whole batch is rejected.
    */
   400: ErrorResponse & {
-    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
   };
   /**
    * Authentication is missing or invalid.
@@ -6426,10 +6656,10 @@ export type UpsertContextGlossaryErrors = {
     code?: 'payload_too_large' | 'response_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -6675,7 +6905,11 @@ export type UpdateContextGlossaryEntryErrors = {
    * The request is malformed or failed validation.
    */
   400: ErrorResponse & {
-    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
   };
   /**
    * Authentication is missing or invalid.
@@ -6712,10 +6946,10 @@ export type UpdateContextGlossaryEntryErrors = {
     code?: 'payload_too_large' | 'response_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -6980,7 +7214,11 @@ export type SetContextGlossaryTranslationErrors = {
    * The request is malformed or failed validation.
    */
   400: ErrorResponse & {
-    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
   };
   /**
    * Authentication is missing or invalid.
@@ -7011,10 +7249,10 @@ export type SetContextGlossaryTranslationErrors = {
     code?: 'payload_too_large' | 'response_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -7203,7 +7441,11 @@ export type UpsertContextCustomPromptsErrors = {
    * The request is malformed or failed validation, including a name and locale repeated within the batch. The whole batch is rejected.
    */
   400: ErrorResponse & {
-    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
   };
   /**
    * Authentication is missing or invalid.
@@ -7234,10 +7476,10 @@ export type UpsertContextCustomPromptsErrors = {
     code?: 'payload_too_large' | 'response_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -7400,7 +7642,11 @@ export type UpdateContextCustomPromptErrors = {
    * The request is malformed or failed validation.
    */
   400: ErrorResponse & {
-    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
   };
   /**
    * Authentication is missing or invalid.
@@ -7437,10 +7683,10 @@ export type UpdateContextCustomPromptErrors = {
     code?: 'payload_too_large' | 'response_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -7503,7 +7749,11 @@ export type ImportContextContentErrors = {
    * The request is malformed or failed validation.
    */
   400: ErrorResponse & {
-    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing';
   };
   /**
    * Authentication is missing or invalid.
@@ -7534,10 +7784,10 @@ export type ImportContextContentErrors = {
     code?: 'payload_too_large' | 'response_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -7730,6 +7980,7 @@ export type UpsertAssetsErrors = {
   400: ErrorResponse & {
     code?:
       | 'invalid_request'
+      | 'invalid_content_encoding'
       | 'api_version_unsupported'
       | 'user_ip_missing'
       | 'api_version_too_old';
@@ -7761,10 +8012,10 @@ export type UpsertAssetsErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
@@ -7832,7 +8083,7 @@ export type CreateCliWizardSessionErrors = {
    * The request is malformed or failed validation.
    */
   400: ErrorResponse & {
-    code?: 'invalid_request';
+    code?: 'invalid_request' | 'invalid_content_encoding';
   };
   /**
    * The request, or the data it would return, exceeds a size or item limit.
@@ -7841,10 +8092,10 @@ export type CreateCliWizardSessionErrors = {
     code?: 'payload_too_large';
   };
   /**
-   * The request body's Content-Type is missing or not supported. Send the body as application/json.
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
    */
   415: ErrorResponse & {
-    code?: 'unsupported_media_type';
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
   };
   /**
    * Too many requests. The rate limit was exceeded.
