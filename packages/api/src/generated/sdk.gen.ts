@@ -170,6 +170,9 @@ import type {
   UpdateContextGroupData,
   UpdateContextGroupErrors,
   UpdateContextGroupResponses,
+  UpdateFilesData,
+  UpdateFilesErrors,
+  UpdateFilesResponses,
   UpdateProjectData,
   UpdateProjectErrors,
   UpdateProjectResponses,
@@ -595,6 +598,27 @@ export const publishFiles = <ThrowOnError extends boolean = false>(
   });
 
 /**
+ * Update files
+ *
+ * Update 1–100 source files or translations in one atomic batch. Requires `project:files:write`.
+ */
+export const updateFiles = <ThrowOnError extends boolean = false>(
+  options: Options<UpdateFilesData, ThrowOnError>
+) =>
+  options.client.patch<UpdateFilesResponses, UpdateFilesErrors, ThrowOnError>({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects/{projectId}/files',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
  * Upload source files
  *
  * Upload 1–100 source files to the project. Requires `project:files:write`.
@@ -647,7 +671,7 @@ export const uploadTranslations = <ThrowOnError extends boolean = false>(
 /**
  * Create file uploads
  *
- * Get presigned URLs to PUT 1–100 files (media up to 2GB, others 100MB) for Upload source files or translations; files over 4MB must use one. Requires `project:files:write`.
+ * Get presigned URLs to PUT 1–100 files (media up to 2GB, others 150MB) for Upload source files or translations; files over 4MB must use one. Requires `project:files:write`.
  */
 export const createFileUploads = <ThrowOnError extends boolean = false>(
   options: Options<CreateFileUploadsData, ThrowOnError>

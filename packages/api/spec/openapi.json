@@ -3,7 +3,7 @@
   "info": {
     "title": "General Translation API",
     "version": "2026-10-08.v1",
-    "description": "Translate content and manage projects with the General Translation API at `https://api.gtx.dev`.\n\nAuthenticate with `Authorization: Bearer <api-key>`. Each endpoint lists its required permissions. Project keys (`gtx-api-`) access one project; Organization keys (`gtx-org-`) access projects in one Organization.\n\nProject-scoped requests take the project from the path. `gt-project-id` applies only to routes without a project ID in the path, such as legacy routes, where project keys default to their own project and Organization keys require it. Discovery endpoints need no project ID. Organization-scoped requests use the Organization ID in the path. You must have access to the selected project or Organization.",
+    "description": "Translate content and manage projects with the General Translation API at `https://api.gtx.dev`.\n\nAuthenticate with `Authorization: Bearer <api-key>`. Each endpoint lists its required permissions. Project keys (`gtx-api-`) access one project; Organization keys (`gtx-org-`) access projects in one Organization.\n\nProject-scoped requests take the project from the path. `gt-project-id` applies only to routes without a project ID in the path, such as legacy routes, where project keys default to their own project and Organization keys require it. Discovery endpoints need no project ID. Organization-scoped requests use the Organization ID in the path. You must have access to the selected project or Organization.\n\nRequest bodies may be sent with `Content-Encoding: gzip`; size limits apply to the decompressed body.",
     "contact": {
       "name": "General Translation Support",
       "email": "support@generaltranslation.com",
@@ -116,7 +116,9 @@
           "drive_account_not_connected",
           "file_too_large",
           "google_account_not_linked",
+          "integration_managed_file",
           "integration_not_connected",
+          "invalid_content_encoding",
           "ip_not_allowed",
           "layout_not_supported",
           "locale_not_allowed",
@@ -135,6 +137,7 @@
           "target_locales_missing",
           "token_invalid",
           "translation_not_ready",
+          "unsupported_content_encoding",
           "upload_incomplete",
           "usage_limit_reached",
           "user_ip_missing"
@@ -711,6 +714,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "drive_account_not_connected": {
                     "summary": "drive_account_not_connected",
                     "value": {
@@ -752,6 +762,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "drive_account_not_connected",
                             "cdn_not_enabled",
                             "target_locales_missing",
@@ -1065,15 +1076,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -1087,7 +1105,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -1335,6 +1356,13 @@
                       "error": "The request is malformed or failed validation.",
                       "code": "invalid_request"
                     }
+                  },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
                   }
                 },
                 "schema": {
@@ -1347,7 +1375,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["invalid_request"]
+                          "enum": [
+                            "invalid_request",
+                            "invalid_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -1570,15 +1601,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -1592,7 +1630,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -2241,6 +2282,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -2268,6 +2316,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing"
                           ]
@@ -2500,15 +2549,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -2522,7 +2578,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -2864,6 +2923,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -2891,6 +2957,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing"
                           ]
@@ -3142,15 +3209,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -3164,7 +3238,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -3960,6 +4037,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -3994,6 +4078,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing",
                             "content_empty"
@@ -4227,15 +4312,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -4249,7 +4341,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -4758,6 +4853,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -4785,6 +4887,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing"
                           ]
@@ -5065,15 +5168,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -5087,7 +5197,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -5417,6 +5530,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -5458,6 +5578,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing",
                             "source_file_not_found",
@@ -5819,15 +5940,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -5841,7 +5969,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -6132,6 +6263,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -6159,6 +6297,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing"
                           ]
@@ -6402,15 +6541,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -6424,7 +6570,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -7017,6 +7166,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -7044,6 +7200,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing"
                           ]
@@ -7295,15 +7452,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -7317,7 +7481,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -7648,6 +7815,13 @@
                       "error": "The request is malformed or failed validation.",
                       "code": "invalid_request"
                     }
+                  },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
                   }
                 },
                 "schema": {
@@ -7660,7 +7834,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["invalid_request"]
+                          "enum": [
+                            "invalid_request",
+                            "invalid_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -7819,15 +7996,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -7841,7 +8025,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -8584,6 +8771,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -8618,6 +8812,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing",
                             "api_version_too_old"
@@ -8799,15 +8994,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -8821,7 +9023,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -9059,6 +9264,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -9093,6 +9305,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing",
                             "api_version_too_old"
@@ -9311,15 +9524,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -9333,7 +9553,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -9620,6 +9843,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -9654,6 +9884,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing",
                             "api_version_too_old"
@@ -9835,15 +10066,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -9857,7 +10095,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -10108,6 +10349,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -10142,6 +10390,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing",
                             "api_version_too_old"
@@ -10323,15 +10572,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -10345,7 +10601,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -11057,6 +11316,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -11098,6 +11364,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing",
                             "cdn_not_enabled",
@@ -11317,15 +11584,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -11339,7 +11613,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -11520,19 +11797,48 @@
                                   "type": "string",
                                   "minLength": 1
                                 },
-                                "formatMetadata": {
-                                  "type": "object",
-                                  "additionalProperties": {}
-                                },
                                 "metadata": {
                                   "type": "object",
                                   "properties": {
                                     "previewUrl": {
-                                      "type": "string",
+                                      "type": ["string", "null"],
                                       "format": "uri",
                                       "description": "Page that shows this version of the file."
                                     }
                                   }
+                                },
+                                "formatMetadata": {
+                                  "oneOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "content": {
+                                          "type": "object",
+                                          "additionalProperties": {},
+                                          "description": "The metadata as a JSON object."
+                                        }
+                                      },
+                                      "required": ["content"]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "upload": {
+                                          "type": "object",
+                                          "properties": {
+                                            "sha256": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{64}$",
+                                              "description": "SHA-256 of the file's bytes, as 64 lowercase hex characters."
+                                            }
+                                          },
+                                          "required": ["sha256"],
+                                          "description": "A JSON object file already PUT to the URL from Create file uploads, for metadata too large to send in the request."
+                                        }
+                                      },
+                                      "required": ["upload"]
+                                    }
+                                  ]
                                 }
                               },
                               "required": ["fileName", "fileFormat", "locale"]
@@ -11674,6 +11980,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -11715,6 +12028,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing",
                             "file_too_large",
@@ -11949,15 +12263,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -11971,7 +12292,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -12098,6 +12422,578 @@
           }
         },
         "tags": ["Files"]
+      },
+      "patch": {
+        "operationId": "updateFiles",
+        "summary": "Update files",
+        "description": "Update 1–100 source files or translations in one atomic batch. Requires `project:files:write`.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "UserBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "required": true,
+            "name": "projectId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/ApiVersion"
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fileId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "branchId": {
+                          "type": "string",
+                          "minLength": 1,
+                          "description": "Branch ID. Defaults to the project default branch."
+                        },
+                        "versionId": {
+                          "type": "string",
+                          "minLength": 1,
+                          "description": "Source version ID."
+                        },
+                        "locale": {
+                          "type": "string",
+                          "minLength": 1,
+                          "description": "Translation locale. Omit to update the source file.",
+                          "examples": ["es"]
+                        },
+                        "metadata": {
+                          "type": "object",
+                          "properties": {
+                            "previewUrl": {
+                              "type": ["string", "null"],
+                              "format": "uri",
+                              "description": "Page that shows this version of the file."
+                            }
+                          }
+                        }
+                      },
+                      "required": ["fileId", "versionId", "metadata"]
+                    },
+                    "minItems": 1,
+                    "maxItems": 100,
+                    "description": "1–100 source files or translations; each branch, file, version and locale may appear once."
+                  }
+                },
+                "required": ["files"],
+                "description": "An absent field keeps its stored value. `null` clears a nullable field or removes a map entry; other fields reject `null`. In batches and imports, items match stored items by natural key, stored items absent from the batch are untouched, and nothing else is deleted. A blank CSV cell counts as absent."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Each file after the update, in request order. Repeating a request is safe.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "files": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "branchId": {
+                            "type": "string"
+                          },
+                          "fileId": {
+                            "type": "string"
+                          },
+                          "versionId": {
+                            "type": "string"
+                          },
+                          "locale": {
+                            "type": "string",
+                            "description": "Translation locale as stored. Absent for a source file."
+                          },
+                          "metadata": {
+                            "type": "object",
+                            "properties": {
+                              "previewUrl": {
+                                "type": ["string", "null"],
+                                "format": "uri",
+                                "description": "Page that shows this version of the file."
+                              }
+                            }
+                          }
+                        },
+                        "required": [
+                          "branchId",
+                          "fileId",
+                          "versionId",
+                          "metadata"
+                        ]
+                      },
+                      "description": "Each file after the update, in request order."
+                    }
+                  },
+                  "required": ["files"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed or failed validation.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "invalid_request": {
+                    "summary": "invalid_request",
+                    "value": {
+                      "error": "The request is malformed or failed validation.",
+                      "code": "invalid_request"
+                    }
+                  },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
+                  "api_version_unsupported": {
+                    "summary": "api_version_unsupported",
+                    "value": {
+                      "error": "The gt-api-version header does not name a known API version.",
+                      "code": "api_version_unsupported"
+                    }
+                  },
+                  "user_ip_missing": {
+                    "summary": "user_ip_missing",
+                    "value": {
+                      "error": "A dashboard-actor token must send the user's IP address header.",
+                      "code": "user_ip_missing"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "invalid_request",
+                            "invalid_content_encoding",
+                            "api_version_unsupported",
+                            "user_ip_missing"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication is missing or invalid.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "unauthenticated": {
+                    "summary": "unauthenticated",
+                    "value": {
+                      "error": "Authentication is missing or invalid.",
+                      "code": "unauthenticated"
+                    }
+                  },
+                  "api_key_invalid": {
+                    "summary": "api_key_invalid",
+                    "value": {
+                      "error": "The API key is not recognized. It may be mistyped, revoked, or rotated.",
+                      "code": "api_key_invalid"
+                    }
+                  },
+                  "token_invalid": {
+                    "summary": "token_invalid",
+                    "value": {
+                      "error": "The access token is invalid or expired. Sign in again.",
+                      "code": "token_invalid"
+                    }
+                  },
+                  "super_user_grant_revoked": {
+                    "summary": "super_user_grant_revoked",
+                    "value": {
+                      "error": "The super-user access grant behind this token is no longer active.",
+                      "code": "super_user_grant_revoked"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unauthenticated",
+                            "api_key_invalid",
+                            "token_invalid",
+                            "super_user_grant_revoked"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller is authenticated but not allowed to perform this operation or access the requested resource.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "scope_missing": {
+                    "summary": "scope_missing",
+                    "value": {
+                      "error": "The user token lacks an OAuth scope this operation requires. The error names the scope.",
+                      "code": "scope_missing"
+                    }
+                  },
+                  "ip_not_allowed": {
+                    "summary": "ip_not_allowed",
+                    "value": {
+                      "error": "The caller's IP address is blocked by the credential's access policy.",
+                      "code": "ip_not_allowed"
+                    }
+                  },
+                  "permission_missing": {
+                    "summary": "permission_missing",
+                    "value": {
+                      "error": "The credential lacks a permission this operation requires. The error names the permission.",
+                      "code": "permission_missing"
+                    }
+                  },
+                  "target_inaccessible": {
+                    "summary": "target_inaccessible",
+                    "value": {
+                      "error": "The target project or organization does not exist, or the credential cannot access it.",
+                      "code": "target_inaccessible"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "scope_missing",
+                            "ip_not_allowed",
+                            "permission_missing",
+                            "target_inaccessible"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A translation does not exist. Nothing is written.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "source_file_not_found": {
+                    "summary": "source_file_not_found",
+                    "value": {
+                      "error": "A referenced source file or version does not exist in this project.",
+                      "code": "source_file_not_found"
+                    }
+                  },
+                  "not_found": {
+                    "summary": "not_found",
+                    "value": {
+                      "error": "A translation does not exist. Nothing is written.",
+                      "code": "not_found"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["source_file_not_found", "not_found"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A source file version belongs to an integration, which owns its metadata. Nothing is written.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "integration_managed_file": {
+                    "summary": "integration_managed_file",
+                    "value": {
+                      "error": "The file belongs to an integration, which owns its metadata. Change it through that integration.",
+                      "code": "integration_managed_file"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["integration_managed_file"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request, or the data it would return, exceeds a size or item limit.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "payload_too_large": {
+                    "summary": "payload_too_large",
+                    "value": {
+                      "error": "The request, or the data it would return, exceeds a size or item limit.",
+                      "code": "payload_too_large"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["payload_too_large"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "unsupported_media_type": {
+                    "summary": "unsupported_media_type",
+                    "value": {
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
+                      "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. The rate limit was exceeded.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "rate_limited": {
+                    "summary": "rate_limited",
+                    "value": {
+                      "error": "Too many requests. The rate limit was exceeded.",
+                      "code": "rate_limited"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["rate_limited"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected server error occurred.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "internal_error": {
+                    "summary": "internal_error",
+                    "value": {
+                      "error": "An unexpected server error occurred.",
+                      "code": "internal_error"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["internal_error"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Files"]
       }
     },
     "/v2/projects/{projectId}/files/translations": {
@@ -12188,10 +13084,6 @@
                                 "incomingBranchId": {
                                   "type": "string",
                                   "minLength": 1
-                                },
-                                "formatMetadata": {
-                                  "type": "object",
-                                  "additionalProperties": {}
                                 }
                               },
                               "required": ["fileName", "fileFormat", "locale"]
@@ -12404,6 +13296,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -12445,6 +13344,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing",
                             "file_too_large",
@@ -12679,15 +13579,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -12701,7 +13608,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -12841,7 +13751,7 @@
       "post": {
         "operationId": "createFileUploads",
         "summary": "Create file uploads",
-        "description": "Get presigned URLs to PUT 1–100 files (media up to 2GB, others 100MB) for Upload source files or translations; files over 4MB must use one. Requires `project:files:write`.",
+        "description": "Get presigned URLs to PUT 1–100 files (media up to 2GB, others 150MB) for Upload source files or translations; files over 4MB must use one. Requires `project:files:write`.",
         "security": [
           {
             "BearerAuth": []
@@ -12890,7 +13800,7 @@
                           "type": "integer",
                           "minimum": 1,
                           "maximum": 2000000000,
-                          "description": "File size in bytes: at most 2000000000 for PNG, JPEG and MP4, and 100000000 for other formats."
+                          "description": "File size in bytes: at most 2000000000 for PNG, JPEG and MP4, and 150000000 for other formats."
                         },
                         "sha256": {
                           "type": "string",
@@ -12981,6 +13891,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -13015,6 +13932,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing",
                             "api_version_too_old"
@@ -13196,15 +14114,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -13218,7 +14143,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -13783,6 +14711,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -13817,6 +14752,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing",
                             "api_version_too_old"
@@ -14050,15 +14986,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -14072,7 +15015,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -14256,6 +15202,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -14283,6 +15236,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing"
                           ]
@@ -14544,15 +15498,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -14566,7 +15527,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -15222,6 +16186,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -15256,6 +16227,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing",
                             "api_version_too_old"
@@ -15474,15 +16446,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -15496,7 +16475,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -15794,6 +16776,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -15842,6 +16831,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing",
                             "cdn_not_enabled",
@@ -16156,15 +17146,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -16178,7 +17175,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -16543,6 +17543,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -16577,6 +17584,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing",
                             "api_version_too_old"
@@ -16802,15 +17810,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -16824,7 +17839,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -16993,6 +18011,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -17027,6 +18052,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing",
                             "api_version_too_old"
@@ -17332,15 +18358,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -17354,7 +18387,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -17943,6 +18979,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -17977,6 +19020,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing",
                             "api_version_too_old"
@@ -18195,15 +19239,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -18217,7 +19268,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -18428,6 +19482,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -18455,6 +19516,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing"
                           ]
@@ -18688,15 +19750,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -18710,7 +19779,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -20921,6 +21993,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -20948,6 +22027,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing"
                           ]
@@ -21172,15 +22252,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -21194,7 +22281,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -21887,6 +22977,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -21921,6 +23018,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing",
                             "api_version_too_old"
@@ -22102,15 +23200,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -22124,7 +23229,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -22662,6 +23770,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -22689,6 +23804,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing"
                           ]
@@ -22885,15 +24001,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -22907,7 +24030,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -23105,6 +24231,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -23132,6 +24265,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing"
                           ]
@@ -23349,15 +24483,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -23371,7 +24512,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -23983,6 +25127,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -24010,6 +25161,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing"
                           ]
@@ -24234,15 +25386,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -24256,7 +25415,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -24814,6 +25976,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -24841,6 +26010,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing"
                           ]
@@ -25057,15 +26227,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -25079,7 +26256,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -26147,6 +27327,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -26174,6 +27361,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing"
                           ]
@@ -26390,15 +27578,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -26412,7 +27607,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -27005,6 +28203,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -27032,6 +28237,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing"
                           ]
@@ -27285,15 +28491,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -27307,7 +28520,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -28386,6 +29602,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -28413,6 +29636,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing"
                           ]
@@ -28629,15 +29853,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -28651,7 +29882,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -29725,6 +30959,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -29752,6 +30993,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing"
                           ]
@@ -29968,15 +31210,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -29990,7 +31239,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -30191,6 +31443,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -30218,6 +31477,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing"
                           ]
@@ -30471,15 +31731,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -30493,7 +31760,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -31103,6 +32373,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -31130,6 +32407,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing"
                           ]
@@ -31346,15 +32624,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -31368,7 +32653,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -32070,6 +33358,13 @@
                       "code": "invalid_request"
                     }
                   },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
+                  },
                   "api_version_unsupported": {
                     "summary": "api_version_unsupported",
                     "value": {
@@ -32104,6 +33399,7 @@
                           "type": "string",
                           "enum": [
                             "invalid_request",
+                            "invalid_content_encoding",
                             "api_version_unsupported",
                             "user_ip_missing",
                             "api_version_too_old"
@@ -32285,15 +33581,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -32307,7 +33610,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -32450,6 +33756,13 @@
                       "error": "The request is malformed or failed validation.",
                       "code": "invalid_request"
                     }
+                  },
+                  "invalid_content_encoding": {
+                    "summary": "invalid_content_encoding",
+                    "value": {
+                      "error": "The gzip-encoded request body is corrupt or truncated. Send it again uncompressed.",
+                      "code": "invalid_content_encoding"
+                    }
                   }
                 },
                 "schema": {
@@ -32462,7 +33775,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["invalid_request"]
+                          "enum": [
+                            "invalid_request",
+                            "invalid_content_encoding"
+                          ]
                         }
                       }
                     }
@@ -32514,15 +33830,22 @@
             }
           },
           "415": {
-            "description": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+            "description": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
             "content": {
               "application/json": {
                 "examples": {
                   "unsupported_media_type": {
                     "summary": "unsupported_media_type",
                     "value": {
-                      "error": "The request body's Content-Type is missing or not supported. Send the body as application/json.",
+                      "error": "The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.",
                       "code": "unsupported_media_type"
+                    }
+                  },
+                  "unsupported_content_encoding": {
+                    "summary": "unsupported_content_encoding",
+                    "value": {
+                      "error": "The request body's Content-Encoding is not supported. Send it uncompressed or gzip-encoded.",
+                      "code": "unsupported_content_encoding"
                     }
                   }
                 },
@@ -32536,7 +33859,10 @@
                       "properties": {
                         "code": {
                           "type": "string",
-                          "enum": ["unsupported_media_type"]
+                          "enum": [
+                            "unsupported_media_type",
+                            "unsupported_content_encoding"
+                          ]
                         }
                       }
                     }
