@@ -32,7 +32,7 @@ function useComputeT({
   _locale,
   _enableI18n,
   _renderPreparedT = renderPreparedT,
-  _translations,
+  inline,
   ...params
 }: TProps): ReactNode {
   // Prepare our source children for rendering
@@ -60,7 +60,7 @@ function useComputeT({
 
   // Translations embedded at the call site win over loaded translations
   const targetJsxChildren =
-    (shouldTranslate ? _translations?.(locale) : undefined) ?? storeJsxChildren;
+    (shouldTranslate ? inline?.(locale) : undefined) ?? storeJsxChildren;
 
   // Tx hot reload: render previous translation while loading new one
   // TODO: account for success vs loading vs failed request states

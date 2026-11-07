@@ -42,7 +42,7 @@ type TProps = {
    * Translations embedded at the call site, checked before loaded
    * translations. Usually injected at build time.
    */
-  _translations?: InlineTranslations<JsxChildren>;
+  inline?: InlineTranslations<JsxChildren>;
 } & JsxTranslationOptions;
 
 type ResolvedTProps = TProps & {
