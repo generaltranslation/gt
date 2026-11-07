@@ -84,6 +84,14 @@ impl TransformVisitor {
   pub fn inject_hash_attributes(&mut self, mut element: JSXElement) -> JSXElement {
     // Check if hash attribute already exists
     let has_hash_attr = TransformVisitor::determine_has_hash_attr(&element);
+    // A spread or `$_hash` prop can change the hash the runtime uses, so an
+    // embedded translation could belong to another entry
+    let hash_may_change = TransformVisitor::determine_has_attr(&element, "$_hash")
+      || element
+        .opening
+        .attrs
+        .iter()
+        .any(|attr| matches!(attr, JSXAttrOrSpread::SpreadElement(_)));
 
     if !has_hash_attr {
       // Get the hash from the aggregator
@@ -95,18 +103,13 @@ impl TransformVisitor {
         let hash_value = translation_jsx.hash.clone();
         let hash_attr = TransformVisitor::create_attr(&element, &hash_value, "_hash");
         element.opening.attrs.push(hash_attr);
-        self.inject_inline_attr(&mut element, &hash_value);
+        if !hash_may_change {
+          self.inject_inline_attr(&mut element, &hash_value);
+        }
       }
     } else if let Some(hash_value) = extract_attribute_from_jsx_attr(&element, "_hash") {
       // A static user-supplied _hash is what the runtime looks up. It takes no
-      // part in the counter, so it is read here instead. A spread or `$_hash`
-      // prop can change the hash the runtime uses, so skip those.
-      let hash_may_change = TransformVisitor::determine_has_attr(&element, "$_hash")
-        || element
-          .opening
-          .attrs
-          .iter()
-          .any(|attr| matches!(attr, JSXAttrOrSpread::SpreadElement(_)));
+      // part in the counter, so it is read here instead.
       if !hash_may_change {
         self.inject_inline_attr(&mut element, &hash_value);
       }

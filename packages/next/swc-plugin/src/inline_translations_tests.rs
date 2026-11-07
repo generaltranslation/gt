@@ -205,6 +205,20 @@ fn embeds_jsx_children_objects_for_t() {
 }
 
 #[test]
+fn skips_t_when_props_can_change_the_computed_hash() {
+  for code in [
+    r#"import { T } from 'gt-next'; export const el = <T $_hash="custom">Hello world</T>;"#,
+    r#"import { T } from 'gt-next'; export const el = <T {...props}>Hello world</T>;"#,
+  ] {
+    let output = transform(
+      code,
+      translations(&["fr"], serde_json::json!({ "fr": { JSX_HELLO_WORLD: "Bonjour le monde" } })),
+    );
+    assert!(!output.contains("inline={"), "{output}");
+  }
+}
+
+#[test]
 fn skips_t_without_embedded_translations() {
   let output = transform(T_CODE, translations(&["fr"], serde_json::json!({ "fr": {} })));
   assert!(output.contains("_hash="), "{output}");
@@ -300,6 +314,19 @@ fn skips_gt_calls_with_a_non_literal_hash() {
     hello_variants(),
   );
   assert!(!output.contains("Bonjour"), "{output}");
+}
+
+#[test]
+fn skips_gt_calls_with_a_repeated_hash() {
+  let output = transform(
+    r#"
+      import { useGT } from 'gt-next';
+      const gt = useGT();
+      gt("Hello", { $_hash: "custom", $_hash: "other" });
+    "#,
+    hello_variants(),
+  );
+  assert!(!output.contains("(locale)=>"), "{output}");
 }
 
 #[test]

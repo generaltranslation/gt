@@ -232,6 +232,26 @@ pub fn has_static_hash_options(options: Option<&ExprOrSpread>) -> bool {
   let Expr::Object(obj) = options.expr.as_ref() else {
     return false;
   };
+  // JavaScript keeps the last of repeated keys, while the hash is read from the first
+  let hash_keys = obj
+    .props
+    .iter()
+    .filter(|prop| match prop {
+      PropOrSpread::Prop(prop) => match prop.as_ref() {
+        Prop::KeyValue(kv) => match &kv.key {
+          PropName::Ident(ident) => ident.sym.as_ref() == "$_hash",
+          PropName::Str(str_lit) => str_lit.value.to_string_lossy() == "$_hash",
+          _ => false,
+        },
+        Prop::Shorthand(ident) => ident.sym.as_ref() == "$_hash",
+        _ => false,
+      },
+      PropOrSpread::Spread(_) => false,
+    })
+    .count();
+  if hash_keys > 1 {
+    return false;
+  }
   obj.props.iter().all(|prop| {
     let PropOrSpread::Prop(prop) = prop else {
       return false;
