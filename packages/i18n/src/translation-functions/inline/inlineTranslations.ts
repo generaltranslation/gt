@@ -1,7 +1,9 @@
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 import {
   getI18nCache,
   isI18nCacheInitialized,
 } from '../../i18n-cache/singleton-operations';
+import logger from '../../logs/logger';
 import type { Translation } from '../../i18n-cache/translations-manager/utils/types/translation-data';
 
 /**
@@ -13,7 +15,7 @@ import type { Translation } from '../../i18n-cache/translations-manager/utils/ty
  * can choose which locales to embed. When the callback returns `undefined`,
  * resolution falls back to the loaded translations for that locale.
  *
- * @param {string} locale - The resolved translation locale (never the default locale)
+ * @param {string} locale - The target locale
  * @returns The translation for the locale, or undefined if it was not embedded
  *
  * @example
@@ -25,23 +27,39 @@ export type InlineTranslations<T extends Translation = Translation> = (
   locale: string
 ) => T | undefined;
 
+const msgBeforeInitWarning = createDiagnosticMessage({
+  source: 'gt-i18n',
+  severity: 'Warning',
+  whatHappened:
+    'msg() received embedded translations before GT was initialized',
+  why: 'there is no translations cache to store them in yet',
+  wayOut: 'these messages fall back to loaded translations',
+  fix: 'Initialize GT before importing modules that call msg()',
+});
+let warnedMsgBeforeInit = false;
+
 /**
- * Register inline translations for a message hash on the I18nCache.
+ * Register translations embedded at a msg() call site for a message hash.
  *
  * `msg()` registers because the message it encodes is resolved later by
- * `m()`, which has no access to the original call site. The cache is a global
- * singleton, so registrations are shared across bundle layers (Next.js
- * evaluates gt-i18n once per server layer).
+ * `m()`, which has no access to the original call site. The translations are
+ * stored in the I18nCache for each embedded locale.
  *
- * Does nothing before GT is initialized, so module-level `msg()` calls must
- * run after initialization (gt-next initializes on import, and SPAs import
- * the app after `initializeGTSPA()`).
+ * Module-level `msg()` calls must run after GT is initialized (gt-next
+ * initializes on import, and SPAs import the app after `initializeGTSPA()`).
+ * Registering earlier warns once and does nothing.
  */
 export function registerInlineTranslations(
   hash: string,
   translations: InlineTranslations
 ): void {
-  if (!isI18nCacheInitialized()) return;
+  if (!isI18nCacheInitialized()) {
+    if (!warnedMsgBeforeInit) {
+      warnedMsgBeforeInit = true;
+      logger.warn(msgBeforeInitWarning);
+    }
+    return;
+  }
   getI18nCache().registerInlineTranslations(hash, translations);
 }
 

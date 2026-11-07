@@ -38,6 +38,14 @@ export type I18nCacheConstructorParams = DictionaryConfig &
     loadTranslations?: TranslationsLoader;
     batchConfig?: TranslationBatchConfig;
     runtimeTranslation?: RuntimeTranslationConfig;
+    /**
+     * Experimental: locales whose translations are embedded at each call site
+     * at build time (see the compiler's `inlineTranslations` option). Their
+     * translations are never loaded or expired, so content that was not
+     * embedded (for example derive content or dictionaries) renders in the
+     * source locale.
+     */
+    inlinedLocales?: string[];
   };
 
 /**

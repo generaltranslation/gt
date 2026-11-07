@@ -26,7 +26,6 @@ import { resolveDictionaryLookupOptions } from './translations-manager/utils/dic
 import { DictionarySourceNotFoundError } from './translations-manager/utils/DictionarySourceNotFoundError';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
-import { hashMessage } from '../utils/hashMessage';
 import type { InlineTranslations } from '../translation-functions/inline/inlineTranslations';
 
 /**
@@ -39,15 +38,13 @@ const DEFAULT_TRANSLATION_TIMEOUT = 12_000; // 12 seconds
  * @template U - The type of the translation (default: Translation)
  * @param {U} message - The message to get the translation for
  * @param {LookupOptions} [options] - The options for the translation
- * @param {InlineTranslations} [inline] - Translations embedded at the call site, checked before the cache
  * @returns {U | undefined} The translation for the given message and options or undefined if the translation is not found
  */
 type TranslationResolver<U extends Translation = Translation> = <
   T extends U = U,
 >(
   message: T,
-  options?: LookupOptions,
-  inline?: InlineTranslations<T>
+  options?: LookupOptions
 ) => T | undefined;
 
 type DictionaryResolver = (id: string) => DictionaryEntry | undefined;
@@ -120,9 +117,9 @@ class I18nCache<TranslationValue extends Translation = Translation> {
   private createTranslateMany: CreateTranslateMany;
 
   /**
-   * Inline translations registered by msg(), keyed by message hash
+   * Locales whose translations are embedded at build time
    */
-  private inlineTranslations = new Map<string, InlineTranslations>();
+  private inlinedLocales: Locale[];
 
   /**
    * Creates an instance of I18nCache.
@@ -184,6 +181,16 @@ class I18nCache<TranslationValue extends Translation = Translation> {
       load: async (locale) =>
         this.createDictionaryCache(locale, await loadDictionary(locale)),
     });
+
+    // Embedded locales never load translations: their caches start empty,
+    // never expire, and are filled by msg() registrations, the server
+    // snapshot, and runtime translation
+    this.inlinedLocales = params.inlinedLocales ?? [];
+    for (const locale of this.inlinedLocales) {
+      this.translations.set(locale, this.createTranslationsCache(locale, {}), {
+        expiresAt: -1,
+      });
+    }
 
     // The default locale's source dictionary is provided synchronously and
     // never expires
@@ -280,12 +287,8 @@ class I18nCache<TranslationValue extends Translation = Translation> {
 
       const txCache = await this.translations.getOrLoad(translationLocale);
 
-      // Get the translations, including those registered by msg(). Clients
-      // resolve msg() strings created in server-only modules from this snapshot.
-      return {
-        ...txCache.getInternalCache(),
-        ...this.getRegisteredInlineTranslations(translationLocale),
-      };
+      // Get the translations
+      return txCache.getInternalCache();
     });
   }
 
@@ -470,8 +473,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
   lookupTranslation<T extends TranslationValue = TranslationValue>(
     locale: string,
     message: T,
-    options: LookupOptions,
-    inline?: InlineTranslations<T>
+    options: LookupOptions
   ): T | undefined {
     return this.guard<T | undefined>(undefined, () => {
       // Validate
@@ -481,18 +483,10 @@ class I18nCache<TranslationValue extends Translation = Translation> {
       // Early return if in default locale
       if (!translationLocale) return message;
 
-      // Get the translation from the call site, then the locale cache
-      return (
-        this.resolveInlineTranslation(
-          translationLocale,
-          message,
-          lookupOptions,
-          inline
-        ) ??
-        this.translations
-          .get(translationLocale)
-          ?.get({ message, options: lookupOptions })
-      );
+      // Get the translation from the locale cache
+      return this.translations
+        .get(translationLocale)
+        ?.get({ message, options: lookupOptions });
     });
   }
 
@@ -505,41 +499,11 @@ class I18nCache<TranslationValue extends Translation = Translation> {
   >(
     locale: string,
     message: T,
-    options: LookupOptions,
-    inline?: InlineTranslations<T>
+    options: LookupOptions
   ): Promise<T | undefined> {
     return this.guardAsync<T | undefined>(undefined, () =>
-      this.lookupTranslationWithFallbackResolved(
-        locale,
-        message,
-        options,
-        inline
-      )
+      this.lookupTranslationWithFallbackResolved(locale, message, options)
     );
-  }
-
-  /**
-   * Resolve only the translation embedded at the call site (or registered by
-   * msg()) for a locale. Returns the message for the default locale and
-   * undefined when nothing was embedded for the locale.
-   */
-  lookupInlineTranslation<T extends TranslationValue = TranslationValue>(
-    locale: string,
-    message: T,
-    options: LookupOptions,
-    inline?: InlineTranslations<T>
-  ): T | undefined {
-    return this.guard<T | undefined>(undefined, () => {
-      const { translationLocale, options: lookupOptions } =
-        this.resolveLookupParams(locale, options);
-      if (!translationLocale) return message;
-      return this.resolveInlineTranslation(
-        translationLocale,
-        message,
-        lookupOptions,
-        inline
-      );
-    });
   }
 
   /**
@@ -606,8 +570,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
         // Create translation resolver
         const lookupTranslation: TranslationResolver<TranslationValue> = (
           message,
-          lookupOptions: LookupOptions = {} as LookupOptions,
-          inline
+          lookupOptions: LookupOptions = {} as LookupOptions
         ) =>
           this.guard(undefined, () => {
             const { translationLocale, options } = this.resolveLookupParams(
@@ -624,15 +587,8 @@ class I18nCache<TranslationValue extends Translation = Translation> {
                 ? asyncBoundaryTxCache
                 : this.translations.get(translationLocale);
 
-            // Get the translation from the call site, then the locale cache
-            return (
-              this.resolveInlineTranslation(
-                translationLocale,
-                message,
-                options,
-                inline
-              ) ?? txCache?.get({ message, options })
-            );
+            // Get the translation
+            return txCache?.get({ message, options });
           });
 
         Object.assign(lookupTranslation, { prefetchEntries });
@@ -746,28 +702,12 @@ class I18nCache<TranslationValue extends Translation = Translation> {
 
   private async lookupTranslationWithFallbackResolved<
     T extends TranslationValue = TranslationValue,
-  >(
-    locale: string,
-    message: T,
-    options: LookupOptions,
-    inline?: InlineTranslations<T>
-  ): Promise<T> {
+  >(locale: string, message: T, options: LookupOptions): Promise<T> {
     const { translationLocale, options: lookupOptions } =
       this.resolveLookupParams(locale, options);
 
     if (!translationLocale) {
       return message;
-    }
-
-    // Embedded translations skip loading the locale entirely
-    const inlineTranslation = this.resolveInlineTranslation(
-      translationLocale,
-      message,
-      lookupOptions,
-      inline
-    );
-    if (inlineTranslation != null) {
-      return inlineTranslation;
     }
 
     const txCache = await this.translations.getOrLoad(translationLocale);
@@ -780,48 +720,20 @@ class I18nCache<TranslationValue extends Translation = Translation> {
   }
 
   /**
-   * Register inline translations for a message hash.
-   * Used by msg(), whose message is resolved later by m() without the call site.
+   * Register translations embedded at a msg() call site. msg() messages are
+   * resolved later by m(), which has no access to the call site, so the
+   * translations are stored in each embedded locale's cache under the
+   * message hash. From there they resolve like loaded translations and reach
+   * the client through the translations snapshot.
    */
-  registerInlineTranslations(hash: string, inline: InlineTranslations): void {
-    this.inlineTranslations.set(hash, inline);
-  }
-
-  /**
-   * Translations registered by msg() for a locale, keyed by message hash
-   */
-  private getRegisteredInlineTranslations(
-    translationLocale: Locale
-  ): Record<Hash, TranslationValue> {
-    const translations: Record<Hash, TranslationValue> = {};
-    this.inlineTranslations.forEach((inline, hash) => {
-      const translation = inline(translationLocale);
-      if (translation != null) {
-        translations[hash] = translation as TranslationValue;
-      }
-    });
-    return translations;
-  }
-
-  /**
-   * Resolve a translation embedded at the call site, falling back to one
-   * registered by msg() under the message hash.
-   */
-  private resolveInlineTranslation<T extends Translation>(
-    translationLocale: string,
-    message: T,
-    options: LookupOptions,
-    inline?: InlineTranslations<T>
-  ): T | undefined {
-    if (inline) {
-      const translation = inline(translationLocale);
-      if (translation != null) return translation;
+  registerInlineTranslations(hash: Hash, inline: InlineTranslations): void {
+    for (const locale of this.inlinedLocales) {
+      const translation = inline(locale);
+      if (translation == null) continue;
+      this.translations.get(locale)?.update({
+        [hash]: translation as TranslationValue,
+      });
     }
-    if (this.inlineTranslations.size === 0) return undefined;
-    const registered = this.inlineTranslations.get(
-      hashMessage(message, options)
-    );
-    return registered?.(translationLocale) as T | undefined;
   }
 }
 

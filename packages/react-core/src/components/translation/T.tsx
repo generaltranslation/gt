@@ -4,7 +4,6 @@ import { useRef, type ReactNode } from 'react';
 import { renderPreparedT } from '../../utils/rendering/renderPipeline';
 import type { TProps } from '../../utils/translation/prepareT.shared';
 import { usePrepareT } from '../../utils/translation/usePrepareT';
-import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 
 // ===== Component ===== //
 
@@ -61,14 +60,7 @@ function useComputeT({
 
   // Translations embedded at the call site win over loaded translations
   const targetJsxChildren =
-    (_translations && shouldTranslate
-      ? getReactI18nCache().lookupInlineTranslation(
-          locale,
-          sourceJsxChildren,
-          targetOptions,
-          _translations
-        )
-      : undefined) ?? storeJsxChildren;
+    (shouldTranslate ? _translations?.(locale) : undefined) ?? storeJsxChildren;
 
   // Tx hot reload: render previous translation while loading new one
   // TODO: account for success vs loading vs failed request states

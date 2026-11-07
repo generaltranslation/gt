@@ -60,10 +60,11 @@ import {
  *   locale === 'fr' ? 'Bonjour' : undefined
  * );
  *
- * @note - Passing inline translations makes msg() impure: it registers them on
- * the I18nCache keyed by the message hash, and does nothing before GT is
- * initialized. For arrays, the callback returns one translation per element,
- * and each element registers separately.
+ * @note - Passing inline translations makes msg() impure: it stores them in the
+ * I18nCache for each embedded locale (`inlinedLocales`) under the message
+ * hash, and warns and does nothing before GT is initialized. For arrays, the
+ * callback returns one translation per element, and each element registers
+ * separately.
  *
  * @important Internal note: until other packages are updated to use i18n-context practices, msg cannot require an initialized i18nCache. It only registers inline translations when the cache already exists.
  */
