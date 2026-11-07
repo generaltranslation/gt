@@ -827,11 +827,22 @@ describe('putFileUpload', () => {
   const upload = {
     url: 'https://bucket.example.com/staged?X-Amz-Signature=sig',
     headers: { 'x-amz-checksum-sha256': 'checksum' },
-    expiresAt: '2026-11-05T00:00:00.000Z',
+    expiresAt: '2099-01-01T00:00:00.000Z',
   };
+  const expiresInMs = (ms: number) =>
+    vi.useFakeTimers({ now: Date.parse(upload.expiresAt) - ms });
+  const neverResponds = vi.fn<typeof fetch>(
+    (input, init) =>
+      new Promise((_, reject) => {
+        const { signal } = new Request(input, init);
+        signal.addEventListener('abort', () => reject(signal.reason));
+      })
+  );
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.useRealTimers();
+    neverResponds.mockClear();
   });
 
   it('PUTs the bytes with the presigned headers and no API credentials', async () => {
@@ -852,29 +863,51 @@ describe('putFileUpload', () => {
     );
   });
 
-  it('gives each attempt one more second per 256 KiB of the file', async () => {
-    vi.useFakeTimers();
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>(
-        (input, init) =>
-          new Promise((_, reject) => {
-            const { signal } = new Request(input, init);
-            signal.addEventListener('abort', () => reject(signal.reason));
-          })
-      )
-    );
+  it('PUTs through the given fetch and retry policy', async () => {
+    const globalFetch = vi.fn<typeof fetch>();
+    vi.stubGlobal('fetch', globalFetch);
+    const configuredFetch = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(new Response(null, { status: 503 }));
 
-    const put = putFileUpload(upload, new Uint8Array(2 * 256 * 1024), {
-      timeoutMs: 100,
-      retryPolicy: 'none',
-    });
+    await expect(
+      putFileUpload(upload, new Uint8Array([1]), {
+        fetch: configuredFetch,
+        retryPolicy: 'none',
+      })
+    ).rejects.toMatchObject({ status: 503 });
+    expect(configuredFetch).toHaveBeenCalledOnce();
+    expect(globalFetch).not.toHaveBeenCalled();
+  });
+
+  it('times out when the presigned URL expires', async () => {
+    expiresInMs(2000);
+    vi.stubGlobal('fetch', neverResponds);
+
+    const put = putFileUpload(upload, new Uint8Array([1]));
     const settled = expect(put).rejects.toThrow(
-      'Request timed out after 2100ms'
+      'Request timed out after 2000ms'
     );
-    await vi.advanceTimersByTimeAsync(2100);
+    await vi.advanceTimersByTimeAsync(2000);
     await settled;
-    vi.useRealTimers();
+    expect(neverResponds).toHaveBeenCalledOnce();
+  });
+
+  it('stops retrying when the URL expires during a backoff, reporting the last response', async () => {
+    expiresInMs(300);
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(new Response(null, { status: 503 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const put = putFileUpload(upload, new Uint8Array([1]));
+    const settled = expect(put).rejects.toThrow(
+      'File upload failed with HTTP 503'
+    );
+    // The first backoff is 500ms, so the URL expires before the second attempt.
+    await vi.advanceTimersByTimeAsync(300);
+    await settled;
+    expect(fetchMock).toHaveBeenCalledOnce();
   });
 
   it('throws an ApiError with the HTTP status when storage rejects the PUT', async () => {
