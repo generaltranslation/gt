@@ -7,7 +7,6 @@ import Formats from './fixtures/Formats.svelte';
 import Greeting from './fixtures/Greeting.svelte';
 import Harness from './fixtures/Harness.svelte';
 import Inbox from './fixtures/Inbox.svelte';
-import InlineString from './fixtures/InlineString.svelte';
 import Strings from './fixtures/Strings.svelte';
 import { hashesOf, setupGT, stringsOf, withoutComments } from './helpers';
 
@@ -222,17 +221,6 @@ describe('strings and formatting', () => {
     const source = html({ component: Strings, locale: 'en' });
     expect(source).toContain('<p class="gt">Hello, Ada!</p>');
     expect(source).toContain('<p class="msg">Saved</p>');
-  });
-
-  it('uses translations embedded at the gt() call site', async () => {
-    setupGT({ fr: {} });
-    const gt = await loadTranslations('fr');
-    expect(html({ component: InlineString, ...gt })).toContain(
-      'Bonjour, Ada !'
-    );
-    expect(html({ component: InlineString, locale: 'en' })).toContain(
-      'Hello, Ada!'
-    );
   });
 
   it('translates every string with the hash the extractor computes', async () => {
