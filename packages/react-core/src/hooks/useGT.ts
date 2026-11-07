@@ -6,7 +6,6 @@ import type {
   GTTranslationOptions,
   InlineTranslations,
 } from 'gt-i18n/types';
-import { getReactI18nCache } from '../i18n-cache/singleton-operations';
 import type { StringFormat } from '@generaltranslation/format/types';
 import { useDefaultLocale } from './i18n-config';
 import {
@@ -48,15 +47,9 @@ export function useGT(_messages?: Message[]): GTFunctionType {
         });
       }
 
-      // Translations embedded at the call site (or registered by msg())
-      // win over loaded translations
+      // Translations embedded at the call site win over loaded translations
       const translation =
-        getReactI18nCache().lookupInlineTranslation(
-          lookupOptions.$locale,
-          message,
-          lookupOptions,
-          inline
-        ) ??
+        inline?.(lookupOptions.$locale) ??
         resolveTranslation({
           locale: lookupOptions.$locale,
           message,

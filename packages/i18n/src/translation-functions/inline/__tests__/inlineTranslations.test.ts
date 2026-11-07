@@ -66,7 +66,7 @@ describe('inline translations', () => {
       expect(inline).not.toHaveBeenCalled();
     });
 
-    it('passes the resolved translation locale to the callback', async () => {
+    it('passes the target locale to the callback', async () => {
       const gt = await getGTInternal({ locale: 'fr', enableI18n: true });
       const inline = vi.fn(() => 'Bonjour');
       gt('Hello', { $locale: 'es' }, inline);
@@ -75,6 +75,15 @@ describe('inline translations', () => {
   });
 
   describe('msg() + m()', () => {
+    beforeEach(() => {
+      resetGTGlobals();
+      initializeI18nConfig({
+        defaultLocale: 'en',
+        locales: ['en', 'fr', 'es'],
+      });
+      setI18nCache(new I18nCache({ loadTranslations, inlinedLocales: ['fr'] }));
+    });
+
     it('resolves inline translations registered by msg()', async () => {
       const encoded = msg('Hello', undefined, frInline({ fr: 'Bonjour' }));
       const m = await getMessagesInternal({ locale: 'fr', enableI18n: true });
@@ -106,7 +115,9 @@ describe('inline translations', () => {
         locale === 'fr' ? ['Bonjour', undefined] : undefined
       );
       const m = await getMessagesInternal({ locale: 'fr', enableI18n: true });
-      expect(encoded.map((entry) => m(entry))).toEqual(['Bonjour', 'Chargé']);
+      // Embedded locales never load, so the element left undefined renders
+      // the source
+      expect(encoded.map((entry) => m(entry))).toEqual(['Bonjour', 'Loaded']);
     });
 
     it('resolves inline translations for msg() arrays with options', async () => {
@@ -131,29 +142,88 @@ describe('inline translations', () => {
       expect(encoded.map((entry) => m(entry))).toEqual(['Un {x}', 'Deux']);
     });
 
-    it('falls back to loaded translations for locales msg() did not inline', async () => {
+    it('ignores translations for locales that are not embedded', async () => {
       msg('Loaded', undefined, frInline({ es: 'Cargado' }));
-      const m = await getMessagesInternal({ locale: 'fr', enableI18n: true });
+      const m = await getMessagesInternal({ locale: 'es', enableI18n: true });
       expect(m('Loaded')).toBe('Chargé');
     });
   });
 
-  describe('I18nCache.lookupTranslationWithFallback()', () => {
-    it('does not load the locale when the translation is inlined', async () => {
-      const cache = new I18nCache({ loadTranslations });
-      const translation = await cache.lookupTranslationWithFallback(
-        'fr',
-        'Hello',
-        { $format: 'ICU' },
-        frInline({ fr: 'Bonjour' })
-      );
-      expect(translation).toBe('Bonjour');
+  describe('inlinedLocales', () => {
+    it('skips loadTranslations for inlined locales', async () => {
+      const cache = new I18nCache({ loadTranslations, inlinedLocales: ['fr'] });
+      expect(await cache.loadTranslations('fr')).toEqual({});
+      await cache.lookupTranslationWithFallback('fr', 'Hello', {
+        $format: 'ICU',
+      });
       expect(loadTranslations).not.toHaveBeenCalled();
+    });
+
+    it('loads translations for other locales', async () => {
+      const cache = new I18nCache({ loadTranslations, inlinedLocales: ['fr'] });
+      await cache.loadTranslations('es');
+      expect(loadTranslations).toHaveBeenCalledWith('es');
+    });
+
+    it('keeps loading when an inlined locale resolves to another app locale', async () => {
+      resetGTGlobals();
+      initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr-FR'] });
+      const cache = new I18nCache({ loadTranslations, inlinedLocales: ['fr'] });
+      await cache.loadTranslations('fr-FR');
+      expect(loadTranslations).toHaveBeenCalledWith('fr-FR');
+    });
+
+    it('never expires msg() registrations for inlined locales', async () => {
+      resetGTGlobals();
+      initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
+      setI18nCache(
+        new I18nCache({
+          loadTranslations,
+          inlinedLocales: ['fr'],
+          cacheExpiryTime: 1,
+        })
+      );
+      const encoded = msg('Hello', undefined, frInline({ fr: 'Bonjour' }));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      const m = await getMessagesInternal({ locale: 'fr', enableI18n: true });
+      expect(m(encoded)).toBe('Bonjour');
+      expect(loadTranslations).not.toHaveBeenCalled();
+    });
+
+    it('sends msg() registrations to the client in the translations snapshot', async () => {
+      resetGTGlobals();
+      initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
+      const serverCache = new I18nCache({
+        loadTranslations,
+        inlinedLocales: ['fr'],
+      });
+      setI18nCache(serverCache);
+      const encoded = msg('Hello', undefined, frInline({ fr: 'Bonjour' }));
+      const snapshot = await serverCache.loadTranslations('fr');
+      expect(snapshot).toEqual({
+        [hashMessage('Hello', { $format: 'ICU' })]: 'Bonjour',
+      });
+
+      // A client that never evaluated the msg() module resolves it from the
+      // snapshot alone
+      resetGTGlobals();
+      initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
+      const clientCache = new I18nCache({
+        loadTranslations: vi.fn(),
+        inlinedLocales: ['fr'],
+      });
+      setI18nCache(clientCache);
+      clientCache.updateTranslations({ fr: snapshot });
+      const m = await getMessagesInternal({ locale: 'fr', enableI18n: true });
+      expect(m(encoded)).toBe('Bonjour');
     });
   });
 });
 
 describe('msg() inline translations registry', () => {
+  const newCache = () =>
+    new I18nCache({ loadTranslations: vi.fn(), inlinedLocales: ['fr'] });
+
   beforeEach(() => {
     resetGTGlobals();
     initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
@@ -161,51 +231,27 @@ describe('msg() inline translations registry', () => {
 
   afterEach(() => {
     resetGTGlobals();
+    vi.restoreAllMocks();
     vi.resetModules();
   });
 
-  it('ignores inline translations passed before GT is initialized', async () => {
-    const loadTranslations = vi.fn().mockResolvedValue({});
-    expect(() =>
-      msg('Hello', undefined, frInline({ fr: 'Bonjour' }))
-    ).not.toThrow();
+  it('warns once and ignores inline translations before GT is initialized', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    msg('Hello', undefined, frInline({ fr: 'Bonjour' }));
+    msg('Goodbye', undefined, frInline({ fr: 'Au revoir' }));
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toContain('before GT was initialized');
 
-    setI18nCache(new I18nCache({ loadTranslations }));
+    setI18nCache(newCache());
     const m = await getMessagesInternal({ locale: 'fr', enableI18n: true });
     expect(m('Hello')).toBe('Hello');
   });
 
   it('keeps registrations when GT is initialized again', async () => {
-    setI18nCache(new I18nCache({ loadTranslations: vi.fn() }));
+    setI18nCache(newCache());
     const encoded = msg('Hello', undefined, frInline({ fr: 'Bonjour' }));
 
-    setI18nCache(new I18nCache({ loadTranslations: vi.fn() }));
-    const m = await getMessagesInternal({ locale: 'fr', enableI18n: true });
-    expect(m(encoded)).toBe('Bonjour');
-  });
-
-  it('includes msg() registrations in the translations snapshot', async () => {
-    const loadTranslations = vi.fn().mockResolvedValue({
-      [hashMessage('Loaded', { $format: 'ICU' })]: 'Chargé',
-    });
-    const serverCache = new I18nCache({ loadTranslations });
-    setI18nCache(serverCache);
-    const encoded = msg('Hello', undefined, frInline({ fr: 'Bonjour' }));
-    msg('Goodbye', undefined, frInline({ es: 'Adiós' }));
-
-    const snapshot = await serverCache.loadTranslations('fr');
-    expect(snapshot).toEqual({
-      [hashMessage('Loaded', { $format: 'ICU' })]: 'Chargé',
-      [hashMessage('Hello', { $format: 'ICU' })]: 'Bonjour',
-    });
-
-    // A client that never evaluated the msg() module resolves it from the
-    // snapshot alone
-    resetGTGlobals();
-    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
-    const clientCache = new I18nCache({ loadTranslations: vi.fn() });
-    setI18nCache(clientCache);
-    clientCache.updateTranslations({ fr: snapshot });
+    setI18nCache(newCache());
     const m = await getMessagesInternal({ locale: 'fr', enableI18n: true });
     expect(m(encoded)).toBe('Bonjour');
   });
@@ -213,7 +259,7 @@ describe('msg() inline translations registry', () => {
   it('is shared between separately evaluated copies of gt-i18n', async () => {
     // Bundlers such as Next.js evaluate gt-i18n once per server layer (RSC and
     // SSR), so msg() and m() can run against different module instances.
-    setI18nCache(new I18nCache({ loadTranslations: vi.fn() }));
+    setI18nCache(newCache());
     vi.resetModules();
     const rscCopy = await import('../../msg/msg');
     vi.resetModules();

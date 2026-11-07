@@ -204,7 +204,7 @@ function createGT(state: GTState): GTFunctionType {
       const cache = getI18nCache();
       // Translations embedded at the call site win over loaded translations
       translation =
-        cache.lookupInlineTranslation(locale, message, lookupOptions, inline) ??
+        inline?.(locale) ??
         (cache.lookupTranslation(locale, message, lookupOptions) as
           | string
           | undefined);

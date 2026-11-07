@@ -96,8 +96,11 @@ export async function getGTInternal(
       'ICU'
     );
 
-    // Lookup translation
-    const translation = lookupTranslation(message, lookupOptions, inline);
+    // Translations embedded at the call site win over loaded translations
+    const translation =
+      (getI18nConfig().requiresTranslation(targetLocale)
+        ? inline?.(targetLocale)
+        : undefined) ?? lookupTranslation(message, lookupOptions);
 
     // Dev hot reload (fire and forget, will be available in a later lookup)
     if (devHotReloadEnabled && translation == null) {
