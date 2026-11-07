@@ -184,6 +184,32 @@ describe('msg() inline translations registry', () => {
     expect(m(encoded)).toBe('Bonjour');
   });
 
+  it('includes msg() registrations in the translations snapshot', async () => {
+    const loadTranslations = vi.fn().mockResolvedValue({
+      [hashMessage('Loaded', { $format: 'ICU' })]: 'Chargé',
+    });
+    const serverCache = new I18nCache({ loadTranslations });
+    setI18nCache(serverCache);
+    const encoded = msg('Hello', undefined, frInline({ fr: 'Bonjour' }));
+    msg('Goodbye', undefined, frInline({ es: 'Adiós' }));
+
+    const snapshot = await serverCache.loadTranslations('fr');
+    expect(snapshot).toEqual({
+      [hashMessage('Loaded', { $format: 'ICU' })]: 'Chargé',
+      [hashMessage('Hello', { $format: 'ICU' })]: 'Bonjour',
+    });
+
+    // A client that never evaluated the msg() module resolves it from the
+    // snapshot alone
+    resetGTGlobals();
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
+    const clientCache = new I18nCache({ loadTranslations: vi.fn() });
+    setI18nCache(clientCache);
+    clientCache.updateTranslations({ fr: snapshot });
+    const m = await getMessagesInternal({ locale: 'fr', enableI18n: true });
+    expect(m(encoded)).toBe('Bonjour');
+  });
+
   it('is shared between separately evaluated copies of gt-i18n', async () => {
     // Bundlers such as Next.js evaluate gt-i18n once per server layer (RSC and
     // SSR), so msg() and m() can run against different module instances.

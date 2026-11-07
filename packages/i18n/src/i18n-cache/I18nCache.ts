@@ -278,8 +278,12 @@ class I18nCache<TranslationValue extends Content = Content> {
 
       const txCache = await this.translations.getOrLoad(translationLocale);
 
-      // Get the translations
-      return txCache.getInternalCache();
+      // Get the translations, including those registered by msg(). Clients
+      // resolve msg() strings created in server-only modules from this snapshot.
+      return {
+        ...txCache.getInternalCache(),
+        ...this.getRegisteredInlineTranslations(translationLocale),
+      };
     });
   }
 
@@ -779,6 +783,22 @@ class I18nCache<TranslationValue extends Content = Content> {
    */
   registerInlineTranslations(hash: string, inline: InlineTranslations): void {
     this.inlineTranslations.set(hash, inline);
+  }
+
+  /**
+   * Translations registered by msg() for a locale, keyed by message hash
+   */
+  private getRegisteredInlineTranslations(
+    translationLocale: Locale
+  ): Record<Hash, TranslationValue> {
+    const translations: Record<Hash, TranslationValue> = {};
+    this.inlineTranslations.forEach((inline, hash) => {
+      const translation = inline(translationLocale);
+      if (translation != null) {
+        translations[hash] = translation as TranslationValue;
+      }
+    });
+    return translations;
   }
 
   /**
