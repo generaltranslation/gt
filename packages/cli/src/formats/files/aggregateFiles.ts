@@ -8,6 +8,7 @@ import {
 import { recordWarning } from '../../state/translateWarnings.js';
 import { lottieHasExpressions } from './detectLottieExpressions.js';
 import {
+  getFileId,
   getRelative,
   readFile,
   readBinaryFileBase64,
@@ -203,7 +204,7 @@ export async function aggregateFiles(
         }
 
         return {
-          fileId: hashStringSync(relativePath),
+          fileId: getFileId(filePath),
           versionId: hashVersionId(
             parsedJson,
             requiresReviewPaths.has(filePath)
@@ -290,7 +291,7 @@ export async function aggregateFiles(
           fileName: relativePath,
           fileFormat,
           ...getTransformFormatProperty(settings, 'yaml'),
-          fileId: hashStringSync(relativePath),
+          fileId: getFileId(filePath),
           versionId: hashVersionId(
             parsedYaml,
             requiresReviewPaths.has(filePath)
@@ -340,7 +341,7 @@ export async function aggregateFiles(
         );
 
         return {
-          fileId: hashStringSync(relativePath),
+          fileId: getFileId(filePath),
           versionId: hashVersionId(
             parsedJson,
             requiresReviewPaths.has(filePath)
@@ -395,7 +396,7 @@ export async function aggregateFiles(
           fileName: relativePath,
           fileFormat: 'LOTTIE' as const,
           ...getTransformFormatProperty(settings, 'lottie'),
-          fileId: hashStringSync(relativePath),
+          fileId: getFileId(filePath),
           versionId: hashStringSync(content),
           locale: settings.defaultLocale,
         } satisfies FileToUpload;
@@ -440,7 +441,7 @@ export async function aggregateFiles(
           fileName: relativePath,
           fileFormat,
           ...getTransformFormatProperty(settings, fileType),
-          fileId: hashStringSync(relativePath),
+          fileId: getFileId(filePath),
           versionId: hashVersionId(content, requiresReviewPaths.has(filePath)),
           locale: settings.defaultLocale,
         } satisfies FileToUpload;
@@ -505,7 +506,7 @@ export async function aggregateFiles(
           fileName: relativePath,
           fileFormat: 'XCSTRINGS' as const,
           ...getTransformFormatProperty(settings, 'xcstrings'),
-          fileId: hashStringSync(relativePath),
+          fileId: getFileId(filePath),
           versionId: hashVersionId(
             sourceSlice,
             requiresReviewPaths.has(filePath)
@@ -563,7 +564,7 @@ export async function aggregateFiles(
             fileName: relativePath,
             fileFormat: CONFIG_FILE_TYPE_TO_FILE_FORMAT[fileType],
             ...getTransformFormatProperty(settings, fileType),
-            fileId: hashStringSync(relativePath),
+            fileId: getFileId(filePath),
             versionId: hashVersionId(
               processed,
               requiresReviewPaths.has(filePath)

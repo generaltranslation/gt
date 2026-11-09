@@ -28,7 +28,7 @@ import {
   validateJsonSchema,
 } from '../../json/utils.js';
 import { validateYamlSchema } from '../../yaml/utils.js';
-import { createFileMapping } from '../fileMapping.js';
+import { createFileMapping, lookupFileMapping } from '../fileMapping.js';
 
 /**
  * With `skipUntranslatedPages`, undo `transform` rewrites that point a
@@ -154,7 +154,12 @@ export function keepUntranslatedPagePaths(
     if (!schema?.transform) continue;
     const source = YAML.parse(fs.readFileSync(filePath, 'utf8')) as JSONValue;
     for (const locale of targetLocales) {
-      const outputPath = fileMapping[locale]?.[getRelative(filePath)];
+      const outputPath = lookupFileMapping(
+        fileMapping,
+        locale,
+        filePath,
+        'host-native'
+      );
       if (!outputPath || !fs.existsSync(outputPath) || !isIncluded(outputPath))
         continue;
       const target = YAML.parse(

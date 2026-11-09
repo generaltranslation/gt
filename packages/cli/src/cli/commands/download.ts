@@ -1,7 +1,10 @@
 import { noFilesError, noVersionIdError } from '../../console/index.js';
 import { SupportedLibraries, TranslateFlags } from '../../types/index.js';
 import { Settings } from '../../types/index.js';
-import { createFileMapping } from '../../formats/files/fileMapping.js';
+import {
+  createFileMapping,
+  lookupFileMapping,
+} from '../../formats/files/fileMapping.js';
 import { getStagedEntriesFromLockfile } from '../../fs/config/downloadedVersions.js';
 import {
   runDownloadWorkflow,
@@ -83,8 +86,16 @@ export async function handleDownload(
     branchData: undefined,
     locales: settings.locales,
     timeoutDuration: options.timeout,
-    resolveOutputPath: (sourcePath, locale) =>
-      fileMapping[locale][sourcePath] ?? null,
+    resolveOutputPath: (sourcePath, locale) => {
+      return (
+        lookupFileMapping(
+          fileMapping,
+          locale,
+          sourcePath,
+          'windows-serialized'
+        ) ?? null
+      );
+    },
     options: settings,
     inlineLibrary,
     forceRetranslation: false, // force is not applicable for downloading staged translations

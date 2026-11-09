@@ -40,7 +40,7 @@ function findPage(url: string): string | undefined {
   const base = url.split(/[?#]/)[0].replace(/^\/+|\/+$/g, '');
   return PAGE_EXTENSIONS.flatMap((ext) => [
     `${base}${ext}`,
-    path.join(base, `${INDEX_PAGE}${ext}`),
+    path.posix.join(base, `${INDEX_PAGE}${ext}`),
   ]).find((page) => fs.existsSync(page));
 }
 

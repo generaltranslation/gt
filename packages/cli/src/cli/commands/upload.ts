@@ -12,7 +12,10 @@ import { extractJson } from '../../formats/json/extractJson.js';
 import { validateJsonSchema } from '../../formats/json/utils.js';
 import { runUploadFilesWorkflow } from '../../workflows/upload.js';
 import { existsSync } from 'node:fs';
-import { createFileMapping } from '../../formats/files/fileMapping.js';
+import {
+  createFileMapping,
+  lookupFileMapping,
+} from '../../formats/files/fileMapping.js';
 import type { FileToUpload } from 'generaltranslation/types';
 import {
   hasValidCredentials,
@@ -180,7 +183,12 @@ export async function upload(
         }
       } else {
         // Non-composite: look for separate translation files
-        const translatedFileName = fileMapping[locale]?.[file.fileName];
+        const translatedFileName = lookupFileMapping(
+          fileMapping,
+          locale,
+          file.fileName,
+          'portable'
+        );
         if (translatedFileName && existsSync(translatedFileName)) {
           const translationFormat = file.transformFormat ?? file.fileFormat;
           let translatedContent: string;

@@ -5,7 +5,10 @@ import {
   FileTranslationData,
   runDownloadWorkflow,
 } from '../../workflows/download.js';
-import { createFileMapping } from '../../formats/files/fileMapping.js';
+import {
+  createFileMapping,
+  lookupFileMapping,
+} from '../../formats/files/fileMapping.js';
 import copyFile from '../../fs/copyFile.js';
 import flattenJsonFiles from '../../utils/flattenJsonFiles.js';
 import localizeStaticUrls from '../../utils/localizeStaticUrls.js';
@@ -57,7 +60,12 @@ export async function handleTranslate(
       locales: settings.locales,
       timeoutDuration: options.timeout,
       resolveOutputPath: (sourcePath, locale) =>
-        fileMapping[locale]?.[sourcePath] ?? null,
+        lookupFileMapping(
+          fileMapping,
+          locale,
+          sourcePath,
+          'windows-serialized'
+        ) ?? null,
       options: settings,
       inlineLibrary,
       forceRetranslation: options.force,

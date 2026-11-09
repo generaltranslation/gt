@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { aggregateFiles } from '../aggregateFiles.js';
 import { logger } from '../../../console/logger.js';
 import { logErrorAndExit } from '../../../console/logging.js';
-import { readFile, getRelative } from '../../../fs/findFilepath.js';
+import { readFile, getRelative, getFileId } from '../../../fs/findFilepath.js';
 import { readFileContent } from '../../../fs/fileContent.js';
 import { parseJson } from '../../json/parseJson.js';
 import parseYaml from '../../yaml/parseYaml.js';
@@ -41,6 +41,7 @@ const mockLogErrorAndExit = vi.mocked(logErrorAndExit);
 const mockReadFile = vi.mocked(readFile);
 const mockReadFileContent = vi.mocked(readFileContent);
 const mockGetRelative = vi.mocked(getRelative);
+const mockGetFileId = vi.mocked(getFileId);
 const mockParseJson = vi.mocked(parseJson);
 const mockParseYaml = vi.mocked(parseYaml);
 const mockSanitizeFileContent = vi.mocked(sanitizeFileContent);
@@ -54,6 +55,9 @@ describe('aggregateFiles - Empty File Handling', () => {
     // Default mocks
     mockGetRelative.mockImplementation((path) =>
       path.replace('/full/path/', '')
+    );
+    mockGetFileId.mockImplementation((path) =>
+      hashStringSync(path.replace('/full/path/', ''))
     );
     mockReadFileContent.mockReturnValue('');
     mockDetermineLibrary.mockReturnValue({

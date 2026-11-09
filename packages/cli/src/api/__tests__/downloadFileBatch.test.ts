@@ -4,6 +4,7 @@ import { api } from '../../utils/api.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import nodePath from 'node:path';
+import { hashStringSync } from '../../utils/hash.js';
 import { logger } from '../../console/logger.js';
 import {
   DownloadFileBatchResult as CoreDownloadFileBatchResult,
@@ -56,15 +57,22 @@ vi.mock('path', async () => {
   };
 });
 
-vi.mock('../../fs/config/downloadedVersions.js', () => ({
-  readLockfile: vi.fn(() => ({
-    data: { entries: [] },
-    entryMap: new Map(),
-    originalV1: false,
-  })),
-  writeLockfile: vi.fn(),
-  findOrCreateEntry: vi.fn(() => ({ translations: {} })),
-}));
+vi.mock('../../fs/config/downloadedVersions.js', async () => {
+  const actual = await vi.importActual<
+    typeof import('../../fs/config/downloadedVersions.js')
+  >('../../fs/config/downloadedVersions.js');
+  return {
+    ...actual,
+    readLockfile: vi.fn(() => ({
+      data: { entries: [] },
+      entryMap: new Map(),
+      originalV1: false,
+    })),
+    writeLockfile: vi.fn(),
+    findOrCreateEntry: vi.fn(() => ({ translations: {} })),
+    findLockfileEntry: actual.findLockfileEntry,
+  };
+});
 
 vi.mock('../../console/logger.js', () => ({
   logger: {
@@ -580,6 +588,188 @@ describe('downloadFileBatch', () => {
 
     expect(result.successful).toHaveLength(1);
     expect(lockEntry.translations.es.fileName).toBe('public/gt/es.json');
+  });
+
+  it('matches transformed source paths against POSIX inputPath across platforms', async () => {
+    const inputPath = 'locales/en/messages.pot';
+    const outputPath = '/output/locales/fr/messages.po';
+    const files = createBatchedFiles(1, {
+      inputPath,
+      outputPath,
+      locale: 'fr',
+    });
+    const fileTracker = createMockFileTracker(files);
+    vi.mocked(api.downloadFileBatch).mockResolvedValue({
+      files: [
+        {
+          id: 'trans-1',
+          branchId: 'branch-1',
+          fileId: 'file-1',
+          versionId: 'version-1',
+          locale: 'fr',
+          fileFormat: 'PO' as FileFormat,
+          data: 'msgid "hello"\nmsgstr "bonjour"',
+          fileName: 'messages.po',
+          metadata: {},
+        },
+      ],
+      count: 1,
+    });
+    setupFileSystemMocks();
+
+    const sourcePath = path.resolve(inputPath);
+    const settings = createMockSettings({
+      files: {
+        resolvedPaths: { pot: [sourcePath] },
+        placeholderPaths: {},
+        transformPaths: {},
+        transformFormats: { pot: 'PO' },
+      },
+      options: {
+        jsonSchema: { [inputPath]: { include: ['*'] } },
+      },
+    });
+
+    const result = await downloadFileBatch(fileTracker, files, settings);
+
+    expect(result.successful).toHaveLength(1);
+    expect(fs.promises.writeFile).toHaveBeenCalledWith(
+      outputPath,
+      'msgid "hello"\nmsgstr "bonjour"'
+    );
+    // Source format merge is skipped because inputPath matched transformed source path
+    expect(fs.readFileSync).not.toHaveBeenCalledWith(inputPath, 'utf8');
+  });
+
+  it('preserves existing downloaded translations and does not overwrite local edits when a legacy Windows lockfile entry exists', async () => {
+    // Legacy Windows lockfile contains fileId hashed from backslash relative path: "locales\\en.json"
+    const relativeWindowsPath = 'locales\\en.json';
+    const legacyWindowsFileId = hashStringSync(relativeWindowsPath);
+    const outputPath = path.resolve('locales/es.json');
+
+    const files = createBatchedFiles(1, {
+      fileId: legacyWindowsFileId,
+      versionId: 'version-1',
+      locale: 'es',
+      outputPath,
+      inputPath: relativeWindowsPath,
+    });
+    const fileTracker = createMockFileTracker(files);
+
+    const legacyLockEntry: DownloadedVersionEntry = {
+      fileId: legacyWindowsFileId,
+      versionId: 'version-1',
+      fileName: relativeWindowsPath,
+      translations: {
+        es: {
+          updatedAt: '2026-01-01T00:00:00.000Z',
+          fileName: 'locales\\es.json',
+          postProcessHash: 'user-edit-hash',
+        },
+      },
+    };
+
+    vi.mocked(readLockfile).mockReturnValue({
+      data: { version: 2, branchId: 'branch-1', entries: [legacyLockEntry] },
+      entryMap: new Map([[legacyWindowsFileId, legacyLockEntry]]),
+      originalV1: null,
+    });
+
+    vi.mocked(api.downloadFileBatch).mockResolvedValue({
+      files: [
+        {
+          id: 'trans-1',
+          branchId: 'branch-1',
+          fileId: legacyWindowsFileId,
+          versionId: 'version-1',
+          locale: 'es',
+          fileFormat: 'JSON' as FileFormat,
+          data: '{"hello":"Server Translation"}',
+          fileName: 'es.json',
+          metadata: {},
+        },
+      ],
+      count: 1,
+    });
+
+    setupFileSystemMocks({ dirExists: true });
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+
+    const result = await downloadFileBatch(
+      fileTracker,
+      files,
+      createMockSettings()
+    );
+
+    // Overwrite must be skipped to preserve existing translation and local user edits
+    expect(result.skipped).toHaveLength(1);
+    expect(result.successful).toHaveLength(0);
+    expect(fs.promises.writeFile).not.toHaveBeenCalled();
+  });
+
+  it('preserves existing translations when lockfile has legacy Windows fileId and incoming download has newly computed POSIX fileId', async () => {
+    const legacyWindowsFileId = hashStringSync('locales\\en.json');
+    const posixFileId = hashStringSync('locales/en.json');
+    const outputPath = path.resolve('locales/es.json');
+
+    const files = createBatchedFiles(1, {
+      fileId: posixFileId,
+      versionId: 'version-1',
+      locale: 'es',
+      outputPath,
+      inputPath: 'locales/en.json',
+    });
+    const fileTracker = createMockFileTracker(files);
+
+    const legacyLockEntry: DownloadedVersionEntry = {
+      fileId: legacyWindowsFileId,
+      versionId: 'version-1',
+      fileName: 'locales\\en.json',
+      translations: {
+        es: {
+          updatedAt: '2026-01-01T00:00:00.000Z',
+          fileName: 'locales\\es.json',
+          postProcessHash: 'user-edit-hash',
+        },
+      },
+    };
+
+    vi.mocked(readLockfile).mockReturnValue({
+      data: { version: 2, branchId: 'branch-1', entries: [legacyLockEntry] },
+      entryMap: new Map([[legacyWindowsFileId, legacyLockEntry]]),
+      originalV1: null,
+    });
+
+    vi.mocked(api.downloadFileBatch).mockResolvedValue({
+      files: [
+        {
+          id: 'trans-1',
+          branchId: 'branch-1',
+          fileId: posixFileId,
+          versionId: 'version-1',
+          locale: 'es',
+          fileFormat: 'JSON' as FileFormat,
+          data: '{"hello":"Server Translation"}',
+          fileName: 'es.json',
+          metadata: {},
+        },
+      ],
+      count: 1,
+    });
+
+    setupFileSystemMocks({ dirExists: true });
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+
+    const result = await downloadFileBatch(
+      fileTracker,
+      files,
+      createMockSettings()
+    );
+
+    // Overwrite must be skipped via findLockfileEntry fallback
+    expect(result.skipped).toHaveLength(1);
+    expect(result.successful).toHaveLength(0);
+    expect(fs.promises.writeFile).not.toHaveBeenCalled();
   });
 
   it('keeps a previously recorded postProcessHash when it re-downloads a locale', async () => {
