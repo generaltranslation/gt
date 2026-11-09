@@ -3,6 +3,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import ts from 'typescript';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
@@ -70,6 +71,28 @@ describe('@generaltranslation/icu package artifacts', () => {
     const parser = bundledCode(join(packageRoot, 'dist', `parser.${ext}`));
     expect(root).not.toContain(parserMarker);
     expect(parser).toContain(parserMarker);
+  });
+
+  it('typechecks its declarations with an older lib and skipLibCheck off', () => {
+    const dist = join(packageRoot, 'dist');
+    const declarations = readdirSync(dist)
+      .filter((file) => /\.d\.[cm]ts$/.test(file))
+      .map((file) => join(dist, file));
+    const program = ts.createProgram(declarations, {
+      lib: ['lib.es2020.d.ts'],
+      skipLibCheck: false,
+      strict: true,
+      noEmit: true,
+      types: [],
+      module: ts.ModuleKind.NodeNext,
+      moduleResolution: ts.ModuleResolutionKind.NodeNext,
+    });
+    const errors = ts
+      .getPreEmitDiagnostics(program)
+      .map((diagnostic) =>
+        ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')
+      );
+    expect(errors).toEqual([]);
   });
 
   it('loads the root and parser entrypoints from both formats', () => {

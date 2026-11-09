@@ -46,16 +46,24 @@ describe('calculateHashes', () => {
   });
 
   it('hashes ICU_TREE sources with hashSource', async () => {
-    const tree = ['Save'];
+    const tree = 'Save';
     const updates: Updates = [
       {
         dataFormat: 'ICU_TREE',
         source: tree,
         metadata: { context: 'button', maxChars: -12, requiresReview: true },
       },
+      {
+        dataFormat: 'ICU',
+        source: tree,
+        metadata: { context: 'button', maxChars: -12, requiresReview: true },
+      },
     ];
 
     await calculateHashes(updates);
+
+    // A plain-text tree is a string too; its format keeps its key apart.
+    expect(updates[0].metadata.hash).not.toBe(updates[1].metadata.hash);
 
     expect(updates[0].metadata.hash).toBe(
       hashSource({

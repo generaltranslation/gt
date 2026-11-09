@@ -59,8 +59,10 @@ function treeError(
   depth: number,
   state: WalkState
 ): MessageTreeValidationError | undefined {
+  // Text without placeholders; an array of only text is valid too.
+  if (typeof value === 'string') return undefined;
   if (!Array.isArray(value)) {
-    return { path, message: 'expected an array of nodes' };
+    return { path, message: 'expected text or an array of nodes' };
   }
   if (depth > state.maxDepth) {
     return { path, message: `nesting deeper than ${state.maxDepth} levels` };
@@ -204,9 +206,7 @@ function branchesError(
   }
   state.nodes += keys.length;
   for (const key of keys) {
-    const branch = branches[key];
-    if (typeof branch === 'string') continue;
-    const error = treeError(branch, [...path, key], depth + 1, state);
+    const error = treeError(branches[key], [...path, key], depth + 1, state);
     if (error) return error;
   }
   return undefined;

@@ -16,8 +16,10 @@ no locale-data polyfills are shipped.
 - `@generaltranslation/icu/internal`: shared by General Translation packages;
   not a public API, and it may change in any release.
 
-A message tree is compact JSON where text is a string, `#` is `0`, and each
-placeholder is a tuple that starts with its variable name:
+A message tree is compact JSON. A message without placeholders is one string
+(`'Save'`, or `''` when empty); any other is an array where text is a string,
+`#` is `0`, and each placeholder is a tuple that starts with its variable name.
+The same rule holds for each plural or select branch and a tag's children:
 
 ```ts
 import { formatMessageTree } from '@generaltranslation/icu';

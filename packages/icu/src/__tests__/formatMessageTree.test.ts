@@ -19,7 +19,14 @@ describe('formatMessageTree', () => {
   });
 
   it('defaults to the library locale and empty variables', () => {
-    expect(formatMessageTree(['Hi'])).toBe('Hi');
+    expect(formatMessageTree('Hi')).toBe('Hi');
+    expect(formatMessageTree('')).toBe('');
+  });
+
+  it('returns a message without placeholders as its text, never as ICU', () => {
+    expect(formatMessageTree("It's {cool} #", 'en', {})).toBe("It's {cool} #");
+    // Valid but not canonical: an array of only text formats the same.
+    expect(formatMessageTree(['Sa', 've'])).toBe('Save');
     expect(formatMessageTree([])).toBe('');
   });
 
@@ -240,6 +247,7 @@ describe('empty branches', () => {
     const values = { s: 'yes', b: (parts: unknown[]) => parts.length };
     expect(formatMessage(message, 'en', values)).toBe(0);
     expect(new IntlMessageFormat(message, 'en').format(values)).toBe(0);
+    expect(formatMessageTree([['b', 'tag', '']], 'en', values)).toBe(0);
   });
 });
 
@@ -275,7 +283,7 @@ describe('values', () => {
       formatMessageTree(['Hi ', ['x'], '!'], 'en', { x: element })
     ).toEqual(['Hi ', element, '!']);
     expect(
-      formatMessageTree(['Read the ', ['b', 'tag', ['terms']]], 'en', {
+      formatMessageTree(['Read the ', ['b', 'tag', 'terms']], 'en', {
         b: (parts) => ({ type: 'b', parts }),
       })
     ).toEqual(['Read the ', { type: 'b', parts: ['terms'] }]);
@@ -285,12 +293,12 @@ describe('values', () => {
     const element = { type: 'b' };
     // One part: the result is that part, not an array holding it.
     expect(
-      formatMessageTree([['b', 'tag', ['hello']]], 'en', { b: () => [element] })
+      formatMessageTree([['b', 'tag', 'hello']], 'en', { b: () => [element] })
     ).toBe(element);
     // A nested tag's parts reach the outer formatter one by one.
     const outer = vi.fn((parts: unknown[]) => parts);
     expect(
-      formatMessageTree([['o', 'tag', [['i', 'tag', ['x']]]]], 'en', {
+      formatMessageTree([['o', 'tag', [['i', 'tag', 'x']]]], 'en', {
         o: outer,
         i: () => [42, 43],
       })

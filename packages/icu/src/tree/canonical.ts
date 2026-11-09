@@ -1,11 +1,11 @@
 import type { MessageNode, MessageTree } from './messageTree';
 import {
-  branchNodes,
   isBranchingNode,
   isFormattedNode,
   isPlaceholderNode,
   isTagNode,
   mapBranches,
+  messageNodes,
 } from './walk';
 
 // Equal messages must have equal tree JSON, because keys are hashes of it.
@@ -33,8 +33,11 @@ export function appendText(out: MessageNode[], text: string): void {
   else out.push(text);
 }
 
-/** A branch without placeholders is its text, the way it was written. */
-export function toBranch(nodes: MessageNode[]): string | MessageTree {
+/**
+ * A message from its nodes: without placeholders it is its text, the way it
+ * was written, and `''` when empty. `messageNodes` reads it back.
+ */
+export function toMessage(nodes: MessageNode[]): MessageTree {
   if (nodes.length === 0) return '';
   return nodes.length === 1 && typeof nodes[0] === 'string' ? nodes[0] : nodes;
 }
@@ -54,13 +57,14 @@ export function canonicalStyle<S extends string | object>(
 /**
  * Rewrites a tree, such as one converted from an ICU string, to the form
  * buildMessageTree builds: adjacent text merged and empty text dropped, a
- * branch without placeholders as one string, branch keys and Intl options
- * sorted, and no zero plural offset or null style. An empty style stays, so
- * printing rejects it rather than formatting it differently.
+ * message, branch or tag's children without placeholders as one string,
+ * branch keys and Intl options sorted, and no zero plural offset or null
+ * style. An empty style stays, so printing rejects it rather than
+ * formatting it differently.
  */
 export function normalizeTree(tree: MessageTree): MessageTree {
   const out: MessageNode[] = [];
-  for (const node of tree) {
+  for (const node of messageNodes(tree)) {
     if (!isPlaceholderNode(node)) {
       if (typeof node === 'string') appendText(out, node);
       else out.push(node);
@@ -68,7 +72,7 @@ export function normalizeTree(tree: MessageTree): MessageTree {
       const [name, kind, branches, offset] = node;
       const sorted = mapBranches(
         branches,
-        (branch) => toBranch(normalizeTree(branchNodes(branch))),
+        normalizeTree,
         Object.keys(branches).sort(compareKeys)
       );
       out.push(
@@ -93,5 +97,5 @@ export function normalizeTree(tree: MessageTree): MessageTree {
       out.push(node);
     }
   }
-  return out;
+  return toMessage(out);
 }

@@ -63,7 +63,7 @@ describe('gt-i18n/unstable msg', () => {
   });
 
   it('translates a plain string as literal text with the hash of gt', async () => {
-    const m = await setup({ [keyOf`Save`]: ['Enregistrer'] });
+    const m = await setup({ [keyOf`Save`]: 'Enregistrer' });
     const gt = await getGT({ locale: 'fr', enableI18n: true });
     expect(m(msg('Save'))).toBe('Enregistrer');
     expect(gt`Save`).toBe('Enregistrer');
@@ -107,22 +107,22 @@ describe('gt-i18n/unstable msg', () => {
   it('returns a Msg for a template with options', async () => {
     const m = await setup({
       [hashSource({
-        source: ['Save'],
+        source: 'Save',
         dataFormat: 'ICU_TREE',
         context: 'button',
-      })]: ['Enregistrer'],
+      })]: 'Enregistrer',
     });
     const save = msg({ context: 'button' })`Save`;
-    expect(save).toMatchObject({ tree: ['Save'], context: 'button' });
+    expect(save).toMatchObject({ tree: 'Save', context: 'button' });
     expect(mFallback(save)).toBe('Save');
     expect(m(save)).toBe('Enregistrer');
     expect(m(msg('Save'))).toBe('Save');
   });
 
   it('reads the same with and without a compiler-injected $_hash', async () => {
-    const saveHash = hashSource({ source: ['Save'], dataFormat: 'ICU_TREE' });
+    const saveHash = hashSource({ source: 'Save', dataFormat: 'ICU_TREE' });
     const m = await setup({
-      [saveHash]: ['Enregistrer'],
+      [saveHash]: 'Enregistrer',
       injected: ['Bonjour, ', ['name']],
     });
     // The compiler rewrites msg`Save` to msg({ $_hash })`Save`.
@@ -232,11 +232,11 @@ describe('gt-i18n/unstable msg', () => {
 
   it('createMessages reads a custom lookupTranslation', () => {
     initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
-    const lookupTranslation = vi.fn(() => ['Enregistrer']);
+    const lookupTranslation = vi.fn(() => 'Enregistrer');
     const m = createMessages({ getLocale: () => 'fr', lookupTranslation });
     expect(m(msg('Save'))).toBe('Enregistrer');
     expect(lookupTranslation).toHaveBeenCalledWith(
-      ['Save'],
+      'Save',
       expect.objectContaining({ $locale: 'fr', $_hash: keyOf`Save` })
     );
   });

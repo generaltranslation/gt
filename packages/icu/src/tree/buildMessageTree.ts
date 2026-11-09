@@ -21,7 +21,7 @@ import {
   canonicalStyle,
   compareKeys,
   sortRecord,
-  toBranch,
+  toMessage,
 } from './canonical';
 import type {
   DateTimeNode,
@@ -100,7 +100,7 @@ export type BuiltMessageTree = {
 
 /**
  * Builds a canonical message tree from template strings and holes: adjacent
- * text is merged, a branch without placeholders is one string, and
+ * text is merged, a message or branch without placeholders is one string, and
  * plural/select keys and Intl options are sorted, so equal messages produce
  * equal tree JSON. Anonymous holes become `_gt_N`
  * arguments, numbered in tree order from 1. Their values are returned
@@ -113,7 +113,7 @@ export function buildMessageTree(
   holes: readonly MessageTreeHole[]
 ): BuiltMessageTree {
   const context: BuildContext = { values: [], formats: new Map() };
-  const tree = build(strings, holes, context, false);
+  const tree = toMessage(build(strings, holes, context, false));
   const formats = Object.fromEntries(
     [...context.formats].filter(([, options]) => Object.keys(options).length)
   );
@@ -216,7 +216,7 @@ function buildHole(
           throw new Error(createInvalidBranchKeyError(key));
         }
         const branch = hole.branches[key];
-        branches[key] = toBranch(
+        branches[key] = toMessage(
           branch == null
             ? []
             : typeof branch === 'string'

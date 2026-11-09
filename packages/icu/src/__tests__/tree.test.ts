@@ -5,7 +5,11 @@ import {
   type MessageTree,
   type SelectNode,
 } from '../index';
-import { buildMessageTree, type MessageTreeHole } from '../internal';
+import {
+  buildMessageTree,
+  forEachPlaceholder,
+  type MessageTreeHole,
+} from '../internal';
 import { icuToMessageTree, messageTreeToIcu } from '../convert';
 import { normalizeTree } from '../tree/canonical';
 
@@ -47,11 +51,36 @@ describe('normalizeTree', () => {
         ['n', 'plural', { '=0': '', one: 'one', other: [0, 'xy'] }],
         ['d', 'date', { month: 'short', year: 'numeric' }],
         ['d', 'date'],
-        ['b', 'tag', ['cd']],
+        ['b', 'tag', 'cd'],
       ])
     );
     // An empty style is invalid, so it stays for validation and printing to reject.
     expect(normalizeTree([['t', 'time', {}]])).toEqual([['t', 'time', {}]]);
+  });
+
+  it('rewrites a message without placeholders to one string', () => {
+    expect(normalizeTree(['Sa', '', 've'])).toBe('Save');
+    expect(normalizeTree('Save')).toBe('Save');
+    expect(normalizeTree([])).toBe('');
+    expect(normalizeTree([''])).toBe('');
+    expect(normalizeTree([['b', 'tag', []]])).toEqual([['b', 'tag', '']]);
+  });
+});
+
+describe('forEachPlaceholder', () => {
+  it('visits no text, whether a message, branch or tag is a string', () => {
+    const names: string[] = [];
+    const visit = ([name]: readonly [string, ...unknown[]]) => names.push(name);
+    forEachPlaceholder('Save {x}', visit);
+    forEachPlaceholder('', visit);
+    forEachPlaceholder(
+      [
+        ['s', 'select', { a: 'Save', other: ['Hi ', ['x']] }],
+        ['b', 'tag', 'y'],
+      ],
+      visit
+    );
+    expect(names).toEqual(['s', 'x', 'b']);
   });
 });
 
@@ -69,8 +98,9 @@ describe('buildMessageTree', () => {
         { kind: 'fragment', strings: ['x'], holes: [] },
         { kind: 'fragment', strings: ['b', 'c'], holes: [] }
       )
-    ).toEqual(['xabc']);
-    expect(tree([''])).toEqual([]);
+    ).toBe('xabc');
+    expect(tree(['Save'])).toBe('Save');
+    expect(tree([''])).toBe('');
   });
 
   it('builds the plural count from a pound hole and keeps # literal', () => {

@@ -36,12 +36,27 @@ describe('validateMessageTree', () => {
     ).toBeUndefined();
   });
 
-  it.each([undefined, null, 0, 'text', {}, { 0: 'a' }])(
-    'rejects the non-array %j',
+  it.each(['Save', '', "It's {cool}"])('accepts the text %j', (text) => {
+    expect(validateMessageTree(text)).toBeUndefined();
+    expect(isMessageTree(text)).toBe(true);
+  });
+
+  it('accepts text, empty text and an array of only text in a branch or tag', () => {
+    expect(
+      isMessageTree([
+        select({ a: 'Save', b: '', other: ['x', 'y'] }),
+        ['b', 'tag', 'bold'],
+        ['i', 'tag', ''],
+      ])
+    ).toBe(true);
+  });
+
+  it.each([undefined, null, 0, {}, { 0: 'a' }])(
+    'rejects the non-tree %j',
     (value) => {
       expect(validateMessageTree(value)).toEqual({
         path: [],
-        message: 'expected an array of nodes',
+        message: 'expected text or an array of nodes',
       });
     }
   );

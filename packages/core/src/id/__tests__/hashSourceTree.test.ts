@@ -79,11 +79,9 @@ describe('hashSource with ICU_TREE', () => {
 
   it('differs from other formats for the same data', () => {
     const tree = fixtureTree('plain-literal');
+    expect(tree).toBe('Save');
     expect(hashTree(tree)).not.toBe(
       hashSource({ source: 'Save', dataFormat: 'ICU' })
-    );
-    expect(hashTree(tree)).not.toBe(
-      hashSource({ source: tree as never, dataFormat: 'ICU' })
     );
   });
 

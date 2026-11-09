@@ -156,7 +156,7 @@ describe('gt-i18n/unstable rendering', () => {
   it('treats a cached value that is not a tree as a miss and warns once', async () => {
     const gt = await setup({
       fr: {
-        [keyOf()`Malformed`]: 'Mal formé',
+        [keyOf()`Malformed`]: { text: 'Mal formé' },
         [keyOf()`Bad type`]: [['x', 'bad-kind']],
       },
     });
@@ -165,6 +165,18 @@ describe('gt-i18n/unstable rendering', () => {
     expect(gt`Bad type`).toBe('Bad type');
     expect(warn).toHaveBeenCalledTimes(2);
     expect(warn.mock.calls[0][0]).toContain('is not a message tree');
+  });
+
+  it('renders a translation without placeholders as literal text, empty included', async () => {
+    const gt = await setup({
+      fr: {
+        [keyOf()`Save {now}`]: "Enregistrer {now} # l'a",
+        [keyOf()`Nothing`]: '',
+      },
+    });
+    expect(gt`Save {now}`).toBe("Enregistrer {now} # l'a");
+    expect(gt`Nothing`).toBe('');
+    expect(warn).not.toHaveBeenCalled();
   });
 
   it('treats a malformed nested branch as a miss', async () => {

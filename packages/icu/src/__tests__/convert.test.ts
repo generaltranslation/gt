@@ -36,6 +36,20 @@ describe('icuToMessageTree', () => {
     ]);
   });
 
+  it('converts a message without placeholders to one string', () => {
+    expect(icuToMessageTree('Save')).toBe('Save');
+    expect(icuToMessageTree('')).toBe('');
+    expect(icuToMessageTree("It's '{cool}'")).toBe("It's {cool}");
+    expect(icuToMessageTree('<b>bold</b> text')).toEqual([
+      ['b', 'tag', 'bold'],
+      ' text',
+    ]);
+    expect(icuToMessageTree('{s, select, a {} other {Hi}}<b></b>')).toEqual([
+      ['s', 'select', { a: '', other: 'Hi' }],
+      ['b', 'tag', ''],
+    ]);
+  });
+
   it('sorts branches and fields like buildMessageTree', () => {
     const tree = icuToMessageTree(
       '{n, plural, other {#} one {one} =2 {two}} {d, date, ::yMMMd}'
@@ -253,8 +267,19 @@ describe('messageTreeToIcu', () => {
     const tree: MessageTree = ['{', '}', ['b', 'tag', ["'", '{']]];
     expect(icuToMessageTree(messageTreeToIcu(tree))).toEqual([
       '{}',
-      ['b', 'tag', ["'{"]],
+      ['b', 'tag', "'{"],
     ]);
+  });
+
+  it('prints a message without placeholders as literal text', () => {
+    expect(messageTreeToIcu("It's {cool}")).toBe("It's '{cool}'");
+    expect(messageTreeToIcu('')).toBe('');
+    expect(messageTreeToIcu([['b', 'tag', 'bold'], ' text'])).toBe(
+      '<b>bold</b> text'
+    );
+    expect(
+      messageTreeToIcu([['n', 'plural', { one: '# {n}', other: [0] }]])
+    ).toBe("{n,plural,one{'#' '{n}'} other{#}}");
   });
 
   it.each<[string, unknown]>([
@@ -354,10 +379,20 @@ function formattedNodes(): (NumberNode | DateTimeNode)[] {
 }
 
 const LOSSLESS_TREES: MessageTree[] = [
-  [],
-  ['Plain text'],
-  ["It's {quoted} # and '' and {}"],
+  '',
+  'Plain text',
+  "It's {quoted} # and '' and {}",
+  "'{'",
   ['Hi ', ['name'], '!'],
+  [['b', 'tag', 'bold'], ' text'],
+  ['a ', ['i', 'tag', ''], " it's"],
+  [
+    [
+      'n',
+      'plural',
+      { '=0': '', one: "# isn't '{n}'", other: [0, " it's '#'"] },
+    ],
+  ],
   ...formattedNodes().map((node) => ['Value: ', node, '.']),
   [
     [
@@ -384,7 +419,7 @@ const LOSSLESS_TREES: MessageTree[] = [
     [
       'b',
       'tag',
-      ['the ', ['i', 'tag', ['terms']], ' by ', ['d', 'date', 'long']],
+      ['the ', ['i', 'tag', 'terms'], ' by ', ['d', 'date', 'long']],
     ],
   ],
   [
@@ -457,6 +492,20 @@ describe('the tree and ICU text', () => {
 
 describe('checkTranslation', () => {
   const price: MessageTree = ['Total: ', ['price', 'number', 'currency']];
+
+  it('checks a message without placeholders on either side', () => {
+    expect(checkTranslation('Save', 'Guardar')).toBeUndefined();
+    expect(checkTranslation('Save', '', { locale: 'ja' })).toBeUndefined();
+    expect(
+      checkTranslation([['b', 'tag', 'Save']], [['b', 'tag', 'Guardar']])
+    ).toBeUndefined();
+    expect(checkTranslation(price, 'Total')).toBe(
+      'The translation does not match its source: "price" is missing from the translation.'
+    );
+    expect(checkTranslation('Save', ['Guardar ', ['name']])).toBe(
+      'The translation does not match its source: "name" does not exist in the source.'
+    );
+  });
 
   it('accepts new text, word order and branch content', () => {
     const source: MessageTree = [

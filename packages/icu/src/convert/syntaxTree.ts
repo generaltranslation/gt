@@ -1,7 +1,7 @@
 import { createUnsupportedTreeFormatError } from '../errors/convertErrors';
 import { parseDateTimeSkeletonOptions } from '../parser/skeleton';
 import { printAST } from '../parser/printer';
-import { canonicalStyle } from '../tree/canonical';
+import { canonicalStyle, toMessage } from '../tree/canonical';
 import type {
   DateTimeNode,
   MessageBranches,
@@ -13,7 +13,7 @@ import type {
   TagNode,
 } from '../tree/messageTree';
 import { styleProblem } from '../tree/validateMessageTree';
-import { branchNodes } from '../tree/walk';
+import { messageNodes } from '../tree/walk';
 import { printDateTimeSkeleton } from './skeleton';
 import {
   SKELETON_TYPE,
@@ -45,13 +45,14 @@ export function toMessageTree(ast: MessageFormatElement[]): MessageTree {
  * hold, and the formatter reads them like a tree's styles.
  */
 export function toFormattingTree(ast: MessageFormatElement[]): MessageTree {
-  return convert(ast, intlStyle);
+  // Plain text as one string takes the formatter's fast path.
+  return toMessage(convert(ast, intlStyle));
 }
 
 function convert(
   ast: MessageFormatElement[],
   readStyle: StyleReader
-): MessageTree {
+): MessageNode[] {
   return ast.map((element) => toNode(element, readStyle));
 }
 
@@ -178,7 +179,7 @@ function toBranches(
  * what ICU spells, so nothing is lost; a style a tree cannot hold throws.
  */
 export function fromMessageTree(tree: MessageTree): MessageFormatElement[] {
-  return tree.map(fromNode);
+  return messageNodes(tree).map(fromNode);
 }
 
 function fromNode(node: MessageNode): MessageFormatElement {
@@ -269,8 +270,7 @@ function fromBranches(
     (a, b) => Number(a === 'offset') - Number(b === 'offset')
   );
   for (const key of keys) {
-    const branch = branches[key];
-    options[key] = { value: fromMessageTree(branchNodes(branch)) };
+    options[key] = { value: fromMessageTree(branches[key]) };
   }
   return Object.setPrototypeOf(options, Object.prototype);
 }

@@ -72,31 +72,35 @@ export const DATE_TIME_CONTEXT_OPTIONS = [
   'localeMatcher',
 ] as const;
 
-export type NumberMessageOptions = Pick<
+// A consumer's older `lib` lacks newer Intl options, like `roundingMode`
+// (ES2023) or `fractionalSecondDigits` (ES2021); its types leave them out.
+type PickAvailable<T, K extends PropertyKey> = Pick<T, Extract<K, keyof T>>;
+
+export type NumberMessageOptions = PickAvailable<
   Intl.NumberFormatOptions,
   (typeof NUMBER_MESSAGE_OPTIONS)[number]
 >;
-export type NumberFormattingContext = Pick<
+export type NumberFormattingContext = PickAvailable<
   Intl.NumberFormatOptions,
   (typeof NUMBER_CONTEXT_OPTIONS)[number]
 >;
-export type DateFieldOptions = Pick<
+export type DateFieldOptions = PickAvailable<
   Intl.DateTimeFormatOptions,
   (typeof DATE_FIELD_OPTIONS)[number]
 >;
-export type TimeFieldOptions = Pick<
+export type TimeFieldOptions = PickAvailable<
   Intl.DateTimeFormatOptions,
   (typeof TIME_FIELD_OPTIONS)[number]
 >;
-export type DateMessageOptions = Pick<
+export type DateMessageOptions = PickAvailable<
   Intl.DateTimeFormatOptions,
   (typeof DATE_MESSAGE_OPTIONS)[number]
 >;
-export type TimeMessageOptions = Pick<
+export type TimeMessageOptions = PickAvailable<
   Intl.DateTimeFormatOptions,
   (typeof TIME_MESSAGE_OPTIONS)[number]
 >;
-export type DateTimeFormattingContext = Pick<
+export type DateTimeFormattingContext = PickAvailable<
   Intl.DateTimeFormatOptions,
   (typeof DATE_TIME_CONTEXT_OPTIONS)[number]
 >;

@@ -58,9 +58,9 @@ describe('unstableHashInjectionPass', () => {
   });
 
   it('rewrites the tag into the options form', async () => {
-    const save = hashSource({ source: ['Save'], dataFormat: 'ICU_TREE' });
+    const save = hashSource({ source: 'Save', dataFormat: 'ICU_TREE' });
     const button = hashSource({
-      source: ['Save'],
+      source: 'Save',
       dataFormat: 'ICU_TREE',
       context: 'button',
     });
@@ -72,7 +72,7 @@ describe('unstableHashInjectionPass', () => {
   });
 
   it('rewrites a msg tag and leaves a msg literal call untouched', async () => {
-    const save = hashSource({ source: ['Save'], dataFormat: 'ICU_TREE' });
+    const save = hashSource({ source: 'Save', dataFormat: 'ICU_TREE' });
     const output = await compile("msg`Save`;\nmsg('Save');");
     expect(output).toContain(`msg({ $_hash: "${save}" })\`Save\``);
     expect(output).toContain("msg('Save');");
@@ -282,7 +282,7 @@ describe('unstableHashInjectionPass', () => {
   it('skips only a template with a reserved variable name', async () => {
     const output = await compile('t`Hi ${{ _gt_user }}`;\nt`Save`;');
     expect(injectedHashes(output)).toEqual([
-      hashSource({ source: ['Save'], dataFormat: 'ICU_TREE' }),
+      hashSource({ source: 'Save', dataFormat: 'ICU_TREE' }),
     ]);
   });
 

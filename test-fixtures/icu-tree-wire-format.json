@@ -3,8 +3,8 @@
     "name": "plain-literal",
     "template": "gt`Save`",
     "options": {},
-    "tree": ["Save"],
-    "hash": "e8f2d4d51413a359"
+    "tree": "Save",
+    "hash": "7b5303cc62f82aa7"
   },
   {
     "name": "context",
@@ -12,8 +12,8 @@
     "options": {
       "context": "button"
     },
-    "tree": ["Save"],
-    "hash": "3db8cdef1139615b"
+    "tree": "Save",
+    "hash": "46c85d11ef7b97de"
   },
   {
     "name": "one-argument",
@@ -28,8 +28,8 @@
     "options": {
       "maxChars": 12
     },
-    "tree": ["Read more about pricing"],
-    "hash": "411e75b344c23e2b"
+    "tree": "Read more about pricing",
+    "hash": "ea3d80ea235d22c6"
   },
   {
     "name": "max-chars-negative",
@@ -37,8 +37,8 @@
     "options": {
       "maxChars": -12
     },
-    "tree": ["Read more about pricing"],
-    "hash": "411e75b344c23e2b"
+    "tree": "Read more about pricing",
+    "hash": "ea3d80ea235d22c6"
   },
   {
     "name": "nested-plural-pound-select",
@@ -321,7 +321,7 @@
     "options": {
       "requiresReview": true
     },
-    "tree": ["Delete account"],
-    "hash": "cfa48e0657479f11"
+    "tree": "Delete account",
+    "hash": "d0b66052a8d61260"
   }
 ]
