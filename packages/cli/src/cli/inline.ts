@@ -124,14 +124,16 @@ export class InlineCLI extends BaseCLI {
       requireConfig: true,
     });
 
+    const skippedPaths: string[] = [];
     const updates = await aggregateInlineTranslations(
       initOptions,
       settings,
-      this.getInlineLibrary()
+      this.getInlineLibrary(),
+      skippedPaths
     );
 
     // Convert updates to the proper data format
-    const newData: Record<string, unknown> = {};
+    let newData: Record<string, unknown> = {};
     for (const update of updates) {
       const { source, metadata } = update;
       const { hash } = metadata;
@@ -150,8 +152,18 @@ export class InlineCLI extends BaseCLI {
         logger.error(noFilesError);
         exitSync(1);
       }
+      // A skipped path may hold the source of saved entries, so keep every
+      // saved source entry and translation.
+      if (skippedPaths.length > 0) {
+        newData = { ...loadJSON(translationFiles.gt), ...newData };
+      }
       await saveJSON(translationFiles.gt, newData);
       logger.step('Source file saved successfully!');
+      if (skippedPaths.length > 0) {
+        logger.warn(
+          `Kept every saved source entry and translation because the scan skipped these paths:\n${skippedPaths.join('\n')}`
+        );
+      }
       // Also save translations (after merging with existing translations)
       for (const locale of settings.locales) {
         const translationsFile = resolveLocaleFiles(
@@ -168,9 +180,14 @@ export class InlineCLI extends BaseCLI {
           ...existingTranslations,
         };
         // Filter out keys that don't exist in newData
-        const filteredTranslations = Object.fromEntries(
-          Object.entries(mergedTranslations).filter(([key]) => newData[key])
-        );
+        const filteredTranslations =
+          skippedPaths.length > 0
+            ? mergedTranslations
+            : Object.fromEntries(
+                Object.entries(mergedTranslations).filter(
+                  ([key]) => newData[key]
+                )
+              );
         await saveJSON(translationsFile.gt, filteredTranslations);
       }
       logger.step('Merged translations successfully!');
