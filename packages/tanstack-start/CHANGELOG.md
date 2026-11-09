@@ -1,5 +1,25 @@
 # gt-tanstack-start
 
+## 11.4.20
+
+### Patch Changes
+
+- Updated dependencies [[`b3c3647`](https://github.com/generaltranslation/gt/commit/b3c3647239a6c44c3549e722b7001b83624865f8)]:
+  - generaltranslation@9.5.11
+  - gt-i18n@1.0.42
+  - gt-react@11.4.20
+  - @generaltranslation/react-core@11.4.20
+
+## 11.4.19
+
+### Patch Changes
+
+- Updated dependencies [[`e1c64a3`](https://github.com/generaltranslation/gt/commit/e1c64a3c27c7a05ffeb81eb2d04ace795d0c3ab5)]:
+  - generaltranslation@9.5.10
+  - gt-i18n@1.0.41
+  - gt-react@11.4.19
+  - @generaltranslation/react-core@11.4.19
+
 ## 11.4.18
 
 ### Patch Changes

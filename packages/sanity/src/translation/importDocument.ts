@@ -2,6 +2,7 @@ import type { GTFile, TranslationFunctionContext } from '../types';
 import { deserializeDocument } from '../utils/serialize';
 import { getTranslationStrategyForType } from './strategy';
 
+/** Imports a translation and returns the document it was written to, by published id and type. */
 export async function importDocument(
   docInfo: GTFile,
   localeId: string,
@@ -17,11 +18,12 @@ export async function importDocument(
   const strategy = getTranslationStrategyForType(
     deserialized._type as string | undefined
   );
-  return strategy.patch(
+  const id = await strategy.patch(
     docInfo,
     deserialized,
     localeId,
     client,
     mergeWithTargetLocale
   );
+  return id ? { id, type: String(deserialized._type) } : undefined;
 }

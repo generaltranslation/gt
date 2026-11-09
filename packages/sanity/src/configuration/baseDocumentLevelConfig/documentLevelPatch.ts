@@ -35,7 +35,7 @@ export const documentLevelPatch = async (
   client: SanityClient,
   languageField: string = 'language',
   mergeWithTargetLocale: boolean = false
-): Promise<void> => {
+): Promise<string> => {
   //this is the document that will serve as the translated doc
   let i18nDoc: SanityDocument | undefined;
 
@@ -123,6 +123,7 @@ export const documentLevelPatch = async (
       client,
       i18nDoc
     );
+    return getPublishedId(i18nDoc._id);
   }
   //otherwise, create a new document
   //and add the document reference to the metadata document
@@ -155,7 +156,7 @@ export const documentLevelPatch = async (
         client,
         freshI18nDoc
       );
-      return;
+      return getPublishedId(freshI18nDoc._id);
     }
 
     /*
@@ -166,7 +167,7 @@ export const documentLevelPatch = async (
      * `createI18nDocAndPatchMetadata` replaces the existing entry for the
      * locale.
      */
-    await createI18nDocAndPatchMetadata(
+    return createI18nDocAndPatchMetadata(
       baseDoc,
       merged,
       localeId,

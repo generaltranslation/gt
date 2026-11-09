@@ -3,6 +3,7 @@ import type { JobResult } from 'generaltranslation/api';
 import { logger } from '../../console/logger.js';
 import type { ApiClient } from '../../utils/api.js';
 import { EnqueueFilesResult } from 'generaltranslation/types';
+import type { JobResult as NormalizedJobResult } from 'generaltranslation/types';
 import { TEMPLATE_FILE_NAME } from '../../utils/constants.js';
 import type { FileProperties } from '../../types/files.js';
 import {
@@ -25,7 +26,7 @@ export type PollJobsInput = {
 export type FileStatusTracker = {
   completed: Map<string, FileProperties>;
   inProgress: Map<string, FileProperties>;
-  failed: Map<string, FileProperties>;
+  failed: Map<string, FileProperties & { failureReason?: string }>;
   skipped: Map<string, FileProperties>;
 };
 
@@ -154,10 +155,8 @@ export class PollTranslationJobsStep {
       timeoutDuration - (Date.now() - startTime) / 1000
     );
 
-    // onPoll receives raw statuses and result.jobs normalized ones; only the
-    // shared fields are read here.
     const updateJobStatuses = (
-      statuses: readonly Pick<JobResult, 'jobId' | 'status'>[]
+      statuses: readonly (JobResult | NormalizedJobResult)[]
     ) => {
       for (const job of statuses) {
         const jobFileProperties = jobFileMap.get(job.jobId);
@@ -170,7 +169,10 @@ export class PollTranslationJobsStep {
         if (job.status === 'completed') {
           fileTracker.completed.set(fileKey, fileProperties);
         } else if (job.status === 'failed') {
-          fileTracker.failed.set(fileKey, fileProperties);
+          fileTracker.failed.set(fileKey, {
+            ...fileProperties,
+            failureReason: job.error?.message ?? undefined,
+          });
         } else if (job.status === 'unknown') {
           fileTracker.skipped.set(fileKey, fileProperties);
         } else {

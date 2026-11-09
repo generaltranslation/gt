@@ -1,5 +1,6 @@
 import { Secrets, TranslationFunctionContext } from '../types';
 import { downloadTranslations } from '../translation/downloadTranslations';
+import { updateTranslationPreviewUrls } from '../translation/updatePreviewUrls';
 import { processImportBatch, ImportBatchItem } from './batchProcessor';
 import type { FileProperties, TranslationStatus } from '../adapter/types';
 import { createStableTranslationKey, getPublishedId } from './documentIds';
@@ -8,6 +9,8 @@ export interface ImportResult {
   successCount: number;
   failureCount: number;
   successfulImports: string[];
+  /** Why the imported translations' preview URLs could not all be stored in GT. */
+  previewUrlFailures: unknown[];
 }
 
 /** A status that has passed the ready check, so its `fileData` is present. */
@@ -88,7 +91,12 @@ export async function importTranslations(
   options: ImportOptions = {}
 ): Promise<ImportResult> {
   if (readyFiles.length === 0) {
-    return { successCount: 0, failureCount: 0, successfulImports: [] };
+    return {
+      successCount: 0,
+      failureCount: 0,
+      successfulImports: [],
+      previewUrlFailures: [],
+    };
   }
 
   const downloadedFiles = await downloadTranslations(readyFiles, secrets);
@@ -117,9 +125,31 @@ export async function importTranslations(
     },
   });
 
+  const previewUrlFailures = await updateTranslationPreviewUrls(
+    downloadedFiles.flatMap((file) => {
+      const written = result.writtenDocuments.get(importKeyFor(file));
+      return written && file.fileId && file.versionId && file.locale
+        ? [
+            {
+              written,
+              file: {
+                branchId: file.branchId,
+                fileId: file.fileId,
+                versionId: file.versionId,
+              },
+              language: file.locale,
+            },
+          ]
+        : [];
+    }),
+    translationContext.client,
+    secrets
+  );
+
   return {
     successCount: result.successCount,
     failureCount: result.failureCount,
     successfulImports: result.successfulImports,
+    previewUrlFailures,
   };
 }
