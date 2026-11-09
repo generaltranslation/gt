@@ -1300,6 +1300,93 @@ mod tests {
     }
   }
 
+  /// msg() accepts an array of messages; the SWC plugin must leave those calls
+  /// untouched and report no violations (matches @generaltranslation/compiler).
+  mod msg_arrays {
+    use super::*;
+    use swc_core::ecma::visit::{Fold, VisitMut};
+
+    fn str_expr(value: &str) -> ExprOrSpread {
+      ExprOrSpread {
+        spread: None,
+        expr: Box::new(Expr::Lit(Lit::Str(Str {
+          span: DUMMY_SP,
+          value: Atom::new(value).into(),
+          raw: None,
+        }))),
+      }
+    }
+
+    fn ident_expr(name: &str) -> ExprOrSpread {
+      ExprOrSpread {
+        spread: None,
+        expr: Box::new(Expr::Ident(Ident {
+          span: DUMMY_SP,
+          sym: Atom::new(name),
+          optional: false,
+          ctxt: SyntaxContext::empty(),
+        })),
+      }
+    }
+
+    fn msg_call(elements: Vec<Option<ExprOrSpread>>) -> CallExpr {
+      CallExpr {
+        span: DUMMY_SP,
+        callee: Callee::Expr(Box::new(Expr::Ident(Ident {
+          span: DUMMY_SP,
+          sym: Atom::new("msg"),
+          optional: false,
+          ctxt: SyntaxContext::empty(),
+        }))),
+        args: vec![ExprOrSpread {
+          spread: None,
+          expr: Box::new(Expr::Array(ArrayLit {
+            span: DUMMY_SP,
+            elems: elements,
+          })),
+        }],
+        type_args: None,
+        ctxt: SyntaxContext::empty(),
+      }
+    }
+
+    fn visitor_with_msg() -> TransformVisitor {
+      let mut visitor = create_visitor_with_imports();
+      visitor
+        .import_tracker
+        .scope_tracker
+        .track_translation_variable(Atom::new("msg"), Atom::new("msg"), 0);
+      visitor
+    }
+
+    #[test]
+    fn leaves_static_msg_arrays_untouched() {
+      let mut visitor = visitor_with_msg();
+      let mut call = msg_call(vec![Some(str_expr("A")), Some(str_expr("B"))]);
+      let original = call.clone();
+      visitor.visit_mut_call_expr(&mut call);
+      assert_eq!(call, original);
+      assert_eq!(visitor.statistics.dynamic_content_violations, 0);
+    }
+
+    #[test]
+    fn does_not_report_violations_for_msg_arrays_via_visit_mut() {
+      let mut visitor = visitor_with_msg();
+      let mut call = msg_call(vec![Some(str_expr("A")), Some(ident_expr("x")), None]);
+      visitor.visit_mut_call_expr(&mut call);
+      assert_eq!(visitor.statistics.dynamic_content_violations, 0);
+    }
+
+    #[test]
+    fn leaves_msg_arrays_untouched_via_fold() {
+      let mut visitor = visitor_with_msg();
+      let call = msg_call(vec![Some(str_expr("A")), Some(str_expr("B"))]);
+      let folded = visitor.fold_call_expr(call.clone());
+      assert_eq!(folded, call);
+      assert_eq!(visitor.statistics.dynamic_content_violations, 0);
+    }
+  }
+
   mod call_expression_violations {
     use super::*;
 
