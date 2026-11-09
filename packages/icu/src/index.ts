@@ -1,5 +1,6 @@
 export {
   formatMessageTree,
+  type FormatMessageTreeOptions,
   type FormattedMessage,
   type MessagePlainValue,
   type MessageTagFormatter,
@@ -17,6 +18,19 @@ export type {
   SelectNode,
   TagNode,
 } from './tree/messageTree';
+export type {
+  DateFieldOptions,
+  DateMessageOptions,
+  DateTimeFormattingContext,
+  DateTimeStyleName,
+  MessageFormattingContext,
+  MessageTreeFormats,
+  NumberFormattingContext,
+  NumberMessageOptions,
+  NumberStyleName,
+  TimeFieldOptions,
+  TimeMessageOptions,
+} from './settings/formatOptions';
 export { isMessageTree, validateMessageTree } from './tree/validateMessageTree';
 export type {
   MessageTreeValidationError,

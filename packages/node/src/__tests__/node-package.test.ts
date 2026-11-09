@@ -45,6 +45,7 @@ describe('gt-node package exports', () => {
         assert.equal(typeof unstable.tx, 'function');
         assert.equal(typeof unstable.dyn, 'function');
         assert.equal(typeof unstable.plural, 'function');
+        assert.equal(typeof unstable.time, 'function');
         assert.equal(typeof unstable.getMessages, 'function');
         assert.equal(typeof unstable.msg, 'function');
       `,

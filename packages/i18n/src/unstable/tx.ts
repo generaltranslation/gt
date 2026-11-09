@@ -32,12 +32,13 @@ export function createTx(
     strings: TemplateStringsArray,
     holes: unknown[]
   ): Promise<string> => {
-    const { tree, values } = buildMessage(strings, holes);
+    const { tree, values, formats } = buildMessage(strings, holes);
     const { locale, enableI18n } = await getConditions();
     if (!enableI18n) {
       return renderMessage(
         tree,
         values,
+        formats,
         getI18nConfig().getDefaultLocale(),
         options,
         () => undefined
@@ -52,6 +53,7 @@ export function createTx(
     return renderMessage(
       tree,
       values,
+      formats,
       locale,
       { ...options, $_hash: lookupOptions.$_hash },
       () => translation

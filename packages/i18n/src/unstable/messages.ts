@@ -1,7 +1,15 @@
-import { formatMessageTree, type MessageTree } from '@generaltranslation/icu';
+import {
+  formatMessageTree,
+  type MessageTree,
+  type MessageTreeFormats,
+} from '@generaltranslation/icu';
 import { formatCutoff } from '@generaltranslation/format';
 import { forEachPlaceholder } from '@generaltranslation/icu/internal';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
+import {
+  getI18nConfig,
+  isI18nConfigInitialized,
+} from '../i18n-config/singleton-operations';
 import { createGtI18nDiagnostic } from '../logs/diagnostics';
 import {
   type CreateGTParams,
@@ -25,6 +33,7 @@ export type M = <T extends string | Msg | null | undefined>(
 type RenderableMessage = {
   tree: MessageTree;
   values: Record<string, unknown>;
+  formats: MessageTreeFormats;
   metadata: MessageTreeMetadata;
 };
 
@@ -34,10 +43,16 @@ function toRenderable(
 ): RenderableMessage {
   // A string is literal text: no ICU parsing, so `{` and `#` are text.
   if (typeof message === 'string') {
-    return { tree: message ? [message] : [], values: {}, metadata: {} };
+    return {
+      tree: message ? [message] : [],
+      values: {},
+      formats: {},
+      metadata: {},
+    };
   }
   if (!isMsg(message)) throw new Error(invalidMsgError);
-  const { tree, values, context, maxChars, requiresReview, $_hash } = message;
+  const { tree, values, formats, context, maxChars, requiresReview, $_hash } =
+    message;
   // Null prototype so names like `__proto__` stay own entries.
   const merged: Record<string, unknown> = Object.create(null);
   // React Flight drops undefined-valued keys, so a source variable without a
@@ -48,6 +63,7 @@ function toRenderable(
   return {
     tree,
     values: Object.assign(merged, values, overrides),
+    formats: formats ?? {},
     metadata: { context, maxChars, requiresReview, $_hash },
   };
 }
@@ -62,9 +78,17 @@ const invalidMsgError = createGtI18nDiagnostic({
 function formatSource(
   tree: MessageTree,
   values: Record<string, unknown>,
+  formats: MessageTreeFormats,
   maxChars: number | undefined
 ): string {
-  const formatted = formatMessageTree(tree, libraryDefaultLocale, values);
+  // Code paths without i18n may never initialize the config.
+  const timeZone = isI18nConfigInitialized()
+    ? getI18nConfig().getTimeZone()
+    : undefined;
+  const formatted = formatMessageTree(tree, libraryDefaultLocale, values, {
+    formats,
+    timeZone,
+  });
   const output = Array.isArray(formatted)
     ? formatted.join('')
     : String(formatted);
@@ -78,8 +102,13 @@ export function createMessages(params: CreateGTParams): M {
   const renderTree = createRenderTree(params);
   return ((message: string | Msg | null | undefined, values?) => {
     if (message == null) return message;
-    const { tree, values: merged, metadata } = toRenderable(message, values);
-    return renderTree(tree, merged, metadata);
+    const {
+      tree,
+      values: merged,
+      formats,
+      metadata,
+    } = toRenderable(message, values);
+    return renderTree(tree, merged, formats, metadata);
   }) as M;
 }
 
@@ -104,6 +133,11 @@ export const mFallback: M = ((
   values?: Record<string, unknown>
 ) => {
   if (message == null) return message;
-  const { tree, values: merged, metadata } = toRenderable(message, values);
-  return formatSource(tree, merged, metadata.maxChars);
+  const {
+    tree,
+    values: merged,
+    formats,
+    metadata,
+  } = toRenderable(message, values);
+  return formatSource(tree, merged, formats, metadata.maxChars);
 }) as M;

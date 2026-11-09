@@ -15,6 +15,7 @@ export {
   select,
   selectordinal,
   t,
+  time,
   useGT,
   useMessages,
   type Fragment,

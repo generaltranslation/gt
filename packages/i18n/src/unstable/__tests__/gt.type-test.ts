@@ -10,6 +10,7 @@ import {
   select,
   selectordinal,
   t,
+  time,
   type GT,
 } from '../../unstable';
 
@@ -22,6 +23,11 @@ declare const status: 'in-progress' | 'done';
 declare const price: number;
 declare const due: Date;
 declare const input: string;
+declare const currency: string;
+declare const timeZone: string;
+declare const digits: number;
+declare const percentOrCurrency: 'percent' | 'currency';
+declare const meterUnit: `${string}meter`;
 const labels = { admin: 'Admin', member: 'Member' } as const;
 enum Plan {
   Free = 'free',
@@ -73,6 +79,16 @@ export function validUsage(): string[] {
     gt`${select(who, { admin: 'Admin', other: 'Someone' })}`,
     gt`Total: ${number(price, { style: 'currency', currency: 'USD' })}`,
     gt`Due ${date(due, { dateStyle: 'medium' })} or ${date(0)}`,
+    // Formatting context may be dynamic; message options are literals.
+    gt`Total: ${number({ price }, { style: 'currency', currency, currencyDisplay: 'code' })}`,
+    gt`${number({ price }, { style: 'percent', maximumFractionDigits: digits })}`,
+    gt`${number({ price }, { style: 'unit', unit: 'kilometer', unitDisplay: 'long' })}`,
+    gt`${number({ price }, { notation: 'compact' })}`,
+    gt`Due ${date({ due }, { dateStyle: 'medium', timeZone })}`,
+    gt`Due ${date({ due }, { month: 'short', day: 'numeric', hour: 'numeric', hourCycle: 'h23' })}`,
+    gt`Starts at ${time({ due }, { timeStyle: 'short', timeZone })}`,
+    gt`Lap ${time({ due }, { minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 })}`,
+    gt`See you ${time(due, { hour: 'numeric', dayPeriod: 'long' })} or ${time(0)}`,
     gt`${select(plan, { free: 'Free', pro: 'Pro' })}`,
     gt`${select({ plan }, { free: 'Free', other: 'Paid' })}`,
     // Computed enum keys are the values the enum compares with.
@@ -193,6 +209,57 @@ export function mistakes(): unknown[] {
 
     // @ts-expect-error number of a string
     number({ price: 'free' }),
+
+    // @ts-expect-error unnamed time of a string
+    time('12:00'),
+
+    // @ts-expect-error a number style that is not one literal
+    number({ price }, { style: percentOrCurrency, currency }),
+
+    // @ts-expect-error a number style of any string
+    number({ price }, { style: input as Intl.NumberFormatOptions['style'] }),
+
+    // @ts-expect-error currency style without a currency
+    number({ price }, { style: 'currency' }),
+
+    // @ts-expect-error unit style without a unit
+    number({ price }, { style: 'unit' }),
+
+    // @ts-expect-error a unit that is not a literal
+    number({ price }, { style: 'unit', unit: input }),
+
+    // @ts-expect-error a unit pattern, which may be many units
+    number({ price }, { style: 'unit', unit: meterUnit }),
+
+    // @ts-expect-error a unit without the unit style
+    number({ price }, { unit: 'kilometer' }),
+
+    // @ts-expect-error a unit with another style
+    number({ price }, { style: 'percent', unit: 'kilometer' }),
+
+    // @ts-expect-error not an option of number()
+    number({ price }, { maximumFractionDigit: 1 }),
+
+    // @ts-expect-error date() has no timeStyle
+    date({ due }, { timeStyle: 'short' }),
+
+    // @ts-expect-error dateStyle combined with fields
+    date({ due }, { dateStyle: 'medium', hour: 'numeric' }),
+
+    // @ts-expect-error a date field that is not one literal
+    date({ due }, { month: input as 'short' | 'long' }),
+
+    // @ts-expect-error a numeric field that is not one literal
+    time({ due }, { fractionalSecondDigits: digits as 1 | 2 }),
+
+    // @ts-expect-error time() has no dateStyle
+    time({ due }, { dateStyle: 'medium' }),
+
+    // @ts-expect-error time() has no date fields
+    time({ due }, { month: 'short' }),
+
+    // @ts-expect-error timeStyle combined with fields
+    time({ due }, { timeStyle: 'short', hour: 'numeric' }),
 
     // @ts-expect-error `n` in a plain template literal, which needs part
     `${n} items`,

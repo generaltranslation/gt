@@ -1547,6 +1547,7 @@ describe('withGTConfig', () => {
           loadTranslationsPath: './server-only-loader.ts',
           customMetadata: 'server-only metadata',
           cacheExpiryTime: 12345,
+          timeZone: 'Asia/Tokyo',
           _versionId: 'version-id',
           _disableDevHotReload: true,
         }
@@ -1561,6 +1562,7 @@ describe('withGTConfig', () => {
         runtimeUrl: expect.any(String),
         cacheUrl: expect.any(String),
         cacheExpiryTime: 12345,
+        timeZone: 'Asia/Tokyo',
         maxConcurrentRequests: expect.any(Number),
         maxBatchSize: expect.any(Number),
         batchInterval: expect.any(Number),

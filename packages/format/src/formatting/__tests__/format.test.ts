@@ -176,7 +176,7 @@ describe('_formatMessageICU', () => {
       }).format(value)
     );
 
-    for (const field of ['C', 'S', 'A']) {
+    for (const field of ['C', 'A']) {
       expect(
         _formatMessageICU(`{value, time, ::${field}}`, 'en-US', { value })
       ).toBe(new Intl.DateTimeFormat('en-US').format(value));

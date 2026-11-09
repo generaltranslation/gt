@@ -14,9 +14,9 @@ const INVALID_SIGNIFICANT_PRECISION = /^(?:(?:\+|#+)[rs]?|[rs])$/;
 const INTEGER_WIDTH = /(\*)(0+)|(#+)(0+)|(0+)/g;
 const NUMBER_SKELETON_WHITE_SPACE = /[\t-\r \x85\u200E\u200F\u2028\u2029]+/u;
 const DATE_TIME_FIELD =
-  /(?:[Eec]{1,6}|G{1,5}|[Qq]{1,5}|(?:[yYur]+|U{1,5})|[ML]{1,5}|d{1,2}|D{1,3}|F|[abB]{1,5}|[hHkK]{1,2}|j{1,2}|J{1,2}|w{1,2}|W|m{1,2}|s{1,2}|[zZOvVxX]{1,4})(?=([^']*'[^']*')*[^']*$)/g;
+  /(?:[Eec]{1,6}|G{1,5}|[Qq]{1,5}|(?:[yYur]+|U{1,5})|[ML]{1,5}|d{1,2}|D{1,3}|F|[ab]{1,5}|B{1,5}|[hHkK]{1,2}|j{1,2}|J{1,2}|w{1,2}|W|m{1,2}|s{1,2}|S+|[zZOvVxX]{1,4})(?=([^']*'[^']*')*[^']*$)/g;
 
-export type ModernNumberFormatOptions = ExtendedNumberFormatOptions & {
+type ModernNumberFormatOptions = ExtendedNumberFormatOptions & {
   roundingMode?:
     | 'ceil'
     | 'floor'
@@ -31,7 +31,7 @@ export type ModernNumberFormatOptions = ExtendedNumberFormatOptions & {
   trailingZeroDisplay?: 'auto' | 'stripIfInteger';
 };
 
-export const ROUNDING_MODES: Partial<
+const ROUNDING_MODES: Partial<
   Record<string, NonNullable<ModernNumberFormatOptions['roundingMode']>>
 > = {
   floor: 'floor',
@@ -43,7 +43,7 @@ export const ROUNDING_MODES: Partial<
   'half-up': 'halfExpand',
 };
 
-export const HOUR_CYCLES: Record<string, Intl.LocaleHourCycleKey> = {
+const HOUR_CYCLES: Record<string, Intl.LocaleHourCycleKey> = {
   h: 'h12',
   H: 'h23',
   K: 'h11',
@@ -110,10 +110,16 @@ export function parseNumberSkeletonOptions(
         result.maximumFractionDigits = 0;
         continue;
       case 'measure-unit':
-      case 'unit':
         requireOption(token);
         result.style = 'unit';
+        // `measure-unit/length-meter`: the category comes before the unit.
         result.unit = option!.replace(/^(.*?)-/, '');
+        continue;
+      case 'unit':
+        // `unit/kilometer-per-hour`: the whole core unit, as ICU4C reads it.
+        requireOption(token);
+        result.style = 'unit';
+        result.unit = option;
         continue;
       case 'compact-short':
       case 'K':
@@ -390,6 +396,10 @@ export function parseDateTimeSkeletonOptions(
       case 'a':
         result.hour12 = true;
         break;
+      case 'B':
+        result.dayPeriod =
+          length === 4 ? 'long' : length === 5 ? 'narrow' : 'short';
+        break;
       // j and J remain only when parsed without a locale. FormatJS ignores
       // them; with `localeHour` they are the locale's hour, which Intl spells
       // as an hour with no hourCycle. J has no day period, so it is a 24-hour
@@ -413,8 +423,19 @@ export function parseDateTimeSkeletonOptions(
       case 's':
         result.second = length === 2 ? '2-digit' : 'numeric';
         break;
+      // ICU shows every `S`; Intl shows at most three digits.
+      case 'S':
+        result.fractionalSecondDigits = Math.min(length, 3) as 1 | 2 | 3;
+        break;
       case 'z':
         result.timeZoneName = length < 4 ? 'short' : 'long';
+        break;
+      case 'O':
+      case 'v':
+        if (length !== 1 && length !== 4) throw unsupported(field, 'date/time');
+        result.timeZoneName = `${length === 1 ? 'short' : 'long'}${
+          field[0] === 'O' ? 'Offset' : 'Generic'
+        }`;
         break;
       default:
         throw unsupported(field, 'date/time');

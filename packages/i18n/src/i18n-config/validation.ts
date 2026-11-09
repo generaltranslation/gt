@@ -1,5 +1,9 @@
 import { isValidLocale } from '@generaltranslation/format';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import {
+  createDiagnosticMessage,
+  formatDiagnosticErrorDetails,
+} from 'generaltranslation/internal';
+import { createGtI18nDiagnostic } from '../logs/diagnostics';
 import logger from '../logs/logger';
 import type { I18nConfigParams } from './I18nConfig';
 
@@ -32,6 +36,23 @@ export function validateI18nConfigParams(
           (locale) => `Invalid locale: ${locale}`
         ),
         fix: 'Use valid BCP 47 locale codes or add custom mappings.',
+      })
+    );
+  }
+}
+
+export function validateTimeZone(timeZone: string | undefined): void {
+  if (timeZone === undefined) return;
+  try {
+    // Intl is the authority on which time zones the host supports.
+    new Intl.DateTimeFormat(undefined, { timeZone });
+  } catch (error) {
+    throw new Error(
+      createGtI18nDiagnostic({
+        severity: 'Error',
+        whatHappened: `Invalid I18nConfig time zone ${JSON.stringify(timeZone)}`,
+        fix: "Use an IANA time zone, like 'America/New_York' or 'UTC'",
+        details: formatDiagnosticErrorDetails(error),
       })
     );
   }

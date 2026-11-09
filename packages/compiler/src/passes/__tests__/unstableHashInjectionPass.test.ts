@@ -4,7 +4,7 @@ import { transformWithPlugin } from '../../__tests__/transformWithPlugin';
 import wireFormatCases from '../../../../../test-fixtures/icu-tree-wire-format.json';
 
 const UNSTABLE_HELPERS =
-  't, msg, useGT, getGT, plural, selectordinal, select, number, date, part, derive, n';
+  't, msg, useGT, getGT, plural, selectordinal, select, number, date, time, part, derive, n';
 
 // The fixtures' free variables, as local values like fixtureParity.test.ts:
 // only a provably primitive value is hashed as an unnamed variable.
@@ -88,7 +88,11 @@ describe('unstableHashInjectionPass', () => {
     ['a __proto__ variable', 't`Hello ${{ __proto__: name }}`;'],
     ['a __proto__ branch', "t`${select({ role }, { __proto__: 'x' })}`;"],
     ['a dynamic branch', 't`${plural({ count }, { other: label })}`;'],
-    ['a dynamic Intl option', 't`${number({ n }, { currency: code })}`;'],
+    ['a dynamic message option', 't`${number({ n }, { style: code })}`;'],
+    [
+      'two literal formatting contexts for one variable',
+      't`${number({ n }, { maximumFractionDigits: 1 })} ${number({ n })}`;',
+    ],
     ['a placeholder variable', 'const role = derive(admin);\nt`Role ${role}`;'],
     ['an object variable', 'const vars = { name };\nt`Hi ${vars}`;'],
     [
@@ -249,6 +253,31 @@ describe('unstableHashInjectionPass', () => {
   ])('hashes %s as an unnamed value', async (_name, body) => {
     expect(injectedHashes(await compile(body))).toHaveLength(1);
   });
+
+  it.each([
+    [
+      'currency',
+      "t`${number({ p }, { style: 'currency', currency: code() })}`;",
+      ['p', 'number', 'currency'],
+    ],
+    [
+      'timeZone',
+      "t`${date({ d }, { dateStyle: 'medium', timeZone: zone })}`;",
+      ['d', 'date', 'medium'],
+    ],
+    [
+      'timeZone on time()',
+      "t`${time({ s }, { timeStyle: 'short', timeZone: `${zone}` })}`;",
+      ['s', 'time', 'short'],
+    ],
+  ])(
+    'hashes a template with a dynamic %s like a literal one',
+    async (_name, body, node) => {
+      expect(injectedHashes(await compile(body))).toEqual([
+        hashSource({ source: [node], dataFormat: 'ICU_TREE' }),
+      ]);
+    }
+  );
 
   it('skips only a template with a reserved variable name', async () => {
     const output = await compile('t`Hi ${{ _gt_user }}`;\nt`Save`;');

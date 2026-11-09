@@ -1,4 +1,4 @@
-import type { MessageTree } from '@generaltranslation/icu';
+import type { MessageTree, MessageTreeFormats } from '@generaltranslation/icu';
 import {
   buildMessageTree,
   type MessageTreeBranch,
@@ -18,6 +18,8 @@ type BuiltMessage = {
   tree: MessageTree;
   /** Formatting values for every argument in the tree, keyed by name. */
   values: Record<string, unknown>;
+  /** Formatting context of each formatted argument, keyed by name. */
+  formats: MessageTreeFormats;
 };
 
 /** Converts template strings and runtime placeholders into a message tree. */
@@ -32,7 +34,7 @@ export function buildMessage(
     holes.map((hole) => toTreeHole(hole, values))
   );
   for (const [name, value] of built.values) bindValue(values, name, value);
-  return { tree: built.tree, values };
+  return { tree: built.tree, values, formats: built.formats };
 }
 
 function toTreeHole(
@@ -64,7 +66,13 @@ function toTreeHole(
       // Derived text is static, so it reads as if written in the template.
       return { kind: 'fragment', strings: [hole.value], holes: [] };
     case 'number':
+      return {
+        kind: 'number',
+        ...toHoleVariable(hole, values),
+        options: hole.options,
+      };
     case 'date':
+    case 'time':
       return {
         kind: hole[PLACEHOLDER],
         ...toHoleVariable(hole, values),

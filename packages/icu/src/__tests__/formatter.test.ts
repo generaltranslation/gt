@@ -312,21 +312,46 @@ describe('formatMessage', () => {
     ).toThrow('outside the safe integer range');
   });
 
-  it('formats date and time named styles', () => {
-    const value = new Date('2020-05-06T14:03:02Z');
-    expect(formatMessage('{d, date, full}', 'en-US', { d: value })).toBe(
-      new Intl.DateTimeFormat('en-US', {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-      }).format(value)
+  // ICU's named styles are Intl's dateStyle and timeStyle, unlike the
+  // field approximations intl-messageformat uses.
+  it.each(
+    ['full', 'long', 'medium', 'short'].flatMap((style) =>
+      ['en-US', 'de', 'ja', 'fr'].map((locale) => [style, locale])
+    )
+  )('formats the %s date and time styles as Intl in %s', (style, locale) => {
+    const d = new Date('2020-05-06T14:03:02Z');
+    const intl = (options: Intl.DateTimeFormatOptions) =>
+      new Intl.DateTimeFormat(locale, options).format(d);
+    expect(formatMessage(`{d, date, ${style}}`, locale, { d })).toBe(
+      intl({ dateStyle: style as 'full' })
     );
-    expect(formatMessage('{d, time, short}', 'en-US', { d: value })).toBe(
-      new Intl.DateTimeFormat('en-US', {
-        hour: 'numeric',
-        minute: 'numeric',
-      }).format(value)
+    expect(formatMessage(`{d, time, ${style}}`, locale, { d })).toBe(
+      intl({ timeStyle: style as 'full' })
+    );
+  });
+
+  // ICU4C 78.3 formats `{0,date}` as `May 6, 2020`: the medium style.
+  it.each(['en-US', 'de', 'ja', 'fr'])(
+    'formats a date or time without a style as the medium style in %s',
+    (locale) => {
+      const d = new Date('2020-05-06T14:03:02Z');
+      expect(formatMessage('{d, date}', locale, { d })).toBe(
+        new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(d)
+      );
+      expect(formatMessage('{d, time}', locale, { d })).toBe(
+        new Intl.DateTimeFormat(locale, { timeStyle: 'medium' }).format(d)
+      );
+    }
+  );
+
+  it('formats fractional seconds and day periods as ICU4C does', () => {
+    const d = new Date(2020, 4, 6, 23, 30, 0, 123);
+    // ICU4C 78.3 formats these as '11:30:00.123 PM' and '11 at night'.
+    expect(formatMessage('{d, date, ::jmmssSSS}', 'en-US', { d })).toBe(
+      '11:30:00.123 PM'
+    );
+    expect(formatMessage('{d, time, ::hB}', 'en-US', { d })).toBe(
+      '11 at night'
     );
   });
 
@@ -381,7 +406,7 @@ describe('formatMessage', () => {
     expect(() => formatMessage('{d, time, ::j}', [], { d: value })).toThrow();
   });
 
-  it.each(['C', 'S', 'A'])(
+  it.each(['C', 'A'])(
     'preserves FormatJS handling of the %s date/time skeleton field',
     (field) => {
       const value = new Date('2020-05-06T14:03:02Z');

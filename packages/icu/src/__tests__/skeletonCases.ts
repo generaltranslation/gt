@@ -50,8 +50,17 @@ export const NUMBER_SKELETONS: NumberCase[] = [
     options: { style: 'unit', unit: 'meter', unitDisplay: 'long' },
   },
   {
-    skeleton: 'unit/duration-second unit-width-narrow',
+    skeleton: 'unit/second unit-width-narrow',
     options: { style: 'unit', unit: 'second', unitDisplay: 'narrow' },
+  },
+  // Read as ICU4C reads it, where the pinned FormatJS parser drops `kilometer-`.
+  {
+    skeleton: 'unit/kilometer-per-hour',
+    options: { style: 'unit', unit: 'kilometer-per-hour' },
+  },
+  {
+    skeleton: 'measure-unit/speed-kilometer-per-hour',
+    options: { style: 'unit', unit: 'kilometer-per-hour' },
   },
   {
     skeleton: 'compact-short',
@@ -180,8 +189,29 @@ export const DATE_SKELETONS: Array<{
   // The pinned FormatJS parser accepts these fields but omits them from the
   // native options object.
   { skeleton: 'C', options: {} },
-  { skeleton: 'S', options: {} },
   { skeleton: 'A', options: {} },
+  // Read as ICU4C reads them, where the pinned FormatJS parser drops `S` and
+  // rejects the others.
+  { skeleton: 'S', options: { fractionalSecondDigits: 1 } },
+  { skeleton: 'SS', options: { fractionalSecondDigits: 2 } },
+  { skeleton: 'SSS', options: { fractionalSecondDigits: 3 } },
+  { skeleton: 'SSSS', options: { fractionalSecondDigits: 3 } },
+  {
+    skeleton: 'hB',
+    options: { hourCycle: 'h12', hour: 'numeric', dayPeriod: 'short' },
+  },
+  {
+    skeleton: 'hBBBB',
+    options: { hourCycle: 'h12', hour: 'numeric', dayPeriod: 'long' },
+  },
+  {
+    skeleton: 'hBBBBB',
+    options: { hourCycle: 'h12', hour: 'numeric', dayPeriod: 'narrow' },
+  },
+  { skeleton: 'O', options: { timeZoneName: 'shortOffset' } },
+  { skeleton: 'OOOO', options: { timeZoneName: 'longOffset' } },
+  { skeleton: 'v', options: { timeZoneName: 'shortGeneric' } },
+  { skeleton: 'vvvv', options: { timeZoneName: 'longGeneric' } },
   {
     skeleton: 'yyyyMMdd',
     options: { year: 'numeric', month: '2-digit', day: '2-digit' },

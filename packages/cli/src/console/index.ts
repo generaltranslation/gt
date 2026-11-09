@@ -170,21 +170,6 @@ export const warnNonStaticMessageTreeSync = (
     location
   );
 
-export const warnConflictingMessageVariableFormatsSync = (
-  file: string,
-  name: string,
-  location?: string
-): string =>
-  withLocation(
-    file,
-    createDiagnosticMessage({
-      whatHappened: 'Skipped a tagged-template message',
-      why: `the variable "${name}" has two formats ICU spells the same way, so a translation cannot tell them apart`,
-      fix: 'Use a different variable name for each format',
-    }),
-    location
-  );
-
 export const warnUntrackedMessageTagSync = (
   file: string,
   location?: string

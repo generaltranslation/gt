@@ -9,7 +9,16 @@ import { t } from '../../unstable';
 import { buildMessage } from '../buildMessage';
 import { createGT, getGT } from '../gt';
 import type { LookupTreeTranslation } from '../renderMessage';
-import { date, derive, n, number, part, plural, select } from '../placeholders';
+import {
+  date,
+  derive,
+  n,
+  number,
+  part,
+  plural,
+  select,
+  time,
+} from '../placeholders';
 import {
   hashSource,
   type MessageTreeHashMetadata,
@@ -39,13 +48,19 @@ function setup({
   enableI18n = true,
   fr = {},
   cacheExpiryTime,
+  timeZone,
 }: {
   locale?: string;
   enableI18n?: boolean;
   fr?: Record<string, unknown>;
   cacheExpiryTime?: number;
+  timeZone?: string;
 } = {}) {
-  initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
+  initializeI18nConfig({
+    defaultLocale: 'en',
+    locales: ['en', 'fr'],
+    timeZone,
+  });
   setI18nCache(
     new I18nCache({
       cacheExpiryTime,
@@ -377,27 +392,45 @@ describe('gt-i18n/unstable rendering', () => {
   it('formats number and date options in the rendered locale', async () => {
     const price = 9.5;
     const due = new Date(Date.UTC(2024, 0, 15));
-    const dateOptions: Intl.DateTimeFormatOptions = {
-      dateStyle: 'medium',
-      timeZone: 'UTC',
-    };
+    const currency = 'USD';
     const gt = await setup({
       fr: {
-        [keyOf()`Total: ${number({ price }, { style: 'currency', currency: 'USD' })}`]:
-          [
-            'Total : ',
-            ['price', 'number', { currency: 'USD', style: 'currency' }],
-          ],
+        // The translation holds only the style; the currency is call-site context.
+        [keyOf()`Total: ${number({ price }, { style: 'currency', currency: 'EUR' })}`]:
+          ['Total : ', ['price', 'number', 'currency']],
       },
     });
     expect(
-      gt`Total: ${number({ price }, { style: 'currency', currency: 'USD' })}`
+      gt`Total: ${number({ price }, { style: 'currency', currency })}`
     ).toBe(
-      `Total : ${new Intl.NumberFormat('fr', { style: 'currency', currency: 'USD' }).format(price)}`
+      `Total : ${new Intl.NumberFormat('fr', { style: 'currency', currency }).format(price)}`
     );
     // A miss formats the source in the source locale.
-    expect(gt`Due ${date({ due }, dateOptions)}`).toBe(
-      `Due ${new Intl.DateTimeFormat('en', dateOptions).format(due)}`
+    expect(
+      gt`Due ${date({ due }, { dateStyle: 'medium', timeZone: 'UTC' })}`
+    ).toBe(
+      `Due ${new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeZone: 'UTC' }).format(due)}`
+    );
+  });
+
+  it('formats dates and times in the config time zone unless the call site sets one', async () => {
+    const start = new Date(Date.UTC(2024, 0, 15, 23, 30));
+    const gt = await setup({ locale: 'en', timeZone: 'Asia/Tokyo' });
+    const format = (timeZone: string) =>
+      new Intl.DateTimeFormat('en', { timeStyle: 'short', timeZone }).format(
+        start
+      );
+    expect(gt`${time({ start }, { timeStyle: 'short' })}`).toBe(
+      format('Asia/Tokyo')
+    );
+    expect(
+      gt`${time({ start }, { timeStyle: 'short', timeZone: 'UTC' })}`
+    ).toBe(format('UTC'));
+  });
+
+  it('rejects an invalid config time zone', () => {
+    expect(() => setup({ timeZone: 'Mars/Olympus' })).toThrow(
+      'Invalid I18nConfig time zone "Mars/Olympus"'
     );
   });
 

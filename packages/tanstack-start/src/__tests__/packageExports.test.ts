@@ -210,6 +210,7 @@ describe.sequential('gt-tanstack-start package exports', () => {
 
           assert.equal(typeof unstable.getGT, 'function');
           assert.equal(typeof unstable.plural, 'function');
+          assert.equal(typeof unstable.time, 'function');
           assert.equal(typeof unstable.useGT, 'function');
           assert.equal(typeof unstable.getMessages, 'function');
           assert.equal(typeof unstable.useMessages, 'function');

@@ -1,15 +1,9 @@
 import type { NodePath } from '@babel/traverse';
 import type * as t from '@babel/types';
-import {
-  buildMessageTree,
-  findConflictingFormat,
-} from '@generaltranslation/icu/internal';
+import { buildMessageTree } from '@generaltranslation/icu/internal';
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
 import { randomUUID } from 'node:crypto';
-import {
-  warnConflictingMessageVariableFormatsSync,
-  warnNonStaticMessageTreeSync,
-} from '../../../../../console/index.js';
+import { warnNonStaticMessageTreeSync } from '../../../../../console/index.js';
 import { extractStringEntryMetadata } from '../processTranslationCall/extractStringEntryMetadata.js';
 import type { ParsingConfig, ParsingOutput } from '../types.js';
 import { NonStaticMessageError, formatLocation } from './diagnostics.js';
@@ -28,10 +22,12 @@ export function processMessage(
     output,
     usesDerive: false,
     resolvingParts: new Set(),
+    namedFormats: [],
   };
   try {
     const hashMetadata = parseMessageOptions(options, tagged.node);
     const variants = templateVariants(tagged.get('quasi'), context);
+    dropDynamicFormattingContext(context.namedFormats);
     const metadata = {
       ...extractStringEntryMetadata({
         output,
@@ -49,6 +45,7 @@ export function processMessage(
         return buildMessageTree(strings, holes).tree;
       } catch (error) {
         // The builder rejects variable names that use its reserved prefix
+        // and a variable formatted with two formatting contexts.
         throw new NonStaticMessageError(
           'the message tree could not be built',
           tagged.node,
@@ -56,18 +53,6 @@ export function processMessage(
         );
       }
     });
-    for (const tree of trees) {
-      const conflict = findConflictingFormat(tree);
-      if (conflict === undefined) continue;
-      output.warnings.add(
-        warnConflictingMessageVariableFormatsSync(
-          config.file,
-          conflict,
-          formatLocation(tagged.node)
-        )
-      );
-      return;
-    }
     for (const tree of trees) {
       output.updates.push({
         dataFormat: 'ICU_TREE',
@@ -87,5 +72,24 @@ export function processMessage(
         error.fix
       )
     );
+  }
+}
+
+/**
+ * An expression may hold any value at runtime, so a formatting-context key
+ * set to one is left out of every format of that variable: the builder then
+ * reports only the conflicts the literals prove.
+ */
+function dropDynamicFormattingContext(
+  namedFormats: TreeContext['namedFormats']
+): void {
+  const dynamic = new Map<string, Set<string>>();
+  for (const { name, dynamicKeys } of namedFormats) {
+    const keys = dynamic.get(name) ?? new Set();
+    for (const key of dynamicKeys) keys.add(key);
+    dynamic.set(name, keys);
+  }
+  for (const { name, options } of namedFormats) {
+    for (const key of dynamic.get(name)!) delete options[key];
   }
 }

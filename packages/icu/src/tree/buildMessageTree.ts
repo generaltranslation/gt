@@ -1,11 +1,28 @@
 import {
+  createConflictingFormatsError,
   createInvalidBranchKeyError,
+  createInvalidFormatOptionError,
   createInvalidVariableNameError,
   createPluralCountOutsidePluralError,
   createReservedVariablePrefixError,
 } from '../errors/treeErrors';
+import {
+  DATE_MESSAGE_OPTIONS,
+  DATE_TIME_CONTEXT_OPTIONS,
+  NUMBER_CONTEXT_OPTIONS,
+  NUMBER_MESSAGE_OPTIONS,
+  TIME_MESSAGE_OPTIONS,
+  type MessageFormattingContext,
+  type MessageTreeFormats,
+} from '../settings/formatOptions';
 import { FALLBACK_BRANCH_KEY, isArgumentName } from '../settings/syntax';
-import { appendText, canonicalStyle, compareKeys, toBranch } from './canonical';
+import {
+  appendText,
+  canonicalStyle,
+  compareKeys,
+  sortRecord,
+  toBranch,
+} from './canonical';
 import type {
   DateTimeNode,
   MessageBranches,
@@ -15,6 +32,7 @@ import type {
   PluralNode,
   SelectNode,
 } from './messageTree';
+import { styleProblem } from './validateMessageTree';
 
 // ===== Hole IR ===== //
 
@@ -38,7 +56,9 @@ export type MessageTreeChoiceKind = (PluralNode | SelectNode)[1];
 
 /**
  * Plain-data description of one template hole. Values never become part of
- * the tree, so the built tree depends only on the message's structure.
+ * the tree, so the built tree depends only on the message's structure. A
+ * format's `options` are all its Intl options; the builder keeps the message
+ * options in the tree and returns the formatting context in `formats`.
  */
 export type MessageTreeHole =
   | { kind: 'argument'; name: string }
@@ -46,7 +66,7 @@ export type MessageTreeHole =
   | { kind: 'anonymous'; value?: unknown }
   | ({ kind: NumberNode[1]; options?: Intl.NumberFormatOptions } & HoleVariable)
   | ({
-      kind: Extract<DateTimeNode[1], 'date'>;
+      kind: DateTimeNode[1];
       options?: Intl.DateTimeFormatOptions;
     } & HoleVariable)
   | ({
@@ -61,6 +81,8 @@ export type MessageTreeHole =
 
 type BuildContext = {
   values: [name: string, value: unknown][];
+  /** Each formatted variable's context, empty included, to find conflicts. */
+  formats: Map<string, MessageFormattingContext>;
 };
 
 // Anonymous values are named `_gt_N`; user names must not collide.
@@ -72,6 +94,8 @@ export type BuiltMessageTree = {
    * Values of anonymous holes, in tree order.
    */
   values: [name: string, value: unknown][];
+  /** The formatting context of each formatted variable that has one. */
+  formats: MessageTreeFormats;
 };
 
 /**
@@ -80,15 +104,20 @@ export type BuiltMessageTree = {
  * plural/select keys and Intl options are sorted, so equal messages produce
  * equal tree JSON. Anonymous holes become `_gt_N`
  * arguments, numbered in tree order from 1. Their values are returned
- * separately because values are never part of the tree.
+ * separately because values are never part of the tree, and so is each
+ * variable's formatting context: one variable formatted with two contexts
+ * throws.
  */
 export function buildMessageTree(
   strings: readonly string[],
   holes: readonly MessageTreeHole[]
 ): BuiltMessageTree {
-  const context: BuildContext = { values: [] };
+  const context: BuildContext = { values: [], formats: new Map() };
   const tree = build(strings, holes, context, false);
-  return { tree, values: context.values };
+  const formats = Object.fromEntries(
+    [...context.formats].filter(([, options]) => Object.keys(options).length)
+  );
+  return { tree, values: context.values, formats };
 }
 
 function validateName(name: string): void {
@@ -151,10 +180,20 @@ function buildHole(
       out.push(0);
       return;
     case 'number':
-    case 'date': {
+    case 'date':
+    case 'time': {
       const name = hole.name ?? addAnonymousValue(context, hole.value);
-      const style = canonicalStyle(hole.options, hole.kind);
-      out.push(style ? [name, hole.kind, style] : [name, hole.kind]);
+      const [style, formatting] = splitOptions(name, hole.kind, hole.options);
+      const bound = context.formats.get(name);
+      if (bound && JSON.stringify(bound) !== JSON.stringify(formatting)) {
+        throw new Error(createConflictingFormatsError(name));
+      }
+      context.formats.set(name, formatting);
+      out.push(
+        (style === undefined
+          ? [name, hole.kind]
+          : [name, hole.kind, style]) as MessageNode
+      );
       return;
     }
     case 'plural':
@@ -189,6 +228,61 @@ function buildHole(
       out.push([name, hole.kind, branches]);
     }
   }
+}
+
+/**
+ * Splits a format's Intl options into its tree style and its sorted
+ * formatting context, by the option classification.
+ */
+function splitOptions(
+  name: string,
+  kind: (NumberNode | DateTimeNode)[1],
+  options: Intl.NumberFormatOptions | Intl.DateTimeFormatOptions = {}
+): [style: unknown, formatting: MessageFormattingContext] {
+  const messageKeys: readonly string[] =
+    kind === 'number'
+      ? NUMBER_MESSAGE_OPTIONS
+      : kind === 'date'
+        ? DATE_MESSAGE_OPTIONS
+        : TIME_MESSAGE_OPTIONS;
+  const contextKeys: readonly string[] =
+    kind === 'number' ? NUMBER_CONTEXT_OPTIONS : DATE_TIME_CONTEXT_OPTIONS;
+  const invalid = (reason: string) =>
+    new Error(createInvalidFormatOptionError(name, kind, reason));
+  const message: Record<string, unknown> = {};
+  const formatting: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(options)) {
+    // Intl reads an undefined option as an absent one.
+    if (value === undefined) continue;
+    if (messageKeys.includes(key)) message[key] = value;
+    else if (contextKeys.includes(key)) formatting[key] = value;
+    else throw invalid(`a ${kind} has no "${key}" option`);
+  }
+
+  let style: unknown;
+  if (kind === 'number') {
+    // Intl ignores `unit` without a unit style, so it would not be in the message.
+    if (message.unit !== undefined && message.style !== 'unit') {
+      throw invalid(`"unit" needs style: 'unit'`);
+    }
+    style =
+      message.style === 'unit'
+        ? { style: 'unit', unit: message.unit }
+        : message.style === 'decimal'
+          ? undefined
+          : message.style;
+  } else {
+    const { dateStyle, timeStyle, ...fields } = message;
+    const named = dateStyle ?? timeStyle;
+    if (named !== undefined && Object.keys(fields).length) {
+      // Intl throws a TypeError for this too.
+      throw invalid(`a style name cannot be combined with fields`);
+    }
+    style = named ?? canonicalStyle(fields);
+  }
+  const problem = styleProblem(kind, style);
+  if (problem) throw invalid(problem.message);
+  return [style, sortRecord(formatting)];
 }
 
 // `=N` with N an integer the parser reads: it rejects unsafe integers.

@@ -8,6 +8,7 @@ export {
   plural,
   select,
   selectordinal,
+  time,
   type Fragment,
   type Placeholder,
 } from './unstable/placeholders';
