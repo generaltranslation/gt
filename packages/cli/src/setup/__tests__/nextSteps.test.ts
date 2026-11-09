@@ -14,6 +14,21 @@ describe('getInitNextSteps', () => {
       'Run `npx gt translate --config config/custom.json` to translate your content into fr, es'
     );
   });
+
+  it('starts with the Cache Components guide when cacheComponents is enabled', () => {
+    const steps = getInitNextSteps({
+      framework: 'next-app',
+      configuredAppEntry: true,
+      cacheComponents: true,
+      docsUrl: 'https://example.com/docs',
+      locales: ['fr'],
+      configFilepath: 'gt.config.json',
+    });
+    expect(steps[0]).toBe(
+      'Follow the Cache Components guide to move your routes under app/[locale], add getLocale and getRegion files and a proxy, then add <GTProvider> to the [locale] layout (see https://generaltranslation.com/docs/react/nextjs/cache-components)'
+    );
+    expect(steps).toHaveLength(5);
+  });
 });
 
 describe('getTranslateInstruction', () => {

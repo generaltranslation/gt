@@ -1,11 +1,17 @@
 import path from 'node:path';
 import type { SupportedReactFrameworks } from '../types/index.js';
 import { getReactFrameworkLibrary } from './frameworkUtils.js';
+import {
+  CACHE_COMPONENTS_DOCS_URL,
+  CACHE_COMPONENTS_SETUP_STEP,
+} from '../next/cacheComponents.js';
 
 export type InitNextStepsContext = {
   framework: SupportedReactFrameworks;
   /** Setup added the GT provider or initializer to the app entry. */
   configuredAppEntry: boolean;
+  /** Next.js cacheComponents left <GTProvider> to the Cache Components guide. */
+  cacheComponents?: boolean;
   /** Setup guide for the framework. */
   docsUrl: string;
   locales: string[];
@@ -25,6 +31,7 @@ export type InitNextStepsContext = {
 export function getInitNextSteps({
   framework,
   configuredAppEntry,
+  cacheComponents,
   docsUrl,
   locales,
   configFilepath,
@@ -35,12 +42,15 @@ export function getInitNextSteps({
   const destination = translationsDir
     ? ` and save them to ${translationsDir}`
     : '';
-  return [
-    ...(configuredAppEntry
+  const appEntrySteps = cacheComponents
+    ? [`${CACHE_COMPONENTS_SETUP_STEP} (see ${CACHE_COMPONENTS_DOCS_URL})`]
+    : configuredAppEntry
       ? []
       : [
           `Add <GTProvider> from ${library} to the root of your app (see ${docsUrl})`,
-        ]),
+        ];
+  return [
+    ...appEntrySteps,
     `Wrap the text you want translated in <T>, or translate strings with useGT(); both come from ${library} (see ${docsUrl})`,
     `Add <LocaleSelector /> from ${library} so visitors can switch language`,
     `${getTranslateInstruction(configFilepath)} to translate your content into ${locales.join(', ')}${destination}`,
