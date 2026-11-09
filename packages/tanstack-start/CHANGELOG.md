@@ -1,5 +1,16 @@
 # gt-tanstack-start
 
+## 12.0.0-samsara.3
+
+### Patch Changes
+
+- Updated dependencies [cf23e00]
+  - generaltranslation@10.0.0-samsara.3
+  - @generaltranslation/compiler@1.4.0-samsara.2
+  - gt-i18n@2.0.0-samsara.3
+  - gt-react@12.0.0-samsara.3
+  - @generaltranslation/react-core@12.0.0-samsara.3
+
 ## 12.0.0-samsara.2
 
 ### Patch Changes
