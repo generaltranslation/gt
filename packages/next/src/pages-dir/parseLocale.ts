@@ -77,9 +77,7 @@ function detectLocale<
   }
 
   return (
-    i18nConfig
-      .getGTClass()
-      .determineLocale(preferredLocales, i18nConfig.getLocales()) ||
+    i18nConfig.determineLocale(preferredLocales, i18nConfig.getLocales()) ||
     i18nConfig.getDefaultLocale()
   );
 }
