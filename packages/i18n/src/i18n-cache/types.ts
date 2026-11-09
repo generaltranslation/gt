@@ -56,7 +56,6 @@ export type I18nCacheConfig = {
   cacheExpiryTime?: number | null;
   batchConfig?: TranslationBatchConfig;
   runtimeTranslation?: RuntimeTranslationConfig;
-  _versionId?: string;
 };
 
 /**

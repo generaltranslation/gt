@@ -43,6 +43,18 @@ describe('I18nConfig', () => {
     expect(config.getLocales()).toEqual(['fr']);
   });
 
+  it('getVersionId() returns the _versionId passed to the constructor', () => {
+    const config = new I18nConfig({ _versionId: 'version-abc' });
+
+    expect(config.getVersionId()).toBe('version-abc');
+  });
+
+  it('getVersionId() returns undefined when no _versionId was provided', () => {
+    const config = new I18nConfig();
+
+    expect(config.getVersionId()).toBeUndefined();
+  });
+
   it('skips locale validation when GT services are disabled', () => {
     const config = new I18nConfig({
       defaultLocale: 'invalid-locale',
