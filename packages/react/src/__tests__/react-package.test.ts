@@ -47,7 +47,7 @@ function isAllowedExternalizedSubpath(
   specifier: string
 ): boolean {
   return (
-    file.startsWith('index.') &&
+    (file.startsWith('index.') || file.startsWith('client-entry.')) &&
     (specifier.startsWith('@generaltranslation/react-core/') ||
       specifier.startsWith('gt-i18n/'))
   );

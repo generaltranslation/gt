@@ -31,6 +31,9 @@ const entries = [
   'src/index.server.ts',
   'src/index.types.ts',
   'src/macros.ts',
+  'src/client-entry.rsc.ts',
+  'src/client-entry.client.ts',
+  'src/client-entry.server.ts',
 ];
 
 // src/index.types.ts only backs the exports map's "types" conditions; its
@@ -40,7 +43,10 @@ const typesOnlyEntry = 'src/index.types.ts';
 
 export default defineConfig(
   entries.flatMap((entry, index) => {
-    const entryDeps = entry.startsWith('src/index.') ? contextDeps : deps;
+    const entryDeps =
+      entry.startsWith('src/index.') || entry.startsWith('src/client-entry.')
+        ? contextDeps
+        : deps;
     const [cjsConfig, esmConfig] = createTsdownConfig([entry], entryDeps);
 
     return [
