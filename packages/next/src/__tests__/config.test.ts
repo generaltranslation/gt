@@ -499,6 +499,43 @@ describe('withGTConfig', () => {
       consoleWarnSpy.mockRestore();
     });
 
+    it('reports the GT locales it compared, including the default locale', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {});
+      vi.mocked(fs.existsSync).mockImplementation(
+        (configPath) => configPath === './gt.config.json'
+      );
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        JSON.stringify({
+          defaultLocale: 'en',
+          locales: ['fr', 'es'],
+        })
+      );
+
+      withGTConfig({
+        i18n: {
+          defaultLocale: 'en',
+          locales: ['fr', 'es'],
+        },
+      });
+
+      const mismatchWarnings = consoleWarnSpy.mock.calls
+        .map(([message]) => String(message))
+        .filter((message) =>
+          message.includes(
+            'Next.js internationalized routing does not match the GT config file'
+          )
+        );
+      expect(mismatchWarnings).toHaveLength(1);
+      expect(mismatchWarnings[0]).toContain(
+        'locales: GT has ["en","fr","es"]; Next.js has ["fr","es"]'
+      );
+      expect(mismatchWarnings[0]).not.toContain('defaultLocale:');
+      consoleWarnSpy.mockRestore();
+    });
+
     it('does not warn when locale sets match in a different order', async () => {
       const withGTConfig = await getWithGTConfig();
       const consoleWarnSpy = vi

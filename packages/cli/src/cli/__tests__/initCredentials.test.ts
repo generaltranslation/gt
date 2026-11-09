@@ -276,11 +276,13 @@ describe('init development credentials', () => {
       name: 'next-pages',
       type: 'react',
     });
+    // Pages Router app setup is left to the quickstart, so it asks nothing.
     vi.mocked(promptConfirm)
       .mockResolvedValueOnce(false) // recommended defaults
-      .mockResolvedValueOnce(false) // install gt-next
       .mockResolvedValueOnce(true); // set up credentials
-    vi.mocked(promptSelect).mockResolvedValueOnce(projects[0]);
+    vi.mocked(promptSelect)
+      .mockResolvedValueOnce('cdn') // translation storage
+      .mockResolvedValueOnce(projects[0]);
 
     await runInit('--config', 'custom.gt.config.json', '--src', 'src/**/*.tsx');
 
