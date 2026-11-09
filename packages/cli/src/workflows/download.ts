@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { Settings } from '../types/index.js';
 import { api } from '../utils/api.js';
 import { EnqueueFilesResult } from 'generaltranslation/types';
@@ -16,7 +17,11 @@ import { recordWarning } from '../state/translateWarnings.js';
 import { BranchStep } from './steps/BranchStep.js';
 import { FileProperties } from '../types/files.js';
 import chalk from 'chalk';
-import type { InlineLibrary } from '../types/libraries.js';
+import {
+  getInlineElementsLabel,
+  type InlineLibrary,
+} from '../types/libraries.js';
+import { TEMPLATE_FILE_NAME } from '../utils/constants.js';
 
 export type FileTranslationData = {
   [fileId: string]: {
@@ -105,20 +110,26 @@ export async function runDownloadWorkflow({
     });
 
     if (pollResult.fileTracker.failed.size > 0) {
-      logger.error(
-        `${chalk.red(`${pollResult.fileTracker.failed.size} file(s) failed to translate:`)}\n${Array.from(
-          pollResult.fileTracker.failed.entries()
-        )
-          .map(([, value]) => `- ${value.fileName}`)
-          .join('\n')}`
-      );
+      const failures: string[] = [];
       for (const [, value] of pollResult.fileTracker.failed) {
-        recordWarning(
-          'failed_translation',
-          value.fileName,
-          `Failed to translate for locale ${value.locale}`
-        );
+        const fileName =
+          value.fileName === TEMPLATE_FILE_NAME
+            ? `<${getInlineElementsLabel(inlineLibrary)}>`
+            : value.fileName;
+        const reason = createDiagnosticMessage({
+          whatHappened: `Failed to translate for locale ${value.locale}`,
+          details: value.failureReason,
+        });
+        failures.push(`- ${fileName}: ${reason}`);
+        recordWarning('failed_translation', fileName, reason);
       }
+      const failureMessage = createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Error',
+        whatHappened: `${pollResult.fileTracker.failed.size} file(s) failed to translate`,
+        details: `\n${failures.join('\n')}`,
+      });
+      logger.error(failureMessage);
 
       // If all files failed translation, exit early
       if (pollResult.fileTracker.completed.size === 0) {

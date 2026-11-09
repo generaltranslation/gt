@@ -19,13 +19,14 @@ export const internationalizedArrayPatch = async (
   translatedFields: SanityDocument,
   localeId: string,
   client: SanityClient
-): Promise<void> => {
+): Promise<string | undefined> => {
   const sourceLocale = pluginConfig.getSourceLocale();
 
   const baseDoc = await findLatestDraft(docInfo.documentId, client);
   if (!baseDoc) {
-    return;
+    return undefined;
   }
+  const publishedId = getPublishedId(baseDoc._id);
 
   const changes = mergeInternationalizedArrays(
     baseDoc as Record<string, unknown>,
@@ -35,7 +36,7 @@ export const internationalizedArrayPatch = async (
   );
 
   if (Object.keys(changes).length === 0) {
-    return;
+    return publishedId;
   }
 
   // Every key in `changes` already exists on the base document (merge only
@@ -43,17 +44,18 @@ export const internationalizedArrayPatch = async (
   // preserves all other locale items and their random `_key`s.
   if (baseDoc._id.startsWith('drafts.')) {
     await client.patch(baseDoc._id).set(changes).commit();
-    return;
+    return publishedId;
   }
 
   // Only the published document exists. Mutations via the client write to the
   // exact id given (drafts are a Studio convention, not created server-side),
   // so patch a draft seeded from the published state instead of publishing
   // translated content directly.
-  const draftId = `drafts.${getPublishedId(baseDoc._id)}`;
+  const draftId = `drafts.${publishedId}`;
   await client
     .transaction()
     .createIfNotExists({ ...baseDoc, _id: draftId })
     .patch(draftId, (patch) => patch.set(changes))
     .commit();
+  return publishedId;
 };

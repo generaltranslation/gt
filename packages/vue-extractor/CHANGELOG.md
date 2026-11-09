@@ -1,5 +1,19 @@
 # @generaltranslation/vue-extractor
 
+## 0.1.25
+
+### Patch Changes
+
+- Updated dependencies [[`b3c3647`](https://github.com/generaltranslation/gt/commit/b3c3647239a6c44c3549e722b7001b83624865f8)]:
+  - generaltranslation@9.5.11
+
+## 0.1.24
+
+### Patch Changes
+
+- Updated dependencies [[`e1c64a3`](https://github.com/generaltranslation/gt/commit/e1c64a3c27c7a05ffeb81eb2d04ace795d0c3ab5)]:
+  - generaltranslation@9.5.10
+
 ## 0.1.23
 
 ### Patch Changes

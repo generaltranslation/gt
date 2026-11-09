@@ -62,7 +62,7 @@ describe('documentLevelPatch', () => {
 
     const client = { fetch, patch, create } as unknown as SanityClient;
 
-    await documentLevelPatch(
+    const written = await documentLevelPatch(
       { documentId: 'article-1' },
       {
         _id: 'article-1',
@@ -80,6 +80,7 @@ describe('documentLevelPatch', () => {
     expect(patch).toHaveBeenCalledWith('drafts.article-1-es', {
       set: expect.objectContaining({ title: 'Hola' }),
     });
+    expect(written).toBe('article-1-es');
   });
 
   test('creates the translated document as a draft and never publishes it', async () => {
@@ -136,7 +137,7 @@ describe('documentLevelPatch', () => {
       action,
     } as unknown as SanityClient;
 
-    await documentLevelPatch(
+    const written = await documentLevelPatch(
       { documentId: 'article-1' },
       {
         _id: 'article-1',
@@ -156,6 +157,7 @@ describe('documentLevelPatch', () => {
     expect(created._id).toBe('drafts.');
     expect(created.language).toBe('es');
     expect(created.title).toBe('Hola');
+    expect(written).toBe('generated-id');
 
     expect(action).not.toHaveBeenCalled();
     // The metadata reference is written, so the translation is discoverable
