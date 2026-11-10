@@ -368,6 +368,10 @@ type TimeOptions = TimeMessageOptions &
   DateTimeFormattingContext &
   Record<string, unknown>;
 
+// With an explicit first type argument the options' type is not inferred, so
+// the checks below see no keys; the options are then checked as Intl options.
+type Uninferred<F, Options> = [keyof F] extends [never] ? Options : unknown;
+
 // Message options are stored in the tree and hashed, and the CLI reads them
 // from source, so each must be one literal; other options may be anything.
 type IsOneLiteral<T> = [T] extends [string | number]
@@ -461,7 +465,8 @@ export function number<
   const F extends NumberOptions = {},
 >(
   value: number | bigint | OneKey<O>,
-  options?: CheckNumberOptions<F>
+  options?: CheckNumberOptions<F> &
+    Uninferred<F, NumberMessageOptions & NumberFormattingContext>
 ): Placeholder {
   const [name, v] = entry(value);
   return {
@@ -482,7 +487,8 @@ export function date<
   const F extends DateOptions = {},
 >(
   value: Date | number | OneKey<O>,
-  options?: CheckDateOptions<F>
+  options?: CheckDateOptions<F> &
+    Uninferred<F, DateMessageOptions & DateTimeFormattingContext>
 ): Placeholder {
   return dateTime('date', value, options);
 }
@@ -496,7 +502,8 @@ export function time<
   const F extends TimeOptions = {},
 >(
   value: Date | number | OneKey<O>,
-  options?: CheckTimeOptions<F>
+  options?: CheckTimeOptions<F> &
+    Uninferred<F, TimeMessageOptions & DateTimeFormattingContext>
 ): Placeholder {
   return dateTime('time', value, options);
 }
