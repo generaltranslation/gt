@@ -5,7 +5,7 @@ import { icuToMessage } from '../convert';
 const select = (branches: unknown) => ['x', 'select', branches];
 
 function nestedTags(levels: number): unknown[] {
-  let tree: unknown[] = ['leaf'];
+  let tree: unknown[] = [['leaf']];
   for (let level = 0; level < levels; level++) tree = [['b', 'tag', tree]];
   return tree;
 }
@@ -47,14 +47,43 @@ describe('validateMessageTree', () => {
     expect(isMessageTree(text)).toBe(true);
   });
 
-  it('accepts text, empty text and an array of only text in a branch or tag', () => {
+  it('accepts text and empty text in a branch or tag', () => {
     expect(
       isMessageTree([
-        select({ a: 'Save', b: '', other: ['x', 'y'] }),
+        select({ a: 'Save', b: '', other: [['name']] }),
         ['b', 'tag', 'bold'],
         ['i', 'tag', ''],
       ])
     ).toBe(true);
+  });
+
+  // A message has one valid tree, so it has one key.
+  it.each([
+    [['Save'], [], 'expected a string for text without placeholders'],
+    [[], [], 'expected a string for text without placeholders'],
+    [
+      [select({ other: ['All'] })],
+      [0, 2, 'other'],
+      'expected a string for text without placeholders',
+    ],
+    [
+      [['b', 'tag', ['bold']]],
+      [0, 2],
+      'expected a string for text without placeholders',
+    ],
+    [
+      ['Hi ', 'there, ', ['name']],
+      [1],
+      'expected a placeholder; write adjacent text as one string',
+    ],
+    [[['name'], ''], [1], 'expected text; leave out empty text'],
+    [
+      [['n', 'plural', { other: [0, ' items'] }, 0]],
+      [0, 3],
+      'leave out an offset of 0',
+    ],
+  ])('rejects the other form %j of a message', (tree, path, message) => {
+    expect(validateMessageTree(tree)).toEqual({ path, message });
   });
 
   it.each([undefined, null, 0, {}, { 0: 'a' }])(
@@ -194,8 +223,8 @@ describe('validateMessageTree', () => {
   });
 
   it('limits the total node count', () => {
-    expect(isMessageTree(Array(10_000).fill('a'))).toBe(true);
-    expect(validateMessageTree(Array(10_001).fill('a'))).toEqual({
+    expect(isMessageTree(Array(10_000).fill(['a']))).toBe(true);
+    expect(validateMessageTree(Array(10_001).fill(['a']))).toEqual({
       path: [10_000],
       message: 'more than 10000 nodes and branches',
     });

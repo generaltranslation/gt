@@ -1,5 +1,8 @@
 ---
-'@generaltranslation/icu': patch
+'@generaltranslation/icu': minor
 ---
 
-The message tree types tell every node apart by its second element, so `switch (node[1])` narrows a node without a cast. `validateMessageTree` no longer accepts a `null` style, which the types never held: a node without a style leaves it out.
+A message has one valid tree, so it has one key.
+
+- `validateMessageTree` and `isMessageTree` reject the other forms of a message: plain text in an array (`['Save']` for `'Save'`), text split in pieces or empty text in an array, a plural offset of 0, and a `null` style. `buildMessageTree` and `icuToMessageTree` never wrote these. The order of keys is still free.
+- The message tree types tell every node apart by its second element, so `switch (node[1])` narrows a node without a cast.

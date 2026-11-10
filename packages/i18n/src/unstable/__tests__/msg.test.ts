@@ -71,7 +71,7 @@ describe('gt-i18n/unstable msg', () => {
 
   it('keeps { # and quotes in a plain string as text', async () => {
     const text = "It's {name} #1";
-    const m = await setup({ [keyOf`It's {name} #1`]: ["C'est {name} n°1"] });
+    const m = await setup({ [keyOf`It's {name} #1`]: "C'est {name} n°1" });
     expect(m(text)).toBe("C'est {name} n°1");
     expect(mFallback(text)).toBe(text);
     expect(m('')).toBe('');
@@ -177,11 +177,11 @@ describe('gt-i18n/unstable msg', () => {
     const m = await setup();
     const invalid = [
       {},
-      { tree: ['Hi'], values: {} },
+      { tree: 'Hi', values: {} },
       { tree: [['x', 'bogus']], values: {}, $_hash: 'h' },
-      { tree: ['Hi'], $_hash: 'h' },
+      { tree: 'Hi', $_hash: 'h' },
       { tree: [['name']], values: {}, $_hash: 'h' },
-      { tree: ['Hi'], values: {}, formats: {}, $_hash: 'h', maxChars: 'ten' },
+      { tree: 'Hi', values: {}, formats: {}, $_hash: 'h', maxChars: 'ten' },
     ];
     for (const message of invalid) {
       expect(() => m(message as Msg)).toThrow('not a message from msg()');
