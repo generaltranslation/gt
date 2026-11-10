@@ -1,6 +1,10 @@
 import type {
+  DateFieldOptions,
   DateMessageOptions,
   DateTimeFormattingContext,
+  NumberFormattingContext,
+  NumberMessageOptions,
+  TimeFieldOptions,
   TimeMessageOptions,
 } from '@generaltranslation/icu';
 import type {
@@ -47,7 +51,7 @@ type DateTimePlaceholder = {
   readonly [PLACEHOLDER]: 'date' | 'time';
   readonly name: string | undefined;
   readonly value: Primitive;
-  readonly options?: DateOptions;
+  readonly options?: DateMessageOptions & DateTimeFormattingContext;
 };
 type ChoicePlaceholder<UsesDyn extends boolean = boolean> = {
   readonly [PLACEHOLDER]: BranchingKind;
@@ -352,30 +356,133 @@ export function select<
   return choice('select', value, branches as Record<string, Branch>);
 }
 
+// The index signature keeps an unknown key inferable, so the checks below can
+// name it instead of falling back to the constraint.
+type NumberOptions = NumberMessageOptions &
+  NumberFormattingContext &
+  Record<string, unknown>;
+type DateOptions = DateMessageOptions &
+  DateTimeFormattingContext &
+  Record<string, unknown>;
+type TimeOptions = TimeMessageOptions &
+  DateTimeFormattingContext &
+  Record<string, unknown>;
+
+// Message options are stored in the tree and hashed, and the CLI reads them
+// from source, so each must be one literal; other options may be anything.
+type IsOneLiteral<T> = [T] extends [string | number]
+  ? true extends IsUnion<T>
+    ? false
+    : T extends string
+      ? // string or a pattern like `${string}meter`, which may be many values.
+        HasValues<T> extends true
+        ? false
+        : true
+      : number extends T
+        ? false
+        : true
+  : false;
+type MessageOption<F, K extends keyof F> =
+  IsOneLiteral<F[K]> extends true
+    ? F[K]
+    : `${K & string} is part of the message, so it must be one literal value: write a separate message for each value`;
+type NotAnOption<Helper extends string> = `not an option of ${Helper}()`;
+
+type NumberStyle<F, K extends keyof F> =
+  IsOneLiteral<F[K]> extends false
+    ? MessageOption<F, K>
+    : F[K] extends 'currency'
+      ? F extends { currency: string }
+        ? F[K]
+        : "style 'currency' needs a currency, like { style: 'currency', currency: 'USD' }"
+      : F[K] extends 'unit'
+        ? F extends { unit: string }
+          ? F[K]
+          : "style 'unit' needs a unit, like { style: 'unit', unit: 'kilometer' }"
+        : F[K];
+/**
+ * Replaces each invalid option with an explanation, so the error lands on
+ * that option. Inferring through this mapped type skips TypeScript's excess
+ * property check, so unknown keys are checked here.
+ */
+type CheckNumberOptions<F> = {
+  [K in keyof F]: K extends 'style'
+    ? NumberStyle<F, K>
+    : K extends 'unit'
+      ? F extends { style: 'unit' }
+        ? MessageOption<F, K>
+        : "unit needs style 'unit', like { style: 'unit', unit: 'kilometer' }"
+      : K extends keyof NumberFormattingContext
+        ? F[K]
+        : NotAnOption<'number'>;
+};
+
+// Intl throws a TypeError for a style combined with fields.
+type CheckDateTimeOptions<F, Helper extends string, FieldKey, WrongKind> = {
+  [K in keyof F]: K extends keyof WrongKind
+    ? WrongKind[K]
+    : K extends 'style'
+      ? [Extract<keyof F, FieldKey>] extends [never]
+        ? MessageOption<F, K>
+        : `style cannot be combined with fields like ${Extract<keyof F, FieldKey> & string}: use one or the other`
+      : K extends FieldKey
+        ? MessageOption<F, K>
+        : K extends keyof DateTimeFormattingContext
+          ? F[K]
+          : NotAnOption<Helper>;
+};
+// Each helper has one named style, so it is `style`; Intl's names get a hint.
+type CheckDateOptions<F> = CheckDateTimeOptions<
+  F,
+  'date',
+  keyof DateFieldOptions,
+  {
+    dateStyle: "write style, not dateStyle: { style: 'medium' }";
+    timeStyle: 'date() has no time style: use time() for a time';
+  }
+>;
+type CheckTimeOptions<F> = CheckDateTimeOptions<
+  F,
+  'time',
+  keyof TimeFieldOptions,
+  { timeStyle: "write style, not timeStyle: { style: 'short' }" } & Record<
+    'dateStyle' | Exclude<keyof DateFieldOptions, keyof TimeFieldOptions>,
+    'time() formats a time only: use date() for a date'
+  >
+>;
+
 /**
  * Intl options instead of ICU skeleton strings: nothing to parse. `style` and
  * `unit` are part of the message, so they are literals; the other options,
  * such as `currency`, are set here and may be any value.
  */
-export function number<const O extends Record<string, number | bigint>>(
+export function number<
+  const O extends Record<string, number | bigint>,
+  const F extends NumberOptions = {},
+>(
   value: number | bigint | OneKey<O>,
-  options?: Intl.NumberFormatOptions
+  options?: CheckNumberOptions<F>
 ): Placeholder {
   const [name, v] = entry(value);
-  return { [PLACEHOLDER]: 'number', name, value: v, options };
+  return {
+    [PLACEHOLDER]: 'number',
+    name,
+    value: v,
+    options: options as Intl.NumberFormatOptions | undefined,
+  };
 }
-
-// A time's options are among a date's.
-type DateOptions = DateMessageOptions & DateTimeFormattingContext;
 
 /**
  * A named `style`, like `'medium'`, or date and time fields are part of the
  * message, so they are literals; the other options, such as `timeZone`, may
  * be any value.
  */
-export function date<const O extends Record<string, Date | number>>(
+export function date<
+  const O extends Record<string, Date | number>,
+  const F extends DateOptions = {},
+>(
   value: Date | number | OneKey<O>,
-  options?: DateOptions
+  options?: CheckDateOptions<F>
 ): Placeholder {
   return dateTime('date', value, options);
 }
@@ -384,9 +491,12 @@ export function date<const O extends Record<string, Date | number>>(
  * A named `style`, like `'short'`, or time fields are part of the message, so
  * they are literals; the other options, such as `timeZone`, may be any value.
  */
-export function time<const O extends Record<string, Date | number>>(
+export function time<
+  const O extends Record<string, Date | number>,
+  const F extends TimeOptions = {},
+>(
   value: Date | number | OneKey<O>,
-  options?: TimeMessageOptions & DateTimeFormattingContext
+  options?: CheckTimeOptions<F>
 ): Placeholder {
   return dateTime('time', value, options);
 }
@@ -394,10 +504,15 @@ export function time<const O extends Record<string, Date | number>>(
 function dateTime(
   kind: DateTimePlaceholder[typeof PLACEHOLDER],
   value: unknown,
-  options: DateOptions | undefined
+  options: unknown
 ): Placeholder {
   const [name, v] = entry(value);
-  return { [PLACEHOLDER]: kind, name, value: v, options };
+  return {
+    [PLACEHOLDER]: kind,
+    name,
+    value: v,
+    options: options as DateTimePlaceholder['options'],
+  };
 }
 
 /** Branch text that contains placeholders, written like a gt message. */
