@@ -13,10 +13,19 @@ type IntlConstructors = {
     : never]: (typeof Intl)[K];
 };
 
+/**
+ * A date formatter is shared by its arguments, so they hold its time zone:
+ * without one it would take the host's, which its arguments do not tell.
+ */
+type SharedIntlConstructors = Omit<IntlConstructors, 'DateTimeFormat'> & {
+  DateTimeFormat: new (
+    locales: Intl.LocalesArgument,
+    options: Intl.DateTimeFormatOptions & { timeZone: string }
+  ) => Intl.DateTimeFormat;
+};
+
 // Bounds what comes from input, such as a currency or a time zone.
 const MAX_INSTANCES = 256;
-
-const HALF_A_YEAR = 182 * 24 * 60 * 60 * 1000;
 
 /**
  * Shares instances of constructors that take `(locales, options)`, like
@@ -26,9 +35,9 @@ const HALF_A_YEAR = 182 * 24 * 60 * 60 * 1000;
 export class IntlCache<Constructors extends Record<string, Constructor>> {
   constructor(
     private readonly constructors: Constructors,
-    private readonly instances: Partial<
-      Record<PropertyKey, Map<string, object>>
-    > = {}
+    // By constructor, not by its name: two copies of a package that each
+    // extend this cache with their own format do not get each other's.
+    private readonly instances = new WeakMap<Constructor, Map<string, object>>()
   ) {}
 
   /** The instance for these arguments: the same one until the cache is full. */
@@ -44,22 +53,17 @@ export class IntlCache<Constructors extends Record<string, Constructor>> {
     for (const name of Object.keys(args[1] ?? {}).sort()) {
       options[name] = args[1][name];
     }
-    let key = `${String(locales)}|${JSON.stringify(options)}`;
-    // Without a time zone a formatter takes the host's, which can change
-    // while the process runs. The host's offsets now and half a year from
-    // now, in its other season, tell its zone from one with other rules.
-    if (constructor === 'DateTimeFormat' && !options.timeZone) {
-      const now = Date.now();
-      key += `|${new Date(now).getTimezoneOffset()},${new Date(now + HALF_A_YEAR).getTimezoneOffset()}`;
-    }
-    const instances = (this.instances[constructor] ??= new Map());
+    const key = `${String(locales)}|${JSON.stringify(options)}`;
+    const Constructor = this.constructors[constructor];
+    let instances = this.instances.get(Constructor);
+    if (!instances) this.instances.set(Constructor, (instances = new Map()));
     let instance = instances.get(key);
     if (!instance) {
-      instance = new this.constructors[constructor](locales, options);
+      instance = new Constructor(locales, options);
       if (instances.size >= MAX_INSTANCES) instances.clear();
       instances.set(key, instance);
     }
-    // The only instances under a constructor's name are its own.
+    // The only instances kept for a constructor are the ones it built.
     return instance as InstanceType<Constructors[K]>;
   }
 
@@ -79,4 +83,4 @@ export class IntlCache<Constructors extends Record<string, Constructor>> {
 }
 
 /** The instances of Intl's own constructors, shared by every package. */
-export const intlCache = new IntlCache<IntlConstructors>(Intl);
+export const intlCache = new IntlCache<SharedIntlConstructors>(Intl);

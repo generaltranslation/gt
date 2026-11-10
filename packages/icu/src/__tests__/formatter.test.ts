@@ -5,6 +5,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import { hostTimeZone } from '../formatter/hostTimeZone';
 import { formatMessage } from '../parser';
 
 describe('formatMessage', () => {
@@ -392,6 +393,8 @@ describe('formatMessage', () => {
   );
 
   it('builds each Intl formatter once, across messages and calls', () => {
+    // Reading the host's time zone builds a formatter of its own, once.
+    hostTimeZone();
     const originalNumberFormat = Intl.NumberFormat;
     const originalDateTimeFormat = Intl.DateTimeFormat;
     const originalPluralRules = Intl.PluralRules;
@@ -448,28 +451,6 @@ describe('formatMessage', () => {
         DateTimeFormat: { value: originalDateTimeFormat },
         PluralRules: { value: originalPluralRules },
       });
-    }
-  });
-
-  it('formats a date without a time zone in the host zone of each call', () => {
-    const hostZone = process.env.TZ;
-    const d = new Date('2020-05-06T14:03:02Z');
-    const format = () => formatMessage('{d, time, ::jmm}', 'en-US', { d });
-    const expected = () =>
-      new Intl.DateTimeFormat('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-      }).format(d);
-    try {
-      process.env.TZ = 'UTC';
-      expect(format()).toBe(expected());
-      const utc = format();
-      process.env.TZ = 'America/New_York';
-      expect(format()).toBe(expected());
-      expect(format()).not.toBe(utc);
-    } finally {
-      if (hostZone === undefined) delete process.env.TZ;
-      else process.env.TZ = hostZone;
     }
   });
 

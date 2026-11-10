@@ -1,6 +1,7 @@
 import { FormatVariables } from '../types';
 import { intlCache } from '../cache/IntlCache';
 import { libraryDefaultLocale } from '../settings/settings';
+import { hostTimeZone } from '@generaltranslation/icu/internal';
 import { formatMessage } from '@generaltranslation/icu/parser';
 
 type FormatParams<Value, Options> = {
@@ -71,6 +72,7 @@ export function _formatDateTime({
       calendar: 'gregory',
       numberingSystem: 'latn',
       ...options,
+      timeZone: options.timeZone ?? hostTimeZone(),
     })
     .format(value);
 }

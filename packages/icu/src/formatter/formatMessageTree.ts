@@ -4,6 +4,7 @@
  */
 
 import { intlCache } from '../cache/IntlCache';
+import { hostTimeZone } from './hostTimeZone';
 import { resolveLocale } from './locale';
 import { libraryDefaultLocale } from '../settings/settings';
 import { FALLBACK_BRANCH_KEY, isPluralCategoryKey } from '../settings/syntax';
@@ -109,6 +110,8 @@ type FormatContext = {
   message: string;
   locales: string | string[];
   variables: MessageVariables;
+  /** The time zone of a date or time whose options set none. */
+  timeZone: string;
 };
 
 /**
@@ -161,7 +164,12 @@ export function formatParsedTree(
 ): unknown {
   // Most messages are plain text, which needs no formatter state.
   if (tree.length === 1 && typeof tree[0] === 'string') return tree[0];
-  const parts = formatNodes(tree, { message, locales, variables });
+  const parts = formatNodes(tree, {
+    message,
+    locales,
+    variables,
+    timeZone: hostTimeZone(),
+  });
   if (parts.length === 1) return parts[0];
   return parts.length ? parts : '';
 }
@@ -227,13 +235,18 @@ function formatNodes(
         const value = requireVariable(context.variables, name);
         const isDate = node[1] === 'date';
         const style = (node as DateTimeNode)[2];
-        const options =
-          typeof style === 'string'
+        // Own options only: Intl would also read inherited ones.
+        const options: Intl.DateTimeFormatOptions = {
+          ...(typeof style === 'string'
             ? (isDate ? DATE_STYLES : TIME_STYLES)[style]
-            : (style ?? (isDate ? undefined : TIME_STYLES.medium));
+            : (style ?? (isDate ? undefined : TIME_STYLES.medium))),
+        };
         append(
           intlCache
-            .get('DateTimeFormat', context.locales, options)
+            .get('DateTimeFormat', context.locales, {
+              ...options,
+              timeZone: options.timeZone ?? context.timeZone,
+            })
             .format(value as number | Date)
         );
         break;

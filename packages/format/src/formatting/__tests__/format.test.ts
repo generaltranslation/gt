@@ -609,22 +609,18 @@ describe('_formatListToParts', () => {
 });
 
 describe('the Intl cache', () => {
-  it('formats a date without a time zone in the host zone at the time of use', () => {
-    const hostZone = process.env.TZ;
+  it('formats a date in its time zone, or in the host zone', () => {
     const date = new Date('2020-05-06T14:03:02Z');
-    try {
-      process.env.TZ = 'UTC';
-      expect(
-        formatDateTime(date, { locales: 'en-US', timeStyle: 'short' })
-      ).toBe('2:03 PM');
-      process.env.TZ = 'America/New_York';
-      expect(
-        formatDateTime(date, { locales: 'en-US', timeStyle: 'short' })
-      ).toBe('10:03 AM');
-    } finally {
-      if (hostZone === undefined) delete process.env.TZ;
-      else process.env.TZ = hostZone;
-    }
+    expect(
+      formatDateTime(date, {
+        locales: 'en-US',
+        timeStyle: 'short',
+        timeZone: 'America/New_York',
+      })
+    ).toBe('10:03 AM');
+    expect(formatDateTime(date, { locales: 'en-US', timeStyle: 'short' })).toBe(
+      new Intl.DateTimeFormat('en-US', { timeStyle: 'short' }).format(date)
+    );
   });
 
   it('shares one instance of a custom format', () => {

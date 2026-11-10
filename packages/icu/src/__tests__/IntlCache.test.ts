@@ -1,19 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { IntlCache, intlCache } from '../cache/IntlCache';
 import { libraryDefaultLocale } from '../settings/settings';
-
-function inHostZones(zones: string[], run: (zone: string) => void): void {
-  const hostZone = process.env.TZ;
-  try {
-    for (const zone of zones) {
-      process.env.TZ = zone;
-      run(zone);
-    }
-  } finally {
-    if (hostZone === undefined) delete process.env.TZ;
-    else process.env.TZ = hostZone;
-  }
-}
 
 describe('IntlCache', () => {
   it('returns one instance for the same locales and options', () => {
@@ -63,55 +50,14 @@ describe('IntlCache', () => {
     );
   });
 
-  it('gives a date without a time zone the host zone at the time of use', () => {
-    const date = new Date('2020-05-06T14:03:02Z');
-    const options = { hour: 'numeric', minute: '2-digit' } as const;
-    inHostZones(['UTC', 'America/New_York'], () => {
-      const format = intlCache.get('DateTimeFormat', 'en-US', options);
-      expect(format.format(date)).toBe(
-        new Intl.DateTimeFormat('en-US', options).format(date)
-      );
-      expect(intlCache.get('DateTimeFormat', 'en-US', options)).toBe(format);
-    });
-  });
-
-  it('tells host zones with the same offset now apart by their other season', () => {
-    // UTC and London have the same offset in November, not in July.
-    vi.useFakeTimers({ now: new Date('2026-11-10T12:00:00Z') });
-    try {
-      const date = new Date('2026-07-01T12:00:00Z');
-      const options = { hour: 'numeric', minute: '2-digit' } as const;
-      const formatted: string[] = [];
-      inHostZones(['UTC', 'Europe/London'], () => {
-        formatted.push(
-          intlCache.get('DateTimeFormat', 'en-US', options).format(date)
-        );
-      });
-      expect(formatted).toEqual(['12:00 PM', '1:00 PM']);
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it('keeps one instance of a date with a time zone when the host zone changes', () => {
-    const instances = new Set<Intl.DateTimeFormat>();
-    inHostZones(['UTC', 'America/New_York'], () => {
-      instances.add(
-        intlCache.get('DateTimeFormat', 'en-US', { timeZone: 'Asia/Tokyo' })
-      );
-    });
-    expect(instances.size).toBe(1);
-  });
-
   it('passes own options only, as its key holds', () => {
-    const options: Intl.DateTimeFormatOptions = Object.assign(
-      Object.create({ timeZone: 'Asia/Tokyo' }),
-      { hour: 'numeric' }
-    );
+    const options = Object.assign(Object.create({ hour12: false }), {
+      hour: 'numeric',
+      timeZone: 'UTC',
+    });
     expect(
-      intlCache.get('DateTimeFormat', 'en-US', options).resolvedOptions()
-        .timeZone
-    ).toBe(new Intl.DateTimeFormat('en-US').resolvedOptions().timeZone);
+      intlCache.get('DateTimeFormat', 'en-US', options).resolvedOptions().hour12
+    ).toBe(true);
   });
 
   it('starts over when a constructor has 256 instances', () => {
@@ -127,6 +73,20 @@ describe('IntlCache', () => {
     expect(cache.get('Format', 'en', { n: 0 })).toBe(first);
     cache.get('Format', 'en', { n: 256 });
     expect(cache.get('Format', 'en', { n: 0 })).not.toBe(first);
+  });
+
+  it('keeps apart two constructors that extend it under one name', () => {
+    // Two copies of a package, each with its own class, on one copy of icu.
+    class First {
+      constructor(readonly locales: string) {}
+    }
+    class Second {
+      constructor(readonly locales: string) {}
+    }
+    const first = intlCache.extend({ Format: First });
+    const second = intlCache.extend({ Format: Second });
+    expect(first.get('Format', 'en')).toBeInstanceOf(First);
+    expect(second.get('Format', 'en')).toBeInstanceOf(Second);
   });
 
   it('extends with more constructors and shares its instances', () => {

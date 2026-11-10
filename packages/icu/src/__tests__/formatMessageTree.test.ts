@@ -2,6 +2,7 @@ import { IntlMessageFormat } from 'intl-messageformat';
 import { describe, expect, it, vi } from 'vitest';
 import { formatMessageTree, type MessageTree } from '../index';
 import { icuToMessageTree } from '../convert';
+import { hostTimeZone } from '../formatter/hostTimeZone';
 import { formatMessage } from '../parser';
 
 describe('formatMessageTree', () => {
@@ -92,19 +93,29 @@ describe('formatMessageTree', () => {
     );
   });
 
-  it('formats a date with an inherited time zone in the host zone', () => {
+  it('formats a date in the host time zone, read once, when it has none', () => {
     const hostZone = process.env.TZ;
     const d = new Date('2020-05-06T14:03:02Z');
     const own = { hour: 'numeric', minute: '2-digit' } as const;
+    // An inherited time zone is not an option of the date.
     const tree = [
-      ['d', 'time', Object.assign(Object.create({ timeZone: 'UTC' }), own)],
+      [
+        'd',
+        'time',
+        Object.assign(Object.create({ timeZone: 'Pacific/Kiritimati' }), own),
+      ],
     ] as unknown as MessageTree;
-    const expected = () => new Intl.DateTimeFormat('en-US', own).format(d);
+    const zone = hostTimeZone();
+    const expected = new Intl.DateTimeFormat('en-US', {
+      ...own,
+      timeZone: zone,
+    }).format(d);
     try {
-      process.env.TZ = 'UTC';
-      expect(formatMessageTree(tree, 'en-US', { d })).toBe(expected());
-      process.env.TZ = 'America/New_York';
-      expect(formatMessageTree(tree, 'en-US', { d })).toBe(expected());
+      expect(formatMessageTree(tree, 'en-US', { d })).toBe(expected);
+      // The zone is an input: a host that changes its own is not followed.
+      process.env.TZ = zone === 'Asia/Tokyo' ? 'UTC' : 'Asia/Tokyo';
+      expect(hostTimeZone()).toBe(zone);
+      expect(formatMessageTree(tree, 'en-US', { d })).toBe(expected);
     } finally {
       if (hostZone === undefined) delete process.env.TZ;
       else process.env.TZ = hostZone;
