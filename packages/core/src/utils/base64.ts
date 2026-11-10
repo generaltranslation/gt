@@ -22,12 +22,23 @@ export function decode(base64: string): string {
     return Buffer.from(base64, 'base64').toString('utf8');
   }
   // Browser path.
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
+  return new TextDecoder().decode(decodeBytes(base64));
+}
+
+/** The bytes a base64 string encodes. */
+export function decodeBytes(base64: string): Uint8Array<ArrayBuffer> {
+  if (typeof Buffer !== 'undefined') {
+    // Node.js path.
+    return new Uint8Array(Buffer.from(base64, 'base64'));
   }
-  return new TextDecoder().decode(bytes);
+  // Browser path.
+  return Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
+}
+
+/** The number of bytes a padded base64 string encodes. */
+export function decodedByteLength(base64: string): number {
+  const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0;
+  return (base64.length / 4) * 3 - padding;
 }
 
 export function encodeFileContent(

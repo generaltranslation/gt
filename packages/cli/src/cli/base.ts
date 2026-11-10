@@ -1006,7 +1006,7 @@ export class BaseCLI {
             }),
         })) === true;
 
-      const reactSetup = reactDetected
+      const resolvedSetup = reactDetected
         ? await resolveReactSetup(
             session,
             options,
@@ -1014,17 +1014,23 @@ export class BaseCLI {
             configuredReact
           )
         : undefined;
+      // A skipped setup only names the framework; the app is left unchanged.
+      const reactSetup =
+        resolvedSetup && !('skipped' in resolvedSetup)
+          ? resolvedSetup
+          : undefined;
       // flag > gt.config.json > detection, used for every later step.
       const framework =
-        reactSetup?.framework ??
+        resolvedSetup?.framework ??
         options.framework ??
         configured ??
         detected.name;
       const nextSteps = await this.handleInitCommand(session, options, {
         configFilepath,
         framework,
-        saveFramework: Boolean(reactSetup || options.framework),
+        saveFramework: Boolean(resolvedSetup || options.framework),
         reactSetup,
+        skippedReactSetup: Boolean(resolvedSetup && !reactSetup),
         keepAppSource: !reactSetup,
       });
 
@@ -1171,6 +1177,8 @@ See https://www.npmjs.com/package/gt-vue`);
       /** Write the framework even when no build-tool setup saves it. */
       saveFramework?: boolean;
       reactSetup?: ReactSetupPlan;
+      /** The app still needs a GT runtime the wizard could not set up. */
+      skippedReactSetup?: boolean;
       /** Init without the React setup never changes application source. */
       keepAppSource?: boolean;
     }
@@ -1179,16 +1187,29 @@ See https://www.npmjs.com/package/gt-vue`);
     const buildTool = getBuildToolSetup(setup.framework);
     const cwd = process.cwd();
     const existingConfig = readSetupConfig(configFilepath);
-    const { defaultLocale, locales } = await getDesiredLocales(
+    const desiredLocales = await getDesiredLocales(
       session,
       existingConfig,
       options
     );
+    const { defaultLocale } = desiredLocales;
+    // Next.js i18n routing requires its default locale in locales, and the
+    // Pages Router quickstart passes the gt.config.json locales to it.
+    const locales =
+      setup.framework === 'next-pages' &&
+      defaultLocale &&
+      desiredLocales.locales &&
+      !desiredLocales.locales.includes(defaultLocale)
+        ? [defaultLocale, ...desiredLocales.locales]
+        : desiredLocales.locales;
 
     const packageJson =
       reactSetup?.packageJson ?? (await searchForPackageJson());
     const runtimeSetup: InlineRuntimeSetup = packageJson
-      ? this.getInlineRuntimeSetup(packageJson, Boolean(reactSetup))
+      ? this.getInlineRuntimeSetup(
+          packageJson,
+          Boolean(reactSetup || setup.skippedReactSetup)
+        )
       : {
           hasOtherInlineRuntime: false,
           hasVueRuntime: false,

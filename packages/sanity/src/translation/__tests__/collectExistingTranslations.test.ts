@@ -130,6 +130,7 @@ describe('collectExistingTranslations (internationalized array)', () => {
     expect(translations?.[0].locale).toBe('es');
     expect(translations?.[0].content).toContain('Hola');
     expect(translations?.[0].content).not.toContain('Hello');
+    expect(translations?.[0].document).toEqual({ id: 'post-1', type: 'post' });
     expect(existing.size).toBe(1);
   });
 
@@ -200,6 +201,10 @@ describe('collectExistingTranslations (document level)', () => {
     expect(translations?.[0].locale).toBe('es');
     expect(translations?.[0].content).toContain('Hola borrador');
     expect(translations?.[0].content).not.toContain('Hola publicado');
+    expect(translations?.[0].document).toEqual({
+      id: 'page-1-es',
+      type: 'page',
+    });
   });
 
   test('returns nothing when no translated documents are linked', async () => {

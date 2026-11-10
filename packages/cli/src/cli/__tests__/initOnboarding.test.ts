@@ -393,7 +393,37 @@ describe('init and configure onboarding', () => {
       `GT_PROJECT_ID=p1\nGT_API_KEY=${SECRET_KEY}\n`
     );
     expect(installPackage).not.toHaveBeenCalled();
-    // Setup does not add the provider for this framework, so it comes first.
+    // The Pages Router is left to its quickstart, so there are no next steps.
+    expect(logger.endCommand).toHaveBeenCalledTimes(1);
+    expect(logger.endCommand).not.toHaveBeenCalledWith(
+      expect.stringContaining('Next steps:')
+    );
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'https://generaltranslation.com/docs/react/nextjs-pages-router-quickstart'
+      )
+    );
+  });
+
+  it('lists the provider first when setup does not add it to the app', async () => {
+    vi.mocked(detectFramework).mockResolvedValue({
+      name: 'vite',
+      type: 'react',
+    });
+
+    await run(
+      'init',
+      '--no-interactive',
+      '--defaults',
+      '--react-setup',
+      '--framework',
+      'react',
+      '--locales',
+      'fr',
+      '--no-dev-credentials'
+    );
+
+    expect(installPackage).not.toHaveBeenCalled();
     expect(logger.endCommand).toHaveBeenCalledTimes(1);
     expect(logger.endCommand).toHaveBeenCalledWith(
       expect.stringContaining(
@@ -728,6 +758,154 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     });
   });
 
+  describe('Next.js Pages Router', () => {
+    const QUICKSTART_URL =
+      'https://generaltranslation.com/docs/react/nextjs-pages-router-quickstart';
+    const nextConfig = 'export default {};\n';
+    const appPage =
+      'export default function App({ Component, pageProps }) {\n  return <Component {...pageProps} />;\n}\n';
+
+    beforeEach(() => {
+      useFreshApp({
+        name: 'example-app',
+        packageManager: 'npm@11.6.2',
+        dependencies: { next: '*', react: '*' },
+      });
+      fs.writeFileSync(file('next.config.ts'), nextConfig);
+      fs.mkdirSync(file('src/pages'), { recursive: true });
+      fs.writeFileSync(file('src/pages/_app.tsx'), appPage);
+    });
+
+    const expectAppUnchanged = () => {
+      expect(fs.readFileSync(file('next.config.ts'), 'utf8')).toBe(nextConfig);
+      expect(fs.readFileSync(file('src/pages/_app.tsx'), 'utf8')).toBe(appPage);
+    };
+
+    it('leaves the app to the quickstart and saves the default locale under --defaults', async () => {
+      vi.mocked(detectFramework).mockResolvedValue({
+        name: 'next-pages',
+        type: 'react',
+      });
+
+      await run(
+        'init',
+        '--json',
+        '--no-locadex',
+        '--defaults',
+        '--locales',
+        'fr',
+        'es',
+        '--no-dev-credentials'
+      );
+
+      for (const prompt of prompts) expect(prompt).not.toHaveBeenCalled();
+      // Only the CLI is installed; no gt-react and no unwired gt-next.
+      expect(vi.mocked(installPackage).mock.calls).toEqual([
+        ['gt', expect.objectContaining({ id: 'npm' }), true],
+      ]);
+      expect(readConfig()).toMatchObject({
+        defaultLocale: 'en',
+        framework: 'next-pages',
+        locales: ['en', 'fr', 'es'],
+        files: { gt: { output: 'public/_gt/[locale].json' } },
+      });
+      expectAppUnchanged();
+      // The quickstart's local loader for gt-next is still prepared.
+      expect(fs.existsSync(file('src/loadTranslations.js'))).toBe(true);
+      expect(logger.endCommand).not.toHaveBeenCalledWith(
+        expect.stringContaining('Since this wizard is experimental')
+      );
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining(QUICKSTART_URL)
+      );
+      expect(events().at(-1)).toMatchObject({
+        outcome: 'needs_human_action',
+        actions: [expect.stringContaining(QUICKSTART_URL)],
+        completedSteps: [
+          'created loadTranslations.js',
+          'created gt.config.json',
+          'installed gt',
+        ],
+      });
+    });
+
+    it('stops the app setup when Pages Router is chosen in the prompt', async () => {
+      useFreshApp({
+        name: 'example-app',
+        dependencies: { next: '*', react: '*' },
+        devDependencies: { gt: '*' },
+      });
+      fs.writeFileSync(file('next.config.ts'), nextConfig);
+      fs.mkdirSync(file('src/pages'), { recursive: true });
+      fs.writeFileSync(file('src/pages/_app.tsx'), appPage);
+      vi.mocked(detectFramework).mockResolvedValue({
+        name: 'next-app',
+        type: 'react',
+      });
+      vi.mocked(logging.promptConfirm).mockImplementation(
+        async ({ message }) =>
+          !message.includes('recommended General Translation defaults')
+      );
+      vi.mocked(logging.promptSelect).mockResolvedValueOnce('next-pages');
+
+      await run(
+        'init',
+        '--no-locadex',
+        '--default-locale',
+        'en',
+        '--locales',
+        'fr',
+        '--storage',
+        'cdn',
+        '--file-formats',
+        'none',
+        '--no-dev-credentials'
+      );
+
+      expect(logging.promptSelect).toHaveBeenCalledTimes(1);
+      expect(logging.promptSelect).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Which framework are you using?' })
+      );
+      expect(installPackage).not.toHaveBeenCalled();
+      expect(readConfig()).toMatchObject({
+        framework: 'next-pages',
+        locales: ['en', 'fr'],
+      });
+      expectAppUnchanged();
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining(QUICKSTART_URL)
+      );
+    });
+
+    it('does not offer gt-react when Pages Router is detected', async () => {
+      vi.mocked(detectFramework).mockResolvedValue({
+        name: 'next-pages',
+        type: 'react',
+      });
+      vi.mocked(logging.promptConfirm).mockResolvedValue(true);
+
+      await run(
+        'init',
+        '--no-locadex',
+        '--locales',
+        'fr',
+        '--no-dev-credentials'
+      );
+
+      const confirmMessages = vi
+        .mocked(logging.promptConfirm)
+        .mock.calls.map(([{ message }]) => String(message));
+      expect(confirmMessages.join('\n')).not.toContain('gt-react');
+      expect(confirmMessages[0]).toContain(
+        'Next.js Pages Router, no app changes'
+      );
+      expect(vi.mocked(installPackage).mock.calls).toEqual([
+        ['gt', expect.objectContaining({ id: 'npm' }), true],
+      ]);
+      expectAppUnchanged();
+    });
+  });
+
   describe('React Native', () => {
     const expoPackageJson = {
       name: 'example-app',
@@ -945,7 +1123,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     expect(open).not.toHaveBeenCalled();
     const [handoff, result] = events();
     expect(handoff).toMatchObject({ type: 'handoff', reason: 'locadex' });
-    expect(handoff.url).toContain('/api/integrations/github/start');
+    expect(handoff.url).toMatch(/\/api\/integrations\/github\/start$/);
     expect(result).toEqual({
       type: 'result',
       command: 'init',

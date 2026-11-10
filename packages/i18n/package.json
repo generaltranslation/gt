@@ -1,6 +1,6 @@
 {
   "name": "gt-i18n",
-  "version": "1.0.40",
+  "version": "1.0.42",
   "description": "Pure JS i18n library for General Translation",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",

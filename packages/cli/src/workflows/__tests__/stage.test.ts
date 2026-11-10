@@ -64,6 +64,8 @@ vi.mock('../utils/filterFilesForEnqueue.js', () => ({
 import { api } from '../../utils/api.js';
 import { collectFonts } from '../../formats/files/collectFonts.js';
 import { logger } from '../../console/logger.js';
+import { loginRequiredError } from '../../auth/errors.js';
+import { filterFilesForEnqueue } from '../utils/filterFilesForEnqueue.js';
 
 const files: FileToUpload[] = [
   {
@@ -169,5 +171,41 @@ describe('runStageFilesWorkflow save-local gate', () => {
     });
 
     expect(userEditDiffsRun).not.toHaveBeenCalled();
+  });
+});
+
+describe('runStageFilesWorkflow errors', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(collectFonts).mockResolvedValue([]);
+  });
+
+  it('leads with the sign-in error instead of burying it', async () => {
+    const error = loginRequiredError();
+    vi.mocked(filterFilesForEnqueue).mockRejectedValueOnce(error);
+
+    const thrown = await runStageFilesWorkflow({
+      files,
+      options,
+      settings,
+    }).catch((caught: Error) => caught);
+
+    expect(thrown).toBeInstanceOf(Error);
+    expect((thrown as Error).message).toBe(error.message);
+    expect(error.message).toMatch(
+      /^gt Error: You are not signed in\..*gt login/
+    );
+  });
+
+  it('keeps the send context for other failures', async () => {
+    vi.mocked(filterFilesForEnqueue).mockRejectedValueOnce(
+      new Error('server down')
+    );
+
+    await expect(
+      runStageFilesWorkflow({ files, options, settings })
+    ).rejects.toThrow(
+      /^Files could not be sent for translation\..*Original error: Error: server down$/
+    );
   });
 });

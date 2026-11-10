@@ -24,9 +24,33 @@ export function createGroqClient(initial: Doc[]) {
 
   const find = (id: string) => dataset.find((doc) => doc._id === id);
 
+  // Like Sanity's `drafts` perspective: a draft replaces its published version under the published id.
+  const withDrafts = () => {
+    const byId = new Map<string, Doc>();
+    for (const doc of dataset) {
+      if (!doc._id.startsWith('drafts.') && !byId.has(doc._id)) {
+        byId.set(doc._id, doc);
+      }
+    }
+    for (const doc of dataset) {
+      if (doc._id.startsWith('drafts.')) {
+        const id = doc._id.slice('drafts.'.length);
+        byId.set(id, { ...doc, _id: id });
+      }
+    }
+    return [...byId.values()];
+  };
+
   const fetch = vi.fn(
-    async (query: string, params: Record<string, unknown> = {}) => {
-      const value = await evaluate(parse(query), { dataset, params });
+    async (
+      query: string,
+      params: Record<string, unknown> = {},
+      options: { perspective?: string } = {}
+    ) => {
+      const value = await evaluate(parse(query), {
+        dataset: options.perspective === 'drafts' ? withDrafts() : dataset,
+        params,
+      });
       return value.get();
     }
   );

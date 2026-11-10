@@ -9,6 +9,17 @@ export { DEFAULT_BATCH_SIZE, processBatches } from './wrappers/batch';
 export type { BatchOptions } from './wrappers/batch';
 export { API_VERSION, createApiClient } from './wrappers/client';
 export { ApiError } from './wrappers/errors';
+export {
+  createFileUploads,
+  putFileUpload,
+  uploadSourceFileReferences,
+} from './wrappers/fileUploads';
+export type {
+  CreateFileUploadsResponse,
+  PresignedFileUpload,
+  SourceFileReference,
+  UploadSourceFileReferencesResponse,
+} from './wrappers/fileUploads';
 export { paginate } from './wrappers/paginate';
 export type {
   ApiClientConfig,
