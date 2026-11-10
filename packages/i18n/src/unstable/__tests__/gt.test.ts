@@ -4,12 +4,24 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setWritableConditionStore } from '../../condition-store/singleton-operations';
 import { I18nCache } from '../../i18n-cache/I18nCache';
 import { setI18nCache } from '../../i18n-cache/singleton-operations';
-import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
+import {
+  getI18nConfig,
+  initializeI18nConfig,
+} from '../../i18n-config/singleton-operations';
 import { t } from '../../unstable';
 import { buildMessage } from '../buildMessage';
 import { createGT, getGT } from '../gt';
 import type { LookupTreeTranslation } from '../renderMessage';
-import { date, derive, n, number, part, plural, select } from '../placeholders';
+import {
+  date,
+  derive,
+  n,
+  number,
+  part,
+  plural,
+  select,
+  time,
+} from '../placeholders';
 import {
   hashSource,
   type MessageTreeHashMetadata,
@@ -39,15 +51,18 @@ function setup({
   enableI18n = true,
   fr = {},
   cacheExpiryTime,
+  timeZone,
 }: {
   locale?: string;
   enableI18n?: boolean;
   fr?: Record<string, unknown>;
   cacheExpiryTime?: number;
+  timeZone?: string;
 } = {}) {
   initializeI18nConfig({
     defaultLocale: 'en',
     locales: ['en', 'fr'],
+    timeZone,
   });
   setI18nCache(
     new I18nCache({
@@ -396,6 +411,33 @@ describe('gt-i18n/unstable rendering', () => {
     // A miss formats the source in the source locale.
     expect(gt`Due ${date({ due }, { style: 'medium', timeZone: 'UTC' })}`).toBe(
       `Due ${new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeZone: 'UTC' }).format(due)}`
+    );
+  });
+
+  it('formats dates and times in the config time zone unless the call site sets one', async () => {
+    const start = new Date(Date.UTC(2024, 0, 15, 23, 30));
+    const gt = await setup({ locale: 'en', timeZone: 'Asia/Tokyo' });
+    const format = (timeZone: string) =>
+      new Intl.DateTimeFormat('en', { timeStyle: 'short', timeZone }).format(
+        start
+      );
+    expect(gt`${time({ start }, { style: 'short' })}`).toBe(
+      format('Asia/Tokyo')
+    );
+    expect(gt`${time({ start }, { style: 'short', timeZone: 'UTC' })}`).toBe(
+      format('UTC')
+    );
+  });
+
+  it('uses the host time zone when the config sets none', async () => {
+    const hostZone = new Intl.DateTimeFormat().resolvedOptions().timeZone;
+    await setup({ locale: 'en' });
+    expect(getI18nConfig().getTimeZone()).toBe(hostZone);
+  });
+
+  it('rejects an invalid config time zone', () => {
+    expect(() => setup({ timeZone: 'Mars/Olympus' })).toThrow(
+      'Invalid I18nConfig time zone "Mars/Olympus"'
     );
   });
 
