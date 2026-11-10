@@ -267,6 +267,19 @@ export function mistakes(): unknown[] {
     // @ts-expect-error a style combined with fields
     time({ due }, { style: 'short', hour: 'numeric' }),
 
+    // An explicit first type argument leaves the options' type uninferred;
+    // they are still checked as Intl options.
+    number<{ price: number }>({ price }, { style: 'percent' }),
+
+    // @ts-expect-error an unknown style with an explicit type argument
+    number<{ price: number }>({ price }, { style: 'banana' }),
+
+    // @ts-expect-error an unknown date style with an explicit type argument
+    date<{ due: Date }>({ due }, { dateStyle: 'huge' }),
+
+    // @ts-expect-error a date field on time() with an explicit type argument
+    time<{ due: Date }>({ due }, { month: 'short' }),
+
     // @ts-expect-error `n` in a plain template literal, which needs part
     `${n} items`,
 
