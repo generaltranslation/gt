@@ -275,7 +275,7 @@ export function mistakes(): unknown[] {
     number<{ price: number }>({ price }, { style: 'banana' }),
 
     // @ts-expect-error an unknown date style with an explicit type argument
-    date<{ due: Date }>({ due }, { dateStyle: 'huge' }),
+    date<{ due: Date }>({ due }, { style: 'huge' }),
 
     // @ts-expect-error a date field on time() with an explicit type argument
     time<{ due: Date }>({ due }, { month: 'short' }),
