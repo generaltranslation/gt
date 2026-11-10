@@ -467,14 +467,13 @@ export function number<
   value: number | bigint | OneKey<O>,
   options?: CheckNumberOptions<F> &
     Uninferred<F, NumberMessageOptions & NumberFormattingContext>
+): Placeholder;
+export function number(
+  value: number | bigint | Record<string, number | bigint>,
+  options?: Intl.NumberFormatOptions
 ): Placeholder {
   const [name, v] = entry(value);
-  return {
-    [PLACEHOLDER]: 'number',
-    name,
-    value: v,
-    options: options as Intl.NumberFormatOptions | undefined,
-  };
+  return { [PLACEHOLDER]: 'number', name, value: v, options };
 }
 
 /**
@@ -489,6 +488,10 @@ export function date<
   value: Date | number | OneKey<O>,
   options?: CheckDateOptions<F> &
     Uninferred<F, DateMessageOptions & DateTimeFormattingContext>
+): Placeholder;
+export function date(
+  value: DateValue,
+  options?: DateTimePlaceholder['options']
 ): Placeholder {
   return dateTime('date', value, options);
 }
@@ -504,22 +507,23 @@ export function time<
   value: Date | number | OneKey<O>,
   options?: CheckTimeOptions<F> &
     Uninferred<F, TimeMessageOptions & DateTimeFormattingContext>
+): Placeholder;
+export function time(
+  value: DateValue,
+  options?: DateTimePlaceholder['options']
 ): Placeholder {
   return dateTime('time', value, options);
 }
 
+type DateValue = Date | number | Record<string, Date | number>;
+
 function dateTime(
   kind: DateTimePlaceholder[typeof PLACEHOLDER],
-  value: unknown,
-  options: unknown
+  value: DateValue,
+  options: DateTimePlaceholder['options']
 ): Placeholder {
   const [name, v] = entry(value);
-  return {
-    [PLACEHOLDER]: kind,
-    name,
-    value: v,
-    options: options as DateTimePlaceholder['options'],
-  };
+  return { [PLACEHOLDER]: kind, name, value: v, options };
 }
 
 /** Branch text that contains placeholders, written like a gt message. */
