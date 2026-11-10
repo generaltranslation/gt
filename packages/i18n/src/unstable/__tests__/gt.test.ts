@@ -127,14 +127,14 @@ describe('gt-i18n/unstable rendering', () => {
 
   it('uses the context in the translation key', async () => {
     const gt = await setup({
-      fr: { [keyOf({ context: 'button' })`Save`]: [literal('Enregistrer')] },
+      fr: { [keyOf({ context: 'button' })`Save`]: 'Enregistrer' },
     });
     expect(gt({ context: 'button' })`Save`).toBe('Enregistrer');
     expect(gt`Save`).toBe('Save');
   });
 
   it('looks up a compiler-injected $_hash without rehashing', async () => {
-    const gt = await setup({ fr: { injected: [literal('Enregistrer')] } });
+    const gt = await setup({ fr: { injected: 'Enregistrer' } });
     // Not in public GTOptions: only emitted JS from the compiler passes it.
     const compiled = { $_hash: 'injected' };
     expect(gt(compiled)`Save`).toBe('Enregistrer');
@@ -150,7 +150,7 @@ describe('gt-i18n/unstable rendering', () => {
   it('renders the source when i18n is disabled', async () => {
     const gt = await setup({
       enableI18n: false,
-      fr: { [keyOf()`Save`]: [literal('Enregistrer')] },
+      fr: { [keyOf()`Save`]: 'Enregistrer' },
     });
     expect(gt`Save`).toBe('Save');
     expect(t`Save`).toBe('Save');
@@ -191,7 +191,7 @@ describe('gt-i18n/unstable rendering', () => {
   });
 
   it('treats a tree nested beyond the depth bound as a miss', async () => {
-    let tree: unknown[] = [literal('deep')];
+    let tree: unknown = 'deep';
     for (let depth = 0; depth < 100; depth++) {
       tree = [['role', 'select', { other: tree }]];
     }
@@ -203,7 +203,7 @@ describe('gt-i18n/unstable rendering', () => {
   it('keeps getGT translations when cacheExpiryTime is 0', async () => {
     const gt = await setup({
       cacheExpiryTime: 0,
-      fr: { [keyOf()`Save`]: [literal('Enregistrer')] },
+      fr: { [keyOf()`Save`]: 'Enregistrer' },
     });
     expect(gt`Save`).toBe('Enregistrer');
     // The global t reads the expired cache directly.
@@ -215,7 +215,7 @@ describe('gt-i18n/unstable rendering', () => {
     try {
       const gt = await setup({
         cacheExpiryTime: 1000,
-        fr: { [keyOf()`Save`]: [literal('Enregistrer')] },
+        fr: { [keyOf()`Save`]: 'Enregistrer' },
       });
       expect(t`Save`).toBe('Enregistrer');
       vi.advanceTimersByTime(2000);
@@ -229,7 +229,7 @@ describe('gt-i18n/unstable rendering', () => {
   it('reads and validates translations from a custom lookupTranslation', async () => {
     await setup({ locale: 'en' });
     const snapshot: Record<string, unknown> = {
-      [`fr:${keyOf()`Save`}`]: [literal('Enregistrer')],
+      [`fr:${keyOf()`Save`}`]: 'Enregistrer',
       [`fr:${keyOf()`Cancel`}`]: [{ type: 0, value: 'Annuler' }],
     };
     const lookupTranslation: LookupTreeTranslation = (_message, options) =>
@@ -242,7 +242,7 @@ describe('gt-i18n/unstable rendering', () => {
 
   it('skips a custom lookupTranslation when i18n is disabled', async () => {
     await setup({ locale: 'en' });
-    const lookupTranslation = vi.fn(() => [literal('Replaced')]);
+    const lookupTranslation = vi.fn(() => 'Replaced');
     const gt = createGT({
       getLocale: () => 'fr',
       getEnableI18n: () => false,
@@ -307,9 +307,7 @@ describe('gt-i18n/unstable rendering', () => {
     const translated = 'En savoir plus sur les tarifs';
     const gt = await setup({
       fr: {
-        [keyOf({ maxChars: 12 })`Read more about pricing`]: [
-          literal(translated),
-        ],
+        [keyOf({ maxChars: 12 })`Read more about pricing`]: translated,
       },
     });
     expect(gt({ maxChars: 12 })`Read more about pricing`).toBe(
@@ -380,7 +378,7 @@ describe('gt-i18n/unstable rendering', () => {
   it('formats derive() text as static text', async () => {
     const gt = await setup({
       fr: {
-        [keyOf()`Welcome back!`]: [literal('Bon retour !')],
+        [keyOf()`Welcome back!`]: 'Bon retour !',
       },
     });
     // Derived text reads as if written in the template, so it shares the key.

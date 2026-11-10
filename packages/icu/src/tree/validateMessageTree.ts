@@ -8,7 +8,7 @@ import {
   NUMBER_STYLE_NAMES,
   TIME_FIELD_OPTIONS,
 } from '../settings/formatOptions';
-import type { DateTimeNode, MessageTree, NumberNode } from './messageTree';
+import type { FormattedNode, MessageTree } from './messageTree';
 
 export interface MessageTreeValidationOptions {
   /**
@@ -39,8 +39,10 @@ interface WalkState {
 
 /**
  * Returns the first structural problem in an untrusted message tree, such as
- * catalog JSON, or `undefined` when it is a valid tree. Entries past a
- * placeholder's known ones are allowed so newer trees still validate.
+ * catalog JSON, or `undefined` when it is a valid tree. A message has one
+ * valid tree, apart from the order of keys, so a valid tree has the key its
+ * message is looked up by. Entries past a placeholder's known ones are
+ * allowed so newer trees still validate.
  */
 export function validateMessageTree(
   value: unknown,
@@ -62,7 +64,6 @@ function treeError(
   depth: number,
   state: WalkState
 ): MessageTreeValidationError | undefined {
-  // Text without placeholders; an array of only text is valid too.
   if (typeof value === 'string') return undefined;
   if (!Array.isArray(value)) {
     return { path, message: 'expected text or an array of nodes' };
@@ -70,14 +71,29 @@ function treeError(
   if (depth > state.maxDepth) {
     return { path, message: `nesting deeper than ${state.maxDepth} levels` };
   }
+  let hasPlaceholder = false;
   for (let index = 0; index < value.length; index++) {
     if (++state.nodes > state.maxNodes) {
       return { path: [...path, index], message: budgetMessage(state) };
     }
-    const error = nodeError(value[index], [...path, index], depth, state);
-    if (error) return error;
+    const node: unknown = value[index];
+    if (typeof node === 'string') {
+      const message =
+        node === ''
+          ? 'expected text; leave out empty text'
+          : typeof value[index - 1] === 'string'
+            ? 'expected a placeholder; write adjacent text as one string'
+            : undefined;
+      if (message) return { path: [...path, index], message };
+    } else {
+      hasPlaceholder = true;
+      const error = nodeError(node, [...path, index], depth, state);
+      if (error) return error;
+    }
   }
-  return undefined;
+  return hasPlaceholder
+    ? undefined
+    : { path, message: 'expected a string for text without placeholders' };
 }
 
 function nodeError(
@@ -86,7 +102,7 @@ function nodeError(
   depth: number,
   state: WalkState
 ): MessageTreeValidationError | undefined {
-  if (typeof node === 'string' || node === 0) return undefined;
+  if (node === 0) return undefined;
   if (!Array.isArray(node)) {
     return { path, message: 'expected text, 0, or a placeholder array' };
   }
@@ -115,6 +131,9 @@ function nodeError(
       ) {
         return { path: [...path, 3], message: 'expected a finite number' };
       }
+      if (offset === 0) {
+        return { path: [...path, 3], message: 'leave out an offset of 0' };
+      }
       return branchesError(node[2], [...path, 2], depth, state);
     }
     case 'tag':
@@ -124,7 +143,6 @@ function nodeError(
   }
 }
 
-type FormattedNode = NumberNode | DateTimeNode;
 type FormattedKind = FormattedNode[1];
 
 /**
