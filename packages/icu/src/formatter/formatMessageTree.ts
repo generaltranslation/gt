@@ -8,14 +8,11 @@ import { resolveLocale } from './locale';
 import { FALLBACK_BRANCH_KEY, isPluralCategoryKey } from '../settings/syntax';
 import type { ExtendedNumberFormatOptions } from '../types-dir/ast';
 import type {
-  DateTimeNode,
+  ParsedNode,
+  ParsedTree,
   MessageBranches,
   MessageNode,
   MessageTree,
-  NumberNode,
-  PluralNode,
-  SelectNode,
-  TagNode,
 } from '../tree/messageTree';
 import { messageNodes } from '../tree/walk';
 import {
@@ -164,7 +161,7 @@ export function formatMessageTree<R>(
 
 /** Formats a tree whose locales were already validated; `message` is reported on errors. */
 export function formatParsedTree<R>(
-  tree: MessageTree,
+  tree: ParsedTree,
   message: string,
   locales: string | string[],
   values: MessageTreeValues<R>,
@@ -183,11 +180,8 @@ export function formatParsedTree<R>(
   return parts.length ? parts : '';
 }
 
-// `switch (node[1])` does not narrow a tuple union, so cases cast to these.
-type BranchNode = SelectNode | PluralNode;
-
 function formatNodes<R>(
-  nodes: MessageNode[],
+  nodes: MessageNode<ParsedNode>[],
   context: FormatContext<R>,
   currentPluralValue?: PluralValue
 ): Part<R>[] {
@@ -225,11 +219,8 @@ function formatNodes<R>(
       }
       case 'number': {
         const value = requireVariable(context.values, name);
+        const style = node[2];
         // An ICU string's skeleton may also hold a scale.
-        const style = (node as NumberNode)[2] as
-          | string
-          | ExtendedNumberFormatOptions
-          | undefined;
         const { scale, ...intlOptions }: ExtendedNumberFormatOptions = {
           ...(typeof style === 'string' ? NAMED_NUMBER_STYLES[style] : style),
           ...formatsOf(context, name),
@@ -251,7 +242,7 @@ function formatNodes<R>(
       case 'time': {
         const value = requireVariable(context.values, name);
         const isDate = node[1] === 'date';
-        const style = (node as DateTimeNode)[2];
+        const style = node[2];
         // Named styles are ICU's: Intl's dateStyle and timeStyle.
         const named = style ?? DEFAULT_DATE_TIME_STYLE;
         const styleOptions: Intl.DateTimeFormatOptions | undefined =
@@ -275,7 +266,7 @@ function formatNodes<R>(
         break;
       }
       case 'select': {
-        const branches = (node as BranchNode)[2];
+        const branches = node[2];
         const value = String(requireVariable(context.values, name));
         const branch =
           ownBranch(branches, value) ??
@@ -286,7 +277,7 @@ function formatNodes<R>(
       }
       case 'plural':
       case 'selectordinal': {
-        const [, kind, branches, offset = 0] = node as PluralNode;
+        const [, kind, branches, offset = 0] = node;
         const rawValue = requireVariable(context.values, name);
         let branch = ownBranch(branches, `=${String(rawValue)}`);
         const value =
@@ -313,7 +304,7 @@ function formatNodes<R>(
           );
         }
         const children = formatNodes(
-          messageNodes((node as TagNode)[2]),
+          messageNodes(node[2]),
           context,
           currentPluralValue
         );
@@ -336,9 +327,9 @@ function formatsOf<R>(
 }
 
 function ownBranch(
-  branches: MessageBranches,
+  branches: MessageBranches<ParsedNode>,
   key: string
-): MessageNode[] | undefined {
+): MessageNode<ParsedNode>[] | undefined {
   const branch = ownOption(branches, key);
   return branch === undefined ? undefined : messageNodes(branch);
 }

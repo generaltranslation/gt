@@ -1,9 +1,8 @@
 import type {
-  DateTimeNode,
+  FormattedNode,
   MessageBranches,
   MessageNode,
   MessageTree,
-  NumberNode,
   PluralNode,
   SelectNode,
   TagNode,
@@ -12,14 +11,11 @@ import type {
 /** A node that names a variable: anything but text and `#`. */
 export type PlaceholderNode = Exclude<MessageNode, string | 0>;
 
-// `switch (node[1])` does not narrow a tuple union, so code narrows with these.
 export function isPlaceholderNode(node: MessageNode): node is PlaceholderNode {
   return typeof node !== 'string' && node !== 0;
 }
 
-export function isFormattedNode(
-  node: PlaceholderNode
-): node is NumberNode | DateTimeNode {
+export function isFormattedNode(node: PlaceholderNode): node is FormattedNode {
   return node[1] === 'number' || node[1] === 'date' || node[1] === 'time';
 }
 
@@ -40,7 +36,9 @@ export function isTagNode(node: PlaceholderNode): node is TagNode {
  * placeholders is its text, and an empty one has no nodes, so it adds no
  * part when formatted. A string is iterable, so every walk starts here.
  */
-export function messageNodes(message: MessageTree): MessageNode[] {
+export function messageNodes<Format>(
+  message: MessageTree<Format>
+): MessageNode<Format>[] {
   if (typeof message !== 'string') return message;
   return message ? [message] : [];
 }
@@ -76,19 +74,26 @@ export function mapPlaceholders(
     if (!isPlaceholderNode(node)) return node;
     const mapped = map(node);
     if (isBranchingNode(mapped)) {
-      const [name, kind, branches, ...rest] = mapped;
-      return [
-        name,
-        kind,
-        mapBranches(branches, (branch) => mapPlaceholders(branch, map)),
-        ...rest,
-      ] as MessageNode;
+      return withBranches(
+        mapped,
+        mapBranches(mapped[2], (branch) => mapPlaceholders(branch, map))
+      );
     }
     if (isTagNode(mapped)) {
       return [mapped[0], 'tag', mapPlaceholders(mapped[2], map)];
     }
     return mapped;
   });
+}
+
+/** A copy of a select or plural with other branches. */
+export function withBranches(
+  node: SelectNode | PluralNode,
+  branches: MessageBranches
+): SelectNode | PluralNode {
+  if (node[1] === 'select') return [node[0], node[1], branches];
+  const [name, kind, , ...rest] = node;
+  return [name, kind, branches, ...rest];
 }
 
 /** Copies branches in `keys` order, mapping each one. */

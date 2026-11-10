@@ -1,4 +1,4 @@
-import type { MessageNode, MessageTree } from './messageTree';
+import type { FormattedNode, MessageNode, MessageTree } from './messageTree';
 import {
   isBranchingNode,
   isFormattedNode,
@@ -37,7 +37,9 @@ export function appendText(out: MessageNode[], text: string): void {
  * A message from its nodes: without placeholders it is its text, the way it
  * was written, and `''` when empty. `messageNodes` reads it back.
  */
-export function toMessage(nodes: MessageNode[]): MessageTree {
+export function toMessage<Format>(
+  nodes: MessageNode<Format>[]
+): MessageTree<Format> {
   if (nodes.length === 0) return '';
   return nodes.length === 1 && typeof nodes[0] === 'string' ? nodes[0] : nodes;
 }
@@ -66,33 +68,37 @@ export function normalizeTree(tree: MessageTree): MessageTree {
       if (typeof node === 'string') appendText(out, node);
       else out.push(node);
     } else if (isBranchingNode(node)) {
-      const [name, kind, branches, offset] = node;
       const sorted = mapBranches(
-        branches,
+        node[2],
         normalizeTree,
-        Object.keys(branches).sort(compareKeys)
+        Object.keys(node[2]).sort(compareKeys)
       );
       out.push(
-        (offset
-          ? [name, kind, sorted, offset]
-          : [name, kind, sorted]) as MessageNode
+        node[1] !== 'select' && node[3]
+          ? [node[0], node[1], sorted, node[3]]
+          : [node[0], node[1], sorted]
       );
     } else if (isTagNode(node)) {
       out.push([node[0], 'tag', normalizeTree(node[2])]);
     } else if (isFormattedNode(node)) {
-      const [name, kind, options] = node;
-      const style =
-        options == null || typeof options === 'string'
-          ? (options ?? undefined)
-          : sortRecord(options);
-      out.push(
-        (style === undefined
-          ? [name, kind]
-          : [name, kind, style]) as MessageNode
-      );
+      out.push(sortStyle(node));
     } else {
       out.push(node);
     }
   }
   return toMessage(out);
+}
+
+// Each kind is its own case, so the node keeps the type of its style.
+function sortStyle(node: FormattedNode): FormattedNode {
+  if (node[2] == null) return [node[0], node[1]];
+  if (typeof node[2] === 'string') return node;
+  switch (node[1]) {
+    case 'number':
+      return [node[0], 'number', sortRecord(node[2])];
+    case 'date':
+      return [node[0], 'date', sortRecord(node[2])];
+    case 'time':
+      return [node[0], 'time', sortRecord(node[2])];
+  }
 }
