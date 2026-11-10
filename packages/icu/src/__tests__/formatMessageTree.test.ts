@@ -79,6 +79,24 @@ describe('formatMessageTree', () => {
     expect(() => formatMessageTree(tree, [])).toThrow(TypeError);
     expect(() => formatMessageTree(tree, 'not a locale!')).toThrow(RangeError);
   });
+
+  it('resolves a locale once, not on every call', () => {
+    const supportedLocalesOf = vi.spyOn(
+      Intl.NumberFormat,
+      'supportedLocalesOf'
+    );
+    try {
+      // A locale no other test uses, so it is not cached yet.
+      for (let i = 0; i < 3; i++) {
+        expect(formatMessageTree(['Hi ', ['n']], 'se-NO', { n: 'Ada' })).toBe(
+          'Hi Ada'
+        );
+      }
+      expect(supportedLocalesOf).toHaveBeenCalledTimes(1);
+    } finally {
+      supportedLocalesOf.mockRestore();
+    }
+  });
 });
 
 describe('empty branches', () => {

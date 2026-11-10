@@ -108,10 +108,26 @@ type FormatContext = {
   message: string;
   locales: string | string[];
   variables: MessageVariables;
-  numberFormats?: Map<string, Intl.NumberFormat>;
-  dateTimeFormats?: Map<string, Intl.DateTimeFormat>;
-  pluralRules?: Map<Intl.PluralRuleType, Intl.PluralRules>;
 };
+
+// Building an Intl formatter costs far more than formatting with it, so
+// formatters are shared across calls. The cap bounds formats that come from
+// input, such as a currency or a time zone.
+const formatters = new Map<string, object>();
+const MAX_FORMATTERS = 256;
+
+function getFormatter<Formatter extends object>(
+  key: string,
+  create: () => Formatter
+): Formatter {
+  let formatter = formatters.get(key) as Formatter | undefined;
+  if (!formatter) {
+    formatter = create();
+    if (formatters.size >= MAX_FORMATTERS) formatters.clear();
+    formatters.set(key, formatter);
+  }
+  return formatter;
+}
 
 /**
  * Formats a message tree without parsing, with native Intl. Plain values
@@ -161,6 +177,8 @@ export function formatParsedTree(
   locales: string | string[],
   variables: MessageVariables
 ): unknown {
+  // Most messages are plain text, which needs no formatter state.
+  if (tree.length === 1 && typeof tree[0] === 'string') return tree[0];
   const parts = formatNodes(tree, { message, locales, variables });
   if (parts.length === 1) return parts[0];
   return parts.length ? parts : '';
@@ -334,22 +352,20 @@ function getNumberFormat(
   context: FormatContext,
   options: Intl.NumberFormatOptions = {}
 ): Intl.NumberFormat {
-  const cache = (context.numberFormats ??= new Map());
-  const key = JSON.stringify(options);
-  return getCachedFormatter(cache, key, () => {
-    return new Intl.NumberFormat(context.locales, options);
-  });
+  return getFormatter(
+    `number|${context.locales}|${JSON.stringify(options)}`,
+    () => new Intl.NumberFormat(context.locales, options)
+  );
 }
 
 function getDateTimeFormat(
   context: FormatContext,
   options?: Intl.DateTimeFormatOptions
 ): Intl.DateTimeFormat {
-  const cache = (context.dateTimeFormats ??= new Map());
-  const key = options ? JSON.stringify(options) : '';
-  return getCachedFormatter(cache, key, () => {
-    return new Intl.DateTimeFormat(context.locales, options);
-  });
+  return getFormatter(
+    `date|${context.locales}|${JSON.stringify(options)}`,
+    () => new Intl.DateTimeFormat(context.locales, options)
+  );
 }
 
 function getPluralRules(
@@ -365,22 +381,10 @@ function getPluralRules(
     error.originalMessage = context.message;
     throw error;
   }
-  const cache = (context.pluralRules ??= new Map());
-  return getCachedFormatter(cache, type, () => {
-    return new Intl.PluralRules(context.locales, { type });
-  });
-}
-
-function getCachedFormatter<Key, Value>(
-  cache: Map<Key, Value>,
-  key: Key,
-  create: () => Value
-): Value {
-  const cached = cache.get(key);
-  if (cached) return cached;
-  const formatter = create();
-  cache.set(key, formatter);
-  return formatter;
+  return getFormatter(
+    `plural|${context.locales}|${type}`,
+    () => new Intl.PluralRules(context.locales, { type })
+  );
 }
 
 function toPluralRulesNumber(value: PluralValue): number {
