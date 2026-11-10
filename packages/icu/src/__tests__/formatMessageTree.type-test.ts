@@ -238,3 +238,8 @@ declare function readParsedTree(tree: ParsedTree): void;
 readParsedTree(tree);
 // @ts-expect-error a formatting tree is not a message tree
 readMessageTree(parsedTree);
+
+// An argument has one entry, as the validator checks.
+readMessageTree([['name']]);
+// @ts-expect-error an argument has no second entry
+readMessageTree([['name', undefined]]);

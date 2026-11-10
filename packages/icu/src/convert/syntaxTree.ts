@@ -66,10 +66,10 @@ export function readMessage(
   ast: MessageFormatElement[],
   styles: NamedStyles
 ): Message {
-  const bindings: FormatBindings = new Map();
+  const contexts: ContextByVariable = new Map();
   const tree = convert(ast, (element) => {
-    const [node, formatting] = splitFormat(element, styles);
-    bindFormatting(bindings, element.value, formatting);
+    const [node, context] = splitFormat(element, styles);
+    addContext(contexts, element.value, context);
     return node;
   });
   return { tree, formats: toFormats(contexts) };
@@ -161,7 +161,7 @@ const FOUR_FRACTIONAL_DIGITS = /S{4}/;
 function splitFormat(
   element: FormatElement,
   styles: NamedStyles
-): [node: FormattedNode, formatting: MessageFormattingContext] {
+): [node: FormattedNode, context: MessageFormattingContext] {
   const kind =
     element.type === TYPE.number
       ? 'number'
