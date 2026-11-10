@@ -11,7 +11,10 @@ import {
 import type { DateTimeNode, MessageTree, NumberNode } from './messageTree';
 
 export interface MessageTreeValidationOptions {
-  /** Deepest allowed nesting of branches and tag children. Defaults to 64. */
+  /**
+   * Deepest allowed nesting of branches and tag children that hold nodes;
+   * text adds no level. Defaults to 64.
+   */
   maxDepth?: number;
   /**
    * Most nodes plus select/plural branches allowed in the whole tree.

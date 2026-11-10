@@ -47,7 +47,7 @@ describe('icuToMessage', () => {
     ]);
   });
 
-  it('sorts branches and fields like buildMessageTree', () => {
+  it('sorts branches and fields like templateToMessage', () => {
     const tree = icuToMessage(
       '{n, plural, other {#} one {one} =2 {two}} {d, date, ::yMMMd}'
     ).tree;

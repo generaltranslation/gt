@@ -1,6 +1,6 @@
 import type { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
-import { buildMessageTree } from '@generaltranslation/icu/internal';
+import { templateToMessage } from '@generaltranslation/icu/internal';
 import { warnNonLiteralMsgCallSync } from '../../../../../console/index.js';
 import { extractStringEntryMetadata } from '../processTranslationCall/extractStringEntryMetadata.js';
 import type { ParsingConfig, ParsingOutput } from '../types.js';
@@ -35,7 +35,7 @@ export function processMsgCall(
   if (text === '') return true;
   output.updates.push({
     dataFormat: 'ICU_TREE',
-    source: buildMessageTree([text], []).tree,
+    source: templateToMessage([text], []).tree,
     metadata: extractStringEntryMetadata({
       output,
       config,

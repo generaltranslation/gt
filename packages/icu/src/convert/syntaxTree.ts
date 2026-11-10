@@ -7,7 +7,7 @@ import {
   type DateTimeStyleName,
   type MessageFormattingContext,
 } from '../settings/formatOptions';
-import { sortRecord, toMessage } from '../tree/canonical';
+import { sortRecord, toMessageTree } from '../tree/canonical';
 import type {
   DateTimeNode,
   Message,
@@ -27,7 +27,7 @@ import {
   type ContextByVariable,
 } from '../tree/splitOptions';
 import { styleProblem } from '../tree/validateMessageTree';
-import { messageNodes } from '../tree/walk';
+import { messageTreeNodes } from '../tree/walk';
 import { printDateTimeSkeleton } from './skeleton';
 import {
   SKELETON_TYPE,
@@ -92,7 +92,7 @@ export function readMessage(
  */
 export function toParsedTree(ast: MessageFormatElement[]): MessageTree {
   // Plain text as one string takes the formatter's fast path.
-  return toMessage(convert(ast, parsedNode));
+  return toMessageTree(convert(ast, parsedNode));
 }
 
 function convert(
@@ -270,7 +270,7 @@ function toBranches(
  * what ICU spells, so nothing is lost; a style a tree cannot hold throws.
  */
 export function fromMessageTree(tree: MessageTree): MessageFormatElement[] {
-  return messageNodes(tree).map(fromNode);
+  return messageTreeNodes(tree).map(fromNode);
 }
 
 function fromNode(node: MessageNode): MessageFormatElement {

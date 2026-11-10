@@ -6,7 +6,7 @@ import {
 } from '../index';
 import { formatMessageTree } from './format';
 import {
-  buildMessageTree,
+  templateToMessage,
   forEachPlaceholder,
   type TemplateHole,
 } from '../internal';
@@ -61,11 +61,13 @@ describe('normalizeMessageTree', () => {
   });
 
   it('rewrites a message without placeholders to one string', () => {
-    expect(normalizeTree(['Sa', '', 've'])).toBe('Save');
-    expect(normalizeTree('Save')).toBe('Save');
-    expect(normalizeTree([])).toBe('');
-    expect(normalizeTree([''])).toBe('');
-    expect(normalizeTree([['b', 'tag', []]])).toEqual([['b', 'tag', '']]);
+    expect(normalizeMessageTree(['Sa', '', 've'])).toBe('Save');
+    expect(normalizeMessageTree('Save')).toBe('Save');
+    expect(normalizeMessageTree([])).toBe('');
+    expect(normalizeMessageTree([''])).toBe('');
+    expect(normalizeMessageTree([['b', 'tag', []]])).toEqual([
+      ['b', 'tag', ''],
+    ]);
   });
 });
 

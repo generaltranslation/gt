@@ -17,7 +17,7 @@ import type {
   SelectNode,
   TagNode,
 } from '../tree/messageTree';
-import { messageNodes } from '../tree/walk';
+import { messageTreeNodes } from '../tree/walk';
 import {
   DATE_TIME_STYLE_NAMES,
   NAMED_NUMBER_STYLES,
@@ -313,7 +313,7 @@ function formatNodes<R>(
           );
         }
         const children = formatNodes(
-          messageNodes((node as TagNode)[2]),
+          messageTreeNodes((node as TagNode)[2]),
           context,
           currentPluralValue
         );
@@ -340,7 +340,7 @@ function ownBranch(
   key: string
 ): MessageNode[] | undefined {
   const branch = ownOption(branches, key);
-  return branch === undefined ? undefined : messageNodes(branch);
+  return branch === undefined ? undefined : messageTreeNodes(branch);
 }
 
 function plainValueText<R>(value: MessageValue<R>): Part<R> {

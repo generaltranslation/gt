@@ -36,11 +36,12 @@ export function isTagNode(node: PlaceholderNode): node is TagNode {
 }
 
 /**
- * The nodes of a message, branch or tag's children. A message without
- * placeholders is its text, and an empty one has no nodes, so it adds no
- * part when formatted. A string is iterable, so every walk starts here.
+ * The nodes of a message tree, which a message, a branch and a tag's children
+ * each are. A tree without placeholders is its text, and an empty one has no
+ * nodes, so it adds no part when formatted. A string is iterable, so every
+ * walk starts here.
  */
-export function messageNodes(message: MessageTree): MessageNode[] {
+export function messageTreeNodes(message: MessageTree): MessageNode[] {
   if (typeof message !== 'string') return message;
   return message ? [message] : [];
 }
@@ -50,7 +51,7 @@ export function forEachPlaceholder(
   tree: MessageTree,
   visit: (node: PlaceholderNode) => void
 ): void {
-  for (const node of messageNodes(tree)) {
+  for (const node of messageTreeNodes(tree)) {
     if (!isPlaceholderNode(node)) continue;
     visit(node);
     if (isBranchingNode(node)) {
@@ -72,7 +73,7 @@ export function mapPlaceholders(
   tree: MessageTree,
   map: (node: PlaceholderNode) => PlaceholderNode
 ): MessageNode[] {
-  return messageNodes(tree).map((node) => {
+  return messageTreeNodes(tree).map((node) => {
     if (!isPlaceholderNode(node)) return node;
     const mapped = map(node);
     if (isBranchingNode(mapped)) {
