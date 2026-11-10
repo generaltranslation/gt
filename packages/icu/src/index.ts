@@ -18,6 +18,16 @@ export type {
   SelectNode,
   TagNode,
 } from './tree/messageTree';
+export type {
+  DateFieldOptions,
+  DateMessageOptions,
+  DateTimeFormattingContext,
+  MessageTreeFormats,
+  NumberFormattingContext,
+  NumberMessageOptions,
+  TimeFieldOptions,
+  TimeMessageOptions,
+} from './settings/formatOptions';
 export { isMessageTree, validateMessageTree } from './tree/validateMessageTree';
 export type {
   MessageTreeValidationError,

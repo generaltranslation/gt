@@ -18,6 +18,7 @@ export {
   plural,
   select,
   selectordinal,
+  time,
   type Fragment,
   type GT,
   type GTOptions,

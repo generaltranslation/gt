@@ -217,7 +217,7 @@ describe('_formatMessageICU', () => {
       }).format(value)
     );
 
-    for (const field of ['C', 'S', 'A']) {
+    for (const field of ['C', 'A']) {
       expect(
         _formatMessageICU(
           `{value, time, ::${field}}`,

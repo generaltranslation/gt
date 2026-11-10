@@ -5,8 +5,7 @@ import { forEachPlaceholder, type PlaceholderNode } from './walk';
 /**
  * A variable is a name used as one kind of placeholder; a plural's offset
  * changes what `#` prints, so it is part of the identity too. Formats are
- * left out: a translation printed as ICU cannot express them, so they are
- * restored by variable.
+ * left out, since one variable may be formatted several ways.
  */
 export function variableKey(node: PlaceholderNode): string {
   const kind = node[1] ?? 'argument';
@@ -17,7 +16,7 @@ export function variableKey(node: PlaceholderNode): string {
   );
 }
 
-/** Intl options written in any key order are one format. */
+/** A style; fields written in any key order are one format. */
 export function formatKey(style: NumberNode[2] | DateTimeNode[2]): string {
   return JSON.stringify(
     style == null || typeof style === 'string'

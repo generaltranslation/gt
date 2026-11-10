@@ -1,5 +1,5 @@
 import { parse } from '../parser/parse';
-import { toMessageTree } from '../convert/syntaxTree';
+import { toFormattingTree } from '../convert/syntaxTree';
 import type { MessageVariables } from '../types-dir/ast';
 import {
   formatParsedTree,
@@ -40,6 +40,6 @@ export function formatMessage(
   options: FormatMessageTreeOptions
 ): unknown {
   const locale = resolveLocale(locales);
-  const tree = toMessageTree(parse(message, { locale }));
+  const tree = toFormattingTree(parse(message, { locale }));
   return formatParsedTree(tree, message, locales, variables, options);
 }

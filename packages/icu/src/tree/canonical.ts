@@ -40,27 +40,19 @@ export function toBranch(nodes: MessageNode[]): string | MessageTree {
 }
 
 /**
- * A format's canonical style: Intl options sorted, and empty options, like
- * `::group-min2` parses to, as no style, since they format alike. A time is
- * the exception: without a style it is a medium time, while `{}` formats as
- * Intl's default date.
+ * A format's canonical style from its fields: sorted, and no style when there
+ * are none, so builders never write `{}`, which a tree does not hold.
  */
-export function canonicalStyle<S extends string | object>(
-  style: S | null | undefined,
-  kind: string
-): S | undefined {
-  if (style == null) return undefined;
-  if (typeof style === 'string') return style;
-  return Object.keys(style).length || kind === 'time'
-    ? (sortRecord(style) as S)
-    : undefined;
+export function canonicalStyle(fields: object): object | undefined {
+  return Object.keys(fields).length ? sortRecord(fields) : undefined;
 }
 
 /**
  * Rewrites a tree, such as one converted from an ICU string, to the form
  * buildMessageTree builds: adjacent text merged and empty text dropped, a
  * branch without placeholders as one string, branch keys and Intl options
- * sorted, and no zero plural offset or empty style.
+ * sorted, and no zero plural offset or null style. An empty style stays, so
+ * printing rejects it rather than formatting it differently.
  */
 export function normalizeTree(tree: MessageTree): MessageTree {
   const out: MessageNode[] = [];
@@ -83,8 +75,11 @@ export function normalizeTree(tree: MessageTree): MessageTree {
     } else if (isTagNode(node)) {
       out.push([node[0], 'tag', normalizeTree(node[2])]);
     } else if (isFormattedNode(node)) {
-      const [name, kind] = node;
-      const style = canonicalStyle(node[2], kind);
+      const [name, kind, options] = node;
+      const style =
+        options == null || typeof options === 'string'
+          ? (options ?? undefined)
+          : sortRecord(options);
       out.push(
         (style === undefined
           ? [name, kind]

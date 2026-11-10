@@ -13,7 +13,7 @@ import wireFormatCases from '../../../../../../test-fixtures/icu-tree-wire-forma
 vi.mock('../../../fs/matchFiles.js', () => ({ matchFiles: vi.fn() }));
 
 const UNSTABLE_HELPERS =
-  't, msg, useGT, getGT, plural, selectordinal, select, number, date, part, derive, n';
+  't, msg, useGT, getGT, plural, selectordinal, select, number, date, time, part, derive, n';
 
 // The fixtures' free variables, typed as in fixtureParity.test.ts: the CLI
 // skips an undeclared value, since TypeScript types it any.
@@ -793,42 +793,101 @@ describe('createInlineUpdates: unstable tagged templates', () => {
     ]);
   });
 
-  describe('a variable with two formats ICU spells alike', () => {
-    it('skips the message with a warning and keeps extracting', async () => {
-      const result = await extract(`
-        import { t, date, select, part } from 'gt-react/unstable';
-        t\`\${date({ d }, { dateStyle: 'short' })} / \${date({ d }, { dateStyle: 'long' })}\`;
-        t\`\${date({ d })} \${select({ r }, { a: part\`\${date({ d }, { dateStyle: 'long' })}\`, other: '' })}\`;
-        t\`Still extracted\`;
-      `);
-
-      const conflicts = result.warnings.filter((w) =>
-        w.includes('has two formats ICU spells the same way')
+  describe('Intl options', () => {
+    const extractTrees = async (message: string) => {
+      const result = await extract(
+        `import { t, number, date, time } from 'gt-react/unstable';\ndeclare const zone: string, code: () => string;\n${message};\n`
       );
-      expect(conflicts.map((w) => w.match(/\((\d+):\d+\)/)?.[1])).toEqual([
-        '3',
-        '4',
-      ]);
-      expect(conflicts[0]).toContain('"d"');
-      expect(treeUpdates(result).map((u) => u.source)).toEqual([
-        ['Still extracted'],
+      return { warnings: result.warnings, updates: treeUpdates(result) };
+    };
+
+    it.each([
+      [
+        'currency',
+        "t`${number({ p }, { style: 'currency', currency: code() })}`",
+        "t`${number({ p }, { style: 'currency', currency: 'USD' })}`",
+      ],
+      [
+        'timeZone',
+        "t`${date({ d }, { dateStyle: 'medium', timeZone: zone })}`",
+        "t`${date({ d }, { dateStyle: 'medium', timeZone: 'UTC' })}`",
+      ],
+      [
+        'timeZone on time()',
+        "t`${time({ s }, { timeStyle: 'short', timeZone: zone })}`",
+        't`${time({ s }, { timeStyle: `short` })}`',
+      ],
+    ])(
+      'extracts a dynamic %s with the hash of a literal one',
+      async (_name, dynamic, literal) => {
+        const dynamicResult = await extractTrees(dynamic);
+        const literalResult = await extractTrees(literal);
+
+        expect(dynamicResult.warnings).toEqual([]);
+        expect(dynamicResult.updates).toHaveLength(1);
+        expect(dynamicResult.updates[0].metadata.hash).toBe(
+          literalResult.updates[0].metadata.hash
+        );
+      }
+    );
+
+    it('extracts time() as a time placeholder', async () => {
+      const { warnings, updates } = await extractTrees(
+        "t`Starts ${time({ s }, { timeStyle: 'short' })} or ${time({ s })}`"
+      );
+
+      expect(warnings).toEqual([]);
+      expect(updates.map((u) => u.source)).toEqual([
+        ['Starts ', ['s', 'time', 'short'], ' or ', ['s', 'time']],
       ]);
     });
 
     it.each([
+      ['dateStyle', 't`${date({ d }, { dateStyle: zone as "short" })}`'],
+      ['style', 't`${number({ p }, { style: zone as "percent" })}`'],
+      ['unit', "t`${number({ p }, { style: 'unit', unit: code() })}`"],
+    ])('skips a non-literal %s with a warning', async (key, message) => {
+      const { warnings, updates } = await extractTrees(message);
+
+      expect(updates).toEqual([]);
+      expect(warnings.join('\n')).toContain(
+        `the Intl option "${key}" is not a literal`
+      );
+    });
+
+    it('skips an option of the wrong helper with the builder error', async () => {
+      const { warnings, updates } = await extractTrees(
+        "t`${date({ d }, { timeStyle: 'short' })}`"
+      );
+
+      expect(updates).toEqual([]);
+      expect(warnings.join('\n')).toContain('a date has no "timeStyle" option');
+    });
+
+    it.each([
       [
-        'identical options',
-        "t`${date({ d }, { dateStyle: 'short', timeStyle: 'short' })} ${date({ d }, { timeStyle: 'short', dateStyle: 'short' })}`",
+        'two named styles',
+        "t`${date({ d }, { dateStyle: 'short' })} / ${date({ d }, { dateStyle: 'long' })}`",
+      ],
+      [
+        'the same context in another order',
+        "t`${date({ d }, { dateStyle: 'short', timeZone: 'UTC', calendar: 'gregory' })} ${date({ d }, { calendar: 'gregory', timeZone: 'UTC' })}`",
+      ],
+      [
+        // Formatting context never reaches the tree; the runtime reports this.
+        'two formatting contexts',
+        't`${number({ p }, { maximumFractionDigits: 1 })} ${number({ p }, { maximumFractionDigits: 2 })}`',
+      ],
+      [
+        'a dynamic and a literal context value',
+        "t`${number({ p }, { currency: code(), style: 'currency' })} ${number({ p }, { currency: 'USD', style: 'currency' })}`",
       ],
       ['an argument and a number', 't`${{ n }} (${number({ n })})`'],
     ])('extracts a name reused with %s', async (_name, message) => {
-      const result = await extract(`
-        import { t, date, number } from 'gt-react/unstable';
-        ${message};
-      `);
+      const { warnings, updates } = await extractTrees(message);
 
-      expect(result.warnings).toEqual([]);
-      expect(treeUpdates(result)).toHaveLength(1);
+      expect(warnings).toEqual([]);
+      expect(updates).toHaveLength(1);
     });
   });
 

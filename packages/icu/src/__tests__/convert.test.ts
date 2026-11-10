@@ -1,21 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import { icuToMessageTree, messageTreeToIcu } from '../convert';
-import { type MessageTree, type SelectNode } from '../index';
+import {
+  validateMessageTree,
+  type DateTimeNode,
+  type MessageTree,
+  type NumberNode,
+  type SelectNode,
+} from '../index';
 import {
   buildMessageTree,
-  findConflictingFormat,
+  DATE_FIELD_OPTIONS,
+  TIME_FIELD_OPTIONS,
   type MessageTreeHole,
 } from '../internal';
+import { DATE_TIME_FIELD_SYMBOLS } from '../convert/skeleton';
+import { normalizeTree } from '../tree/canonical';
 import { formatMessage, formatMessageTree } from './format';
-import type { ExtendedNumberFormatOptions } from '../types-dir/ast';
-import { DATE_SKELETONS, NUMBER_SKELETONS } from './skeletonCases';
 
 const POUND: MessageTreeHole = { kind: 'pound' };
-
-const price: MessageTree = [
-  'Total: ',
-  ['price', 'number', { currency: 'USD', style: 'currency' }],
-];
 
 describe('icuToMessageTree', () => {
   it('converts an ICU string to a message tree', () => {
@@ -29,9 +31,9 @@ describe('icuToMessageTree', () => {
     ]);
   });
 
-  it('sorts branches and Intl options like buildMessageTree', () => {
+  it('sorts branches and fields like buildMessageTree', () => {
     const tree = icuToMessageTree(
-      '{n, plural, other {#} one {one} =2 {two}} {p, number, ::currency/EUR}'
+      '{n, plural, other {#} one {one} =2 {two}} {d, date, ::yMMMd}'
     );
     expect(Object.keys((tree[0] as SelectNode)[2])).toEqual([
       '=2',
@@ -39,7 +41,7 @@ describe('icuToMessageTree', () => {
       'other',
     ]);
     expect(JSON.stringify(tree[2])).toBe(
-      '["p","number",{"currency":"EUR","style":"currency"}]'
+      '["d","date",{"day":"numeric","month":"short","year":"numeric"}]'
     );
   });
 
@@ -81,23 +83,94 @@ describe('icuToMessageTree', () => {
     ]);
   });
 
-  // Without a locale, j and J stay the locale's hour, like Intl's `hour`
-  // without an `hourCycle`, instead of being dropped.
-  it.each([
-    ['{d, time, ::j}', { hour: 'numeric' }],
-    ['{d, time, ::jjmm}', { hour: '2-digit', minute: '2-digit' }],
-    [
-      '{d, time, ::Jmm}',
-      { hour: 'numeric', hourCycle: 'h23', minute: '2-digit' },
-    ],
-  ])('keeps the locale hour in %s', (icu, options) => {
-    expect(icuToMessageTree(icu)).toEqual([['d', 'time', options]]);
-    const d = new Date(2026, 0, 1, 13, 5);
-    for (const locale of ['en-US', 'de']) {
-      expect(formatMessageTree(icuToMessageTree(icu), locale, { d })).toBe(
-        formatMessage(icu, locale, { d })
-      );
+  // The hour cycle is formatting context, so every hour symbol is the hour.
+  it.each(['j', 'J', 'h', 'H', 'K', 'k', 'ha'])(
+    'reads the hour symbol in ::%smm as the hour',
+    (hour) => {
+      expect(icuToMessageTree(`{d, time, ::${hour}mm}`)).toEqual([
+        ['d', 'time', { hour: 'numeric', minute: '2-digit' }],
+      ]);
     }
+  );
+
+  it('reads a skeleton of only formatting context as no style, never {}', () => {
+    expect(icuToMessageTree('{t, time, ::a}{d, date, ::a}')).toEqual([
+      ['t', 'time'],
+      ['d', 'date'],
+    ]);
+  });
+
+  it('formats the locale hour like formatMessage', () => {
+    const d = new Date(2026, 0, 1, 13, 5);
+    for (const icu of ['{d, time, ::j}', '{d, time, ::jjmm}']) {
+      for (const locale of ['en-US', 'de']) {
+        expect(formatMessageTree(icuToMessageTree(icu), locale, { d })).toBe(
+          formatMessage(icu, locale, { d })
+        );
+      }
+    }
+  });
+
+  it('reads fractional seconds, day periods and time zone names', () => {
+    expect(
+      icuToMessageTree(
+        '{d, time, ::jmmssSSS} {d, time, ::hB} {d, date, ::vvvv}'
+      )
+    ).toEqual([
+      [
+        'd',
+        'time',
+        {
+          fractionalSecondDigits: 3,
+          hour: 'numeric',
+          minute: '2-digit',
+          second: '2-digit',
+        },
+      ],
+      ' ',
+      ['d', 'time', { dayPeriod: 'short', hour: 'numeric' }],
+      ' ',
+      ['d', 'date', { timeZoneName: 'longGeneric' }],
+    ]);
+  });
+
+  it('reads a unit as ICU4C does, the whole identifier', () => {
+    expect(icuToMessageTree('{s, number, ::unit/kilometer-per-hour}')).toEqual([
+      ['s', 'number', { style: 'unit', unit: 'kilometer-per-hour' }],
+    ]);
+  });
+
+  it.each([
+    '{n, number, ::currency/USD}',
+    '{n, number, ::percent}',
+    '{n, number, ::unit/meter unit-width-full-name}',
+    '{n, number, ::measure-unit/length-meter}',
+    '{n, number, integer}',
+    '{d, date, ::yMd}{d, date, foo}',
+    '{t, time, ::E}',
+  ])('rejects %s, which a tree cannot hold', (icu) => {
+    expect(() => icuToMessageTree(icu)).toThrow(
+      /cannot be part of a message tree: /
+    );
+  });
+
+  it('names the problem and the placeholder', () => {
+    expect(() => icuToMessageTree('{n, number, ::.00}')).toThrow(
+      '{n, number, ::.00} cannot be part of a message tree: a number skeleton can only be ::unit/<unit>; other number options are formatting context.'
+    );
+    expect(() => icuToMessageTree('{t, time, ::yMd}')).toThrow(
+      '{t, time, ::yMd} cannot be part of a message tree: a time has no "day" option.'
+    );
+    expect(() => icuToMessageTree('{t, time, ::ssSSSS}')).toThrow(
+      '{t, time, ::ssSSSS} cannot be part of a message tree: fractional seconds have at most three digits, SSS.'
+    );
+  });
+
+  it('formats more than three fractional digits in an ICU string as three', () => {
+    const t = new Date(2020, 4, 6, 23, 30, 5, 123);
+    expect(formatMessage('{t, time, ::ssSSSS}', 'en-US', { t })).toBe(
+      formatMessage('{t, time, ::ssSSS}', 'en-US', { t })
+    );
   });
 
   it('throws a SyntaxError for an invalid ICU string', () => {
@@ -119,48 +192,52 @@ describe('messageTreeToIcu', () => {
     );
   });
 
-  it('prints Intl options ICU can spell as skeletons', () => {
-    expect(messageTreeToIcu(price)).toBe(
-      'Total: {price, number, ::currency/USD}'
-    );
-    expect(
-      messageTreeToIcu([
-        ['d', 'date', { day: 'numeric', month: 'short', year: 'numeric' }],
-        ' ',
-        ['p', 'number', 'percent'],
-        ' ',
-        ['h', 'time', { hour: 'numeric', minute: '2-digit' }],
-      ])
-    ).toBe('{d, date, ::yMMMd} {p, number, percent} {h, time, ::jmm}');
-  });
-
-  it('prints options a skeleton formats alike by the Intl spec', () => {
-    // compactDisplay defaults to short, and a currency ignores unitDisplay,
-    // in every locale and time zone.
-    expect(
-      messageTreeToIcu([
-        ['n', 'number', { notation: 'compact' }],
-        ' ',
+  it.each<[MessageTree, string]>([
+    [[['n', 'number']], '{n, number}'],
+    [[['p', 'number', 'percent']], '{p, number, percent}'],
+    [[['t', 'number', 'currency']], '{t, number, currency}'],
+    [
+      [['km', 'number', { style: 'unit', unit: 'kilometer' }]],
+      '{km, number, ::unit/kilometer}',
+    ],
+    [[['d', 'date', 'medium']], '{d, date, medium}'],
+    [[['t', 'time', 'short']], '{t, time, short}'],
+    [[['d', 'date', { day: 'numeric', month: 'short' }]], '{d, date, ::MMMd}'],
+    [
+      [
         [
-          'p',
-          'number',
+          'd',
+          'date',
           {
-            currency: 'EUR',
-            currencyDisplay: 'narrowSymbol',
-            style: 'currency',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            month: 'short',
+            year: 'numeric',
           },
         ],
-      ])
-    ).toBe(
-      '{n, number, ::compact-short} {p, number, ::currency/EUR unit-width-narrow}'
-    );
-  });
-
-  it('prints plain percent as the named style, which scales like Intl', () => {
-    // An ICU `percent` skeleton does not multiply by 100; the named style does.
-    expect(messageTreeToIcu([['p', 'number', { style: 'percent' }]])).toBe(
-      '{p, number, percent}'
-    );
+      ],
+      '{d, date, ::yMMMdjmm}',
+    ],
+    [
+      [
+        [
+          't',
+          'time',
+          {
+            dayPeriod: 'long',
+            fractionalSecondDigits: 2,
+            hour: '2-digit',
+            second: 'numeric',
+            timeZoneName: 'shortOffset',
+          },
+        ],
+      ],
+      '{t, time, ::jjBBBBsSSO}',
+    ],
+  ])('prints %j as %s', (tree, icu) => {
+    expect(messageTreeToIcu(tree)).toBe(icu);
+    expect(icuToMessageTree(icu)).toEqual(tree);
   });
 
   it('prints adjacent text as one literal', () => {
@@ -172,77 +249,21 @@ describe('messageTreeToIcu', () => {
     ]);
   });
 
-  it('drops a zero scale, which formats as no scale, unlike in ICU', () => {
-    expect(
-      messageTreeToIcu([
-        ['n', 'number', { scale: 0 }],
-        ['p', 'number', { currency: 'USD', scale: 0, style: 'currency' }],
-      ])
-    ).toBe('{n, number}{p, number, ::currency/USD}');
-  });
-
-  it('prints every number format the parser reads, in its spelling', () => {
-    expect(
-      messageTreeToIcu([
-        [
-          'a',
-          'number',
-          { currency: 'USD', currencyDisplay: 'code', style: 'currency' },
-        ],
-        ' ',
-        ['b', 'number', { scale: 100, style: 'percent' }],
-        ' ',
-        ['c', 'number', { maximumFractionDigits: 2 }],
-        ' ',
-        ['d', 'number', { minimumFractionDigits: 3 }],
-        ' ',
-        ['e', 'number', { maximumFractionDigits: 0 }],
-        ' ',
-        [
-          'f',
-          'number',
-          {
-            maximumFractionDigits: 2,
-            maximumSignificantDigits: 3,
-            minimumFractionDigits: 1,
-            minimumSignificantDigits: 2,
-            roundingPriority: 'morePrecision',
-          } as ExtendedNumberFormatOptions,
-        ],
-      ])
-    ).toBe(
-      '{a, number, ::currency/USD unit-width-short} {b, number, ::percent scale/100} {c, number, ::.##} {d, number, ::.000*} {e, number, ::precision-integer} {f, number, ::.0#/@@#r}'
+  it.each<[string, unknown]>([
+    ['a currency', ['p', 'number', { currency: 'USD', style: 'currency' }]],
+    ['a time zone', ['d', 'date', { timeZone: 'UTC', year: 'numeric' }]],
+    ['dateStyle as an option', ['d', 'date', { dateStyle: 'medium' }]],
+    ['date fields on a time', ['t', 'time', { year: 'numeric' }]],
+    ['an unknown style name', ['n', 'number', 'integer']],
+  ])('throws for %s, which a tree cannot hold', (_name, node) => {
+    expect(() => messageTreeToIcu([node] as MessageTree)).toThrow(
+      /cannot be part of a message tree/
     );
-  });
-
-  it('prints the ICU part of a format, leaving tree-only options to source', () => {
-    expect(
-      messageTreeToIcu([
-        ['d', 'date', { dateStyle: 'medium', timeStyle: 'short' }],
-        ' ',
-        ['t', 'time', { timeZone: 'UTC', year: 'numeric' }],
-        ' ',
-        ['c', 'date', { calendar: 'gregory', year: 'numeric' }],
-        ' ',
-        ['n', 'number', { numberingSystem: 'arab', style: 'percent' }],
-      ])
-    ).toBe('{d, date} {t, time, ::y} {c, date, ::y} {n, number, percent}');
-  });
-
-  it('drops a format whose fields ICU cannot spell', () => {
-    // Printing only `second` would show a format the tree does not have.
-    expect(
-      messageTreeToIcu([
-        ['s', 'time', { fractionalSecondDigits: 2, second: 'numeric' }],
-        // A 12-hour clock left to the locale is h12 or h11; ICU spells one.
-        ['h', 'time', { hour: 'numeric', hour12: true }],
-      ])
-    ).toBe('{s, time}{h, time}');
   });
 
   it('prints the same ICU in any host time zone', () => {
     const tree: MessageTree = [
-      ['t', 'time', { timeZone: 'UTC', year: 'numeric' }],
+      ['t', 'time', { hour: 'numeric', timeZoneName: 'short' }],
       ['d', 'date', { day: 'numeric', month: 'short', year: 'numeric' }],
     ];
     const original = process.env.TZ;
@@ -252,86 +273,12 @@ describe('messageTreeToIcu', () => {
         return messageTreeToIcu(tree);
       });
       expect(new Set(printed)).toEqual(
-        new Set(['{t, time, ::y}{d, date, ::yMMMd}'])
+        new Set(['{t, time, ::jz}{d, date, ::yMMMd}'])
       );
     } finally {
       if (original === undefined) delete process.env.TZ;
       else process.env.TZ = original;
     }
-  });
-
-  // Skeletons that print as another spelling of the same format: plain percent
-  // as the named style, and Intl defaults or a zero scale as nothing.
-  const EQUIVALENT_SPELLINGS: Record<string, string> = {
-    '{v, number, ::percent}': '{v, number, percent}',
-    '{v, number, ::%}': '{v, number, percent}',
-    '{v, number, ::currency/USD unit-width-iso-code}':
-      '{v, number, ::currency/USD}',
-    '{v, number, ::sign-auto}': '{v, number}',
-    '{v, number, ::scale/0}': '{v, number}',
-    '{v, time, ::S}': '{v, time, ::yMd}',
-  };
-  const formatted = (icu: string): string[] => {
-    const values = icu.startsWith('{v, number')
-      ? [1234.5678, -0.5, 0]
-      : [new Date(2025, 0, 2, 15, 4, 5)];
-    return ['en-US', 'de', 'ja'].flatMap((locale) =>
-      values.map((v) => {
-        try {
-          return formatMessage(icu, locale, { v });
-        } catch (error) {
-          return `throws ${(error as Error).name}`;
-        }
-      })
-    );
-  };
-
-  it.each([
-    ...NUMBER_SKELETONS.map(({ skeleton }) => `{v, number, ::${skeleton}}`),
-    ...DATE_SKELETONS.map(({ skeleton }) => `{v, date, ::${skeleton}}`),
-    // Concise and combined forms.
-    '{v, number, ::K}',
-    '{v, number, ::+! currency/EUR unit-width-narrow}',
-    '{v, number, ::() currency/JPY}',
-    '{v, number, ::sign-never group-off}',
-    '{v, number, ::.00/w}',
-    '{v, number, ::.0#/@@#r}',
-    // Significant digits a fraction stem cannot carry as its option.
-    '{v, number, ::precision-integer @@r}',
-    '{v, number, ::.00/w @@r}',
-    '{v, number, ::@@+s}',
-    '{v, number, ::rounding-mode-half-even scale/0.5}',
-    '{v, number, ::integer-width/*000 measure-unit/length-meter}',
-    '{v, time, ::Hmm}',
-    '{v, time, ::ha}',
-    '{v, time, ::j}',
-    '{v, time, ::jjmm}',
-    '{v, date, ::yMMMdjmm}',
-    '{v, date, ::GGGGyMMMMdEEEEhmsz}',
-    '{v, date, ::LLLLcccc}',
-    '{v, time, ::S}',
-  ])('round-trips %s without a source', (icu) => {
-    const tree = icuToMessageTree(icu);
-    const printed = messageTreeToIcu(tree);
-    if (icu in EQUIVALENT_SPELLINGS) {
-      expect(printed).toBe(EQUIVALENT_SPELLINGS[icu]);
-    } else {
-      expect(icuToMessageTree(printed)).toEqual(tree);
-    }
-    expect(formatted(printed)).toEqual(formatted(icu));
-  });
-
-  it('treats empty Intl options as no options, except on a time', () => {
-    const none: MessageTree = [['p', 'number']];
-    expect(icuToMessageTree('{p, number, ::group-min2}')).toEqual(none);
-    expect(
-      buildMessageTree(['', ''], [{ kind: 'number', name: 'p', options: {} }])
-        .tree
-    ).toEqual(none);
-    expect(icuToMessageTree('{d, date, ::S}')).toEqual([['d', 'date']]);
-    // A time without a style formats as a medium time; with `{}`, as Intl's
-    // default date.
-    expect(icuToMessageTree('{t, time, ::S}')).toEqual([['t', 'time', {}]]);
   });
 
   it('prints an offset branch where it cannot read as offset:', () => {
@@ -340,257 +287,150 @@ describe('messageTreeToIcu', () => {
   });
 });
 
-describe('icuToMessageTree with a source', () => {
-  const sources: [string, MessageTree][] = [
-    [
-      'formats',
-      [
-        'Due ',
-        ['due', 'date', { dateStyle: 'medium', timeStyle: 'short' }],
-        ', total: ',
-        price[1],
-      ],
-    ],
-    [
-      'nested branches',
-      [
-        [
-          'count',
-          'plural',
-          {
-            '=0': 'No messages',
-            one: [
-              0,
-              ' message for ',
-              ['role', 'select', { admin: 'admins', other: 'everyone' }],
-            ],
-            other: [
-              0,
-              ' messages from ',
-              ['who'],
-              ' at ',
-              ['p', 'number', { style: 'percent' }],
-            ],
-          },
-        ],
-      ],
-    ],
-    [
-      'an offset and a tag',
-      [
-        [
-          'b',
-          'tag',
-          [['n', 'selectordinal', { one: [0, 'st'], other: [0, 'th'] }, 1]],
-        ],
-      ],
-    ],
+// Every style a tree holds, each field value alone, and fields together.
+function formattedNodes(): (NumberNode | DateTimeNode)[] {
+  const nodes: (NumberNode | DateTimeNode)[] = [
+    ['n', 'number'],
+    ['n', 'number', 'percent'],
+    ['n', 'number', 'currency'],
+    ['n', 'number', { style: 'unit', unit: 'kilometer' }],
+    ['n', 'number', { style: 'unit', unit: 'kilometer-per-hour' }],
+    ['d', 'date'],
+    ['d', 'time'],
   ];
+  for (const name of ['full', 'long', 'medium', 'short'] as const) {
+    nodes.push(['d', 'date', name], ['d', 'time', name]);
+  }
+  for (const kind of ['date', 'time'] as const) {
+    const fields: readonly string[] =
+      kind === 'date' ? DATE_FIELD_OPTIONS : TIME_FIELD_OPTIONS;
+    for (const field of fields) {
+      const symbols =
+        DATE_TIME_FIELD_SYMBOLS[field as keyof typeof DATE_TIME_FIELD_SYMBOLS];
+      for (const value of Object.keys(symbols)) {
+        const typed =
+          field === 'fractionalSecondDigits' ? Number(value) : value;
+        nodes.push(['d', kind, { [field]: typed }] as DateTimeNode);
+      }
+    }
+  }
+  nodes.push(
+    [
+      'd',
+      'date',
+      {
+        day: '2-digit',
+        era: 'long',
+        hour: 'numeric',
+        minute: '2-digit',
+        month: 'long',
+        second: '2-digit',
+        weekday: 'short',
+        year: 'numeric',
+      },
+    ],
+    [
+      'd',
+      'time',
+      {
+        dayPeriod: 'narrow',
+        fractionalSecondDigits: 1,
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+        timeZoneName: 'long',
+      },
+    ]
+  );
+  return nodes;
+}
 
-  it.each(sources)('round-trips %s through printing', (_name, source) => {
-    expect(icuToMessageTree(messageTreeToIcu(source), { source })).toEqual(
-      source
-    );
-  });
+const LOSSLESS_TREES: MessageTree[] = [
+  [],
+  ['Plain text'],
+  ["It's {quoted} # and '' and {}"],
+  ['Hi ', ['name'], '!'],
+  ...formattedNodes().map((node) => ['Value: ', node, '.']),
+  [
+    [
+      'count',
+      'plural',
+      {
+        '=0': 'None',
+        '=-1': 'Minus one',
+        few: [0, ' few'],
+        one: [0, " item's"],
+        other: [
+          0,
+          ' items for ',
+          ['role', 'select', { admin: ['admins # ', ['who']], other: '' }],
+        ],
+      },
+      1,
+    ],
+  ],
+  [['place', 'selectordinal', { one: [0, 'st'], other: [0, 'th'] }]],
+  [['k', 'select', JSON.parse('{"__proto__":"P","offset":"X","other":"O"}')]],
+  [
+    'Read ',
+    [
+      'b',
+      'tag',
+      ['the ', ['i', 'tag', ['terms']], ' by ', ['d', 'date', 'long']],
+    ],
+  ],
+  [
+    [
+      'n',
+      'plural',
+      {
+        other: [
+          ['b', 'tag', [0, ' at ', ['p', 'number', 'percent']]],
+          ['t', 'time', { hour: '2-digit', minute: '2-digit' }],
+        ],
+      },
+    ],
+  ],
+];
 
-  it("restores the source's formats in a translation", () => {
-    expect(
-      icuToMessageTree('Total : {price, number}', { source: price })
-    ).toEqual([
-      'Total : ',
-      ['price', 'number', { currency: 'USD', style: 'currency' }],
-    ]);
-    // The source decides formats, so a translated style is replaced.
-    expect(
-      icuToMessageTree('Total : {price, number, percent}', { source: price })
-    ).toEqual(icuToMessageTree('Total : {price, number}', { source: price }));
-  });
-
-  it.each([
-    [
-      'a variable the source does not have',
-      'Total : {cost, number}',
-      '"cost" does not exist in the source; "price" is missing from the translation',
-    ],
-    ['a missing variable', 'Total', '"price" is missing from the translation'],
-    [
-      'a changed kind',
-      'Total : {price}',
-      '"price" changed kind or plural offset',
-    ],
-  ])('rejects %s', (_name, translation, problem) => {
-    expect(() => icuToMessageTree(translation, { source: price })).toThrow(
-      `The translation does not use the same variables as its source: ${problem}`
-    );
-  });
-
-  it('accepts leaving out the plural categories the locale does not have', () => {
-    // Japanese has only `other`, so `one` and its `name` go.
-    const source: MessageTree = [
-      [
-        'n',
-        'plural',
-        { one: ['Only ', ['name'], "'s file"], other: [0, ' files'] },
-      ],
-    ];
-    expect(
-      icuToMessageTree('{n, plural, other {#件のファイル}}', {
-        source,
-        locale: 'ja',
-      })
-    ).toEqual([['n', 'plural', { other: [0, '件のファイル'] }]]);
-    // Ordinals use the locale's ordinal categories, and a variable may sit
-    // deeper in the left-out branch.
-    const nested: MessageTree = [
-      [
-        'n',
-        'selectordinal',
-        {
-          one: [['role', 'select', { admin: ['by ', ['name']], other: '' }]],
-          other: [0, 'th'],
-        },
-      ],
-    ];
-    expect(
-      icuToMessageTree('{n, selectordinal, other {#.}}', {
-        source: nested,
-        locale: 'ja',
-      })
-    ).toEqual([['n', 'selectordinal', { other: [0, '.'] }]]);
-  });
-
-  it.each<[string, MessageTree, string, string | undefined]>([
-    [
-      'is in a category the locale has (French has one)',
-      [['n', 'plural', { one: ['by ', ['name']], other: [0] }]],
-      '{n, plural, other {#}}',
-      'fr',
-    ],
-    [
-      'is in a left-out category, without a locale',
-      [['n', 'plural', { one: ['by ', ['name']], other: [0] }]],
-      '{n, plural, other {#}}',
-      undefined,
-    ],
-    [
-      'is used outside the left-out category',
-      [['name'], ': ', ['n', 'plural', { one: ['by ', ['name']], other: [0] }]],
-      '{n, plural, other {#}}',
-      'ja',
-    ],
-    [
-      'is in an exact branch, which every locale has',
-      [['n', 'plural', { '=0': ['None by ', ['name']], other: [0] }]],
-      '{n, plural, other {#}}',
-      'ja',
-    ],
-    [
-      'is in a select branch, which every locale has',
-      [['role', 'select', { admin: ['Admin ', ['name']], other: 'User' }]],
-      '{role, select, other {User}}',
-      'ja',
-    ],
-  ])(
-    'rejects a missing variable that %s',
-    (_name, source, translation, locale) => {
-      expect(() => icuToMessageTree(translation, { source, locale })).toThrow(
-        '"name" is missing from the translation'
-      );
+describe('the tree and ICU text', () => {
+  // Valid canonical trees print to ICU and read back as the same tree.
+  it.each(LOSSLESS_TREES.map((tree) => [JSON.stringify(tree), tree]))(
+    'convert without loss: %s',
+    (_json, tree) => {
+      expect(validateMessageTree(tree)).toBeUndefined();
+      expect(normalizeTree(tree)).toEqual(tree);
+      expect(icuToMessageTree(messageTreeToIcu(tree))).toEqual(tree);
     }
   );
 
-  it('rejects a changed plural offset or plural kind', () => {
-    const source: MessageTree = [['n', 'plural', { other: [0] }]];
-    expect(() =>
-      icuToMessageTree('{n, plural, offset:1 other {#}}', { source })
-    ).toThrow('"n" changed kind or plural offset');
-    expect(() =>
-      icuToMessageTree('{n, selectordinal, other {#}}', { source })
-    ).toThrow('"n" changed kind or plural offset');
-  });
-
-  it('treats Intl options in any key order as one format', () => {
-    const source: MessageTree = [
-      ['p', 'number', { style: 'currency', currency: 'USD' }],
-      ' / ',
-      ['p', 'number', { currency: 'USD', style: 'currency' }],
-      ' ',
-      ['d', 'date', { dateStyle: 'short', timeZone: 'UTC' }],
-      ['d', 'date', { timeZone: 'UTC', dateStyle: 'short' }],
-    ];
-    const icu = messageTreeToIcu(source);
-    expect(icuToMessageTree(icu, { source })).toEqual(
-      icuToMessageTree(icu, { source: JSON.parse(JSON.stringify(source)) })
-    );
-    expect(icuToMessageTree(icu, { source })[0]).toEqual([
-      'p',
-      'number',
-      { currency: 'USD', style: 'currency' },
-    ]);
-  });
-
-  it('restores each format of a variable from its ICU spelling', () => {
-    const source: MessageTree = [
-      ['p', 'number', { style: 'percent' }],
-      ' (',
-      [
-        'p',
-        'number',
-        { currency: 'USD', numberingSystem: 'latn', style: 'currency' },
-      ],
-      ')',
-    ];
-    // Translators may reorder placeholders; each keeps its own format.
-    expect(
-      icuToMessageTree('({p, number, ::currency/USD}) {p, number, percent}', {
-        source,
-      })
-    ).toEqual(['(', source[2], ') ', source[0]]);
-  });
-
-  it('rejects a format the source does not have when a variable has several', () => {
-    const source: MessageTree = [
-      ['p', 'number', { style: 'percent' }],
-      ['p', 'number'],
-    ];
-    expect(() =>
-      icuToMessageTree('{p, number, ::currency/EUR}{p, number}', { source })
-    ).toThrow('"p" uses a format the source does not have');
-  });
-
-  it('rejects a source that formats one variable two ways ICU spells alike', () => {
-    const source: MessageTree = [
-      ['d', 'date', { dateStyle: 'short', timeZone: 'UTC' }],
-      ['d', 'date', { dateStyle: 'short', timeZone: 'Asia/Tokyo' }],
-    ];
-    expect(() => icuToMessageTree('{d, date}{d, date}', { source })).toThrow(
-      'Message variable "d" has two formats ICU spells the same way in the source'
+  // Non-canonical styles that would print and read back as another tree.
+  it.each<[string, unknown]>([
+    ['an empty time style', [['t', 'time', {}]]],
+    ['an empty date style', [['d', 'date', {}]]],
+    ['an empty number style', [['n', 'number', {}]]],
+  ])('rejects %s, which is not lossless', (_name, tree) => {
+    expect(validateMessageTree(tree)).toEqual({
+      path: [0, 2],
+      message: 'expected options; leave out an empty style',
+    });
+    expect(() => messageTreeToIcu(tree as MessageTree)).toThrow(
+      /cannot be part of a message tree/
     );
   });
-});
 
-describe('findConflictingFormat', () => {
-  it('names a variable with two formats ICU spells the same way', () => {
-    expect(
-      findConflictingFormat([
-        ['t', 'time', { timeStyle: 'short', timeZone: 'UTC' }],
-        ['n', 'plural', { other: [['t', 'time', { timeStyle: 'short' }]] }],
-      ])
-    ).toBe('t');
-  });
-
-  it('accepts formats ICU spells differently, in any key order, and one name used as different kinds', () => {
-    expect(
-      findConflictingFormat([
-        ['p', 'number', { style: 'currency', currency: 'USD' }],
-        ['p', 'number', { currency: 'USD', style: 'currency' }],
-        ['p', 'number', { style: 'percent' }],
-        ['p', 'number'],
-        ['d', 'date', 'short'],
-        ['d', 'date', { dateStyle: 'short' }],
-        ['d', 'time', { timeStyle: 'short' }],
-        ['d'],
-      ])
-    ).toBeUndefined();
+  it('formats each node like its printed ICU', () => {
+    const d = new Date(2020, 4, 6, 23, 30, 5, 123);
+    for (const node of formattedNodes()) {
+      // The currency is formatting context, which ICU text cannot carry.
+      if (node[2] === 'currency') continue;
+      const icu = messageTreeToIcu([node]);
+      const values = node[1] === 'number' ? { n: 1234.5 } : { d };
+      for (const locale of ['en-US', 'de', 'ja']) {
+        expect(formatMessageTree([node], locale, values)).toBe(
+          formatMessage(icu, locale, values)
+        );
+      }
+    }
   });
 });

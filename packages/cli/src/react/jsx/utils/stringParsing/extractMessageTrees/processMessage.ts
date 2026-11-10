@@ -1,15 +1,9 @@
 import type { NodePath } from '@babel/traverse';
 import type * as t from '@babel/types';
-import {
-  buildMessageTree,
-  findConflictingFormat,
-} from '@generaltranslation/icu/internal';
+import { buildMessageTree } from '@generaltranslation/icu/internal';
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
 import { randomUUID } from 'node:crypto';
-import {
-  warnConflictingMessageVariableFormatsSync,
-  warnNonStaticMessageTreeSync,
-} from '../../../../../console/index.js';
+import { warnNonStaticMessageTreeSync } from '../../../../../console/index.js';
 import { extractStringEntryMetadata } from '../processTranslationCall/extractStringEntryMetadata.js';
 import type { ParsingConfig, ParsingOutput } from '../types.js';
 import { NonStaticMessageError, formatLocation } from './diagnostics.js';
@@ -49,6 +43,7 @@ export function processMessage(
         return buildMessageTree(strings, holes).tree;
       } catch (error) {
         // The builder rejects variable names that use its reserved prefix
+        // and options a helper does not have.
         throw new NonStaticMessageError(
           'the message tree could not be built',
           tagged.node,
@@ -56,18 +51,6 @@ export function processMessage(
         );
       }
     });
-    for (const tree of trees) {
-      const conflict = findConflictingFormat(tree);
-      if (conflict === undefined) continue;
-      output.warnings.add(
-        warnConflictingMessageVariableFormatsSync(
-          config.file,
-          conflict,
-          formatLocation(tagged.node)
-        )
-      );
-      return;
-    }
     for (const tree of trees) {
       output.updates.push({
         dataFormat: 'ICU_TREE',

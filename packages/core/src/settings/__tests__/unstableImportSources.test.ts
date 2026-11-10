@@ -18,6 +18,7 @@ describe('isUnstableGTImportSource', () => {
 describe('isUnstableGTHelperName', () => {
   it('matches only names build tools recognize', () => {
     expect(isUnstableGTHelperName('plural')).toBe(true);
+    expect(isUnstableGTHelperName('time')).toBe(true);
     expect(isUnstableGTHelperName('tx')).toBe(false);
   });
 });

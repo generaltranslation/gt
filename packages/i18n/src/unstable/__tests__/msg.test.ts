@@ -148,6 +148,9 @@ describe('gt-i18n/unstable msg', () => {
       _gt_1: Infinity,
       nickname: undefined,
     });
+    // The time zone is formatting context: kept beside the tree, not in it.
+    expect((message as Msg).formats).toEqual({ due: { timeZone: 'UTC' } });
+    expect((message as Msg).tree).toContainEqual(['due', 'date', 'medium']);
     expect(m(message)).toBe(expected);
     expect(mFallback(message)).toBe(expected);
   });
@@ -177,6 +180,23 @@ describe('gt-i18n/unstable msg', () => {
       { tree: [['x', 'bogus']], values: {}, $_hash: 'h' },
       { tree: ['Hi'], $_hash: 'h' },
       { tree: ['Hi'], values: {}, $_hash: 'h', maxChars: 'ten' },
+      { tree: ['Hi'], values: {}, $_hash: 'h', formats: 'UTC' },
+      { tree: ['Hi'], values: {}, $_hash: 'h', formats: { due: 'UTC' } },
+      // Message options in formats would change the output but not the hash.
+      {
+        tree: [['n', 'number']],
+        values: { n: 0.5 },
+        $_hash: 'h',
+        formats: { n: { style: 'percent' } },
+      },
+      {
+        tree: [['d', 'date']],
+        values: { d: 0 },
+        $_hash: 'h',
+        formats: { d: { dateStyle: 'medium' } },
+      },
+      { tree: ['Hi'], values: {}, $_hash: 'h', formats: [] },
+      { tree: ['Hi'], values: {}, $_hash: 'h', formats: { n: [] } },
     ];
     for (const message of invalid) {
       expect(() => m(message as Msg)).toThrow('not a message from msg()');

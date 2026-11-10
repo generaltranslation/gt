@@ -102,6 +102,7 @@ describe('@generaltranslation/react-core package exports', () => {
           assert.equal(typeof unstable.useGT, 'function');
           assert.equal(typeof unstable.plural, 'function');
           assert.equal(typeof unstable.derive, 'function');
+          assert.equal(typeof unstable.time, 'function');
           assert.equal(typeof unstable.useMessages, 'function');
           assert.equal(typeof unstable.msg, 'function');
           assert.equal(typeof unstable.mFallback, 'function');

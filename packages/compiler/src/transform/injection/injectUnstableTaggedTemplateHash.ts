@@ -2,6 +2,8 @@ import type { NodePath, Scope } from '@babel/traverse';
 import * as t from '@babel/types';
 import {
   buildMessageTree,
+  DATE_TIME_CONTEXT_OPTIONS,
+  NUMBER_CONTEXT_OPTIONS,
   type MessageTreeBranch,
   type MessageTreeFragment,
   type MessageTreeHole,
@@ -196,10 +198,11 @@ function getHole(hole: t.Expression | t.TSType, scope: Scope): MessageTreeHole {
       return { kind: helper, ...holeVariable, branches };
     }
     case 'number':
-    case 'date': {
+    case 'date':
+    case 'time': {
       if (args.length < 1 || args.length > 2) nonStatic();
       const holeVariable = getHoleVariable(args[0], scope);
-      const options = args[1] && getIntlOptions(args[1]);
+      const options = args[1] && getIntlOptions(args[1], helper);
       return {
         kind: helper,
         ...holeVariable,
@@ -437,14 +440,21 @@ function getNumber(node: t.Node): number | undefined {
   }
 }
 
-/** Flat Intl options object with literal values. */
+/**
+ * Flat Intl options object with literal values. Formatting context is not
+ * part of the tree, so it is left out and may be any expression.
+ */
 function getIntlOptions(
-  node: t.Node
+  node: t.Node,
+  kind: 'number' | 'date' | 'time'
 ): Record<string, string | number | boolean> {
   if (!t.isObjectExpression(node)) nonStatic();
+  const contextKeys: readonly string[] =
+    kind === 'number' ? NUMBER_CONTEXT_OPTIONS : DATE_TIME_CONTEXT_OPTIONS;
   const options: Record<string, string | number | boolean> = {};
   for (const property of node.properties) {
     const key = getPropertyKey(property);
+    if (contextKeys.includes(key)) continue;
     const value = (property as t.ObjectProperty).value;
     const number = getNumber(value);
     if (number != null) options[key] = number;

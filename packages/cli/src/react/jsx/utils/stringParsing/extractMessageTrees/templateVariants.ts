@@ -91,7 +91,8 @@ function holeVariants(
       case 'select':
         return branchHoleVariants(helper, expression, context);
       case 'number':
-      case 'date': {
+      case 'date':
+      case 'time': {
         if (args.length < 1 || args.length > 2) {
           throw new NonStaticMessageError(
             `${helper}() takes a variable and optional Intl options`,
@@ -99,8 +100,8 @@ function holeVariants(
           );
         }
         const variable = getHoleVariable(args[0], context);
-        // Static literals are passed to Intl unchanged, as at runtime.
-        const options = args[1] && getIntlOptions(args[1].node, context);
+        const options =
+          args[1] && getIntlOptions(args[1].node, helper, context);
         return [
           {
             kind: helper,

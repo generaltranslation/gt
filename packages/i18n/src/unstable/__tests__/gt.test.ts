@@ -45,7 +45,10 @@ function setup({
   fr?: Record<string, unknown>;
   cacheExpiryTime?: number;
 } = {}) {
-  initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
+  initializeI18nConfig({
+    defaultLocale: 'en',
+    locales: ['en', 'fr'],
+  });
   setI18nCache(
     new I18nCache({
       cacheExpiryTime,
@@ -377,27 +380,24 @@ describe('gt-i18n/unstable rendering', () => {
   it('formats number and date options in the rendered locale', async () => {
     const price = 9.5;
     const due = new Date(Date.UTC(2024, 0, 15));
-    const dateOptions: Intl.DateTimeFormatOptions = {
-      dateStyle: 'medium',
-      timeZone: 'UTC',
-    };
+    const currency = 'USD';
     const gt = await setup({
       fr: {
-        [keyOf()`Total: ${number({ price }, { style: 'currency', currency: 'USD' })}`]:
-          [
-            'Total : ',
-            ['price', 'number', { currency: 'USD', style: 'currency' }],
-          ],
+        // The translation holds only the style; the currency is call-site context.
+        [keyOf()`Total: ${number({ price }, { style: 'currency', currency: 'EUR' })}`]:
+          ['Total : ', ['price', 'number', 'currency']],
       },
     });
     expect(
-      gt`Total: ${number({ price }, { style: 'currency', currency: 'USD' })}`
+      gt`Total: ${number({ price }, { style: 'currency', currency })}`
     ).toBe(
-      `Total : ${new Intl.NumberFormat('fr', { style: 'currency', currency: 'USD' }).format(price)}`
+      `Total : ${new Intl.NumberFormat('fr', { style: 'currency', currency }).format(price)}`
     );
     // A miss formats the source in the source locale.
-    expect(gt`Due ${date({ due }, dateOptions)}`).toBe(
-      `Due ${new Intl.DateTimeFormat('en', dateOptions).format(due)}`
+    expect(
+      gt`Due ${date({ due }, { dateStyle: 'medium', timeZone: 'UTC' })}`
+    ).toBe(
+      `Due ${new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeZone: 'UTC' }).format(due)}`
     );
   });
 

@@ -20,6 +20,11 @@ import type {
   TagNode,
 } from '../tree/messageTree';
 import { branchNodes } from '../tree/walk';
+import {
+  DATE_TIME_STYLE_NAMES,
+  type DateTimeStyleName,
+  type MessageTreeFormats,
+} from '../settings/formatOptions';
 
 const NUMBER_STYLES: Record<string, Intl.NumberFormatOptions> = {
   integer: { maximumFractionDigits: 0 },
@@ -27,31 +32,10 @@ const NUMBER_STYLES: Record<string, Intl.NumberFormatOptions> = {
   percent: { style: 'percent' },
 };
 
-const DATE_STYLES: Record<string, Intl.DateTimeFormatOptions> = {
-  short: { month: 'numeric', day: 'numeric', year: '2-digit' },
-  medium: { month: 'short', day: 'numeric', year: 'numeric' },
-  long: { month: 'long', day: 'numeric', year: 'numeric' },
-  full: {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  },
-};
+const DATE_TIME_STYLES = new Set<string>(DATE_TIME_STYLE_NAMES);
 
-const LONG_TIME_STYLE: Intl.DateTimeFormatOptions = {
-  hour: 'numeric',
-  minute: 'numeric',
-  second: 'numeric',
-  timeZoneName: 'short',
-};
-
-const TIME_STYLES: Record<string, Intl.DateTimeFormatOptions> = {
-  short: { hour: 'numeric', minute: 'numeric' },
-  medium: { hour: 'numeric', minute: 'numeric', second: 'numeric' },
-  long: LONG_TIME_STYLE,
-  full: LONG_TIME_STYLE,
-};
+// ICU formats `{d, date}` and `{t, time}` without a style in the medium style.
+const DEFAULT_DATE_TIME_STYLE: DateTimeStyleName = 'medium';
 
 type PluralValue = number | bigint;
 type TagFormatter = (parts: unknown[]) => unknown;
@@ -104,10 +88,16 @@ export type FormattedMessage<R> = [R] extends [string]
   ? string
   : string | R | Array<string | R>;
 
-/** What a message is formatted with, besides its locales and values. */
+/** Formatting context for `formatMessageTree`, kept out of the tree. */
 export type FormatMessageTreeOptions = {
   /**
-   * The time zone of a date or time whose options set none. It is always
+   * Each formatted variable's formatting context, such as a currency or
+   * `timeZone`, as `buildMessageTree` returns it. It is merged over the
+   * placeholder's style.
+   */
+  formats?: MessageTreeFormats;
+  /**
+   * The time zone of a date or time whose formats set none. It is always
    * passed in: this package does not read the host's.
    */
   timeZone: string;
@@ -134,6 +124,12 @@ type FormatContext = FormatMessageTreeOptions & {
  *     { b: (parts) => <b>{parts}</b> },
  *     { timeZone }
  *   ); // ['Read the ', <b>terms</b>]
+ *
+ * Formatting context, like a currency or a time zone, is passed by variable:
+ *
+ *   formatMessageTree([['total', 'number', 'currency']], 'en', { total: 5 }, {
+ *     formats: { total: { currency: 'EUR' } },
+ *   }); // '€5.00'
  *
  * Locales are validated the same way as `formatMessage` from
  * `@generaltranslation/icu/parser`.
@@ -173,7 +169,7 @@ export function formatParsedTree(
   message: string,
   locales: string | string[],
   variables: MessageVariables,
-  { timeZone }: FormatMessageTreeOptions
+  { formats, timeZone }: FormatMessageTreeOptions
 ): unknown {
   // Most messages are plain text, which needs no formatter state.
   if (tree.length === 1 && typeof tree[0] === 'string') return tree[0];
@@ -181,6 +177,7 @@ export function formatParsedTree(
     message,
     locales,
     variables,
+    formats,
     timeZone,
   });
   if (parts.length === 1) return parts[0];
@@ -229,12 +226,20 @@ function formatNodes(
       }
       case 'number': {
         const value = requireVariable(context.variables, name);
-        const style = (node as NumberNode)[2];
-        const options: ExtendedNumberFormatOptions =
-          typeof style === 'string'
-            ? (NUMBER_STYLES[style] ?? {})
-            : (style ?? {});
-        const { scale, ...intlOptions } = options;
+        // An ICU string's skeleton may also hold a scale.
+        const style = (node as NumberNode)[2] as
+          | string
+          | ExtendedNumberFormatOptions
+          | undefined;
+        const { scale, ...intlOptions }: ExtendedNumberFormatOptions = {
+          ...(typeof style === 'string' ? NUMBER_STYLES[style] : style),
+          ...formatsOf(context, name),
+        };
+        if (intlOptions.style === 'currency' && !intlOptions.currency) {
+          throw new TypeError(
+            `The ICU variable "${name}" is formatted as currency, but no currency was given.`
+          );
+        }
         const scaledValue = applyScale(value, scale);
         append(
           intlCache
@@ -248,11 +253,17 @@ function formatNodes(
         const value = requireVariable(context.variables, name);
         const isDate = node[1] === 'date';
         const style = (node as DateTimeNode)[2];
-        // Own options only: Intl would also read inherited ones.
+        // Named styles are ICU's: Intl's dateStyle and timeStyle.
+        const named = style ?? DEFAULT_DATE_TIME_STYLE;
+        const styleOptions: Intl.DateTimeFormatOptions | undefined =
+          typeof named === 'string'
+            ? DATE_TIME_STYLES.has(named)
+              ? { [isDate ? 'dateStyle' : 'timeStyle']: named }
+              : undefined
+            : named;
         const options: Intl.DateTimeFormatOptions = {
-          ...(typeof style === 'string'
-            ? (isDate ? DATE_STYLES : TIME_STYLES)[style]
-            : (style ?? (isDate ? undefined : TIME_STYLES.medium))),
+          ...styleOptions,
+          ...formatsOf(context, name),
         };
         append(
           intlCache
@@ -316,6 +327,13 @@ function formatNodes(
   }
 
   return result;
+}
+
+function formatsOf(
+  context: FormatContext,
+  name: string
+): MessageTreeFormats[string] | undefined {
+  return context.formats && ownOption(context.formats, name);
 }
 
 function ownBranch(

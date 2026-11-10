@@ -33,6 +33,7 @@ export const UNSTABLE_GT_HELPER_NAMES = [
   'select',
   'number',
   'date',
+  'time',
   'part',
   'derive',
   'n',

@@ -1,4 +1,8 @@
-import { isMessageTree, type MessageTree } from '@generaltranslation/icu';
+import {
+  isMessageTree,
+  type MessageTree,
+  type MessageTreeFormats,
+} from '@generaltranslation/icu';
 import {
   hashSource,
   type MessageTreeHashMetadata,
@@ -60,6 +64,7 @@ export function hashMessageTree(
 export function renderMessage(
   tree: MessageTree,
   values: Record<string, unknown>,
+  formats: MessageTreeFormats,
   locale: string,
   metadata: MessageTreeMetadata,
   lookupTranslation: LookupTreeTranslation
@@ -78,7 +83,7 @@ export function renderMessage(
   let output: string | undefined;
   if (translation) {
     try {
-      output = formatTree(translation, locale, values);
+      output = formatTree(translation, locale, values, formats);
       outputLocale = locale;
     } catch (error) {
       warnOnce(
@@ -87,7 +92,7 @@ export function renderMessage(
       );
     }
   }
-  output ??= formatTree(tree, defaultLocale, values);
+  output ??= formatTree(tree, defaultLocale, values, formats);
 
   return maxChars == null
     ? output
@@ -155,7 +160,8 @@ function lookupTreeTranslation(
 function formatTree(
   tree: MessageTree,
   locale: string,
-  values: Record<string, unknown>
+  values: Record<string, unknown>,
+  formats: MessageTreeFormats
 ): string {
   const config = getI18nConfig();
   // The config resolves custom aliases, which must not reach Intl as
@@ -163,6 +169,7 @@ function formatTree(
   const formatted = config.formatMessageTree(tree, undefined, {
     locales: [locale, config.getDefaultLocale()],
     variables: values,
+    formats,
   });
   return Array.isArray(formatted) ? formatted.join('') : String(formatted);
 }

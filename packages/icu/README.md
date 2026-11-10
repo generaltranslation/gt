@@ -9,7 +9,8 @@ no locale-data polyfills are shipped.
 - `@generaltranslation/icu`: message trees, without the parser.
   `formatMessageTree()`, `validateMessageTree()` and `isMessageTree()`.
 - `@generaltranslation/icu/convert`: `icuToMessageTree()` and
-  `messageTreeToIcu()` convert between ICU strings and message trees.
+  `messageTreeToIcu()` convert between ICU strings and message trees without
+  loss.
 - `@generaltranslation/icu/parser`: the ICU string parser. `parse()`,
   `formatMessage()`, `printAST()` and the syntax-tree types.
 - `@generaltranslation/icu/internal`: shared by General Translation packages;
@@ -32,6 +33,20 @@ formatMessageTree(
   { count: 2, name: 'Ada' },
   { timeZone: 'America/New_York' }
 ); // '2 files from Ada'
+```
+
+A tree holds only what ICU spells: named styles such as
+`['total', 'number', 'currency']` or `['due', 'date', 'medium']` (Intl's
+`dateStyle`), a unit, and date and time fields. Other Intl options, like the
+currency or a time zone, are formatting context, passed by variable name:
+
+```ts
+formatMessageTree(
+  ['Total: ', ['total', 'number', 'currency']],
+  'en',
+  { total: 5 },
+  { formats: { total: { currency: 'EUR' } }, timeZone: 'UTC' }
+); // 'Total: €5.00'
 ```
 
 The formatters take every argument: the locales, the values, and the time
