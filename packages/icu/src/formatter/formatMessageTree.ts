@@ -362,10 +362,13 @@ function getDateTimeFormat(
   context: FormatContext,
   options?: Intl.DateTimeFormatOptions
 ): Intl.DateTimeFormat {
-  return getFormatter(
-    `date|${context.locales}|${JSON.stringify(options)}`,
-    () => new Intl.DateTimeFormat(context.locales, options)
-  );
+  // Own options only, as the key holds: Intl would also read inherited ones.
+  const create = () => new Intl.DateTimeFormat(context.locales, { ...options });
+  // Without a time zone a formatter takes the host's, which can change while
+  // the process runs, so it is not shared across calls.
+  return options?.timeZone
+    ? getFormatter(`date|${context.locales}|${JSON.stringify(options)}`, create)
+    : create();
 }
 
 function getPluralRules(

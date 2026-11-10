@@ -80,6 +80,18 @@ describe('formatMessageTree', () => {
     expect(() => formatMessageTree(tree, 'not a locale!')).toThrow(RangeError);
   });
 
+  it('formats a date with its own options only', () => {
+    const d = new Date(Date.UTC(2020, 4, 6, 12));
+    // An inherited option is not in the formatter's cache key, so a formatter
+    // built with it would be shared with every date that has no options.
+    const tree = [
+      ['d', 'date', Object.create({ year: 'numeric' })],
+    ] as unknown as MessageTree;
+    expect(formatMessageTree(tree, 'en-TT', { d })).toBe(
+      new Intl.DateTimeFormat('en-TT').format(d)
+    );
+  });
+
   it('resolves a locale once, not on every call', () => {
     const supportedLocalesOf = vi.spyOn(
       Intl.NumberFormat,
