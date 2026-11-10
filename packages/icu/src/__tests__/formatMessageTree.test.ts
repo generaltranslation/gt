@@ -92,6 +92,25 @@ describe('formatMessageTree', () => {
     );
   });
 
+  it('formats a date with an inherited time zone in the host zone', () => {
+    const hostZone = process.env.TZ;
+    const d = new Date('2020-05-06T14:03:02Z');
+    const own = { hour: 'numeric', minute: '2-digit' } as const;
+    const tree = [
+      ['d', 'time', Object.assign(Object.create({ timeZone: 'UTC' }), own)],
+    ] as unknown as MessageTree;
+    const expected = () => new Intl.DateTimeFormat('en-US', own).format(d);
+    try {
+      process.env.TZ = 'UTC';
+      expect(formatMessageTree(tree, 'en-US', { d })).toBe(expected());
+      process.env.TZ = 'America/New_York';
+      expect(formatMessageTree(tree, 'en-US', { d })).toBe(expected());
+    } finally {
+      if (hostZone === undefined) delete process.env.TZ;
+      else process.env.TZ = hostZone;
+    }
+  });
+
   it('resolves a locale once, not on every call', () => {
     const supportedLocalesOf = vi.spyOn(
       Intl.NumberFormat,

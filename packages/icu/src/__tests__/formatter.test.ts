@@ -441,8 +441,8 @@ describe('formatMessage', () => {
 
       expect(numberFormat).toHaveBeenCalledTimes(1);
       expect(pluralRules).toHaveBeenCalledTimes(1);
-      // A date without a time zone takes the host's, so it is built each time.
-      expect(dateTimeFormat).toHaveBeenCalledTimes(4);
+      // A date without a time zone takes the host's, so it is built per call.
+      expect(dateTimeFormat).toHaveBeenCalledTimes(2);
     } finally {
       Object.defineProperties(Intl, {
         NumberFormat: { value: originalNumberFormat },

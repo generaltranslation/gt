@@ -108,23 +108,28 @@ type FormatContext = {
   message: string;
   locales: string | string[];
   variables: MessageVariables;
+  /** Date formatters without a time zone, shared within this call only. */
+  hostZoneDateFormats?: Map<string, Intl.DateTimeFormat>;
 };
 
 // Building an Intl formatter costs far more than formatting with it, so
-// formatters are shared across calls. The cap bounds formats that come from
-// input, such as a currency or a time zone.
-const formatters = new Map<string, object>();
+// formatters are shared across calls. The cap, for each kind, bounds formats
+// that come from input, such as a currency or a time zone.
+const numberFormats = new Map<string, Intl.NumberFormat>();
+const dateTimeFormats = new Map<string, Intl.DateTimeFormat>();
+const pluralRules = new Map<string, Intl.PluralRules>();
 const MAX_FORMATTERS = 256;
 
-function getFormatter<Formatter extends object>(
+function getFormatter<Formatter>(
+  cache: Map<string, Formatter>,
   key: string,
   create: () => Formatter
 ): Formatter {
-  let formatter = formatters.get(key) as Formatter | undefined;
+  let formatter = cache.get(key);
   if (!formatter) {
     formatter = create();
-    if (formatters.size >= MAX_FORMATTERS) formatters.clear();
-    formatters.set(key, formatter);
+    if (cache.size >= MAX_FORMATTERS) cache.clear();
+    cache.set(key, formatter);
   }
   return formatter;
 }
@@ -353,7 +358,8 @@ function getNumberFormat(
   options: Intl.NumberFormatOptions = {}
 ): Intl.NumberFormat {
   return getFormatter(
-    `number|${context.locales}|${JSON.stringify(options)}`,
+    numberFormats,
+    `${context.locales}|${JSON.stringify(options)}`,
     () => new Intl.NumberFormat(context.locales, options)
   );
 }
@@ -362,13 +368,19 @@ function getDateTimeFormat(
   context: FormatContext,
   options?: Intl.DateTimeFormatOptions
 ): Intl.DateTimeFormat {
-  // Own options only, as the key holds: Intl would also read inherited ones.
-  const create = () => new Intl.DateTimeFormat(context.locales, { ...options });
+  // Own options only, as the keys hold: Intl would also read inherited ones.
+  const own = { ...options };
+  const key = JSON.stringify(own);
+  const create = () => new Intl.DateTimeFormat(context.locales, own);
+  if (own.timeZone) {
+    return getFormatter(dateTimeFormats, `${context.locales}|${key}`, create);
+  }
   // Without a time zone a formatter takes the host's, which can change while
-  // the process runs, so it is not shared across calls.
-  return options?.timeZone
-    ? getFormatter(`date|${context.locales}|${JSON.stringify(options)}`, create)
-    : create();
+  // the process runs, so it is shared within this call only.
+  const formats = (context.hostZoneDateFormats ??= new Map());
+  let formatter = formats.get(key);
+  if (!formatter) formats.set(key, (formatter = create()));
+  return formatter;
 }
 
 function getPluralRules(
@@ -385,7 +397,8 @@ function getPluralRules(
     throw error;
   }
   return getFormatter(
-    `plural|${context.locales}|${type}`,
+    pluralRules,
+    `${context.locales}|${type}`,
     () => new Intl.PluralRules(context.locales, { type })
   );
 }
