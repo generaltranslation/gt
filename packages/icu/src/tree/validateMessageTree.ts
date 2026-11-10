@@ -141,7 +141,9 @@ export function formattedNode(
   const problem = styleProblem(kind, style);
   if (problem) throw fail(problem.message);
   // The check above is what makes the style one of its kind.
-  return (style == null ? [name, kind] : [name, kind, style]) as FormattedNode;
+  return (
+    style === undefined ? [name, kind] : [name, kind, style]
+  ) as FormattedNode;
 }
 
 /**
@@ -153,7 +155,7 @@ export function styleProblem(
   kind: FormattedKind,
   style: unknown
 ): { key?: string; message: string } | undefined {
-  if (style == null) return undefined;
+  if (style === undefined) return undefined;
   if (typeof style === 'string') {
     const names: readonly string[] =
       kind === 'number' ? NUMBER_STYLE_NAMES : DATE_TIME_STYLE_NAMES;

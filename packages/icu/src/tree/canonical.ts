@@ -57,8 +57,8 @@ export function canonicalStyle<T extends object>(fields: T): T | undefined {
  * Rewrites a tree, such as one converted from an ICU string, to the form
  * templateToMessage builds: adjacent text merged and empty text dropped, a
  * message, branch or tag's children without placeholders as one string,
- * branch keys and Intl options sorted, and no zero plural offset or null
- * style. An empty style stays, so printing rejects it rather than
+ * branch keys and Intl options sorted, and no zero plural offset or
+ * `undefined` style. An empty style stays, so printing rejects it rather than
  * formatting it differently.
  */
 export function normalizeMessageTree(tree: MessageTree): MessageTree {
@@ -91,7 +91,7 @@ export function normalizeMessageTree(tree: MessageTree): MessageTree {
 
 // Each kind is its own case, so the node keeps the type of its style.
 function sortStyle(node: FormattedNode): FormattedNode {
-  if (node[2] == null) return [node[0], node[1]];
+  if (node[2] === undefined) return [node[0], node[1]];
   if (typeof node[2] === 'string') return node;
   switch (node[1]) {
     case 'number':

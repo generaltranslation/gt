@@ -72,12 +72,11 @@ export type FormattedNode = NumberNode | DateTimeNode;
 /**
  * `{n, number}`, `{n, number, percent}`, `{n, number, currency}`, whose
  * currency is formatting context, or `{n, number, ::unit/kilometer}`.
- * A `null` style is no style: JSON writes an `undefined` one that way.
  */
 export type NumberNode = readonly [
   name: string,
   kind: 'number',
-  style?: NumberStyleName | { style: 'unit'; unit: string } | null,
+  style?: NumberStyleName | { style: 'unit'; unit: string },
 ];
 
 /**
@@ -88,12 +87,12 @@ export type DateTimeNode =
   | readonly [
       name: string,
       kind: 'date',
-      style?: DateTimeStyleName | DateFieldOptions | null,
+      style?: DateTimeStyleName | DateFieldOptions,
     ]
   | readonly [
       name: string,
       kind: 'time',
-      style?: DateTimeStyleName | TimeFieldOptions | null,
+      style?: DateTimeStyleName | TimeFieldOptions,
     ];
 
 export type SelectNode<Format = FormattedNode> = readonly [
@@ -131,12 +130,12 @@ export type ParsedNode =
   | readonly [
       name: string,
       kind: 'number',
-      style?: string | ExtendedNumberFormatOptions | null,
+      style?: string | ExtendedNumberFormatOptions,
     ]
   | readonly [
       name: string,
       kind: 'date' | 'time',
-      style?: string | Intl.DateTimeFormatOptions | null,
+      style?: string | Intl.DateTimeFormatOptions,
     ];
 
 /** What the formatter reads: a message tree, or an ICU string's syntax tree. */
