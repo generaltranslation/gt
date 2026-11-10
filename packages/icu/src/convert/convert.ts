@@ -26,9 +26,11 @@ export type IcuToMessageOptions = {
  *   //   formats: { total: { currency: 'EUR', maximumFractionDigits: 2, minimumFractionDigits: 2 } } }
  *
  * `formatMessageTree(tree, locales, values, { formats, timeZone })` formats
- * it as the string would format. Throws a `SyntaxError` for an invalid ICU
- * string, and an `Error` for one variable with two formatting contexts,
- * since `formats` is by variable.
+ * it as the string would format. A translation of a tree printed with
+ * `messageTreeToIcu` is read the same way; `checkTranslation` checks it
+ * against its source. Throws a `SyntaxError` for an invalid ICU string, and
+ * an `Error` for one variable with two formatting contexts, since `formats`
+ * is by variable.
  */
 export function icuToMessage(
   icu: string,
