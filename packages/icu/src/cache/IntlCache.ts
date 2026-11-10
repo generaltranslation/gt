@@ -16,6 +16,8 @@ type IntlConstructors = {
 // Bounds what comes from input, such as a currency or a time zone.
 const MAX_INSTANCES = 256;
 
+const HALF_A_YEAR = 182 * 24 * 60 * 60 * 1000;
+
 /**
  * Shares instances of constructors that take `(locales, options)`, like
  * Intl's: building one costs far more than using it. A constructor is read
@@ -37,12 +39,18 @@ export class IntlCache<Constructors extends Record<string, Constructor>> {
     const locales: Intl.LocalesArgument = args[0] ?? libraryDefaultLocale;
     // One copy is both the key and the argument, so they cannot differ: Intl
     // would also read options the copy leaves out, such as inherited ones.
-    const options: { timeZone?: unknown } = { ...args[1] };
+    // Its keys are sorted, so options in another order share an instance.
+    const options: Record<string, unknown> = {};
+    for (const name of Object.keys(args[1] ?? {}).sort()) {
+      options[name] = args[1][name];
+    }
     let key = `${String(locales)}|${JSON.stringify(options)}`;
     // Without a time zone a formatter takes the host's, which can change
-    // while the process runs. A change of the host's offset gives a new one.
+    // while the process runs. The host's offsets now and half a year from
+    // now, in its other season, tell its zone from one with other rules.
     if (constructor === 'DateTimeFormat' && !options.timeZone) {
-      key += `|${new Date().getTimezoneOffset()}`;
+      const now = Date.now();
+      key += `|${new Date(now).getTimezoneOffset()},${new Date(now + HALF_A_YEAR).getTimezoneOffset()}`;
     }
     const instances = (this.instances[constructor] ??= new Map());
     let instance = instances.get(key);

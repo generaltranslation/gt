@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { IntlCache, intlCache } from '../cache/IntlCache';
 import { libraryDefaultLocale } from '../settings/settings';
 
@@ -29,6 +29,31 @@ describe('IntlCache', () => {
     ).not.toBe(percent);
   });
 
+  it('returns one instance for the same options in another order', () => {
+    expect(
+      intlCache.get('NumberFormat', 'en-BW', {
+        style: 'currency',
+        currency: 'EUR',
+      })
+    ).toBe(
+      intlCache.get('NumberFormat', 'en-BW', {
+        currency: 'EUR',
+        style: 'currency',
+      })
+    );
+    expect(
+      intlCache.get('NumberFormat', 'en-BW', {
+        style: 'currency',
+        currency: 'USD',
+      })
+    ).not.toBe(
+      intlCache.get('NumberFormat', 'en-BW', {
+        currency: 'EUR',
+        style: 'currency',
+      })
+    );
+  });
+
   it('uses the library default locale when there are no locales', () => {
     expect(intlCache.get('NumberFormat').resolvedOptions().locale).toBe(
       libraryDefaultLocale
@@ -48,6 +73,24 @@ describe('IntlCache', () => {
       );
       expect(intlCache.get('DateTimeFormat', 'en-US', options)).toBe(format);
     });
+  });
+
+  it('tells host zones with the same offset now apart by their other season', () => {
+    // UTC and London have the same offset in November, not in July.
+    vi.useFakeTimers({ now: new Date('2026-11-10T12:00:00Z') });
+    try {
+      const date = new Date('2026-07-01T12:00:00Z');
+      const options = { hour: 'numeric', minute: '2-digit' } as const;
+      const formatted: string[] = [];
+      inHostZones(['UTC', 'Europe/London'], () => {
+        formatted.push(
+          intlCache.get('DateTimeFormat', 'en-US', options).format(date)
+        );
+      });
+      expect(formatted).toEqual(['12:00 PM', '1:00 PM']);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('keeps one instance of a date with a time zone when the host zone changes', () => {
