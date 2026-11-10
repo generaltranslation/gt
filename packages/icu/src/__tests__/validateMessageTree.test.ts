@@ -24,15 +24,22 @@ describe('validateMessageTree', () => {
     expect(validateMessageTree(icuToMessage(message).tree)).toBeUndefined();
   });
 
-  it('accepts pound, an absent style, and entries past the known ones', () => {
+  it('accepts pound and an absent style', () => {
     expect(
-      validateMessageTree([
-        0,
-        ['n', 'number'],
-        ['n', 'number', 'percent'],
-        ['s', 'select', { other: '' }, 'future'],
-      ])
+      validateMessageTree([0, ['n', 'number'], ['n', 'number', 'percent']])
     ).toBeUndefined();
+  });
+
+  it.each([
+    [['n', 'number', 'percent', 'more'], 3],
+    [['s', 'select', { other: '' }, 'more'], 3],
+    [['n', 'plural', { other: '' }, 1, 'more'], 4],
+    [['b', 'tag', 'bold', 'more'], 3],
+  ])('rejects the node %j with more entries than its kind has', (node, at) => {
+    expect(validateMessageTree([node])).toEqual({
+      path: [0, at],
+      message: 'expected no more entries',
+    });
   });
 
   it('rejects a null style: no style is left out', () => {

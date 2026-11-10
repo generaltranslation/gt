@@ -41,8 +41,7 @@ interface WalkState {
  * Returns the first structural problem in an untrusted message tree, such as
  * catalog JSON, or `undefined` when it is a valid tree. A message has one
  * valid tree, apart from the order of keys, so a valid tree has the key its
- * message is looked up by. Entries past a placeholder's known ones are
- * allowed so newer trees still validate.
+ * message is looked up by.
  */
 export function validateMessageTree(
   value: unknown,
@@ -110,6 +109,20 @@ function nodeError(
     return { path: [...path, 0], message: 'expected a variable name' };
   }
   if (node.length === 1) return undefined;
+  const error = kindError(node, path, depth, state);
+  if (error) return error;
+  const entries = node[1] === 'plural' || node[1] === 'selectordinal' ? 4 : 3;
+  return node.length > entries
+    ? { path: [...path, entries], message: 'expected no more entries' }
+    : undefined;
+}
+
+function kindError(
+  node: unknown[],
+  path: Path,
+  depth: number,
+  state: WalkState
+): MessageTreeValidationError | undefined {
   switch (node[1]) {
     case 'number':
     case 'date':
