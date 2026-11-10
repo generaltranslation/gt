@@ -48,11 +48,15 @@ export class IntlCache<Constructors extends Record<string, Constructor>> {
     const locales: Intl.LocalesArgument = args[0] ?? libraryDefaultLocale;
     // One copy is both the key and the argument, so they cannot differ: Intl
     // would also read options the copy leaves out, such as inherited ones.
-    // Its keys are sorted, so options in another order share an instance.
-    const options: Record<string, unknown> = {};
-    for (const name of Object.keys(args[1] ?? {}).sort()) {
-      options[name] = args[1][name];
-    }
+    // A spread and Object.fromEntries define own properties, so a key like
+    // `__proto__` from JSON stays a key and adds no option the key lacks.
+    const given: Record<string, unknown> = { ...args[1] };
+    const names = Object.keys(given);
+    // Sorted, so the same options in another order share an instance.
+    const options =
+      names.length > 1
+        ? Object.fromEntries(names.sort().map((name) => [name, given[name]]))
+        : given;
     const key = `${String(locales)}|${JSON.stringify(options)}`;
     const Constructor = this.constructors[constructor];
     let instances = this.instances.get(Constructor);

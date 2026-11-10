@@ -60,6 +60,19 @@ describe('IntlCache', () => {
     ).toBe(true);
   });
 
+  it('keeps a `__proto__` key from JSON out of the options Intl reads', () => {
+    for (const json of [
+      '{"__proto__":{"minimumFractionDigits":2}}',
+      '{"__proto__":{"minimumFractionDigits":2},"useGrouping":true}',
+    ]) {
+      expect(
+        intlCache.get('NumberFormat', 'en-NZ', JSON.parse(json)).format(1)
+      ).toBe('1');
+    }
+    // A formatter built with such options is not shared with ordinary ones.
+    expect(intlCache.get('NumberFormat', 'en-NZ').format(1)).toBe('1');
+  });
+
   it('starts over when a constructor has 256 instances', () => {
     class Format {
       constructor(
