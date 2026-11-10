@@ -8,7 +8,7 @@ import {
   type NumberNode,
   type SelectNode,
 } from '../index';
-import { buildMessageTree, type TemplateHole } from '../internal';
+import { templateToMessage, type TemplateHole } from '../internal';
 import {
   DATE_FIELD_OPTIONS,
   TIME_FIELD_OPTIONS,

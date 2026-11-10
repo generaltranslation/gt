@@ -61,10 +61,12 @@ export type MessageNode<Format = FormattedNode> =
 export type PoundNode = 0;
 
 /**
- * `{name}`. It has no kind: `kind` is in the type so that `node[1]` tells
- * every node apart.
+ * `{name}`. It has one entry: the second is in the type, as never set, so
+ * that `node[1]` tells every node apart.
  */
-export type ArgumentNode = readonly [name: string, kind?: undefined];
+export type ArgumentNode = readonly [name: string] & {
+  readonly 1?: undefined;
+};
 
 /** A node that formats its value: a number, a date or a time. */
 export type FormattedNode = NumberNode | DateTimeNode;

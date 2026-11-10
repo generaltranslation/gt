@@ -304,7 +304,7 @@ function formatNodes<R>(
           );
         }
         const children = formatNodes(
-          messageNodes(node[2]),
+          messageTreeNodes(node[2]),
           context,
           currentPluralValue
         );

@@ -37,11 +37,11 @@ export function isTagNode(node: PlaceholderNode): node is TagNode {
  * nodes, so it adds no part when formatted. A string is iterable, so every
  * walk starts here.
  */
-export function messageNodes<Format>(
-  message: MessageTree<Format>
+export function messageTreeNodes<Format>(
+  tree: MessageTree<Format>
 ): MessageNode<Format>[] {
-  if (typeof message !== 'string') return message;
-  return message ? [message] : [];
+  if (typeof tree !== 'string') return tree;
+  return tree ? [tree] : [];
 }
 
 /** Visits every placeholder in tree order, including those in branches and tags. */

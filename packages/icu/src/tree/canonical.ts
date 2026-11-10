@@ -37,7 +37,7 @@ export function appendText(out: MessageNode[], text: string): void {
  * A message tree from its nodes: without placeholders it is its text, the way it
  * was written, and `''` when empty. `messageTreeNodes` reads it back.
  */
-export function toMessage<Format>(
+export function toMessageTree<Format>(
   nodes: MessageNode<Format>[]
 ): MessageTree<Format> {
   if (nodes.length === 0) return '';
@@ -56,7 +56,7 @@ export function canonicalStyle<T extends object>(fields: T): T | undefined {
 /**
  * Rewrites a tree the types allow, such as one converted node for node from
  * an ICU string, to the one valid tree of its message, the form
- * buildMessageTree builds: adjacent text merged and empty text dropped, a
+ * templateToMessage builds: adjacent text merged and empty text dropped, a
  * message, branch or tag's children without placeholders as one string,
  * branch keys and Intl options sorted, and no zero plural offset or
  * `undefined` style. An empty style stays, so printing rejects it rather than
@@ -71,7 +71,7 @@ export function normalizeMessageTree(tree: MessageTree): MessageTree {
     } else if (isBranchingNode(node)) {
       const sorted = mapBranches(
         node[2],
-        normalizeTree,
+        normalizeMessageTree,
         Object.keys(node[2]).sort(compareKeys)
       );
       out.push(
