@@ -96,8 +96,8 @@ export function buildMessageTree(
   strings: readonly string[],
   holes: readonly TemplateHole[]
 ): BuiltMessageTree {
-  const context: BuildContext = { values: [], formats: new Map() };
-  const tree = toMessage(build(strings, holes, context, false));
+  const state: BuildState = { values: [], contexts: new Map() };
+  const tree = toMessage(build(strings, holes, state, false));
   return {
     tree,
     values: state.values,
