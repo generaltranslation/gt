@@ -36,12 +36,13 @@ export function isTagNode(node: PlaceholderNode): node is TagNode {
 }
 
 /**
- * The nodes of a branch. A branch without placeholders is its text, and an
- * empty one has no nodes, so it adds no part when formatted.
+ * The nodes of a message, branch or tag's children. A message without
+ * placeholders is its text, and an empty one has no nodes, so it adds no
+ * part when formatted. A string is iterable, so every walk starts here.
  */
-export function branchNodes(branch: string | MessageTree): MessageTree {
-  if (typeof branch !== 'string') return branch;
-  return branch ? [branch] : [];
+export function messageNodes(message: MessageTree): MessageNode[] {
+  if (typeof message !== 'string') return message;
+  return message ? [message] : [];
 }
 
 /** Visits every placeholder in tree order, including those in branches and tags. */
@@ -49,12 +50,12 @@ export function forEachPlaceholder(
   tree: MessageTree,
   visit: (node: PlaceholderNode) => void
 ): void {
-  for (const node of tree) {
+  for (const node of messageNodes(tree)) {
     if (!isPlaceholderNode(node)) continue;
     visit(node);
     if (isBranchingNode(node)) {
       for (const branch of Object.values(node[2])) {
-        forEachPlaceholder(branchNodes(branch), visit);
+        forEachPlaceholder(branch, visit);
       }
     } else if (isTagNode(node)) {
       forEachPlaceholder(node[2], visit);
@@ -63,14 +64,15 @@ export function forEachPlaceholder(
 }
 
 /**
- * Copies the tree with each placeholder replaced by `map(placeholder)`. The
- * branches and tag children of the result are mapped the same way.
+ * Copies the tree's nodes with each placeholder replaced by `map(placeholder)`.
+ * The branches and tag children of the result are mapped the same way; text
+ * comes back as nodes, not in canonical form.
  */
 export function mapPlaceholders(
   tree: MessageTree,
   map: (node: PlaceholderNode) => PlaceholderNode
-): MessageTree {
-  return tree.map((node) => {
+): MessageNode[] {
+  return messageNodes(tree).map((node) => {
     if (!isPlaceholderNode(node)) return node;
     const mapped = map(node);
     if (isBranchingNode(mapped)) {
@@ -78,9 +80,7 @@ export function mapPlaceholders(
       return [
         name,
         kind,
-        mapBranches(branches, (branch) =>
-          typeof branch === 'string' ? branch : mapPlaceholders(branch, map)
-        ),
+        mapBranches(branches, (branch) => mapPlaceholders(branch, map)),
         ...rest,
       ] as MessageNode;
     }
@@ -94,7 +94,7 @@ export function mapPlaceholders(
 /** Copies branches in `keys` order, mapping each one. */
 export function mapBranches(
   branches: MessageBranches,
-  map: (branch: string | MessageTree) => string | MessageTree,
+  map: (branch: MessageTree) => MessageTree,
   keys = Object.keys(branches)
 ): MessageBranches {
   // Object.fromEntries defines own properties, so a `__proto__` branch stays one.

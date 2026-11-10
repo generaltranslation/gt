@@ -8,11 +8,11 @@ import { t } from '../t';
 
 type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
 
-const saveTree = ['Save'];
+const saveTree = 'Save';
 const translations: Record<string, unknown> = {
-  [hashSource({ source: saveTree, dataFormat: 'ICU_TREE' })]: ['Enregistrer'],
+  [hashSource({ source: saveTree, dataFormat: 'ICU_TREE' })]: 'Enregistrer',
   [hashSource({ source: saveTree, dataFormat: 'ICU_TREE', context: 'button' })]:
-    ['Sauvegarder'],
+    'Sauvegarder',
 };
 
 function setConditions(locale: string, enableI18n = true) {
@@ -31,7 +31,7 @@ describe('react-core/unstable t', () => {
     Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
     setReactI18nCache({
       lookupTranslation: vi.fn(
-        (locale: string, message: string[], options: { $context?: string }) =>
+        (locale: string, message: string, options: { $context?: string }) =>
           locale === 'fr'
             ? translations[
                 hashSource({
