@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { formatMessage as publicFormatMessage } from '../../core';
+import {
+  formatCutoff,
+  formatDateTime,
+  formatMessage as publicFormatMessage,
+} from '../../core';
+import { intlCache } from '../../cache/IntlCache';
 import { _formatListToParts, _formatMessageICU } from '../format';
 
 describe('_formatMessageICU', () => {
@@ -600,5 +605,32 @@ describe('_formatListToParts', () => {
     expect(result).toEqual([items[0], ' and ', items[1]]);
     expect(result[0]).toBe(items[0]);
     expect(result[2]).toBe(items[1]);
+  });
+});
+
+describe('the Intl cache', () => {
+  it('formats a date without a time zone in the host zone at the time of use', () => {
+    const hostZone = process.env.TZ;
+    const date = new Date('2020-05-06T14:03:02Z');
+    try {
+      process.env.TZ = 'UTC';
+      expect(
+        formatDateTime(date, { locales: 'en-US', timeStyle: 'short' })
+      ).toBe('2:03 PM');
+      process.env.TZ = 'America/New_York';
+      expect(
+        formatDateTime(date, { locales: 'en-US', timeStyle: 'short' })
+      ).toBe('10:03 AM');
+    } finally {
+      if (hostZone === undefined) delete process.env.TZ;
+      else process.env.TZ = hostZone;
+    }
+  });
+
+  it('shares one instance of a custom format', () => {
+    expect(formatCutoff('Hello, world!', { maxChars: 8 })).toBe('Hello, …');
+    expect(intlCache.get('CutoffFormat', 'en', { maxChars: 8 })).toBe(
+      intlCache.get('CutoffFormat', 'en', { maxChars: 8 })
+    );
   });
 });

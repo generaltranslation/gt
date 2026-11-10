@@ -3,6 +3,7 @@
  * while using only native Intl APIs. See THIRD_PARTY_NOTICES.md.
  */
 
+import { intlCache } from '../cache/IntlCache';
 import { resolveLocale } from './locale';
 import { libraryDefaultLocale } from '../settings/settings';
 import { FALLBACK_BRANCH_KEY, isPluralCategoryKey } from '../settings/syntax';
@@ -108,31 +109,7 @@ type FormatContext = {
   message: string;
   locales: string | string[];
   variables: MessageVariables;
-  /** Date formatters without a time zone, shared within this call only. */
-  hostZoneDateFormats?: Map<string, Intl.DateTimeFormat>;
 };
-
-// Building an Intl formatter costs far more than formatting with it, so
-// formatters are shared across calls. The cap, for each kind, bounds formats
-// that come from input, such as a currency or a time zone.
-const numberFormats = new Map<string, Intl.NumberFormat>();
-const dateTimeFormats = new Map<string, Intl.DateTimeFormat>();
-const pluralRules = new Map<string, Intl.PluralRules>();
-const MAX_FORMATTERS = 256;
-
-function getFormatter<Formatter>(
-  cache: Map<string, Formatter>,
-  key: string,
-  create: () => Formatter
-): Formatter {
-  let formatter = cache.get(key);
-  if (!formatter) {
-    formatter = create();
-    if (cache.size >= MAX_FORMATTERS) cache.clear();
-    cache.set(key, formatter);
-  }
-  return formatter;
-}
 
 /**
  * Formats a message tree without parsing, with native Intl. Plain values
@@ -214,7 +191,11 @@ function formatNodes(
     }
     if (node === 0) {
       if (currentPluralValue !== undefined) {
-        append(getNumberFormat(context).format(currentPluralValue));
+        append(
+          intlCache
+            .get('NumberFormat', context.locales)
+            .format(currentPluralValue)
+        );
       }
       continue;
     }
@@ -235,7 +216,9 @@ function formatNodes(
         const { scale, ...intlOptions } = options;
         const scaledValue = applyScale(value, scale);
         append(
-          getNumberFormat(context, intlOptions).format(scaledValue as number)
+          intlCache
+            .get('NumberFormat', context.locales, intlOptions)
+            .format(scaledValue as number)
         );
         break;
       }
@@ -249,7 +232,9 @@ function formatNodes(
             ? (isDate ? DATE_STYLES : TIME_STYLES)[style]
             : (style ?? (isDate ? undefined : TIME_STYLES.medium));
         append(
-          getDateTimeFormat(context, options).format(value as number | Date)
+          intlCache
+            .get('DateTimeFormat', context.locales, options)
+            .format(value as number | Date)
         );
         break;
       }
@@ -353,36 +338,6 @@ function applyScale(value: unknown, scale?: number): unknown {
   return Number(value) * scale;
 }
 
-function getNumberFormat(
-  context: FormatContext,
-  options: Intl.NumberFormatOptions = {}
-): Intl.NumberFormat {
-  return getFormatter(
-    numberFormats,
-    `${context.locales}|${JSON.stringify(options)}`,
-    () => new Intl.NumberFormat(context.locales, options)
-  );
-}
-
-function getDateTimeFormat(
-  context: FormatContext,
-  options?: Intl.DateTimeFormatOptions
-): Intl.DateTimeFormat {
-  // Own options only, as the keys hold: Intl would also read inherited ones.
-  const own = { ...options };
-  const key = JSON.stringify(own);
-  const create = () => new Intl.DateTimeFormat(context.locales, own);
-  if (own.timeZone) {
-    return getFormatter(dateTimeFormats, `${context.locales}|${key}`, create);
-  }
-  // Without a time zone a formatter takes the host's, which can change while
-  // the process runs, so it is shared within this call only.
-  const formats = (context.hostZoneDateFormats ??= new Map());
-  let formatter = formats.get(key);
-  if (!formatter) formats.set(key, (formatter = create()));
-  return formatter;
-}
-
 function getPluralRules(
   context: FormatContext,
   type: Intl.PluralRuleType
@@ -396,11 +351,7 @@ function getPluralRules(
     error.originalMessage = context.message;
     throw error;
   }
-  return getFormatter(
-    pluralRules,
-    `${context.locales}|${type}`,
-    () => new Intl.PluralRules(context.locales, { type })
-  );
+  return intlCache.get('PluralRules', context.locales, { type });
 }
 
 function toPluralRulesNumber(value: PluralValue): number {
