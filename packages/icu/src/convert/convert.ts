@@ -41,7 +41,7 @@ export function icuToMessage(
 }
 
 /**
- * Prints a message tree as an ICU MessageFormat string, e.g. for a
+ * Prints a valid message tree as an ICU MessageFormat string, e.g. for a
  * translator, without loss: `icuToMessage` reads it back as the same
  * tree. Named styles print as is, a unit as `::unit/…`, and date and time
  * fields as a skeleton whose hour is `j`, the locale's hour:
@@ -52,8 +52,5 @@ export function icuToMessage(
  * Throws for a style a tree cannot hold, as `validateMessageTree` reports.
  */
 export function messageTreeToIcu(tree: MessageTree): string {
-  // The types allow adjacent text, which a valid tree does not have. It must
-  // print as one literal: quoting '{' and '}' separately gives '{''}', an
-  // escaped quote.
-  return printAST(fromMessageTree(normalizeTree(tree)));
+  return printAST(fromMessageTree(tree));
 }

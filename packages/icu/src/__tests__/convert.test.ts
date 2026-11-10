@@ -384,15 +384,6 @@ describe('messageTreeToIcu', () => {
     expect(icuToMessage(icu).tree).toEqual(tree);
   });
 
-  it('prints adjacent text, which the types allow, as one literal', () => {
-    // Quoting '{' and '}' separately would print '{''}', an escaped quote.
-    const tree: MessageTree = ['{', '}', ['b', 'tag', ["'", '{']]];
-    expect(icuToMessage(messageTreeToIcu(tree)).tree).toEqual([
-      '{}',
-      ['b', 'tag', "'{"],
-    ]);
-  });
-
   it('prints a message without placeholders as literal text', () => {
     expect(messageTreeToIcu("It's {cool}")).toBe("It's '{cool}'");
     expect(messageTreeToIcu('')).toBe('');
