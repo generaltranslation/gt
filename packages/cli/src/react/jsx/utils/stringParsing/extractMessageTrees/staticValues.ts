@@ -114,18 +114,14 @@ export function getNumber(node: t.Node): number | undefined {
 }
 
 /**
- * A flat Intl options object. Every option must be a literal except
- * formatting context, which may be any expression: it is not evaluated, and
- * its key is returned in `dynamicKeys` instead.
+ * A flat Intl options object with literal values. Formatting context is not
+ * part of the tree, so it is left out and may be any expression.
  */
 export function getIntlOptions(
   node: t.Node,
   kind: 'number' | 'date' | 'time',
   context: TreeContext
-): {
-  options: Record<string, string | number | boolean>;
-  dynamicKeys: string[];
-} {
+): Record<string, string | number | boolean> {
   if (!t.isObjectExpression(node)) {
     throw new NonStaticMessageError(
       'the Intl options are not an object literal',
@@ -135,17 +131,15 @@ export function getIntlOptions(
   const contextKeys: readonly string[] =
     kind === 'number' ? NUMBER_CONTEXT_OPTIONS : DATE_TIME_CONTEXT_OPTIONS;
   const entries: [string, string | number | boolean][] = [];
-  const dynamicKeys: string[] = [];
   for (const property of node.properties) {
     if (skipProtoSetter(property, context)) continue;
     const key = getPropertyKey(property);
+    if (contextKeys.includes(key)) continue;
     const value = (property as t.ObjectProperty).value;
     const literal =
       getNumber(value) ??
       (t.isBooleanLiteral(value) ? value.value : readStaticText(value));
-    if (literal !== undefined) entries.push([key, literal]);
-    else if (contextKeys.includes(key)) dynamicKeys.push(key);
-    else {
+    if (literal === undefined) {
       throw new NonStaticMessageError(
         `the Intl option "${key}" is not a literal`,
         value,
@@ -153,7 +147,8 @@ export function getIntlOptions(
         'Write it as a literal: only options that do not change the message, such as currency and timeZone, can be expressions'
       );
     }
+    entries.push([key, literal]);
   }
   // fromEntries keeps a computed ['__proto__'] key as an own property.
-  return { options: Object.fromEntries(entries), dynamicKeys };
+  return Object.fromEntries(entries);
 }

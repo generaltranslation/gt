@@ -116,22 +116,14 @@ export type MessageTreeFormats = Readonly<
 >;
 
 /** The named styles of `{d, date, …}` and `{t, time, …}`: Intl `dateStyle` and `timeStyle`. */
-export type DateTimeStyleName = NonNullable<
-  Intl.DateTimeFormatOptions['dateStyle']
->;
-export const DATE_TIME_STYLE_NAMES: readonly DateTimeStyleName[] = [
+export const DATE_TIME_STYLE_NAMES = [
   'full',
   'long',
   'medium',
   'short',
-];
+] as const;
+export type DateTimeStyleName = (typeof DATE_TIME_STYLE_NAMES)[number];
 
 /** Named number styles a tree holds; a unit is the `::unit/…` skeleton. */
-export type NumberStyleName = Extract<
-  Intl.NumberFormatOptions['style'],
-  'percent' | 'currency'
->;
-export const NUMBER_STYLE_NAMES: readonly NumberStyleName[] = [
-  'currency',
-  'percent',
-];
+export const NUMBER_STYLE_NAMES = ['currency', 'percent'] as const;
+export type NumberStyleName = (typeof NUMBER_STYLE_NAMES)[number];

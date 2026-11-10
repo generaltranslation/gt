@@ -89,10 +89,6 @@ describe('unstableHashInjectionPass', () => {
     ['a __proto__ branch', "t`${select({ role }, { __proto__: 'x' })}`;"],
     ['a dynamic branch', 't`${plural({ count }, { other: label })}`;'],
     ['a dynamic message option', 't`${number({ n }, { style: code })}`;'],
-    [
-      'two literal formatting contexts for one variable',
-      't`${number({ n }, { maximumFractionDigits: 1 })} ${number({ n })}`;',
-    ],
     ['a placeholder variable', 'const role = derive(admin);\nt`Role ${role}`;'],
     ['an object variable', 'const vars = { name };\nt`Hi ${vars}`;'],
     [
@@ -258,23 +254,32 @@ describe('unstableHashInjectionPass', () => {
     [
       'currency',
       "t`${number({ p }, { style: 'currency', currency: code() })}`;",
-      ['p', 'number', 'currency'],
+      [['p', 'number', 'currency']],
     ],
     [
       'timeZone',
       "t`${date({ d }, { dateStyle: 'medium', timeZone: zone })}`;",
-      ['d', 'date', 'medium'],
+      [['d', 'date', 'medium']],
     ],
     [
       'timeZone on time()',
       "t`${time({ s }, { timeStyle: 'short', timeZone: `${zone}` })}`;",
-      ['s', 'time', 'short'],
+      [['s', 'time', 'short']],
+    ],
+    [
+      // Formatting context never reaches the tree; the runtime checks it.
+      'or literal maximumFractionDigits',
+      't`${number({ n }, { maximumFractionDigits: digits() })}${number({ n }, { maximumFractionDigits: 1 })}`;',
+      [
+        ['n', 'number'],
+        ['n', 'number'],
+      ],
     ],
   ])(
     'hashes a template with a dynamic %s like a literal one',
-    async (_name, body, node) => {
+    async (_name, body, source) => {
       expect(injectedHashes(await compile(body))).toEqual([
-        hashSource({ source: [node], dataFormat: 'ICU_TREE' }),
+        hashSource({ source, dataFormat: 'ICU_TREE' }),
       ]);
     }
   );

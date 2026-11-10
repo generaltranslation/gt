@@ -22,12 +22,9 @@ export type {
   DateFieldOptions,
   DateMessageOptions,
   DateTimeFormattingContext,
-  DateTimeStyleName,
-  MessageFormattingContext,
   MessageTreeFormats,
   NumberFormattingContext,
   NumberMessageOptions,
-  NumberStyleName,
   TimeFieldOptions,
   TimeMessageOptions,
 } from './settings/formatOptions';

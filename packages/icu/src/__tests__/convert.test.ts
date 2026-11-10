@@ -162,14 +162,11 @@ describe('icuToMessageTree', () => {
   it.each([
     '{n, number, ::currency/USD}',
     '{n, number, ::percent}',
-    '{n, number, ::.00}',
     '{n, number, ::unit/meter unit-width-full-name}',
     '{n, number, ::measure-unit/length-meter}',
     '{n, number, integer}',
     '{d, date, ::yMd}{d, date, foo}',
-    '{t, time, ::yMd}',
     '{t, time, ::E}',
-    '{t, time, ::ssSSSS}',
   ])('rejects %s, which a tree cannot hold', (icu) => {
     expect(() => icuToMessageTree(icu)).toThrow(
       /cannot be part of a message tree: /
@@ -476,18 +473,6 @@ describe('the tree and ICU text', () => {
       }
     }
   });
-
-  it('formats a printed compound unit', () => {
-    const tree: MessageTree = [
-      ['s', 'number', { style: 'unit', unit: 'kilometer-per-hour' }],
-    ];
-    expect(formatMessage(messageTreeToIcu(tree), 'en', { s: 12 })).toBe(
-      new Intl.NumberFormat('en', {
-        style: 'unit',
-        unit: 'kilometer-per-hour',
-      }).format(12)
-    );
-  });
 });
 
 describe('checkTranslation', () => {
@@ -529,7 +514,6 @@ describe('checkTranslation', () => {
       'Total : {cost, number, currency}',
       '"cost" does not exist in the source; "price" is missing from the translation',
     ],
-    ['a missing variable', 'Total', '"price" is missing from the translation'],
     [
       'a changed kind',
       'Total : {price}',

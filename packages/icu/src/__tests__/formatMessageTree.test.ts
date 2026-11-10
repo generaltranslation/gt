@@ -215,9 +215,7 @@ describe('formatting context', () => {
         [['toString', 'number']],
         'en',
         { toString: 1234 },
-        {
-          formats: {},
-        }
+        { formats: Object.create({ toString: { useGrouping: false } }) }
       )
     ).toBe('1,234');
   });

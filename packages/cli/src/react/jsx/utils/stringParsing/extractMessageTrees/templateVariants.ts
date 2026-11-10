@@ -100,11 +100,8 @@ function holeVariants(
           );
         }
         const variable = getHoleVariable(args[0], context);
-        const intl = args[1] && getIntlOptions(args[1].node, helper, context);
-        const options = intl?.options;
-        if (intl && variable.name !== undefined) {
-          context.namedFormats.push({ name: variable.name, ...intl });
-        }
+        const options =
+          args[1] && getIntlOptions(args[1].node, helper, context);
         return [
           {
             kind: helper,

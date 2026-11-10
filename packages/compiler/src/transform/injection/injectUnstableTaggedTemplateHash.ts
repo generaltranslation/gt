@@ -417,20 +417,16 @@ function getPropertyKey(
   return name;
 }
 
-function isStaticText(
-  node: t.Node
-): node is t.StringLiteral | t.TemplateLiteral {
-  return (
-    t.isStringLiteral(node) ||
-    (t.isTemplateLiteral(node) &&
-      node.expressions.length === 0 &&
-      node.quasis[0].value.cooked != null)
-  );
-}
-
 function getStaticText(node: t.Node): string {
-  if (!isStaticText(node)) nonStatic();
-  return t.isStringLiteral(node) ? node.value : node.quasis[0].value.cooked!;
+  if (t.isStringLiteral(node)) return node.value;
+  if (
+    t.isTemplateLiteral(node) &&
+    node.expressions.length === 0 &&
+    node.quasis[0].value.cooked != null
+  ) {
+    return node.quasis[0].value.cooked;
+  }
+  nonStatic();
 }
 
 function getNumber(node: t.Node): number | undefined {
@@ -445,10 +441,8 @@ function getNumber(node: t.Node): number | undefined {
 }
 
 /**
- * Flat Intl options object with literal values. A formatting-context option
- * may be any expression: it is not part of the tree, so it is left out. If
- * that makes two formats of a variable look different, the builder throws and
- * the runtime hashes the template.
+ * Flat Intl options object with literal values. Formatting context is not
+ * part of the tree, so it is left out and may be any expression.
  */
 function getIntlOptions(
   node: t.Node,
@@ -460,13 +454,12 @@ function getIntlOptions(
   const options: Record<string, string | number | boolean> = {};
   for (const property of node.properties) {
     const key = getPropertyKey(property);
+    if (contextKeys.includes(key)) continue;
     const value = (property as t.ObjectProperty).value;
     const number = getNumber(value);
     if (number != null) options[key] = number;
     else if (t.isBooleanLiteral(value)) options[key] = value.value;
-    else if (!contextKeys.includes(key) || isStaticText(value)) {
-      options[key] = getStaticText(value);
-    }
+    else options[key] = getStaticText(value);
   }
   return options;
 }

@@ -864,17 +864,6 @@ describe('createInlineUpdates: unstable tagged templates', () => {
       expect(warnings.join('\n')).toContain('a date has no "timeStyle" option');
     });
 
-    it('skips a variable formatted with two literal formatting contexts', async () => {
-      const { warnings, updates } = await extractTrees(
-        't`${number({ p }, { maximumFractionDigits: 1 })} ${number({ p }, { maximumFractionDigits: 2 })}`'
-      );
-
-      expect(updates).toEqual([]);
-      expect(warnings.join('\n')).toContain(
-        'Message variable "p" is formatted with different formatting context in one message'
-      );
-    });
-
     it.each([
       [
         'two named styles',
@@ -883,6 +872,11 @@ describe('createInlineUpdates: unstable tagged templates', () => {
       [
         'the same context in another order',
         "t`${date({ d }, { dateStyle: 'short', timeZone: 'UTC', calendar: 'gregory' })} ${date({ d }, { calendar: 'gregory', timeZone: 'UTC' })}`",
+      ],
+      [
+        // Formatting context never reaches the tree; the runtime reports this.
+        'two formatting contexts',
+        't`${number({ p }, { maximumFractionDigits: 1 })} ${number({ p }, { maximumFractionDigits: 2 })}`',
       ],
       [
         'a dynamic and a literal context value',

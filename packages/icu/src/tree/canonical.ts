@@ -43,15 +43,11 @@ export function toMessage(nodes: MessageNode[]): MessageTree {
 }
 
 /**
- * A format's canonical style from options: sorted, and empty options as no
- * style, so builders never write `{}`, which a tree does not hold.
+ * A format's canonical style from its fields: sorted, and no style when there
+ * are none, so builders never write `{}`, which a tree does not hold.
  */
-export function canonicalStyle<S extends string | object>(
-  style: S | null | undefined
-): S | undefined {
-  if (style == null) return undefined;
-  if (typeof style === 'string') return style;
-  return Object.keys(style).length ? (sortRecord(style) as S) : undefined;
+export function canonicalStyle(fields: object): object | undefined {
+  return Object.keys(fields).length ? sortRecord(fields) : undefined;
 }
 
 /**
