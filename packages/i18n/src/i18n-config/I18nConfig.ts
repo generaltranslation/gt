@@ -20,13 +20,14 @@ import {
   type GeneralTranslationLogLevel,
 } from '../logs/logLevel';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
-import { validateI18nConfigParams } from './validation';
+import { validateI18nConfigParams, validateTimeZone } from './validation';
 
 export type I18nConfigParams = Pick<
   GTConfig,
   | 'defaultLocale'
   | 'locales'
   | 'customMapping'
+  | 'timeZone'
   | 'projectId'
   | 'devApiKey'
   | 'apiKey'
@@ -55,7 +56,12 @@ export class I18nConfig extends LocaleConfig {
 
   constructor(params: I18nConfigParams = {}) {
     const gtServicesEnabled = resolveGTServicesEnabled(params);
-    super(getLocaleConfigParams(params, gtServicesEnabled));
+    // Validated first: the locale config formats with it.
+    validateTimeZone(params.timeZone);
+    super({
+      ...getLocaleConfigParams(params, gtServicesEnabled),
+      timeZone: params.timeZone,
+    });
     this.runtimeConfig = {
       projectId: params.projectId,
       devApiKey: params.devApiKey,
@@ -78,6 +84,14 @@ export class I18nConfig extends LocaleConfig {
 
   getCustomMapping(): CustomMapping {
     return this.customMapping || {};
+  }
+
+  /**
+   * The time zone of dates and times whose call site sets none: the
+   * configured one, or the host's.
+   */
+  getTimeZone(): string {
+    return this.timeZone;
   }
 
   getProjectId(): string | undefined {
