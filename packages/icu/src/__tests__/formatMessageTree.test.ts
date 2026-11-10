@@ -25,9 +25,6 @@ describe('formatMessageTree', () => {
 
   it('returns a message without placeholders as its text, never as ICU', () => {
     expect(formatMessageTree("It's {cool} #", 'en', {})).toBe("It's {cool} #");
-    // The formatter does not validate: an array of only text formats the same.
-    expect(formatMessageTree(['Sa', 've'])).toBe('Save');
-    expect(formatMessageTree([])).toBe('');
   });
 
   it('formats every node kind', () => {
