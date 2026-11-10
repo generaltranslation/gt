@@ -42,7 +42,7 @@ describe('normalizeTree', () => {
       'b',
       ['n', 'plural', { other: [0, 'x', 'y'], one: ['one'], '=0': [] }, 0],
       ['d', 'date', { year: 'numeric', month: 'short' }],
-      ['d', 'date', null],
+      ['d', 'date', undefined],
       ['b', 'tag', ['c', 'd']],
     ];
     expect(JSON.stringify(normalizeTree(tree))).toBe(

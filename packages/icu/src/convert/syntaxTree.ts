@@ -282,8 +282,8 @@ function fromNode(node: MessageNode): MessageFormatElement {
         );
       }
       if (node[1] === 'number') {
-        const style = node[2] ?? null;
-        const unit = typeof style === 'object' ? style : null;
+        const style = node[2];
+        const unit = typeof style === 'object' ? style : undefined;
         return {
           type: TYPE.number,
           value,
@@ -298,8 +298,8 @@ function fromNode(node: MessageNode): MessageFormatElement {
               : null,
         };
       }
-      const style = node[2] ?? null;
-      const fields = typeof style === 'object' ? style : null;
+      const style = node[2];
+      const fields = typeof style === 'object' ? style : undefined;
       const pattern = fields && printDateTimeSkeleton(fields);
       return {
         type: node[1] === 'date' ? TYPE.date : TYPE.time,

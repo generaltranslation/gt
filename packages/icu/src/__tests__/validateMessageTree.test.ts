@@ -24,16 +24,22 @@ describe('validateMessageTree', () => {
     expect(validateMessageTree(icuToMessage(message).tree)).toBeUndefined();
   });
 
-  it('accepts pound, absent and null styles, and entries past the known ones', () => {
+  it('accepts pound, an absent style, and entries past the known ones', () => {
     expect(
       validateMessageTree([
         0,
         ['n', 'number'],
-        ['n', 'number', null],
         ['n', 'number', 'percent'],
         ['s', 'select', { other: '' }, 'future'],
       ])
     ).toBeUndefined();
+  });
+
+  it('rejects a null style: no style is left out', () => {
+    expect(validateMessageTree([['n', 'number', null]])).toEqual({
+      path: [0, 2],
+      message: 'expected a style name or Intl options',
+    });
   });
 
   it.each(['Save', '', "It's {cool}"])('accepts the text %j', (text) => {

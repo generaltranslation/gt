@@ -19,7 +19,7 @@ export function variableKey(node: PlaceholderNode): string {
 /** A style; fields written in any key order are one format. */
 export function formatKey(style: NumberNode[2] | DateTimeNode[2]): string {
   return JSON.stringify(
-    style == null || typeof style === 'string'
+    style === undefined || typeof style === 'string'
       ? (style ?? null)
       : Object.entries(style).sort(([a], [b]) => compareKeys(a, b))
   );
