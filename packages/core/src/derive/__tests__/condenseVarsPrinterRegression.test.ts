@@ -222,9 +222,14 @@ describe('condenseVars printer regression', () => {
       "{_gt_1, select, other {Ada}} {count, plural, other {'##'}}"
     );
 
-    expect(formatMessage(condensed, 'en', { _gt_1: 'Ada', count: 7 })).toBe(
-      'Ada ##'
-    );
+    expect(
+      formatMessage(
+        condensed,
+        'en',
+        { _gt_1: 'Ada', count: 7 },
+        { timeZone: 'UTC' }
+      )
+    ).toBe('Ada ##');
   });
 
   it('preserves quoted syntax adjacent to a self-closing tag at runtime', () => {
@@ -232,9 +237,9 @@ describe('condenseVars printer regression', () => {
       "{_gt_1, select, other {Ada}} '}'<br/> done"
     );
 
-    expect(formatMessage(condensed, 'en', { _gt_1: 'Ada' })).toBe(
-      'Ada }<br/> done'
-    );
+    expect(
+      formatMessage(condensed, 'en', { _gt_1: 'Ada' }, { timeZone: 'UTC' })
+    ).toBe('Ada }<br/> done');
   });
 
   it.each([
@@ -243,6 +248,8 @@ describe('condenseVars printer regression', () => {
   ])('preserves apostrophe-boundary rendering for %j', (message, expected) => {
     const condensed = condenseVars(message);
 
-    expect(formatMessage(condensed, 'en', { _gt_1: 'Ada' })).toBe(expected);
+    expect(
+      formatMessage(condensed, 'en', { _gt_1: 'Ada' }, { timeZone: 'UTC' })
+    ).toBe(expected);
   });
 });

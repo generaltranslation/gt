@@ -5,7 +5,7 @@ import type { CustomMapping } from '../types';
 describe('LocaleConfig', () => {
   it('refreshes its prepared locale scope after the configured locales mutate', () => {
     const locales = ['en-US', 'fr-FR'];
-    const config = new LocaleConfig({ locales });
+    const config = new LocaleConfig({ timeZone: 'UTC', locales });
 
     expect(config.determineLocale('fr-FR')).toBe('fr-FR');
     locales.splice(1, 1, 'de-DE');
@@ -19,7 +19,11 @@ describe('LocaleConfig', () => {
     const customMapping: CustomMapping = {
       brand: brandMapping,
     };
-    const config = new LocaleConfig({ locales: ['brand'], customMapping });
+    const config = new LocaleConfig({
+      timeZone: 'UTC',
+      locales: ['brand'],
+      customMapping,
+    });
 
     expect(config.determineLocale('fr-FR')).toBe('brand');
     brandMapping.code = 'de-DE';
@@ -30,7 +34,11 @@ describe('LocaleConfig', () => {
 
   it('refreshes translation decisions after the configured locales mutate', () => {
     const locales = ['es'];
-    const config = new LocaleConfig({ defaultLocale: 'en', locales });
+    const config = new LocaleConfig({
+      timeZone: 'UTC',
+      defaultLocale: 'en',
+      locales,
+    });
 
     expect(config.requiresTranslation('es')).toBe(true);
     locales.splice(0, 1, 'fr');
@@ -40,7 +48,7 @@ describe('LocaleConfig', () => {
   });
 
   it('does not expose the prepared locale scope as enumerable state', () => {
-    const config = new LocaleConfig({ locales: ['en-US'] });
+    const config = new LocaleConfig({ timeZone: 'UTC', locales: ['en-US'] });
     const serializedBeforeResolution = JSON.stringify(config);
 
     config.determineLocale('en-US');
@@ -53,6 +61,7 @@ describe('LocaleConfig', () => {
 describe('determineLocale approved spelling', () => {
   it('does not restandardize the approved list on warmed spelling lookups', () => {
     const config = new LocaleConfig({
+      timeZone: 'UTC',
       locales: ['en-us', 'fr-fr', 'de-de', 'es-es', 'pt-br'],
     });
     expect(config.determineLocale('pt-BR')).toBe('pt-br');
@@ -73,6 +82,7 @@ describe('determineLocale approved spelling', () => {
   it('refreshes equivalent spellings after a mapped code changes', () => {
     const mapping = { code: 'en-gb' };
     const config = new LocaleConfig({
+      timeZone: 'UTC',
       locales: ['brand'],
       customMapping: { brand: mapping },
     });
@@ -99,7 +109,7 @@ describe('determineLocale approved spelling', () => {
   ])(
     'resolves %s to an approved identifier',
     (candidate, locales, expected) => {
-      const config = new LocaleConfig({ locales });
+      const config = new LocaleConfig({ timeZone: 'UTC', locales });
       expect(config.determineLocale(candidate)).toBe(expected);
       expect(config.determineLocale(candidate, [...locales])).toBe(expected);
     }
@@ -109,17 +119,21 @@ describe('determineLocale approved spelling', () => {
     ['en-gb', 'en-GB'],
     ['en-GB', 'en-gb'],
   ])('preserves exact configured identity for %j', (...locales) => {
-    const config = new LocaleConfig({ locales });
+    const config = new LocaleConfig({ timeZone: 'UTC', locales });
     expect(config.determineLocale('en-gb')).toBe('en-gb');
   });
 
   it('uses the first equivalent approved spelling when no exact match exists', () => {
-    const config = new LocaleConfig({ locales: ['EN-gb', 'en-gb'] });
+    const config = new LocaleConfig({
+      timeZone: 'UTC',
+      locales: ['EN-gb', 'en-gb'],
+    });
     expect(config.determineLocale('en-GB')).toBe('EN-gb');
   });
 
   it('returns an approved alias whose mapped code has noncanonical spelling', () => {
     const config = new LocaleConfig({
+      timeZone: 'UTC',
       locales: ['brand', 'other'],
       customMapping: { brand: { code: 'en-gb' }, other: { code: 'en-gb' } },
     });
@@ -130,6 +144,7 @@ describe('determineLocale approved spelling', () => {
 
   it('preserves an exact alias without changing candidate priority', () => {
     const config = new LocaleConfig({
+      timeZone: 'UTC',
       locales: ['en', 'brand', 'partner'],
       customMapping: { brand: { code: 'en-GB' }, partner: { code: 'en-GB' } },
     });
@@ -140,6 +155,7 @@ describe('determineLocale approved spelling', () => {
 
   it('keeps exact mapped-code precedence over equivalent spellings', () => {
     const config = new LocaleConfig({
+      timeZone: 'UTC',
       locales: ['brand', 'canonical'],
       customMapping: { brand: { code: 'en-gb' }, canonical: { code: 'en-GB' } },
     });
@@ -148,7 +164,7 @@ describe('determineLocale approved spelling', () => {
 
   it('refreshes preserved spelling after the approved list changes', () => {
     const locales = ['en-us'];
-    const config = new LocaleConfig({ locales });
+    const config = new LocaleConfig({ timeZone: 'UTC', locales });
     expect(config.determineLocale('en-US')).toBe('en-us');
     locales[0] = 'EN-us';
     expect(config.determineLocale('en-US')).toBe('EN-us');

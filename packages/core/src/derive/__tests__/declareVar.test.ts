@@ -98,7 +98,12 @@ describe('declareVar', () => {
       const originalText = 'Hello {world} with <tags>';
       const sanitized = declareVar(originalText);
 
-      const output = formatMessage(sanitized, 'en', { _gt_: 'placeholder' });
+      const output = formatMessage(
+        sanitized,
+        'en',
+        { _gt_: 'placeholder' },
+        { timeZone: 'UTC' }
+      );
 
       expect(output).toBe(originalText);
     });
@@ -107,7 +112,12 @@ describe('declareVar', () => {
       const originalText = '{count, plural, one{# item} other{# items}}';
       const sanitized = declareVar(originalText);
 
-      const output = formatMessage(sanitized, 'en', { _gt_: 'placeholder' });
+      const output = formatMessage(
+        sanitized,
+        'en',
+        { _gt_: 'placeholder' },
+        { timeZone: 'UTC' }
+      );
 
       expect(output).toBe(originalText);
     });
@@ -116,7 +126,12 @@ describe('declareVar', () => {
       const originalText = "User's data: {id: 123} <status>active</status>";
       const sanitized = declareVar(originalText);
 
-      const output = formatMessage(sanitized, 'en', { _gt_: 'placeholder' });
+      const output = formatMessage(
+        sanitized,
+        'en',
+        { _gt_: 'placeholder' },
+        { timeZone: 'UTC' }
+      );
 
       expect(output).toBe(originalText);
     });

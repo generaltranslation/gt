@@ -1,9 +1,8 @@
 import { IntlMessageFormat } from 'intl-messageformat';
 import { describe, expect, it, vi } from 'vitest';
-import { formatMessageTree, type MessageTree } from '../index';
+import { formatMessageTree as formatTree, type MessageTree } from '../index';
 import { icuToMessageTree } from '../convert';
-import { hostTimeZone } from '../formatter/hostTimeZone';
-import { formatMessage } from '../parser';
+import { formatMessage, formatMessageTree } from './format';
 
 describe('formatMessageTree', () => {
   it('matches formatMessage for a localized currency', () => {
@@ -93,33 +92,35 @@ describe('formatMessageTree', () => {
     );
   });
 
-  it('formats a date in the host time zone, read once, when it has none', () => {
-    const hostZone = process.env.TZ;
+  it('formats a date in the time zone it is given, or in its own', () => {
     const d = new Date('2020-05-06T14:03:02Z');
     const own = { hour: 'numeric', minute: '2-digit' } as const;
     // An inherited time zone is not an option of the date.
-    const tree = [
-      [
-        'd',
-        'time',
-        Object.assign(Object.create({ timeZone: 'Pacific/Kiritimati' }), own),
-      ],
-    ] as unknown as MessageTree;
-    const zone = hostTimeZone();
-    const expected = new Intl.DateTimeFormat('en-US', {
-      ...own,
-      timeZone: zone,
-    }).format(d);
-    try {
-      expect(formatMessageTree(tree, 'en-US', { d })).toBe(expected);
-      // The zone is an input: a host that changes its own is not followed.
-      process.env.TZ = zone === 'Asia/Tokyo' ? 'UTC' : 'Asia/Tokyo';
-      expect(hostTimeZone()).toBe(zone);
-      expect(formatMessageTree(tree, 'en-US', { d })).toBe(expected);
-    } finally {
-      if (hostZone === undefined) delete process.env.TZ;
-      else process.env.TZ = hostZone;
-    }
+    const inherited = Object.assign(
+      Object.create({ timeZone: 'Pacific/Kiritimati' }),
+      own
+    );
+    const format = (options: object, timeZone: string) =>
+      formatMessageTree(
+        [['d', 'time', options]] as unknown as MessageTree,
+        'en-US',
+        { d },
+        { timeZone }
+      );
+    expect(format(inherited, 'UTC')).toBe('2:03 PM');
+    expect(format(own, 'America/New_York')).toBe('10:03 AM');
+    expect(format({ ...own, timeZone: 'Asia/Tokyo' }, 'UTC')).toBe('11:03 PM');
+  });
+
+  it('throws for a date when a caller the types do not check gives no time zone', () => {
+    const untyped = formatTree as (...args: unknown[]) => unknown;
+    const d = new Date('2020-05-06T14:03:02Z');
+    expect(() => untyped([['d', 'date']], 'en-US', { d }, {})).toThrow(
+      'The ICU variable "d" is formatted as a date, but no time zone was given.'
+    );
+    expect(untyped(['Hi ', ['name']], 'en-US', { name: 'Ada' }, {})).toBe(
+      'Hi Ada'
+    );
   });
 
   it('resolves a locale once, not on every call', () => {

@@ -4,7 +4,6 @@
  */
 
 import { intlCache } from '../cache/IntlCache';
-import { hostTimeZone } from './hostTimeZone';
 import { resolveLocale } from './locale';
 import { libraryDefaultLocale } from '../settings/settings';
 import { FALLBACK_BRANCH_KEY, isPluralCategoryKey } from '../settings/syntax';
@@ -106,53 +105,67 @@ export type FormattedMessage<R> = [R] extends [string]
   ? string
   : string | R | Array<string | R>;
 
-type FormatContext = {
+/** What a message is formatted with, besides its locales and values. */
+export type FormatMessageTreeOptions = {
+  /**
+   * The time zone of a date or time whose options set none. It is always
+   * passed in: this package does not read the host's.
+   */
+  timeZone: string;
+};
+
+type FormatContext = FormatMessageTreeOptions & {
   message: string;
   locales: string | string[];
   variables: MessageVariables;
-  /** The time zone of a date or time whose options set none. */
-  timeZone: string;
 };
 
 /**
  * Formats a message tree without parsing, with native Intl. Plain values
  * format as text, so the result is a string:
  *
- *   formatMessageTree(['Hi ', ['name']], 'en', { name: 'Ada' }); // 'Hi Ada'
+ *   formatMessageTree(['Hi ', ['name']], 'en', { name: 'Ada' }, { timeZone });
+ *   // 'Hi Ada'
  *
  * A rich value, or a tag formatter's result, is kept as a part:
  *
- *   formatMessageTree(['Read the ', ['b', 'tag', ['terms']]], 'en', {
- *     b: (parts) => <b>{parts}</b>,
- *   }); // ['Read the ', <b>terms</b>]
+ *   formatMessageTree(
+ *     ['Read the ', ['b', 'tag', ['terms']]],
+ *     'en',
+ *     { b: (parts) => <b>{parts}</b> },
+ *     { timeZone }
+ *   ); // ['Read the ', <b>terms</b>]
  *
  * Locales are validated the same way as `formatMessage` from
  * `@generaltranslation/icu/parser`.
  */
 export function formatMessageTree(
   tree: MessageTree,
-  locales?: string | string[],
-  variables?: Readonly<Record<string, MessagePlainValue>>
+  locales: string | string[] | undefined,
+  variables: Readonly<Record<string, MessagePlainValue>> | undefined,
+  options: FormatMessageTreeOptions
 ): string;
 /**
  * With rich values or tag formatters, the result is a string, a rich value,
  * or the parts around them. TypeScript infers `R` from rich values; a tag
  * formatter alone needs it written, as in
- * `formatMessageTree<ReactNode>(tree, locale, { b: (parts) => <b>{parts}</b> })`,
+ * `formatMessageTree<ReactNode>(tree, locale, { b: (parts) => <b>{parts}</b> }, options)`,
  * since `R` types its `parts`.
  */
 export function formatMessageTree<R>(
   tree: MessageTree,
   locales: string | string[] | undefined,
-  variables: MessageTreeValues<R> & OnePartValues<R>
+  variables: MessageTreeValues<R> & OnePartValues<R>,
+  options: FormatMessageTreeOptions
 ): FormattedMessage<R>;
 export function formatMessageTree(
   tree: MessageTree,
   locales: string | string[] = libraryDefaultLocale,
-  variables: MessageVariables = {}
+  variables: MessageVariables = {},
+  options: FormatMessageTreeOptions
 ): unknown {
   resolveLocale(locales);
-  return formatParsedTree(tree, '', locales, variables);
+  return formatParsedTree(tree, '', locales, variables, options);
 }
 
 /** Formats a tree whose locales were already validated; `message` is reported on errors. */
@@ -160,7 +173,8 @@ export function formatParsedTree(
   tree: MessageTree,
   message: string,
   locales: string | string[],
-  variables: MessageVariables
+  variables: MessageVariables,
+  { timeZone }: FormatMessageTreeOptions
 ): unknown {
   // Most messages are plain text, which needs no formatter state.
   if (tree.length === 1 && typeof tree[0] === 'string') return tree[0];
@@ -168,7 +182,7 @@ export function formatParsedTree(
     message,
     locales,
     variables,
-    timeZone: hostTimeZone(),
+    timeZone,
   });
   if (parts.length === 1) return parts[0];
   return parts.length ? parts : '';
@@ -241,12 +255,16 @@ function formatNodes(
             ? (isDate ? DATE_STYLES : TIME_STYLES)[style]
             : (style ?? (isDate ? undefined : TIME_STYLES.medium))),
         };
+        const timeZone = options.timeZone ?? context.timeZone;
+        // The types require one; this is for a caller they do not check.
+        if (!timeZone) {
+          throw new TypeError(
+            `The ICU variable "${name}" is formatted as a ${node[1]}, but no time zone was given.`
+          );
+        }
         append(
           intlCache
-            .get('DateTimeFormat', context.locales, {
-              ...options,
-              timeZone: options.timeZone ?? context.timeZone,
-            })
+            .get('DateTimeFormat', context.locales, { ...options, timeZone })
             .format(value as number | Date)
         );
         break;

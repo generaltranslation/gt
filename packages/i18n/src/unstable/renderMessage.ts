@@ -164,7 +164,9 @@ function formatTree(
   const locales = [locale, config.getDefaultLocale()].map((code) =>
     config.resolveCanonicalLocale(code)
   );
-  const formatted = formatMessageTree(tree, locales, values);
+  const formatted = formatMessageTree(tree, locales, values, {
+    timeZone: config.timeZone,
+  });
   return Array.isArray(formatted) ? formatted.join('') : String(formatted);
 }
 

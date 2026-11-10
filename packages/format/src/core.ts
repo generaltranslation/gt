@@ -7,6 +7,7 @@ import {
   _formatNum,
   _formatRelativeTime,
   _selectRelativeTimeUnit,
+  type ZonedDateTimeFormatOptions,
 } from './formatting/format';
 import { intlCache } from './cache/IntlCache';
 import type { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
@@ -44,6 +45,8 @@ type LocalesOption = {
 type MessageFormatOptions = LocalesOption & {
   variables?: FormatVariables;
   dataFormat?: StringFormat;
+  /** The time zone of the dates and times in the message. */
+  timeZone: string;
 };
 
 /**
@@ -112,21 +115,21 @@ export function formatCutoff(
  * @param {string | string[]} [options.locales] - The locales to use for formatting.
  * @param {FormatVariables} [options.variables] - The variables to use for formatting.
  * @param {StringFormat} [options.dataFormat='ICU'] - The format of the message. When STRING, the message is returned as is.
+ * @param {string} options.timeZone - The time zone of the dates and times in the message.
  * @returns {string} The formatted message.
  *
  * @example
- * formatMessage('Hello {name}', { variables: { name: 'John' } });
+ * formatMessage('Hello {name}', { variables: { name: 'John' }, timeZone: 'UTC' });
  * // Returns: "Hello John"
- *
- * @example
- * formatMessage('Hello {name}', {
- *   locales: ['fr'],
- *   variables: { name: 'John' }
- * });
  */
-export function formatMessage(message: string, options?: MessageFormatOptions) {
-  if (options?.dataFormat === 'STRING') return message;
-  return _formatMessageICU(message, options?.locales, options?.variables);
+export function formatMessage(message: string, options: MessageFormatOptions) {
+  if (options.dataFormat === 'STRING') return message;
+  return _formatMessageICU(
+    message,
+    options.locales,
+    options.variables,
+    options.timeZone
+  );
 }
 
 /**
@@ -153,15 +156,15 @@ export function formatNum(
  * Formats a date according to the specified languages and options.
  * @param {Object} params - The parameters for the date formatting.
  * @param {Date} params.value - The date to format.
- * @param {Intl.DateTimeFormatOptions} [params.options] - Additional options for date formatting.
+ * @param {ZonedDateTimeFormatOptions} params.options - Options for date formatting, with the time zone.
  * @param {string | string[]} [params.options.locales] - The languages to use for formatting.
  * @returns {string} The formatted date.
  */
 export function formatDateTime(
   date: Date,
-  options?: LocalesOption & Intl.DateTimeFormatOptions
+  options: LocalesOption & ZonedDateTimeFormatOptions
 ): string {
-  const { locales, ...intlOptions } = options ?? {};
+  const { locales, ...intlOptions } = options;
   return _formatDateTime({
     value: date,
     locales,

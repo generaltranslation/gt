@@ -1,7 +1,14 @@
 import { formatMessageTree, type MessageTree } from '@generaltranslation/icu';
 import { formatCutoff } from '@generaltranslation/format';
 import { forEachPlaceholder } from '@generaltranslation/icu/internal';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import {
+  hostTimeZone,
+  libraryDefaultLocale,
+} from 'generaltranslation/internal';
+import {
+  getI18nConfig,
+  isI18nConfigInitialized,
+} from '../i18n-config/singleton-operations';
 import { createGtI18nDiagnostic } from '../logs/diagnostics';
 import {
   type CreateGTParams,
@@ -64,7 +71,13 @@ function formatSource(
   values: Record<string, unknown>,
   maxChars: number | undefined
 ): string {
-  const formatted = formatMessageTree(tree, libraryDefaultLocale, values);
+  // Code paths without i18n may never initialize the config.
+  const timeZone = isI18nConfigInitialized()
+    ? getI18nConfig().timeZone
+    : hostTimeZone();
+  const formatted = formatMessageTree(tree, libraryDefaultLocale, values, {
+    timeZone,
+  });
   const output = Array.isArray(formatted)
     ? formatted.join('')
     : String(formatted);

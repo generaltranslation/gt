@@ -5,8 +5,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { hostTimeZone } from '../formatter/hostTimeZone';
-import { formatMessage } from '../parser';
+import { formatMessage } from './format';
 
 describe('formatMessage', () => {
   it('interpolates direct arguments without dropping zero', () => {
@@ -393,8 +392,6 @@ describe('formatMessage', () => {
   );
 
   it('builds each Intl formatter once, across messages and calls', () => {
-    // Reading the host's time zone builds a formatter of its own, once.
-    hostTimeZone();
     const originalNumberFormat = Intl.NumberFormat;
     const originalDateTimeFormat = Intl.DateTimeFormat;
     const originalPluralRules = Intl.PluralRules;

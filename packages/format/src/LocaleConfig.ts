@@ -35,6 +35,11 @@ export type LocaleConfigConstructorParams = {
   defaultLocale?: string;
   locales?: string[];
   customMapping?: CustomMapping;
+  /**
+   * The time zone of the dates and times this config formats. It is always
+   * passed in: this package does not read the host's.
+   */
+  timeZone: string;
 };
 
 type LocalesOption = {
@@ -71,6 +76,7 @@ export class LocaleConfig {
   readonly defaultLocale: string;
   readonly locales: string[];
   readonly customMapping?: CustomMapping;
+  readonly timeZone: string;
   // Built lazily so construction stays cheap for instances that never resolve
   // locales. The snapshot is refreshed if callers mutate the public locale or
   // custom-mapping collections retained by this instance.
@@ -153,10 +159,12 @@ export class LocaleConfig {
     defaultLocale = libraryDefaultLocale,
     locales = [],
     customMapping,
-  }: LocaleConfigConstructorParams = {}) {
+    timeZone,
+  }: LocaleConfigConstructorParams) {
     this.defaultLocale = defaultLocale;
     this.locales = locales;
     this.customMapping = customMapping;
+    this.timeZone = timeZone;
   }
 
   private getFormattingLocales(
@@ -196,7 +204,10 @@ export class LocaleConfig {
     return _formatDateTime({
       value,
       locales: this.getFormattingLocales(targetLocale, locales),
-      options: intlOptions,
+      options: {
+        ...intlOptions,
+        timeZone: intlOptions.timeZone ?? this.timeZone,
+      },
     });
   }
 
@@ -278,7 +289,8 @@ export class LocaleConfig {
     return _formatMessageICU(
       message,
       this.getFormattingLocales(targetLocale, locales),
-      variables
+      variables,
+      this.timeZone
     );
   }
 

@@ -4,6 +4,7 @@ import type {
 } from '../types/options';
 import { formatMessage } from '@generaltranslation/format';
 import {
+  hostTimeZone,
   libraryDefaultLocale,
   VAR_IDENTIFIER,
 } from 'generaltranslation/internal';
@@ -85,6 +86,7 @@ export function msg(
         ...variables,
         [VAR_IDENTIFIER]: 'other',
       },
+      timeZone: hostTimeZone(),
     });
   } catch {
     logger.warn(createInterpolationFailureMessage(message));

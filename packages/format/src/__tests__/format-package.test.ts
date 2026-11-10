@@ -60,7 +60,7 @@ describe('@generaltranslation/format package export', () => {
           } = require('@generaltranslation/format');
 
           assert.equal(
-            formatMessage('Hi {name}', { variables: { name: 'Ada' } }),
+            formatMessage('Hi {name}', { variables: { name: 'Ada' }, timeZone: 'UTC' }),
             'Hi Ada'
           );
           assert.equal(formatCutoff('Hello, world!', { maxChars: 8 }), 'Hello, …');
@@ -73,7 +73,7 @@ describe('@generaltranslation/format package export', () => {
             undefined,
           );
           assert.equal(typeof relativeFromDate, 'string');
-          assert.equal(new LocaleConfig().formatNum(1234.5, 'en-US'), '1,234.5');
+          assert.equal(new LocaleConfig({ timeZone: 'UTC' }).formatNum(1234.5, 'en-US'), '1,234.5');
           assert.equal(getRegionProperties('US').name, 'United States');
           assert.equal(standardizeLocale('en-us'), 'en-US');
         `,
@@ -105,7 +105,7 @@ describe('@generaltranslation/format package export', () => {
           } from '@generaltranslation/format';
 
           assert.equal(
-            formatMessage('Hi {name}', { variables: { name: 'Ada' } }),
+            formatMessage('Hi {name}', { variables: { name: 'Ada' }, timeZone: 'UTC' }),
             'Hi Ada'
           );
           assert.equal(formatCutoff('Hello, world!', { maxChars: 8 }), 'Hello, …');
@@ -119,7 +119,7 @@ describe('@generaltranslation/format package export', () => {
           );
           assert.equal(typeof relativeFromDate, 'string');
           assert.equal(
-            new LocaleConfig({ customMapping: { en: 'English' } }).getLocaleName('en'),
+            new LocaleConfig({ customMapping: { en: 'English' }, timeZone: 'UTC' }).getLocaleName('en'),
             'English'
           );
           assert.equal(getRegionProperties('419').emoji, '🌎');

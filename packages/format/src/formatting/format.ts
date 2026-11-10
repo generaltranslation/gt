@@ -1,7 +1,7 @@
 import { FormatVariables } from '../types';
 import { intlCache } from '../cache/IntlCache';
+import { missingTimeZoneError } from '../errors/formattingErrors';
 import { libraryDefaultLocale } from '../settings/settings';
-import { hostTimeZone } from '@generaltranslation/icu/internal';
 import { formatMessage } from '@generaltranslation/icu/parser';
 
 type FormatParams<Value, Options> = {
@@ -11,20 +11,30 @@ type FormatParams<Value, Options> = {
 };
 
 /**
+ * Date options with the time zone to format in. It is always passed in: this
+ * package does not read the host's.
+ */
+export type ZonedDateTimeFormatOptions = Intl.DateTimeFormatOptions & {
+  timeZone: string;
+};
+
+/**
  * Formats a message according to the specified locales and options.
  *
  * @param {string} message - The message to format.
  * @param {string | string[]} [locales=libraryDefaultLocale] - The locales to use for formatting.
  * @param {Record<string, any>} [variables={}] - The variables to use for formatting.
+ * @param {string} timeZone - The time zone of the dates and times in the message.
  * @returns {string} The formatted message.
  * @internal
  */
 export function _formatMessageICU(
   message: string,
   locales: string | string[] = libraryDefaultLocale,
-  variables: FormatVariables = {}
+  variables: FormatVariables = {},
+  timeZone: string
 ): string {
-  return formatMessage(message, locales, variables);
+  return formatMessage(message, locales, variables, { timeZone });
 }
 
 /**
@@ -57,7 +67,7 @@ export function _formatNum({
  * @param {Object} params - The parameters for the date formatting.
  * @param {Date} params.value - The date to format.
  * @param {string | string[]} [params.locales=libraryDefaultLocale] - The locales to use for formatting.
- * @param {Intl.DateTimeFormatOptions} [params.options={}] - Additional options for date formatting.
+ * @param {ZonedDateTimeFormatOptions} params.options - Options for date formatting, with the time zone.
  *
  * @returns {string} The formatted date.
  * @internal
@@ -65,14 +75,19 @@ export function _formatNum({
 export function _formatDateTime({
   value,
   locales = [libraryDefaultLocale],
-  options = {},
-}: FormatParams<Date, Intl.DateTimeFormatOptions>): string {
+  options,
+}: {
+  value: Date;
+  locales?: string | string[];
+  options: ZonedDateTimeFormatOptions;
+}): string {
+  // The types require one; this is for a caller they do not check.
+  if (!options.timeZone) throw new TypeError(missingTimeZoneError);
   return intlCache
     .get('DateTimeFormat', locales, {
       calendar: 'gregory',
       numberingSystem: 'latn',
       ...options,
-      timeZone: options.timeZone ?? hostTimeZone(),
     })
     .format(value);
 }

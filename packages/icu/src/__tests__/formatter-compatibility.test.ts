@@ -7,7 +7,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { formatMessage } from '../parser';
+import { formatMessage } from './format';
 import { DATE_SKELETONS, NUMBER_SKELETONS } from './skeletonCases';
 
 const LOCALES = ['en-US', 'fr-FR', 'de-DE'] as const;

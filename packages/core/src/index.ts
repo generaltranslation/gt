@@ -78,16 +78,15 @@ export { derive } from './derive/derive';
 export {
   LocaleConfig,
   type LocaleConfigConstructorParams,
-} from '@generaltranslation/format';
+} from './LocaleConfig';
+export { formatDateTime, formatMessage } from './formatting';
 
 export {
   determineLocale,
   formatCurrency,
   formatCutoff,
-  formatDateTime,
   formatList,
   formatListToParts,
-  formatMessage,
   formatNum,
   formatRelativeTime,
   formatRelativeTimeFromDate,

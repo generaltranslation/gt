@@ -14,4 +14,3 @@ export { FALLBACK_BRANCH_KEY } from './settings/syntax';
 export { findConflictingFormat } from './convert/convert';
 export { forEachPlaceholder } from './tree/walk';
 export { IntlCache, intlCache } from './cache/IntlCache';
-export { hostTimeZone } from './formatter/hostTimeZone';

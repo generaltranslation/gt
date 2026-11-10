@@ -29,9 +29,13 @@ formatMessageTree(
     ['name'],
   ],
   'en',
-  { count: 2, name: 'Ada' }
+  { count: 2, name: 'Ada' },
+  { timeZone: 'America/New_York' }
 ); // '2 files from Ada'
 ```
+
+The formatters take the time zone of dates and times as an argument. This
+package does not read the host's time zone; its caller passes one in.
 
 Parts of the compatibility behavior and regression suite are adapted from
 FormatJS. See `THIRD_PARTY_NOTICES.md` for attribution and license details.

@@ -5,7 +5,8 @@ import {
   getI18nConfig,
   isI18nConfigInitialized,
 } from '../../i18n-config/singleton-operations';
-import { formatMessage as formatUnconfiguredMessage } from '@generaltranslation/format';
+import { formatMessage as formatZonedMessage } from '@generaltranslation/format';
+import { hostTimeZone } from 'generaltranslation/internal';
 
 /**
  * Given an encoded message and variables, formats the message.
@@ -24,10 +25,11 @@ export function formatMessage(
     // Fallback helpers also work before initializeGT(). Once configured, use
     // its custom mapping so app aliases never reach Intl as language codes.
     if (!isI18nConfigInitialized()) {
-      return formatUnconfiguredMessage(encodedMsg, {
+      return formatZonedMessage(encodedMsg, {
         variables,
         locales,
         dataFormat,
+        timeZone: hostTimeZone(),
       });
     }
     return getI18nConfig().formatMessage(encodedMsg, undefined, {

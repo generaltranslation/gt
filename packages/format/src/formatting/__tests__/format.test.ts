@@ -7,6 +7,9 @@ import {
 import { intlCache } from '../../cache/IntlCache';
 import { _formatListToParts, _formatMessageICU } from '../format';
 
+// The host's zone, so a formatted date compares with what Intl gives.
+const timeZone = new Intl.DateTimeFormat().resolvedOptions().timeZone;
+
 describe('_formatMessageICU', () => {
   it.each([
     ['plain text', {}, 'plain text'],
@@ -64,20 +67,32 @@ describe('_formatMessageICU', () => {
   ])(
     'formats %j through the public format boundary',
     (message, variables, expected) => {
-      expect(_formatMessageICU(message, 'en-US', variables)).toBe(expected);
+      expect(_formatMessageICU(message, 'en-US', variables, timeZone)).toBe(
+        expected
+      );
     }
   );
 
   it('passes number skeletons through the package boundary', () => {
     expect(
-      _formatMessageICU('{value, number, ::currency/USD .00}', 'en-US', {
-        value: 1234.5,
-      })
+      _formatMessageICU(
+        '{value, number, ::currency/USD .00}',
+        'en-US',
+        {
+          value: 1234.5,
+        },
+        timeZone
+      )
     ).toBe('$1,234.50');
     expect(
-      _formatMessageICU('{value, number, ::scale/0}', 'en-US', {
-        value: 12.34,
-      })
+      _formatMessageICU(
+        '{value, number, ::scale/0}',
+        'en-US',
+        {
+          value: 12.34,
+        },
+        timeZone
+      )
     ).toBe('12.34');
   });
 
@@ -91,9 +106,14 @@ describe('_formatMessageICU', () => {
     'ignores inherited rounding-mode map key %j through the public boundary',
     (stem) => {
       expect(
-        _formatMessageICU(`{value, number, ::${stem}}`, 'en-US', {
-          value: 1234.5,
-        })
+        _formatMessageICU(
+          `{value, number, ::${stem}}`,
+          'en-US',
+          {
+            value: 1234.5,
+          },
+          timeZone
+        )
       ).toBe('1,234.5');
     }
   );
@@ -106,19 +126,27 @@ describe('_formatMessageICU', () => {
   ])(
     'preserves pinned FormatJS formatting for legacy message %j',
     (message, value, expected) => {
-      expect(_formatMessageICU(message, 'en-US', { value })).toBe(expected);
+      expect(_formatMessageICU(message, 'en-US', { value }, timeZone)).toBe(
+        expected
+      );
     }
   );
 
   it('preserves FormatJS parse success before native currency validation', () => {
     expect(() =>
-      _formatMessageICU('{value, number, ::currency}', 'en-US', { value: 1 })
+      _formatMessageICU(
+        '{value, number, ::currency}',
+        'en-US',
+        { value: 1 },
+        timeZone
+      )
     ).toThrow(TypeError);
   });
 
   it('preserves numeric-string precision through the public boundary', () => {
     expect(
       publicFormatMessage('{value, number}', {
+        timeZone,
         locales: 'en-US',
         variables: { value: '123456789012345678901234567890' },
       })
@@ -129,6 +157,7 @@ describe('_formatMessageICU', () => {
     const inherited = Object.create({ name: 'Ada', count: '2' });
     expect(
       publicFormatMessage('Hello {name}: {count, plural, other {# items}}', {
+        timeZone,
         locales: 'en',
         variables: inherited,
       })
@@ -143,6 +172,7 @@ describe('_formatMessageICU', () => {
     );
     expect(
       publicFormatMessage('Hello {name}', {
+        timeZone,
         locales: 'en',
         variables: proxy,
       })
@@ -162,6 +192,7 @@ describe('_formatMessageICU', () => {
     (_codePoint, space) => {
       expect(
         publicFormatMessage(`{n, number, ${space}percent}`, {
+          timeZone,
           locales: 'en-US',
           variables: { n: 2 },
         })
@@ -172,7 +203,12 @@ describe('_formatMessageICU', () => {
   it('passes date skeletons through the package boundary', () => {
     const value = new Date('2020-05-06T14:03:02Z');
     expect(
-      _formatMessageICU('{value, date, ::yyyyMMMdd}', 'en-US', { value })
+      _formatMessageICU(
+        '{value, date, ::yyyyMMMdd}',
+        'en-US',
+        { value },
+        timeZone
+      )
     ).toBe(
       new Intl.DateTimeFormat('en-US', {
         year: 'numeric',
@@ -183,7 +219,12 @@ describe('_formatMessageICU', () => {
 
     for (const field of ['C', 'S', 'A']) {
       expect(
-        _formatMessageICU(`{value, time, ::${field}}`, 'en-US', { value })
+        _formatMessageICU(
+          `{value, time, ::${field}}`,
+          'en-US',
+          { value },
+          timeZone
+        )
       ).toBe(new Intl.DateTimeFormat('en-US').format(value));
     }
   });
@@ -199,6 +240,7 @@ describe('_formatMessageICU', () => {
       const value = new Date(2020, 4, 6, 14, 3, 2);
       expect(
         publicFormatMessage(`{value, time, ::${skeleton}}`, {
+          timeZone,
           locales: locale,
           variables: { value },
         })
@@ -210,6 +252,7 @@ describe('_formatMessageICU', () => {
     const value = new Date(2020, 4, 6, 7, 3, 2);
     expect(
       publicFormatMessage('{value, time, ::j}', {
+        timeZone,
         locales: 'en-u-rg-gbzzzz',
         variables: { value },
       })
@@ -219,12 +262,14 @@ describe('_formatMessageICU', () => {
     locales[1] = 'fr-FR';
     expect(
       publicFormatMessage('{value, time, ::j}', {
+        timeZone,
         locales,
         variables: { value },
       })
     ).toBe('07 h');
     expect(() =>
       publicFormatMessage('{value, time, ::j}', {
+        timeZone,
         locales: [],
         variables: { value },
       })
@@ -233,22 +278,27 @@ describe('_formatMessageICU', () => {
 
   it('preserves locale arrays through the package boundary', () => {
     expect(
-      _formatMessageICU('{value, number}', ['de-DE', 'en-US'], {
-        value: 1234.5,
-      })
+      _formatMessageICU(
+        '{value, number}',
+        ['de-DE', 'en-US'],
+        {
+          value: 1234.5,
+        },
+        timeZone
+      )
     ).toBe(new Intl.NumberFormat('de-DE').format(1234.5));
   });
 
   it('still surfaces missing-variable failures through the package boundary', () => {
-    expect(() => _formatMessageICU('Hello {name}', 'en-US')).toThrow(
-      'variable "name" was not provided'
-    );
+    expect(() =>
+      _formatMessageICU('Hello {name}', 'en-US', undefined, timeZone)
+    ).toThrow('variable "name" was not provided');
   });
 
   it('preserves FormatJS SyntaxError metadata through the public boundary', () => {
     expect.assertions(3);
     try {
-      publicFormatMessage('{name', { locales: 'en-US' });
+      publicFormatMessage('{name', { timeZone, locales: 'en-US' });
     } catch (error) {
       const syntaxError = error as SyntaxError & {
         location?: unknown;
@@ -273,7 +323,7 @@ describe('_formatMessageICU', () => {
       expect(
         publicFormatMessage(
           '{count, plural, =2 {exact} one {one item} other {# items}}',
-          { locales: 'en-US', variables: { count } }
+          { timeZone, locales: 'en-US', variables: { count } }
         )
       ).toBe(expected);
     }
@@ -290,7 +340,7 @@ describe('_formatMessageICU', () => {
       expect(
         publicFormatMessage(
           '{count, plural, =1 {canonical} =01 {leading} =+1 {positive} other {other}}',
-          { locales: 'en-US', variables: { count } }
+          { timeZone, locales: 'en-US', variables: { count } }
         )
       ).toBe(expected);
     }
@@ -300,11 +350,15 @@ describe('_formatMessageICU', () => {
     const value = new Date(0);
     expect(
       publicFormatMessage('before {value} after', {
+        timeZone,
         variables: { value: true },
       })
     ).toBe('before true after');
     expect(
-      publicFormatMessage('before {value} after', { variables: { value } })
+      publicFormatMessage('before {value} after', {
+        timeZone,
+        variables: { value },
+      })
     ).toBe(`before ${value} after`);
   });
 });
@@ -609,17 +663,22 @@ describe('_formatListToParts', () => {
 });
 
 describe('the Intl cache', () => {
-  it('formats a date in its time zone, or in the host zone', () => {
+  it('formats a date in the time zone it is given', () => {
     const date = new Date('2020-05-06T14:03:02Z');
-    expect(
+    const format = (zone: string) =>
       formatDateTime(date, {
         locales: 'en-US',
         timeStyle: 'short',
-        timeZone: 'America/New_York',
-      })
-    ).toBe('10:03 AM');
-    expect(formatDateTime(date, { locales: 'en-US', timeStyle: 'short' })).toBe(
-      new Intl.DateTimeFormat('en-US', { timeStyle: 'short' }).format(date)
+        timeZone: zone,
+      });
+    expect(format('America/New_York')).toBe('10:03 AM');
+    expect(format('UTC')).toBe('2:03 PM');
+  });
+
+  it('throws for a date when a caller the types do not check gives no time zone', () => {
+    const untyped = formatDateTime as (date: Date, options: object) => string;
+    expect(() => untyped(new Date(0), { locales: 'en-US' })).toThrow(
+      'A date was formatted without a time zone'
     );
   });
 

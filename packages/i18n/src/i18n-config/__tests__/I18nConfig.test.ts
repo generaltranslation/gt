@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import {
+  hostTimeZone,
+  libraryDefaultLocale,
+} from 'generaltranslation/internal';
 import { I18nConfig } from '../I18nConfig';
 
 describe('I18nConfig', () => {
@@ -35,6 +38,15 @@ describe('I18nConfig', () => {
 
     expect(config.getDefaultLocale()).toBe(libraryDefaultLocale);
     expect(config.getLocales()).toEqual([libraryDefaultLocale]);
+  });
+
+  it("formats dates and times in the host's time zone", () => {
+    const config = new I18nConfig({ defaultLocale: 'en-US' });
+    const date = new Date('2020-05-06T14:03:02Z');
+    expect(config.timeZone).toBe(hostTimeZone());
+    expect(config.formatDateTime(date, 'en-US', { timeStyle: 'short' })).toBe(
+      new Intl.DateTimeFormat('en-US', { timeStyle: 'short' }).format(date)
+    );
   });
 
   it('defaults locales to the resolved default locale', () => {
