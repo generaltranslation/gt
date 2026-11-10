@@ -119,7 +119,25 @@ function nodeError(
   }
 }
 
-type FormattedKind = (NumberNode | DateTimeNode)[1];
+type FormattedNode = NumberNode | DateTimeNode;
+type FormattedKind = FormattedNode[1];
+
+/**
+ * A number, date or time node from a style that is not checked yet, such as
+ * one read from ICU text or from call options. `fail` makes the error from
+ * why the style is not one a tree holds.
+ */
+export function formattedNode(
+  name: string,
+  kind: FormattedKind,
+  style: unknown,
+  fail: (reason: string) => Error
+): FormattedNode {
+  const problem = styleProblem(kind, style);
+  if (problem) throw fail(problem.message);
+  // The check above is what makes the style one of its kind.
+  return (style == null ? [name, kind] : [name, kind, style]) as FormattedNode;
+}
 
 /**
  * Why `style` is not a style a tree holds for a `kind` placeholder, and the

@@ -32,7 +32,7 @@ import type {
   PluralNode,
   SelectNode,
 } from './messageTree';
-import { styleProblem } from './validateMessageTree';
+import { formattedNode } from './validateMessageTree';
 
 // ===== Hole IR ===== //
 
@@ -183,17 +183,13 @@ function buildHole(
     case 'date':
     case 'time': {
       const name = hole.name ?? addAnonymousValue(context, hole.value);
-      const [style, formatting] = splitOptions(name, hole.kind, hole.options);
+      const [node, formatting] = splitOptions(name, hole.kind, hole.options);
       const bound = context.formats.get(name);
       if (bound && JSON.stringify(bound) !== JSON.stringify(formatting)) {
         throw new Error(createConflictingFormatsError(name));
       }
       context.formats.set(name, formatting);
-      out.push(
-        (style === undefined
-          ? [name, hole.kind]
-          : [name, hole.kind, style]) as MessageNode
-      );
+      out.push(node);
       return;
     }
     case 'plural':
@@ -231,14 +227,14 @@ function buildHole(
 }
 
 /**
- * Splits a format's Intl options into its tree style and its sorted
- * formatting context, by the option classification.
+ * Splits a format's Intl options into its tree node, which holds the style,
+ * and its sorted formatting context, by the option classification.
  */
 function splitOptions(
   name: string,
   kind: (NumberNode | DateTimeNode)[1],
   options: Intl.NumberFormatOptions | Intl.DateTimeFormatOptions = {}
-): [style: unknown, formatting: MessageFormattingContext] {
+): [node: NumberNode | DateTimeNode, formatting: MessageFormattingContext] {
   const messageKeys: readonly string[] =
     kind === 'number'
       ? NUMBER_MESSAGE_OPTIONS
@@ -280,9 +276,7 @@ function splitOptions(
     }
     style = named ?? canonicalStyle(fields);
   }
-  const problem = styleProblem(kind, style);
-  if (problem) throw invalid(problem.message);
-  return [style, sortRecord(formatting)];
+  return [formattedNode(name, kind, style, invalid), sortRecord(formatting)];
 }
 
 // `=N` with N an integer the parser reads: it rejects unsafe integers.
