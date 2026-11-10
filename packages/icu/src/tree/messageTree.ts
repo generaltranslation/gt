@@ -5,6 +5,7 @@ import type {
   NumberStyleName,
   TimeFieldOptions,
 } from '../settings/formatOptions';
+import type { ExtendedNumberFormatOptions } from '../types-dir/ast';
 
 /**
  * A message as compact JSON, the form catalogs ship and keys are hashed from.
@@ -28,8 +29,13 @@ import type {
  * `@generaltranslation/icu/convert`. Other Intl options, like a currency or
  * a time zone, are formatting context, passed to `formatMessageTree` as
  * `formats`.
+ *
+ * `Format` is the type of the number, date and time nodes, at every level.
+ * Leave it out: a message tree holds `NumberNode` and `DateTimeNode`.
  */
-export type MessageTree = string | MessageNode[];
+export type MessageTree<Format = FormattedNode> =
+  | string
+  | MessageNode<Format>[];
 
 /**
  * A message in full: its tree, which is what is translated and hashed, and
@@ -42,30 +48,36 @@ export type Message = {
   formats: MessageFormats;
 };
 
-export type MessageNode =
+export type MessageNode<Format = FormattedNode> =
   | string
   | PoundNode
   | ArgumentNode
-  | NumberNode
-  | DateTimeNode
-  | SelectNode
-  | PluralNode
-  | TagNode;
+  | Format
+  | SelectNode<Format>
+  | PluralNode<Format>
+  | TagNode<Format>;
 
 /** The count of the nearest plural or selectordinal, ICU `#`. */
 export type PoundNode = 0;
 
-/** `{name}` */
-export type ArgumentNode = readonly [name: string];
+/**
+ * `{name}`. It has no kind: `kind` is in the type so that `node[1]` tells
+ * every node apart.
+ */
+export type ArgumentNode = readonly [name: string, kind?: undefined];
+
+/** A node that formats its value: a number, a date or a time. */
+export type FormattedNode = NumberNode | DateTimeNode;
 
 /**
  * `{n, number}`, `{n, number, percent}`, `{n, number, currency}`, whose
  * currency is formatting context, or `{n, number, ::unit/kilometer}`.
+ * A `null` style is no style: JSON writes an `undefined` one that way.
  */
 export type NumberNode = readonly [
   name: string,
   kind: 'number',
-  style?: NumberStyleName | { style: 'unit'; unit: string },
+  style?: NumberStyleName | { style: 'unit'; unit: string } | null,
 ];
 
 /**
@@ -76,33 +88,56 @@ export type DateTimeNode =
   | readonly [
       name: string,
       kind: 'date',
-      style?: DateTimeStyleName | DateFieldOptions,
+      style?: DateTimeStyleName | DateFieldOptions | null,
     ]
   | readonly [
       name: string,
       kind: 'time',
-      style?: DateTimeStyleName | TimeFieldOptions,
+      style?: DateTimeStyleName | TimeFieldOptions | null,
     ];
 
-export type SelectNode = readonly [
+export type SelectNode<Format = FormattedNode> = readonly [
   name: string,
   kind: 'select',
-  branches: MessageBranches,
+  branches: MessageBranches<Format>,
 ];
 
 /** `offset` is omitted when it is 0. */
-export type PluralNode = readonly [
+export type PluralNode<Format = FormattedNode> = readonly [
   name: string,
   kind: 'plural' | 'selectordinal',
-  branches: MessageBranches,
+  branches: MessageBranches<Format>,
   offset?: number,
 ];
 
 /** `<name>children</name>`, formatted by the function passed as `name`. */
-export type TagNode = readonly [
+export type TagNode<Format = FormattedNode> = readonly [
   name: string,
   kind: 'tag',
-  children: MessageTree,
+  children: MessageTree<Format>,
 ];
 
-export type MessageBranches = Record<string, MessageTree>;
+export type MessageBranches<Format = FormattedNode> = Record<
+  string,
+  MessageTree<Format>
+>;
+
+/**
+ * A number, date or time as the formatter reads it. A message tree's nodes
+ * are these too. An ICU string's can also hold any style name and every Intl
+ * option of a skeleton, which a message tree does not hold.
+ */
+export type ParsedNode =
+  | readonly [
+      name: string,
+      kind: 'number',
+      style?: string | ExtendedNumberFormatOptions | null,
+    ]
+  | readonly [
+      name: string,
+      kind: 'date' | 'time',
+      style?: string | Intl.DateTimeFormatOptions | null,
+    ];
+
+/** What the formatter reads: a message tree, or an ICU string's syntax tree. */
+export type ParsedTree = MessageTree<ParsedNode>;

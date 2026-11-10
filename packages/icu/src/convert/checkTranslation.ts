@@ -6,7 +6,6 @@ import type {
   Message,
   MessageTree,
   NumberNode,
-  PluralNode,
 } from '../tree/messageTree';
 import { collectVariables, formatKey, variableKey } from '../tree/variables';
 import {
@@ -14,6 +13,7 @@ import {
   isBranchingNode,
   isFormattedNode,
   mapPlaceholders,
+  withBranches,
 } from '../tree/walk';
 import { fromMessageTree } from './syntaxTree';
 
@@ -146,11 +146,10 @@ function withLocaleCategories(
   };
   return mapPlaceholders(source, (node) => {
     if (!isBranchingNode(node) || node[1] === 'select') return node;
-    const [name, kind, branches, ...rest] = node as PluralNode;
-    const type = kind === 'plural' ? 'cardinal' : 'ordinal';
-    const kept = Object.entries(branches).filter(
+    const type = node[1] === 'plural' ? 'cardinal' : 'ordinal';
+    const kept = Object.entries(node[2]).filter(
       ([key]) => !isPluralCategoryKey(key) || localeHas(type, key)
     );
-    return [name, kind, Object.fromEntries(kept), ...rest];
+    return withBranches(node, Object.fromEntries(kept));
   });
 }

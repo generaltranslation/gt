@@ -9,15 +9,13 @@ import {
 } from '../settings/formatOptions';
 import { sortRecord, toMessageTree } from '../tree/canonical';
 import type {
-  DateTimeNode,
+  FormattedNode,
   Message,
+  ParsedNode,
+  ParsedTree,
   MessageBranches,
   MessageNode,
   MessageTree,
-  NumberNode,
-  PluralNode,
-  SelectNode,
-  TagNode,
 } from '../tree/messageTree';
 import {
   addContext,
@@ -44,15 +42,7 @@ import {
 const DATE_TIME_STYLES = new Set<string>(DATE_TIME_STYLE_NAMES);
 
 type FormatElement = NumberElement | DateElement | TimeElement;
-type FormatKind = (NumberNode | DateTimeNode)[1];
-// A style as an ICU string spells it: a name, or the Intl options of a skeleton.
-type IntlStyle =
-  | string
-  | ExtendedNumberFormatOptions
-  | Intl.DateTimeFormatOptions
-  | null
-  | undefined;
-type FormatReader = (element: FormatElement, kind: FormatKind) => MessageNode;
+type FormatReader<Format> = (element: FormatElement) => Format;
 
 /**
  * An app's own style names by kind, in the shape of react-intl's `formats`
@@ -76,10 +66,10 @@ export function readMessage(
   ast: MessageFormatElement[],
   styles: NamedStyles
 ): Message {
-  const contexts: ContextByVariable = new Map();
-  const tree = convert(ast, (element, kind) => {
-    const [node, context] = splitFormat(element, kind, styles);
-    addContext(contexts, element.value, context);
+  const bindings: FormatBindings = new Map();
+  const tree = convert(ast, (element) => {
+    const [node, formatting] = splitFormat(element, styles);
+    bindFormatting(bindings, element.value, formatting);
     return node;
   });
   return { tree, formats: toFormats(contexts) };
@@ -90,22 +80,22 @@ export function readMessage(
  * placeholder keeps every Intl option its skeleton spells, which a message
  * tree cannot hold, and the formatter reads them like a tree's styles.
  */
-export function toParsedTree(ast: MessageFormatElement[]): MessageTree {
+export function toParsedTree(ast: MessageFormatElement[]): ParsedTree {
   // Plain text as one string takes the formatter's fast path.
   return toMessageTree(convert(ast, parsedNode));
 }
 
-function convert(
+function convert<Format>(
   ast: MessageFormatElement[],
-  readFormat: FormatReader
-): MessageNode[] {
+  readFormat: FormatReader<Format>
+): MessageNode<Format>[] {
   return ast.map((element) => toNode(element, readFormat));
 }
 
-function toNode(
+function toNode<Format>(
   element: MessageFormatElement,
-  readFormat: FormatReader
-): MessageNode {
+  readFormat: FormatReader<Format>
+): MessageNode<Format> {
   switch (element.type) {
     case TYPE.literal:
       return element.value;
@@ -115,15 +105,8 @@ function toNode(
       return [element.value];
     case TYPE.number:
     case TYPE.date:
-    case TYPE.time: {
-      const kind =
-        element.type === TYPE.number
-          ? 'number'
-          : element.type === TYPE.date
-            ? 'date'
-            : 'time';
-      return readFormat(element, kind);
-    }
+    case TYPE.time:
+      return readFormat(element);
     case TYPE.select:
       return [element.value, 'select', toBranches(element.options, readFormat)];
     case TYPE.plural: {
@@ -143,18 +126,21 @@ function toNode(
  * A formatted placeholder for the formatter only: the style is the name, or
  * every Intl option the skeleton spells.
  */
-function parsedNode(element: FormatElement, kind: FormatKind): MessageNode {
-  const skeleton = element.style;
-  const style: IntlStyle =
-    skeleton == null || typeof skeleton === 'string'
-      ? skeleton
-      : skeleton.type === SKELETON_TYPE.dateTime
-        ? dateTimeOptions(skeleton)
-        : skeleton.parsedOptions;
-  // Not a style a message tree holds; the formatter reads both kinds.
-  return (
-    style == null ? [element.value, kind] : [element.value, kind, style]
-  ) as MessageNode;
+function parsedNode(element: FormatElement): ParsedNode {
+  if (element.type === TYPE.number) {
+    const style = element.style ?? undefined;
+    return [
+      element.value,
+      'number',
+      typeof style === 'object' ? style.parsedOptions : style,
+    ];
+  }
+  const style = element.style ?? undefined;
+  return [
+    element.value,
+    element.type === TYPE.date ? 'date' : 'time',
+    typeof style === 'object' ? dateTimeOptions(style) : style,
+  ];
 }
 
 // Parsed without a locale, `::j` would otherwise lose its hour.
@@ -174,9 +160,14 @@ const FOUR_FRACTIONAL_DIGITS = /S{4}/;
  */
 function splitFormat(
   element: FormatElement,
-  kind: FormatKind,
   styles: NamedStyles
-): [node: NumberNode | DateTimeNode, context: MessageFormattingContext] {
+): [node: FormattedNode, formatting: MessageFormattingContext] {
+  const kind =
+    element.type === TYPE.number
+      ? 'number'
+      : element.type === TYPE.date
+        ? 'date'
+        : 'time';
   const fail = (reason: string) =>
     new Error(createUnsupportedTreeFormatError(printAST([element]), reason));
   const unknownStyle = (name: string) =>
@@ -252,10 +243,10 @@ function own<T>(
     : undefined;
 }
 
-function toBranches(
+function toBranches<Format>(
   options: Record<string, PluralOrSelectOption>,
-  readFormat: FormatReader
-): MessageBranches {
+  readFormat: FormatReader<Format>
+): MessageBranches<Format> {
   // Object.fromEntries defines own properties, so a `__proto__` branch stays one.
   return Object.fromEntries(
     Object.keys(options).map((key) => [
@@ -283,8 +274,7 @@ function fromNode(node: MessageNode): MessageFormatElement {
     case 'number':
     case 'date':
     case 'time': {
-      const [, kind, style] = node as NumberNode | DateTimeNode;
-      const problem = styleProblem(kind, style);
+      const problem = styleProblem(node[1], node[2]);
       if (problem) {
         throw new Error(
           createUnsupportedTreeFormatError(
@@ -293,48 +283,46 @@ function fromNode(node: MessageNode): MessageFormatElement {
           )
         );
       }
-      if (kind === 'number') {
+      if (node[1] === 'number') {
+        const style = node[2] ?? null;
+        const unit = typeof style === 'object' ? style : null;
         return {
           type: TYPE.number,
           value,
-          style:
-            style == null || typeof style === 'string'
-              ? (style ?? null)
-              : {
-                  type: SKELETON_TYPE.number,
-                  tokens: [{ stem: 'unit', options: [style.unit] }],
-                  parsedOptions: style,
-                },
+          style: unit
+            ? {
+                type: SKELETON_TYPE.number,
+                tokens: [{ stem: 'unit', options: [unit.unit] }],
+                parsedOptions: unit,
+              }
+            : typeof style === 'string'
+              ? style
+              : null,
         };
       }
-      const pattern =
-        style == null || typeof style === 'string'
-          ? undefined
-          : printDateTimeSkeleton(style);
+      const style = node[2] ?? null;
+      const fields = typeof style === 'object' ? style : null;
+      const pattern = fields && printDateTimeSkeleton(fields);
       return {
-        type: kind === 'date' ? TYPE.date : TYPE.time,
+        type: node[1] === 'date' ? TYPE.date : TYPE.time,
         value,
-        style: pattern
-          ? {
-              type: SKELETON_TYPE.dateTime,
-              pattern,
-              parsedOptions: style as Intl.DateTimeFormatOptions,
-            }
-          : typeof style === 'string'
-            ? style
-            : null,
+        style:
+          fields && pattern
+            ? { type: SKELETON_TYPE.dateTime, pattern, parsedOptions: fields }
+            : typeof style === 'string'
+              ? style
+              : null,
       };
     }
     case 'select':
       return {
         type: TYPE.select,
         value,
-        options: fromBranches((node as SelectNode)[2]),
+        options: fromBranches(node[2]),
       };
     case 'plural':
     case 'selectordinal': {
-      // `switch (node[1])` does not narrow a tuple union.
-      const [, kind, branches, offset = 0] = node as PluralNode;
+      const [, kind, branches, offset = 0] = node;
       return {
         type: TYPE.plural,
         value,
@@ -347,7 +335,7 @@ function fromNode(node: MessageNode): MessageFormatElement {
       return {
         type: TYPE.tag,
         value,
-        children: fromMessageTree((node as TagNode)[2]),
+        children: fromMessageTree(node[2]),
       };
   }
 }
