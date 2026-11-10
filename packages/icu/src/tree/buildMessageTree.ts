@@ -6,7 +6,7 @@ import {
   createReservedVariablePrefixError,
 } from '../errors/treeErrors';
 import { FALLBACK_BRANCH_KEY, isArgumentName } from '../settings/syntax';
-import { appendText, compareKeys, toBranch } from './canonical';
+import { appendText, compareKeys, toMessage } from './canonical';
 import type {
   DateTimeNode,
   Message,
@@ -84,7 +84,7 @@ export type BuiltMessageTree = Message & {
 
 /**
  * Builds a canonical message tree from template strings and holes: adjacent
- * text is merged, a branch without placeholders is one string, and
+ * text is merged, a message or branch without placeholders is one string, and
  * plural/select keys and Intl options are sorted, so equal messages produce
  * equal tree JSON. Anonymous holes become `_gt_N`
  * arguments, numbered in tree order from 1. Their values are returned
@@ -96,8 +96,8 @@ export function buildMessageTree(
   strings: readonly string[],
   holes: readonly TemplateHole[]
 ): BuiltMessageTree {
-  const state: BuildState = { values: [], contexts: new Map() };
-  const tree = build(strings, holes, state, false);
+  const context: BuildContext = { values: [], formats: new Map() };
+  const tree = toMessage(build(strings, holes, context, false));
   return {
     tree,
     values: state.values,
@@ -199,7 +199,7 @@ function buildHole(
           throw new Error(createInvalidBranchKeyError(key));
         }
         const branch = hole.branches[key];
-        branches[key] = toBranch(
+        branches[key] = toMessage(
           branch == null
             ? []
             : typeof branch === 'string'

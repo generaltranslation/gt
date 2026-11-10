@@ -75,7 +75,7 @@ describe('collectFiles', () => {
   });
 
   it('uploads ICU_TREE sources as GTJSON tree values', async () => {
-    const tree = ['Save'];
+    const tree = 'Save';
     vi.mocked(aggregateInlineTranslations).mockResolvedValue([
       {
         dataFormat: 'ICU_TREE',

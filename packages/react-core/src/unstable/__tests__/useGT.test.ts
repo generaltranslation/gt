@@ -79,7 +79,7 @@ describe('react-core/unstable useGT', () => {
   });
 
   it('renders the source, validated, when the resolver returns no tree', () => {
-    resolveTranslation.mockReturnValue('not a tree');
+    resolveTranslation.mockReturnValue({ text: 'not a tree' });
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     expect(useGT()`Hello, ${{ name }}!`).toBe('Hello, Ada!');

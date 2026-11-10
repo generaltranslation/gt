@@ -40,10 +40,11 @@ function toRenderable(
   message: string | Msg,
   overrides: Record<string, unknown> | undefined
 ): RenderableMessage {
-  // A string is literal text: no ICU parsing, so `{` and `#` are text.
+  // A string is literal text, which is its own message tree: no ICU parsing,
+  // so `{` and `#` are text.
   if (typeof message === 'string') {
     return {
-      tree: message ? [message] : [],
+      tree: message,
       values: {},
       formats: {},
       metadata: {},

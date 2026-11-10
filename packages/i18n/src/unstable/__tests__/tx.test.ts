@@ -23,7 +23,7 @@ vi.mock(
 
 type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
 
-const saveHash = hashSource({ source: ['Save'], dataFormat: 'ICU_TREE' });
+const saveHash = hashSource({ source: 'Save', dataFormat: 'ICU_TREE' });
 const greetingTree = ['Hello, ', ['name'], '!'];
 const greetingHash = hashSource({
   source: greetingTree,
@@ -40,7 +40,7 @@ function setup({ enableI18n = true } = {}) {
   setI18nCache(
     new I18nCache({
       loadTranslations: async (locale: string) =>
-        locale === 'fr' ? { [saveHash]: ['Enregistrer'] } : {},
+        locale === 'fr' ? { [saveHash]: 'Enregistrer' } : {},
     })
   );
   setWritableConditionStore({
@@ -95,18 +95,18 @@ describe('gt-i18n/unstable tx', () => {
   it('sends the options form with its context hash', async () => {
     setup();
     const hash = hashSource({
-      source: ['Save'],
+      source: 'Save',
       dataFormat: 'ICU_TREE',
       context: 'button',
     });
     translateMany.mockResolvedValue({
-      [hash]: { success: true, translation: ['Sauvegarder'] },
+      [hash]: { success: true, translation: 'Sauvegarder' },
     });
 
     expect(await tx({ context: 'button' })`Save`).toBe('Sauvegarder');
     expect(translateMany).toHaveBeenCalledWith({
       [hash]: {
-        source: ['Save'],
+        source: 'Save',
         metadata: expect.objectContaining({ hash, context: 'button' }),
       },
     });

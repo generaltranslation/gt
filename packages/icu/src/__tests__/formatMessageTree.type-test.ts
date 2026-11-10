@@ -185,7 +185,7 @@ expectType<Equal<typeof icuUnrelated, Rich>>();
 // A returned array is always several parts, so R cannot be an array where
 // tags format: `[42]` would reach the outer tag as the number 42.
 formatMessageTree<number[]>(
-  [['o', 'tag', [['i', 'tag', ['x']]]]],
+  [['o', 'tag', [['i', 'tag', 'x']]]],
   'en',
   {
     // @ts-expect-error tags need R to be one part, not an array

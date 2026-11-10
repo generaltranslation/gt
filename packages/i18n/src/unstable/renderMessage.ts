@@ -81,7 +81,8 @@ export function renderMessage(
 
   let outputLocale = defaultLocale;
   let output: string | undefined;
-  if (translation) {
+  // An empty translation is the text '', not a missing one.
+  if (translation !== undefined) {
     try {
       output = formatTree(translation, locale, values, formats);
       outputLocale = locale;

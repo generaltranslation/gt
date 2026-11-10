@@ -44,14 +44,14 @@ describe('gt-i18n/unstable runtime translation', () => {
     });
     await cache.loadTranslations('fr');
 
-    const source = ['Save'];
+    const source = 'Save';
     const hash = hashSource({
       source,
       dataFormat: 'ICU_TREE',
       context: 'button',
     });
     translateMany.mockResolvedValue({
-      [hash]: { success: true, translation: ['Enregistrer'] },
+      [hash]: { success: true, translation: 'Enregistrer' },
     });
 
     expect(t({ context: 'button' })`Save`).toBe('Save');
@@ -81,9 +81,9 @@ describe('gt-i18n/unstable runtime translation', () => {
     setI18nCache(
       new I18nCache({ loadTranslations: async () => ({}), cacheExpiryTime: 0 })
     );
-    const hash = hashSource({ source: ['Save'], dataFormat: 'ICU_TREE' });
+    const hash = hashSource({ source: 'Save', dataFormat: 'ICU_TREE' });
     translateMany.mockResolvedValue({
-      [hash]: { success: true, translation: ['Enregistrer'] },
+      [hash]: { success: true, translation: 'Enregistrer' },
     });
 
     const gt = await getGT({ locale: 'fr', enableI18n: true });
