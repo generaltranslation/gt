@@ -52,7 +52,8 @@ export function icuToMessage(
  * Throws for a style a tree cannot hold, as `validateMessageTree` reports.
  */
 export function messageTreeToIcu(tree: MessageTree): string {
-  // Canonical first: adjacent text must print as one literal, since
-  // quoting '{' and '}' separately gives '{''}', an escaped quote.
-  return printAST(fromMessageTree(normalizeMessageTree(tree)));
+  // The types allow adjacent text, which a valid tree does not have. It must
+  // print as one literal: quoting '{' and '}' separately gives '{''}', an
+  // escaped quote.
+  return printAST(fromMessageTree(normalizeTree(tree)));
 }

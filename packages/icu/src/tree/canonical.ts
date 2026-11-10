@@ -54,8 +54,9 @@ export function canonicalStyle<T extends object>(fields: T): T | undefined {
 }
 
 /**
- * Rewrites a tree, such as one converted from an ICU string, to the form
- * templateToMessage builds: adjacent text merged and empty text dropped, a
+ * Rewrites a tree the types allow, such as one converted node for node from
+ * an ICU string, to the one valid tree of its message, the form
+ * buildMessageTree builds: adjacent text merged and empty text dropped, a
  * message, branch or tag's children without placeholders as one string,
  * branch keys and Intl options sorted, and no zero plural offset or
  * `undefined` style. An empty style stays, so printing rejects it rather than
