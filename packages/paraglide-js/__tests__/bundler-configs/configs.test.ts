@@ -1,6 +1,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { afterAll, describe, expect, test } from 'vitest';
+import {
+  applyAliases,
+  type ImportAlias,
+} from '../../lib/compiler/bundler-configs/alias.js';
 import type { BundlerConfig } from '../../lib/compiler/bundler-configs/bundler-config.js';
 import { defaultBundlerConfigs } from '../../lib/compiler/bundler-configs/index.js';
 import { probeBundlerConfig } from '../../lib/compiler/bundler-configs/probe.js';
@@ -149,6 +153,38 @@ describe('webpack and rspack', () => {
         { find: 'i18n', replacement: '/app/src/i18n.ts', exact: true },
       ],
     });
+  });
+
+  test('a name with one `*` stands for any text, which replaces the `*` of the path', async () => {
+    const { aliases } = (await read(
+      'webpack-wildcard',
+      'webpack.config.js',
+      `export default { resolve: { alias: {
+        "@/*": "/app/src/*",
+        "*.svg": "/app/icons/*.js",
+        "all/*": "/app/$one",
+        "exact/*$": "/app/exact",
+        "a/*/*": "/app/two",
+      } } };`
+    )) as { aliases: ImportAlias[] };
+
+    expect(aliases).toEqual([
+      { find: /^@\/(.*)$/, replacement: '/app/src/$1' },
+      { find: /^(.*)\.svg$/, replacement: '/app/icons/$1.js' },
+      { find: /^all\/(.*)$/, replacement: '/app/$$one' },
+      { find: 'exact/*', replacement: '/app/exact', exact: true },
+      { find: 'a/*/*', replacement: '/app/two', exact: false },
+    ]);
+    const resolved = ['@/ui/a.js', 'logo.svg', 'all/b', 'exact/b', 'a/b/c'].map(
+      (specifier) => applyAliases(specifier, aliases)
+    );
+    expect(resolved).toEqual([
+      '/app/src/ui/a.js',
+      '/app/icons/logo.js',
+      '/app/$one',
+      'exact/b',
+      'a/b/c',
+    ]);
   });
 
   test('a CommonJS config that is a function; of several configs, the first', async () => {

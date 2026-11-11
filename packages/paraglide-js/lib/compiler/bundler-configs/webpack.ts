@@ -1,5 +1,6 @@
 import { pathToFileURL } from 'node:url';
 import { isJsonObject } from '../utils/json.js';
+import { escapeRegExp } from '../utils/regexp.js';
 import type { ImportAlias } from './alias.js';
 import { configFileNames, type BundlerConfig } from './bundler-config.js';
 
@@ -49,9 +50,25 @@ function importAliases(alias: unknown): ImportAlias[] {
 
     const exact = name.endsWith('$');
     const find = exact ? name.slice(0, -1) : name;
+    if (!exact && WILDCARD_NAME.test(find)) {
+      return [wildcardAlias(find, replacement)];
+    }
 
     return [{ find, replacement, exact }];
   });
+}
+
+/** A name with one `*`, which stands for any text: `@/*`. With more, webpack reads them as they are. */
+const WILDCARD_NAME = /^[^*]*\*[^*]*$/;
+
+/** `"@/*": "/app/src/*"` → `/^@\/(.*)$/` to `/app/src/$1` */
+function wildcardAlias(name: string, target: string): ImportAlias {
+  const [before, after] = name.split('*').map(escapeRegExp);
+  const find = new RegExp(`^${before}(.*)${after}$`);
+  // A `$` of the target is not a reference to the match; only its first `*` is.
+  const replacement = target.replaceAll('$', '$$$$').replace('*', () => '$1');
+
+  return { find, replacement };
 }
 
 /** `{ name: target }`, or `[{ name, alias, onlyModule }]` where `onlyModule` is `name$`. */

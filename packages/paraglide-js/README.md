@@ -107,7 +107,8 @@ come from, in order:
 2. the first `vite.config.*`, `webpack.config.*` or `rspack.config.*` it finds.
    Vite's is resolved by the project's own Vite, so plugin aliases (SvelteKit's
    `$lib`) and root paths (`/src/a.js`) work. webpack's and rspack's is
-   imported, so a TypeScript config needs a Node.js that runs TypeScript;
+   imported, so a TypeScript config needs a Node.js that runs TypeScript. Its
+   `name$` and wildcard (`"@/*"`) aliases work;
 3. `tsconfig.json` `paths` and `package.json` `imports`.
 
 When no bundler config could be read, imports that did not resolve are listed
@@ -239,7 +240,7 @@ is exported on its own, with the helpers they use (`remapProgram`, `applyEdits`,
 ## Not handled yet
 
 - **Aliases:** a bundler config gives only its aliases (and Vite's root),
-  not its plugins' virtual modules or webpack's wildcard aliases (`"@/*"`).
+  not its plugins' virtual modules.
   Next.js, Nuxt and Astro configs are not read; their aliases come from
   `tsconfig.json`.
 - **Other inlang format plugins** (i18next, …) get no metadata files.

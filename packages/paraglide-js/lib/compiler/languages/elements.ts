@@ -1,4 +1,5 @@
 import type { ElementContext, SourceRange } from '../analysis/types.js';
+import { escapeRegExp } from '../utils/regexp.js';
 
 /** An attribute's name as written (`:title`, `@click`, `{...}`) and the range of its value. */
 export type SourceAttribute = { name: string; start: number; end: number };
@@ -122,8 +123,4 @@ function closingTagName(
   const start = tagStart + closingTag[0].indexOf(name, '</'.length);
 
   return { start, end: start + name.length };
-}
-
-function escapeRegExp(text: string): string {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

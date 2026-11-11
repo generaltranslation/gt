@@ -88,13 +88,24 @@ describe('aliases a config file of the project declares', () => {
         import path from "node:path";
         const src = path.resolve(import.meta.dirname, "src");
         export default {
-          resolve: { alias: { "@": src, "i18n$": path.join(src, "i18n/index.ts") } },
+          resolve: {
+            alias: {
+              "@": src,
+              "i18n$": path.join(src, "i18n/index.ts"),
+              "~/*": path.join(src, "*"),
+            },
+          },
         };`,
       'src/direct.ts': useGreeting('@/paraglide/messages.js'),
       'src/reexport.ts': useGreeting('i18n'),
+      'src/wildcard.ts': useGreeting('~/paraglide/messages.js'),
     });
     expect(await collect(root)).toMatchObject({
-      usages: [greetingIn('src/direct.ts'), greetingIn('src/reexport.ts')],
+      usages: [
+        greetingIn('src/direct.ts'),
+        greetingIn('src/reexport.ts'),
+        greetingIn('src/wildcard.ts'),
+      ],
       warnings: [],
     });
   });
