@@ -1,17 +1,31 @@
 # @generaltranslation/paraglide-js (proof of concept)
 
-Collects the source-code context of every usage of a Paraglide message in an
-app, **without changing Paraglide**. It writes the 10 lines above and below
-each usage to a metadata file next to each message file
-(`messages/en.json` → `messages/en.metadata.json`), which the gt CLI uploads
-with the messages as translation context.
+Finds every usage of a Paraglide message in an app and saves the code around it
+as translation context, **without changing Paraglide**.
 
-Supports Paraglide 1, 2 and 3, and any framework built with Vite 5+, webpack 5,
-rspack (Next.js), Rollup, Rolldown or esbuild: JSX frameworks, Vue/Nuxt,
-Svelte/SvelteKit, Astro, Angular/Analog, VitePress, Lit, Marko, Ember, and plain
-TypeScript. Bundlers without plugins (Turbopack, Angular CLI) use the CLI.
+Each message file gets a metadata file next to it
+(`messages/en.json` → `messages/en.metadata.json`) with the 10 lines above and
+below every usage. The gt CLI uploads it with the messages.
+
+Supports Paraglide 1–3 on Node 20+, in apps built with Vite 5+, webpack 5,
+rspack (Next.js), Rollup, Rolldown or esbuild.
 
 ## Usage
+
+Run it either way. Both take the same [options](#options) and write the same
+files.
+
+**CLI**, without running the bundler:
+
+```bash
+npx paraglide-context [root] [--watch] [--verbose] [options]
+```
+
+`--watch` keeps the files up to date; `--verbose` prints a summary. From a
+script, use `collectContext(options)` or `watchContext(options)`, which returns
+`{ ready, close() }`.
+
+**Bundler plugin**, in a build or dev server:
 
 ```ts
 // vite.config.ts
@@ -29,32 +43,19 @@ export default defineConfig({
 });
 ```
 
-Everything is exported from `@generaltranslation/paraglide-js/compiler`;
-`@generaltranslation/paraglide-js` itself exports nothing. Other bundlers take the same options:
+| Other bundlers                    | Plugin                                |
+| --------------------------------- | ------------------------------------- |
+| webpack, rspack (`next.config.*`) | `new ParaglideContextWebpackPlugin()` |
+| Rollup, Rolldown                  | `paraglideContextRollup()`            |
+| esbuild                           | `paraglideContextEsbuild()`           |
 
-```ts
-// webpack / rspack (e.g. next.config.ts)
-import { ParaglideContextWebpackPlugin } from '@generaltranslation/paraglide-js/compiler';
-config.plugins.push(new ParaglideContextWebpackPlugin());
-
-// Rollup / Rolldown
-import { paraglideContextRollup } from '@generaltranslation/paraglide-js/compiler';
-
-// esbuild
-import { paraglideContextEsbuild } from '@generaltranslation/paraglide-js/compiler';
-```
-
-Without a bundler, use the CLI or `collectContext` / `watchContext`. Only `include` is analyzed then (imports are still
-followed):
-
-```bash
-npx paraglide-context [root] [--watch] [--include src] [--alias ~=./src] [--project project.inlang]
-```
+Everything is exported from `@generaltranslation/paraglide-js/compiler`. The
+package root exports nothing.
 
 ## Output
 
-A metadata file has the keys of its message file. Each used message lists the
-code around its usages, by source file (relative to the project root):
+A metadata file mirrors its message file. Each used message lists the code
+around its usages, by source file:
 
 ```json
 // messages/en.metadata.json
@@ -73,86 +74,118 @@ code around its usages, by source file (relative to the project root):
 }
 ```
 
-- **Only the base locale** gets one: the context is the same for every target
-  language.
-- **Several message files** (`pathPattern` is a list) each get their own, with
-  their own keys. Nested keys stay nested.
-- **Several inlang projects** each get their own: a usage goes to the project
-  its outdir was compiled from.
-- **Only keys the message file has** are written; the gt CLI rejects others.
+- Only base-locale message files get one: context is the same for every target
+  language. Nested keys stay nested.
+- Only keys the message file has are written (the gt CLI rejects others).
   Unused messages have no entry.
-- **`sourceCode` is replaced on every write.** Other fields (`context`,
-  `maxChars`) are hand-written and kept.
-- A dynamic name like `error_*` goes to every message it matches; `m[key]`
-  alone goes to none.
+- `sourceCode` is replaced on every write. Hand-written fields (`context`,
+  `maxChars`) are kept.
+- A dynamic name like ``m[`error_${code}`]`` goes to every message matching
+  `error_*`. `m[key]` alone goes to none.
+- With several inlang projects, a usage goes to the project its outdir was
+  compiled from.
+- Files are written atomically and only when they change. One that is not a
+  JSON object is left alone, with a warning.
 
 ## Options
 
-| Option           | Default            | Meaning                                                                                                 |
-| ---------------- | ------------------ | ------------------------------------------------------------------------------------------------------- |
-| `include`        | the whole project  | Paths or globs analyzed, relative to the project root.                                                  |
-| `exclude`        | `DEFAULT_EXCLUDE`  | Paths or globs not analyzed. The default excludes tests.                                                |
-| `targets`        | `defaultTargets`   | What counts as Paraglide (see [Targets](#targets)).                                                     |
-| `languages`      | `defaultLanguages` | Formats besides JS/TS (see [Frameworks](#frameworks)).                                                  |
-| `outdirs`        | detected           | Paraglide outdirs to trust without verification.                                                        |
-| `autoImports`    | detected           | Names used without an import, e.g. `{ m: "./src/paraglide/messages.js" }`. `false` disables detection.  |
-| `inlangProjects` | detected           | inlang project directories whose messages get metadata files (see [inlang projects](#inlang-projects)). |
-| `radius`         | `10`               | Lines of context above and below each usage.                                                            |
-| `enabled`        | off in tests       | Set `true` to run under Vitest, `mode: "test"` or `NODE_ENV=test`.                                      |
+Paths are relative to the project root: the nearest `package.json` at or above
+the bundler's or CLI's root. Flags marked `…` can be repeated.
+
+| Option           | CLI flag              | Default                 | Meaning                                                                               |
+| ---------------- | --------------------- | ----------------------- | ------------------------------------------------------------------------------------- |
+| `include`        | `--include …`         | the whole project       | Paths or globs to analyze.                                                            |
+| `exclude`        | `--exclude …`         | `DEFAULT_EXCLUDE`       | Paths or globs to skip. The default skips tests and tool configs.                     |
+| `radius`         | `--radius`            | `10`                    | Lines of context above and below each usage.                                          |
+| `outdirs`        | `--outdir …`          | detected                | Paraglide outdirs to trust without verification.                                      |
+| `inlangProjects` | `--project …`         | detected                | inlang project directories whose messages get metadata files.                         |
+| `autoImports`    |                       | detected                | Names used without an import: `{ m: "./src/paraglide/messages.js" }`. `false`: none.  |
+| `targets`        |                       | `defaultTargets`        | What counts as Paraglide. See [Targets](#targets).                                    |
+| `languages`      |                       | `defaultLanguages`      | File formats besides JS/TS. See [File formats](#file-formats).                        |
+| `enabled`        |                       | off in tests            | Plugins only. `true` runs under Vitest, `mode: "test"` or `NODE_ENV=test`.            |
+| `root`           | `[root]`              | working directory       | CLI and Rollup only. Other plugins use the bundler's root.                            |
+| `alias`          | `--alias ~=./src …`   | none                    | CLI only. Import aliases: `{ "~": "/abs/src" }` or a list of `{ find, replacement }`. |
+| `bundlerConfigs` | `--no-bundler-config` | `defaultBundlerConfigs` | CLI only. Bundler configs to read aliases from. `[]`: none.                           |
+
+"CLI only" includes `collectContext` and `watchContext`, which also take
+`logger` (`{ warn, info }`), `conditions` (package export conditions) and
+`rootDirectory` (where `/src/a.js` resolves from).
 
 ## How it works
 
-**Files.** The project root is the nearest `package.json` at or above Vite's
-root. Analyzed: `include` (minus `exclude`, `node_modules`, build output and
-anything `.gitignore`d from the repository or monorepo root down), plus every
-module the bundler loads, wherever it lives
-(monorepo packages, Vike's `pages/`, Laravel's `resources/js`).
+**Files.** `include`, minus `exclude`, `node_modules`, build and framework
+output, and anything `.gitignore`d. Plugins also analyze every module the
+bundler loads, wherever it lives (monorepo packages, Vike's `pages/`, Laravel's
+`resources/js`).
 
-**Imports** are never matched by specifier text. Each one is:
+**Imports** are never matched by their text. Each is resolved, followed through
+re-exports (ESM and CommonJS), and counted only if it ends in a Paraglide file.
+Plugins resolve with the bundler's own resolver. The CLI takes aliases from, in
+order:
 
-1. **Resolved** with the bundler's own resolver (Vite's plugin container,
-   webpack's resolver, Rollup's `this.resolve`, esbuild's resolutions), so
-   aliases, `exports`/`imports`, tsconfig paths and Paraglide's virtual modules
-   all work.
-2. **Followed** through re-exports of non-Paraglide modules, ESM and CommonJS.
-3. **Verified** to end at a file a target matches; otherwise nothing is recorded.
+1. the `alias` option;
+2. the first `vite.config.*`, `webpack.config.*` or `rspack.config.*` it finds.
+   Vite's is resolved by the project's own Vite, so plugin aliases (SvelteKit's
+   `$lib`) and root paths (`/src/a.js`) work. webpack's and rspack's is
+   imported, so a TypeScript config needs a Node.js that runs TypeScript;
+3. `tsconfig.json` `paths` and `package.json` `imports`.
 
-**Values** are tracked with ESLint's scope analysis
-(`@typescript-eslint/scope-manager`): aliases (`const t = m`), destructuring,
-reassignment, object spreads, function arguments and JSX props passed to
-parameters (also across modules and re-export barrels, and from templates), and
-computed keys (`m["a"]`, `m[c ? "a" : "b"]`). Unknown keys give
-a dynamic name like `error_*`.
+If it could read no bundler config, the CLI warns about imports it could not
+resolve, since they may be undeclared aliases.
 
-**The message catalog** is read from the generated files. Unknown messages are
-flagged `not in the catalog` (with a build warning), and dynamic names list the
-messages they can match.
+**Outdirs** are detected, so several Paraglide projects in one app need no
+setup. A directory counts if it holds exactly what the installed Paraglide
+generates (Paraglide 1: the same structure), on disk or as virtual modules. A
+rejected one is skipped with a warning; list it in `outdirs` to force it.
+
+**inlang projects.** Each outdir is paired with the project its `README.md`
+names (`Compiled from: …`), else the only `*.inlang` directory between the
+bundler's root and the monorepo root, else the one defining the most of its
+messages. `inlangProjects` replaces that search. Message files come from the
+project's `settings.json`: `baseLocale` and
+`plugin.inlang.messageFormat.pathPattern`.
+
+**Usages.** Values are tracked with ESLint's scope analysis through aliases
+(`const t = m`), destructuring, reassignment, object spreads, function
+arguments, component props (across modules and from templates) and computed
+keys (`m["a"]`, `m[c ? "a" : "b"]`). Each is a `call` (`m.tos()`), `method`
+(`m.tos.parts()`), `reference` (`message={m.tos}`) or `component`
+(`<ParaglideMessage />`). Messages missing from the generated catalog are
+reported in a warning.
 
 **Auto-imports** from unplugin-auto-import, unplugin-vue-components and Nuxt
-are read from their `.d.ts` files; local names shadow them.
+are read from their `.d.ts` files.
 
-**Outdirs** are detected, not configured, so several Paraglide projects in one
-app need no setup. A directory counts only if it contains Paraglide's exact
-generated code for the installed version (Paraglide 2/3: byte comparison with an
-empty compiled project; Paraglide 1: structural check). A failing directory is
-skipped with a warning saying why; list it in `outdirs` to force it.
+**In a bundler.** A build analyzes `include` when it starts and loaded modules
+when it ends. Dev analyzes at startup, then each module as it loads; a change
+re-analyzes the file and its dependents, and adding or deleting a file
+re-scans. Modules are never transformed. Bundler instances of one project
+(Nuxt, Next.js, Astro) share the metadata files. Paraglide's plugin watches the
+messages directory, so it recompiles once after a metadata file changes.
 
-## inlang projects
+## File formats
 
-Each outdir is paired with the inlang project it was compiled from:
+JS, TS and JSX are parsed with oxc, including Lit-style `` html`…` ``
+templates. Other formats are converted to TypeScript by the framework's own
+tooling, loaded from the app so versions match:
 
-1. the project its `README.md` names (`Compiled from: …`, written by
-   Paraglide 2 and 3 unless `emitReadme` is off);
-2. else, of the `*.inlang` directories in the bundler's root and each
-   directory above it up to the monorepo root, the only one, or the one that
-   defines the most of the outdir's messages.
+| Files                                   | Needs in the app                                                                                     |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `.vue`, VitePress `.md`                 | `@vue/language-core` (comes with `vue-tsc`), `typescript` 5 or 6; `@vue/language-plugin-pug` for pug |
+| `.svelte`                               | `svelte2tsx` (comes with `svelte-check`), `svelte`                                                   |
+| `.astro`                                | `@astrojs/astro2tsx` (comes with `@astrojs/check`), else `@astrojs/compiler`                         |
+| `.mdx`                                  | `@mdx-js/language-service`, `typescript` 5 or 6                                                      |
+| Angular `.ts`/`.html`, `.ag`, `.analog` | `@angular/compiler`                                                                                  |
+| `.marko`                                | `@marko/language-tools`, `@marko/compiler`                                                           |
+| `.gjs`, `.gts`                          | `@glint/ember-tsc`                                                                                   |
 
-`inlangProjects` replaces both with a list, matched the same way. Message
-files come from the project's `settings.json`: `baseLocale` and
-`plugin.inlang.messageFormat.pathPattern`. Other format plugins (i18next, …)
-are not written yet.
+A format whose tool is missing is skipped with one warning naming what to
+install. A file that stops parsing mid-edit keeps its last usages until it
+parses again; one that never parsed is skipped.
 
-## Targets
+## Extending
+
+### Targets
 
 A target says which resolved files belong to Paraglide and what each export is:
 
@@ -165,13 +198,14 @@ type ParaglideTarget = {
 // SymbolSpec: { type: "namespace", member(name) } | { type: "value", name, methods? }
 ```
 
-Built in: `messagesTarget` (`messages.js`, `messages/*.js`), `runtimeTarget`,
-`serverTarget`, `registryTarget`, and `adapterTargets`, Paraglide's framework
-adapters (`@inlang/paraglide-js-react`, `-solid`, `-svelte`, `-vue`, and
-Paraglide 1's `@inlang/paraglide-sveltekit`, `-next`, `-astro`), so
-`<Message message={m.tos} />` is a usage too. Custom ones can use
-`defineTarget()`, `generatedFileTarget(name, path)` or
-`packageTarget(name, packageName)`:
+`defaultTargets` is `messagesTarget` (`messages.js`, `messages/*.js`),
+`runtimeTarget`, `serverTarget`, `registryTarget` and `adapterTargets`:
+`@inlang/paraglide-js-react`, `-solid`, `-svelte`, `-vue`, and Paraglide 1's
+`@inlang/paraglide-sveltekit`, `-next`, `-astro`. So
+`<Message message={m.tos} />` is a usage too.
+
+Write your own with `defineTarget()`, `generatedFileTarget(name, path)` or
+`packageTarget(name, packageName)`. When several match a file, the last wins:
 
 ```ts
 paraglideContext({
@@ -182,116 +216,88 @@ paraglideContext({
 });
 ```
 
-When several targets match a file, the last one wins, so a target after
-`defaultTargets` can also relabel a built-in one.
+### Languages
 
-Usage kinds: `call`, `method` (`m.tos.parts()`), `reference` (`message={m.tos}`)
-and `component` (`<ParaglideMessage />`).
-
-## Frameworks
-
-JS/TS/JSX are parsed directly with oxc; Lit-style `` html`…` `` templates get
-their elements from parse5. Every other format is read with the framework's own
-tooling, which turns a component into TypeScript with mappings back to the
-file, so usages report the file's own lines and its scoping rules are the
-framework's:
-
-| Files                        | Tool the project needs                                                                               |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `.vue`, VitePress `.md`      | `@vue/language-core` (comes with `vue-tsc`), `typescript` 5 or 6; `@vue/language-plugin-pug` for pug |
-| `.svelte`                    | `svelte2tsx` (comes with `svelte-check`), `svelte`                                                   |
-| `.astro`                     | `@astrojs/astro2tsx` (comes with `@astrojs/check`), else `@astrojs/compiler`                         |
-| `.mdx`                       | `@mdx-js/language-service`, `typescript` 5 or 6                                                      |
-| Angular `.ts`/`.html`, `.ag` | `@angular/compiler`                                                                                  |
-| `.marko`                     | `@marko/language-tools`, `@marko/compiler`                                                           |
-| `.gjs`, `.gts`               | `@glint/ember-tsc`                                                                                   |
-
-The tools are loaded from the app, so their versions match its framework. They
-are also found as dependencies of the app's dependencies (e.g. `svelte2tsx` of
-`svelte-check`). When one is missing, that format's files are skipped with one
-warning naming what to install, e.g.:
-
-```
-[paraglide-context] 14 .vue file(s) were not analyzed (e.g. src/App.vue): they need
-@vue/language-core, which is not installed. Install it: pnpm add -D vue-tsc (vue-tsc includes
-@vue/language-core)
-```
-
-A file its tool rejects (mid-edit) is skipped until it parses again.
-
-Each usage records its `scope` (nearest named function, component or class
-member) and the element and attribute it is in, from the framework's parser.
-
-Add formats with `languages`: a `SourceLanguage` returns the tool's output as
-`{ code, lang, mappings, elements }` (`mappingsFromVolar`, `mappingsFromSourceMap`):
+A `SourceLanguage` returns its tool's output as
+`{ code, lang, mappings, elements? }`. Build `mappings` with
+`mappingsFromSourceMap` or `mappingsFromVolar`:
 
 ```ts
-import {
-  defaultLanguages,
-  mappingsFromSourceMap,
-  type SourceLanguage,
-} from '@generaltranslation/paraglide-js/compiler';
-
 const riot: SourceLanguage = {
   name: 'riot',
   extensions: ['.riot'],
-  requires: ['@riotjs/compiler'],
+  requires: ['@riotjs/compiler'], // named in the warning when missing
   async generate(source, file, context) {
+    // Loaded from the app; undefined if it is not installed.
     const compiler =
       await context.load<typeof import('@riotjs/compiler')>('@riotjs/compiler');
-    if (!compiler) return undefined; // skipped, naming `requires`
+    if (!compiler) return undefined; // skipped
     const { code, map } = compiler.compile(source, { file });
-    return {
-      code,
-      lang: 'js',
-      mappings: mappingsFromSourceMap(map, code, source),
-    };
+    const mappings = mappingsFromSourceMap(map, code, source);
+    return { code, lang: 'js', mappings };
   },
 };
 paraglideContext({ languages: [...defaultLanguages, riot] });
 ```
 
-## Build and dev
+### Bundlers
 
-- **Build** analyzes `include` at `buildStart` and loaded modules at `buildEnd`.
-- **Dev** analyzes at startup, then each module as it loads. A change
-  re-analyzes the file and its dependents; adding or deleting a file re-scans.
-- It never transforms modules and imports nothing from `vite` at runtime.
-- Bundler instances of one project in one process (Nuxt, Next.js, Astro) share
-  the metadata files; writes are atomic and only happen when content changes.
-- Paraglide's own plugin watches the messages directory, so it recompiles once
-  after a metadata file changes; the unchanged output ends there.
+- **CLI aliases:** add a `BundlerConfig` (`{ name, files, read }`) to
+  `bundlerConfigs: [...defaultBundlerConfigs, yours]`. `webpackLikeConfig()`
+  makes one for a config in webpack's format.
+- **A plugin:** call `createCollector(options, { root, logger })`, set its
+  `resolver`, and drive it from the bundler's hooks (`scanAll`, `addLoaded`,
+  `write`). `nodeResolver` and `ProjectResolver` resolve without a bundler.
+
+### Lower-level API
+
+For scripts that want the usages rather than the files: `ModuleGraph`,
+`analyzeModule`, `parseSource`, `readInlangProject`, `sourceCodeByMessage`,
+`sourceSnippet`, `renderMetadataFile` and `metadataPath`. A `ParaglideUsage`
+has the target, name, kind, expression, position, `scope` (nearest named
+function, component or class member), element and attribute, and the modules it
+resolved through.
+
+Each built-in language (`vueLanguage`, …) and bundler config (`viteConfig`, …)
+is exported on its own, with the helpers they use (`remapProgram`, `applyEdits`,
+`elementContextAt`, `componentTagAt`, `applyAliases`).
 
 ## Not handled yet
 
-- Apps that share one inlang project overwrite each other's `sourceCode`: the
+- **CLI aliases:** a bundler config gives only its aliases (and Vite's root),
+  not its plugins' virtual modules or webpack's wildcard aliases (`"@/*"`).
+  Next.js, Nuxt and Astro configs are not read; their aliases come from
+  `tsconfig.json`.
+- **Other inlang format plugins** (i18next, …) get no metadata files.
+- **Apps sharing one inlang project** overwrite each other's `sourceCode`. The
   last one built wins.
-- Usages of runtime functions and other targets are analyzed but not written;
-  only messages have a key to be written under.
-- CommonJS exports below a module's top level.
-- Computed keys with more than 16 alternatives (become `*`).
-- A file that stops parsing (mid-edit in dev) keeps its last version's usages
-  until it parses again; at build time it is skipped. Tools recover from most
-  errors, but Astro loses the rest of an element after an unclosed `{`, and
-  with `@astrojs/compiler` alone (Astro 6 and older) the rest of the line.
-- Formats whose tool is not installed are skipped (with a warning).
-- Values are followed through bindings, arguments, props and re-exports, not
-  through return values, React context, `provide`/`inject`, arrays or objects
-  assigned later. A read after an unconditional reassignment sees only it;
-  loops are not modelled.
-- Props are followed into Svelte, Vue and Astro components, imported or
-  auto-imported, not into ones registered with `app.component()` or
-  `<svelte:component this={X}>`.
+- **Other targets** (runtime functions, …) are analyzed but not written: only
+  messages have a key to write under.
+- **Value flow** stops at return values, React context, `provide`/`inject`,
+  arrays, and objects assigned later. A read after an unconditional
+  reassignment sees only the new value. Loops are not modelled.
+- **Props** are followed into Svelte, Vue and Astro components, but not ones
+  registered with `app.component()` or `<svelte:component this={X}>`.
+- **Computed keys** with more than 16 alternatives become `*`.
+- **CommonJS exports** below a module's top level.
+- **Broken Astro files** lose the rest of an element after an unclosed `{`, or
+  the rest of the line with only `@astrojs/compiler` (Astro 6 and older).
 
-## Layout
+## Development
+
+```bash
+pnpm install                                             # at the repository root
+pnpm --filter @generaltranslation/paraglide-js test      # vitest: Vite 5–8, webpack, rspack, Rollup, esbuild, Paraglide 1–3
+pnpm --filter @generaltranslation/paraglide-js build     # tsc → dist/
+pnpm --filter @generaltranslation/paraglide-js typecheck
+```
 
 ```
-src/                    the package's entry points, nothing else
-  index.ts              `@generaltranslation/paraglide-js`: empty
-  compiler.ts           `@generaltranslation/paraglide-js/compiler`: the public API
+src/                    entry points: index.ts (empty), compiler.ts (the public API)
 lib/compiler/
   options.ts            plugin and CLI options
   plugins/              bundler adapters (the only code that knows bundlers)
+  bundler-configs/      bundler configs → import aliases, for the CLI
   cli/                  the `paraglide-context` command
   collector/            bundler-neutral orchestration and the metadata files
   project/              include/exclude, roots, auto-imports, installed packages
@@ -300,26 +306,12 @@ lib/compiler/
   analysis/             JS semantics: module graph, scopes, value flow, usages
   languages/            file formats → the framework tool's TypeScript, mapped back
   output/               usages → a message file's metadata (the gt CLI's format)
-  utils/
 __tests__/              mirrors lib/compiler/
 ```
 
-To add a bundler, write a `plugins/` adapter that calls `createCollector` and
-drives it from the bundler's hooks. A file format is a `SourceLanguage` in
-`languages/`; something Paraglide-like is a `ParaglideTarget`.
-
-## Development
-
-```bash
-pnpm install                                             # at the repository root
-pnpm --filter @generaltranslation/paraglide-js test      # vitest; covers Vite 5–8, webpack, rspack, Rollup, esbuild, Paraglide 1–3
-pnpm --filter @generaltranslation/paraglide-js build     # tsc → dist/
-pnpm --filter @generaltranslation/paraglide-js typecheck
-```
-
-To use a local checkout in an app, install it as an **injected** dependency
-(not `link:`, which leads to duplicate Vite types and TS2321 in
-`defineConfig()`):
+To try a local checkout in an app, install it as an **injected** dependency
+(`link:` causes duplicate Vite types and TS2321 in `defineConfig()`), then
+rebuild and re-run `pnpm install` in the app after each change:
 
 ```json
 {
@@ -331,5 +323,3 @@ To use a local checkout in an app, install it as an **injected** dependency
   }
 }
 ```
-
-After changing the plugin, build it and run `pnpm install` in the app.

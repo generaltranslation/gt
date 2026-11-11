@@ -9,9 +9,11 @@ const USAGE = `Usage: paraglide-context [root] [options]
 
 Writes the source context of Paraglide's message usages to a metadata file
 next to each message file (messages/en.json → messages/en.metadata.json),
-without a bundler (Turbopack, Angular's esbuild builder, CI). root defaults to
-the working directory; paths are relative to the project root (its nearest
-package.json).
+without running the bundler. root defaults to the working directory; paths are
+relative to the project root (its nearest package.json).
+
+Import aliases are read from tsconfig.json, package.json and the project's
+vite, webpack or rspack config.
 
 Options:
   --include <path>    path or glob to analyze; repeatable (default: the project)
@@ -20,6 +22,7 @@ Options:
   --project <dir>     inlang project whose messages get metadata; repeatable
                       (default: detected)
   --alias <a=path>    import alias, e.g. ~=./src; repeatable
+  --no-bundler-config do not read aliases from a bundler config
   --radius <lines>    lines of context around each usage (default: 10)
   --watch             keep the files up to date
   --verbose           print a summary
@@ -38,6 +41,7 @@ export async function main(argv: string[]): Promise<number> {
         outdir: { type: 'string', multiple: true },
         project: { type: 'string', multiple: true },
         alias: { type: 'string', multiple: true },
+        'no-bundler-config': { type: 'boolean' },
         radius: { type: 'string' },
         watch: { type: 'boolean' },
         verbose: { type: 'boolean' },
@@ -69,6 +73,7 @@ export async function main(argv: string[]): Promise<number> {
     inlangProjects: values.project,
     radius: values.radius === undefined ? undefined : Number(values.radius),
     alias: aliases(values.alias ?? [], root),
+    bundlerConfigs: values['no-bundler-config'] ? [] : undefined,
     enabled: true,
     logger: {
       warn: (message: string) => console.warn(message),

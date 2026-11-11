@@ -37,6 +37,12 @@ const IGNORED_DIRECTORIES = new Set([
 
 const IGNORED_GLOBS = [...IGNORED_DIRECTORIES].map((name) => `**/${name}/**`);
 
+export function isInIgnoredDirectory(file: string): boolean {
+  return toPosix(file)
+    .split('/')
+    .some((segment) => IGNORED_DIRECTORIES.has(segment));
+}
+
 /** The repository root at or above `directory`: where `.git` is. */
 function gitRoot(directory: string): string | undefined {
   for (let current = directory; ; current = path.dirname(current)) {

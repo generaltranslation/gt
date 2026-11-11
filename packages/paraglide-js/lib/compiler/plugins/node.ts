@@ -1,19 +1,27 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { CollectorLogger } from '../collector/collector.js';
+import type {
+  CollectorLogger,
+  ContextCollector,
+} from '../collector/collector.js';
 import { createCollector } from '../collector/create.js';
 import { findProjectRoot } from '../project/roots.js';
 import type { ParaglideContextOptions } from '../options.js';
-import { nodeResolver, type NodeResolverOptions } from './node-resolver.js';
+import {
+  ProjectResolver,
+  type ProjectResolverOptions,
+} from './project-resolver.js';
 import { taskQueue } from './queue.js';
 
 export type CollectContextOptions = ParaglideContextOptions &
-  NodeResolverOptions & {
+  ProjectResolverOptions & {
     /** The project, or a directory in it. Default: the working directory. */
     root?: string;
     /** Default: `console`, without info messages. */
     logger?: CollectorLogger;
   };
+
+type NodeCollector = { collector: ContextCollector; resolver: ProjectResolver };
 
 const quietConsole: CollectorLogger = {
   warn: (message) => console.warn(message),
@@ -21,16 +29,16 @@ const quietConsole: CollectorLogger = {
 };
 
 /**
- * Writes the metadata files once, without a bundler: for Turbopack, Angular's
- * esbuild builder, CI, or scripts. Only `include` is analyzed, since no
- * bundler reports the modules it loads; imports are still followed.
+ * Writes the metadata files once, without running a bundler. Only `include` is
+ * analyzed, since no bundler reports the modules it loads.
  */
 export async function collectContext(
   options: CollectContextOptions = {}
 ): Promise<void> {
-  const collector = createNodeCollector(options);
+  const { collector, resolver } = createNodeCollector(options);
   await collector.scanAll();
   await collector.write();
+  await resolver.warnUnresolved();
 }
 
 export type ContextWatcher = {
@@ -43,12 +51,14 @@ export type ContextWatcher = {
 export function watchContext(
   options: CollectContextOptions = {}
 ): ContextWatcher {
-  const collector = createNodeCollector(options);
+  const { collector, resolver } = createNodeCollector(options);
   const logger = options.logger ?? quietConsole;
-  const run = taskQueue((error) =>
+  const queue = taskQueue((error) =>
     logger.warn(`[paraglide-context] ${error.stack}`)
   );
-  const ready = run(collector, (collector) => collector.scanAll());
+  const run = (task: (collector: ContextCollector) => Promise<unknown>) =>
+    queue(collector, task).then(() => resolver.warnUnresolved());
+  const ready = run((collector) => collector.scanAll());
   const root = findProjectRoot(path.resolve(options.root ?? process.cwd()));
 
   let pending = new Map<string, boolean>();
@@ -58,7 +68,7 @@ export function watchContext(
     pending = new Map();
     // A new or deleted file can change how any import resolves.
     const rescan = [...changes.values()].some((renamed) => renamed);
-    void run(collector, async (collector) => {
+    void run(async (collector) => {
       if (rescan) return collector.scanAll();
       for (const file of changes.keys())
         await collector.updateChangedFileFromPath(file);
@@ -85,12 +95,12 @@ export function watchContext(
   };
 }
 
-function createNodeCollector(options: CollectContextOptions) {
+function createNodeCollector(options: CollectContextOptions): NodeCollector {
   const root = path.resolve(options.root ?? process.cwd());
-  const collector = createCollector(options, {
-    root,
-    logger: options.logger ?? quietConsole,
-  });
-  collector.resolver = nodeResolver(options);
-  return collector;
+  const logger = options.logger ?? quietConsole;
+  const collector = createCollector(options, { root, logger });
+  const resolver = new ProjectResolver(options, { root, logger });
+  collector.resolver = resolver.resolve;
+
+  return { collector, resolver };
 }

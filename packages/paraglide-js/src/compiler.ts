@@ -9,7 +9,7 @@ export {
   paraglideContextEsbuild,
   type ParaglideContextEsbuildPlugin,
 } from '../lib/compiler/plugins/esbuild.js';
-// Without a bundler (Turbopack, Angular CLI): the `paraglide-context` CLI uses these.
+// Without running a bundler: the `paraglide-context` CLI uses these.
 export {
   collectContext,
   watchContext,
@@ -20,6 +20,31 @@ export {
   nodeResolver,
   type NodeResolverOptions,
 } from '../lib/compiler/plugins/node-resolver.js';
+export {
+  ProjectResolver,
+  type ProjectResolverEnvironment,
+  type ProjectResolverOptions,
+} from '../lib/compiler/plugins/project-resolver.js';
+
+// Bundler configs: where the CLI reads import aliases from.
+export { defaultBundlerConfigs } from '../lib/compiler/bundler-configs/index.js';
+export { viteConfig } from '../lib/compiler/bundler-configs/vite.js';
+export {
+  rspackConfig,
+  webpackConfig,
+  webpackLikeConfig,
+} from '../lib/compiler/bundler-configs/webpack.js';
+export type {
+  BundlerConfig,
+  ConfigContext,
+  ConfigFailure,
+  ImportResolution,
+} from '../lib/compiler/bundler-configs/bundler-config.js';
+export {
+  applyAliases,
+  type AliasOption,
+  type ImportAlias,
+} from '../lib/compiler/bundler-configs/alias.js';
 export type { ParaglideContextOptions } from '../lib/compiler/options.js';
 
 // Running the analysis from another bundler or a script.
