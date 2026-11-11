@@ -69,19 +69,6 @@ export const defaultGroups = [
         expectedMatches: 1,
       },
       {
-        path: 'packages/paraglide-js/src/compiler/paraglide/outdir.ts',
-        reason:
-          'The locale of an empty catalog compiled to detect Paraglide output, not a fallback.',
-        matches: isWithinVariableDeclaration('EMPTY_CATALOG_LOCALE'),
-        expectedMatches: 1,
-      },
-      {
-        path: 'packages/paraglide-js/src/compiler/resolver/project-resolver.ts',
-        reason: 'The locale is the language of the English warning text.',
-        matches: isWithinVariableDeclaration('OR'),
-        expectedMatches: 1,
-      },
-      {
         path: 'packages/react-native/src/tools/testLocalePolyfill.ts',
         reason: 'The locale is a fixed Intl.DisplayNames probe.',
         matches: isWithinCallExpression("dn.of('en')"),

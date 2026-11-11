@@ -50,8 +50,11 @@ type ParaglideModule = {
   compileProject?: CompileProject;
 };
 
-/** Any locale: an empty catalog is compiled only to see the files Paraglide writes. */
-const EMPTY_CATALOG_LOCALE = 'en';
+/**
+ * No locale in particular ("undetermined"): an empty catalog is compiled only
+ * for its `registry.js` and `messages.js`, which name no locale.
+ */
+const EMPTY_CATALOG_LOCALE = 'und';
 const EMPTY_CATALOG_SETTINGS = {
   baseLocale: EMPTY_CATALOG_LOCALE,
   locales: [EMPTY_CATALOG_LOCALE],

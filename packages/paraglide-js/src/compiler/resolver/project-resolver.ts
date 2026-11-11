@@ -22,9 +22,6 @@ export type ProjectResolverOptions = NodeResolverOptions & {
   bundlerConfigs?: readonly BundlerConfig[];
 };
 
-/** "vite, webpack, or rspack": the warnings are in English. */
-const OR = new Intl.ListFormat('en', { type: 'disjunction' });
-
 export type ProjectResolverEnvironment = {
   /** Config files are looked for here and in the project root. */
   root: string;
@@ -98,7 +95,7 @@ export class ProjectResolver {
         const names = this.bundlers.map((bundler) => bundler.name);
 
         return names.length > 0
-          ? `no ${OR.format(names)} config was found to read them from`
+          ? `no ${orList(names)} config was found to read them from`
           : 'no bundler config is read';
       }
     }
@@ -125,6 +122,13 @@ export class ProjectResolver {
   private relative(file: string): string {
     return relativePath(this.projectRoot, file);
   }
+}
+
+/** "vite", "vite or webpack", "vite, webpack, or rspack" */
+function orList(names: readonly string[]): string {
+  if (names.length <= 2) return names.join(' or ');
+
+  return `${names.slice(0, -1).join(', ')}, or ${names.at(-1)}`;
 }
 
 /** The user's own aliases come first. */
