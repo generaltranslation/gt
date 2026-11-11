@@ -61,6 +61,14 @@ const decodedContent = { ...content, data: 'hello', metadata: {} };
 const uploaded = { ...ids, fileName: 'f.json', fileFormat: 'JSON' };
 const asset = { id: 'asset', assetKey: 'key', fileName: 'font.woff2' };
 
+const apiKey = {
+  id: 'k',
+  name: 'CI',
+  permissions: ['project:files:read'],
+  createdAt: '2026-01-01T00:00:00.000Z',
+  lastUsedAt: null,
+};
+
 function succeeded<T>(results: T[]) {
   return {
     summary: { total: results.length, succeeded: results.length, failed: 0 },
@@ -72,7 +80,10 @@ const routes: Record<string, unknown> = {
   'GET /v2/projects/p': project,
   'PATCH /v2/projects/p': { ...project, cdnEnabled: true },
   'GET /v2/projects/p/branches': { items: [branch], nextCursor: null },
-  'POST /v2/projects/p/branches': { branch },
+  'POST /v2/projects/p/branches': branch,
+  'GET /v2/projects/p/api-keys': { items: [apiKey], nextCursor: null },
+  'GET /v2/projects/p/api-keys/k': apiKey,
+  'DELETE /v2/projects/p/api-keys/k': { deleted: true },
   'PATCH /v2/projects/p/branches/b': branch,
   'GET /v2/projects/p/branches/b/files': {
     items: [branchFile],
@@ -87,7 +98,7 @@ const routes: Record<string, unknown> = {
   },
   'GET /v2/projects/p/jobs/job': { ...job, error: null },
   'POST /v2/projects/p/files/translate': { jobs: [job] },
-  'PUT /v2/projects/p/tags/release': { created: true, tag },
+  'PUT /v2/projects/p/tags/release': tag,
   'POST /v2/projects/p/files/publish': succeeded([
     {
       ...ids,
@@ -146,9 +157,13 @@ describe.sequential('GeneralTranslation canonical API methods', () => {
       items: [branch],
       nextCursor: null,
     });
-    await expect(gt.createBranch({ name: 'main' })).resolves.toEqual({
-      branch,
+    await expect(gt.createBranch({ name: 'main' })).resolves.toEqual(branch);
+    await expect(gt.listApiKeys({ limit: 1 })).resolves.toEqual({
+      items: [apiKey],
+      nextCursor: null,
     });
+    await expect(gt.getApiKey('k')).resolves.toEqual(apiKey);
+    await expect(gt.deleteApiKey('k')).resolves.toEqual({ deleted: true });
     await expect(gt.updateBranch('b', { isDefault: true })).resolves.toEqual(
       branch
     );
@@ -167,10 +182,7 @@ describe.sequential('GeneralTranslation canonical API methods', () => {
     });
     await expect(gt.getJob('job')).resolves.toEqual({ ...job, error: null });
     await expect(gt.translateFiles([ids])).resolves.toEqual({ jobs: [job] });
-    await expect(gt.setTag('release', { files: [ids] })).resolves.toEqual({
-      created: true,
-      tag,
-    });
+    await expect(gt.setTag('release', { files: [ids] })).resolves.toEqual(tag);
     await expect(
       gt.overwriteTranslations([
         { ...ids, locale: 'es', diff: '@@', localContent: '{}' },

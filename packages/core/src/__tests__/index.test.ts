@@ -51,11 +51,9 @@ describe.sequential('GeneralTranslation Translation Methods', () => {
         locale: 'fr',
         dataFormat: 'ICU',
       } as const;
+      const { success: _success, ...succeeded } = translated;
       fetchMock.mockResolvedValue(
-        Response.json({
-          translations: { greeting: translated },
-          generated: true,
-        })
+        Response.json({ results: [{ status: 'succeeded', ...succeeded }] })
       );
       const entry = {
         source: 'Hello {name}',
@@ -82,7 +80,7 @@ describe.sequential('GeneralTranslation Translation Methods', () => {
       expect(request.headers.get('authorization')).toBe('Bearer test-api-key');
       expect(request.headers.has('gt-project-id')).toBe(false);
       expect(await request.json()).toMatchObject({
-        requests: { greeting: entry },
+        requests: [entry],
         targetLocale: 'fr',
         sourceLocale: 'en-US',
         metadata: { modelProvider: 'OPENAI' },
@@ -272,12 +270,10 @@ describe.sequential('GeneralTranslation scopes', () => {
     fetchMock.mockImplementation(async (input, init) => {
       requests.push(new Request(input, init));
       return Response.json({
-        project: {
-          id: 'prj',
-          name: 'Project',
-          orgId: 'org',
-          defaultLocale: 'en-US',
-        },
+        id: 'prj',
+        name: 'Project',
+        orgId: 'org',
+        defaultLocale: 'en-US',
       });
     });
     const org = new GeneralTranslation({
@@ -288,12 +284,10 @@ describe.sequential('GeneralTranslation scopes', () => {
     await expect(
       org.createProject({ name: 'Project', defaultLocale: 'source' })
     ).resolves.toEqual({
-      project: {
-        id: 'prj',
-        name: 'Project',
-        orgId: 'org',
-        defaultLocale: 'source',
-      },
+      id: 'prj',
+      name: 'Project',
+      orgId: 'org',
+      defaultLocale: 'source',
     });
     expect(requests).toHaveLength(1);
     expect(await requests[0].json()).toMatchObject({
@@ -307,12 +301,13 @@ describe.sequential('GeneralTranslation scopes', () => {
       id: 'key-id',
       name: 'Dev',
       key: 'gtx-api-secret',
-      projectId: 'prj',
-      type: 'production',
+      permissions: ['project:translations:generate'],
+      createdAt: '2026-01-01T00:00:00.000Z',
+      lastUsedAt: null,
     };
     fetchMock.mockImplementation(async (input, init) => {
       requests.push(new Request(input, init));
-      return Response.json({ apiKey }, { status: 201 });
+      return Response.json(apiKey, { status: 201 });
     });
     const body = {
       name: 'Dev',
@@ -325,7 +320,7 @@ describe.sequential('GeneralTranslation scopes', () => {
         baseUrl: 'https://api.example.com',
         projectId: 'prj',
       }).createApiKey(body)
-    ).resolves.toEqual({ apiKey });
+    ).resolves.toEqual(apiKey);
     expect(requests).toHaveLength(1);
     expect(requests[0].method).toBe('POST');
     expect(new URL(requests[0].url).pathname).toBe('/v2/projects/prj/api-keys');
@@ -338,11 +333,13 @@ describe.sequential('GeneralTranslation scopes', () => {
       id: 'key-id',
       name: 'CI',
       key: 'gtx-org-secret',
-      orgId: 'org',
+      permissions: ['org:context:read'],
+      createdAt: '2026-01-01T00:00:00.000Z',
+      lastUsedAt: null,
     };
     fetchMock.mockImplementation(async (input, init) => {
       requests.push(new Request(input, init));
-      return Response.json({ apiKey }, { status: 201 });
+      return Response.json(apiKey, { status: 201 });
     });
     const body = {
       name: 'CI',
@@ -356,7 +353,7 @@ describe.sequential('GeneralTranslation scopes', () => {
       })
         .org('org')
         .createApiKey(body)
-    ).resolves.toEqual({ apiKey });
+    ).resolves.toEqual(apiKey);
     expect(requests).toHaveLength(1);
     expect(requests[0].method).toBe('POST');
     expect(new URL(requests[0].url).pathname).toBe('/v2/orgs/org/api-keys');

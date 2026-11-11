@@ -3,13 +3,16 @@ import {
   createBranch,
   createProjectApiKey,
   DEFAULT_BATCH_SIZE,
+  deleteProjectApiKey,
   generateProjectContext,
   getFileContent,
   getFileStatus,
   getJob,
   getProject,
+  getProjectApiKey,
   listBranchFiles,
   listBranches,
+  listProjectApiKeys,
   moveFiles,
   overwriteTranslations,
   processBatches,
@@ -30,6 +33,7 @@ import {
   type CreateBranchResponse,
   type CreateProjectApiKeyData,
   type CreateProjectApiKeyResponse,
+  type DeleteProjectApiKeyResponse,
   type GenerateProjectContextData,
   type GenerateProjectContextResponse,
   type GetFileContentData,
@@ -37,11 +41,14 @@ import {
   type GetFileStatusData,
   type GetFileStatusResponse,
   type GetJobResponse,
+  type GetProjectApiKeyResponse,
   type GetProjectResponse,
   type ListBranchesData,
   type ListBranchesResponse,
   type ListBranchFilesData,
   type ListBranchFilesResponse,
+  type ListProjectApiKeysData,
+  type ListProjectApiKeysResponse,
   type MoveFilesResponse,
   type OverwriteTranslationsData,
   type OverwriteTranslationsResponse,
@@ -266,7 +273,7 @@ export class ProjectHandle extends GTRuntime {
 
   /**
    * Creates an API key for the project with exactly the requested
-   * permissions. The returned `apiKey.key` is shown only once.
+   * permissions. The returned `key` is shown only once.
    *
    * @param body - The key `name` and `permissions`.
    */
@@ -278,6 +285,59 @@ export class ProjectHandle extends GTRuntime {
         path: { projectId: this.projectId },
         body,
         client: this.client,
+      })
+    );
+  }
+
+  /**
+   * Lists one page of the project's API keys. A key's secret is returned only
+   * when it is created.
+   *
+   * @param query - Paging (`cursor`, `limit`).
+   */
+  async listApiKeys(
+    query: ListProjectApiKeysData['query'] = {},
+    options: { timeout?: number } = {}
+  ): Promise<ListProjectApiKeysResponse> {
+    return unwrapApiResult(
+      await listProjectApiKeys({ ...this.request(options.timeout), query })
+    );
+  }
+
+  /**
+   * Gets a project API key, without its secret.
+   *
+   * @param apiKeyId - The key to read.
+   */
+  async getApiKey(
+    apiKeyId: string,
+    options: { timeout?: number } = {}
+  ): Promise<GetProjectApiKeyResponse> {
+    const request = this.request(options.timeout);
+    return unwrapApiResult(
+      await getProjectApiKey({
+        ...request,
+        path: { ...request.path, apiKeyId },
+      })
+    );
+  }
+
+  /**
+   * Deletes a project API key. The key usually stops working at once, and
+   * always within 10 minutes. A key that does not exist throws an `ApiError`
+   * with code `not_found`.
+   *
+   * @param apiKeyId - The key to delete.
+   */
+  async deleteApiKey(
+    apiKeyId: string,
+    options: { timeout?: number } = {}
+  ): Promise<DeleteProjectApiKeyResponse> {
+    const request = this.request(options.timeout);
+    return unwrapApiResult(
+      await deleteProjectApiKey({
+        ...request,
+        path: { ...request.path, apiKeyId },
       })
     );
   }
@@ -554,7 +614,7 @@ export class ProjectHandle extends GTRuntime {
    *
    * @param tagId - The tag name, unique within the project.
    * @param body - The tagged file versions and optional message.
-   * @returns The tag, and whether this request `created` it.
+   * @returns The tag.
    */
   async setTag(
     tagId: string,

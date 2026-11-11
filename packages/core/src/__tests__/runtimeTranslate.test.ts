@@ -10,7 +10,7 @@ const config = { projectId: 'test-project', apiKey: 'test-api-key', baseUrl };
 type CapturedRequest = {
   url: URL;
   headers: Headers;
-  body: { requests: Record<string, unknown>; targetLocale: string };
+  body: { requests: { source: string }[]; targetLocale: string };
 };
 
 function captureRequests(): {
@@ -26,18 +26,15 @@ function captureRequests(): {
       headers: request.headers,
       body,
     });
-    const translations = Object.fromEntries(
-      Object.keys(body.requests).map((hash) => [
-        hash,
-        {
-          success: true,
-          translation: `${hash}:${body.targetLocale}`,
-          locale: body.targetLocale,
-          dataFormat: 'STRING',
-        },
-      ])
+    const results = (body as CapturedRequest['body']).requests.map(
+      ({ source }) => ({
+        status: 'succeeded',
+        translation: `${source}:${body.targetLocale}`,
+        locale: body.targetLocale,
+        dataFormat: 'STRING',
+      })
     );
-    return Response.json({ translations, generated: true });
+    return Response.json({ results });
   };
   return { fetch: fetchImplementation, requests };
 }
@@ -122,10 +119,14 @@ describe.sequential('runtime translation', () => {
         'fr'
       );
       expect(Object.keys(record)).toEqual(['first', 'second']);
-      expect(requests[0].body.requests).toEqual({
-        first: { source: 'Hello' },
-        second: { source: 'Goodbye' },
+      expect(record).toMatchObject({
+        first: { translation: 'Hello:fr' },
+        second: { translation: 'Goodbye:fr' },
       });
+      expect(requests[0].body.requests).toEqual([
+        { source: 'Hello' },
+        { source: 'Goodbye' },
+      ]);
 
       const single = await runtime.translate('Hello', 'fr');
       expect(single).toMatchObject({ success: true, locale: 'fr' });

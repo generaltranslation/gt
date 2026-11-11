@@ -138,7 +138,7 @@ describe.sequential('GeneralTranslation project and organization operations', ()
     >('@generaltranslation/api');
     vi.mocked(createBranch).mockImplementation(realCreateBranch as never);
     const fetchMock = vi.fn<typeof fetch>(async () =>
-      Response.json({ branch }, { status: 201 })
+      Response.json(branch, { status: 201 })
     );
     vi.stubGlobal('fetch', fetchMock);
     await new GeneralTranslation({
@@ -1228,16 +1228,18 @@ describe.sequential('GeneralTranslation project and organization operations', ()
     });
   });
 
+  const createdProject = {
+    id: 'project-id',
+    name: 'Project',
+    orgId: 'org-id',
+    currentLocales: [],
+    autoApprove: false,
+    cdnEnabled: false,
+  };
+
   it('creates a project under the organization with a canonical default locale', async () => {
     vi.mocked(createProject).mockResolvedValue(
-      result({
-        project: {
-          id: 'project-id',
-          name: 'Project',
-          orgId: 'org-id',
-          defaultLocale: 'en-US',
-        },
-      })
+      result({ ...createdProject, defaultLocale: 'en-US' })
     );
     const adapter = account();
 
@@ -1246,14 +1248,7 @@ describe.sequential('GeneralTranslation project and organization operations', ()
         name: 'Project',
         defaultLocale: 'source',
       })
-    ).resolves.toEqual({
-      project: {
-        id: 'project-id',
-        name: 'Project',
-        orgId: 'org-id',
-        defaultLocale: 'source',
-      },
-    });
+    ).resolves.toEqual({ ...createdProject, defaultLocale: 'source' });
 
     expect(createProject).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -1267,14 +1262,7 @@ describe.sequential('GeneralTranslation project and organization operations', ()
     'returns the requested alias %s when two aliases share a code',
     async (alias) => {
       vi.mocked(createProject).mockResolvedValue(
-        result({
-          project: {
-            id: 'project-id',
-            name: 'Project',
-            orgId: 'org-id',
-            defaultLocale: 'en-US',
-          },
-        })
+        result({ ...createdProject, defaultLocale: 'en-US' })
       );
       const org = new GeneralTranslation({
         apiKey: 'key',
@@ -1288,7 +1276,7 @@ describe.sequential('GeneralTranslation project and organization operations', ()
 
       await expect(
         org.createProject({ name: 'Project', defaultLocale: alias })
-      ).resolves.toMatchObject({ project: { defaultLocale: alias } });
+      ).resolves.toMatchObject({ defaultLocale: alias });
     }
   );
 
@@ -1344,18 +1332,17 @@ describe.sequential('GeneralTranslation project and organization operations', ()
   it('creates a project API key with exactly the requested permissions', async () => {
     vi.mocked(createProjectApiKey).mockResolvedValue(
       result({
-        apiKey: {
-          id: 'key-id',
-          name: 'Dev',
-          key: 'gtx-secret',
-          projectId: 'project-id',
-          type: 'production' as const,
-        },
+        id: 'key-id',
+        name: 'Dev',
+        key: 'gtx-secret',
+        permissions: ['project:translations:generate' as const],
+        createdAt: '2026-01-01T00:00:00.000Z',
+        lastUsedAt: null,
       })
     );
     const adapter = account();
 
-    const { apiKey } = await adapter.project('project-id').createApiKey({
+    const apiKey = await adapter.project('project-id').createApiKey({
       name: 'Dev',
       permissions: ['project:translations:generate'],
     });

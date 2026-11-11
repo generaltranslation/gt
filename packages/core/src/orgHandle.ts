@@ -65,7 +65,7 @@ export class OrgHandle {
   async createProject(
     body: CreateProjectData['body']
   ): Promise<CreateProjectResponse> {
-    const { project } = unwrapApiResult(
+    const project = unwrapApiResult(
       await createProject({
         path: { orgId: this.orgId },
         body: {
@@ -78,12 +78,12 @@ export class OrgHandle {
         client: createGtApiClient(this.params),
       })
     );
-    return { project: { ...project, defaultLocale: body.defaultLocale } };
+    return { ...project, defaultLocale: body.defaultLocale };
   }
 
   /**
    * Creates an API key for the organization with exactly the requested
-   * permissions. The returned `apiKey.key` is shown only once.
+   * permissions. The returned `key` is shown only once.
    *
    * @param body - The key `name` and `permissions`.
    */

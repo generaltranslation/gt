@@ -9,14 +9,11 @@ describe('GeneralTranslation user-token authentication', () => {
   it('accepts a user token provider in place of an API key', async () => {
     const fetchMock = vi.fn<typeof fetch>(async () =>
       Response.json({
-        created: true,
-        tag: {
-          id: 'id',
-          tagId: 'release',
-          message: null,
-          createdAt: '2026-01-01',
-          updatedAt: '2026-01-01',
-        },
+        id: 'id',
+        tagId: 'release',
+        message: null,
+        createdAt: '2026-01-01',
+        updatedAt: '2026-01-01',
       })
     );
     vi.stubGlobal('fetch', fetchMock);

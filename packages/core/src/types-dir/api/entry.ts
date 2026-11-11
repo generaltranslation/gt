@@ -6,7 +6,7 @@ import type { Content, DataFormat } from '../../types';
 
 export type ActionType = NonNullable<
   NonNullable<
-    TranslateContentData['body']['requests'][string]['metadata']
+    TranslateContentData['body']['requests'][number]['metadata']
   >['actionType']
 >;
 

@@ -127,8 +127,8 @@ it('loads packed ESM/CJS, typechecks NodeNext declarations and keeps the publish
         assert.equal(new URL(request.url).pathname, '/v2/projects/project/translate');
         assert.equal(request.headers.has('gt-project-id'), false);
         assert.equal(request.headers.get('authorization'), 'Bearer key');
-        return Response.json({ generated: true, translations: Object.fromEntries(Object.keys(body.requests).map(key => [key,
-          { success: true, translation: 'Hola', locale: 'es', dataFormat: 'STRING' }])) });
+        return Response.json({ results: body.requests.map(() => (
+          { status: 'succeeded', translation: 'Hola', locale: 'es', dataFormat: 'STRING' })) });
       };
       const runtime = LOAD('generaltranslation/runtime');
       const { GeneralTranslation } = LOAD('generaltranslation');

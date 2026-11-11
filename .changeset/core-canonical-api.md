@@ -15,7 +15,7 @@ Removed `GT` methods and their replacements on the project-scoped `GeneralTransl
 - `setupProject()` → `generateProjectContext()`
 - `checkJobStatus()` → `queryJobs()` or `getJob()`
 - `enqueueFiles()` → `translateFiles()`
-- `createTag()` → `setTag()`
+- `createTag()` → `setTag()`, which returns the tag itself
 - `submitUserEditDiffs()` → `overwriteTranslations()`
 - `queryFileData()` → `queryFiles()`
 - `querySourceFile()` → `getFileStatus()`
@@ -23,11 +23,11 @@ Removed `GT` methods and their replacements on the project-scoped `GeneralTransl
 - `downloadFileBatch()` → `queryFilesContent()`
 - `uploadFonts()` → `account.org(orgId).upsertAssets()` on an account-scoped `GeneralTranslation`
 
-`update()`, `updateBranch()`, and `createApiKey(body)` (creates a project API key with exactly the requested permissions) are new.
+`update()`, `updateBranch()`, `createApiKey(body)`, `listApiKeys()`, `getApiKey(apiKeyId)` and `deleteApiKey(apiKeyId)` are new. `createApiKey(body)` creates a project API key with exactly the requested permissions and returns it with its `key`, which no later call returns.
 
 Changed methods:
 
-- `createBranch()` takes `{ name, isDefault }` only and sends only the create request: a name the project already has throws an `ApiError` with code `already_exists`. To reuse an existing branch, call `listBranches({ name: [name] })` first and create only when it returns none.
+- `createBranch()` takes `{ name, isDefault }` only, returns the branch itself rather than `{ branch }`, and sends only the create request: a name the project already has throws an `ApiError` with code `already_exists`. To reuse an existing branch, call `listBranches({ name: [name] })` first and create only when it returns none.
 - `awaitJobs(jobIds, options)` takes job IDs only and returns jobs as `{ id, status, subject?, error? }`, with `error` a string. A job the project does not have is `not_found`; `unknown` means the job was not polled before the timeout. `options.onPoll` receives each poll's statuses.
 - `queryJobs(jobIds, { signal, timeout })` takes an optional `signal` that aborts in-flight requests.
 - `translate()` and `translateMany()` failures (`TranslationError`) carry the API's string error `code` (for example `plan_feature_unavailable`) instead of a number; a missing or invalid translation reads `internal_error`.
@@ -47,7 +47,7 @@ Changed methods:
 `GeneralTranslation`, `GTRuntime`, and the new `GTIntl` split credentials, translation, and formatting. Each takes its locales as `localeConfig`, plain data (`{ defaultLocale, locales, customMapping }`, type `LocaleConfig`):
 
 - Project work: `new GT({ apiKey, projectId, sourceLocale, locales, customMapping })` → `new GeneralTranslation({ apiKey, projectId, localeConfig: { defaultLocale, locales, customMapping } })`. With `projectId`, `GeneralTranslation` is project-scoped (class `ProjectHandle`): every project and file method, plus `translate()` and `translateMany()`.
-- Account work: `new GeneralTranslation({ apiKey })` without `projectId` is account-scoped (class `GTAccount`): `listOrgs()` and `listProjects()` (new), `account.project(projectId)` (a `ProjectHandle`), and `account.org(orgId)` (an `OrgHandle` with `upsertAssets()` and the new `createProject()` and `createApiKey()`). `upsertAssets()` no longer looks up the project's organization; with only a project: `account.org((await project.get()).orgId)`. A project key (`gtx-api-…`) without `projectId` throws.
+- Account work: `new GeneralTranslation({ apiKey })` without `projectId` is account-scoped (class `GTAccount`): `listOrgs()` and `listProjects()` (new), `account.project(projectId)` (a `ProjectHandle`), and `account.org(orgId)` (an `OrgHandle` with `upsertAssets()` and the new `createProject()` and `createApiKey()`, which return the project and the key). `upsertAssets()` no longer looks up the project's organization; with only a project: `account.org((await project.get()).orgId)`. A project key (`gtx-api-…`) without `projectId` throws.
 - Runtime translation: `new GTRuntime({ apiKey, projectId, targetLocale: 'es' }).translate(source, 'es')` → `new GTRuntime({ apiKey, projectId, localeConfig }).translate(source, 'es')`. `GTRuntime` only translates, and `projectId` is required. The instance `targetLocale` is gone, so JavaScript calls that omitted the target and relied on it now throw; pass the target locale on each call.
 - Formatting and locale helpers: `new GT({ targetLocale: 'es', customMapping }).formatNum(n)` → `new GTIntl({ customMapping }, { locale: 'es' }).formatNum(n)`, and `gt.formatNum(n, { locales: ['fr'] })` keeps working as `intl.formatNum(n, { locales: ['fr'] })`. `GTIntl` takes no credentials; `options.locale` overrides its locale for one call. `GeneralTranslation` and `GTRuntime` no longer format or resolve locales, and `LocaleConfig` (from `@generaltranslation/format`) is a type, not a class.
 - `GTIntl` methods take the values they act on positionally and an options object last: `gt.requiresTranslation(source, target)` → `intl.requiresTranslation({ locale: target, sourceLocale: source })`, `gt.determineLocale(candidates, approved)` → `intl.determineLocale(candidates, { approvedLocales: approved })`, `gt.getRegionProperties(region)` → `intl.getRegionProperties(region, { locale })`. `getLocaleName`, `getLocaleProperties`, `getLocaleEmoji`, and `getLocaleDirection` describe the target locale when called without one, as before (`gt.getLocaleName()` → `intl.getLocaleName()`), and name locales in the target locale rather than the default locale; `{ locale }` overrides it per call. No method takes a per-call `customMapping`; `standardizeLocale` only normalizes spelling and does not resolve aliases.

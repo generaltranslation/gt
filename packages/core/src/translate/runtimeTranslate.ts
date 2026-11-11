@@ -4,8 +4,8 @@ import {
   translateContent,
   type JsonObject,
   type JsonValue,
-  type RuntimeTranslationResponse,
   type TranslateContentData,
+  type TranslateContentResponse,
 } from '@generaltranslation/api';
 import { isMessageTree } from '@generaltranslation/icu';
 import type {
@@ -29,8 +29,10 @@ import { hashSource } from '../id';
 import { validateModelProvider } from './modelProvider';
 import { unwrapApiResult } from './utils/unwrapApiResult';
 
-type RuntimeTranslationResult = RuntimeTranslationResponse[string];
-type RuntimeRequests = TranslateContentData['body']['requests'];
+type RuntimeTranslationResult = TranslateContentResponse['results'][number];
+type RuntimeRequest = TranslateContentData['body']['requests'][number];
+// A request with the hash its result is returned under.
+type HashedRequest = [hash: string, request: RuntimeRequest];
 
 // The API rejects translate request bodies over 4MB.
 const MAX_REQUEST_BYTES = 4_000_000;
@@ -44,25 +46,22 @@ const byteLength = (value: unknown) =>
  * is sent alone, and the API rejects it.
  */
 function splitRequests(
-  requests: RuntimeRequests,
+  requests: HashedRequest[],
   envelope: Omit<TranslateContentData['body'], 'requests'>
-): RuntimeRequests[] {
-  const emptyBytes = byteLength({ ...envelope, requests: {} });
-  const groups: RuntimeRequests[] = [];
-  let group: RuntimeRequests = {};
+): HashedRequest[][] {
+  const emptyBytes = byteLength({ ...envelope, requests: [] });
+  const groups: HashedRequest[][] = [];
+  let group: HashedRequest[] = [];
   let groupBytes = emptyBytes;
-  for (const [hash, request] of Object.entries(requests)) {
-    // Each entry adds `"hash":{...}` and a separating comma.
-    const entryBytes = byteLength({ [hash]: request }) - 2 + 1;
-    if (
-      groupBytes + entryBytes > MAX_REQUEST_BYTES &&
-      Object.keys(group).length > 0
-    ) {
+  for (const entry of requests) {
+    // Each entry adds its JSON and a separating comma.
+    const entryBytes = byteLength(entry[1]) + 1;
+    if (groupBytes + entryBytes > MAX_REQUEST_BYTES && group.length > 0) {
       groups.push(group);
-      group = {};
+      group = [];
       groupBytes = emptyBytes;
     }
-    group[hash] = request;
+    group.push(entry);
     groupBytes += entryBytes;
   }
   groups.push(group);
@@ -123,7 +122,9 @@ function isJsxChildren(
 function toTranslationResult(
   result: RuntimeTranslationResult
 ): TranslationResult {
-  if (!result.success) return result;
+  if (result.status === 'failed') {
+    return { success: false, error: result.error, code: result.code };
+  }
   if (result.dataFormat === 'JSX' && isJsxChildren(result.translation)) {
     return {
       success: true,
@@ -232,25 +233,30 @@ export async function translateEntries(
     ),
     metadata: { modelProvider: globalMetadata.modelProvider },
   } satisfies Omit<TranslateContentData['body'], 'requests'>;
+  // The API returns one result per request, in request order.
   const responses = await Promise.all(
-    splitRequests(requestsObject, envelope).map(async (requests) =>
-      unwrapApiResult(
-        await translateContent({
-          body: { ...envelope, requests },
-          client,
-          headers: apiVersionHeaders(),
-          path: { projectId: runtime.projectId },
-        })
-      )
+    splitRequests(Object.entries(requestsObject), envelope).map(
+      async (group) => {
+        const { results } = unwrapApiResult(
+          await translateContent({
+            body: {
+              ...envelope,
+              requests: group.map(([, request]) => request),
+            },
+            client,
+            headers: apiVersionHeaders(),
+            path: { projectId: runtime.projectId },
+          })
+        );
+        return results.map(
+          (result, index) =>
+            [group[index][0], toTranslationResult(result)] as const
+        );
+      }
     )
   );
   const response: Record<string, TranslationResult> = Object.fromEntries(
-    responses.flatMap(({ translations }) =>
-      Object.entries(translations).map(([hash, translationResult]) => [
-        hash,
-        toTranslationResult(translationResult),
-      ])
-    )
+    responses.flat()
   );
 
   // If input was an array, map the record response back to an array in input order

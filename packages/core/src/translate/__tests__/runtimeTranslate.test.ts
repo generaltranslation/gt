@@ -1,10 +1,9 @@
 import type {
-  RuntimeTranslationResponse,
   TranslateContentData,
+  TranslateContentResponse,
 } from '@generaltranslation/api';
 import type { Content } from '@generaltranslation/format/types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { hashSource } from '../../id/hashSource';
 import { GTRuntime } from '../../runtime';
 
 const runtime = new GTRuntime({
@@ -15,9 +14,21 @@ const runtime = new GTRuntime({
 const options = { targetLocale: 'es', sourceLocale: 'en' };
 const fetchMock = vi.fn<typeof fetch>();
 
-function mockTranslateResponse(data: RuntimeTranslationResponse): void {
+function mockTranslateResponse(
+  results: TranslateContentResponse['results']
+): void {
+  const succeeded = results.filter(
+    ({ status }) => status === 'succeeded'
+  ).length;
   fetchMock.mockResolvedValue(
-    Response.json({ translations: data, generated: true })
+    Response.json({
+      summary: {
+        total: results.length,
+        succeeded,
+        failed: results.length - succeeded,
+      },
+      results,
+    } satisfies TranslateContentResponse)
   );
 }
 
@@ -30,7 +41,7 @@ describe.sequential('runtime translation requests', () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal('fetch', fetchMock);
-    mockTranslateResponse({});
+    mockTranslateResponse([]);
   });
 
   afterEach(() => {
@@ -40,12 +51,11 @@ describe.sequential('runtime translation requests', () => {
 
   it('sends authenticated runtime requests and returns keyed results', async () => {
     const translated = {
-      success: true,
       translation: 'Hola mundo',
       locale: 'es',
       dataFormat: 'ICU',
     } as const;
-    mockTranslateResponse({ greeting: translated });
+    mockTranslateResponse([{ status: 'succeeded', ...translated }]);
     const sources = {
       greeting: {
         source: 'Hello world',
@@ -64,41 +74,41 @@ describe.sequential('runtime translation requests', () => {
     expect(request.headers.get('authorization')).toBe('Bearer test-api-key');
     expect(request.headers.has('gt-project-id')).toBe(false);
     expect(await request.json()).toEqual({
-      requests: sources,
+      requests: [sources.greeting],
       targetLocale: 'es',
       sourceLocale: 'en',
       metadata: {},
     });
-    expect(result).toEqual({ greeting: translated });
+    expect(result).toEqual({ greeting: { success: true, ...translated } });
   });
 
   it('narrows JSON translations to their format-specific content type', async () => {
-    mockTranslateResponse({
-      jsx: {
-        success: true,
+    mockTranslateResponse([
+      {
+        status: 'succeeded',
         translation: ['Hola ', { t: 'strong', c: ['mundo'] }],
         locale: 'es',
         dataFormat: 'JSX',
       },
-      invalid: {
-        success: true,
+      {
+        status: 'succeeded',
         translation: 42,
         locale: 'es',
         dataFormat: 'STRING',
       },
-      tree: {
-        success: true,
+      {
+        status: 'succeeded',
         translation: ['Hola, ', ['name']],
         locale: 'es',
         dataFormat: 'ICU_TREE',
       },
-      invalidTree: {
-        success: true,
+      {
+        status: 'succeeded',
         translation: 'Hola',
         locale: 'es',
         dataFormat: 'ICU_TREE',
       },
-    });
+    ]);
 
     const result = await runtime.translateMany(
       {
@@ -230,87 +240,87 @@ describe.sequential('runtime translation requests', () => {
       options
     );
 
-    expect(Object.values((await requestBody()).requests)[0]).toEqual({
+    expect((await requestBody()).requests[0]).toEqual({
       source,
       metadata: { dataFormat: 'JSX' },
     });
   });
 
-  it('uses content hash keys while preserving custom id metadata', async () => {
+  it('sends custom id metadata without using it to match results', async () => {
     await runtime.translateMany(
       [{ source: 'Hello', metadata: { id: 'custom-id', dataFormat: 'ICU' } }],
       options
     );
 
-    const body = await requestBody();
-    const key = Object.keys(body.requests)[0];
-    expect(key).not.toBe('custom-id');
-    expect(body.requests[key].source).toBe('Hello');
-    expect(body.requests[key].metadata).toMatchObject({ id: 'custom-id' });
+    expect((await requestBody()).requests).toEqual([
+      { source: 'Hello', metadata: { id: 'custom-id', dataFormat: 'ICU' } },
+    ]);
   });
 
-  it('sends document requests with their file format and a format-aware key', async () => {
+  it('sends a document apart from the same text without a file format', async () => {
     const source = '# Hello\n\nA short document.';
 
     await runtime.translateMany(
-      [{ source, metadata: { fileFormat: 'MDX' } }],
+      [{ source, metadata: { fileFormat: 'MDX' } }, { source }],
       options
     );
 
-    const body = await requestBody();
-    const [key] = Object.keys(body.requests);
-    expect(body.requests[key]).toEqual({
-      source,
-      metadata: { fileFormat: 'MDX' },
-    });
-    expect(key).toBe(
-      hashSource({ source, dataFormat: 'STRING', fileFormat: 'MDX' })
-    );
-    expect(key).not.toBe(hashSource({ source, dataFormat: 'STRING' }));
+    expect((await requestBody()).requests).toEqual([
+      { source, metadata: { fileFormat: 'MDX' } },
+      { source },
+    ]);
   });
 
-  it('uses explicit hash keys before calculating a hash', async () => {
-    await runtime.translateMany(
+  it('sends entries that share a hash once and returns the result to each', async () => {
+    const translated = {
+      translation: 'Hola',
+      locale: 'es',
+      dataFormat: 'STRING',
+    } as const;
+    mockTranslateResponse([
+      { status: 'succeeded', ...translated },
+      { status: 'succeeded', ...translated, translation: 'Adiós' },
+    ]);
+
+    const result = await runtime.translateMany(
       [
-        {
-          source: 'Hello',
-          metadata: { id: 'custom-id', hash: 'precomputed-hash' },
-        },
+        { source: 'Hello', metadata: { hash: 'precomputed-hash' } },
+        'Goodbye',
+        { source: 'Hello', metadata: { hash: 'precomputed-hash' } },
+        'Goodbye',
       ],
       options
     );
 
-    expect(Object.keys((await requestBody()).requests)).toEqual([
-      'precomputed-hash',
+    expect((await requestBody()).requests).toEqual([
+      { source: 'Hello', metadata: { hash: 'precomputed-hash' } },
+      { source: 'Goodbye' },
     ]);
+    const hello = { success: true, ...translated };
+    const goodbye = { ...hello, translation: 'Adiós' };
+    expect(result).toEqual([hello, goodbye, hello, goodbye]);
   });
 
-  it('restores array order and reports failed or missing translations', async () => {
-    const success = {
-      success: true,
+  it('matches results to entries by position and reports failed or missing translations', async () => {
+    const translated = {
       translation: 'Hola',
       locale: 'es',
       dataFormat: 'ICU',
     } as const;
-    const failure = {
-      success: false,
-      error: 'failed',
-      code: 'upstream_error',
-    } as const;
-    mockTranslateResponse({ second: failure, first: success });
+    const failure = { error: 'failed', code: 'upstream_error' } as const;
+    mockTranslateResponse([
+      { status: 'succeeded', ...translated },
+      { status: 'failed', ...failure },
+    ]);
 
     const result = await runtime.translateMany(
-      [
-        { source: 'Hello', metadata: { hash: 'first' } },
-        { source: 'Goodbye', metadata: { hash: 'second' } },
-        { source: 'Missing', metadata: { hash: 'third' } },
-      ],
+      ['Hello', 'Goodbye', 'Missing'],
       options
     );
 
     expect(result).toEqual([
-      success,
-      failure,
+      { success: true, ...translated },
+      { success: false, ...failure },
       {
         success: false,
         error: 'No translation returned',
@@ -324,24 +334,20 @@ describe.sequential('runtime translation requests', () => {
     fetchMock.mockImplementation(async (input, init) => {
       const text = await new Request(input, init).text();
       const { requests } = JSON.parse(text) as {
-        requests: Record<string, unknown>;
+        requests: { metadata: { hash: string } }[];
       };
+      const hashes = requests.map(({ metadata }) => metadata.hash);
       bodies.push({
         bytes: new TextEncoder().encode(text).byteLength,
-        hashes: Object.keys(requests),
+        hashes,
       });
       return Response.json({
-        translations: Object.fromEntries(
-          Object.keys(requests).map((hash) => [
-            hash,
-            {
-              success: true,
-              translation: `es:${hash}`,
-              locale: 'es',
-              dataFormat: 'STRING',
-            },
-          ])
-        ),
+        results: hashes.map((hash) => ({
+          status: 'succeeded',
+          translation: `es:${hash}`,
+          locale: 'es',
+          dataFormat: 'STRING',
+        })),
       });
     });
     const large = 'x'.repeat(1_500_000);
