@@ -1,6 +1,12 @@
-import type { SourceCode } from 'generaltranslation/types';
 import type { FileUsages, ParaglideUsage } from '../analysis/types.js';
 import { patternMatcher } from '../paraglide/catalog.js';
+
+/**
+ * The lines of a source file around a usage, in the gt CLI's format. The CLI
+ * has the same type; this package keeps its own so that it depends on no
+ * workspace package.
+ */
+export type SourceCode = { before: string; target: string; after: string };
 
 /** A message's snippets, by project-relative source file: what the gt CLI reads as `sourceCode`. */
 export type SourceCodeByFile = Record<string, SourceCode[]>;

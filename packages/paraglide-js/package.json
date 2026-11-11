@@ -74,7 +74,6 @@
     "@vue/language-core": "^3.3.14",
     "@vue/language-plugin-pug": "^3.3.14",
     "content-tag": "^4.2.1",
-    "generaltranslation": "workspace:*",
     "paraglide-js-1": "npm:@inlang/paraglide-js@^1.11.8",
     "paraglide-js-2": "npm:@inlang/paraglide-js@^2.29.3",
     "pug": "^3.0.4",
