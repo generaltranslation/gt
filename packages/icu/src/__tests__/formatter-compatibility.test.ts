@@ -8,6 +8,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { formatMessage } from '../index';
+import { expectEachCase } from './expectEachCase';
 
 const LOCALES = ['en-US', 'fr-FR', 'de-DE'] as const;
 const NUMBERS = [
@@ -263,41 +264,49 @@ const DATE_CASES = ['en-US', 'de-DE', 'fr-FR', 'ja-JP'].flatMap((locale) =>
   )
 );
 
-describe('pinned intl-messageformat compatibility matrix', () => {
-  it.each(NUMBER_CASES)(
-    'formats $skeleton for $value in $locale',
-    ({ locale, skeleton, options, scale, value }) => {
-      expect(
-        formatMessage(`{n, number, ::${skeleton}}`, locale, { value, n: value })
-      ).toBe(new Intl.NumberFormat(locale, options).format(value * scale));
-    }
-  );
+const CARDINAL_MESSAGE =
+  '{n, plural, offset:1 =-1 {exact-negative} =0 {exact-zero} =1 {exact-one} zero {zero:#} one {one:#} two {two:#} few {few:#} many {many:#} other {other:#}}';
+const CARDINAL_EXACT_MATCHES = new Map([
+  [-1, 'exact-negative'],
+  [0, 'exact-zero'],
+  [1, 'exact-one'],
+]);
+const ORDINAL_MESSAGE =
+  '{n, selectordinal, =0 {exact-zero} zero {zero:#} one {one:#} two {two:#} few {few:#} many {many:#} other {other:#}}';
 
-  it.each(PLURAL_CASES)(
-    'formats cardinal $value in $locale',
-    ({ locale, value }) => {
-      const message =
-        '{n, plural, offset:1 =-1 {exact-negative} =0 {exact-zero} =1 {exact-one} zero {zero:#} one {one:#} two {two:#} few {few:#} many {many:#} other {other:#}}';
-      const exact = new Map([
-        [-1, 'exact-negative'],
-        [0, 'exact-zero'],
-        [1, 'exact-one'],
-      ]).get(value);
+// Each test checks its whole matrix; expectEachCase reports every failing
+// input instead of registering thousands of individual tests.
+describe('pinned intl-messageformat compatibility matrix', () => {
+  it('formats every number skeleton like native Intl', () => {
+    expectEachCase(
+      NUMBER_CASES,
+      ({ locale, skeleton, options, scale, value }) => {
+        expect(
+          formatMessage(`{n, number, ::${skeleton}}`, locale, {
+            value,
+            n: value,
+          })
+        ).toBe(new Intl.NumberFormat(locale, options).format(value * scale));
+      }
+    );
+  });
+
+  it('formats cardinal plurals with offsets and exact matches', () => {
+    expectEachCase(PLURAL_CASES, ({ locale, value }) => {
       const adjusted = value - 1;
       const category = new Intl.PluralRules(locale).select(adjusted);
       const expected =
-        exact ??
+        CARDINAL_EXACT_MATCHES.get(value) ??
         `${category}:${new Intl.NumberFormat(locale).format(adjusted)}`;
 
-      expect(formatMessage(message, locale, { n: value })).toBe(expected);
-    }
-  );
+      expect(formatMessage(CARDINAL_MESSAGE, locale, { n: value })).toBe(
+        expected
+      );
+    });
+  });
 
-  it.each(PLURAL_CASES)(
-    'formats ordinal $value in $locale',
-    ({ locale, value }) => {
-      const message =
-        '{n, selectordinal, =0 {exact-zero} zero {zero:#} one {one:#} two {two:#} few {few:#} many {many:#} other {other:#}}';
+  it('formats ordinal plurals with exact matches', () => {
+    expectEachCase(PLURAL_CASES, ({ locale, value }) => {
       const category = new Intl.PluralRules(locale, {
         type: 'ordinal',
       }).select(value);
@@ -306,16 +315,17 @@ describe('pinned intl-messageformat compatibility matrix', () => {
           ? 'exact-zero'
           : `${category}:${new Intl.NumberFormat(locale).format(value)}`;
 
-      expect(formatMessage(message, locale, { n: value })).toBe(expected);
-    }
-  );
+      expect(formatMessage(ORDINAL_MESSAGE, locale, { n: value })).toBe(
+        expected
+      );
+    });
+  });
 
-  it.each(DATE_CASES)(
-    'formats $skeleton for $value in $locale',
-    ({ locale, skeleton, options, value }) => {
+  it('formats every date skeleton like native Intl', () => {
+    expectEachCase(DATE_CASES, ({ locale, skeleton, options, value }) => {
       expect(
         formatMessage(`{value, date, ::${skeleton}}`, locale, { value })
       ).toBe(new Intl.DateTimeFormat(locale, options).format(value));
-    }
-  );
+    });
+  });
 });

@@ -1,14 +1,4 @@
 import { defineConfig } from 'vitest/config';
+import { vitestThreadsPreset } from '../../vitest.preset.mts';
 
-export default defineConfig({
-  test: {
-    globals: true,
-    environment: 'node',
-    pool: 'forks',
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      exclude: ['node_modules/', 'dist/', '**/*.d.ts', '**/*.config.*'],
-    },
-  },
-});
+export default defineConfig(vitestThreadsPreset);

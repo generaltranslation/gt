@@ -139,8 +139,13 @@ const PLATFORM_LOCALES: [locale: string, qualifier: string][] = [
 ];
 
 describe('androidLocaleQualifier', () => {
-  it.each(PLATFORM_LOCALES)('%s -> values-%s', (locale, qualifier) => {
-    expect(androidLocaleQualifier(locale)).toBe(qualifier);
+  it('names the values- directory aapt2 accepts for every platform locale', () => {
+    expect(
+      PLATFORM_LOCALES.map(([locale]) => [
+        locale,
+        androidLocaleQualifier(locale),
+      ])
+    ).toEqual(PLATFORM_LOCALES);
   });
 
   it('uses the legacy form wherever one exists', () => {

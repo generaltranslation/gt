@@ -8,22 +8,17 @@ import {
   type InlineExtractionOutput,
 } from '../../integration.js';
 import {
-  createProjectFixture,
+  createTestProject,
   linkInstalledVue,
-  removeProjectFixture,
   translatableSfc,
 } from './projectTestUtils.js';
 
-const temporaryDirectories: string[] = [];
 const initialCwd = process.cwd();
 const COLD_START_PLAN_RUN_TIMEOUT_MS = 15_000;
 
 afterEach(() => {
   process.chdir(initialCwd);
   vi.restoreAllMocks();
-  for (const directory of temporaryDirectories.splice(0)) {
-    removeProjectFixture(directory);
-  }
 });
 
 describe('manifestDirectlyDeclaresGTVue', () => {
@@ -58,7 +53,7 @@ describe('planVueExtraction activation', () => {
   it.each(['dependencies', 'devDependencies'] as const)(
     'activates for a direct root %s declaration',
     (field) => {
-      const root = createFixture({
+      const root = createTestProject({
         'package.json': JSON.stringify({ [field]: { 'gt-vue': '*' } }),
       });
 
@@ -73,7 +68,7 @@ describe('planVueExtraction activation', () => {
   );
 
   it('activates for an explicitly selected gt-vue runtime', () => {
-    const root = createFixture({
+    const root = createTestProject({
       'package.json': JSON.stringify({ dependencies: { react: '*' } }),
     });
 
@@ -107,7 +102,7 @@ describe('planVueExtraction activation', () => {
       },
     ],
   ])('does not activate for a root %s', (_name, manifest) => {
-    const root = createFixture({
+    const root = createTestProject({
       'package.json': JSON.stringify(manifest),
     });
 
@@ -117,7 +112,7 @@ describe('planVueExtraction activation', () => {
   });
 
   it('ignores child, wrapper, transitive, and source-code evidence', () => {
-    const root = createFixture({
+    const root = createTestProject({
       'package.json': JSON.stringify({
         private: true,
         workspaces: ['packages/*'],
@@ -153,7 +148,7 @@ describe('planVueExtraction activation', () => {
     ['malformed manifest', { 'package.json': '{' }],
     ['non-object manifest', { 'package.json': '[]' }],
   ])('returns the inert plan for a %s', (_name, files) => {
-    const root = createFixture(files);
+    const root = createTestProject(files);
 
     const plan = planVueExtraction({
       library: 'gt-react',
@@ -223,7 +218,7 @@ describe('handled Vue extraction plans', () => {
   });
 
   it('handles an early default rejection before yielding to Vue inspection', async () => {
-    const root = createFixture({
+    const root = createTestProject({
       'package.json': JSON.stringify({
         private: true,
         workspaces: ['packages/*'],
@@ -348,7 +343,7 @@ describe('handled Vue extraction plans', () => {
         export const title = msg('Anchored Vue message');
       `,
     });
-    const otherDirectory = createFixture({});
+    const otherDirectory = createTestProject({});
     const absolutePattern = path.join(root, 'absolute.ts');
     const patterns = [
       './src/messages.ts',
@@ -400,7 +395,7 @@ import { LocalT } from '@local/gt';
 <template><LocalT>Captured config message</LocalT></template>
 `,
     });
-    const otherDirectory = createFixture({
+    const otherDirectory = createTestProject({
       'config/vue.tsconfig.json': JSON.stringify({
         compilerOptions: {
           baseUrl: '..',
@@ -486,7 +481,7 @@ import { LocalT } from '@local/gt';
   );
 
   it('lets an explicitly selected gt-vue runtime own an undeclared root', async () => {
-    const root = createFixture({
+    const root = createTestProject({
       'package.json': JSON.stringify({ private: true }),
       'src/messages.ts': `
         import { msg } from 'gt-vue';
@@ -552,14 +547,8 @@ import { LocalT } from '@local/gt';
   });
 });
 
-function createFixture(files: Record<string, string>): string {
-  const root = createProjectFixture(files);
-  temporaryDirectories.push(root);
-  return root;
-}
-
 function createVueFixture(files: Record<string, string>): string {
-  const root = createFixture({
+  const root = createTestProject({
     'package.json': JSON.stringify({
       name: 'vue-planner-fixture',
       private: true,

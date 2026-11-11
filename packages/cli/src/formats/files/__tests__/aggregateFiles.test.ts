@@ -16,6 +16,30 @@ import type { Settings } from '../../../types/index.js';
 const aggregateTestFiles = (settings: Partial<Settings>) =>
   aggregateFiles(settings as Settings);
 
+/** Settings whose source files live under /full/path, by file type. */
+const settingsFor = (
+  files: Record<string, string[]>,
+  {
+    transformFormats,
+    ...settings
+  }: Record<string, unknown> & { transformFormats?: object } = {}
+) =>
+  ({
+    files: {
+      resolvedPaths: Object.fromEntries(
+        Object.entries(files).map(([type, names]) => [
+          type,
+          names.map((name) => `/full/path/${name}`),
+        ])
+      ),
+      placeholderPaths: {},
+      ...(transformFormats && { transformFormats }),
+    },
+    options: {},
+    defaultLocale: 'en',
+    ...settings,
+  }) as Partial<Settings>;
+
 vi.mock('../../../console/logger.js', () => ({
   logger: {
     warn: vi.fn(),
@@ -89,27 +113,140 @@ describe('aggregateFiles - Empty File Handling', () => {
     vi.clearAllMocks();
   });
 
-  describe('JSON files', () => {
+  describe('files with nothing to translate', () => {
+    const VALID = {
+      json: ['json', '{"key": "value"}'],
+      twilioContentJson: ['json', '{"key": "value"}'],
+      // .yaml is covered by the mixed-type test below
+      yaml: ['yml', 'key: value'],
+      mdx: ['mdx', '# Valid MDX'],
+    } as const;
+
+    it.each([
+      ['an empty JSON file', 'json', '', 'JSON file is not parsable'],
+      [
+        'an empty Twilio Content JSON file',
+        'twilioContentJson',
+        '',
+        'JSON file is not parsable',
+      ],
+      [
+        'an unparsable Twilio Content JSON file',
+        'twilioContentJson',
+        '{ invalid json',
+        'JSON file is not parsable',
+      ],
+      [
+        'a whitespace-only YAML file',
+        'yaml',
+        '   \n\t  ',
+        'YAML file is empty',
+      ],
+      ['an empty MDX file', 'mdx', '', 'File is empty after sanitization'],
+    ] as const)(
+      'skips %s with a warning and keeps the valid files',
+      async (_name, type, content, reason) => {
+        const [extension, valid] = VALID[type];
+        mockReadFile.mockReturnValueOnce(content).mockReturnValueOnce(valid);
+
+        const { files } = await aggregateTestFiles(
+          settingsFor({
+            [type]: [`skipped.${extension}`, `valid.${extension}`],
+          })
+        );
+
+        expect(mockLogWarning).toHaveBeenCalledWith(
+          `Skipping skipped.${extension}: ${reason}`
+        );
+        expect(files.map((file) => file.fileName)).toEqual([
+          `valid.${extension}`,
+        ]);
+      }
+    );
+
+    it.each([
+      ['empty', 'md', '<!-- only comments -->', ''],
+      ['whitespace', 'ts', 'some content', '   \n\t  '],
+    ])(
+      'skips a file that is %s after sanitization',
+      async (_name, type, content, sanitized) => {
+        mockReadFile
+          .mockReturnValueOnce(content)
+          .mockReturnValueOnce('# Valid content');
+        mockSanitizeFileContent
+          .mockReturnValueOnce(sanitized)
+          .mockReturnValueOnce('# Valid content');
+
+        const { files } = await aggregateTestFiles(
+          settingsFor({ [type]: [`skipped.${type}`, `valid.${type}`] })
+        );
+
+        expect(mockLogWarning).toHaveBeenCalledWith(
+          `Skipping skipped.${type}: File is empty after sanitization`
+        );
+        expect(files.map((file) => file.fileName)).toEqual([`valid.${type}`]);
+      }
+    );
+
+    it('drops a JSON file whose parsed content is empty', async () => {
+      mockReadFile
+        .mockReturnValueOnce('{"some": "input"}')
+        .mockReturnValueOnce('{"key": "value"}');
+      mockParseJson
+        .mockReturnValueOnce('')
+        .mockReturnValueOnce('parsed content');
+
+      const { files } = await aggregateTestFiles(
+        settingsFor({ json: ['empty-output.json', 'valid.json'] })
+      );
+
+      expect(files).toHaveLength(1);
+      expect(files[0]).toMatchObject({
+        fileName: 'valid.json',
+        content: 'parsed content',
+      });
+    });
+
+    it('skips empty files of every type and keeps the valid ones in order', async () => {
+      mockReadFile
+        .mockReturnValueOnce('') // empty.json
+        .mockReturnValueOnce('{"key": "value"}') // valid.json
+        .mockReturnValueOnce('') // empty.yaml
+        .mockReturnValueOnce('{"twilio": "content"}') // valid-twilio.json
+        .mockReturnValueOnce('# Valid markdown'); // valid.md
+
+      const { files } = await aggregateTestFiles(
+        settingsFor({
+          json: ['empty.json', 'valid.json'],
+          yaml: ['empty.yaml'],
+          twilioContentJson: ['valid-twilio.json'],
+          md: ['valid.md'],
+        })
+      );
+
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        'Skipping empty.json: JSON file is not parsable'
+      );
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        'Skipping empty.yaml: YAML file is empty'
+      );
+      expect(files.map((file) => file.fileName).sort()).toEqual([
+        'valid-twilio.json',
+        'valid.json',
+        'valid.md',
+      ]);
+    });
+  });
+
+  describe('file validation and metadata', () => {
     it('detects JSON data format without project warnings', async () => {
       mockDetermineLibrary.mockReturnValueOnce({
         library: 'base',
         additionalModules: [],
       });
-
-      const settings = {
-        files: {
-          resolvedPaths: {
-            json: ['/full/path/valid.json'],
-          },
-          placeholderPaths: {},
-        },
-        options: {},
-        defaultLocale: 'en',
-      };
-
       mockReadFile.mockReturnValueOnce('{"key": "value"}');
 
-      await aggregateTestFiles(settings);
+      await aggregateTestFiles(settingsFor({ json: ['valid.json'] }));
 
       expect(mockDetermineLibrary).toHaveBeenCalledWith();
       expect(mockLogWarning).not.toHaveBeenCalledWith(
@@ -117,482 +254,123 @@ describe('aggregateFiles - Empty File Handling', () => {
       );
     });
 
-    it('should skip empty JSON files and log warning', async () => {
-      const settings = {
-        files: {
-          resolvedPaths: {
-            json: ['/full/path/empty.json', '/full/path/valid.json'],
-          },
-          placeholderPaths: {},
-        },
-        options: {},
-        defaultLocale: 'en',
-      };
+    it('uploads Twilio Content JSON as strings with its own file format', async () => {
+      mockReadFile.mockReturnValueOnce('{"key": "value"}');
 
-      mockReadFile
-        .mockReturnValueOnce('') // empty file
-        .mockReturnValueOnce('{"key": "value"}'); // valid file
-
-      const { files: result } = await aggregateTestFiles(settings);
-
-      expect(mockLogWarning).toHaveBeenCalledWith(
-        'Skipping empty.json: JSON file is not parsable'
+      const { files } = await aggregateTestFiles(
+        settingsFor({ twilioContentJson: ['content.json'] })
       );
-      expect(result).toHaveLength(1);
-      expect(result[0].fileName).toBe('valid.json');
-    });
 
-    it('should skip JSON files with only whitespace and log warning', async () => {
-      const settings = {
-        files: {
-          resolvedPaths: {
-            json: ['/full/path/whitespace.json', '/full/path/valid.json'],
-          },
-          placeholderPaths: {},
-        },
-        options: {},
-        defaultLocale: 'en',
-      };
-
-      mockReadFile
-        .mockReturnValueOnce('   \n\t  ') // whitespace only
-        .mockReturnValueOnce('{"key": "value"}'); // valid file
-
-      const { files: result } = await aggregateTestFiles(settings);
-
-      expect(mockLogWarning).toHaveBeenCalledWith(
-        'Skipping whitespace.json: JSON file is not parsable'
-      );
-      expect(result).toHaveLength(1);
-      expect(result[0].fileName).toBe('valid.json');
-    });
-
-    it('should allow invalid JSON when validation is skipped', async () => {
-      const settings = {
-        files: {
-          resolvedPaths: {
-            json: ['/full/path/invalid.json'],
-          },
-          placeholderPaths: {},
-        },
-        options: {
-          skipFileValidation: {
-            json: true,
-          },
-        },
-        defaultLocale: 'en',
-      };
-
-      mockReadFile.mockReturnValueOnce('{ invalid json');
-
-      const { files: result } = await aggregateTestFiles(settings);
-
-      expect(mockLogWarning).not.toHaveBeenCalled();
-      expect(result).toHaveLength(1);
-      expect(result[0].fileName).toBe('invalid.json');
-    });
-  });
-
-  describe('YAML files', () => {
-    it('should skip empty YAML files and log warning', async () => {
-      const settings = {
-        files: {
-          resolvedPaths: {
-            yaml: ['/full/path/empty.yaml', '/full/path/valid.yaml'],
-          },
-          placeholderPaths: {},
-        },
-        options: {},
-      };
-
-      mockReadFile
-        .mockReturnValueOnce('') // empty file
-        .mockReturnValueOnce('key: value'); // valid file
-
-      const { files: result } = await aggregateTestFiles(settings);
-
-      expect(mockLogWarning).toHaveBeenCalledWith(
-        'Skipping empty.yaml: YAML file is empty'
-      );
-      expect(result).toHaveLength(1);
-      expect(result[0].fileName).toBe('valid.yaml');
-    });
-
-    it('should skip YAML files with only whitespace and log warning', async () => {
-      const settings = {
-        files: {
-          resolvedPaths: {
-            yaml: ['/full/path/whitespace.yml', '/full/path/valid.yml'],
-          },
-          placeholderPaths: {},
-        },
-        options: {},
-      };
-
-      mockReadFile
-        .mockReturnValueOnce('   \n\t  ') // whitespace only
-        .mockReturnValueOnce('key: value'); // valid file
-
-      const { files: result } = await aggregateTestFiles(settings);
-
-      expect(mockLogWarning).toHaveBeenCalledWith(
-        'Skipping whitespace.yml: YAML file is empty'
-      );
-      expect(result).toHaveLength(1);
-      expect(result[0].fileName).toBe('valid.yml');
-    });
-  });
-
-  describe('Other file types (MDX, MD, TS, etc.)', () => {
-    it('should skip empty MDX files and log warning', async () => {
-      const settings = {
-        files: {
-          resolvedPaths: {
-            mdx: ['/full/path/empty.mdx', '/full/path/valid.mdx'],
-          },
-          placeholderPaths: {},
-        },
-        options: {},
-      };
-
-      mockReadFile
-        .mockReturnValueOnce('') // empty file
-        .mockReturnValueOnce('# Valid MDX'); // valid file
-
-      const { files: result } = await aggregateTestFiles(settings);
-
-      expect(mockLogWarning).toHaveBeenCalledWith(
-        'Skipping empty.mdx: File is empty after sanitization'
-      );
-      expect(result).toHaveLength(1);
-      expect(result[0].fileName).toBe('valid.mdx');
-    });
-
-    it('should skip MDX validation when configured', async () => {
-      const settings = {
-        files: {
-          resolvedPaths: {
-            mdx: ['/full/path/invalid.mdx'],
-          },
-          placeholderPaths: {},
-        },
-        options: {
-          skipFileValidation: {
-            mdx: true,
-          },
-        },
-      };
-
-      mockReadFile.mockReturnValueOnce('<>Invalid mdx');
-      mockIsValidMdx.mockReturnValueOnce({
-        isValid: false,
-        error: 'bad',
+      expect(files).toHaveLength(1);
+      expect(files[0]).toMatchObject({
+        fileName: 'content.json',
+        fileFormat: 'TWILIO_CONTENT_JSON',
+        dataFormat: 'STRING',
       });
+    });
 
-      const { files: result } = await aggregateTestFiles(settings);
+    it.each(['json', 'twilioContentJson'])(
+      'uploads invalid %s when JSON validation is skipped',
+      async (type) => {
+        mockReadFile.mockReturnValueOnce('{ invalid json');
+
+        const { files } = await aggregateTestFiles(
+          settingsFor(
+            { [type]: ['invalid.json'] },
+            { options: { skipFileValidation: { json: true } } }
+          )
+        );
+
+        expect(mockLogWarning).not.toHaveBeenCalled();
+        expect(files.map((file) => file.fileName)).toEqual(['invalid.json']);
+      }
+    );
+
+    it('uploads invalid MDX without validating it when MDX validation is skipped', async () => {
+      mockReadFile.mockReturnValueOnce('<>Invalid mdx');
+      mockIsValidMdx.mockReturnValueOnce({ isValid: false, error: 'bad' });
+
+      const { files } = await aggregateTestFiles(
+        settingsFor(
+          { mdx: ['invalid.mdx'] },
+          { options: { skipFileValidation: { mdx: true } } }
+        )
+      );
 
       expect(mockIsValidMdx).not.toHaveBeenCalled();
       expect(mockLogWarning).not.toHaveBeenCalled();
-      expect(result).toHaveLength(1);
-      expect(result[0].fileName).toBe('invalid.mdx');
+      expect(files.map((file) => file.fileName)).toEqual(['invalid.mdx']);
     });
 
-    it('should attach transformFormat for configured POT files', async () => {
-      const settings = {
-        files: {
-          resolvedPaths: {
-            pot: ['/full/path/messages.pot'],
-          },
-          placeholderPaths: {},
-          transformFormats: {
-            pot: 'PO',
-          },
-        },
-        defaultLocale: 'en',
-        options: {},
-      };
-
+    it('attaches the configured transformFormat to POT files', async () => {
       mockReadFile.mockReturnValueOnce('msgid "Hello"');
 
-      const { files: result } = await aggregateTestFiles(settings);
+      const { files } = await aggregateTestFiles(
+        settingsFor(
+          { pot: ['messages.pot'] },
+          { transformFormats: { pot: 'PO' } }
+        )
+      );
 
-      expect(result).toHaveLength(1);
-      expect(result[0]).toMatchObject({
+      expect(files).toHaveLength(1);
+      expect(files[0]).toMatchObject({
         fileName: 'messages.pot',
         fileFormat: 'POT',
         transformFormat: 'PO',
       });
     });
-
-    it('should infer mintlify title from filename when missing', async () => {
-      const settings = {
-        files: {
-          resolvedPaths: {
-            mdx: ['/full/path/my-file.mdx'],
-          },
-          placeholderPaths: {},
-        },
-        defaultLocale: 'en',
-        framework: 'mintlify',
-        options: {
-          mintlify: {
-            inferTitleFromFilename: true,
-          },
-        },
-      };
-
-      mockReadFile.mockReturnValueOnce(
-        '---\nsummary: "Hello"\n---\n\n# Content'
-      );
-
-      const { files: result } = await aggregateTestFiles(settings);
-
-      expect(result).toHaveLength(1);
-      expect(result[0].content).toMatch(/title:\s*"?My File"?/);
-    });
-
-    it('should not change mintlify frontmatter when title is present', async () => {
-      const settings = {
-        files: {
-          resolvedPaths: {
-            mdx: ['/full/path/assistant.mdx'],
-          },
-          placeholderPaths: {},
-        },
-        defaultLocale: 'en',
-        framework: 'mintlify',
-        options: {
-          mintlify: {
-            inferTitleFromFilename: true,
-          },
-        },
-      };
-
-      const content =
-        '---\n' +
-        'title: Assistant\n' +
-        'description: "Test"\n' +
-        '---\n\n' +
-        '# Content';
-
-      mockReadFile.mockReturnValueOnce(content);
-
-      const { files: result } = await aggregateTestFiles(settings);
-
-      expect(result).toHaveLength(1);
-      expect(result[0].content).toBe(content);
-    });
-
-    it('should infer title from parent directory for index files', async () => {
-      const settings = {
-        files: {
-          resolvedPaths: {
-            mdx: ['/full/path/docs/getting-started/index.mdx'],
-          },
-          placeholderPaths: {},
-        },
-        defaultLocale: 'en',
-        framework: 'mintlify',
-        options: {
-          mintlify: {
-            inferTitleFromFilename: true,
-          },
-        },
-      };
-
-      mockReadFile.mockReturnValueOnce(
-        '---\nsummary: "Hello"\n---\n\n# Content'
-      );
-
-      const { files: result } = await aggregateTestFiles(settings);
-
-      expect(result).toHaveLength(1);
-      expect(result[0].content).toMatch(/title:\s*"?Getting Started"?/);
-    });
-
-    it('should use Index for default locale index files', async () => {
-      const settings = {
-        files: {
-          resolvedPaths: {
-            mdx: ['/full/path/es/index.mdx'],
-          },
-          placeholderPaths: {},
-        },
-        defaultLocale: 'es',
-        framework: 'mintlify',
-        options: {
-          mintlify: {
-            inferTitleFromFilename: true,
-          },
-        },
-      };
-
-      mockReadFile.mockReturnValueOnce(
-        '---\nsummary: "Hello"\n---\n\n# Content'
-      );
-
-      const { files: result } = await aggregateTestFiles(settings);
-
-      expect(result).toHaveLength(1);
-      expect(result[0].content).toMatch(/title:\s*"?Index"?/);
-    });
-
-    it('should skip files that are empty after sanitization and log warning', async () => {
-      const settings = {
-        files: {
-          resolvedPaths: {
-            md: ['/full/path/sanitized-empty.md', '/full/path/valid.md'],
-          },
-          placeholderPaths: {},
-        },
-        options: {},
-      };
-
-      mockReadFile
-        .mockReturnValueOnce('<!-- only comments -->') // content that becomes empty after sanitization
-        .mockReturnValueOnce('# Valid content'); // valid file
-
-      mockSanitizeFileContent
-        .mockReturnValueOnce('') // empty after sanitization
-        .mockReturnValueOnce('# Valid content'); // valid after sanitization
-
-      const { files: result } = await aggregateTestFiles(settings);
-
-      expect(mockLogWarning).toHaveBeenCalledWith(
-        'Skipping sanitized-empty.md: File is empty after sanitization'
-      );
-      expect(result).toHaveLength(1);
-      expect(result[0].fileName).toBe('valid.md');
-    });
-
-    it('should skip files that have only whitespace after sanitization and log warning', async () => {
-      const settings = {
-        files: {
-          resolvedPaths: {
-            ts: [
-              '/full/path/whitespace-after-sanitization.ts',
-              '/full/path/valid.ts',
-            ],
-          },
-          placeholderPaths: {},
-        },
-        options: {},
-      };
-
-      mockReadFile
-        .mockReturnValueOnce('some content') // file content before sanitization
-        .mockReturnValueOnce('export const Component = () => "Hello"'); // valid file
-
-      mockSanitizeFileContent
-        .mockReturnValueOnce('   \n\t  ') // whitespace only after sanitization
-        .mockReturnValueOnce('export const Component = () => "Hello"'); // valid after sanitization
-
-      const { files: result } = await aggregateTestFiles(settings);
-
-      expect(mockLogWarning).toHaveBeenCalledWith(
-        'Skipping whitespace-after-sanitization.ts: File is empty after sanitization'
-      );
-      expect(result).toHaveLength(1);
-      expect(result[0].fileName).toBe('valid.ts');
-    });
   });
 
-  describe('Twilio Content JSON files', () => {
-    it('should process valid Twilio Content JSON files with correct fileFormat', async () => {
-      const settings = {
-        files: {
-          resolvedPaths: {
-            twilioContentJson: ['/full/path/content.json'],
-          },
-          placeholderPaths: {},
-        },
-        options: {},
-        defaultLocale: 'en',
-      };
-
-      mockReadFile.mockReturnValueOnce('{"key": "value"}');
-
-      const { files: result } = await aggregateTestFiles(settings);
-
-      expect(result).toHaveLength(1);
-      expect(result[0].fileFormat).toBe('TWILIO_CONTENT_JSON');
-      expect(result[0].dataFormat).toBe('STRING');
-      expect(result[0].fileName).toBe('content.json');
-    });
-
-    it('should skip empty Twilio Content JSON files and log warning', async () => {
-      const settings = {
-        files: {
-          resolvedPaths: {
-            twilioContentJson: [
-              '/full/path/empty.json',
-              '/full/path/valid.json',
-            ],
-          },
-          placeholderPaths: {},
-        },
-        options: {},
-        defaultLocale: 'en',
-      };
-
-      mockReadFile
-        .mockReturnValueOnce('') // empty file
-        .mockReturnValueOnce('{"key": "value"}'); // valid file
-
-      const { files: result } = await aggregateTestFiles(settings);
-
-      expect(mockLogWarning).toHaveBeenCalledWith(
-        'Skipping empty.json: JSON file is not parsable'
+  describe('Mintlify title inference', () => {
+    const mintlify = (file: string, defaultLocale = 'en') =>
+      settingsFor(
+        { mdx: [file] },
+        {
+          defaultLocale,
+          framework: 'mintlify',
+          options: { mintlify: { inferTitleFromFilename: true } },
+        }
       );
-      expect(result).toHaveLength(1);
-      expect(result[0].fileName).toBe('valid.json');
-    });
 
-    it('should skip unparsable Twilio Content JSON files', async () => {
-      const settings = {
-        files: {
-          resolvedPaths: {
-            twilioContentJson: ['/full/path/invalid.json'],
-          },
-          placeholderPaths: {},
-        },
-        options: {},
-        defaultLocale: 'en',
-      };
+    it.each([
+      ['the file name', 'my-file.mdx', 'en', 'My File'],
+      [
+        'the parent directory of an index file',
+        'docs/getting-started/index.mdx',
+        'en',
+        'Getting Started',
+      ],
+      [
+        '"Index" for a default-locale index file',
+        'es/index.mdx',
+        'es',
+        'Index',
+      ],
+    ])(
+      'infers a missing title from %s',
+      async (_name, file, defaultLocale, title) => {
+        mockReadFile.mockReturnValueOnce(
+          '---\nsummary: "Hello"\n---\n\n# Content'
+        );
 
-      mockReadFile.mockReturnValueOnce('{ invalid json');
+        const { files } = await aggregateTestFiles(
+          mintlify(file, defaultLocale)
+        );
 
-      const { files: result } = await aggregateTestFiles(settings);
+        expect(files).toHaveLength(1);
+        expect(files[0].content).toMatch(new RegExp(`title:\\s*"?${title}"?`));
+      }
+    );
 
-      expect(mockLogWarning).toHaveBeenCalledWith(
-        'Skipping invalid.json: JSON file is not parsable'
-      );
-      expect(result).toHaveLength(0);
-    });
+    it('leaves frontmatter that already has a title untouched', async () => {
+      const content =
+        '---\ntitle: Assistant\ndescription: "Test"\n---\n\n# Content';
+      mockReadFile.mockReturnValueOnce(content);
 
-    it('should allow invalid JSON when validation is skipped', async () => {
-      const settings = {
-        files: {
-          resolvedPaths: {
-            twilioContentJson: ['/full/path/invalid.json'],
-          },
-          placeholderPaths: {},
-        },
-        options: {
-          skipFileValidation: {
-            json: true,
-          },
-        },
-        defaultLocale: 'en',
-      };
+      const { files } = await aggregateTestFiles(mintlify('assistant.mdx'));
 
-      mockReadFile.mockReturnValueOnce('{ invalid json');
-
-      const { files: result } = await aggregateTestFiles(settings);
-
-      expect(mockLogWarning).not.toHaveBeenCalled();
-      expect(result).toHaveLength(1);
-      expect(result[0].fileName).toBe('invalid.json');
+      expect(files).toHaveLength(1);
+      expect(files[0].content).toBe(content);
     });
   });
 
@@ -920,116 +698,6 @@ describe('aggregateFiles - Empty File Handling', () => {
       );
       expect(result).toHaveLength(1);
       expect(result[0].fileName).toBe('res/values/strings.xml');
-    });
-  });
-
-  describe('Mixed file types with empty files', () => {
-    it('should skip empty files across all file types and process valid ones', async () => {
-      const settings = {
-        files: {
-          resolvedPaths: {
-            json: ['/full/path/empty.json', '/full/path/valid.json'],
-            yaml: ['/full/path/empty.yaml'],
-            twilioContentJson: ['/full/path/valid-twilio.json'],
-            md: ['/full/path/valid.md'],
-          },
-          placeholderPaths: {},
-        },
-        options: {},
-        defaultLocale: 'en',
-      };
-
-      mockReadFile
-        .mockReturnValueOnce('') // empty JSON
-        .mockReturnValueOnce('{"key": "value"}') // valid JSON
-        .mockReturnValueOnce('') // empty YAML
-        .mockReturnValueOnce('{"twilio": "content"}') // valid Twilio Content JSON
-        .mockReturnValueOnce('# Valid markdown'); // valid MD
-
-      const { files: result } = await aggregateTestFiles(settings);
-
-      // Check that warnings were logged for empty files
-      expect(mockLogWarning).toHaveBeenCalledWith(
-        'Skipping empty.json: JSON file is not parsable'
-      );
-      expect(mockLogWarning).toHaveBeenCalledWith(
-        'Skipping empty.yaml: YAML file is empty'
-      );
-
-      // Should have 3 valid files
-      expect(result).toHaveLength(3);
-
-      // Check the file names are correct
-      const fileNames = result.map((f) => f.fileName);
-      expect(fileNames).toContain('valid.json');
-      expect(fileNames).toContain('valid-twilio.json');
-      expect(fileNames).toContain('valid.md');
-    });
-  });
-
-  describe('Filter behavior', () => {
-    it('should filter out files that return null from map function', async () => {
-      const settings = {
-        files: {
-          resolvedPaths: {
-            json: [
-              '/full/path/empty1.json',
-              '/full/path/empty2.json',
-              '/full/path/valid.json',
-            ],
-          },
-          placeholderPaths: {},
-        },
-        options: {},
-        defaultLocale: 'en',
-      };
-
-      // Both empty files should be skipped, only valid file should remain
-      mockReadFile
-        .mockReturnValueOnce('') // empty file 1 - will return null from map
-        .mockReturnValueOnce('') // empty file 2 - will return null from map
-        .mockReturnValueOnce('{"key": "value"}'); // valid file
-
-      const { files: result } = await aggregateTestFiles(settings);
-
-      expect(mockLogWarning).toHaveBeenCalledWith(
-        'Skipping empty1.json: JSON file is not parsable'
-      );
-      expect(mockLogWarning).toHaveBeenCalledWith(
-        'Skipping empty2.json: JSON file is not parsable'
-      );
-      expect(result).toHaveLength(1);
-      expect(result[0].fileName).toBe('valid.json');
-    });
-
-    it('should filter out files where parsed content is empty', async () => {
-      const settings = {
-        files: {
-          resolvedPaths: {
-            json: [
-              '/full/path/valid-input-empty-output.json',
-              '/full/path/valid.json',
-            ],
-          },
-          placeholderPaths: {},
-        },
-        options: {},
-        defaultLocale: 'en',
-      };
-
-      mockReadFile
-        .mockReturnValueOnce('{"some": "input"}') // valid input
-        .mockReturnValueOnce('{"key": "value"}'); // valid file
-
-      mockParseJson
-        .mockReturnValueOnce('') // empty after parsing - gets filtered out
-        .mockReturnValueOnce('parsed content'); // valid after parsing
-
-      const { files: result } = await aggregateTestFiles(settings);
-
-      expect(result).toHaveLength(1);
-      expect(result[0].fileName).toBe('valid.json');
-      expect(result[0].content).toBe('parsed content');
     });
   });
 });

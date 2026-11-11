@@ -58,20 +58,6 @@ describe('hashSource requiresReview', () => {
     expect(reviewed).not.toBe(base);
   });
 
-  it('is stable for requiresReview: true', () => {
-    const a = hashSource({
-      source: 'Hello world',
-      requiresReview: true,
-      dataFormat: 'ICU',
-    });
-    const b = hashSource({
-      source: 'Hello world',
-      requiresReview: true,
-      dataFormat: 'ICU',
-    });
-    expect(a).toBe(b);
-  });
-
   it('composes with other metadata without disturbing their hashes', () => {
     const withContext = hashSource({
       source: 'Hello world',

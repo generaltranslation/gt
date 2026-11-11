@@ -1,19 +1,4 @@
 import { defineConfig } from 'vitest/config';
+import { vitestThreadsPreset } from '../../vitest.preset.mts';
 
-export default defineConfig({
-  test: {
-    environment: 'node',
-    globals: true,
-    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
-    testTimeout: 15000,
-    isolate: true,
-    reporters: [
-      [
-        'default',
-        {
-          summary: true,
-        },
-      ],
-    ],
-  },
-});
+export default defineConfig(vitestThreadsPreset);

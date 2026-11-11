@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import { Schema } from '@sanity/schema';
 import { SanityDocument, TypedObject } from 'sanity';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
@@ -197,6 +199,15 @@ const sourceDocument = {
     },
   ],
 } as unknown as SanityDocument;
+
+// @portabletext/to-html warns about every type it has no component for.
+// Those types take gt-sanity's fallbacks, which is what these tests cover.
+const silenceWarnings = () => {
+  vi.spyOn(console, 'warn').mockImplementation(() => {});
+};
+// Suite bodies serialize too, and some suites restore all mocks after a test.
+silenceWarnings();
+beforeEach(silenceWarnings);
 
 const MARKER = '«fr»';
 

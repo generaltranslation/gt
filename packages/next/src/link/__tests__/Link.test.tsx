@@ -2,6 +2,7 @@ import type React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MiddlewareConfig } from '../../middleware-dir/types';
+import type { LinkLocale } from '../localize-utils';
 
 const { mockNextLink, mockUseLocale } = vi.hoisted(() => ({
   mockNextLink: vi.fn(),
@@ -214,5 +215,56 @@ describe('Link', () => {
       expect(warn).not.toHaveBeenCalled();
       warn.mockRestore();
     });
+  });
+});
+
+describe('useLocalizeHref', () => {
+  /** Loads the hook with the current routing env and returns its localizer. */
+  async function loadLocalize() {
+    vi.resetModules();
+    const { useLocalizeHref } = await import('../useLocalizeHref');
+    return (href: string, locale?: LinkLocale) => {
+      let result: string | undefined;
+      function Probe() {
+        result = useLocalizeHref()(href, locale);
+        return null;
+      }
+      renderToStaticMarkup(<Probe />);
+      return result;
+    };
+  }
+
+  beforeEach(() => {
+    vi.stubEnv('_GENERALTRANSLATION_MIDDLEWARE_CONFIG', '{}');
+  });
+
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('prefixes paths the middleware would redirect', async () => {
+    mockUseLocale.mockReturnValue('fr');
+    const localize = await loadLocalize();
+
+    expect(localize('/checkout?step=1#top')).toBe('/fr/checkout?step=1#top');
+    expect(localize('https://example.com')).toBe('https://example.com');
+  });
+
+  it('matches Link for default-locale, explicit, and unlocalized hrefs', async () => {
+    mockUseLocale.mockReturnValue('en');
+    const localize = await loadLocalize();
+
+    expect(localize('/checkout')).toBe('/checkout');
+    expect(localize('/checkout', 'en')).toBe('/en/checkout');
+    expect(localize('/checkout', 'fr')).toBe('/fr/checkout');
+    expect(localize('/checkout', false)).toBe('/checkout');
+  });
+
+  it('leaves paths outside pathRegex unprefixed', async () => {
+    vi.stubEnv('_GENERALTRANSLATION_PATH_REGEX', '^/(?!api(?:/|$)).*');
+    mockUseLocale.mockReturnValue('fr');
+    const localize = await loadLocalize();
+
+    expect(localize('/api/export?format=csv')).toBe('/api/export?format=csv');
+    expect(localize('/api', 'de')).toBe('/api');
+    expect(localize('/apis')).toBe('/fr/apis');
   });
 });

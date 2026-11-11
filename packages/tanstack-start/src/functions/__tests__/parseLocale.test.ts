@@ -73,6 +73,19 @@ const localeConfig = {
   },
 };
 
+// The isomorphic function mock exposes both implementations.
+const { server: determineLocaleServer, client: determineLocaleClientFn } =
+  determineLocale as unknown as Record<
+    'server' | 'client',
+    (config: typeof localeConfig) => string
+  >;
+
+const cookieOptions = {
+  path: '/',
+  sameSite: 'lax',
+  maxAge: 60 * 60 * 24 * 365,
+};
+
 const originalDocumentDescriptor = Object.getOwnPropertyDescriptor(
   globalThis,
   'document'
@@ -90,7 +103,7 @@ function restoreGlobalProperty(
   Reflect.deleteProperty(globalThis, property);
 }
 
-describe.sequential('parseLocale', () => {
+describe('parseLocale', () => {
   beforeEach(() => {
     resetI18nConfigSingleton();
     initializeI18nConfig(localeConfig);
@@ -101,6 +114,7 @@ describe.sequential('parseLocale', () => {
 
   afterEach(() => {
     restoreGlobalProperty('document', originalDocumentDescriptor);
+    vi.restoreAllMocks();
   });
 
   it('uses the server cookie before Accept-Language', () => {
@@ -111,21 +125,11 @@ describe.sequential('parseLocale', () => {
       })
     );
 
-    expect(
-      (
-        determineLocale as unknown as {
-          server: (config: typeof localeConfig) => string;
-        }
-      ).server(localeConfig)
-    ).toBe('brand-french');
+    expect(determineLocaleServer(localeConfig)).toBe('brand-french');
     expect(mockSetCookie).toHaveBeenCalledWith(
       'generaltranslation.locale',
       'brand-french',
-      {
-        path: '/',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 365,
-      }
+      cookieOptions
     );
   });
 
@@ -134,21 +138,11 @@ describe.sequential('parseLocale', () => {
       createRequest({ acceptLanguage: 'es,en;q=0.8' })
     );
 
-    expect(
-      (
-        determineLocale as unknown as {
-          server: (config: typeof localeConfig) => string;
-        }
-      ).server(localeConfig)
-    ).toBe('es');
+    expect(determineLocaleServer(localeConfig)).toBe('es');
     expect(mockSetCookie).toHaveBeenCalledWith(
       'generaltranslation.locale',
       'es',
-      {
-        path: '/',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 365,
-      }
+      cookieOptions
     );
   });
 
@@ -161,11 +155,7 @@ describe.sequential('parseLocale', () => {
       () => {
         mockRequest.mockClear();
         mockSetCookie.mockClear();
-        return (
-          determineLocale as unknown as {
-            server: (config: typeof localeConfig) => string;
-          }
-        ).server(localeConfig);
+        return determineLocaleServer(localeConfig);
       }
     );
 
@@ -175,13 +165,7 @@ describe.sequential('parseLocale', () => {
   });
 
   it('reads initialized locale state on the client', () => {
-    expect(
-      (
-        determineLocale as unknown as {
-          client: (config: typeof localeConfig) => string;
-        }
-      ).client(localeConfig)
-    ).toBe('fr');
+    expect(determineLocaleClientFn(localeConfig)).toBe('fr');
     expect(mockGetLocale).toHaveBeenCalledOnce();
   });
 
@@ -198,21 +182,11 @@ describe.sequential('parseLocale', () => {
       })
     );
 
-    expect(
-      (
-        determineLocale as unknown as {
-          server: (config: typeof localeConfig) => string;
-        }
-      ).server(localeConfig)
-    ).toBe('brand-french');
+    expect(determineLocaleServer(localeConfig)).toBe('brand-french');
     expect(mockSetCookie).toHaveBeenCalledWith(
       'custom-locale',
       'brand-french',
-      {
-        path: '/',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 365,
-      }
+      cookieOptions
     );
   });
 
@@ -243,12 +217,16 @@ describe.sequential('parseLocale', () => {
     expect(determineLocaleClient(localeConfig)).toBe('brand-french');
   });
 
-  it('falls back to the default locale during client initialization', () => {
+  it('warns and falls back to the default locale during client initialization', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     Object.defineProperty(globalThis, 'document', {
       configurable: true,
       value: { cookie: '' },
     });
 
     expect(determineLocaleClient(localeConfig)).toBe('en');
+    expect(warn).toHaveBeenCalledWith(
+      'gt-tanstack-start(client): no locales could be determined for this request'
+    );
   });
 });

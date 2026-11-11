@@ -5,69 +5,18 @@ import {
   getFileExtensionForFormat,
 } from '../transformFormat.js';
 
-describe('transformFormat - .strings', () => {
-  it('maps the config file key to the API file format enum value', () => {
-    expect(CONFIG_FILE_TYPE_TO_FILE_FORMAT.dotStrings).toBe('DOT_STRINGS');
-  });
-
-  it('maps the API file format enum value back to the config file key', () => {
-    expect(FILE_FORMAT_TO_CONFIG_FILE_TYPE.DOT_STRINGS).toBe('dotStrings');
-  });
-
-  it('writes translated files with the matching extension', () => {
-    expect(getFileExtensionForFormat('DOT_STRINGS')).toBe('strings');
-  });
-});
-
-describe('transformFormat - .stringsdict', () => {
-  it('maps the config file key to the API file format enum value', () => {
-    expect(CONFIG_FILE_TYPE_TO_FILE_FORMAT.dotStringsdict).toBe(
-      'DOT_STRINGSDICT'
-    );
-  });
-
-  it('maps the API file format enum value back to the config file key', () => {
-    expect(FILE_FORMAT_TO_CONFIG_FILE_TYPE.DOT_STRINGSDICT).toBe(
-      'dotStringsdict'
-    );
-  });
-
-  it('writes translated files with the matching extension', () => {
-    expect(getFileExtensionForFormat('DOT_STRINGSDICT')).toBe('stringsdict');
-  });
-});
-
-describe('transformFormat - Android strings.xml', () => {
-  it('maps the config file key to the API file format enum value', () => {
-    expect(CONFIG_FILE_TYPE_TO_FILE_FORMAT.androidStrings).toBe(
-      'ANDROID_STRINGS'
-    );
-  });
-
-  it('maps the API file format enum value back to the config file key', () => {
-    expect(FILE_FORMAT_TO_CONFIG_FILE_TYPE.ANDROID_STRINGS).toBe(
-      'androidStrings'
-    );
-  });
-
-  it('writes translated files with the matching extension', () => {
-    expect(getFileExtensionForFormat('ANDROID_STRINGS')).toBe('xml');
-    expect(CONFIG_FILE_TYPE_TO_FILE_FORMAT.srt).toBe('SRT');
-    expect(FILE_FORMAT_TO_CONFIG_FILE_TYPE.SRT).toBe('srt');
-    expect(getFileExtensionForFormat('SRT')).toBe('srt');
-  });
-});
-
-describe('transformFormat - .NET .resx', () => {
-  it('maps the config file key to the API file format enum value', () => {
-    expect(CONFIG_FILE_TYPE_TO_FILE_FORMAT.resx).toBe('RESX');
-  });
-
-  it('maps the API file format enum value back to the config file key', () => {
-    expect(FILE_FORMAT_TO_CONFIG_FILE_TYPE.RESX).toBe('resx');
-  });
-
-  it('writes translated files with the matching extension', () => {
-    expect(getFileExtensionForFormat('RESX')).toBe('resx');
+// The config file key, the API file format enum value it is uploaded as, and
+// the extension translated files are written with.
+describe('transformFormat', () => {
+  it.each([
+    ['dotStrings', 'DOT_STRINGS', 'strings'],
+    ['dotStringsdict', 'DOT_STRINGSDICT', 'stringsdict'],
+    ['androidStrings', 'ANDROID_STRINGS', 'xml'],
+    ['srt', 'SRT', 'srt'],
+    ['resx', 'RESX', 'resx'],
+  ] as const)('maps %s to %s and back, written as .%s', (key, format, ext) => {
+    expect(CONFIG_FILE_TYPE_TO_FILE_FORMAT[key]).toBe(format);
+    expect(FILE_FORMAT_TO_CONFIG_FILE_TYPE[format]).toBe(key);
+    expect(getFileExtensionForFormat(format)).toBe(ext);
   });
 });

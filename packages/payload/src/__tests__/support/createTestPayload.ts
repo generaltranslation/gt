@@ -376,3 +376,11 @@ export async function createTestPayload(
 ): Promise<Payload> {
   return getPayload({ config: await testConfig(plugins, options) });
 }
+
+let shared: Promise<Payload> | undefined;
+
+// The test file's instance without plugins, created on first use, for suites
+// that share a file. The file destroys it when its suites are done.
+export function sharedTestPayload(): Promise<Payload> {
+  return (shared ??= createTestPayload());
+}

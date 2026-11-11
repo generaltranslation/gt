@@ -1,7 +1,4 @@
 import { defineConfig } from 'vitest/config';
+import { vitestThreadsPreset } from '../../vitest.preset.mts';
 
-export default defineConfig({
-  test: {
-    environment: 'node',
-  },
-});
+export default defineConfig(vitestThreadsPreset);

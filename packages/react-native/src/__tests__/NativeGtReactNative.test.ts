@@ -42,14 +42,7 @@ describe('NativeGtReactNative resolution', () => {
     vi.restoreAllMocks();
   });
 
-  it('does not throw at import time on web when the native module is absent', async () => {
-    rn.os = 'web';
-    rn.getEnforcing.mockImplementation(nativeModuleMissing);
-
-    await expect(import('../NativeGtReactNative')).resolves.toBeDefined();
-  });
-
-  it('resolves GtReactNative to null on web without calling getEnforcing', async () => {
+  it('imports on web with GtReactNative null, without calling getEnforcing', async () => {
     rn.os = 'web';
     rn.getEnforcing.mockImplementation(nativeModuleMissing);
 
@@ -100,14 +93,7 @@ describe('native utilities degrade on web without the native module', () => {
     vi.unstubAllGlobals();
   });
 
-  it('getNativeLocales returns an array instead of crashing on import', async () => {
-    const { getNativeLocales } = await import('../utils/getNativeLocales');
-
-    expect(() => getNativeLocales()).not.toThrow();
-    expect(Array.isArray(getNativeLocales())).toBe(true);
-  });
-
-  it('getNativeLocales returns navigator.languages on web', async () => {
+  it('getNativeLocales imports and returns navigator.languages on web', async () => {
     vi.stubGlobal('navigator', {
       languages: ['fr-FR', 'fr'],
       language: 'fr-FR',

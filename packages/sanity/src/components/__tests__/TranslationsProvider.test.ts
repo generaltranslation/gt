@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
@@ -31,8 +33,9 @@ const mocks = vi.hoisted(() => ({
   updateTranslationPreviewUrls: vi.fn(),
 }));
 
-vi.mock('sanity', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('sanity')>()),
+// The provider's only runtime uses of `sanity`; loading the real package
+// costs about a second.
+vi.mock('sanity', () => ({
   useSchema: () => mocks.schema,
   useDocumentStore: mocks.useDocumentStore,
 }));

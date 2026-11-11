@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DictionaryCache, Dictionary } from '../DictionaryCache';
+import { setDictionaryValueAtPath } from '../utils/dictionary-helpers';
 
 describe('DictionaryCache', () => {
-  let mockTranslateMany: ReturnType<typeof vi.fn>;
   const runtimeTranslate = vi.fn();
   const dictionary: Dictionary = {
     greeting: 'Hello',
@@ -17,55 +17,35 @@ describe('DictionaryCache', () => {
   };
 
   beforeEach(() => {
-    mockTranslateMany = vi.fn();
     runtimeTranslate.mockRejectedValue(
       new Error('DictionaryCache fallback is not implemented')
     );
   });
 
-  // ===== REGRESSION TESTS ===== //
+  const createCache = (init: Dictionary = dictionary) =>
+    new DictionaryCache({ init, runtimeTranslate });
 
-  it('getEntry() returns cached dictionary leaf when init is pre-populated', () => {
-    const cache = new DictionaryCache({
-      init: dictionary,
-      runtimeTranslate,
+  it('getEntry() returns leaves with their options, never subtrees', () => {
+    const cache = createCache();
+
+    expect(cache.getEntry('user.profile.name')).toEqual({
+      entry: 'Name',
+      options: {},
     });
-
-    const result = cache.getEntry('user.profile.name');
-    expect(result).toEqual({ entry: 'Name', options: {} });
-    expect(mockTranslateMany).not.toHaveBeenCalled();
-  });
-
-  it('getEntry() returns the entry from a tuple leaf', () => {
-    const cache = new DictionaryCache({
-      init: dictionary,
-      runtimeTranslate,
-    });
-
     expect(cache.getEntry('cta')).toEqual({ entry: 'Click me', options: {} });
-  });
-
-  it('getEntry() returns the entry and options from a metadata tuple leaf', () => {
-    const cache = new DictionaryCache({
-      init: dictionary,
-      runtimeTranslate,
-    });
-
     expect(cache.getEntry('header')).toEqual({
       entry: 'Welcome',
       options: { $context: 'homepage', $maxChars: 12 },
     });
-    expect(cache.getEntry('footer')).toEqual({
-      entry: 'Thanks',
-      options: { $context: 'homepage footer' },
-    });
+    // Tuple leaves are leaves, and subtrees and the root are not entries
+    expect(cache.getEntry('header.$context')).toBeUndefined();
+    expect(cache.getEntry('user')).toBeUndefined();
+    expect(cache.getEntry('')).toBeUndefined();
+    expect(cache.getEntry('missing.entry')).toBeUndefined();
   });
 
   it('getEntry() returns copies of cached dictionary options', () => {
-    const cache = new DictionaryCache({
-      init: dictionary,
-      runtimeTranslate,
-    });
+    const cache = createCache();
 
     const entry = cache.getEntry('header');
     entry!.options.$context = 'changed';
@@ -76,71 +56,27 @@ describe('DictionaryCache', () => {
     });
   });
 
-  it('getEntry() returns undefined for malformed metadata tuple leaves', () => {
-    const cache = new DictionaryCache({
-      init: {
-        nullMetadata: ['Hello', null],
-        numberMetadata: ['Hello', 42],
-        stringMetadata: ['Hello', 'World'],
-        invalidFormat: ['Hello', { $format: 42 }],
-      } as unknown as Dictionary,
-      runtimeTranslate,
-    });
+  it('getEntry() rejects malformed metadata tuples but accepts unknown options', () => {
+    const cache = createCache({
+      nullMetadata: ['Hello', null],
+      numberMetadata: ['Hello', 42],
+      stringMetadata: ['Hello', 'World'],
+      invalidFormat: ['Hello', { $format: 42 }],
+      unknownMetadataKey: ['Hello', { custom: 'value' }],
+    } as unknown as Dictionary);
 
     expect(cache.getEntry('nullMetadata')).toBeUndefined();
     expect(cache.getEntry('numberMetadata')).toBeUndefined();
     expect(cache.getEntry('stringMetadata')).toBeUndefined();
     expect(cache.getEntry('invalidFormat')).toBeUndefined();
-  });
-
-  it('getEntry() accepts unknown metadata options', () => {
-    const cache = new DictionaryCache({
-      init: {
-        unknownMetadataKey: ['Hello', { custom: 'value' }],
-      } as unknown as Dictionary,
-      runtimeTranslate,
-    });
-
     expect(cache.getEntry('unknownMetadataKey')).toEqual({
       entry: 'Hello',
       options: { custom: 'value' },
     });
   });
 
-  it('getEntry() treats tuple leaves as leaves instead of subtrees', () => {
-    const cache = new DictionaryCache({
-      init: dictionary,
-      runtimeTranslate,
-    });
-
-    expect(cache.getEntry('header.$context')).toBeUndefined();
-  });
-
-  it('getEntry() returns cached dictionary subtree when init is pre-populated', () => {
-    const cache = new DictionaryCache({
-      init: dictionary,
-      runtimeTranslate,
-    });
-
-    const result = cache.getEntry('user');
-    expect(result).toBeUndefined();
-  });
-
-  it('getEntry() returns undefined on cache miss', () => {
-    const cache = new DictionaryCache({
-      init: dictionary,
-      runtimeTranslate,
-    });
-
-    const result = cache.getEntry('missing.entry');
-    expect(result).toBeUndefined();
-  });
-
   it('update() merges the cached dictionary', () => {
-    const cache = new DictionaryCache({
-      init: dictionary,
-      runtimeTranslate,
-    });
+    const cache = createCache();
 
     const updatedDictionary: Dictionary = {
       greeting: 'Hi',
@@ -176,10 +112,7 @@ describe('DictionaryCache', () => {
   });
 
   it('materializeEntry() rejects because fallback is not implemented', async () => {
-    const cache = new DictionaryCache({
-      init: {},
-      runtimeTranslate,
-    });
+    const cache = createCache({});
 
     await expect(
       cache.materializeEntry('user.profile.name', {
@@ -187,17 +120,13 @@ describe('DictionaryCache', () => {
         options: {},
       })
     ).rejects.toThrow('DictionaryCache fallback is not implemented');
-    expect(mockTranslateMany).not.toHaveBeenCalled();
     expect(cache.getEntry('user.profile.name')).toBeUndefined();
     expect(cache.getInternalCache()).toEqual({});
   });
 
   it('materializeEntry() stores runtime fallback values by dictionary path', async () => {
     runtimeTranslate.mockResolvedValue('Name');
-    const cache = new DictionaryCache({
-      init: {},
-      runtimeTranslate,
-    });
+    const cache = createCache({});
 
     const sourceEntry = { entry: 'Name', options: {} };
     await expect(
@@ -232,10 +161,7 @@ describe('DictionaryCache', () => {
           resolveTranslation = resolve;
         })
     );
-    const cache = new DictionaryCache({
-      init: {},
-      runtimeTranslate,
-    });
+    const cache = createCache({});
     const sourceEntry = { entry: 'Name', options: {} };
 
     const firstEntry = cache.materializeEntry('user.profile.name', sourceEntry);
@@ -264,10 +190,7 @@ describe('DictionaryCache', () => {
           resolveTranslation = resolve;
         })
     );
-    const cache = new DictionaryCache({
-      init: {},
-      runtimeTranslate,
-    });
+    const cache = createCache({});
     const sourceEntry = { entry: 'Name', options: { $context: 'source' } };
 
     const firstEntry = cache.materializeEntry('user.profile.name', sourceEntry);
@@ -290,10 +213,7 @@ describe('DictionaryCache', () => {
 
   it('materializeEntry() rejects unsafe dictionary paths without polluting Object.prototype', async () => {
     runtimeTranslate.mockResolvedValue('Value');
-    const cache = new DictionaryCache({
-      init: {},
-      runtimeTranslate,
-    });
+    const cache = createCache({});
 
     await expect(
       cache.materializeEntry('__proto__.polluted', {
@@ -308,10 +228,7 @@ describe('DictionaryCache', () => {
   });
 
   it('materializeValue() rejects unsafe target-only root keys without mutating the cache prototype', async () => {
-    const cache = new DictionaryCache({
-      init: {},
-      runtimeTranslate,
-    });
+    const cache = createCache({});
     const targetValue = JSON.parse(
       '{"__proto__":{"polluted":"yes"}}'
     ) as Dictionary;
@@ -326,10 +243,7 @@ describe('DictionaryCache', () => {
   });
 
   it('materializeValue() rejects unsafe target subtrees under safe source leaves', async () => {
-    const cache = new DictionaryCache({
-      init: {},
-      runtimeTranslate,
-    });
+    const cache = createCache({});
     const targetValue = JSON.parse(
       '{"__proto__":{"polluted":"yes"}}'
     ) as Dictionary;
@@ -344,77 +258,25 @@ describe('DictionaryCache', () => {
     expect(({} as { polluted?: string }).polluted).toBeUndefined();
   });
 
-  // ===== NEW BEHAVIOR TESTS ===== //
-
-  it('getEntry() returns undefined for the root dictionary object', () => {
-    const cache = new DictionaryCache({
-      init: dictionary,
-      runtimeTranslate,
-    });
-
-    const result = cache.getEntry('');
-    expect(result).toBeUndefined();
-  });
-
-  it('getValue() returns cached dictionary leaves and subtrees', () => {
-    const cache = new DictionaryCache({
-      init: dictionary,
-      runtimeTranslate,
-    });
+  it('getValue() returns copies of leaves, subtrees and the root', () => {
+    const cache = createCache();
 
     expect(cache.getValue('greeting')).toBe('Hello');
     expect(cache.getValue('header')).toEqual([
       'Welcome',
       { $context: 'homepage', $maxChars: 12 },
     ]);
-    expect(cache.getValue('user')).toEqual({
-      profile: {
-        name: 'Name',
-      },
-    });
-  });
-
-  it('getValue() returns undefined on cache miss', () => {
-    const cache = new DictionaryCache({
-      init: dictionary,
-      runtimeTranslate,
-    });
-
-    expect(cache.getValue('missing.entry')).toBeUndefined();
-  });
-
-  it('getValue() returns the root dictionary object', () => {
-    const cache = new DictionaryCache({
-      init: dictionary,
-      runtimeTranslate,
-    });
-
     expect(cache.getValue('')).toEqual(dictionary);
-  });
-
-  it('getValue() returns copies of cached dictionary objects', () => {
-    const cache = new DictionaryCache({
-      init: dictionary,
-      runtimeTranslate,
-    });
+    expect(cache.getValue('missing.entry')).toBeUndefined();
 
     const user = cache.getValue('user') as Dictionary;
-    user.profile = {
-      name: 'Changed',
-    };
-
-    expect(cache.getValue('user')).toEqual({
-      profile: {
-        name: 'Name',
-      },
-    });
+    expect(user).toEqual({ profile: { name: 'Name' } });
+    user.profile = { name: 'Changed' };
+    expect(cache.getValue('user')).toEqual({ profile: { name: 'Name' } });
   });
 
   it('setValue() stores dictionary leaves by path', () => {
-    const cache = new DictionaryCache({
-      init: {},
-      runtimeTranslate,
-    });
+    const cache = createCache({});
 
     cache.setValue('user.profile.name', [
       'Name',
@@ -435,10 +297,7 @@ describe('DictionaryCache', () => {
   });
 
   it('setValue() stores entry-shaped dictionary subtrees by path', () => {
-    const cache = new DictionaryCache({
-      init: {},
-      runtimeTranslate,
-    });
+    const cache = createCache({});
 
     cache.setValue('content', {
       entry: 'Entry label',
@@ -459,10 +318,7 @@ describe('DictionaryCache', () => {
   });
 
   it('setValue() stores dictionary subtrees by path', () => {
-    const cache = new DictionaryCache({
-      init: {},
-      runtimeTranslate,
-    });
+    const cache = createCache({});
 
     cache.setValue('user.profile', {
       name: 'Name',
@@ -485,10 +341,7 @@ describe('DictionaryCache', () => {
   });
 
   it('setValue() stores copies of dictionary objects', () => {
-    const cache = new DictionaryCache({
-      init: {},
-      runtimeTranslate,
-    });
+    const cache = createCache({});
     const value: Dictionary = {
       profile: {
         name: 'Name',
@@ -509,10 +362,7 @@ describe('DictionaryCache', () => {
 
   it('materializeValue() stores runtime fallback dictionary entries by path', async () => {
     runtimeTranslate.mockResolvedValue('Name');
-    const cache = new DictionaryCache({
-      init: {},
-      runtimeTranslate,
-    });
+    const cache = createCache({});
     const sourceEntry = { entry: 'Name', options: {} };
 
     await expect(
@@ -541,10 +391,7 @@ describe('DictionaryCache', () => {
       }
       throw new Error(`Unexpected key: ${key}`);
     });
-    const cache = new DictionaryCache({
-      init: {},
-      runtimeTranslate,
-    });
+    const cache = createCache({});
     const sourceObject = {
       name: 'Name',
       title: 'Title',
@@ -585,10 +432,7 @@ describe('DictionaryCache', () => {
       }
       throw new Error(`Unexpected key: ${key}`);
     });
-    const cache = new DictionaryCache({
-      init: {},
-      runtimeTranslate,
-    });
+    const cache = createCache({});
     const setValueSpy = vi.spyOn(cache, 'setValue');
     const sourceObject = {
       name: 'Name',
@@ -618,5 +462,64 @@ describe('DictionaryCache', () => {
         },
       },
     });
+  });
+});
+
+describe('setDictionaryValueAtPath', () => {
+  it.each(['__proto__', 'constructor', 'prototype'])(
+    'rejects unsafe dictionary path segment %s',
+    (segment) => {
+      expect(() =>
+        setDictionaryValueAtPath({}, `safe.${segment}.leaf`, 'value')
+      ).toThrow(
+        `Dictionary path "safe.${segment}.leaf" contains an unsafe segment`
+      );
+    }
+  );
+
+  it('does not pollute Object.prototype when setting unsafe dictionary paths', () => {
+    const dictionary: Dictionary = {};
+
+    expect(() =>
+      setDictionaryValueAtPath(dictionary, '__proto__.polluted', 'yes')
+    ).toThrow(
+      'Dictionary path "__proto__.polluted" contains an unsafe segment'
+    );
+    expect(({} as { polluted?: string }).polluted).toBeUndefined();
+    expect(dictionary).toEqual({});
+  });
+
+  it('creates plain objects for missing intermediate dictionary paths', () => {
+    const dictionary: Dictionary = {};
+
+    setDictionaryValueAtPath(dictionary, 'safe.path.leaf', 'value');
+
+    expect(Object.getPrototypeOf(dictionary.safe)).toBe(Object.prototype);
+    expect(Object.getPrototypeOf((dictionary.safe as Dictionary).path)).toBe(
+      Object.prototype
+    );
+    expect(dictionary).toEqual({ safe: { path: { leaf: 'value' } } });
+  });
+
+  it('rejects unsafe root dictionary keys without mutating the cache prototype', () => {
+    const dictionary: Dictionary = {};
+    const value = JSON.parse('{"__proto__":{"polluted":"yes"}}') as Dictionary;
+
+    expect(() => setDictionaryValueAtPath(dictionary, '', value)).toThrow(
+      'Dictionary path "__proto__" contains an unsafe segment'
+    );
+    expect(dictionary).toEqual({});
+    expect((dictionary as { polluted?: string }).polluted).toBeUndefined();
+    expect(({} as { polluted?: string }).polluted).toBeUndefined();
+  });
+
+  it('rejects unsafe nested dictionary keys before storing subtrees', () => {
+    const dictionary: Dictionary = {};
+    const value = JSON.parse('{"__proto__":{"polluted":"yes"}}') as Dictionary;
+
+    expect(() => setDictionaryValueAtPath(dictionary, 'safe', value)).toThrow(
+      'Dictionary path "safe.__proto__" contains an unsafe segment'
+    );
+    expect(dictionary).toEqual({});
   });
 });

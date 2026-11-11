@@ -13,7 +13,7 @@ function resetGTGlobals() {
   Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
 }
 
-describe.sequential('withGT', () => {
+describe('withGT', () => {
   beforeEach(() => {
     resetGTGlobals();
     initializeGT({

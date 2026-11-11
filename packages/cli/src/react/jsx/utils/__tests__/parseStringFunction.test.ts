@@ -1,3635 +1,983 @@
-import { describe, it, expect } from 'vitest';
+import nodePath from 'node:path';
+import fs from 'node:fs';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as t from '@babel/types';
 import { parse } from '@babel/parser';
-import traverse from '@babel/traverse';
-import { parseStrings } from '../parseStringFunction.js';
+import traverseModule from '@babel/traverse';
+import { parseStrings, clearParsingCaches } from '../parseStringFunction.js';
+import { resolveImportPath } from '../resolveImportPath.js';
 import { Updates } from '../../../../types/index.js';
 
-describe('parseStrings', () => {
-  const parseCode = (code: string) => {
-    return parse(code, {
-      sourceType: 'module',
-      plugins: ['jsx', 'typescript'],
-    });
-  };
+vi.mock('node:fs');
+vi.mock('../resolveImportPath.js');
 
-  const FILE_PATH = 'test.tsx';
+const traverse = traverseModule.default || traverseModule;
 
-  const createMockParams = () => ({
+type Config = Parameters<typeof parseStrings>[3];
+
+const FILE_PATH = 'test.tsx';
+
+/**
+ * Runs parseStrings for the import of `functionName` in `code`, the way
+ * createInlineUpdates does for every GT import it finds.
+ */
+function run(code: string, functionName: string, config: Partial<Config> = {}) {
+  const output = {
     updates: [] as Updates,
     errors: [] as string[],
     warnings: new Set<string>(),
-    file: FILE_PATH,
-    parsingOptions: { conditionNames: [] },
+  };
+  const ast = parse(code, {
+    sourceType: 'module',
+    plugins: ['jsx', 'typescript'],
+  });
+  traverse(ast, {
+    ImportSpecifier(path) {
+      if (
+        t.isIdentifier(path.node.imported) &&
+        path.node.imported.name === functionName
+      ) {
+        parseStrings(
+          path.node.local.name,
+          functionName,
+          path,
+          {
+            parsingOptions: { conditionNames: [] },
+            file: FILE_PATH,
+            ignoreInlineMetadata: false,
+            ignoreDynamicContent: false,
+            ignoreInvalidIcu: false,
+            ignoreInlineListContent: true,
+            ignoreTaggedTemplates: false,
+            ignoreGlobalTaggedTemplates: false,
+            autoderiveMethod: 'DISABLED',
+            ...config,
+          },
+          output
+        );
+      }
+    },
+  });
+  return output;
+}
+
+/** Every update as [source, metadata], without the bookkeeping fields. */
+function extracted({ updates }: { updates: Updates }) {
+  return updates.map(({ dataFormat, source, metadata }) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { filePaths, staticId, ...rest } = metadata;
+    expect(dataFormat).toBe('ICU');
+    return [source, rest];
+  });
+}
+
+const NON_STRING = (code: string) => `Found non-string literal (${code})`;
+
+beforeEach(() => {
+  vi.resetAllMocks();
+  clearParsingCaches();
+});
+
+describe('parseStrings', () => {
+  // msg() cases run with inline lists enabled, like the array cases below
+  const lists = { ignoreInlineListContent: false };
+
+  it.each<[string, string, string, unknown[], Partial<Config>?]>([
+    // Hooks and their metadata
+    [
+      'a useGT() call with $id',
+      'useGT',
+      `import { useGT } from 'generaltranslation';
+       const t = useGT();
+       t('hello world', { $id: 'greeting' });`,
+      [['hello world', { id: 'greeting' }]],
+    ],
+    [
+      'an awaited getGT() call with $context',
+      'getGT',
+      `import { getGT } from 'generaltranslation';
+       async function test() {
+         const t = await getGT();
+         t('hello world', { $context: 'page' });
+       }`,
+      [['hello world', { context: 'page' }]],
+    ],
+    [
+      'a template literal without expressions',
+      'useGT',
+      `import { useGT } from 'generaltranslation';
+       const t = useGT();
+       t(\`hello world\`);`,
+      [['hello world', {}]],
+    ],
+    [
+      '$id, $context and $maxChars together',
+      'useGT',
+      `import { useGT } from 'generaltranslation';
+       const gt = useGT();
+       gt("hello world", { $id: 'greeting', $context: 'homepage', $maxChars: 25 });`,
+      [['hello world', { id: 'greeting', context: 'homepage', maxChars: 25 }]],
+    ],
+    [
+      '$maxChars next to an ICU variable',
+      'useGT',
+      `import { useGT } from 'generaltranslation';
+       const gt = useGT();
+       gt("hello, {name}", { name: "John", $maxChars: 10 });`,
+      [['hello, {name}', { maxChars: 10 }]],
+    ],
+    [
+      '$maxChars of zero',
+      'useGT',
+      `import { useGT } from 'generaltranslation';
+       const gt = useGT();
+       gt("hello world", { $maxChars: 0 });`,
+      [['hello world', { maxChars: 0 }]],
+    ],
+    [
+      'a negative $maxChars as its absolute value',
+      'useGT',
+      `import { useGT } from 'generaltranslation';
+       const gt = useGT();
+       gt("hello world", { $maxChars: -5 });`,
+      [['hello world', { maxChars: 5 }]],
+    ],
+    [
+      '$requiresReview: true',
+      'useGT',
+      `import { useGT } from 'gt-react';
+       const gt = useGT();
+       gt('hello world', { $requiresReview: true });`,
+      [['hello world', { requiresReview: true }]],
+    ],
+    [
+      '$requiresReview: false',
+      'useGT',
+      `import { useGT } from 'gt-react';
+       const gt = useGT();
+       gt('hello world', { $requiresReview: false });`,
+      [['hello world', { requiresReview: false }]],
+    ],
+    [
+      'no metadata from options without the $ prefix',
+      'useGT',
+      `import { useGT } from 'generaltranslation';
+       const t = useGT();
+       t('hello world', { id: 'static-id', context: 'static-context' });`,
+      [['hello world', {}]],
+    ],
+
+    // Aliases of the translation function
+    [
+      'a call through a chain of aliases',
+      'useGT',
+      `import { useGT } from 'generaltranslation';
+       function test() {
+         const translate = useGT();
+         const t = translate;
+         const a = t;
+         const b = a;
+         const c = b;
+         c('hello world', { $id: 'deep-alias' });
+       }`,
+      [['hello world', { id: 'deep-alias' }]],
+    ],
+    [
+      'calls through the original and its aliases',
+      'getGT',
+      `import { getGT } from 'generaltranslation';
+       async function test() {
+         const translate = await getGT();
+         const t = translate;
+         const alias = t;
+         translate('original call', { $id: 'original' });
+         t('alias call', { $context: 'page' });
+         t(\`template literal\`);
+         alias('deep alias call', { $id: 'deep' });
+       }`,
+      [
+        ['original call', { id: 'original' }],
+        ['alias call', { context: 'page' }],
+        ['template literal', {}],
+        ['deep alias call', { id: 'deep' }],
+      ],
+    ],
+    [
+      // TODO: the alias in the inner function is not followed yet
+      'only the outer call when an alias is created in a nested function',
+      'useGT',
+      `import { useGT } from 'generaltranslation';
+       function outer() {
+         const translate = useGT();
+         function inner() {
+           const t = translate;
+           t('inner scope', { $id: 'inner' });
+         }
+         translate('outer scope', { $id: 'outer' });
+         inner();
+       }`,
+      [['outer scope', { id: 'outer' }]],
+    ],
+    [
+      'only the direct call when an alias is assigned conditionally',
+      'useGT',
+      `import { useGT } from 'generaltranslation';
+       function test(condition) {
+         const translate = useGT();
+         const t = condition ? translate : null;
+         if (t) {
+           t('conditional message', { $id: 'conditional' });
+         }
+         translate('direct usage', { $id: 'direct' });
+       }`,
+      [['direct usage', { id: 'direct' }]],
+    ],
+    [
+      'an alias declared after an unrelated destructuring',
+      'useGT',
+      `import { useGT } from 'generaltranslation';
+       function test() {
+         const translate = useGT();
+         const { length } = 'test';
+         const t = translate;
+         t('destructured test', { $id: 'destructured' });
+       }`,
+      [['destructured test', { id: 'destructured' }]],
+    ],
+    [
+      'aliases that are reassigned to each other',
+      'useGT',
+      `import { useGT } from 'generaltranslation';
+       function test() {
+         const translate = useGT();
+         let t = translate;
+         let a = t;
+         t = a;
+         t('circular test', { $id: 'circular' });
+       }`,
+      [['circular test', { id: 'circular' }]],
+    ],
+
+    // The translation function passed to other functions
+    [
+      'a callback passed to a function declaration',
+      'useGT',
+      `import { useGT } from 'generaltranslation';
+       function getGreeting(t) {
+         return t('hello world', { $id: 'greeting' });
+       }
+       const t = useGT();
+       getGreeting(t);`,
+      [['hello world', { id: 'greeting' }]],
+    ],
+    [
+      'a callback passed to an arrow function',
+      'useGT',
+      `import { useGT } from 'generaltranslation';
+       const getGreeting = (t) => {
+         return t('hello world', { $context: 'page' });
+       };
+       const t = useGT();
+       getGreeting(t);`,
+      [['hello world', { context: 'page' }]],
+    ],
+    [
+      'a helper once per call that passes the callback or an alias',
+      'useGT',
+      `import { useGT } from 'generaltranslation';
+       function helper(translator) {
+         return translator('helper message', { $id: 'helper' });
+       }
+       function test() {
+         const translate = useGT();
+         const t = translate;
+         helper(translate);
+         helper(t);
+       }`,
+      [
+        ['helper message', { id: 'helper' }],
+        ['helper message', { id: 'helper' }],
+      ],
+    ],
+    [
+      'a function that passes the callback to itself',
+      'useGT',
+      `import { useGT } from 'generaltranslation';
+       function renderTree(gt, nodes) {
+         gt('leaf node', { $id: 'leaf' });
+         gt('branch node', { $id: 'branch' });
+         for (const child of nodes) {
+           renderTree(gt, child.children);
+         }
+       }
+       const gt = useGT();
+       renderTree(gt, tree);`,
+      [
+        ['leaf node', { id: 'leaf' }],
+        ['branch node', { id: 'branch' }],
+      ],
+    ],
+    [
+      'functions that pass the callback to each other',
+      'useGT',
+      `import { useGT } from 'generaltranslation';
+       function processEven(gt, n) {
+         gt('even case', { $id: 'even' });
+         if (n > 0) processOdd(gt, n - 1);
+       }
+       function processOdd(gt, n) {
+         gt('odd case', { $id: 'odd' });
+         if (n > 0) processEven(gt, n - 1);
+       }
+       const gt = useGT();
+       processEven(gt, 10);`,
+      [
+        ['even case', { id: 'even' }],
+        ['odd case', { id: 'odd' }],
+      ],
+    ],
+    [
+      'an arrow function that passes the callback to itself in a closure',
+      'useGT',
+      `import { useGT } from 'generaltranslation';
+       const traverse = (gt, node) => {
+         gt('visiting node', { $id: 'visit' });
+         node.children.forEach(child => traverse(gt, child));
+       };
+       const gt = useGT();
+       traverse(gt, root);`,
+      [['visiting node', { id: 'visit' }]],
+    ],
+    [
+      'a recursive function that also calls a helper',
+      'useGT',
+      `import { useGT } from 'generaltranslation';
+       function formatLabel(gt) {
+         return gt('label text', { $id: 'label' });
+       }
+       function walkTree(gt, node) {
+         gt('tree node', { $id: 'node' });
+         formatLabel(gt);
+         if (node.left) walkTree(gt, node.left);
+         if (node.right) walkTree(gt, node.right);
+       }
+       const gt = useGT();
+       walkTree(gt, binaryTree);`,
+      [
+        ['tree node', { id: 'node' }],
+        ['label text', { id: 'label' }],
+      ],
+    ],
+
+    // msg()
+    [
+      'a msg() call',
+      'msg',
+      `import { msg } from 'gt-next';
+       msg('hello world');`,
+      [['hello world', {}]],
+    ],
+    [
+      'a msg() template literal without expressions',
+      'msg',
+      `import { msg } from 'generaltranslation';
+       msg(\`hello world\`);`,
+      [['hello world', {}]],
+      lists,
+    ],
+    [
+      'an aliased msg import',
+      'msg',
+      `import { msg as message } from 'generaltranslation';
+       message('aliased msg call');`,
+      [['aliased msg call', {}]],
+      lists,
+    ],
+    [
+      'msg() but not msg.decode()',
+      'msg',
+      `import { msg } from 'generaltranslation';
+       msg.decode('should not work');
+       msg('should work');`,
+      [['should work', {}]],
+      lists,
+    ],
+    [
+      'msg() calls in functions, conditions and methods',
+      'msg',
+      `import { msg } from 'generaltranslation';
+       function test() {
+         const result = msg('function context');
+         return result;
+       }
+       const arrow = () => msg('arrow function');
+       if (true) {
+         msg('conditional context');
+       }
+       const obj = {
+         method() {
+           msg('object method');
+         }
+       };`,
+      [
+        ['function context', {}],
+        ['arrow function', {}],
+        ['conditional context', {}],
+        ['object method', {}],
+      ],
+      lists,
+    ],
+    [
+      'the msg() inside a useMessages() call',
+      'msg',
+      `import { msg, useMessages } from 'gt-react';
+       const m = useMessages();
+       m(msg("some string"));`,
+      [['some string', {}]],
+      lists,
+    ],
+
+    // msg() arrays (processTranslationCall has its own array cases)
+    [
+      'a msg() array with an indexed $id and shared $context',
+      'msg',
+      `import { msg } from 'gt-next';
+       msg(["a", "b"], { $id: "x", $context: "nav" });`,
+      [
+        ['a', { id: 'x.0', context: 'nav' }],
+        ['b', { id: 'x.1', context: 'nav' }],
+      ],
+      lists,
+    ],
+
+    // useMessages() / getMessages() ignore metadata and accept dynamic
+    // arguments, because the argument may be an encoded msg()
+    [
+      'a useMessages() call without its metadata',
+      'useMessages',
+      `import { useMessages } from 'generaltranslation';
+       const t = useMessages();
+       t('hello world', { $id: 'greeting', $context: 'homepage' });`,
+      [['hello world', {}]],
+    ],
+    [
+      'an awaited getMessages() call without its metadata',
+      'getMessages',
+      `import { getMessages } from 'generaltranslation';
+       async function test() {
+         const t = await getMessages();
+         t('hello world', { $context: 'page' });
+       }`,
+      [['hello world', {}]],
+    ],
+    [
+      'a useMessages() template literal without expressions',
+      'useMessages',
+      `import { useMessages } from 'generaltranslation';
+       const t = useMessages();
+       t(\`hello world\`);`,
+      [['hello world', {}]],
+    ],
+    [
+      'a useMessages() callback passed to a function',
+      'useMessages',
+      `import { useMessages } from 'generaltranslation';
+       function getGreeting(t) {
+         return t('hello world', { $id: 'greeting' });
+       }
+       const t = useMessages();
+       getGreeting(t);`,
+      [['hello world', {}]],
+    ],
+    [
+      'a getMessages() callback passed to a function',
+      'getMessages',
+      `import { getMessages } from 'generaltranslation';
+       function getGreeting(t) {
+         return t('hello world', { $context: 'page' });
+       }
+       async function test() {
+         const t = await getMessages();
+         getGreeting(t);
+       }`,
+      [['hello world', {}]],
+    ],
+    [
+      'nothing from a msg() passed to useMessages()',
+      'useMessages',
+      `import { msg, useMessages } from 'gt-react';
+       const m = useMessages();
+       m(msg("hello world"));`,
+      [],
+    ],
+    [
+      'nothing from a useMessages() template literal with expressions',
+      'useMessages',
+      `import { useMessages } from 'generaltranslation';
+       const t = useMessages();
+       const name = 'world';
+       t(\`hello \${name}\`);`,
+      [],
+    ],
+    [
+      'nothing from a useMessages() call with a variable',
+      'useMessages',
+      `import { useMessages } from 'generaltranslation';
+       const t = useMessages();
+       const message = 'hello world';
+       t(message);`,
+      [],
+    ],
+    [
+      'nothing from a getMessages() call with a variable',
+      'getMessages',
+      `import { getMessages } from 'generaltranslation';
+       async function test() {
+         const t = await getMessages();
+         const message = 'hello world';
+         t(message);
+       }`,
+      [],
+    ],
+  ])('extracts %s', (_name, functionName, code, expected, config) => {
+    const result = run(code, functionName, config);
+
+    expect(result.errors).toEqual([]);
+    expect(result.warnings.size).toBe(0);
+    expect(extracted(result)).toEqual(expected);
   });
 
-  it('should handle direct msg() calls', () => {
-    const code = `
-      import { msg } from 'gt-next';
-      msg('hello world');
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
+  it('records the file path on every update', () => {
+    const { updates } = run(
+      `import { msg } from 'gt-next';
+       msg('hello world');`,
+      'msg'
+    );
 
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'msg' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'msg',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates).toMatchObject([
+    expect(updates).toEqual([
       {
         dataFormat: 'ICU',
         source: 'hello world',
-        metadata: {},
+        metadata: { filePaths: [FILE_PATH] },
       },
     ]);
-    expect(params.updates[0].metadata.filePaths).toEqual([FILE_PATH]);
-    expect(params.errors).toHaveLength(0);
   });
 
-  it('should handle nested m msg calls', () => {
-    const code = `
-      import { msg, useMessages } from 'gt-react';
-      const m = useMessages();
-      m(msg("hello world"));
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
+  it('attaches the surrounding source code when asked to', () => {
+    const lines = [
+      'import { useGT } from "gt-next";',
+      '',
+      'function Page() {',
+      '  const gt = useGT();',
+      '  const name = "world";',
+      '  const greeting = gt("Hello, {name}!");',
+      '  return greeting;',
+      '}',
+    ];
+    const code = lines.join('\n');
+    vi.mocked(fs.readFileSync).mockReturnValue(code);
 
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useMessages' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useMessages',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
+    const { updates } = run(code, 'useGT', {
+      file: nodePath.resolve('src/page.tsx'),
+      includeSourceCodeContext: true,
     });
 
-    expect(params.updates).toHaveLength(0);
-    expect(params.errors).toHaveLength(0);
-    expect(params.warnings).toHaveLength(0);
-  });
-
-  it('should handle useGT() translation calls', () => {
-    const code = `
-      import { useGT } from 'generaltranslation';
-      const t = useGT();
-      t('hello world', { $id: 'greeting' });
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates).toMatchObject([
+    expect(updates.map((update) => update.metadata.sourceCode)).toEqual([
       {
-        dataFormat: 'ICU',
-        source: 'hello world',
-        metadata: {
-          id: 'greeting',
-        },
+        [nodePath.join('src', 'page.tsx')]: [
+          {
+            before: lines.slice(0, 5).join('\n'),
+            target: lines[5],
+            after: lines.slice(6).join('\n'),
+          },
+        ],
       },
     ]);
-    expect(params.errors).toHaveLength(0);
   });
 
-  it('should handle getGT() translation calls in async functions', () => {
-    const code = `
-      import { getGT } from 'generaltranslation';
-      async function test() {
-        const t = await getGT();
-        t('hello world', { $context: 'page' });
-      }
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'getGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'getGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'hello world',
-      metadata: {
-        context: 'page',
-      },
-    });
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should handle template literals without expressions', () => {
-    const code = `
-      import { useGT } from 'generaltranslation';
-      const t = useGT();
-      t(\`hello world\`);
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'hello world',
-      metadata: {},
-    });
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should add errors for template literals with expressions', () => {
-    const code = `
-      import { useGT } from 'generaltranslation';
-      const t = useGT();
-      const name = 'world';
-      t(\`hello \${name}\`);
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(0);
-    expect(params.errors.length).toBeGreaterThan(0);
-  });
-
-  it('should add errors for non-string arguments', () => {
-    const code = `
-      import { useGT } from 'generaltranslation';
-      const t = useGT();
-      const message = 'hello world';
-      t(message);
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(0);
-    expect(params.errors.length).toBeGreaterThan(0);
-  });
-
-  it('should add errors for useGT in async functions', () => {
-    const code = `
-      import { useGT } from 'generaltranslation';
-      async function test() {
-        const t = useGT();
-        t('hello world');
-      }
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(0);
-    expect(params.errors.length).toBeGreaterThan(0);
-  });
-
-  it('should add errors for getGT in non-async functions', () => {
-    const code = `
-      import { getGT } from 'generaltranslation';
-      function test() {
-        const t = getGT();
-        t('hello world');
-      }
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'getGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'getGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(0);
-    expect(params.errors.length).toBeGreaterThan(0);
-  });
-
-  it('should handle translation callback passed to other functions', () => {
-    const code = `
-      import { useGT } from 'generaltranslation';
-      
-      function getGreeting(t) {
-        return t('hello world', { $id: 'greeting' });
-      }
-      
-      const t = useGT();
-      getGreeting(t);
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'hello world',
-      metadata: {
-        id: 'greeting',
-      },
-    });
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should handle arrow function with translation callback', () => {
-    const code = `
-      import { useGT } from 'generaltranslation';
-      
-      const getGreeting = (t) => {
-        return t('hello world', { $context: 'page' });
-      };
-      
-      const t = useGT();
-      getGreeting(t);
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'hello world',
-      metadata: {
-        context: 'page',
-      },
-    });
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should handle variable aliases for translation callbacks', () => {
-    const code = `
-      import { useGT } from 'gt-next';
-      
-      function test() {
-        const translate = useGT();
-        const t = translate;
-        const a = t;
-        const b = a;
-        b('hello world', { $id: 'test' });
-      }
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'hello world',
-      metadata: {
-        id: 'test',
-      },
-    });
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should handle multiple metadata attributes', () => {
-    const code = `
-      import { useGT } from 'generaltranslation';
-      const t = useGT();
-      t('hello world', { $id: 'greeting', $context: 'homepage' });
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'hello world',
-      metadata: {
-        id: 'greeting',
-        context: 'homepage',
-      },
-    });
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should handle $maxChars parameter correctly', () => {
-    const code = `
-      import { useGT } from 'generaltranslation';
-      const gt = useGT();
-      const result = gt("hello, {name}", {name: "John", $maxChars: 10});
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'hello, {name}',
-      metadata: {
-        maxChars: 10,
-      },
-    });
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should handle $maxChars with other metadata attributes', () => {
-    const code = `
-      import { useGT } from 'generaltranslation';
-      const gt = useGT();
-      const result = gt("hello world", { $id: 'greeting', $context: 'homepage', $maxChars: 25 });
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'hello world',
-      metadata: {
-        id: 'greeting',
-        context: 'homepage',
-        maxChars: 25,
-      },
-    });
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should add errors for invalid $maxChars values (string)', () => {
-    const code = `
-      import { useGT } from 'generaltranslation';
-      const gt = useGT();
-      const result = gt("hello world", { $maxChars: "invalid" });
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'hello world',
-      metadata: {},
-    });
-    expect(params.errors.length).toBeGreaterThan(0);
-    expect(params.errors[0]).toContain('Found invalid maxChars value');
-  });
-
-  it('should add errors for invalid $maxChars values (boolean)', () => {
-    const code = `
-      import { useGT } from 'generaltranslation';
-      const gt = useGT();
-      const result = gt("hello world", { $maxChars: true });
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'hello world',
-      metadata: {},
-    });
-    expect(params.errors.length).toBeGreaterThan(0);
-    expect(params.errors[0]).toContain('Found invalid maxChars value');
-  });
-
-  it('should handle $maxChars with zero value', () => {
-    const code = `
-      import { useGT } from 'generaltranslation';
-      const gt = useGT();
-      const result = gt("hello world", { $maxChars: 0 });
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'hello world',
-      metadata: {
-        maxChars: 0,
-      },
-    });
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should handle $maxChars with negative values', () => {
-    const code = `
-      import { useGT } from 'generaltranslation';
-      const gt = useGT();
-      const result = gt("hello world", { $maxChars: -5 });
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'hello world',
-      metadata: {
-        maxChars: 5,
-      },
-    });
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should handle $maxChars with getGT() in async functions', () => {
-    const code = `
-      import { getGT } from 'generaltranslation';
-      async function test() {
-        const gt = await getGT();
-        gt("hello, {name}", {name: "John", $maxChars: 15});
-      }
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'getGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'getGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'hello, {name}',
-      metadata: {
-        maxChars: 15,
-      },
-    });
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should handle $maxChars with variable aliases', () => {
-    const code = `
-      import { useGT } from 'generaltranslation';
-      
-      function test() {
-        const translate = useGT();
-        const gt = translate;
-        gt("Limited text", { $maxChars: 50 });
-      }
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'Limited text',
-      metadata: {
-        maxChars: 50,
-      },
-    });
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should add errors for non-static metadata expressions', () => {
-    const code = `
-      import { useGT } from 'generaltranslation';
-      const t = useGT();
-      const dynamicId = 'test';
-      t(\`hello \${dynamicId} world\`, { id: dynamicId });
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(0);
-    expect(params.errors.length).toBeGreaterThan(0);
-  });
-
-  it('should handle static metadata expressions correctly', () => {
-    const code = `
-      import { useGT } from 'generaltranslation';
-      const t = useGT();
-      t('hello world', { id: 'static-id', context: 'static-context' });
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'hello world',
-      metadata: {},
-    });
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should handle deeply nested variable aliases', () => {
-    const code = `
-      import { useGT } from 'generaltranslation';
-      
-      function test() {
-        const translate = useGT();
-        const t = translate;
-        const a = t;
-        const b = a;
-        const c = b;
-        c('hello world', { $id: 'deep-alias' });
-      }
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'hello world',
-      metadata: {
-        id: 'deep-alias',
-      },
-    });
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should handle aliases in different scopes', () => {
-    // TODO: Should theoretically be 2 updates, but we don't support this yet
-    const code = `
-      import { useGT } from 'generaltranslation';
-      
-      function outer() {
-        const translate = useGT();
-        
-        function inner() {
-          const t = translate;
-          t('inner scope', { $id: 'inner' });
-        }
-        
-        translate('outer scope', { $id: 'outer' });
-        inner();
-      }
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    // TODO: Should theoretically be 2 updates, but we don't support this yet
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates).toMatchObject(
-      expect.arrayContaining([
-        {
-          dataFormat: 'ICU',
-          source: 'outer scope',
-          metadata: {
-            filePaths: [FILE_PATH],
-            id: 'outer',
-          },
-        },
-        // {
-        //   dataFormat: 'ICU',
-        //   source: 'inner scope',
-        //   metadata: {
-        //     id: 'inner',
-        //   },
-        // },
-      ])
+  // [description, function, code, expected error fragments, updates still extracted]
+  it.each<[string, string, string, string[], unknown[], Partial<Config>?]>([
+    [
+      'a template literal with expressions',
+      'useGT',
+      `import { useGT } from 'generaltranslation';
+       const t = useGT();
+       const name = 'world';
+       t(\`hello \${name}\`);`,
+      [NON_STRING('`hello ${name}`')],
+      [],
+    ],
+    [
+      'a variable argument',
+      'useGT',
+      `import { useGT } from 'generaltranslation';
+       const t = useGT();
+       const message = 'hello world';
+       t(message);`,
+      [NON_STRING('message')],
+      [],
+    ],
+    [
+      'dynamic arguments passed to an alias',
+      'useGT',
+      `import { useGT } from 'generaltranslation';
+       function test() {
+         const translate = useGT();
+         const t = translate;
+         const name = 'dynamic';
+         t(\`hello \${name}\`);
+         t(name);
+       }`,
+      [NON_STRING('`hello ${name}`'), NON_STRING('name')],
+      [],
+    ],
+    [
+      'useGT() in an async function',
+      'useGT',
+      `import { useGT } from 'generaltranslation';
+       async function test() {
+         const t = useGT();
+         t('hello world');
+       }`,
+      ['Found useGT() in an async function. Use getGT() instead'],
+      [],
+    ],
+    [
+      'getGT() in a synchronous function',
+      'getGT',
+      `import { getGT } from 'generaltranslation';
+       function test() {
+         const t = getGT();
+         t('hello world');
+       }`,
+      ['Found getGT() in a synchronous function. Use useGT() instead'],
+      [],
+    ],
+    [
+      'useMessages() in an async function',
+      'useMessages',
+      `import { useMessages } from 'generaltranslation';
+       async function test() {
+         const t = useMessages();
+         t('hello world');
+       }`,
+      ['in an async function'],
+      [],
+    ],
+    [
+      'getMessages() in a synchronous function',
+      'getMessages',
+      `import { getMessages } from 'generaltranslation';
+       function test() {
+         const t = getMessages();
+         t('hello world');
+       }`,
+      ['in a synchronous function'],
+      [],
+    ],
+    [
+      'a string $maxChars',
+      'useGT',
+      `import { useGT } from 'generaltranslation';
+       const gt = useGT();
+       gt("hello world", { $maxChars: "invalid" });`,
+      ['Found invalid maxChars value: $maxChars: "invalid"'],
+      [['hello world', {}]],
+    ],
+    [
+      'a boolean $maxChars',
+      'useGT',
+      `import { useGT } from 'generaltranslation';
+       const gt = useGT();
+       gt("hello world", { $maxChars: true });`,
+      ['Found invalid maxChars value: $maxChars: true'],
+      [['hello world', {}]],
+    ],
+    [
+      'a string $requiresReview',
+      'useGT',
+      `import { useGT } from 'gt-react';
+       const gt = useGT();
+       gt('hello world', { $requiresReview: 'true' });`,
+      ["Found invalid requiresReview value: $requiresReview: 'true'"],
+      [['hello world', {}]],
+    ],
+    [
+      'a dynamic $requiresReview',
+      'useGT',
+      `import { useGT } from 'gt-react';
+       const flag = Math.random() > 0.5;
+       const gt = useGT();
+       gt('hello world', { $requiresReview: flag });`,
+      ['Found non-static expression for attribute $requiresReview: flag'],
+      [['hello world', {}]],
+    ],
+    [
+      'a msg() template literal with expressions',
+      'msg',
+      `import { msg } from 'generaltranslation';
+       const name = 'world';
+       msg(\`hello \${name}\`);`,
+      [NON_STRING('`hello ${name}`')],
+      [],
+      lists,
+    ],
+    [
+      'a msg() call with a variable',
+      'msg',
+      `import { msg } from 'generaltranslation';
+       const message = 'hello world';
+       msg(message);`,
+      [NON_STRING('message')],
+      [],
+      lists,
+    ],
+    [
+      'a variable inside a msg() array',
+      'msg',
+      `import { msg } from 'gt-next';
+       const someVar = "dynamic";
+       msg(["hello", someVar]);`,
+      [NON_STRING('someVar')],
+      [['hello', {}]],
+      lists,
+    ],
+  ])('reports %s', (_name, functionName, code, errors, expected, config) => {
+    const result = run(code, functionName, config);
+
+    expect(result.errors).toEqual(
+      errors.map((error) => expect.stringContaining(error))
     );
-    expect(params.errors).toHaveLength(0);
+    expect(extracted(result)).toEqual(expected);
   });
 
-  it('should handle mixed translation patterns in one function', () => {
-    const code = `
-      import { useGT } from 'generaltranslation';
-      
-      function test() {
-        const translate = useGT();
-        const t = translate;
-        
-        // Direct call with original variable
-        translate('direct call', { $id: 'direct' });
-        
-        // Call with alias
-        t('aliased call', { $context: 'page' });
-        
-        // Template literal with alias
-        t(\`template literal\`);
-        
-        // Multiple metadata
-        t('multi meta', { $id: 'multi', $context: 'form' });
-      }
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(4);
-    expect(params.updates).toMatchObject(
-      expect.arrayContaining([
-        {
-          dataFormat: 'ICU',
-          source: 'direct call',
-          metadata: {
-            filePaths: [FILE_PATH],
-            id: 'direct',
-          },
-        },
-        {
-          dataFormat: 'ICU',
-          source: 'aliased call',
-          metadata: {
-            filePaths: [FILE_PATH],
-            context: 'page',
-          },
-        },
-        {
-          dataFormat: 'ICU',
-          source: 'template literal',
-          metadata: { filePaths: [FILE_PATH] },
-        },
-        {
-          dataFormat: 'ICU',
-          source: 'multi meta',
-          metadata: {
-            filePaths: [FILE_PATH],
-            id: 'multi',
-            context: 'form',
-          },
-        },
-      ])
-    );
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should handle aliases passed as function parameters', () => {
-    const code = `
-      import { useGT } from 'generaltranslation';
-      
-      function helper(translator) {
-        return translator('helper message', { $id: 'helper' });
-      }
-      
-      function test() {
-        const translate = useGT();
-        const t = translate;
-        
-        // Pass original variable
-        helper(translate);
-        
-        // Pass alias
-        helper(t);
-      }
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(2);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'helper message',
-      metadata: {
-        id: 'helper',
-      },
-    });
-    expect(params.updates[1]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'helper message',
-      metadata: {
-        id: 'helper',
-      },
-    });
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should handle conditional assignment aliases', () => {
-    const code = `
-      import { useGT } from 'generaltranslation';
-      
-      function test(condition) {
-        const translate = useGT();
-        const t = condition ? translate : null;
-        
-        if (t) {
-          t('conditional message', { $id: 'conditional' });
-        }
-        
-        // Direct usage should still work
-        translate('direct usage', { $id: 'direct' });
-      }
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'direct usage',
-      metadata: {
-        id: 'direct',
-      },
-    });
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should handle destructured assignment patterns', () => {
-    const code = `
-      import { useGT } from 'generaltranslation';
-      
-      function test() {
-        const translate = useGT();
-        const { length } = 'test';
-        const t = translate;
-        
-        t('destructured test', { $id: 'destructured' });
-      }
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'destructured test',
-      metadata: {
-        id: 'destructured',
-      },
-    });
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should handle await with aliases', () => {
-    const code = `
-      import { getGT } from 'generaltranslation';
-      
-      async function test() {
-        const translate = await getGT();
-        const t = translate;
-        const alias = t;
-        
-        translate('original call', { $id: 'original' });
-        t('alias call', { $context: 'page' });
-        alias('deep alias call', { $id: 'deep' });
-      }
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'getGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'getGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(3);
-    expect(params.updates).toMatchObject(
-      expect.arrayContaining([
-        {
-          dataFormat: 'ICU',
-          source: 'original call',
-          metadata: {
-            filePaths: [FILE_PATH],
-            id: 'original',
-          },
-        },
-        {
-          dataFormat: 'ICU',
-          source: 'alias call',
-          metadata: {
-            filePaths: [FILE_PATH],
-            context: 'page',
-          },
-        },
-        {
-          dataFormat: 'ICU',
-          source: 'deep alias call',
-          metadata: {
-            filePaths: [FILE_PATH],
-            id: 'deep',
-          },
-        },
-      ])
-    );
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should handle errors with aliases', () => {
-    const code = `
-      import { useGT } from 'generaltranslation';
-      
-      function test() {
-        const translate = useGT();
-        const t = translate;
-        const name = 'dynamic';
-        
-        // Error with alias - template literal with expressions
-        t(\`hello \${name}\`);
-        
-        // Error with alias - non-string argument
-        t(name);
-        
-      }
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(0);
-    expect(params.errors.length).toBeGreaterThanOrEqual(2);
-  });
-
-  it('should not create infinite loops with circular references', () => {
-    const code = `
-      import { useGT } from 'generaltranslation';
-
-      function test() {
-        const translate = useGT();
-        let t = translate;
-        let a = t;
-        // This would create a circular reference if not handled properly
-        t = a;
-
-        t('circular test', { $id: 'circular' });
-      }
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    // Should complete without hanging and find at least one translation
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'circular test',
-      metadata: {
-        id: 'circular',
-      },
-    });
-    expect(params.errors).toHaveLength(0);
-  });
-
-  // Test for gt() with template literals with expressions
-  it('should add errors for gt() with template literals with expressions', () => {
-    const code = `
-      import { useGT } from 'generaltranslation';
-      const gt = useGT();
-      const foo = 'world';
-      gt(\`hello \${foo}\`);
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(0);
-    expect(params.errors.length).toBeGreaterThan(0);
-  });
-
-  // Test for useMessages(msg("some string")) - should extract the string
-  it('should handle useMessages with msg() passed as argument', () => {
-    const code = `
-      import { msg, useMessages } from 'gt-react';
-      const m = useMessages();
-      m(msg("some string"));
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    // First parse msg
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'msg' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'msg',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: false,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
-      dataFormat: 'ICU',
-      source: 'some string',
-      metadata: {
-        filePaths: [FILE_PATH],
-      },
-    });
-    expect(params.errors).toHaveLength(0);
-  });
-
-  // Additional tests for msg() functionality
-  it('should handle msg() with template literals without expressions', () => {
-    const code = `
-      import { msg } from 'generaltranslation';
-      msg(\`hello world\`);
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'msg' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'msg',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: false,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'hello world',
-      metadata: {},
-    });
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should add errors for msg() with template literals with expressions', () => {
-    const code = `
-      import { msg } from 'generaltranslation';
-      const name = 'world';
-      msg(\`hello \${name}\`);
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'msg' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'msg',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: false,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(0);
-    expect(params.errors.length).toBeGreaterThan(0);
-  });
-
-  it('should add errors for msg() with non-string arguments', () => {
-    const code = `
-      import { msg } from 'generaltranslation';
-      const message = 'hello world';
-      msg(message);
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'msg' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'msg',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: false,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(0);
-    expect(params.errors.length).toBeGreaterThan(0);
-  });
-
-  it('should handle multiple msg() calls', () => {
-    const code = `
-      import { msg } from 'generaltranslation';
-      msg('hello');
-      msg('world');
-      msg('goodbye');
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'msg' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'msg',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: false,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(3);
-    expect(params.updates).toMatchObject([
-      { dataFormat: 'ICU', source: 'hello', metadata: {} },
-      { dataFormat: 'ICU', source: 'world', metadata: {} },
-      { dataFormat: 'ICU', source: 'goodbye', metadata: {} },
-    ]);
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should handle msg() calls with different import aliases', () => {
-    const code = `
-      import { msg as message } from 'generaltranslation';
-      message('aliased msg call');
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'msg' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'msg',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: false,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'aliased msg call',
-      metadata: {},
-    });
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should not handle msg.decode() calls (only encode should work)', () => {
-    const code = `
-      import { msg } from 'generaltranslation';
-      msg.decode('should not work');
-      msg('should work');
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'msg' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'msg',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: false,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'should work',
-      metadata: {},
-    });
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should handle msg() calls in different contexts', () => {
-    const code = `
-      import { msg } from 'generaltranslation';
-      
-      function test() {
-        const result = msg('function context');
-        return result;
-      }
-      
-      const arrow = () => msg('arrow function');
-      
-      if (true) {
-        msg('conditional context');
-      }
-      
-      const obj = {
-        method() {
-          msg('object method');
-        }
-      };
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'msg' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'msg',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: false,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(4);
-    expect(params.updates).toMatchObject([
-      { dataFormat: 'ICU', source: 'function context', metadata: {} },
-      { dataFormat: 'ICU', source: 'arrow function', metadata: {} },
-      { dataFormat: 'ICU', source: 'conditional context', metadata: {} },
-      { dataFormat: 'ICU', source: 'object method', metadata: {} },
-    ]);
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should handle both msg() and msg() calls in the same code', () => {
-    const code = `
-      import { msg } from 'generaltranslation';
-      msg('direct call');
-      msg('encode call');
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'msg' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'msg',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: false,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(2);
-    expect(params.updates).toMatchObject([
-      { dataFormat: 'ICU', source: 'direct call', metadata: {} },
-      { dataFormat: 'ICU', source: 'encode call', metadata: {} },
-    ]);
-    expect(params.errors).toHaveLength(0);
-  });
-
-  // Tests for useMessages hook functionality
-  it('should handle useMessages() translation calls', () => {
-    const code = `
-      import { useMessages } from 'generaltranslation';
-      const t = useMessages();
-      t('hello world', { $id: 'greeting' });
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useMessages' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useMessages',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'hello world',
-      metadata: {},
-    });
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should handle getMessages() translation calls in async functions', () => {
-    const code = `
-      import { getMessages } from 'generaltranslation';
-      async function test() {
-        const t = await getMessages();
-        t('hello world', { $context: 'page' });
-      }
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'getMessages' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'getMessages',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'hello world',
-      metadata: {},
-    });
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should handle useMessages() with template literals without expressions', () => {
-    const code = `
-      import { useMessages } from 'generaltranslation';
-      const t = useMessages();
-      t(\`hello world\`);
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useMessages' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useMessages',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'hello world',
-      metadata: {},
-    });
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should NOT add errors for useMessages with template literals with expressions (since msg() may be passed)', () => {
-    const code = `
-      import { useMessages } from 'generaltranslation';
-      const t = useMessages();
-      const name = 'world';
-      t(\`hello \${name}\`);
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useMessages' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useMessages',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(0);
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should NOT add errors for useMessages with non-string arguments (since msg() may be passed)', () => {
-    const code = `
-      import { useMessages } from 'generaltranslation';
-      const t = useMessages();
-      const message = 'hello world';
-      t(message);
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useMessages' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useMessages',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(0);
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should NOT add errors for getMessages with template literals with expressions (since msg() may be passed)', () => {
-    const code = `
-      import { getMessages } from 'generaltranslation';
-      async function test() {
-        const t = await getMessages();
-        const name = 'world';
-        t(\`hello \${name}\`);
-      }
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'getMessages' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'getMessages',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(0);
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should NOT add errors for getMessages with non-string arguments (since msg() may be passed)', () => {
-    const code = `
-      import { getMessages } from 'generaltranslation';
-      async function test() {
-        const t = await getMessages();
-        const message = 'hello world';
-        t(message);
-      }
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'getMessages' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'getMessages',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(0);
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should add errors for useMessages in async functions', () => {
-    const code = `
-      import { useMessages } from 'generaltranslation';
-      async function test() {
-        const t = useMessages();
-        t('hello world');
-      }
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useMessages' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useMessages',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(0);
-    expect(params.errors.length).toBeGreaterThan(0);
-  });
-
-  it('should add errors for getMessages in non-async functions', () => {
-    const code = `
-      import { getMessages } from 'generaltranslation';
-      function test() {
-        const t = getMessages();
-        t('hello world');
-      }
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'getMessages' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'getMessages',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(0);
-    expect(params.errors.length).toBeGreaterThan(0);
-  });
-
-  it('should handle useMessages with translation callback passed to other functions', () => {
-    const code = `
-      import { useMessages } from 'generaltranslation';
-      
-      function getGreeting(t) {
-        return t('hello world', { $id: 'greeting' });
-      }
-      
-      const t = useMessages();
-      getGreeting(t);
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useMessages' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useMessages',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'hello world',
-      metadata: {},
-    });
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should handle getMessages with translation callback passed to other functions', () => {
-    const code = `
-      import { getMessages } from 'generaltranslation';
-      
-      function getGreeting(t) {
-        return t('hello world', { $context: 'page' });
-      }
-      
-      async function test() {
-        const t = await getMessages();
-        getGreeting(t);
-      }
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'getMessages' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'getMessages',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'hello world',
-      metadata: {},
-    });
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should handle useMessages with multiple metadata attributes (ignores metadata)', () => {
-    const code = `
-      import { useMessages } from 'generaltranslation';
-      const t = useMessages();
-      t('hello world', { $id: 'greeting', $context: 'homepage' });
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useMessages' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useMessages',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'hello world',
-      metadata: {},
-    });
-    expect(params.errors).toHaveLength(0);
-  });
-
-  it('should handle getMessages with multiple metadata attributes (ignores metadata)', () => {
-    const code = `
-      import { getMessages } from 'generaltranslation';
-      async function test() {
-        const t = await getMessages();
-        t('hello world', { $id: 'greeting', $context: 'homepage' });
-      }
-    `;
-    const ast = parseCode(code);
-    const params = createMockParams();
-
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'getMessages' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'getMessages',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
-      },
-    });
-
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toMatchObject({
-      dataFormat: 'ICU',
-      source: 'hello world',
-      metadata: {},
-    });
-    expect(params.errors).toHaveLength(0);
-  });
-
-  // ----- Array support tests ----- //
-
-  describe('msg() array support', () => {
-    /**
-     * Helper to run parseStrings for a msg() import and return the output.
-     */
-    function runMsgParseStrings(code: string) {
-      const ast = parseCode(code);
-      const params = createMockParams();
-
-      traverse(ast, {
-        ImportSpecifier(path) {
-          if (
-            t.isIdentifier(path.node.imported) &&
-            path.node.imported.name === 'msg' &&
-            t.isIdentifier(path.node.local)
-          ) {
-            parseStrings(
-              path.node.local.name,
-              'msg',
-              path,
-              {
-                parsingOptions: params.parsingOptions,
-                file: params.file,
-                ignoreInlineMetadata: false,
-                ignoreDynamicContent: false,
-                ignoreInvalidIcu: false,
-                ignoreInlineListContent: false,
-                ignoreTaggedTemplates: false,
-                ignoreGlobalTaggedTemplates: false,
-                autoderiveMethod: 'DISABLED',
-              },
-              {
-                updates: params.updates,
-                errors: params.errors,
-                warnings: params.warnings,
-              }
-            );
-          }
-        },
-      });
-
-      return params;
-    }
-
-    it('should handle msg() with array of string literals', () => {
-      const params = runMsgParseStrings(`
-        import { msg } from 'gt-next';
-        msg(["hello", "world"]);
-      `);
-
-      expect(params.updates).toHaveLength(2);
-      expect(params.updates[0]).toMatchObject({
-        dataFormat: 'ICU',
-        source: 'hello',
-      });
-      expect(params.updates[1]).toMatchObject({
-        dataFormat: 'ICU',
-        source: 'world',
-      });
-      expect(params.errors).toHaveLength(0);
-    });
-
-    it('should handle msg() with array of template literals', () => {
-      const params = runMsgParseStrings(`
-        import { msg } from 'gt-next';
-        msg([\`hello\`, \`world\`]);
-      `);
-
-      expect(params.updates).toHaveLength(2);
-      expect(params.updates[0]).toMatchObject({ source: 'hello' });
-      expect(params.updates[1]).toMatchObject({ source: 'world' });
-      expect(params.errors).toHaveLength(0);
-    });
-
-    it('should handle msg() with mixed string and template literals in array', () => {
-      const params = runMsgParseStrings(`
-        import { msg } from 'gt-next';
-        msg(["hello", \`world\`]);
-      `);
-
-      expect(params.updates).toHaveLength(2);
-      expect(params.updates[0]).toMatchObject({ source: 'hello' });
-      expect(params.updates[1]).toMatchObject({ source: 'world' });
-      expect(params.errors).toHaveLength(0);
-    });
-
-    it('should append index to $id for each array element', () => {
-      const params = runMsgParseStrings(`
-        import { msg } from 'gt-next';
-        msg(["a", "b"], { $id: "items" });
-      `);
-
-      expect(params.updates).toHaveLength(2);
-      expect(params.updates[0]).toMatchObject({
-        source: 'a',
-        metadata: { id: 'items.0' },
-      });
-      expect(params.updates[1]).toMatchObject({
-        source: 'b',
-        metadata: { id: 'items.1' },
-      });
-      expect(params.errors).toHaveLength(0);
-    });
-
-    it('should append index to $id and share $context across array elements', () => {
-      const params = runMsgParseStrings(`
-        import { msg } from 'gt-next';
-        msg(["a", "b"], { $id: "x", $context: "nav" });
-      `);
-
-      expect(params.updates).toHaveLength(2);
-      expect(params.updates[0]).toMatchObject({
-        source: 'a',
-        metadata: { id: 'x.0', context: 'nav' },
-      });
-      expect(params.updates[1]).toMatchObject({
-        source: 'b',
-        metadata: { id: 'x.1', context: 'nav' },
-      });
-      expect(params.errors).toHaveLength(0);
-    });
-
-    it('should share $context without id when $id is not provided', () => {
-      const params = runMsgParseStrings(`
-        import { msg } from 'gt-next';
-        msg(["a", "b"], { $context: "nav" });
-      `);
-
-      expect(params.updates).toHaveLength(2);
-      expect(params.updates[0]).toMatchObject({
-        source: 'a',
-        metadata: { context: 'nav' },
-      });
-      expect(params.updates[0].metadata).not.toHaveProperty('id');
-      expect(params.updates[1]).toMatchObject({
-        source: 'b',
-        metadata: { context: 'nav' },
-      });
-      expect(params.updates[1].metadata).not.toHaveProperty('id');
-      expect(params.errors).toHaveLength(0);
-    });
-
-    it('should share $maxChars across array elements', () => {
-      const params = runMsgParseStrings(`
-        import { msg } from 'gt-next';
-        msg(["a", "b"], { $maxChars: 10 });
-      `);
-
-      expect(params.updates).toHaveLength(2);
-      expect(params.updates[0]).toMatchObject({
-        metadata: { maxChars: 10 },
-      });
-      expect(params.updates[1]).toMatchObject({
-        metadata: { maxChars: 10 },
-      });
-      expect(params.errors).toHaveLength(0);
-    });
-
-    it('should handle msg() with empty array', () => {
-      const params = runMsgParseStrings(`
-        import { msg } from 'gt-next';
-        msg([]);
-      `);
-
-      expect(params.updates).toHaveLength(0);
-      expect(params.errors).toHaveLength(0);
-    });
-
-    it('should handle msg() with single-element array', () => {
-      const params = runMsgParseStrings(`
-        import { msg } from 'gt-next';
-        msg(["only"]);
-      `);
-
-      expect(params.updates).toHaveLength(1);
-      expect(params.updates[0]).toMatchObject({
-        dataFormat: 'ICU',
-        source: 'only',
-      });
-      expect(params.errors).toHaveLength(0);
-    });
-
-    it('should index $id for single-element array', () => {
-      const params = runMsgParseStrings(`
-        import { msg } from 'gt-next';
-        msg(["only"], { $id: "s" });
-      `);
-
-      expect(params.updates).toHaveLength(1);
-      expect(params.updates[0]).toMatchObject({
-        source: 'only',
-        metadata: { id: 's.0' },
-      });
-      expect(params.errors).toHaveLength(0);
-    });
-
-    it('should error on dynamic variable element inside array', () => {
-      const params = runMsgParseStrings(`
-        import { msg } from 'gt-next';
-        const someVar = "dynamic";
-        msg(["hello", someVar]);
-      `);
-
-      expect(params.updates).toHaveLength(1);
-      expect(params.updates[0]).toMatchObject({ source: 'hello' });
-      expect(params.errors.length).toBeGreaterThan(0);
-    });
-
-    it('should error on template literal with expression inside array', () => {
-      const params = runMsgParseStrings(`
-        import { msg } from 'gt-next';
-        const name = "world";
-        msg(["hello", \`hi \${name}\`]);
-      `);
-
-      expect(params.updates).toHaveLength(1);
-      expect(params.updates[0]).toMatchObject({ source: 'hello' });
-      expect(params.errors.length).toBeGreaterThan(0);
-    });
-  });
-
-  describe('autoderive for string registration and hook functions', () => {
-    const runParseStrings = (
-      code: string,
-      functionName: string,
-      params: ReturnType<typeof createMockParams>
-    ) => {
-      const ast = parseCode(code);
-      traverse(ast, {
-        ImportSpecifier(path) {
-          if (
-            t.isIdentifier(path.node.imported) &&
-            path.node.imported.name === functionName &&
-            t.isIdentifier(path.node.local)
-          ) {
-            parseStrings(
-              path.node.local.name,
-              functionName,
-              path,
-              {
-                parsingOptions: params.parsingOptions,
-                file: params.file,
-                ignoreInlineMetadata: false,
-                ignoreDynamicContent: false,
-                ignoreInvalidIcu: false,
-                ignoreInlineListContent: true,
-                ignoreTaggedTemplates: false,
-                ignoreGlobalTaggedTemplates: false,
-                autoderiveMethod: 'AUTO',
-              },
-              {
-                updates: params.updates,
-                errors: params.errors,
-                warnings: params.warnings,
-              }
-            );
-          }
-        },
-      });
-    };
-
-    it('should autoderive t() with template literal interpolation', () => {
-      const code = `
-        import { t } from 'gt-react/browser';
-        const name = "John";
-        t(\`Hello, \${name}\`);
-      `;
-      const params = createMockParams();
-      runParseStrings(code, 't', params);
-
-      expect(params.updates).toHaveLength(1);
-      expect(params.updates[0].source).toBe('Hello, John');
-      expect(params.errors).toHaveLength(0);
-    });
-
-    it('should autoderive t() with concatenation', () => {
-      const code = `
-        import { t } from 'gt-react/browser';
-        const name = "John";
-        t("Hello, " + name);
-      `;
-      const params = createMockParams();
-      runParseStrings(code, 't', params);
-
-      expect(params.updates).toHaveLength(1);
-      expect(params.updates[0].source).toBe('Hello, John');
-      expect(params.errors).toHaveLength(0);
-    });
-
-    it('should autoderive msg() with template literal interpolation', () => {
-      const code = `
-        import { msg } from 'gt-react';
-        const name = "John";
-        msg(\`Hello, \${name}\`);
-      `;
-      const params = createMockParams();
-      runParseStrings(code, 'msg', params);
-
-      expect(params.updates).toHaveLength(1);
-      expect(params.updates[0].source).toBe('Hello, John');
-      expect(params.errors).toHaveLength(0);
-    });
-
-    it('should autoderive msg() with concatenation', () => {
-      const code = `
-        import { msg } from 'gt-react';
-        const name = "John";
-        msg("Hello, " + name);
-      `;
-      const params = createMockParams();
-      runParseStrings(code, 'msg', params);
-
-      expect(params.updates).toHaveLength(1);
-      expect(params.updates[0].source).toBe('Hello, John');
-      expect(params.errors).toHaveLength(0);
-    });
-
-    it('should autoderive gt() from useGT() with template literal interpolation', () => {
-      const code = `
-        import { useGT } from 'gt-react';
-        const name = "John";
-        const gt = useGT();
-        gt(\`Hello, \${name}\`);
-      `;
-      const params = createMockParams();
-      runParseStrings(code, 'useGT', params);
-
-      expect(params.updates).toHaveLength(1);
-      expect(params.updates[0].source).toBe('Hello, John');
-      expect(params.errors).toHaveLength(0);
-    });
-
-    it('should autoderive gt() from useGT() with concatenation', () => {
-      const code = `
-        import { useGT } from 'gt-react';
-        const name = "John";
-        const gt = useGT();
-        gt("Hello, " + name);
-      `;
-      const params = createMockParams();
-      runParseStrings(code, 'useGT', params);
-
-      expect(params.updates).toHaveLength(1);
-      expect(params.updates[0].source).toBe('Hello, John');
-      expect(params.errors).toHaveLength(0);
-    });
-
-    it('should autoderive gt() from getGT() with template literal interpolation', () => {
-      const code = `
-        import { getGT } from 'gt-react';
-        const name = "John";
-        async function test() {
-          const gt = await getGT();
-          gt(\`Hello, \${name}\`);
-        }
-      `;
-      const params = createMockParams();
-      runParseStrings(code, 'getGT', params);
-
-      expect(params.updates).toHaveLength(1);
-      expect(params.updates[0].source).toBe('Hello, John');
-      expect(params.errors).toHaveLength(0);
-    });
-  });
-
-  describe('recursive callback function resolution', () => {
-    const runUseGTParseStrings = (
-      code: string,
-      params: ReturnType<typeof createMockParams>
-    ) => {
-      const ast = parseCode(code);
-      traverse(ast, {
-        ImportSpecifier(path) {
-          if (
-            t.isIdentifier(path.node.imported) &&
-            path.node.imported.name === 'useGT' &&
-            t.isIdentifier(path.node.local)
-          ) {
-            parseStrings(
-              path.node.local.name,
-              'useGT',
-              path,
-              {
-                parsingOptions: params.parsingOptions,
-                file: params.file,
-                ignoreInlineMetadata: false,
-                ignoreDynamicContent: false,
-                ignoreInvalidIcu: false,
-                ignoreInlineListContent: true,
-                ignoreTaggedTemplates: false,
-                ignoreGlobalTaggedTemplates: false,
-                autoderiveMethod: 'DISABLED',
-              },
-              {
-                updates: params.updates,
-                errors: params.errors,
-                warnings: params.warnings,
-              }
-            );
-          }
-        },
-      });
-    };
-
-    it('should handle a directly recursive function that passes gt to itself', () => {
-      const code = `
-        import { useGT } from 'generaltranslation';
-
-        function renderTree(gt, nodes) {
-          gt('leaf node', { $id: 'leaf' });
-          gt('branch node', { $id: 'branch' });
-          for (const child of nodes) {
-            renderTree(gt, child.children);
-          }
-        }
-
-        const gt = useGT();
-        renderTree(gt, tree);
-      `;
-      const params = createMockParams();
-      runUseGTParseStrings(code, params);
-
-      expect(params.updates).toHaveLength(2);
-      const sources = params.updates.map((u) => u.source);
-      expect(sources).toContain('leaf node');
-      expect(sources).toContain('branch node');
-      expect(params.errors).toHaveLength(0);
-    });
-
-    it('should handle mutually recursive functions that pass gt', () => {
-      const code = `
-        import { useGT } from 'generaltranslation';
-
-        function processEven(gt, n) {
-          gt('even case', { $id: 'even' });
-          if (n > 0) processOdd(gt, n - 1);
-        }
-
-        function processOdd(gt, n) {
-          gt('odd case', { $id: 'odd' });
-          if (n > 0) processEven(gt, n - 1);
-        }
-
-        const gt = useGT();
-        processEven(gt, 10);
-      `;
-      const params = createMockParams();
-      runUseGTParseStrings(code, params);
-
-      expect(params.updates).toHaveLength(2);
-      const sources = params.updates.map((u) => u.source);
-      expect(sources).toContain('even case');
-      expect(sources).toContain('odd case');
-      expect(params.errors).toHaveLength(0);
-    });
-
-    it('should handle recursive arrow function that passes gt', () => {
-      const code = `
-        import { useGT } from 'generaltranslation';
-
-        const traverse = (gt, node) => {
-          gt('visiting node', { $id: 'visit' });
-          node.children.forEach(child => traverse(gt, child));
-        };
-
-        const gt = useGT();
-        traverse(gt, root);
-      `;
-      const params = createMockParams();
-      runUseGTParseStrings(code, params);
-
-      expect(params.updates).toHaveLength(1);
-      expect(params.updates[0]).toMatchObject({
-        source: 'visiting node',
-        metadata: { id: 'visit' },
-      });
-      expect(params.errors).toHaveLength(0);
-    });
-
-    it('should register all strings in a recursive function with multiple gt calls', () => {
-      const code = `
-        import { useGT } from 'generaltranslation';
-
-        function walkMenu(gt, items) {
-          gt('menu header', { $id: 'header' });
-          gt('menu item', { $id: 'item' });
-          gt('menu footer', { $id: 'footer' });
-          items.forEach(item => {
-            if (item.submenu) {
-              walkMenu(gt, item.submenu);
-            }
-          });
-        }
-
-        const gt = useGT();
-        walkMenu(gt, menuData);
-      `;
-      const params = createMockParams();
-      runUseGTParseStrings(code, params);
-
-      expect(params.updates).toHaveLength(3);
-      const sources = params.updates.map((u) => u.source);
-      expect(sources).toContain('menu header');
-      expect(sources).toContain('menu item');
-      expect(sources).toContain('menu footer');
-      expect(params.errors).toHaveLength(0);
-    });
-
-    it('should handle recursive function that also passes gt to a non-recursive helper', () => {
-      const code = `
-        import { useGT } from 'generaltranslation';
-
-        function formatLabel(gt) {
-          return gt('label text', { $id: 'label' });
-        }
-
-        function walkTree(gt, node) {
-          gt('tree node', { $id: 'node' });
-          formatLabel(gt);
-          if (node.left) walkTree(gt, node.left);
-          if (node.right) walkTree(gt, node.right);
-        }
-
-        const gt = useGT();
-        walkTree(gt, binaryTree);
-      `;
-      const params = createMockParams();
-      runUseGTParseStrings(code, params);
-
-      expect(params.updates).toHaveLength(2);
-      const sources = params.updates.map((u) => u.source);
-      expect(sources).toContain('tree node');
-      expect(sources).toContain('label text');
-      expect(params.errors).toHaveLength(0);
-    });
+  it.each([
+    [
+      't() with a template literal',
+      't',
+      `import { t } from 'gt-react/browser';
+       const name = "John";
+       t(\`Hello, \${name}\`);`,
+    ],
+    [
+      't() with a concatenation',
+      't',
+      `import { t } from 'gt-react/browser';
+       const name = "John";
+       t("Hello, " + name);`,
+    ],
+    [
+      'msg() with a template literal',
+      'msg',
+      `import { msg } from 'gt-react';
+       const name = "John";
+       msg(\`Hello, \${name}\`);`,
+    ],
+    [
+      'msg() with a concatenation',
+      'msg',
+      `import { msg } from 'gt-react';
+       const name = "John";
+       msg("Hello, " + name);`,
+    ],
+    [
+      'useGT() with a template literal',
+      'useGT',
+      `import { useGT } from 'gt-react';
+       const name = "John";
+       const gt = useGT();
+       gt(\`Hello, \${name}\`);`,
+    ],
+    [
+      'useGT() with a concatenation',
+      'useGT',
+      `import { useGT } from 'gt-react';
+       const name = "John";
+       const gt = useGT();
+       gt("Hello, " + name);`,
+    ],
+    [
+      'getGT() with a template literal',
+      'getGT',
+      `import { getGT } from 'gt-react';
+       const name = "John";
+       async function test() {
+         const gt = await getGT();
+         gt(\`Hello, \${name}\`);
+       }`,
+    ],
+  ])('autoderives %s', (_name, functionName, code) => {
+    const result = run(code, functionName, { autoderiveMethod: 'AUTO' });
+
+    expect(result.errors).toEqual([]);
+    expect(extracted(result)).toEqual([['Hello, John', {}]]);
   });
 });
 
-describe('parseStrings $requiresReview', () => {
-  const FILE_PATH = 'test.tsx';
-
-  const createMockParams = () => ({
-    updates: [] as Updates,
-    errors: [] as string[],
-    warnings: new Set<string>(),
-    file: FILE_PATH,
-    parsingOptions: { conditionNames: [] },
-  });
-
-  const runUseGTParseStrings = (
-    code: string,
-    params: ReturnType<typeof createMockParams>
-  ) => {
-    const ast = parse(code, {
-      sourceType: 'module',
-      plugins: ['jsx', 'typescript'],
+describe('parseStrings across files', () => {
+  /**
+   * Serves `files` (absolute path -> code). Imports resolve through `aliases`
+   * or relative to the importing file, so a wrong importing file resolves to
+   * nothing.
+   */
+  function mockProject(
+    files: Record<string, string>,
+    aliases: Record<string, string> = {}
+  ) {
+    vi.mocked(fs.readFileSync).mockImplementation((file) => {
+      const code = files[String(file)];
+      if (code === undefined) throw new Error(`File not found: ${file}`);
+      return code;
     });
-    traverse(ast, {
-      ImportSpecifier(path) {
-        if (
-          t.isIdentifier(path.node.imported) &&
-          path.node.imported.name === 'useGT' &&
-          t.isIdentifier(path.node.local)
-        ) {
-          parseStrings(
-            path.node.local.name,
-            'useGT',
-            path,
-            {
-              parsingOptions: params.parsingOptions,
-              file: params.file,
-              ignoreInlineMetadata: false,
-              ignoreDynamicContent: false,
-              ignoreInvalidIcu: false,
-              ignoreInlineListContent: true,
-              ignoreTaggedTemplates: false,
-              ignoreGlobalTaggedTemplates: false,
-              autoderiveMethod: 'DISABLED',
-            },
-            {
-              updates: params.updates,
-              errors: params.errors,
-              warnings: params.warnings,
-            }
-          );
-        }
+    vi.mocked(resolveImportPath).mockImplementation(
+      (currentFile, importPath) => {
+        const resolved =
+          aliases[importPath] ??
+          `${nodePath.posix.resolve(nodePath.posix.dirname(currentFile), importPath)}.ts`;
+        return resolved in files ? resolved : null;
+      }
+    );
+  }
+
+  /** A component that passes gt to `fn`, imported from `from`. */
+  const component = (fn: string, from: string) => `
+    import { useGT } from 'gt-react';
+    import { ${fn} } from '${from}';
+    function Component() {
+      const gt = useGT();
+      ${fn}(gt);
+    }
+  `;
+  const extract = (code: string) =>
+    run(code, 'useGT', { file: '/app/page.tsx' });
+
+  it.each<[string, string, Record<string, string>, unknown[]]>([
+    [
+      // './helpers' only resolves relative to utils.ts, not to the page
+      'a chain of three files',
+      component('getDetails', '@lib/utils'),
+      {
+        '/lib/src/utils.ts': `
+          import { getLabel } from './helpers';
+          export function getDetails(gt) {
+            gt('detail string', { $id: 'detail' });
+            getLabel(gt);
+          }`,
+        '/lib/src/helpers.ts': `
+          export function getLabel(gt) {
+            gt('label string', { $id: 'label' });
+          }`,
       },
-    });
-  };
+      [
+        ['detail string', { id: 'detail' }],
+        ['label string', { id: 'label' }],
+      ],
+    ],
+    [
+      'a re-export',
+      component('process', '@lib/utils'),
+      {
+        '/lib/src/utils.ts': `export { process } from './processor';`,
+        '/lib/src/processor.ts': `
+          export function process(gt) {
+            gt('processed', { $id: 'processed' });
+          }`,
+      },
+      [['processed', { id: 'processed' }]],
+    ],
+    [
+      'parameters with a default value',
+      component('getCopy', '@lib/utils'),
+      {
+        '/lib/src/utils.ts': `
+          import { formatCopy } from './format';
+          export function getCopy(gt = fallback) {
+            gt('direct copy', { $id: 'direct' });
+            formatCopy(gt);
+          }`,
+        '/lib/src/format.ts': `
+          export function formatCopy(gt = fallback) {
+            gt('formatted copy', { $id: 'formatted' });
+          }`,
+      },
+      [
+        ['direct copy', { id: 'direct' }],
+        ['formatted copy', { id: 'formatted' }],
+      ],
+    ],
+  ])('follows gt through %s', (_name, code, files, expected) => {
+    mockProject(files, { '@lib/utils': '/lib/src/utils.ts' });
 
-  it('extracts $requiresReview: true into metadata', () => {
-    const code = `
-      import { useGT } from 'gt-react';
-      const gt = useGT();
-      gt('hello world', { $requiresReview: true });
-    `;
-    const params = createMockParams();
-    runUseGTParseStrings(code, params);
+    const result = extract(code);
 
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0].metadata.requiresReview).toBe(true);
-    expect(params.errors).toHaveLength(0);
+    expect(result.errors).toEqual([]);
+    expect(result.warnings.size).toBe(0);
+    expect(extracted(result)).toEqual(expected);
   });
 
-  it('extracts $requiresReview: false into metadata', () => {
-    const code = `
-      import { useGT } from 'gt-react';
-      const gt = useGT();
-      gt('hello world', { $requiresReview: false });
-    `;
-    const params = createMockParams();
-    runUseGTParseStrings(code, params);
+  // Regression guard: config.file must be updated at each file boundary
+  it('resolves nested imports relative to the file that contains them', () => {
+    mockProject(
+      {
+        '/pkg/src/outer.ts': `
+          import { inner } from './inner';
+          export function outer(gt) {
+            inner(gt);
+          }`,
+        '/pkg/src/inner.ts': `
+          export function inner(gt) {
+            gt('inner string', { $id: 'inner' });
+          }`,
+      },
+      { '@pkg/outer': '/pkg/src/outer.ts' }
+    );
 
-    expect(params.updates).toHaveLength(1);
-    expect(params.updates[0].metadata.requiresReview).toBe(false);
-    expect(params.errors).toHaveLength(0);
-  });
+    const result = extract(component('outer', '@pkg/outer'));
 
-  it('rejects string "true" as a $requiresReview value', () => {
-    const code = `
-      import { useGT } from 'gt-react';
-      const gt = useGT();
-      gt('hello world', { $requiresReview: 'true' });
-    `;
-    const params = createMockParams();
-    runUseGTParseStrings(code, params);
-
-    expect(params.errors.length).toBeGreaterThan(0);
-    expect(params.errors.join('\n')).toContain('requiresReview');
+    expect(extracted(result)).toEqual([['inner string', { id: 'inner' }]]);
     expect(
-      params.updates[0]?.metadata.requiresReview ?? undefined
-    ).toBeUndefined();
+      vi
+        .mocked(resolveImportPath)
+        .mock.calls.filter(([, importPath]) => importPath === './inner')
+        .map(([currentFile]) => currentFile)
+    ).toEqual(['/pkg/src/outer.ts']);
   });
 
-  it('rejects dynamic $requiresReview expressions', () => {
-    const code = `
-      import { useGT } from 'gt-react';
-      const flag = Math.random() > 0.5;
-      const gt = useGT();
-      gt('hello world', { $requiresReview: flag });
-    `;
-    const params = createMockParams();
-    runUseGTParseStrings(code, params);
+  it('warns when the imported function cannot be resolved', () => {
+    mockProject({});
 
-    expect(params.errors.length).toBeGreaterThan(0);
-    expect(
-      params.updates[0]?.metadata.requiresReview ?? undefined
-    ).toBeUndefined();
+    const result = extract(component('getData', '@app/data'));
+
+    expect(result.errors).toEqual([]);
+    expect(result.updates).toEqual([]);
+    expect([...result.warnings]).toEqual([
+      expect.stringContaining(
+        'Could not resolve import @app/data for function getData'
+      ),
+    ]);
+  });
+
+  it('warns about an unresolved nested import and keeps the strings found', () => {
+    mockProject(
+      {
+        '/pkg/src/outer.ts': `
+          import { inner } from './missing-file';
+          export function outer(gt) {
+            gt('found', { $id: 'found' });
+            inner(gt);
+          }`,
+      },
+      { '@pkg/outer': '/pkg/src/outer.ts' }
+    );
+
+    const result = extract(component('outer', '@pkg/outer'));
+
+    expect(result.errors).toEqual([]);
+    expect(extracted(result)).toEqual([['found', { id: 'found' }]]);
+    expect([...result.warnings]).toEqual([
+      expect.stringContaining(
+        '/pkg/src/outer.ts (5:18): Could not resolve import ./missing-file for function inner'
+      ),
+    ]);
   });
 });

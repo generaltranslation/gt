@@ -10,6 +10,48 @@ import { SerializedDocument, TranslationLevel } from '../types';
 import schema from './__fixtures__/schema';
 import clone from 'just-clone';
 
+export { default as inlineSchema } from './__fixtures__/inlineSchema';
+export { default as schema } from './__fixtures__/schema';
+export { default as documentLevelArticle } from './__fixtures__/documentLevelArticle.json';
+export { default as docWithInlineMarks } from './__fixtures__/documentInlineMarks.json';
+export { default as inlineDocumentLevelArticle } from './__fixtures__/inlineDocumentLevelArticle.json';
+export { default as fieldLevelArticle } from './__fixtures__/fieldLevelArticle.json';
+export { default as annotationAndInlineBlocks } from './__fixtures__/annotationAndInlineBlocks.json';
+export { default as nestedLanguageFields } from './__fixtures__/nestedLanguageFields.json';
+
+type ArticleBlock = {
+  _key: string;
+  _type: string;
+  style?: string;
+  children?: Array<{ text: string }>;
+};
+
+type ArticleObject = {
+  title: string;
+  objectAsField: { title: string; content: ArticleBlock[] };
+};
+
+/**
+ * The translatable fields the document-level and field-level article fixtures
+ * share. The field-level fixture holds each of them under a language key.
+ */
+export type ArticleFields = {
+  title: string;
+  snippet: string;
+  config: ArticleObject & { nestedArrayField: ArticleBlock[] };
+  content: Array<ArticleBlock & ArticleObject>;
+};
+
+export const getHTMLNode = (serialized: SerializedDocument): Document =>
+  new DOMParser().parseFromString(serialized.content, 'text/html');
+
+export const findByClass = (
+  children: HTMLCollection,
+  className: string
+): Element | undefined => {
+  return Array.from(children).find((node) => node.className === className);
+};
+
 export const getSerialized = <TDocument extends SanityDocument>(
   document: TDocument,
   level: TranslationLevel
@@ -27,7 +69,7 @@ export const getDeserialized = <TDocument extends SanityDocument>(
   return deserializer.deserializeDocument(serialized.content) as TDocument;
 };
 
-export const getValidFields = (field: Record<string, unknown>): string[] => {
+export const getValidFields = (field: object): string[] => {
   const invalidFields = ['_type', '_key'];
   return Object.keys(field).filter((key) => !invalidFields.includes(key));
 };

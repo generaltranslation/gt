@@ -8,11 +8,7 @@ import {
   packageConsumesPublicGT,
 } from '../project/consumerUsage.js';
 import { parseScriptAst } from '../script/parser.js';
-import {
-  createProjectFixture,
-  removeProjectFixture,
-  writeProjectFiles,
-} from './projectTestUtils.js';
+import { createTestProject, writeProjectFiles } from './projectTestUtils.js';
 
 vi.mock('../script/parser.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../script/parser.js')>();
@@ -22,14 +18,9 @@ vi.mock('../script/parser.js', async (importOriginal) => {
   };
 });
 
-const temporaryDirectories: string[] = [];
-
 afterEach(() => {
   vi.restoreAllMocks();
   vi.clearAllMocks();
-  for (const directory of temporaryDirectories.splice(0)) {
-    removeProjectFixture(directory);
-  }
 });
 
 describe('consumer wrapper usage cache', () => {
@@ -168,7 +159,7 @@ describe('consumer wrapper usage cache', () => {
   });
 
   it('resumes a partially scanned consumer for a later wrapper query', () => {
-    const root = createFixture({
+    const root = createTestProject({
       'package.json': JSON.stringify({
         name: '@fixture/consumer',
         exports: './entry.ts',
@@ -209,7 +200,7 @@ describe('consumer wrapper usage cache', () => {
 
   it('returns order-independent results for used and unused wrappers', () => {
     const wrapperNames = ['a', 'b', 'c', 'd', 'e', 'f'];
-    const root = createFixture({
+    const root = createTestProject({
       'package.json': JSON.stringify({
         name: '@fixture/consumer',
         exports: './entry.ts',
@@ -271,7 +262,7 @@ function createWrapperWorkspace(wrapperCount: number): string {
       `// wrapper-cache-source-${index}\nexport { T as WrapperT${index} } from 'gt-vue';\n`;
   }
 
-  return createFixture({
+  return createTestProject({
     'package.json': JSON.stringify({
       name: '@fixture/root',
       private: true,
@@ -296,7 +287,7 @@ export const wrappers = [${Array.from(
 }
 
 function createLocalWrapperApp(usesWrapper: boolean): string {
-  const root = createFixture({
+  const root = createTestProject({
     'package.json': JSON.stringify({
       name: '@fixture/app',
       dependencies: {
@@ -377,12 +368,6 @@ function createRuntimeConsumerImport(name: string): string {
     import { ${component} } from '@fixture/wrapper-${name}';
     export const component = ${component};
   `;
-}
-
-function createFixture(files: Record<string, string>): string {
-  const root = createProjectFixture(files);
-  temporaryDirectories.push(root);
-  return root;
 }
 
 function linkPackage(

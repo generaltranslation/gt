@@ -2,8 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { isValidMdx } from '../validateMdx.js';
 
 describe('isValidMdx', () => {
-  it('should return true for valid MDX content', () => {
-    const validMdx = `---
+  it.each([
+    [
+      'frontmatter, JSX and ESM',
+      `---
 title: Test Document
 ---
 
@@ -14,102 +16,37 @@ This is a valid MDX document.
 <CustomComponent prop="value" />
 
 export const metadata = { title: 'Test' };
-`;
-
-    expect(isValidMdx(validMdx, 'test.mdx').isValid).toBe(true);
+`,
+    ],
+    ['plain markdown', '# Hello World\n\nThis is simple markdown content.\n'],
+  ])('accepts %s', (_name, content) => {
+    expect(isValidMdx(content, 'test.mdx')).toEqual({ isValid: true });
   });
 
-  it('should return true for simple markdown content', () => {
-    const simpleMarkdown = `# Hello World
+  it.each([
+    [
+      'an unclosed attribute string',
+      '# Hello World\n\n<CustomComponent prop="unclosed tag\n',
+    ],
+    ['an unclosed element', '# Test\n\n<div>\n  <span>Unclosed div\n</span>\n'],
+    ['mismatched tags', '# Test\n\n<div>\n  <span>Content</div>\n</span>\n'],
+    [
+      'an invalid expression',
+      '# Test\n\n{invalid javascript expression &&& syntax}\n\nRegular content.\n',
+    ],
+    [
+      'an invalid attribute expression',
+      '# Test\n\n<Component prop={someVariable.} />\n',
+    ],
+    [
+      'an invalid import statement',
+      "import { Component from './invalid-syntax';\n\n# Test Content\n",
+    ],
+  ])('rejects %s with the parser error', (_name, content) => {
+    const result = isValidMdx(content, 'test.mdx');
 
-This is simple markdown content.
-`;
-
-    expect(isValidMdx(simpleMarkdown, 'test.mdx').isValid).toBe(true);
-  });
-
-  it('should return false for invalid MDX syntax', () => {
-    const invalidMdx = `---
-title: Test Document
----
-
-# Hello World
-
-<CustomComponent prop="unclosed tag
-`;
-
-    expect(isValidMdx(invalidMdx, 'test.mdx').isValid).toBe(false);
-  });
-
-  it('should return false for malformed JSX in MDX', () => {
-    const malformedMdx = `# Test
-
-<div>
-  <span>Unclosed div
-</span>
-`;
-
-    expect(isValidMdx(malformedMdx, 'test.mdx').isValid).toBe(false);
-  });
-
-  it('should return false for invalid JSX expression', () => {
-    const invalidJsx = `# Test
-
-{invalid javascript expression &&& syntax}
-
-Regular content.
-`;
-
-    expect(isValidMdx(invalidJsx, 'test.mdx').isValid).toBe(false);
-  });
-
-  it('should return false for mismatched JSX tags', () => {
-    const mismatchedTags = `# Test
-
-<div>
-  <span>Content</div>
-</span>
-`;
-
-    expect(isValidMdx(mismatchedTags, 'test.mdx').isValid).toBe(false);
-  });
-
-  it('should return false for invalid import statements', () => {
-    const invalidImport = `import { Component from './invalid-syntax';
-
-# Test Content
-`;
-
-    expect(isValidMdx(invalidImport, 'test.mdx').isValid).toBe(false);
-  });
-
-  it('should return false for unclosed JSX attributes', () => {
-    const unclosedAttribute = `# Test
-
-<Component 
-  prop="value
-  other="complete"
-/>
-`;
-
-    expect(isValidMdx(unclosedAttribute, 'test.mdx').isValid).toBe(false);
-  });
-
-  it('should return false for invalid MDX expressions', () => {
-    const invalidExpression = `# Test
-
-<Component prop={someVariable.} />
-`;
-
-    expect(isValidMdx(invalidExpression, 'test.mdx').isValid).toBe(false);
-  });
-
-  it('should return error message for invalid MDX', () => {
-    const invalidMdx = `<Component prop="unclosed`;
-
-    const result = isValidMdx(invalidMdx, 'test.mdx');
     expect(result.isValid).toBe(false);
-    expect(result.error).toBeDefined();
-    expect(typeof result.error).toBe('string');
+    expect(result.error).toEqual(expect.any(String));
+    expect(result.error).not.toBe('');
   });
 });

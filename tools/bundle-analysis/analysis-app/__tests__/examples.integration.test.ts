@@ -7,9 +7,9 @@ import type { Analysis, BuildSettings } from '../shared/types.ts';
 
 /**
  * Builds the examples the way the analysis server does and checks the
- * measurements. Slow: set BUNDLE_ANALYSIS_INTEGRATION=1 to run.
+ * measurements. Slow: vitest.config.ts only collects this file when
+ * BUNDLE_ANALYSIS_INTEGRATION=1 is set (`pnpm test:integration`).
  */
-const run = process.env.BUNDLE_ANALYSIS_INTEGRATION === '1';
 const packages = readWorkspacePackages();
 
 function buildAndAnalyze(id: string, settings: BuildSettings): Analysis {
@@ -42,7 +42,7 @@ const EXPECTED_GT: Record<string, string> = {
   'vite-vue': 'gt-vue',
 };
 
-describe.skipIf(!run)('example builds', () => {
+describe('example builds', () => {
   for (const example of examples) {
     it(`${example.id}: every byte is attributed and GT packages are found`, () => {
       const analysis = buildAndAnalyze(example.id, {
