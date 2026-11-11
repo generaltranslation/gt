@@ -6,10 +6,7 @@
 import { intlCache } from '../cache/IntlCache';
 import { resolveLocale } from './locale';
 import { FALLBACK_BRANCH_KEY, isPluralCategoryKey } from '../settings/syntax';
-import type {
-  ExtendedNumberFormatOptions,
-  MessageVariables,
-} from '../types-dir/ast';
+import type { ExtendedNumberFormatOptions } from '../types-dir/ast';
 import type {
   DateTimeNode,
   MessageBranches,
@@ -38,7 +35,6 @@ const DATE_TIME_STYLES = new Set<string>(DATE_TIME_STYLE_NAMES);
 const DEFAULT_DATE_TIME_STYLE: DateTimeStyleName = 'medium';
 
 type PluralValue = number | bigint;
-type TagFormatter = (parts: unknown[]) => unknown;
 
 /**
  * A value that formats as text, as in a template literal: `true` is
@@ -103,10 +99,14 @@ export type FormatMessageTreeOptions = {
   timeZone: string;
 };
 
-type FormatContext = FormatMessageTreeOptions & {
+/** One part of a formatted message: text, or a rich value. */
+type Part<R> = string | R;
+type MessageValue<R> = MessageTreeValues<R>[string];
+
+type FormatContext<R> = FormatMessageTreeOptions & {
   message: string;
   locales: string | string[];
-  variables: MessageVariables;
+  variables: MessageTreeValues<R>;
 };
 
 /**
@@ -153,24 +153,24 @@ export function formatMessageTree<R>(
   variables: MessageTreeValues<R> & OnePartValues<R>,
   options: FormatMessageTreeOptions
 ): FormattedMessage<R>;
-export function formatMessageTree(
+export function formatMessageTree<R>(
   tree: MessageTree,
   locales: string | string[],
-  variables: MessageVariables,
+  variables: MessageTreeValues<R>,
   options: FormatMessageTreeOptions
-): unknown {
+): Part<R> | Part<R>[] {
   resolveLocale(locales);
   return formatParsedTree(tree, '', locales, variables, options);
 }
 
 /** Formats a tree whose locales were already validated; `message` is reported on errors. */
-export function formatParsedTree(
+export function formatParsedTree<R>(
   tree: MessageTree,
   message: string,
   locales: string | string[],
-  variables: MessageVariables,
+  variables: MessageTreeValues<R>,
   { formats, timeZone }: FormatMessageTreeOptions
-): unknown {
+): Part<R> | Part<R>[] {
   // Most messages are plain text, which needs no formatter state.
   if (tree.length === 1 && typeof tree[0] === 'string') return tree[0];
   const parts = formatNodes(tree, {
@@ -187,13 +187,13 @@ export function formatParsedTree(
 // `switch (node[1])` does not narrow a tuple union, so cases cast to these.
 type BranchNode = SelectNode | PluralNode;
 
-function formatNodes(
+function formatNodes<R>(
   nodes: MessageTree,
-  context: FormatContext,
+  context: FormatContext<R>,
   currentPluralValue?: PluralValue
-): unknown[] {
-  const result: unknown[] = [];
-  const append = (value: unknown): void => {
+): Part<R>[] {
+  const result: Part<R>[] = [];
+  const append = (value: Part<R>): void => {
     const previous = result[result.length - 1];
     if (typeof previous === 'string' && typeof value === 'string') {
       result[result.length - 1] = previous + value;
@@ -318,7 +318,7 @@ function formatNodes(
           context,
           currentPluralValue
         );
-        const formatted = (formatter as TagFormatter)(children);
+        const formatted = (formatter as MessageTagFormatter<R>)(children);
         if (Array.isArray(formatted)) formatted.forEach(append);
         else append(formatted);
         break;
@@ -329,8 +329,8 @@ function formatNodes(
   return result;
 }
 
-function formatsOf(
-  context: FormatContext,
+function formatsOf<R>(
+  context: FormatContext<R>,
   name: string
 ): MessageTreeFormats[string] | undefined {
   return context.formats && ownOption(context.formats, name);
@@ -344,7 +344,7 @@ function ownBranch(
   return branch === undefined ? undefined : branchNodes(branch);
 }
 
-function plainValueText(value: unknown): unknown {
+function plainValueText<R>(value: MessageValue<R>): Part<R> {
   if (value == null) return '';
   return typeof value === 'string' ||
     typeof value === 'number' ||
@@ -352,10 +352,14 @@ function plainValueText(value: unknown): unknown {
     typeof value === 'boolean' ||
     value instanceof Date
     ? String(value)
-    : value;
+    : // A value that is not plain is a rich one, kept as a part.
+      (value as R);
 }
 
-function requireVariable(variables: MessageVariables, name: string): unknown {
+function requireVariable<R>(
+  variables: MessageTreeValues<R>,
+  name: string
+): MessageValue<R> {
   // intl-messageformat intentionally used `name in values`, so inherited and
   // proxy-backed records are observable through the public formatting API.
   // Selector option lookup remains own-property-only to avoid prototype
@@ -366,7 +370,10 @@ function requireVariable(variables: MessageVariables, name: string): unknown {
   return variables[name];
 }
 
-function applyScale(value: unknown, scale?: number): unknown {
+function applyScale<Value>(
+  value: Value,
+  scale?: number
+): Value | number | bigint {
   // intl-messageformat treated scale/0 as an absent scale. Preserve that
   // observable behavior for existing messages even though multiplying by zero
   // would follow the ICU skeleton definition more literally.
@@ -382,8 +389,8 @@ function applyScale(value: unknown, scale?: number): unknown {
   return Number(value) * scale;
 }
 
-function getPluralRules(
-  context: FormatContext,
+function getPluralRules<R>(
+  context: FormatContext<R>,
   type: Intl.PluralRuleType
 ): Intl.PluralRules {
   if (typeof Intl.PluralRules !== 'function') {

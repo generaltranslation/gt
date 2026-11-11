@@ -3,10 +3,6 @@ import {
   type MessageTree,
   type MessageTreeFormats,
 } from '@generaltranslation/icu';
-import {
-  DATE_TIME_CONTEXT_OPTIONS,
-  NUMBER_CONTEXT_OPTIONS,
-} from '@generaltranslation/icu/internal';
 import type { MessageTreeHashMetadata } from 'generaltranslation/id';
 import { buildMessage } from './buildMessage';
 import { isTemplateStringsArray, type GTOptions } from './gt';
@@ -21,7 +17,11 @@ import { hashMessageTree, type MessageTreeMetadata } from './renderMessage';
 export type Msg = MessageTreeHashMetadata & {
   tree: MessageTree;
   values: Record<string, unknown>;
-  /** Formatting context of formatted arguments, keyed by name; absent when none. */
+  /**
+   * Formatting context of formatted arguments, keyed by name; absent when
+   * none. Its type holds no message option, which would change the rendered
+   * message without changing its tree or hash.
+   */
   formats?: MessageTreeFormats;
   $_hash: string;
 };
@@ -92,39 +92,15 @@ function fromTemplate(
  */
 export function isMsg(value: unknown): value is Msg {
   if (typeof value !== 'object' || value === null) return false;
-  const { tree, values, formats, $_hash, context, maxChars, requiresReview } =
+  const { tree, values, $_hash, context, maxChars, requiresReview } =
     value as Record<string, unknown>;
   return (
     isMessageTree(tree) &&
     typeof values === 'object' &&
     values !== null &&
-    (formats === undefined || isMessageTreeFormats(formats)) &&
     typeof $_hash === 'string' &&
     (context === undefined || typeof context === 'string') &&
     (requiresReview === undefined || typeof requiresReview === 'boolean') &&
     (maxChars == null || Number.isFinite(maxChars))
   );
-}
-
-// Only formatting context: a message option here would change the rendered
-// message without changing its tree or hash.
-function isMessageTreeFormats(value: unknown): value is MessageTreeFormats {
-  return (
-    isPlainRecord(value) &&
-    Object.values(value).every(
-      (context) =>
-        isPlainRecord(context) &&
-        Object.keys(context).every(
-          (key) =>
-            (NUMBER_CONTEXT_OPTIONS as readonly string[]).includes(key) ||
-            (DATE_TIME_CONTEXT_OPTIONS as readonly string[]).includes(key)
-        )
-    )
-  );
-}
-
-function isPlainRecord(value: unknown): value is Record<string, unknown> {
-  if (typeof value !== 'object' || value === null) return false;
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
 }

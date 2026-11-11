@@ -65,6 +65,14 @@ export function invalidUsage(): unknown[] {
     // @ts-expect-error m takes a string or a Msg
     m(1),
 
+    m({
+      tree: [['total', 'number']],
+      values: { total: 0.5 },
+      $_hash: 'h',
+      // @ts-expect-error a message option, which is part of the tree
+      formats: { total: { style: 'percent' } },
+    }),
+
     // @ts-expect-error a template with values is not a string
     ((): string => msg`Hello, ${{ name }}!`)(),
   ];

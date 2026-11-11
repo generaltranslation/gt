@@ -12,7 +12,6 @@ export type {
   Location,
   LocationDetails,
   MessageFormatElement,
-  MessageVariables,
   NumberElement,
   NumberSkeleton,
   NumberSkeletonToken,

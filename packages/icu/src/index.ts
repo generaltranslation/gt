@@ -33,7 +33,4 @@ export type {
   MessageTreeValidationError,
   MessageTreeValidationOptions,
 } from './tree/validateMessageTree';
-export type {
-  ExtendedNumberFormatOptions,
-  MessageVariables,
-} from './types-dir/ast';
+export type { ExtendedNumberFormatOptions } from './types-dir/ast';
