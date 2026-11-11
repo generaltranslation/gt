@@ -15,7 +15,7 @@ export { RegionSelector as Client_RegionSelector } from 'gt-react';
 import { getCookieValue, getI18nConfig, I18nConfig } from 'gt-i18n/internal';
 import { GTProvider, type SharedGTProviderProps } from 'gt-react';
 import { usePathname, useRouter } from 'next/navigation';
-import { useCallback, useEffect } from 'react';
+import { Suspense, useCallback, useEffect } from 'react';
 import { initializeGTClient } from '../setup/initGT.client';
 import {
   defaultLocaleRoutingEnabledCookieName,
@@ -89,12 +89,25 @@ export function Client_GTProvider({
     },
     [refreshServerComponents, reloadBrowserPage]
   );
-  usePathCheck({
-    reloadBrowserPage,
-    refreshServerComponents,
-    locale: props.locale,
-  });
-  return <GTProvider {...props} _reload={syncServerContent} />;
+  return (
+    <>
+      {/* usePathname() is request data under Cache Components, so the check
+          renders in its own boundary instead of blocking the prerender. */}
+      <Suspense fallback={null}>
+        <PathCheck
+          reloadBrowserPage={reloadBrowserPage}
+          refreshServerComponents={refreshServerComponents}
+          locale={props.locale}
+        />
+      </Suspense>
+      <GTProvider {...props} _reload={syncServerContent} />
+    </>
+  );
+}
+
+function PathCheck(props: Parameters<typeof usePathCheck>[0]) {
+  usePathCheck(props);
+  return null;
 }
 
 /**
