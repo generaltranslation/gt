@@ -163,6 +163,7 @@ describe('webpack and rspack', () => {
         "@/*": "/app/src/*",
         "*.svg": "/app/icons/*.js",
         "all/*": "/app/$one",
+        "twice/*": "/app/*/$*",
         "exact/*$": "/app/exact",
         "a/*/*": "/app/two",
       } } };`
@@ -172,16 +173,27 @@ describe('webpack and rspack', () => {
       { find: /^@\/(.*)$/, replacement: '/app/src/$1' },
       { find: /^(.*)\.svg$/, replacement: '/app/icons/$1.js' },
       { find: /^all\/(.*)$/, replacement: '/app/$$one' },
+      // As in webpack, only the first `*` of the path is the match.
+      { find: /^twice\/(.*)$/, replacement: '/app/$1/$$*' },
       { find: 'exact/*', replacement: '/app/exact', exact: true },
       { find: 'a/*/*', replacement: '/app/two', exact: false },
     ]);
-    const resolved = ['@/ui/a.js', 'logo.svg', 'all/b', 'exact/b', 'a/b/c'].map(
-      (specifier) => applyAliases(specifier, aliases)
+    const specifiers = [
+      '@/ui/a.js',
+      'logo.svg',
+      'all/b',
+      'twice/b',
+      'exact/b',
+      'a/b/c',
+    ];
+    const resolved = specifiers.map((specifier) =>
+      applyAliases(specifier, aliases)
     );
     expect(resolved).toEqual([
       '/app/src/ui/a.js',
       '/app/icons/logo.js',
       '/app/$one',
+      '/app/b/$*',
       'exact/b',
       'a/b/c',
     ]);

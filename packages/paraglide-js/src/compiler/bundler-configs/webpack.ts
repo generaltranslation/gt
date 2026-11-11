@@ -65,10 +65,25 @@ const WILDCARD_NAME = /^[^*]*\*[^*]*$/;
 function wildcardAlias(name: string, target: string): ImportAlias {
   const [before, after] = name.split('*').map(escapeRegExp);
   const find = new RegExp(`^${before}(.*)${after}$`);
-  // A `$` of the target is not a reference to the match; only its first `*` is.
-  const replacement = target.replaceAll('$', '$$$$').replace('*', () => '$1');
 
-  return { find, replacement };
+  return { find, replacement: wildcardReplacement(target) };
+}
+
+/**
+ * The target as the replacement of a `String.replace`: its first `*` stands
+ * for the match. Only the first: webpack leaves any later `*` as it is. A `$`
+ * of the target is text, not a reference to the match.
+ */
+function wildcardReplacement(target: string): string {
+  const asText = (text: string) => text.replaceAll('$', '$$$$');
+
+  const star = target.indexOf('*');
+  if (star === -1) return asText(target);
+
+  const before = target.slice(0, star);
+  const after = target.slice(star + 1);
+
+  return `${asText(before)}$1${asText(after)}`;
 }
 
 /** `{ name: target }`, or `[{ name, alias, onlyModule }]` where `onlyModule` is `name$`. */
