@@ -9,14 +9,24 @@ import {
   formatRelativeTime as _formatRelativeTime,
   formatRelativeTimeFromDate as _formatRelativeTimeFromDate,
 } from '@generaltranslation/format';
+import {
+  formatMessageTree as _formatMessageTree,
+  type FormatMessageTreeOptions,
+  type MessageTree,
+  type MessageTreeValues,
+} from '@generaltranslation/icu';
 import { libraryDefaultLocale } from './settings/settings';
 import { hostTimeZone } from './utils/hostTimeZone';
 
-// `@generaltranslation/format` takes every argument: it applies no defaults
-// and reads neither the host's time zone nor the clock. These are the same
-// functions for a caller, who may leave out what is resolved here: the
-// locales, a message's variables, the time zone and the date to compare with.
-type WithOptional<Options, Keys extends keyof Options> = Omit<Options, Keys> &
+// `@generaltranslation/format` and `@generaltranslation/icu` take every
+// argument: they apply no defaults and read neither the host's time zone nor
+// the clock. These are the same functions for a caller, who may leave out
+// what is resolved here: the locales, a message's values, the time zone and
+// the date to compare with. Nothing outside this package resolves them.
+export type WithOptional<Options, Keys extends keyof Options> = Omit<
+  Options,
+  Keys
+> &
   Partial<Pick<Options, Keys>>;
 
 type Options<
@@ -203,6 +213,28 @@ export function formatMessage(
   return _formatMessage(message, {
     ...withLocales(options),
     variables: options?.variables ?? {},
+    timeZone: options?.timeZone ?? hostTimeZone(),
+  });
+}
+
+/**
+ * Formats a message tree according to the specified locales and options.
+ *
+ * @param {MessageTree} tree - The message tree to format.
+ * @param {string | string[]} [locales] - The locales to use for formatting.
+ * @param {Object} [values] - The values of the tree's variables.
+ * @param {Object} [options] - What the tree is formatted with. The
+ * `timeZone` of its dates and times defaults to the host's.
+ * @returns The formatted message: a string, or the parts around rich values.
+ */
+export function formatMessageTree(
+  tree: MessageTree,
+  locales: string | string[] = libraryDefaultLocale,
+  values: MessageTreeValues<unknown> = {},
+  options?: WithOptional<FormatMessageTreeOptions, 'timeZone'>
+): unknown {
+  return _formatMessageTree<unknown>(tree, locales, values, {
+    ...options,
     timeZone: options?.timeZone ?? hostTimeZone(),
   });
 }

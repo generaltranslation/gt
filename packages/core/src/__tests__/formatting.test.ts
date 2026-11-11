@@ -11,7 +11,8 @@ import {
   formatRelativeTimeFromDate,
   LocaleConfig,
 } from '../index';
-import { hostTimeZone, libraryDefaultLocale } from '../internal';
+import { formatMessageTree, libraryDefaultLocale } from '../internal';
+import { hostTimeZone } from '../utils/hostTimeZone';
 
 const date = new Date('2020-05-06T14:03:02Z');
 
@@ -95,6 +96,36 @@ describe('what a caller leaves out', () => {
     expect(formatMessage('Hi {name}', { variables: { name: 'Ada' } })).toBe(
       'Hi Ada'
     );
+  });
+
+  it('formats a message tree', () => {
+    expect(formatMessageTree([['n', 'number']], undefined, { n: 1234.5 })).toBe(
+      '1,234.5'
+    );
+    const at = [['at', 'time', 'short']] as const;
+    expect(
+      formatMessageTree(
+        [...at],
+        'en-US',
+        { at: date },
+        { timeZone: 'Asia/Tokyo' }
+      )
+    ).toBe('11:03 PM');
+    expect(formatMessageTree([...at], 'en-US', { at: date })).toBe(
+      new Intl.DateTimeFormat('en-US', { timeStyle: 'short' }).format(date)
+    );
+  });
+
+  it('formats relative time from a locale config without a base date', () => {
+    const hour = 60 * 60 * 1000;
+    expect(
+      new LocaleConfig().formatRelativeTimeFromDate(new Date(Date.now() - hour))
+    ).toBe('1 hour ago');
+    expect(
+      new LocaleConfig().formatRelativeTimeFromDate(new Date(3 * hour), 'en', {
+        baseDate: new Date(0),
+      })
+    ).toBe('in 3 hours');
   });
 
   it('compares a date with now, or with the base date', () => {

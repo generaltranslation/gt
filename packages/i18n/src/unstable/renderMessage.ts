@@ -1,14 +1,13 @@
-import {
-  formatMessageTree,
-  isMessageTree,
-  type MessageTree,
-} from '@generaltranslation/icu';
-import { formatCutoff } from '@generaltranslation/format';
+import { isMessageTree, type MessageTree } from '@generaltranslation/icu';
 import {
   hashSource,
   type MessageTreeHashMetadata,
 } from 'generaltranslation/id';
-import { formatDiagnosticErrorDetails } from 'generaltranslation/internal';
+import {
+  formatCutoff,
+  formatDiagnosticErrorDetails,
+  formatMessageTree,
+} from 'generaltranslation/internal';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
 import { createGtI18nDiagnostic } from '../logs/diagnostics';
 import logger from '../logs/logger';

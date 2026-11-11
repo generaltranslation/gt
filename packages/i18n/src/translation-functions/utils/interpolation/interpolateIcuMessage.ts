@@ -4,9 +4,8 @@ import {
   VAR_IDENTIFIER,
   extractVars,
   condenseVars,
-  libraryDefaultLocale,
+  formatCutoff,
 } from 'generaltranslation/internal';
-import { formatCutoff } from '@generaltranslation/format';
 import logger from '../../../logs/logger';
 import { createInterpolationFailureMessage } from '../messages';
 import type { TranslationOptions } from '../../types/options';
@@ -52,7 +51,6 @@ export function interpolateIcuMessage<T extends string | null | undefined>(
     );
     // Apply cutoff formatting
     const cutoffMessage = formatCutoff(interpolatedMessage, {
-      locales: libraryDefaultLocale,
       maxChars: options.$maxChars,
     });
     return cutoffMessage as T extends string ? string : T;
@@ -69,7 +67,6 @@ export function interpolateIcuMessage<T extends string | null | undefined>(
 
     // Apply cutoff formatting
     const cutoffMessage = formatCutoff(encodedMsg, {
-      locales: libraryDefaultLocale,
       maxChars: options.$maxChars,
     });
     return cutoffMessage as T extends string ? string : T;

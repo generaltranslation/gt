@@ -1,8 +1,8 @@
-import { formatMessageTree, type MessageTree } from '@generaltranslation/icu';
-import { formatCutoff } from '@generaltranslation/format';
+import type { MessageTree } from '@generaltranslation/icu';
 import { forEachPlaceholder } from '@generaltranslation/icu/internal';
 import {
-  hostTimeZone,
+  formatCutoff,
+  formatMessageTree,
   libraryDefaultLocale,
 } from 'generaltranslation/internal';
 import {
@@ -74,7 +74,7 @@ function formatSource(
   // Code paths without i18n may never initialize the config.
   const timeZone = isI18nConfigInitialized()
     ? getI18nConfig().timeZone
-    : hostTimeZone();
+    : undefined;
   const formatted = formatMessageTree(tree, libraryDefaultLocale, values, {
     timeZone,
   });

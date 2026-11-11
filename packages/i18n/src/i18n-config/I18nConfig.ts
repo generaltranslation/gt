@@ -1,12 +1,9 @@
-import {
-  LocaleConfig,
-  type LocaleConfigConstructorParams,
-} from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import { GTRuntime } from 'generaltranslation/runtime';
 import {
-  hostTimeZone,
   libraryDefaultLocale,
+  LocaleConfig,
+  type LocaleConfigConstructorParams,
 } from 'generaltranslation/internal';
 import type { GTConfig } from '../config/types';
 import {
@@ -58,10 +55,7 @@ export class I18nConfig extends LocaleConfig {
 
   constructor(params: I18nConfigParams = {}) {
     const gtServicesEnabled = resolveGTServicesEnabled(params);
-    super({
-      ...getLocaleConfigParams(params, gtServicesEnabled),
-      timeZone: hostTimeZone(),
-    });
+    super(getLocaleConfigParams(params, gtServicesEnabled));
     this.runtimeConfig = {
       projectId: params.projectId,
       devApiKey: params.devApiKey,
@@ -205,12 +199,10 @@ export class I18nConfig extends LocaleConfig {
   }
 }
 
-type LocaleParams = Omit<LocaleConfigConstructorParams, 'timeZone'>;
-
 function getLocaleConfigParams(
   params: I18nConfigParams,
   gtServicesEnabled: boolean
-): LocaleParams {
+): LocaleConfigConstructorParams {
   const {
     defaultLocale = libraryDefaultLocale,
     locales = [],
@@ -238,7 +230,7 @@ function getLocaleResolverConfigParams({
   defaultLocale = libraryDefaultLocale,
   locales = [],
   customMapping,
-}: I18nConfigParams = {}): LocaleParams {
+}: I18nConfigParams = {}): LocaleConfigConstructorParams {
   return {
     defaultLocale,
     // As in the constructor, the default locale is always supported.
