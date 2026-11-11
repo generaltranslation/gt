@@ -305,12 +305,36 @@ describe('withGTConfig', () => {
       }
     });
 
-    it('has empty swcPlugins array in experimental', async () => {
+    it('omits swcPlugins when the compiler is disabled to avoid the Next.js experiments banner', async () => {
       const withGTConfig = await getWithGTConfig();
       const result = withGTConfig();
 
-      expect(result.experimental!.swcPlugins).toEqual([]);
+      expect(result.experimental).not.toHaveProperty('swcPlugins');
     });
+
+    it.each(['none', 'swc'] as const)(
+      'preserves user SWC plugins with compiler type %s',
+      async (type) => {
+        const withGTConfig = await getWithGTConfig();
+        const plugins: NonNullable<NextConfig['experimental']>['swcPlugins'] = [
+          ['user-plugin', { enabled: true }],
+        ];
+        const result = withGTConfig(
+          { experimental: { swcPlugins: plugins } },
+          { experimentalCompilerOptions: { type } }
+        );
+
+        expect(result.experimental!.swcPlugins![0]).toEqual(plugins[0]);
+        expect(result.experimental!.swcPlugins).toHaveLength(
+          type === 'swc' ? 2 : 1
+        );
+        if (type === 'swc') {
+          expect(result.experimental!.swcPlugins![1][0]).toContain(
+            'gt_swc_plugin.wasm'
+          );
+        }
+      }
+    );
 
     it('sets experimental.rootParams to true (since mocked rootParamStability = experimental)', async () => {
       const withGTConfig = await getWithGTConfig();

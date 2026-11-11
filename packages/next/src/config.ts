@@ -794,10 +794,12 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
       ...(rootParamStability === 'experimental' && {
         rootParams: true,
       }),
-      swcPlugins: [
-        ...(internalNextConfig.experimental?.swcPlugins || []),
-        ...(swcPluginEntry ? [swcPluginEntry] : []),
-      ],
+      ...(swcPluginEntry && {
+        swcPlugins: [
+          ...(internalNextConfig.experimental?.swcPlugins || []),
+          swcPluginEntry,
+        ],
+      }),
       ...(turboPackEnabled &&
         experimentalTurbopack && {
           turbo: {
