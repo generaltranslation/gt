@@ -129,6 +129,7 @@ type FormatContext<R> = FormatMessageTreeOptions & {
  *
  *   formatMessageTree([['total', 'number', 'currency']], 'en', { total: 5 }, {
  *     formats: { total: { currency: 'EUR' } },
+ *     timeZone,
  *   }); // '€5.00'
  *
  * Locales are validated the same way as `formatMessage` from

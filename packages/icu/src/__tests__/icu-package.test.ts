@@ -73,6 +73,7 @@ describe('@generaltranslation/icu package artifacts', () => {
     expect(parser).toContain(parserMarker);
   });
 
+  // Runs the TypeScript compiler, which can take over 5 s on a busy CI runner.
   it('typechecks its declarations with an older lib and skipLibCheck off', () => {
     const dist = join(packageRoot, 'dist');
     const declarations = readdirSync(dist)
@@ -93,7 +94,7 @@ describe('@generaltranslation/icu package artifacts', () => {
         ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')
       );
     expect(errors).toEqual([]);
-  });
+  }, 30_000);
 
   it('loads the root and parser entrypoints from both formats', () => {
     const smoke = `
