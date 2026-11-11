@@ -53,8 +53,8 @@ export function toMessageTree(ast: MessageFormatElement[]): MessageTree {
  * keeps every Intl option its skeleton spells, which a message tree cannot
  * hold, and the formatter reads them like a tree's styles.
  */
-export function toFormattingTree(ast: MessageFormatElement[]): MessageTree {
-  return convert(ast, formattingNode);
+export function toParsedTree(ast: MessageFormatElement[]): MessageTree {
+  return convert(ast, parsedNode);
 }
 
 function convert(
@@ -105,7 +105,7 @@ function toNode(
  * A format for the formatter only: the style is the name, or every Intl
  * option the skeleton spells.
  */
-function formattingNode(element: FormatElement, kind: FormatKind): MessageNode {
+function parsedNode(element: FormatElement, kind: FormatKind): MessageNode {
   const skeleton = element.style;
   const style: IntlStyle =
     skeleton == null || typeof skeleton === 'string'

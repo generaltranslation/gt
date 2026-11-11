@@ -1,5 +1,5 @@
 import { parse } from '../parser/parse';
-import { toFormattingTree } from '../convert/syntaxTree';
+import { toParsedTree } from '../convert/syntaxTree';
 import {
   formatParsedTree,
   type FormatMessageTreeOptions,
@@ -19,7 +19,7 @@ import { resolveLocale } from './locale';
 export function formatMessage(
   message: string,
   locales: string | string[],
-  variables: Readonly<Record<string, MessagePlainValue>>,
+  values: Readonly<Record<string, MessagePlainValue>>,
   options: FormatMessageTreeOptions
 ): string;
 /**
@@ -29,16 +29,16 @@ export function formatMessage(
 export function formatMessage<R>(
   message: string,
   locales: string | string[],
-  variables: MessageTreeValues<R> & OnePartValues<R>,
+  values: MessageTreeValues<R> & OnePartValues<R>,
   options: FormatMessageTreeOptions
 ): FormattedMessage<R>;
 export function formatMessage<R>(
   message: string,
   locales: string | string[],
-  variables: MessageTreeValues<R>,
+  values: MessageTreeValues<R>,
   options: FormatMessageTreeOptions
 ): string | R | Array<string | R> {
   const locale = resolveLocale(locales);
-  const tree = toFormattingTree(parse(message, { locale }));
-  return formatParsedTree(tree, message, locales, variables, options);
+  const tree = toParsedTree(parse(message, { locale }));
+  return formatParsedTree(tree, message, locales, values, options);
 }

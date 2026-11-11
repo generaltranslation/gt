@@ -19,7 +19,7 @@ import type {
   RuleFix,
   RuleFixer,
 } from '@typescript-eslint/utils/ts-eslint';
-import type { MessageTreeChoiceKind } from '@generaltranslation/icu/internal';
+import type { BranchingKind } from '@generaltranslation/icu/internal';
 import {
   isUnstableGTImportSource,
   type UnstableGTHelperName,
@@ -35,7 +35,7 @@ const CHOICE_HELPERS: ReadonlySet<string> = new Set([
   'plural',
   'selectordinal',
   'select',
-] satisfies MessageTreeChoiceKind[]);
+] satisfies BranchingKind[]);
 const PART_HELPER = 'part' satisfies UnstableGTHelperName;
 
 /** Whether a specifier imports only a type, which can't run as a tag. */

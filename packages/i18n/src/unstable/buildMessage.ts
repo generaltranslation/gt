@@ -1,8 +1,8 @@
 import type { MessageTree, MessageTreeFormats } from '@generaltranslation/icu';
 import {
   buildMessageTree,
-  type MessageTreeBranch,
-  type MessageTreeHole,
+  type TemplateBranch,
+  type TemplateHole,
 } from '@generaltranslation/icu/internal';
 import { createGtI18nDiagnostic } from '../logs/diagnostics';
 import {
@@ -40,7 +40,7 @@ export function buildMessage(
 function toTreeHole(
   hole: unknown,
   values: Record<string, unknown>
-): MessageTreeHole {
+): TemplateHole {
   if (hole === n) return { kind: 'pound' };
   if (isAnonymousValue(hole)) {
     return {
@@ -80,7 +80,7 @@ function toTreeHole(
       };
     default: {
       const variable = toHoleVariable(hole, values);
-      const branches: Record<string, MessageTreeBranch | undefined> =
+      const branches: Record<string, TemplateBranch | undefined> =
         Object.create(null);
       for (const [key, branch] of Object.entries(hole.branches)) {
         branches[key] = toTreeBranch(branch, values);
@@ -103,7 +103,7 @@ function toHoleVariable(
 function toTreeBranch(
   branch: Branch | undefined,
   values: Record<string, unknown>
-): MessageTreeBranch | undefined {
+): TemplateBranch | undefined {
   if (branch == null || typeof branch === 'string') return branch;
   return {
     strings: branch.strings,

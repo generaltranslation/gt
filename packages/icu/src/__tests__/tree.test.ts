@@ -5,7 +5,7 @@ import {
   type SelectNode,
 } from '../index';
 import { formatMessageTree } from './format';
-import { buildMessageTree, type MessageTreeHole } from '../internal';
+import { buildMessageTree, type TemplateHole } from '../internal';
 import { icuToMessageTree, messageTreeToIcu } from '../convert';
 import { normalizeTree } from '../tree/canonical';
 
@@ -28,7 +28,7 @@ function expectPrintRoundTrip(result: MessageTree): void {
   expect(parseTree(messageTreeToIcu(result))).toEqual(result);
 }
 
-const POUND: MessageTreeHole = { kind: 'pound' };
+const POUND: TemplateHole = { kind: 'pound' };
 
 describe('normalizeTree', () => {
   it('rewrites a tree to the form buildMessageTree builds', () => {
@@ -188,7 +188,7 @@ describe('buildMessageTree', () => {
   });
 
   it('numbers anonymous values in tree order', () => {
-    const holes: MessageTreeHole[] = [
+    const holes: TemplateHole[] = [
       { kind: 'anonymous', value: 0 },
       { kind: 'anonymous', value: 'x' },
       {
@@ -270,7 +270,7 @@ describe('buildMessageTree', () => {
     ).toContain('2 from Ada 950%');
   });
 
-  it.each<[string, MessageTreeHole]>([
+  it.each<[string, TemplateHole]>([
     ['with a space', { kind: 'argument', name: 'first name' }],
     ['that is empty', { kind: 'number', name: '' }],
     [
@@ -281,7 +281,7 @@ describe('buildMessageTree', () => {
     expect(() => tree(['', ''], hole)).toThrow(/not a valid ICU argument name/);
   });
 
-  it.each<[string, MessageTreeHole]>([
+  it.each<[string, TemplateHole]>([
     [
       'with ICU syntax',
       { kind: 'select', name: 's', branches: { 'non-binary': 'x' } },
@@ -316,7 +316,7 @@ describe('buildMessageTree', () => {
   });
 
   it('rejects the plural count outside a plural branch', () => {
-    const select: MessageTreeHole = {
+    const select: TemplateHole = {
       kind: 'select',
       name: 's',
       branches: { other: { strings: ['', ''], holes: [POUND] } },
@@ -357,7 +357,7 @@ describe('buildMessageTree', () => {
     ).toThrow(/reserved/);
   });
 
-  it.each<[string, MessageTreeHole, MessageTree, Record<string, object>]>([
+  it.each<[string, TemplateHole, MessageTree, Record<string, object>]>([
     ['a plain number', { kind: 'number', name: 'n' }, [['n', 'number']], {}],
     [
       'a decimal number with digits',
@@ -503,7 +503,7 @@ describe('buildMessageTree', () => {
   });
 
   it('binds one formatting context per variable', () => {
-    const currency = (currency?: string): MessageTreeHole => ({
+    const currency = (currency?: string): TemplateHole => ({
       kind: 'number',
       name: 'p',
       options: { style: 'currency', currency, currencyDisplay: 'code' },
@@ -526,7 +526,7 @@ describe('buildMessageTree', () => {
     ).toThrow(/different formatting context/);
   });
 
-  it.each<[string, MessageTreeHole, string]>([
+  it.each<[string, TemplateHole, string]>([
     [
       'a date field on a time',
       { kind: 'time', name: 't', options: { year: 'numeric' } },

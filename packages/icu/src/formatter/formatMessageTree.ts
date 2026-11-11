@@ -106,7 +106,7 @@ type MessageValue<R> = MessageTreeValues<R>[string];
 type FormatContext<R> = FormatMessageTreeOptions & {
   message: string;
   locales: string | string[];
-  variables: MessageTreeValues<R>;
+  values: MessageTreeValues<R>;
 };
 
 /**
@@ -138,7 +138,7 @@ type FormatContext<R> = FormatMessageTreeOptions & {
 export function formatMessageTree(
   tree: MessageTree,
   locales: string | string[],
-  variables: Readonly<Record<string, MessagePlainValue>>,
+  values: Readonly<Record<string, MessagePlainValue>>,
   options: FormatMessageTreeOptions
 ): string;
 /**
@@ -151,17 +151,17 @@ export function formatMessageTree(
 export function formatMessageTree<R>(
   tree: MessageTree,
   locales: string | string[],
-  variables: MessageTreeValues<R> & OnePartValues<R>,
+  values: MessageTreeValues<R> & OnePartValues<R>,
   options: FormatMessageTreeOptions
 ): FormattedMessage<R>;
 export function formatMessageTree<R>(
   tree: MessageTree,
   locales: string | string[],
-  variables: MessageTreeValues<R>,
+  values: MessageTreeValues<R>,
   options: FormatMessageTreeOptions
 ): Part<R> | Part<R>[] {
   resolveLocale(locales);
-  return formatParsedTree(tree, '', locales, variables, options);
+  return formatParsedTree(tree, '', locales, values, options);
 }
 
 /** Formats a tree whose locales were already validated; `message` is reported on errors. */
@@ -169,7 +169,7 @@ export function formatParsedTree<R>(
   tree: MessageTree,
   message: string,
   locales: string | string[],
-  variables: MessageTreeValues<R>,
+  values: MessageTreeValues<R>,
   { formats, timeZone }: FormatMessageTreeOptions
 ): Part<R> | Part<R>[] {
   // Most messages are plain text, which needs no formatter state.
@@ -177,7 +177,7 @@ export function formatParsedTree<R>(
   const parts = formatNodes(tree, {
     message,
     locales,
-    variables,
+    values,
     formats,
     timeZone,
   });
@@ -221,12 +221,12 @@ function formatNodes<R>(
     const name = node[0];
     switch (node[1]) {
       case undefined: {
-        const value = requireVariable(context.variables, name);
+        const value = requireVariable(context.values, name);
         append(plainValueText(value));
         break;
       }
       case 'number': {
-        const value = requireVariable(context.variables, name);
+        const value = requireVariable(context.values, name);
         // An ICU string's skeleton may also hold a scale.
         const style = (node as NumberNode)[2] as
           | string
@@ -251,7 +251,7 @@ function formatNodes<R>(
       }
       case 'date':
       case 'time': {
-        const value = requireVariable(context.variables, name);
+        const value = requireVariable(context.values, name);
         const isDate = node[1] === 'date';
         const style = (node as DateTimeNode)[2];
         // Named styles are ICU's: Intl's dateStyle and timeStyle.
@@ -278,7 +278,7 @@ function formatNodes<R>(
       }
       case 'select': {
         const branches = (node as BranchNode)[2];
-        const value = String(requireVariable(context.variables, name));
+        const value = String(requireVariable(context.values, name));
         const branch =
           ownBranch(branches, value) ??
           ownBranch(branches, FALLBACK_BRANCH_KEY);
@@ -289,7 +289,7 @@ function formatNodes<R>(
       case 'plural':
       case 'selectordinal': {
         const [, kind, branches, offset = 0] = node as PluralNode;
-        const rawValue = requireVariable(context.variables, name);
+        const rawValue = requireVariable(context.values, name);
         let branch = ownBranch(branches, `=${String(rawValue)}`);
         const value =
           typeof rawValue === 'bigint' ? rawValue : Number(rawValue);
@@ -308,7 +308,7 @@ function formatNodes<R>(
         break;
       }
       case 'tag': {
-        const formatter = requireVariable(context.variables, name);
+        const formatter = requireVariable(context.values, name);
         if (typeof formatter !== 'function') {
           throw new TypeError(
             `The ICU tag variable "${name}" must be a function.`
@@ -358,17 +358,17 @@ function plainValueText<R>(value: MessageValue<R>): Part<R> {
 }
 
 function requireVariable<R>(
-  variables: MessageTreeValues<R>,
+  values: MessageTreeValues<R>,
   name: string
 ): MessageValue<R> {
   // intl-messageformat intentionally used `name in values`, so inherited and
   // proxy-backed records are observable through the public formatting API.
   // Selector option lookup remains own-property-only to avoid prototype
   // collisions with values such as "constructor" and "toString".
-  if (!(name in variables)) {
+  if (!(name in values)) {
     throw new Error(`The ICU message variable "${name}" was not provided.`);
   }
-  return variables[name];
+  return values[name];
 }
 
 function applyScale<Value>(

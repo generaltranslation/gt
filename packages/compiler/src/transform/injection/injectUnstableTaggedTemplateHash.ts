@@ -4,9 +4,9 @@ import {
   buildMessageTree,
   DATE_TIME_CONTEXT_OPTIONS,
   NUMBER_CONTEXT_OPTIONS,
-  type MessageTreeBranch,
-  type MessageTreeFragment,
-  type MessageTreeHole,
+  type TemplateBranch,
+  type TemplateFragment,
+  type TemplateHole,
 } from '@generaltranslation/icu/internal';
 import {
   hashSource,
@@ -155,14 +155,14 @@ function parseMessageOptions(
 function templateFragment(
   quasi: t.TemplateLiteral,
   scope: Scope
-): MessageTreeFragment {
+): TemplateFragment {
   return {
     strings: quasi.quasis.map(({ value }) => value.cooked ?? nonStatic()),
     holes: quasi.expressions.map((expression) => getHole(expression, scope)),
   };
 }
 
-function getHole(hole: t.Expression | t.TSType, scope: Scope): MessageTreeHole {
+function getHole(hole: t.Expression | t.TSType, scope: Scope): TemplateHole {
   const expression = unwrapTypeScript(hole);
   if (t.isObjectExpression(expression)) {
     return { kind: 'argument', name: getVariableName(expression) };
@@ -188,7 +188,7 @@ function getHole(hole: t.Expression | t.TSType, scope: Scope): MessageTreeHole {
       const [variable, branchesArg] = args;
       if (args.length !== 2 || !t.isObjectExpression(branchesArg)) nonStatic();
       const holeVariable = getHoleVariable(variable, scope);
-      const branches: Record<string, MessageTreeBranch> = {};
+      const branches: Record<string, TemplateBranch> = {};
       for (const property of branchesArg.properties) {
         branches[getPropertyKey(property)] = getBranch(
           (property as t.ObjectProperty).value,
@@ -207,7 +207,7 @@ function getHole(hole: t.Expression | t.TSType, scope: Scope): MessageTreeHole {
         kind: helper,
         ...holeVariable,
         ...(options && { options }),
-      } as MessageTreeHole;
+      } as TemplateHole;
     }
     default:
       // derive(), other helpers and other calls: the runtime computes the
@@ -350,7 +350,7 @@ function everyAssignedValue(
   return proven;
 }
 
-function getBranch(value: t.Node, scope: Scope): MessageTreeBranch {
+function getBranch(value: t.Node, scope: Scope): TemplateBranch {
   if (t.isStringLiteral(value) || t.isTemplateLiteral(value)) {
     return getStaticText(value);
   }
@@ -361,10 +361,7 @@ function getBranch(value: t.Node, scope: Scope): MessageTreeBranch {
  * An inline part`...`; undefined otherwise. Fragments referenced through an
  * identifier are left to the runtime: the object can be mutated before use.
  */
-function getFragment(
-  node: t.Node,
-  scope: Scope
-): MessageTreeFragment | undefined {
+function getFragment(node: t.Node, scope: Scope): TemplateFragment | undefined {
   if (
     !t.isTaggedTemplateExpression(node) ||
     !t.isIdentifier(node.tag) ||

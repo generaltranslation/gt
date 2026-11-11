@@ -39,12 +39,12 @@ import { formattedNode } from './validateMessageTree';
 // ===== Hole IR ===== //
 
 /** Static text with interleaved holes, like a tagged template's arguments. */
-export type MessageTreeFragment = {
+export type TemplateFragment = {
   strings: readonly string[];
-  holes: readonly MessageTreeHole[];
+  holes: readonly TemplateHole[];
 };
 
-export type MessageTreeBranch = string | MessageTreeFragment;
+export type TemplateBranch = string | TemplateFragment;
 
 /**
  * The variable a helper formats: its `name`, or for a value passed without
@@ -54,7 +54,7 @@ export type MessageTreeBranch = string | MessageTreeFragment;
 type HoleVariable = { name?: string; value?: unknown };
 
 /** Kinds whose value picks one of several branches. */
-export type MessageTreeChoiceKind = (PluralNode | SelectNode)[1];
+export type BranchingKind = (PluralNode | SelectNode)[1];
 
 // A time's options are among a date's, and each kind's are checked when built.
 type DateTimeOptions = DateMessageOptions & DateTimeFormattingContext;
@@ -66,17 +66,17 @@ type DateTimeOptions = DateMessageOptions & DateTimeFormattingContext;
  * is `style`; the builder keeps the message options in the tree and returns
  * the formatting context in `formats`.
  */
-export type MessageTreeHole =
+export type TemplateHole =
   | { kind: 'argument'; name: string }
   /** A value without a name; it becomes the next `_gt_N` argument. */
   | { kind: 'anonymous'; value?: unknown }
   | ({ kind: NumberNode[1]; options?: Intl.NumberFormatOptions } & HoleVariable)
   | ({ kind: DateTimeNode[1]; options?: DateTimeOptions } & HoleVariable)
   | ({
-      kind: MessageTreeChoiceKind;
-      branches: Readonly<Record<string, MessageTreeBranch | undefined>>;
+      kind: BranchingKind;
+      branches: Readonly<Record<string, TemplateBranch | undefined>>;
     } & HoleVariable)
-  | ({ kind: 'fragment' } & MessageTreeFragment)
+  | ({ kind: 'fragment' } & TemplateFragment)
   /** The count of the nearest plural or selectordinal, like ICU `#`. */
   | { kind: 'pound' };
 
@@ -113,7 +113,7 @@ export type BuiltMessageTree = {
  */
 export function buildMessageTree(
   strings: readonly string[],
-  holes: readonly MessageTreeHole[]
+  holes: readonly TemplateHole[]
 ): BuiltMessageTree {
   const context: BuildContext = { values: [], formats: new Map() };
   const tree = build(strings, holes, context, false);
@@ -144,7 +144,7 @@ function addAnonymousValue(context: BuildContext, value: unknown): string {
 
 function build(
   strings: readonly string[],
-  holes: readonly MessageTreeHole[],
+  holes: readonly TemplateHole[],
   context: BuildContext,
   inPlural: boolean
 ): MessageNode[] {
@@ -159,7 +159,7 @@ function build(
 
 function buildHole(
   out: MessageNode[],
-  hole: MessageTreeHole,
+  hole: TemplateHole,
   context: BuildContext,
   inPlural: boolean
 ): void {

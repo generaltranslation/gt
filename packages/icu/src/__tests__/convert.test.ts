@@ -11,13 +11,13 @@ import {
   buildMessageTree,
   DATE_FIELD_OPTIONS,
   TIME_FIELD_OPTIONS,
-  type MessageTreeHole,
+  type TemplateHole,
 } from '../internal';
 import { DATE_TIME_FIELD_SYMBOLS } from '../convert/skeleton';
 import { normalizeTree } from '../tree/canonical';
 import { formatMessage, formatMessageTree } from './format';
 
-const POUND: MessageTreeHole = { kind: 'pound' };
+const POUND: TemplateHole = { kind: 'pound' };
 
 describe('icuToMessageTree', () => {
   it('converts an ICU string to a message tree', () => {

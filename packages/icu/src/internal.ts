@@ -5,10 +5,10 @@ export {
 } from './tree/buildMessageTree';
 export type {
   BuiltMessageTree,
-  MessageTreeBranch,
-  MessageTreeChoiceKind,
-  MessageTreeFragment,
-  MessageTreeHole,
+  TemplateBranch,
+  BranchingKind,
+  TemplateFragment,
+  TemplateHole,
 } from './tree/buildMessageTree';
 export { FALLBACK_BRANCH_KEY } from './settings/syntax';
 export {

@@ -5,7 +5,7 @@ import type {
 } from '@generaltranslation/icu';
 import type {
   FALLBACK_BRANCH_KEY,
-  MessageTreeChoiceKind,
+  BranchingKind,
 } from '@generaltranslation/icu/internal';
 import { createGtI18nDiagnostic } from '../logs/diagnostics';
 
@@ -50,7 +50,7 @@ type DateTimePlaceholder = {
   readonly options?: DateOptions;
 };
 type ChoicePlaceholder<UsesDyn extends boolean = boolean> = {
-  readonly [PLACEHOLDER]: MessageTreeChoiceKind;
+  readonly [PLACEHOLDER]: BranchingKind;
   readonly name: string | undefined;
   readonly value: Primitive;
   readonly branches: Readonly<Record<string, Branch | undefined>>;
