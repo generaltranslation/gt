@@ -10,48 +10,27 @@ import { relativePath } from '../utils/paths.js';
 /** A metadata file that was left as it is, and why. */
 export type SkippedFile = { file: string; reason: string };
 
-type Registry = Map<string, MetadataFiles>;
-
 type ProjectMessageFile = { project: InlangProject; messageFile: MessageFile };
 
-const REGISTRY = Symbol.for('paraglide-context/metadata-files');
 /** What a metadata file that does not exist counts as, so that none is created for nothing. */
 const NO_METADATA = '{}\n';
 
 /**
- * The metadata files of a project's messages, shared by every collector in the
- * process that analyzes the project.
- *
- * Frameworks run several bundler instances at once or one after another
- * (Nuxt's client and server, Astro's build-info server and build, Next.js's
- * client, server and edge compilers). Each sees part of the app, so the files
- * hold, for each source file, the analysis that ran last, whichever instance
- * ran it. Writes are serialized, and atomic for readers.
+ * The metadata files of a project's messages: holds the usages of each
+ * analyzed source file and writes them next to the message files. Writes are
+ * serialized, and atomic for readers.
  */
 export class MetadataFiles {
-  /** By absolute path; `undefined` once a file has no usages, or is gone. */
+  /** By absolute path; `undefined` once a file has no usages. */
   private readonly entries = new Map<string, FileUsages | undefined>();
   /** Absolute inlang project directories. */
   private readonly projects = new Set<string>();
   private queue: Promise<unknown> = Promise.resolve();
 
-  private constructor(
+  constructor(
     private readonly projectRoot: string,
     private readonly radius: number
   ) {}
-
-  /** The shared instance for `projectRoot`. The first caller's `radius` is used. */
-  static for(projectRoot: string, radius: number): MetadataFiles {
-    const global = globalThis as { [REGISTRY]?: Registry };
-    const registry = (global[REGISTRY] ??= new Map());
-    let files = registry.get(projectRoot);
-    if (!files) {
-      files = new MetadataFiles(projectRoot, radius);
-      registry.set(projectRoot, files);
-    }
-
-    return files;
-  }
 
   /** Each message file of the inlang project at `directory` (absolute) gets a metadata file. */
   addProject(directory: string): void {
@@ -61,13 +40,6 @@ export class MetadataFiles {
   /** Records the analysis of `file` (absolute); `undefined` when it has no usages. */
   set(file: string, usages: FileUsages | undefined): void {
     this.entries.set(file, usages);
-  }
-
-  /** Forgets files that no longer exist, e.g. deleted while another instance ran. */
-  prune(exists: (file: string) => boolean): void {
-    for (const file of this.entries.keys()) {
-      if (!exists(file)) this.entries.delete(file);
-    }
   }
 
   /** Writes the files whose content changed. Resolves with those it had to skip. */

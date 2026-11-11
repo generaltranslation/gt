@@ -1,18 +1,19 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { afterAll, expect, test } from 'vitest';
-import { build, createLogger } from 'vite';
 import { OutdirProjects } from '../../lib/compiler/collector/outdir-projects.js';
 import { MetadataFiles } from '../../lib/compiler/collector/metadata-files.js';
-import { collectContext } from '../../lib/compiler/plugins/node.js';
-import { paraglideContext } from '../../src/compiler.js';
+import {
+  collectContext,
+  type CollectContextOptions,
+} from '../../lib/compiler/context.js';
 import {
   compileMessages,
   filesIn,
   readMetadata,
   readSnippets,
   writeProject,
-} from '../plugins/fixture.js';
+} from '../helpers/fixture.js';
 
 const TMP = path.join(import.meta.dirname, '.tmp');
 afterAll(() => fs.rm(TMP, { recursive: true, force: true }));
@@ -30,8 +31,11 @@ const use = (from: string, ...ids: string[]) =>
     '',
   ].join('\n');
 
-/** Runs the collector without a bundler. Returns its warnings. */
-async function collect(root: string, options = {}): Promise<string[]> {
+/** Analyzes the project. Returns the warnings. */
+async function collect(
+  root: string,
+  options: CollectContextOptions = {}
+): Promise<string[]> {
   const warnings: string[] = [];
   await collectContext({
     root,
@@ -41,10 +45,9 @@ async function collect(root: string, options = {}): Promise<string[]> {
   return warnings;
 }
 
-test('one instance per project; the latest analysis of each source file wins', async () => {
+test('the latest analysis of each source file wins; writes are serialized', async () => {
   const root = await writeProject('metadata-unit', {});
-  const files = MetadataFiles.for(root, 0);
-  expect(MetadataFiles.for(root, 3)).toBe(files);
+  const files = new MetadataFiles(root, 0);
 
   const usages = (file: string, line: string) => ({
     file,
@@ -156,7 +159,11 @@ test('hand-written fields survive a rewrite; snippets of removed usages do not',
     later: { context: 'Not used yet' },
   });
 
-  await fs.writeFile(path.join(root, 'src/a.ts'), 'export {};\n');
+  // Still imported, so that the outdir and its project are known.
+  await fs.writeFile(
+    path.join(root, 'src/a.ts'),
+    use('./paraglide/messages.js')
+  );
   await collect(root);
   expect(await readMetadata(root)).toEqual({
     greeting: { context: 'Shown on the home page', maxChars: 20 },
@@ -254,48 +261,4 @@ test('a project in another message format is reported', async () => {
       '(`plugin.inlang.messageFormat`); its messages get no metadata file',
   ]);
   expect(await readMetadata(root)).toEqual({});
-});
-
-test('concurrent Vite builds in one process write one merged file', async () => {
-  // Like Nuxt's client and server builds: each sees only some files.
-  const parts = ['client', 'server', 'edge', 'worker'];
-  const root = await writeProject('metadata-concurrent', {
-    ...filesIn('src/paraglide', await compileMessages(parts)),
-    'messages/en.json': JSON.stringify(
-      Object.fromEntries(parts.map((part) => [part, part]))
-    ),
-    ...Object.fromEntries(
-      parts.map((part) => [
-        `src/${part}.ts`,
-        use('./paraglide/messages.js', part),
-      ])
-    ),
-  });
-  const errors: string[] = [];
-  const logger = createLogger('silent');
-  logger.error = (message) => void errors.push(message);
-
-  await Promise.all(
-    parts.map((part) =>
-      build({
-        root,
-        configFile: false,
-        customLogger: logger,
-        logLevel: 'silent',
-        plugins: [
-          paraglideContext({ enabled: true, include: [`src/${part}.ts`] }),
-        ],
-        build: {
-          write: false,
-          lib: { entry: path.join(root, `src/${part}.ts`), formats: ['es'] },
-        },
-      })
-    )
-  );
-
-  const metadata = await readMetadata(root);
-  expect(
-    parts.map((part) => Object.keys(metadata[part]?.sourceCode ?? {}))
-  ).toEqual(parts.map((part) => [`src/${part}.ts`]));
-  expect(errors).toEqual([]);
 });

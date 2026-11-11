@@ -3,7 +3,7 @@ import { realpathSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
-import { collectContext, watchContext } from '../plugins/node.js';
+import { collectContext, watchContext } from '../context.js';
 
 const USAGE = `Usage: paraglide-context [root] [options]
 
@@ -74,7 +74,6 @@ export async function main(argv: string[]): Promise<number> {
     radius: values.radius === undefined ? undefined : Number(values.radius),
     alias: aliases(values.alias ?? [], root),
     bundlerConfigs: values['no-bundler-config'] ? [] : undefined,
-    enabled: true,
     logger: {
       warn: (message: string) => console.warn(message),
       info: (message: string) =>

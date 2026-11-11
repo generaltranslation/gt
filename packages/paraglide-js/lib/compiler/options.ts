@@ -2,12 +2,11 @@ import type { SourceLanguage } from './languages/language.js';
 import type { ParaglideTarget } from './paraglide/targets.js';
 import type { AutoImportOptions } from './project/auto-imports.js';
 
-/** Options of every bundler plugin and of the CLI. */
+/** Options of `collectContext`, `watchContext` and the CLI. */
 export type ParaglideContextOptions = {
   /**
    * Paths or globs analyzed for usages, relative to the project root (the
-   * nearest package.json at or above the bundler's root). Default: the whole project.
-   * Files the bundler loads are analyzed too, wherever they are.
+   * nearest package.json at or above `root`). Default: the whole project.
    */
   include?: string[];
   /** Paths or globs that are not analyzed. Default: `DEFAULT_EXCLUDE` (tests). */
@@ -35,6 +34,4 @@ export type ParaglideContextOptions = {
    * unplugin-auto-import and Nuxt auto-imports are detected; `false` disables both.
    */
   autoImports?: false | AutoImportOptions;
-  /** Default: off in test runners (Vitest, `NODE_ENV=test`), on otherwise. */
-  enabled?: boolean;
 };

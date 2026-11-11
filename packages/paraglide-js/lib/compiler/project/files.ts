@@ -145,27 +145,22 @@ export type FileSelectionOptions = {
   include?: readonly string[];
   /** Default: `DEFAULT_EXCLUDE`. */
   exclude?: readonly string[];
-  /** Absolute directories to skip, e.g. Vite's `build.outDir` and `publicDir`. */
-  ignoredDirectories?: readonly string[];
   isSourceFile(file: string): boolean;
 };
 
-/** Which files are analyzed: the files `include` lists, and files the bundler loads. */
+/** Which files are analyzed: the source files `include` lists. */
 export class FileSelection {
   private readonly exclude: Pattern[];
   private readonly ignoredDirectories: string[];
-  /** Whether a file is `.gitignore`d (nested ones too), for files the bundler loads. */
-  private isGitIgnored: ((file: string) => boolean) | undefined;
 
   constructor(private readonly options: FileSelectionOptions) {
     const { projectRoot } = options;
     this.exclude = (options.exclude ?? DEFAULT_EXCLUDE).map((entry) =>
       compilePattern(entry, projectRoot)
     );
-    this.ignoredDirectories = [
-      ...IGNORED_AT_ROOT.map((directory) => path.join(projectRoot, directory)),
-      ...(options.ignoredDirectories ?? []),
-    ];
+    this.ignoredDirectories = IGNORED_AT_ROOT.map((directory) =>
+      path.join(projectRoot, directory)
+    );
   }
 
   /** Lists the included source files, and `auto-imports.d.ts` files among them. */
@@ -194,10 +189,6 @@ export class FileSelection {
     const prefix = toPosix(path.relative(base, projectRoot));
     const inBase = (pattern: string) =>
       prefix ? path.posix.join(prefix, pattern) : pattern;
-    this.isGitIgnored = await isIgnoredByIgnoreFiles(GITIGNORE_FILES, {
-      cwd: base,
-      ignore: IGNORED_GLOBS,
-    });
     const found =
       patterns.length === 0
         ? []
@@ -221,24 +212,6 @@ export class FileSelection {
     };
   }
 
-  /** Whether a file the bundler loaded is analyzed, wherever it is. */
-  acceptsLoaded(file: string): boolean {
-    if (!this.isSelected(file)) return false;
-    const { projectRoot, workspaceRoot } = this.options;
-    const base = isWithin(projectRoot, file)
-      ? projectRoot
-      : workspaceRoot && isWithin(workspaceRoot, file)
-        ? workspaceRoot
-        : undefined;
-    if (!base) return true;
-    const relative = relativeWithin(base, file)!;
-    if (relative.split('/').some((segment) => IGNORED_DIRECTORIES.has(segment)))
-      return false;
-    if (this.ignoredDirectories.some((directory) => isWithin(directory, file)))
-      return false;
-    return base !== projectRoot || !this.isGitIgnored?.(file);
-  }
-
   private isSelected(file: string): boolean {
     return (
       this.options.isSourceFile(file) &&
@@ -256,26 +229,4 @@ export class FileSelection {
         .map((directory) => `${relativeWithin(projectRoot, directory)}/**`),
     ];
   }
-}
-
-/** Directories below `roots` that contain `fileName`, `.gitignore`d or not, outside dependencies. */
-export async function findDirectoriesContaining(
-  roots: readonly string[],
-  fileName: string
-): Promise<string[]> {
-  const ignore = IGNORED_GLOBS;
-  const found = await Promise.all(
-    roots.map((cwd) =>
-      globby(`**/${fileName}`, {
-        cwd,
-        absolute: true,
-        dot: true,
-        followSymbolicLinks: false,
-        ignore,
-      })
-    )
-  );
-  return [
-    ...new Set(found.flat().map((file) => path.dirname(path.normalize(file)))),
-  ];
 }

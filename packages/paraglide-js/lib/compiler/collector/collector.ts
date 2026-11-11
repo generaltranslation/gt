@@ -1,4 +1,3 @@
-import fs from 'node:fs';
 import { isBuiltin } from 'node:module';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
@@ -11,7 +10,6 @@ import {
 } from '../analysis/module-graph.js';
 import { matchesPattern, readCatalog } from '../paraglide/catalog.js';
 import { OutdirDetector } from '../paraglide/outdir.js';
-import { VirtualModules } from '../paraglide/virtual-modules.js';
 import { isDependency, isWithin, relativePath } from '../utils/paths.js';
 import {
   isSourceFile,
@@ -34,7 +32,7 @@ import {
 } from '../project/auto-imports.js';
 import type { FileSelection } from '../project/files.js';
 
-/** Resolves like the bundler: an id, or nothing. */
+/** Resolves an import like the project's bundler would: a file, or nothing. */
 export type Resolver = (
   specifier: string,
   importer: string
@@ -89,7 +87,6 @@ export class ContextCollector {
   private readonly moduleGraph: ModuleGraph;
   private readonly outDirDetector: OutdirDetector;
   private readonly warnedMessages = new Set<string>();
-  /** Shared with other collectors that analyze the same project. */
   private readonly output: MetadataFiles;
   private readonly outdirProjects: OutdirProjects;
   /** The files this collector analyzed, and how many usages each has. */
@@ -103,11 +100,8 @@ export class ContextCollector {
   private readonly dependencies = new Map<string, Set<string>>();
   /** Files `include` selects. */
   private included = new Set<string>();
-  /** Files the bundler loaded, wherever they are. */
-  private readonly loaded = new Set<string>();
   /** Auto-import declaration files and the modules their imports reach. */
   private globalDependencies = new Set<string>();
-  private readonly virtualModules: VirtualModules;
   /** Each file's last successful parse, used while it does not parse (mid-edit). */
   private readonly lastParsed = new Map<string, ParsedModule>();
   /** Files skipped because their language's tools are unavailable, by language. */
@@ -118,16 +112,12 @@ export class ContextCollector {
 
   constructor(settings: CollectorSettings) {
     this.settings = settings;
-    this.output = MetadataFiles.for(settings.projectRoot, settings.radius);
+    this.output = new MetadataFiles(settings.projectRoot, settings.radius);
     this.outdirProjects = new OutdirProjects({
       configured: settings.inlangProjects,
       searchDirectories: settings.inlangSearchDirectories,
     });
     this.packages = projectPackages(settings.projectRoot);
-    this.virtualModules = new VirtualModules(
-      [settings.projectRoot, ...settings.fallbackDirectories],
-      settings.outdirs
-    );
     this.outDirDetector = new OutdirDetector({
       fallbackDirectories: settings.fallbackDirectories,
     });
@@ -161,15 +151,10 @@ export class ContextCollector {
         this.warn(`include entry ${this.relative(entry)} does not exist`);
     }
     this.included = new Set(files);
-    for (const file of this.loaded) {
-      if (!fs.existsSync(file)) this.loaded.delete(file);
-    }
     // Outdirs inside `include` must be known before choosing the sources.
     await Promise.all(files.map((file) => this.moduleGraph.detectOutdir(file)));
     await this.loadGlobals(autoImportDeclarations);
-    const sources = [...this.included, ...this.loaded].filter((file) =>
-      this.isSource(file)
-    );
+    const sources = files.filter((file) => this.isSource(file));
     // Every source is loaded before any is analyzed: a value can flow from one
     // module into another's function, e.g. `show(m)` into `function show(t)`.
     await Promise.all(sources.map((file) => this.load(file)));
@@ -178,7 +163,6 @@ export class ContextCollector {
     for (const file of previous) {
       if (!this.analyzed.has(file)) this.output.set(file, undefined);
     }
-    this.output.prune((file) => fs.existsSync(file));
     if (this.moduleGraph.outdirs.length === 0) {
       // Custom targets (components, packages) can still have usages.
       const recorded = [...this.analyzed.values()].some((count) => count > 0);
@@ -199,32 +183,6 @@ export class ContextCollector {
       `[paraglide-context] ${usages} usage(s) in ${counts.length} of ${sources.length} analyzed file(s)` +
         (outdirs ? `; outdirs: ${outdirs}` : '')
     );
-  }
-
-  /** Adds files the bundler loaded. Returns whether any was new. */
-  async addLoaded(files: Iterable<string>): Promise<boolean> {
-    const candidates = [...files].filter(
-      (file) => !this.loaded.has(file) && !this.included.has(file)
-    );
-    // The bundler loads Paraglide's own files too; they are not sources.
-    await Promise.all(
-      candidates.map((file) => this.moduleGraph.detectOutdir(file))
-    );
-    const added: string[] = [];
-    for (const file of candidates) {
-      if (this.loaded.has(file) || this.included.has(file)) continue;
-      if (
-        !this.settings.selection.acceptsLoaded(file) ||
-        this.moduleGraph.isGenerated(file)
-      ) {
-        continue;
-      }
-      this.loaded.add(file);
-      added.push(file);
-    }
-    await Promise.all(added.map((file) => this.analyze(file)));
-    await this.warnMissingTools();
-    return added.length > 0;
   }
 
   /** Re-analyzes `changed` and every file that depends on it. */
@@ -485,10 +443,7 @@ export class ContextCollector {
   }
 
   private isSource(file: string): boolean {
-    return (
-      (this.included.has(file) || this.loaded.has(file)) &&
-      !this.moduleGraph.isGenerated(file)
-    );
+    return this.included.has(file) && !this.moduleGraph.isGenerated(file);
   }
 
   private async isOutdir(directory: string): Promise<boolean> {
@@ -520,8 +475,6 @@ export class ContextCollector {
     // Builtins are never Paraglide, and resolving them in a client environment warns.
     if (!this.resolver || isBuiltin(specifier)) return undefined;
     const id = await this.resolver(specifier, importer).catch(() => undefined);
-    if (id && VirtualModules.isVirtualId(id))
-      return this.virtualModules.fileOf(id);
     const file = id?.split('?', 1)[0];
     // Skip virtual modules (`\0…`, `virtual:…`) and URLs.
     if (file && !file.startsWith('\0') && path.isAbsolute(file))
@@ -545,7 +498,7 @@ export class ContextCollector {
    */
   private async warnMissingTools(): Promise<void> {
     for (const [language, { requires, reason, files }] of this.missingTools) {
-      // Once per project and language, also across bundler instances.
+      // Once per project and language, also across collectors.
       const key = `${this.settings.projectRoot}\0${language}`;
       if (WARNED_LANGUAGES.has(key)) continue;
       WARNED_LANGUAGES.add(key);

@@ -7,47 +7,34 @@ Each message file gets a metadata file next to it
 (`messages/en.json` → `messages/en.metadata.json`) with the 10 lines above and
 below every usage. The gt CLI uploads it with the messages.
 
-Supports Paraglide 1–3 on Node 20+, in apps built with Vite 5+, webpack 5,
-rspack (Next.js), Rollup, Rolldown or esbuild.
+Supports Paraglide 1–3 on Node 20+. It reads the app's source and never runs
+its bundler, so it works however the app is built.
 
 ## Usage
 
 Run it either way. Both take the same [options](#options) and write the same
 files.
 
-**CLI**, without running the bundler:
+**CLI:**
 
 ```bash
 npx paraglide-context [root] [--watch] [--verbose] [options]
 ```
 
-`--watch` keeps the files up to date; `--verbose` prints a summary. From a
-script, use `collectContext(options)` or `watchContext(options)`, which returns
-`{ ready, close() }`.
+`--watch` keeps the files up to date; `--verbose` prints a summary.
 
-**Bundler plugin**, in a build or dev server:
+**Library:**
 
 ```ts
-// vite.config.ts
-import { paraglideVitePlugin } from '@inlang/paraglide-js';
-import { paraglideContext } from '@generaltranslation/paraglide-js/compiler';
+import {
+  collectContext,
+  watchContext,
+} from '@generaltranslation/paraglide-js/compiler';
 
-export default defineConfig({
-  plugins: [
-    paraglideVitePlugin({
-      project: './project.inlang',
-      outdir: './src/paraglide',
-    }),
-    paraglideContext(),
-  ],
-});
+await collectContext({ root: './apps/web', include: ['src'] });
+
+const watcher = watchContext(); // { ready, close() }
 ```
-
-| Other bundlers                    | Plugin                                |
-| --------------------------------- | ------------------------------------- |
-| webpack, rspack (`next.config.*`) | `new ParaglideContextWebpackPlugin()` |
-| Rollup, Rolldown                  | `paraglideContextRollup()`            |
-| esbuild                           | `paraglideContextEsbuild()`           |
 
 Everything is exported from `@generaltranslation/paraglide-js/compiler`. The
 package root exports nothing.
@@ -90,38 +77,36 @@ around its usages, by source file:
 ## Options
 
 Paths are relative to the project root: the nearest `package.json` at or above
-the bundler's or CLI's root. Flags marked `…` can be repeated.
+`root`. Flags marked `…` can be repeated.
 
-| Option           | CLI flag              | Default                 | Meaning                                                                               |
-| ---------------- | --------------------- | ----------------------- | ------------------------------------------------------------------------------------- |
-| `include`        | `--include …`         | the whole project       | Paths or globs to analyze.                                                            |
-| `exclude`        | `--exclude …`         | `DEFAULT_EXCLUDE`       | Paths or globs to skip. The default skips tests and tool configs.                     |
-| `radius`         | `--radius`            | `10`                    | Lines of context above and below each usage.                                          |
-| `outdirs`        | `--outdir …`          | detected                | Paraglide outdirs to trust without verification.                                      |
-| `inlangProjects` | `--project …`         | detected                | inlang project directories whose messages get metadata files.                         |
-| `autoImports`    |                       | detected                | Names used without an import: `{ m: "./src/paraglide/messages.js" }`. `false`: none.  |
-| `targets`        |                       | `defaultTargets`        | What counts as Paraglide. See [Targets](#targets).                                    |
-| `languages`      |                       | `defaultLanguages`      | File formats besides JS/TS. See [File formats](#file-formats).                        |
-| `enabled`        |                       | off in tests            | Plugins only. `true` runs under Vitest, `mode: "test"` or `NODE_ENV=test`.            |
-| `root`           | `[root]`              | working directory       | CLI and Rollup only. Other plugins use the bundler's root.                            |
-| `alias`          | `--alias ~=./src …`   | none                    | CLI only. Import aliases: `{ "~": "/abs/src" }` or a list of `{ find, replacement }`. |
-| `bundlerConfigs` | `--no-bundler-config` | `defaultBundlerConfigs` | CLI only. Bundler configs to read aliases from. `[]`: none.                           |
+| Option           | CLI flag              | Default                 | Meaning                                                                              |
+| ---------------- | --------------------- | ----------------------- | ------------------------------------------------------------------------------------ |
+| `include`        | `--include …`         | the whole project       | Paths or globs to analyze.                                                           |
+| `exclude`        | `--exclude …`         | `DEFAULT_EXCLUDE`       | Paths or globs to skip. The default skips tests and tool configs.                    |
+| `radius`         | `--radius`            | `10`                    | Lines of context above and below each usage.                                         |
+| `outdirs`        | `--outdir …`          | detected                | Paraglide outdirs to trust without verification.                                     |
+| `inlangProjects` | `--project …`         | detected                | inlang project directories whose messages get metadata files.                        |
+| `autoImports`    |                       | detected                | Names used without an import: `{ m: "./src/paraglide/messages.js" }`. `false`: none. |
+| `targets`        |                       | `defaultTargets`        | What counts as Paraglide. See [Targets](#targets).                                   |
+| `languages`      |                       | `defaultLanguages`      | File formats besides JS/TS. See [File formats](#file-formats).                       |
+| `root`           | `[root]`              | working directory       | The project, or a directory in it.                                                   |
+| `alias`          | `--alias ~=./src …`   | none                    | Import aliases: `{ "~": "/abs/src" }` or a list of `{ find, replacement }`.          |
+| `bundlerConfigs` | `--no-bundler-config` | `defaultBundlerConfigs` | Bundler configs to read aliases from. `[]`: none.                                    |
 
-"CLI only" includes `collectContext` and `watchContext`, which also take
-`logger` (`{ warn, info }`), `conditions` (package export conditions) and
-`rootDirectory` (where `/src/a.js` resolves from).
+`collectContext` and `watchContext` also take `logger` (`{ warn, info }`),
+`conditions` (package export conditions) and `rootDirectory` (where `/src/a.js`
+resolves from).
 
 ## How it works
 
 **Files.** `include`, minus `exclude`, `node_modules`, build and framework
-output, and anything `.gitignore`d. Plugins also analyze every module the
-bundler loads, wherever it lives (monorepo packages, Vike's `pages/`, Laravel's
-`resources/js`).
+output, and anything `.gitignore`d. Files outside the project are analyzed when
+`include` lists them (`../shared`).
 
 **Imports** are never matched by their text. Each is resolved, followed through
 re-exports (ESM and CommonJS), and counted only if it ends in a Paraglide file.
-Plugins resolve with the bundler's own resolver. The CLI takes aliases from, in
-order:
+They are resolved like the app's bundler would, without running it. Aliases
+come from, in order:
 
 1. the `alias` option;
 2. the first `vite.config.*`, `webpack.config.*` or `rspack.config.*` it finds.
@@ -130,8 +115,8 @@ order:
    imported, so a TypeScript config needs a Node.js that runs TypeScript;
 3. `tsconfig.json` `paths` and `package.json` `imports`.
 
-If it could read no bundler config, the CLI warns about imports it could not
-resolve, since they may be undeclared aliases.
+When no bundler config could be read, imports that did not resolve are listed
+in a warning, since they may be undeclared aliases.
 
 **Outdirs** are detected, so several Paraglide projects in one app need no
 setup. A directory counts if it holds exactly what the installed Paraglide
@@ -139,8 +124,8 @@ generates (Paraglide 1: the same structure), on disk or as virtual modules. A
 rejected one is skipped with a warning; list it in `outdirs` to force it.
 
 **inlang projects.** Each outdir is paired with the project its `README.md`
-names (`Compiled from: …`), else the only `*.inlang` directory between the
-bundler's root and the monorepo root, else the one defining the most of its
+names (`Compiled from: …`), else the only `*.inlang` directory between `root`
+and the monorepo root, else the one defining the most of its
 messages. `inlangProjects` replaces that search. Message files come from the
 project's `settings.json`: `baseLocale` and
 `plugin.inlang.messageFormat.pathPattern`.
@@ -156,12 +141,10 @@ reported in a warning.
 **Auto-imports** from unplugin-auto-import, unplugin-vue-components and Nuxt
 are read from their `.d.ts` files.
 
-**In a bundler.** A build analyzes `include` when it starts and loaded modules
-when it ends. Dev analyzes at startup, then each module as it loads; a change
-re-analyzes the file and its dependents, and adding or deleting a file
-re-scans. Modules are never transformed. Bundler instances of one project
-(Nuxt, Next.js, Astro) share the metadata files. Paraglide's plugin watches the
-messages directory, so it recompiles once after a metadata file changes.
+**Watching.** A change re-analyzes the file and its dependents; adding or
+deleting a file re-scans. If the app's dev server runs too, Paraglide's plugin
+watches the messages directory, so it recompiles once after a metadata file
+changes.
 
 ## File formats
 
@@ -208,7 +191,7 @@ Write your own with `defineTarget()`, `generatedFileTarget(name, path)` or
 `packageTarget(name, packageName)`. When several match a file, the last wins:
 
 ```ts
-paraglideContext({
+await collectContext({
   targets: [
     ...defaultTargets,
     packageTarget('ui-kit', '@acme/i18n-components'),
@@ -237,17 +220,18 @@ const riot: SourceLanguage = {
     return { code, lang: 'js', mappings };
   },
 };
-paraglideContext({ languages: [...defaultLanguages, riot] });
+await collectContext({ languages: [...defaultLanguages, riot] });
 ```
 
-### Bundlers
+### Bundler configs and resolvers
 
-- **CLI aliases:** add a `BundlerConfig` (`{ name, files, read }`) to
+- **Aliases from another bundler's config:** add a `BundlerConfig`
+  (`{ name, files, read }`) to
   `bundlerConfigs: [...defaultBundlerConfigs, yours]`. `webpackLikeConfig()`
   makes one for a config in webpack's format.
-- **A plugin:** call `createCollector(options, { root, logger })`, set its
-  `resolver`, and drive it from the bundler's hooks (`scanAll`, `addLoaded`,
-  `write`). `nodeResolver` and `ProjectResolver` resolve without a bundler.
+- **Another resolver:** call `createCollector(options, { root, logger })`, set
+  its `resolver`, then `scanAll()` and `write()`. `nodeResolver` and
+  `ProjectResolver` are the ones `collectContext` uses.
 
 ### Lower-level API
 
@@ -264,13 +248,15 @@ is exported on its own, with the helpers they use (`remapProgram`, `applyEdits`,
 
 ## Not handled yet
 
-- **CLI aliases:** a bundler config gives only its aliases (and Vite's root),
+- **Aliases:** a bundler config gives only its aliases (and Vite's root),
   not its plugins' virtual modules or webpack's wildcard aliases (`"@/*"`).
   Next.js, Nuxt and Astro configs are not read; their aliases come from
   `tsconfig.json`.
 - **Other inlang format plugins** (i18next, …) get no metadata files.
 - **Apps sharing one inlang project** overwrite each other's `sourceCode`. The
-  last one built wins.
+  last one analyzed wins.
+- **A project that no longer imports Paraglide** keeps its metadata files as
+  they are: its outdir, and so its inlang project, is not found.
 - **Other targets** (runtime functions, …) are analyzed but not written: only
   messages have a key to write under.
 - **Value flow** stops at return values, React context, `provide`/`inject`,
@@ -287,7 +273,7 @@ is exported on its own, with the helpers they use (`remapProgram`, `applyEdits`,
 
 ```bash
 pnpm install                                             # at the repository root
-pnpm --filter @generaltranslation/paraglide-js test      # vitest: Vite 5–8, webpack, rspack, Rollup, esbuild, Paraglide 1–3
+pnpm --filter @generaltranslation/paraglide-js test      # vitest: Paraglide 1–3, Vite 5–8 configs
 pnpm --filter @generaltranslation/paraglide-js build     # tsc → dist/
 pnpm --filter @generaltranslation/paraglide-js typecheck
 ```
@@ -295,11 +281,12 @@ pnpm --filter @generaltranslation/paraglide-js typecheck
 ```
 src/                    entry points: index.ts (empty), compiler.ts (the public API)
 lib/compiler/
-  options.ts            plugin and CLI options
-  plugins/              bundler adapters (the only code that knows bundlers)
-  bundler-configs/      bundler configs → import aliases, for the CLI
+  context.ts            collectContext, watchContext
+  options.ts            their options, and the CLI's
   cli/                  the `paraglide-context` command
-  collector/            bundler-neutral orchestration and the metadata files
+  collector/            orchestration and the metadata files
+  resolver/             imports → files, like the app's bundler would
+  bundler-configs/      bundler configs → import aliases
   project/              include/exclude, roots, auto-imports, installed packages
   paraglide/            outdir verification, catalog, targets, virtual modules
   inlang/               inlang projects: settings, message files, their keys
@@ -309,17 +296,13 @@ lib/compiler/
 __tests__/              mirrors lib/compiler/
 ```
 
-To try a local checkout in an app, install it as an **injected** dependency
-(`link:` causes duplicate Vite types and TS2321 in `defineConfig()`), then
+To try a local checkout in an app, install it as a `file:` dependency, then
 rebuild and re-run `pnpm install` in the app after each change:
 
 ```json
 {
   "devDependencies": {
     "@generaltranslation/paraglide-js": "file:../gt/packages/paraglide-js"
-  },
-  "dependenciesMeta": {
-    "@generaltranslation/paraglide-js": { "injected": true }
   }
 }
 ```

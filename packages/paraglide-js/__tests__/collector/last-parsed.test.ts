@@ -2,8 +2,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test } from 'vitest';
 import { createCollector } from '../../lib/compiler/collector/create.js';
-import { nodeResolver } from '../../lib/compiler/plugins/node-resolver.js';
-import { readSnippets, writeProject } from '../plugins/fixture.js';
+import { nodeResolver } from '../../lib/compiler/resolver/node-resolver.js';
+import { readSnippets, writeProject } from '../helpers/fixture.js';
 
 test("a file that stops parsing (mid-edit) keeps its last version's usages", async () => {
   const root = await writeProject('last-parsed', {

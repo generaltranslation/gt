@@ -14,17 +14,15 @@ import { ContextCollector, type CollectorLogger } from './collector.js';
 export const DEFAULT_CONTEXT_RADIUS = 10;
 
 export type CollectorEnvironment = {
-  /** The bundler's root, e.g. Vite's `root` or webpack's `context`. */
+  /** The project, or a directory in it, e.g. its bundler's root. */
   root: string;
   logger: CollectorLogger;
-  /** Absolute directories that are never sources, e.g. the build output. */
-  ignoredDirectories?: readonly string[];
 };
 
-/** A collector for any bundler: resolves the options against the project. */
+/** A collector with the options resolved against the project. */
 export function createCollector(
   options: ParaglideContextOptions,
-  { root, logger, ignoredDirectories = [] }: CollectorEnvironment
+  { root, logger }: CollectorEnvironment
 ): ContextCollector {
   const projectRoot = findProjectRoot(root);
   const workspaceRoot = findWorkspaceRoot(projectRoot);
@@ -36,7 +34,6 @@ export function createCollector(
       workspaceRoot,
       include: options.include,
       exclude: options.exclude,
-      ignoredDirectories,
       isSourceFile: (file) => collector.isSourceFile(file),
     }),
     explicitInclude: options.include !== undefined,
@@ -61,13 +58,4 @@ export function createCollector(
     ],
   });
   return collector;
-}
-
-/** Whether a test runner is running; plugins are off there unless `enabled` is set. */
-export function isTestEnvironment(mode?: string): boolean {
-  return (
-    process.env.VITEST !== undefined ||
-    process.env.NODE_ENV === 'test' ||
-    mode === 'test'
-  );
 }

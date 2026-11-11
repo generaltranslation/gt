@@ -76,6 +76,30 @@ describe('vite', () => {
     });
   });
 
+  test.each([
+    ['5', 'vite5'],
+    ['6', 'vite6'],
+    ['7', 'vite7'],
+  ])(
+    "the project's own Vite, whatever its version: Vite %s",
+    async (version, name) => {
+      const root = await write(`vite-${version}`, {
+        ...PACKAGE,
+        'vite.config.mjs': `export default { resolve: { alias: { "@": "/app/src" } } };`,
+      });
+      const vite: unknown = await import(name);
+      const resolution = await viteConfig.read(
+        path.join(root, 'vite.config.mjs'),
+        { load: async <T>() => vite as T }
+      );
+      expect(resolution).toMatchObject({ rootDirectory: root });
+      expect('aliases' in resolution && resolution.aliases).toContainEqual({
+        find: '@',
+        replacement: '/app/src',
+      });
+    }
+  );
+
   test('without Vite in the project, the config is not read', async () => {
     expect(await viteConfig.read('/app/vite.config.ts', NO_PACKAGES)).toEqual({
       error: 'vite is not installed in the project',

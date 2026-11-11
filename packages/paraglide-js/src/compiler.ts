@@ -1,30 +1,22 @@
-// Bundler plugins. Each runs the same collector; see `lib/compiler/collector/create.ts`.
-export { paraglideContext } from '../lib/compiler/plugins/vite.js';
-export { ParaglideContextWebpackPlugin } from '../lib/compiler/plugins/webpack.js';
-export {
-  paraglideContextRollup,
-  type ParaglideContextRollupPlugin,
-} from '../lib/compiler/plugins/rollup.js';
-export {
-  paraglideContextEsbuild,
-  type ParaglideContextEsbuildPlugin,
-} from '../lib/compiler/plugins/esbuild.js';
-// Without running a bundler: the `paraglide-context` CLI uses these.
+// Writing the metadata files: what the `paraglide-context` CLI runs.
 export {
   collectContext,
   watchContext,
   type CollectContextOptions,
   type ContextWatcher,
-} from '../lib/compiler/plugins/node.js';
+} from '../lib/compiler/context.js';
+export type { ParaglideContextOptions } from '../lib/compiler/options.js';
+
+// Resolving imports like the project's bundler, without running it.
 export {
   nodeResolver,
   type NodeResolverOptions,
-} from '../lib/compiler/plugins/node-resolver.js';
+} from '../lib/compiler/resolver/node-resolver.js';
 export {
   ProjectResolver,
   type ProjectResolverEnvironment,
   type ProjectResolverOptions,
-} from '../lib/compiler/plugins/project-resolver.js';
+} from '../lib/compiler/resolver/project-resolver.js';
 
 // Bundler configs: where the CLI reads import aliases from.
 export { defaultBundlerConfigs } from '../lib/compiler/bundler-configs/index.js';
@@ -45,9 +37,8 @@ export {
   type AliasOption,
   type ImportAlias,
 } from '../lib/compiler/bundler-configs/alias.js';
-export type { ParaglideContextOptions } from '../lib/compiler/options.js';
 
-// Running the analysis from another bundler or a script.
+// Running the analysis with another resolver.
 export {
   ContextCollector,
   type CollectorLogger,

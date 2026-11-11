@@ -1,6 +1,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { compileCatalog } from '@inlang/paraglide-js';
+import {
+  collectContext,
+  type CollectContextOptions,
+} from '../../lib/compiler/context.js';
 
 /** A message with one English text, as Paraglide's compiler takes it. */
 const bundle = (id: string) => ({
@@ -66,7 +70,7 @@ export const inlangProject: Record<string, string> = {
 };
 
 /**
- * Writes a project under `__tests__/plugins/.tmp/<name>` (inside the package, so
+ * Writes a project under `__tests__/helpers/.tmp/<name>` (inside the package, so
  * `@inlang/paraglide-js` resolves from the outdir) with a compiled outdir at
  * `src/paraglide` and its inlang project. Returns its root.
  */
@@ -89,6 +93,31 @@ export async function writeProject(
     await fs.writeFile(path.join(root, file), content);
   }
   return root;
+}
+
+/** What analyzing a project gave: the snippets of `greeting`, and what was logged. */
+export type Collected = {
+  usages: string[];
+  warnings: string[];
+  info: string[];
+};
+
+/** Analyzes the project at `root`, as the CLI does. `options.root` can be a directory in it. */
+export async function collect(
+  root: string,
+  options: CollectContextOptions = {}
+): Promise<Collected> {
+  const warnings: string[] = [];
+  const info: string[] = [];
+  await collectContext({
+    root,
+    ...options,
+    logger: {
+      warn: (message) => void warnings.push(message),
+      info: (message) => void info.push(message),
+    },
+  });
+  return { usages: await readSnippets(root), warnings, info };
 }
 
 type Metadata = Record<

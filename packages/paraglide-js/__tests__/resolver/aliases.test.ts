@@ -1,37 +1,17 @@
+// Where the CLI learns an import alias from: tsconfig.json, package.json, the
+// project's bundler config, or the `alias` option. An alias nothing declares
+// is reported, and the rest of the project is still analyzed.
 import path from 'node:path';
 import { describe, expect, test } from 'vitest';
 import type { BundlerConfig } from '../../lib/compiler/bundler-configs/bundler-config.js';
 import { main } from '../../lib/compiler/cli/index.js';
 import {
-  collectContext,
-  type CollectContextOptions,
-} from '../../lib/compiler/plugins/node.js';
-import {
+  collect,
   greetingIn,
   readSnippets,
   useGreeting,
   writeProject,
-} from './fixture.js';
-
-type Logged = { usages: string[]; warnings: string[]; info: string[] };
-
-/** `usages` are the snippets of `greeting`. */
-async function collect(
-  root: string,
-  options: CollectContextOptions = {}
-): Promise<Logged> {
-  const warnings: string[] = [];
-  const info: string[] = [];
-  await collectContext({
-    root,
-    ...options,
-    logger: {
-      warn: (message) => void warnings.push(message),
-      info: (message) => void info.push(message),
-    },
-  });
-  return { usages: await readSnippets(root), warnings, info };
-}
+} from '../helpers/fixture.js';
 
 /** A re-export whose path does not name Paraglide. */
 const I18N = {
