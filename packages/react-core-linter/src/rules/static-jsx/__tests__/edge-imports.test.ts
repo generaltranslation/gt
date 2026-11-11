@@ -1124,3 +1124,27 @@ describe('edge-imports: default libs option, Branch added from gt-next', () => {
     ],
   });
 });
+
+// Default libs option with gt-tanstack-start
+describe('edge-imports: default libs option, Var added from gt-tanstack-start', () => {
+  ruleTester.run('default-libs-tanstack-start', staticJsx, {
+    valid: [],
+    invalid: [
+      {
+        code: `
+          import { T } from 'gt-tanstack-start';
+          function Component({ name }) {
+            return <T>{name}</T>;
+          }
+        `,
+        errors: [{ messageId: 'dynamicContent' }],
+        output: `
+          import { T, Var } from 'gt-tanstack-start';
+          function Component({ name }) {
+            return <T><Var>{name}</Var></T>;
+          }
+        `,
+      },
+    ],
+  });
+});
