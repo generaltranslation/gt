@@ -1,0 +1,3 @@
+.tmp
+# The repository root ignores `lib/` (React Native build output); this one is source.
+!/lib/
