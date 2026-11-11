@@ -5,9 +5,19 @@ import { configFileNames, type BundlerConfig } from './bundler-config.js';
 /** The parts of Vite this uses. */
 type Vite = {
   resolveConfig(
-    inlineConfig: { configFile: string; root: string; logLevel: 'silent' },
+    inlineConfig: {
+      configFile: string;
+      plugins: readonly ConfigPlugin[];
+      logLevel: 'silent';
+    },
     command: 'build'
   ): Promise<ResolvedConfig>;
+};
+
+type ConfigPlugin = {
+  name: string;
+  enforce: 'post';
+  config(config: { root?: string }): { root: string };
 };
 
 type ResolvedConfig = {
@@ -42,11 +52,26 @@ async function resolveConfig(
 
   try {
     return await vite.resolveConfig(
-      { configFile: file, root: path.dirname(file), logLevel: 'silent' },
+      { configFile: file, plugins: [rootPlugin(file)], logLevel: 'silent' },
       'build'
     );
   } finally {
     if (nodeEnv === undefined) delete process.env.NODE_ENV;
     else process.env.NODE_ENV = nodeEnv;
   }
+}
+
+/**
+ * Makes the root what it is when Vite runs in the config's directory: the
+ * `root` the config or one of its plugins sets, else that directory. An inline
+ * `root` would replace the config's own.
+ */
+function rootPlugin(configFile: string): ConfigPlugin {
+  const directory = path.dirname(configFile);
+
+  return {
+    name: 'paraglide-context:root',
+    enforce: 'post',
+    config: (config) => ({ root: path.resolve(directory, config.root ?? '') }),
+  };
 }

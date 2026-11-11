@@ -63,6 +63,28 @@ describe('vite', () => {
     expect(process.env.NODE_ENV).toBe(nodeEnv);
   });
 
+  test.each([
+    ['absolute', (root: string) => JSON.stringify(path.join(root, 'client'))],
+    ['relative to the config', () => '"./client"'],
+    [
+      'set by a plugin',
+      () =>
+        'undefined, plugins: [{ name: "p", config: () => ({ root: "client" }) }]',
+    ],
+  ])('the root the config declares: %s', async (_name, declaredRoot) => {
+    const root = await write('vite-root', PACKAGE);
+    await writeFiles(root, {
+      'vite.config.mjs': `export default { root: ${declaredRoot(root)} };`,
+    });
+    const resolution = await viteConfig.read(
+      path.join(root, 'vite.config.mjs'),
+      projectPackages(root)
+    );
+    expect(resolution).toMatchObject({
+      rootDirectory: path.join(root, 'client'),
+    });
+  });
+
   test('resolve.alias as a list, with a RegExp', async () => {
     const root = await write('vite-list', {
       ...PACKAGE,
