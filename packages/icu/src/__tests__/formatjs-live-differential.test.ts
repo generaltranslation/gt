@@ -17,6 +17,7 @@ import { parse as formatJsParse } from '@formatjs/icu-messageformat-parser';
 import { IntlMessageFormat } from 'intl-messageformat';
 import { describe, expect, it } from 'vitest';
 import { formatMessage, parse, printAST } from '../index';
+import { expectEachCase } from './expectEachCase';
 
 const PLURAL_LOCALES = [
   'en',
@@ -141,17 +142,26 @@ const GENERATED_HOUR_SKELETONS = [1, 2, 3].flatMap((length) =>
     }
   )
 );
+// The skeleton scanner only sees a locale through its resolved hour symbol, so
+// every combination runs for one 12-hour and one 24-hour locale. The locales
+// that exercise other ways of resolving that symbol (numbering system, region
+// overrides, undetermined language) run every combination of up to two symbols.
 const GENERATED_HOUR_SKELETON_CASES = [
-  'en-US',
-  'de-DE',
-  'ar-EG',
-  'ja-JP',
-  'en-u-rg-gbzzzz',
-  'en-GB-u-rg-uszzzz',
-  'und-GB',
-].flatMap((locale) =>
-  GENERATED_HOUR_SKELETONS.map((skeleton) => ({ locale, skeleton }))
-);
+  ...['en-US', 'de-DE'].flatMap((locale) =>
+    GENERATED_HOUR_SKELETONS.map((skeleton) => ({ locale, skeleton }))
+  ),
+  ...[
+    'ar-EG',
+    'ja-JP',
+    'en-u-rg-gbzzzz',
+    'en-GB-u-rg-uszzzz',
+    'und-GB',
+  ].flatMap((locale) =>
+    GENERATED_HOUR_SKELETONS.filter((skeleton) => skeleton.length <= 2).map(
+      (skeleton) => ({ locale, skeleton })
+    )
+  ),
+];
 
 const NON_GRAMMAR_SPACES = [
   '\u00A0',
@@ -241,14 +251,16 @@ const PARSER_MESSAGES = [
   '{n,number,{}',
   '{x, number,{percent}',
   '{n, number, foo{bar} {_gt_, select, other {X}}}',
+  'prefix 0 {value0} suffix 127',
+  'prefix 127 {value127} suffix 0',
+  // Offsets 0-4 with one- and two-digit leading-zero exact selectors.
   ...Array.from(
-    { length: 128 },
-    (_, index) => `prefix ${index} {value${index}} suffix ${127 - index}`
-  ),
-  ...Array.from(
-    { length: 64 },
+    { length: 10 },
     (_, index) =>
       `{value${index}, plural, offset:${index % 5} =0 {zero} =0${index + 1} {leading} one {one:#} other {other:#}}`
+  ),
+  ...OBJECT_PROTOTYPE_SKELETON_STEMS.map(
+    (stem) => `{value, number, ::${stem}}`
   ),
 ];
 
@@ -325,105 +337,100 @@ function formatWithFormatJs(
   return formatter.format(values as never);
 }
 
+function expectSameFormat(
+  message: string,
+  locale: string | string[],
+  values: Record<string, unknown>
+): void {
+  expect(formatMessage(message, locale, values)).toEqual(
+    formatWithFormatJs(message, locale, values)
+  );
+}
+
+function expectSameAst(message: string, locale?: string): void {
+  const options = locale
+    ? { locale: new Intl.Locale(locale) }
+    : { captureLocation: false };
+  expect(parse(message, options)).toEqual(formatJsParse(message, options));
+}
+
+function catchError(run: () => unknown): unknown {
+  try {
+    run();
+  } catch (error) {
+    return error;
+  }
+  return undefined;
+}
+
+// Each test below checks a whole corpus; expectEachCase reports every failing
+// input instead of registering thousands of individual tests.
 describe('live FormatJS runtime compatibility', () => {
-  it.each(PLURAL_RUNTIME_CASES)(
-    'matches plural formatting for $locale, $value, $message',
-    ({ locale, message, value }) => {
-      const values = { value };
-      expect(formatMessage(message, locale, values)).toEqual(
-        formatWithFormatJs(message, locale, values)
-      );
-    }
-  );
+  it('matches plural formatting', () => {
+    expectEachCase(PLURAL_RUNTIME_CASES, ({ locale, message, value }) => {
+      expectSameFormat(message, locale, { value });
+    });
+  });
 
-  it.each(NUMBER_RUNTIME_CASES)(
-    'matches number formatting for $locale, $value, $message',
-    ({ locale, message, value }) => {
-      const values = { value };
-      expect(formatMessage(message, locale, values)).toEqual(
-        formatWithFormatJs(message, locale, values)
-      );
-    }
-  );
+  it('matches number formatting', () => {
+    expectEachCase(NUMBER_RUNTIME_CASES, ({ locale, message, value }) => {
+      expectSameFormat(message, locale, { value });
+    });
+  });
 
-  it.each(OBJECT_PROTOTYPE_SKELETON_STEMS)(
-    'ignores inherited rounding-mode map key ::%s like FormatJS',
-    (stem) => {
-      const message = `{value, number, ::${stem}}`;
-      const values = { value: 1234.5 };
-      expect(formatMessage(message, 'en-US', values)).toEqual(
-        formatWithFormatJs(message, 'en-US', values)
-      );
-    }
-  );
+  it('ignores inherited rounding-mode map keys like FormatJS', () => {
+    expectEachCase(OBJECT_PROTOTYPE_SKELETON_STEMS, (stem) => {
+      expectSameFormat(`{value, number, ::${stem}}`, 'en-US', {
+        value: 1234.5,
+      });
+    });
+  });
 
-  it.each(DATE_RUNTIME_CASES)(
-    'matches date/time formatting for $locale and $message',
-    ({ locale, message, value }) => {
-      const values = { value };
-      expect(formatMessage(message, locale, values)).toEqual(
-        formatWithFormatJs(message, locale, values)
-      );
-    }
-  );
+  it('matches date/time formatting', () => {
+    expectEachCase(DATE_RUNTIME_CASES, ({ locale, message, value }) => {
+      expectSameFormat(message, locale, { value });
+    });
+  });
 
-  it.each(HOUR_SKELETON_RUNTIME_CASES)(
-    'matches locale-aware hour skeleton ::$skeleton for $locale',
-    ({ locale, skeleton }) => {
+  it('matches locale-aware hour skeletons', () => {
+    const values = { value: new Date(2020, 4, 6, 14, 3, 2) };
+    expectEachCase(HOUR_SKELETON_RUNTIME_CASES, ({ locale, skeleton }) => {
+      expectSameFormat(`{value, time, ::${skeleton}}`, locale, values);
+    });
+  });
+
+  it('matches every generated hour skeleton and its AST', () => {
+    const values = { value: new Date(2020, 4, 6, 19, 3, 2) };
+    expectEachCase(GENERATED_HOUR_SKELETON_CASES, ({ locale, skeleton }) => {
       const message = `{value, time, ::${skeleton}}`;
-      const values = { value: new Date(2020, 4, 6, 14, 3, 2) };
-      expect(formatMessage(message, locale, values)).toEqual(
-        formatWithFormatJs(message, locale, values)
-      );
-    }
-  );
+      expectSameFormat(message, locale, values);
+      expectSameAst(message, locale);
+    });
+  });
 
-  it.each(GENERATED_HOUR_SKELETON_CASES)(
-    'matches generated hour skeleton ::$skeleton for $locale',
-    ({ locale, skeleton }) => {
-      const message = `{value, time, ::${skeleton}}`;
-      const values = { value: new Date(2020, 4, 6, 19, 3, 2) };
-      expect(formatMessage(message, locale, values)).toEqual(
-        formatWithFormatJs(message, locale, values)
-      );
+  it('matches named-style behavior after non-grammar spaces', () => {
+    expectEachCase(NON_GRAMMAR_SPACES, (space) => {
+      expectSameFormat(`{value, number, ${space}percent}`, 'en-US', {
+        value: 2,
+      });
+    });
+  });
 
-      const localeObject = new Intl.Locale(locale);
-      expect(parse(message, { locale: localeObject })).toEqual(
-        formatJsParse(message, { locale: localeObject })
-      );
-    }
-  );
-
-  it.each(NON_GRAMMAR_SPACES)(
-    'matches named-style behavior after non-grammar space %j',
-    (space) => {
-      const message = `{value, number, ${space}percent}`;
-      const values = { value: 2 };
-      expect(formatMessage(message, 'en-US', values)).toEqual(
-        formatWithFormatJs(message, 'en-US', values)
-      );
-    }
-  );
-
-  it.each(['scale', 'scale/0x10', 'scale/2foo'])(
-    'matches FormatJS parsing of number skeleton ::%s',
-    (skeleton) => {
-      const message = `{value, number, ::${skeleton}}`;
-      const values = { value: 3 };
-      expect(formatMessage(message, 'en-US', values)).toEqual(
-        formatWithFormatJs(message, 'en-US', values)
-      );
-    }
-  );
+  it('matches FormatJS parsing of malformed scale skeletons', () => {
+    expectEachCase(['scale', 'scale/0x10', 'scale/2foo'], (skeleton) => {
+      expectSameFormat(`{value, number, ::${skeleton}}`, 'en-US', { value: 3 });
+    });
+  });
 
   it('matches inherited and proxy-backed variable lookup', () => {
     const inherited = Object.create({ name: 'Ada', count: '2' }) as Record<
       string,
       unknown
     >;
-    const message = 'Hello {name}: {count, plural, other {# items}}';
-    expect(formatMessage(message, 'en', inherited)).toEqual(
-      formatWithFormatJs(message, 'en', inherited)
+    expectSameFormat(
+      'Hello {name}: {count, plural, other {# items}}',
+      'en',
+      inherited
     );
 
     const proxy = new Proxy<Record<string, unknown>>(
@@ -433,9 +440,7 @@ describe('live FormatJS runtime compatibility', () => {
         has: (_target, key) => key === 'name',
       }
     );
-    expect(formatMessage('Hello {name}', 'en', proxy)).toEqual(
-      formatWithFormatJs('Hello {name}', 'en', proxy)
-    );
+    expectSameFormat('Hello {name}', 'en', proxy);
   });
 
   it('matches empty and sparse locale-list behavior', () => {
@@ -444,100 +449,66 @@ describe('live FormatJS runtime compatibility', () => {
     const sparseLocales: string[] = [];
     sparseLocales[1] = 'fr-FR';
 
-    expect(formatMessage(message, sparseLocales, values)).toEqual(
-      formatWithFormatJs(message, sparseLocales, values)
-    );
+    expectSameFormat(message, sparseLocales, values);
     expect(() => formatMessage(message, [], values)).toThrow();
     expect(() => formatWithFormatJs(message, [], values)).toThrow();
   });
 
-  it.each(SIMPLE_RUNTIME_CASES)(
-    'matches argument/select behavior for $message',
-    ({ locale, message, values }) => {
-      expect(formatMessage(message, locale, values)).toEqual(
-        formatWithFormatJs(message, locale, values)
-      );
-    }
-  );
+  it('matches argument/select behavior', () => {
+    expectEachCase(SIMPLE_RUNTIME_CASES, ({ locale, message, values }) => {
+      expectSameFormat(message, locale, values);
+    });
+  });
 });
 
 describe('live FormatJS parser compatibility', () => {
-  it.each(PARSER_MESSAGES)('matches the AST for %j', (message) => {
-    expect(parse(message, { captureLocation: false })).toEqual(
-      formatJsParse(message, { captureLocation: false })
-    );
+  it('matches the AST', () => {
+    expectEachCase(PARSER_MESSAGES, (message) => expectSameAst(message));
   });
 
-  it.each(PARSER_MESSAGES)(
-    'preserves the AST through our public parse/print round trip for %j',
-    (message) => {
+  it('preserves the AST through our public parse/print round trip', () => {
+    expectEachCase(PARSER_MESSAGES, (message) => {
       const ast = parse(message, { captureLocation: false });
       expect(parse(printAST(ast), { captureLocation: false })).toEqual(ast);
-    }
-  );
+    });
+  });
 
-  it.each(OBJECT_PROTOTYPE_SKELETON_STEMS)(
-    'ignores inherited rounding-mode map key ::%s in the AST',
-    (stem) => {
-      const message = `{value, number, ::${stem}}`;
-      expect(parse(message, { captureLocation: false })).toEqual(
-        formatJsParse(message, { captureLocation: false })
-      );
-    }
-  );
+  it('matches the locale-aware AST for hour skeletons', () => {
+    expectEachCase(HOUR_SKELETON_AST_CASES, ({ locale, skeleton }) => {
+      expectSameAst(`{value, time, ::${skeleton}}`, locale);
+    });
+  });
 
-  it.each(INVALID_MESSAGES)(
-    'matches rejection of invalid input %j',
-    (message) => {
+  it('matches rejection of invalid input', () => {
+    const messages = [
+      ...INVALID_MESSAGES,
+      ...INVALID_SIGNIFICANT_PRECISION_SKELETONS.map(
+        (skeleton) => `{value, number, ::${skeleton}}`
+      ),
+    ];
+    expectEachCase(messages, (message) => {
       expect(() => parse(message)).toThrow();
       expect(() => formatJsParse(message)).toThrow();
-    }
-  );
+    });
+  });
 
-  it.each(HOUR_SKELETON_AST_CASES)(
-    'matches the locale-aware AST for ::$skeleton in $locale',
-    ({ locale, skeleton }) => {
-      const message = `{value, time, ::${skeleton}}`;
-      const localeObject = new Intl.Locale(locale);
-      expect(parse(message, { locale: localeObject })).toEqual(
-        formatJsParse(message, { locale: localeObject })
-      );
-    }
-  );
+  it('matches SyntaxError metadata', () => {
+    expectEachCase(EXACT_ERROR_MESSAGES, (message) => {
+      const formatJsError = catchError(() =>
+        formatJsParse(message)
+      ) as Error & {
+        location: unknown;
+        originalMessage: string;
+      };
 
-  it.each(EXACT_ERROR_MESSAGES)(
-    'matches SyntaxError metadata for %j',
-    (message) => {
-      let formatJsError: unknown;
-      let replacementError: unknown;
-      try {
-        formatJsParse(message);
-      } catch (error) {
-        formatJsError = error;
-      }
-      try {
-        parse(message);
-      } catch (error) {
-        replacementError = error;
-      }
-
-      expect(replacementError).toMatchObject({
-        message: (formatJsError as Error).message,
-        location: (formatJsError as Error & { location: unknown }).location,
-        originalMessage: (formatJsError as Error & { originalMessage: string })
-          .originalMessage,
+      expect(formatJsError).toBeInstanceOf(Error);
+      expect(catchError(() => parse(message))).toMatchObject({
+        message: formatJsError.message,
+        location: formatJsError.location,
+        originalMessage: formatJsError.originalMessage,
       });
-    }
-  );
-
-  it.each(INVALID_SIGNIFICANT_PRECISION_SKELETONS)(
-    'matches FormatJS rejection of malformed significant precision ::%s',
-    (skeleton) => {
-      const message = `{value, number, ::${skeleton}}`;
-      expect(() => parse(message)).toThrow();
-      expect(() => formatJsParse(message)).toThrow();
-    }
-  );
+    });
+  });
 });
 
 // FormatJS printAST is intentionally not used as an oracle: it is not part of

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createFileUploads,
@@ -17,8 +18,6 @@ import {
   uploadSourceFiles,
   uploadTranslations,
 } from '@generaltranslation/api';
-import { sha256 } from '@noble/hashes/sha2.js';
-import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 import type {
   PublishFilesData,
   SubmitUserEditDiffsData,
@@ -45,6 +44,11 @@ vi.mock('@generaltranslation/api', async (importOriginal) => ({
   uploadTranslations: vi.fn(),
 }));
 
+// Node's native hash: an independent check of the adapter's digests, and much
+// faster than a second JS pass over the 20MB fixture.
+const sha256Hex = (data: string | Uint8Array) =>
+  createHash('sha256').update(data).digest('hex');
+
 function result<T>(data: T) {
   return {
     data,
@@ -58,7 +62,7 @@ const customMapping = {
   target: { code: 'es-ES' },
 };
 
-describe.sequential('createGtApiAdapter', () => {
+describe('createGtApiAdapter', () => {
   beforeEach(() => {
     vi.resetAllMocks();
   });
@@ -585,10 +589,10 @@ describe.sequential('createGtApiAdapter', () => {
   });
 });
 
-describe.sequential('createGtApiAdapter uploadSourceFiles', () => {
+describe('createGtApiAdapter uploadSourceFiles', () => {
   // One byte over the legacy route's 20MB inline limit.
   const largeContent = 'a'.repeat(20_000_001);
-  const largeHash = bytesToHex(sha256(utf8ToBytes(largeContent)));
+  const largeHash = sha256Hex(largeContent);
   const presigned = {
     url: 'https://bucket.example.com/staged',
     headers: { 'x-amz-checksum-sha256': 'checksum' },
@@ -607,8 +611,8 @@ describe.sequential('createGtApiAdapter uploadSourceFiles', () => {
     locale: 'source',
     formatMetadata: { hash: { sourceCode: {} } },
   };
-  const metadataBytes = utf8ToBytes(JSON.stringify(large.formatMetadata));
-  const metadataHash = bytesToHex(sha256(metadataBytes));
+  const metadataJson = JSON.stringify(large.formatMetadata);
+  const metadataHash = sha256Hex(metadataJson);
   const metadataPresigned = { ...presigned, url: `${presigned.url}/metadata` };
   const uploaded = (fileName: string, fileFormat: 'JSON' | 'GTJSON') => ({
     branchId: 'branch-id',
@@ -702,7 +706,7 @@ describe.sequential('createGtApiAdapter uploadSourceFiles', () => {
             {
               sha256: metadataHash,
               fileFormat: 'JSON',
-              size: metadataBytes.byteLength,
+              size: metadataJson.length,
             },
           ],
         },
@@ -711,10 +715,7 @@ describe.sequential('createGtApiAdapter uploadSourceFiles', () => {
     expect(
       vi
         .mocked(putFileUpload)
-        .mock.calls.map(([target, bytes]) => [
-          target,
-          bytesToHex(sha256(bytes)),
-        ])
+        .mock.calls.map(([target, bytes]) => [target, sha256Hex(bytes)])
     ).toEqual([
       [presigned, largeHash],
       [metadataPresigned, metadataHash],

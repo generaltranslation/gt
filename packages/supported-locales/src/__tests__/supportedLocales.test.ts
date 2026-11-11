@@ -18,13 +18,18 @@ describe('@generaltranslation/supported-locales', () => {
     expect(getSupportedLocale('ar-Arab-OM')).toBe('ar-OM');
   });
 
-  it.each(listSupportedLocales())(
-    'accepts listed locale %s and resolves it to a listed locale',
-    (locale) => {
-      expect(isValidLocale(locale)).toBe(true);
-      expect(listSupportedLocales()).toContain(getSupportedLocale(locale));
-    }
-  );
+  it('accepts every listed locale and resolves it to a listed locale', () => {
+    const supported = listSupportedLocales();
+    const failing = supported.filter((locale) => {
+      const resolved = getSupportedLocale(locale);
+      return (
+        !isValidLocale(locale) ||
+        resolved === null ||
+        !supported.includes(resolved)
+      );
+    });
+    expect(failing).toEqual([]);
+  });
 
   it('supports Greek (Greece)', () => {
     expect(listSupportedLocales()).toContain('el-GR');

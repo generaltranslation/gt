@@ -48,42 +48,19 @@ describe('forEachMatchingField', () => {
     expect(cb.mock.calls[1][0].value).toBe('Banner B');
   });
 
-  test('filters by documentId — matching', () => {
+  // An entry without a documentId applies to every document, as in the tests above.
+  test.each([
+    ['its own id', 'doc-1', 1],
+    ['another id', 'doc-other', 0],
+    ['a null id', null, 1],
+  ])('filters by documentId: %s', (_, documentId, calls) => {
     const fields: IgnoreFields[] = [
-      { documentId: 'doc-1', fields: [{ property: '$.title' }] },
+      { documentId, fields: [{ property: '$.title' }] },
     ];
     const cb = vi.fn();
     forEachMatchingField('doc-1', doc, fields, cb);
 
-    expect(cb).toHaveBeenCalledTimes(1);
-  });
-
-  test('filters by documentId — non-matching', () => {
-    const fields: IgnoreFields[] = [
-      { documentId: 'doc-other', fields: [{ property: '$.title' }] },
-    ];
-    const cb = vi.fn();
-    forEachMatchingField('doc-1', doc, fields, cb);
-
-    expect(cb).not.toHaveBeenCalled();
-  });
-
-  test('applies globally when documentId is undefined', () => {
-    const fields: IgnoreFields[] = [{ fields: [{ property: '$.title' }] }];
-    const cb = vi.fn();
-    forEachMatchingField('doc-1', doc, fields, cb);
-
-    expect(cb).toHaveBeenCalledTimes(1);
-  });
-
-  test('applies globally when documentId is null', () => {
-    const fields: IgnoreFields[] = [
-      { documentId: null, fields: [{ property: '$.title' }] },
-    ];
-    const cb = vi.fn();
-    forEachMatchingField('doc-1', doc, fields, cb);
-
-    expect(cb).toHaveBeenCalledTimes(1);
+    expect(cb).toHaveBeenCalledTimes(calls);
   });
 
   test('filters by type — matching _type', () => {

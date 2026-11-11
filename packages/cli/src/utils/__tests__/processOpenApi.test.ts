@@ -35,8 +35,90 @@ function createSettings(tmpDir: string, openapiFiles: string[]): Settings {
   } as Settings;
 }
 
+type Transform = { match: string; replace: string };
+
+const GET_FOO = { openapi: '3.0.0', paths: { '/foo': { get: {} } } };
+const POST_FOO = { openapi: '3.0.0', paths: { '/foo': { post: {} } } };
+
+const frontmatter = (...lines: string[]) => `---\n${lines.join('\n')}\n---\n`;
+
+/** A docs.json whose languages each hold one "API" tab with the given groups. */
+const docsJson = (languages: Record<string, unknown[]>) => ({
+  $schema: 'https://mintlify.com/docs.json',
+  navigation: {
+    languages: Object.entries(languages).map(([language, groups]) => ({
+      language,
+      tabs: [{ tab: 'API', groups }],
+    })),
+  },
+});
+
 describe('processOpenApi', () => {
   let tmpDir: string;
+
+  const absolute = (file: string) => path.join(tmpDir, file);
+  const read = (file: string) => fs.readFileSync(absolute(file), 'utf8');
+  const readGroups = (language: number) =>
+    JSON.parse(read('docs.json')).navigation.languages[language].tabs[0].groups;
+
+  /**
+   * Writes `files` (relative path -> content) into the project and runs
+   * processOpenApi over it. `specs` are the source OpenAPI files, `pages` the
+   * source MDX pages (translated to `es/<page>`), and `docs` adds docs.json to
+   * the translated JSON files.
+   */
+  const run = async (
+    {
+      files,
+      specs,
+      transform,
+      pages = [],
+      docs = false,
+      type = 'json',
+    }: {
+      files: Record<string, unknown>;
+      specs: string[];
+      transform: Transform | Transform[];
+      pages?: string[];
+      docs?: boolean;
+      type?: 'json' | 'yaml';
+    },
+    includeFiles?: Set<string>
+  ) => {
+    for (const [file, content] of Object.entries(files)) {
+      fs.mkdirSync(path.dirname(absolute(file)), { recursive: true });
+      fs.writeFileSync(
+        absolute(file),
+        typeof content === 'string' ? content : JSON.stringify(content, null, 2)
+      );
+    }
+    const specFiles = [...specs, ...(docs ? ['docs.json'] : [])].map(absolute);
+    const settings = createSettings(
+      tmpDir,
+      specs.map((spec) => `./${spec}`)
+    );
+    settings.files = {
+      resolvedPaths: {
+        ...(pages.length && { mdx: pages.map(absolute) }),
+        [type]: specFiles,
+      },
+      placeholderPaths: {
+        ...(pages.length && {
+          mdx: pages.map((page) => path.join(tmpDir, '[locale]', page)),
+        }),
+        [type]: specFiles,
+      },
+      transformPaths: { [type]: transform },
+    } as Settings['files'];
+
+    await processOpenApi(settings, includeFiles);
+  };
+
+  /** Transform that prefixes each of the given files with the locale. */
+  const localeDirectory = (...files: string[]): Transform => ({
+    match: files.map((file) => `${file}$`).join('|'),
+    replace: '{locale}/$&',
+  });
 
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-openapi-'));
@@ -48,633 +130,380 @@ describe('processOpenApi', () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it('rewrites source and translated frontmatter with locale-specific spec path (root-relative)', async () => {
-    const spec = { openapi: '3.0.0', paths: { '/foo': { post: {} } } };
+  describe('page frontmatter', () => {
+    it.each([
+      ['json', JSON.stringify(POST_FOO)],
+      ['yaml', 'openapi: 3.0.0\npaths:\n  /foo:\n    post: {}\n'],
+    ] as const)(
+      'points source and translated pages at their own root-relative %s spec',
+      async (type, spec) => {
+        const specFile = `openapi.demo.${type}`;
 
-    const specPath = path.join(tmpDir, 'openapi.demo.json');
-    fs.writeFileSync(specPath, JSON.stringify(spec));
-    const translatedSpecPath = path.join(tmpDir, 'es', 'openapi.demo.json');
-    fs.mkdirSync(path.dirname(translatedSpecPath), { recursive: true });
-    fs.writeFileSync(translatedSpecPath, JSON.stringify(spec));
-
-    const sourceMdxPath = path.join(tmpDir, 'openapiPage.mdx');
-    fs.writeFileSync(sourceMdxPath, '---\nopenapi: POST /foo\n---\n');
-    const translatedMdxPath = path.join(tmpDir, 'es', 'openapiPage.mdx');
-    fs.mkdirSync(path.dirname(translatedMdxPath), { recursive: true });
-    fs.writeFileSync(translatedMdxPath, '---\nopenapi: POST /foo\n---\n');
-
-    const settings = createSettings(tmpDir, ['./openapi.demo.json']);
-    settings.files = {
-      resolvedPaths: {
-        mdx: [sourceMdxPath],
-        json: [specPath],
-      },
-      placeholderPaths: {
-        mdx: [path.join(tmpDir, '[locale]', 'openapiPage.mdx')],
-        json: [specPath],
-      },
-      transformPaths: {
-        json: {
-          match: 'openapi.demo.json$',
-          replace: '{locale}/openapi.demo.json',
-        },
-      },
-    };
-
-    await processOpenApi(settings);
-
-    const updatedSource = fs.readFileSync(sourceMdxPath, 'utf8');
-    const updatedTranslated = fs.readFileSync(translatedMdxPath, 'utf8');
-    expect(updatedSource).toContain('/openapi.demo.json POST /foo');
-    expect(updatedTranslated).toContain('/es/openapi.demo.json POST /foo');
-  });
-
-  it('supports YAML OpenAPI specs for frontmatter rewrites', async () => {
-    const spec = 'openapi: 3.0.0\npaths:\n  /foo:\n    post: {}\n';
-
-    const specPath = path.join(tmpDir, 'openapi.demo.yaml');
-    fs.writeFileSync(specPath, spec);
-    const translatedSpecPath = path.join(tmpDir, 'es', 'openapi.demo.yaml');
-    fs.mkdirSync(path.dirname(translatedSpecPath), { recursive: true });
-    fs.writeFileSync(translatedSpecPath, spec);
-
-    const sourceMdxPath = path.join(tmpDir, 'openapiYamlPage.mdx');
-    fs.writeFileSync(sourceMdxPath, '---\nopenapi: POST /foo\n---\n');
-    const translatedMdxPath = path.join(tmpDir, 'es', 'openapiYamlPage.mdx');
-    fs.mkdirSync(path.dirname(translatedMdxPath), { recursive: true });
-    fs.writeFileSync(translatedMdxPath, '---\nopenapi: POST /foo\n---\n');
-
-    const settings = createSettings(tmpDir, ['./openapi.demo.yaml']);
-    settings.files = {
-      resolvedPaths: {
-        mdx: [sourceMdxPath],
-        yaml: [specPath],
-      },
-      placeholderPaths: {
-        mdx: [path.join(tmpDir, '[locale]', 'openapiYamlPage.mdx')],
-        yaml: [specPath],
-      },
-      transformPaths: {
-        yaml: {
-          match: 'openapi.demo.yaml$',
-          replace: '{locale}/openapi.demo.yaml',
-        },
-      },
-    };
-
-    await processOpenApi(settings);
-
-    const updatedSource = fs.readFileSync(sourceMdxPath, 'utf8');
-    const updatedTranslated = fs.readFileSync(translatedMdxPath, 'utf8');
-    expect(updatedSource).toContain('/openapi.demo.yaml POST /foo');
-    expect(updatedTranslated).toContain('/es/openapi.demo.yaml POST /foo');
-  });
-
-  it('rewrites Mintlify docs.json openapi source, directory, and strips locale prefixes from openapi pages', async () => {
-    const spec = { openapi: '3.0.0', paths: { '/foo': { get: {} } } };
-    const specPath = path.join(tmpDir, 'openapi.json');
-    fs.writeFileSync(specPath, JSON.stringify(spec));
-    const translatedSpecPath = path.join(tmpDir, 'es', 'openapi.json');
-    fs.mkdirSync(path.dirname(translatedSpecPath), { recursive: true });
-    fs.writeFileSync(translatedSpecPath, JSON.stringify(spec));
-
-    const docsJsonPath = path.join(tmpDir, 'docs.json');
-    fs.writeFileSync(
-      docsJsonPath,
-      JSON.stringify(
-        {
-          $schema: 'https://mintlify.com/docs.json',
-          navigation: {
-            languages: [
-              {
-                language: 'en',
-                tabs: [
-                  {
-                    tab: 'API',
-                    groups: [
-                      {
-                        group: 'Endpoints',
-                        openapi: { source: 'openapi.json', directory: 'api' },
-                        pages: ['GET /foo'],
-                      },
-                    ],
-                  },
-                ],
-              },
-              {
-                language: 'es',
-                tabs: [
-                  {
-                    tab: 'API',
-                    groups: [
-                      {
-                        group: 'Endpoints',
-                        openapi: { source: 'openapi.json', directory: 'api' },
-                        pages: ['es/GET /foo'],
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
+        await run({
+          files: {
+            [specFile]: spec,
+            [`es/${specFile}`]: spec,
+            'page.mdx': frontmatter('openapi: POST /foo'),
+            'es/page.mdx': frontmatter('openapi: POST /foo'),
           },
-        },
-        null,
-        2
-      )
+          specs: [specFile],
+          pages: ['page.mdx'],
+          transform: localeDirectory(specFile),
+          type,
+        });
+
+        expect(read('page.mdx')).toContain(`/${specFile} POST /foo`);
+        expect(read('es/page.mdx')).toContain(`/es/${specFile} POST /foo`);
+      }
     );
 
-    const settings = createSettings(tmpDir, ['./openapi.json']);
-    settings.files = {
-      resolvedPaths: {
-        json: [specPath, docsJsonPath],
-      },
-      placeholderPaths: {
-        json: [specPath, docsJsonPath],
-      },
-      transformPaths: {
-        json: {
-          match: 'openapi.json$',
-          replace: '{locale}/openapi.json',
+    it('emits root-relative paths for nested specs and pages', async () => {
+      const spec = 'openapi/dirA/dirAa/openapi.json';
+
+      await run({
+        files: {
+          [spec]: POST_FOO,
+          [`es/${spec}`]: POST_FOO,
+          'nested/page.mdx': frontmatter('openapi: POST /foo'),
+          'es/nested/page.mdx': frontmatter('openapi: POST /foo'),
         },
-      },
-    };
+        specs: [spec],
+        pages: ['nested/page.mdx'],
+        transform: localeDirectory(spec),
+      });
 
-    await processOpenApi(settings);
+      expect(read('es/nested/page.mdx')).toContain(`/es/${spec} POST /foo`);
+    });
 
-    const updatedDocs = JSON.parse(fs.readFileSync(docsJsonPath, 'utf8'));
-    const enGroup = updatedDocs.navigation.languages[0].tabs[0].groups[0];
-    const esGroup = updatedDocs.navigation.languages[1].tabs[0].groups[0];
-    expect(enGroup.openapi.source).toBe('openapi.json');
-    expect(enGroup.openapi.directory).toBe('api');
-    expect(enGroup.pages[0]).toBe('GET /foo');
-    expect(esGroup.openapi.source).toBe('es/openapi.json');
-    expect(esGroup.openapi.directory).toBe('es/api');
-    expect(esGroup.pages[0]).toBe('GET /foo');
+    it('preserves flow-style frontmatter formatting', async () => {
+      await run({
+        files: {
+          'openapi.demo.json': POST_FOO,
+          'es/openapi.demo.json': POST_FOO,
+          'page.mdx': frontmatter(
+            'openapi: POST /foo',
+            'keywords: ["agent job", "create"]'
+          ),
+          'es/page.mdx': frontmatter(
+            'openapi: POST /foo',
+            'keywords: ["tarea de agente", "crear"]'
+          ),
+        },
+        specs: ['openapi.demo.json'],
+        pages: ['page.mdx'],
+        transform: localeDirectory('openapi.demo.json'),
+      });
 
-    await processOpenApi(settings);
+      expect(read('page.mdx')).toContain('/openapi.demo.json POST /foo');
+      expect(read('page.mdx')).toMatch(
+        /keywords:\s*\[\s*"agent job",\s*"create"\s*\]/
+      );
+      expect(read('es/page.mdx')).toContain('/es/openapi.demo.json POST /foo');
+      expect(read('es/page.mdx')).toMatch(
+        /keywords:\s*\[\s*"tarea de agente",\s*"crear"\s*\]/
+      );
+    });
 
-    const repeatedDocs = JSON.parse(fs.readFileSync(docsJsonPath, 'utf8'));
-    const repeatedEsGroup =
-      repeatedDocs.navigation.languages[1].tabs[0].groups[0];
-    expect(repeatedEsGroup.openapi.source).toBe('es/openapi.json');
-    expect(repeatedEsGroup.openapi.directory).toBe('es/api');
-  });
-
-  it('keeps default-locale docs.json registrations outside language blocks when only a target locale was downloaded', async () => {
-    const spec = { openapi: '3.0.0', paths: { '/foo': { get: {} } } };
-    const specPath = path.join(tmpDir, 'openapi.json');
-    fs.writeFileSync(specPath, JSON.stringify(spec));
-    const translatedSpecPath = path.join(tmpDir, 'es', 'openapi.json');
-    fs.mkdirSync(path.dirname(translatedSpecPath), { recursive: true });
-    fs.writeFileSync(translatedSpecPath, JSON.stringify(spec));
-
-    const docsJsonPath = path.join(tmpDir, 'docs.json');
-    fs.writeFileSync(
-      docsJsonPath,
-      JSON.stringify(
-        {
-          $schema: 'https://mintlify.com/docs.json',
-          api: {
-            openapi: { source: 'openapi.json', directory: 'api-reference' },
+    describe('with several specs', () => {
+      const twoSpecs = async (
+        specA: unknown,
+        specB: unknown,
+        openapi: string,
+        localized = ['es/spec-a.json', 'es/spec-b.json']
+      ) => {
+        const contents: Record<string, unknown> = {
+          'spec-a.json': specA,
+          'spec-b.json': specB,
+          'es/spec-a.json': specA,
+          'es/spec-b.json': specB,
+        };
+        await run({
+          files: {
+            ...Object.fromEntries(
+              ['spec-a.json', 'spec-b.json', ...localized].map((file) => [
+                file,
+                contents[file],
+              ])
+            ),
+            'page.mdx': frontmatter(`openapi: ${openapi}`),
+            'es/page.mdx': frontmatter(`openapi: ${openapi}`),
           },
-          navigation: {
-            groups: [
-              {
-                group: 'Shared API',
-                openapi: { source: 'openapi.json', directory: 'shared-api' },
-              },
-            ],
-            languages: [
-              {
-                language: 'en',
-                groups: [
-                  {
-                    group: 'API',
-                    openapi: { source: 'openapi.json', directory: 'en/api' },
-                  },
-                ],
-              },
-              {
-                language: 'es',
-                groups: [
-                  {
-                    group: 'API',
-                    openapi: { source: 'openapi.json', directory: 'es/api' },
-                  },
-                ],
-              },
-            ],
+          specs: ['spec-a.json', 'spec-b.json'],
+          pages: ['page.mdx'],
+          transform: localeDirectory('spec-a.json', 'spec-b.json'),
+        });
+      };
+
+      it('leaves an operation that several specs define unchanged', async () => {
+        const dup = { openapi: '3.0.0', paths: { '/dup': { get: {} } } };
+
+        await twoSpecs(dup, dup, 'GET /dup', ['es/spec-a.json']);
+
+        expect(read('page.mdx')).toContain('openapi: GET /dup');
+        expect(read('es/page.mdx')).toContain('openapi: GET /dup');
+        expect(read('es/page.mdx')).not.toContain('/es/spec-a.json');
+      });
+
+      it('repoints an explicit spec path when the operation lives in another spec', async () => {
+        await twoSpecs(
+          GET_FOO,
+          { openapi: '3.0.0', paths: { '/bar': { get: {} } } },
+          '/spec-a.json GET /bar'
+        );
+
+        expect(read('page.mdx')).toContain('/spec-b.json GET /bar');
+        expect(read('es/page.mdx')).toContain('/es/spec-b.json GET /bar');
+      });
+
+      it('resolves an explicit spec name without an extension', async () => {
+        const spec = {
+          openapi: '3.0.0',
+          paths: { '/batch/scrape/{id}': { delete: {} } },
+        };
+        const openapi = 'v2-openapi DELETE /batch/scrape/{id}';
+        const specs = [
+          'api-reference/v1-openapi.json',
+          'api-reference/v2-openapi.json',
+        ];
+
+        await run({
+          files: {
+            ...Object.fromEntries(
+              specs.flatMap((file) => [
+                [file, spec],
+                [`es/${file}`, spec],
+              ])
+            ),
+            'page.mdx': frontmatter(`openapi: ${openapi}`),
+            'es/page.mdx': frontmatter(`openapi: ${openapi}`),
+          },
+          specs,
+          pages: ['page.mdx'],
+          transform: localeDirectory(...specs),
+        });
+
+        expect(read('page.mdx')).toContain(
+          '/api-reference/v2-openapi.json DELETE /batch/scrape/{id}'
+        );
+        expect(read('es/page.mdx')).toContain(
+          '/es/api-reference/v2-openapi.json DELETE /batch/scrape/{id}'
+        );
+      });
+    });
+
+    it('resolves an explicit leading-slash spec path against the config directory', async () => {
+      await run({
+        files: {
+          'openapi.demo.json': POST_FOO,
+          'es/openapi.demo.json': POST_FOO,
+          'page.mdx': frontmatter('openapi: /openapi.demo.json POST /foo'),
+          'es/page.mdx': frontmatter('openapi: /openapi.demo.json POST /foo'),
+        },
+        specs: ['openapi.demo.json'],
+        pages: ['page.mdx'],
+        transform: localeDirectory('openapi.demo.json'),
+      });
+
+      expect(read('es/page.mdx')).toContain('/es/openapi.demo.json POST /foo');
+    });
+
+    it('resolves openapi-schema refs that use an extensionless spec name (e.g. "events-schema group.created")', async () => {
+      // Components-only spec (no paths) referenced by file stem, Mintlify-style.
+      const spec = {
+        openapi: '3.1.0',
+        info: { title: 'Events', version: '1' },
+        components: {
+          schemas: {
+            'group.created': {
+              type: 'object',
+              description: 'A group was created',
+            },
           },
         },
-        null,
-        2
-      )
-    );
+      };
+      const ref = frontmatter('openapi-schema: events-schema group.created');
 
-    // Locadex writes target locales only, and a translate run postprocesses
-    // just the files it downloaded: the composite docs.json itself.
-    const settings = createSettings(tmpDir, ['./openapi.json']);
-    settings.files = {
-      resolvedPaths: { json: [specPath, docsJsonPath] },
-      placeholderPaths: { json: [specPath, docsJsonPath] },
-      transformPaths: {
-        json: { match: 'openapi.json$', replace: '{locale}/openapi.json' },
-      },
-    };
+      await run({
+        files: {
+          'events-schema.json': spec,
+          'es/events-schema.json': spec,
+          'group.created.mdx': ref,
+          'es/group.created.mdx': ref,
+        },
+        specs: ['events-schema.json'],
+        pages: ['group.created.mdx'],
+        transform: localeDirectory('events-schema.json'),
+      });
 
-    await processOpenApi(settings, new Set([docsJsonPath]));
-
-    const updatedDocs = JSON.parse(fs.readFileSync(docsJsonPath, 'utf8'));
-    expect(updatedDocs.api.openapi).toEqual({
-      source: 'openapi.json',
-      directory: 'api-reference',
-    });
-    expect(updatedDocs.navigation.groups[0].openapi).toEqual({
-      source: 'openapi.json',
-      directory: 'shared-api',
-    });
-    expect(updatedDocs.navigation.languages[0].groups[0].openapi).toEqual({
-      source: 'openapi.json',
-      directory: 'en/api',
-    });
-    expect(updatedDocs.navigation.languages[1].groups[0].openapi).toEqual({
-      source: 'es/openapi.json',
-      directory: 'es/api',
+      // The bare name resolves to the spec and the ref is rewritten per-locale.
+      expect(read('group.created.mdx')).toContain(
+        '/events-schema.json group.created'
+      );
+      expect(read('es/group.created.mdx')).toContain(
+        '/es/events-schema.json group.created'
+      );
     });
   });
 
-  it('rewrites docs.json string openapi field with locale-specific spec path', async () => {
-    const spec = { openapi: '3.0.0', paths: { '/foo': { get: {} } } };
-    const specPath = path.join(tmpDir, 'openapi.json');
-    fs.writeFileSync(specPath, JSON.stringify(spec));
-    const translatedSpecPath = path.join(tmpDir, 'es', 'openapi.json');
-    fs.mkdirSync(path.dirname(translatedSpecPath), { recursive: true });
-    fs.writeFileSync(translatedSpecPath, JSON.stringify(spec));
-
-    const reportingSpec = {
-      openapi: '3.0.0',
-      paths: { '/reports': { get: {} } },
+  describe('docs.json', () => {
+    const openapiJson = {
+      files: { 'openapi.json': GET_FOO, 'es/openapi.json': GET_FOO },
+      specs: ['openapi.json'],
+      docs: true,
+      transform: localeDirectory('openapi.json'),
     };
-    const reportingSpecPath = path.join(tmpDir, 'openapi-reporting.json');
-    fs.writeFileSync(reportingSpecPath, JSON.stringify(reportingSpec));
-    const translatedReportingSpecPath = path.join(
-      tmpDir,
-      'es',
-      'openapi-reporting.json'
-    );
-    fs.writeFileSync(
-      translatedReportingSpecPath,
-      JSON.stringify(reportingSpec)
-    );
 
-    const docsJsonPath = path.join(tmpDir, 'docs.json');
-    fs.writeFileSync(
-      docsJsonPath,
-      JSON.stringify(
-        {
-          $schema: 'https://mintlify.com/docs.json',
-          navigation: {
-            languages: [
-              {
-                language: 'en',
-                tabs: [
-                  {
-                    tab: 'API',
-                    groups: [
-                      {
-                        group: 'Processing API',
-                        icon: 'square-terminal',
-                        openapi: 'openapi.json',
-                      },
-                      {
-                        group: 'Reporting API',
-                        icon: 'square-terminal',
-                        openapi: 'openapi-reporting.json',
-                      },
-                    ],
-                  },
-                ],
-              },
-              {
-                language: 'es',
-                tabs: [
-                  {
-                    tab: 'API',
-                    groups: [
-                      {
-                        group: 'API de procesamiento',
-                        icon: 'square-terminal',
-                        openapi: 'openapi.json',
-                      },
-                      {
-                        group: 'API de informes',
-                        icon: 'square-terminal',
-                        openapi: 'openapi-reporting.json',
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
+    it('localizes the openapi source and directory, and strips locale prefixes from openapi pages', async () => {
+      const group = (pages: string[]) => ({
+        group: 'Endpoints',
+        openapi: { source: 'openapi.json', directory: 'api' },
+        pages,
+      });
+      const project = {
+        ...openapiJson,
+        files: {
+          ...openapiJson.files,
+          'docs.json': docsJson({
+            en: [group(['GET /foo'])],
+            es: [group(['es/GET /foo'])],
+          }),
         },
-        null,
-        2
-      )
-    );
+      };
 
-    const settings = createSettings(tmpDir, [
-      './openapi.json',
-      './openapi-reporting.json',
-    ]);
-    settings.files = {
-      resolvedPaths: {
-        json: [specPath, reportingSpecPath, docsJsonPath],
-      },
-      placeholderPaths: {
-        json: [specPath, reportingSpecPath, docsJsonPath],
-      },
-      transformPaths: {
-        json: [
-          {
-            match: 'openapi\\.json$',
-            replace: '{locale}/openapi.json',
-          },
+      await run(project);
+
+      const expected = {
+        group: 'Endpoints',
+        openapi: { source: 'es/openapi.json', directory: 'es/api' },
+        pages: ['GET /foo'],
+      };
+      expect(readGroups(0)).toEqual([group(['GET /foo'])]);
+      expect(readGroups(1)).toEqual([expected]);
+
+      // A second run over its own output changes nothing.
+      await run({ ...project, files: {} });
+
+      expect(readGroups(1)).toEqual([expected]);
+    });
+
+    it('keeps default-locale registrations outside language blocks when only a target locale was downloaded', async () => {
+      const registration = (directory: string) => ({
+        source: 'openapi.json',
+        directory,
+      });
+      const docs = {
+        $schema: 'https://mintlify.com/docs.json',
+        api: { openapi: registration('api-reference') },
+        navigation: {
+          groups: [
+            { group: 'Shared API', openapi: registration('shared-api') },
+          ],
+          languages: [
+            {
+              language: 'en',
+              groups: [{ group: 'API', openapi: registration('en/api') }],
+            },
+            {
+              language: 'es',
+              groups: [{ group: 'API', openapi: registration('es/api') }],
+            },
+          ],
+        },
+      };
+
+      // Locadex writes target locales only, and a translate run postprocesses
+      // just the files it downloaded: the composite docs.json itself.
+      await run(
+        { ...openapiJson, files: { ...openapiJson.files, 'docs.json': docs } },
+        new Set([absolute('docs.json')])
+      );
+
+      const updated = structuredClone(docs);
+      updated.navigation.languages[1].groups[0].openapi.source =
+        'es/openapi.json';
+      expect(JSON.parse(read('docs.json'))).toEqual(updated);
+    });
+
+    it('localizes string openapi fields for every spec', async () => {
+      const reporting = {
+        openapi: '3.0.0',
+        paths: { '/reports': { get: {} } },
+      };
+      const groups = ['openapi.json', 'openapi-reporting.json'].map(
+        (openapi) => ({ group: openapi, icon: 'square-terminal', openapi })
+      );
+
+      await run({
+        files: {
+          'openapi.json': GET_FOO,
+          'es/openapi.json': GET_FOO,
+          'openapi-reporting.json': reporting,
+          'es/openapi-reporting.json': reporting,
+          'docs.json': docsJson({ en: groups, es: groups }),
+        },
+        specs: ['openapi.json', 'openapi-reporting.json'],
+        docs: true,
+        transform: [
+          { match: 'openapi\\.json$', replace: '{locale}/openapi.json' },
           {
             match: 'openapi-reporting\\.json$',
             replace: '{locale}/openapi-reporting.json',
           },
         ],
-      },
-    };
+      });
 
-    await processOpenApi(settings);
+      const sources = (language: number) =>
+        readGroups(language).map((group: { openapi: string }) => group.openapi);
+      expect(sources(0)).toEqual(['openapi.json', 'openapi-reporting.json']);
+      expect(sources(1)).toEqual([
+        'es/openapi.json',
+        'es/openapi-reporting.json',
+      ]);
+    });
 
-    const updatedDocs = JSON.parse(fs.readFileSync(docsJsonPath, 'utf8'));
-    const enGroups = updatedDocs.navigation.languages[0].tabs[0].groups;
-    const esGroups = updatedDocs.navigation.languages[1].tabs[0].groups;
-    expect(enGroups[0].openapi).toBe('openapi.json');
-    expect(enGroups[1].openapi).toBe('openapi-reporting.json');
-    expect(esGroups[0].openapi).toBe('es/openapi.json');
-    expect(esGroups[1].openapi).toBe('es/openapi-reporting.json');
-  });
-
-  it('rewrites docs.json openapi source with nested locale paths and respects absolute style', async () => {
-    const spec = { openapi: '3.0.0', paths: { '/foo': { get: {} } } };
-    const specPath = path.join(tmpDir, 'api', 'specs', 'openapi.json');
-    fs.mkdirSync(path.dirname(specPath), { recursive: true });
-    fs.writeFileSync(specPath, JSON.stringify(spec));
-
-    const localizedSpecPath = path.join(
-      tmpDir,
-      'api',
-      'es',
-      'specs',
-      'openapi.json'
-    );
-    fs.mkdirSync(path.dirname(localizedSpecPath), { recursive: true });
-    fs.writeFileSync(localizedSpecPath, JSON.stringify(spec));
-
-    const docsJsonPath = path.join(tmpDir, 'docs.json');
-    fs.writeFileSync(
-      docsJsonPath,
-      JSON.stringify(
+    it.each<
+      [
+        string,
+        string[],
+        Record<string, string>,
+        Transform | Transform[],
+        string,
+      ]
+    >([
+      [
+        'nests the locale inside the path and keeps the absolute style',
+        ['api/specs/openapi.json', 'api/es/specs/openapi.json'],
+        { source: '/api/specs/openapi.json', directory: 'api' },
         {
-          $schema: 'https://mintlify.com/docs.json',
-          navigation: {
-            languages: [
-              {
-                language: 'es',
-                tabs: [
-                  {
-                    tab: 'API',
-                    groups: [
-                      {
-                        group: 'Endpoints',
-                        openapi: {
-                          source: '/api/specs/openapi.json',
-                          directory: 'api',
-                        },
-                        pages: ['es/GET /foo'],
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
-        },
-        null,
-        2
-      )
-    );
-
-    const settings = createSettings(tmpDir, ['./api/specs/openapi.json']);
-    settings.files = {
-      resolvedPaths: { json: [specPath, docsJsonPath] },
-      placeholderPaths: { json: [specPath, docsJsonPath] },
-      transformPaths: {
-        json: {
           match: 'api/specs/openapi\\.json$',
           replace: 'api/{locale}/specs/openapi.json',
         },
-      },
-    };
-
-    await processOpenApi(settings);
-
-    const updatedDocs = JSON.parse(fs.readFileSync(docsJsonPath, 'utf8'));
-    const esGroup = updatedDocs.navigation.languages[0].tabs[0].groups[0];
-    expect(esGroup.openapi.source).toBe('/api/es/specs/openapi.json');
-    expect(esGroup.pages[0]).toBe('GET /foo');
-  });
-
-  it('leaves docs.json openapi source unchanged when localized file is missing', async () => {
-    const spec = { openapi: '3.0.0', paths: { '/foo': { get: {} } } };
-    const specPath = path.join(tmpDir, 'openapi.json');
-    fs.writeFileSync(specPath, JSON.stringify(spec));
-
-    const docsJsonPath = path.join(tmpDir, 'docs.json');
-    fs.writeFileSync(
-      docsJsonPath,
-      JSON.stringify(
-        {
-          $schema: 'https://mintlify.com/docs.json',
-          navigation: {
-            languages: [
-              {
-                language: 'es',
-                tabs: [
-                  {
-                    tab: 'API',
-                    groups: [
-                      {
-                        group: 'Endpoints',
-                        openapi: { source: 'openapi.json', directory: 'api' },
-                        pages: ['es/GET /foo'],
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
-        },
-        null,
-        2
-      )
-    );
-
-    const settings = createSettings(tmpDir, ['./openapi.json']);
-    settings.files = {
-      resolvedPaths: { json: [specPath, docsJsonPath] },
-      placeholderPaths: { json: [specPath, docsJsonPath] },
-      transformPaths: {
-        json: {
-          match: 'openapi.json$',
-          replace: '{locale}/openapi.json',
-        },
-      },
-    };
-
-    await processOpenApi(settings);
-
-    const updatedDocs = JSON.parse(fs.readFileSync(docsJsonPath, 'utf8'));
-    const esGroup = updatedDocs.navigation.languages[0].tabs[0].groups[0];
-    expect(esGroup.openapi.source).toBe('openapi.json');
-    expect(esGroup.pages[0]).toBe('GET /foo');
-  });
-
-  it('preserves ./relative openapi source style while localizing', async () => {
-    const spec = { openapi: '3.0.0', paths: { '/foo': { get: {} } } };
-    const specPath = path.join(tmpDir, 'api', 'openapi.json');
-    fs.mkdirSync(path.dirname(specPath), { recursive: true });
-    fs.writeFileSync(specPath, JSON.stringify(spec));
-
-    const localizedSpecPath = path.join(tmpDir, 'api', 'es', 'openapi.json');
-    fs.mkdirSync(path.dirname(localizedSpecPath), { recursive: true });
-    fs.writeFileSync(localizedSpecPath, JSON.stringify(spec));
-
-    const docsJsonPath = path.join(tmpDir, 'docs.json');
-    fs.writeFileSync(
-      docsJsonPath,
-      JSON.stringify(
-        {
-          $schema: 'https://mintlify.com/docs.json',
-          navigation: {
-            languages: [
-              {
-                language: 'es',
-                tabs: [
-                  {
-                    tab: 'API',
-                    groups: [
-                      {
-                        group: 'Endpoints',
-                        openapi: { source: './api/openapi.json' },
-                        pages: ['es/GET /foo'],
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
-        },
-        null,
-        2
-      )
-    );
-
-    const settings = createSettings(tmpDir, ['./api/openapi.json']);
-    settings.files = {
-      resolvedPaths: { json: [specPath, docsJsonPath] },
-      placeholderPaths: { json: [specPath, docsJsonPath] },
-      transformPaths: {
-        json: {
-          match: 'api/openapi\\.json$',
-          replace: 'api/{locale}/openapi.json',
-        },
-      },
-    };
-
-    await processOpenApi(settings);
-
-    const updatedDocs = JSON.parse(fs.readFileSync(docsJsonPath, 'utf8'));
-    const esGroup = updatedDocs.navigation.languages[0].tabs[0].groups[0];
-    expect(esGroup.openapi.source).toBe('./api/es/openapi.json');
-    expect(esGroup.pages[0]).toBe('GET /foo');
-  });
-
-  it('localizes docs.json openapi source when multiple specs share a basename', async () => {
-    const spec = { openapi: '3.0.0', paths: { '/foo': { get: {} } } };
-    const specAPath = path.join(tmpDir, 'api', 'a', 'openapi.json');
-    const specBPath = path.join(tmpDir, 'api', 'b', 'openapi.json');
-    fs.mkdirSync(path.dirname(specAPath), { recursive: true });
-    fs.mkdirSync(path.dirname(specBPath), { recursive: true });
-    fs.writeFileSync(specAPath, JSON.stringify(spec));
-    fs.writeFileSync(specBPath, JSON.stringify(spec));
-
-    const localizedSpecAPath = path.join(
-      tmpDir,
-      'api',
-      'es',
-      'a',
-      'openapi.json'
-    );
-    const localizedSpecBPath = path.join(
-      tmpDir,
-      'api',
-      'es',
-      'b',
-      'openapi.json'
-    );
-    fs.mkdirSync(path.dirname(localizedSpecAPath), { recursive: true });
-    fs.mkdirSync(path.dirname(localizedSpecBPath), { recursive: true });
-    fs.writeFileSync(localizedSpecAPath, JSON.stringify(spec));
-    fs.writeFileSync(localizedSpecBPath, JSON.stringify(spec));
-
-    const docsJsonPath = path.join(tmpDir, 'docs.json');
-    fs.writeFileSync(
-      docsJsonPath,
-      JSON.stringify(
-        {
-          $schema: 'https://mintlify.com/docs.json',
-          navigation: {
-            languages: [
-              {
-                language: 'es',
-                tabs: [
-                  {
-                    tab: 'API',
-                    groups: [
-                      {
-                        group: 'Endpoints',
-                        openapi: { source: 'openapi.json' },
-                        pages: ['es/GET /foo'],
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
-        },
-        null,
-        2
-      )
-    );
-
-    const settings = createSettings(tmpDir, [
-      './api/a/openapi.json',
-      './api/b/openapi.json',
-    ]);
-    settings.files = {
-      resolvedPaths: { json: [specAPath, specBPath, docsJsonPath] },
-      placeholderPaths: { json: [specAPath, specBPath, docsJsonPath] },
-      transformPaths: {
-        json: [
+        '/api/es/specs/openapi.json',
+      ],
+      [
+        'keeps the ./relative style',
+        ['api/openapi.json', 'api/es/openapi.json'],
+        { source: './api/openapi.json' },
+        { match: 'api/openapi\\.json$', replace: 'api/{locale}/openapi.json' },
+        './api/es/openapi.json',
+      ],
+      [
+        'leaves the source unchanged when the localized spec is missing',
+        ['openapi.json'],
+        { source: 'openapi.json', directory: 'api' },
+        { match: 'openapi.json$', replace: '{locale}/openapi.json' },
+        'openapi.json',
+      ],
+      [
+        'resolves a basename several specs share',
+        [
+          'api/a/openapi.json',
+          'api/b/openapi.json',
+          'api/es/a/openapi.json',
+          'api/es/b/openapi.json',
+        ],
+        { source: 'openapi.json' },
+        [
           {
             match: 'api/a/openapi\\.json$',
             replace: 'api/{locale}/a/openapi.json',
@@ -684,378 +513,24 @@ describe('processOpenApi', () => {
             replace: 'api/{locale}/b/openapi.json',
           },
         ],
-      },
-    };
-
-    await processOpenApi(settings);
-
-    const updatedDocs = JSON.parse(fs.readFileSync(docsJsonPath, 'utf8'));
-    const esGroup = updatedDocs.navigation.languages[0].tabs[0].groups[0];
-    expect(esGroup.openapi.source).toBe('api/es/a/openapi.json');
-    expect(esGroup.pages[0]).toBe('GET /foo');
-  });
-
-  it('skips ambiguous operations when multiple specs match and leaves frontmatter unchanged', async () => {
-    const specA = { openapi: '3.0.0', paths: { '/dup': { get: {} } } };
-    const specB = { openapi: '3.0.0', paths: { '/dup': { get: {} } } };
-
-    const specAPath = path.join(tmpDir, 'spec-a.json');
-    const specBPath = path.join(tmpDir, 'spec-b.json');
-    fs.writeFileSync(specAPath, JSON.stringify(specA));
-    fs.writeFileSync(specBPath, JSON.stringify(specB));
-    const specALocalized = path.join(tmpDir, 'es', 'spec-a.json');
-    fs.mkdirSync(path.dirname(specALocalized), { recursive: true });
-    fs.writeFileSync(specALocalized, JSON.stringify(specA));
-
-    const sourceMdxPath = path.join(tmpDir, 'page.mdx');
-    fs.writeFileSync(sourceMdxPath, '---\nopenapi: GET /dup\n---\n');
-    const translatedMdxPath = path.join(tmpDir, 'es', 'page.mdx');
-    fs.mkdirSync(path.dirname(translatedMdxPath), { recursive: true });
-    fs.writeFileSync(translatedMdxPath, '---\nopenapi: GET /dup\n---\n');
-
-    const settings = createSettings(tmpDir, ['./spec-a.json', './spec-b.json']);
-    settings.files = {
-      resolvedPaths: { mdx: [sourceMdxPath], json: [specAPath, specBPath] },
-      placeholderPaths: {
-        mdx: [path.join(tmpDir, '[locale]', 'page.mdx')],
-        json: [specAPath, specBPath],
-      },
-      transformPaths: {
-        json: {
-          match: 'spec-a.json$|spec-b.json$',
-          replace: '{locale}/$&',
+        'api/es/a/openapi.json',
+      ],
+    ])('%s', async (_name, specFiles, openapi, transform, source) => {
+      await run({
+        files: {
+          ...Object.fromEntries(specFiles.map((file) => [file, GET_FOO])),
+          'docs.json': docsJson({
+            es: [{ group: 'Endpoints', openapi, pages: ['es/GET /foo'] }],
+          }),
         },
-      },
-    };
+        specs: specFiles.filter((file) => !file.includes('/es/')),
+        docs: true,
+        transform,
+      });
 
-    await processOpenApi(settings);
-
-    const updatedSource = fs.readFileSync(sourceMdxPath, 'utf8');
-    const updatedTranslated = fs.readFileSync(translatedMdxPath, 'utf8');
-    expect(updatedSource).toContain('openapi: GET /dup');
-    expect(updatedTranslated).toContain('openapi: GET /dup');
-    expect(updatedTranslated).not.toContain('/es/spec-a.json');
-  });
-
-  it('respects explicit spec identifiers without extensions and localizes correctly', async () => {
-    const specV1 = {
-      openapi: '3.0.0',
-      paths: { '/batch/scrape/{id}': { delete: {} } },
-    };
-    const specV2 = {
-      openapi: '3.0.0',
-      paths: { '/batch/scrape/{id}': { delete: {} } },
-    };
-
-    const specDir = path.join(tmpDir, 'api-reference');
-    const specV1Path = path.join(specDir, 'v1-openapi.json');
-    const specV2Path = path.join(specDir, 'v2-openapi.json');
-    fs.mkdirSync(specDir, { recursive: true });
-    fs.writeFileSync(specV1Path, JSON.stringify(specV1));
-    fs.writeFileSync(specV2Path, JSON.stringify(specV2));
-
-    const localizedSpecDir = path.join(tmpDir, 'es', 'api-reference');
-    const localizedSpecV1Path = path.join(localizedSpecDir, 'v1-openapi.json');
-    const localizedSpecV2Path = path.join(localizedSpecDir, 'v2-openapi.json');
-    fs.mkdirSync(localizedSpecDir, { recursive: true });
-    fs.writeFileSync(localizedSpecV1Path, JSON.stringify(specV1));
-    fs.writeFileSync(localizedSpecV2Path, JSON.stringify(specV2));
-
-    const sourceMdxPath = path.join(tmpDir, 'page.mdx');
-    fs.writeFileSync(
-      sourceMdxPath,
-      '---\nopenapi: v2-openapi DELETE /batch/scrape/{id}\n---\n'
-    );
-    const translatedMdxPath = path.join(tmpDir, 'es', 'page.mdx');
-    fs.mkdirSync(path.dirname(translatedMdxPath), { recursive: true });
-    fs.writeFileSync(
-      translatedMdxPath,
-      '---\nopenapi: v2-openapi DELETE /batch/scrape/{id}\n---\n'
-    );
-
-    const settings = createSettings(tmpDir, [
-      './api-reference/v1-openapi.json',
-      './api-reference/v2-openapi.json',
-    ]);
-    settings.files = {
-      resolvedPaths: {
-        mdx: [sourceMdxPath],
-        json: [specV1Path, specV2Path],
-      },
-      placeholderPaths: {
-        mdx: [path.join(tmpDir, '[locale]', 'page.mdx')],
-        json: [specV1Path, specV2Path],
-      },
-      transformPaths: {
-        json: {
-          match:
-            'api-reference/v1-openapi.json$|api-reference/v2-openapi.json$',
-          replace: '{locale}/$&',
-        },
-      },
-    };
-
-    await processOpenApi(settings);
-
-    const updatedSource = fs.readFileSync(sourceMdxPath, 'utf8');
-    const updatedTranslated = fs.readFileSync(translatedMdxPath, 'utf8');
-    expect(updatedSource).toContain(
-      '/api-reference/v2-openapi.json DELETE /batch/scrape/{id}'
-    );
-    expect(updatedTranslated).toContain(
-      '/es/api-reference/v2-openapi.json DELETE /batch/scrape/{id}'
-    );
-  });
-
-  it('handles nested spec paths with transforms and emits root-relative paths', async () => {
-    const spec = { openapi: '3.0.0', paths: { '/foo': { post: {} } } };
-    const specPath = path.join(
-      tmpDir,
-      'openapi',
-      'dirA',
-      'dirAa',
-      'openapi.json'
-    );
-    fs.mkdirSync(path.dirname(specPath), { recursive: true });
-    fs.writeFileSync(specPath, JSON.stringify(spec));
-    const localizedSpecPath = path.join(
-      tmpDir,
-      'es',
-      'openapi',
-      'dirA',
-      'dirAa',
-      'openapi.json'
-    );
-    fs.mkdirSync(path.dirname(localizedSpecPath), { recursive: true });
-    fs.writeFileSync(localizedSpecPath, JSON.stringify(spec));
-
-    const sourceMdxPath = path.join(tmpDir, 'nested', 'page.mdx');
-    fs.mkdirSync(path.dirname(sourceMdxPath), { recursive: true });
-    fs.writeFileSync(sourceMdxPath, '---\nopenapi: POST /foo\n---\n');
-    const translatedMdxPath = path.join(tmpDir, 'es', 'nested', 'page.mdx');
-    fs.mkdirSync(path.dirname(translatedMdxPath), { recursive: true });
-    fs.writeFileSync(translatedMdxPath, '---\nopenapi: POST /foo\n---\n');
-
-    const settings = createSettings(tmpDir, [
-      './openapi/dirA/dirAa/openapi.json',
-    ]);
-    settings.files = {
-      resolvedPaths: { mdx: [sourceMdxPath], json: [specPath] },
-      placeholderPaths: {
-        mdx: [path.join(tmpDir, '[locale]', 'nested', 'page.mdx')],
-        json: [specPath],
-      },
-      transformPaths: {
-        json: {
-          match: 'openapi/dirA/dirAa/openapi.json$',
-          replace: '{locale}/openapi/dirA/dirAa/openapi.json',
-        },
-      },
-    };
-
-    await processOpenApi(settings);
-
-    const updatedTranslated = fs.readFileSync(translatedMdxPath, 'utf8');
-    expect(updatedTranslated).toContain(
-      '/es/openapi/dirA/dirAa/openapi.json POST /foo'
-    );
-  });
-
-  it('resolves explicit leading-slash spec paths against config dir', async () => {
-    const spec = { openapi: '3.0.0', paths: { '/foo': { post: {} } } };
-    const specPath = path.join(tmpDir, 'openapi.demo.json');
-    fs.writeFileSync(specPath, JSON.stringify(spec));
-    const localizedSpecPath = path.join(tmpDir, 'es', 'openapi.demo.json');
-    fs.mkdirSync(path.dirname(localizedSpecPath), { recursive: true });
-    fs.writeFileSync(localizedSpecPath, JSON.stringify(spec));
-
-    const sourceMdxPath = path.join(tmpDir, 'page.mdx');
-    fs.writeFileSync(
-      sourceMdxPath,
-      '---\nopenapi: /openapi.demo.json POST /foo\n---\n'
-    );
-    const translatedMdxPath = path.join(tmpDir, 'es', 'page.mdx');
-    fs.mkdirSync(path.dirname(translatedMdxPath), { recursive: true });
-    fs.writeFileSync(
-      translatedMdxPath,
-      '---\nopenapi: /openapi.demo.json POST /foo\n---\n'
-    );
-
-    const settings = createSettings(tmpDir, ['./openapi.demo.json']);
-    settings.files = {
-      resolvedPaths: { mdx: [sourceMdxPath], json: [specPath] },
-      placeholderPaths: {
-        mdx: [path.join(tmpDir, '[locale]', 'page.mdx')],
-        json: [specPath],
-      },
-      transformPaths: {
-        json: {
-          match: 'openapi.demo.json$',
-          replace: '{locale}/openapi.demo.json',
-        },
-      },
-    };
-
-    await processOpenApi(settings);
-
-    const updatedTranslated = fs.readFileSync(translatedMdxPath, 'utf8');
-    expect(updatedTranslated).toContain('/es/openapi.demo.json POST /foo');
-  });
-
-  it('repoints explicit spec paths when entry moves to another spec', async () => {
-    const specA = { openapi: '3.0.0', paths: { '/foo': { get: {} } } };
-    const specB = { openapi: '3.0.0', paths: { '/bar': { get: {} } } };
-
-    const specAPath = path.join(tmpDir, 'spec-a.json');
-    const specBPath = path.join(tmpDir, 'spec-b.json');
-    fs.writeFileSync(specAPath, JSON.stringify(specA));
-    fs.writeFileSync(specBPath, JSON.stringify(specB));
-    const specALocalized = path.join(tmpDir, 'es', 'spec-a.json');
-    const specBLocalized = path.join(tmpDir, 'es', 'spec-b.json');
-    fs.mkdirSync(path.dirname(specALocalized), { recursive: true });
-    fs.writeFileSync(specALocalized, JSON.stringify(specA));
-    fs.writeFileSync(specBLocalized, JSON.stringify(specB));
-
-    const sourceMdxPath = path.join(tmpDir, 'page.mdx');
-    fs.writeFileSync(
-      sourceMdxPath,
-      '---\nopenapi: /spec-a.json GET /bar\n---\n'
-    );
-    const translatedMdxPath = path.join(tmpDir, 'es', 'page.mdx');
-    fs.mkdirSync(path.dirname(translatedMdxPath), { recursive: true });
-    fs.writeFileSync(
-      translatedMdxPath,
-      '---\nopenapi: /spec-a.json GET /bar\n---\n'
-    );
-
-    const settings = createSettings(tmpDir, ['./spec-a.json', './spec-b.json']);
-    settings.files = {
-      resolvedPaths: { mdx: [sourceMdxPath], json: [specAPath, specBPath] },
-      placeholderPaths: {
-        mdx: [path.join(tmpDir, '[locale]', 'page.mdx')],
-        json: [specAPath, specBPath],
-      },
-      transformPaths: {
-        json: {
-          match: 'spec-a.json$|spec-b.json$',
-          replace: '{locale}/$&',
-        },
-      },
-    };
-
-    await processOpenApi(settings);
-
-    const updatedSource = fs.readFileSync(sourceMdxPath, 'utf8');
-    const updatedTranslated = fs.readFileSync(translatedMdxPath, 'utf8');
-    expect(updatedSource).toContain('/spec-b.json GET /bar');
-    expect(updatedTranslated).toContain('/es/spec-b.json GET /bar');
-  });
-
-  it('preserves flow-style frontmatter formatting when updating openapi', async () => {
-    const spec = { openapi: '3.0.0', paths: { '/foo': { post: {} } } };
-    const specPath = path.join(tmpDir, 'openapi.demo.json');
-    fs.writeFileSync(specPath, JSON.stringify(spec));
-    const localizedSpecPath = path.join(tmpDir, 'es', 'openapi.demo.json');
-    fs.mkdirSync(path.dirname(localizedSpecPath), { recursive: true });
-    fs.writeFileSync(localizedSpecPath, JSON.stringify(spec));
-
-    const sourceMdxPath = path.join(tmpDir, 'page.mdx');
-    fs.writeFileSync(
-      sourceMdxPath,
-      '---\nopenapi: POST /foo\nkeywords: ["agent job", "create"]\n---\n'
-    );
-    const translatedMdxPath = path.join(tmpDir, 'es', 'page.mdx');
-    fs.mkdirSync(path.dirname(translatedMdxPath), { recursive: true });
-    fs.writeFileSync(
-      translatedMdxPath,
-      '---\nopenapi: POST /foo\nkeywords: ["tarea de agente", "crear"]\n---\n'
-    );
-
-    const settings = createSettings(tmpDir, ['./openapi.demo.json']);
-    settings.files = {
-      resolvedPaths: { mdx: [sourceMdxPath], json: [specPath] },
-      placeholderPaths: {
-        mdx: [path.join(tmpDir, '[locale]', 'page.mdx')],
-        json: [specPath],
-      },
-      transformPaths: {
-        json: {
-          match: 'openapi.demo.json$',
-          replace: '{locale}/openapi.demo.json',
-        },
-      },
-    };
-
-    await processOpenApi(settings);
-
-    const updatedSource = fs.readFileSync(sourceMdxPath, 'utf8');
-    const updatedTranslated = fs.readFileSync(translatedMdxPath, 'utf8');
-    expect(updatedSource).toContain('/openapi.demo.json POST /foo');
-    expect(updatedSource).toMatch(
-      /keywords:\s*\[\s*"agent job",\s*"create"\s*\]/
-    );
-    expect(updatedSource).not.toMatch(/keywords:\\s*\\n\\s*- /);
-    expect(updatedTranslated).toContain('/es/openapi.demo.json POST /foo');
-    expect(updatedTranslated).toMatch(
-      /keywords:\s*\[\s*"tarea de agente",\s*"crear"\s*\]/
-    );
-    expect(updatedTranslated).not.toMatch(/keywords:\\s*\\n\\s*- /);
-  });
-
-  it('resolves openapi-schema refs that use an extensionless spec name (e.g. "events-schema group.created")', async () => {
-    // Components-only spec (no paths) referenced by file stem, Mintlify-style.
-    const spec = {
-      openapi: '3.1.0',
-      info: { title: 'Events', version: '1' },
-      components: {
-        schemas: {
-          'group.created': {
-            type: 'object',
-            description: 'A group was created',
-          },
-        },
-      },
-    };
-
-    const specPath = path.join(tmpDir, 'events-schema.json');
-    fs.writeFileSync(specPath, JSON.stringify(spec));
-    const translatedSpecPath = path.join(tmpDir, 'es', 'events-schema.json');
-    fs.mkdirSync(path.dirname(translatedSpecPath), { recursive: true });
-    fs.writeFileSync(translatedSpecPath, JSON.stringify(spec));
-
-    const sourceMdxPath = path.join(tmpDir, 'group.created.mdx');
-    fs.writeFileSync(
-      sourceMdxPath,
-      '---\nopenapi-schema: events-schema group.created\n---\n'
-    );
-    const translatedMdxPath = path.join(tmpDir, 'es', 'group.created.mdx');
-    fs.mkdirSync(path.dirname(translatedMdxPath), { recursive: true });
-    fs.writeFileSync(
-      translatedMdxPath,
-      '---\nopenapi-schema: events-schema group.created\n---\n'
-    );
-
-    const settings = createSettings(tmpDir, ['./events-schema.json']);
-    settings.files = {
-      resolvedPaths: { mdx: [sourceMdxPath], json: [specPath] },
-      placeholderPaths: {
-        mdx: [path.join(tmpDir, '[locale]', 'group.created.mdx')],
-        json: [specPath],
-      },
-      transformPaths: {
-        json: {
-          match: 'events-schema.json$',
-          replace: '{locale}/events-schema.json',
-        },
-      },
-    } as Settings['files'];
-
-    await processOpenApi(settings);
-
-    const updatedSource = fs.readFileSync(sourceMdxPath, 'utf8');
-    const updatedTranslated = fs.readFileSync(translatedMdxPath, 'utf8');
-    // The bare name resolves to the spec and the ref is rewritten per-locale.
-    expect(updatedSource).toContain('/events-schema.json group.created');
-    expect(updatedTranslated).toContain('/es/events-schema.json group.created');
+      const [group] = readGroups(0);
+      expect(group.openapi.source).toBe(source);
+      expect(group.pages).toEqual(['GET /foo']);
+    });
   });
 });

@@ -25,16 +25,20 @@ describe('batchProcess', () => {
   });
 
   it('returns results in input order when items finish out of order', async () => {
+    const finished: number[] = [];
+
     const results = await batchProcess(
-      [30, 10, 20],
-      async (ms) => {
-        await new Promise((resolve) => setTimeout(resolve, ms));
-        return ms;
+      [3, 1, 2],
+      async (ticks) => {
+        for (let i = 0; i < ticks; i++) await tick();
+        finished.push(ticks);
+        return ticks;
       },
       3
     );
 
-    expect(results).toEqual([30, 10, 20]);
+    expect(finished).toEqual([1, 2, 3]);
+    expect(results).toEqual([3, 1, 2]);
   });
 
   it('rejects when an item fails', async () => {

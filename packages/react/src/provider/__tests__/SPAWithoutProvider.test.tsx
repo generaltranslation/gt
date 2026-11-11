@@ -1,7 +1,6 @@
-// @vitest-environment jsdom
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 import {
   useEnableI18n,
@@ -13,10 +12,26 @@ import {
 } from '@generaltranslation/react-core/hooks';
 import { createOrUpdateBrowserConditionStore } from '../../condition-store/createBrowserConditionStore';
 
+// An in-memory cookie jar stands in for document.cookie, so no DOM is needed.
+const cookieValues = vi.hoisted(() => new Map<string, string>());
+
+vi.mock('../../condition-store/cookies', () => ({
+  getCookieValue: ({ cookieName }: { cookieName: string }) =>
+    cookieValues.get(cookieName),
+  setCookieValue: ({
+    cookieName,
+    value,
+  }: {
+    cookieName: string;
+    value: string;
+  }) => cookieValues.set(cookieName, value),
+}));
+
 type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
 
 function resetGTGlobals() {
   Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
+  cookieValues.clear();
 }
 
 describe('SPA hooks without a provider', () => {

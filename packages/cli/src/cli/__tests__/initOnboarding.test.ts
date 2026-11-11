@@ -1625,17 +1625,23 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       }) as typeof process.exit);
       vi.spyOn(process.stderr, 'write').mockReturnValue(true);
 
-      await expect(
-        run('init', '--json', '--storage', 'invalid')
-      ).rejects.toThrow('exit 1');
-      expect(events()).toEqual([
-        expect.objectContaining({
-          type: 'result',
-          command: 'init',
-          outcome: 'failed',
-          error: expect.stringContaining("argument 'invalid' is invalid"),
-        }),
-      ]);
+      for (const [args, message] of [
+        [['init', '--json', '--storage', 'invalid'], "argument 'invalid'"],
+        [['configure', '--json', '--nope'], "unknown option '--nope'"],
+        [['init', '--json', '--locales'], "'--locales <locales...>' argument"],
+      ] as const) {
+        stdoutEvents = [];
+        await expect(run(...args)).rejects.toThrow('exit 1');
+        expect(events()).toEqual([
+          {
+            type: 'result',
+            command: args[0],
+            outcome: 'failed',
+            completedSteps: [],
+            error: expect.stringContaining(message),
+          },
+        ]);
+      }
 
       stdoutEvents = [];
       await expect(run('configure', '--storage', 'invalid')).rejects.toThrow(

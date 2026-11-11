@@ -14,7 +14,6 @@ import * as os from 'node:os';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import chalk from 'chalk';
-import { Command } from 'commander';
 import open from 'open';
 import {
   afterEach,
@@ -25,10 +24,7 @@ import {
   it,
   vi,
 } from 'vitest';
-import { BaseCLI } from '../../cli/base.js';
-import * as config from '../../config/resolveConfig.js';
 import { logger } from '../../console/logger.js';
-import * as logging from '../../console/logging.js';
 import {
   deleteOAuthTokens,
   getCredentialsPath,
@@ -36,6 +32,7 @@ import {
   writeOAuthTokens,
   type OAuthTokens,
 } from '../credentialStore.js';
+import { loginInteractively } from '../interactiveLogin.js';
 import {
   ACCOUNT_LOOKUP_TIMEOUT_MS,
   createUserTokenProvider,
@@ -468,10 +465,11 @@ describe('discovery and browser authorization', () => {
       socket.on('close', () => sockets.delete(socket));
     });
     let requestSignal: AbortSignal | null | undefined;
+    // Only the lookup budget is faked; the loopback and stalled I/O are real.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     try {
       let page!: Promise<string>;
-      const started = Date.now();
-      const result = await browserLogin({
+      const pending = browserLogin({
         fetch: provider({
           userinfo: (init) => {
             requestSignal = init?.signal;
@@ -485,23 +483,27 @@ describe('discovery and browser authorization', () => {
           return page;
         },
       });
+      await vi.waitFor(() => expect(sockets.size).toBe(1), { interval: 5 });
+      expect(requestSignal?.aborted).toBe(false);
+      await vi.advanceTimersByTimeAsync(ACCOUNT_LOOKUP_TIMEOUT_MS);
+      const result = await pending;
       expect(result.subject).toBe('user-1');
       expect(await readOAuthTokens(authBaseUrl)).toEqual(result);
-      expect(Date.now() - started).toBeLessThan(
-        ACCOUNT_LOOKUP_TIMEOUT_MS + 2000
-      );
       const html = await page;
       expect(html).toContain('Signed in to the gt CLI');
       expect(html).not.toContain('class="note"');
       // The budget aborted the request and its connection is gone, so no
       // socket keeps the process alive until the library's own timeout.
       expect(requestSignal?.aborted).toBe(true);
-      await vi.waitFor(() => expect(sockets.size).toBe(0), { timeout: 2000 });
+      await vi.waitFor(() => expect(sockets.size).toBe(0), {
+        interval: 5,
+        timeout: 2000,
+      });
     } finally {
       for (const socket of sockets) socket.destroy();
       await new Promise<void>((resolve) => stalled.close(() => resolve()));
     }
-  }, 10_000);
+  });
   it.each([
     ['a malformed email', async () => json({ sub: 'user-1', email: {} })],
     ['a failing userinfo endpoint', async () => json({ error: 'nope' }, 500)],
@@ -791,6 +793,8 @@ function deviceLogin(options: LoginOptions = {}) {
     ...options,
   });
 }
+// The default 50ms poll would idle every device test for that long.
+const POLL = { interval: 2 };
 async function startDevice(
   fetcher: ReturnType<typeof provider>,
   options: LoginOptions = {}
@@ -798,7 +802,7 @@ async function startDevice(
   const onDeviceCode = vi.fn();
   const pending = deviceLogin({ fetch: fetcher, onDeviceCode, ...options });
   pending.catch(() => undefined);
-  await vi.waitFor(() => expect(onDeviceCode).toHaveBeenCalled());
+  await vi.waitFor(() => expect(onDeviceCode).toHaveBeenCalled(), POLL);
   return { pending, onDeviceCode };
 }
 
@@ -854,23 +858,13 @@ describe('requested scope contract', () => {
 
 describe('library-managed device authorization', () => {
   it.each(['SSH_CONNECTION', 'SSH_CLIENT', 'SSH_TTY'])(
-    'gt login prints device instructions without a listener or browser when %s is set',
+    'interactive login prints device instructions without a listener or browser when %s is set',
     async (variable) => {
       vi.stubEnv(variable, 'ssh-session');
       vi.stubEnv('GT_AUTH_URL', authBaseUrl);
       vi.stubEnv('GT_API_URL', apiBaseUrl);
       vi.stubGlobal('fetch', provider());
-      vi.spyOn(config, 'resolveConfig').mockReturnValue(null);
-      vi.spyOn(logging, 'displayHeader').mockImplementation(() => {});
-      vi.spyOn(logging, 'logErrorAndExit').mockImplementation((message) => {
-        throw new Error(message);
-      });
-      vi.spyOn(logger, 'setConsoleOutput').mockImplementation(() => {});
-      vi.spyOn(logger, 'setQuiet').mockImplementation(() => {});
       const message = vi.spyOn(logger, 'message').mockImplementation(() => {});
-      const endCommand = vi
-        .spyOn(logger, 'endCommand')
-        .mockImplementation(() => {});
       const loopback = await import('../loopback.js');
       const startLoopback = vi
         .spyOn(loopback, 'startLoopbackServer')
@@ -880,24 +874,14 @@ describe('library-managed device authorization', () => {
         .mockReset()
         .mockRejectedValue(new Error('Unexpected browser launch'));
       vi.useFakeTimers();
-      const program = new Command().exitOverride();
-      new BaseCLI(program, 'base');
-      const pending = program.parseAsync(['login'], { from: 'user' });
+      const pending = loginInteractively(undefined);
       pending.catch(() => undefined);
-      await vi.waitFor(() => expect(message).toHaveBeenCalled());
+      await vi.waitFor(() => expect(message).toHaveBeenCalled(), POLL);
       await vi.advanceTimersByTimeAsync(5000);
       await pending;
-      const instructions = String(message.mock.calls[0][0]);
-      expect(instructions.split('\n')).toContain(
-        chalk.cyan(String(deviceResponse().verification_uri_complete))
+      expect(message).toHaveBeenCalledExactlyOnceWith(
+        `Visit:\n\n${chalk.cyan(String(deviceResponse().verification_uri_complete))}\n\nWaiting for authentication...`
       );
-      expect(instructions).not.toContain('confirm the code');
-      expect(instructions).toContain('ABCD-EFGH');
-      expect(instructions).toContain('Waiting for authentication...');
-      expect(message).not.toHaveBeenCalledWith(
-        expect.stringContaining('Opening your browser')
-      );
-      expect(endCommand).toHaveBeenCalledWith('You are now signed in.');
       expect(await readOAuthTokens(authBaseUrl)).toMatchObject({
         subject: 'user-1',
       });
@@ -1117,12 +1101,14 @@ describe('library-managed device authorization', () => {
       });
       const rejected = expect(pending).rejects.toThrow();
       if (stage !== 'before') {
-        await vi.waitFor(() =>
-          expect(
-            fetcher.mock.calls.some(([url]) =>
-              String(url).endsWith('/device/code')
-            )
-          ).toBe(true)
+        await vi.waitFor(
+          () =>
+            expect(
+              fetcher.mock.calls.some(([url]) =>
+                String(url).endsWith('/device/code')
+              )
+            ).toBe(true),
+          POLL
         );
         if (stage === 'wait') controller.abort();
         await vi.advanceTimersByTimeAsync(5000);
@@ -1187,7 +1173,7 @@ describe('OAuth session operations', () => {
       session({ fetch: fetcher }).refreshAccessToken(),
       session({ fetch: fetcher }).getAccessToken(),
     ]);
-    await vi.waitFor(() => expect(forms(fetcher)).toHaveLength(1));
+    await vi.waitFor(() => expect(forms(fetcher)).toHaveLength(1), POLL);
     expect((await readOAuthTokens(authBaseUrl))?.refreshToken).toBe(
       'refresh-1'
     );

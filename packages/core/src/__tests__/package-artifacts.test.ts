@@ -1,9 +1,10 @@
 import { execFileSync } from 'node:child_process';
 import {
+  cpSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
-  readdirSync,
   realpathSync,
   rmSync,
   symlinkSync,
@@ -19,6 +20,13 @@ const packageRoot = fileURLToPath(new URL('../..', import.meta.url));
 const adapterMarker = 'call configureApiClient first';
 const projectPath = '/v2/project/info/{projectId}';
 const config = `{ projectId: 'project', apiKey: 'key', baseUrl: 'https://example.test' }`;
+const allowedPackages = [
+  'generaltranslation',
+  '@generaltranslation/api',
+  '@generaltranslation/format',
+  '@generaltranslation/icu',
+  '@noble/hashes',
+];
 
 // Parse imports rather than grep one entry: cover re-exports, require and dynamic
 // imports too. A computed dependency is not an auditable isolated artifact.
@@ -49,37 +57,39 @@ function imports(code: string): string[] {
   return result;
 }
 
-it('loads packed ESM/CJS, typechecks NodeNext declarations and keeps the published runtime free of management', () => {
+// Lays out what `pnpm pack` publishes (the manifest plus its `files`) as a real
+// copy under the fixture, so bare imports resolve from the fixture's explicit
+// dependency links and never from the workspace. Spawning pnpm for each of the
+// four packages made this the slowest test in the package on CI. The copy is
+// only faithful while nothing rewrites the manifest or file list at pack time.
+function layOutPublishedPackage(directory: string, fixture: string): void {
+  const root = join(packageRoot, '..', directory);
+  const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+  expect(manifest.publishConfig, 'pack-time manifest rewrite').toBeUndefined();
+  expect(
+    Object.keys(manifest.scripts).filter((name) =>
+      ['prepack', 'postpack', 'prepare', 'prepublishOnly'].includes(name)
+    ),
+    'pack-time lifecycle scripts'
+  ).toEqual([]);
+
+  const published = join(fixture, directory);
+  for (const entry of ['package.json', ...manifest.files]) {
+    if (existsSync(join(root, entry))) {
+      cpSync(join(root, entry), join(published, entry), { recursive: true });
+    }
+  }
+  const link = join(fixture, 'node_modules', manifest.name);
+  mkdirSync(dirname(link), { recursive: true });
+  symlinkSync(published, link, 'junction');
+}
+
+it('loads published ESM/CJS, typechecks NodeNext declarations and keeps the published runtime free of management', () => {
   const fixture = mkdtempSync(join(tmpdir(), 'gt-core-artifacts-'));
   const nodeModules = join(fixture, 'node_modules');
-  mkdirSync(nodeModules);
-  const allowedPackages = [
-    'generaltranslation',
-    '@generaltranslation/api',
-    '@generaltranslation/format',
-    '@generaltranslation/icu',
-    '@noble/hashes',
-  ];
   try {
-    // Like Vue's package-layout test, use pnpm's executable (not node + a
-    // potentially native pnpm binary), packed files and explicit dependency links.
     for (const directory of ['core', 'api', 'format', 'icu']) {
-      const root = join(packageRoot, '..', directory);
-      const manifest = JSON.parse(
-        readFileSync(join(root, 'package.json'), 'utf8')
-      );
-      const pack = join(fixture, directory);
-      mkdirSync(pack);
-      execFileSync(
-        process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm',
-        ['pack', '--pack-destination', pack],
-        { cwd: root, stdio: 'pipe' }
-      );
-      const archive = readdirSync(pack).find((name) => name.endsWith('.tgz'))!;
-      execFileSync('tar', ['-xzf', join(pack, archive), '-C', pack]);
-      const link = join(nodeModules, manifest.name);
-      mkdirSync(dirname(link), { recursive: true });
-      symlinkSync(join(pack, 'package'), link, 'junction');
+      layOutPublishedPackage(directory, fixture);
     }
     mkdirSync(join(nodeModules, '@noble'));
     symlinkSync(
@@ -117,7 +127,10 @@ it('loads packed ESM/CJS, typechecks NodeNext declarations and keeps the publish
       );
     }
 
+    // One fresh Node consumer loads every entry through both export conditions.
     const smoke = `
+      import { createRequire } from 'node:module';
+      const require = createRequire(import.meta.url);
       const assert = require('node:assert/strict');
       const config = ${config};
       globalThis.fetch = async (input, init) => {
@@ -129,25 +142,24 @@ it('loads packed ESM/CJS, typechecks NodeNext declarations and keeps the publish
         return Response.json(Object.fromEntries(Object.keys(body.requests).map(key => [key,
           { success: true, translation: 'Hola', locale: 'es', dataFormat: 'STRING' }])));
       };
-      const runtime = LOAD('generaltranslation/runtime');
-      const { GT } = LOAD('generaltranslation');
-      const { createGtApiAdapter } = LOAD('generaltranslation/internal');
-      for (const result of [
-        (await new runtime.GTRuntime(config).translateMany(['Hello'], 'es'))[0],
-        await new GT(config).translate('Hello', 'es'),
-        await createGtApiAdapter(config).translate('Hello', 'es'),
-      ]) assert.equal(result.translation, 'Hola');
+      const entries = ['generaltranslation', 'generaltranslation/runtime', 'generaltranslation/internal'];
+      for (const entry of entries) {
+        assert.match(import.meta.resolve(entry), /\\.mjs$/);
+        assert.match(require.resolve(entry), /\\.cjs$/);
+      }
+      for (const load of [(entry) => import(entry), async (entry) => require(entry)]) {
+        const [{ GT }, runtime, { createGtApiAdapter }] = await Promise.all(entries.map(load));
+        for (const result of [
+          (await new runtime.GTRuntime(config).translateMany(['Hello'], 'es'))[0],
+          await new GT(config).translate('Hello', 'es'),
+          await createGtApiAdapter(config).translate('Hello', 'es'),
+        ]) assert.equal(result.translation, 'Hola');
+      }
     `;
-    for (const esm of [true, false]) {
-      const script = esm
-        ? `import { createRequire } from 'node:module'; const require = createRequire(import.meta.url); ${smoke.replaceAll('LOAD(', 'await import(')}`
-        : `(async () => { ${smoke.replaceAll('LOAD(', 'require(')} })().catch(error => { console.error(error); process.exit(1); });`;
-      execFileSync(
-        process.execPath,
-        [...(esm ? ['--input-type=module'] : []), '--eval', script],
-        { cwd: fixture, stdio: 'pipe' }
-      );
-    }
+    execFileSync(process.execPath, ['--input-type=module', '--eval', smoke], {
+      cwd: fixture,
+      stdio: 'pipe',
+    });
 
     const types = `
       import { GT } from 'generaltranslation';
@@ -167,28 +179,30 @@ it('loads packed ESM/CJS, typechecks NodeNext declarations and keeps the publish
       adapter.translate('Hello', 'es', { timeout: 10 });
       void [array, record];
     `;
-    for (const extension of ['mts', 'cts']) {
-      writeFileSync(join(fixture, `consumer.${extension}`), types);
-    }
-    execFileSync(
-      process.execPath,
-      [
-        join(packageRoot, 'node_modules/typescript/bin/tsc'),
-        '--noEmit',
-        '--strict',
-        '--module',
-        'NodeNext',
-        '--moduleResolution',
-        'NodeNext',
-        '--target',
-        'ES2022',
-        '--lib',
-        'ES2023,DOM,DOM.Iterable',
-        join(fixture, 'consumer.mts'),
-        join(fixture, 'consumer.cts'),
-      ],
-      { cwd: fixture, stdio: 'inherit' }
+    const consumers = ['mts', 'cts'].map((extension) =>
+      join(fixture, `consumer.${extension}`)
     );
+    for (const consumer of consumers) writeFileSync(consumer, types);
+    // The same check as `tsc --noEmit --strict` on both consumers, in process.
+    // Published declarations are still checked; only TypeScript's own lib
+    // files are skipped.
+    const program = ts.createProgram(consumers, {
+      noEmit: true,
+      strict: true,
+      module: ts.ModuleKind.NodeNext,
+      moduleResolution: ts.ModuleResolutionKind.NodeNext,
+      target: ts.ScriptTarget.ES2022,
+      lib: ['lib.es2023.d.ts', 'lib.dom.d.ts', 'lib.dom.iterable.d.ts'],
+      types: [],
+      skipDefaultLibCheck: true,
+    });
+    expect(
+      ts.formatDiagnostics(ts.getPreEmitDiagnostics(program), {
+        getCanonicalFileName: (fileName) => fileName,
+        getCurrentDirectory: () => fixture,
+        getNewLine: () => '\n',
+      })
+    ).toBe('');
   } finally {
     rmSync(fixture, { recursive: true, force: true });
   }

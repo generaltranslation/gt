@@ -1,6 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { formatMessage as publicFormatMessage } from '../../core';
-import { _formatListToParts, _formatMessageICU } from '../format';
+import {
+  formatMessage as publicFormatMessage,
+  formatRelativeTimeFromDate,
+} from '../../core';
+import {
+  _formatListToParts,
+  _formatMessageICU,
+  _formatRelativeTime,
+  _selectRelativeTimeUnit,
+} from '../format';
 
 describe('_formatMessageICU', () => {
   it.each([
@@ -310,300 +318,161 @@ describe('_formatMessageICU', () => {
 });
 
 describe('_formatListToParts', () => {
-  it('should format empty array', () => {
-    const result = _formatListToParts({
-      value: [],
-      locales: ['en'],
-      options: {},
-    });
-
-    expect(result).toEqual([]);
+  it.each<
+    [string, string[], string[] | undefined, Intl.ListFormatOptions, string[]]
+  >([
+    ['an empty list', [], ['en'], {}, []],
+    ['a single item', ['apple'], ['en'], {}, ['apple']],
+    [
+      'two items',
+      ['apple', 'banana'],
+      ['en'],
+      {},
+      ['apple', ' and ', 'banana'],
+    ],
+    [
+      'three items',
+      ['apple', 'banana', 'orange'],
+      ['en'],
+      {},
+      ['apple', ', ', 'banana', ', and ', 'orange'],
+    ],
+    [
+      'a disjunction',
+      ['red', 'green', 'blue'],
+      ['en'],
+      { type: 'disjunction' },
+      ['red', ', ', 'green', ', or ', 'blue'],
+    ],
+    [
+      'units',
+      ['1 km', '2 mi', '3 ft'],
+      ['en'],
+      { type: 'unit' },
+      ['1 km', ', ', '2 mi', ', ', '3 ft'],
+    ],
+    [
+      'the short style',
+      ['first', 'second', 'third'],
+      ['en'],
+      { style: 'short' },
+      ['first', ', ', 'second', ', & ', 'third'],
+    ],
+    [
+      'the narrow style',
+      ['A', 'B', 'C'],
+      ['en'],
+      { style: 'narrow' },
+      ['A', ', ', 'B', ', ', 'C'],
+    ],
+    [
+      'a short disjunction',
+      ['a', 'b', 'c'],
+      ['en'],
+      { type: 'disjunction', style: 'short' },
+      ['a', ', ', 'b', ', or ', 'c'],
+    ],
+    [
+      'Spanish',
+      ['manzana', 'plátano', 'naranja'],
+      ['es'],
+      {},
+      ['manzana', ', ', 'plátano', ' y ', 'naranja'],
+    ],
+    [
+      'French',
+      ['pomme', 'banane', 'orange'],
+      ['fr'],
+      {},
+      ['pomme', ', ', 'banane', ' et ', 'orange'],
+    ],
+    [
+      'the first of several locales',
+      ['item1', 'item2', 'item3'],
+      ['es-ES', 'en-US'],
+      {},
+      ['item1', ', ', 'item2', ' y ', 'item3'],
+    ],
+    [
+      'the default locale',
+      ['one', 'two'],
+      undefined,
+      {},
+      ['one', ' and ', 'two'],
+    ],
+  ])('formats %s', (_label, value, locales, options, expected) => {
+    expect(_formatListToParts({ value, locales, options })).toEqual(expected);
   });
 
-  it('should format single item array', () => {
-    const result = _formatListToParts({
-      value: ['apple'],
-      locales: ['en'],
-      options: {},
-    });
+  it('preserves the identity and order of non-string items', () => {
+    const object = { name: 'object' };
+    const date = new Date('2023-01-01');
+    const fn = () => 'hello';
+    const value = ['string', 42, object, true, null, undefined, date, fn, 0];
 
-    expect(result).toEqual(['apple']);
+    const result = _formatListToParts({ value, locales: ['en'], options: {} });
+
+    expect(result).toHaveLength(value.length * 2 - 1);
+    result.forEach((part, index) => {
+      if (index % 2 === 0) expect(part).toBe(value[index / 2]);
+      else expect(part).toBe(index === result.length - 2 ? ', and ' : ', ');
+    });
+  });
+});
+
+describe('_selectRelativeTimeUnit', () => {
+  const baseDate = new Date('2026-06-15T12:00:00Z');
+  const second = 1000;
+  const minute = 60 * second;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+
+  it.each<[string, number, number, Intl.RelativeTimeFormatUnit]>([
+    ['the same instant', 0, 0, 'second'],
+    ['under a minute', -30 * second, -30, 'second'],
+    ['under an hour', -5 * minute, -5, 'minute'],
+    ['under a day', -3 * hour, -3, 'hour'],
+    ['a future date', 3 * hour, 3, 'hour'],
+    ['under a week', -5 * day, -5, 'day'],
+    // Floors rather than rounding 3.5 days up to 4 days or a week.
+    ['a partial day', -3.5 * day, -3, 'day'],
+    ['exactly a week', -7 * day, -1, 'week'],
+    ['under four weeks', -14 * day, -2, 'week'],
+    // 28-29 days floor to 0 months, so they stay in weeks.
+    ['28 days', -28 * day, -4, 'week'],
+    ['29 days', -29 * day, -4, 'week'],
+    ['30 days', -30 * day, -1, 'month'],
+    ['under a year', -60 * day, -2, 'month'],
+    // 360-364 days floor to 0 years, so they stay in months.
+    ['362 days', -362 * day, -12, 'month'],
+    ['over a year', -400 * day, -1, 'year'],
+  ])('selects the unit for %s', (_label, offset, value, unit) => {
+    const date = new Date(baseDate.getTime() + offset);
+    expect(_selectRelativeTimeUnit(date, baseDate)).toEqual({ value, unit });
   });
 
-  it('should format two items with conjunction (default)', () => {
-    const result = _formatListToParts({
-      value: ['apple', 'banana'],
-      locales: ['en'],
-      options: {},
-    });
-
-    expect(result).toEqual(['apple', ' and ', 'banana']);
+  it.each([
+    [-2 * hour, '2 hours ago'],
+    [3 * day, 'in 3 days'],
+    [-14 * day, '2 weeks ago'],
+  ])('formats an offset of %d ms from the base date', (offset, expected) => {
+    const date = new Date(baseDate.getTime() + offset);
+    expect(
+      formatRelativeTimeFromDate(date, { baseDate, locales: ['en'] })
+    ).toBe(expected);
   });
+});
 
-  it('should format three items with conjunction', () => {
-    const result = _formatListToParts({
-      value: ['apple', 'banana', 'orange'],
-      locales: ['en'],
-      options: {},
-    });
-
-    expect(result).toEqual(['apple', ', ', 'banana', ', and ', 'orange']);
-  });
-
-  it('should format with disjunction type', () => {
-    const result = _formatListToParts({
-      value: ['red', 'green', 'blue'],
-      locales: ['en'],
-      options: { type: 'disjunction' },
-    });
-
-    expect(result).toEqual(['red', ', ', 'green', ', or ', 'blue']);
-  });
-
-  it('should format with unit type', () => {
-    const result = _formatListToParts({
-      value: ['1 km', '2 mi', '3 ft'],
-      locales: ['en'],
-      options: { type: 'unit' },
-    });
-
-    expect(result).toEqual(['1 km', ', ', '2 mi', ', ', '3 ft']);
-  });
-
-  it('should format with short style', () => {
-    const result = _formatListToParts({
-      value: ['first', 'second', 'third'],
-      locales: ['en'],
-      options: { style: 'short' },
-    });
-
-    expect(result).toEqual(['first', ', ', 'second', ', & ', 'third']);
-  });
-
-  it('should format with narrow style', () => {
-    const result = _formatListToParts({
-      value: ['A', 'B', 'C'],
-      locales: ['en'],
-      options: { style: 'narrow' },
-    });
-
-    expect(result).toEqual(['A', ', ', 'B', ', ', 'C']);
-  });
-
-  it('should respect different locales - Spanish', () => {
-    const result = _formatListToParts({
-      value: ['manzana', 'plátano', 'naranja'],
-      locales: ['es'],
-      options: {},
-    });
-
-    expect(result).toEqual(['manzana', ', ', 'plátano', ' y ', 'naranja']);
-  });
-
-  it('should respect different locales - French', () => {
-    const result = _formatListToParts({
-      value: ['pomme', 'banane', 'orange'],
-      locales: ['fr'],
-      options: {},
-    });
-
-    expect(result).toEqual(['pomme', ', ', 'banane', ' et ', 'orange']);
-  });
-
-  it('should handle mixed data types', () => {
-    const mixedArray = ['string', 42, { name: 'object' }, true, null];
-
-    const result = _formatListToParts({
-      value: mixedArray,
-      locales: ['en'],
-      options: {},
-    });
-
-    // Should preserve original types and add separators
-    expect(result).toHaveLength(9); // 5 items + 4 separators
-    expect(result[0]).toBe('string');
-    expect(result[2]).toBe(42);
-    expect(result[4]).toEqual({ name: 'object' });
-    expect(result[6]).toBe(true);
-    expect(result[8]).toBe(null);
-
-    // Check separators
-    expect(result[1]).toBe(', ');
-    expect(result[3]).toBe(', ');
-    expect(result[5]).toBe(', ');
-    expect(result[7]).toBe(', and ');
-  });
-
-  it('should handle objects and preserve their identity', () => {
-    const obj1 = { id: 1, name: 'first' };
-    const obj2 = { id: 2, name: 'second' };
-
-    const result = _formatListToParts({
-      value: [obj1, obj2],
-      locales: ['en'],
-      options: {},
-    });
-
-    expect(result).toEqual([obj1, ' and ', obj2]);
-    expect(result[0]).toBe(obj1); // Same reference
-    expect(result[2]).toBe(obj2); // Same reference
-  });
-
-  it('should handle numbers and preserve their types', () => {
-    const result = _formatListToParts({
-      value: [1, 2.5, -3, 0],
-      locales: ['en'],
-      options: {},
-    });
-
-    expect(result).toEqual([1, ', ', 2.5, ', ', -3, ', and ', 0]);
-    expect(typeof result[0]).toBe('number');
-    expect(typeof result[2]).toBe('number');
-    expect(typeof result[4]).toBe('number');
-    expect(typeof result[6]).toBe('number');
-  });
-
-  it('should handle boolean values', () => {
-    const result = _formatListToParts({
-      value: [true, false],
-      locales: ['en'],
-      options: {},
-    });
-
-    expect(result).toEqual([true, ' and ', false]);
-    expect(typeof result[0]).toBe('boolean');
-    expect(typeof result[2]).toBe('boolean');
-  });
-
-  it('should use default locale when not specified', () => {
-    const result = _formatListToParts({
-      value: ['one', 'two'],
-      options: {},
-    });
-
-    expect(result).toEqual(['one', ' and ', 'two']);
-  });
-
-  it('should handle multiple locales array', () => {
-    const result = _formatListToParts({
-      value: ['item1', 'item2', 'item3'],
-      locales: ['es-ES', 'en-US'],
-      options: {},
-    });
-
-    // Should use the first locale in the array (Spanish)
-    expect(result).toEqual(['item1', ', ', 'item2', ' y ', 'item3']);
-  });
-
-  it('should override default options with provided options', () => {
-    const result = _formatListToParts({
-      value: ['a', 'b', 'c'],
-      locales: ['en'],
-      options: {
-        type: 'disjunction',
-        style: 'short',
-      },
-    });
-
-    expect(result).toEqual(['a', ', ', 'b', ', or ', 'c']);
-  });
-
-  it('should handle very long arrays', () => {
-    const longArray = Array.from({ length: 10 }, (_, i) => `item${i + 1}`);
-
-    const result = _formatListToParts({
-      value: longArray,
-      locales: ['en'],
-      options: {},
-    });
-
-    // Should have 10 items + 9 separators = 19 total parts
-    expect(result).toHaveLength(19);
-
-    // First item should be preserved
-    expect(result[0]).toBe('item1');
-    // Last item should be preserved
-    expect(result[18]).toBe('item10');
-    // Second to last separator should be the final conjunction
-    expect(result[17]).toBe(', and ');
-  });
-
-  it('should handle undefined and null values', () => {
-    const result = _formatListToParts({
-      value: [undefined, null, 'valid'],
-      locales: ['en'],
-      options: {},
-    });
-
-    expect(result).toEqual([undefined, ', ', null, ', and ', 'valid']);
-    expect(result[0]).toBeUndefined();
-    expect(result[2]).toBeNull();
-    expect(result[4]).toBe('valid');
-  });
-
-  it('should handle Date objects', () => {
-    const date1 = new Date('2023-01-01');
-    const date2 = new Date('2023-12-31');
-
-    const result = _formatListToParts({
-      value: [date1, date2],
-      locales: ['en'],
-      options: {},
-    });
-
-    expect(result).toEqual([date1, ' and ', date2]);
-    expect(result[0]).toBe(date1);
-    expect(result[2]).toBe(date2);
-  });
-
-  it('should handle functions', () => {
-    const fn1 = () => 'hello';
-    const fn2 = () => 'world';
-
-    const result = _formatListToParts({
-      value: [fn1, fn2],
-      locales: ['en'],
-      options: {},
-    });
-
-    expect(result).toEqual([fn1, ' and ', fn2]);
-    expect(result[0]).toBe(fn1);
-    expect(result[2]).toBe(fn2);
-  });
-
-  it('should maintain insertion order', () => {
-    const items = [3, 1, 4, 1, 5, 9, 2, 6];
-
-    const result = _formatListToParts({
-      value: items,
-      locales: ['en'],
-      options: {},
-    });
-
-    // Extract only the original items (every other element starting from 0)
-    const extractedItems = result.filter((_, index) => index % 2 === 0);
-    expect(extractedItems).toEqual(items);
-  });
-
-  it('should work with generic types', () => {
-    interface TestItem {
-      id: number;
-      name: string;
-    }
-
-    const items: TestItem[] = [
-      { id: 1, name: 'first' },
-      { id: 2, name: 'second' },
-    ];
-
-    const result = _formatListToParts({
-      value: items,
-      locales: ['en'],
-      options: {},
-    });
-
-    expect(result).toEqual([items[0], ' and ', items[1]]);
-    expect(result[0]).toBe(items[0]);
-    expect(result[2]).toBe(items[1]);
+describe('_formatRelativeTime', () => {
+  it.each<[number, Intl.RelativeTimeFormatUnit, string, string]>([
+    [-1, 'day', 'en', 'yesterday'],
+    [2, 'hour', 'en', 'in 2 hours'],
+    [-1, 'week', 'en', 'last week'],
+    [0, 'day', 'en', 'today'],
+    [-3, 'day', 'es', 'hace 3 días'],
+  ])('formats %d %s in %s as %j', (value, unit, locale, expected) => {
+    expect(_formatRelativeTime({ value, unit, locales: [locale] })).toBe(
+      expected
+    );
   });
 });

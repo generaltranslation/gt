@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import type {
   TransformResult,
   UnpluginBuildContext,
@@ -17,317 +17,268 @@ import gtUnplugin, {
 } from '../index';
 import type { GTUnpluginOptions } from '../index';
 
-const JSX_RUNTIME_CODE = `
+// These tests drive the real unplugin transform, because config loading and
+// the gating between passes live in index.ts.
+
+const AUTO_JSX_CODE = `
   import { jsx, jsxs } from 'react/jsx-runtime';
   export function App() {
     return jsxs("div", { children: ["Hello ", name] });
   }
 `;
 
-const tempDirs: string[] = [];
+const T_COMPONENT_CODE = `
+  import { jsx } from 'react/jsx-runtime';
+  import { T } from 'gt-react';
+  export const el = jsx(T, { children: "Hello world" });
+`;
 
-function createTempDir(): string {
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-compiler-'));
-  tempDirs.push(tempDir);
-  return tempDir;
+const USEGT_CODE = `
+  import { useGT } from 'gt-react';
+  const gt = useGT();
+  gt("Hello world");
+`;
+
+const TAGGED_TEMPLATE_CODE = `
+  import { useGT } from 'gt-react';
+  const gt = useGT();
+  const message = t\`Hello world\`;
+`;
+
+let tempRoot: string;
+
+beforeAll(() => {
+  tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-compiler-'));
+});
+
+afterAll(() => {
+  fs.rmSync(tempRoot, { force: true, recursive: true });
+});
+
+/** Creates a project dir, optionally holding a gt.config.json */
+function createProject(gtConfig?: unknown): string {
+  const cwd = fs.mkdtempSync(path.join(tempRoot, 'project-'));
+  if (gtConfig !== undefined) {
+    fs.writeFileSync(
+      path.join(cwd, 'gt.config.json'),
+      typeof gtConfig === 'string' ? gtConfig : JSON.stringify(gtConfig)
+    );
+  }
+  return cwd;
 }
 
-function createTestContext(): UnpluginBuildContext & UnpluginContext {
-  return {
-    addWatchFile() {},
-    emitFile() {},
-    getWatchFiles() {
-      return [];
-    },
-    parse() {
-      throw new Error('parse is not implemented in this test context');
-    },
-    warn() {},
-    error(message: unknown) {
-      throw new Error(String(message));
-    },
-  } as UnpluginBuildContext & UnpluginContext;
-}
+const testContext = {
+  addWatchFile() {},
+  emitFile() {},
+  getWatchFiles() {
+    return [];
+  },
+  parse() {
+    throw new Error('parse is not implemented in this test context');
+  },
+  warn() {},
+  error(message: unknown) {
+    throw new Error(String(message));
+  },
+} as UnpluginBuildContext & UnpluginContext;
 
-function writeGTConfig(cwd: string, config: unknown): void {
-  fs.writeFileSync(
-    path.join(cwd, 'gt.config.json'),
-    JSON.stringify(config, null, 2)
-  );
-}
-
-function writeInvalidGTConfig(cwd: string): string {
-  const configPath = path.join(cwd, 'gt.config.json');
-  fs.writeFileSync(configPath, '{ invalid json');
-  return configPath;
-}
-
-async function transformWithPlugin(
+/**
+ * Creates the plugin with `cwd` as the working directory and transforms
+ * `code` once per file name. Returns each output (null when untransformed)
+ * and every console.warn message.
+ */
+async function runPlugin(
   options: GTUnpluginOptions | undefined,
-  cwd: string
-): Promise<string | null> {
+  code: string,
+  { cwd = createProject(), files = ['App.tsx'] } = {}
+): Promise<{ outputs: (string | null)[]; warnings: unknown[] }> {
   const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(cwd);
-  const plugin = (() => {
-    try {
-      return gtUnplugin.raw(options, { framework: 'vite' });
-    } finally {
-      cwdSpy.mockRestore();
+  const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  try {
+    const { transform } = gtUnplugin.raw(options, { framework: 'vite' });
+    if (typeof transform !== 'function') {
+      throw new Error('Expected transform hook to be a function');
     }
-  })();
-
-  const transform = plugin.transform;
-  if (typeof transform !== 'function') {
-    throw new Error('Expected transform hook to be a function');
+    const outputs: (string | null)[] = [];
+    for (const file of files) {
+      const result: TransformResult = await transform.call(
+        testContext,
+        code,
+        path.join(cwd, file)
+      );
+      outputs.push(
+        !result ? null : typeof result === 'string' ? result : result.code
+      );
+    }
+    return {
+      outputs,
+      warnings: warnSpy.mock.calls.map(([message]) => message),
+    };
+  } finally {
+    cwdSpy.mockRestore();
+    warnSpy.mockRestore();
   }
-
-  const context = createTestContext();
-
-  const result: TransformResult = await transform.call(
-    context,
-    JSX_RUNTIME_CODE,
-    path.join(cwd, 'App.tsx')
-  );
-  if (!result) {
-    return null;
-  }
-  return typeof result === 'string' ? result : result.code;
 }
+
+const parsingFlags = (flags: Record<string, unknown>) => ({
+  files: { gt: { parsingFlags: flags } },
+});
+const PROJECT_SETTINGS = {
+  defaultLocale: 'en',
+  locales: ['en', 'es'],
+  files: { gt: { output: 'src/_gt/[locale].json' } },
+};
 
 describe('gtUnplugin config loading', () => {
-  afterEach(() => {
-    for (const tempDir of tempDirs.splice(0)) {
-      fs.rmSync(tempDir, { force: true, recursive: true });
-    }
-  });
-
-  it('auto-loads gt.config.json from process.cwd() when gtConfig is omitted', async () => {
-    const cwd = createTempDir();
-    writeGTConfig(cwd, {
-      files: {
-        gt: {
-          parsingFlags: {
-            enableAutoJsxInjection: true,
+  it.each<
+    [
+      name: string,
+      diskConfig: unknown,
+      options: GTUnpluginOptions | undefined,
+      autoJsxInjected: boolean,
+    ]
+  >([
+    [
+      'auto-loads gt.config.json from process.cwd() when gtConfig is omitted',
+      parsingFlags({ enableAutoJsxInjection: true }),
+      undefined,
+      true,
+    ],
+    [
+      'does not auto-load gt.config.json when gtConfig is provided',
+      parsingFlags({ enableAutoJsxInjection: true }),
+      { gtConfig: parsingFlags({ enableAutoJsxInjection: false }) },
+      false,
+    ],
+    [
+      'accepts a parsed gt.config.json as top-level options',
+      undefined,
+      {
+        ...PROJECT_SETTINGS,
+        _versionId: 'test-version',
+        files: {
+          gt: {
+            output: 'src/_gt/[locale].json',
+            parsingFlags: { enableAutoJsxInjection: true },
           },
         },
       },
-    });
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-    try {
-      const output = await transformWithPlugin(undefined, cwd);
-
-      expect(output).toContain('GtInternalTranslateJsx');
-      expect(warnSpy).not.toHaveBeenCalled();
-    } finally {
-      warnSpy.mockRestore();
-    }
-  });
-
-  it('does not auto-load gt.config.json when gtConfig is provided', async () => {
-    const cwd = createTempDir();
-    writeGTConfig(cwd, {
-      files: {
-        gt: {
-          parsingFlags: {
-            enableAutoJsxInjection: true,
-          },
-        },
+      true,
+    ],
+    [
+      'merges partial top-level options with the auto-loaded config',
+      parsingFlags({ enableAutoJsxInjection: true }),
+      {
+        defaultLocale: 'en',
+        files: { gt: { output: 'src/_gt/[locale].json' } },
       },
+      true,
+    ],
+    [
+      'keeps defaults when the auto-loaded config has only project settings',
+      { ...PROJECT_SETTINGS, projectId: 'test-project', _versionId: 'v1' },
+      undefined,
+      false,
+    ],
+    [
+      'keeps defaults when auto-loaded parsingFlags are explicitly disabled',
+      parsingFlags({
+        enableAutoJsxInjection: false,
+        autoderive: false,
+        devHotReload: false,
+      }),
+      undefined,
+      false,
+    ],
+  ])('%s', async (_name, diskConfig, options, autoJsxInjected) => {
+    const { outputs, warnings } = await runPlugin(options, AUTO_JSX_CODE, {
+      cwd: createProject(diskConfig),
     });
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-    try {
-      const output = await transformWithPlugin(
-        {
-          gtConfig: {
-            files: {
-              gt: {
-                parsingFlags: {
-                  enableAutoJsxInjection: false,
-                },
-              },
-            },
-          },
-        },
-        cwd
-      );
-
-      expect(output).toBeNull();
-      expect(warnSpy).not.toHaveBeenCalled();
-    } finally {
-      warnSpy.mockRestore();
+    if (autoJsxInjected) {
+      expect(outputs[0]).toContain('GtInternalTranslateJsx');
+    } else {
+      expect(outputs[0]).toBeNull();
     }
+    expect(warnings).toEqual([]);
   });
 
-  it('accepts a parsed gt.config.json as top-level options', async () => {
-    const cwd = createTempDir();
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-    try {
-      const output = await transformWithPlugin(
-        {
-          defaultLocale: 'en',
-          locales: ['en', 'es'],
-          files: {
-            gt: {
-              output: 'src/_gt/[locale].json',
-              parsingFlags: {
-                enableAutoJsxInjection: true,
-              },
-            },
-          },
-          _versionId: 'test-version',
-        },
-        cwd
-      );
-
-      expect(output).toContain('GtInternalTranslateJsx');
-      expect(warnSpy).not.toHaveBeenCalled();
-    } finally {
-      warnSpy.mockRestore();
-    }
+  it('warns once per plugin instance when no gt.config.json is found', async () => {
+    const { warnings } = await runPlugin(undefined, AUTO_JSX_CODE, {
+      files: ['One.tsx', 'Two.tsx'],
+    });
+    expect(warnings).toEqual([MISSING_GT_CONFIG_WARNING]);
   });
 
-  it('merges partial top-level options with the auto-loaded config', async () => {
-    const cwd = createTempDir();
-    writeGTConfig(cwd, {
-      files: {
-        gt: {
-          parsingFlags: {
-            enableAutoJsxInjection: true,
-          },
-        },
+  it('warns that gt.config.json is invalid when it cannot be parsed', async () => {
+    const cwd = createProject('{ invalid json');
+    const { outputs, warnings } = await runPlugin(undefined, AUTO_JSX_CODE, {
+      cwd,
+    });
+    expect(outputs).toEqual([null]);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain(
+      `[@generaltranslation/compiler] Failed to load gt.config.json at ${path.join(cwd, 'gt.config.json')}.`
+    );
+    expect(warnings[0]).toContain('valid gt.config.json');
+  });
+});
+
+/**
+ * compileTimeHash must actually gate hash injection, and each flag governs
+ * only its own feature: disableBuildChecks disables validation, not hashing,
+ * and macro expansion / dev hot reload run independently of both.
+ */
+describe('pass gating by plugin options', () => {
+  const CODE = {
+    '<T>': T_COMPONENT_CODE,
+    'useGT()': USEGT_CODE,
+    't`` macro': TAGGED_TEMPLATE_CODE,
+  };
+
+  it.each<
+    [
+      code: keyof typeof CODE,
+      options: GTUnpluginOptions | undefined,
+      expected: { has?: string[]; lacks?: string[] } | null,
+    ]
+  >([
+    // Defaults: hashes injected, useGT() prefetch entries, macros expanded
+    ['<T>', undefined, { has: ['_hash: "'] }],
+    [
+      'useGT()',
+      undefined,
+      {
+        has: ['"$_hash": "', 'useGT(['],
+        lacks: ['GtInternalRuntimeTranslateString'],
       },
-    });
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-    try {
-      const output = await transformWithPlugin(
-        {
-          defaultLocale: 'en',
-          files: {
-            gt: {
-              output: 'src/_gt/[locale].json',
-            },
-          },
-        },
-        cwd
-      );
-
-      expect(output).toContain('GtInternalTranslateJsx');
-      expect(warnSpy).not.toHaveBeenCalled();
-    } finally {
-      warnSpy.mockRestore();
+    ],
+    ['t`` macro', undefined, { has: ['$_hash'], lacks: ['t`'] }],
+    // compileTimeHash: false -> no injection; untouched files return null
+    ['<T>', { compileTimeHash: false }, null],
+    ['useGT()', { compileTimeHash: false }, null],
+    [
+      't`` macro',
+      { compileTimeHash: false },
+      { has: ['t("Hello world")'], lacks: ['t`', '$_hash'] },
+    ],
+    ['<T>', { disableBuildChecks: true }, { has: ['_hash: "'] }],
+    ['<T>', { compileTimeHash: false, disableBuildChecks: true }, null],
+    ['useGT()', { compileTimeHash: false, disableBuildChecks: true }, null],
+    ['t`` macro', { compileTimeHash: false, disableBuildChecks: true }, null],
+    [
+      'useGT()',
+      { devHotReload: true },
+      { has: ['GtInternalRuntimeTranslateString', '"$_hash": "'] },
+    ],
+  ])('%s with options %j', async (code, options, expected) => {
+    const { outputs } = await runPlugin(options, CODE[code]);
+    if (expected === null) {
+      expect(outputs).toEqual([null]);
+      return;
     }
-  });
-
-  it('preserves default behavior when auto-loaded gt.config.json has ordinary project settings', async () => {
-    const cwd = createTempDir();
-    writeGTConfig(cwd, {
-      projectId: 'test-project',
-      _versionId: 'test-version',
-      defaultLocale: 'en',
-      locales: ['en', 'es'],
-      files: {
-        gt: {
-          output: 'src/_gt/[locale].json',
-        },
-      },
-    });
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-    try {
-      const output = await transformWithPlugin(undefined, cwd);
-
-      expect(output).toBeNull();
-      expect(warnSpy).not.toHaveBeenCalled();
-    } finally {
-      warnSpy.mockRestore();
-    }
-  });
-
-  it('preserves default behavior when auto-loaded parsingFlags are explicitly disabled', async () => {
-    const cwd = createTempDir();
-    writeGTConfig(cwd, {
-      locales: ['en', 'es'],
-      files: {
-        gt: {
-          output: 'src/_gt/[locale].json',
-          parsingFlags: {
-            enableAutoJsxInjection: false,
-            autoderive: false,
-            devHotReload: false,
-          },
-        },
-      },
-    });
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-    try {
-      const output = await transformWithPlugin(undefined, cwd);
-
-      expect(output).toBeNull();
-      expect(warnSpy).not.toHaveBeenCalled();
-    } finally {
-      warnSpy.mockRestore();
-    }
-  });
-
-  it('warns once per plugin instance when gtConfig cannot be loaded', async () => {
-    const cwd = createTempDir();
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-    try {
-      const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(cwd);
-      const plugin = (() => {
-        try {
-          return gtUnplugin.raw(undefined, { framework: 'vite' });
-        } finally {
-          cwdSpy.mockRestore();
-        }
-      })();
-      const transform = plugin.transform;
-      if (typeof transform !== 'function') {
-        throw new Error('Expected transform hook to be a function');
-      }
-      const context = createTestContext();
-
-      await transform.call(
-        context,
-        JSX_RUNTIME_CODE,
-        path.join(cwd, 'One.tsx')
-      );
-      await transform.call(
-        context,
-        JSX_RUNTIME_CODE,
-        path.join(cwd, 'Two.tsx')
-      );
-
-      expect(warnSpy).toHaveBeenCalledTimes(1);
-      expect(warnSpy).toHaveBeenCalledWith(MISSING_GT_CONFIG_WARNING);
-    } finally {
-      warnSpy.mockRestore();
-    }
-  });
-
-  it('warns that gt.config.json is invalid when the config file cannot be parsed', async () => {
-    const cwd = createTempDir();
-    const configPath = writeInvalidGTConfig(cwd);
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-    try {
-      const output = await transformWithPlugin(undefined, cwd);
-
-      expect(output).toBeNull();
-      expect(warnSpy).toHaveBeenCalledTimes(1);
-      const warning = warnSpy.mock.calls[0]?.[0];
-      expect(warning).toContain(
-        `[@generaltranslation/compiler] Failed to load gt.config.json at ${configPath}.`
-      );
-      expect(warning).toContain('valid gt.config.json');
-      expect(warning).not.toBe(MISSING_GT_CONFIG_WARNING);
-    } finally {
-      warnSpy.mockRestore();
+    for (const text of expected.has ?? []) expect(outputs[0]).toContain(text);
+    for (const text of expected.lacks ?? []) {
+      expect(outputs[0]).not.toContain(text);
     }
   });
 });
@@ -340,20 +291,7 @@ describe('bundler adapters', () => {
   });
 
   it('builds a raw rspack plugin that exposes a transform hook', () => {
-    const plugin = gtUnplugin.raw(
-      {
-        defaultLocale: 'en',
-        locales: ['en', 'es'],
-        files: {
-          gt: {
-            output: 'src/_gt/[locale].json',
-          },
-        },
-      },
-      { framework: 'rspack' }
-    );
-
-    expect(plugin).toBeTypeOf('object');
+    const plugin = gtUnplugin.raw(PROJECT_SETTINGS, { framework: 'rspack' });
     expect(typeof plugin.transform).toBe('function');
   });
 });

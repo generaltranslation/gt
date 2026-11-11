@@ -1,226 +1,169 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fetchWithTimeout } from '../fetchWithTimeout.js';
-import { defaultTimeout } from '../../../settings/settings.js';
+import { fetchWithTimeout } from '../fetchWithTimeout';
+import { translationTimeoutError } from '../../../logging/errors';
+import { defaultTimeout } from '../../../settings/settings';
 
-// Mock dependencies
-const mockTranslationTimeoutError = vi.hoisted(() => vi.fn());
-vi.mock('../../../logging/errors.js', () => ({
-  translationTimeoutError: mockTranslationTimeoutError,
-}));
-
-vi.mock('../../../settings/settings.js', () => ({
-  defaultTimeout: 60000,
-}));
-
-// Mock global fetch
+const url = 'https://api.example.com/test';
 const nativeFetch = globalThis.fetch;
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
 
-describe.sequential('fetchWithTimeout', () => {
-  // Common mock data factories
-  const createMockResponse = (overrides: Partial<Response> = {}): Response => {
-    return {
-      ok: true,
-      status: 200,
-      statusText: 'OK',
-      headers: new Headers(),
-      body: null,
-      bodyUsed: false,
-      arrayBuffer: vi.fn(),
-      blob: vi.fn(),
-      clone: vi.fn(),
-      formData: vi.fn(),
-      json: vi.fn(),
-      text: vi.fn(),
-      url: 'https://api.example.com/test',
-      redirected: false,
-      type: 'basic',
-      ...overrides,
-    } as Response;
-  };
+const createAbortError = (): Error => {
+  const error = new Error('The operation was aborted');
+  error.name = 'AbortError';
+  return error;
+};
 
-  const createAbortError = (): Error => {
-    const error = new Error('The operation was aborted');
-    error.name = 'AbortError';
-    return error;
-  };
+// A fetch that never resolves and rejects with the composed signal's reason
+// once it aborts, optionally after a delay like a slow custom fetch.
+const mockSignalDrivenFetch = (rejectDelayMs?: number) =>
+  mockFetch.mockImplementation(
+    (_url, init) =>
+      new Promise<Response>((_resolve, reject) => {
+        init.signal.addEventListener('abort', () => {
+          const rejectWithReason = () => reject(init.signal.reason);
+          if (rejectDelayMs === undefined) rejectWithReason();
+          else setTimeout(rejectWithReason, rejectDelayMs);
+        });
+      })
+  );
 
-  // A fetch that never resolves and rejects with the composed signal's reason
-  // once it aborts, optionally after a delay like a slow custom fetch.
-  const mockSignalDrivenFetch = (rejectDelayMs?: number) =>
-    mockFetch.mockImplementation(
-      (_url, init) =>
-        new Promise<Response>((_resolve, reject) => {
-          init.signal.addEventListener('abort', () => {
-            const rejectWithReason = () => reject(init.signal.reason);
-            if (rejectDelayMs === undefined) rejectWithReason();
-            else setTimeout(rejectWithReason, rejectDelayMs);
-          });
-        })
-    );
-
+describe('fetchWithTimeout', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    mockTranslationTimeoutError.mockReturnValue('Mocked timeout error');
-    global.fetch = mockFetch;
+    mockFetch.mockReset();
+    vi.stubGlobal('fetch', mockFetch);
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
     vi.useRealTimers();
   });
 
-  describe('successful requests', () => {
-    it('should make successful fetch request without timeout', async () => {
-      const mockResponse = createMockResponse();
-      mockFetch.mockResolvedValue(mockResponse);
+  describe('requests', () => {
+    it.each([
+      ['a string', url],
+      ['a URL', new URL(url)],
+      ['a Request', new Request(url, { method: 'POST' })],
+    ])('passes %s and its options to global fetch', async (_name, input) => {
+      const response = new Response();
+      mockFetch.mockResolvedValue(response);
+      const options = { method: 'POST', body: 'test data' };
 
-      const result = await fetchWithTimeout('https://api.example.com/test', {
-        method: 'GET',
-      });
-
-      expect(mockFetch).toHaveBeenCalledWith('https://api.example.com/test', {
-        method: 'GET',
-        signal: expect.any(AbortSignal),
-      });
-      expect(result).toBe(mockResponse);
-    });
-
-    it('should make successful fetch request with custom timeout', async () => {
-      const mockResponse = createMockResponse();
-      mockFetch.mockResolvedValue(mockResponse);
-
-      const result = await fetchWithTimeout(
-        'https://api.example.com/test',
-        { method: 'POST', body: 'test data' },
-        5000
+      await expect(fetchWithTimeout(input, options, 5000)).resolves.toBe(
+        response
       );
-
-      expect(mockFetch).toHaveBeenCalledWith('https://api.example.com/test', {
-        method: 'POST',
-        body: 'test data',
+      expect(mockFetch).toHaveBeenCalledWith(input, {
+        ...options,
         signal: expect.any(AbortSignal),
       });
-      expect(result).toBe(mockResponse);
     });
 
-    it('should handle URL object as input', async () => {
-      const mockResponse = createMockResponse();
-      mockFetch.mockResolvedValue(mockResponse);
-      const url = new URL('https://api.example.com/test');
+    it('calls a custom fetch implementation instead of the global fetch', async () => {
+      const response = new Response();
+      const customFetch = vi.fn<typeof fetch>().mockResolvedValue(response);
 
-      const result = await fetchWithTimeout(url, { method: 'GET' });
-
-      expect(mockFetch).toHaveBeenCalledWith(url, {
+      await expect(
+        fetchWithTimeout(url, { method: 'GET' }, undefined, customFetch)
+      ).resolves.toBe(response);
+      expect(customFetch).toHaveBeenCalledWith(url, {
         method: 'GET',
         signal: expect.any(AbortSignal),
       });
-      expect(result).toBe(mockResponse);
+      expect(mockFetch).not.toHaveBeenCalled();
     });
 
-    it('should handle Request object as input', async () => {
-      const mockResponse = createMockResponse();
-      mockFetch.mockResolvedValue(mockResponse);
-      const request = new Request('https://api.example.com/test', {
-        method: 'POST',
-      });
+    it.each([
+      ['the options', (signal: AbortSignal) => [url, { signal }] as const],
+      [
+        'a Request',
+        (signal: AbortSignal) => [new Request(url, { signal }), {}] as const,
+      ],
+    ])('composes the caller signal from %s', async (_name, args) => {
+      mockFetch.mockResolvedValue(new Response());
+      const caller = new AbortController();
 
-      const result = await fetchWithTimeout(request, { method: 'GET' });
+      await fetchWithTimeout(...args(caller.signal));
 
-      expect(mockFetch).toHaveBeenCalledWith(request, {
-        method: 'GET',
-        signal: expect.any(AbortSignal),
-      });
-      expect(result).toBe(mockResponse);
+      const signal = mockFetch.mock.calls[0][1].signal as AbortSignal;
+      expect(signal.aborted).toBe(false);
+      caller.abort();
+      expect(signal.aborted).toBe(true);
+    });
+
+    it.each([
+      ['an Error', new TypeError('Invalid URL')],
+      ['a non-Error value', 'String error'],
+    ])('propagates %s rejected by fetch untouched', async (_name, error) => {
+      mockFetch.mockRejectedValue(error);
+
+      await expect(fetchWithTimeout(url, { method: 'GET' })).rejects.toBe(
+        error
+      );
     });
   });
 
-  describe('timeout behavior', () => {
-    it('should use defaultTimeout when no timeout provided', async () => {
-      const mockResponse = createMockResponse();
-      mockFetch.mockResolvedValue(mockResponse);
+  describe('timeouts', () => {
+    it.each([
+      ['a numeric timeout', 3000, 3000],
+      ['the default timeout', undefined, defaultTimeout],
+      ['a literal zero, not the default', 0, 0],
+    ])(
+      'rejects with a timeout error after %s',
+      async (_name, timeoutMs, elapsed) => {
+        vi.useFakeTimers();
+        mockSignalDrivenFetch();
 
-      const result = await fetchWithTimeout('https://api.example.com/test', {
-        method: 'GET',
-      });
+        const rejection = expect(
+          fetchWithTimeout(url, { method: 'GET' }, timeoutMs)
+        ).rejects.toBe(translationTimeoutError(elapsed));
+        await vi.advanceTimersByTimeAsync(elapsed);
 
-      expect(result).toBe(mockResponse);
-    });
-
-    it('should limit timeout to defaultTimeout when provided timeout exceeds it', async () => {
-      const mockResponse = createMockResponse();
-      mockFetch.mockResolvedValue(mockResponse);
-
-      const customTimeout = (defaultTimeout as number) + 10000; // Exceeds defaultTimeout
-      const result = await fetchWithTimeout(
-        'https://api.example.com/test',
-        { method: 'GET' },
-        customTimeout
-      );
-
-      expect(result).toBe(mockResponse);
-    });
-
-    it('throws translationTimeoutError when the numeric timer aborts the fetch', async () => {
-      vi.useFakeTimers();
-      mockSignalDrivenFetch();
-
-      const rejection = expect(
-        fetchWithTimeout(
-          'https://api.example.com/test',
-          { method: 'GET' },
-          3000
-        )
-      ).rejects.toBe('Mocked timeout error');
-      await vi.advanceTimersByTimeAsync(3000);
-
-      await rejection;
-      expect(mockTranslationTimeoutError).toHaveBeenCalledWith(3000);
-    });
+        await rejection;
+      }
+    );
 
     it('converts the SDK abort reason from native fetch into a timeout', async () => {
       vi.useFakeTimers();
-      const pending = fetchWithTimeout(
-        'data:text/plain,hello',
-        {},
-        3000,
-        nativeFetch
-      );
-      const rejection = expect(pending).rejects.toBe('Mocked timeout error');
+      const rejection = expect(
+        fetchWithTimeout('data:text/plain,hello', {}, 3000, nativeFetch)
+      ).rejects.toBe(translationTimeoutError(3000));
       // Abort before native fetch's response microtask settles the data URL.
       vi.advanceTimersByTime(3000);
 
       await rejection;
-      expect(mockTranslationTimeoutError).toHaveBeenCalledWith(3000);
     });
 
-    it('throws translationTimeoutError when the default timer aborts the fetch', async () => {
+    it('does not start a timer when the timeout is false', async () => {
       vi.useFakeTimers();
-      mockSignalDrivenFetch();
+      const response = new Response();
+      mockFetch.mockImplementation(
+        (_url, init) =>
+          new Promise<Response>((resolve, reject) => {
+            init.signal.addEventListener('abort', () =>
+              reject(init.signal.reason)
+            );
+            setTimeout(() => resolve(response), defaultTimeout * 2);
+          })
+      );
 
-      const rejection = expect(
-        fetchWithTimeout('https://api.example.com/test', { method: 'GET' })
-      ).rejects.toBe('Mocked timeout error');
-      await vi.advanceTimersByTimeAsync(defaultTimeout);
+      const pending = fetchWithTimeout(url, { method: 'GET' }, false);
+      await vi.advanceTimersByTimeAsync(defaultTimeout * 2);
 
-      await rejection;
-      expect(mockTranslationTimeoutError).toHaveBeenCalledWith(defaultTimeout);
+      await expect(pending).resolves.toBe(response);
     });
+  });
 
-    it('propagates a fetch-owned AbortError untouched when the timer has not fired', async () => {
-      const abortError = createAbortError();
-      mockFetch.mockRejectedValue(abortError);
+  describe('cancellations that are not timeouts', () => {
+    it.each([3000, false] as const)(
+      'propagates a fetch-owned AbortError untouched with timeout %s',
+      async (timeoutMs) => {
+        const abortError = createAbortError();
+        mockFetch.mockRejectedValue(abortError);
 
-      await expect(
-        fetchWithTimeout(
-          'https://api.example.com/test',
-          { method: 'GET' },
-          3000
-        )
-      ).rejects.toBe(abortError);
-      expect(mockTranslationTimeoutError).not.toHaveBeenCalled();
-    });
+        await expect(
+          fetchWithTimeout(url, { method: 'GET' }, timeoutMs)
+        ).rejects.toBe(abortError);
+      }
+    );
 
     it('preserves a private native cancellation through cleanup past the SDK deadline', async () => {
       vi.useFakeTimers();
@@ -251,7 +194,6 @@ describe.sequential('fetchWithTimeout', () => {
         expect(pending).rejects.toBe(privateController.signal.reason),
         vi.advanceTimersByTimeAsync(5000),
       ]);
-      expect(mockTranslationTimeoutError).not.toHaveBeenCalled();
     });
 
     it('propagates a caller abort untouched when the fetch rejects only after the timer fires', async () => {
@@ -262,7 +204,7 @@ describe.sequential('fetchWithTimeout', () => {
 
       const rejection = expect(
         fetchWithTimeout(
-          'https://api.example.com/test',
+          url,
           { method: 'GET', signal: callerController.signal },
           3000
         )
@@ -271,241 +213,6 @@ describe.sequential('fetchWithTimeout', () => {
       await vi.advanceTimersByTimeAsync(5000);
 
       await rejection;
-      expect(mockTranslationTimeoutError).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('error handling', () => {
-    it('should propagate non-AbortError errors', async () => {
-      const networkError = new Error('Network error');
-      networkError.name = 'NetworkError';
-      mockFetch.mockRejectedValue(networkError);
-
-      await expect(
-        fetchWithTimeout('https://api.example.com/test', { method: 'GET' })
-      ).rejects.toThrow('Network error');
-
-      expect(mockTranslationTimeoutError).not.toHaveBeenCalled();
-    });
-
-    it('should handle TypeError (e.g., invalid URL)', async () => {
-      const typeError = new TypeError('Invalid URL');
-      mockFetch.mockRejectedValue(typeError);
-
-      await expect(
-        fetchWithTimeout('invalid-url', { method: 'GET' })
-      ).rejects.toThrow('Invalid URL');
-
-      expect(mockTranslationTimeoutError).not.toHaveBeenCalled();
-    });
-
-    it('should handle generic Error objects', async () => {
-      const genericError = new Error('Generic error');
-      genericError.name = 'GenericError';
-      mockFetch.mockRejectedValue(genericError);
-
-      await expect(
-        fetchWithTimeout('https://api.example.com/test', { method: 'GET' })
-      ).rejects.toThrow('Generic error');
-
-      expect(mockTranslationTimeoutError).not.toHaveBeenCalled();
-    });
-
-    it('should handle non-Error objects being thrown', async () => {
-      const stringError = 'String error';
-      mockFetch.mockRejectedValue(stringError);
-
-      await expect(
-        fetchWithTimeout('https://api.example.com/test', { method: 'GET' })
-      ).rejects.toBe(stringError);
-
-      expect(mockTranslationTimeoutError).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('request options', () => {
-    it('should preserve RequestInit options and add signal', async () => {
-      const mockResponse = createMockResponse();
-      mockFetch.mockResolvedValue(mockResponse);
-
-      const options: RequestInit = {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ test: 'data' }),
-      };
-
-      const result = await fetchWithTimeout(
-        'https://api.example.com/test',
-        options
-      );
-
-      expect(result).toBe(mockResponse);
-      // Test that the function completed successfully with the expected response
-      expect(result.ok).toBe(true);
-      expect(result.status).toBe(200);
-    });
-
-    it('composes the caller signal with its timeout signal', async () => {
-      const mockResponse = createMockResponse();
-      mockFetch.mockResolvedValue(mockResponse);
-
-      const existingController = new AbortController();
-      await fetchWithTimeout('https://api.example.com/test', {
-        method: 'GET',
-        signal: existingController.signal,
-      });
-
-      const signal = mockFetch.mock.calls[0][1].signal as AbortSignal;
-      expect(signal.aborted).toBe(false);
-      existingController.abort();
-      expect(signal.aborted).toBe(true);
-    });
-
-    it('composes a Request signal with its timeout signal', async () => {
-      const mockResponse = createMockResponse();
-      mockFetch.mockResolvedValue(mockResponse);
-
-      const existingController = new AbortController();
-      const request = new Request('https://api.example.com/test', {
-        signal: existingController.signal,
-      });
-      await fetchWithTimeout(request, { method: 'GET' });
-
-      const signal = mockFetch.mock.calls[0][1].signal as AbortSignal;
-      expect(signal.aborted).toBe(false);
-      existingController.abort();
-      expect(signal.aborted).toBe(true);
-    });
-  });
-
-  describe('edge cases', () => {
-    it('treats an explicit timeout of 0 as a literal zero, not the default', async () => {
-      vi.useFakeTimers();
-      mockSignalDrivenFetch();
-
-      const rejection = expect(
-        fetchWithTimeout('https://api.example.com/test', { method: 'GET' }, 0)
-      ).rejects.toBe('Mocked timeout error');
-      await vi.advanceTimersByTimeAsync(0);
-
-      await rejection;
-      expect(mockTranslationTimeoutError).toHaveBeenCalledWith(0);
-    });
-
-    it('does not start a timer when the timeout is false', async () => {
-      vi.useFakeTimers();
-      const mockResponse = createMockResponse();
-      mockFetch.mockImplementation(
-        (_url, init) =>
-          new Promise<Response>((resolve, reject) => {
-            init.signal.addEventListener('abort', () =>
-              reject(init.signal.reason)
-            );
-            setTimeout(() => resolve(mockResponse), defaultTimeout * 2);
-          })
-      );
-
-      const pending = fetchWithTimeout(
-        'https://api.example.com/test',
-        { method: 'GET' },
-        false
-      );
-      await vi.advanceTimersByTimeAsync(defaultTimeout * 2);
-
-      await expect(pending).resolves.toBe(mockResponse);
-      expect(mockTranslationTimeoutError).not.toHaveBeenCalled();
-    });
-
-    it('propagates caller cancellation untouched when the timeout is false', async () => {
-      const abortError = createAbortError();
-      mockFetch.mockRejectedValue(abortError);
-
-      await expect(
-        fetchWithTimeout(
-          'https://api.example.com/test',
-          { method: 'GET' },
-          false
-        )
-      ).rejects.toBe(abortError);
-      expect(mockTranslationTimeoutError).not.toHaveBeenCalled();
-    });
-
-    it('calls a custom fetch implementation instead of the global fetch', async () => {
-      const mockResponse = createMockResponse();
-      const customFetch = vi.fn<typeof fetch>().mockResolvedValue(mockResponse);
-
-      const result = await fetchWithTimeout(
-        'https://api.example.com/test',
-        { method: 'GET' },
-        undefined,
-        customFetch
-      );
-
-      expect(result).toBe(mockResponse);
-      expect(customFetch).toHaveBeenCalledWith('https://api.example.com/test', {
-        method: 'GET',
-        signal: expect.any(AbortSignal),
-      });
-      expect(mockFetch).not.toHaveBeenCalled();
-    });
-
-    it('should handle negative timeout values', async () => {
-      const mockResponse = createMockResponse();
-      mockFetch.mockResolvedValue(mockResponse);
-
-      const result = await fetchWithTimeout(
-        'https://api.example.com/test',
-        { method: 'GET' },
-        -1000
-      );
-
-      expect(result).toBe(mockResponse);
-    });
-
-    it('should handle undefined timeout', async () => {
-      const mockResponse = createMockResponse();
-      mockFetch.mockResolvedValue(mockResponse);
-
-      const result = await fetchWithTimeout(
-        'https://api.example.com/test',
-        { method: 'GET' },
-        undefined
-      );
-
-      expect(result).toBe(mockResponse);
-    });
-  });
-
-  describe('AbortController integration', () => {
-    it('should create AbortController and set signal', async () => {
-      const mockResponse = createMockResponse();
-      mockFetch.mockResolvedValue(mockResponse);
-
-      await fetchWithTimeout('https://api.example.com/test', { method: 'GET' });
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.example.com/test',
-        expect.objectContaining({
-          signal: expect.any(AbortSignal),
-        })
-      );
-    });
-
-    it('should respect timeout parameter in Math.min calculation', async () => {
-      const mockResponse = createMockResponse();
-      mockFetch.mockResolvedValue(mockResponse);
-
-      // Test with timeout less than defaultTimeout
-      const smallTimeout = 5000;
-      const result = await fetchWithTimeout(
-        'https://api.example.com/test',
-        { method: 'GET' },
-        smallTimeout
-      );
-
-      expect(result).toBe(mockResponse);
     });
   });
 });

@@ -1,4 +1,13 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeAll,
+  beforeEach,
+  afterEach,
+} from 'vitest';
+import type { MockInstance } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import type { NextConfig } from 'next';
@@ -24,96 +33,242 @@ const mockVersionInfo = vi.hoisted(() => ({
 
 vi.mock('../plugin/getStableNextVersionInfo', () => mockVersionInfo);
 
+// The default render settings are derived from NODE_ENV when the config
+// module loads, so it is imported once the development env is in place.
+let withGTConfig: typeof import('../config').withGTConfig;
+
+beforeAll(async () => {
+  vi.stubEnv('NODE_ENV', 'development');
+  ({ withGTConfig } = await import('../config'));
+});
+
 // ---- Helpers ---- //
 
-function parseConfigParams(result: NextConfig) {
-  return JSON.parse(result.env!._GENERALTRANSLATION_I18N_CONFIG_PARAMS!);
+type GTProps = NonNullable<Parameters<typeof withGTConfig>[1]>;
+type WebpackConfigArg = Parameters<NonNullable<NextConfig['webpack']>>[0];
+type WebpackOptions = Parameters<NonNullable<NextConfig['webpack']>>[1];
+// Mirrors webpack condition semantics: string = path prefix, RegExp = test,
+// array = any-of.
+type Condition = string | RegExp | Condition[];
+type Rule = { test: Condition; include?: Condition; type: string };
+type WebpackConfig = {
+  context: string;
+  resolve: { alias: Record<string, unknown> };
+  plugins: unknown[];
+  cache: boolean;
+  module?: { rules?: Rule[] };
+};
+
+const CONFLICT = /[Cc]onflicting configuration/;
+const I18N_MISMATCH =
+  'Next.js internationalized routing does not match the GT config file';
+const LOAD_TRANSLATIONS = './loadTranslations.ts';
+
+let warn: MockInstance<typeof console.warn>;
+
+/** Runs withGTConfig() on an object config and returns its env block. */
+function buildEnv(props?: GTProps, nextConfig: NextConfig = {}) {
+  return withGTConfig(nextConfig, props).env!;
 }
 
-function makeWebpackConfig() {
-  return {
+/** Runs withGTConfig() and parses the serialized server config params. */
+function buildParams(props?: GTProps, nextConfig: NextConfig = {}) {
+  return JSON.parse(
+    buildEnv(props, nextConfig)._GENERALTRANSLATION_I18N_CONFIG_PARAMS!
+  );
+}
+
+/** Makes exactly these paths exist, as given (not resolved). */
+function mockExistingPaths(...paths: string[]) {
+  vi.mocked(fs.existsSync).mockImplementation((p) => paths.includes(String(p)));
+}
+
+/** Makes exactly these project-relative files exist at their resolved path. */
+function mockExistingFiles(...files: string[]) {
+  mockExistingPaths(...files.map((file) => path.resolve(file)));
+}
+
+/** Provides a GT config file with the given contents. */
+function mockConfigFile(config: object | string, at = './gt.config.json') {
+  mockExistingPaths(at);
+  vi.mocked(fs.readFileSync).mockReturnValue(
+    typeof config === 'string' ? config : JSON.stringify(config)
+  );
+}
+
+function stubCredentials(env: Record<string, string>) {
+  for (const [name, value] of Object.entries(env)) vi.stubEnv(name, value);
+}
+
+function runWebpack(
+  result: NextConfig,
+  options: Partial<WebpackOptions> = { isServer: true }
+) {
+  const config: WebpackConfig = {
     context: '/fake/project',
     resolve: { alias: {} },
     plugins: [],
     cache: true,
   };
+  const returned = result.webpack!(
+    config as WebpackConfigArg,
+    options as WebpackOptions
+  );
+  return { config, returned };
 }
 
-type WebpackConfig = ReturnType<typeof makeWebpackConfig>;
-type WebpackConfigArg = Parameters<NonNullable<NextConfig['webpack']>>[0];
-type WebpackOptions = Parameters<NonNullable<NextConfig['webpack']>>[1];
-
-function makeWebpackOptions() {
-  return { isServer: true } as WebpackOptions;
+function findAutoRule(config: WebpackConfig) {
+  return (config.module?.rules ?? []).find((r) => r.type === 'javascript/auto');
 }
 
-function runWebpack(result: NextConfig, config: WebpackConfig) {
-  return result.webpack!(config as WebpackConfigArg, makeWebpackOptions());
+function conditionMatches(cond: Condition, p: string): boolean {
+  return typeof cond === 'string'
+    ? p.startsWith(cond)
+    : Array.isArray(cond)
+      ? cond.some((c) => conditionMatches(c, p))
+      : cond.test(p);
+}
+
+function ruleAppliesTo(rule: Rule, p: string) {
+  return (
+    conditionMatches(rule.test, p) &&
+    (!rule.include || conditionMatches(rule.include, p))
+  );
 }
 
 // ---- Setup ---- //
 
-let savedEnv: NodeJS.ProcessEnv;
-
 beforeEach(() => {
-  savedEnv = { ...process.env };
-  delete process.env.GT_PROJECT_ID;
-  delete process.env.GT_API_KEY;
-  delete process.env.GT_DEV_API_KEY;
-  delete process.env.NEXT_PUBLIC_GT_PROJECT_ID;
-  delete process.env.NEXT_PUBLIC_GT_DEV_API_KEY;
-  delete process.env.TURBOPACK;
-  process.env.NODE_ENV = 'development';
-  vi.clearAllMocks();
-  mockVersionInfo.rootParamStability = 'experimental';
-  mockVersionInfo.turboConfigStable = true;
-  mockVersionInfo.localeRefreshSupported = true;
-  mockVersionInfo.swcPluginCompatible = true;
-  mockVersionInfo.babelPluginCompatible = true;
-  vi.mocked(fs.existsSync).mockReturnValue(false);
-  vi.mocked(fs.readFileSync).mockReturnValue('{}');
+  for (const name of [
+    'GT_PROJECT_ID',
+    'GT_API_KEY',
+    'GT_DEV_API_KEY',
+    'NEXT_PUBLIC_GT_PROJECT_ID',
+    'NEXT_PUBLIC_GT_DEV_API_KEY',
+    'TURBOPACK',
+  ]) {
+    vi.stubEnv(name, undefined);
+  }
+  vi.stubEnv('NODE_ENV', 'development');
+  Object.assign(mockVersionInfo, {
+    rootParamStability: 'experimental',
+    turboConfigStable: true,
+    localeRefreshSupported: true,
+    swcPluginCompatible: true,
+    babelPluginCompatible: true,
+  });
+  // Restores the fs mocks to "no files exist".
+  vi.resetAllMocks();
+  warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 });
 
 afterEach(() => {
-  process.env = savedEnv;
+  vi.restoreAllMocks();
+  vi.unstubAllEnvs();
 });
 
 // ---- Tests ---- //
 
 describe('withGTConfig', () => {
-  // Lazy import to ensure mocks are in place
-  async function getWithGTConfig() {
-    const mod = await import('../config');
-    return mod.withGTConfig;
-  }
-
-  it.each([false, true])(
-    'exports locale refresh support (%s) from the detected Next version',
-    async (supported) => {
-      mockVersionInfo.localeRefreshSupported = supported;
-      const withGTConfig = await getWithGTConfig();
-      expect(
-        withGTConfig().env?._GENERALTRANSLATION_LOCALE_REFRESH_SUPPORTED
-      ).toBe(String(supported));
-    }
-  );
-
-  // ==============================
-  // 1. Default behavior
-  // ==============================
-  describe('1. Default behavior (no props, no config file)', () => {
-    it('returns NextConfig with env, webpack, experimental', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig();
+  describe('defaults', () => {
+    it.each([undefined, {}])('layers GT onto nextConfig %j', (nextConfig) => {
+      const result = withGTConfig(nextConfig);
 
       expect(result).toHaveProperty('env');
-      expect(result).toHaveProperty('webpack');
-      expect(result).toHaveProperty('experimental');
-      expect(typeof result.webpack).toBe('function');
+      expect(result.webpack).toBeTypeOf('function');
+      expect(result.experimental!.swcPlugins).toEqual([]);
     });
 
-    it('adds gt-next to transpilePackages while preserving user packages', async () => {
-      const withGTConfig = await getWithGTConfig();
+    it('serializes the library defaults into the config params', () => {
+      expect(buildParams()).toMatchObject({
+        _usingPlugin: true,
+        defaultLocale: 'en',
+        loadDictionaryEnabled: false,
+        loadTranslationsType: 'remote',
+        maxConcurrentRequests: 100,
+        maxBatchSize: 25,
+        batchInterval: 50,
+        // Remote translations without a dev API key are cached for a minute.
+        cacheExpiryTime: 60000,
+        experimentalCompilerOptions: {
+          type: 'none',
+          logLevel: 'warn',
+          compileTimeHash: true,
+          disableBuildChecks: false,
+        },
+        renderSettings: { method: 'default', timeout: 8000 },
+        headersAndCookies: {
+          localeHeaderName: 'x-generaltranslation-locale',
+          localeCookieName: 'generaltranslation.locale',
+          enableI18nCookieName: 'generaltranslation.enable-i18n',
+          referrerLocaleCookieName: 'generaltranslation.referrer-locale',
+          localeRoutingEnabledCookieName:
+            'generaltranslation.locale-routing-enabled',
+          resetLocaleCookieName: 'generaltranslation.locale-reset',
+        },
+      });
+    });
+
+    it('exposes every flag to Next.js as a string env var', () => {
+      const env = buildEnv();
+
+      expect(env).toMatchObject({
+        _GENERALTRANSLATION_I18N_CONFIG_PARAMS: expect.any(String),
+        _GENERALTRANSLATION_MIDDLEWARE_CONFIG: '{}',
+        _GENERALTRANSLATION_DEFAULT_LOCALE: 'en',
+        _GENERALTRANSLATION_GT_SERVICES_ENABLED: 'false',
+        _GENERALTRANSLATION_LOCAL_DICTIONARY_ENABLED: 'false',
+        _GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED: 'false',
+        _GENERALTRANSLATION_IGNORE_BROWSER_LOCALES: 'false',
+        _GENERALTRANSLATION_CUSTOM_GET_LOCALE_ENABLED: expect.any(String),
+        _GENERALTRANSLATION_CUSTOM_GET_REGION_ENABLED: expect.any(String),
+        _GENERALTRANSLATION_DISABLE_INVALID_LOCALE_WARNING: 'false',
+      });
+      // No dictionary was found, so no dictionary file type is exposed.
+      expect(env._GENERALTRANSLATION_DICTIONARY_FILE_TYPE).toBeUndefined();
+      for (const [key, value] of Object.entries(env)) {
+        if (key.startsWith('_GENERALTRANSLATION_')) {
+          expect(value, key).toBeTypeOf('string');
+        }
+      }
+    });
+
+    it.each([false, true])(
+      'exports locale refresh support (%s) from the detected Next version',
+      (supported) => {
+        mockVersionInfo.localeRefreshSupported = supported;
+
+        expect(buildEnv()._GENERALTRANSLATION_LOCALE_REFRESH_SUPPORTED).toBe(
+          String(supported)
+        );
+      }
+    );
+
+    it('opts into experimental.rootParams only while root params are experimental', () => {
+      expect(withGTConfig().experimental!.rootParams).toBe(true);
+
+      mockVersionInfo.rootParamStability = 'stable';
+      expect(withGTConfig().experimental).not.toHaveProperty('rootParams');
+    });
+  });
+
+  describe('nextConfig passthrough', () => {
+    it('preserves existing nextConfig properties and env', () => {
+      const result = withGTConfig({
+        images: { domains: ['example.com'] },
+        reactStrictMode: true,
+        compress: false,
+        env: { MY_EXISTING_VAR: 'hello' },
+      });
+
+      expect(result.images).toEqual({ domains: ['example.com'] });
+      expect(result.reactStrictMode).toBe(true);
+      expect(result.compress).toBe(false);
+      expect(result.env!.MY_EXISTING_VAR).toBe('hello');
+      expect(result.env!._GENERALTRANSLATION_I18N_CONFIG_PARAMS).toBeDefined();
+    });
+
+    it('adds gt-next to transpilePackages while preserving user packages', () => {
       const result = withGTConfig({
         transpilePackages: ['existing-package', 'gt-next'],
       });
@@ -121,1505 +276,404 @@ describe('withGTConfig', () => {
       expect(result.transpilePackages).toEqual(['existing-package', 'gt-next']);
     });
 
-    it('preserves the user-owned Next.js i18n configuration unchanged', async () => {
-      const withGTConfig = await getWithGTConfig();
+    it.each([
+      ['a sync', (_phase: string): NextConfig => ({ reactStrictMode: true })],
+      [
+        'an async',
+        async (_phase: string): Promise<NextConfig> => ({
+          reactStrictMode: true,
+        }),
+      ],
+    ])('layers GT on the result of %s config function', async (_, factory) => {
+      const built = withGTConfig(factory);
+
+      expect(built).toBeTypeOf('function');
+      const resolved = await (
+        built as unknown as (
+          phase: string,
+          context: { defaultConfig: NextConfig }
+        ) => NextConfig | Promise<NextConfig>
+      )('phase-production-build', { defaultConfig: {} });
+
+      expect(resolved.reactStrictMode).toBe(true);
+      expect(resolved).toHaveProperty('env');
+      expect(resolved.webpack).toBeTypeOf('function');
+      expect(resolved.transpilePackages).toContain('gt-next');
+    });
+  });
+
+  describe('Next.js i18n configuration', () => {
+    it('preserves the user-owned Next.js i18n configuration unchanged', () => {
       const i18n = {
         locales: ['en', 'fr'],
         defaultLocale: 'en',
         localeDetection: false,
-        domains: [
-          {
-            domain: 'example.fr',
-            defaultLocale: 'fr',
-          },
-        ],
+        domains: [{ domain: 'example.fr', defaultLocale: 'fr' }],
       } satisfies NonNullable<NextConfig['i18n']>;
 
       const result = withGTConfig({ i18n });
-      const privateParams = parseConfigParams(result);
       const clientParams = JSON.parse(
         result.env!.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS!
       );
 
       expect(result.i18n).toBe(i18n);
-      expect(privateParams.headersAndCookies.localeCookieName).toBe(
-        'generaltranslation.locale'
-      );
+      expect(
+        JSON.parse(result.env!._GENERALTRANSLATION_I18N_CONFIG_PARAMS!)
+          .headersAndCookies.localeCookieName
+      ).toBe('generaltranslation.locale');
       expect(clientParams.headersAndCookies.localeCookieName).toBe(
         'generaltranslation.locale'
       );
     });
 
-    it('uses NEXT_LOCALE when Next.js locale detection is enabled', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig(
-        {
-          i18n: {
-            locales: ['en', 'fr'],
-            defaultLocale: 'en',
-          },
-        },
-        {
-          headersAndCookies: {
-            localeCookieName: 'custom-locale',
-          },
-        }
-      );
-
-      expect(parseConfigParams(result).headersAndCookies.localeCookieName).toBe(
-        nextLocaleCookieName
-      );
-    });
-
-    it('preserves a custom GT cookie when Next.js locale detection is disabled', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig(
-        {
-          i18n: {
-            locales: ['en', 'fr'],
-            defaultLocale: 'en',
-            localeDetection: false,
-          },
-        },
-        {
-          headersAndCookies: {
-            localeCookieName: 'custom-locale',
-          },
-        }
-      );
-
-      expect(parseConfigParams(result).headersAndCookies.localeCookieName).toBe(
-        'custom-locale'
-      );
-    });
-
-    it('sets _usingPlugin to true in config params', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      expect(params._usingPlugin).toBe(true);
-    });
-
-    it('defaults to locale "en"', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      expect(params.defaultLocale).toBe('en');
-      expect(result.env!._GENERALTRANSLATION_DEFAULT_LOCALE).toBe('en');
-    });
-
-    it('has GT services disabled (no projectId)', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig();
-
-      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('false');
-    });
-
-    it('has loadDictionaryEnabled false and loadTranslationsType remote', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      expect(params.loadDictionaryEnabled).toBe(false);
-      expect(params.loadTranslationsType).toBe('remote');
-      expect(result.env!._GENERALTRANSLATION_LOCAL_DICTIONARY_ENABLED).toBe(
-        'false'
-      );
-      expect(result.env!._GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED).toBe(
-        'false'
-      );
-    });
-
-    it('has default batching config', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      expect(params.maxConcurrentRequests).toBe(100);
-      expect(params.maxBatchSize).toBe(25);
-      expect(params.batchInterval).toBe(50);
-    });
-
-    it('has default compiler config', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      expect(params.experimentalCompilerOptions).toMatchObject({
-        type: 'none',
-        logLevel: 'warn',
-        compileTimeHash: true,
-        disableBuildChecks: false,
-      });
-    });
-
-    it('has default render settings for development', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      expect(params.renderSettings).toMatchObject({
-        method: 'default',
-        timeout: 8000,
-      });
-    });
-
-    it('has default headers/cookies values', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      expect(params.headersAndCookies).toMatchObject({
-        localeHeaderName: 'x-generaltranslation-locale',
-        localeCookieName: 'generaltranslation.locale',
-        enableI18nCookieName: 'generaltranslation.enable-i18n',
-        referrerLocaleCookieName: 'generaltranslation.referrer-locale',
-        localeRoutingEnabledCookieName:
-          'generaltranslation.locale-routing-enabled',
-        resetLocaleCookieName: 'generaltranslation.locale-reset',
-      });
-    });
-
-    it('has ignoreBrowserLocales false', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig();
-
-      expect(result.env!._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES).toBe(
-        'false'
-      );
-    });
-
-    it('sets all expected _GENERALTRANSLATION_* env vars as strings', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig();
-
-      const gtKeys = Object.keys(result.env!).filter((k) =>
-        k.startsWith('_GENERALTRANSLATION_')
-      );
-      expect(gtKeys.length).toBeGreaterThan(0);
-
-      for (const key of gtKeys) {
-        expect(typeof result.env![key]).toBe('string');
-      }
-    });
-
-    it('has empty swcPlugins array in experimental', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig();
-
-      expect(result.experimental!.swcPlugins).toEqual([]);
-    });
-
-    it('sets experimental.rootParams to true (since mocked rootParamStability = experimental)', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig();
-
-      expect(result.experimental!.rootParams).toBe(true);
-    });
-
-    it('omits experimental.rootParams when root params are stable', async () => {
-      const withGTConfig = await getWithGTConfig();
-      mockVersionInfo.rootParamStability = 'stable';
-      const result = withGTConfig();
-
-      expect(result.experimental).not.toHaveProperty('rootParams');
-    });
-  });
-
-  // ==============================
-  // 2. Config file loading
-  // ==============================
-  describe('2. Config file loading', () => {
-    it('loads from ./gt.config.json when it exists', async () => {
-      const withGTConfig = await getWithGTConfig();
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === './gt.config.json') return true;
-        return false;
-      });
-      vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({ defaultLocale: 'fr' })
-      );
-
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      expect(params.defaultLocale).toBe('fr');
-    });
-
-    it('falls back to ./.gt/gt.config.json', async () => {
-      const withGTConfig = await getWithGTConfig();
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === './.gt/gt.config.json') return true;
-        return false;
-      });
-      vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({ defaultLocale: 'de' })
-      );
-
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      expect(params.defaultLocale).toBe('de');
-    });
-
-    it('falls back to ./.locadex/gt.config.json (legacy)', async () => {
-      const withGTConfig = await getWithGTConfig();
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === './.locadex/gt.config.json') return true;
-        return false;
-      });
-      vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({ defaultLocale: 'ja' })
-      );
-
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      expect(params.defaultLocale).toBe('ja');
-    });
-
-    it('prioritizes default path over .gt/ and .locadex/', async () => {
-      const withGTConfig = await getWithGTConfig();
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === './gt.config.json') return true;
-        if (p === './.gt/gt.config.json') return true;
-        if (p === './.locadex/gt.config.json') return true;
-        return false;
-      });
-      vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({ defaultLocale: 'it' })
-      );
-
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      // Should have loaded from ./gt.config.json (first priority)
-      expect(params.defaultLocale).toBe('it');
-    });
-
-    it('uses custom props.config path directly', async () => {
-      const withGTConfig = await getWithGTConfig();
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === './custom/my-config.json') return true;
-        return false;
-      });
-      vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({ defaultLocale: 'ko' })
-      );
-
-      const result = withGTConfig({}, { config: './custom/my-config.json' });
-      const params = parseConfigParams(result);
-
-      expect(params.defaultLocale).toBe('ko');
-    });
-
-    it('handles invalid JSON in config file gracefully', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const consoleSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
-
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === './gt.config.json') return true;
-        return false;
-      });
-      vi.mocked(fs.readFileSync).mockReturnValue('not valid json!!!');
-
-      // Should not throw, just use defaults
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      expect(params.defaultLocale).toBe('en');
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
-    });
-
-    it('config file values merge into output correctly', async () => {
-      const withGTConfig = await getWithGTConfig();
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === './gt.config.json') return true;
-        return false;
-      });
-      vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({
-          defaultLocale: 'es',
-          locales: ['es', 'en'],
-          maxBatchSize: 50,
-        })
-      );
-
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      expect(params.defaultLocale).toBe('es');
-      expect(params.maxBatchSize).toBe(50);
-      // locales should have defaultLocale prepended and be deduped
-      expect(params.locales).toContain('es');
-      expect(params.locales).toContain('en');
-    });
-
-    it('warns when the GT locale fields differ from Next.js i18n', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {});
-      vi.mocked(fs.existsSync).mockImplementation(
-        (configPath) => configPath === './gt.config.json'
-      );
-      vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({
-          defaultLocale: 'en',
-          locales: ['en', 'fr'],
-        })
-      );
-
-      withGTConfig({
-        i18n: {
-          defaultLocale: 'es',
-          locales: ['es', 'de'],
-        },
-      });
-
-      const mismatchWarnings = consoleWarnSpy.mock.calls
-        .map(([message]) => String(message))
-        .filter((message) =>
-          message.includes(
-            'Next.js internationalized routing does not match the GT config file'
-          )
+    it.each([
+      // Next.js locale detection only reads its own preference cookie.
+      { localeDetection: undefined, expected: nextLocaleCookieName },
+      { localeDetection: false as const, expected: 'custom-locale' },
+    ])(
+      'uses the $expected cookie with localeDetection=$localeDetection',
+      ({ localeDetection, expected }) => {
+        const params = buildParams(
+          { headersAndCookies: { localeCookieName: 'custom-locale' } },
+          {
+            i18n: {
+              locales: ['en', 'fr'],
+              defaultLocale: 'en',
+              localeDetection,
+            },
+          }
         );
-      expect(mismatchWarnings).toHaveLength(1);
-      expect(mismatchWarnings[0]).toContain(
-        'defaultLocale: GT has "en"; Next.js has "es"'
-      );
-      expect(mismatchWarnings[0]).toContain(
+
+        expect(params.headersAndCookies.localeCookieName).toBe(expected);
+      }
+    );
+
+    function mismatchWarnings() {
+      return warn.mock.calls
+        .map(([message]) => String(message))
+        .filter((message) => message.includes(I18N_MISMATCH));
+    }
+
+    it('warns when the GT locale fields differ from Next.js i18n', () => {
+      mockConfigFile({ defaultLocale: 'en', locales: ['en', 'fr'] });
+
+      withGTConfig({ i18n: { defaultLocale: 'es', locales: ['es', 'de'] } });
+
+      expect(mismatchWarnings()).toEqual([
+        expect.stringContaining('defaultLocale: GT has "en"; Next.js has "es"'),
+      ]);
+      expect(mismatchWarnings()[0]).toContain(
         'locales: GT has ["en","fr"]; Next.js has ["es","de"]'
       );
-      consoleWarnSpy.mockRestore();
     });
 
-    it('reports the GT locales it compared, including the default locale', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {});
-      vi.mocked(fs.existsSync).mockImplementation(
-        (configPath) => configPath === './gt.config.json'
-      );
-      vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({
-          defaultLocale: 'en',
-          locales: ['fr', 'es'],
-        })
-      );
+    it('reports the GT locales it compared, including the default locale', () => {
+      mockConfigFile({ defaultLocale: 'en', locales: ['fr', 'es'] });
 
-      withGTConfig({
-        i18n: {
-          defaultLocale: 'en',
-          locales: ['fr', 'es'],
-        },
-      });
+      withGTConfig({ i18n: { defaultLocale: 'en', locales: ['fr', 'es'] } });
 
-      const mismatchWarnings = consoleWarnSpy.mock.calls
-        .map(([message]) => String(message))
-        .filter((message) =>
-          message.includes(
-            'Next.js internationalized routing does not match the GT config file'
-          )
-        );
-      expect(mismatchWarnings).toHaveLength(1);
-      expect(mismatchWarnings[0]).toContain(
-        'locales: GT has ["en","fr","es"]; Next.js has ["fr","es"]'
-      );
-      expect(mismatchWarnings[0]).not.toContain('defaultLocale:');
-      consoleWarnSpy.mockRestore();
-    });
-
-    it('does not warn when locale sets match in a different order', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {});
-      vi.mocked(fs.existsSync).mockImplementation(
-        (configPath) => configPath === './gt.config.json'
-      );
-      vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({
-          defaultLocale: 'en',
-          locales: ['fr', 'en'],
-        })
-      );
-
-      withGTConfig({
-        i18n: {
-          defaultLocale: 'en',
-          locales: ['en', 'fr'],
-        },
-      });
-
-      expect(consoleWarnSpy).not.toHaveBeenCalledWith(
+      expect(mismatchWarnings()).toEqual([
         expect.stringContaining(
-          'Next.js internationalized routing does not match the GT config file'
-        )
-      );
-      consoleWarnSpy.mockRestore();
+          'locales: GT has ["en","fr","es"]; Next.js has ["fr","es"]'
+        ),
+      ]);
+      expect(mismatchWarnings()[0]).not.toContain('defaultLocale:');
     });
 
-    it('does not warn when the GT locale list omits its default locale', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {});
-      vi.mocked(fs.existsSync).mockImplementation(
-        (configPath) => configPath === './gt.config.json'
-      );
-      vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({
-          defaultLocale: 'en',
-          locales: ['fr'],
-        })
-      );
+    it.each([
+      ['the locale sets match in a different order', ['fr', 'en']],
+      ['the GT locale list omits its default locale', ['fr']],
+      ['GT normalization removes duplicates', ['fr', 'fr']],
+    ])('does not warn when %s', (_, locales) => {
+      mockConfigFile({ defaultLocale: 'en', locales });
 
-      withGTConfig({
-        i18n: {
-          defaultLocale: 'en',
-          locales: ['en', 'fr'],
-        },
-      });
+      withGTConfig({ i18n: { defaultLocale: 'en', locales: ['en', 'fr'] } });
 
-      expect(consoleWarnSpy).not.toHaveBeenCalledWith(
-        expect.stringContaining(
-          'Next.js internationalized routing does not match the GT config file'
-        )
-      );
-      consoleWarnSpy.mockRestore();
+      expect(mismatchWarnings()).toEqual([]);
     });
 
-    it('does not warn about locale duplicates removed by GT normalization', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {});
-      vi.mocked(fs.existsSync).mockImplementation(
-        (configPath) => configPath === './gt.config.json'
-      );
-      vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({
-          defaultLocale: 'en',
-          locales: ['fr', 'fr'],
-        })
-      );
-
-      withGTConfig({
-        i18n: {
-          defaultLocale: 'en',
-          locales: ['en', 'fr'],
-        },
-      });
-
-      expect(consoleWarnSpy).not.toHaveBeenCalledWith(
-        expect.stringContaining(
-          'Next.js internationalized routing does not match the GT config file'
-        )
-      );
-      consoleWarnSpy.mockRestore();
-    });
-
-    it('does not compare locale fields without Next.js i18n', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {});
-      vi.mocked(fs.existsSync).mockImplementation(
-        (configPath) => configPath === './gt.config.json'
-      );
-      vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({
-          defaultLocale: 'en',
-          locales: ['en', 'fr'],
-        })
-      );
+    it('does not compare locale fields without Next.js i18n', () => {
+      mockConfigFile({ defaultLocale: 'en', locales: ['en', 'fr'] });
 
       withGTConfig();
 
-      expect(consoleWarnSpy).not.toHaveBeenCalledWith(
-        expect.stringContaining(
-          'Next.js internationalized routing does not match the GT config file'
-        )
-      );
-      consoleWarnSpy.mockRestore();
+      expect(mismatchWarnings()).toEqual([]);
     });
   });
 
-  // ==============================
-  // 3. Config merge precedence
-  // ==============================
-  describe('3. Config merge precedence: props > env > config file > defaults', () => {
-    it('config file values override defaults', async () => {
-      const withGTConfig = await getWithGTConfig();
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === './gt.config.json') return true;
-        return false;
-      });
-      vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({ maxBatchSize: 99 })
+  describe('config file loading', () => {
+    const candidates = [
+      './gt.config.json',
+      './.gt/gt.config.json',
+      // Legacy location
+      './.locadex/gt.config.json',
+    ];
+
+    it.each(candidates)('loads %s when it exists', (configPath) => {
+      mockConfigFile({ defaultLocale: 'fr' }, configPath);
+
+      expect(buildParams().defaultLocale).toBe('fr');
+    });
+
+    it('prefers ./gt.config.json, then .gt/, then .locadex/', () => {
+      vi.mocked(fs.readFileSync).mockImplementation((p) =>
+        JSON.stringify({ description: String(p) })
       );
 
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
+      mockExistingPaths(...candidates);
+      expect(buildParams().description).toBe(candidates[0]);
 
-      expect(params.maxBatchSize).toBe(99);
+      mockExistingPaths(...candidates.slice(1));
+      expect(buildParams().description).toBe(candidates[1]);
     });
 
-    it('GT_PROJECT_ID env var is not serialized when config file has projectId', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.GT_PROJECT_ID = 'env-project-id';
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === './gt.config.json') return true;
-        return false;
-      });
-      vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({ projectId: 'config-project-id' })
-      );
-
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      expect(params.projectId).toBeUndefined();
-    });
-
-    it('props projectId is not serialized when overriding env vars', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.GT_PROJECT_ID = 'env-project-id';
-
-      const result = withGTConfig({}, { projectId: 'props-project-id' });
-      const params = parseConfigParams(result);
-
-      expect(params.projectId).toBeUndefined();
-    });
-
-    it('full chain: each layer contributes different values', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.GT_PROJECT_ID = 'env-project-id';
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === './gt.config.json') return true;
-        return false;
-      });
-      vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({
-          maxBatchSize: 99, // config file value (no conflict with props)
-          defaultLocale: 'fr', // config file value (overridden by props)
-        })
-      );
-
-      const result = withGTConfig(
-        {},
-        { defaultLocale: 'fr', maxConcurrentRequests: 200 }
-      );
-      const params = parseConfigParams(result);
-
-      // From config file (not overridden)
-      expect(params.maxBatchSize).toBe(99);
-      // From env (not serialized)
-      expect(params.projectId).toBeUndefined();
-      // From props (overrides all)
-      expect(params.defaultLocale).toBe('fr');
-      expect(params.maxConcurrentRequests).toBe(200);
-      // From defaults (not overridden by any)
-      expect(params.batchInterval).toBe(50);
-    });
-  });
-
-  // ==============================
-  // 4. Config conflict detection
-  // ==============================
-  describe('4. Config conflict detection', () => {
-    it('throws when config file and props have differing primitive values', async () => {
-      const withGTConfig = await getWithGTConfig();
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === './gt.config.json') return true;
-        return false;
-      });
-      vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({ defaultLocale: 'fr' })
-      );
-
-      expect(() => withGTConfig({}, { defaultLocale: 'de' })).toThrow(
-        /[Cc]onflicting/
-      );
-    });
-
-    it('throws on differing arrays (different length)', async () => {
-      const withGTConfig = await getWithGTConfig();
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === './gt.config.json') return true;
-        return false;
-      });
-      vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({ locales: ['en', 'fr'] })
-      );
-
-      expect(() => withGTConfig({}, { locales: ['en'] })).toThrow(
-        /[Cc]onflicting/
-      );
-    });
-
-    it('throws on differing arrays (different values)', async () => {
-      const withGTConfig = await getWithGTConfig();
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === './gt.config.json') return true;
-        return false;
-      });
-      vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({ locales: ['en', 'fr'] })
-      );
-
-      expect(() => withGTConfig({}, { locales: ['en', 'de'] })).toThrow(
-        /[Cc]onflicting/
-      );
-    });
-
-    it('throws on differing objects', async () => {
-      const withGTConfig = await getWithGTConfig();
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === './gt.config.json') return true;
-        return false;
-      });
-      vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({
-          renderSettings: { method: 'skeleton', timeout: 5000 },
-        })
-      );
-
-      expect(() =>
-        withGTConfig(
-          {},
-          { renderSettings: { method: 'default', timeout: 5000 } }
-        )
-      ).toThrow(/[Cc]onflicting/);
-    });
-
-    it('throws when one is null and other is defined', async () => {
-      const withGTConfig = await getWithGTConfig();
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === './gt.config.json') return true;
-        return false;
-      });
-      vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({ runtimeUrl: null })
-      );
-
-      expect(() =>
-        withGTConfig({}, { runtimeUrl: 'https://custom.example.com' })
-      ).toThrow(/[Cc]onflicting/);
-    });
-
-    it('does NOT throw when values are identical (primitives)', async () => {
-      const withGTConfig = await getWithGTConfig();
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === './gt.config.json') return true;
-        return false;
-      });
-      vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({ defaultLocale: 'en' })
-      );
-
-      expect(() => withGTConfig({}, { defaultLocale: 'en' })).not.toThrow();
-    });
-
-    it('does NOT throw when values are identical (arrays)', async () => {
-      const withGTConfig = await getWithGTConfig();
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === './gt.config.json') return true;
-        return false;
-      });
-      vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({ locales: ['en', 'fr'] })
-      );
-
-      expect(() => withGTConfig({}, { locales: ['en', 'fr'] })).not.toThrow();
-    });
-
-    it('does NOT throw when values are identical (objects)', async () => {
-      const withGTConfig = await getWithGTConfig();
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === './gt.config.json') return true;
-        return false;
-      });
-      vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({
-          renderSettings: { method: 'default', timeout: 5000 },
-        })
-      );
-
-      expect(() =>
-        withGTConfig(
-          {},
-          { renderSettings: { method: 'default', timeout: 5000 } }
-        )
-      ).not.toThrow();
-    });
-
-    it('no conflict for keys only in config file (not in props)', async () => {
-      const withGTConfig = await getWithGTConfig();
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === './gt.config.json') return true;
-        return false;
-      });
-      vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({ maxBatchSize: 99 })
-      );
-
-      // props don't have maxBatchSize — no conflict
-      expect(() => withGTConfig({}, { defaultLocale: 'en' })).not.toThrow();
-    });
-
-    it('error message contains key name and both values', async () => {
-      const withGTConfig = await getWithGTConfig();
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === './gt.config.json') return true;
-        return false;
-      });
-      vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({ defaultLocale: 'fr' })
-      );
-
-      try {
-        withGTConfig({}, { defaultLocale: 'de' });
-        expect.fail('Should have thrown');
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-        const message = error instanceof Error ? error.message : '';
-        expect(message).toContain('defaultLocale');
-        expect(message).toContain('fr');
-        expect(message).toContain('de');
-      }
-    });
-  });
-
-  // ==============================
-  // 5. Environment variable handling
-  // ==============================
-  describe('5. Environment variable handling', () => {
-    it('GT_PROJECT_ID enables services but is not serialized', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.GT_PROJECT_ID = 'my-project';
-      process.env.GT_API_KEY = 'dev-key-value';
-
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('true');
-      expect(params.projectId).toBeUndefined();
-    });
-
-    it('GT_API_KEY in production enables services but is not serialized', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.NODE_ENV = 'production';
-      process.env.GT_API_KEY = 'api-key-value';
-      process.env.GT_PROJECT_ID = 'proj';
-
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('true');
-      expect(params.apiKey).toBeUndefined();
-    });
-
-    it('GT_API_KEY in development enables services but is not serialized as devApiKey', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.NODE_ENV = 'development';
-      process.env.GT_PROJECT_ID = 'proj';
-      process.env.GT_API_KEY = 'dev-key-value';
-
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('true');
-      expect(params.devApiKey).toBeUndefined();
-    });
-
-    it('GT_API_KEY in development is not serialized', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.NODE_ENV = 'development';
-      process.env.GT_API_KEY = 'api-key-value';
-
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      expect(params.apiKey).toBeUndefined();
-    });
-
-    it('public development credentials enable services without GT_API_KEY and are not serialized', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.NODE_ENV = 'development';
-      process.env.NEXT_PUBLIC_GT_PROJECT_ID = 'proj';
-      process.env.NEXT_PUBLIC_GT_DEV_API_KEY = 'public-dev-key-value';
-
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      expect(process.env.GT_API_KEY).toBeUndefined();
-      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('true');
-      expect(params.devApiKey).toBeUndefined();
-    });
-
-    it('does not parse key prefixes', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.NODE_ENV = 'development';
-      process.env.GT_PROJECT_ID = 'proj';
-      process.env.GT_API_KEY = 'not-prefixed';
-
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      expect(params.devApiKey).toBeUndefined();
-      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('true');
-    });
-  });
-
-  // ==============================
-  // 6. Dictionary resolution
-  // ==============================
-  describe('6. Dictionary resolution', () => {
-    it('props.dictionary string is used directly; file type set', async () => {
-      const withGTConfig = await getWithGTConfig();
-
-      const result = withGTConfig({}, { dictionary: './my-dict.json' });
-
-      expect(result.env!._GENERALTRANSLATION_DICTIONARY_FILE_TYPE).toBe(
-        '.json'
-      );
-    });
-
-    it('resolves dictionary via resolveConfigFilepath fallback (e.g. ./dictionary.ts)', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const resolvedPath = require('path').resolve('./dictionary.ts');
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === resolvedPath) return true;
-        return false;
-      });
-
-      const result = withGTConfig();
-
-      expect(result.env!._GENERALTRANSLATION_DICTIONARY_FILE_TYPE).toBe('.ts');
-    });
-
-    it('falls back to [defaultLocale].json then [languageCode].json', async () => {
-      const withGTConfig = await getWithGTConfig();
-      // No dictionary.ts/.js/.json found, but en.json exists
-      const resolvedEnJsonPath = require('path').resolve('./en.json');
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === resolvedEnJsonPath) return true;
-        return false;
-      });
-
-      const result = withGTConfig({}, { defaultLocale: 'en' });
-
-      expect(result.env!._GENERALTRANSLATION_DICTIONARY_FILE_TYPE).toBe(
-        '.json'
-      );
-    });
-
-    it('no dictionary found = no _GENERALTRANSLATION_DICTIONARY_FILE_TYPE', async () => {
-      const withGTConfig = await getWithGTConfig();
-      // fs.existsSync returns false for everything (default mock)
-
-      const result = withGTConfig();
+    it('reads a custom props.config path', () => {
+      mockConfigFile({ defaultLocale: 'ko' }, './custom/my-config.json');
 
       expect(
-        result.env!._GENERALTRANSLATION_DICTIONARY_FILE_TYPE
-      ).toBeUndefined();
+        buildParams({ config: './custom/my-config.json' }).defaultLocale
+      ).toBe('ko');
     });
 
-    it('correct file type for .ts extension', async () => {
-      const withGTConfig = await getWithGTConfig();
+    it('falls back to the defaults when the config file is invalid JSON', () => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      mockConfigFile('not valid json!!!');
 
-      const result = withGTConfig({}, { dictionary: './dict.ts' });
-
-      expect(result.env!._GENERALTRANSLATION_DICTIONARY_FILE_TYPE).toBe('.ts');
+      expect(buildParams().defaultLocale).toBe('en');
+      expect(error).toHaveBeenCalled();
     });
 
-    it('correct file type for .js extension', async () => {
-      const withGTConfig = await getWithGTConfig();
+    it('merges props over the config file over the defaults', () => {
+      stubCredentials({ GT_PROJECT_ID: 'env-project-id' });
+      mockConfigFile({
+        maxBatchSize: 99,
+        defaultLocale: 'es',
+        locales: ['es', 'en'],
+      });
 
-      const result = withGTConfig({}, { dictionary: './dict.js' });
+      const params = buildParams({
+        defaultLocale: 'es',
+        maxConcurrentRequests: 200,
+      });
 
-      expect(result.env!._GENERALTRANSLATION_DICTIONARY_FILE_TYPE).toBe('.js');
+      expect(params).toMatchObject({
+        // Config file
+        maxBatchSize: 99,
+        locales: ['es', 'en'],
+        // Props (agreeing with the config file)
+        defaultLocale: 'es',
+        maxConcurrentRequests: 200,
+        // Defaults
+        batchInterval: 50,
+      });
     });
   });
 
-  // ==============================
-  // 7. Custom loader paths
-  // ==============================
-  describe('7. Custom loader paths', () => {
-    it('loadDictionaryPath resolves + file exists = local dictionary enabled', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const resolvedPath = require('path').resolve('./loadDictionary.ts');
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === resolvedPath) return true;
-        return false;
-      });
+  describe('conflicts between the config file and props', () => {
+    it.each([
+      ['primitives', { defaultLocale: 'fr' }, { defaultLocale: 'de' }],
+      [
+        'arrays of different length',
+        { locales: ['en', 'fr'] },
+        { locales: ['en'] },
+      ],
+      [
+        'arrays with different values',
+        { locales: ['en', 'fr'] },
+        { locales: ['en', 'de'] },
+      ],
+      [
+        'objects',
+        { renderSettings: { method: 'skeleton', timeout: 5000 } },
+        { renderSettings: { method: 'default', timeout: 5000 } },
+      ],
+      [
+        'null against a value',
+        { runtimeUrl: null },
+        { runtimeUrl: 'https://custom.example.com' },
+      ],
+    ] as [string, object, GTProps][])(
+      'throws for differing %s',
+      (_, fileConfig, props) => {
+        mockConfigFile(fileConfig);
 
-      const result = withGTConfig(
-        {},
-        { loadDictionaryPath: './loadDictionary.ts' }
-      );
+        expect(() => withGTConfig({}, props)).toThrow(CONFLICT);
+      }
+    );
 
-      expect(result.env!._GENERALTRANSLATION_LOCAL_DICTIONARY_ENABLED).toBe(
-        'true'
-      );
-    });
+    it.each([
+      [
+        'identical primitives',
+        { defaultLocale: 'en' },
+        { defaultLocale: 'en' },
+      ],
+      [
+        'identical arrays',
+        { locales: ['en', 'fr'] },
+        { locales: ['en', 'fr'] },
+      ],
+      [
+        'identical objects',
+        { renderSettings: { method: 'default', timeout: 5000 } },
+        { renderSettings: { method: 'default', timeout: 5000 } },
+      ],
+      [
+        'keys only in the config file',
+        { maxBatchSize: 99 },
+        { defaultLocale: 'en' },
+      ],
+    ] as [string, object, GTProps][])(
+      'does not throw for %s',
+      (_, fileConfig, props) => {
+        mockConfigFile(fileConfig);
 
-    it('loadTranslationsPath resolves + file exists = local translation enabled', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const resolvedPath = require('path').resolve('./loadTranslations.ts');
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === resolvedPath) return true;
-        return false;
-      });
+        expect(() => withGTConfig({}, props)).not.toThrow();
+      }
+    );
 
-      const result = withGTConfig(
-        {},
-        { loadTranslationsPath: './loadTranslations.ts' }
-      );
-
-      expect(result.env!._GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED).toBe(
-        'true'
-      );
-    });
-
-    it('throws when loadDictionaryPath set but file does not exist', async () => {
-      const withGTConfig = await getWithGTConfig();
-      // fs.existsSync returns false by default
-
-      expect(() =>
-        withGTConfig(
-          {},
-          { loadDictionaryPath: './nonexistent/loadDictionary.ts' }
-        )
-      ).toThrow(/loadDictionary/);
-    });
-
-    it('throws when loadTranslationsPath set but file does not exist', async () => {
-      const withGTConfig = await getWithGTConfig();
-      // fs.existsSync returns false by default
-
-      expect(() =>
-        withGTConfig(
-          {},
-          { loadTranslationsPath: './nonexistent/loadTranslations.ts' }
-        )
-      ).toThrow(/loadTranslations/);
-    });
-
-    it('auto-resolves loadDictionary via resolveConfigFilepath when not in props', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const resolvedAutoPath = require('path').resolve('./loadDictionary.ts');
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === resolvedAutoPath) return true;
-        return false;
-      });
-
-      const result = withGTConfig();
-
-      expect(result.env!._GENERALTRANSLATION_LOCAL_DICTIONARY_ENABLED).toBe(
-        'true'
-      );
-    });
-
-    it('auto-resolves loadTranslations via resolveConfigFilepath when not in props', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const resolvedAutoPath = require('path').resolve('./loadTranslations.ts');
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === resolvedAutoPath) return true;
-        return false;
-      });
-
-      const result = withGTConfig();
-
-      expect(result.env!._GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED).toBe(
-        'true'
-      );
-    });
-  });
-
-  // ==============================
-  // 8. Locale handling
-  // ==============================
-  describe('8. Locale handling', () => {
-    it('defaultLocale is prepended to locales array', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig(
-        {},
-        { defaultLocale: 'en', locales: ['fr', 'de'] }
-      );
-      const params = parseConfigParams(result);
-
-      expect(params.locales[0]).toBe('en');
-    });
-
-    it('duplicates removed', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig(
-        {},
-        { defaultLocale: 'en', locales: ['en', 'fr', 'en'] }
-      );
-      const params = parseConfigParams(result);
-
-      const enCount = params.locales.filter((l: string) => l === 'en').length;
-      expect(enCount).toBe(1);
-    });
-
-    it('preserves configured locale spellings when GT services are enabled', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.GT_PROJECT_ID = 'proj';
-      process.env.GT_API_KEY = 'gt-dev-abc';
-      vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-      const result = withGTConfig(
-        {},
-        { defaultLocale: 'en', locales: ['en-us', 'fr-fr'] }
-      );
-      const params = parseConfigParams(result);
-
-      // Runtime identities retain the same spelling as routes and local files.
-      expect(params.locales).toContain('en-us');
-      expect(params.locales).toContain('fr-fr');
-    });
-
-    it('locales NOT standardized when GT services disabled', async () => {
-      const withGTConfig = await getWithGTConfig();
-      // No projectId = GT services disabled
-
-      const result = withGTConfig(
-        {},
-        { defaultLocale: 'en', locales: ['en-us', 'fr-fr'] }
-      );
-      const params = parseConfigParams(result);
-
-      // Should keep original non-standardized values
-      expect(params.locales).toContain('en-us');
-      expect(params.locales).toContain('fr-fr');
-    });
-
-    it('empty locales + defaultLocale = [defaultLocale]', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig({}, { defaultLocale: 'en', locales: [] });
-      const params = parseConfigParams(result);
-
-      expect(params.locales).toEqual(['en']);
-    });
-  });
-
-  // ==============================
-  // 9. GT Services enabled logic
-  // ==============================
-  describe('9. GT Services enabled logic', () => {
-    it('enabled: default runtimeUrl + dev apiKey + projectId', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.NODE_ENV = 'development';
-      process.env.GT_API_KEY = 'gt-dev-abc';
-      process.env.GT_PROJECT_ID = 'proj';
-      vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-      const result = withGTConfig();
-
-      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('true');
-    });
-
-    it('NOT enabled with only projectId and default cacheUrl (loadTranslationsType not yet set during check)', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.GT_PROJECT_ID = 'proj';
-      vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-      // No API key; loadTranslationsType is not set at the time of the
-      // gtRemoteCacheEnabled check (it gets set later in the function),
-      // so gtServicesEnabled ends up false.
-      const result = withGTConfig();
-
-      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('false');
-    });
-
-    it('disabled: no projectId', async () => {
-      const withGTConfig = await getWithGTConfig();
-      // No GT_PROJECT_ID
-
-      const result = withGTConfig();
-
-      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('false');
-    });
-
-    it('disabled: custom runtimeUrl + null cacheUrl', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.GT_PROJECT_ID = 'proj';
-
-      const result = withGTConfig(
-        {},
-        {
-          runtimeUrl: 'https://custom-runtime.example.com',
-          cacheUrl: null,
-        }
-      );
-
-      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('false');
-    });
-  });
-
-  // ==============================
-  // 10. Error cases
-  // ==============================
-  describe('10. Error cases', () => {
-    it('exposes GT_PROJECT_ID and GT_API_KEY to client code in development', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.NODE_ENV = 'development';
-      process.env.GT_PROJECT_ID = 'proj';
-      process.env.GT_API_KEY = 'gtx-development-key';
-      vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-      const result = withGTConfig();
-
-      expect(result.env).toMatchObject({
-        GT_PROJECT_ID: 'proj',
-        GT_API_KEY: 'gtx-development-key',
-      });
-    });
-
-    it('does not expose GT_API_KEY to client code when hot reload is off', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.NODE_ENV = 'development';
-      process.env.GT_PROJECT_ID = 'proj';
-      process.env.GT_API_KEY = 'gtx-development-key';
-      vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-      const result = withGTConfig({}, { runtimeUrl: null });
-
-      expect(result.env).not.toHaveProperty('GT_API_KEY');
-    });
-
-    it('ignores NEXT_PUBLIC_GT_DEV_API_KEY in production builds instead of failing them', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.NODE_ENV = 'production';
-      process.env.GT_PROJECT_ID = 'proj';
-      process.env.NEXT_PUBLIC_GT_DEV_API_KEY = 'gtx-development-key';
-
-      const result = withGTConfig();
-
-      // Without GT_API_KEY, runtime translation stays off.
-      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('false');
-      expect(JSON.stringify(result.env)).not.toContain('gtx-development-key');
-    });
-
-    it('never exposes GT_API_KEY to client code in production builds', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.NODE_ENV = 'production';
-      process.env.GT_PROJECT_ID = 'proj';
-      process.env.GT_API_KEY = 'gtx-api-key';
-
-      const result = withGTConfig();
-
-      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('true');
-      expect(JSON.stringify(result.env)).not.toContain('gtx-api-key');
-    });
-
-    it('invalid locales + GT services enabled throws invalidLocalesError', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.GT_PROJECT_ID = 'proj';
-      process.env.GT_API_KEY = 'gt-dev-abc';
-      vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-      expect(() =>
-        withGTConfig(
-          {},
-          { defaultLocale: 'en', locales: ['not-a-real-locale-xyz'] }
-        )
-      ).toThrow(/invalid locale/i);
-    });
-
-    it('invalid locales + GT services disabled does NOT throw', async () => {
-      const withGTConfig = await getWithGTConfig();
-      // No projectId = GT services disabled
-
-      expect(() =>
-        withGTConfig(
-          {},
-          { defaultLocale: 'en', locales: ['not-a-real-locale-xyz'] }
-        )
-      ).not.toThrow();
-    });
-
-    it('config conflicts throw conflictingConfigurationBuildError', async () => {
-      const withGTConfig = await getWithGTConfig();
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === './gt.config.json') return true;
-        return false;
-      });
-      vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({ defaultLocale: 'fr' })
-      );
+    it('names the key and both values in the error', () => {
+      mockConfigFile({ defaultLocale: 'fr' });
 
       expect(() => withGTConfig({}, { defaultLocale: 'de' })).toThrow(
-        /[Cc]onflicting configuration/
-      );
-    });
-
-    it('invalid pathRegex throws a descriptive error', async () => {
-      const withGTConfig = await getWithGTConfig();
-
-      expect(() => withGTConfig({}, { pathRegex: '[unclosed' })).toThrowError(
-        'gt-next Error: pathRegex "[unclosed" is not a valid regular expression.'
-      );
-    });
-
-    it('missing loader files throw respective build errors', async () => {
-      const withGTConfig = await getWithGTConfig();
-
-      expect(() =>
-        withGTConfig({}, { loadDictionaryPath: './missing/loadDictionary.ts' })
-      ).toThrow(/loadDictionary.*could not be resolved/i);
-
-      expect(() =>
-        withGTConfig(
-          {},
-          { loadTranslationsPath: './missing/loadTranslations.ts' }
-        )
-      ).toThrow(/loadTranslations.*could not be resolved/i);
-    });
-  });
-
-  // ==============================
-  // 11. Cache expiry defaults
-  // ==============================
-  describe('11. Cache expiry defaults', () => {
-    it('60000ms when: remote translations, no devApiKey, no explicit cacheExpiryTime', async () => {
-      const withGTConfig = await getWithGTConfig();
-
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      expect(params.cacheExpiryTime).toBe(60000);
-    });
-
-    it('NOT set when devApiKey present', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.GT_API_KEY = 'gt-dev-abc';
-      vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      // cacheExpiryTime should remain undefined (not defaulted)
-      expect(params.cacheExpiryTime).toBeUndefined();
-    });
-
-    it('NOT set when cacheExpiryTime explicitly provided', async () => {
-      const withGTConfig = await getWithGTConfig();
-
-      const result = withGTConfig({}, { cacheExpiryTime: 30000 });
-      const params = parseConfigParams(result);
-
-      expect(params.cacheExpiryTime).toBe(30000);
-    });
-
-    it('NOT set when loadTranslationsType === custom', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const resolvedPath = require('path').resolve('./loadTranslations.ts');
-      vi.mocked(fs.existsSync).mockImplementation((p) => {
-        if (p === resolvedPath) return true;
-        return false;
-      });
-
-      const result = withGTConfig(
-        {},
-        { loadTranslationsPath: './loadTranslations.ts' }
-      );
-      const params = parseConfigParams(result);
-
-      // loadTranslationsType is 'custom' so cacheExpiryTime should not be defaulted
-      expect(params.cacheExpiryTime).toBeUndefined();
-    });
-
-    it('0 when cacheComponents is enabled', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const resolvedPath = require('path').resolve('./loadTranslations.ts');
-      vi.mocked(fs.existsSync).mockImplementation((p) => p === resolvedPath);
-
-      const result = withGTConfig(
-        { cacheComponents: true },
-        { loadTranslationsPath: './loadTranslations.ts' }
-      );
-      const params = parseConfigParams(result);
-
-      expect(params.cacheExpiryTime).toBe(0);
-      expect(params._cacheComponentsEnabled).toBe(true);
-      expect(params._disableDevHotReload).toBe(true);
-    });
-
-    it('overrides explicit cacheExpiryTime when cacheComponents is enabled', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const resolvedPath = require('path').resolve('./loadTranslations.ts');
-      vi.mocked(fs.existsSync).mockImplementation((p) => p === resolvedPath);
-
-      const result = withGTConfig(
-        { cacheComponents: true },
-        {
-          cacheExpiryTime: 30000,
-          loadTranslationsPath: './loadTranslations.ts',
-        }
-      );
-      const params = parseConfigParams(result);
-
-      expect(params.cacheExpiryTime).toBe(0);
-    });
-
-    it('warns when cacheComponents disables active dev hot reload translation', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.GT_PROJECT_ID = 'project-id';
-      process.env.GT_API_KEY = 'dev-key';
-      const resolvedPath = require('path').resolve('./loadTranslations.ts');
-      vi.mocked(fs.existsSync).mockImplementation((p) => p === resolvedPath);
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-      const result = withGTConfig(
-        { cacheComponents: true },
-        {
-          loadTranslationsPath: './loadTranslations.ts',
-          getLocalePath: './getLocale.ts',
-          getRegionPath: './getRegion.ts',
-        }
-      );
-      const params = parseConfigParams(result);
-
-      expect(params._disableDevHotReload).toBe(true);
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining(
-          'development runtime translation hot reload has been disabled'
-        )
-      );
-    });
-
-    it('throws when cacheComponents is enabled without custom loadTranslations', async () => {
-      const withGTConfig = await getWithGTConfig();
-
-      expect(() => withGTConfig({ cacheComponents: true })).toThrow(
-        /custom loadTranslations\(\) is not configured/
+        '- Key: defaultLocale Next Config: "de" does not match GT Config: "fr"'
       );
     });
   });
 
-  // ==============================
-  // 12. Output env vars completeness
-  // ==============================
-  describe('12. Output env vars completeness', () => {
-    it('all expected _GENERALTRANSLATION_* keys present', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig();
+  describe('credentials and GT services', () => {
+    const devKeys = {
+      GT_PROJECT_ID: 'proj',
+      GT_API_KEY: 'gtx-development-key',
+    };
 
-      const expectedKeys = [
-        '_GENERALTRANSLATION_I18N_CONFIG_PARAMS',
-        '_GENERALTRANSLATION_MIDDLEWARE_CONFIG',
-        '_GENERALTRANSLATION_LOCAL_DICTIONARY_ENABLED',
-        '_GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED',
-        '_GENERALTRANSLATION_DEFAULT_LOCALE',
-        '_GENERALTRANSLATION_GT_SERVICES_ENABLED',
-        '_GENERALTRANSLATION_IGNORE_BROWSER_LOCALES',
-        '_GENERALTRANSLATION_CUSTOM_GET_LOCALE_ENABLED',
-        '_GENERALTRANSLATION_CUSTOM_GET_REGION_ENABLED',
-        '_GENERALTRANSLATION_DISABLE_INVALID_LOCALE_WARNING',
-      ];
-
-      for (const key of expectedKeys) {
-        expect(result.env).toHaveProperty(key);
-      }
-    });
-
-    it('preserves existing nextConfig.env', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig({ env: { MY_EXISTING_VAR: 'hello' } });
-
-      expect(result.env!.MY_EXISTING_VAR).toBe('hello');
-      expect(result.env!._GENERALTRANSLATION_I18N_CONFIG_PARAMS).toBeDefined();
-    });
-
-    it('exposes pathRegex to middleware and client code', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const pathRegex = '^/(?!uk(?:/|$)).*';
-
-      const result = withGTConfig({}, { pathRegex });
-
-      expect(result.env!._GENERALTRANSLATION_PATH_REGEX).toBe(pathRegex);
-    });
-
-    it('exposes middleware options to createNextMiddleware separately', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const pathConfig = { '/about': { fr: '/a-propos' } };
-
-      const result = withGTConfig(
-        {},
-        { prefixDefaultLocale: true, enableSmartRouting: undefined, pathConfig }
-      );
-
-      expect(
-        JSON.parse(result.env!._GENERALTRANSLATION_MIDDLEWARE_CONFIG!)
-      ).toEqual({ prefixDefaultLocale: true, pathConfig });
-      const i18nConfig = JSON.parse(
-        result.env!._GENERALTRANSLATION_I18N_CONFIG_PARAMS!
-      );
-      expect(i18nConfig).not.toHaveProperty('prefixDefaultLocale');
-      expect(i18nConfig).not.toHaveProperty('pathConfig');
-    });
-
-    it('exposes no middleware options by default', async () => {
-      const withGTConfig = await getWithGTConfig();
-
-      expect(withGTConfig().env!._GENERALTRANSLATION_MIDDLEWARE_CONFIG).toBe(
-        '{}'
-      );
-    });
-
-    it('I18N_CONFIG_PARAMS contains non-credential config as JSON string', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig(
-        {},
-        {
+    it.each([
+      {
+        name: 'a project and API key in development',
+        env: devKeys,
+        enabled: 'true',
+      },
+      {
+        name: 'a project and API key in production',
+        env: { ...devKeys, NODE_ENV: 'production' },
+        enabled: 'true',
+      },
+      {
+        name: 'the legacy public development credentials',
+        env: {
+          NEXT_PUBLIC_GT_PROJECT_ID: 'proj',
+          NEXT_PUBLIC_GT_DEV_API_KEY: 'public-dev-key-value',
+        },
+        enabled: 'true',
+      },
+      {
+        name: 'credentials passed as props',
+        props: {
           projectId: 'project-id',
           apiKey: 'api-key',
           devApiKey: 'dev-key',
-        }
-      );
+        },
+        enabled: 'true',
+      },
+      {
+        name: 'a project ID in both the env and the config file',
+        env: { GT_PROJECT_ID: 'env-project-id' },
+        fileConfig: { projectId: 'config-project-id' },
+        enabled: 'false',
+      },
+      {
+        // The remote cache alone does not enable services.
+        name: 'a project ID without an API key',
+        env: { GT_PROJECT_ID: 'proj' },
+        enabled: 'false',
+      },
+      {
+        name: 'an API key without a project ID',
+        env: { GT_API_KEY: 'api-key-value' },
+        enabled: 'false',
+      },
+      {
+        name: 'a custom runtime URL without a cache URL',
+        env: { GT_PROJECT_ID: 'proj' },
+        props: {
+          runtimeUrl: 'https://custom-runtime.example.com',
+          cacheUrl: null,
+        },
+        enabled: 'false',
+      },
+      {
+        // Without GT_API_KEY, runtime translation stays off in production.
+        name: 'only a public development key in production',
+        env: {
+          NODE_ENV: 'production',
+          GT_PROJECT_ID: 'proj',
+          NEXT_PUBLIC_GT_DEV_API_KEY: 'gtx-development-key',
+        },
+        enabled: 'false',
+      },
+    ] as {
+      name: string;
+      env?: Record<string, string>;
+      props?: GTProps;
+      fileConfig?: object;
+      enabled: string;
+    }[])(
+      'never serializes credentials for $name (services enabled: $enabled)',
+      ({ env = {}, props, fileConfig, enabled }) => {
+        stubCredentials(env);
+        if (fileConfig) mockConfigFile(fileConfig);
 
-      const raw = result.env!._GENERALTRANSLATION_I18N_CONFIG_PARAMS;
-      expect(typeof raw).toBe('string');
-      const parsed = JSON.parse(raw!);
-      expect(parsed).toHaveProperty('defaultLocale');
-      expect(parsed).toHaveProperty('_usingPlugin', true);
-      expect(parsed.projectId).toBeUndefined();
-      expect(parsed.apiKey).toBeUndefined();
-      expect(parsed.devApiKey).toBeUndefined();
+        const result = buildEnv(props);
+        const params = JSON.parse(
+          result._GENERALTRANSLATION_I18N_CONFIG_PARAMS!
+        );
+
+        expect(params.projectId).toBeUndefined();
+        expect(params.apiKey).toBeUndefined();
+        expect(params.devApiKey).toBeUndefined();
+        expect(result._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe(enabled);
+        // Legacy public credentials are read in place, never copied.
+        expect(process.env.GT_API_KEY).toBe(env.GT_API_KEY);
+      }
+    );
+
+    it('exposes GT_PROJECT_ID and GT_API_KEY to client code for development hot reload', () => {
+      stubCredentials(devKeys);
+
+      expect(buildEnv()).toMatchObject(devKeys);
+      // Hot reload is off without a runtime URL.
+      expect(buildEnv({ runtimeUrl: null })).not.toHaveProperty('GT_API_KEY');
     });
 
-    it('limits client config params to runtime fields', async () => {
-      const withGTConfig = await getWithGTConfig();
+    it.each<Record<string, string>>([
+      { GT_API_KEY: 'gtx-secret-key' },
+      { NEXT_PUBLIC_GT_DEV_API_KEY: 'gtx-secret-key' },
+    ])('never exposes %j to client code in production builds', (key) => {
+      stubCredentials({
+        NODE_ENV: 'production',
+        GT_PROJECT_ID: 'proj',
+        ...key,
+      });
+
+      expect(JSON.stringify(buildEnv())).not.toContain('gtx-secret-key');
+    });
+
+    it('limits client config params to runtime fields', () => {
       vi.mocked(fs.existsSync).mockImplementation((filepath) =>
         String(filepath).endsWith('server-only-loader.ts')
       );
-      const result = withGTConfig(
-        {},
-        {
-          description: 'server-only description',
-          loadTranslationsPath: './server-only-loader.ts',
-          customMetadata: 'server-only metadata',
-          cacheExpiryTime: 12345,
-          _versionId: 'version-id',
-          _disableDevHotReload: true,
-        }
-      );
 
-      const clientConfig = JSON.parse(
-        result.env!.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS!
-      );
-      expect(clientConfig).toEqual({
+      const env = buildEnv({
+        description: 'server-only description',
+        loadTranslationsPath: './server-only-loader.ts',
+        customMetadata: 'server-only metadata',
+        cacheExpiryTime: 12345,
+        _versionId: 'version-id',
+        _disableDevHotReload: true,
+      });
+
+      expect(
+        JSON.parse(env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS!)
+      ).toEqual({
         defaultLocale: expect.any(String),
         locales: expect.any(Array),
         runtimeUrl: expect.any(String),
@@ -1637,63 +691,264 @@ describe('withGTConfig', () => {
         _disableDevHotReload: true,
       });
     });
+  });
 
-    it('boolean flags are string "true"/"false", not booleans', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig();
-
-      expect(result.env!._GENERALTRANSLATION_LOCAL_DICTIONARY_ENABLED).toBe(
-        'false'
+  describe('locales', () => {
+    it.each([
+      [
+        ['fr', 'de'],
+        ['en', 'fr', 'de'],
+      ],
+      [
+        ['en', 'fr', 'en'],
+        ['en', 'fr'],
+      ],
+      [[], ['en']],
+    ])('normalizes locales %j to %j', (locales, expected) => {
+      expect(buildParams({ defaultLocale: 'en', locales }).locales).toEqual(
+        expected
       );
-      expect(
-        typeof result.env!._GENERALTRANSLATION_LOCAL_DICTIONARY_ENABLED
-      ).toBe('string');
-
-      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('false');
-      expect(typeof result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe(
-        'string'
-      );
-      expect(
-        result.env!._GENERALTRANSLATION_DISABLE_INVALID_LOCALE_WARNING
-      ).toBe('false');
     });
 
-    it('sets invalid locale warning env flag from withGTConfig props', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig({}, { disableInvalidLocaleWarning: true });
+    // Runtime identities retain the same spelling as routes and local files.
+    it.each([false, true])(
+      'preserves configured locale spellings (GT services: %s)',
+      (services) => {
+        if (services) {
+          stubCredentials({ GT_PROJECT_ID: 'proj', GT_API_KEY: 'gt-dev-abc' });
+        }
 
+        const env = buildEnv({
+          defaultLocale: 'en',
+          locales: ['en-us', 'fr-fr'],
+        });
+
+        expect(env._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe(
+          String(services)
+        );
+        expect(
+          JSON.parse(env._GENERALTRANSLATION_I18N_CONFIG_PARAMS!).locales
+        ).toEqual(['en', 'en-us', 'fr-fr']);
+      }
+    );
+
+    it('rejects invalid locales only when GT services are enabled', () => {
+      const props = { defaultLocale: 'en', locales: ['not-a-real-locale-xyz'] };
+
+      expect(() => withGTConfig({}, props)).not.toThrow();
+
+      stubCredentials({ GT_PROJECT_ID: 'proj', GT_API_KEY: 'gt-dev-abc' });
+      expect(() => withGTConfig({}, props)).toThrow(/invalid locale/i);
+    });
+
+    it('sets the invalid locale warning flag from props', () => {
       expect(
-        result.env!._GENERALTRANSLATION_DISABLE_INVALID_LOCALE_WARNING
+        buildEnv({ disableInvalidLocaleWarning: true })
+          ._GENERALTRANSLATION_DISABLE_INVALID_LOCALE_WARNING
       ).toBe('true');
     });
   });
 
-  // ==============================
-  // 13. Compiler configuration
-  // ==============================
-  describe('13. Compiler configuration', () => {
+  describe('dictionary resolution', () => {
+    it.each(['.json', '.ts', '.js'])(
+      'reports the file type of a props.dictionary ending in %s',
+      (extension) => {
+        expect(
+          buildEnv({ dictionary: `./my-dict${extension}` })
+            ._GENERALTRANSLATION_DICTIONARY_FILE_TYPE
+        ).toBe(extension);
+      }
+    );
+
+    it.each([
+      ['./dictionary.ts', '.ts'],
+      // Falls back to [defaultLocale].json
+      ['./en.json', '.json'],
+    ])('finds %s without props.dictionary', (file, extension) => {
+      mockExistingFiles(file);
+
+      expect(buildEnv()._GENERALTRANSLATION_DICTIONARY_FILE_TYPE).toBe(
+        extension
+      );
+    });
+  });
+
+  describe('custom loaders', () => {
+    const loaders = [
+      {
+        name: 'loadDictionary',
+        prop: 'loadDictionaryPath',
+        flag: '_GENERALTRANSLATION_LOCAL_DICTIONARY_ENABLED',
+      },
+      {
+        name: 'loadTranslations',
+        prop: 'loadTranslationsPath',
+        flag: '_GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED',
+      },
+    ] as const;
+
+    it.each(loaders)(
+      'enables a $name file given as $prop',
+      ({ name, prop, flag }) => {
+        mockExistingFiles(`./custom/${name}.ts`);
+
+        expect(buildEnv({ [prop]: `./custom/${name}.ts` })[flag]).toBe('true');
+      }
+    );
+
+    it.each(loaders)('finds ./$name.ts without $prop', ({ name, flag }) => {
+      mockExistingFiles(`./${name}.ts`);
+
+      expect(buildEnv()[flag]).toBe('true');
+    });
+
+    it.each(loaders)('throws when $prop does not exist', ({ name, prop }) => {
+      expect(() =>
+        withGTConfig({}, { [prop]: `./missing/${name}.ts` })
+      ).toThrow(new RegExp(`${name}.*could not be resolved`, 'i'));
+    });
+  });
+
+  describe('cache expiry', () => {
+    it('is not defaulted with a development API key', () => {
+      stubCredentials({ GT_API_KEY: 'gt-dev-abc' });
+
+      expect(buildParams().cacheExpiryTime).toBeUndefined();
+    });
+
+    it('keeps an explicit cacheExpiryTime', () => {
+      expect(buildParams({ cacheExpiryTime: 30000 }).cacheExpiryTime).toBe(
+        30000
+      );
+    });
+
+    it('is not defaulted with a custom loadTranslations', () => {
+      mockExistingFiles(LOAD_TRANSLATIONS);
+
+      expect(
+        buildParams({ loadTranslationsPath: LOAD_TRANSLATIONS }).cacheExpiryTime
+      ).toBeUndefined();
+    });
+  });
+
+  describe('cacheComponents', () => {
+    it('disables caching and dev hot reload, overriding cacheExpiryTime', () => {
+      mockExistingFiles(LOAD_TRANSLATIONS);
+
+      expect(
+        buildParams(
+          { cacheExpiryTime: 30000, loadTranslationsPath: LOAD_TRANSLATIONS },
+          { cacheComponents: true }
+        )
+      ).toMatchObject({
+        cacheExpiryTime: 0,
+        _cacheComponentsEnabled: true,
+        _disableDevHotReload: true,
+      });
+    });
+
+    it('warns when it disables active dev hot reload translation', () => {
+      stubCredentials({ GT_PROJECT_ID: 'project-id', GT_API_KEY: 'dev-key' });
+      mockExistingFiles(LOAD_TRANSLATIONS);
+
+      const params = buildParams(
+        {
+          loadTranslationsPath: LOAD_TRANSLATIONS,
+          getLocalePath: './getLocale.ts',
+          getRegionPath: './getRegion.ts',
+        },
+        { cacheComponents: true }
+      );
+
+      expect(params._disableDevHotReload).toBe(true);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'development runtime translation hot reload has been disabled'
+        )
+      );
+    });
+
+    it('requires a custom loadTranslations', () => {
+      expect(() => withGTConfig({ cacheComponents: true })).toThrow(
+        /custom loadTranslations\(\) is not configured/
+      );
+    });
+  });
+
+  describe('middleware and routing options', () => {
+    it('exposes pathRegex to middleware and client code', () => {
+      const pathRegex = '^/(?!uk(?:/|$)).*';
+
+      expect(buildEnv({ pathRegex })._GENERALTRANSLATION_PATH_REGEX).toBe(
+        pathRegex
+      );
+    });
+
+    it('throws a descriptive error for an invalid pathRegex', () => {
+      expect(() => withGTConfig({}, { pathRegex: '[unclosed' })).toThrowError(
+        'gt-next Error: pathRegex "[unclosed" is not a valid regular expression.'
+      );
+    });
+
+    it('exposes middleware options to createNextMiddleware separately', () => {
+      const pathConfig = { '/about': { fr: '/a-propos' } };
+
+      const env = buildEnv({
+        prefixDefaultLocale: true,
+        enableSmartRouting: undefined,
+        pathConfig,
+      });
+
+      expect(JSON.parse(env._GENERALTRANSLATION_MIDDLEWARE_CONFIG!)).toEqual({
+        prefixDefaultLocale: true,
+        pathConfig,
+      });
+      const i18nConfig = JSON.parse(
+        env._GENERALTRANSLATION_I18N_CONFIG_PARAMS!
+      );
+      expect(i18nConfig).not.toHaveProperty('prefixDefaultLocale');
+      expect(i18nConfig).not.toHaveProperty('pathConfig');
+    });
+
+    it('merges headersAndCookies overrides with the defaults', () => {
+      const customNames = {
+        localeHeaderName: 'x-my-locale',
+        localeCookieName: 'my-locale',
+        referrerLocaleCookieName: 'my-referrer',
+        localeRoutingEnabledCookieName: 'my-routing',
+        resetLocaleCookieName: 'my-reset',
+      };
+
+      expect(
+        buildParams({ headersAndCookies: { localeCookieName: 'my-locale' } })
+          .headersAndCookies
+      ).toMatchObject({
+        localeCookieName: 'my-locale',
+        localeHeaderName: 'x-generaltranslation-locale',
+      });
+      expect(
+        buildParams({ headersAndCookies: customNames }).headersAndCookies
+      ).toMatchObject(customNames);
+    });
+  });
+
+  describe('compiler configuration', () => {
     it.each(['none', 'swc'] as const)(
       'warns when automatic JSX injection is used with the %s compiler',
-      async (type) => {
-        const withGTConfig = await getWithGTConfig();
-        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
+      (type) => {
         withGTConfig(
           {},
           {
-            experimentalCompilerOptions: {
-              type,
-              enableAutoJsxInjection: true,
-            },
+            experimentalCompilerOptions: { type, enableAutoJsxInjection: true },
           }
         );
 
-        expect(warnSpy).toHaveBeenCalledWith(
+        expect(warn).toHaveBeenCalledWith(
           expect.stringContaining(
             'Automatic JSX injection requires the GT webpack compiler'
           )
         );
-        expect(warnSpy).toHaveBeenCalledWith(
+        expect(warn).toHaveBeenCalledWith(
           expect.stringContaining(
             "Set experimentalCompilerOptions.type to 'babel'"
           )
@@ -1701,12 +956,37 @@ describe('withGTConfig', () => {
       }
     );
 
-    it('uses a Turbopack-specific babel compiler warning', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      process.env.TURBOPACK = '1';
+    const turbopackWarning =
+      'The GT babel compiler is not compatible with Turbopack';
+    const reactWarning = `The GT babel compiler requires react@${BABEL_PLUGIN_SUPPORT} or newer`;
 
-      const result = withGTConfig(
+    it.each([
+      { turbopack: true, oldReact: false },
+      { turbopack: false, oldReact: true },
+      { turbopack: true, oldReact: true },
+    ])(
+      'falls back from the babel compiler with a specific warning (Turbopack: $turbopack, old React: $oldReact)',
+      ({ turbopack, oldReact }) => {
+        if (turbopack) vi.stubEnv('TURBOPACK', '1');
+        mockVersionInfo.babelPluginCompatible = !oldReact;
+
+        const params = buildParams({
+          experimentalCompilerOptions: { type: 'babel' },
+        });
+
+        expect(params.experimentalCompilerOptions.type).toBe('none');
+        const warned = (text: string) =>
+          warn.mock.calls.some(([message]) => String(message).includes(text));
+        expect(warned(turbopackWarning)).toBe(turbopack);
+        expect(warned(reactWarning)).toBe(oldReact);
+        expect(warned('compatible with turbopack or < react')).toBe(false);
+      }
+    );
+
+    it('explains how to keep automatic JSX injection under Turbopack', () => {
+      vi.stubEnv('TURBOPACK', '1');
+
+      withGTConfig(
         {},
         {
           experimentalCompilerOptions: {
@@ -1715,94 +995,24 @@ describe('withGTConfig', () => {
           },
         }
       );
-      const params = parseConfigParams(result);
 
-      expect(params.experimentalCompilerOptions.type).toBe('none');
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining(
-          'The GT babel compiler is not compatible with Turbopack'
-        )
-      );
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining("experimentalCompilerOptions: { type: 'swc' }")
-      );
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining(
-          'Automatic JSX injection requires the GT webpack compiler'
-        )
-      );
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('build with webpack')
-      );
-      expect(warnSpy).not.toHaveBeenCalledWith(
-        expect.stringContaining('compatible with turbopack or < react')
-      );
-      warnSpy.mockRestore();
-    });
-
-    it('uses a React-version-specific babel compiler warning', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      mockVersionInfo.babelPluginCompatible = false;
-
-      const result = withGTConfig(
-        {},
-        { experimentalCompilerOptions: { type: 'babel' } }
-      );
-      const params = parseConfigParams(result);
-
-      expect(params.experimentalCompilerOptions.type).toBe('none');
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining(
-          `The GT babel compiler requires react@${BABEL_PLUGIN_SUPPORT} or newer`
-        )
-      );
-      expect(warnSpy).not.toHaveBeenCalledWith(
-        expect.stringContaining('compatible with turbopack or < react')
-      );
-      warnSpy.mockRestore();
-    });
-
-    it('warns for both babel compiler incompatibilities when both apply', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      process.env.TURBOPACK = '1';
-      mockVersionInfo.babelPluginCompatible = false;
-
-      const result = withGTConfig(
-        {},
-        { experimentalCompilerOptions: { type: 'babel' } }
-      );
-      const params = parseConfigParams(result);
-
-      expect(params.experimentalCompilerOptions.type).toBe('none');
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining(
-          'The GT babel compiler is not compatible with Turbopack'
-        )
-      );
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining(
-          `The GT babel compiler requires react@${BABEL_PLUGIN_SUPPORT} or newer`
-        )
-      );
-      expect(warnSpy).not.toHaveBeenCalledWith(
-        expect.stringContaining('compatible with turbopack or < react')
-      );
-      warnSpy.mockRestore();
+      for (const text of [
+        turbopackWarning,
+        "experimentalCompilerOptions: { type: 'swc' }",
+        'Automatic JSX injection requires the GT webpack compiler',
+        'build with webpack',
+      ]) {
+        expect(warn).toHaveBeenCalledWith(expect.stringContaining(text));
+      }
     });
   });
 
-  // ==============================
-  // 14. Webpack function
-  // ==============================
-  describe('14. Webpack function', () => {
-    it('passes automatic JSX injection to the webpack compiler', async () => {
+  describe('webpack', () => {
+    const dictionary = { dictionary: './my-dict.json' };
+
+    it('passes automatic JSX injection to the webpack compiler', () => {
       const compiler = require('@generaltranslation/compiler');
-      const compilerWebpackSpy = vi
-        .spyOn(compiler, 'webpack')
-        .mockReturnValue({});
-      const withGTConfig = await getWithGTConfig();
+      const compilerWebpack = vi.spyOn(compiler, 'webpack').mockReturnValue({});
       const result = withGTConfig(
         {},
         {
@@ -1813,83 +1023,46 @@ describe('withGTConfig', () => {
         }
       );
 
-      runWebpack(result, makeWebpackConfig());
+      runWebpack(result);
 
-      expect(compilerWebpackSpy).toHaveBeenCalledWith(
+      expect(compilerWebpack).toHaveBeenCalledWith(
         expect.objectContaining({
           enableAutoJsxInjection: true,
           autoJsxImportSource: 'gt-next',
         })
       );
-      compilerWebpackSpy.mockRestore();
     });
 
-    it('returns webpack config object', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig();
-
-      const webpackResult = runWebpack(result, makeWebpackConfig());
-
-      expect(webpackResult).toBeDefined();
-      expect(webpackResult).toHaveProperty('resolve');
-    });
-
-    it('calls original nextConfig.webpack if present', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const originalWebpack = vi.fn((config: WebpackConfig) => ({
+    it('returns the config from the original nextConfig.webpack', () => {
+      const originalWebpack = vi.fn((config: object) => ({
         ...config,
         customProp: true,
       }));
 
-      const result = withGTConfig({ webpack: originalWebpack });
-
-      const webpackResult = runWebpack(result, makeWebpackConfig());
+      const { returned } = runWebpack(
+        withGTConfig({ webpack: originalWebpack })
+      );
 
       expect(originalWebpack).toHaveBeenCalled();
-      expect(webpackResult).toHaveProperty('customProp', true);
+      expect(returned).toMatchObject({ customProp: true, resolve: {} });
     });
 
-    it('sets alias for dictionary when dictionary file found', async () => {
-      const withGTConfig = await getWithGTConfig();
-
-      const result = withGTConfig({}, { dictionary: './my-dict.json' });
-
-      const wc = makeWebpackConfig();
-      runWebpack(result, wc);
-
-      expect(wc.resolve.alias).toHaveProperty('gt-next/internal/_dictionary');
+    it('disables webpackConfig.cache in development', () => {
+      expect(runWebpack(withGTConfig()).config.cache).toBe(false);
     });
 
-    // Mirrors webpack condition semantics: string = path prefix,
-    // RegExp = test, array = any-of.
-    type Condition = string | RegExp | Condition[];
-    type RuleWebpackConfig = WebpackConfig & {
-      module?: {
-        rules?: { test: Condition; include?: Condition; type: string }[];
-      };
-    };
-    function findAutoRule(wc: RuleWebpackConfig) {
-      return (wc.module?.rules ?? []).find((r) => r.type === 'javascript/auto');
-    }
-    function conditionMatches(cond: Condition, p: string): boolean {
-      return typeof cond === 'string'
-        ? p.startsWith(cond)
-        : Array.isArray(cond)
-          ? cond.some((c) => conditionMatches(c, p))
-          : cond.test(p);
-    }
-    function ruleAppliesTo(
-      rule: NonNullable<ReturnType<typeof findAutoRule>>,
-      p: string
-    ) {
-      return (
-        conditionMatches(rule.test, p) &&
-        (!rule.include || conditionMatches(rule.include, p))
-      );
-    }
+    it('aliases the dictionary unless Turbopack resolves it', () => {
+      expect(
+        runWebpack(withGTConfig({}, dictionary)).config.resolve.alias
+      ).toHaveProperty('gt-next/internal/_dictionary');
 
-    it('parses gt-next ESM dist as javascript/auto when a file alias is set', async () => {
-      const withGTConfig = await getWithGTConfig();
+      vi.stubEnv('TURBOPACK', '1');
+      expect(
+        runWebpack(withGTConfig({}, dictionary)).config.resolve.alias
+      ).not.toHaveProperty('gt-next/internal/_dictionary');
+    });
+
+    it('parses gt-next ESM dist as javascript/auto when a file alias is set', () => {
       // The module dir only counts as gt-next's dist when its sentinel files
       // exist beside the compiled config (config.mjs, internal/_dictionary.mjs)
       vi.mocked(fs.existsSync).mockImplementation(
@@ -1898,21 +1071,17 @@ describe('withGTConfig', () => {
           String(p).endsWith(path.join('internal', '_dictionary.mjs'))
       );
 
-      const result = withGTConfig({}, { dictionary: './my-dict.json' });
-
-      const wc = makeWebpackConfig() as RuleWebpackConfig;
-      runWebpack(result, wc);
-
-      const rule = findAutoRule(wc);
-      expect(rule).toBeDefined();
+      const rule = findAutoRule(
+        runWebpack(withGTConfig({}, dictionary)).config
+      )!;
 
       // app-local, hoisted-root, and pnpm-store installs
       expect(
-        ruleAppliesTo(rule!, '/app/node_modules/gt-next/dist/index.server.mjs')
+        ruleAppliesTo(rule, '/app/node_modules/gt-next/dist/index.server.mjs')
       ).toBe(true);
       expect(
         ruleAppliesTo(
-          rule!,
+          rule,
           '/repo/node_modules/.pnpm/gt-next@1.0.0/node_modules/gt-next/dist/index.server.mjs'
         )
       ).toBe(true);
@@ -1920,299 +1089,83 @@ describe('withGTConfig', () => {
       // segment; matched via this package's own dist dir (__dirname of config)
       const moduleDir = path.resolve(__dirname, '..');
       expect(
-        ruleAppliesTo(rule!, path.join(moduleDir, 'index.server.mjs'))
+        ruleAppliesTo(rule, path.join(moduleDir, 'index.server.mjs'))
       ).toBe(true);
       // prefix collisions with sibling dirs never match
-      expect(ruleAppliesTo(rule!, `${moduleDir}-other/index.server.mjs`)).toBe(
+      expect(ruleAppliesTo(rule, `${moduleDir}-other/index.server.mjs`)).toBe(
         false
       );
       // never CJS dist, never other packages
       expect(
-        ruleAppliesTo(rule!, '/app/node_modules/gt-next/dist/index.server.js')
+        ruleAppliesTo(rule, '/app/node_modules/gt-next/dist/index.server.js')
       ).toBe(false);
       expect(
-        ruleAppliesTo(rule!, '/app/node_modules/other/dist/index.mjs')
+        ruleAppliesTo(rule, '/app/node_modules/other/dist/index.mjs')
       ).toBe(false);
     });
 
-    it('does not widen the javascript/auto rule beyond node_modules when the module dir is not gt-next dist', async () => {
-      const withGTConfig = await getWithGTConfig();
-      // Default existsSync mock returns false: the sentinel check fails, as it
-      // would if a bundler had inlined the config somewhere else. Only the
-      // node_modules pattern may remain — a dir prefix here could sweep every
-      // .mjs under the bundle output into javascript/auto.
-      const result = withGTConfig({}, { dictionary: './my-dict.json' });
+    it('does not widen the javascript/auto rule beyond node_modules when the module dir is not gt-next dist', () => {
+      // No files exist, so the sentinel check fails, as it would if a bundler
+      // had inlined the config somewhere else. Only the node_modules pattern
+      // may remain — a dir prefix here could sweep every .mjs under the
+      // bundle output into javascript/auto.
+      const rule = findAutoRule(
+        runWebpack(withGTConfig({}, dictionary)).config
+      )!;
 
-      const wc = makeWebpackConfig() as RuleWebpackConfig;
-      runWebpack(result, wc);
-
-      const rule = findAutoRule(wc);
-      expect(rule).toBeDefined();
-      const includes = Array.isArray(rule!.include)
-        ? rule!.include
-        : [rule!.include];
+      const includes = Array.isArray(rule.include)
+        ? rule.include
+        : [rule.include];
       expect(includes.every((c) => c instanceof RegExp)).toBe(true);
       expect(
-        ruleAppliesTo(rule!, path.resolve(__dirname, '..', 'some.mjs'))
+        ruleAppliesTo(rule, path.resolve(__dirname, '..', 'some.mjs'))
       ).toBe(false);
     });
 
-    it('does not add the javascript/auto rule on the client compilation', async () => {
-      const withGTConfig = await getWithGTConfig();
-
-      const result = withGTConfig({}, { dictionary: './my-dict.json' });
-
-      const wc = makeWebpackConfig() as WebpackConfig & {
-        module?: { rules?: { test: RegExp; type: string }[] };
-      };
-      result.webpack!(
-        wc as WebpackConfigArg,
-        { isServer: false } as WebpackOptions
-      );
-
-      expect(
-        (wc.module?.rules ?? []).some((r) => r.type === 'javascript/auto')
-      ).toBe(false);
-    });
-
-    it('does not add the javascript/auto rule without file aliases', async () => {
-      const withGTConfig = await getWithGTConfig();
-
-      const result = withGTConfig({}, {});
-
-      const wc = makeWebpackConfig() as WebpackConfig & {
-        module?: { rules?: { test: RegExp; type: string }[] };
-      };
-      runWebpack(result, wc);
-
-      expect(
-        (wc.module?.rules ?? []).some((r) => r.type === 'javascript/auto')
-      ).toBe(false);
-    });
-
-    it('adds the javascript/auto rule when only a request-function alias is set', async () => {
-      const withGTConfig = await getWithGTConfig();
-
+    it('adds the javascript/auto rule when only a request-function alias is set', () => {
       // No dictionary or loader options: the request-function alias alone
       // must enable the rule, keeping the guard in lockstep with the alias
       // block (see config.ts).
-      const result = withGTConfig({}, { getLocalePath: './my-get-locale.ts' });
-
-      const wc = makeWebpackConfig() as RuleWebpackConfig;
-      runWebpack(result, wc);
-
-      expect(wc.resolve.alias).toHaveProperty('gt-next/internal/_getLocale');
-      expect(findAutoRule(wc)).toBeDefined();
-    });
-
-    it('does NOT set aliases when TURBOPACK enabled', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.TURBOPACK = '1';
-
-      const result = withGTConfig({}, { dictionary: './my-dict.json' });
-
-      const wc = makeWebpackConfig();
-      runWebpack(result, wc);
-
-      expect(wc.resolve.alias).not.toHaveProperty(
-        'gt-next/internal/_dictionary'
+      const { config } = runWebpack(
+        withGTConfig({}, { getLocalePath: './my-get-locale.ts' })
       );
+
+      expect(config.resolve.alias).toHaveProperty(
+        'gt-next/internal/_getLocale'
+      );
+      expect(findAutoRule(config)).toBeDefined();
     });
 
-    it('disables webpackConfig.cache in development', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.NODE_ENV = 'development';
+    it.each([
+      ['on the client compilation', dictionary, { isServer: false }],
+      ['without file aliases', {}, { isServer: true }],
+    ])('does not add the javascript/auto rule %s', (_, props, options) => {
+      const { config } = runWebpack(withGTConfig({}, props), options);
 
-      const result = withGTConfig();
-
-      const wc = makeWebpackConfig();
-      runWebpack(result, wc);
-
-      expect(wc.cache).toBe(false);
+      expect(findAutoRule(config)).toBeUndefined();
     });
   });
 
-  // ==============================
-  // 15. Turbopack configuration
-  // ==============================
-  describe('15. Turbopack configuration', () => {
-    it('when TURBOPACK=1 + turboConfigStable=true (no legacy turbo config): aliases in result.turbopack.resolveAlias', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.TURBOPACK = '1';
+  describe('Turbopack', () => {
+    beforeEach(() => vi.stubEnv('TURBOPACK', '1'));
 
-      const result = withGTConfig({}, { dictionary: './my-dict.json' });
-
-      expect(result.turbopack).toBeDefined();
-      expect(result.turbopack!.resolveAlias).toBeDefined();
-      expect(result.turbopack!.resolveAlias).toHaveProperty(
-        'gt-next/internal/_dictionary'
-      );
+    it('adds aliases to turbopack.resolveAlias', () => {
+      expect(
+        withGTConfig({}, { dictionary: './my-dict.json' }).turbopack!
+          .resolveAlias
+      ).toHaveProperty('gt-next/internal/_dictionary');
     });
 
-    it('preserves existing nextConfig.turbopack properties', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.TURBOPACK = '1';
-
+    it('preserves existing turbopack.resolveAlias entries', () => {
       const result = withGTConfig(
-        {
-          turbopack: {
-            resolveAlias: { 'existing-alias': '/some/path' },
-          },
-        },
+        { turbopack: { resolveAlias: { 'existing-alias': '/some/path' } } },
         { dictionary: './my-dict.json' }
       );
 
-      expect(result.turbopack!.resolveAlias).toHaveProperty(
-        'existing-alias',
-        '/some/path'
-      );
-      expect(result.turbopack!.resolveAlias).toHaveProperty(
-        'gt-next/internal/_dictionary'
-      );
-    });
-  });
-
-  // ==============================
-  // 16. Headers/cookies merging
-  // ==============================
-  describe('16. Headers/cookies merging', () => {
-    it('default values used when none provided', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      expect(params.headersAndCookies.localeHeaderName).toBe(
-        'x-generaltranslation-locale'
-      );
-      expect(params.headersAndCookies.localeCookieName).toBe(
-        'generaltranslation.locale'
-      );
-      expect(params.headersAndCookies.enableI18nCookieName).toBe(
-        'generaltranslation.enable-i18n'
-      );
-    });
-
-    it('partial override merges with defaults', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig(
-        {},
-        {
-          headersAndCookies: {
-            localeCookieName: 'my-custom-cookie',
-          },
-        }
-      );
-      const params = parseConfigParams(result);
-
-      expect(params.headersAndCookies.localeCookieName).toBe(
-        'my-custom-cookie'
-      );
-      // Other values should remain defaults
-      expect(params.headersAndCookies.localeHeaderName).toBe(
-        'x-generaltranslation-locale'
-      );
-    });
-
-    it('full override replaces all values', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const customHeaders = {
-        localeHeaderName: 'x-my-locale',
-        localeCookieName: 'my-locale',
-        referrerLocaleCookieName: 'my-referrer',
-        localeRoutingEnabledCookieName: 'my-routing',
-        resetLocaleCookieName: 'my-reset',
-      };
-
-      const result = withGTConfig({}, { headersAndCookies: customHeaders });
-      const params = parseConfigParams(result);
-
-      expect(params.headersAndCookies).toMatchObject(customHeaders);
-    });
-  });
-
-  // ==============================
-  // 17. nextConfig passthrough
-  // ==============================
-  describe('17. nextConfig passthrough', () => {
-    it('preserves all existing nextConfig properties', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig({
-        images: { domains: ['example.com'] },
-        reactStrictMode: true,
-        compress: false,
+      expect(result.turbopack!.resolveAlias).toMatchObject({
+        'existing-alias': '/some/path',
+        'gt-next/internal/_dictionary': expect.anything(),
       });
-
-      expect(result.images).toEqual({
-        domains: ['example.com'],
-      });
-      expect(result.reactStrictMode).toBe(true);
-      expect(result.compress).toBe(false);
-    });
-
-    it('handles empty {} nextConfig', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig({});
-
-      expect(result).toHaveProperty('env');
-      expect(result).toHaveProperty('webpack');
-      expect(result).toHaveProperty('experimental');
-    });
-
-    it('handles undefined nextConfig', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig(undefined);
-
-      expect(result).toHaveProperty('env');
-      expect(result).toHaveProperty('webpack');
-      expect(result).toHaveProperty('experimental');
-    });
-  });
-
-  // ==============================
-  // 18. Function-form next config
-  // ==============================
-  describe('18. Function-form next config', () => {
-    it('calls a sync config function and layers GT on the result', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const built = withGTConfig(
-        (_phase: string): NextConfig => ({
-          reactStrictMode: true,
-        })
-      );
-
-      expect(typeof built).toBe('function');
-      const resolved = (
-        built as unknown as (
-          phase: string,
-          context: { defaultConfig: NextConfig }
-        ) => NextConfig
-      )('phase-production-build', { defaultConfig: {} });
-
-      expect(resolved.reactStrictMode).toBe(true);
-      expect(resolved).toHaveProperty('env');
-      expect(typeof resolved.webpack).toBe('function');
-      expect(resolved.transpilePackages).toContain('gt-next');
-    });
-
-    it('awaits an async config function and layers GT on the result', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const built = withGTConfig(
-        async (_phase: string): Promise<NextConfig> => ({
-          reactStrictMode: true,
-        })
-      );
-
-      const resolved = await (
-        built as unknown as (
-          phase: string,
-          context: { defaultConfig: NextConfig }
-        ) => Promise<NextConfig>
-      )('phase-production-build', { defaultConfig: {} });
-
-      expect(resolved.reactStrictMode).toBe(true);
-      expect(resolved).toHaveProperty('env');
-      expect(typeof resolved.webpack).toBe('function');
-      expect(resolved.transpilePackages).toContain('gt-next');
     });
   });
 });

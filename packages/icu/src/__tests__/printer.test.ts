@@ -7,6 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import { parse, printAST } from '../index';
 import { TYPE, type MessageFormatElement } from '../types';
+import { expectEachCase } from './expectEachCase';
 
 const GENERATED_ROUND_TRIP_MESSAGES = [
   ...Array.from(
@@ -258,25 +259,18 @@ describe('printAST', () => {
     expect(parse(printed!)).toEqual([{ type: TYPE.literal, value: "'#{</b>" }]);
   });
 
-  it.each(GENERATED_ROUND_TRIP_MESSAGES)(
-    'preserves the AST through print and reparse for %j',
-    (message) => {
-      const original = parse(message);
-      const reparsed = parse(printAST(original));
-
-      expect(reparsed).toEqual(original);
-    }
-  );
-
-  it.each(GENERATED_ESCAPED_PLURAL_ROUND_TRIP_MESSAGES)(
-    'preserves escaped plural syntax through print and reparse for %j',
-    (message) => {
-      const original = parse(message);
-      const reparsed = parse(printAST(original));
-
-      expect(reparsed).toEqual(original);
-    }
-  );
+  it('preserves the AST of generated messages through print and reparse', () => {
+    expectEachCase(
+      [
+        ...GENERATED_ROUND_TRIP_MESSAGES,
+        ...GENERATED_ESCAPED_PLURAL_ROUND_TRIP_MESSAGES,
+      ],
+      (message) => {
+        const original = parse(message);
+        expect(parse(printAST(original))).toEqual(original);
+      }
+    );
+  });
 
   it('round-trips adversarial apostrophe and syntax combinations in every literal context', () => {
     for (const value of GENERATED_ADVERSARIAL_LITERALS) {

@@ -1,1920 +1,1066 @@
 /**
- * Tests for auto JSX injection simulation in the CLI extraction pipeline.
+ * Auto JSX injection in the CLI extraction pipeline.
  *
- * When enableAutoJsxInjection is true, the CLI runs two extraction passes:
- *   Pass 1: Extract user-written <T> components (unchanged behavior)
- *   Pass 2: Auto-inject <T> and <Var> into the AST, then extract from the new <T> only
+ * With enableAutoJsxInjection the CLI extracts in two passes:
+ *   Pass 1: user-written <T> components (unchanged behavior)
+ *   Pass 2: inject GtInternalTranslateJsx / GtInternalVar into the AST and
+ *           extract from the injected components only
  *
- * The hashes produced must agree with the compiler plugin's output.
- *
- * See AUTO_JSX_INJECTION_CLI_PLAN.md for the full strategy.
- * See JSX_INSERTION_RULES.md (compiler package) for insertion rules.
+ * The extracted sources (and therefore hashes) must agree with what a user
+ * would get by writing <T> and <Var> by hand, and with the compiler plugin.
+ * See JSX_INSERTION_RULES.md in the compiler package for the insertion rules.
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as t from '@babel/types';
-import { parse } from '@babel/parser';
-import traverse, { NodePath } from '@babel/traverse';
-import { parseTranslationComponent } from '../parseJsx.js';
-import { ParsingConfigOptions } from '../../../../../types/parsing.js';
-import { Updates } from '../../../../../types/index.js';
-import { hashSource } from 'generaltranslation/id';
-import { Libraries } from '../../../../../types/libraries.js';
-import type { JsxChild } from '@generaltranslation/format/types';
+import traverseModule from '@babel/traverse';
 import { getPathsAndAliases } from '../../getPathsAndAliases.js';
 import {
   ensureTAndVarImported,
   autoInsertJsxComponents,
 } from '../autoInsertion.js';
+import { INTERNAL_TRANSLATION_COMPONENT } from '../../constants.js';
+import { Libraries } from '../../../../../types/libraries.js';
 import {
-  INTERNAL_TRANSLATION_COMPONENT,
-  INTERNAL_VAR_COMPONENT,
-} from '../../constants.js';
-import generateModule from '@babel/generator';
-const generate =
-  (generateModule as { default?: typeof generateModule }).default ||
-  generateModule;
+  collectAliases,
+  extractUserT,
+  extractWithAutoInjection,
+  inject,
+  mockFiles,
+  page,
+  parseCode,
+  sources,
+} from './harness.js';
 
 vi.mock('node:fs');
 vi.mock('../../resolveImportPath.js');
 
-describe('auto JSX injection simulation', () => {
-  let parsingOptions: ParsingConfigOptions;
+const traverse = traverseModule.default || traverseModule;
 
-  beforeEach(() => {
-    parsingOptions = {
-      conditionNames: ['import', 'require'],
-    };
-    vi.clearAllMocks();
+const DYNAMIC_CHILDREN =
+  '<T> component has children that could change at runtime';
+
+/** The variable an auto-injected (or user) Var produces at GT id `i`. */
+const variable = (i: number) => ({ i, k: `_gt_value_${i}`, v: 'v' });
+
+beforeEach(() => {
+  vi.resetAllMocks();
+});
+
+describe('injection pass', () => {
+  // [description, JSX returned by the page, injected T count, injected Var count]
+  it.each<[string, string, number, number]>([
+    // Text makes an element translatable; only dynamic expressions get a Var
+    ['text only', '<div>Hello</div>', 1, 0],
+    ['text and a numeric literal', '<div>Count: {42}</div>', 1, 0],
+    ['text and a nested element', '<div>Hello <b>World</b> today</div>', 1, 0],
+    ['an identifier', '<div>Hello {name}</div>', 1, 1],
+    ['a member expression', '<div>Price: {obj.price}</div>', 1, 1],
+    [
+      'a ternary of strings',
+      '<div>Status: {isActive ? "on" : "off"}</div>',
+      1,
+      1,
+    ],
+    ['a function call', '<div>Result: {getValue()}</div>', 1, 1],
+    ['an interpolated template', '<div>Hello {`${name}!`}</div>', 1, 1],
+    ['a static template literal', '<div>Text {`Hello`}</div>', 1, 0],
+    ['a string concatenation', '<div>Total: {"$" + amount}</div>', 1, 1],
+    ['a negative number', '<div>Temperature: {-5}</div>', 1, 0],
+    ['a null literal', '<div>Text {null}</div>', 1, 0],
+    ['optional chaining', '<div>Name: {user?.name}</div>', 1, 1],
+    ['nullish coalescing', '<div>Name: {name ?? "Anonymous"}</div>', 1, 1],
+    ['several dynamic children', '<div>{a}sometext{b}{c} and {d}</div>', 1, 4],
+    ['unicode and emoji text', '<div>こんにちは 🌍</div>', 1, 0],
+    ['spread props next to text', '<div {...props}>Hello World</div>', 1, 0],
+
+    // Nothing translatable
+    ['a self-closing element', '<div />', 0, 0],
+    ['an empty element', '<div></div>', 0, 0],
+    ['whitespace only', '<div>   </div>', 0, 0],
+    ['an expression only', '<div>{userName}</div>', 0, 0],
+    [
+      'expressions separated by whitespace',
+      '<div>{firstName} {lastName}</div>',
+      0,
+      0,
+    ],
+    ['boolean literals only', '<div>{true} {false}</div>', 0, 0],
+    ['a numeric literal only', '<div>{42}</div>', 0, 0],
+    [
+      'a map as the only child',
+      '<ul>{items.map(i => <li>{i}</li>)}</ul>',
+      0,
+      0,
+    ],
+
+    // User-written GT components are left alone
+    ['a user T', '<T>Hello</T>', 0, 0],
+    ['a user T containing a user Var', '<T>Hello <Var>{name}</Var></T>', 0, 0],
+    [
+      'nested content inside a user T',
+      '<T>Hello <span>{name} <b>World</b></span></T>',
+      0,
+      0,
+    ],
+    ['a user Var', '<div>Hello <Var>{name}</Var></div>', 1, 0],
+    ['a user Num', '<div>Price: <Num>{price}</Num></div>', 1, 0],
+    ['a user Currency', '<div>Paid <Currency>{amount}</Currency></div>', 1, 0],
+    ['a user DateTime', '<div>Date: <DateTime>{date}</DateTime></div>', 1, 0],
+    [
+      'a user Var next to a dynamic expression',
+      '<div>Hello <Var>{x}</Var> and {y}</div>',
+      1,
+      1,
+    ],
+    [
+      'JSX nested inside a user Var',
+      '<div>Hello <Var>{flag ? <span><b>Deep {text}</b></span> : <em>Other</em>}</Var></div>',
+      1,
+      0,
+    ],
+
+    // The T goes on the outermost element that has text
+    [
+      'text in a deeply nested leaf',
+      '<main><section><article><div><p>Very deep</p></div></article></section></main>',
+      1,
+      0,
+    ],
+    [
+      'text at the root with a deeply nested expression',
+      '<main>Root text <section><article><p><span>{name}</span></p></article></section></main>',
+      1,
+      1,
+    ],
+    [
+      'siblings at different depths',
+      '<div><span>First</span><p><em>Second</em></p></div>',
+      2,
+      0,
+    ],
+    ['a fragment', '<>Hello World</>', 1, 0],
+    ['a fragment with dynamic content', '<>Welcome {name}!</>', 1, 1],
+    ['nested fragments', '<><>Hello World</></>', 1, 0],
+
+    // Branch and Plural are opaque: one T at the parent, Var for dynamic content
+    ['a Branch', '<div><Branch branch="test">Fallback</Branch></div>', 1, 0],
+    [
+      'a Plural (n is a control prop)',
+      '<div><Plural n={count} one="item" other="items" /></div>',
+      1,
+      0,
+    ],
+    [
+      'an element in Branch children',
+      '<div><Branch branch="x"><p>Fallback text</p></Branch></div>',
+      1,
+      0,
+    ],
+    [
+      'elements in Plural forms',
+      '<div><Plural n={c} one={<span>One item</span>} other={<span>Many items</span>} /></div>',
+      1,
+      0,
+    ],
+    [
+      'dynamic content in Branch children',
+      '<div>Text <Branch branch={x}>Fallback {name}</Branch></div>',
+      1,
+      1,
+    ],
+    [
+      'dynamic content in Plural children',
+      '<div><Plural n={count}>You have {count} items</Plural></div>',
+      1,
+      1,
+    ],
+    [
+      'dynamic content in a JSX Branch prop',
+      '<div><Branch branch="mode" Ernest={<>Hello {userName}</>}>fb</Branch></div>',
+      1,
+      1,
+    ],
+    [
+      'a dynamic Branch prop value',
+      '<div><Branch branch="hello" hello={count} /></div>',
+      1,
+      1,
+    ],
+    [
+      'static Branch props',
+      '<div><Branch branch="x" a="A" b="B">fallback</Branch></div>',
+      1,
+      0,
+    ],
+    [
+      'a data-* attribute on Branch',
+      '<div><Branch branch="x" data-testid={id} hello={val}>fb</Branch></div>',
+      1,
+      1,
+    ],
+    [
+      'Branch and Plural siblings next to text',
+      '<div>Label: <Branch branch="x">fb</Branch><Plural n={c} one="1" other="n" /></div>',
+      1,
+      0,
+    ],
+
+    // Derive is opaque and its children are never wrapped
+    ['a Derive', '<div>Hello <Derive>{getX()}</Derive></div>', 1, 0],
+    [
+      'Derive siblings',
+      '<div>The <Derive>{getX()}</Derive> and <Derive>{getY()}</Derive></div>',
+      1,
+      0,
+    ],
+    [
+      'a Derive next to a dynamic expression',
+      '<div>Hello <Derive>{getX()}</Derive> and {z}</div>',
+      1,
+      1,
+    ],
+    [
+      'a Derive next to a user Var',
+      '<div>Price: <Var>{price}</Var> for <Derive>{getItem()}</Derive></div>',
+      1,
+      0,
+    ],
+    [
+      'a fragment containing only a Derive',
+      '<><Derive>{getContent()}</Derive></>',
+      1,
+      0,
+    ],
+    [
+      'Branch, Derive and a dynamic expression',
+      '<div>Label: <Branch branch="x">fb</Branch><Derive>{getStuff()}</Derive>{dynamicVal}</div>',
+      1,
+      1,
+    ],
+
+    // JSX in props is translated independently of the children
+    [
+      'a JSX prop and text children',
+      '<Card header={<h1>Title</h1>}>Body text</Card>',
+      2,
+      0,
+    ],
+    [
+      'a JSX prop without text children',
+      '<Card header={<h1>Title</h1>}><div /></Card>',
+      1,
+      0,
+    ],
+    [
+      'a JSX prop of an element inside a T',
+      '<div>Hello <Button icon={<span>X</span>}>Click</Button></div>',
+      2,
+      0,
+    ],
+    [
+      'several JSX props',
+      '<Layout header={<h1>Header</h1>} footer={<p>Footer</p>}>Main content</Layout>',
+      3,
+      0,
+    ],
+    [
+      'a JSX prop with dynamic content',
+      '<Card header={<h1>Title {count}</h1>}>Body</Card>',
+      2,
+      1,
+    ],
+
+    // JSX inside a dynamic expression is translated independently
+    [
+      'a ternary of JSX next to text',
+      '<div>Status: {isActive ? <span>Active</span> : <span>Inactive</span>}</div>',
+      3,
+      1,
+    ],
+    [
+      'a ternary of JSX without text',
+      '<div>{flag ? <p>Yes</p> : <p>No</p>}</div>',
+      2,
+      0,
+    ],
+    [
+      'a nested ternary of JSX',
+      '<div>Result: {a ? (b ? <span>AB</span> : <span>notB</span>) : <span>C</span>}</div>',
+      4,
+      1,
+    ],
+    ['a logical AND', '<div>Hello {show && <span>Content</span>}</div>', 2, 1],
+    [
+      'a logical OR',
+      '<div>Hello {content || <span>Fallback</span>}</div>',
+      2,
+      1,
+    ],
+    [
+      'a map next to text',
+      '<ul>Items: {items.map(i => <li>{i.name}</li>)}</ul>',
+      1,
+      1,
+    ],
+  ])('%s', (_name, jsx, tCount, varCount) => {
+    const result = inject(page(jsx));
+
+    expect([result.tCount, result.varCount]).toEqual([tCount, varCount]);
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
+  it.each<[string, string, number, number]>([
+    [
+      'an await expression',
+      'export default async function Page() { return <div>Result: {await getData()}</div>; }',
+      1,
+      1,
+    ],
+    [
+      'each component of a file',
+      `function Header() { return <h1>Welcome</h1>; }
+       function Footer() { return <p>Copyright {year}</p>; }`,
+      2,
+      1,
+    ],
+    [
+      'each return path of a component',
+      `function Message({ ok }: { ok: boolean }) {
+         if (ok) return <span>Success</span>;
+         return <span>Error</span>;
+       }`,
+      2,
+      0,
+    ],
+    [
+      'a realistic page',
+      `import { Branch, Derive, Num } from "gt-next";
+       export default function Page() {
+         return (
+           <main>
+             <header>
+               <h1>Welcome {userName}</h1>
+               <nav><a href="/">Home</a><a href="/about">About</a></nav>
+             </header>
+             <section>
+               <p>You have <Num>{count}</Num> items</p>
+               <div><Derive>{getDetails()}</Derive></div>
+             </section>
+             <footer>
+               <Branch branch="theme" dark={<span>Dark mode</span>} light={<span>Light mode</span>}>
+                 Default
+               </Branch>
+             </footer>
+           </main>
+         );
+       }`,
+      6,
+      1,
+    ],
+  ])('%s', (_name, code, tCount, varCount) => {
+    const result = inject(code);
+
+    expect([result.tCount, result.varCount]).toEqual([tCount, varCount]);
   });
 
-  // ================================================================ //
-  //  Helper: simulates the two-pass extraction from createInlineUpdates
-  // ================================================================ //
-
-  /**
-   * Pass 1 only: extract user-written T components (existing behavior).
-   * This is the baseline — should work identically with flag on or off.
-   */
-  function extractUserT(sourceCode: string) {
-    const localUpdates: Updates = [];
-    const localErrors: string[] = [];
-    const localWarnings = new Set<string>();
-
-    const ast = parse(sourceCode, {
-      sourceType: 'module',
-      plugins: ['jsx', 'typescript'],
-    });
-
-    const importAliases: Record<string, string> = {};
-    let tLocalName = '';
-
-    traverse(ast, {
-      ImportDeclaration(path) {
-        const source = path.node.source.value;
-        if (['gt-next', 'gt-react', 'gt-react/browser'].includes(source)) {
-          path.node.specifiers.forEach((spec) => {
-            if (t.isImportSpecifier(spec) && t.isIdentifier(spec.imported)) {
-              importAliases[spec.local.name] = spec.imported.name;
-              if (spec.imported.name === 'T') tLocalName = spec.local.name;
-            }
-          });
-        }
-      },
-    });
-
-    if (tLocalName) {
-      traverse(ast, {
-        Program(programPath) {
-          const tBinding = programPath.scope.getBinding(tLocalName);
-          if (tBinding) {
-            parseTranslationComponent({
-              originalName: 'T',
-              localName: tLocalName,
-              path: tBinding.path,
-              updates: localUpdates,
-              config: {
-                importAliases,
-                parsingOptions,
-                pkgs: [Libraries.GT_NEXT],
-                file: '/test/page.tsx',
-                includeSourceCodeContext: false,
-              },
-              output: {
-                errors: localErrors,
-                warnings: localWarnings,
-                unwrappedExpressions: [],
-              },
-            });
-          }
-        },
-      });
-    }
-
-    return {
-      updates: localUpdates,
-      errors: localErrors,
-      warnings: localWarnings,
-      ast,
-    };
-  }
-
-  /**
-   * Full two-pass extraction: Pass 1 (user T) + Pass 2 (auto-injected T).
-   */
-  function extractWithAutoInjection(sourceCode: string) {
-    const localUpdates: Updates = [];
-    const localErrors: string[] = [];
-    const localWarnings = new Set<string>();
-
-    const ast = parse(sourceCode, {
-      sourceType: 'module',
-      plugins: ['jsx', 'typescript'],
-    });
-
-    const pkgs = [Libraries.GT_NEXT, Libraries.GT_REACT];
-
-    // --- PASS 1: Extract user-written T components ---
-    const pass1Result = getPathsAndAliases(ast, pkgs);
-    const importAliases = { ...pass1Result.importAliases };
-
-    for (const { localName, path } of pass1Result.translationComponentPaths) {
-      parseTranslationComponent({
-        originalName: localName,
-        localName,
-        path,
-        updates: localUpdates,
-        config: {
-          importAliases,
-          parsingOptions,
-          pkgs,
-          file: '/test/page.tsx',
-          includeSourceCodeContext: false,
-        },
-        output: {
-          errors: localErrors,
-          warnings: localWarnings,
-          unwrappedExpressions: [],
-        },
-      });
-    }
-    const pass1Count = localUpdates.length;
-
-    // --- PASS 2: Auto-inject using GtInternalTranslateJsx/GtInternalVar ---
-    // Add translation component names to importAliases so autoInsertJsxComponents
-    // recognizes user T as hands-off
-    for (const {
-      localName,
-      originalName,
-    } of pass1Result.translationComponentPaths) {
-      importAliases[localName] = originalName;
-    }
-    ensureTAndVarImported(ast, importAliases);
-    autoInsertJsxComponents(ast, importAliases);
-
-    // Re-parse the modified AST to get fresh scope/bindings
-    const modifiedCode = generate(ast).code;
-    const freshAst = parse(modifiedCode, {
-      sourceType: 'module',
-      plugins: ['jsx', 'typescript'],
-    });
-
-    // Find GtInternalTranslateJsx references in the fresh AST
-    const internalTName = INTERNAL_TRANSLATION_COMPONENT;
-
-    traverse(freshAst, {
-      Program(programPath) {
-        const tBinding = programPath.scope.getBinding(internalTName);
-        if (!tBinding) return;
-
-        // Augment referencePaths with any JSX usages not captured by scope
-        const existingRefs = new Set(
-          tBinding.referencePaths.map((r) => r.node)
-        );
-        programPath.traverse({
-          JSXIdentifier(jsxIdPath: NodePath<t.JSXIdentifier>) {
-            if (
-              jsxIdPath.node.name === internalTName &&
-              jsxIdPath.parentPath?.isJSXOpeningElement() &&
-              !existingRefs.has(jsxIdPath.node)
-            ) {
-              tBinding.referencePaths.push(jsxIdPath);
-            }
-          },
-        });
-
-        parseTranslationComponent({
-          originalName: internalTName,
-          localName: internalTName,
-          path: tBinding.path,
-          updates: localUpdates,
-          config: {
-            importAliases: {
-              ...importAliases,
-              [INTERNAL_TRANSLATION_COMPONENT]: INTERNAL_TRANSLATION_COMPONENT,
-              [INTERNAL_VAR_COMPONENT]: INTERNAL_VAR_COMPONENT,
-            },
-            parsingOptions,
-            pkgs,
-            file: '/test/page.tsx',
-            includeSourceCodeContext: false,
-            enableAutoJsxInjection: true,
-          },
-          output: {
-            errors: localErrors,
-            warnings: localWarnings,
-            unwrappedExpressions: [],
-          },
-        });
-      },
-    });
-
-    // Remove Pass 1 duplicates (Pass 2 re-extracts everything)
-    // Keep only unique updates by source content
-    const pass1Sources = new Set(
-      localUpdates.slice(0, pass1Count).map((u) => JSON.stringify(u.source))
+  it('wraps the children of the innermost element with text', () => {
+    expect(
+      inject(page('<div><span>Click {count}</span></div>')).code
+    ).toContain(
+      '<div><span><GtInternalTranslateJsx>Click {<GtInternalVar>{count}</GtInternalVar>}</GtInternalTranslateJsx></span></div>'
     );
-    const deduped = [
-      ...localUpdates.slice(0, pass1Count),
-      ...localUpdates
-        .slice(pass1Count)
-        .filter((u) => !pass1Sources.has(JSON.stringify(u.source))),
-    ];
-
-    return {
-      updates: deduped,
-      errors: localErrors,
-      warnings: localWarnings,
-      ast: freshAst,
-    };
-  }
-
-  // ================================================================ //
-  //  1. TWO-PASS SEPARATION: user T vs auto T never double-extract
-  // ================================================================ //
-
-  describe('two-pass separation', () => {
-    it('Pass 1: user-written <T> extracts normally even with flag on', () => {
-      // SOURCE:
-      //   <T>Hello World</T>
-      //
-      // PASS 1 extracts: "Hello World"
-      // PASS 2 may re-extract user T (duplicates removed by dedupeUpdates in pipeline)
-      //
-      // EXPECTED: at least 1 update with source "Hello World", no errors
-      const code = `
-        import { T } from "gt-next";
-        export default function Page() {
-          return <T>Hello World</T>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.errors).toHaveLength(0);
-      expect(result.updates.length).toBeGreaterThanOrEqual(1);
-      expect(result.updates[0].source).toEqual('Hello World');
-    });
-
-    it('Pass 1 errors on user <T> are preserved — auto-injection does NOT fix them', () => {
-      // SOURCE:
-      //   <T>Hello {name}</T>
-      //
-      // The user wrote <T> with an unwrapped expression — that's an error.
-      // Auto-injection must NOT suppress this by inserting <Var>.
-      // Pass 1 should produce the error. Pass 2 should not touch user T content.
-      //
-      // EXPECTED: error for unwrapped expression in user <T>
-      const code = `
-        import { T } from "gt-next";
-        export default function Page() {
-          const name = "World";
-          return <T>Hello {name}</T>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.errors.length + result.warnings.size).toBeGreaterThan(0);
-    });
-
-    it('auto-injected <T> alongside user <T> produces separate updates', () => {
-      // SOURCE:
-      //   <div>
-      //     <T>User translated</T>
-      //     <span>Auto translate me</span>
-      //   </div>
-      //
-      // PASS 1 extracts: "User translated" from user <T>
-      // PASS 2 extracts: "Auto translate me" from auto-inserted <T> inside <span>
-      //
-      // EXPECTED: 2 updates total, one from each pass
-      const code = `
-        import { T } from "gt-next";
-        export default function Page() {
-          return (
-            <div>
-              <T>User translated</T>
-              <span>Auto translate me</span>
-            </div>
-          );
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.updates).toHaveLength(2);
-      expect(result.updates[0].source).toEqual('User translated');
-      expect(result.updates[1].source).toEqual('Auto translate me');
-    });
   });
 
-  // ================================================================ //
-  //  2. HASH AGREEMENT: auto-injected must match user-written hashes
-  // ================================================================ //
+  it('accepts source that already contains injected components', () => {
+    const first = inject(page('<div>Hello {name}</div>'));
+    const second = inject(first.code);
 
-  describe('hash agreement', () => {
-    it('auto-injected <T> for simple text produces same hash as user <T>', () => {
-      // The entire point of this system: if a user writes <T>Hello</T>,
-      // and the compiler auto-inserts <_T>Hello</_T>, the hashes must match.
-      //
-      // MANUAL:  <T>Hello World</T>        → source: "Hello World" → hash X
-      // AUTO:    <div>Hello World</div>     → source: "Hello World" → hash X
-      //
-      // EXPECTED: both hashes are identical
-      const manualCode = `
-        import { T } from "gt-next";
-        export default function Page() {
-          return <T>Hello World</T>;
-        }
-      `;
-      const autoCode = `
-        import { T } from "gt-next";
-        export default function Page() {
-          return <div>Hello World</div>;
-        }
-      `;
-
-      const manualResult = extractUserT(manualCode);
-      const autoResult = extractWithAutoInjection(autoCode);
-
-      expect(manualResult.updates).toHaveLength(1);
-      expect(autoResult.updates).toHaveLength(1);
-
-      const manualHash = hashSource({
-        source: manualResult.updates[0].source,
-        dataFormat: 'JSX',
-      });
-      const autoHash = hashSource({
-        source: autoResult.updates[0].source,
-        dataFormat: 'JSX',
-      });
-      expect(autoHash).toEqual(manualHash);
-    });
-
-    it('auto-injected <T> with <Var> produces same hash as user <T> with <Var>', () => {
-      // MANUAL:  <T>Hello <Var>{name}</Var>!</T>
-      // AUTO:    <div>Hello {name}!</div>
-      //
-      // Both should produce: ["Hello ", { i:1, k:"_gt_value_1", v:"v" }, "!"]
-      // And therefore the same hash.
-      const manualCode = `
-        import { T, Var } from "gt-next";
-        export default function Page() {
-          const name = "World";
-          return <T>Hello <Var>{name}</Var>!</T>;
-        }
-      `;
-      const autoCode = `
-        import { T } from "gt-next";
-        export default function Page() {
-          const name = "World";
-          return <div>Hello {name}!</div>;
-        }
-      `;
-
-      const manualResult = extractUserT(manualCode);
-      const autoResult = extractWithAutoInjection(autoCode);
-
-      expect(manualResult.updates).toHaveLength(1);
-      expect(autoResult.updates).toHaveLength(1);
-      expect(autoResult.updates[0].source).toEqual(
-        manualResult.updates[0].source
-      );
-    });
+    expect([first.tCount, first.varCount]).toEqual([1, 1]);
+    expect(second.tCount).toBeGreaterThanOrEqual(1);
   });
 
-  // ================================================================ //
-  //  3. INSERTION RULES: where T and Var get placed
-  // ================================================================ //
-
-  describe('insertion rules', () => {
-    it('text at deepest level — T wraps inside innermost element', () => {
-      // SOURCE:
-      //   <div><section><p>Deep text</p></section></div>
-      //
-      // SIMULATED:
-      //   <div><section><p><T>Deep text</T></p></section></div>
-      //
-      // The <p> has text, div and section do not → T inside p
-      //
-      // EXPECTED: 1 update, source: "Deep text"
-      const code = `
-        import { T } from "gt-next";
-        export default function Page() {
-          return <div><section><p>Deep text</p></section></div>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.updates).toHaveLength(1);
-      expect(result.updates[0].source).toEqual('Deep text');
+  describe('imports', () => {
+    it('imports the internal components from gt-react', () => {
+      expect(inject(page('<div>Hello</div>')).imports).toEqual(['gt-react']);
     });
 
-    it('parent with text claims subtree — no T on nested children', () => {
-      // SOURCE:
-      //   <div>Hello <b>World</b> today</div>
-      //
-      // SIMULATED:
-      //   <div><T>Hello <b>World</b> today</T></div>
-      //
-      // div has direct text "Hello " → T at div, <b> is part of the unit
-      //
-      // EXPECTED: 1 update (not 2), source includes the <b> as a nested element
-      const code = `
-        import { T } from "gt-next";
-        export default function Page() {
-          return <div>Hello <b>World</b> today</div>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.updates).toHaveLength(1);
-      // Source should be: ["Hello ", { t: "b", i: 1, c: "World" }, " today"]
-      expect(Array.isArray(result.updates[0].source)).toBe(true);
-    });
-
-    it('no text → no extraction', () => {
-      // SOURCE:
-      //   <div>{userName}</div>
-      //
-      // No string content in children → no T inserted → no extraction
-      //
-      // EXPECTED: 0 updates (no errors either — just nothing to translate)
-      const code = `
-        import { T } from "gt-next";
-        export default function Page() {
-          return <div>{userName}</div>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.updates).toHaveLength(0);
-    });
-
-    it('whitespace-only between dynamic expressions → no extraction', () => {
-      // SOURCE:
-      //   <div>{firstName} {lastName}</div>
-      //
-      // Only whitespace string content — not translatable
-      //
-      // EXPECTED: 0 updates
-      const code = `
-        import { T } from "gt-next";
-        export default function Page() {
-          return <div>{firstName} {lastName}</div>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.updates).toHaveLength(0);
-    });
-
-    it('sibling elements get independent T insertions', () => {
-      // SOURCE:
-      //   <div>
-      //     <span>First</span>
-      //     <p><em>Second</em></p>
-      //   </div>
-      //
-      // SIMULATED:
-      //   <div>
-      //     <span><T>First</T></span>
-      //     <p><em><T>Second</T></em></p>
-      //   </div>
-      //
-      // div has no text, each child path gets its own T
-      //
-      // EXPECTED: 2 updates: "First" and "Second"
-      const code = `
-        import { T } from "gt-next";
-        export default function Page() {
-          return (
-            <div>
-              <span>First</span>
-              <p><em>Second</em></p>
-            </div>
-          );
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.updates).toHaveLength(2);
-    });
-  });
-
-  // ================================================================ //
-  //  4. SCOPE REFRESH: auto-inserted T must be discoverable
-  // ================================================================ //
-
-  describe('scope and binding refresh', () => {
-    it('auto-inserted T is found by parseTranslationComponent after scope.crawl()', () => {
-      // This test verifies that after we insert <T> into the AST and
-      // call scope.crawl(), the new T reference shows up in
-      // binding.referencePaths so parseTranslationComponent finds it.
-      //
-      // SOURCE (no user T):
-      //   <h1>Welcome</h1>
-      //
-      // SIMULATED:
-      //   <h1><T>Welcome</T></h1>
-      //
-      // If scope refresh fails, parseTranslationComponent won't find the
-      // new T reference → 0 updates (test fails).
-      //
-      // EXPECTED: 1 update, source: "Welcome"
-      const code = `
-        import { T } from "gt-next";
-        export default function Page() {
-          return <h1>Welcome</h1>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.updates).toHaveLength(1);
-      expect(result.updates[0].source).toEqual('Welcome');
-    });
-
-    it('T not imported at all — auto-injection adds the import and extracts', () => {
-      // SOURCE (T is NOT imported):
-      //   export default function Page() {
-      //     return <h1>Welcome</h1>;
-      //   }
-      //
-      // ensureTAndVarImported() should add: import { T, Var } from "gt-react/browser"
-      // Then auto-insertion wraps: <h1><T>Welcome</T></h1>
-      // scope.crawl() picks up the new binding
-      //
-      // EXPECTED: 1 update, source: "Welcome"
-      const code = `
-        export default function Page() {
-          return <h1>Welcome</h1>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.updates).toHaveLength(1);
-      expect(result.updates[0].source).toEqual('Welcome');
-    });
-  });
-
-  // ================================================================ //
-  //  5. DERIVE CROSS-FILE: auto T ignored, auto Var preserved
-  // ================================================================ //
-
-  describe('derive cross-file handling', () => {
-    it('auto-inserted T inside Derive return is ignored (matches runtime removal)', () => {
-      // SOURCE:
-      //   function getName() {
-      //     return <div>John</div>;
-      //   }
-      //   <div><Derive>{getName()}</Derive></div>
-      //
-      // The compiler would insert T in getName's return:
-      //   function getName() { return <div><_T>John</_T></div>; }
-      //
-      // But removeInjectedT strips it at runtime. So the CLI must
-      // also ignore it — the effective source for hashing is just "John"
-      // inside the Derive, NOT wrapped in T.
-      //
-      // EXPECTED: Derive extraction produces source with "John" as a
-      //           static derive value, NOT as a nested T component.
-      const code = `
-        import { T, Derive } from "gt-next";
-        function getName() {
-          return <div>John</div>;
-        }
-        export default function Page() {
-          return <div><Derive>{getName()}</Derive></div>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      // Should have update(s) from the outer T (wrapping Derive)
-      // The Derive's inner content should NOT have a nested T structure
-      expect(result.updates.length).toBeGreaterThan(0);
-      for (const update of result.updates) {
-        // Verify no nested T component appears in the source tree
-        const sourceStr = JSON.stringify(update.source);
-        expect(sourceStr).not.toContain('"t":"T"');
-        expect(sourceStr).not.toContain('"t":"GtInternalTranslateJsx"');
-      }
-    });
-
-    it('auto-inserted Var inside Derive return IS preserved', () => {
-      // SOURCE:
-      //   function getGreeting(name) {
-      //     return <div>Hello {name}</div>;
-      //   }
-      //   <div><Derive>{getGreeting("World")}</Derive></div>
-      //
-      // The compiler inserts T + Var:
-      //   function getGreeting(name) { return <div><_T>Hello <_Var>{name}</_Var></_T></div>; }
-      //
-      // Runtime removes the T (inside Derive) but the Var structure remains
-      // because it defines the variable slot in the translation.
-      //
-      // EXPECTED: Derive source includes a Var-like variable entry for {name}
-      const code = `
-        import { T, Derive } from "gt-next";
-        function getGreeting(name: string) {
-          return <span>Hello {name}</span>;
-        }
-        export default function Page() {
-          return <div><Derive>{getGreeting("World")}</Derive></div>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.updates.length).toBeGreaterThan(0);
-      // At least one update should contain a variable entry (v: "v")
-      const hasVar = result.updates.some((u) => {
-        const s = JSON.stringify(u.source);
-        return s.includes('"v":"v"');
-      });
-      expect(hasVar).toBe(true);
-    });
-  });
-
-  // ================================================================ //
-  //  6. USER COMPONENTS: hands-off behavior
-  // ================================================================ //
-
-  describe('user component hands-off', () => {
-    it('user <Var> inside auto-injected T is preserved as-is', () => {
-      // SOURCE:
-      //   <div>Hello <Var>{name}</Var></div>
-      //
-      // SIMULATED:
-      //   <div><T>Hello <Var>{name}</Var></T></div>
-      //
-      // The user Var is NOT replaced with auto Var. It's used directly.
-      //
-      // EXPECTED: source has the user Var structure, not auto Var
-      const code = `
-        import { T, Var } from "gt-next";
-        export default function Page() {
-          return <div>Hello <Var>{name}</Var></div>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.updates).toHaveLength(1);
-      // User Var should produce: ["Hello ", { i: 1, k: "_gt_value_1", v: "v" }]
-      expect(result.updates[0].source).toEqual([
-        'Hello ',
-        { i: 1, k: '_gt_value_1', v: 'v' },
+    it('imports from gt-react/browser for the legacy import source', () => {
+      expect(inject(page('<div>Hello</div>'), true).imports).toEqual([
+        'gt-react/browser',
       ]);
     });
 
-    it('content inside user <T> is not touched by auto-injection', () => {
-      // SOURCE:
-      //   <T>Hello <span>{name}</span></T>
-      //
-      // This is a user T with an unwrapped expression inside a span.
-      // The existing extraction should handle this (likely error or warning).
-      // Auto-injection must NOT insert Var inside the user's T.
-      //
-      // EXPECTED: same behavior as without the flag — error/warning for {name}
-      const code = `
-        import { T } from "gt-next";
-        export default function Page() {
-          return <T>Hello <span>{name}</span></T>;
-        }
-      `;
-      const withFlag = extractWithAutoInjection(code);
+    it('does not import the internal components twice', () => {
+      const { imports } = inject(`
+        import { GtInternalTranslateJsx, GtInternalVar } from "gt-react/browser";
+        export default function Page() { return <div>Hello</div>; }
+      `);
 
-      const withoutFlag = extractUserT(code);
-
-      // Both should produce errors/warnings — auto-injection doesn't suppress user errors
-      // The exact count may differ (Pass 2 re-extraction can produce additional entries)
-      // but every error from flag-off should also appear in flag-on
-      for (const err of withoutFlag.errors) {
-        expect(withFlag.errors).toContainEqual(err);
-      }
+      expect(imports).toEqual(['gt-react/browser']);
     });
   });
+});
 
-  // ================================================================ //
-  //  7. DYNAMIC EXPRESSION TYPES (Rule 4)
-  // ================================================================ //
+describe('injection and extraction', () => {
+  const plural = { b: { one: 'item', other: 'items' }, t: 'p' };
 
-  describe('dynamic expression types', () => {
-    it('wraps member expression in Var', () => {
-      // SOURCE:   <div>Price: {obj.price}</div>
-      // INJECTED: <div><T>Price: <Var>{obj.price}</Var></T></div>
-      // EXPECTED: 1 update: ["Price: ", { i: 1, k: "_gt_value_1", v: "v" }]
-      const code = `
-        import { T } from "gt-next";
-        export default function Page() {
-          return <div>Price: {obj.price}</div>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.updates).toHaveLength(1);
-      const source = result.updates[0].source;
-      expect(Array.isArray(source)).toBe(true);
-      expect((source as JsxChild[])[0]).toBe('Price: ');
-      expect((source as JsxChild[])[1]).toHaveProperty('v', 'v');
-    });
+  // [description, code, sources of the extracted updates]
+  it.each<[string, string, unknown[]]>([
+    // Pass 1 and pass 2 together
+    ['a user T', page('<T>Hello World</T>'), ['Hello World']],
+    [
+      'a user T next to injected content',
+      page('<div><T>User translated</T><span>Auto translate me</span></div>'),
+      ['User translated', 'Auto translate me'],
+    ],
+    [
+      'the same content from both passes once',
+      page('<div><T>Hello</T><span>Hello</span></div>'),
+      ['Hello'],
+    ],
+    [
+      'a user T around a fragment once',
+      page('<T><>Hello There</></T>'),
+      [{ t: 'C1', i: 1, c: 'Hello There' }],
+    ],
+    ['a file without GT imports', page('<h1>Welcome</h1>'), ['Welcome']],
+    [
+      'a file that imports T without using it',
+      'import { T } from "gt-next";\nexport default function Page() { return <h1>Welcome</h1>; }',
+      ['Welcome'],
+    ],
 
-    it('wraps ternary in Var', () => {
-      // SOURCE:   <div>Status: {isActive ? "on" : "off"}</div>
-      // INJECTED: <div><T>Status: <Var>{isActive ? "on" : "off"}</Var></T></div>
-      // EXPECTED: 1 update with Var
-      const code = `
-        import { T } from "gt-next";
-        export default function Page() {
-          return <div>Status: {isActive ? "on" : "off"}</div>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.updates).toHaveLength(1);
-      const source = result.updates[0].source;
-      expect(Array.isArray(source)).toBe(true);
-      expect((source as JsxChild[])[0]).toBe('Status: ');
-      expect((source as JsxChild[])[1]).toHaveProperty('v', 'v');
-    });
+    // Where the injected T goes
+    [
+      'deeply nested text',
+      page(
+        '<main><section><article><p>Very deep text</p></article></section></main>'
+      ),
+      ['Very deep text'],
+    ],
+    [
+      'deeply nested text with a dynamic expression',
+      page(
+        '<main><section><article><p>Hello {name}</p></article></section></main>'
+      ),
+      [['Hello ', variable(1)]],
+    ],
+    [
+      'text with a nested element as one update',
+      page('<div>Hello <b>World</b> today</div>'),
+      [['Hello ', { t: 'b', i: 1, c: 'World' }, ' today']],
+    ],
+    [
+      'sibling elements separately',
+      page('<div><span>First</span><p><em>Second</em></p></div>'),
+      ['First', 'Second'],
+    ],
+    [
+      'each component of a file',
+      `function Header() { return <h1>Welcome</h1>; }
+       function Footer() { return <p>Copyright {year}</p>; }`,
+      ['Welcome', ['Copyright ', variable(1)]],
+    ],
+    ['unicode text', page('<div>こんにちは世界</div>'), ['こんにちは世界']],
+    ['nothing from an expression only', page('<div>{userName}</div>'), []],
+    [
+      'nothing from expressions separated by whitespace',
+      page('<div>{firstName} {lastName}</div>'),
+      [],
+    ],
+    ['nothing from a self-closing element', page('<input />'), []],
+    ['nothing from an empty element', page('<div></div>'), []],
+    ['a fragment', page('<>Hello World</>'), ['Hello World']],
+    [
+      'a fragment with dynamic content',
+      page('<>Welcome {name}!</>'),
+      [['Welcome ', variable(1), '!']],
+    ],
+    [
+      'a fragment with a nested element',
+      page('<>Hello <b>World</b></>'),
+      [['Hello ', { t: 'b', i: 1, c: 'World' }]],
+    ],
 
-    it('wraps function call in Var', () => {
-      // SOURCE:   <div>Result: {getValue()}</div>
-      // INJECTED: <div><T>Result: <Var>{getValue()}</Var></T></div>
-      // EXPECTED: 1 update with Var
-      const code = `
-        import { T } from "gt-next";
-        export default function Page() {
-          return <div>Result: {getValue()}</div>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.updates).toHaveLength(1);
-      const source = result.updates[0].source;
-      expect(Array.isArray(source)).toBe(true);
-      expect((source as JsxChild[])[0]).toBe('Result: ');
-      expect((source as JsxChild[])[1]).toHaveProperty('v', 'v');
-    });
-  });
+    // Injected Var
+    [
+      'a member expression as a variable',
+      page('<div>Price: {obj.price}</div>'),
+      [['Price: ', variable(1)]],
+    ],
+    [
+      'several dynamic expressions as variables',
+      page('<div>Hello {first}, welcome to {city}!</div>'),
+      [['Hello ', variable(1), ', welcome to ', variable(2), '!']],
+    ],
+    [
+      'dynamic expressions in nested elements as variables',
+      page('<div>Hello <span>{first}</span> and <em>{last}</em></div>'),
+      [
+        [
+          'Hello ',
+          { t: 'span', i: 1, c: variable(2) },
+          ' and ',
+          { t: 'em', i: 3, c: variable(4) },
+        ],
+      ],
+    ],
 
-  // ================================================================ //
-  //  8. BRANCH/PLURAL OPAQUE (Rule 8)
-  // ================================================================ //
+    // User variable components
+    [
+      'a user Var',
+      page('<div>Hello <Var>{name}</Var></div>'),
+      [['Hello ', variable(1)]],
+    ],
+    [
+      'a user Num',
+      page('<div>Price: <Num>{price}</Num></div>'),
+      [['Price: ', { i: 1, k: '_gt_n_1', v: 'n' }]],
+    ],
+    [
+      'a user RelativeTime',
+      page('<div>Updated: <RelativeTime>{date}</RelativeTime></div>'),
+      [['Updated: ', { i: 1, k: '_gt_time_1', v: 'rt' }]],
+    ],
+    [
+      'a user Currency and DateTime',
+      page(
+        '<div>Paid <Currency>{amount}</Currency> on <DateTime>{date}</DateTime></div>'
+      ),
+      [
+        [
+          'Paid ',
+          { i: 1, k: '_gt_cost_1', v: 'c' },
+          ' on ',
+          { i: 2, k: '_gt_date_2', v: 'd' },
+        ],
+      ],
+    ],
+    [
+      'nothing from a JSX ternary inside a user Var',
+      page('<div>Hello <Var>{flag ? <p>A</p> : <p>B</p>}</Var></div>'),
+      [['Hello ', variable(1)]],
+    ],
+    [
+      'nothing from a map inside a user Var',
+      page('<div>Items: <Var>{items.map(i => <li>{i}</li>)}</Var></div>'),
+      [['Items: ', variable(1)]],
+    ],
+    [
+      'the sibling of a user Var that contains JSX',
+      page('<div><Var>{<p>Opaque</p>}</Var><span>Auto {x}</span></div>'),
+      [['Auto ', variable(1)]],
+    ],
 
-  describe('Branch/Plural opaque', () => {
-    it('Branch triggers T at parent, content is opaque', () => {
-      // SOURCE:   <div><Branch branch="test">Fallback</Branch></div>
-      // INJECTED: <div><T><Branch branch="test">Fallback</Branch></T></div>
-      // EXPECTED: 1 update with Branch structure
-      const code = `
-        import { T, Branch } from "gt-next";
-        export default function Page() {
-          return <div><Branch branch="test">Fallback</Branch></div>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.updates.length).toBeGreaterThanOrEqual(1);
-    });
+    // JSX in props and in dynamic expressions
+    [
+      'a JSX prop',
+      page('<Card header={<h1>Title</h1>}>Body text</Card>'),
+      ['Title', 'Body text'],
+    ],
+    [
+      'several JSX props',
+      page(
+        '<Layout header={<h1>Header</h1>} footer={<p>Footer</p>}>Main</Layout>'
+      ),
+      ['Header', 'Footer', 'Main'],
+    ],
+    [
+      'a JSX prop with dynamic content',
+      page('<Card header={<h1>Title {count}</h1>}>Body</Card>'),
+      [['Title ', variable(1)], 'Body'],
+    ],
+    [
+      'the branches of a JSX ternary next to text',
+      page(
+        '<div>Status: {isActive ? <span>Active</span> : <span>Inactive</span>}</div>'
+      ),
+      [['Status: ', variable(1)], 'Active', 'Inactive'],
+    ],
+    [
+      'the branches of a JSX ternary without text',
+      page('<div>{flag ? <p>Yes</p> : <p>No</p>}</div>'),
+      ['Yes', 'No'],
+    ],
+    [
+      'JSX behind a logical AND',
+      page('<div>Hello {show && <span>Content</span>}</div>'),
+      [['Hello ', variable(1)], 'Content'],
+    ],
 
-    it('Plural triggers T at parent', () => {
-      // SOURCE:   <div><Plural n={count} one="item" other="items" /></div>
-      // INJECTED: <div><T><Plural n={count} one="item" other="items" /></T></div>
-      // EXPECTED: update(s) with Plural structure
-      const code = `
-        import { T } from "gt-next";
-        import { Plural } from "gt-next";
-        export default function Page() {
-          return <div><Plural n={count} one="item" other="items" /></div>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.updates.length).toBeGreaterThanOrEqual(1);
-    });
-  });
+    // Branch and Plural
+    [
+      'a Branch with JSX props',
+      page(
+        '<div><Branch branch="test" a={<span>A</span>} b={<span>B</span>}>Fallback</Branch></div>'
+      ),
+      [
+        {
+          t: 'Branch',
+          i: 1,
+          d: {
+            b: {
+              a: { t: 'span', i: 2, c: 'A' },
+              b: { t: 'span', i: 2, c: 'B' },
+            },
+            t: 'b',
+          },
+          c: 'Fallback',
+        },
+      ],
+    ],
+    [
+      'a Plural with string forms',
+      page('<div><Plural n={count} one="item" other="items" /></div>'),
+      [{ t: 'Plural', i: 1, d: plural }],
+    ],
+    [
+      'dynamic content in Branch children',
+      page(
+        '<>Hello, my good friend <Branch branch={userName}>Fallback with Var {userName}</Branch></>'
+      ),
+      [
+        [
+          'Hello, my good friend ',
+          { t: 'Branch', i: 1, c: ['Fallback with Var ', variable(2)] },
+        ],
+      ],
+    ],
+    [
+      'dynamic content in Plural children',
+      page('<div><Plural n={count}>You have {count} items</Plural></div>'),
+      [{ t: 'Plural', i: 1, c: ['You have ', variable(2), ' items'] }],
+    ],
+    [
+      'dynamic content in a JSX Branch prop',
+      page(
+        '<div><Branch branch="mode" Ernest={<>Hello {userName}</>}>Fallback</Branch></div>'
+      ),
+      [
+        {
+          t: 'Branch',
+          i: 1,
+          d: {
+            b: { Ernest: { t: 'C2', i: 2, c: ['Hello ', variable(3)] } },
+            t: 'b',
+          },
+          c: 'Fallback',
+        },
+      ],
+    ],
+    [
+      'the branches of a JSX ternary in a Branch prop',
+      page(
+        '<div><Branch branch="mode" summary={flag ? <p>Option A</p> : <p>Option B</p>}>Fallback</Branch></div>'
+      ),
+      [
+        {
+          t: 'Branch',
+          i: 1,
+          d: { b: { summary: variable(2) }, t: 'b' },
+          c: 'Fallback',
+        },
+        'Option A',
+        'Option B',
+      ],
+    ],
+    [
+      'the branches of a JSX ternary in a Plural form',
+      page(
+        '<div><Plural n={n} one={flag ? <b>single</b> : <b>solo</b>} other="many" /></div>'
+      ),
+      [
+        {
+          t: 'Plural',
+          i: 1,
+          d: { b: { one: variable(2), other: 'many' }, t: 'p' },
+        },
+        'single',
+        'solo',
+      ],
+    ],
+    // Branch/Plural children share the id counter with the following siblings
+    [
+      'an element after Branch children with the next id',
+      page(
+        '<div><Branch branch={status} draft={<span>Draft</span>}><span>Unknown</span></Branch><span>Last saved {lastSaved}</span></div>'
+      ),
+      [
+        [
+          {
+            t: 'Branch',
+            i: 1,
+            d: { b: { draft: { t: 'span', i: 2, c: 'Draft' } }, t: 'b' },
+            c: { t: 'span', i: 2, c: 'Unknown' },
+          },
+          { t: 'span', i: 3, c: ['Last saved ', variable(4)] },
+        ],
+      ],
+    ],
+    [
+      'an element after Plural children with the next id',
+      page(
+        '<div><Plural n={count} one={<span>one</span>}><span>other</span></Plural><span>Total: {total}</span></div>'
+      ),
+      [
+        [
+          {
+            t: 'Plural',
+            i: 1,
+            d: { b: { one: { t: 'span', i: 2, c: 'one' } }, t: 'p' },
+            c: { t: 'span', i: 2, c: 'other' },
+          },
+          { t: 'span', i: 3, c: ['Total: ', variable(4)] },
+        ],
+      ],
+    ],
+    [
+      'a root-level Plural',
+      page('<Plural n={n} one={<><strong>one</strong></>}><>other</></Plural>'),
+      [
+        {
+          t: 'Plural',
+          i: 1,
+          d: {
+            b: { one: { t: 'C2', i: 2, c: { t: 'strong', i: 3, c: 'one' } } },
+            t: 'p',
+          },
+          c: { t: 'C2', i: 2, c: 'other' },
+        },
+      ],
+    ],
 
-  // ================================================================ //
-  //  8b. OPAQUE COMPONENT CHILDREN (fallback) — Var-wrapping
-  // ================================================================ //
-
-  describe('opaque component children (fallback) processing', () => {
-    it('Var-wraps dynamic content inside Branch children without losing text', () => {
-      // SOURCE:
-      //   <>
-      //     Hello, my good friend
-      //     <Branch branch={userName}>Fallback with Var {userName}</Branch>
-      //   </>
-      //
-      // INJECTED:
-      //   <>
-      //     <_T>
-      //       Hello, my good friend
-      //       <Branch branch={userName}>Fallback with Var <_Var>{userName}</_Var></Branch>
-      //     </_T>
-      //   </>
-      //
-      // Branch children is ["Fallback with Var ", {userName}] — must be processed
-      // element-by-element. The {userName} inside children gets Var-wrapped.
-      // EXPECTED: no errors, Branch children in jsxChildren contains text + variable
-      const code = `
-        import { Branch } from "gt-react/browser";
-        export default function Page() {
-          const userName = "Ernest";
-          return (
-            <>
-              Hello, my good friend
-              <Branch branch={userName}>
-                Fallback with Var {userName}
-              </Branch>
-            </>
-          );
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.errors).toHaveLength(0);
-      expect(result.updates.length).toBeGreaterThanOrEqual(1);
-      const source = result.updates[0].source as JsxChild[];
-      expect(Array.isArray(source)).toBe(true);
-      // Should contain text + Branch element
-      const branchEl = source.find(
-        (child) =>
-          typeof child === 'object' &&
-          child !== null &&
-          't' in child &&
-          child.t === 'Branch'
-      ) as unknown;
-      expect(branchEl).toBeDefined();
-      // Branch children should preserve "Fallback with Var" text
-      // (not be a single variable with text lost)
-      const branchChildren = branchEl.c;
-      expect(Array.isArray(branchChildren)).toBe(true);
-    });
-
-    it('Var-wraps dynamic content inside Plural children without losing text', () => {
-      // SOURCE:   <div><Plural n={count}>You have {count} items</Plural></div>
-      // INJECTED: <div><_T><Plural n={count}>You have <_Var>{count}</_Var> items</Plural></_T></div>
-      // EXPECTED: no errors, Plural children contains text + variable
-      const code = `
-        import { Plural } from "gt-react/browser";
-        export default function Page() {
-          const count = 5;
-          return (
-            <div>
-              <Plural n={count}>
-                You have {count} items
-              </Plural>
-            </div>
-          );
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.errors).toHaveLength(0);
-      expect(result.updates.length).toBeGreaterThanOrEqual(1);
-    });
-
-    it('Var-wraps dynamic content inside Branch content prop JSX', () => {
-      // SOURCE:
-      //   <div>
-      //     <Branch branch="mode" Ernest={<>Hello {userName}</>}>Fallback</Branch>
-      //   </div>
-      //
-      // INJECTED:
-      //   <div>
-      //     <_T>
-      //       <Branch branch="mode" Ernest={<>Hello <_Var>{userName}</_Var></>}>Fallback</Branch>
-      //     </_T>
-      //   </div>
-      //
-      // Ernest prop is a content prop with JSX containing dynamic content.
-      // {userName} inside Ernest's fragment should get Var-wrapped.
-      // EXPECTED: no errors
-      const code = `
-        import { Branch } from "gt-react/browser";
-        export default function Page() {
-          const userName = "Ernest";
-          return (
-            <div>
-              <Branch branch="mode" Ernest={<>Hello {userName}</>}>
-                Fallback
-              </Branch>
-            </div>
-          );
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.errors).toHaveLength(0);
-      expect(result.updates.length).toBeGreaterThanOrEqual(1);
-    });
-
-    it('does NOT Var-wrap Derive children (opaque content)', () => {
-      // SOURCE:   <div>Hello <Derive>{getName()}</Derive></div>
-      // INJECTED: <div><_T>Hello <Derive>{getName()}</Derive></_T></div>
-      // Derive children are fully opaque — no Var wrapping, no errors
-      const code = `
-        import { Derive } from "gt-react/browser";
-        export default function Page() {
-          return <div>Hello <Derive>{getName()}</Derive></div>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.errors).toHaveLength(0);
-      expect(result.updates.length).toBeGreaterThanOrEqual(1);
-    });
-  });
-
-  // ================================================================ //
-  //  8b2. ROOT-LEVEL OPAQUE GT COMPONENT
-  // ================================================================ //
-
-  describe('root-level opaque GT component', () => {
-    it('wraps root-level Plural in _T and extracts correctly', () => {
-      // SOURCE: <Plural n={n} one={<><strong>one</strong></>}><>other</></Plural>
-      // Plural is the root element — no parent to claim _T.
-      // Auto-injection should wrap Plural itself in _T.
-      // EXPECTED: no errors, at least 1 update extracted
-      const code = `
-        import { Plural } from "gt-react/browser";
-        export default function Page() {
-          const n = 1;
-          return <Plural n={n} one={<><strong>one</strong></>}><>other</></Plural>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.errors).toHaveLength(0);
-      expect(result.updates.length).toBeGreaterThanOrEqual(1);
-    });
-
-    it('wraps root-level Derive in _T and extracts with resolved content', () => {
-      // SOURCE:
-      //   function getUserName2() {
-      //     return <Derive><>other some other examples</></Derive>;
-      //   }
-      //   // getUserName2() called somewhere that triggers extraction
-      //
-      // Derive is the root element — auto-injection should wrap it in _T.
-      // EXPECTED jsxChildren:
-      //   { "t": "Derive", "i": 1, "c": { "t": "C2", "i": 2, "c": "other some other examples" } }
-      const code = `
-        import { Derive } from "gt-react/browser";
-        export default function Page() {
-          return <Derive><>other some other examples</></Derive>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.errors).toHaveLength(0);
-      expect(result.updates.length).toBeGreaterThanOrEqual(1);
-
-      const expected = {
-        t: 'Derive',
-        i: 1,
-        c: { t: 'C2', i: 2, c: 'other some other examples' },
-      };
-      expect(result.updates[0].source).toEqual(expected);
-    });
-  });
-
-  // ================================================================ //
-  //  8c. DERIVE EXTRACTION WITH AUTO-INJECTION
-  // ================================================================ //
-
-  describe('Derive extraction with auto-injection', () => {
-    it('Derive with function returning JSX + text — auto-inserted T unwrapped', () => {
-      // SOURCE:
-      //   function getName() { return <span>John</span>; }
-      //   <div>Hello <Derive>{getName()}</Derive></div>
-      //
-      // The compiler inserts _T inside <span>John</span>.
-      // The CLI extraction should unwrap that _T (transparent in Derive context).
-      // EXPECTED: no errors, Derive resolves to the function's return value
-      const code = `
-        import { Derive } from "gt-react/browser";
-        function getName() { return <span>John</span>; }
-        export default function Page() {
-          return <div>Hello <Derive>{getName()}</Derive></div>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.errors).toHaveLength(0);
-      expect(result.updates.length).toBeGreaterThanOrEqual(1);
-    });
-
-    it('Multiple Derives in same parent — each resolves independently', () => {
-      // SOURCE:
-      //   function getSubject() { return gender === 'male' ? 'boy' : 'girl'; }
-      //   function getObject() { return toy === 'ball' ? 'ball' : 'crayon'; }
-      //   <div>The <Derive>{getSubject()}</Derive> plays with the <Derive>{getObject()}</Derive></div>
-      //
-      // EXPECTED: no errors, multiple updates (multiplicative from Derive resolution)
-      const code = `
-        import { Derive } from "gt-react/browser";
-        function getSubject() { return gender === 'male' ? 'boy' : 'girl'; }
-        function getObject() { return toy === 'ball' ? 'ball' : 'crayon'; }
-        export default function Page() {
-          return (
-            <div>
-              The <Derive>{getSubject()}</Derive> plays with the <Derive>{getObject()}</Derive>
-            </div>
-          );
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.errors).toHaveLength(0);
-      expect(result.updates.length).toBeGreaterThanOrEqual(1);
-    });
-
-    it('Derive with conditional returns — produces multiple branches', () => {
-      // SOURCE:
-      //   function getStatus(ok) { if (ok) return 'Success'; return 'Error'; }
-      //   <div>Status: <Derive>{getStatus(ok)}</Derive></div>
-      //
-      // EXPECTED: no errors, multiple updates from conditional branches
-      const code = `
-        import { Derive } from "gt-react/browser";
-        function getStatus(ok) { if (ok) return 'Success'; return 'Error'; }
-        export default function Page() {
-          return <div>Status: <Derive>{getStatus(ok)}</Derive></div>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.errors).toHaveLength(0);
-      expect(result.updates.length).toBeGreaterThanOrEqual(1);
-    });
-  });
-
-  // ================================================================ //
-  //  8d. USER VAR OPAQUENESS WITH AUTO-INJECTION
-  // ================================================================ //
-
-  describe('user Var opaqueness with auto-injection', () => {
-    it('user Var with ternary containing JSX — no injection inside Var', () => {
-      // SOURCE:   <div>Hello <Var>{flag ? <p>A</p> : <p>B</p>}</Var></div>
-      // INJECTED: <div><_T>Hello <Var>{flag ? <p>A</p> : <p>B</p>}</Var></_T></div>
-      // "A" and "B" must NOT get auto-inserted _T inside Var
-      // EXPECTED: no errors, extraction succeeds
-      const code = `
-        import { Var } from "gt-react/browser";
-        export default function Page() {
-          const flag = true;
-          return <div>Hello <Var>{flag ? <p>A</p> : <p>B</p>}</Var></div>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.errors).toHaveLength(0);
-      expect(result.updates.length).toBeGreaterThanOrEqual(1);
-    });
-
-    it('user Var with .map() returning JSX — no injection inside Var', () => {
-      // SOURCE:   <div>Items: <Var>{items.map(i => <li>{i}</li>)}</Var></div>
-      // INJECTED: <div><_T>Items: <Var>{...}</Var></_T></div>
-      // <li> elements inside Var must NOT get _T
-      // EXPECTED: no errors
-      const code = `
-        import { Var } from "gt-react/browser";
-        export default function Page() {
-          const items = ['a', 'b'];
-          return <div>Items: <Var>{items.map(i => <li>{i}</li>)}</Var></div>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.errors).toHaveLength(0);
-      expect(result.updates.length).toBeGreaterThanOrEqual(1);
-    });
-
-    it('user Var depth resets — sibling content still gets injected', () => {
-      // SOURCE:   <div><Var>{<p>Opaque</p>}</Var><span>Auto {x}</span></div>
-      // INJECTED: Var opaque, span gets _T + _Var
-      // EXPECTED: no errors, extraction includes the span content
-      const code = `
-        import { Var } from "gt-react/browser";
-        export default function Page() {
-          const x = 'dynamic';
-          return (
-            <div>
-              <Var>{<p>Opaque</p>}</Var>
-              <span>Auto {x}</span>
-            </div>
-          );
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.errors).toHaveLength(0);
-      expect(result.updates.length).toBeGreaterThanOrEqual(1);
-    });
-  });
-
-  // ================================================================ //
-  //  8e. BUG: User T inside fragment should not get duplicate extraction
-  // ================================================================ //
-
-  describe('user T duplicate extraction bug', () => {
-    it('user T inside fragment should produce exactly one update, not two', () => {
-      // SOURCE:
-      //   <T><>Hello There</></T>
-      //
-      // Pass 1 correctly extracts from user T.
-      // Pass 2 (auto-injection) should NOT re-extract from user T.
-      // BUG: pass1Paths.has(path) check fails because refreshed paths are new objects,
-      // causing user T to be re-extracted in Pass 2 — producing a duplicate entry.
-      //
-      // EXPECTED: exactly 1 update, not 2
-      const code = `
-        import { T } from "gt-react/browser";
-        export default function Page() {
-          return <T><>Hello There</></T>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.errors).toHaveLength(0);
-      expect(result.updates).toHaveLength(1);
-    });
-  });
-
-  // ================================================================ //
-  //  8f. BUG: Derive function resolution with auto-injection
-  // ================================================================ //
-
-  describe('Derive function resolution with auto-injection', () => {
-    it('Derive should resolve getUserName() and inline its JSX content', () => {
-      // SOURCE:
-      //   function getUserName() { return <>User name is <b>Ernest</b></>; }
-      //   <>Here is the user name: <Derive>{getUserName()}</Derive></>
-      //
-      // The CLI should resolve getUserName(), follow into the function body,
-      // and produce jsxChildren with the Derive element containing the resolved content.
-      // BUG: with auto-injection on, the Derive chain is not properly explored —
-      // the generated jsxChildren shows Derive as just {"i": 1} without resolved content.
-      //
-      // EXPECTED: no errors, the Derive entry should contain resolved children
-      // (the fragment with "User name is " + <b>Ernest</b>)
-      const code = `
-        import { Derive } from "gt-react/browser";
-        function getUserName() {
-          return <>User name is <b>Ernest</b></>;
-        }
-        export default function Page() {
-          return <>Here is the user name: <Derive>{getUserName()}</Derive></>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.errors).toHaveLength(0);
-      expect(result.updates.length).toBeGreaterThanOrEqual(1);
-      // The main update should contain "Here is the user name:" with a Derive element
-      const mainUpdate = result.updates.find((u) => {
-        const src = u.source;
-        return (
-          Array.isArray(src) &&
-          JSON.stringify(src).includes('Here is the user name')
-        );
-      });
-      expect(mainUpdate).toBeDefined();
-      const source = mainUpdate!.source as JsxChild[];
-      // The Derive is extracted as an indexed element {"i": N} at extraction time.
-      // Derive function resolution + linking happens in post-processing (linkDeriveUpdates).
-      // At this level, just verify the Derive slot exists.
-      const deriveSlot = source.find(
-        (child) => typeof child === 'object' && child !== null && 'i' in child
-      );
-      expect(deriveSlot).toBeDefined();
-      // The function body should also be extracted as a separate entry
-      const funcUpdate = result.updates.find((u) => {
-        const src = u.source;
-        return (
-          Array.isArray(src) && JSON.stringify(src).includes('User name is')
-        );
-      });
-      expect(funcUpdate).toBeDefined();
-    });
-  });
-
-  // ================================================================ //
-  //  8g. Derive resolution must produce the same structure with auto-injected _T as with user T
-  // ================================================================ //
-
-  describe('Derive resolution parity between user T and auto-injected T', () => {
-    it('auto-injected _T with Derive produces Derive element with resolved children', () => {
-      // SOURCE:
-      //   function getUserName() { return <>User name is <b>Brian</b></>; }
-      //   <>Here is the user name: <Derive>{getUserName()}</Derive></>
-      //
-      // EXPECTED jsxChildren for the main entry:
-      //   [
-      //     "Here is the user name: ",
-      //     {
-      //       "t": "Derive",
-      //       "i": 1,
-      //       "c": {
-      //         "t": "C2",
-      //         "i": 2,
-      //         "c": [
-      //           "User name is ",
-      //           { "t": "b", "i": 3, "c": "Brian" }
-      //         ]
-      //       }
-      //     }
-      //   ]
-      const code = `
-        import { Derive } from "gt-react/browser";
-        function getUserName() {
-          return <>User name is <b>Brian</b></>;
-        }
-        export default function Page() {
-          return <>Here is the user name: <Derive>{getUserName()}</Derive></>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.errors).toHaveLength(0);
-
-      const mainUpdate = result.updates.find((u) => {
-        const src = u.source;
-        return (
-          Array.isArray(src) &&
-          JSON.stringify(src).includes('Here is the user name')
-        );
-      });
-      expect(mainUpdate).toBeDefined();
-
-      const expectedSource = [
-        'Here is the user name: ',
+    // Derive: the T injected into a derived function's JSX is not part of
+    // the Derive content (the runtime removes it), an injected Var is.
+    [
+      'a root-level Derive',
+      page('<Derive><>other some other examples</></Derive>'),
+      [
         {
           t: 'Derive',
           i: 1,
-          c: {
-            t: 'C2',
-            i: 2,
-            c: ['User name is ', { t: 'b', i: 3, c: 'Brian' }],
-          },
+          c: { t: 'C2', i: 2, c: 'other some other examples' },
         },
-      ];
-
-      expect(mainUpdate!.source).toEqual(expectedSource);
-    });
-  });
-
-  // ================================================================ //
-  //  8h. Regression: flatMap change must not break non-Derive paths
-  // ================================================================ //
-
-  describe('flatMap regression — non-Derive paths unchanged', () => {
-    it('user T with fragment containing multiple children — no unwrapping', () => {
-      // SOURCE: <T><>Hello <b>World</b></></T>
-      // User T does NOT go through the transparency unwrap.
-      // EXPECTED: { "t": "C1", "i": 1, "c": ["Hello ", { "t": "b", "i": 2, "c": "World" }] }
-      const code = `
-        import { T } from "gt-react/browser";
-        export default function Page() {
-          return <T><>Hello <b>World</b></></T>;
-        }
-      `;
-      const result = extractUserT(code);
-      expect(result.errors).toHaveLength(0);
-      expect(result.updates).toHaveLength(1);
-      const expected = {
-        t: 'C1',
-        i: 1,
-        c: ['Hello ', { t: 'b', i: 2, c: 'World' }],
-      };
-      expect(result.updates[0].source).toEqual(expected);
-    });
-
-    it('auto-injected T (not inside Derive) with fragment — no unwrapping', () => {
-      // SOURCE: <>Hello <b>World</b></>  (no Derive context)
-      // Auto-inserted _T wraps the content. Not inside Derive, so no transparency unwrap.
-      // EXPECTED: ["Hello ", { "t": "b", "i": 1, "c": "World" }]
-      const code = `
-        import { T } from "gt-react/browser";
-        export default function Page() {
-          return <>Hello <b>World</b></>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.errors).toHaveLength(0);
-      const mainUpdate = result.updates.find((u) => {
-        const src = u.source;
-        return Array.isArray(src) && JSON.stringify(src).includes('Hello');
-      });
-      expect(mainUpdate).toBeDefined();
-      const expected = ['Hello ', { t: 'b', i: 1, c: 'World' }];
-      expect(mainUpdate!.source).toEqual(expected);
-    });
-
-    it('user T with Derive — baseline still works', () => {
-      // SOURCE: <T>Label: <Derive>{getUserName()}</Derive></T>
-      // where getUserName() returns <>User name is <b>Brian</b></>
-      // User T path — no auto-inserted _T inside the function.
-      const code = `
-        import { T, Derive } from "gt-react/browser";
-        function getUserName() {
-          return <>User name is <b>Brian</b></>;
-        }
-        export default function Page() {
-          return <T>Label: <Derive>{getUserName()}</Derive></T>;
-        }
-      `;
-      const result = extractUserT(code);
-      expect(result.errors).toHaveLength(0);
-      expect(result.updates.length).toBeGreaterThanOrEqual(1);
-      const expected = [
-        'Label: ',
+        'other some other examples',
+      ],
+    ],
+    [
+      'a Derive of a function returning an element',
+      page('<div><Derive>{getName()}</Derive></div>', {
+        outer: 'function getName() { return <div>John</div>; }',
+      }),
+      ['John', { t: 'Derive', i: 1, c: { t: 'div', i: 2, c: 'John' } }],
+    ],
+    [
+      'a Derive of a function returning a fragment',
+      page('<>Here is the user name: <Derive>{getUserName()}</Derive></>', {
+        outer:
+          'function getUserName() { return <>User name is <b>Brian</b></>; }',
+      }),
+      [
+        ['User name is ', { t: 'b', i: 1, c: 'Brian' }],
+        [
+          'Here is the user name: ',
+          {
+            t: 'Derive',
+            i: 1,
+            c: {
+              t: 'C2',
+              i: 2,
+              c: ['User name is ', { t: 'b', i: 3, c: 'Brian' }],
+            },
+          },
+        ],
+      ],
+    ],
+    [
+      'a Derive of a function returning dynamic JSX',
+      page('<div><Derive>{getGreeting("World")}</Derive></div>', {
+        outer:
+          'function getGreeting(name: string) { return <span>Hello {name}</span>; }',
+      }),
+      [
+        ['Hello ', variable(1)],
         {
           t: 'Derive',
           i: 1,
-          c: {
-            t: 'C2',
-            i: 2,
-            c: ['User name is ', { t: 'b', i: 3, c: 'Brian' }],
+          c: { t: 'span', i: 2, c: ['Hello ', variable(3)] },
+        },
+      ],
+    ],
+    [
+      'a Derive of a function with several returns',
+      page('<div>Status: <Derive>{getStatus(ok)}</Derive></div>', {
+        outer:
+          "function getStatus(ok) { if (ok) return 'Success'; return 'Error'; }",
+      }),
+      [
+        ['Status: ', { t: 'Derive', i: 1, c: 'Success' }],
+        ['Status: ', { t: 'Derive', i: 1, c: 'Error' }],
+      ],
+    ],
+    [
+      'the cross product of two Derives',
+      page(
+        '<div>The <Derive>{getSubject()}</Derive> has the <Derive>{getObject()}</Derive></div>',
+        {
+          outer: `function getSubject() { return gender === 'male' ? 'boy' : 'girl'; }
+                  function getObject() { return toy === 'ball' ? 'ball' : 'crayon'; }`,
+        }
+      ),
+      ['boy', 'girl'].flatMap((subject) =>
+        ['ball', 'crayon'].map((object) => [
+          'The ',
+          { t: 'Derive', i: 1, c: subject },
+          ' has the ',
+          { t: 'Derive', i: 2, c: object },
+        ])
+      ),
+    ],
+    [
+      'a Derive next to a dynamic expression',
+      page('<div>Hello <Derive>{getX()}</Derive> and {z}</div>'),
+      [['Hello ', { t: 'Derive', i: 1 }, ' and ', variable(2)]],
+    ],
+    [
+      'a Branch inside a Derive, also on its own',
+      page(
+        '<div>Hello <Derive><Branch branch="x">fallback</Branch></Derive></div>'
+      ),
+      [
+        [
+          'Hello ',
+          { t: 'Derive', i: 1, c: { t: 'Branch', i: 2, c: 'fallback' } },
+        ],
+        { t: 'Branch', i: 1, c: 'fallback' },
+      ],
+    ],
+    [
+      'a Plural inside a Derive, also on its own',
+      page(
+        '<div>Hello <Derive><Plural n={n} one="item" other="items" /></Derive></div>'
+      ),
+      [
+        ['Hello ', { t: 'Derive', i: 1, c: { t: 'Plural', i: 2, d: plural } }],
+        { t: 'Plural', i: 1, d: plural },
+      ],
+    ],
+  ])('extracts %s', (_name, code, expected) => {
+    const result = extractWithAutoInjection(code);
+
+    expect(result.errors).toEqual([]);
+    expect(sources(result)).toEqual(expected);
+  });
+
+  // The point of auto injection: the same hash as hand-written components
+  it.each([
+    ['text', '<T>Hello World</T>', '<div>Hello World</div>'],
+    ['a Var', '<T>Hello <Var>{name}</Var>!</T>', '<div>Hello {name}!</div>'],
+    [
+      'several Vars',
+      '<T>Hello <Var>{first}</Var>, welcome to <Var>{city}</Var>!</T>',
+      '<div>Hello {first}, welcome to {city}!</div>',
+    ],
+    [
+      'a nested element',
+      '<T>Hello <b>World</b></T>',
+      '<div>Hello <b>World</b></div>',
+    ],
+    [
+      'a Num',
+      '<T>Price: <Num>{price}</Num></T>',
+      '<div>Price: <Num>{price}</Num></div>',
+    ],
+    [
+      'a Derive',
+      '<T>Label: <Derive>{getUserName()}</Derive></T>',
+      '<main>Label: <Derive>{getUserName()}</Derive></main>',
+    ],
+  ])('matches a hand-written <T> with %s', (_name, manualJsx, autoJsx) => {
+    const outer = 'function getUserName() { return "Brian"; }';
+    const manual = extractUserT(page(manualJsx, { outer }));
+    const auto = extractWithAutoInjection(page(autoJsx, { outer }));
+
+    expect(manual.updates).toHaveLength(1);
+    expect(sources(auto)).toEqual(sources(manual));
+  });
+
+  it('extracts only the user T when auto injection is off', () => {
+    const result = extractUserT(
+      page('<div><T>Manual</T><span>Should not be extracted</span></div>')
+    );
+
+    expect(sources(result)).toEqual(['Manual']);
+  });
+
+  it('does not inject Var into a user T with dynamic children', () => {
+    const result = extractWithAutoInjection(page('<T>Hello {name}</T>'));
+
+    expect(result.errors).toEqual([expect.stringContaining(DYNAMIC_CHILDREN)]);
+    expect(result.updates).toEqual([]);
+  });
+
+  it('reports the same errors for a user T as without auto injection', () => {
+    const code = page('<T>Hello <span>{name}</span></T>');
+    const withInjection = extractWithAutoInjection(code);
+
+    expect(withInjection.errors).toEqual([
+      expect.stringContaining(DYNAMIC_CHILDREN),
+    ]);
+    expect(withInjection.errors).toEqual(extractUserT(code).errors);
+  });
+
+  // Baselines without auto injection, for the cases above
+  it.each<[string, string, unknown[]]>([
+    [
+      'does not translate JSX inside a user Var',
+      page(
+        '<T>Status: <Var>{isActive ? <span>Active</span> : <span>Inactive</span>}</Var></T>'
+      ),
+      [['Status: ', variable(1)]],
+    ],
+    [
+      'keeps a fragment child as an element',
+      page('<T><>Hello <b>World</b></></T>'),
+      [{ t: 'C1', i: 1, c: ['Hello ', { t: 'b', i: 2, c: 'World' }] }],
+    ],
+    [
+      'inlines the fragment returned by a derived function',
+      page('<T>Label: <Derive>{getUserName()}</Derive></T>', {
+        outer:
+          'function getUserName() { return <>User name is <b>Brian</b></>; }',
+      }),
+      [
+        [
+          'Label: ',
+          {
+            t: 'Derive',
+            i: 1,
+            c: {
+              t: 'C2',
+              i: 2,
+              c: ['User name is ', { t: 'b', i: 3, c: 'Brian' }],
+            },
           },
-        },
-      ];
-      expect(result.updates[0].source).toEqual(expected);
-    });
+        ],
+      ],
+    ],
+  ])('a user T %s', (_name, code, expected) => {
+    const result = extractUserT(code);
+
+    expect(result.errors).toEqual([]);
+    expect(sources(result)).toEqual(expected);
   });
 
-  // ================================================================ //
-  //  9. NESTED DYNAMIC CONTENT (Rule 12)
-  // ================================================================ //
-
-  describe('nested dynamic content', () => {
-    it('Var wraps dynamic expression inside nested element within T', () => {
-      // SOURCE:   <div>Hello <span>{userName}</span></div>
-      // INJECTED: <div><T>Hello <span><Var>{userName}</Var></span></T></div>
-      //
-      // Parent has text "Hello " → T at div. {userName} inside span → Var.
-      // EXPECTED: 1 update, source contains span element with Var child
-      const code = `
-        import { T } from "gt-next";
-        export default function Page() {
-          return <div>Hello <span>{userName}</span></div>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.updates).toHaveLength(1);
-      const source = result.updates[0].source;
-      expect(Array.isArray(source)).toBe(true);
-      // First element: "Hello "
-      expect((source as JsxChild[])[0]).toBe('Hello ');
-      // Second element: span with Var child
-      const spanEl = (source as JsxChild[])[1];
-      expect(spanEl).toHaveProperty('t', 'span');
-    });
-  });
-
-  // ================================================================ //
-  //  10. FRAGMENTS (Rule 13)
-  // ================================================================ //
-
-  describe('fragments', () => {
-    it('extracts text inside fragments', () => {
-      // SOURCE:   <>Hello World</>
-      // INJECTED: <><T>Hello World</T></>
-      // EXPECTED: 1 update, source: "Hello World"
-      const code = `
-        import { T } from "gt-next";
-        export default function Page() {
-          return <>Hello World</>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.updates).toHaveLength(1);
-      expect(result.updates[0].source).toEqual('Hello World');
-    });
-
-    it('extracts fragment with dynamic content', () => {
-      // SOURCE:   <>Welcome {name}!</>
-      // INJECTED: <><T>Welcome <Var>{name}</Var>!</T></>
-      // EXPECTED: 1 update with Var
-      const code = `
-        import { T } from "gt-next";
-        export default function Page() {
-          return <>Welcome {name}!</>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.updates).toHaveLength(1);
-      const source = result.updates[0].source;
-      expect(Array.isArray(source)).toBe(true);
-    });
-  });
-
-  // ================================================================ //
-  //  11. NON-CHILDREN PROPS INDEPENDENT (Rule 10)
-  // ================================================================ //
-
-  describe('non-children props', () => {
-    it('extracts JSX in non-children prop independently', () => {
-      // SOURCE:   <Card header={<h1>Title</h1>}>Body text</Card>
-      // INJECTED: <Card header={<h1><T>Title</T></h1>}><T>Body text</T></Card>
-      // EXPECTED: 2 updates: "Title" and "Body text"
-      const code = `
-        import { T } from "gt-next";
-        export default function Page() {
-          return <Card header={<h1>Title</h1>}>Body text</Card>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.updates).toHaveLength(2);
-    });
-  });
-
-  // ================================================================ //
-  //  12. USER NUM/CURRENCY/DATETIME (Rule 7)
-  // ================================================================ //
-
-  describe('user Num/Currency/DateTime/RelativeTime', () => {
-    it('user RelativeTime is preserved as variable component', () => {
-      // SOURCE:   <div>Updated: <RelativeTime>{date}</RelativeTime></div>
-      // INJECTED: <div><T>Updated: <RelativeTime>{date}</RelativeTime></T></div>
-      // User RelativeTime untouched — appears as v:"rt" in extraction
-      // EXPECTED: 1 update with RelativeTime variable entry
-      const code = `
-        import { T, RelativeTime } from "gt-next";
-        export default function Page() {
-          return <div>Updated: <RelativeTime>{date}</RelativeTime></div>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.updates).toHaveLength(1);
-      const source = result.updates[0].source;
-      expect(Array.isArray(source)).toBe(true);
-      expect((source as JsxChild[])[0]).toBe('Updated: ');
-      expect((source as JsxChild[])[1]).toHaveProperty('v', 'rt');
-    });
-
-    it('user Num is preserved as variable component', () => {
-      // SOURCE:   <div>Price: <Num>{price}</Num></div>
-      // INJECTED: <div><T>Price: <Num>{price}</Num></T></div>
-      // User Num untouched — appears as v:"n" in extraction
-      // EXPECTED: 1 update with Num variable entry
-      const code = `
-        import { T, Num } from "gt-next";
-        export default function Page() {
-          return <div>Price: <Num>{price}</Num></div>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.updates).toHaveLength(1);
-      const source = result.updates[0].source;
-      expect(Array.isArray(source)).toBe(true);
-      expect((source as JsxChild[])[0]).toBe('Price: ');
-      expect((source as JsxChild[])[1]).toHaveProperty('v', 'n');
-    });
-  });
-
-  // ================================================================ //
-  //  13. TERNARY: auto Var vs user Var (Rules 14, 7a, 7b)
-  // ================================================================ //
-
-  describe('ternary with JSX — auto vs user Var', () => {
-    it('7a: auto Var — JSX inside ternary IS translated', () => {
-      // SOURCE (no user T/Var):
-      //   <div>Status: {isActive ? <span>Active</span> : <span>Inactive</span>}</div>
-      //
-      // INJECTED:
-      //   <div><T>Status: <Var>{isActive ? <span><T>Active</T></span> : <span><T>Inactive</T></span>}</Var></T></div>
-      //
-      // EXPECTED: 3 updates: outer + Active + Inactive
-      const code = `
-        import { T } from "gt-next";
-        export default function Page() {
-          return <div>Status: {isActive ? <span>Active</span> : <span>Inactive</span>}</div>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.updates).toHaveLength(3);
-    });
-
-    it('7b: user Var — JSX inside ternary is NOT translated', () => {
-      // SOURCE (user manually wrote T and Var):
-      //   <T>Status: <Var>{isActive ? <span>Active</span> : <span>Inactive</span>}</Var></T>
-      //
-      // User Var is opaque — Active/Inactive do NOT get their own T
-      // EXPECTED: 1 update only (the outer T extraction)
-      const code = `
-        import { T, Var } from "gt-next";
-        export default function Page() {
-          return <T>Status: <Var>{isActive ? <span>Active</span> : <span>Inactive</span>}</Var></T>;
-        }
-      `;
-      const result = extractUserT(code);
-      expect(result.updates).toHaveLength(1);
-      expect(Array.isArray(result.updates[0].source)).toBe(true);
-      expect((result.updates[0].source as JsxChild[])[0]).toBe('Status: ');
-      expect((result.updates[0].source as JsxChild[])[1]).toHaveProperty(
-        'v',
-        'v'
-      );
-    });
-  });
-
-  // ================================================================ //
-  //  14. NON-GT COMPONENTS NAMED T/Var SHOULD NOT BE TREATED AS GT
-  // ================================================================ //
-
-  describe('non-GT components sharing GT names', () => {
-    it('Var not imported from GT is treated as a regular element, not a variable', () => {
-      // SOURCE — T and Var are NOT imported from any GT library:
-      //   import { T, Var } from 'some-other-library';
-      //   <T>Hello, <div>World</div> <Var>{userName}</Var>!</T>
-      //
-      // Since T is not from GT, Pass 1 finds no user T components.
-      // Auto-injection (Pass 2) inserts GtInternalTranslateJsx around text.
-      // The <T> and <Var> in the source are just regular components.
-      //
-      // After injection the structure becomes something like:
-      //   <T><GtInternalTranslateJsx>Hello, <div>World</div>
-      //     <Var><GtInternalVar>{userName}</GtInternalVar></Var>
-      //   !</GtInternalTranslateJsx></T>
-      //
-      // When extracting from GtInternalTranslateJsx, <Var> should appear as
-      // a regular element { t: "Var", i: ..., c: ... } because it's NOT
-      // imported from GT. It should NOT be treated as a variable slot { v: "v" }.
-      //
-      // EXPECTED: The Var in the source appears as a regular element in the
-      // extraction, not as a minified variable.
-      const code = `
-        import { T, Var } from 'some-other-library';
-        export default function Page() {
-          const userName = "Ernest";
-          return <T>Hello, <div>World</div> <Var>{userName}</Var>!</T>;
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.updates.length).toBeGreaterThan(0);
-
-      // Find the update that contains "Hello, " — this is from auto-injection
-      const mainUpdate = result.updates.find((u) => {
-        const s = JSON.stringify(u.source);
-        return s.includes('Hello, ');
-      });
-      expect(mainUpdate).toBeDefined();
-
-      const source = mainUpdate!.source as JsxChild[];
-      expect(Array.isArray(source)).toBe(true);
-
-      // Var should appear as a regular element { t: "Var" } — NOT as { v: "v" }
-      const varSlotWithoutTag = source.find(
-        (child) =>
-          typeof child === 'object' &&
-          child !== null &&
-          'v' in child &&
-          (child as Record<string, unknown>).v === 'v' &&
-          !('t' in child)
-      );
-      // This should be undefined — Var is not a GT variable, it's a regular element
-      expect(varSlotWithoutTag).toBeUndefined();
-    });
-  });
-
-  // ================================================================ //
-  //  9. TERNARY JSX IN BRANCH CONTENT PROP — inner _T extraction
-  // ================================================================ //
-
-  describe('ternary JSX in Branch content prop', () => {
-    it('ternary with JSX branches in Branch prop — inner elements are extracted as independent translation units', () => {
-      // SOURCE:
-      //   <div>
-      //     <Branch branch="mode" summary={flag ? <p>Option A</p> : <p>Option B</p>}>
-      //       Fallback
-      //     </Branch>
-      //   </div>
-      //
-      // INSERTION:
-      //   <div>
-      //     <_T>
-      //       <Branch branch="mode"
-      //         summary={<_Var>{flag ? <p><_T>Option A</_T></p> : <p><_T>Option B</_T></p>}</_Var>}>
-      //         Fallback
-      //       </Branch>
-      //     </_T>
-      //   </div>
-      //
-      // The ternary is a dynamic expression in a content prop → _Var wrapped.
-      // _Var is auto-inserted, so JSX inside it is still eligible for _T (Rule 14).
-      // Each <p> branch contains text → each gets independent _T → each extracted.
-      //
-      // EXPECTED: 3 translation entries:
-      //   1. Branch structure with summary as variable slot
-      //   2. "Option A" (from inner _T around <p>Option A</p>)
-      //   3. "Option B" (from inner _T around <p>Option B</p>)
-      //
-      // BUG: CLI currently only extracts the Branch structure (1 entry).
-      //      The inner <p> elements inside the ternary are not discovered.
-      const code = `
-        import { Branch } from "gt-react";
-        export default function Page() {
-          const flag = true;
-          return (
-            <div>
-              <Branch branch="mode" summary={flag ? <p>Option A</p> : <p>Option B</p>}>
-                Fallback
-              </Branch>
-            </div>
-          );
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.errors).toHaveLength(0);
-
-      // Should have 3 entries: Branch structure + "Option A" + "Option B"
-      expect(result.updates.length).toBe(3);
-
-      // Verify the inner translation entries exist
-      const sources = result.updates.map((u) =>
-        typeof u.source === 'string' ? u.source : JSON.stringify(u.source)
-      );
-      expect(sources).toContain('Option A');
-      expect(sources).toContain('Option B');
-    });
-
-    it('ternary with JSX branches in Branch prop — inner _T found via scope.crawl (no reparse)', () => {
-      // This test simulates the real createInlineUpdates pipeline which uses
-      // scope.crawl() on the mutated AST instead of generate+reparse.
-      // The inner _T elements must be discoverable through the binding's
-      // referencePaths after scope.crawl().
-      const code = `
-        import { Branch } from "gt-react";
-        export default function Page() {
-          const flag = true;
-          return (
-            <div>
-              <Branch branch="mode" summary={flag ? <p>Option A</p> : <p>Option B</p>}>
-                Fallback
-              </Branch>
-            </div>
-          );
-        }
-      `;
-      const ast = parse(code, {
-        sourceType: 'module',
-        plugins: ['jsx', 'typescript'],
-      });
-
-      const pkgs = [Libraries.GT_NEXT, Libraries.GT_REACT];
-      const pass1Result = getPathsAndAliases(ast, pkgs);
-      const importAliases = { ...pass1Result.importAliases };
-      for (const {
-        localName,
-        originalName,
-      } of pass1Result.translationComponentPaths) {
-        importAliases[localName] = originalName;
+  it('treats T and Var from another library as regular elements', () => {
+    const result = extractWithAutoInjection(`
+      import { T, Var } from 'some-other-library';
+      export default function Page() {
+        const userName = "Ernest";
+        return <T>Hello, <div>World</div> <Var>{userName}</Var>!</T>;
       }
+    `);
 
-      ensureTAndVarImported(ast, importAliases);
-      autoInsertJsxComponents(ast, importAliases);
+    expect(sources(result)).toEqual([
+      [
+        'Hello, ',
+        { t: 'div', i: 1, c: 'World' },
+        ' ',
+        { t: 'Var', i: 2, c: variable(3) },
+        '!',
+      ],
+    ]);
+  });
 
-      // Simulate createInlineUpdates: scope.crawl() on mutated AST (NO reparse)
-      traverse(ast, {
-        Program(programPath) {
-          programPath.scope.crawl();
-        },
-      });
+  it('finds the T injected into a Branch prop ternary without re-parsing', () => {
+    const ast = parseCode(
+      page(
+        '<div><Branch branch="mode" summary={flag ? <p>Option A</p> : <p>Option B</p>}>Fallback</Branch></div>'
+      )
+    );
+    const { importAliases } = collectAliases(ast);
+    ensureTAndVarImported(ast, importAliases);
+    autoInsertJsxComponents(ast, importAliases);
+    traverse(ast, {
+      Program(programPath) {
+        programPath.scope.crawl();
+      },
+    });
 
-      const refreshed = getPathsAndAliases(ast, pkgs);
+    const injected = getPathsAndAliases(ast, [
+      Libraries.GT_NEXT,
+      Libraries.GT_REACT,
+    ]).translationComponentPaths.filter(
+      ({ originalName }) => originalName === INTERNAL_TRANSLATION_COMPONENT
+    );
+    const references = injected.flatMap(({ path, localName }) =>
+      path.scope.bindings[localName].referencePaths.filter((reference) =>
+        t.isJSXOpeningElement(reference.parent)
+      )
+    );
 
-      // The binding for GtInternalTranslateJsx should include inner _T refs
-      let refCount = 0;
-      for (const {
-        path,
-        originalName,
-        localName,
-      } of refreshed.translationComponentPaths) {
-        if (originalName !== INTERNAL_TRANSLATION_COMPONENT) continue;
-        const binding = path.scope.bindings[localName];
-        refCount =
-          binding?.referencePaths?.filter((r) =>
-            t.isJSXOpeningElement(r.parent)
-          ).length ?? 0;
+    expect(references).toHaveLength(3);
+  });
+
+  describe('Derive across files', () => {
+    const derive = (c: unknown) => ['Label: ', { t: 'Derive', i: 1, c }];
+
+    // [description, call, function, Derive contents, updates from the function's own JSX]
+    it.each<[string, string, string, unknown[], unknown[]]>([
+      [
+        'a string',
+        'getName()',
+        'function getName() { return "John"; }',
+        ['John'],
+        [],
+      ],
+      [
+        'static JSX',
+        'getLabel()',
+        'function getLabel() { return <span>Dashboard</span>; }',
+        [{ t: 'span', i: 2, c: 'Dashboard' }],
+        ['Dashboard'],
+      ],
+      [
+        'dynamic JSX',
+        'getGreeting("World")',
+        'function getGreeting(name: string) { return <span>Hello {name}</span>; }',
+        [{ t: 'span', i: 2, c: ['Hello ', variable(3)] }],
+        [['Hello ', variable(1)]],
+      ],
+      [
+        'JSX from several returns',
+        'getStatus()',
+        `function getStatus() {
+           if (Math.random() > 0.5) { return <em>Active</em>; }
+           return <em>Inactive</em>;
+         }`,
+        [
+          { t: 'em', i: 2, c: 'Active' },
+          { t: 'em', i: 2, c: 'Inactive' },
+        ],
+        ['Active', 'Inactive'],
+      ],
+    ])(
+      'resolves a function returning %s like in the same file',
+      (_name, call, fn, contents, ownUpdates) => {
+        const jsx = `<div>Label: <Derive>{${call}}</Derive></div>`;
+        const fnName = call.slice(0, call.indexOf('('));
+        const root = mockFiles({ 'libs/utils.tsx': `export ${fn}` });
+
+        const crossFile = extractWithAutoInjection(
+          page(jsx, { outer: `import { ${fnName} } from "./libs/utils";` }),
+          `${root}/page.tsx`
+        );
+        const sameFile = extractWithAutoInjection(page(jsx, { outer: fn }));
+
+        expect(crossFile.errors).toEqual([]);
+        expect(sources(crossFile)).toEqual(contents.map(derive));
+        // In the same file the function's own JSX is translatable as well
+        expect(sources(sameFile)).toEqual([
+          ...ownUpdates,
+          ...contents.map(derive),
+        ]);
       }
-
-      // 3 opening elements: outer _T + inner _T(Option A) + inner _T(Option B)
-      expect(refCount).toBe(3);
-    });
-
-    it('ternary with JSX branches in Plural form prop — inner elements are extracted', () => {
-      // Same pattern but with Plural: form prop values containing ternary JSX
-      //
-      // SOURCE:
-      //   <div>
-      //     <Plural n={n} one={flag ? <b>single</b> : <b>solo</b>} other="many" />
-      //   </div>
-      //
-      // EXPECTED: 3 entries: Plural structure + "single" + "solo"
-      const code = `
-        import { Plural } from "gt-react";
-        export default function Page() {
-          const n = 1;
-          const flag = true;
-          return (
-            <div>
-              <Plural n={n} one={flag ? <b>single</b> : <b>solo</b>} other="many" />
-            </div>
-          );
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.errors).toHaveLength(0);
-
-      expect(result.updates.length).toBe(3);
-
-      const sources = result.updates.map((u) =>
-        typeof u.source === 'string' ? u.source : JSON.stringify(u.source)
-      );
-      expect(sources).toContain('single');
-      expect(sources).toContain('solo');
-    });
-  });
-
-  // ================================================================ //
-  //  10. OPAQUE GT COMPONENTS INSIDE DERIVE — independent extraction
-  // ================================================================ //
-
-  describe('opaque GT components inside Derive', () => {
-    it('Branch inside Derive children — Branch gets independent _T and extraction', () => {
-      // SOURCE:
-      //   <div>
-      //     Hello <Derive><Branch branch="x">fallback</Branch></Derive>
-      //   </div>
-      //
-      // The insertion pass wraps <div> in _T (opaque child Derive).
-      // The Branch inside Derive is a direct child JSX element.
-      //
-      // The compiler's Babel visitor independently encounters <Branch> and
-      // wraps it in _T, producing a standalone entry:
-      //   { "t": "Branch", "i": 1, "c": "fallback" }
-      //
-      // This is correct and generalizable: if the same Branch were inside a
-      // function definition invoked by Derive (e.g. <Derive>{fn()}</Derive>
-      // where fn returns <Branch>), the compiler would also produce the
-      // standalone entry. The rules should be consistent regardless of
-      // whether the JSX is inline or inside a function call.
-      //
-      // BUG: The CLI does not produce this standalone Branch entry.
-      // It treats Branch as part of the Derive structure without extracting
-      // it independently.
-      //
-      // EXPECTED: 2 entries:
-      //   1. The outer _T (Derive structure — skipped in parity due to Derive)
-      //   2. Standalone Branch entry: { "t": "Branch", "i": 1, "c": "fallback" }
-      const code = `
-        import { Derive, Branch } from "gt-react";
-        export default function Page() {
-          return (
-            <div>
-              Hello <Derive><Branch branch="x">fallback</Branch></Derive>
-            </div>
-          );
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.errors).toHaveLength(0);
-
-      // Should have at least 2 entries — the outer _T and the standalone Branch
-      expect(result.updates.length).toBeGreaterThanOrEqual(2);
-
-      // Find the standalone Branch entry
-      const branchUpdate = result.updates.find((u) => {
-        if (typeof u.source === 'string') return false;
-        const s = JSON.stringify(u.source);
-        return s.includes('"t":"Branch"') && s.includes('"c":"fallback"');
-      });
-      expect(branchUpdate).toBeDefined();
-    });
-
-    it('Plural inside Derive children — Plural gets independent _T and extraction', () => {
-      // Same principle: Plural inside Derive should produce its own entry.
-      const code = `
-        import { Derive, Plural } from "gt-react";
-        export default function Page() {
-          const n = 3;
-          return (
-            <div>
-              Hello <Derive><Plural n={n} one="item" other="items" /></Derive>
-            </div>
-          );
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.errors).toHaveLength(0);
-
-      expect(result.updates.length).toBeGreaterThanOrEqual(2);
-
-      const pluralUpdate = result.updates.find((u) => {
-        if (typeof u.source === 'string') return false;
-        const s = JSON.stringify(u.source);
-        return s.includes('"t":"Plural"');
-      });
-      expect(pluralUpdate).toBeDefined();
-    });
-  });
-
-  // ================================================================ //
-  //  11. BRANCHING INDEX INDEPENDENCE — siblings after Branch/Plural
-  // ================================================================ //
-
-  describe('branching index numbering', () => {
-    it('Branch children share the index — sibling after Branch gets i:3', () => {
-      // SOURCE:
-      //   <div>
-      //     <Branch branch={status} draft={<span>Draft</span>}>
-      //       <span>Unknown</span>
-      //     </Branch>
-      //     <span>Last saved {lastSaved}</span>
-      //   </div>
-      //
-      // The <div> has an opaque child (Branch) → _T wraps at div.
-      // Inside the _T:
-      //   - Branch gets i:1
-      //   - Branch props and children each start counting from i:1, so both
-      //     <span>s get i:2
-      //   - The SIBLING <span>Last saved...</span> gets i:3, because the
-      //     runtime's addGTIdentifier keeps counting through Branch children
-      //     (https://github.com/generaltranslation/gt/issues/2449)
-      const code = `
-        import { Branch } from "gt-react";
-        export default function Page() {
-          const status = "draft";
-          const lastSaved = "2 min ago";
-          return (
-            <div>
-              <Branch branch={status} draft={<span>Draft</span>}>
-                <span>Unknown</span>
-              </Branch>
-              <span>Last saved {lastSaved}</span>
-            </div>
-          );
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.errors).toHaveLength(0);
-
-      // Find the entry that contains both Branch and "Last saved"
-      const mainUpdate = result.updates.find((u) => {
-        const s = JSON.stringify(u.source);
-        return s.includes('Branch') && s.includes('Last saved');
-      });
-      expect(mainUpdate).toBeDefined();
-
-      const source = mainUpdate!.source as unknown[];
-      const siblingSpan = source.find(
-        (child) =>
-          typeof child === 'object' &&
-          child !== null &&
-          'c' in child &&
-          JSON.stringify((child as Record<string, unknown>).c).includes(
-            'Last saved'
-          )
-      ) as Record<string, unknown>;
-      expect(siblingSpan).toBeDefined();
-      expect(siblingSpan.i).toBe(3);
-    });
-
-    it('Plural children share the index — sibling after Plural gets i:3', () => {
-      // Same principle but with Plural.
-      //
-      // SOURCE:
-      //   <div>
-      //     <Plural n={count} one={<span>one</span>}>
-      //       <span>other</span>
-      //     </Plural>
-      //     <span>Total: {total}</span>
-      //   </div>
-      const code = `
-        import { Plural } from "gt-react";
-        export default function Page() {
-          const count = 3;
-          const total = 42;
-          return (
-            <div>
-              <Plural n={count} one={<span>one</span>}>
-                <span>other</span>
-              </Plural>
-              <span>Total: {total}</span>
-            </div>
-          );
-        }
-      `;
-      const result = extractWithAutoInjection(code);
-      expect(result.errors).toHaveLength(0);
-
-      const mainUpdate = result.updates.find((u) => {
-        const s = JSON.stringify(u.source);
-        return s.includes('Plural') && s.includes('Total');
-      });
-      expect(mainUpdate).toBeDefined();
-
-      const source = mainUpdate!.source as unknown[];
-      const siblingSpan = source.find(
-        (child) =>
-          typeof child === 'object' &&
-          child !== null &&
-          'c' in child &&
-          JSON.stringify((child as Record<string, unknown>).c).includes('Total')
-      ) as Record<string, unknown>;
-      expect(siblingSpan).toBeDefined();
-      expect(siblingSpan.i).toBe(3);
-    });
+    );
   });
 });

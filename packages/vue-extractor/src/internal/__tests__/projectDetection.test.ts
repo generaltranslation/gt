@@ -1,37 +1,36 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { detectVueProject } from '../../detect.js';
 import {
   inspectVueProject,
+  inspectVueProjectAsync,
   readVueSfcExclusionPatterns,
 } from '../../inspect.js';
 import { extractFromVueProject } from '../../project.js';
+import { isVueSfcSource } from '../project/inspectVueProject.js';
 import {
   parseLocalDependencyPath,
+  readJavaScriptPackageManifest,
   resolveInstalledJavaScriptPackage,
 } from '../project/manifest.js';
 import {
-  createProjectFixture,
+  createWorkspaceDiscoveryCache,
+  readDeclaredWorkspacePackages,
+  readDeclaredWorkspacePackagesAsync,
+} from '../project/workspaces.js';
+import {
+  createTestProject,
   linkInstalledVue,
-  removeProjectFixture,
   translatableSfc,
   writePackageJson,
 } from './projectTestUtils.js';
-
-const temporaryDirectories: string[] = [];
-
-afterEach(() => {
-  for (const directory of temporaryDirectories.splice(0)) {
-    removeProjectFixture(directory);
-  }
-});
 
 describe('detectVueProject', () => {
   it.each(['dependencies', 'devDependencies'] as const)(
     'detects an installed root declaration in %s',
     (field) => {
-      const root = createFixture({
+      const root = createTestProject({
         'package.json': JSON.stringify({
           name: 'root-vue-app',
           [field]: { 'gt-vue': 'workspace:*' },
@@ -45,7 +44,7 @@ describe('detectVueProject', () => {
   it.each(['optionalDependencies', 'peerDependencies'] as const)(
     'does not treat an unresolved %s declaration as an installed Vue application',
     (field) => {
-      const root = createFixture({
+      const root = createTestProject({
         'package.json': JSON.stringify({
           name: 'root-vue-library',
           [field]: { 'gt-vue': 'workspace:*' },
@@ -59,7 +58,7 @@ describe('detectVueProject', () => {
   it.each(['optionalDependencies', 'peerDependencies'] as const)(
     'detects a resolvable root declaration in %s',
     (field) => {
-      const root = createFixture({
+      const root = createTestProject({
         'package.json': JSON.stringify({
           name: 'root-vue-library',
           [field]: { 'gt-vue': '*' },
@@ -78,7 +77,7 @@ describe('detectVueProject', () => {
   );
 
   it('honors an optional dependency that overrides the same required dependency', () => {
-    const root = createFixture({
+    const root = createTestProject({
       'package.json': JSON.stringify({
         name: 'root-react-app',
         dependencies: { 'gt-vue': '^1.0.0' },
@@ -90,7 +89,7 @@ describe('detectVueProject', () => {
   });
 
   it('rejects an installed optional dependency outside its declared range', () => {
-    const root = createFixture({
+    const root = createTestProject({
       'package.json': JSON.stringify({
         name: 'root-react-app',
         dependencies: { 'gt-vue': '^1.0.0' },
@@ -109,7 +108,7 @@ describe('detectVueProject', () => {
   });
 
   it('rejects an installed required peer outside its declared range', () => {
-    const root = createFixture({
+    const root = createTestProject({
       'package.json': JSON.stringify({
         name: 'root-react-library',
         peerDependencies: { 'gt-vue': '^2.0.0' },
@@ -127,7 +126,7 @@ describe('detectVueProject', () => {
   });
 
   it("uses an active Plug'n'Play API to locate import-only packages", () => {
-    const root = createFixture({
+    const root = createTestProject({
       'package.json': JSON.stringify({
         name: 'pnp-root',
         dependencies: { '@fixture/vue-wrapper': '^1.0.0' },
@@ -178,7 +177,7 @@ describe('detectVueProject', () => {
   });
 
   it('does not fall through a malformed nearest installed package', () => {
-    const root = createFixture({
+    const root = createTestProject({
       'package.json': JSON.stringify({ name: 'workspace-root' }),
       'apps/docs/package.json': JSON.stringify({
         name: '@fixture/docs',
@@ -200,7 +199,7 @@ describe('detectVueProject', () => {
   });
 
   it('does not let a workspace descendant select the root CLI mode', async () => {
-    const root = createFixture({
+    const root = createTestProject({
       'package.json': JSON.stringify({
         name: 'workspace-root',
         private: true,
@@ -232,7 +231,7 @@ describe('detectVueProject', () => {
   });
 
   it('partitions real child SFCs without hiding legacy JSX .vue modules', () => {
-    const root = createFixture({
+    const root = createTestProject({
       'package.json': JSON.stringify({
         name: 'workspace-root',
         private: true,
@@ -276,8 +275,8 @@ ${translatableSfc('Text-prefixed workspace message')}`,
   });
 
   it('fails safely for missing and malformed project manifests', () => {
-    const missing = createFixture({});
-    const malformed = createFixture({ 'package.json': '{not-json' });
+    const missing = createTestProject({});
+    const malformed = createTestProject({ 'package.json': '{not-json' });
 
     expect(detectVueProject(missing)).toBe(false);
     expect(detectVueProject(malformed)).toBe(false);
@@ -285,7 +284,7 @@ ${translatableSfc('Text-prefixed workspace message')}`,
   });
 
   it('selects reverse consumers of a local wrapper while excluding the root', async () => {
-    const root = createFixture({
+    const root = createTestProject({
       'package.json': JSON.stringify({
         name: 'workspace-root',
         private: true,
@@ -328,7 +327,7 @@ import { WrapperT } from '@fixture/vue-wrapper';
   });
 
   it('selects workspace consumers when the root package is the gt-vue wrapper', async () => {
-    const root = createFixture({
+    const root = createTestProject({
       'package.json': JSON.stringify({
         name: '@fixture/root-vue-wrapper',
         private: true,
@@ -368,7 +367,7 @@ import { WrapperT } from '@fixture/root-vue-wrapper';
   it.each(['dependencies', 'devDependencies'] as const)(
     'detects a root that consumes a local gt-vue wrapper through %s',
     (field) => {
-      const root = createFixture({
+      const root = createTestProject({
         'package.json': JSON.stringify({
           name: '@fixture/docs',
           private: true,
@@ -404,7 +403,7 @@ import { WrapperT } from '@fixture/root-vue-wrapper';
   );
 
   it('detects a local wrapper whose gt-vue API is exposed by a wildcard subpath', () => {
-    const root = createFixture({
+    const root = createTestProject({
       'package.json': JSON.stringify({
         name: '@fixture/docs',
         private: true,
@@ -441,7 +440,7 @@ import { WrapperT } from '@fixture/root-vue-wrapper';
   it.each(['dependencies', 'devDependencies'] as const)(
     'keeps a local gt-vue owner in %s scoped to itself when its public API is ordinary',
     async (field) => {
-      const root = createFixture({
+      const root = createTestProject({
         'package.json': JSON.stringify({
           name: '@fixture/file-only-root',
           private: true,
@@ -479,7 +478,7 @@ import { WrapperT } from '@fixture/root-vue-wrapper';
   );
 
   it('does not propagate a wrapper consumer reached only through a development edge', async () => {
-    const root = createFixture({
+    const root = createTestProject({
       'package.json': JSON.stringify({
         name: '@fixture/file-only-root',
         private: true,
@@ -529,7 +528,7 @@ import { WrapperT } from '@fixture/root-vue-wrapper';
   it.each(['file:', 'link:', 'portal:'])(
     'extracts a root that consumes an explicit %s wrapper outside workspaces',
     async (protocol) => {
-      const root = createFixture({
+      const root = createTestProject({
         'package.json': JSON.stringify({
           name: '@fixture/docs',
           private: true,
@@ -574,7 +573,7 @@ import { WrapperT } from '@fixture/vue-wrapper';
   it.each(['dependencies', 'devDependencies'] as const)(
     'does not classify a root from an external package %s on gt-vue',
     (field) => {
-      const root = createFixture({
+      const root = createTestProject({
         'package.json': JSON.stringify({
           name: 'file-only-root',
           dependencies: { ordinary: '1.0.0' },
@@ -592,7 +591,7 @@ import { WrapperT } from '@fixture/vue-wrapper';
   );
 
   it('does not select consumers whose range excludes the local wrapper', async () => {
-    const root = createFixture({
+    const root = createTestProject({
       'package.json': JSON.stringify({
         name: 'workspace-root',
         private: true,
@@ -626,7 +625,7 @@ import { WrapperT } from '@fixture/vue-wrapper';
   ])(
     'selects a consumer whose %s range includes the local wrapper',
     async (specifier) => {
-      const root = createFixture({
+      const root = createTestProject({
         'package.json': JSON.stringify({
           name: 'workspace-root',
           private: true,
@@ -664,7 +663,7 @@ import { WrapperT } from '@fixture/vue-wrapper';
   );
 
   it('does not select a compatible bare range without an installed local binding', async () => {
-    const root = createFixture({
+    const root = createTestProject({
       'package.json': JSON.stringify({
         name: 'workspace-root',
         private: true,
@@ -709,7 +708,7 @@ import { WrapperT } from '@fixture/vue-wrapper';
   ])(
     'matches prerelease wrappers against %s like the workspace resolver',
     async (specifier, selected) => {
-      const root = createFixture({
+      const root = createTestProject({
         'package.json': JSON.stringify({
           name: 'workspace-root',
           private: true,
@@ -757,7 +756,7 @@ import { WrapperT } from '@fixture/vue-wrapper';
   ])(
     'selects a consumer of workspace alias %s',
     async (bindingName, specifier, selected) => {
-      const root = createFixture({
+      const root = createTestProject({
         'package.json': JSON.stringify({
           name: 'workspace-root',
           private: true,
@@ -805,7 +804,7 @@ import { WrapperT } from '${bindingName}';
     'validates the installed npm alias range %s',
     async (specifier, selected) => {
       const bindingName = 'vue-alias';
-      const root = createFixture({
+      const root = createTestProject({
         'package.json': JSON.stringify({
           name: 'workspace-root',
           private: true,
@@ -850,7 +849,7 @@ import { WrapperT } from '${bindingName}';
   ])(
     'selects the local catalog binding %s',
     async (bindingName, catalogEntry) => {
-      const root = createFixture({
+      const root = createTestProject({
         'package.json': JSON.stringify({
           name: 'workspace-root',
           private: true,
@@ -903,7 +902,7 @@ import { WrapperT } from '${bindingName}';
   ])(
     'resolves a %s wrapper path to its exact workspace',
     async (specifier, selected) => {
-      const root = createFixture({
+      const root = createTestProject({
         'package.json': JSON.stringify({
           name: 'workspace-root',
           private: true,
@@ -947,7 +946,7 @@ import { WrapperT } from '${bindingName}';
   );
 
   it('does not select a root consumer whose range excludes the local wrapper', async () => {
-    const root = createFixture({
+    const root = createTestProject({
       'package.json': JSON.stringify({
         name: 'workspace-root',
         private: true,
@@ -984,7 +983,7 @@ import { WrapperT } from '${bindingName}';
   });
 
   it('does not select installed optional Vue workspace integrations', async () => {
-    const root = createFixture({
+    const root = createTestProject({
       'package.json': JSON.stringify({
         name: 'react-workspace-root',
         private: true,
@@ -1021,7 +1020,7 @@ import { WrapperT } from '${bindingName}';
   });
 
   it('does not select workspace runtimes hidden by optional overrides or incompatible peers', async () => {
-    const root = createFixture({
+    const root = createTestProject({
       'package.json': JSON.stringify({
         name: 'react-workspace-root',
         private: true,
@@ -1063,7 +1062,7 @@ import { WrapperT } from '${bindingName}';
   });
 
   it('selects a workspace with an installed required gt-vue peer', async () => {
-    const root = createFixture({
+    const root = createTestProject({
       'package.json': JSON.stringify({
         name: 'react-workspace-root',
         private: true,
@@ -1095,7 +1094,7 @@ import { WrapperT } from '${bindingName}';
   });
 
   it('selects a workspace with an installed required wrapper peer', async () => {
-    const root = createFixture({
+    const root = createTestProject({
       'package.json': JSON.stringify({
         name: 'workspace-root',
         private: true,
@@ -1133,7 +1132,7 @@ import { WrapperT } from '@fixture/vue-wrapper';
   });
 
   it('rejects an installed local wrapper outside a required peer range', async () => {
-    const root = createFixture({
+    const root = createTestProject({
       'package.json': JSON.stringify({
         name: 'workspace-root',
         private: true,
@@ -1169,7 +1168,7 @@ import { WrapperT } from '@fixture/vue-wrapper';
 
   it('selects an installed required peer through a workspace alias', async () => {
     const bindingName = 'vue-peer-alias';
-    const root = createFixture({
+    const root = createTestProject({
       'package.json': JSON.stringify({
         name: 'workspace-root',
         private: true,
@@ -1205,7 +1204,7 @@ import { WrapperT } from '${bindingName}';
   });
 
   it('treats a valid pnpm workspace file as authoritative', () => {
-    const emptyPnpmRoot = createFixture({
+    const emptyPnpmRoot = createTestProject({
       'package.json': JSON.stringify({
         private: true,
         workspaces: ['stale'],
@@ -1216,7 +1215,7 @@ import { WrapperT } from '${bindingName}';
         dependencies: { 'gt-vue': '*' },
       }),
     });
-    const excludedPnpmRoot = createFixture({
+    const excludedPnpmRoot = createTestProject({
       'package.json': JSON.stringify({
         private: true,
         workspaces: ['packages/*'],
@@ -1242,7 +1241,7 @@ import { WrapperT } from '${bindingName}';
   ])(
     'does not fall back to package.json workspaces for %s in pnpm-workspace.yaml',
     (_name, workspaceFile) => {
-      const root = createFixture({
+      const root = createTestProject({
         'package.json': JSON.stringify({
           private: true,
           workspaces: ['stale'],
@@ -1259,13 +1258,13 @@ import { WrapperT } from '${bindingName}';
   );
 
   it('rejects workspace patterns that could escape the project root', () => {
-    const outside = createFixture({
+    const outside = createTestProject({
       'package.json': JSON.stringify({
         name: 'outside-vue-app',
         dependencies: { 'gt-vue': '*' },
       }),
     });
-    const root = createFixture({});
+    const root = createTestProject({});
     const outsideName = path.basename(outside);
     writePackageJson(root, '', {
       name: 'workspace-root',
@@ -1283,7 +1282,7 @@ import { WrapperT } from '${bindingName}';
   });
 
   it('escapes glob metacharacters in discovered package directories', async () => {
-    const root = createFixture({
+    const root = createTestProject({
       'package.json': JSON.stringify({
         name: 'workspace-root',
         private: true,
@@ -1335,55 +1334,452 @@ import { WrapperT } from '${bindingName}';
       /from ['"](?:@vue|fast-glob|yaml|#vue-compiler-sfc|\.\/internal\/extractFromVueSource)/
     );
   });
-});
 
-function createFixture(files: Record<string, string>): string {
-  const root = createProjectFixture(files);
-  temporaryDirectories.push(root);
-  return root;
-}
-
-function wrapperSfc(message: string, source = '@fixture/vue-wrapper'): string {
-  return `<script setup lang="ts">
+  function wrapperSfc(
+    message: string,
+    source = '@fixture/vue-wrapper'
+  ): string {
+    return `<script setup lang="ts">
 import { WrapperT } from '${source}';
 </script>
 <template><WrapperT>${message}</WrapperT></template>
 `;
-}
-
-function linkWorkspaceBinding(
-  root: string,
-  consumerDirectory: string,
-  bindingName: string,
-  targetDirectory: string
-): void {
-  const destination = path.join(
-    root,
-    consumerDirectory,
-    'node_modules',
-    ...bindingName.split('/')
-  );
-  fs.mkdirSync(path.dirname(destination), { recursive: true });
-  fs.symlinkSync(path.join(root, targetDirectory), destination, 'dir');
-}
-
-function collectLocalModuleGraph(entry: string): Set<string> {
-  const visited = new Set<string>();
-  const pending = [entry];
-  while (pending.length > 0) {
-    const file = pending.pop();
-    if (!file || visited.has(file)) continue;
-    visited.add(file);
-    const source = fs.readFileSync(file, 'utf8');
-    for (const match of source.matchAll(/from\s+['"](\.[^'"]+)['"]/g)) {
-      const specifier = match[1];
-      if (!specifier) continue;
-      const resolved = path.resolve(
-        path.dirname(file),
-        specifier.replace(/\.js$/, '.ts')
-      );
-      if (fs.existsSync(resolved)) pending.push(resolved);
-    }
   }
-  return visited;
-}
+
+  function linkWorkspaceBinding(
+    root: string,
+    consumerDirectory: string,
+    bindingName: string,
+    targetDirectory: string
+  ): void {
+    const destination = path.join(
+      root,
+      consumerDirectory,
+      'node_modules',
+      ...bindingName.split('/')
+    );
+    fs.mkdirSync(path.dirname(destination), { recursive: true });
+    fs.symlinkSync(path.join(root, targetDirectory), destination, 'dir');
+  }
+
+  function collectLocalModuleGraph(entry: string): Set<string> {
+    const visited = new Set<string>();
+    const pending = [entry];
+    while (pending.length > 0) {
+      const file = pending.pop();
+      if (!file || visited.has(file)) continue;
+      visited.add(file);
+      const source = fs.readFileSync(file, 'utf8');
+      for (const match of source.matchAll(/from\s+['"](\.[^'"]+)['"]/g)) {
+        const specifier = match[1];
+        if (!specifier) continue;
+        const resolved = path.resolve(
+          path.dirname(file),
+          specifier.replace(/\.js$/, '.ts')
+        );
+        if (fs.existsSync(resolved)) pending.push(resolved);
+      }
+    }
+    return visited;
+  }
+});
+
+describe('isVueSfcSource', () => {
+  it.each([
+    ['root template', '<template><T>Message</T></template>'],
+    ['root script', '<script setup>const message = 1;</script>'],
+    ['same-line text', 'Copyright 2026 <template><T>Message</T></template>'],
+    [
+      'multiline text',
+      'Copyright 2026\nAll rights reserved\n<template>Message</template>',
+    ],
+    [
+      'text before script setup',
+      'Generated file <script setup>const message = 1;</script>',
+    ],
+    [
+      'text and custom block',
+      'Metadata <i18n>{"locale":"en"}</i18n><template>Message</template>',
+    ],
+    [
+      'comments and doctype',
+      '<!-- license --><!DOCTYPE html>/* generated */<template>Message</template>',
+    ],
+  ])('recognizes an SFC with %s', (_name, source) => {
+    expect(isVueSfcSource(source)).toBe(true);
+  });
+
+  it.each([
+    [
+      'an import and exported JSX',
+      "import { T } from 'gt-react'; export const value = <T>Message</T>;",
+    ],
+    ['typed parenthesized JSX', 'const value: JSX.Element = (<T>Message</T>);'],
+    ['a JSX fragment', 'const value = <><T>Message</T></>;'],
+    [
+      'a comment containing a standard tag',
+      '/* <template>fake</template> */ <T>Message</T>;',
+    ],
+    [
+      'a string containing a standard tag',
+      "const fake = '<template>fake</template>'; const value = <T>Message</T>;",
+    ],
+    [
+      'a template literal containing a standard tag',
+      'const fake = `<script>fake</script>`; const value = <T>Message</T>;',
+    ],
+    ['a root custom element', '<T>Message</T>'],
+    ['a root member element', '<GT.T>Message</GT.T>'],
+    ['a hyphenated custom element', '<gt-widget>Message</gt-widget>'],
+    [
+      'custom and standard-named JSX expressions',
+      '<T>Message</T>; <template><T>Nested</T></template>;',
+    ],
+    [
+      'a leading standard-named JSX expression followed by module syntax',
+      "<template><T>Message</T></template>; import { T } from 'gt-react';",
+    ],
+    [
+      'a directive before a standard-named JSX expression',
+      "'Copyright 2026'; <template><T>Message</T></template>; import { T } from 'gt-react';",
+    ],
+    [
+      'a parenthesized standard-named JSX expression',
+      '(<template><T>Message</T></template>);',
+    ],
+  ])('preserves a legacy module with %s', (_name, source) => {
+    expect(isVueSfcSource(source)).toBe(false);
+  });
+});
+
+describe('asynchronous Vue workspace inspection', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('matches synchronous discovery without synchronously reading child manifests', async () => {
+    const root = createTestProject({
+      'package.json': JSON.stringify({
+        name: 'workspace-root',
+        private: true,
+        workspaces: ['stale/*'],
+      }),
+      'pnpm-workspace.yaml': `packages:
+  - 'apps/*'
+  - '!apps/excluded'
+`,
+      'apps/vue/package.json': JSON.stringify({
+        name: 'vue-app',
+        dependencies: { 'gt-vue': '*' },
+      }),
+      'apps/ordinary/package.json': JSON.stringify({
+        name: 'ordinary-app',
+        dependencies: { 'gt-react': '*' },
+      }),
+      'apps/excluded/package.json': JSON.stringify({
+        name: 'excluded-vue-app',
+        dependencies: { 'gt-vue': '*' },
+      }),
+      'apps/invalid/package.json': '{invalid',
+    });
+    const rootManifest = readJavaScriptPackageManifest(
+      path.join(root, 'package.json')
+    );
+    expect(rootManifest).toBeDefined();
+    const synchronous = readDeclaredWorkspacePackages(
+      root,
+      rootManifest!,
+      createWorkspaceDiscoveryCache()
+    );
+    const readFileSync = vi.spyOn(fs, 'readFileSync');
+
+    const asynchronous = await readDeclaredWorkspacePackagesAsync(
+      root,
+      rootManifest!,
+      createWorkspaceDiscoveryCache()
+    );
+
+    expect(normalizeWorkspacePackages(root, asynchronous)).toEqual(
+      normalizeWorkspacePackages(root, synchronous)
+    );
+    const synchronousChildManifestReads = readFileSync.mock.calls.filter(
+      ([file]) =>
+        typeof file === 'string' &&
+        file.startsWith(path.join(root, 'apps') + path.sep) &&
+        path.basename(file) === 'package.json'
+    );
+    expect(synchronousChildManifestReads).toEqual([]);
+  });
+
+  it('produces the same reusable extraction plan as synchronous inspection', async () => {
+    const root = createTestProject({
+      'package.json': JSON.stringify({
+        name: 'workspace-root',
+        private: true,
+        workspaces: ['apps/*'],
+      }),
+      'apps/vue/package.json': JSON.stringify({
+        name: 'vue-app',
+        dependencies: { 'gt-vue': '*' },
+      }),
+      'apps/vue/src/App.vue': translatableSfc(
+        'Asynchronously discovered message'
+      ),
+    });
+    linkInstalledVue(root);
+
+    const asynchronous = await inspectVueProjectAsync(root);
+
+    expect(asynchronous).toEqual(inspectVueProject(root));
+    const output = await extractFromVueProject({
+      cwd: root,
+      inspection: asynchronous,
+    });
+    expect(output.errors).toEqual([]);
+    expect(output.updates.map(({ source }) => source)).toEqual([
+      'Asynchronously discovered message',
+    ]);
+  });
+
+  it('rejects symlink escapes in static and dynamic workspace paths', async () => {
+    const outside = createTestProject({
+      'static/vue/package.json': JSON.stringify({
+        name: 'outside-static-vue',
+        dependencies: { 'gt-vue': '*' },
+      }),
+      'dynamic/package.json': JSON.stringify({
+        name: 'outside-dynamic-vue',
+        dependencies: { 'gt-vue': '*' },
+      }),
+    });
+    const root = createTestProject({
+      'package.json': JSON.stringify({
+        name: 'workspace-root',
+        private: true,
+        workspaces: ['linked/*', 'packages/*'],
+      }),
+      'packages/local/package.json': JSON.stringify({
+        name: 'local-react-package',
+        dependencies: { 'gt-react': '*' },
+      }),
+    });
+    fs.symlinkSync(
+      path.join(outside, 'static'),
+      path.join(root, 'linked'),
+      'dir'
+    );
+    fs.symlinkSync(
+      path.join(outside, 'dynamic'),
+      path.join(root, 'packages/escaped'),
+      'dir'
+    );
+    const rootManifest = readJavaScriptPackageManifest(
+      path.join(root, 'package.json')
+    );
+    expect(rootManifest).toBeDefined();
+
+    const synchronous = readDeclaredWorkspacePackages(
+      root,
+      rootManifest!,
+      createWorkspaceDiscoveryCache()
+    );
+    const asynchronous = await readDeclaredWorkspacePackagesAsync(
+      root,
+      rootManifest!,
+      createWorkspaceDiscoveryCache()
+    );
+
+    expect(normalizeWorkspacePackages(root, synchronous)).toEqual([
+      {
+        directory: 'packages/local',
+        manifest: {
+          name: 'local-react-package',
+          dependencies: { 'gt-react': '*' },
+        },
+      },
+    ]);
+    expect(normalizeWorkspacePackages(root, asynchronous)).toEqual(
+      normalizeWorkspacePackages(root, synchronous)
+    );
+  });
+
+  it('retains physical containment for every glob fallback match', async () => {
+    const outside = createTestProject({
+      'x/package.json': JSON.stringify({
+        name: 'outside-vue',
+        dependencies: { 'gt-vue': '*' },
+      }),
+    });
+    const root = createTestProject({
+      'package.json': JSON.stringify({
+        name: 'workspace-root',
+        private: true,
+        workspaces: ['link-out/x', '.'],
+      }),
+    });
+    fs.symlinkSync(outside, path.join(root, 'link-out'), 'dir');
+
+    expect(readWorkspacePackagesSync(root)).toEqual([]);
+    expect(await readWorkspacePackages(root)).toEqual([]);
+  });
+
+  it('rejects a shallow base redirected into node_modules', async () => {
+    const root = createTestProject({
+      'package.json': JSON.stringify({
+        name: 'workspace-root',
+        private: true,
+        workspaces: ['alias/*'],
+      }),
+      'node_modules/bad/package.json': JSON.stringify({
+        name: 'installed-vue',
+        dependencies: { 'gt-vue': '*' },
+      }),
+    });
+    fs.symlinkSync(path.join(root, 'node_modules'), path.join(root, 'alias'));
+
+    expect(readWorkspacePackagesSync(root)).toEqual([]);
+    expect(await readWorkspacePackages(root)).toEqual([]);
+  });
+
+  it('matches the glob fallback for bounded shallow workspace patterns', async () => {
+    const outside = createTestProject({
+      'manifest.json': JSON.stringify({
+        name: 'outside-manifest-vue',
+        dependencies: { 'gt-vue': '*' },
+      }),
+      'directory/package.json': JSON.stringify({
+        name: 'outside-directory-vue',
+        dependencies: { 'gt-vue': '*' },
+      }),
+    });
+    const optimizedRoot = createShallowWorkspaceFixture(outside, false);
+    const fallbackRoot = createShallowWorkspaceFixture(outside, true);
+
+    const optimized = await readWorkspacePackages(optimizedRoot);
+    const fallback = await readWorkspacePackages(fallbackRoot);
+
+    expect(normalizeWorkspacePackages(optimizedRoot, optimized)).toEqual([
+      {
+        directory: 'apps/valid',
+        manifest: { name: 'valid-app' },
+      },
+      {
+        directory: 'packages/valid',
+        manifest: { name: 'valid-package' },
+      },
+    ]);
+    expect(normalizeWorkspacePackages(fallbackRoot, fallback)).toEqual(
+      normalizeWorkspacePackages(optimizedRoot, optimized)
+    );
+  });
+
+  it('resolves shallow workspace bases instead of every child manifest', async () => {
+    const packageCount = 128;
+    const files: Record<string, string> = {
+      'package.json': JSON.stringify({
+        name: 'workspace-root',
+        private: true,
+        workspaces: ['packages/*'],
+      }),
+    };
+    for (let index = 0; index < packageCount; index += 1) {
+      files[`packages/package-${index}/package.json`] = JSON.stringify({
+        name: `react-package-${index}`,
+        dependencies: { 'gt-react': '*' },
+      });
+    }
+    const root = createTestProject(files);
+    const rootManifest = readJavaScriptPackageManifest(
+      path.join(root, 'package.json')
+    );
+    expect(rootManifest).toBeDefined();
+    const realpath = vi.spyOn(fs.promises, 'realpath');
+
+    const packages = await readDeclaredWorkspacePackagesAsync(
+      root,
+      rootManifest!,
+      createWorkspaceDiscoveryCache()
+    );
+
+    expect(packages).toHaveLength(packageCount);
+    expect(
+      realpath.mock.calls.filter(
+        ([file]) =>
+          typeof file === 'string' && path.basename(file) === 'package.json'
+      )
+    ).toEqual([]);
+    expect(realpath).toHaveBeenCalledTimes(2);
+  });
+
+  function createShallowWorkspaceFixture(
+    outside: string,
+    forceGlobFallback: boolean
+  ): string {
+    const patterns = ['packages/*', 'apps/*', 'missing/*'];
+    const root = createTestProject({
+      'package.json': JSON.stringify({
+        name: 'workspace-root',
+        private: true,
+        workspaces: patterns,
+      }),
+      ...(forceGlobFallback
+        ? {
+            'pnpm-workspace.yaml': `packages:\n${patterns
+              .map((pattern) => `  - '${pattern}'`)
+              .join('\n')}\n  - '!packages/not-present'\n`,
+          }
+        : {}),
+      'apps/valid/package.json': JSON.stringify({ name: 'valid-app' }),
+      'packages/valid/package.json': JSON.stringify({ name: 'valid-package' }),
+      'packages/.hidden/package.json': JSON.stringify({ name: 'hidden-vue' }),
+      'packages/malformed/package.json': '{invalid',
+      'packages/missing/README.md': 'No manifest',
+      'packages/symlink-manifest/README.md': 'Linked manifest',
+    });
+    fs.symlinkSync(
+      path.join(outside, 'manifest.json'),
+      path.join(root, 'packages/symlink-manifest/package.json'),
+      'file'
+    );
+    fs.symlinkSync(
+      path.join(outside, 'directory'),
+      path.join(root, 'packages/symlink-directory'),
+      'dir'
+    );
+    return root;
+  }
+
+  async function readWorkspacePackages(root: string) {
+    const manifest = readJavaScriptPackageManifest(
+      path.join(root, 'package.json')
+    );
+    expect(manifest).toBeDefined();
+    return readDeclaredWorkspacePackagesAsync(
+      root,
+      manifest!,
+      createWorkspaceDiscoveryCache()
+    );
+  }
+
+  function readWorkspacePackagesSync(root: string) {
+    const manifest = readJavaScriptPackageManifest(
+      path.join(root, 'package.json')
+    );
+    expect(manifest).toBeDefined();
+    return readDeclaredWorkspacePackages(
+      root,
+      manifest!,
+      createWorkspaceDiscoveryCache()
+    );
+  }
+
+  function normalizeWorkspacePackages(
+    root: string,
+    packages: ReturnType<typeof readDeclaredWorkspacePackages>
+  ) {
+    return packages.map(({ directory, manifest }) => ({
+      directory: path.relative(root, directory),
+      manifest,
+    }));
+  }
+});

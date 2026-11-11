@@ -2,31 +2,9 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
+    // Worker threads start faster than the default child-process pool.
     pool: 'threads',
-    poolOptions: {
-      threads: {
-        minThreads: 2,
-        maxThreads: 4,
-      },
-    },
-    fileParallelism: true,
-    sequence: {
-      concurrent: true,
-    },
-    testTimeout: 15000,
-    isolate: true,
-    environment: 'node',
-    globals: true,
-    env: {
-      _GT_LOG_LEVEL: 'off',
-    },
-    reporters: [
-      [
-        'default',
-        {
-          summary: true,
-        },
-      ],
-    ],
+    // Start workers as files need them instead of one per CPU core up front.
+    minWorkers: 1,
   },
 });

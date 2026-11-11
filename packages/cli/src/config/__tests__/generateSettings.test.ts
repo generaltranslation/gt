@@ -98,57 +98,48 @@ describe('generateSettings - composite patterns', () => {
     });
   });
 
-  it('should extract composite patterns from jsonSchema options and pass to resolveFiles', async () => {
-    const options = {
-      files: {
-        json: { include: ['src/*.json'] },
-      },
-      options: {
+  it.each([
+    [
+      'the jsonSchema patterns marked composite',
+      {
         jsonSchema: {
           'composite-pattern-1': { composite: true },
-          'composite-pattern-2': { composite: true },
           'regular-pattern': { composite: false },
+          'composite-pattern-2': { composite: true },
           'another-pattern': {},
         },
-      },
-    };
-
-    await generateSettings(options, '/test/cwd');
-
-    expect(resolveFiles).toHaveBeenCalledWith(
-      { json: { include: ['src/*.json'] } },
-      'en',
-      ['fr', 'es'],
-      '/test/cwd',
-      ['composite-pattern-1', 'composite-pattern-2'],
-      false
-    );
-  });
-
-  it('should pass empty array when no composite patterns exist', async () => {
-    const options = {
-      files: {
-        json: { include: ['src/*.json'] },
-      },
-      options: {
-        jsonSchema: {
-          'regular-pattern-1': { composite: false },
-          'regular-pattern-2': {},
+        // Only jsonSchema declares composite patterns.
+        yamlSchema: {
+          'yaml-composite': { composite: true },
+          'yaml-regular': {},
         },
       },
-    };
-
-    await generateSettings(options, '/test/cwd');
-
-    expect(resolveFiles).toHaveBeenCalledWith(
-      { json: { include: ['src/*.json'] } },
-      'en',
-      ['fr', 'es'],
-      '/test/cwd',
+      ['composite-pattern-1', 'composite-pattern-2'],
+    ],
+    [
+      'nothing when no jsonSchema pattern is composite',
+      { jsonSchema: { 'regular-pattern': { composite: false }, other: {} } },
       [],
-      false
-    );
-  });
+    ],
+    ['nothing without jsonSchema options', {}, []],
+    ['nothing without options', undefined, []],
+  ])(
+    'passes %s to resolveFiles as composite patterns',
+    async (_case, options, compositePatterns) => {
+      const files = { json: { include: ['src/*.json'] } };
+
+      await generateSettings({ files, options }, '/test/cwd');
+
+      expect(resolveFiles).toHaveBeenCalledWith(
+        files,
+        'en',
+        ['fr', 'es'],
+        '/test/cwd',
+        compositePatterns,
+        false
+      );
+    }
+  );
 
   it.each([
     ['package.json', JSON.stringify({ dependencies: { next: '15.5.9' } })],
@@ -211,45 +202,6 @@ describe('generateSettings - composite patterns', () => {
 
     expect(mockLogWarning).not.toHaveBeenCalledWith(
       expect.stringContaining('No package.json')
-    );
-  });
-
-  it('should pass empty array when jsonSchema options are not provided', async () => {
-    const options = {
-      files: {
-        json: { include: ['src/*.json'] },
-      },
-    };
-
-    await generateSettings(options, '/test/cwd');
-
-    expect(resolveFiles).toHaveBeenCalledWith(
-      { json: { include: ['src/*.json'] } },
-      'en',
-      ['fr', 'es'],
-      '/test/cwd',
-      [],
-      false
-    );
-  });
-
-  it('should pass empty array when options are not provided', async () => {
-    const options = {
-      files: {
-        json: { include: ['src/*.json'] },
-      },
-      options: undefined,
-    };
-
-    await generateSettings(options, '/test/cwd');
-
-    expect(resolveFiles).toHaveBeenCalledWith(
-      { json: { include: ['src/*.json'] } },
-      'en',
-      ['fr', 'es'],
-      '/test/cwd',
-      [],
-      false
     );
   });
 
@@ -352,67 +304,6 @@ describe('generateSettings - composite patterns', () => {
       const settings = await generateSettings({ saveLocal: true }, '/test/cwd');
       expect(settings.options?.saveLocal).toBe(true);
     });
-  });
-
-  it('should handle mixed composite and non-composite patterns', async () => {
-    const options = {
-      files: {
-        yaml: { include: ['data/*.yaml'] },
-      },
-      options: {
-        jsonSchema: {
-          'pattern-1': { composite: true },
-          'pattern-2': { composite: false },
-          'pattern-3': { composite: true },
-          'pattern-4': { someOtherProperty: true },
-        },
-      },
-    };
-
-    await generateSettings(options, '/project/root');
-
-    expect(resolveFiles).toHaveBeenCalledWith(
-      { yaml: { include: ['data/*.yaml'] } },
-      'en',
-      ['fr', 'es'],
-      '/project/root',
-      ['pattern-1', 'pattern-3'],
-      false
-    );
-  });
-
-  it('should extract composite patterns only from jsonSchema', async () => {
-    const options = {
-      files: {
-        json: { include: ['src/*.json'] },
-        yaml: { include: ['data/*.yaml'] },
-      },
-      options: {
-        jsonSchema: {
-          'json-composite-1': { composite: true },
-          'json-regular': { composite: false },
-        },
-        yamlSchema: {
-          'yaml-composite-1': { composite: true },
-          'yaml-composite-2': { composite: true },
-          'yaml-regular': {},
-        },
-      },
-    };
-
-    await generateSettings(options, '/test/cwd');
-
-    expect(resolveFiles).toHaveBeenCalledWith(
-      {
-        json: { include: ['src/*.json'] },
-        yaml: { include: ['data/*.yaml'] },
-      },
-      'en',
-      ['fr', 'es'],
-      '/test/cwd',
-      ['json-composite-1'],
-      false
-    );
   });
 
   it('configures a lazy user token provider alongside any explicit API key', async () => {

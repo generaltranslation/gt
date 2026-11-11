@@ -1,5 +1,5 @@
 // @vitest-environment edge-runtime
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 import {
   defaultLocaleCookieName,
@@ -7,23 +7,14 @@ import {
 } from '@generaltranslation/react-core/pure';
 import { defaultLocaleHeaderName } from '../../utils/headers';
 import { createNextMiddleware } from '../createNextMiddleware';
+import { stubRoutingEnv, useRoutingEnv } from './routingTestUtils';
 
 const origin = 'https://example.com';
 const query = '?tag=a&tag=b&encoded=%2F%252F';
 
-beforeEach(() => {
-  vi.stubEnv(
-    '_GENERALTRANSLATION_I18N_CONFIG_PARAMS',
-    JSON.stringify({
-      defaultLocale: 'en',
-      locales: ['en', 'en-GB', 'fr'],
-    })
-  );
-  vi.stubEnv('_GENERALTRANSLATION_GT_SERVICES_ENABLED', 'false');
-  vi.stubEnv('_GENERALTRANSLATION_IGNORE_BROWSER_LOCALES', 'true');
-  vi.stubEnv('_GENERALTRANSLATION_PATH_REGEX', '');
-});
-afterEach(() => vi.unstubAllEnvs());
+const locales = ['en', 'en-GB', 'fr'];
+
+useRoutingEnv({ locales });
 
 function request(path: string, reset = false, basePath = '') {
   const req = new NextRequest(origin + basePath + path + query, {
@@ -239,7 +230,7 @@ describe('localeRoutes', () => {
   });
 
   it('falls back for browser language detection without needing a cookie', () => {
-    vi.stubEnv('_GENERALTRANSLATION_IGNORE_BROWSER_LOCALES', 'false');
+    stubRoutingEnv({ locales, browserLocales: true });
     const middleware = createNextMiddleware({
       localeRoutes: { 'en-GB': [] },
     });
@@ -308,7 +299,7 @@ describe('localeRoutes', () => {
   });
 
   it('standardizes configured locale keys when GT services are enabled', () => {
-    vi.stubEnv('_GENERALTRANSLATION_GT_SERVICES_ENABLED', 'true');
+    stubRoutingEnv({ locales, services: true });
     const middleware = createNextMiddleware({
       localeRoutes: { 'EN-gb': [] },
     });
@@ -318,16 +309,11 @@ describe('localeRoutes', () => {
   it.each([false, true])(
     'resolves locale route keys to the approved spelling (custom alias=%s)',
     (customAlias) => {
-      vi.stubEnv(
-        '_GENERALTRANSLATION_I18N_CONFIG_PARAMS',
-        JSON.stringify({
-          defaultLocale: 'fr',
-          locales: ['fr', 'en-gb'],
-          customMapping: customAlias
-            ? { 'en-GB': { code: 'en-gb' } }
-            : undefined,
-        })
-      );
+      stubRoutingEnv({
+        defaultLocale: 'fr',
+        locales: ['fr', 'en-gb'],
+        customMapping: customAlias ? { 'en-GB': { code: 'en-gb' } } : undefined,
+      });
       const middleware = createNextMiddleware({
         localeRoutes: { 'en-GB': ['/allowed'] },
       });

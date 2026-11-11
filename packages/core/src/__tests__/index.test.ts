@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GT, LocaleConfig } from '../index';
+import { GTRuntime } from '../runtime';
 import type { TranslateManyEntry } from '../types';
 
 const numberValue = 1234.56;
@@ -18,7 +19,7 @@ const formatCurrencyWithIntl = (locale: string, currency = 'EUR') =>
     numberingSystem: 'latn',
   }).format(numberValue);
 
-describe.sequential('GT Translation Methods', () => {
+describe('GT translation methods', () => {
   describe.each(['translate', 'translateMany'] as const)('%s', (method) => {
     const fetchMock = vi.fn<typeof fetch>();
     let gt: GT;
@@ -121,169 +122,97 @@ describe.sequential('GT Translation Methods', () => {
     });
   });
 
-  describe('configuration handling', () => {
-    it('should handle minimal GT configuration', () => {
-      const gt = new GT({
-        apiKey: 'test-key',
-        projectId: 'test-project',
-        baseUrl: 'https://api.test.com',
-      });
-
-      expect(gt.apiKey).toBe('test-key');
-      expect(gt.projectId).toBe('test-project');
-      expect(gt.baseUrl).toBe('https://api.test.com');
+  it('exposes the configured credentials, base URL and target locale', () => {
+    const gt = new GT({
+      apiKey: 'test-key',
+      devApiKey: 'dev-key',
+      projectId: 'test-project',
+      baseUrl: 'https://api.test.com',
+      targetLocale: 'es',
     });
 
-    it('should handle GT configuration with all options', () => {
-      const gt = new GT({
-        apiKey: 'test-key',
-        devApiKey: 'dev-key',
-        projectId: 'test-project',
-        baseUrl: 'https://api.test.com',
-        targetLocale: 'es',
-      });
-
-      expect(gt.apiKey).toBe('test-key');
-      expect(gt.devApiKey).toBe('dev-key');
-      expect(gt.projectId).toBe('test-project');
-      expect(gt.baseUrl).toBe('https://api.test.com');
-      expect(gt.targetLocale).toBe('es');
+    expect(gt).toMatchObject({
+      apiKey: 'test-key',
+      devApiKey: 'dev-key',
+      projectId: 'test-project',
+      baseUrl: 'https://api.test.com',
+      targetLocale: 'es',
     });
   });
+});
 
-  describe('resolveCanonicalLocale', () => {
-    it('should return canonical locale from custom mapping when available', () => {
-      const customMapping = {
-        'custom-locale': {
-          code: 'en-US',
-          name: 'Custom English',
-        },
-      };
+describe('GT locale resolution', () => {
+  const customMapping = {
+    'custom-locale': { code: 'en-US', name: 'Custom English' },
+    'name-only': 'Name Only',
+  };
 
-      const gt = new GT({
-        customMapping,
-        targetLocale: 'custom-locale',
-      });
+  it.each([
+    ['an alias with a canonical code', 'custom-locale', 'en-US'],
+    ['an alias without a canonical code', 'name-only', 'name-only'],
+    ['a locale outside the mapping', 'fr-FR', 'fr-FR'],
+    ['the instance target locale', undefined, 'en-US'],
+  ])('resolves %s to its canonical locale', (_name, locale, expected) => {
+    const gt = new GT({ customMapping, targetLocale: 'custom-locale' });
 
-      const result = gt.resolveCanonicalLocale('custom-locale');
-      expect(result).toBe('en-US');
-    });
-
-    it('should return original locale when custom mapping does not have canonical locale', () => {
-      const customMapping = {
-        'custom-locale': 'Custom English',
-      };
-
-      const gt = new GT({
-        customMapping,
-        targetLocale: 'en-US',
-      });
-
-      const result = gt.resolveCanonicalLocale('en-US');
-      expect(result).toBe('en-US');
-    });
-
-    it('should return original locale when no custom mapping provided', () => {
-      const gt = new GT({
-        targetLocale: 'fr-FR',
-      });
-
-      const result = gt.resolveCanonicalLocale('fr-FR');
-      expect(result).toBe('fr-FR');
-    });
-
-    it('should use instance target locale when no locale parameter provided', () => {
-      const customMapping = {
-        'alias-locale': {
-          code: 'de-DE',
-          name: 'German',
-        },
-      };
-
-      const gt = new GT({
-        customMapping,
-        targetLocale: 'alias-locale',
-      });
-
-      const result = gt.resolveCanonicalLocale();
-      expect(result).toBe('de-DE');
-    });
-
-    it('should throw error when no target locale is provided and no parameter', () => {
-      const gt = new GT();
-
-      expect(() => gt.resolveCanonicalLocale()).toThrow(
-        'GT Error: Cannot call `resolveCanonicalLocale` without a specified locale. Pass a locale to `resolveCanonicalLocale` or specify targetLocale in the GT constructor.'
-      );
-    });
+    expect(gt.resolveCanonicalLocale(locale)).toBe(expected);
   });
 
-  describe('resolveAliasLocale', () => {
-    it('should return alias locale from reverse custom mapping when available', () => {
-      const customMapping = {
-        'my-custom-locale': {
-          code: 'en-GB',
-          name: 'British English',
-        },
-      };
+  it('resolves canonical locales without a custom mapping', () => {
+    expect(new GT().resolveCanonicalLocale('fr-FR')).toBe('fr-FR');
+  });
 
-      const gt = new GT({
-        customMapping,
-      });
+  it('requires a locale to resolve when no target locale is configured', () => {
+    expect(() => new GT().resolveCanonicalLocale()).toThrow(
+      'GT Error: Cannot call `resolveCanonicalLocale` without a specified locale. Pass a locale to `resolveCanonicalLocale` or specify targetLocale in the GT constructor.'
+    );
+  });
 
-      const result = gt.resolveAliasLocale('en-GB');
-      expect(result).toBe('my-custom-locale');
-    });
+  it.each([
+    ['a canonical code with an alias', 'en-US', 'custom-locale'],
+    ['a canonical code without an alias', 'es-ES', 'es-ES'],
+  ])('resolves %s to its alias locale', (_name, locale, expected) => {
+    expect(new GT({ customMapping }).resolveAliasLocale(locale)).toBe(expected);
+  });
 
-    it('should return original locale when no alias exists in reverse mapping', () => {
-      const customMapping = {
-        'custom-locale': {
-          code: 'fr-FR',
-          name: 'French',
-        },
-      };
+  it('resolves alias locales from a per-call mapping or none at all', () => {
+    const gt = new GT();
 
-      const gt = new GT({
-        customMapping,
-      });
+    expect(gt.resolveAliasLocale('en-US', customMapping)).toBe('custom-locale');
+    expect(gt.resolveAliasLocale('zh-CN')).toBe('zh-CN');
+    expect(gt.resolveAliasLocale('en-US', { 'name-only': 'Name Only' })).toBe(
+      'en-US'
+    );
+  });
+});
 
-      const result = gt.resolveAliasLocale('es-ES');
-      expect(result).toBe('es-ES');
-    });
+describe('GTRuntime.determineLocale approved identifiers', () => {
+  it.each([
+    ['sh', 'sr-Latn'],
+    ['cnr', 'sr-ME'],
+  ])('preserves accepted legacy code %s', (locale, canonical) => {
+    const gt = new GTRuntime({ sourceLocale: locale, locales: [locale] });
+    expect(gt.sourceLocale).toBe(locale);
+    expect(gt.determineLocale(locale)).toBe(locale);
+    expect(gt.determineLocale(canonical)).toBe(locale);
+  });
 
-    it('should return original locale when custom mapping contains string values only', () => {
-      const customMapping = {
-        'custom-locale': 'Custom Name',
-      };
+  it('preserves explicit approved spelling with configured and per-call mappings', () => {
+    const gt = new GTRuntime({ locales: ['en-us', 'fr'] });
+    // Constructor locales and explicit approved lists retain configured spelling.
+    expect(gt.determineLocale('en-US')).toBe('en-us');
+    expect(gt.determineLocale('en-US', ['en-us'])).toBe('en-us');
+    expect(gt.determineLocale('en-US', ['en-us'], {})).toBe('en-us');
+  });
 
-      const gt = new GT({
-        customMapping,
-      });
-
-      const result = gt.resolveAliasLocale('en-US');
-      expect(result).toBe('en-US');
-    });
-
-    it('should work with custom mapping parameter instead of instance mapping', () => {
-      const gt = new GT();
-
-      const customMapping = {
-        'special-locale': {
-          code: 'ja-JP',
-          name: 'Japanese',
-        },
-      };
-
-      const result = gt.resolveAliasLocale('ja-JP', customMapping);
-      expect(result).toBe('special-locale');
-    });
-
-    it('should return original locale when no custom mapping provided', () => {
-      const gt = new GT();
-
-      const result = gt.resolveAliasLocale('zh-CN');
-      expect(result).toBe('zh-CN');
-    });
+  it('resolves per-call aliases back to the approved identifier', () => {
+    const gt = new GTRuntime();
+    expect(
+      gt.determineLocale('en-GB', ['brand'], { brand: { code: 'en-gb' } })
+    ).toBe('brand');
+    expect(
+      gt.determineLocale('de', ['brand'], { brand: { code: 'en-gb' } })
+    ).toBeUndefined();
   });
 });
 

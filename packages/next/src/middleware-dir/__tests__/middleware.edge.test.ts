@@ -1,857 +1,966 @@
 // @vitest-environment edge-runtime
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { NextRequest } from 'next/server';
-import { createNextMiddleware } from '../createNextMiddleware';
-import type { PathConfig } from '../utils';
-import type { CustomMapping } from '@generaltranslation/format/types';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { NextRequest, type NextResponse } from 'next/server';
+import { GT } from 'generaltranslation';
+import {
+  defaultLocaleCookieName as LOCALE_COOKIE,
+  defaultResetLocaleCookieName as RESET_COOKIE,
+} from '@generaltranslation/react-core/pure';
+import {
+  defaultLocaleRoutingEnabledCookieName as ROUTING_COOKIE,
+  defaultReferrerLocaleCookieName as REFERRER_COOKIE,
+} from '../../utils/cookies';
+import { defaultLocaleHeaderName as LOCALE_HEADER } from '../../utils/headers';
+import {
+  createNextMiddleware,
+  type RouteOverrides,
+} from '../createNextMiddleware';
+import {
+  defaultMiddlewareConfig,
+  splitMiddlewareConfig,
+} from '../defaultMiddlewareConfig';
+import { resolveMiddlewareConfig } from '../resolveMiddlewareConfig';
+import type { MiddlewareConfig } from '../types';
+import {
+  createPathMatcher,
+  getLocaleFromRequest,
+  type PathConfig,
+  type PathMatcher,
+} from '../utils';
+import { stubRoutingEnv, useRoutingEnv } from './routingTestUtils';
 
-// ---- Cookie Constants (must match the real defaults) ----
-const LOCALE_COOKIE = 'generaltranslation.locale';
-const RESET_COOKIE = 'generaltranslation.locale-reset';
-const REFERRER_COOKIE = 'generaltranslation.referrer-locale';
-const ROUTING_COOKIE = 'generaltranslation.locale-routing-enabled';
-const LOCALE_HEADER = 'x-generaltranslation-locale';
+const origin = 'https://example.com';
 
-// ---- Helpers ----
+type Cookies = Record<string, string>;
+type Middleware = ReturnType<typeof createNextMiddleware>;
 
-type MiddlewareEnvOverrides = {
-  defaultLocale?: string;
-  locales?: string[];
-  customMapping?: CustomMapping;
-  headersAndCookies?: Record<string, string>;
-};
+useRoutingEnv({ locales: ['en', 'fr', 'es', 'de'] });
 
-function setEnvConfig(overrides: MiddlewareEnvOverrides = {}) {
-  process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS = JSON.stringify({
-    defaultLocale: 'en',
-    locales: ['en', 'fr', 'es', 'de'],
-    ...overrides,
-  });
-}
-
-function createRequest(
-  pathname: string,
-  opts: {
-    cookies?: Record<string, string>;
-    acceptLanguage?: string;
-    search?: string;
+function request(
+  path: string,
+  {
+    browser,
+    cookies = {},
+    basePath = '',
+    trailingSlash,
+    destination,
+  }: {
+    browser?: string;
+    cookies?: Cookies;
     basePath?: string;
+    trailingSlash?: boolean;
+    destination?: string;
   } = {}
-): NextRequest {
-  const url = new URL(pathname, 'http://localhost:3000');
-  if (opts.search) url.search = opts.search;
-
-  const headers = new Headers();
-  if (opts.acceptLanguage) {
-    headers.set('accept-language', opts.acceptLanguage);
-  }
-
-  const req = new NextRequest(url, {
-    headers,
-    nextConfig: opts.basePath ? { basePath: opts.basePath } : undefined,
+) {
+  const req = new NextRequest(origin + basePath + path, {
+    headers: browser ? { 'accept-language': browser } : {},
+    nextConfig: { basePath, trailingSlash },
   });
-  if (opts.cookies) {
-    for (const [name, value] of Object.entries(opts.cookies)) {
-      req.cookies.set(name, value);
-    }
-  }
+  if (destination !== undefined) req.headers.set('sec-fetch-dest', destination);
+  for (const [name, value] of Object.entries(cookies))
+    req.cookies.set(name, value);
   return req;
 }
 
-// ---- Response Inspection ----
-
-function getResponseType(
-  res: Response
-): 'redirect' | 'rewrite' | 'next' | 'unknown' {
-  if (res.status === 307 || res.status === 308) return 'redirect';
-  if (res.headers.has('x-middleware-rewrite')) return 'rewrite';
-  if (res.headers.get('x-middleware-next') === '1') return 'next';
-  return 'unknown';
+function target(
+  response: Response,
+  header: 'location' | 'x-middleware-rewrite'
+) {
+  const value = response.headers.get(header);
+  return value ? new URL(value) : undefined;
 }
 
-function getResponsePath(res: Response): string {
-  const type = getResponseType(res);
-  if (type === 'redirect') {
-    return new URL(res.headers.get('location')!).pathname;
+/** Summarizes where a response sends the request, including its query. */
+function routeOf(response: Response) {
+  const redirect = target(response, 'location');
+  const rewrite = target(response, 'x-middleware-rewrite');
+  if (response.status === 307 && redirect) {
+    return { type: 'redirect', path: redirect.pathname + redirect.search };
   }
-  if (type === 'rewrite') {
-    return new URL(res.headers.get('x-middleware-rewrite')!).pathname;
+  if (rewrite) {
+    return { type: 'rewrite', path: rewrite.pathname + rewrite.search };
   }
-  return '';
+  return {
+    type:
+      response.headers.get('x-middleware-next') === '1' ? 'next' : 'unknown',
+  };
 }
 
-function getResponseSearch(res: Response): string {
-  const type = getResponseType(res);
-  if (type === 'redirect') {
-    return new URL(res.headers.get('location')!).search;
-  }
-  if (type === 'rewrite') {
-    return new URL(res.headers.get('x-middleware-rewrite')!).search;
-  }
-  return '';
+function expectRedirect(response: Response, path: string) {
+  expect(response.status).toBe(307);
+  expect(target(response, 'location')?.pathname).toBe(path);
 }
 
-// ---- Tests ----
+describe('single-pass routing', () => {
+  it('rewrites an unprefixed default-locale path to its locale route', () => {
+    const res = createNextMiddleware()(request('/about'));
 
-describe('Middleware Integration Tests', () => {
-  let savedEnv: Record<string, string | undefined>;
-
-  beforeEach(() => {
-    savedEnv = {
-      _GENERALTRANSLATION_I18N_CONFIG_PARAMS:
-        process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS,
-      _GENERALTRANSLATION_GT_SERVICES_ENABLED:
-        process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED,
-      _GENERALTRANSLATION_IGNORE_BROWSER_LOCALES:
-        process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES,
-      _GENERALTRANSLATION_PATH_REGEX:
-        process.env._GENERALTRANSLATION_PATH_REGEX,
-    };
-    // Default: GT services disabled
-    delete process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED;
-    delete process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES;
-    delete process.env._GENERALTRANSLATION_PATH_REGEX;
+    expect(routeOf(res)).toEqual({ type: 'rewrite', path: '/en/about' });
+    expect(res.headers.get(LOCALE_HEADER)).toBe('en');
+    expect(res.cookies.get(ROUTING_COOKIE)?.value).toBe('true');
   });
 
-  afterEach(() => {
-    for (const [key, value] of Object.entries(savedEnv)) {
-      if (value === undefined) {
-        delete process.env[key];
-      } else {
-        process.env[key] = value;
-      }
+  it.each([
+    { path: '/en/about', locale: 'en', prefixDefaultLocale: true },
+    { path: '/fr/about', locale: 'fr', prefixDefaultLocale: false },
+  ])(
+    'continues for a correctly prefixed $path',
+    ({ path, locale, prefixDefaultLocale }) => {
+      const res = createNextMiddleware({ prefixDefaultLocale })(request(path));
+
+      expect(routeOf(res)).toEqual({ type: 'next' });
+      expect(res.headers.get(LOCALE_HEADER)).toBe(locale);
     }
+  );
+
+  it.each([
+    { path: '/fr/a-propos', destination: '/fr/about', locale: 'fr' },
+    { path: '/about-us', destination: '/en/about', locale: 'en' },
+  ])(
+    'rewrites the localized pathConfig path $path to its shared route',
+    ({ path, destination, locale }) => {
+      const res = createNextMiddleware({
+        pathConfig: { '/about': { en: '/about-us', fr: '/a-propos' } },
+      })(request(path));
+
+      expect(routeOf(res)).toEqual({ type: 'rewrite', path: destination });
+      expect(res.headers.get(LOCALE_HEADER)).toBe(locale);
+    }
+  );
+
+  it('supports catch-all and optional catch-all pathConfig routes', () => {
+    const middleware = createNextMiddleware({
+      prefixDefaultLocale: true,
+      pathConfig: {
+        '/docs/[...slug]': { fr: '/knowledge/base/[...slug]' },
+        '/news/[[...slug]]': { fr: '/international/actualites/[[...slug]]' },
+      },
+    });
+
+    expect(
+      routeOf(middleware(request('/fr/knowledge/base/guides/start')))
+    ).toEqual({ type: 'rewrite', path: '/fr/docs/guides/start' });
+    expect(routeOf(middleware(request('/fr/docs/guides/start')))).toEqual({
+      type: 'redirect',
+      path: '/fr/knowledge/base/guides/start',
+    });
+    expect(
+      routeOf(middleware(request('/fr/international/actualites')))
+    ).toEqual({ type: 'rewrite', path: '/fr/news' });
+    expect(
+      routeOf(middleware(request('/fr/international/actualites/world/latest')))
+    ).toEqual({ type: 'rewrite', path: '/fr/news/world/latest' });
   });
 
-  // ================================================================
-  // Category 2: 1-Pass Routing
-  // ================================================================
+  it('treats regex metacharacters in dynamic paths literally', () => {
+    const middleware = createNextMiddleware({
+      prefixDefaultLocale: true,
+      pathConfig: {
+        '/releases/v1.0/[slug]': { fr: '/versions/v1.0/[slug]' },
+        '/language/c++/[slug]': { fr: '/langage/c++/[slug]' },
+      },
+    });
 
-  describe('Category 2: 1-Pass Routing', () => {
-    it('2.1: !prefixDefault, default user, /about → rewrite /en/about', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
+    expect(routeOf(middleware(request('/fr/versions/v1.0/notes')))).toEqual({
+      type: 'rewrite',
+      path: '/fr/releases/v1.0/notes',
+    });
+    expect(routeOf(middleware(request('/fr/versions/v1x0/notes')))).toEqual({
+      type: 'next',
+    });
+    expect(routeOf(middleware(request('/fr/langage/c++/templates')))).toEqual({
+      type: 'rewrite',
+      path: '/fr/language/c++/templates',
+    });
+  });
+
+  it('only detects the locale when localeRouting is false', () => {
+    const res = createNextMiddleware({ localeRouting: false })(
+      request('/some/path')
+    );
+
+    expect(routeOf(res)).toEqual({ type: 'next' });
+    expect(res.headers.get(LOCALE_HEADER)).toBe('en');
+    expect(res.cookies.get(ROUTING_COOKIE)?.value).toBe('false');
+  });
+
+  it('skips Next.js source map requests entirely', () => {
+    const res = createNextMiddleware({ ignoreSourceMaps: true })(
+      request('/__nextjs_source-map/main.js')
+    );
+
+    expect(routeOf(res)).toEqual({ type: 'next' });
+    expect(res.headers.get(LOCALE_HEADER)).toBeNull();
+  });
+
+  it('applies i18n routing only to paths matching pathRegex', () => {
+    vi.stubEnv('_GENERALTRANSLATION_PATH_REGEX', '^/(?!excluded(?:/|$)).*');
+    const middleware = createNextMiddleware();
+
+    expect(routeOf(middleware(request('/about')))).toEqual({
+      type: 'rewrite',
+      path: '/en/about',
+    });
+    const excluded = middleware(request('/excluded/about'));
+    expect(routeOf(excluded)).toEqual({ type: 'next' });
+    expect(excluded.headers.get(LOCALE_HEADER)).toBeNull();
+    expect(excluded.cookies.get(ROUTING_COOKIE)).toBeUndefined();
+  });
+
+  it('throws a descriptive error for an invalid pathRegex', () => {
+    vi.stubEnv('_GENERALTRANSLATION_PATH_REGEX', '[unclosed');
+
+    expect(() => createNextMiddleware()).toThrowError(
+      'gt-next Error: pathRegex "[unclosed" is not a valid regular expression.'
+    );
+  });
+});
+
+describe('redirects', () => {
+  const pathConfig: PathConfig = {
+    '/about': { en: '/about-us', fr: '/a-propos' },
+  };
+
+  it.each([
+    {
+      name: 'a reset to the unprefixed default locale',
+      path: '/fr/about',
+      cookies: { [LOCALE_COOKIE]: 'en', [RESET_COOKIE]: 'true' },
+      destination: '/about',
+    },
+    {
+      name: 'a reset to another locale',
+      options: { prefixDefaultLocale: true },
+      path: '/en/about',
+      cookies: { [LOCALE_COOKIE]: 'fr', [RESET_COOKIE]: 'true' },
+      destination: '/fr/about',
+    },
+    {
+      name: 'a non-default locale cookie on an unprefixed path',
+      path: '/about',
+      cookies: { [LOCALE_COOKIE]: 'fr' },
+      destination: '/fr/about',
+    },
+    {
+      name: 'a reset between localized pathConfig paths',
+      options: { prefixDefaultLocale: true, pathConfig },
+      path: '/en/about-us',
+      cookies: { [LOCALE_COOKIE]: 'fr', [RESET_COOKIE]: 'true' },
+      destination: '/fr/a-propos',
+    },
+    {
+      name: 'a shared path that has a localized pathConfig path',
+      options: { prefixDefaultLocale: true, pathConfig },
+      path: '/fr/about',
+      cookies: { [LOCALE_COOKIE]: 'fr' },
+      destination: '/fr/a-propos',
+    },
+    {
+      name: 'a referrer locale cookie',
+      path: '/docs',
+      cookies: { [REFERRER_COOKIE]: 'fr' },
+      destination: '/fr/docs',
+    },
+  ] as {
+    name: string;
+    options?: MiddlewareConfig;
+    path: string;
+    cookies: Cookies;
+    destination: string;
+  }[])('redirects for $name', ({ options, path, cookies, destination }) => {
+    const res = createNextMiddleware(options)(request(path, { cookies }));
+
+    expect(routeOf(res)).toEqual({ type: 'redirect', path: destination });
+  });
+});
+
+describe('response properties', () => {
+  it('preserves the query string on rewrites and redirects', () => {
+    const middleware = createNextMiddleware();
+
+    expect(routeOf(middleware(request('/about?foo=bar&baz=1')))).toEqual({
+      type: 'rewrite',
+      path: '/en/about?foo=bar&baz=1',
+    });
+    const redirect = middleware(
+      request('/about?page=2', { cookies: { [LOCALE_COOKIE]: 'fr' } })
+    );
+    expect(routeOf(redirect)).toEqual({
+      type: 'redirect',
+      path: '/fr/about?page=2',
+    });
+    expect(redirect.headers.get(LOCALE_HEADER)).toBe('fr');
+  });
+
+  it('preserves basePath on rewrites and redirects', () => {
+    const middleware = createNextMiddleware({
+      prefixDefaultLocale: true,
+      pathConfig: { '/about': { fr: '/a-propos' } },
+    });
+
+    expect(
+      routeOf(
+        middleware(request('/fr/a-propos?preview=true', { basePath: '/corp' }))
+      )
+    ).toEqual({ type: 'rewrite', path: '/corp/fr/about?preview=true' });
+    expect(
+      routeOf(middleware(request('/fr/about', { basePath: '/corp' })))
+    ).toEqual({ type: 'redirect', path: '/corp/fr/a-propos' });
+  });
+
+  it('clears the reset cookie on the final response only, keeping the locale cookie', () => {
+    const middleware = createNextMiddleware({ prefixDefaultLocale: true });
+    const cookies = { [LOCALE_COOKIE]: 'fr', [RESET_COOKIE]: 'true' };
+
+    // The reset cookie persists across the redirect to the new locale.
+    const redirect = middleware(request('/en/about', { cookies }));
+    expect(routeOf(redirect)).toEqual({ type: 'redirect', path: '/fr/about' });
+    expect(redirect.headers.get('set-cookie') || '').not.toContain(
+      `${RESET_COOKIE}=;`
+    );
+
+    const final = middleware(request('/fr/about', { cookies }));
+    expect(routeOf(final)).toEqual({ type: 'next' });
+    const setCookie = final.headers.get('set-cookie') || '';
+    expect(setCookie).toContain(`${RESET_COOKIE}=;`);
+    // The locale cookie must survive: the client re-reads it on every
+    // render, and deleting it races with concurrent prefetch responses
+    // after a locale switch.
+    expect(setCookie).not.toContain(`${LOCALE_COOKIE}=;`);
+  });
+});
+
+describe('getLocaleFromRequest', () => {
+  const gt = new GT();
+
+  function resolveLocale(
+    req: NextRequest,
+    defaultLocalePaths: PathMatcher = createPathMatcher([])
+  ) {
+    return getLocaleFromRequest(
+      req,
+      'en',
+      ['en', 'fr', 'es', 'de'],
+      true,
+      false,
+      defaultLocalePaths,
+      REFERRER_COOKIE,
+      LOCALE_COOKIE,
+      RESET_COOKIE,
+      gt
+    );
+  }
+
+  it.each([
+    {
+      name: 'uses the pathname locale',
+      path: '/fr/about',
+      expected: { userLocale: 'fr', pathnameLocale: 'fr' },
+    },
+    {
+      name: 'prefers the pathname locale over the locale cookie',
+      path: '/fr/about',
+      cookies: { [LOCALE_COOKIE]: 'de' },
+      expected: { userLocale: 'fr', pathnameLocale: 'fr' },
+    },
+    {
+      name: 'lets a reset cookie override the pathname locale',
+      path: '/fr/about',
+      cookies: { [LOCALE_COOKIE]: 'es', [RESET_COOKIE]: 'true' },
+      expected: {
+        userLocale: 'es',
+        pathnameLocale: 'fr',
+        clearResetCookie: true,
+      },
+    },
+    {
+      name: 'uses the locale cookie on an unprefixed path',
+      path: '/about',
+      cookies: { [LOCALE_COOKIE]: 'de' },
+      expected: { userLocale: 'de' },
+    },
+    {
+      name: 'uses the referrer cookie',
+      path: '/about',
+      cookies: { [REFERRER_COOKIE]: 'fr' },
+      expected: { userLocale: 'fr' },
+    },
+    {
+      name: 'ignores the referrer cookie during a reset',
+      path: '/about',
+      cookies: {
+        [LOCALE_COOKIE]: 'en',
+        [RESET_COOKIE]: 'true',
+        [REFERRER_COOKIE]: 'fr',
+      },
+      expected: { userLocale: 'en', clearResetCookie: true },
+    },
+    {
+      name: 'negotiates Accept-Language when browser locales are enabled',
+      path: '/about',
+      browser: 'es-ES,es;q=0.9,en;q=0.8',
+      browserLocales: true,
+      expected: { userLocale: 'es' },
+    },
+    {
+      name: 'falls back to the default locale without signals',
+      path: '/about',
+      expected: { userLocale: 'en' },
+    },
+    {
+      name: 'ignores an invalid pathname locale',
+      path: '/notavalidlocale/page',
+      expected: { userLocale: 'en' },
+    },
+  ] as {
+    name: string;
+    path: string;
+    cookies?: Cookies;
+    browser?: string;
+    browserLocales?: boolean;
+    expected: object;
+  }[])('$name', ({ path, cookies, browser, browserLocales, expected }) => {
+    stubRoutingEnv({ browserLocales });
+
+    expect(resolveLocale(request(path, { cookies, browser }))).toMatchObject({
+      pathnameLocale: undefined,
+      clearResetCookie: false,
+      ...expected,
+    });
+  });
+
+  it('gives an unprefixed default-locale path priority over the locale cookie', () => {
+    const req = request('/about-us', { cookies: { [LOCALE_COOKIE]: 'fr' } });
+
+    expect(resolveLocale(req).userLocale).toBe('fr');
+    expect(
+      resolveLocale(req, createPathMatcher([['/about-us', '/about']]))
+        .userLocale
+    ).toBe('en');
+  });
+});
+
+describe('middleware config', () => {
+  function stubMiddlewareEnv(config: MiddlewareConfig | string) {
+    vi.stubEnv(
+      '_GENERALTRANSLATION_MIDDLEWARE_CONFIG',
+      typeof config === 'string' ? config : JSON.stringify(config)
+    );
+  }
+
+  beforeEach(() => vi.stubEnv('_GENERALTRANSLATION_MIDDLEWARE_CONFIG', ''));
+
+  describe('splitMiddlewareConfig', () => {
+    it('separates set middleware options from the rest of the config', () => {
+      const { middlewareConfig, otherConfig } = splitMiddlewareConfig({
+        prefixDefaultLocale: true,
+        enableSmartRouting: undefined,
+        pathConfig: { '/about': { fr: '/a-propos' } },
+        defaultLocale: 'en',
+      });
+
+      expect(middlewareConfig).toEqual({
+        prefixDefaultLocale: true,
+        pathConfig: { '/about': { fr: '/a-propos' } },
+      });
+      expect(otherConfig).toEqual({ defaultLocale: 'en' });
+    });
+  });
+
+  describe('resolveMiddlewareConfig', () => {
+    it('uses the library defaults without env or options', () => {
+      expect(resolveMiddlewareConfig()).toEqual({
+        localeRouting: true,
         prefixDefaultLocale: false,
-      });
-
-      const res = middleware(createRequest('/about'));
-
-      expect(getResponseType(res)).toBe('rewrite');
-      expect(getResponsePath(res)).toBe('/en/about');
-      expect(res.headers.get(LOCALE_HEADER)).toBe('en');
-      expect(res.cookies.get(ROUTING_COOKIE)?.value).toBe('true');
-    });
-
-    it('2.2: prefixDefault, /en/about → next()', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: true,
-      });
-
-      const res = middleware(createRequest('/en/about'));
-
-      expect(getResponseType(res)).toBe('next');
-      expect(res.headers.get(LOCALE_HEADER)).toBe('en');
-    });
-
-    it('2.3: !prefixDefault, non-default locale, /fr/about → next()', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: false,
-      });
-
-      const res = middleware(createRequest('/fr/about'));
-
-      expect(getResponseType(res)).toBe('next');
-      expect(res.headers.get(LOCALE_HEADER)).toBe('fr');
-    });
-
-    it('2.4: pathConfig, /fr/a-propos → rewrite /fr/about', () => {
-      setEnvConfig();
-      const pathConfig: PathConfig = {
-        '/about': { en: '/about-us', fr: '/a-propos' },
-      };
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: true,
-        pathConfig,
-      });
-
-      const res = middleware(createRequest('/fr/a-propos'));
-
-      expect(getResponseType(res)).toBe('rewrite');
-      expect(getResponsePath(res)).toBe('/fr/about');
-      expect(res.headers.get(LOCALE_HEADER)).toBe('fr');
-    });
-
-    it('2.5: pathConfig + !prefixDefault, /about-us → rewrite /en/about', () => {
-      setEnvConfig();
-      const pathConfig: PathConfig = {
-        '/about': { en: '/about-us', fr: '/a-propos' },
-      };
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: false,
-        pathConfig,
-      });
-
-      const res = middleware(createRequest('/about-us'));
-
-      expect(getResponseType(res)).toBe('rewrite');
-      expect(getResponsePath(res)).toBe('/en/about');
-      expect(res.headers.get(LOCALE_HEADER)).toBe('en');
-    });
-
-    it('supports catch-all and optional catch-all pathConfig routes', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: true,
-        pathConfig: {
-          '/docs/[...slug]': { fr: '/knowledge/base/[...slug]' },
-          '/news/[[...slug]]': {
-            fr: '/international/actualites/[[...slug]]',
-          },
-        },
-      });
-
-      const catchAllResponse = middleware(
-        createRequest('/fr/knowledge/base/guides/start')
-      );
-      const catchAllRedirect = middleware(
-        createRequest('/fr/docs/guides/start')
-      );
-      const optionalRootResponse = middleware(
-        createRequest('/fr/international/actualites')
-      );
-      const optionalNestedResponse = middleware(
-        createRequest('/fr/international/actualites/world/latest')
-      );
-
-      expect(getResponseType(catchAllResponse)).toBe('rewrite');
-      expect(getResponsePath(catchAllResponse)).toBe('/fr/docs/guides/start');
-      expect(getResponseType(catchAllRedirect)).toBe('redirect');
-      expect(getResponsePath(catchAllRedirect)).toBe(
-        '/fr/knowledge/base/guides/start'
-      );
-      expect(getResponseType(optionalRootResponse)).toBe('rewrite');
-      expect(getResponsePath(optionalRootResponse)).toBe('/fr/news');
-      expect(getResponseType(optionalNestedResponse)).toBe('rewrite');
-      expect(getResponsePath(optionalNestedResponse)).toBe(
-        '/fr/news/world/latest'
-      );
-    });
-
-    it('treats regex metacharacters in dynamic paths literally', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: true,
-        pathConfig: {
-          '/releases/v1.0/[slug]': {
-            fr: '/versions/v1.0/[slug]',
-          },
-          '/language/c++/[slug]': {
-            fr: '/langage/c++/[slug]',
-          },
-        },
-      });
-
-      const dotResponse = middleware(createRequest('/fr/versions/v1.0/notes'));
-      const falsePositiveResponse = middleware(
-        createRequest('/fr/versions/v1x0/notes')
-      );
-      const plusResponse = middleware(
-        createRequest('/fr/langage/c++/templates')
-      );
-
-      expect(getResponseType(dotResponse)).toBe('rewrite');
-      expect(getResponsePath(dotResponse)).toBe('/fr/releases/v1.0/notes');
-      expect(getResponseType(falsePositiveResponse)).toBe('next');
-      expect(getResponseType(plusResponse)).toBe('rewrite');
-      expect(getResponsePath(plusResponse)).toBe('/fr/language/c++/templates');
-    });
-
-    it('matches encoded requests against Unicode pathConfig entries', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: true,
-        pathConfig: {
-          '/café/[slug]': {
-            fr: '/café-français/[slug]',
-          },
-        },
-      });
-
-      const res = middleware(
-        createRequest('/fr/caf%C3%A9-fran%C3%A7ais/article')
-      );
-
-      expect(getResponseType(res)).toBe('rewrite');
-      expect(getResponsePath(res)).toBe('/fr/caf%C3%A9/article');
-    });
-
-    it('preserves trailing slashes while rewriting pathConfig routes', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: true,
-        pathConfig: {
-          '/about': { fr: '/a-propos' },
-          '/docs/[...slug]': { fr: '/documentation/[...slug]' },
-        },
-      });
-
-      const staticResponse = middleware(createRequest('/fr/a-propos/'));
-      const catchAllResponse = middleware(
-        createRequest('/fr/documentation/guides/start/')
-      );
-
-      expect(getResponseType(staticResponse)).toBe('rewrite');
-      expect(getResponsePath(staticResponse)).toBe('/fr/about/');
-      expect(getResponseType(catchAllResponse)).toBe('rewrite');
-      expect(getResponsePath(catchAllResponse)).toBe('/fr/docs/guides/start/');
-    });
-
-    it('2.6: localeRouting=false → next()', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        localeRouting: false,
-      });
-
-      const res = middleware(createRequest('/some/path'));
-
-      expect(getResponseType(res)).toBe('next');
-      expect(res.headers.get(LOCALE_HEADER)).toBe('en');
-      expect(res.cookies.get(ROUTING_COOKIE)?.value).toBe('false');
-    });
-
-    it('2.7: ignoreSourceMaps, /__nextjs_source-map/* → bare next()', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
+        enableSmartRouting: true,
         ignoreSourceMaps: true,
+        pathConfig: {},
+        routeOverrides: {},
+        localeRoutes: {},
+      });
+    });
+
+    it('uses withGTConfig options from the env over the defaults', () => {
+      stubMiddlewareEnv({
+        prefixDefaultLocale: true,
+        enableSmartRouting: false,
       });
 
-      const res = middleware(createRequest('/__nextjs_source-map/main.js'));
-
-      expect(getResponseType(res)).toBe('next');
-      // Source map next() is bare — no locale header or routing cookie
-      expect(res.headers.get(LOCALE_HEADER)).toBeNull();
+      expect(resolveMiddlewareConfig()).toMatchObject({
+        prefixDefaultLocale: true,
+        enableSmartRouting: false,
+        localeRouting: true,
+      });
     });
 
-    it('2.8: pathRegex applies i18n middleware only to matching paths', () => {
-      setEnvConfig();
-      process.env._GENERALTRANSLATION_PATH_REGEX = '^/(?!excluded(?:/|$)).*';
-      const middleware = createNextMiddleware();
+    it('uses createNextMiddleware options over the env', () => {
+      stubMiddlewareEnv({
+        prefixDefaultLocale: true,
+        localeRoutes: { fr: [] },
+      });
 
-      const includedRes = middleware(createRequest('/about'));
-      const excludedRes = middleware(createRequest('/excluded/about'));
-
-      expect(getResponseType(includedRes)).toBe('rewrite');
-      expect(getResponsePath(includedRes)).toBe('/en/about');
-      expect(getResponseType(excludedRes)).toBe('next');
-      expect(excludedRes.headers.get(LOCALE_HEADER)).toBeNull();
-      expect(excludedRes.cookies.get(ROUTING_COOKIE)).toBeUndefined();
+      expect(
+        resolveMiddlewareConfig({
+          prefixDefaultLocale: false,
+          localeRoutes: {},
+        })
+      ).toMatchObject({ prefixDefaultLocale: false, localeRoutes: {} });
     });
 
-    it('2.9: invalid pathRegex throws a descriptive error', () => {
-      process.env._GENERALTRANSLATION_PATH_REGEX = '[unclosed';
+    it('treats undefined createNextMiddleware options as unset', () => {
+      stubMiddlewareEnv({ prefixDefaultLocale: true });
 
-      expect(() => createNextMiddleware()).toThrowError(
-        'gt-next Error: pathRegex "[unclosed" is not a valid regular expression.'
+      expect(
+        resolveMiddlewareConfig({ prefixDefaultLocale: undefined })
+      ).toMatchObject({ prefixDefaultLocale: true });
+    });
+
+    it('ignores unknown env keys', () => {
+      stubMiddlewareEnv(JSON.stringify({ unknown: true }));
+
+      expect(resolveMiddlewareConfig()).not.toHaveProperty('unknown');
+    });
+
+    it('falls back to the defaults when the env is malformed', () => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      stubMiddlewareEnv('{');
+
+      expect(resolveMiddlewareConfig()).toMatchObject({
+        prefixDefaultLocale: false,
+      });
+      expect(error).toHaveBeenCalledOnce();
+      expect(error).toHaveBeenCalledWith(
+        expect.stringContaining('_GENERALTRANSLATION_MIDDLEWARE_CONFIG')
+      );
+      error.mockRestore();
+    });
+  });
+
+  describe('parseEnvConfig', () => {
+    it('treats valid non-object JSON as unset', () => {
+      stubMiddlewareEnv('null');
+      vi.stubEnv('_GENERALTRANSLATION_I18N_CONFIG_PARAMS', 'null');
+
+      expect(resolveMiddlewareConfig()).toEqual(defaultMiddlewareConfig);
+      expect(() => createNextMiddleware()).not.toThrow();
+    });
+  });
+
+  describe('createNextMiddleware config precedence', () => {
+    it('routes with withGTConfig options from the env', () => {
+      stubMiddlewareEnv({ prefixDefaultLocale: true });
+
+      const response = createNextMiddleware()(
+        new NextRequest(`${origin}/about`)
+      );
+
+      expect(response.headers.get('location')).toBe(`${origin}/en/about`);
+    });
+
+    it('routes with createNextMiddleware options over the env', () => {
+      stubMiddlewareEnv({ prefixDefaultLocale: true });
+
+      const response = createNextMiddleware({ prefixDefaultLocale: false })(
+        new NextRequest(`${origin}/about`)
+      );
+
+      expect(response.headers.get('location')).toBeNull();
+      expect(response.headers.get('x-middleware-rewrite')).toBe(
+        `${origin}/en/about`
       );
     });
   });
 
-  describe('Route overrides', () => {
-    it('rewrites a locale-specific page to its custom route', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: true,
-        routeOverrides: { fr: ['/custom-page'] },
-      });
+  describe('createNextMiddleware Link routing warning', () => {
+    beforeEach(() => vi.stubEnv('NODE_ENV', 'development'));
 
-      const res = middleware(createRequest('/fr/custom-page'));
+    it('warns when Link cannot see a middleware-only routing option', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-      expect(getResponseType(res)).toBe('rewrite');
-      expect(getResponsePath(res)).toBe('/fr/fr/custom-page');
-      expect(res.headers.get(LOCALE_HEADER)).toBe('fr');
-    });
+      createNextMiddleware({ prefixDefaultLocale: true });
 
-    it('leaves shared pages on their normal route', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: true,
-        routeOverrides: { fr: ['/custom-page'] },
-      });
-
-      const res = middleware(createRequest('/fr/shared-page'));
-
-      expect(getResponseType(res)).toBe('next');
-    });
-
-    it('works for a non-default locale when the default locale is unprefixed', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: false,
-        routeOverrides: { fr: ['/custom-page'] },
-      });
-
-      const res = middleware(createRequest('/fr/custom-page'));
-
-      expect(getResponseType(res)).toBe('rewrite');
-      expect(getResponsePath(res)).toBe('/fr/fr/custom-page');
-    });
-
-    it('works for an unprefixed default-locale page', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: false,
-        routeOverrides: { en: ['/custom-page'] },
-      });
-
-      const res = middleware(createRequest('/custom-page'));
-
-      expect(getResponseType(res)).toBe('rewrite');
-      expect(getResponsePath(res)).toBe('/en/en/custom-page');
-    });
-
-    it('preserves query parameters', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: true,
-        routeOverrides: { fr: ['/custom-page'] },
-      });
-
-      const res = middleware(
-        createRequest('/fr/custom-page', { search: 'preview=true' })
+      expect(warn).toHaveBeenCalledOnce();
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('prefixDefaultLocale')
       );
-
-      expect(getResponseType(res)).toBe('rewrite');
-      expect(getResponsePath(res)).toBe('/fr/fr/custom-page');
-      expect(getResponseSearch(res)).toBe('?preview=true');
+      warn.mockRestore();
     });
 
-    it('supports dynamic page segments', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: true,
-        routeOverrides: { fr: ['/products/[id]'] },
-      });
+    it('does not warn when withGTConfig sets the same options', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      stubMiddlewareEnv({ prefixDefaultLocale: true });
 
-      const res = middleware(createRequest('/fr/products/ramp-card'));
+      createNextMiddleware({ prefixDefaultLocale: true, localeRoutes: {} });
 
-      expect(getResponseType(res)).toBe('rewrite');
-      expect(getResponsePath(res)).toBe('/fr/fr/products/ramp-card');
-    });
-
-    it('supports catch-all page segments', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: true,
-        routeOverrides: { fr: ['/blog/[...slug]'] },
-      });
-
-      const res = middleware(createRequest('/fr/blog/guides/getting-started'));
-
-      expect(getResponseType(res)).toBe('rewrite');
-      expect(getResponsePath(res)).toBe('/fr/fr/blog/guides/getting-started');
-    });
-
-    it('supports empty and populated optional catch-all page segments', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: true,
-        routeOverrides: { fr: ['/news/[[...slug]]'] },
-      });
-
-      const rootRes = middleware(createRequest('/fr/news'));
-      const nestedRes = middleware(createRequest('/fr/news/world/latest'));
-
-      expect(getResponseType(rootRes)).toBe('rewrite');
-      expect(getResponsePath(rootRes)).toBe('/fr/fr/news');
-      expect(getResponseType(nestedRes)).toBe('rewrite');
-      expect(getResponsePath(nestedRes)).toBe('/fr/fr/news/world/latest');
-    });
-
-    it('preserves catch-all parameters when combined with pathConfig', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: true,
-        pathConfig: {
-          '/blog/[...slug]': { fr: '/articles/[...slug]' },
-        },
-        routeOverrides: { fr: ['/blog/[...slug]'] },
-      });
-
-      const res = middleware(
-        createRequest('/fr/articles/guides/getting-started')
-      );
-
-      expect(getResponseType(res)).toBe('rewrite');
-      expect(getResponsePath(res)).toBe('/fr/fr/blog/guides/getting-started');
-    });
-
-    it('matches literal regex characters and encoded localized Unicode paths', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: true,
-        pathConfig: {
-          '/cafe/[slug]': { fr: '/café/[slug]' },
-        },
-        routeOverrides: { fr: ['/cafe/[slug]', '/docs/v1.0/[...slug]'] },
-      });
-
-      const literalRes = middleware(createRequest('/fr/docs/v1.0/setup'));
-      const unicodeRes = middleware(createRequest('/fr/caf%C3%A9/guides'));
-
-      expect(getResponseType(literalRes)).toBe('rewrite');
-      expect(getResponsePath(literalRes)).toBe('/fr/fr/docs/v1.0/setup');
-      expect(getResponseType(unicodeRes)).toBe('rewrite');
-      expect(getResponsePath(unicodeRes)).toBe('/fr/fr/cafe/guides');
-    });
-
-    it('preserves trailing slashes and basePath', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: true,
-        routeOverrides: { fr: ['/custom-page'] },
-      });
-
-      const res = middleware(
-        createRequest('/corp/fr/custom-page/', { basePath: '/corp' })
-      );
-
-      expect(getResponseType(res)).toBe('rewrite');
-      expect(getResponsePath(res)).toBe('/corp/fr/fr/custom-page/');
-    });
-
-    it('standardizes configured locales when GT services are enabled', () => {
-      setEnvConfig({ locales: ['en', 'fr-FR'] });
-      process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED = 'true';
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: true,
-        routeOverrides: { 'fr-fr': ['/custom-page'] },
-      });
-
-      const res = middleware(createRequest('/fr-FR/custom-page'));
-
-      expect(getResponseType(res)).toBe('rewrite');
-      expect(getResponsePath(res)).toBe('/fr-FR/fr-FR/custom-page');
-    });
-
-    it('uses the shared path when combined with pathConfig', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: true,
-        pathConfig: {
-          '/custom-page': { fr: '/page-personnalisee' },
-        },
-        routeOverrides: { fr: ['/custom-page'] },
-      });
-
-      const res = middleware(createRequest('/fr/page-personnalisee'));
-
-      expect(getResponseType(res)).toBe('rewrite');
-      expect(getResponsePath(res)).toBe('/fr/fr/custom-page');
-    });
-
-    it('keeps locale-switch redirects ahead of custom rewrites', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: false,
-        routeOverrides: { fr: ['/custom-page'] },
-      });
-
-      const res = middleware(
-        createRequest('/fr/custom-page', {
-          cookies: {
-            [LOCALE_COOKIE]: 'en',
-            [RESET_COOKIE]: 'true',
-          },
-        })
-      );
-
-      expect(getResponseType(res)).toBe('redirect');
-      expect(getResponsePath(res)).toBe('/custom-page');
+      expect(warn).not.toHaveBeenCalled();
+      warn.mockRestore();
     });
   });
+});
 
-  // ================================================================
-  // Category 3: 2-Pass Routing (Redirect Scenarios)
-  // ================================================================
+describe('smart routing', () => {
+  beforeEach(() =>
+    stubRoutingEnv({ locales: ['en', 'fr', 'es'], browserLocales: true })
+  );
 
-  describe('Category 3: 2-Pass Routing (Redirects)', () => {
-    it('3.1: !prefixDefault, reset cookie to en, /fr/about → redirect /about', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: false,
-      });
+  function carryCookies(response: NextResponse, cookies: Cookies): Cookies {
+    const next = { ...cookies };
+    for (const cookie of response.cookies.getAll()) {
+      if (!cookie.value || cookie.maxAge === 0) delete next[cookie.name];
+      else next[cookie.name] = cookie.value;
+    }
+    return next;
+  }
 
-      const res = middleware(
-        createRequest('/fr/about', {
-          cookies: {
-            [LOCALE_COOKIE]: 'en',
-            [RESET_COOKIE]: 'true',
-          },
-        })
-      );
+  function followRedirect(
+    middleware: Middleware,
+    response: NextResponse,
+    cookies: Cookies,
+    options: Parameters<typeof request>[1] = {}
+  ) {
+    const url = target(response, 'location')!;
+    return middleware(
+      request(url.pathname + url.search, {
+        ...options,
+        cookies: carryCookies(response, cookies),
+      })
+    );
+  }
 
-      expect(getResponseType(res)).toBe('redirect');
-      expect(getResponsePath(res)).toBe('/about');
-    });
+  describe('smart routing disabled', () => {
+    it.each(['/', '/docs/guides/install'])(
+      'uses the default locale for an ordinary unprefixed %s despite a locale cookie',
+      (path) => {
+        const response = createNextMiddleware({ enableSmartRouting: false })(
+          request(path, { cookies: { [LOCALE_COOKIE]: 'fr' } })
+        );
 
-    it('3.2: prefixDefault, reset cookie to fr, /en/about → redirect /fr/about', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: true,
-      });
+        expect(response.status).toBe(200);
+        expect(target(response, 'x-middleware-rewrite')?.pathname).toBe(
+          '/en' + path
+        );
+        expect(response.headers.get(LOCALE_HEADER)).toBe('en');
+      }
+    );
 
-      const res = middleware(
-        createRequest('/en/about', {
-          cookies: {
-            [LOCALE_COOKIE]: 'fr',
-            [RESET_COOKIE]: 'true',
-          },
-        })
-      );
-
-      expect(getResponseType(res)).toBe('redirect');
-      expect(getResponsePath(res)).toBe('/fr/about');
-    });
-
-    it('3.3: non-default locale cookie fr (no reset), /about → redirect /fr/about', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: false,
-      });
-
-      const res = middleware(
-        createRequest('/about', {
-          cookies: {
-            [LOCALE_COOKIE]: 'fr',
-          },
-        })
-      );
-
-      expect(getResponseType(res)).toBe('redirect');
-      expect(getResponsePath(res)).toBe('/fr/about');
-    });
-
-    it('3.4: pathConfig + prefixDefault, reset cookie to fr, /en/about-us → redirect /fr/a-propos', () => {
-      setEnvConfig();
+    it('uses browser locales only when no locale cookie exists, even on a default alias', () => {
       const pathConfig: PathConfig = {
-        '/about': { en: '/about-us', fr: '/a-propos' },
+        '/blog': { en: '/articles', fr: '/histoires' },
       };
       const middleware = createNextMiddleware({
-        prefixDefaultLocale: true,
+        enableSmartRouting: false,
         pathConfig,
       });
 
-      const res = middleware(
-        createRequest('/en/about-us', {
-          cookies: {
-            [LOCALE_COOKIE]: 'fr',
-            [RESET_COOKIE]: 'true',
-          },
+      expectRedirect(
+        middleware(request('/articles', { browser: 'fr-FR,fr;q=0.9' })),
+        '/fr/histoires'
+      );
+      const returning = middleware(
+        request('/articles', { cookies: { [LOCALE_COOKIE]: 'fr' } })
+      );
+      expect(returning.headers.get('location')).toBeNull();
+      expect(target(returning, 'x-middleware-rewrite')?.pathname).toBe(
+        '/en/blog'
+      );
+    });
+
+    it('honors ignoreBrowserLocales when an ordinary route has no cookie', () => {
+      stubRoutingEnv({ locales: ['en', 'fr', 'es'] });
+      const response = createNextMiddleware({ enableSmartRouting: false })(
+        request('/blog', { browser: 'fr-FR,fr;q=0.9' })
+      );
+
+      expect(response.status).toBe(200);
+      expect(target(response, 'x-middleware-rewrite')?.pathname).toBe(
+        '/en/blog'
+      );
+      expect(response.headers.get(LOCALE_HEADER)).toBe('en');
+    });
+
+    it('lets a reset locale override an unprefixed default route', () => {
+      const response = createNextMiddleware({ enableSmartRouting: false })(
+        request('/blog', {
+          cookies: { [LOCALE_COOKIE]: 'fr', [RESET_COOKIE]: 'true' },
         })
       );
 
-      expect(getResponseType(res)).toBe('redirect');
-      expect(getResponsePath(res)).toBe('/fr/a-propos');
+      expectRedirect(response, '/fr/blog');
+      expect(response.headers.get(LOCALE_HEADER)).toBe('fr');
     });
 
-    it('3.5: wrong localized path /fr/about → redirect /fr/a-propos', () => {
-      setEnvConfig();
+    it('honors an explicit locale prefix unless a reset cookie changes it', () => {
+      const middleware = createNextMiddleware({ enableSmartRouting: false });
+
+      expect(
+        middleware(request('/fr/blog', { cookies: { [LOCALE_COOKIE]: 'en' } }))
+          .status
+      ).toBe(200);
+      expectRedirect(
+        middleware(
+          request('/fr/blog', {
+            cookies: { [LOCALE_COOKIE]: 'en', [RESET_COOKIE]: 'true' },
+          })
+        ),
+        '/blog'
+      );
+    });
+
+    it('removes an explicit default prefix and carries that intent through the next request', () => {
+      const middleware = createNextMiddleware({ enableSmartRouting: false });
+      const initialCookies = {};
+      const first = middleware(
+        request('/en/blog?tag=a&tag=b', {
+          browser: 'fr',
+          cookies: initialCookies,
+          destination: 'document',
+        })
+      );
+
+      expectRedirect(first, '/blog');
+      expect(target(first, 'location')?.search).toBe('?tag=a&tag=b');
+      expect(first.cookies.get(LOCALE_COOKIE)?.value).toBe('en');
+
+      const second = followRedirect(middleware, first, initialCookies, {
+        browser: 'fr',
+      });
+      expect(second.headers.get('location')).toBeNull();
+      expect(target(second, 'x-middleware-rewrite')?.pathname).toBe('/en/blog');
+      expect(second.headers.get(LOCALE_HEADER)).toBe('en');
+    });
+
+    it('preserves an explicit default root on a first document visit', () => {
+      const middleware = createNextMiddleware({ enableSmartRouting: false });
+      const first = middleware(
+        request('/en', { browser: 'fr', destination: 'document' })
+      );
+
+      expectRedirect(first, '/');
+      expect(first.cookies.get(LOCALE_COOKIE)?.value).toBe('en');
+      const second = followRedirect(middleware, first, {}, { browser: 'fr' });
+      expect(second.headers.get('location')).toBeNull();
+      expect(second.headers.get(LOCALE_HEADER)).toBe('en');
+    });
+
+    it.each([
+      { destination: 'empty', cookie: undefined },
+      { destination: 'empty', cookie: 'fr' },
+      { destination: undefined, cookie: undefined },
+      { destination: 'document', cookie: 'fr' },
+      { destination: 'document', cookie: 'en' },
+      { destination: 'document', cookie: '' },
+    ])(
+      'does not write the locale cookie for destination=$destination, cookie=$cookie',
+      ({ destination, cookie }) => {
+        const cookies = cookie === undefined ? {} : { [LOCALE_COOKIE]: cookie };
+        const middleware = createNextMiddleware({ enableSmartRouting: false });
+        const response = middleware(
+          request('/en', { browser: 'fr', destination, cookies })
+        );
+
+        expectRedirect(response, '/');
+        expect(response.cookies.get(LOCALE_COOKIE)).toBeUndefined();
+        if (cookie) {
+          const next = followRedirect(middleware, response, cookies, {
+            browser: 'fr',
+          });
+          expect(next.headers.get('location')).toBeNull();
+          expect(next.headers.get(LOCALE_HEADER)).toBe('en');
+          expect(next.cookies.get(LOCALE_COOKIE)).toBeUndefined();
+        }
+      }
+    );
+
+    it.each(['en+us', 'en[us'])(
+      'strips a default alias %s literally for plain paths and localized aliases',
+      (defaultLocale) => {
+        stubRoutingEnv({
+          defaultLocale,
+          locales: [defaultLocale, 'fr'],
+          customMapping: { [defaultLocale]: { code: 'en-US' } },
+          browserLocales: true,
+        });
+        for (const pathConfig of [
+          {},
+          { '/blog': { [defaultLocale]: '/articles' } },
+        ]) {
+          const middleware = createNextMiddleware({
+            enableSmartRouting: false,
+            pathConfig,
+          });
+          const first = middleware(
+            request(`/${defaultLocale}/blog`, {
+              browser: 'fr',
+              destination: 'document',
+            })
+          );
+          expectRedirect(
+            first,
+            Object.keys(pathConfig).length ? '/articles' : '/blog'
+          );
+          const second = followRedirect(
+            middleware,
+            first,
+            {},
+            { browser: 'fr' }
+          );
+          expect(second.headers.get('location')).toBeNull();
+          expect(target(second, 'x-middleware-rewrite')?.pathname).toBe(
+            `/${defaultLocale}/blog`
+          );
+        }
+      }
+    );
+
+    it('keeps default routing through aliases, route overrides, and availability fallbacks', () => {
       const pathConfig: PathConfig = {
-        '/about': { en: '/about-us', fr: '/a-propos' },
+        '/blog/[slug]': { en: '/articles/[slug]', fr: '/histoires/[slug]' },
       };
+      const routeOverrides: RouteOverrides = { en: ['/blog/[slug]'] };
       const middleware = createNextMiddleware({
-        prefixDefaultLocale: true,
+        enableSmartRouting: false,
         pathConfig,
+        routeOverrides,
+        localeRoutes: { fr: ['/blog/[slug]'] },
       });
 
-      const res = middleware(
-        createRequest('/fr/about', {
-          cookies: {
-            [LOCALE_COOKIE]: 'fr',
-          },
-        })
+      const defaultRoute = middleware(
+        request('/articles/first', { cookies: { [LOCALE_COOKIE]: 'fr' } })
+      );
+      expect(target(defaultRoute, 'x-middleware-rewrite')?.pathname).toBe(
+        '/en/en/blog/first'
       );
 
-      expect(getResponseType(res)).toBe('redirect');
-      expect(getResponsePath(res)).toBe('/fr/a-propos');
+      expectRedirect(
+        middleware(
+          request('/fr/careers', { cookies: { [LOCALE_COOKIE]: 'fr' } })
+        ),
+        '/careers'
+      );
     });
 
-    it('3.6: referrer cookie fr, /docs → redirect /fr/docs', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: false,
+    it('supports custom locale and reset cookie names', () => {
+      stubRoutingEnv({
+        headersAndCookies: {
+          localeCookieName: 'locale',
+          resetLocaleCookieName: 'locale-reset',
+        },
+        browserLocales: true,
       });
+      const middleware = createNextMiddleware({ enableSmartRouting: false });
 
-      const res = middleware(
-        createRequest('/docs', {
-          cookies: {
-            [REFERRER_COOKIE]: 'fr',
-          },
+      expect(
+        target(
+          middleware(request('/blog', { cookies: { locale: 'fr' } })),
+          'x-middleware-rewrite'
+        )?.pathname
+      ).toBe('/en/blog');
+      expectRedirect(
+        middleware(
+          request('/blog', {
+            cookies: { locale: 'fr', 'locale-reset': 'true' },
+          })
+        ),
+        '/fr/blog'
+      );
+      const firstVisit = middleware(
+        request('/en', { browser: 'fr', destination: 'document' })
+      );
+      expect(firstVisit.cookies.get('locale')?.value).toBe('en');
+      const returning = middleware(
+        request('/en', {
+          browser: 'fr',
+          destination: 'document',
+          cookies: { locale: 'fr' },
+        })
+      );
+      expect(returning.cookies.get('locale')).toBeUndefined();
+    });
+
+    it('preserves base paths and trailing slashes while removing the default prefix', () => {
+      const middleware = createNextMiddleware({ enableSmartRouting: false });
+      const response = middleware(
+        request('/en/docs/', {
+          basePath: '/portal',
+          trailingSlash: true,
+          browser: 'fr',
         })
       );
 
-      expect(getResponseType(res)).toBe('redirect');
-      expect(getResponsePath(res)).toBe('/fr/docs');
+      expectRedirect(response, '/portal/docs/');
+    });
+
+    it('uses a configured default alias as the ordinary-route fallback', () => {
+      stubRoutingEnv({
+        defaultLocale: 'en-US',
+        locales: ['en-US', 'fr'],
+        browserLocales: true,
+      });
+      const response = createNextMiddleware({ enableSmartRouting: false })(
+        request('/blog', { cookies: { [LOCALE_COOKIE]: 'fr' } })
+      );
+
+      expect(target(response, 'x-middleware-rewrite')?.pathname).toBe(
+        '/en-US/blog'
+      );
+      expect(response.headers.get(LOCALE_HEADER)).toBe('en-US');
+    });
+
+    it('does not change prefixDefaultLocale or localeRouting=false behavior', () => {
+      expectRedirect(
+        createNextMiddleware({
+          enableSmartRouting: false,
+          prefixDefaultLocale: true,
+        })(request('/blog', { cookies: { [LOCALE_COOKIE]: 'fr' } })),
+        '/fr/blog'
+      );
+
+      const response = createNextMiddleware({
+        enableSmartRouting: false,
+        localeRouting: false,
+      })(request('/blog', { cookies: { [LOCALE_COOKIE]: 'fr' } }));
+      expect(response.status).toBe(200);
+      expect(response.headers.get('location')).toBeNull();
     });
   });
 
-  // ================================================================
-  // Response Properties
-  // ================================================================
-
-  describe('Response Properties', () => {
-    it('preserves query string on rewrite', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: false,
-      });
-
-      const res = middleware(
-        createRequest('/about', { search: 'foo=bar&baz=1' })
+  describe('smart routing enabled explicitly', () => {
+    const enableSmartRouting = true;
+    it('uses an ordinary locale cookie on an unprefixed shared route', () => {
+      const response = createNextMiddleware({ enableSmartRouting })(
+        request('/blog', { cookies: { [LOCALE_COOKIE]: 'fr' } })
       );
-
-      expect(getResponseType(res)).toBe('rewrite');
-      expect(getResponseSearch(res)).toBe('?foo=bar&baz=1');
+      expectRedirect(response, '/fr/blog');
     });
 
-    it('preserves query string on redirect', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: false,
-      });
-
-      const res = middleware(
-        createRequest('/about', {
-          cookies: { [LOCALE_COOKIE]: 'fr' },
-          search: 'page=2',
+    it('retains referrer-cookie negotiation without a locale cookie', () => {
+      const response = createNextMiddleware({ enableSmartRouting })(
+        request('/blog', {
+          browser: 'es',
+          cookies: { [REFERRER_COOKIE]: 'fr' },
         })
       );
-
-      expect(getResponseType(res)).toBe('redirect');
-      expect(getResponseSearch(res)).toBe('?page=2');
+      expectRedirect(response, '/fr/blog');
     });
 
-    it('preserves basePath on rewrites and redirects', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: true,
-        pathConfig: {
-          '/about': { fr: '/a-propos' },
-        },
-      });
-
-      const rewriteResponse = middleware(
-        createRequest('/corp/fr/a-propos', {
-          basePath: '/corp',
-          search: 'preview=true',
-        })
+    it('recognizes an unprefixed default alias before browser language', () => {
+      const response = createNextMiddleware({
+        enableSmartRouting,
+        pathConfig: { '/blog': { en: '/articles', fr: '/histoires' } },
+      })(request('/articles', { browser: 'fr' }));
+      expect(response.headers.get('location')).toBeNull();
+      expect(target(response, 'x-middleware-rewrite')?.pathname).toBe(
+        '/en/blog'
       );
-      const redirectResponse = middleware(
-        createRequest('/corp/fr/about', { basePath: '/corp' })
-      );
-
-      expect(getResponseType(rewriteResponse)).toBe('rewrite');
-      expect(getResponsePath(rewriteResponse)).toBe('/corp/fr/about');
-      expect(getResponseSearch(rewriteResponse)).toBe('?preview=true');
-      expect(getResponseType(redirectResponse)).toBe('redirect');
-      expect(getResponsePath(redirectResponse)).toBe('/corp/fr/a-propos');
     });
 
-    it('sets locale header on rewrite responses', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: false,
-      });
-
-      const res = middleware(createRequest('/about'));
-
-      expect(res.headers.get(LOCALE_HEADER)).toBe('en');
-    });
-
-    it('sets locale header on redirect responses', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: false,
-      });
-
-      const res = middleware(
-        createRequest('/about', {
-          cookies: { [LOCALE_COOKIE]: 'fr' },
-        })
+    it('keeps an explicit default prefix without a reset cookie', () => {
+      const response = createNextMiddleware({ enableSmartRouting })(
+        request('/en/blog', { browser: 'fr' })
       );
-
-      expect(res.headers.get(LOCALE_HEADER)).toBe('fr');
-    });
-
-    it('sets locale-routing-enabled cookie on routed responses', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: false,
-      });
-
-      const res = middleware(createRequest('/about'));
-
-      expect(res.cookies.get(ROUTING_COOKIE)?.value).toBe('true');
-    });
-
-    it('clears reset cookies on rewrite but not on redirect', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: true,
-      });
-
-      // Redirect case: reset cookie to fr from /en/about
-      const redirectRes = middleware(
-        createRequest('/en/about', {
-          cookies: {
-            [LOCALE_COOKIE]: 'fr',
-            [RESET_COOKIE]: 'true',
-          },
-        })
-      );
-      expect(getResponseType(redirectRes)).toBe('redirect');
-      // On redirect, reset cookies should NOT be cleared
-      // (they persist until the next non-redirect response)
-      const redirectSetCookie = redirectRes.headers.get('set-cookie') || '';
-      expect(redirectSetCookie).not.toContain(`${RESET_COOKIE}=;`);
-
-      // After the redirect to /fr/about, the next request should be a next()
-      // that clears the reset cookies
-      const nextRes = middleware(
-        createRequest('/fr/about', {
-          cookies: {
-            [LOCALE_COOKIE]: 'fr',
-            [RESET_COOKIE]: 'true',
-          },
-        })
-      );
-      // This should be a next() since the locale and path now match
-      expect(getResponseType(nextRes)).toBe('next');
-    });
-
-    it('keeps the locale cookie when clearing the reset cookie', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: true,
-      });
-
-      const res = middleware(
-        createRequest('/fr/about', {
-          cookies: {
-            [LOCALE_COOKIE]: 'fr',
-            [RESET_COOKIE]: 'true',
-          },
-        })
-      );
-      expect(getResponseType(res)).toBe('next');
-      const setCookie = res.headers.get('set-cookie') || '';
-      expect(setCookie).toContain(`${RESET_COOKIE}=;`);
-      // The locale cookie must survive: the client re-reads it on every
-      // render, and deleting it races with concurrent prefetch responses
-      // after a locale switch.
-      expect(setCookie).not.toContain(`${LOCALE_COOKIE}=;`);
+      expect(response.status).toBe(200);
+      expect(response.headers.get('location')).toBeNull();
+      expect(response.cookies.get(LOCALE_COOKIE)).toBeUndefined();
     });
   });
 });

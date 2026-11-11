@@ -80,7 +80,6 @@ Every test file starts with:
 
 ```typescript
 import { RuleTester } from '@typescript-eslint/rule-tester';
-import { describe, it } from 'vitest';
 import { ruleUnderTest } from '../index.js';
 
 const ruleTester = new RuleTester({
@@ -98,19 +97,16 @@ const ruleTester = new RuleTester({
 
 ### Test Organization
 
-- **One `describe` block per behavior/scenario**. The describe label is the scenario in plain English.
-- Inside each describe, call `ruleTester.run(name, rule, { valid, invalid })`.
+- **One test file per rule**: `src/rules/<rule-name>/__tests__/<rule-name>.test.ts`. Every file imports ESLint and the TypeScript parser, so extra files cost CI time; add cases to the existing file instead of creating `edge-*` or feature-specific files.
+- **Call `ruleTester.run(name, rule, { valid, invalid })` at the top level of the file**, one call per topic (for example `'static-jsx: ternaries'`). `RuleTester` registers its own `describe`/`it` blocks, so a `run()` call placed inside `it()` never executes its cases and the test passes without asserting anything.
+- Give every case a `name` that states the scenario in plain English.
 - `valid` cases: code that should NOT trigger the rule.
 - `invalid` cases: code that SHOULD trigger the rule, with:
   - `errors: [{ messageId: '...' }]` -- expected error(s)
   - `output: '...'` -- expected auto-fixed code (required for fixable rules)
-- Always provide `options: [{ libs: ['...'] }]` to each test case.
-
-### Test Naming
-
-- Main test file: `<rule-name>.test.ts` -- core functionality.
-- Edge case files: `edge-<category>.test.ts` (e.g., `edge-imports.test.ts`, `edge-ternary.test.ts`).
-- Feature-specific files: `<rule-name>-<feature>.test.ts` (e.g., `static-jsx-branch-wrap.test.ts`).
+- Cases use the rule's default `libs`. Pass `options: [{ libs: ['...'] }]` only in the cases that test library selection.
+- **One case per input class.** Before adding a case, check that it reaches a branch or produces an output shape that no existing case covers; permutations of the same branch (another operator, another prop name, deeper nesting) are not new cases.
+- The suite runs with `isolate: false` in one worker (see `vitest.config.ts`), so test files must stay pure: no `vi.mock`, no global or environment stubbing.
 
 ### Test Quality
 
@@ -118,7 +114,6 @@ const ruleTester = new RuleTester({
 - **Both functions**: test with both `gt()` (via `useGT()`) and `msg()` where applicable.
 - **Both libraries**: test with at least `gt-react` and `@generaltranslation/react-core`.
 - **Aliasing**: include at least one test with aliased imports.
-- **Code formatting**: test code should use consistent indentation (10-space indent inside function bodies to match the existing test patterns).
 
 ### What NOT to Test
 

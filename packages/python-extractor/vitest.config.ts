@@ -2,8 +2,9 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    globals: true,
-    environment: 'node',
-    include: ['src/**/*.test.ts', 'src/**/*.spec.ts'],
+    // Worker threads start faster than the default child-process pool.
+    pool: 'threads',
+    // Start workers as files need them instead of one per CPU core up front.
+    minWorkers: 1,
   },
 });

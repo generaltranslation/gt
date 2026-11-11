@@ -67,9 +67,10 @@ pnpm --filter @generaltranslation/compiler test
 
 Test suites in `src/passes/__tests__/`:
 
-- `jsxInsertionPass.test.ts` — core JSX insertion behavior
+- `jsxInsertionPass.test.ts` — JSX insertion behavior, edge cases and regressions
 - `jsxInsertionE2E.test.ts` — end-to-end pipeline tests
-- `jsxInsertionEdgeCases.test.ts` — edge cases and regressions
+- `hashInjection.test.ts` — hash injection for derive, Branch/Plural ids and `gt` callbacks
+- `testHelpers.ts` — shared parse/traverse/generate pipeline for pass tests
 
 ## Important Invariants
 
