@@ -11,11 +11,7 @@ const ruleTester = new RuleTester({
   },
 });
 
-type MessageId =
-  | 'staticStringRequired'
-  | 'variableInterpolationRequired'
-  | 'sugarVariableMustBeStatic'
-  | 'invalidICUFormat';
+type MessageId = keyof typeof staticString.meta.messages;
 
 const errors = (...messageIds: MessageId[]) =>
   messageIds.map((messageId) => ({ messageId }));

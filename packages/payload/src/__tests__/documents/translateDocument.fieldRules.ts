@@ -145,7 +145,18 @@ describe('translateDocument: field rules', () => {
   });
 
   it('publishes a translated draft whose language has its own list rows', async () => {
-    await setHeader(payload);
+    await setHeader(payload, ['Pricing', 'Careers']);
+    const publishedSpanishLabels = async () => {
+      const es = await payload.findGlobal({
+        slug: 'header',
+        locale: 'es',
+        fallbackLocale: false,
+        depth: 0,
+      });
+      return navRows(es).map((row) => row.link?.label);
+    };
+    expect(await publishedSpanishLabels()).not.toContain('PRICING');
+
     await translateDocument({
       payload,
       gt: new FakeGt(),
@@ -158,16 +169,7 @@ describe('translateDocument: field rules', () => {
       data: { _status: 'published' },
     });
 
-    const es = await payload.findGlobal({
-      slug: 'header',
-      locale: 'es',
-      fallbackLocale: false,
-      depth: 0,
-    });
-    expect(navRows(es).map((row) => row.link?.label)).toEqual([
-      'ABOUT US',
-      'BLOG',
-    ]);
+    expect(await publishedSpanishLabels()).toEqual(['PRICING', 'CAREERS']);
   });
 
   it("keeps a language's own value for an opted-out field in a localized group", async () => {
