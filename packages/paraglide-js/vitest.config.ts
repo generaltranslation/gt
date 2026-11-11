@@ -4,7 +4,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['__tests__/**/*.test.ts'],
-    // Projects the plugin tests write.
+    // Projects the tests write.
     exclude: ['**/node_modules/**', '**/.tmp/**'],
   },
 });

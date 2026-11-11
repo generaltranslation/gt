@@ -11,6 +11,7 @@ import {
 } from '../../lib/compiler/bundler-configs/webpack.js';
 import { projectPackages } from '../../lib/compiler/project/packages.js';
 import { NO_PACKAGES } from '../../lib/compiler/languages/language.js';
+import { writeFiles } from '../helpers/files.js';
 
 // Inside the package, so that its `vite` is the project's.
 const TMP = path.join(import.meta.dirname, '.tmp');
@@ -22,10 +23,7 @@ async function write(
 ): Promise<string> {
   const root = path.join(TMP, name);
   await fs.rm(root, { recursive: true, force: true });
-  for (const [file, content] of Object.entries(files)) {
-    await fs.mkdir(path.dirname(path.join(root, file)), { recursive: true });
-    await fs.writeFile(path.join(root, file), content);
-  }
+  await writeFiles(root, files);
   return root;
 }
 

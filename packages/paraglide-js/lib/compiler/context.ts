@@ -1,8 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type {
-  CollectorLogger,
-  ContextCollector,
+import {
+  LOG_PREFIX,
+  type CollectorLogger,
+  type ContextCollector,
 } from './collector/collector.js';
 import { createCollector } from './collector/create.js';
 import type { ParaglideContextOptions } from './options.js';
@@ -11,6 +12,7 @@ import {
   ProjectResolver,
   type ProjectResolverOptions,
 } from './resolver/project-resolver.js';
+import { isDependency } from './utils/paths.js';
 
 export type CollectContextOptions = ParaglideContextOptions &
   ProjectResolverOptions & {
@@ -26,9 +28,12 @@ export type ContextWatcher = {
   close(): void;
 };
 
-type Context = { collector: ContextCollector; resolver: ProjectResolver };
-
-type CollectorTask = (collector: ContextCollector) => Promise<unknown>;
+type Context = {
+  collector: ContextCollector;
+  resolver: ProjectResolver;
+  logger: CollectorLogger;
+  projectRoot: string;
+};
 
 /** `true` for a file that was added or deleted, not only changed. */
 type PendingChanges = Map<string, boolean>;
@@ -59,24 +64,20 @@ export async function collectContext(
 export function watchContext(
   options: CollectContextOptions = {}
 ): ContextWatcher {
-  const { collector, resolver } = createContext(options);
-  const logger = options.logger ?? QUIET_CONSOLE;
-  const root = findProjectRoot(path.resolve(options.root ?? process.cwd()));
+  const { collector, resolver, logger, projectRoot } = createContext(options);
   let queue = Promise.resolve();
   let pending: PendingChanges = new Map();
   let timer: NodeJS.Timeout | undefined;
 
   /** Runs tasks one at a time and writes after each. A failed one is reported, not thrown. */
-  const run = (task: CollectorTask): Promise<void> => {
+  const run = (task: () => Promise<unknown>): Promise<void> => {
     queue = queue
       .then(async () => {
-        await task(collector);
+        await task();
         await collector.write();
         await resolver.warnUnresolved();
       })
-      .catch((error: Error) =>
-        logger.warn(`[paraglide-context] ${error.stack}`)
-      );
+      .catch((error: Error) => logger.warn(`${LOG_PREFIX} ${error.stack}`));
 
     return queue;
   };
@@ -87,7 +88,7 @@ export function watchContext(
     // A new or deleted file can change how any import resolves.
     const isRescan = [...changes.values()].some((isRenamed) => isRenamed);
 
-    void run(async (collector) => {
+    void run(async () => {
       if (isRescan) return collector.scanAll();
 
       for (const file of changes.keys()) {
@@ -96,12 +97,11 @@ export function watchContext(
     });
   };
 
-  const watcher = fs.watch(root, { recursive: true }, (event, name) => {
+  const watcher = fs.watch(projectRoot, { recursive: true }, (event, name) => {
     if (!name) return;
 
-    const file = path.join(root, name.toString());
-    const isDependency = file.split(path.sep).includes('node_modules');
-    if (isDependency || !collector.isWatched(file)) return;
+    const file = path.join(projectRoot, name.toString());
+    if (isDependency(file) || !collector.isWatched(file)) return;
 
     const isRenamed = event === 'rename' || pending.get(file) === true;
     pending.set(file, isRenamed);
@@ -110,7 +110,7 @@ export function watchContext(
   });
 
   return {
-    ready: run((collector) => collector.scanAll()),
+    ready: run(() => collector.scanAll()),
     close() {
       clearTimeout(timer);
       watcher.close();
@@ -121,9 +121,13 @@ export function watchContext(
 function createContext(options: CollectContextOptions): Context {
   const root = path.resolve(options.root ?? process.cwd());
   const logger = options.logger ?? QUIET_CONSOLE;
-  const collector = createCollector(options, { root, logger });
+  const projectRoot = findProjectRoot(root);
   const resolver = new ProjectResolver(options, { root, logger });
-  collector.resolver = resolver.resolve;
+  const collector = createCollector(options, {
+    root,
+    logger,
+    resolver: resolver.resolve,
+  });
 
-  return { collector, resolver };
+  return { collector, resolver, logger, projectRoot };
 }

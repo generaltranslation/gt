@@ -32,6 +32,24 @@ export async function readInlangProject(
   return { directory, messageFiles };
 }
 
+/** The ids of every message the project's files define. */
+export function messageIds(project: InlangProject): Set<string> {
+  const ids = project.messageFiles.flatMap((file) =>
+    file.keys.map((key) => key.id)
+  );
+
+  return new Set(ids);
+}
+
+/** Reads the directories that are inlang projects. */
+export async function readInlangProjects(
+  directories: readonly string[]
+): Promise<InlangProject[]> {
+  const projects = await Promise.all(directories.map(readInlangProject));
+
+  return projects.filter((project) => project !== undefined);
+}
+
 /** `pathPattern: "./messages/{locale}.json"` → `["/app/messages/en.json"]` */
 function messageFilePaths(settings: JsonObject, directory: string): string[] {
   // `sourceLanguageTag` is its name in Paraglide 1 projects.

@@ -4,7 +4,7 @@ import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { globby, isIgnoredByIgnoreFiles } from 'globby';
 import picomatch from 'picomatch';
-import { isWithin, relativeWithin, toPosix } from '../utils/paths.js';
+import { isWithin, relativePath, toPosix } from '../utils/paths.js';
 
 /** Never app code, wherever they are. */
 const IGNORED_DIRECTORIES = new Set([
@@ -103,6 +103,12 @@ const IGNORED_AT_ROOT = [
   '.vitepress/dist',
 ];
 
+/** Dependencies, framework output and build output, relative to the project root. */
+const PROJECT_IGNORE_GLOBS = [
+  ...IGNORED_GLOBS,
+  ...IGNORED_AT_ROOT.map((directory) => `${directory}/**`),
+];
+
 /** Tests and tool configs are not app usages. Replaced by the `exclude` option. */
 export const DEFAULT_EXCLUDE: readonly string[] = [
   // vite.config.ts, svelte.config.js, nuxt.config.ts, eslint.config.mjs, …
@@ -151,15 +157,10 @@ export type FileSelectionOptions = {
 /** Which files are analyzed: the source files `include` lists. */
 export class FileSelection {
   private readonly exclude: Pattern[];
-  private readonly ignoredDirectories: string[];
 
   constructor(private readonly options: FileSelectionOptions) {
-    const { projectRoot } = options;
     this.exclude = (options.exclude ?? DEFAULT_EXCLUDE).map((entry) =>
-      compilePattern(entry, projectRoot)
-    );
-    this.ignoredDirectories = IGNORED_AT_ROOT.map((directory) =>
-      path.join(projectRoot, directory)
+      compilePattern(entry, options.projectRoot)
     );
   }
 
@@ -179,7 +180,7 @@ export class FileSelection {
       }
       const absolute = path.resolve(projectRoot, entry);
       const stat = await fsp.stat(absolute).catch(() => undefined);
-      const relative = toPosix(path.relative(projectRoot, absolute)) || '.';
+      const relative = relativePath(projectRoot, absolute);
       if (!stat) missing.push(absolute);
       else patterns.push(stat.isDirectory() ? `${relative}/**` : relative);
     }
@@ -198,7 +199,7 @@ export class FileSelection {
             dot: true,
             ignoreFiles: GITIGNORE_FILES,
             followSymbolicLinks: false,
-            ignore: this.ignoreGlobs().map((glob) =>
+            ignore: PROJECT_IGNORE_GLOBS.map((glob) =>
               glob.startsWith('**/') ? glob : inBase(glob)
             ),
           });
@@ -217,16 +218,5 @@ export class FileSelection {
       this.options.isSourceFile(file) &&
       !this.exclude.some((pattern) => pattern.matches(file))
     );
-  }
-
-  /** Dependencies, framework output and build output, relative to the project root. */
-  private ignoreGlobs(): string[] {
-    const { projectRoot } = this.options;
-    return [
-      ...IGNORED_GLOBS,
-      ...this.ignoredDirectories
-        .filter((directory) => isWithin(projectRoot, directory))
-        .map((directory) => `${relativeWithin(projectRoot, directory)}/**`),
-    ];
   }
 }

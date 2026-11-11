@@ -1,6 +1,10 @@
 import { findInlangProjects } from '../inlang/find.js';
 import { matchInlangProject } from '../inlang/match.js';
-import { readInlangProject, type InlangProject } from '../inlang/project.js';
+import {
+  readInlangProject,
+  readInlangProjects,
+  type InlangProject,
+} from '../inlang/project.js';
 import { readCompiledFrom } from '../paraglide/readme.js';
 
 export type OutdirProjectsSettings = {
@@ -73,7 +77,6 @@ async function readCandidates({
 }: OutdirProjectsSettings): Promise<InlangProject[]> {
   const directories =
     configured ?? (await findInlangProjects(searchDirectories));
-  const projects = await Promise.all(directories.map(readInlangProject));
 
-  return projects.filter((project) => project !== undefined);
+  return readInlangProjects(directories);
 }

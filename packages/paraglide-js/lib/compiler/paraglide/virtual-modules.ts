@@ -7,7 +7,7 @@ import path from 'node:path';
  * memory, as `virtual:paraglide/<hash>/<path>`; the outdir's `messages.js`
  * imports them by that id.
  */
-export function outdirHash(directory: string): string {
+function outdirHash(directory: string): string {
   return createHash('sha256')
     .update(path.resolve(directory))
     .digest('hex')

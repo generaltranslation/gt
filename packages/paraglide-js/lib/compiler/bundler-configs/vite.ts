@@ -1,6 +1,6 @@
 import path from 'node:path';
 import type { ImportAlias } from './alias.js';
-import type { BundlerConfig } from './bundler-config.js';
+import { configFileNames, type BundlerConfig } from './bundler-config.js';
 
 /** The parts of Vite this uses. */
 type Vite = {
@@ -18,9 +18,7 @@ type ResolvedConfig = {
 /** Resolved by the project's own Vite, so aliases that plugins add (SvelteKit's `$lib`) count. */
 export const viteConfig: BundlerConfig = {
   name: 'vite',
-  files: ['ts', 'js', 'mjs', 'mts', 'cjs', 'cts'].map(
-    (extension) => `vite.config.${extension}`
-  ),
+  files: configFileNames('vite.config'),
   async read(file, context) {
     const vite = await context.load<Vite>('vite');
     if (!vite) return { error: 'vite is not installed in the project' };

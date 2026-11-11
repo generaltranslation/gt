@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest';
 import { renderMetadataFile } from '../../lib/compiler/output/metadata.js';
+import { sourceCodeByMessage } from '../../lib/compiler/output/source-code.js';
 import type {
   FileUsages,
   ParaglideUsage,
@@ -43,14 +44,15 @@ const render = (
   keys: ReturnType<typeof key>[],
   sourceFiles: FileUsages[],
   existing: Record<string, unknown> = {}
-) =>
-  renderMetadataFile({
-    keys,
-    sourceFiles,
+) => {
+  const sourceCode = sourceCodeByMessage(sourceFiles, {
+    ids: new Set(keys.map(({ id }) => id)),
     inlangProject: PROJECT,
     radius: 1,
-    existing,
   });
+
+  return renderMetadataFile({ keys, sourceCode, existing });
+};
 
 test('each used message gets the lines around its usages, by source file', () => {
   const metadata = render(

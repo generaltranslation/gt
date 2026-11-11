@@ -1,4 +1,4 @@
-import type { InlangProject } from './project.js';
+import { messageIds, type InlangProject } from './project.js';
 
 /**
  * The project a Paraglide outdir was compiled from: the only one, else the one
@@ -31,9 +31,5 @@ function countDefined(
   project: InlangProject,
   catalog: ReadonlySet<string>
 ): number {
-  const ids = project.messageFiles.flatMap((file) =>
-    file.keys.map((key) => key.id)
-  );
-
-  return [...new Set(ids)].filter((id) => catalog.has(id)).length;
+  return [...messageIds(project)].filter((id) => catalog.has(id)).length;
 }

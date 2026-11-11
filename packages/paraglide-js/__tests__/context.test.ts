@@ -18,6 +18,7 @@ import {
   useGreeting,
   writeProject,
 } from './helpers/fixture.js';
+import { writeFiles } from './helpers/files.js';
 
 const outside: string[] = [];
 afterAll(() =>
@@ -36,7 +37,7 @@ describe('collectContext', () => {
       'src/a.ts': useGreeting('~/paraglide/messages.js'),
       'src/b.ts': useGreeting('#i18n/messages.js'),
       'src/c.ts': `export { m } from "./paraglide/messages.js";\n`,
-      'src/d.ts': `import { m } from "./c.js";\nexport const text = m.greeting();\n`,
+      'src/d.ts': useGreeting('./c.js'),
     });
     await collectContext({ root });
     expect(await readSnippets(root)).toEqual([
@@ -117,10 +118,7 @@ describe('collectContext', () => {
       'src/App.vue': `<template><p>{{ m.greeting() }}</p></template>\n`,
       'src/Card.vue': `<template><p>{{ m.card() }}</p></template>\n`,
     };
-    for (const [file, content] of Object.entries(files)) {
-      await fs.mkdir(path.dirname(path.join(root, file)), { recursive: true });
-      await fs.writeFile(path.join(root, file), content);
-    }
+    await writeFiles(root, files);
     const { warnings } = await collect(root);
     expect(warnings.filter((warning) => warning.includes('.vue'))).toEqual([
       '[paraglide-context] 2 .vue file(s) were not analyzed (e.g. src/App.vue): they need ' +

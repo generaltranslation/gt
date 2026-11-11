@@ -229,9 +229,10 @@ await collectContext({ languages: [...defaultLanguages, riot] });
   (`{ name, files, read }`) to
   `bundlerConfigs: [...defaultBundlerConfigs, yours]`. `webpackLikeConfig()`
   makes one for a config in webpack's format.
-- **Another resolver:** call `createCollector(options, { root, logger })`, set
-  its `resolver`, then `scanAll()` and `write()`. `nodeResolver` and
-  `ProjectResolver` are the ones `collectContext` uses.
+- **Another resolver:** call
+  `createCollector(options, { root, logger, resolver })`, then `scanAll()` and
+  `write()`. `nodeResolver` and `ProjectResolver` are the ones `collectContext`
+  uses.
 
 ### Lower-level API
 

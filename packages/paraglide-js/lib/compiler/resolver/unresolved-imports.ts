@@ -1,16 +1,11 @@
-import type { ProbedConfig } from '../bundler-configs/probe.js';
 import { relativePath } from '../utils/paths.js';
 
 export type UnresolvedWarningOptions = {
   projectRoot: string;
-  /** Nothing is warned about when a config was read. */
-  probed: ProbedConfig;
-  /** Names of the bundlers a config was looked for. */
-  bundlers: readonly string[];
+  /** Why aliases may be unknown, e.g. "vite.config.ts could not be read". */
+  reason: string;
 };
 
-/** "vite, webpack, or rspack" */
-const OR = new Intl.ListFormat('en', { type: 'disjunction' });
 const MAX_LISTED = 5;
 /** `./a.js`, `../a.js`, `.` */
 const RELATIVE = /^\.{1,2}(?:\/|$)/;
@@ -24,10 +19,9 @@ export function mayBeAlias(specifier: string): boolean {
 
 export function unresolvedWarning(
   unresolved: ReadonlyMap<string, string>,
-  { projectRoot, probed, bundlers }: UnresolvedWarningOptions
+  { projectRoot, reason }: UnresolvedWarningOptions
 ): string | undefined {
-  const reason = unknownAliasesReason(probed, bundlers, projectRoot);
-  if (!reason || unresolved.size === 0) return undefined;
+  if (unresolved.size === 0) return undefined;
 
   const imports = [...unresolved].sort(([a], [b]) => a.localeCompare(b));
   const listed = imports
@@ -46,22 +40,4 @@ export function unresolvedWarning(
     `${imports.length} import(s) could not be resolved, so usages through them are missed: ${listed}${more}. ` +
     `If they are aliases, declare them in tsconfig.json "paths" or pass them with --alias: ${reason}.`
   );
-}
-
-/** Undefined when a bundler config gave the aliases. */
-function unknownAliasesReason(
-  probed: ProbedConfig,
-  bundlers: readonly string[],
-  projectRoot: string
-): string | undefined {
-  switch (probed.type) {
-    case 'read':
-      return undefined;
-    case 'unreadable':
-      return `${relativePath(projectRoot, probed.file)} could not be read`;
-    case 'none':
-      return bundlers.length > 0
-        ? `no ${OR.format(bundlers)} config was found to read them from`
-        : 'no bundler config is read';
-  }
 }

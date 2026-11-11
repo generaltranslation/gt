@@ -237,7 +237,7 @@ describe('aliases no config declares', () => {
       'src/a.ts': `import "$app/stores";\n${useGreeting('./paraglide/messages.js')}`,
     });
     expect(await collect(root)).toMatchObject({
-      usages: ['src/a.ts: export const text = m.greeting();'],
+      usages: [greetingIn('src/a.ts')],
       warnings: [],
     });
   });

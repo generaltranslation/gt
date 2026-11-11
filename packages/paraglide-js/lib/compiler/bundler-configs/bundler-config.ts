@@ -24,3 +24,11 @@ export type BundlerConfig = {
     context: ConfigContext
   ): Promise<ImportResolution | ConfigFailure>;
 };
+
+/** In the order bundlers look for them. */
+const CONFIG_EXTENSIONS = ['js', 'mjs', 'ts', 'cjs', 'mts', 'cts'];
+
+/** `configFileNames("vite.config")` → `["vite.config.js", "vite.config.mjs", …]` */
+export function configFileNames(baseName: string): string[] {
+  return CONFIG_EXTENSIONS.map((extension) => `${baseName}.${extension}`);
+}

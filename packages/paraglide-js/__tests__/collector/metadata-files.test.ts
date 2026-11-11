@@ -1,22 +1,17 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { afterAll, expect, test } from 'vitest';
+import { expect, test } from 'vitest';
 import { OutdirProjects } from '../../lib/compiler/collector/outdir-projects.js';
 import { MetadataFiles } from '../../lib/compiler/collector/metadata-files.js';
+import type { CollectContextOptions } from '../../lib/compiler/context.js';
 import {
-  collectContext,
-  type CollectContextOptions,
-} from '../../lib/compiler/context.js';
-import {
+  collect as collectProject,
   compileMessages,
   filesIn,
   readMetadata,
   readSnippets,
   writeProject,
 } from '../helpers/fixture.js';
-
-const TMP = path.join(import.meta.dirname, '.tmp');
-afterAll(() => fs.rm(TMP, { recursive: true, force: true }));
 
 const settings = (pathPattern: string | string[], baseLocale = 'en') =>
   JSON.stringify({
@@ -36,13 +31,7 @@ async function collect(
   root: string,
   options: CollectContextOptions = {}
 ): Promise<string[]> {
-  const warnings: string[] = [];
-  await collectContext({
-    root,
-    ...options,
-    logger: { warn: (message) => void warnings.push(message), info() {} },
-  });
-  return warnings;
+  return (await collectProject(root, options)).warnings;
 }
 
 test('the latest analysis of each source file wins; writes are serialized', async () => {

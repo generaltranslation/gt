@@ -1,7 +1,7 @@
 import { pathToFileURL } from 'node:url';
 import { isJsonObject } from '../utils/json.js';
 import type { ImportAlias } from './alias.js';
-import type { BundlerConfig } from './bundler-config.js';
+import { configFileNames, type BundlerConfig } from './bundler-config.js';
 
 type AliasEntry = [name: string, target: unknown];
 
@@ -21,9 +21,7 @@ export function webpackLikeConfig(
 ): BundlerConfig {
   return {
     name,
-    files: ['js', 'mjs', 'cjs', 'ts', 'mts', 'cts'].map(
-      (extension) => `${baseName}.${extension}`
-    ),
+    files: configFileNames(baseName),
     async read(file) {
       const config = await loadConfig(file);
       if (!isJsonObject(config)) return { error: 'it exports no config' };

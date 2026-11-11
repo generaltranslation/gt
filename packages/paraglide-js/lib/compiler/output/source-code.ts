@@ -1,5 +1,5 @@
 import type { FileUsages, ParaglideUsage } from '../analysis/types.js';
-import { matchesPattern } from '../paraglide/catalog.js';
+import { patternMatcher } from '../paraglide/catalog.js';
 
 /** The lines of a source file around a usage, in the gt CLI's format. */
 export type SourceCode = { before: string; target: string; after: string };
@@ -70,9 +70,12 @@ function messageSnippets(
   const usages = projectUsages(sourceFiles, inlangProject);
 
   return usages.flatMap(({ file, lines, usage }) => {
+    const named = namedMessages(usage, ids);
+    if (named.length === 0) return [];
+
     const snippet = sourceSnippet(lines, usage, radius);
 
-    return namedMessages(usage, ids).map((id) => ({ id, file, snippet }));
+    return named.map((id) => ({ id, file, snippet }));
   });
 }
 
@@ -84,10 +87,14 @@ function projectUsages(
   const sorted = [...sourceFiles].sort((a, b) => a.file.localeCompare(b.file));
 
   return sorted.flatMap(({ file, code, usages }) => {
+    const ofProject = usages.filter(
+      (usage) => usage.inlangProject === inlangProject
+    );
+    if (ofProject.length === 0) return [];
+
     const lines = code.split(/\r?\n/);
 
-    return usages
-      .filter((usage) => usage.inlangProject === inlangProject)
+    return ofProject
       .sort((a, b) => a.start - b.start || a.end - b.end)
       .map((usage) => ({ file, lines, usage }));
   });
@@ -104,7 +111,7 @@ function namedMessages(
   const isAnyMessage = usage.name.replaceAll('*', '') === '';
   if (isAnyMessage) return [];
 
-  return [...ids].filter((id) => matchesPattern(usage.name, id));
+  return [...ids].filter(patternMatcher(usage.name));
 }
 
 function isSameSnippet(a: SourceCode, b: SourceCode): boolean {

@@ -5,6 +5,7 @@ import {
   collectContext,
   type CollectContextOptions,
 } from '../../lib/compiler/context.js';
+import { writeFiles } from './files.js';
 
 /** A message with one English text, as Paraglide's compiler takes it. */
 const bundle = (id: string) => ({
@@ -88,10 +89,7 @@ export async function writeProject(
     ...filesIn('src/paraglide', outdir),
     ...files,
   };
-  for (const [file, content] of Object.entries(all)) {
-    await fs.mkdir(path.dirname(path.join(root, file)), { recursive: true });
-    await fs.writeFile(path.join(root, file), content);
-  }
+  await writeFiles(root, all);
   return root;
 }
 
@@ -125,15 +123,15 @@ type Metadata = Record<
   { sourceCode?: Record<string, { target: string }[]> }
 >;
 
-/** A metadata file under `root`; `{}` if it was not written. */
+/** A metadata file under `root`; `{}` if it was not written or is not JSON. */
 export async function readMetadata(
   root: string,
   file = 'messages/en.metadata.json'
 ): Promise<Metadata> {
-  const content = await fs
+  return fs
     .readFile(path.join(root, file), 'utf8')
-    .catch(() => '{}');
-  return JSON.parse(content);
+    .then((content) => JSON.parse(content) as Metadata)
+    .catch(() => ({}));
 }
 
 /** The snippets of a message in a metadata file, as `file: target lines`. */

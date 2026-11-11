@@ -4,6 +4,7 @@ import { afterAll, expect, test } from 'vitest';
 import { findInlangProjects } from '../../lib/compiler/inlang/find.js';
 import { matchInlangProject } from '../../lib/compiler/inlang/match.js';
 import { readInlangProject } from '../../lib/compiler/inlang/project.js';
+import { writeFiles } from '../helpers/files.js';
 
 const TMP = path.join(import.meta.dirname, '.tmp');
 afterAll(() => fs.rm(TMP, { recursive: true, force: true }));
@@ -14,10 +15,10 @@ async function write(
   files: Record<string, unknown>
 ): Promise<string> {
   const root = path.join(TMP, name);
-  for (const [file, content] of Object.entries(files)) {
-    await fs.mkdir(path.dirname(path.join(root, file)), { recursive: true });
-    await fs.writeFile(path.join(root, file), JSON.stringify(content));
-  }
+  const contents = Object.entries(files).map(
+    ([file, content]) => [file, JSON.stringify(content)] as const
+  );
+  await writeFiles(root, Object.fromEntries(contents));
   return root;
 }
 

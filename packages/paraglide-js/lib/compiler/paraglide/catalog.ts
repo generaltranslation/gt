@@ -73,10 +73,17 @@ export async function readCatalog(
 
 /** Whether `name`, a message id or a dynamic pattern where `*` is any text, matches `id`. */
 export function matchesPattern(pattern: string, id: string): boolean {
+  return patternMatcher(pattern)(id);
+}
+
+/** `matchesPattern` for one pattern and many ids: the pattern is compiled once. */
+export function patternMatcher(pattern: string): (id: string) => boolean {
   const parts = pattern
     .split('*')
     .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-  return new RegExp(`^${parts.join('[\\s\\S]*')}$`).test(id);
+  const expression = new RegExp(`^${parts.join('[\\s\\S]*')}$`);
+
+  return (id) => expression.test(id);
 }
 
 async function parseFile(file: string): Promise<ESTree.Program | undefined> {

@@ -1,4 +1,3 @@
-import type { FileUsages } from '../analysis/types.js';
 import type { MessageKey } from '../inlang/message-file.js';
 import {
   isJsonObject,
@@ -6,17 +5,13 @@ import {
   valueAtPath,
   type JsonObject,
 } from '../utils/json.js';
-import { sourceCodeByMessage } from './source-code.js';
+import type { SourceCodeByFile } from './source-code.js';
 
 export type MetadataFileInput = {
   /** The keys of the message file the metadata is for. */
   keys: readonly MessageKey[];
-  /** The usages of every analyzed source file. */
-  sourceFiles: readonly FileUsages[];
-  /** Only usages of this project count; compared with `ParaglideUsage.inlangProject`. */
-  inlangProject: string;
-  /** Lines of context above and below each usage. */
-  radius: number;
+  /** The source code around the usages of each message id: see `sourceCodeByMessage`. */
+  sourceCode: ReadonlyMap<string, SourceCodeByFile>;
   /** The metadata file's current content. Fields other than `sourceCode` are kept. */
   existing: JsonObject;
 };
@@ -32,17 +27,9 @@ export function metadataPath(messageFile: string): string {
  */
 export function renderMetadataFile({
   keys,
-  sourceFiles,
-  inlangProject,
-  radius,
+  sourceCode,
   existing,
 }: MetadataFileInput): JsonObject {
-  const ids = new Set(keys.map((key) => key.id));
-  const sourceCode = sourceCodeByMessage(sourceFiles, {
-    ids,
-    inlangProject,
-    radius,
-  });
   const metadata: JsonObject = {};
 
   for (const key of keys) {

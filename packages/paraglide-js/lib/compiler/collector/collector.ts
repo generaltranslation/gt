@@ -36,17 +36,21 @@ import type { FileSelection } from '../project/files.js';
 export type Resolver = (
   specifier: string,
   importer: string
-) => Promise<string | null | undefined>;
+) => Promise<string | undefined>;
 
 export type CollectorLogger = {
   warn(message: string): void;
   info(message: string): void;
 };
 
+/** Starts every logged message. */
+export const LOG_PREFIX = '[paraglide-context]';
+
 export type CollectorSettings = {
   /** Usages are reported relative to it. */
   projectRoot: string;
   logger: CollectorLogger;
+  resolver: Resolver;
   selection: FileSelection;
   /** Whether `include` was configured, so that missing entries are worth a warning. */
   explicitInclude: boolean;
@@ -82,7 +86,6 @@ const parse: ParseFunction = (file, code, lang) =>
 
 /** Analyzes the project's source files and writes their usages to the messages' metadata files. */
 export class ContextCollector {
-  resolver: Resolver | undefined;
   private readonly settings: CollectorSettings;
   private readonly moduleGraph: ModuleGraph;
   private readonly outDirDetector: OutdirDetector;
@@ -180,7 +183,7 @@ export class ContextCollector {
       .map((outdir) => this.relative(outdir))
       .join(', ');
     this.settings.logger.info(
-      `[paraglide-context] ${usages} usage(s) in ${counts.length} of ${sources.length} analyzed file(s)` +
+      `${LOG_PREFIX} ${usages} usage(s) in ${counts.length} of ${sources.length} analyzed file(s)` +
         (outdirs ? `; outdirs: ${outdirs}` : '')
     );
   }
@@ -221,7 +224,7 @@ export class ContextCollector {
     }
   }
 
-  isSourceFile(file: string): boolean {
+  private isSourceFile(file: string): boolean {
     return isSourceFile(file, this.settings.languages);
   }
 
@@ -461,7 +464,7 @@ export class ContextCollector {
   private warn(message: string): void {
     if (this.warnedMessages.has(message)) return;
     this.warnedMessages.add(message);
-    this.settings.logger.warn(`[paraglide-context] ${message}`);
+    this.settings.logger.warn(`${LOG_PREFIX} ${message}`);
   }
 
   private relative(file: string): string {
@@ -472,13 +475,14 @@ export class ContextCollector {
     specifier: string,
     importer: string
   ): Promise<string | undefined> {
-    // Builtins are never Paraglide, and resolving them in a client environment warns.
-    if (!this.resolver || isBuiltin(specifier)) return undefined;
-    const id = await this.resolver(specifier, importer).catch(() => undefined);
+    // Builtins are never Paraglide.
+    if (isBuiltin(specifier)) return undefined;
+    const id = await this.settings
+      .resolver(specifier, importer)
+      .catch(() => undefined);
     const file = id?.split('?', 1)[0];
-    // Skip virtual modules (`\0…`, `virtual:…`) and URLs.
-    if (file && !file.startsWith('\0') && path.isAbsolute(file))
-      return path.normalize(file);
+    // A resolver may answer with something that is not a file, e.g. a virtual module.
+    if (file && path.isAbsolute(file)) return path.normalize(file);
     if (
       !id &&
       /(^|[/\\])paraglide[/\\]/.test(specifier) &&

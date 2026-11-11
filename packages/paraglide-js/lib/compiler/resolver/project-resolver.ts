@@ -5,7 +5,11 @@ import {
   probeBundlerConfig,
   type ProbedConfig,
 } from '../bundler-configs/probe.js';
-import type { CollectorLogger, Resolver } from '../collector/collector.js';
+import {
+  LOG_PREFIX,
+  type CollectorLogger,
+  type Resolver,
+} from '../collector/collector.js';
 import { isInIgnoredDirectory } from '../project/files.js';
 import { projectPackages } from '../project/packages.js';
 import { findProjectRoot } from '../project/roots.js';
@@ -17,6 +21,9 @@ export type ProjectResolverOptions = NodeResolverOptions & {
   /** Configs to read aliases from. Default: `defaultBundlerConfigs`; `[]` reads none. */
   bundlerConfigs?: readonly BundlerConfig[];
 };
+
+/** "vite, webpack, or rspack" */
+const OR = new Intl.ListFormat('en', { type: 'disjunction' });
 
 export type ProjectResolverEnvironment = {
   /** Config files are looked for here and in the project root. */
@@ -68,16 +75,33 @@ export class ProjectResolver {
     return undefined;
   };
 
+  /** Warns about the unresolved imports, unless a bundler config gave the aliases. */
   async warnUnresolved(): Promise<void> {
-    const warning = unresolvedWarning(this.unresolved, {
-      projectRoot: this.projectRoot,
-      probed: await this.probed,
-      bundlers: this.bundlers.map((bundler) => bundler.name),
-    });
+    const reason = this.unknownAliasesReason(await this.probed);
+    if (!reason) return;
+
+    const { projectRoot } = this;
+    const warning = unresolvedWarning(this.unresolved, { projectRoot, reason });
     if (!warning || warning === this.lastWarning) return;
 
     this.lastWarning = warning;
-    this.environment.logger.warn(`[paraglide-context] ${warning}`);
+    this.environment.logger.warn(`${LOG_PREFIX} ${warning}`);
+  }
+
+  private unknownAliasesReason(probed: ProbedConfig): string | undefined {
+    switch (probed.type) {
+      case 'read':
+        return undefined;
+      case 'unreadable':
+        return `${this.relative(probed.file)} could not be read`;
+      case 'none': {
+        const names = this.bundlers.map((bundler) => bundler.name);
+
+        return names.length > 0
+          ? `no ${OR.format(names)} config was found to read them from`
+          : 'no bundler config is read';
+      }
+    }
   }
 
   private logProbed(probed: ProbedConfig): void {
@@ -88,12 +112,12 @@ export class ProjectResolver {
         return;
       case 'read':
         logger.info(
-          `[paraglide-context] import aliases are read from ${this.relative(probed.file)}`
+          `${LOG_PREFIX} import aliases are read from ${this.relative(probed.file)}`
         );
         return;
       case 'unreadable':
         logger.warn(
-          `[paraglide-context] ${this.relative(probed.file)} could not be read, so its aliases are unknown: ${probed.reason}`
+          `${LOG_PREFIX} ${this.relative(probed.file)} could not be read, so its aliases are unknown: ${probed.reason}`
         );
     }
   }

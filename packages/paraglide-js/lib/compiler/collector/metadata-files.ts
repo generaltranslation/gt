@@ -2,15 +2,23 @@ import { randomUUID } from 'node:crypto';
 import fsp from 'node:fs/promises';
 import type { FileUsages } from '../analysis/types.js';
 import type { MessageFile } from '../inlang/message-file.js';
-import { readInlangProject, type InlangProject } from '../inlang/project.js';
+import {
+  messageIds,
+  readInlangProjects,
+  type InlangProject,
+} from '../inlang/project.js';
 import { metadataPath, renderMetadataFile } from '../output/metadata.js';
+import {
+  sourceCodeByMessage,
+  type SourceCodeByFile,
+} from '../output/source-code.js';
 import { parseJsonObject } from '../utils/json.js';
 import { relativePath } from '../utils/paths.js';
 
 /** A metadata file that was left as it is, and why. */
 export type SkippedFile = { file: string; reason: string };
 
-type ProjectMessageFile = { project: InlangProject; messageFile: MessageFile };
+type SourceCodeByMessage = ReadonlyMap<string, SourceCodeByFile>;
 
 /** What a metadata file that does not exist counts as, so that none is created for nothing. */
 const NO_METADATA = '{}\n';
@@ -21,8 +29,8 @@ const NO_METADATA = '{}\n';
  * serialized, and atomic for readers.
  */
 export class MetadataFiles {
-  /** By absolute path; `undefined` once a file has no usages. */
-  private readonly entries = new Map<string, FileUsages | undefined>();
+  /** The source files with usages, by absolute path. */
+  private readonly entries = new Map<string, FileUsages>();
   /** Absolute inlang project directories. */
   private readonly projects = new Set<string>();
   private queue: Promise<unknown> = Promise.resolve();
@@ -39,7 +47,8 @@ export class MetadataFiles {
 
   /** Records the analysis of `file` (absolute); `undefined` when it has no usages. */
   set(file: string, usages: FileUsages | undefined): void {
-    this.entries.set(file, usages);
+    if (usages) this.entries.set(file, usages);
+    else this.entries.delete(file);
   }
 
   /** Writes the files whose content changed. Resolves with those it had to skip. */
@@ -51,60 +60,57 @@ export class MetadataFiles {
     return written;
   }
 
+  /** The projects are read anew for each write: message files change while the collector runs. */
   private async writeAll(): Promise<SkippedFile[]> {
-    const messageFiles = await this.messageFiles();
+    const projects = await readInlangProjects([...this.projects].sort());
     const results = await Promise.all(
-      messageFiles.map((messageFile) => this.writeMetadataOf(messageFile))
+      projects.flatMap((project) => this.writeProject(project))
     );
 
     return results.filter((skipped) => skipped !== undefined);
   }
 
-  /** Read anew for each write: message files change while the collector runs. */
-  private async messageFiles(): Promise<ProjectMessageFile[]> {
-    const directories = [...this.projects].sort();
-    const projects = await Promise.all(directories.map(readInlangProject));
-
-    return projects
-      .filter((project) => project !== undefined)
-      .flatMap((project) =>
-        project.messageFiles.map((messageFile) => ({ project, messageFile }))
-      );
-  }
-
-  /** Returns the file if it was skipped. */
-  private async writeMetadataOf({
-    project,
-    messageFile,
-  }: ProjectMessageFile): Promise<SkippedFile | undefined> {
-    const file = metadataPath(messageFile.path);
-    const current =
-      (await fsp.readFile(file, 'utf8').catch(() => undefined)) ?? NO_METADATA;
-    const existing = parseJsonObject(current);
-    // Overwriting it could lose hand-written fields.
-    if (!existing) {
-      return { file, reason: 'it is not a JSON object; fix or delete it' };
-    }
-
-    const metadata = renderMetadataFile({
-      keys: messageFile.keys,
-      sourceFiles: this.sourceFiles(),
+  /** One write per message file of the project. */
+  private writeProject(
+    project: InlangProject
+  ): Promise<SkippedFile | undefined>[] {
+    const sourceCode = sourceCodeByMessage([...this.entries.values()], {
+      ids: messageIds(project),
       inlangProject: relativePath(this.projectRoot, project.directory),
       radius: this.radius,
-      existing,
     });
-    const content = `${JSON.stringify(metadata, null, 2)}\n`;
-    if (content === current) return undefined;
 
-    await writeAtomically(file, content);
+    return project.messageFiles.map((messageFile) =>
+      writeMetadata(messageFile, sourceCode)
+    );
+  }
+}
 
-    return undefined;
+/** Writes the metadata file of a message file if its content changed. Returns the file if it was skipped. */
+async function writeMetadata(
+  messageFile: MessageFile,
+  sourceCode: SourceCodeByMessage
+): Promise<SkippedFile | undefined> {
+  const file = metadataPath(messageFile.path);
+  const current =
+    (await fsp.readFile(file, 'utf8').catch(() => undefined)) ?? NO_METADATA;
+  const existing = parseJsonObject(current);
+  // Overwriting it could lose hand-written fields.
+  if (!existing) {
+    return { file, reason: 'it is not a JSON object; fix or delete it' };
   }
 
-  /** Every source file with usages. */
-  private sourceFiles(): FileUsages[] {
-    return [...this.entries.values()].filter((usages) => usages !== undefined);
-  }
+  const metadata = renderMetadataFile({
+    keys: messageFile.keys,
+    sourceCode,
+    existing,
+  });
+  const content = `${JSON.stringify(metadata, null, 2)}\n`;
+  if (content === current) return undefined;
+
+  await writeAtomically(file, content);
+
+  return undefined;
 }
 
 async function writeAtomically(file: string, content: string): Promise<void> {

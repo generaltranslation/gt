@@ -15,9 +15,9 @@ test("a file that stops parsing (mid-edit) keeps its last version's usages", asy
     {
       root,
       logger: { warn: (message) => void warnings.push(message), info() {} },
+      resolver: nodeResolver(),
     }
   );
-  collector.resolver = nodeResolver();
   const usages = ['src/a.ts: export const a = m.greeting();'];
   await collector.scanAll();
   await collector.write();
