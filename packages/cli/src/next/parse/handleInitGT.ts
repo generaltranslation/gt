@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { parse } from '@babel/parser';
 import generateModule from '@babel/generator';
-import traverseModule from '@babel/traverse';
+import traverseModule, { type NodePath } from '@babel/traverse';
 
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
@@ -41,12 +41,21 @@ export async function handleInitGT(
 
     // Check if withGTConfig is already imported/required
     let hasGTConfig = false;
+    let hasModuleExports = false;
+    // Local name of an existing top-level withGTConfig function binding
+    let gtConfigName: string | undefined;
     traverse(ast, {
+      AssignmentExpression(path) {
+        if (isTopLevelModuleExports(path)) hasModuleExports = true;
+      },
       ImportDeclaration(path) {
         if (path.node.source.value === 'gt-next/config') {
           path.node.specifiers.forEach((spec) => {
             if (t.isImportSpecifier(spec)) {
-              if (spec.local.name === 'withGTConfig') hasGTConfig = true;
+              if (spec.local.name === 'withGTConfig') {
+                hasGTConfig = true;
+                gtConfigName = spec.local.name;
+              }
             }
           });
         }
@@ -74,7 +83,12 @@ export async function handleInitGT(
                     t.isIdentifier(prop.key) &&
                     t.isIdentifier(prop.value)
                   ) {
-                    if (prop.key.name === 'withGTConfig') hasGTConfig = true;
+                    if (prop.key.name === 'withGTConfig') {
+                      hasGTConfig = true;
+                      if (path.parentPath.isProgram()) {
+                        gtConfigName = prop.value.name;
+                      }
+                    }
                   }
                 });
               }
@@ -93,6 +107,7 @@ export async function handleInitGT(
                 t.isIdentifier(dec.init.property, { name: 'withGTConfig' })
               ) {
                 hasGTConfig = true;
+                if (path.parentPath.isProgram()) gtConfigName = dec.id.name;
               }
             }
           }
@@ -100,37 +115,62 @@ export async function handleInitGT(
       },
     });
 
-    // Return early if withGTConfig is already present
-    if (hasGTConfig) {
+    // Return early if withGTConfig is already present. An earlier gt init
+    // could require it in a CommonJS config without ever using it; only that
+    // top-level, unreferenced function binding gets module.exports wrapped
+    // below. A binding that cannot be found is never treated as unused.
+    let gtConfigUnused = false;
+    traverse(ast, {
+      Program(path) {
+        const binding = gtConfigName
+          ? path.scope.getBinding(gtConfigName)
+          : undefined;
+        gtConfigUnused = binding !== undefined && !binding.referenced;
+        path.stop();
+      },
+    });
+    if (hasGTConfig && !(gtConfigUnused && hasModuleExports)) {
       return;
     }
+    const wrapperName = gtConfigName ?? 'withGTConfig';
 
-    ast.program.body.unshift(
-      cjsEnabled
-        ? t.variableDeclaration('const', [
-            t.variableDeclarator(
-              t.identifier('withGTConfig'),
-              t.memberExpression(
-                t.callExpression(t.identifier('require'), [
-                  t.stringLiteral('gt-next/config'),
-                ]),
-                t.identifier('withGTConfig')
-              )
-            ),
-          ])
-        : t.importDeclaration(
-            [
-              t.importSpecifier(
+    if (!hasGTConfig)
+      ast.program.body.unshift(
+        cjsEnabled
+          ? t.variableDeclaration('const', [
+              t.variableDeclarator(
                 t.identifier('withGTConfig'),
-                t.identifier('withGTConfig')
+                t.memberExpression(
+                  t.callExpression(t.identifier('require'), [
+                    t.stringLiteral('gt-next/config'),
+                  ]),
+                  t.identifier('withGTConfig')
+                )
               ),
-            ],
-            t.stringLiteral('gt-next/config')
-          )
-    );
+            ])
+          : t.importDeclaration(
+              [
+                t.importSpecifier(
+                  t.identifier('withGTConfig'),
+                  t.identifier('withGTConfig')
+                ),
+              ],
+              t.stringLiteral('gt-next/config')
+            )
+      );
 
     // Find and transform the default export
     traverse(ast, {
+      AssignmentExpression(path) {
+        // CommonJS: module.exports = config
+        if (isTopLevelModuleExports(path)) {
+          path.node.right = t.callExpression(t.identifier(wrapperName), [
+            path.node.right,
+            t.objectExpression([]),
+          ]);
+          path.skip();
+        }
+      },
       ExportDefaultDeclaration(path) {
         const oldExport = path.node.declaration;
 
@@ -178,7 +218,7 @@ export async function handleInitGT(
           );
         }
 
-        path.node.declaration = t.callExpression(t.identifier('withGTConfig'), [
+        path.node.declaration = t.callExpression(t.identifier(wrapperName), [
           exportExpression,
           t.objectExpression([]),
         ]);
@@ -212,4 +252,18 @@ export async function handleInitGT(
     logger.error(`Error parsing file ${filepath}: ${error}`);
     errors.push(`Failed to parse ${filepath}: ${error}`);
   }
+}
+
+/** Whether the assignment is a top-level `module.exports = ...` statement. */
+function isTopLevelModuleExports(
+  path: NodePath<t.AssignmentExpression>
+): boolean {
+  const { left } = path.node;
+  return (
+    t.isMemberExpression(left) &&
+    t.isIdentifier(left.object, { name: 'module' }) &&
+    t.isIdentifier(left.property, { name: 'exports' }) &&
+    path.parentPath.isExpressionStatement() &&
+    path.parentPath.parentPath.isProgram()
+  );
 }
