@@ -4,7 +4,7 @@ import { compileCatalog } from '@inlang/paraglide-js';
 import {
   collectContext,
   type CollectContextOptions,
-} from '../../lib/compiler/context.js';
+} from '../../src/compiler/context.js';
 import { writeFiles } from './files.js';
 
 /** A message with one English text, as Paraglide's compiler takes it. */

@@ -1,27 +1,27 @@
 import path from 'node:path/posix';
 import { parseSync } from 'oxc-parser';
-import { analyzeModule } from '../../lib/compiler/analysis/analyze.js';
-import { defaultLanguages } from '../../lib/compiler/languages/index.js';
-import { isDependency } from '../../lib/compiler/utils/paths.js';
+import { analyzeModule } from '../../src/compiler/analysis/analyze.js';
+import { defaultLanguages } from '../../src/compiler/languages/index.js';
+import { isDependency } from '../../src/compiler/utils/paths.js';
 import {
   isSourceFile,
   parseSource,
-} from '../../lib/compiler/languages/language.js';
-import { projectPackages } from '../../lib/compiler/project/packages.js';
+} from '../../src/compiler/languages/language.js';
+import { projectPackages } from '../../src/compiler/project/packages.js';
 import {
   ModuleGraph,
   type GlobalBinding,
-} from '../../lib/compiler/analysis/module-graph.js';
+} from '../../src/compiler/analysis/module-graph.js';
 import type {
   LanguageContext,
   SourceLanguage,
-} from '../../lib/compiler/languages/language.js';
+} from '../../src/compiler/languages/language.js';
 import {
   defaultTargets,
   packageTarget,
   type ParaglideTarget,
-} from '../../lib/compiler/paraglide/targets.js';
-import type { ParaglideUsage } from '../../lib/compiler/analysis/types.js';
+} from '../../src/compiler/paraglide/targets.js';
+import type { ParaglideUsage } from '../../src/compiler/analysis/types.js';
 
 export const ROOT = '/app';
 /** The language tools installed in this repo (its devDependencies), as an app would have them. */
@@ -122,7 +122,7 @@ export async function analyzeProject(
   });
   const entry = options.entry ?? ENTRY;
   const sources = options.loadAll ? Object.keys(files) : [entry];
-  await Promise.all(sources.map((file) => graph.loadPath(file)));
+  await graph.loadPaths(sources);
   return analyzeModule({ graph, file: entry, root: ROOT });
 }
 

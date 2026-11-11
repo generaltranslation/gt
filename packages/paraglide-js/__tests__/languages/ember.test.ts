@@ -1,10 +1,10 @@
 import { expect, test } from 'vitest';
 import { parseSync } from 'oxc-parser';
-import { emberLanguage } from '../../lib/compiler/languages/ember.js';
+import { emberLanguage } from '../../src/compiler/languages/ember.js';
 import {
   NO_PACKAGES,
   parseSource,
-} from '../../lib/compiler/languages/language.js';
+} from '../../src/compiler/languages/language.js';
 import {
   ADAPTER_FILES,
   ADAPTER_TARGETS,

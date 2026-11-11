@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import type { ParaglideUsage } from '../../lib/compiler/analysis/types.js';
+import type { ParaglideUsage } from '../../src/compiler/analysis/types.js';
 import { ENTRY, analyzeProject } from '../helpers/project.js';
 
 const imports = [
@@ -26,6 +26,27 @@ describe('dynamic member access', () => {
       ['message:error_*:call dynamic'],
     ],
     ['concatenation', `m["a_" + x + "_b"]();`, ['message:a_*_b:call dynamic']],
+    [
+      'text joined with a number',
+      `m["step_" + index + 1]();`,
+      ['message:step_*1:call dynamic'],
+    ],
+    [
+      'an unknown sum in a template may be a number: its operands are not joined',
+      'm[`step_${index + 1}`]();',
+      ['message:step_*:call dynamic'],
+    ],
+    ['an unknown sum', `m[index + 1]();`, ['message:*:call dynamic']],
+    [
+      'a sum of known numbers is added',
+      `m["step_" + (1 + 2)]();`,
+      ['message:step_3:call'],
+    ],
+    [
+      'a sum of a known const',
+      'const first = 1; m[`step_${first + 1}`]();',
+      ['message:step_2:call'],
+    ],
     [
       'a known const key',
       `const k = "greeting"; m[k]();`,

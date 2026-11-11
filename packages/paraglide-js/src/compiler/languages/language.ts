@@ -1,6 +1,7 @@
 import path from 'node:path';
 import type { ESTree } from '../analysis/ast.js';
 import type { ParsedModule } from '../analysis/module-graph.js';
+import type { SourceRange } from '../analysis/types.js';
 import { isScript } from '../utils/paths.js';
 import type { SourceElement } from './elements.js';
 import { remapProgram, type Mapping } from './mapping.js';
@@ -30,6 +31,11 @@ export type ComponentFields = {
   specifier: string;
   /** Default: the decorated classes whose `templateUrl` names this file, else all of them. */
   className?: string;
+  /**
+   * The part of this file that reads the fields, e.g. the class's inline
+   * template: a file can hold several. Default: the whole file.
+   */
+  range?: SourceRange;
 };
 
 /**
@@ -52,7 +58,18 @@ export type GeneratedSource = {
    * or a call wrapping it. The props are at `path` in the argument.
    */
   componentInstances?: { via: 'new' | 'call'; path: readonly string[] };
+  /**
+   * Modules of their own in the file, e.g. an Astro page's client scripts or a
+   * page's `<script type="module">` tags: none shares names with another, or
+   * with `code`.
+   */
+  scripts?: readonly GeneratedScript[];
 };
+
+export type GeneratedScript = Pick<
+  GeneratedSource,
+  'code' | 'lang' | 'mappings'
+>;
 
 /** Where a component reads the props its call sites pass. */
 export type PropsReads = {
@@ -180,20 +197,25 @@ async function parseWithLanguage(
 
   if (!generated) return missingToolsFailure(language);
 
-  const { program, errors } = parse(file, generated.code, generated.lang);
+  const programs: ESTree.Program[] = [];
 
-  const error = firstError(errors);
-  if (error) {
-    return {
-      error: `${language.name} tooling produced unparsable code: ${error.message}`,
-    };
+  for (const script of [generated, ...(generated.scripts ?? [])]) {
+    const { program, errors } = parse(file, script.code, script.lang);
+
+    const error = firstError(errors);
+    if (error) {
+      return {
+        error: `${language.name} tooling produced unparsable code: ${error.message}`,
+      };
+    }
+
+    remapProgram(program, script.mappings, script.code.length);
+    programs.push(program);
   }
-
-  remapProgram(program, generated.mappings, generated.code.length);
 
   const component = path.basename(file, extension).replace(/\.component$/, '');
 
-  return { module: generatedModule(code, program, component, generated) };
+  return { module: generatedModule(code, programs, component, generated) };
 }
 
 function generationFailure(
@@ -224,22 +246,28 @@ function missingToolsFailure(language: SourceLanguage): ParseFailure {
   };
 }
 
+/** `programs` are the generated code's and then its scripts'. */
 function generatedModule(
   code: string,
-  program: ESTree.Program,
+  [program, ...scriptPrograms]: readonly ESTree.Program[],
   component: string,
   generated: GeneratedSource
 ): ParsedModule {
-  return {
+  const inFile = {
     code,
-    program,
     component,
     generated: true,
     sourceElements: generated.elements,
+  };
+
+  return {
+    ...inFile,
+    program: program!,
     componentFields: generated.componentFields,
     scopeObjects: generated.scopeObjects,
     props: generated.props,
     componentInstances: generated.componentInstances,
+    scripts: scriptPrograms.map((script) => ({ ...inFile, program: script })),
   };
 }
 

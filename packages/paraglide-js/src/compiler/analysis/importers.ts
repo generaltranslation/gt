@@ -33,9 +33,11 @@ export type GlobalExport = {
 };
 
 export type LoadedModules = {
-  /** In loading order. */
+  /** Each file's module, by file. */
   records: ReadonlyMap<string, ModuleRecord>;
-  scopeOf(file: string): Scope | undefined;
+  /** Every module in loading order, a file's scripts after its module. */
+  all(): Iterable<ModuleRecord>;
+  scopeOf(record: ModuleRecord): Scope;
   /** Changes whenever a module is added or removed. */
   generation(): number;
   globalExports(): readonly GlobalExport[];
@@ -106,9 +108,7 @@ export class ImporterIndex {
     const sites: CallSite[] = [];
     callSites.set(fn, sites);
 
-    const scope = this.modules.scopeOf(record.file);
-    if (!scope) return sites;
-
+    const scope = this.modules.scopeOf(record);
     const sitesInOwnModule =
       callSitesIn(record.program, scope).byDeclaration.get(fn) ?? [];
     sites.push(...sitesInOwnModule);
@@ -215,7 +215,7 @@ export class ImporterIndex {
 
   private dependents(): Dependents {
     const cache = this.currentCache();
-    cache.dependents ??= dependentsOf(this.modules.records.values());
+    cache.dependents ??= dependentsOf(this.modules.all());
 
     return cache.dependents;
   }
@@ -238,7 +238,7 @@ export class ImporterIndex {
 
     const isUsableWithoutImport = globals.length > 0;
     const modules = isUsableWithoutImport
-      ? this.modules.records.values()
+      ? this.modules.all()
       : importersOf(exporters, exportedAs, dependents);
 
     return { modules, globals, exporters, exportedAs };
@@ -254,9 +254,7 @@ export class ImporterIndex {
     const imports = valueImports(importer.program);
     if (imports.length === 0 && referrers.globals.length === 0) return [];
 
-    const scope = this.modules.scopeOf(importer.file);
-    if (!scope) return [];
-
+    const scope = this.modules.scopeOf(importer);
     const index = indexSites(importer.program, scope);
     const sites: CallSite[] = [];
 

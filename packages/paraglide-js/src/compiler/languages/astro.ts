@@ -2,15 +2,21 @@ import type * as Astro2Tsx from '@astrojs/astro2tsx';
 import type * as AstroCompiler from '@astrojs/compiler';
 import type { EncodedSourceMap } from '@jridgewell/trace-mapping';
 import { jsxElements } from './jsx-elements.js';
-import type { LanguageContext, SourceLanguage } from './language.js';
+import type {
+  GeneratedScript,
+  LanguageContext,
+  SourceLanguage,
+} from './language.js';
 import { mappingsFromSourceMap, type Mapping } from './mapping.js';
 import { parseSkippingUnparsable } from './recover.js';
+
+type BundledScript = { start: number; content: string };
 
 type Tsx = {
   code: string;
   mappings: Mapping[];
   /** The scripts Astro bundles, which the TSX does not contain. */
-  bundledScripts: Array<{ start: number; content: string }>;
+  bundledScripts: BundledScript[];
 };
 
 const BUNDLED_SCRIPT = 'processed-module';
@@ -30,8 +36,8 @@ export const astroLanguage: SourceLanguage = {
       (await convertWithCompiler(source, file, context));
     if (!tsx) return undefined;
 
-    const { code: generated, mappings } = withBundledScripts(tsx);
-    const { code } = parseSkippingUnparsable(file, generated, 'tsx', mappings, {
+    const { mappings } = tsx;
+    const { code } = parseSkippingUnparsable(file, tsx.code, 'tsx', mappings, {
       skipCopiedText: true,
     });
     const elements = jsxElements(file, code, 'tsx', mappings, source);
@@ -42,6 +48,7 @@ export const astroLanguage: SourceLanguage = {
       mappings,
       elements,
       props: { members: ['Astro.props'] },
+      scripts: tsx.bundledScripts.map((script) => clientScript(file, script)),
     };
   },
 };
@@ -115,22 +122,24 @@ async function convertWithCompiler(
   return { code, mappings, bundledScripts };
 }
 
-/** Bundled scripts are modules of their own: appended, their imports are at the top level. */
-function withBundledScripts(tsx: Tsx): { code: string; mappings: Mapping[] } {
-  let { code } = tsx;
-  const mappings = [...tsx.mappings];
+/**
+ * A bundled script is a module of its own, in the browser: its `m` is not the
+ * frontmatter's, nor another script's. One that does not parse is skipped.
+ */
+function clientScript(file: string, script: BundledScript): GeneratedScript {
+  const lang = 'ts';
+  const mappings = [
+    { generated: 0, source: script.start, length: script.content.length },
+  ];
+  const { code } = parseSkippingUnparsable(
+    file,
+    script.content,
+    lang,
+    mappings,
+    { skipCopiedText: true }
+  );
 
-  for (const script of tsx.bundledScripts) {
-    code += '\n;';
-    mappings.push({
-      generated: code.length,
-      source: script.start,
-      length: script.content.length,
-    });
-    code += `${script.content}\n;`;
-  }
-
-  return { code, mappings };
+  return { code, lang, mappings };
 }
 
 /** `@astrojs/compiler` reports positions in UTF-8 bytes, not string offsets. */

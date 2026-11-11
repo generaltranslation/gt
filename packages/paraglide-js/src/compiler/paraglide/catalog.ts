@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { parseSync } from 'oxc-parser';
 import { moduleExportName, type ESTree } from '../analysis/ast.js';
+import { declaredNames } from '../analysis/module-syntax.js';
 
 /**
  * The message ids an outdir defines, read from its generated files without
@@ -115,19 +116,4 @@ async function declaredModules(
     }
   }
   return modules;
-}
-
-function declaredNames(declaration: ESTree.Declaration): string[] {
-  switch (declaration.type) {
-    case 'VariableDeclaration':
-      return declaration.declarations.flatMap((declarator) =>
-        declarator.id.type === 'Identifier' ? [declarator.id.name] : []
-      );
-    case 'FunctionDeclaration':
-    case 'ClassDeclaration':
-    case 'TSDeclareFunction':
-      return declaration.id ? [declaration.id.name] : [];
-    default:
-      return [];
-  }
 }

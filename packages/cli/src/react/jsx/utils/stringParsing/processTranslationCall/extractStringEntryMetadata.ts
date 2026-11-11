@@ -13,7 +13,7 @@ import { mapAttributeName } from '../../mapAttributeName.js';
 import pathModule from 'node:path';
 import { isNumberLiteral } from '../../isNumberLiteral.js';
 import { extractSourceCode } from '../../extractSourceCode.js';
-import type { SourceCode } from '../../extractSourceCode.js';
+import type { SourceCode } from 'generaltranslation/types';
 import { SURROUNDING_LINE_COUNT } from '../../../../../utils/constants.js';
 
 // Handle CommonJS/ESM interop

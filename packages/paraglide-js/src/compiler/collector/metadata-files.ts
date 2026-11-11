@@ -92,10 +92,13 @@ async function writeMetadata(
   sourceCode: SourceCodeByMessage
 ): Promise<SkippedFile | undefined> {
   const file = metadataPath(messageFile.path);
-  const current =
-    (await fsp.readFile(file, 'utf8').catch(() => undefined)) ?? NO_METADATA;
-  const existing = parseJsonObject(current);
+  const current = await readMetadata(file);
   // Overwriting it could lose hand-written fields.
+  if ('unreadable' in current) {
+    return { file, reason: `it could not be read (${current.unreadable})` };
+  }
+
+  const existing = parseJsonObject(current.content);
   if (!existing) {
     return { file, reason: 'it is not a JSON object; fix or delete it' };
   }
@@ -106,16 +109,37 @@ async function writeMetadata(
     existing,
   });
   const content = `${JSON.stringify(metadata, null, 2)}\n`;
-  if (content === current) return undefined;
+  if (content === current.content) return undefined;
 
   await writeAtomically(file, content);
 
   return undefined;
 }
 
+/** Only a file that does not exist counts as empty: one that cannot be read may hold hand-written fields. */
+async function readMetadata(
+  file: string
+): Promise<{ content: string } | { unreadable: string }> {
+  try {
+    return { content: await fsp.readFile(file, 'utf8') };
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code === 'ENOENT') return { content: NO_METADATA };
+
+    return { unreadable: code ?? (error as Error).message };
+  }
+}
+
 async function writeAtomically(file: string, content: string): Promise<void> {
   // A unique name: other processes may write the same file.
   const temporary = `${file}.${process.pid}.${randomUUID()}.tmp`;
-  await fsp.writeFile(temporary, content);
-  await fsp.rename(temporary, file);
+
+  try {
+    await fsp.writeFile(temporary, content);
+    await fsp.rename(temporary, file);
+  } catch (error) {
+    // The failed write is what is reported, not a failed cleanup.
+    await fsp.rm(temporary, { force: true }).catch(() => undefined);
+    throw error;
+  }
 }

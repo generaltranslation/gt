@@ -1,11 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { expect, test } from 'vitest';
-import { createCollector } from '../../lib/compiler/collector/create.js';
-import { OutdirProjects } from '../../lib/compiler/collector/outdir-projects.js';
-import { MetadataFiles } from '../../lib/compiler/collector/metadata-files.js';
-import type { CollectContextOptions } from '../../lib/compiler/context.js';
-import { nodeResolver } from '../../lib/compiler/resolver/node-resolver.js';
+import { afterEach, expect, test, vi } from 'vitest';
+import { createCollector } from '../../src/compiler/collector/create.js';
+import { OutdirProjects } from '../../src/compiler/collector/outdir-projects.js';
+import { MetadataFiles } from '../../src/compiler/collector/metadata-files.js';
+import type { CollectContextOptions } from '../../src/compiler/context.js';
+import { nodeResolver } from '../../src/compiler/resolver/node-resolver.js';
 import {
   collect as collectProject,
   compileMessages,
@@ -36,29 +36,49 @@ async function collect(
   return (await collectProject(root, options)).warnings;
 }
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+/** A source file whose only line uses `greeting`. */
+const usages = (file: string, line: string) => ({
+  file,
+  code: line,
+  usages: [
+    {
+      target: 'message',
+      name: 'greeting',
+      kind: 'call' as const,
+      expression: 'm.greeting()',
+      start: 0,
+      end: 5,
+      line: 1,
+      column: 1,
+      endLine: 1,
+      resolution: ['src/paraglide/messages.js'],
+      inlangProject: 'project.inlang',
+    },
+  ],
+});
+
+/** The metadata files of a new project's `project.inlang`, with one usage to write. */
+async function metadataFiles(name: string) {
+  const root = await writeProject(name, {});
+  const files = new MetadataFiles(root, 0);
+  files.addProject(path.join(root, 'project.inlang'));
+  files.set('/a.ts', usages('a.ts', 'first'));
+
+  const written = () => fs.readdir(path.join(root, 'messages'));
+
+  return { root, files, written };
+}
+
+const failure = (code: string) => Object.assign(new Error(code), { code });
+
 test('the latest analysis of each source file wins; writes are serialized', async () => {
   const root = await writeProject('metadata-unit', {});
   const files = new MetadataFiles(root, 0);
 
-  const usages = (file: string, line: string) => ({
-    file,
-    code: line,
-    usages: [
-      {
-        target: 'message',
-        name: 'greeting',
-        kind: 'call' as const,
-        expression: 'm.greeting()',
-        start: 0,
-        end: 5,
-        line: 1,
-        column: 1,
-        endLine: 1,
-        resolution: ['src/paraglide/messages.js'],
-        inlangProject: 'project.inlang',
-      },
-    ],
-  });
   files.addProject(path.join(root, 'project.inlang'));
   files.set('/a.ts', usages('a.ts', 'first'));
   files.set('/b.ts', usages('b.ts', 'other'));
@@ -71,6 +91,65 @@ test('the latest analysis of each source file wins; writes are serialized', asyn
     'en.json',
     'en.metadata.json',
   ]);
+});
+
+test('a write that fails leaves no temporary file, and the next queued write succeeds', async () => {
+  const { root, files, written } = await metadataFiles('metadata-failed-write');
+  vi.spyOn(fs, 'rename').mockRejectedValueOnce(failure('EXDEV'));
+
+  const [failed, queued] = await Promise.allSettled([
+    files.write(),
+    files.write(),
+  ]);
+
+  expect(failed).toMatchObject({
+    status: 'rejected',
+    reason: { code: 'EXDEV' },
+  });
+  expect(queued).toEqual({ status: 'fulfilled', value: [] });
+  expect((await written()).sort()).toEqual(['en.json', 'en.metadata.json']);
+  expect(await readSnippets(root)).toEqual(['a.ts: first']);
+});
+
+test('a temporary file that was only partly written is removed', async () => {
+  const { root, files, written } = await metadataFiles(
+    'metadata-partial-write'
+  );
+  const writeFile = fs.writeFile.bind(fs);
+  vi.spyOn(fs, 'writeFile').mockImplementationOnce(async (file) => {
+    await writeFile(file, '{ "greeting": ');
+    throw failure('ENOSPC');
+  });
+
+  await expect(files.write()).rejects.toMatchObject({ code: 'ENOSPC' });
+  expect(await written()).toEqual(['en.json']);
+
+  // A later write is not affected.
+  expect(await files.write()).toEqual([]);
+  expect((await written()).sort()).toEqual(['en.json', 'en.metadata.json']);
+  expect(await readSnippets(root)).toEqual(['a.ts: first']);
+});
+
+test('a metadata file that cannot be read is left alone, with a warning', async () => {
+  const { root, files } = await metadataFiles('metadata-unreadable');
+  const file = path.join(root, 'messages/en.metadata.json');
+  const handWritten = JSON.stringify({
+    greeting: { context: 'On the home page' },
+  });
+  await fs.writeFile(file, handWritten);
+
+  const readFile = fs.readFile.bind(fs) as (
+    ...args: unknown[]
+  ) => Promise<never>;
+  vi.spyOn(fs, 'readFile').mockImplementation((...args: unknown[]) =>
+    args[0] === file ? Promise.reject(failure('EACCES')) : readFile(...args)
+  );
+  expect(await files.write()).toEqual([
+    { file, reason: 'it could not be read (EACCES)' },
+  ]);
+  vi.restoreAllMocks();
+
+  expect(await fs.readFile(file, 'utf8')).toBe(handWritten);
 });
 
 test('several inlang projects and message files: each file gets the usages of its own messages', async () => {

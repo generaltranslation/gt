@@ -1,15 +1,15 @@
 import { parseSync } from 'oxc-parser';
 import { describe, expect, test } from 'vitest';
-import { astroLanguage } from '../../lib/compiler/languages/astro.js';
+import { astroLanguage } from '../../src/compiler/languages/astro.js';
 import {
   NO_PACKAGES,
   parseSource,
   type LanguageContext,
   type ParseFunction,
-} from '../../lib/compiler/languages/language.js';
-import { sourceSnippet } from '../../lib/compiler/output/source-code.js';
-import { svelteLanguage } from '../../lib/compiler/languages/svelte.js';
-import { vueLanguage } from '../../lib/compiler/languages/vue.js';
+} from '../../src/compiler/languages/language.js';
+import { sourceSnippet } from '../../src/compiler/output/source-code.js';
+import { svelteLanguage } from '../../src/compiler/languages/svelte.js';
+import { vueLanguage } from '../../src/compiler/languages/vue.js';
 import {
   ADAPTER_FILES,
   ADAPTER_TARGETS,
@@ -349,6 +349,64 @@ describe('Astro', () => {
       'm.greeting() 5:14',
       'm.bold() 5:38',
       'm.client() 8:20',
+    ]);
+  });
+
+  test("a client script is a module of its own: its names are not the frontmatter's or another script's", async () => {
+    const UI_OUTDIR = '/app/packages/ui/paraglide';
+    const page = [
+      `---`,
+      `import { m } from "../paraglide/messages.js";`,
+      `const label = m.server;`,
+      `---`,
+      `<p>{label()}</p>`,
+      `<script>`,
+      `  import { m } from "../../packages/ui/paraglide/messages.js";`,
+      `  const label = m.client;`,
+      `  document.title = label();`,
+      `</script>`,
+      `<script>`,
+      `  import { m } from "../paraglide/messages.js";`,
+      `  import { show } from "../show.js";`,
+      `  const label = m.other;`,
+      `  show(label, m.passed);`,
+      `</script>`,
+    ].join('\n');
+    const files = {
+      [file]: page,
+      '/app/src/show.ts': `export const show = (label, message) => label() + message();\n`,
+      [`${UI_OUTDIR}/messages.js`]: 'export {}',
+    };
+    const options = {
+      outdirs: ['/app/src/paraglide', UI_OUTDIR],
+      loadAll: true,
+    };
+
+    const usages = await analyzeProject(files, { ...options, entry: file });
+    expect(
+      usages.map(
+        ({ name, kind, line, resolution }) =>
+          `${name}:${kind} ${line} ${resolution.at(-1)}`
+      )
+    ).toEqual([
+      'server:call 5 src/paraglide/messages.js',
+      'client:call 9 packages/ui/paraglide/messages.js',
+      'other:reference 15 src/paraglide/messages.js',
+      'passed:reference 15 src/paraglide/messages.js',
+    ]);
+
+    // What a script passes to another module's function is followed, as from any module.
+    const helper = await analyzeProject(files, {
+      ...options,
+      entry: '/app/src/show.ts',
+    });
+    expect(
+      helper.map(
+        ({ name, kind, resolution }) => `${name}:${kind} ${resolution[0]}`
+      )
+    ).toEqual([
+      'other:call src/pages/index.astro',
+      'passed:call src/pages/index.astro',
     ]);
   });
 

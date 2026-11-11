@@ -114,7 +114,11 @@ export function followCandidate(
     return { ...candidate, path: [...candidate.path, ...path] };
   }
 
-  return { type: 'computed', get: () => followPath(candidate.get(), path) };
+  return {
+    type: 'computed',
+    get: () =>
+      candidate.get().flatMap((symbol) => toList(followPath(symbol, path))),
+  };
 }
 
 export function followPath(
@@ -307,7 +311,7 @@ function propsOf(scope: Scope): TrackedSymbol[] {
 }
 
 function evaluateCandidate(candidate: Candidate): TrackedSymbol[] {
-  if (candidate.type === 'computed') return toList(candidate.get());
+  if (candidate.type === 'computed') return candidate.get();
 
   const symbols = evaluateAll(candidate.node, candidate.scope);
 
@@ -330,7 +334,10 @@ function guarded(key: object, compute: () => TrackedSymbol[]): TrackedSymbol[] {
   }
 }
 
-/** One value per name, the first found; namespaces as they are. */
+/**
+ * One value per name and origin, the first found; namespaces as they are. Two
+ * outdirs can define a message of the same name: those are two values.
+ */
 function distinct(symbols: readonly TrackedSymbol[]): TrackedSymbol[] {
   const valuesByName = new Map<string, TrackedValue>();
   const namespaces: TrackedSymbol[] = [];
@@ -341,17 +348,33 @@ function distinct(symbols: readonly TrackedSymbol[]): TrackedSymbol[] {
       continue;
     }
 
-    const key = `${symbol.target}\0${symbol.name}\0${symbol.dynamic === true}`;
+    const key = `${originOf(symbol)}\0${symbol.name}\0${symbol.dynamic === true}`;
     if (!valuesByName.has(key)) valuesByName.set(key, symbol);
   }
 
   const values = [...valuesByName.values()];
-  const collapsed: TrackedSymbol[] =
-    values.length > MAX_VALUES
-      ? [{ ...values[0]!, name: '*', dynamic: true }]
-      : values;
+  const collapsed =
+    values.length > MAX_VALUES ? anyValuePerOrigin(values) : values;
 
   return [...collapsed, ...namespaces.slice(0, MAX_VALUES)];
+}
+
+/** The target and its file that a value comes from, e.g. an outdir's `messages.js`. */
+function originOf(value: TrackedValue): string {
+  return `${value.target}\0${value.via.at(-1) ?? ''}`;
+}
+
+function anyValuePerOrigin(values: readonly TrackedValue[]): TrackedValue[] {
+  const byOrigin = new Map<string, TrackedValue>();
+
+  for (const value of values) {
+    const origin = originOf(value);
+    if (byOrigin.has(origin)) continue;
+
+    byOrigin.set(origin, { ...value, name: '*', dynamic: true });
+  }
+
+  return [...byOrigin.values()];
 }
 
 function toList(symbol: TrackedSymbol | undefined): TrackedSymbol[] {

@@ -1,12 +1,12 @@
 import { describe, expect, test } from 'vitest';
-import { defaultLanguages } from '../../lib/compiler/languages/index.js';
+import { defaultLanguages } from '../../src/compiler/languages/index.js';
 import {
   NO_PACKAGES,
   parseSource,
   type ParseFunction,
-} from '../../lib/compiler/languages/language.js';
+} from '../../src/compiler/languages/language.js';
 import { parseSync } from 'oxc-parser';
-import { markdownLanguage } from '../../lib/compiler/languages/markdown.js';
+import { markdownLanguage } from '../../src/compiler/languages/markdown.js';
 import {
   ADAPTER_FILES,
   ADAPTER_TARGETS,

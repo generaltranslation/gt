@@ -1,10 +1,11 @@
 import path from 'node:path';
-import { staticString, type ESTree } from './ast.js';
+import { staticString, type ESTree, type Node } from './ast.js';
 import type { ModuleGraph, ModuleRecord } from './module-graph.js';
 import { topLevelClasses } from './module-syntax.js';
-import type { Binding } from './scope.js';
+import type { Binding, ImplicitNames } from './scope.js';
 import { prependVia } from './tracked-symbols.js';
-import type { TrackedSymbol } from './types.js';
+import type { SourceRange, TrackedSymbol } from './types.js';
+import type { ComponentFields } from '../languages/language.js';
 
 type Modules = Pick<ModuleGraph, 'getRecord' | 'moduleScope'>;
 
@@ -15,17 +16,58 @@ type ComponentField = {
   declaredIn: string;
 };
 
+/** The fields of the classes one `ComponentFields` names, and where they are readable. */
+type FieldScope = {
+  /** In the template's file; undefined for the whole file. */
+  range: SourceRange | undefined;
+  bindings: ReadonlyMap<string, Binding>;
+};
+
 /**
  * The names a template can use without declaring them: the fields of its
- * component classes, e.g. Angular's `protected readonly m = m`.
+ * component classes, e.g. Angular's `protected readonly m = m`. A file with
+ * several components has several templates: each reads its own class.
  */
 export function componentFieldBindings(
+  template: ModuleRecord,
+  modules: Modules
+): ImplicitNames {
+  const scopes: FieldScope[] = (template.componentFields ?? []).map(
+    (classes) => ({
+      range: classes.range,
+      bindings: fieldBindings(classes, template, modules),
+    })
+  );
+
+  return (name, at) => {
+    for (const { range, bindings } of scopes) {
+      const binding = isReadableAt(range, at) ? bindings.get(name) : undefined;
+      if (binding) return binding;
+    }
+
+    return undefined;
+  };
+}
+
+/** Fields readable in a part of the file are names only where an identifier in it reads them. */
+function isReadableAt(
+  range: SourceRange | undefined,
+  at: Node | undefined
+): boolean {
+  if (!range) return true;
+
+  return at !== undefined && range.start <= at.start && at.start < range.end;
+}
+
+/** Of several classes with a field of the same name, the first one's counts. */
+function fieldBindings(
+  classes: ComponentFields,
   template: ModuleRecord,
   modules: Modules
 ): Map<string, Binding> {
   const bindings = new Map<string, Binding>();
 
-  for (const field of componentFields(template, modules)) {
+  for (const field of fieldsOf(classes, template, modules)) {
     const isAlreadyBound = bindings.has(field.name);
     if (isAlreadyBound) continue;
 
@@ -35,35 +77,29 @@ export function componentFieldBindings(
   return bindings;
 }
 
-function componentFields(
+function fieldsOf(
+  { specifier, className }: ComponentFields,
   template: ModuleRecord,
   modules: Modules
 ): ComponentField[] {
-  const templateFileName = path.basename(template.file);
-  const fields: ComponentField[] = [];
+  const isInTemplateModule = specifier === '';
+  const declaringFile = isInTemplateModule
+    ? template.file
+    : template.resolved.get(specifier);
+  if (!declaringFile) return [];
 
-  for (const { specifier, className } of template.componentFields ?? []) {
-    const isInTemplateModule = specifier === '';
-    const declaringFile = isInTemplateModule
-      ? template.file
-      : template.resolved.get(specifier);
-    if (!declaringFile) continue;
+  const declaringModule = modules.getRecord(declaringFile);
+  if (!declaringModule) return [];
 
-    const declaringModule = modules.getRecord(declaringFile);
-    if (!declaringModule) continue;
+  const classes = componentClasses(
+    declaringModule.program,
+    className,
+    path.basename(template.file)
+  );
 
-    const classes = componentClasses(
-      declaringModule.program,
-      className,
-      templateFileName
-    );
-
-    for (const classNode of classes) {
-      fields.push(...initializedFields(classNode, declaringFile));
-    }
-  }
-
-  return fields;
+  return classes.flatMap((classNode) =>
+    initializedFields(classNode, declaringFile)
+  );
 }
 
 function fieldBinding(

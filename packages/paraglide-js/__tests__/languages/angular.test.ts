@@ -3,13 +3,13 @@ import {
   analogLanguage,
   angularComponentLanguage,
   angularTemplateLanguage,
-} from '../../lib/compiler/languages/angular.js';
+} from '../../src/compiler/languages/angular.js';
 import { parseSync } from 'oxc-parser';
-import { defaultLanguages } from '../../lib/compiler/languages/index.js';
+import { defaultLanguages } from '../../src/compiler/languages/index.js';
 import {
   NO_PACKAGES,
   parseSource,
-} from '../../lib/compiler/languages/language.js';
+} from '../../src/compiler/languages/language.js';
 import {
   analyzeProject,
   describeUsages,
@@ -74,6 +74,28 @@ describe('inline templates', () => {
       column: 32,
       scope: 'header',
     });
+  });
+
+  test('several components in a file: each template reads the fields of its own class', async () => {
+    const usages = await analyze(file, {
+      [file]: lines(
+        `import { Component } from "@angular/core";`,
+        `import { m } from "../paraglide/messages.js";`,
+        `@Component({ selector: "app-first", template: "<p>{{ label() }}</p>" })`,
+        `export class First { label = m.first; }`,
+        `@Component({ selector: "app-second", template: "<b>{{ label() }} {{ own() }}</b>" })`,
+        `export class Second { label = m.second; own = m.own; }`,
+        `@Component({ selector: "app-third", template: "<i>{{ own() }}</i>" })`,
+        `export class Third {}`
+      ),
+    });
+    expect(
+      describeUsages(usages).filter((usage) => usage.includes(':call'))
+    ).toEqual([
+      'message:first:call 3 <p>',
+      'message:second:call 5 <b>',
+      'message:own:call 5 <b>',
+    ]);
   });
 
   test('a field that is not Paraglide is not tracked', async () => {
@@ -315,6 +337,29 @@ describe('plain HTML', () => {
       ),
     });
     expect(describeUsages(usages)).toEqual(['message:title:call 12']);
+  });
+
+  test('each module script is a module of its own', async () => {
+    const file = '/app/index.html';
+    const usages = await analyze(file, {
+      [file]: lines(
+        `<!doctype html>`,
+        `<script type="module">`,
+        `  import { m } from "./src/paraglide/messages.js";`,
+        `  const label = m.first;`,
+        `  document.title = label();`,
+        `</script>`,
+        `<script type="module">`,
+        `  import { m } from "./src/paraglide/messages.js";`,
+        `  const label = m.second;`,
+        `  document.body.title = label();`,
+        `</script>`
+      ),
+    });
+    expect(describeUsages(usages)).toEqual([
+      'message:first:call 5',
+      'message:second:call 10',
+    ]);
   });
 });
 

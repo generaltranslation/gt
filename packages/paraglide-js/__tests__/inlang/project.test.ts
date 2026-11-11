@@ -1,9 +1,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { afterAll, expect, test } from 'vitest';
-import { findInlangProjects } from '../../lib/compiler/inlang/find.js';
-import { matchInlangProject } from '../../lib/compiler/inlang/match.js';
-import { readInlangProject } from '../../lib/compiler/inlang/project.js';
+import { findInlangProjects } from '../../src/compiler/inlang/find.js';
+import { matchInlangProject } from '../../src/compiler/inlang/match.js';
+import { readInlangProject } from '../../src/compiler/inlang/project.js';
 import { writeFiles } from '../helpers/files.js';
 
 const TMP = path.join(import.meta.dirname, '.tmp');

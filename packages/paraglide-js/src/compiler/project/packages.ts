@@ -17,18 +17,23 @@ import { resolvePackage } from '../utils/resolve-package.js';
 export function projectPackages(projectRoot: string): LanguageContext {
   const loaded = new Map<string, Promise<unknown>>();
   let levels: Promise<string[][]> | undefined;
+
   const find = async (specifier: string): Promise<string | undefined> => {
     const direct = await resolvePackage(projectRoot, specifier);
     if (direct) return direct;
+
     levels ??= dependencyLevels(projectRoot, 2);
+
     for (const level of await levels) {
       for (const directory of level) {
         const file = await resolvePackage(directory, specifier);
         if (file) return file;
       }
     }
+
     return undefined;
   };
+
   return {
     load<T>(specifier: string): Promise<T | undefined> {
       let module = loaded.get(specifier);
@@ -68,12 +73,16 @@ async function dependencyLevels(
   const seen = new Set<string>();
   const levels: string[][] = [];
   let current = await dependencyDirectories(projectRoot, true);
+
   for (let level = 0; level < depth && current.length > 0; level++) {
     const fresh = current.filter((directory) => !seen.has(directory));
     for (const directory of fresh) seen.add(directory);
     levels.push(fresh);
+
     current = (
-      await Promise.all(fresh.map((d) => dependencyDirectories(d, false)))
+      await Promise.all(
+        fresh.map((directory) => dependencyDirectories(directory, false))
+      )
     ).flat();
   }
   return levels;
@@ -94,13 +103,16 @@ async function dependencyDirectories(
         }
     )
     .catch(() => undefined);
+
   const names = Object.keys({
     ...manifest?.dependencies,
     ...(dev ? manifest?.devDependencies : {}),
   });
+
   const directories = await Promise.all(
     names.map((name) => findPackage(packageDirectory, name))
   );
+
   return directories.filter(
     (directory): directory is string => directory !== undefined
   );

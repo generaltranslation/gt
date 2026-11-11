@@ -10,6 +10,7 @@ import { writeTemplate } from './angular/template.js';
 import type { SourceElement } from './elements.js';
 import type {
   ComponentFields,
+  GeneratedScript,
   GeneratedSource,
   LanguageContext,
   SourceLanguage,
@@ -45,7 +46,11 @@ export const angularComponentLanguage: SourceLanguage = {
 
       const template = { start, end, escapedString: true };
       elements.push(...writeTemplate(compiler, generated, file, template));
-      componentFields.push({ specifier: '', className });
+      componentFields.push({
+        specifier: '',
+        className,
+        range: { start, end },
+      });
     }
 
     return {
@@ -203,12 +208,20 @@ function isPage(source: string): boolean {
   });
 }
 
+/** Each `<script type="module">` is a module of its own: none sees another's names. */
 function pageScripts(source: string): GeneratedSource {
-  const generated = new GeneratedCode(source);
+  const scripts: GeneratedScript[] = [];
 
   const visit = (node: Parse5Node) => {
-    if (isElement(node) && isInlineModuleScript(node))
-      copyScript(generated, node);
+    if (isElement(node) && isInlineModuleScript(node)) {
+      const script = new GeneratedCode(source);
+      copyScript(script, node);
+      scripts.push({
+        code: script.code,
+        lang: 'js',
+        mappings: script.mappings,
+      });
+    }
     if ('childNodes' in node) node.childNodes.forEach(visit);
     if (isElement(node) && isTemplate(node))
       node.content.childNodes.forEach(visit);
@@ -217,7 +230,7 @@ function pageScripts(source: string): GeneratedSource {
   const document = parse(source, { sourceCodeLocationInfo: true });
   document.childNodes.forEach(visit);
 
-  return { code: generated.code, lang: 'js', mappings: generated.mappings };
+  return { code: '', lang: 'js', mappings: [], scripts };
 }
 
 function copyScript(generated: GeneratedCode, script: Parse5Element): void {

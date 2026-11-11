@@ -3,7 +3,7 @@ import path from 'node:path';
 import YAML from 'yaml';
 import { logger } from '../console/logger.js';
 import { exitSync } from '../console/logging.js';
-import type { SourceCode } from '../react/jsx/utils/extractSourceCode.js';
+import type { SourceCode } from 'generaltranslation/types';
 import type { JSONObject } from '../types/data/json.js';
 
 export type MetadataLeaf = {

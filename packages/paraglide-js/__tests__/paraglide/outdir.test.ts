@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterAll, describe, expect, test } from 'vitest';
 import { compileCatalog } from '@inlang/paraglide-js';
-import { OutdirDetector } from '../../lib/compiler/paraglide/outdir.js';
+import { OutdirDetector } from '../../src/compiler/paraglide/outdir.js';
 import { writeFiles } from '../helpers/files.js';
 
 // Inside the package, so `@inlang/paraglide-js` resolves from the outdirs.

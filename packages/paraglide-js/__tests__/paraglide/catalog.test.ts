@@ -6,7 +6,7 @@ import { compileCatalog } from '@inlang/paraglide-js';
 import {
   matchesPattern,
   readCatalog,
-} from '../../lib/compiler/paraglide/catalog.js';
+} from '../../src/compiler/paraglide/catalog.js';
 import { writeFiles } from '../helpers/files.js';
 
 const TMP = path.join(import.meta.dirname, '.tmp', 'catalog');

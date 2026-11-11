@@ -1,10 +1,5 @@
 import fs from 'node:fs';
-
-export type SourceCode = {
-  before: string;
-  target: string;
-  after: string;
-};
+import type { SourceCode } from 'generaltranslation/types';
 
 // Cache file contents to avoid re-reading the same file for multiple translation sites
 const fileContentCache = new Map<string, string>();

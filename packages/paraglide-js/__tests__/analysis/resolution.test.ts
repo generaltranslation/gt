@@ -5,7 +5,7 @@ import {
   messagesTarget,
   packageTarget,
   runtimeTarget,
-} from '../../lib/compiler/paraglide/targets.js';
+} from '../../src/compiler/paraglide/targets.js';
 import {
   ENTRY,
   OUTDIR,
@@ -393,6 +393,38 @@ describe('multiple Paraglide projects', () => {
       ['runtime', 'getLocale', ['packages/ui/paraglide/runtime.js']],
     ]);
   });
+
+  test.each([
+    ['a script', ENTRY, (code: string) => code],
+    // A framework file's usages are merged by position.
+    [
+      'a component file',
+      '/app/src/Page.astro',
+      (code: string) => `---\n${code}\n---\n`,
+    ],
+  ])(
+    'a message both outdirs define, passed to one helper in %s, is a usage of each',
+    async (_name, entry, wrap) => {
+      const code = [
+        `import { m } from "./paraglide/messages.js";`,
+        `import { m as ui } from "../packages/ui/paraglide/messages.js";`,
+        `const show = (message) => message();`,
+        `show(m.greeting); show(ui.greeting);`,
+      ].join('\n');
+      const usages = await analyzeProject(
+        { ...files, [entry]: wrap(code) },
+        { entry, outdirs: [OUTDIR, UI_OUTDIR] }
+      );
+      expect(
+        usages
+          .filter(({ kind }) => kind === 'call')
+          .map(({ name, resolution }) => [name, resolution])
+      ).toEqual([
+        ['greeting', ['src/paraglide/messages.js']],
+        ['greeting', ['packages/ui/paraglide/messages.js']],
+      ]);
+    }
+  );
 
   test('ignores directories that do not verify as outdirs', async () => {
     expect(summarize(await analyzeProject(files))).toEqual([call]);

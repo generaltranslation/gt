@@ -17,7 +17,11 @@ import {
   requireSpecifier,
 } from './evaluate.js';
 import { jsxElementContext } from './jsx-context.js';
-import type { ModuleGraph, ModuleRecord } from './module-graph.js';
+import {
+  modulesOf,
+  type ModuleGraph,
+  type ModuleRecord,
+} from './module-graph.js';
 import { holdsArguments, type Scope } from './scope.js';
 import { enclosingScopeName } from './scope-name.js';
 import type {
@@ -54,7 +58,7 @@ const NEVER_USAGES = new Set<Node['type']>([
   'TSDeclareFunction',
 ]);
 
-/** The usages in a module loaded with `graph.loadPath(file)`. */
+/** The usages in a module loaded with `graph.loadPaths([file])`. */
 export function analyzeModule({
   graph,
   file,
@@ -65,10 +69,11 @@ export function analyzeModule({
   root: string;
 }): ParaglideUsage[] {
   const record = graph.getRecord(file);
-  const scope = graph.moduleScope(file);
-  if (!record || !scope) return [];
+  if (!record) return [];
 
-  const usages = new UsageCollector(record, scope, root).collect();
+  const usages = modulesOf(record).flatMap((module) =>
+    new UsageCollector(module, graph.scopeOf(module), root).collect()
+  );
 
   return record.generated ? onePerSourceRange(usages) : usages;
 }
@@ -319,7 +324,9 @@ function onePerSourceRange(usages: ParaglideUsage[]): ParaglideUsage[] {
   const rank = (usage: ParaglideUsage) => (usage.kind === 'reference' ? 0 : 1);
 
   for (const usage of usages) {
-    const key = `${usage.start}\0${usage.target}\0${usage.name}`;
+    // Two outdirs can define a message of the same name: the target's file tells them apart.
+    const targetFile = usage.resolution.at(-1) ?? '';
+    const key = `${usage.start}\0${usage.target}\0${targetFile}\0${usage.name}`;
     const existing = kept.get(key);
 
     if (!existing || rank(usage) > rank(existing)) kept.set(key, usage);

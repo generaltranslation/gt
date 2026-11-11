@@ -3,8 +3,8 @@ import { parseSync } from 'oxc-parser';
 import {
   NO_PACKAGES,
   parseSource,
-} from '../../lib/compiler/languages/language.js';
-import { markoLanguage } from '../../lib/compiler/languages/marko.js';
+} from '../../src/compiler/languages/language.js';
+import { markoLanguage } from '../../src/compiler/languages/marko.js';
 import {
   ADAPTER_FILES,
   ADAPTER_TARGETS,

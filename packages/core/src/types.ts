@@ -58,6 +58,7 @@ export type {
 } from './types-dir/api/downloadFileBatch';
 export type { EnqueueFilesOptions } from './translate/enqueueFiles';
 export type { EnqueueFilesResult, Updates } from './types-dir/api/enqueueFiles';
+export type { SourceCode } from './types-dir/api/sourceCode';
 export type CreateTagOptions = CreateTagData['body'];
 export type CreateTagResult = CreateTagResponse;
 export type { SetupProjectFileReference } from './translate/setupProject';

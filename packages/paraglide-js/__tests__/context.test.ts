@@ -5,7 +5,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterAll, describe, expect, test, vi } from 'vitest';
 import { build } from 'vite';
-import { main } from '../lib/compiler/cli/index.js';
+import { main } from '../src/compiler/cli/index.js';
+import { createCollector } from '../src/compiler/collector/create.js';
+import { nodeResolver } from '../src/compiler/resolver/node-resolver.js';
 import {
   collect,
   compileMessages,
@@ -314,6 +316,37 @@ describe('auto-imports', () => {
     });
     expect(usages).toEqual([greetingIn('src/main.ts')]);
   });
+
+  test('the autoImports option wins over a declaration of the same name, even when it resolves later', async () => {
+    const root = await writeProject('context-auto-imports-order', {
+      'src/main.ts': usesGlobal,
+      'src/other.ts': "export const m = { greeting: () => '' };\n",
+      'auto-imports.d.ts': [
+        'export {}',
+        'declare global {',
+        "  const m: typeof import('./src/other')['m']",
+        '}',
+      ].join('\n'),
+    });
+    const resolve = nodeResolver();
+    const collector = createCollector(
+      { autoImports: { m: './src/paraglide/messages.js' } },
+      {
+        root,
+        logger: { warn() {}, info() {} },
+        resolver: async (specifier, importer) => {
+          const isOption = specifier === './src/paraglide/messages.js';
+          if (isOption) await new Promise((done) => setTimeout(done, 50));
+
+          return resolve(specifier, importer);
+        },
+      }
+    );
+    await collector.scanAll();
+    await collector.write();
+
+    expect(await readSnippets(root)).toEqual([greetingIn('src/main.ts')]);
+  });
 });
 
 describe('outdirs', () => {
@@ -412,6 +445,15 @@ describe('the CLI', () => {
       await readSnippets(root, { file: 'i18n/messages/en.metadata.json' })
     ).toEqual([greetingIn('src/a.ts'), greetingIn('src/c.ts')]);
     expect(await readSnippets(root)).toEqual([]);
+  });
+
+  test('--alias is relative to the project root when root is a directory in it', async () => {
+    const root = await writeProject('context-cli-alias-root', {
+      'app/main.ts': useGreeting('@/paraglide/messages.js'),
+    });
+
+    expect(await main([path.join(root, 'app'), '--alias', '@=./src'])).toBe(0);
+    expect(await readSnippets(root)).toEqual([greetingIn('app/main.ts')]);
   });
 
   test('wrong arguments print the usage and exit with 2; --help prints it', async () => {

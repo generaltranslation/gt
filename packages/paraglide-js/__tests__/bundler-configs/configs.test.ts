@@ -4,17 +4,17 @@ import { afterAll, describe, expect, test } from 'vitest';
 import {
   applyAliases,
   type ImportAlias,
-} from '../../lib/compiler/bundler-configs/alias.js';
-import type { BundlerConfig } from '../../lib/compiler/bundler-configs/bundler-config.js';
-import { defaultBundlerConfigs } from '../../lib/compiler/bundler-configs/index.js';
-import { probeBundlerConfig } from '../../lib/compiler/bundler-configs/probe.js';
-import { viteConfig } from '../../lib/compiler/bundler-configs/vite.js';
+} from '../../src/compiler/bundler-configs/alias.js';
+import type { BundlerConfig } from '../../src/compiler/bundler-configs/bundler-config.js';
+import { defaultBundlerConfigs } from '../../src/compiler/bundler-configs/index.js';
+import { probeBundlerConfig } from '../../src/compiler/bundler-configs/probe.js';
+import { viteConfig } from '../../src/compiler/bundler-configs/vite.js';
 import {
   rspackConfig,
   webpackConfig,
-} from '../../lib/compiler/bundler-configs/webpack.js';
-import { projectPackages } from '../../lib/compiler/project/packages.js';
-import { NO_PACKAGES } from '../../lib/compiler/languages/language.js';
+} from '../../src/compiler/bundler-configs/webpack.js';
+import { projectPackages } from '../../src/compiler/project/packages.js';
+import { NO_PACKAGES } from '../../src/compiler/languages/language.js';
 import { writeFiles } from '../helpers/files.js';
 
 // Inside the package, so that its `vite` is the project's.

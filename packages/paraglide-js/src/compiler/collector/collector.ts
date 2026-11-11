@@ -153,7 +153,7 @@ export class ContextCollector {
     const sources = files.filter((file) => this.isSource(file));
     // Every source is loaded before any is analyzed: a value can flow from one
     // module into another's function, e.g. `show(m)` into `function show(t)`.
-    await Promise.all(sources.map((file) => this.moduleGraph.loadPath(file)));
+    await this.moduleGraph.loadPaths(sources);
     await this.loadCatalogs();
     for (const file of sources) this.analyzeLoaded(file);
     for (const file of previous) {
@@ -334,8 +334,6 @@ export class ContextCollector {
       ...detected,
     ];
 
-    const globals: GlobalBinding[] = [];
-    const names = new Set<string>();
     // Many names come from one module, e.g. `ref` and `computed` from "vue".
     const resolved = new Map<string, Promise<string | undefined>>();
     const resolveOnce = ({ specifier, importer }: AutoImport) => {
@@ -344,31 +342,32 @@ export class ContextCollector {
         resolved.set(key, this.resolve(specifier, importer));
       return resolved.get(key)!;
     };
+    const files = await Promise.all(imports.map(resolveOnce));
+
+    // Of two auto-imports of a name, the first declared that resolves wins,
+    // whichever resolved first.
+    const globals: GlobalBinding[] = [];
+    const names = new Set<string>();
+    imports.forEach(({ name, exportName }, index) => {
+      const file = files[index];
+      if (!file || names.has(name)) return;
+      names.add(name);
+      globals.push({ name, file, exportName });
+    });
+
+    const modules = [...new Set(globals.map(({ file }) => file))];
+    // Outdirs must be known before deciding what is a target.
     await Promise.all(
-      imports.map(async (autoImport: AutoImport) => {
-        const file = await resolveOnce(autoImport);
-        if (!file || names.has(autoImport.name)) return;
-        names.add(autoImport.name);
-        globals.push({
-          name: autoImport.name,
-          file,
-          exportName: autoImport.exportName,
-        });
-        await this.moduleGraph.detectOutdir(file);
-        if (
+      modules.map((file) => this.moduleGraph.detectOutdir(file))
+    );
+    await this.moduleGraph.loadPaths(
+      modules.filter(
+        (file) =>
           !this.moduleGraph.targetOf(file) &&
           this.isSourceFile(file) &&
           !isDependency(file)
-        ) {
-          await this.moduleGraph.loadPath(file);
-        }
-      })
+      )
     );
-    // Declaration order decides which of two auto-imports of a name wins.
-    const order = new Map(
-      imports.map((autoImport, index) => [autoImport.name, index])
-    );
-    globals.sort((a, b) => order.get(a.name)! - order.get(b.name)!);
     this.moduleGraph.setGlobals(globals);
   }
 

@@ -1,13 +1,13 @@
 import { describe, expect, test } from 'vitest';
-import { renderMetadataFile } from '../../lib/compiler/output/metadata.js';
+import { renderMetadataFile } from '../../src/compiler/output/metadata.js';
 import {
   sourceCodeByMessage,
   sourceSnippet,
-} from '../../lib/compiler/output/source-code.js';
+} from '../../src/compiler/output/source-code.js';
 import type {
   FileUsages,
   ParaglideUsage,
-} from '../../lib/compiler/analysis/types.js';
+} from '../../src/compiler/analysis/types.js';
 import { analyzeProject } from '../helpers/project.js';
 
 const PROJECT = 'project.inlang';
@@ -95,6 +95,28 @@ test('the metadata is nested like the message file', () => {
     nav: { home: { sourceCode } },
     'a.b': { sourceCode },
   });
+});
+
+test('a key named `__proto__` is a key like any other', () => {
+  const sourceCode = `{"src/a.ts":[{"before":"","target":"one","after":"two"}]}`;
+  const files = (id: string) => [source('src/a.ts', [usage(id, 1)])];
+
+  const flat = render([key('__proto__')], files('__proto__'));
+  expect(JSON.stringify(flat)).toBe(
+    `{"__proto__":{"sourceCode":${sourceCode}}}`
+  );
+  expect(Object.getPrototypeOf(flat)).toBe(Object.prototype);
+
+  const nested = render(
+    [key('__proto__.home', ['__proto__', 'home'])],
+    files('__proto__.home'),
+    JSON.parse(`{ "__proto__": { "home": { "context": "The start page" } } }`)
+  );
+  expect(JSON.stringify(nested)).toBe(
+    `{"__proto__":{"home":{"context":"The start page","sourceCode":${sourceCode}}}}`
+  );
+  // Nothing was written onto the prototype every object has.
+  expect(({} as { home?: unknown }).home).toBeUndefined();
 });
 
 test("messages the file does not define, and other projects' usages, are left out", () => {

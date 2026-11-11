@@ -1,6 +1,6 @@
 import { Updates } from '../types/index.js';
 import { hashSource, hashString } from 'generaltranslation/id';
-import type { SourceCode } from '../react/jsx/utils/extractSourceCode.js';
+import type { SourceCode } from 'generaltranslation/types';
 
 /**
  * Calculate hashes for all updates in parallel

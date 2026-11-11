@@ -5,14 +5,14 @@ import {
   type ESTree,
   type Node,
 } from './ast.js';
-import { evaluate, layeredNamespace, type Layer } from './evaluate.js';
+import { evaluateAll, layeredNamespace, type Layer } from './evaluate.js';
 import type { Scope } from './scope.js';
 import type { TrackedSymbol } from './types.js';
 
-/** A value a binding may hold. */
+/** What a binding may hold: an expression's values, or computed ones. */
 export type Candidate =
   | { type: 'expression'; node: Node; scope: Scope; path: readonly string[] }
-  | { type: 'computed'; get: () => TrackedSymbol | undefined };
+  | { type: 'computed'; get: () => TrackedSymbol[] };
 
 export type SymbolMap = (symbol: TrackedSymbol) => TrackedSymbol;
 
@@ -108,6 +108,23 @@ export function argumentOf(
   if (site.type === 'call') return callArgument(site, index);
 
   return index === 0 ? propsArgument(site) : undefined;
+}
+
+/**
+ * Whether a call site leaves parameter `index` to its default: it passes
+ * nothing there, or `undefined`. A JSX element passes only its props.
+ */
+export function omitsArgument(site: CallSite, index: number): boolean {
+  if (site.type === 'jsx') return index > 0;
+
+  // After a spread, what is passed where is unknown.
+  const upToIndex = site.arguments.slice(0, index + 1);
+  if (upToIndex.some((argument) => argument.type === 'SpreadElement'))
+    return false;
+
+  const argument = site.arguments[index];
+
+  return argument === undefined || isUndefined(argument, site.scope);
 }
 
 function indexOnce(
@@ -218,6 +235,19 @@ function instantiatedComponent(
     : node;
 }
 
+/** `undefined` and `void 0` */
+function isUndefined(expression: Node, scope: Scope): boolean {
+  const node = unwrapExpression(expression);
+
+  if (node.type === 'UnaryExpression') return node.operator === 'void';
+
+  return (
+    node.type === 'Identifier' &&
+    node.name === 'undefined' &&
+    scope.isGlobal(node)
+  );
+}
+
 function callArgument(site: Call, index: number): Candidate | undefined {
   const argument = site.arguments[index];
   if (!argument || argument.type === 'SpreadElement') return undefined;
@@ -230,12 +260,10 @@ function callArgument(site: Call, index: number): Candidate | undefined {
   const { scope, map } = site;
   if (!map) return { type: 'expression', node: argument, scope, path: [] };
 
+  // Every value: `show(m[cond ? "first" : "second"])` passes two messages.
   return {
     type: 'computed',
-    get: () => {
-      const symbol = evaluate(argument, scope);
-      return symbol && map(symbol);
-    },
+    get: () => evaluateAll(argument, scope).map(map),
   };
 }
 
@@ -247,7 +275,7 @@ function propsArgument({ element, scope, map }: JsxElement): Candidate {
         () => element.attributes.flatMap(attributeLayer),
         scope
       );
-      return map ? map(props) : props;
+      return [map ? map(props) : props];
     },
   };
 }

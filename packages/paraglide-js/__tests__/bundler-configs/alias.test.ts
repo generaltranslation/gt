@@ -2,7 +2,7 @@ import { expect, test } from 'vitest';
 import {
   aliasEntries,
   applyAliases,
-} from '../../lib/compiler/bundler-configs/alias.js';
+} from '../../src/compiler/bundler-configs/alias.js';
 
 test('a string alias matches the import itself and paths below it', () => {
   const aliases = [{ find: '@', replacement: '/app/src' }];

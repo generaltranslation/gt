@@ -135,6 +135,7 @@ export function topLevelClasses(program: ESTree.Program): ESTree.Class[] {
   return classes;
 }
 
+/** The names a declaration gives values to: `const { a, b } = …` → a, b. */
 export function declaredNames(declaration: ESTree.Declaration): string[] {
   switch (declaration.type) {
     case 'VariableDeclaration':
@@ -143,6 +144,8 @@ export function declaredNames(declaration: ESTree.Declaration): string[] {
       );
 
     case 'FunctionDeclaration':
+    // `declare function f(): void`, as in a `.d.ts` file.
+    case 'TSDeclareFunction':
     case 'ClassDeclaration':
     case 'TSEnumDeclaration':
       return declaration.id ? [declaration.id.name] : [];

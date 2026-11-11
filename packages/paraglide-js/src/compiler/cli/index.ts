@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { collectContext } from '../context.js';
+import { findProjectRoot } from '../project/roots.js';
 
 const USAGE = `Usage: paraglide-context [root] [options]
 
@@ -70,7 +71,8 @@ export async function main(argv: string[]): Promise<number> {
     outdirs: values.outdir,
     inlangProjects: values.project,
     radius: values.radius === undefined ? undefined : Number(values.radius),
-    alias: aliases(values.alias ?? [], root),
+    // Relative to the project root, like every other path.
+    alias: aliases(values.alias ?? [], findProjectRoot(path.resolve(root))),
     bundlerConfigs: values['no-bundler-config'] ? [] : undefined,
     logger: {
       warn: (message: string) => console.warn(message),
@@ -82,15 +84,18 @@ export async function main(argv: string[]): Promise<number> {
   return 0;
 }
 
-/** `["~=./src"]` → `{ "~": "<root>/src" }`; replacements that are not paths stay as they are. */
-function aliases(entries: string[], root: string): Record<string, string> {
+/** `["~=./src"]` → `{ "~": "<project root>/src" }`; replacements that are not paths stay as they are. */
+function aliases(
+  entries: string[],
+  projectRoot: string
+): Record<string, string> {
   return Object.fromEntries(
     entries.map((entry) => {
       const [find = '', replacement = ''] = entry.split('=', 2);
       return [
         find,
         replacement.startsWith('.')
-          ? path.resolve(root, replacement)
+          ? path.resolve(projectRoot, replacement)
           : replacement,
       ];
     })

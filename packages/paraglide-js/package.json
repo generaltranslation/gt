@@ -7,7 +7,7 @@
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
   "bin": {
-    "paraglide-context": "./dist/lib/compiler/cli/index.js"
+    "paraglide-context": "./dist/src/compiler/cli/index.js"
   },
   "files": [
     "dist"
@@ -30,7 +30,7 @@
     "build:watch": "tsc -p tsconfig.build.json --watch",
     "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
     "build:release": "pnpm run build:clean",
-    "format": "oxfmt src lib __tests__",
+    "format": "oxfmt src __tests__",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
@@ -74,6 +74,7 @@
     "@vue/language-core": "^3.3.14",
     "@vue/language-plugin-pug": "^3.3.14",
     "content-tag": "^4.2.1",
+    "generaltranslation": "workspace:*",
     "paraglide-js-1": "npm:@inlang/paraglide-js@^1.11.8",
     "paraglide-js-2": "npm:@inlang/paraglide-js@^2.29.3",
     "pug": "^3.0.4",

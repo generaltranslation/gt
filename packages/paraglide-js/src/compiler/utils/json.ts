@@ -55,11 +55,21 @@ export function setAtPath(
   let parent = root;
 
   for (const key of parentKeys) {
-    const child = parent[key];
+    const child = Object.hasOwn(parent, key) ? parent[key] : undefined;
     const next = isJsonObject(child) ? child : {};
-    parent[key] = next;
+    setOwnProperty(parent, key, next);
     parent = next;
   }
 
-  parent[lastKey] = value;
+  setOwnProperty(parent, lastKey, value);
+}
+
+/** Assigning the key `__proto__` would change the object's prototype instead. */
+function setOwnProperty(object: JsonObject, key: string, value: unknown): void {
+  Object.defineProperty(object, key, {
+    value,
+    writable: true,
+    enumerable: true,
+    configurable: true,
+  });
 }

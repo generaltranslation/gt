@@ -1,12 +1,12 @@
 import { parseSync } from 'oxc-parser';
 import { describe, expect, test } from 'vitest';
-import { defaultLanguages } from '../../lib/compiler/languages/index.js';
+import { defaultLanguages } from '../../src/compiler/languages/index.js';
 import {
   NO_PACKAGES,
   parseSource,
   type ParseFunction,
-} from '../../lib/compiler/languages/language.js';
-import { mdxLanguage } from '../../lib/compiler/languages/mdx.js';
+} from '../../src/compiler/languages/language.js';
+import { mdxLanguage } from '../../src/compiler/languages/mdx.js';
 import {
   ADAPTER_FILES,
   ADAPTER_TARGETS,

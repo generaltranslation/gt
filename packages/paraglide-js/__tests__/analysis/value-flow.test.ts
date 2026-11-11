@@ -113,6 +113,18 @@ describe('values passed into functions', () => {
     ],
     ['default value', `function show(t = other) { t.greeting(); } show(m);`],
     [
+      'the default value of an omitted argument',
+      `function show(t = m) { return t.greeting(); } show();`,
+    ],
+    [
+      'the default value of an argument that is undefined',
+      `function show(a, t = m) { return t.greeting(); } show(1, undefined);`,
+    ],
+    [
+      'a destructured default value',
+      `const show = ({ t } = { t: m }) => t.greeting(); show();`,
+    ],
+    [
       'recursion terminates',
       `function f(t) { if (x) f(t); t.greeting(); } f(m);`,
     ],
@@ -130,6 +142,15 @@ describe('values passed into functions', () => {
     ],
   ])('%s', async (_name, code) => {
     expect(await analyzeEntry(imports + code)).toEqual([call]);
+  });
+
+  test.each([
+    ['a default value that every call replaces', `show(other);`],
+    ['a default value of a function that is never called', ``],
+    ['an argument that may be anything, after a spread', `show(...args);`],
+  ])('%s is not held', async (_name, calls) => {
+    const show = `function show(t = m) { return t.greeting(); }`;
+    expect(await analyzeEntry(`${imports}${show} ${calls}`)).toEqual([]);
   });
 
   test('a wrapped component gets the props: memo(…), forwardRef(…)', async () => {
@@ -210,6 +231,20 @@ describe('values passed into functions', () => {
         '/app/src/show.ts'
       );
       expect(summarize(usages)).toEqual([call]);
+    });
+
+    test('every value of an argument: a computed key with alternatives', async () => {
+      const usages = await analyzeAll(
+        {
+          '/app/src/App.ts': `${imports}import { show } from "./show.js";\nshow(m[cond ? "first" : "second"]);\n`,
+          '/app/src/show.ts': `export const show = (message) => message();\n`,
+        },
+        '/app/src/show.ts'
+      );
+      expect(summarize(usages)).toEqual([
+        'message:first:call',
+        'message:second:call',
+      ]);
     });
 
     const show = `export function show(t) { return t.greeting(); }\n`;

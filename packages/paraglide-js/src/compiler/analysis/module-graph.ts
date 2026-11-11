@@ -42,6 +42,11 @@ export type ParsedModule = {
   componentFields?: readonly ComponentFields[];
   props?: GeneratedSource['props'];
   componentInstances?: GeneratedSource['componentInstances'];
+  /**
+   * Modules of their own in the same file, e.g. an Astro page's client
+   * scripts: none shares names with another, or with `program`.
+   */
+  scripts?: readonly ParsedModule[];
 };
 
 /** A name every module can use without importing it, e.g. from unplugin-auto-import. */
@@ -66,11 +71,13 @@ export type ModuleGraphOptions = {
   globals?: readonly GlobalBinding[];
 };
 
-export type ModuleRecord = ParsedModule & {
+export type ModuleRecord = Omit<ParsedModule, 'scripts'> & {
   file: string;
   /** The file of each specifier the module loads. */
   resolved: Map<string, string | undefined>;
   scope?: Scope;
+  /** The file's other modules: each has the file's path, and its own imports and scope. */
+  scripts?: readonly ModuleRecord[];
 };
 
 type TargetMatch = { target: ParaglideTarget; file: TargetFile };
@@ -110,7 +117,8 @@ export class ModuleGraph {
   private readonly exportsBeingResolved = new Set<string>();
   private readonly importers = new ImporterIndex({
     records: this.records,
-    scopeOf: (file) => this.moduleScope(file),
+    all: () => [...this.records.values()].flatMap(modulesOf),
+    scopeOf: (record) => this.scopeOf(record),
     generation: () => this.generation,
     globalExports: () => this.globalExports,
   });
@@ -125,7 +133,9 @@ export class ModuleGraph {
   setGlobals(globals: readonly GlobalBinding[]): void {
     this.declareGlobals(globals);
 
-    for (const record of this.records.values()) record.scope = undefined;
+    for (const record of this.records.values()) {
+      for (const module of modulesOf(record)) module.scope = undefined;
+    }
     this.generation++;
   }
 
@@ -158,10 +168,13 @@ export class ModuleGraph {
     await Promise.all(outdirCandidates(file).map(detect));
   }
 
-  /** Loads `entry` and every module reachable from it. */
-  async loadPath(entry: string): Promise<void> {
+  /**
+   * Loads `entries` and every module reachable from them. One walk for all of
+   * them: a module that several entries reach is visited once.
+   */
+  async loadPaths(entries: readonly string[]): Promise<void> {
     const visited = new Set<string>();
-    let frontier = [entry];
+    let frontier = [...new Set(entries)];
 
     while (frontier.length > 0) {
       for (const file of frontier) visited.add(file);
@@ -195,10 +208,14 @@ export class ModuleGraph {
     return this.records.get(file);
   }
 
+  /** The scope of the file's module; its scripts have their own: see `scopeOf`. */
   moduleScope(file: string): Scope | undefined {
     const record = this.records.get(file);
-    if (!record) return undefined;
 
+    return record && this.scopeOf(record);
+  }
+
+  scopeOf(record: ModuleRecord): Scope {
     record.scope ??= this.createScope(record);
 
     return record.scope;
@@ -379,8 +396,8 @@ export class ModuleGraph {
     const fields = componentFieldBindings(record, this);
     const globals = this.globals;
     const props = this.undeclaredPropBindings(record);
-    const implicitNames = (name: string) =>
-      fields.get(name) ?? globals.get(name) ?? props?.(name);
+    const implicitNames = (name: string, at?: Node) =>
+      fields(name, at) ?? globals.get(name) ?? props?.(name);
 
     const overrides = new Map<string, Binding>();
     const scope = new Scope(
@@ -518,9 +535,25 @@ export class ModuleGraph {
   }
 
   private async readRecord(file: string): Promise<ModuleRecord | undefined> {
-    const module = await this.options.readModule(file);
-    if (!module) return undefined;
+    const parsed = await this.options.readModule(file);
+    if (!parsed) return undefined;
 
+    const { scripts = [], ...module } = parsed;
+    const [record, scriptRecords] = await Promise.all([
+      this.linkModule(file, module),
+      Promise.all(scripts.map((script) => this.linkModule(file, script))),
+    ]);
+
+    return scriptRecords.length > 0
+      ? { ...record, scripts: scriptRecords }
+      : record;
+  }
+
+  /** Resolves what a module of `file` loads. */
+  private async linkModule(
+    file: string,
+    module: Omit<ParsedModule, 'scripts'>
+  ): Promise<ModuleRecord> {
     const loaded = loadedSpecifiers(module.program);
     for (const { specifier } of module.componentFields ?? []) {
       if (specifier !== '') loaded.add(specifier);
@@ -538,14 +571,23 @@ export class ModuleGraph {
   }
 }
 
+/** A file's module, then its scripts. */
+export function modulesOf(record: ModuleRecord): ModuleRecord[] {
+  return [record, ...(record.scripts ?? [])];
+}
+
 function dependenciesOf(
   records: ReadonlyArray<ModuleRecord | undefined>
 ): string[] {
   const dependencies = new Set<string>();
 
   for (const record of records) {
-    for (const file of record?.resolved.values() ?? []) {
-      if (file) dependencies.add(file);
+    const modules = record ? modulesOf(record) : [];
+
+    for (const module of modules) {
+      for (const file of module.resolved.values()) {
+        if (file) dependencies.add(file);
+      }
     }
   }
 

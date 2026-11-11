@@ -3,9 +3,11 @@
 Finds every usage of a Paraglide message in an app and saves the code around it
 as translation context, **without changing Paraglide**.
 
-Each message file gets a metadata file next to it
+Each message file of the base locale gets a metadata file next to it
 (`messages/en.json` → `messages/en.metadata.json`) with the 10 lines above and
-below every usage. The gt CLI uploads it with the messages.
+below every usage. The gt CLI uploads it with the messages. Other locales'
+files (`messages/fr.json`) get none: the context is the same for every target
+language.
 
 Supports Paraglide 1–3 on Node 20+. It reads the app's source and never runs
 its bundler, so it works however the app is built.
@@ -31,8 +33,8 @@ import { collectContext } from '@generaltranslation/paraglide-js/compiler';
 await collectContext({ root: './apps/web', include: ['src'] });
 ```
 
-Everything is exported from `@generaltranslation/paraglide-js/compiler`. The
-package root exports nothing.
+The public API is exported from `@generaltranslation/paraglide-js/compiler`:
+`collectContext` and what its options take. The package root exports nothing.
 
 ## Output
 
@@ -66,8 +68,8 @@ around its usages, by source file:
   `error_*`. `m[key]` alone goes to none.
 - With several inlang projects, a usage goes to the project its outdir was
   compiled from.
-- Files are written atomically and only when they change. One that is not a
-  JSON object is left alone, with a warning.
+- Files are written atomically and only when they change. One that cannot be
+  read or is not a JSON object is left alone, with a warning.
 
 ## Options
 
@@ -128,8 +130,8 @@ project's `settings.json`: `baseLocale` and
 
 **Usages.** Values are tracked with ESLint's scope analysis through aliases
 (`const t = m`), destructuring, reassignment, object spreads, function
-arguments, component props (across modules and from templates) and computed
-keys (`m["a"]`, `m[c ? "a" : "b"]`). Each is a `call` (`m.tos()`), `method`
+arguments and parameter defaults, component props (across modules and from
+templates) and computed keys (`m["a"]`, `m[c ? "a" : "b"]`). Each is a `call` (`m.tos()`), `method`
 (`m.tos.parts()`), `reference` (`message={m.tos}`) or `component`
 (`<ParaglideMessage />`). Messages missing from the generated catalog are
 reported in a warning.
@@ -193,7 +195,9 @@ await collectContext({
 
 A `SourceLanguage` returns its tool's output as
 `{ code, lang, mappings, elements? }`. Build `mappings` with
-`mappingsFromSourceMap` or `mappingsFromVolar`:
+`mappingsFromSourceMap` or `mappingsFromVolar`. Scripts that are modules of
+their own, like an Astro page's client scripts, go in `scripts`, each as
+`{ code, lang, mappings }`:
 
 ```ts
 const riot: SourceLanguage = {
@@ -224,18 +228,9 @@ await collectContext({ languages: [...defaultLanguages, riot] });
   `write()`. `nodeResolver` and `ProjectResolver` are the ones `collectContext`
   uses.
 
-### Lower-level API
-
-For scripts that want the usages rather than the files: `ModuleGraph`,
-`analyzeModule`, `parseSource`, `readInlangProject`, `sourceCodeByMessage`,
-`sourceSnippet`, `renderMetadataFile` and `metadataPath`. A `ParaglideUsage`
-has the target, name, kind, expression, position, `scope` (nearest named
-function, component or class member), element and attribute, and the modules it
-resolved through.
-
 Each built-in language (`vueLanguage`, …) and bundler config (`viteConfig`, …)
-is exported on its own, with the helpers they use (`remapProgram`, `applyEdits`,
-`elementContextAt`, `componentTagAt`, `applyAliases`).
+is exported on its own. The analysis itself (module graph, usages, rendering)
+is internal.
 
 ## Not handled yet
 
@@ -271,7 +266,7 @@ pnpm --filter @generaltranslation/paraglide-js typecheck
 
 ```
 src/                    entry points: index.ts (empty), compiler.ts (the public API)
-lib/compiler/
+src/compiler/
   context.ts            collectContext
   options.ts            their options, and the CLI's
   cli/                  the `paraglide-context` command
@@ -284,7 +279,7 @@ lib/compiler/
   analysis/             JS semantics: module graph, scopes, value flow, usages
   languages/            file formats → the framework tool's TypeScript, mapped back
   output/               usages → a message file's metadata (the gt CLI's format)
-__tests__/              mirrors lib/compiler/
+__tests__/              mirrors src/compiler/
 ```
 
 To try a local checkout in an app, install it as a `file:` dependency, then

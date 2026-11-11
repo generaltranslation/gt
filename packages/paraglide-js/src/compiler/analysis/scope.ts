@@ -18,7 +18,12 @@ import {
   type Node,
   type Pattern,
 } from './ast.js';
-import { argumentOf, type CallSite, type Candidate } from './call-sites.js';
+import {
+  argumentOf,
+  omitsArgument,
+  type CallSite,
+  type Candidate,
+} from './call-sites.js';
 import {
   classNamespace,
   followCandidate,
@@ -64,8 +69,11 @@ export type Binding = (
   declaration?: Node;
 };
 
-/** Names a module uses without declaring them, e.g. component fields or auto-imports. */
-export type ImplicitNames = (name: string) => Binding | undefined;
+/**
+ * Names a module uses without declaring them, e.g. component fields or
+ * auto-imports. `at` is the identifier that reads the name, when one does.
+ */
+export type ImplicitNames = (name: string, at?: Node) => Binding | undefined;
 
 type ExpressionCandidate = Extract<Candidate, { type: 'expression' }>;
 
@@ -142,7 +150,8 @@ export class Scope {
     return binding ? resolveBinding(binding, identifier) : [];
   }
 
-  bindingOf(moduleLevelName: string): Binding | undefined {
+  /** `at` is the identifier that reads the name, when one does. */
+  bindingOf(moduleLevelName: string, at?: Node): Binding | undefined {
     const override = this.overrides.get(moduleLevelName);
     if (override) return override;
 
@@ -150,7 +159,7 @@ export class Scope {
 
     return variable
       ? this.bindingOfVariable(variable)
-      : this.implicitNames(moduleLevelName);
+      : this.implicitNames(moduleLevelName, at);
   }
 
   bindingAt(identifier: Node): Binding | undefined {
@@ -158,11 +167,14 @@ export class Scope {
     const reference = this.references.get(identifier);
 
     if (!reference)
-      return name === undefined ? undefined : this.bindingOf(name);
+      return name === undefined ? undefined : this.bindingOf(name, identifier);
 
     const variable = reference.resolved;
-    if (!variable)
-      return name === undefined ? undefined : this.implicitNames(name);
+    if (!variable) {
+      return name === undefined
+        ? undefined
+        : this.implicitNames(name, identifier);
+    }
 
     const isModuleLevel = variable.scope === this.topLevel;
     const override = isModuleLevel
@@ -662,13 +674,30 @@ function parameterCandidates(
   path: readonly string[]
 ): Candidate[] {
   const candidates: Candidate[] = [];
+  const sites = scope.host.callSitesOf?.(fn) ?? [];
 
-  for (const site of scope.host.callSitesOf?.(fn) ?? []) {
+  for (const site of sites) {
     const argument = argumentOf(site, index);
     if (argument) candidates.push(followCandidate(argument, path));
   }
 
+  // `function show(t = m)` called as `show()` holds `m`.
+  const defaultValue = defaultOf(fn.params[index]);
+  const isDefaultUsed = sites.some((site) => omitsArgument(site, index));
+
+  if (defaultValue && isDefaultUsed) {
+    candidates.push({ type: 'expression', node: defaultValue, scope, path });
+  }
+
   return candidates;
+}
+
+/** `m` of the parameter `t = m`, or of the constructor's `private t = m`. */
+function defaultOf(parameter: Node | undefined): Node | undefined {
+  const pattern =
+    parameter?.type === 'TSParameterProperty' ? parameter.parameter : parameter;
+
+  return pattern?.type === 'AssignmentPattern' ? pattern.right : undefined;
 }
 
 /** `const f = memo(forwardRef((props) => …))` declares the innermost function. */
