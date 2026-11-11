@@ -1,5 +1,5 @@
-import { isBuiltin } from 'node:module';
 import fsp from 'node:fs/promises';
+import { isBuiltin } from 'node:module';
 import path from 'node:path';
 import { parseSync } from 'oxc-parser';
 import { analyzeModule } from '../analysis/analyze.js';
@@ -8,22 +8,18 @@ import {
   type GlobalBinding,
   type ParsedModule,
 } from '../analysis/module-graph.js';
-import { matchesPattern, readCatalog } from '../paraglide/catalog.js';
-import { OutdirDetector } from '../paraglide/outdir.js';
-import { isDependency, isWithin, relativePath } from '../utils/paths.js';
+import type { ParaglideUsage } from '../analysis/types.js';
 import {
   isSourceFile,
   parseSource,
   type LanguageContext,
+  type ParseFailure,
   type ParseFunction,
   type SourceLanguage,
 } from '../languages/language.js';
-import { OutdirProjects } from './outdir-projects.js';
-import { MetadataFiles } from './metadata-files.js';
-import { projectPackages } from '../project/packages.js';
-import { addDevDependencyCommand } from '../project/package-manager.js';
+import { readCatalog } from '../paraglide/catalog.js';
+import { OutdirDetector } from '../paraglide/outdir.js';
 import type { ParaglideTarget } from '../paraglide/targets.js';
-import type { ParaglideUsage } from '../analysis/types.js';
 import {
   autoImportsFromOptions,
   detectAutoImports,
@@ -31,6 +27,12 @@ import {
   type AutoImportOptions,
 } from '../project/auto-imports.js';
 import type { FileSelection } from '../project/files.js';
+import { projectPackages } from '../project/packages.js';
+import { isDependency, isWithin, relativePath } from '../utils/paths.js';
+import { checkCatalog, unknownMessagesWarning } from './catalog-check.js';
+import { MetadataFiles } from './metadata-files.js';
+import { MissingTools } from './missing-tools.js';
+import { OutdirProjects } from './outdir-projects.js';
 
 /** Resolves an import like the project's bundler would: a file, or nothing. */
 export type Resolver = (
@@ -69,13 +71,11 @@ export type CollectorSettings = {
   fallbackDirectories: readonly string[];
 };
 
-/** Dynamic names list at most this many matching messages. */
-const MAX_MATCHES = 50;
-/** The warning about messages not in the catalog lists at most this many. */
-const MAX_LISTED = 10;
+/** An outdir's message ids; undefined if they cannot be read. */
+type Catalog = Set<string> | undefined;
 
-/** Projects and languages whose unavailable tools were warned about, in this process. */
-const WARNED_LANGUAGES = new Set<string>();
+/** `./paraglide/messages.js`, `$lib/paraglide/runtime` */
+const IN_PARAGLIDE_DIRECTORY = /(^|[/\\])paraglide[/\\]/;
 
 const parse: ParseFunction = (file, code, lang) =>
   parseSync(file, code, {
@@ -87,37 +87,42 @@ const parse: ParseFunction = (file, code, lang) =>
 /** Analyzes the project's source files and writes their usages to the messages' metadata files. */
 export class ContextCollector {
   private readonly settings: CollectorSettings;
-  private readonly moduleGraph: ModuleGraph;
-  private readonly outDirDetector: OutdirDetector;
-  private readonly warnedMessages = new Set<string>();
-  private readonly output: MetadataFiles;
-  private readonly outdirProjects: OutdirProjects;
-  /** The files this collector analyzed, and how many usages each has. */
-  private readonly analyzed = new Map<string, number>();
-  /** Message ids by outdir; undefined if an outdir's catalog cannot be read. */
-  private readonly catalogs = new Map<string, Set<string> | undefined>();
-  /** Per analyzed file, its usages of messages that are not in the catalog. */
-  private readonly unknownMessages = new Map<string, string[]>();
   private readonly packages: LanguageContext;
-  /** Files `include` selects. */
-  private included = new Set<string>();
-  /** Files skipped because their language's tools are unavailable, by language. */
-  private readonly missingTools = new Map<
-    string,
-    { requires: readonly string[]; reason?: string; files: Set<string> }
-  >();
+
+  private readonly moduleGraph: ModuleGraph;
+  private readonly outdirDetector: OutdirDetector;
+  private readonly outdirProjects: OutdirProjects;
+  private readonly output: MetadataFiles;
+
+  /** The files of the last scan, and how many usages each has. */
+  private readonly analyzed = new Map<string, number>();
+  private readonly catalogs = new Map<string, Catalog>();
+  /** The last scan's usages of messages that are not in their catalog. */
+  private readonly unknownMessages: string[] = [];
+  private readonly missingTools: MissingTools;
+  /** Warnings are logged once, also when another scan gives them again. */
+  private readonly warned = new Set<string>();
 
   constructor(settings: CollectorSettings) {
+    const { projectRoot, languages } = settings;
+
     this.settings = settings;
-    this.output = new MetadataFiles(settings.projectRoot, settings.radius);
+    this.packages = projectPackages(projectRoot);
+    this.output = new MetadataFiles(projectRoot, settings.radius);
+    this.missingTools = new MissingTools({
+      projectRoot,
+      languages,
+      packages: this.packages,
+    });
+
     this.outdirProjects = new OutdirProjects({
       configured: settings.inlangProjects,
       searchDirectories: settings.inlangSearchDirectories,
     });
-    this.packages = projectPackages(settings.projectRoot);
-    this.outDirDetector = new OutdirDetector({
+    this.outdirDetector = new OutdirDetector({
       fallbackDirectories: settings.fallbackDirectories,
     });
+
     this.moduleGraph = new ModuleGraph({
       resolve: (specifier, importer) => this.resolve(specifier, importer),
       readModule: (file) => this.readModule(file),
@@ -125,60 +130,37 @@ export class ContextCollector {
       outdirs: settings.outdirs,
       isOutdir: (directory) => this.isOutdir(directory),
       shouldFollow: (file) =>
-        this.isSourceFile(file) &&
-        !isDependency(file) &&
-        !this.moduleGraph.isGenerated(file),
+        this.isAppSource(file) && !this.moduleGraph.isGenerated(file),
     });
   }
 
+  /** Analyzes the files `include` selects. `write()` writes what they use. */
   async scanAll(): Promise<void> {
-    this.moduleGraph.clear();
-    this.missingTools.clear();
-    this.outDirDetector.clear();
-    const previous = new Set(this.analyzed.keys());
-    this.analyzed.clear();
-    this.catalogs.clear();
-    this.outdirProjects.clear();
-    this.unknownMessages.clear();
+    const previouslyAnalyzed = [...this.analyzed.keys()];
+    this.reset();
+
     const { files, missing, autoImportDeclarations } =
       await this.settings.selection.list();
-    if (this.settings.explicitInclude) {
-      for (const entry of missing)
-        this.warn(`include entry ${this.relative(entry)} does not exist`);
-    }
-    this.included = new Set(files);
+    this.warnMissingIncludes(missing);
+
     // Outdirs inside `include` must be known before choosing the sources.
     await Promise.all(files.map((file) => this.moduleGraph.detectOutdir(file)));
     await this.loadGlobals(autoImportDeclarations);
-    const sources = files.filter((file) => this.isSource(file));
+
+    const sources = files.filter((file) => !this.moduleGraph.isGenerated(file));
+
     // Every source is loaded before any is analyzed: a value can flow from one
     // module into another's function, e.g. `show(m)` into `function show(t)`.
     await this.moduleGraph.loadPaths(sources);
     await this.loadCatalogs();
+
     for (const file of sources) this.analyzeLoaded(file);
-    for (const file of previous) {
-      if (!this.analyzed.has(file)) this.output.set(file, undefined);
-    }
-    if (this.moduleGraph.outdirs.length === 0) {
-      // Custom targets (components, packages) can still have usages.
-      const recorded = [...this.analyzed.values()].some((count) => count > 0);
-      this.warn(
-        recorded
-          ? 'no Paraglide outdir found; messages and runtime functions are not recorded, only other targets'
-          : 'no Paraglide outdir found; no usages can be recorded'
-      );
-    }
+    this.forgetUnanalyzed(previouslyAnalyzed);
+
+    this.warnNoOutdir();
     await this.warnMissingTools();
     this.warnUnknownMessages();
-    const counts = [...this.analyzed.values()].filter((count) => count > 0);
-    const usages = counts.reduce((sum, count) => sum + count, 0);
-    const outdirs = this.moduleGraph.outdirs
-      .map((outdir) => this.relative(outdir))
-      .join(', ');
-    this.settings.logger.info(
-      `${LOG_PREFIX} ${usages} usage(s) in ${counts.length} of ${sources.length} analyzed file(s)` +
-        (outdirs ? `; outdirs: ${outdirs}` : '')
-    );
+    this.logSummary(sources.length);
   }
 
   async write(): Promise<void> {
@@ -187,44 +169,166 @@ export class ContextCollector {
     }
   }
 
-  private isSourceFile(file: string): boolean {
-    return isSourceFile(file, this.settings.languages);
+  private reset(): void {
+    this.moduleGraph.clear();
+    this.outdirDetector.clear();
+    this.outdirProjects.clear();
+    this.missingTools.clear();
+
+    this.analyzed.clear();
+    this.catalogs.clear();
+    this.unknownMessages.length = 0;
   }
 
-  private analyzeLoaded(file: string): void {
-    const root = this.settings.projectRoot;
-    const usages = analyzeModule({ graph: this.moduleGraph, file, root });
-    const record = this.moduleGraph.getRecord(file);
-    this.tagInlangProjects(usages);
-    this.checkCatalog(file, usages);
-    this.analyzed.set(file, usages.length);
-    this.output.set(
+  /** The file an import resolves to; undefined if it is not a file, or not found. */
+  private async resolve(
+    specifier: string,
+    importer: string
+  ): Promise<string | undefined> {
+    // Builtins are never Paraglide.
+    if (isBuiltin(specifier)) return undefined;
+
+    const id = await this.settings
+      .resolver(specifier, importer)
+      .catch(() => undefined);
+    if (!id) {
+      this.warnUnresolvedParaglide(specifier, importer);
+      return undefined;
+    }
+
+    // A resolver may answer with something that is not a file, e.g. a virtual module.
+    const [file = ''] = id.split('?', 1);
+
+    return path.isAbsolute(file) ? path.normalize(file) : undefined;
+  }
+
+  private async readModule(file: string): Promise<ParsedModule | undefined> {
+    const code = await fsp.readFile(file, 'utf8').catch(() => undefined);
+    if (code === undefined) return undefined;
+
+    const parsed = await parseSource(
       file,
-      record && usages.length > 0
-        ? { file: this.relative(file), code: record.code, usages }
-        : undefined
+      code,
+      parse,
+      this.settings.languages,
+      this.packages
     );
+    if ('module' in parsed) return parsed.module;
+
+    this.reportSkipped(file, parsed);
+
+    return undefined;
   }
 
-  /** Reads the catalog of every known outdir not read yet. */
-  private async loadCatalogs(): Promise<void> {
+  private reportSkipped(file: string, failure: ParseFailure): void {
+    const { language, missing: requires, reason } = failure;
+
+    // Unavailable tools get one warning per language, after the scan.
+    if (language && requires) {
+      this.missingTools.add(file, { language, requires, reason });
+      return;
+    }
+
+    this.warn(`skipped ${this.relative(file)}: ${failure.error}`);
+  }
+
+  private async isOutdir(directory: string): Promise<boolean> {
+    if (this.settings.outdirs.includes(directory)) return true;
+
+    const verdict = await this.outdirDetector.check(directory);
+
+    if (!verdict.outdir && verdict.reason) {
+      this.warn(
+        `${this.relative(directory)} is not used as a Paraglide outdir: ${verdict.reason}. ` +
+          'If it is one, add it to the `outdirs` option.'
+      );
+    }
+
+    return verdict.outdir;
+  }
+
+  /** A file of the app, not of a dependency, in a format that is analyzed. */
+  private isAppSource(file: string): boolean {
+    return isSourceFile(file, this.settings.languages) && !isDependency(file);
+  }
+
+  /** Makes auto-imported names visible in every module. */
+  private async loadGlobals(
+    declarationFiles: readonly string[]
+  ): Promise<void> {
+    const globals = await this.autoImportedGlobals(declarationFiles);
+    const modules = [...new Set(globals.map(({ file }) => file))];
+
+    // Outdirs must be known before deciding what is a target.
     await Promise.all(
-      this.moduleGraph.outdirs
-        .filter((outdir) => !this.catalogs.has(outdir))
-        .map(async (outdir) => {
-          const catalog = await readCatalog(outdir).catch(() => undefined);
-          this.catalogs.set(outdir, catalog);
-          await this.pairProject(outdir, catalog);
-        })
+      modules.map((file) => this.moduleGraph.detectOutdir(file))
+    );
+
+    const sources = modules.filter(
+      (file) => !this.moduleGraph.targetOf(file) && this.isAppSource(file)
+    );
+    await this.moduleGraph.loadPaths(sources);
+
+    this.moduleGraph.setGlobals(globals);
+  }
+
+  /** The auto-imports of the options, then the detected ones; none if they are disabled. */
+  private async autoImportedGlobals(
+    declarationFiles: readonly string[]
+  ): Promise<GlobalBinding[]> {
+    const { autoImports, projectRoot } = this.settings;
+    if (autoImports === false) return [];
+
+    const imports = [
+      ...autoImportsFromOptions(autoImports ?? {}, projectRoot),
+      ...(await detectAutoImports(projectRoot, declarationFiles)),
+    ];
+    const files = await this.resolveAutoImports(imports);
+
+    return firstResolvedOfEachName(imports, files);
+  }
+
+  /** The file of each auto-import. Many names come from one module, e.g. `ref` and `computed` from "vue". */
+  private resolveAutoImports(
+    imports: readonly AutoImport[]
+  ): Promise<Array<string | undefined>> {
+    const resolved = new Map<string, Promise<string | undefined>>();
+
+    const resolveOnce = ({ specifier, importer }: AutoImport) => {
+      const key = `${importer}\0${specifier}`;
+      let file = resolved.get(key);
+
+      if (!file) {
+        file = this.resolve(specifier, importer);
+        resolved.set(key, file);
+      }
+
+      return file;
+    };
+
+    return Promise.all(imports.map(resolveOnce));
+  }
+
+  /** Reads the catalog of every known outdir, and pairs each outdir with its inlang project. */
+  private async loadCatalogs(): Promise<void> {
+    const unread = this.moduleGraph.outdirs.filter(
+      (outdir) => !this.catalogs.has(outdir)
+    );
+
+    await Promise.all(
+      unread.map(async (outdir) => {
+        const catalog = await readCatalog(outdir).catch(() => undefined);
+
+        this.catalogs.set(outdir, catalog);
+        await this.pairProject(outdir, catalog);
+      })
     );
   }
 
   /** Pairs `outdir` with its inlang project, whose messages get metadata files. */
-  private async pairProject(
-    outdir: string,
-    catalog: Set<string> | undefined
-  ): Promise<void> {
+  private async pairProject(outdir: string, catalog: Catalog): Promise<void> {
     const project = await this.outdirProjects.pair(outdir, catalog);
+
     if (!project) {
       this.warn(
         `no inlang project found for ${this.relative(outdir)}; its messages get no metadata file. ` +
@@ -244,6 +348,25 @@ export class ContextCollector {
     );
   }
 
+  private analyzeLoaded(file: string): void {
+    const { projectRoot: root } = this.settings;
+    const usages = analyzeModule({ graph: this.moduleGraph, file, root });
+
+    this.tagInlangProjects(usages);
+    this.checkCatalogs(file, usages);
+    this.analyzed.set(file, usages.length);
+
+    const record = this.moduleGraph.getRecord(file);
+    const hasUsages = record !== undefined && usages.length > 0;
+
+    this.output.set(
+      file,
+      hasUsages
+        ? { file: this.relative(file), code: record.code, usages }
+        : undefined
+    );
+  }
+
   /** Records on each message usage the inlang project its outdir is paired with. */
   private tagInlangProjects(usages: readonly ParaglideUsage[]): void {
     for (const usage of usages) {
@@ -257,51 +380,19 @@ export class ContextCollector {
     }
   }
 
-  /** Marks message usages that are not in their outdir's catalog. */
-  private checkCatalog(file: string, usages: readonly ParaglideUsage[]): void {
-    const unknown: string[] = [];
+  /** Records on each message usage whether its outdir's catalog has the message. */
+  private checkCatalogs(file: string, usages: readonly ParaglideUsage[]): void {
     for (const usage of usages) {
       const outdir = this.messageOutdir(usage);
       const catalog = outdir && this.catalogs.get(outdir);
       if (!catalog) continue;
-      if (usage.dynamic) {
-        const matches = [...catalog]
-          .filter((id) => matchesPattern(usage.name, id))
-          .sort();
-        usage.catalog = {
-          exists: matches.length > 0,
-          matches:
-            matches.length > MAX_MATCHES
-              ? [
-                  ...matches.slice(0, MAX_MATCHES),
-                  `… ${matches.length - MAX_MATCHES} more`,
-                ]
-              : matches,
-        };
-      } else {
-        usage.catalog = { exists: catalog.has(usage.name) };
-      }
-      if (!usage.catalog.exists) {
-        unknown.push(
-          `${usage.name} (${this.relative(file)}:${usage.line}:${usage.column})`
-        );
-      }
-    }
-    if (unknown.length > 0) this.unknownMessages.set(file, unknown);
-    else this.unknownMessages.delete(file);
-  }
 
-  private warnUnknownMessages(): void {
-    const unknown = [...this.unknownMessages.values()].flat();
-    if (unknown.length === 0) return;
-    const listed = unknown.slice(0, MAX_LISTED).join(', ');
-    const more =
-      unknown.length > MAX_LISTED
-        ? `, and ${unknown.length - MAX_LISTED} more`
-        : '';
-    this.warn(
-      `${unknown.length} usage(s) of messages not in the catalog: ${listed}${more}`
-    );
+      usage.catalog = checkCatalog(usage, catalog);
+      if (usage.catalog.exists) continue;
+
+      const position = `${this.relative(file)}:${usage.line}:${usage.column}`;
+      this.unknownMessages.push(`${usage.name} (${position})`);
+    }
   }
 
   /** The outdir of the message a usage resolves to; undefined for other targets. */
@@ -311,193 +402,110 @@ export class ContextCollector {
     const messageFile = usage.resolution.at(-1);
     if (!messageFile) return undefined;
 
-    return this.outdirOf(path.resolve(this.settings.projectRoot, messageFile));
-  }
+    const file = path.resolve(this.settings.projectRoot, messageFile);
 
-  /** The known outdir containing `file`, the innermost if nested. */
-  private outdirOf(file: string): string | undefined {
+    // The innermost one, if outdirs are nested.
     return this.moduleGraph.outdirs.find((outdir) => isWithin(outdir, file));
   }
 
-  /** Makes auto-imported names visible in every module. */
-  private async loadGlobals(
-    declarationFiles: readonly string[]
-  ): Promise<void> {
-    const { autoImports, projectRoot } = this.settings;
-    if (autoImports === false) {
-      this.moduleGraph.setGlobals([]);
-      return;
+  /** Files of the scan before that are gone, or are no longer selected, lose their usages. */
+  private forgetUnanalyzed(previouslyAnalyzed: readonly string[]): void {
+    for (const file of previouslyAnalyzed) {
+      if (!this.analyzed.has(file)) this.output.set(file, undefined);
     }
-    const detected = await detectAutoImports(projectRoot, declarationFiles);
-    const imports = [
-      ...autoImportsFromOptions(autoImports ?? {}, projectRoot),
-      ...detected,
-    ];
-
-    // Many names come from one module, e.g. `ref` and `computed` from "vue".
-    const resolved = new Map<string, Promise<string | undefined>>();
-    const resolveOnce = ({ specifier, importer }: AutoImport) => {
-      const key = `${importer}\0${specifier}`;
-      if (!resolved.has(key))
-        resolved.set(key, this.resolve(specifier, importer));
-      return resolved.get(key)!;
-    };
-    const files = await Promise.all(imports.map(resolveOnce));
-
-    // Of two auto-imports of a name, the first declared that resolves wins,
-    // whichever resolved first.
-    const globals: GlobalBinding[] = [];
-    const names = new Set<string>();
-    imports.forEach(({ name, exportName }, index) => {
-      const file = files[index];
-      if (!file || names.has(name)) return;
-      names.add(name);
-      globals.push({ name, file, exportName });
-    });
-
-    const modules = [...new Set(globals.map(({ file }) => file))];
-    // Outdirs must be known before deciding what is a target.
-    await Promise.all(
-      modules.map((file) => this.moduleGraph.detectOutdir(file))
-    );
-    await this.moduleGraph.loadPaths(
-      modules.filter(
-        (file) =>
-          !this.moduleGraph.targetOf(file) &&
-          this.isSourceFile(file) &&
-          !isDependency(file)
-      )
-    );
-    this.moduleGraph.setGlobals(globals);
   }
 
-  private isSource(file: string): boolean {
-    return this.included.has(file) && !this.moduleGraph.isGenerated(file);
+  private warnMissingIncludes(missing: readonly string[]): void {
+    if (!this.settings.explicitInclude) return;
+
+    for (const entry of missing) {
+      this.warn(`include entry ${this.relative(entry)} does not exist`);
+    }
   }
 
-  private async isOutdir(directory: string): Promise<boolean> {
-    if (this.settings.outdirs.includes(directory)) return true;
-    const verdict = await this.outDirDetector.check(directory);
-    if (!verdict.outdir && verdict.reason) {
-      this.warn(
-        `${this.relative(directory)} is not used as a Paraglide outdir: ${verdict.reason}. ` +
-          'If it is one, add it to the `outdirs` option.'
-      );
+  private warnUnresolvedParaglide(specifier: string, importer: string): void {
+    const mayBeParaglide =
+      IN_PARAGLIDE_DIRECTORY.test(specifier) &&
+      !specifier.startsWith('@inlang/');
+    if (!mayBeParaglide) return;
+
+    this.warn(
+      `could not resolve "${specifier}" from ${this.relative(importer)}; usages through it are not recorded`
+    );
+  }
+
+  private warnNoOutdir(): void {
+    if (this.moduleGraph.outdirs.length > 0) return;
+
+    // Custom targets (components, packages) can still have usages.
+    const hasUsages = this.usageCounts().length > 0;
+
+    this.warn(
+      hasUsages
+        ? 'no Paraglide outdir found; messages and runtime functions are not recorded, only other targets'
+        : 'no Paraglide outdir found; no usages can be recorded'
+    );
+  }
+
+  private async warnMissingTools(): Promise<void> {
+    for (const warning of await this.missingTools.warnings()) {
+      this.warn(warning);
     }
-    return verdict.outdir;
+  }
+
+  private warnUnknownMessages(): void {
+    const warning = unknownMessagesWarning(this.unknownMessages);
+    if (warning) this.warn(warning);
+  }
+
+  /** "12 usage(s) in 3 of 40 analyzed file(s); outdirs: src/paraglide" */
+  private logSummary(sourceCount: number): void {
+    const counts = this.usageCounts();
+    const usages = counts.reduce((sum, count) => sum + count, 0);
+    const outdirs = this.moduleGraph.outdirs
+      .map((outdir) => this.relative(outdir))
+      .join(', ');
+
+    this.settings.logger.info(
+      `${LOG_PREFIX} ${usages} usage(s) in ${counts.length} of ${sourceCount} analyzed file(s)` +
+        (outdirs ? `; outdirs: ${outdirs}` : '')
+    );
+  }
+
+  /** The number of usages of each analyzed file that has any. */
+  private usageCounts(): number[] {
+    return [...this.analyzed.values()].filter((count) => count > 0);
   }
 
   private warn(message: string): void {
-    if (this.warnedMessages.has(message)) return;
-    this.warnedMessages.add(message);
+    if (this.warned.has(message)) return;
+
+    this.warned.add(message);
     this.settings.logger.warn(`${LOG_PREFIX} ${message}`);
   }
 
   private relative(file: string): string {
     return relativePath(this.settings.projectRoot, file);
   }
+}
 
-  private async resolve(
-    specifier: string,
-    importer: string
-  ): Promise<string | undefined> {
-    // Builtins are never Paraglide.
-    if (isBuiltin(specifier)) return undefined;
-    const id = await this.settings
-      .resolver(specifier, importer)
-      .catch(() => undefined);
-    const file = id?.split('?', 1)[0];
-    // A resolver may answer with something that is not a file, e.g. a virtual module.
-    if (file && path.isAbsolute(file)) return path.normalize(file);
-    if (
-      !id &&
-      /(^|[/\\])paraglide[/\\]/.test(specifier) &&
-      !specifier.startsWith('@inlang/')
-    ) {
-      this.warn(
-        `could not resolve "${specifier}" from ${this.relative(importer)}; usages through it are not recorded`
-      );
-    }
-    return undefined;
-  }
+/**
+ * Of several auto-imports of a name, the first declared one that resolves
+ * counts, whichever was resolved first. `files[index]` is the file of
+ * `imports[index]`.
+ */
+function firstResolvedOfEachName(
+  imports: readonly AutoImport[],
+  files: ReadonlyArray<string | undefined>
+): GlobalBinding[] {
+  const globals = new Map<string, GlobalBinding>();
 
-  /**
-   * One warning per language whose tools are unavailable, e.g.
-   * "14 .vue file(s) were not analyzed (e.g. src/App.vue): they need
-   * @vue/language-core, which is not installed. Install it: pnpm add -D @vue/language-core"
-   */
-  private async warnMissingTools(): Promise<void> {
-    for (const [language, { requires, reason, files }] of this.missingTools) {
-      // Once per project and language, also across collectors.
-      const key = `${this.settings.projectRoot}\0${language}`;
-      if (WARNED_LANGUAGES.has(key)) continue;
-      WARNED_LANGUAGES.add(key);
-      const extensions = [
-        ...new Set([...files].map((file) => path.extname(file))),
-      ].join(', ');
-      const example = this.relative([...files].sort()[0]!);
-      const skipped = `${files.size} ${extensions} file(s) were not analyzed (e.g. ${example})`;
-      if (reason) {
-        this.warn(`${skipped}: ${reason}.`);
-        continue;
-      }
-      const missing: string[] = [];
-      for (const name of requires) {
-        if ((await this.packages.load(name)) === undefined) missing.push(name);
-      }
-      if (missing.length === 0) {
-        this.warn(`${skipped}: ${requires.join(' and ')} could not be loaded.`);
-        continue;
-      }
-      const list = missing.join(' and ');
-      const installedWith = this.settings.languages.find(
-        ({ name }) => name === language
-      )?.installedWith;
-      const install = [
-        ...new Set(missing.map((name) => installedWith?.[name] ?? name)),
-      ];
-      const command = await addDevDependencyCommand(
-        this.settings.projectRoot,
-        install
-      );
-      // `(vue-tsc includes @vue/language-core)`
-      const includes = missing
-        .filter((name) => installedWith?.[name])
-        .map((name) => ` (${installedWith![name]} includes ${name})`)
-        .join('');
-      this.warn(
-        `${skipped}: they need ${list}, which ${missing.length > 1 ? 'are' : 'is'} not installed. ` +
-          `Install ${missing.length > 1 ? 'them' : 'it'}: ${command}${includes}`
-      );
-    }
-  }
+  imports.forEach(({ name, exportName }, index) => {
+    const file = files[index];
+    if (!file || globals.has(name)) return;
 
-  private async readModule(file: string): Promise<ParsedModule | undefined> {
-    const code = await fsp.readFile(file, 'utf8').catch(() => undefined);
-    if (code === undefined) return undefined;
+    globals.set(name, { name, file, exportName });
+  });
 
-    const parsed = await parseSource(
-      file,
-      code,
-      parse,
-      this.settings.languages,
-      this.packages
-    );
-    if ('error' in parsed) {
-      if (parsed.missing && parsed.language) {
-        // One warning per language, after the scan.
-        const entry = this.missingTools.get(parsed.language) ?? {
-          requires: parsed.missing,
-          reason: parsed.reason,
-          files: new Set<string>(),
-        };
-        entry.files.add(file);
-        this.missingTools.set(parsed.language, entry);
-      } else {
-        this.warn(`skipped ${this.relative(file)}: ${parsed.error}`);
-      }
-      return undefined;
-    }
-    return parsed.module;
-  }
+  return [...globals.values()];
 }

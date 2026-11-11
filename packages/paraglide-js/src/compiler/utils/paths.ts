@@ -40,6 +40,7 @@ export function isScript(file: string): boolean {
 export function displayPath(root: string, file: string): string {
   const posix = toPosix(file);
   const index = posix.lastIndexOf('/node_modules/');
+
   return index === -1
     ? toPosix(path.relative(root, file))
     : posix.slice(index + 1);

@@ -214,23 +214,27 @@ function pageScripts(source: string): GeneratedSource {
 
   const visit = (node: Parse5Node) => {
     if (isElement(node) && isInlineModuleScript(node)) {
-      const script = new GeneratedCode(source);
-      copyScript(script, node);
-      scripts.push({
-        code: script.code,
-        lang: 'js',
-        mappings: script.mappings,
-      });
+      scripts.push(moduleScript(source, node));
     }
+
     if ('childNodes' in node) node.childNodes.forEach(visit);
-    if (isElement(node) && isTemplate(node))
+
+    if (isElement(node) && isTemplate(node)) {
       node.content.childNodes.forEach(visit);
+    }
   };
 
   const document = parse(source, { sourceCodeLocationInfo: true });
   document.childNodes.forEach(visit);
 
   return { code: '', lang: 'js', mappings: [], scripts };
+}
+
+function moduleScript(source: string, script: Parse5Element): GeneratedScript {
+  const generated = new GeneratedCode(source);
+  copyScript(generated, script);
+
+  return { code: generated.code, lang: 'js', mappings: generated.mappings };
 }
 
 function copyScript(generated: GeneratedCode, script: Parse5Element): void {

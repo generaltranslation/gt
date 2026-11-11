@@ -23,6 +23,16 @@ export type AutoImportOptions = Record<
   string | { from: string; export?: string }
 >;
 
+/** What a type like `typeof import('x').m` imports. */
+type ImportedExport = Pick<AutoImport, 'specifier' | 'exportName'>;
+
+type DeclaredImport = Omit<AutoImport, 'importer'>;
+
+type DeclarationStatement =
+  | ESTree.Statement
+  | ESTree.Declaration
+  | ESTree.TSModuleDeclaration;
+
 /** Declarations that auto-import tools generate, relative to the project root. */
 const DECLARATION_FILES = [
   // unplugin-auto-import (default `dts`)
@@ -43,9 +53,11 @@ export function autoImportsFromOptions(
   projectRoot: string
 ): AutoImport[] {
   const importer = path.join(projectRoot, 'package.json');
+
   return Object.entries(options).map(([name, value]) => {
     const { from, export: exportName = name } =
       typeof value === 'string' ? { from: value } : value;
+
     return { name, specifier: from, exportName, importer };
   });
 }
@@ -55,19 +67,20 @@ export async function detectAutoImports(
   projectRoot: string,
   extraFiles: readonly string[] = []
 ): Promise<AutoImport[]> {
-  const candidates = [
-    ...new Set([
-      ...DECLARATION_FILES.map((file) => path.join(projectRoot, file)),
-      ...extraFiles,
-    ]),
-  ];
+  const candidates = new Set([
+    ...DECLARATION_FILES.map((file) => path.join(projectRoot, file)),
+    ...extraFiles,
+  ]);
   const imports: AutoImport[] = [];
+
   for (const file of candidates) {
     const code = await fs.readFile(file, 'utf8').catch(() => undefined);
     if (code === undefined) continue;
+
     imports.push(...parseAutoImportDeclarations(code, file));
   }
-  return unique(imports);
+
+  return firstOfEachName(imports);
 }
 
 /**
@@ -86,99 +99,129 @@ export function parseAutoImportDeclarations(
   importer: string
 ): AutoImport[] {
   const { program } = parseSync(importer, code, { lang: 'dts' });
-  const imports: AutoImport[] = [];
 
-  const visit = (
-    statement:
-      | ESTree.Statement
-      | ESTree.Declaration
-      | ESTree.TSModuleDeclaration
-  ) => {
-    switch (statement.type) {
-      // `declare global { … }`
-      case 'TSModuleDeclaration':
-        if (statement.body?.type === 'TSModuleBlock')
-          statement.body.body.forEach(visit);
-        break;
-      // `interface GlobalComponents { Foo: … }`
-      case 'TSInterfaceDeclaration':
-        for (const member of statement.body.body) {
-          if (member.type !== 'TSPropertySignature' || member.computed)
-            continue;
-          const name =
-            member.key.type === 'Identifier'
-              ? member.key.name
-              : staticString(member.key);
-          const type = member.typeAnnotation?.typeAnnotation;
-          const imported = type && typeofImport(type);
-          if (name !== undefined && imported)
-            imports.push({ name, ...imported, importer });
-        }
-        break;
-      case 'VariableDeclaration':
-        for (const declarator of statement.declarations) {
-          const type = declarator.id.typeAnnotation?.typeAnnotation;
-          const imported = type && typeofImport(type);
-          if (declarator.id.type === 'Identifier' && imported) {
-            imports.push({ name: declarator.id.name, ...imported, importer });
-          }
-        }
-        break;
-      case 'ExportNamedDeclaration':
-        if (statement.declaration) visit(statement.declaration);
-        if (!statement.source || statement.exportKind === 'type') break;
-        for (const specifier of statement.specifiers) {
-          if (specifier.exportKind === 'type') continue;
-          imports.push({
-            name: moduleExportName(specifier.exported),
-            specifier: statement.source.value,
-            exportName: moduleExportName(specifier.local),
-            importer,
-          });
-        }
-        break;
-    }
-  };
-  program.body.forEach(visit);
-  return imports;
+  return program.body
+    .flatMap((statement) => declaredImports(statement))
+    .map((declared) => ({ ...declared, importer }));
+}
+
+function declaredImports(statement: DeclarationStatement): DeclaredImport[] {
+  switch (statement.type) {
+    // `declare global { … }`
+    case 'TSModuleDeclaration':
+      return statement.body?.type === 'TSModuleBlock'
+        ? statement.body.body.flatMap((inner) => declaredImports(inner))
+        : [];
+
+    // `interface GlobalComponents { Foo: … }`
+    case 'TSInterfaceDeclaration':
+      return statement.body.body.flatMap(memberImport);
+
+    case 'VariableDeclaration':
+      return statement.declarations.flatMap(variableImport);
+
+    case 'ExportNamedDeclaration':
+      return [
+        ...(statement.declaration
+          ? declaredImports(statement.declaration)
+          : []),
+        ...reexportedImports(statement),
+      ];
+
+    default:
+      return [];
+  }
+}
+
+/** `Foo: typeof import('./Foo.vue')['default']` */
+function memberImport(member: ESTree.TSSignature): DeclaredImport[] {
+  if (member.type !== 'TSPropertySignature' || member.computed) return [];
+
+  const name =
+    member.key.type === 'Identifier'
+      ? member.key.name
+      : staticString(member.key);
+  const imported = typeofImport(member.typeAnnotation?.typeAnnotation);
+  if (name === undefined || !imported) return [];
+
+  return [{ name, ...imported }];
+}
+
+/** `const m: typeof import('./paraglide/messages').m` */
+function variableImport(
+  declarator: ESTree.VariableDeclarator
+): DeclaredImport[] {
+  const { id } = declarator;
+  const imported = typeofImport(id.typeAnnotation?.typeAnnotation);
+  if (id.type !== 'Identifier' || !imported) return [];
+
+  return [{ name: id.name, ...imported }];
+}
+
+/** `export { m, default as greet } from './paraglide/messages'` */
+function reexportedImports(
+  statement: ESTree.ExportNamedDeclaration
+): DeclaredImport[] {
+  if (!statement.source || statement.exportKind === 'type') return [];
+
+  const specifier = statement.source.value;
+
+  return statement.specifiers
+    .filter(({ exportKind }) => exportKind !== 'type')
+    .map(({ exported, local }) => ({
+      name: moduleExportName(exported),
+      specifier,
+      exportName: moduleExportName(local),
+    }));
 }
 
 /** `typeof import('x').m` and `typeof import('x')['m']` → x, m; `typeof import('x')` → x, * */
 function typeofImport(
-  type: ESTree.TSType
-): { specifier: string; exportName: string } | undefined {
-  let exportName: string | undefined;
+  annotation: ESTree.TSType | null | undefined
+): ImportedExport | undefined {
+  if (!annotation) return undefined;
+
   // Nuxt's `LazyComponent<typeof import(…)>`
-  if (
-    type.type === 'TSTypeReference' &&
-    type.typeArguments?.params.length === 1
-  ) {
-    type = type.typeArguments.params[0]!;
-  }
-  if (type.type === 'TSIndexedAccessType') {
-    const index = type.indexType;
-    exportName =
-      index.type === 'TSLiteralType' ? staticString(index.literal) : undefined;
-    if (exportName === undefined) return undefined;
-    type = type.objectType;
-  }
+  const isWrapped =
+    annotation.type === 'TSTypeReference' &&
+    annotation.typeArguments?.params.length === 1;
+  const type = isWrapped ? annotation.typeArguments!.params[0]! : annotation;
+
+  if (type.type !== 'TSIndexedAccessType') return importQuery(type, undefined);
+
+  const index = type.indexType;
+  const exportName =
+    index.type === 'TSLiteralType' ? staticString(index.literal) : undefined;
+  if (exportName === undefined) return undefined;
+
+  return importQuery(type.objectType, exportName);
+}
+
+/** `typeof import('x')` and `typeof import('x').m`; `indexed` is the `m` of a `['m']` after it. */
+function importQuery(
+  type: ESTree.TSType,
+  indexed: string | undefined
+): ImportedExport | undefined {
   if (type.type !== 'TSTypeQuery' || type.exprName.type !== 'TSImportType')
     return undefined;
+
   const { source, qualifier } = type.exprName;
-  if (qualifier) {
-    // `.a.b` is not a module export.
-    if (qualifier.type !== 'Identifier' || exportName !== undefined)
-      return undefined;
-    exportName = qualifier.name;
-  }
-  return { specifier: source.value, exportName: exportName ?? '*' };
+  const specifier = source.value;
+  if (!qualifier) return { specifier, exportName: indexed ?? '*' };
+
+  // `.a.b` and `.a['b']` are not module exports.
+  const isExport = qualifier.type === 'Identifier' && indexed === undefined;
+
+  return isExport ? { specifier, exportName: qualifier.name } : undefined;
 }
 
 /** The first declaration of each name wins. */
-function unique(imports: AutoImport[]): AutoImport[] {
-  const seen = new Map<string, AutoImport>();
+function firstOfEachName(imports: readonly AutoImport[]): AutoImport[] {
+  const byName = new Map<string, AutoImport>();
+
   for (const autoImport of imports) {
-    if (!seen.has(autoImport.name)) seen.set(autoImport.name, autoImport);
+    if (!byName.has(autoImport.name)) byName.set(autoImport.name, autoImport);
   }
-  return [...seen.values()];
+
+  return [...byName.values()];
 }

@@ -275,6 +275,7 @@ function propsArgument({ element, scope, map }: JsxElement): Candidate {
         () => element.attributes.flatMap(attributeLayer),
         scope
       );
+
       return [map ? map(props) : props];
     },
   };

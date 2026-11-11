@@ -34,19 +34,26 @@ export function projectPackages(projectRoot: string): LanguageContext {
     return undefined;
   };
 
+  const importPackage = async (specifier: string): Promise<unknown> => {
+    const file = await find(specifier);
+    if (!file) return undefined;
+
+    const module: unknown = await import(pathToFileURL(file).href).catch(
+      () => undefined
+    );
+
+    return withDefaultExports(module);
+  };
+
   return {
     load<T>(specifier: string): Promise<T | undefined> {
       let module = loaded.get(specifier);
+
       if (!module) {
-        module = (async () => {
-          const file = await find(specifier);
-          const module =
-            file &&
-            (await import(pathToFileURL(file).href).catch(() => undefined));
-          return withDefaultExports(module);
-        })();
+        module = importPackage(specifier);
         loaded.set(specifier, module);
       }
+
       return module as Promise<T | undefined>;
     },
   };
@@ -54,11 +61,16 @@ export function projectPackages(projectRoot: string): LanguageContext {
 
 /** A CommonJS module's exports, also as named exports: `parse`, not only `default.parse`. */
 function withDefaultExports(module: unknown): unknown {
-  if (typeof module !== 'object' || module === null) return module;
+  if (!isObject(module)) return module;
+
   const fallback = (module as { default?: unknown }).default;
-  return typeof fallback === 'object' && fallback !== null
-    ? { ...(fallback as object), ...(module as object) }
-    : module;
+  if (!isObject(fallback)) return module;
+
+  return { ...fallback, ...module };
+}
+
+function isObject(value: unknown): value is object {
+  return typeof value === 'object' && value !== null;
 }
 
 /**
@@ -85,6 +97,7 @@ async function dependencyLevels(
       )
     ).flat();
   }
+
   return levels;
 }
 
@@ -127,6 +140,8 @@ async function findPackage(
     const candidate = path.join(directory, 'node_modules', ...name.split('/'));
     const real = await fs.realpath(candidate).catch(() => undefined);
     if (real) return real;
-    if (path.dirname(directory) === directory) return undefined;
+
+    const isFilesystemRoot = path.dirname(directory) === directory;
+    if (isFilesystemRoot) return undefined;
   }
 }

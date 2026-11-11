@@ -220,6 +220,7 @@ function propertyName(
       ancestors.slice(0, index - 1),
       defaultExportName
     );
+
     return component && { name: component.name, weak: false };
   }
 

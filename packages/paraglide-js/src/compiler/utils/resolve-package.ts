@@ -20,9 +20,9 @@ export async function resolvePackage(
   from: string,
   specifier: string
 ): Promise<string | undefined> {
-  const result = await resolver.resolveFileAsync(
-    path.join(from, '_.js'),
-    specifier
-  );
+  // The resolver takes the importing file, not its directory.
+  const importer = path.join(from, '_.js');
+  const result = await resolver.resolveFileAsync(importer, specifier);
+
   return result.path;
 }

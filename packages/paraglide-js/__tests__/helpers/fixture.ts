@@ -81,6 +81,7 @@ export async function writeProject(
 ): Promise<string> {
   const root = path.join(import.meta.dirname, '.tmp', name);
   await fs.rm(root, { recursive: true, force: true });
+
   const all = {
     // Its own repository, as an app is: this repo's .gitignore (`.tmp`) does not apply.
     '.git/HEAD': 'ref: refs/heads/main\n',
@@ -90,6 +91,7 @@ export async function writeProject(
     ...files,
   };
   await writeFiles(root, all);
+
   return root;
 }
 
@@ -107,6 +109,7 @@ export async function collect(
 ): Promise<Collected> {
   const warnings: string[] = [];
   const info: string[] = [];
+
   await collectContext({
     root,
     ...options,
@@ -115,6 +118,7 @@ export async function collect(
       info: (message) => void info.push(message),
     },
   });
+
   return { usages: await readSnippets(root), warnings, info };
 }
 
@@ -140,6 +144,7 @@ export async function readSnippets(
   { message = 'greeting', file = 'messages/en.metadata.json' } = {}
 ): Promise<string[]> {
   const metadata = await readMetadata(root, file);
+
   return Object.entries(metadata[message]?.sourceCode ?? {}).flatMap(
     ([source, snippets]) =>
       snippets.map((snippet) => `${source}: ${snippet.target}`)

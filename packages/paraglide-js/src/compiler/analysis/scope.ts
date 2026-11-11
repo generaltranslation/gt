@@ -310,6 +310,7 @@ export class Scope {
       const exportName = importedName(
         node as ESTree.ImportSpecifier | ESTree.ImportDefaultSpecifier
       );
+
       return host.exportOf(specifier, exportName);
     };
 

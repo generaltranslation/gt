@@ -166,8 +166,10 @@ class UsageCollector {
     const called = evaluateAll(callee, this.scope).filter(isValue);
 
     if (called.length > 0) {
-      for (const value of called)
+      for (const value of called) {
         this.add({ node: call, value, kind: 'call', ancestors });
+      }
+
       this.markRecorded(callee);
       return;
     }
@@ -225,13 +227,15 @@ class UsageCollector {
           range: tagRange,
         });
       }
+
       return true;
     }
 
     if (isPassedThroughOrInspected(node, ancestors, this.scope)) return true;
 
-    for (const value of values)
+    for (const value of values) {
       this.add({ node, value, kind: 'reference', ancestors });
+    }
 
     return true;
   }

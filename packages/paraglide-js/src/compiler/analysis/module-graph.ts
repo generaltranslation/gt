@@ -623,8 +623,9 @@ function outdirCandidates(file: string): string[] {
   const grandparent = path.dirname(parent);
 
   for (const directory of [parent, grandparent]) {
-    if (path.basename(directory) === 'messages')
+    if (path.basename(directory) === 'messages') {
       return [path.dirname(directory)];
+    }
   }
 
   return [];

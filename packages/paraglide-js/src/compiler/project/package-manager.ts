@@ -6,11 +6,9 @@ export async function addDevDependencyCommand(
   packages: readonly string[]
 ): Promise<string> {
   const detected = await detect({ cwd: projectRoot });
-  const command = resolveCommand(detected?.agent ?? 'npm', 'add', [
-    '-D',
-    ...packages,
-  ]);
-  return command
-    ? [command.command, ...command.args].join(' ')
-    : `npm install -D ${packages.join(' ')}`;
+  const agent = detected?.agent ?? 'npm';
+  const command = resolveCommand(agent, 'add', ['-D', ...packages]);
+  if (!command) return `npm install -D ${packages.join(' ')}`;
+
+  return [command.command, ...command.args].join(' ');
 }

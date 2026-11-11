@@ -50,6 +50,7 @@ export function writeTemplate(
     escapedString: range.escapedString ?? false,
     preserveLineEndings: true,
   };
+
   const html = new compiler.HtmlParser().parse(source, file, {
     ...options,
     tokenizeExpansionForms: true,
@@ -57,8 +58,9 @@ export function writeTemplate(
     tokenizeLet: true,
   });
   const [markupError] = html.errors;
-  if (markupError)
+  if (markupError) {
     throw new Error(`Angular rejected the template: ${markupError.msg}`);
+  }
 
   const template = compiler.parseTemplate(source, file, {
     ...options,
@@ -69,6 +71,7 @@ export function writeTemplate(
   const bound = new compiler.R3TargetBinder(null).bind({
     template: template.nodes,
   });
+
   const writer = new ExpressionWriter(compiler, generated, bound);
   forEachExpression(compiler, template.nodes, (expression) =>
     writer.write(expression)

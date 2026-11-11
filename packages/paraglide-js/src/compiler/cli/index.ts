@@ -3,7 +3,7 @@ import { realpathSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
-import { collectContext } from '../context.js';
+import { collectContext, type CollectContextOptions } from '../context.js';
 import { findProjectRoot } from '../project/roots.js';
 
 const USAGE = `Usage: paraglide-context [root] [options]
@@ -28,60 +28,79 @@ Options:
   --verbose           print a summary
   -h, --help          show this help`;
 
+type Arguments = ReturnType<typeof parseArguments>['values'];
+
 /** Runs the CLI. Returns the exit code. */
 export async function main(argv: string[]): Promise<number> {
   let parsed;
+
   try {
-    parsed = parseArgs({
-      args: argv,
-      allowPositionals: true,
-      options: {
-        include: { type: 'string', multiple: true },
-        exclude: { type: 'string', multiple: true },
-        outdir: { type: 'string', multiple: true },
-        project: { type: 'string', multiple: true },
-        alias: { type: 'string', multiple: true },
-        'no-bundler-config': { type: 'boolean' },
-        radius: { type: 'string' },
-        verbose: { type: 'boolean' },
-        help: { type: 'boolean', short: 'h' },
-      },
-    });
+    parsed = parseArguments(argv);
   } catch (error) {
     console.error(`${(error as Error).message}\n\n${USAGE}`);
     return 2;
   }
+
   const { values, positionals } = parsed;
+
   if (values.help) {
     console.log(USAGE);
     return 0;
   }
-  if (
-    positionals.length > 1 ||
-    (values.radius !== undefined && !/^\d+$/.test(values.radius))
-  ) {
+
+  const isRadiusValid =
+    values.radius === undefined || /^\d+$/.test(values.radius);
+  if (positionals.length > 1 || !isRadiusValid) {
     console.error(USAGE);
     return 2;
   }
+
   const root = positionals[0] ?? process.cwd();
-  const options = {
+  await collectContext(contextOptions(values, root));
+
+  return 0;
+}
+
+/** Throws on an unknown option or a missing value. */
+function parseArguments(argv: string[]) {
+  return parseArgs({
+    args: argv,
+    allowPositionals: true,
+    options: {
+      include: { type: 'string', multiple: true },
+      exclude: { type: 'string', multiple: true },
+      outdir: { type: 'string', multiple: true },
+      project: { type: 'string', multiple: true },
+      alias: { type: 'string', multiple: true },
+      'no-bundler-config': { type: 'boolean' },
+      radius: { type: 'string' },
+      verbose: { type: 'boolean' },
+      help: { type: 'boolean', short: 'h' },
+    },
+  });
+}
+
+function contextOptions(
+  values: Arguments,
+  root: string
+): CollectContextOptions {
+  // Relative to the project root, like every other path.
+  const projectRoot = findProjectRoot(path.resolve(root));
+
+  return {
     root,
     include: values.include,
     exclude: values.exclude,
     outdirs: values.outdir,
     inlangProjects: values.project,
     radius: values.radius === undefined ? undefined : Number(values.radius),
-    // Relative to the project root, like every other path.
-    alias: aliases(values.alias ?? [], findProjectRoot(path.resolve(root))),
+    alias: aliases(values.alias ?? [], projectRoot),
     bundlerConfigs: values['no-bundler-config'] ? [] : undefined,
     logger: {
-      warn: (message: string) => console.warn(message),
-      info: (message: string) =>
-        values.verbose ? console.log(message) : undefined,
+      warn: (message) => console.warn(message),
+      info: (message) => (values.verbose ? console.log(message) : undefined),
     },
   };
-  await collectContext(options);
-  return 0;
 }
 
 /** `["~=./src"]` → `{ "~": "<project root>/src" }`; replacements that are not paths stay as they are. */
@@ -92,11 +111,11 @@ function aliases(
   return Object.fromEntries(
     entries.map((entry) => {
       const [find = '', replacement = ''] = entry.split('=', 2);
+      const isRelativePath = replacement.startsWith('.');
+
       return [
         find,
-        replacement.startsWith('.')
-          ? path.resolve(projectRoot, replacement)
-          : replacement,
+        isRelativePath ? path.resolve(projectRoot, replacement) : replacement,
       ];
     })
   );
