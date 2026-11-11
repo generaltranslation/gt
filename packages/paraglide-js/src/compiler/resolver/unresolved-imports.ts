@@ -1,4 +1,5 @@
 import { relativePath } from '../utils/paths.js';
+import { compareText } from '../utils/sort.js';
 
 export type UnresolvedWarningOptions = {
   projectRoot: string;
@@ -23,7 +24,7 @@ export function unresolvedWarning(
 ): string | undefined {
   if (unresolved.size === 0) return undefined;
 
-  const imports = [...unresolved].sort(([a], [b]) => a.localeCompare(b));
+  const imports = [...unresolved].sort(([a], [b]) => compareText(a, b));
   const listed = imports
     .slice(0, MAX_LISTED)
     .map(

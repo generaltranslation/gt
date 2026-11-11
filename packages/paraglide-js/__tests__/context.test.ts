@@ -52,12 +52,13 @@ describe('collectContext', () => {
       'node_modules/vue/index.js': '',
     });
     const { usages, warnings } = await collect(root);
+    // By code units, whatever the machine's locale: `Title` before `main`.
     expect(usages).toEqual([
       'app/page.astro: <p>{m.greeting()}</p>',
       'src/Card.svelte: <p title={m.greeting()}></p>',
       'src/Card.vue: <template><p>{{ m.greeting() }}</p></template>',
-      greetingIn('src/main.ts'),
       'src/Title.tsx: export const Title = () => <h1 title={m.greeting()} />;',
+      greetingIn('src/main.ts'),
     ]);
     expect(warnings).toEqual([
       expect.stringContaining('skipped src/broken.ts: '),

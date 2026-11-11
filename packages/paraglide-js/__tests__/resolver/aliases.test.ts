@@ -170,7 +170,7 @@ describe('aliases no config declares', () => {
   };
   const unresolved =
     '3 import(s) could not be resolved, so usages through them are missed: ' +
-    '"@/paraglide/messages.js" (src/direct.ts), "@i18n" (src/reexport.ts), "/src/paraglide/messages.js" (src/from-root.ts). ' +
+    '"/src/paraglide/messages.js" (src/from-root.ts), "@/paraglide/messages.js" (src/direct.ts), "@i18n" (src/reexport.ts). ' +
     'If they are aliases, declare them in tsconfig.json "paths" or pass them with --alias: ';
 
   test('without a bundler config: the rest is analyzed, the imports are reported', async () => {

@@ -1,5 +1,6 @@
 import type { FileUsages, ParaglideUsage } from '../analysis/types.js';
 import { patternMatcher } from '../paraglide/catalog.js';
+import { compareText } from '../utils/sort.js';
 
 /**
  * The lines of a source file around a usage, in the gt CLI's format. The CLI
@@ -88,7 +89,7 @@ function projectUsages(
   sourceFiles: readonly FileUsages[],
   inlangProject: string
 ): LocatedUsage[] {
-  const sorted = [...sourceFiles].sort((a, b) => a.file.localeCompare(b.file));
+  const sorted = [...sourceFiles].sort((a, b) => compareText(a.file, b.file));
 
   return sorted.flatMap(({ file, code, usages }) => {
     const ofProject = usages.filter(
