@@ -1,14 +1,14 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig, mergeConfig } from 'vitest/config';
+import { vitestThreadsPreset } from '../../vitest.preset.mts';
 
-export default defineConfig({
-  test: {
-    // Worker threads start faster than the default child-process pool.
-    pool: 'threads',
-    // Headroom over the 5s default for a CI runner shared with every package.
-    testTimeout: 15000,
-    // Keep the GT logger quiet in test output.
-    env: {
-      _GT_LOG_LEVEL: 'off',
+export default mergeConfig(
+  vitestThreadsPreset,
+  defineConfig({
+    test: {
+      // Keep the GT logger quiet in test output.
+      env: {
+        _GT_LOG_LEVEL: 'off',
+      },
     },
-  },
-});
+  })
+);

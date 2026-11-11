@@ -59,12 +59,20 @@ describe('translateSite', () => {
     const gt = new FakeGt();
     const result = await translateSite({ payload, gt, locales: ['es'] });
 
-    // Three pages, one media document, the header and the footer.
-    expect(gt.fileIds()).toHaveLength(6);
-    expect(result.documents).toHaveLength(6);
-    expect(
-      result.documents.every((d) => d.result.locales.es?.status === 'applied')
-    ).toBe(true);
+    // The documents this file set up. Other tests add their own to the same
+    // Payload instance, so the site as a whole has no fixed size.
+    const applied = result.documents
+      .filter((d) => d.result.locales.es?.status === 'applied')
+      .map((d) => d.target);
+    expect(applied).toEqual(
+      expect.arrayContaining([
+        ...pageIds.map((id) => ({ collection: 'pages', id })),
+        { collection: 'media', id: mediaId },
+        { global: 'header' },
+        { global: 'footer' },
+      ])
+    );
+    expect(new Set(gt.fileIds()).size).toBe(result.documents.length);
     for (const id of pageIds)
       expect((await readPage(id, 'es')).title).toBe('HOME');
     const media = await payload.findByID({

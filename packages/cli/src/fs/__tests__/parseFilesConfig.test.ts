@@ -188,7 +188,7 @@ describe('parseFilesConfig', () => {
       };
 
       vi.mocked(fg.sync).mockImplementation((pattern) => [
-        String(pattern).replace('*', 'file'),
+        String(pattern).replace(/\*/g, 'file'),
       ]);
 
       const result = resolveFiles(files, 'en', defaultLocales, '/project');

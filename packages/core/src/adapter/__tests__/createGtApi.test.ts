@@ -706,7 +706,7 @@ describe('createGtApiAdapter uploadSourceFiles', () => {
             {
               sha256: metadataHash,
               fileFormat: 'JSON',
-              size: metadataJson.length,
+              size: Buffer.byteLength(metadataJson),
             },
           ],
         },

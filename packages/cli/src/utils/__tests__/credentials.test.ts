@@ -353,7 +353,19 @@ describe('setCredentials', () => {
     const git = (cwd: string, ...args: string[]) =>
       execFileSync(
         'git',
-        ['-c', 'user.name=test', '-c', 'user.email=test@example.com', ...args],
+        [
+          '-c',
+          'user.name=test',
+          '-c',
+          'user.email=test@example.com',
+          // A commit can start detached maintenance that is still rewriting
+          // `.git/objects` while the repository is copied.
+          '-c',
+          'maintenance.auto=false',
+          '-c',
+          'gc.auto=0',
+          ...args,
+        ],
         {
           cwd,
           encoding: 'utf8',

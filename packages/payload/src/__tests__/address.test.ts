@@ -30,9 +30,13 @@ describe('isAddress', () => {
 
   it('answers quickly for long values', () => {
     const value = `!@!.${'!.'.repeat(50_000)}@`;
+    // Timed because there is nothing to count: the risk is one regular
+    // expression call that backtracks. The usual email pattern takes over two
+    // seconds on this value; the check here takes well under a millisecond.
     const started = performance.now();
-    isAddress(value);
+    const result = isAddress(value);
 
-    expect(performance.now() - started).toBeLessThan(100);
+    expect(result).toBe(false);
+    expect(performance.now() - started).toBeLessThan(1_000);
   });
 });

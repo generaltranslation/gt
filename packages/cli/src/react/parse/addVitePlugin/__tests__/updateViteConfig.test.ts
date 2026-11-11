@@ -176,15 +176,17 @@ describe('updateViteConfig', () => {
   );
 
   describe('failures', () => {
+    let filesUpdated: string[];
     const run = () =>
       updateViteConfig({
         errors: [],
         warnings: [],
-        filesUpdated: [],
+        filesUpdated,
         viteConfigPath: '/app/vite.config.ts',
       });
 
     beforeEach(() => {
+      filesUpdated = [];
       vi.mocked(exitSync).mockImplementation(() => {
         throw new Error('Process exited');
       });
@@ -216,6 +218,7 @@ describe('updateViteConfig', () => {
 
       await expect(run()).rejects.toThrow('Process exited');
       expect(exitSync).toHaveBeenCalledWith(1);
+      expect(filesUpdated).toEqual([]);
     });
   });
 });

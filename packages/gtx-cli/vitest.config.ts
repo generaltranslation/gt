@@ -1,7 +1,4 @@
 import { defineConfig } from 'vitest/config';
+import { vitestPreset } from '../../vitest.preset.mts';
 
-export default defineConfig({
-  test: {
-    testTimeout: 15000,
-  },
-});
+export default defineConfig(vitestPreset);

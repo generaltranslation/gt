@@ -1,13 +1,30 @@
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 
 const packageRoot = fileURLToPath(new URL('../..', import.meta.url));
 
-// These tests load the built package through its own exports map, so `dist`
-// must exist. Turbo builds before `test`; run `pnpm build` first otherwise.
+// These tests load the built package through its own exports map.
 describe('@generaltranslation/format package exports', () => {
+  beforeAll(() => {
+    // Turbo builds this package before its tests. A standalone run rebuilds,
+    // so the entrypoints exist and match the current sources.
+    if (process.env.TURBO_HASH) return;
+
+    // npm_execpath may be a JS CLI (corepack pnpm.cjs, runnable via node) or
+    // a native binary (mise-installed pnpm, runnable directly).
+    const npmExecpath = process.env.npm_execpath;
+    const isJsCli = npmExecpath !== undefined && /\.[cm]?js$/.test(npmExecpath);
+    const command = isJsCli ? process.execPath : (npmExecpath ?? 'pnpm');
+    const args = isJsCli ? [npmExecpath, 'run', 'build'] : ['run', 'build'];
+    execFileSync(command, args, {
+      cwd: packageRoot,
+      stdio: 'pipe',
+      timeout: 60_000,
+    });
+  }, 65_000);
+
   it('loads and formats from the built CJS entrypoints', () => {
     const require = createRequire(import.meta.url);
     const format = require('@generaltranslation/format');

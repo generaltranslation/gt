@@ -1,10 +1,11 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig, mergeConfig } from 'vitest/config';
+import { vitestThreadsPreset } from '../../vitest.preset.mts';
 
-export default defineConfig({
-  test: {
-    environment: 'node',
-    // Worker threads start faster than the default forked processes. Files
-    // stay isolated, and nothing here needs process-level APIs.
-    pool: 'threads',
-  },
-});
+export default mergeConfig(
+  vitestThreadsPreset,
+  defineConfig({
+    test: {
+      environment: 'node',
+    },
+  })
+);

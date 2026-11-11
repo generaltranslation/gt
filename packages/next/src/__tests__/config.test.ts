@@ -277,29 +277,40 @@ describe('withGTConfig', () => {
     });
 
     it.each([
-      ['a sync', (_phase: string): NextConfig => ({ reactStrictMode: true })],
+      [
+        'a sync',
+        (_phase: string): NextConfig => ({ reactStrictMode: true }),
+        false,
+      ],
       [
         'an async',
         async (_phase: string): Promise<NextConfig> => ({
           reactStrictMode: true,
         }),
+        true,
       ],
-    ])('layers GT on the result of %s config function', async (_, factory) => {
-      const built = withGTConfig(factory);
+    ])(
+      'layers GT on the result of %s config function',
+      async (_, factory, isAsync) => {
+        const built = withGTConfig(factory);
 
-      expect(built).toBeTypeOf('function');
-      const resolved = await (
-        built as unknown as (
-          phase: string,
-          context: { defaultConfig: NextConfig }
-        ) => NextConfig | Promise<NextConfig>
-      )('phase-production-build', { defaultConfig: {} });
+        expect(built).toBeTypeOf('function');
+        const returned = (
+          built as unknown as (
+            phase: string,
+            context: { defaultConfig: NextConfig }
+          ) => NextConfig | Promise<NextConfig>
+        )('phase-production-build', { defaultConfig: {} });
 
-      expect(resolved.reactStrictMode).toBe(true);
-      expect(resolved).toHaveProperty('env');
-      expect(resolved.webpack).toBeTypeOf('function');
-      expect(resolved.transpilePackages).toContain('gt-next');
-    });
+        // A sync config function must stay sync: Next reads its result as is.
+        expect(returned instanceof Promise).toBe(isAsync);
+        const resolved = await returned;
+        expect(resolved.reactStrictMode).toBe(true);
+        expect(resolved).toHaveProperty('env');
+        expect(resolved.webpack).toBeTypeOf('function');
+        expect(resolved.transpilePackages).toContain('gt-next');
+      }
+    );
   });
 
   describe('Next.js i18n configuration', () => {

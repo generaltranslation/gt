@@ -1,25 +1,25 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig, mergeConfig } from 'vitest/config';
+import { vitestThreadsPreset } from './vitest.preset.mts';
 
-export default defineConfig({
-  test: {
-    globals: true,
-    environment: 'node',
-    // Worker threads start faster than the default child-process pool.
-    pool: 'threads',
-    // Start workers as files need them instead of one per CPU core up front.
-    minWorkers: 1,
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      exclude: [
-        'node_modules/',
-        'dist/',
-        'coverage/',
-        '**/*.d.ts',
-        '**/*.config.*',
-        '**/rollup.config.*',
-        '**/tsconfig.json',
-      ],
+export default mergeConfig(
+  vitestThreadsPreset,
+  defineConfig({
+    test: {
+      globals: true,
+      environment: 'node',
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'json', 'html'],
+        exclude: [
+          'node_modules/',
+          'dist/',
+          'coverage/',
+          '**/*.d.ts',
+          '**/*.config.*',
+          '**/rollup.config.*',
+          '**/tsconfig.json',
+        ],
+      },
     },
-  },
-});
+  })
+);

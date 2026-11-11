@@ -11,15 +11,17 @@ import { describe, it, expect } from 'vitest';
 import { runPasses } from './testHelpers';
 import hashSource from '../../utils/calculateHash';
 
-/** Collected string entries (callback entries first, then standalone ones) */
+/**
+ * The entries in each collection. gt() callbacks register in the callback
+ * collection; standalone msg(), t() and t`` register as runtime-only. Which
+ * collection an entry lands in decides whether it is preloaded.
+ */
 function collect(code: string) {
   const { state, errors } = runPasses(code, ['collection']);
   return {
     errors,
-    content: [
-      ...state.stringCollector.getAllTranslationContent(),
-      ...state.stringCollector.getRuntimeOnlyContent(),
-    ],
+    callback: state.stringCollector.getAllTranslationContent(),
+    runtimeOnly: state.stringCollector.getRuntimeOnlyContent(),
   };
 }
 
@@ -52,7 +54,8 @@ describe('gt() callback extraction', () => {
   ])('resolves gt(%s)', (expression, message) => {
     expect(collect(`${GT}gt(${expression});`)).toEqual({
       errors: [],
-      content: [entry(message)],
+      callback: [entry(message)],
+      runtimeOnly: [],
     });
   });
 
@@ -61,13 +64,13 @@ describe('gt() callback extraction', () => {
     ['`section.title`', 'section.title'],
   ])('resolves a static $context: %s', (expression, context) => {
     expect(
-      collect(`${GT}gt("Hello", { $context: ${expression} });`).content
+      collect(`${GT}gt("Hello", { $context: ${expression} });`).callback
     ).toEqual([entry('Hello', { context })]);
   });
 
   it('extracts multiple calls independently, in order', () => {
     expect(
-      collect(`${GT}gt("Hello" + " World");\ngt(\`Foo \${"Bar"}\`);`).content
+      collect(`${GT}gt("Hello" + " World");\ngt(\`Foo \${"Bar"}\`);`).callback
     ).toEqual([entry('Hello World'), entry('Foo Bar')]);
   });
 
@@ -77,41 +80,43 @@ describe('gt() callback extraction', () => {
     'gt(`Hello ${name}`);',
     'gt("Hello", { $context: contextVar });',
   ])('rejects dynamic content: %s', (call) => {
-    const { errors, content } = collect(GT + call);
-    expect(content).toEqual([]);
+    const { errors, callback, runtimeOnly } = collect(GT + call);
+    expect([...callback, ...runtimeOnly]).toEqual([]);
     expect(errors.length).toBeGreaterThan(0);
   });
 });
 
 describe.each([
-  ['gt() callback', GT, 'gt'],
-  ['msg()', MSG, 'msg'],
-  ['t()', T, 't'],
-])('%s', (_name, setup, fn) => {
-  it('extracts a complex static expression with its options', () => {
+  ['gt() callback', GT, 'gt', 'callback'],
+  ['msg()', MSG, 'msg', 'runtimeOnly'],
+  ['t()', T, 't', 'runtimeOnly'],
+])('%s', (_name, setup, fn, collection) => {
+  it(`extracts a complex static expression with its options as ${collection}`, () => {
     expect(
       collect(
         `${setup}${fn}("A" + \`B \${"C"}\`, { $id: "hw", $context: "nav" });`
       )
     ).toEqual({
       errors: [],
-      content: [entry('AB C', { id: 'hw', context: 'nav' })],
+      callback: [],
+      runtimeOnly: [],
+      [collection]: [entry('AB C', { id: 'hw', context: 'nav' })],
     });
   });
 
   it('rejects a dynamic message', () => {
-    const { errors, content } = collect(`${setup}${fn}(name);`);
-    expect(content).toEqual([]);
+    const { errors, callback, runtimeOnly } = collect(`${setup}${fn}(name);`);
+    expect([...callback, ...runtimeOnly]).toEqual([]);
     expect(errors.length).toBeGreaterThan(0);
   });
 });
 
 describe('t() extraction', () => {
   it('does not treat labels as shadowing translation imports', () => {
-    const { content } = collect(
+    const { runtimeOnly } = collect(
       `${T}t: while (condition) { t("Inside label"); }\nt("After label");`
     );
-    expect(content.map(({ message }) => message)).toEqual([
+    expect(runtimeOnly.map(({ message }) => message)).toEqual([
       'Inside label',
       'After label',
     ]);
@@ -133,7 +138,11 @@ describe('t`` tagged template extraction', () => {
     ["import { t } from 'gt-react/browser';\nt`Hello`;", 'Hello'],
     ["import { t } from 'gt-react/client';\nt`Hello`;", 'Hello'],
   ])('extracts %j', (code, message) => {
-    expect(collect(code)).toEqual({ errors: [], content: [entry(message)] });
+    expect(collect(code)).toEqual({
+      errors: [],
+      callback: [],
+      runtimeOnly: [entry(message)],
+    });
   });
 
   it.each([
@@ -146,13 +155,18 @@ describe('t`` tagged template extraction', () => {
       "import { derive } from 'gt-react/browser';\nt`Hello ${derive(getName())}`;",
     ],
   ])('does not extract %s', (_name, code) => {
-    expect(collect(code)).toEqual({ errors: [], content: [] });
+    expect(collect(code)).toEqual({
+      errors: [],
+      callback: [],
+      runtimeOnly: [],
+    });
   });
 
   it('reports invalid escape sequences', () => {
     expect(collect('t`\\xg`;')).toEqual({
       errors: ['Template literal contains an invalid escape sequence'],
-      content: [],
+      callback: [],
+      runtimeOnly: [],
     });
   });
 });

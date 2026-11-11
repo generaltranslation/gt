@@ -146,20 +146,18 @@ const GENERATED_HOUR_SKELETONS = [1, 2, 3].flatMap((length) =>
 // every combination runs for one 12-hour and one 24-hour locale. The locales
 // that exercise other ways of resolving that symbol (numbering system, region
 // overrides, undetermined language) run every combination of up to two symbols.
-const GENERATED_HOUR_SKELETON_CASES = [
-  ...['en-US', 'de-DE'].flatMap((locale) =>
-    GENERATED_HOUR_SKELETONS.map((skeleton) => ({ locale, skeleton }))
-  ),
-  ...[
-    'ar-EG',
-    'ja-JP',
-    'en-u-rg-gbzzzz',
-    'en-GB-u-rg-uszzzz',
-    'und-GB',
-  ].flatMap((locale) =>
-    GENERATED_HOUR_SKELETONS.filter((skeleton) => skeleton.length <= 2).map(
-      (skeleton) => ({ locale, skeleton })
-    )
+const GENERATED_HOUR_SKELETON_LOCALES = [
+  ...['en-US', 'de-DE'].map((locale) => ({
+    locale,
+    skeletons: GENERATED_HOUR_SKELETONS,
+  })),
+  ...['ar-EG', 'ja-JP', 'en-u-rg-gbzzzz', 'en-GB-u-rg-uszzzz', 'und-GB'].map(
+    (locale) => ({
+      locale,
+      skeletons: GENERATED_HOUR_SKELETONS.filter(
+        (skeleton) => skeleton.length <= 2
+      ),
+    })
   ),
 ];
 
@@ -399,14 +397,19 @@ describe('live FormatJS runtime compatibility', () => {
     });
   });
 
-  it('matches every generated hour skeleton and its AST', () => {
-    const values = { value: new Date(2020, 4, 6, 19, 3, 2) };
-    expectEachCase(GENERATED_HOUR_SKELETON_CASES, ({ locale, skeleton }) => {
-      const message = `{value, time, ::${skeleton}}`;
-      expectSameFormat(message, locale, values);
-      expectSameAst(message, locale);
-    });
-  });
+  // One test per locale: the whole corpus in one test outran the test timeout
+  // on a busy CI runner.
+  it.each(GENERATED_HOUR_SKELETON_LOCALES)(
+    'matches every generated hour skeleton and its AST for $locale',
+    ({ locale, skeletons }) => {
+      const values = { value: new Date(2020, 4, 6, 19, 3, 2) };
+      expectEachCase(skeletons, (skeleton) => {
+        const message = `{value, time, ::${skeleton}}`;
+        expectSameFormat(message, locale, values);
+        expectSameAst(message, locale);
+      });
+    }
+  );
 
   it('matches named-style behavior after non-grammar spaces', () => {
     expectEachCase(NON_GRAMMAR_SPACES, (space) => {

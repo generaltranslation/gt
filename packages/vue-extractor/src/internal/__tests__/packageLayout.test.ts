@@ -134,8 +134,15 @@ function buildIsCurrent(): boolean {
   );
   const inputs = [
     ...listSourceFiles({ includeTests: false }),
-    join(packageRoot, 'package.json'),
-    join(packageRoot, 'tsdown.config.mts'),
+    ...[
+      'package.json',
+      'tsconfig.json',
+      'tsdown.config.mts',
+      // Shared by every package's build; turbo.json lists both as global
+      // dependencies.
+      '../../tsdown.preset.mts',
+      '../../tsconfig.base.json',
+    ].map((file) => join(packageRoot, file)),
   ].map((file) => modifiedAt(file) ?? Infinity);
   const oldestOutput = Math.min(...outputs.map((time) => time ?? -Infinity));
   return oldestOutput >= Math.max(...inputs);

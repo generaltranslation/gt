@@ -4,8 +4,7 @@
  * FormatJS parser fixtures are MIT licensed. See ../../THIRD_PARTY_NOTICES.md.
  */
 
-import { performance } from 'node:perf_hooks';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { parse, SKELETON_TYPE, TYPE, type Location } from '../index';
 
 describe('parse', () => {
@@ -73,15 +72,23 @@ describe('parse', () => {
       { length: count },
       (_, index) => `{v${index}}`
     ).join('');
-    const start = performance.now();
-    const ast = parse(message, { captureLocation: true });
-    const duration = performance.now() - start;
+    // Count character reads instead of timing the parse. One pass reads each
+    // character about three times; the former per-node prefix rescans read
+    // the message thousands of times over.
+    const reads = vi.spyOn(String.prototype, 'charCodeAt');
+    let readCount: number;
+    let ast: ReturnType<typeof parse>;
+    try {
+      ast = parse(message, { captureLocation: true });
+      readCount = reads.mock.calls.length;
+    } finally {
+      reads.mockRestore();
+    }
 
     expect(ast).toHaveLength(count);
     expect(ast.at(-1)?.location?.end.offset).toBe(message.length);
-    // The former per-node prefix rescans took multiple seconds here. Keep a
-    // deliberately generous ceiling for slower CI machines.
-    expect(duration).toBeLessThan(1_000);
+    expect(readCount).toBeGreaterThanOrEqual(message.length);
+    expect(readCount).toBeLessThan(message.length * 8);
   });
 
   it('parses selects, nested arguments, and null-prototype-like keys safely', () => {

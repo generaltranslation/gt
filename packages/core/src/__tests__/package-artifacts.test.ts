@@ -4,6 +4,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   realpathSync,
   rmSync,
@@ -11,7 +12,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 import { expect, it } from 'vitest';
@@ -61,7 +62,9 @@ function imports(code: string): string[] {
 // copy under the fixture, so bare imports resolve from the fixture's explicit
 // dependency links and never from the workspace. Spawning pnpm for each of the
 // four packages made this the slowest test in the package on CI. The copy is
-// only faithful while nothing rewrites the manifest or file list at pack time.
+// only faithful while nothing rewrites the manifest or file list at pack time
+// and `files` names plain paths, so anything else fails here instead of being
+// copied wrongly.
 function layOutPublishedPackage(directory: string, fixture: string): void {
   const root = join(packageRoot, '..', directory);
   const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
@@ -73,12 +76,27 @@ function layOutPublishedPackage(directory: string, fixture: string): void {
     'pack-time lifecycle scripts'
   ).toEqual([]);
 
+  // A glob or a `!` negation selects files this copy cannot reproduce.
+  expect(
+    manifest.files.filter(
+      (entry: string) =>
+        /[*?[\]{}!]/.test(entry) || !existsSync(join(root, entry))
+    ),
+    '`files` entries that are not existing plain paths'
+  ).toEqual([]);
+
   const published = join(fixture, directory);
   for (const entry of ['package.json', ...manifest.files]) {
-    if (existsSync(join(root, entry))) {
-      cpSync(join(root, entry), join(published, entry), { recursive: true });
-    }
+    cpSync(join(root, entry), join(published, entry), { recursive: true });
   }
+  // `files` overrides the package's own ignore file, but an ignore file inside
+  // a published directory still drops files from the tarball.
+  expect(
+    readdirSync(published, { recursive: true }).filter((file) =>
+      ['.npmignore', '.gitignore'].includes(basename(String(file)))
+    ),
+    'ignore files inside published directories'
+  ).toEqual([]);
   const link = join(fixture, 'node_modules', manifest.name);
   mkdirSync(dirname(link), { recursive: true });
   symlinkSync(published, link, 'junction');
