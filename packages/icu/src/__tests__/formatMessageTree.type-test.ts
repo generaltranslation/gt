@@ -34,7 +34,7 @@ const plain = formatMessageTree(
   options
 );
 expectType<Equal<typeof plain, string>>();
-const none = formatMessageTree(tree, undefined, undefined, options);
+const none = formatMessageTree(tree, 'en', {}, options);
 expectType<Equal<typeof none, string>>();
 
 // A rich value makes the result that value or the parts around it.
@@ -133,7 +133,7 @@ const icuText = formatMessage(
   options
 );
 expectType<Equal<typeof icuText, string>>();
-const icuNone = formatMessage('Hi', undefined, undefined, options);
+const icuNone = formatMessage('Hi', 'en', {}, options);
 expectType<Equal<typeof icuNone, string>>();
 const icuRich = formatMessage(
   '<b>hi</b> {avatar}',
@@ -218,8 +218,13 @@ expectType<
   Equal<typeof listValue, string | string[] | Array<string | string[]>>
 >();
 
-// The time zone is always passed in: this package does not read the host's.
+// Every argument is passed in: this package has no defaults of its own and
+// does not read the host's time zone.
 // @ts-expect-error a message is formatted with a time zone
 formatMessageTree(tree, 'en', {});
 // @ts-expect-error a message is formatted with a time zone
 formatMessage('Hi {name}', 'en', { name: 'Ada' });
+// @ts-expect-error a message is formatted in the locales it is given
+formatMessageTree(tree, undefined, {}, options);
+// @ts-expect-error a message is formatted with the values it is given
+formatMessage('Hi', 'en', undefined, options);

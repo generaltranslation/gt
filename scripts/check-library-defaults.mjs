@@ -59,7 +59,6 @@ export const defaultGroups = [
     declarations: [
       'packages/core/src/settings/settings.ts',
       'packages/format/src/settings/settings.ts',
-      'packages/icu/src/settings/settings.ts',
     ],
     exceptions: [
       {

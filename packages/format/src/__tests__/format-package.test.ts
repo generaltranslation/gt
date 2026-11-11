@@ -60,20 +60,20 @@ describe('@generaltranslation/format package export', () => {
           } = require('@generaltranslation/format');
 
           assert.equal(
-            formatMessage('Hi {name}', { variables: { name: 'Ada' }, timeZone: 'UTC' }),
+            formatMessage('Hi {name}', { locales: 'en', variables: { name: 'Ada' }, timeZone: 'UTC' }),
             'Hi Ada'
           );
-          assert.equal(formatCutoff('Hello, world!', { maxChars: 8 }), 'Hello, …');
-          assert.equal(formatNum(1234.5), '1,234.5');
-          assert.equal(formatCurrency(1234.5, 'USD'), '$1,234.50');
-          assert.equal(formatList(['apples', 'bananas']), 'apples and bananas');
-          assert.equal(formatRelativeTime(-1, 'day'), 'yesterday');
+          assert.equal(formatCutoff('Hello, world!', { locales: 'en', maxChars: 8 }), 'Hello, …');
+          assert.equal(formatNum(1234.5, { locales: 'en' }), '1,234.5');
+          assert.equal(formatCurrency(1234.5, 'USD', { locales: 'en' }), '$1,234.50');
+          assert.equal(formatList(['apples', 'bananas'], { locales: 'en' }), 'apples and bananas');
+          assert.equal(formatRelativeTime(-1, 'day', { locales: 'en' }), 'yesterday');
           const relativeFromDate = formatRelativeTimeFromDate(
             new Date(Date.now() - 24 * 60 * 60 * 1000),
-            undefined,
+            { locales: 'en', baseDate: new Date() },
           );
           assert.equal(typeof relativeFromDate, 'string');
-          assert.equal(new LocaleConfig({ timeZone: 'UTC' }).formatNum(1234.5, 'en-US'), '1,234.5');
+          assert.equal(new LocaleConfig({ defaultLocale: 'en', locales: [], timeZone: 'UTC' }).formatNum(1234.5, 'en-US'), '1,234.5');
           assert.equal(getRegionProperties('US').name, 'United States');
           assert.equal(standardizeLocale('en-us'), 'en-US');
         `,
@@ -105,21 +105,21 @@ describe('@generaltranslation/format package export', () => {
           } from '@generaltranslation/format';
 
           assert.equal(
-            formatMessage('Hi {name}', { variables: { name: 'Ada' }, timeZone: 'UTC' }),
+            formatMessage('Hi {name}', { locales: 'en', variables: { name: 'Ada' }, timeZone: 'UTC' }),
             'Hi Ada'
           );
-          assert.equal(formatCutoff('Hello, world!', { maxChars: 8 }), 'Hello, …');
-          assert.equal(formatNum(1234.5), '1,234.5');
-          assert.equal(formatCurrency(1234.5, 'USD'), '$1,234.50');
-          assert.equal(formatList(['apples', 'bananas']), 'apples and bananas');
-          assert.equal(formatRelativeTime(-1, 'day'), 'yesterday');
+          assert.equal(formatCutoff('Hello, world!', { locales: 'en', maxChars: 8 }), 'Hello, …');
+          assert.equal(formatNum(1234.5, { locales: 'en' }), '1,234.5');
+          assert.equal(formatCurrency(1234.5, 'USD', { locales: 'en' }), '$1,234.50');
+          assert.equal(formatList(['apples', 'bananas'], { locales: 'en' }), 'apples and bananas');
+          assert.equal(formatRelativeTime(-1, 'day', { locales: 'en' }), 'yesterday');
           const relativeFromDate = formatRelativeTimeFromDate(
             new Date(Date.now() - 24 * 60 * 60 * 1000),
-            undefined,
+            { locales: 'en', baseDate: new Date() },
           );
           assert.equal(typeof relativeFromDate, 'string');
           assert.equal(
-            new LocaleConfig({ customMapping: { en: 'English' }, timeZone: 'UTC' }).getLocaleName('en'),
+            new LocaleConfig({ defaultLocale: 'en', locales: [], customMapping: { en: 'English' }, timeZone: 'UTC' }).getLocaleName('en'),
             'English'
           );
           assert.equal(getRegionProperties('419').emoji, '🌎');

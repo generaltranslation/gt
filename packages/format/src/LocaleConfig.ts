@@ -31,9 +31,11 @@ import { getCustomLocaleCode } from './locales/customLocaleMapping';
 import type { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
 import type { StringFormat } from './types-dir/jsx/content';
 
+// Every setting but the custom mapping is passed in: this package applies no
+// defaults of its own to them. `generaltranslation` and gt-i18n resolve them.
 export type LocaleConfigConstructorParams = {
-  defaultLocale?: string;
-  locales?: string[];
+  defaultLocale: string;
+  locales: string[];
   customMapping?: CustomMapping;
   /**
    * The time zone of the dates and times this config formats. It is always
@@ -156,8 +158,8 @@ export class LocaleConfig {
   }
 
   constructor({
-    defaultLocale = libraryDefaultLocale,
-    locales = [],
+    defaultLocale,
+    locales,
     customMapping,
     timeZone,
   }: LocaleConfigConstructorParams) {
@@ -243,16 +245,16 @@ export class LocaleConfig {
 
   formatRelativeTimeFromDate(
     date: Date,
-    targetLocale?: string,
+    targetLocale: string | undefined,
     options: WithLocales<
-      Intl.RelativeTimeFormatOptions & { baseDate?: Date }
-    > = {}
+      Intl.RelativeTimeFormatOptions & {
+        /** The date to compare with. This package does not read the clock. */
+        baseDate: Date;
+      }
+    >
   ) {
     const { locales, baseDate, ...intlOptions } = options;
-    const { value, unit } = _selectRelativeTimeUnit(
-      date,
-      baseDate ?? new Date()
-    );
+    const { value, unit } = _selectRelativeTimeUnit(date, baseDate);
     return _formatRelativeTime({
       value,
       unit,
@@ -289,7 +291,7 @@ export class LocaleConfig {
     return _formatMessageICU(
       message,
       this.getFormattingLocales(targetLocale, locales),
-      variables,
+      variables ?? {},
       this.timeZone
     );
   }

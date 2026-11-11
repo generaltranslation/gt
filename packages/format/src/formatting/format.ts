@@ -1,13 +1,15 @@
 import { FormatVariables } from '../types';
 import { intlCache } from '../cache/IntlCache';
 import { missingTimeZoneError } from '../errors/formattingErrors';
-import { libraryDefaultLocale } from '../settings/settings';
 import { formatMessage } from '@generaltranslation/icu/parser';
 
+// Every argument is passed in: this package applies no defaults of its own
+// to them. `generaltranslation` and the configs resolve what a caller leaves
+// out.
 type FormatParams<Value, Options> = {
   value: Value;
-  locales?: string | string[];
-  options?: Options;
+  locales: string | string[];
+  options: Options;
 };
 
 /**
@@ -22,16 +24,16 @@ export type ZonedDateTimeFormatOptions = Intl.DateTimeFormatOptions & {
  * Formats a message according to the specified locales and options.
  *
  * @param {string} message - The message to format.
- * @param {string | string[]} [locales=libraryDefaultLocale] - The locales to use for formatting.
- * @param {Record<string, any>} [variables={}] - The variables to use for formatting.
+ * @param {string | string[]} locales - The locales to use for formatting.
+ * @param {Record<string, any>} variables - The variables to use for formatting.
  * @param {string} timeZone - The time zone of the dates and times in the message.
  * @returns {string} The formatted message.
  * @internal
  */
 export function _formatMessageICU(
   message: string,
-  locales: string | string[] = libraryDefaultLocale,
-  variables: FormatVariables = {},
+  locales: string | string[],
+  variables: FormatVariables,
   timeZone: string
 ): string {
   return formatMessage(message, locales, variables, { timeZone });
@@ -42,16 +44,16 @@ export function _formatMessageICU(
  *
  * @param {Object} params - The parameters for the number formatting.
  * @param {number} params.value - The number to format.
- * @param {string | string[]} [params.locales=[libraryDefaultLocale]] - The locales to use for formatting.
- * @param {Intl.NumberFormatOptions} [params.options={}] - Additional options for number formatting.
+ * @param {string | string[]} params.locales - The locales to use for formatting.
+ * @param {Intl.NumberFormatOptions} params.options - Options for number formatting.
  *
  * @returns {string} The formatted number.
  * @internal
  */
 export function _formatNum({
   value,
-  locales = [libraryDefaultLocale],
-  options = {},
+  locales,
+  options,
 }: FormatParams<number, Intl.NumberFormatOptions>): string {
   return intlCache
     .get('NumberFormat', locales, {
@@ -66,7 +68,7 @@ export function _formatNum({
  *
  * @param {Object} params - The parameters for the date formatting.
  * @param {Date} params.value - The date to format.
- * @param {string | string[]} [params.locales=libraryDefaultLocale] - The locales to use for formatting.
+ * @param {string | string[]} params.locales - The locales to use for formatting.
  * @param {ZonedDateTimeFormatOptions} params.options - Options for date formatting, with the time zone.
  *
  * @returns {string} The formatted date.
@@ -74,13 +76,9 @@ export function _formatNum({
  */
 export function _formatDateTime({
   value,
-  locales = [libraryDefaultLocale],
+  locales,
   options,
-}: {
-  value: Date;
-  locales?: string | string[];
-  options: ZonedDateTimeFormatOptions;
-}): string {
+}: FormatParams<Date, ZonedDateTimeFormatOptions>): string {
   // The types require one; this is for a caller they do not check.
   if (!options.timeZone) throw new TypeError(missingTimeZoneError);
   return intlCache
@@ -98,8 +96,8 @@ export function _formatDateTime({
  * @param {Object} params - The parameters for the currency formatting.
  * @param {number} params.value - The currency value to format.
  * @param {string} params.currency - The currency code (e.g., 'USD').
- * @param {string | string[]} [params.locales=[libraryDefaultLocale]] - The locales to use for formatting.
- * @param {Intl.NumberFormatOptions} [params.options={}] - Additional options for currency formatting.
+ * @param {string | string[]} params.locales - The locales to use for formatting.
+ * @param {Intl.NumberFormatOptions} params.options - Options for currency formatting.
  *
  * @returns {string} The formatted currency value.
  * @internal
@@ -107,12 +105,11 @@ export function _formatDateTime({
 
 export function _formatCurrency({
   value,
-  locales = [libraryDefaultLocale],
-  currency = 'USD',
-  options = {},
+  locales,
+  currency,
+  options,
 }: FormatParams<number, Intl.NumberFormatOptions> & {
-  value: number;
-  currency?: string;
+  currency: string;
 }): string {
   return intlCache
     .get('NumberFormat', locales, {
@@ -129,16 +126,16 @@ export function _formatCurrency({
  *
  * @param {Object} params - The parameters for the list formatting.
  * @param {Array<string | number>} params.value - The list of items to format.
- * @param {string | string[]} [params.locales=[libraryDefaultLocale]] - The locales to use for formatting.
- * @param {Intl.ListFormatOptions} [params.options={}] - Additional options for list formatting.
+ * @param {string | string[]} params.locales - The locales to use for formatting.
+ * @param {Intl.ListFormatOptions} params.options - Options for list formatting.
  *
  * @returns {string} The formatted list.
  * @internal
  */
 export function _formatList({
   value,
-  locales = [libraryDefaultLocale],
-  options = {},
+  locales,
+  options,
 }: FormatParams<Array<string | number>, Intl.ListFormatOptions>): string {
   return intlCache
     .get('ListFormat', locales, {
@@ -153,15 +150,15 @@ export function _formatList({
  * Formats a list of items according to the specified locales and options.
  * @param {Object} params - The parameters for the list formatting.
  * @param {Array<T>} params.value - The list of items to format.
- * @param {string | string[]} [params.locales=[libraryDefaultLocale]] - The locales to use for formatting.
- * @param {Intl.ListFormatOptions} [params.options={}] - Additional options for list formatting.
+ * @param {string | string[]} params.locales - The locales to use for formatting.
+ * @param {Intl.ListFormatOptions} params.options - Options for list formatting.
  * @returns {Array<T | string>} The formatted list parts.
  * @internal
  */
 export function _formatListToParts<T>({
   value,
-  locales = [libraryDefaultLocale],
-  options = {},
+  locales,
+  options,
 }: FormatParams<Array<T>, Intl.ListFormatOptions>) {
   const formatListParts = intlCache
     .get('ListFormat', locales, {
@@ -224,8 +221,8 @@ export function _selectRelativeTimeUnit(
  * @param {Object} params - The parameters for the relative time formatting.
  * @param {number} params.value - The relative time value to format.
  * @param {Intl.RelativeTimeFormatUnit} params.unit - The unit of time (e.g., 'second', 'minute', 'hour', 'day', 'week', 'month', 'year').
- * @param {string | string[]} [params.locales=[libraryDefaultLocale]] - The locales to use for formatting.
- * @param {Intl.RelativeTimeFormatOptions} [params.options={}] - Additional options for relative time formatting.
+ * @param {string | string[]} params.locales - The locales to use for formatting.
+ * @param {Intl.RelativeTimeFormatOptions} params.options - Options for relative time formatting.
  *
  * @returns {string} The formatted relative time string.
  * @internal
@@ -233,8 +230,8 @@ export function _selectRelativeTimeUnit(
 export function _formatRelativeTime({
   value,
   unit,
-  locales = [libraryDefaultLocale],
-  options = {},
+  locales,
+  options,
 }: FormatParams<number, Intl.RelativeTimeFormatOptions> & {
   unit: Intl.RelativeTimeFormatUnit;
 }): string {

@@ -5,7 +5,6 @@
 
 import { intlCache } from '../cache/IntlCache';
 import { resolveLocale } from './locale';
-import { libraryDefaultLocale } from '../settings/settings';
 import { FALLBACK_BRANCH_KEY, isPluralCategoryKey } from '../settings/syntax';
 import type {
   ExtendedNumberFormatOptions,
@@ -141,8 +140,8 @@ type FormatContext = FormatMessageTreeOptions & {
  */
 export function formatMessageTree(
   tree: MessageTree,
-  locales: string | string[] | undefined,
-  variables: Readonly<Record<string, MessagePlainValue>> | undefined,
+  locales: string | string[],
+  variables: Readonly<Record<string, MessagePlainValue>>,
   options: FormatMessageTreeOptions
 ): string;
 /**
@@ -154,14 +153,14 @@ export function formatMessageTree(
  */
 export function formatMessageTree<R>(
   tree: MessageTree,
-  locales: string | string[] | undefined,
+  locales: string | string[],
   variables: MessageTreeValues<R> & OnePartValues<R>,
   options: FormatMessageTreeOptions
 ): FormattedMessage<R>;
 export function formatMessageTree(
   tree: MessageTree,
-  locales: string | string[] = libraryDefaultLocale,
-  variables: MessageVariables = {},
+  locales: string | string[],
+  variables: MessageVariables,
   options: FormatMessageTreeOptions
 ): unknown {
   resolveLocale(locales);

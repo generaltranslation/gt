@@ -587,7 +587,7 @@ export class GTRuntime {
     return this.localeConfig.formatRelativeTimeFromDate(
       date,
       this.targetLocale,
-      options
+      { ...options, baseDate: options?.baseDate ?? new Date() }
     );
   }
 

@@ -1,5 +1,6 @@
-// The formatters as the tests call them: in the host's time zone, which
-// intl-messageformat formats in too, unless a test passes another.
+// The formatters as the tests call them, with what a caller would resolve:
+// English, no values, and the host's time zone, which intl-messageformat
+// formats in too.
 import {
   formatMessageTree as formatTree,
   type FormatMessageTreeOptions,
@@ -13,7 +14,7 @@ export const hostTimeZone = new Intl.DateTimeFormat().resolvedOptions()
 
 export function formatMessageTree(
   tree: MessageTree,
-  locales?: string | string[],
+  locales: string | string[] = 'en',
   variables: MessageTreeValues<unknown> = {},
   options?: Partial<FormatMessageTreeOptions>
 ): unknown {
@@ -25,7 +26,7 @@ export function formatMessageTree(
 
 export function formatMessage(
   message: string,
-  locales?: string | string[],
+  locales: string | string[] = 'en',
   variables: MessageTreeValues<unknown> = {},
   options?: Partial<FormatMessageTreeOptions>
 ): unknown {

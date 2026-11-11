@@ -1,23 +1,23 @@
 import {
-  LocaleConfig as ZonedLocaleConfig,
-  type LocaleConfigConstructorParams as ZonedLocaleConfigConstructorParams,
+  LocaleConfig as ResolvedLocaleConfig,
+  type LocaleConfigConstructorParams as ResolvedLocaleConfigParams,
 } from '@generaltranslation/format';
+import { libraryDefaultLocale } from './settings/settings';
 import { hostTimeZone } from './utils/hostTimeZone';
 
-export type LocaleConfigConstructorParams = Omit<
-  ZonedLocaleConfigConstructorParams,
-  'timeZone'
-> & {
-  /** The time zone of dates and times. Defaults to the host's. */
-  timeZone?: string;
-};
+export type LocaleConfigConstructorParams = Partial<ResolvedLocaleConfigParams>;
 
 /**
  * The locale and formatting primitives of `@generaltranslation/format`, with
- * the time zone resolved: that package takes it as an argument.
+ * its settings resolved: that package takes each of them as an argument.
  */
-export class LocaleConfig extends ZonedLocaleConfig {
+export class LocaleConfig extends ResolvedLocaleConfig {
   constructor(params: LocaleConfigConstructorParams = {}) {
-    super({ ...params, timeZone: params.timeZone ?? hostTimeZone() });
+    super({
+      ...params,
+      defaultLocale: params.defaultLocale ?? libraryDefaultLocale,
+      locales: params.locales ?? [],
+      timeZone: params.timeZone ?? hostTimeZone(),
+    });
   }
 }

@@ -1,6 +1,5 @@
 import { parse } from '../parser/parse';
 import { toMessageTree } from '../convert/syntaxTree';
-import { libraryDefaultLocale } from '../settings/settings';
 import type { MessageVariables } from '../types-dir/ast';
 import {
   formatParsedTree,
@@ -20,8 +19,8 @@ import { resolveLocale } from './locale';
  */
 export function formatMessage(
   message: string,
-  locales: string | string[] | undefined,
-  variables: Readonly<Record<string, MessagePlainValue>> | undefined,
+  locales: string | string[],
+  variables: Readonly<Record<string, MessagePlainValue>>,
   options: FormatMessageTreeOptions
 ): string;
 /**
@@ -30,14 +29,14 @@ export function formatMessage(
  */
 export function formatMessage<R>(
   message: string,
-  locales: string | string[] | undefined,
+  locales: string | string[],
   variables: MessageTreeValues<R> & OnePartValues<R>,
   options: FormatMessageTreeOptions
 ): FormattedMessage<R>;
 export function formatMessage(
   message: string,
-  locales: string | string[] = libraryDefaultLocale,
-  variables: MessageVariables = {},
+  locales: string | string[],
+  variables: MessageVariables,
   options: FormatMessageTreeOptions
 ): unknown {
   const locale = resolveLocale(locales);

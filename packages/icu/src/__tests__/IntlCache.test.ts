@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { IntlCache, intlCache } from '../cache/IntlCache';
-import { libraryDefaultLocale } from '../settings/settings';
 
 describe('IntlCache', () => {
   it('returns one instance for the same locales and options', () => {
@@ -38,15 +37,6 @@ describe('IntlCache', () => {
         currency: 'EUR',
         style: 'currency',
       })
-    );
-  });
-
-  it('uses the library default locale when there are no locales', () => {
-    expect(intlCache.get('NumberFormat').resolvedOptions().locale).toBe(
-      libraryDefaultLocale
-    );
-    expect(intlCache.get('NumberFormat')).toBe(
-      intlCache.get('NumberFormat', libraryDefaultLocale)
     );
   });
 

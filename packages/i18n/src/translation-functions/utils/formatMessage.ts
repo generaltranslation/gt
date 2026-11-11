@@ -6,7 +6,10 @@ import {
   isI18nConfigInitialized,
 } from '../../i18n-config/singleton-operations';
 import { formatMessage as formatZonedMessage } from '@generaltranslation/format';
-import { hostTimeZone } from 'generaltranslation/internal';
+import {
+  hostTimeZone,
+  libraryDefaultLocale,
+} from 'generaltranslation/internal';
 
 /**
  * Given an encoded message and variables, formats the message.
@@ -27,7 +30,7 @@ export function formatMessage(
     if (!isI18nConfigInitialized()) {
       return formatZonedMessage(encodedMsg, {
         variables,
-        locales,
+        locales: locales ?? libraryDefaultLocale,
         dataFormat,
         timeZone: hostTimeZone(),
       });

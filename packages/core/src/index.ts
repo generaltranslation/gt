@@ -79,17 +79,20 @@ export {
   LocaleConfig,
   type LocaleConfigConstructorParams,
 } from './LocaleConfig';
-export { formatDateTime, formatMessage } from './formatting';
-
 export {
-  determineLocale,
   formatCurrency,
   formatCutoff,
+  formatDateTime,
   formatList,
   formatListToParts,
+  formatMessage,
   formatNum,
   formatRelativeTime,
   formatRelativeTimeFromDate,
+} from './formatting';
+
+export {
+  determineLocale,
   getLocaleDirection,
   getLocaleEmoji,
   getLocaleName,

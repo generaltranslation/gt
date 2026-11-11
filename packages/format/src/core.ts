@@ -38,12 +38,14 @@ export {
   type CustomRegionMapping,
 } from './locales/getRegionProperties';
 
+// Every argument is passed in: these functions apply no defaults of their own
+// to them. `generaltranslation` resolves what a caller leaves out.
 type LocalesOption = {
-  locales?: string | string[];
+  locales: string | string[];
 };
 
 type MessageFormatOptions = LocalesOption & {
-  variables?: FormatVariables;
+  variables: FormatVariables;
   dataFormat?: StringFormat;
   /** The time zone of the dates and times in the message. */
   timeZone: string;
@@ -101,9 +103,9 @@ type MessageFormatOptions = LocalesOption & {
  */
 export function formatCutoff(
   value: string,
-  options?: LocalesOption & CutoffFormatOptions
+  options: LocalesOption & CutoffFormatOptions
 ) {
-  const { locales, ...formatOptions } = options ?? {};
+  const { locales, ...formatOptions } = options;
   return intlCache.get('CutoffFormat', locales, formatOptions).format(value);
 }
 
@@ -142,9 +144,9 @@ export function formatMessage(message: string, options: MessageFormatOptions) {
  */
 export function formatNum(
   number: number,
-  options?: LocalesOption & Intl.NumberFormatOptions
+  options: LocalesOption & Intl.NumberFormatOptions
 ): string {
-  const { locales, ...intlOptions } = options ?? {};
+  const { locales, ...intlOptions } = options;
   return _formatNum({
     value: number,
     locales,
@@ -184,9 +186,9 @@ export function formatDateTime(
 export function formatCurrency(
   value: number,
   currency: string,
-  options?: LocalesOption & Intl.NumberFormatOptions
+  options: LocalesOption & Intl.NumberFormatOptions
 ): string {
-  const { locales, ...intlOptions } = options ?? {};
+  const { locales, ...intlOptions } = options;
   return _formatCurrency({
     value,
     currency,
@@ -205,9 +207,9 @@ export function formatCurrency(
  */
 export function formatList(
   array: Array<string | number>,
-  options?: LocalesOption & Intl.ListFormatOptions
+  options: LocalesOption & Intl.ListFormatOptions
 ): string {
-  const { locales, ...intlOptions } = options ?? {};
+  const { locales, ...intlOptions } = options;
   return _formatList({
     value: array,
     locales,
@@ -225,9 +227,9 @@ export function formatList(
  */
 export function formatListToParts<T>(
   array: Array<T>,
-  options?: LocalesOption & Intl.ListFormatOptions
+  options: LocalesOption & Intl.ListFormatOptions
 ): Array<T | string> {
-  const { locales, ...intlOptions } = options ?? {};
+  const { locales, ...intlOptions } = options;
   return _formatListToParts<T>({
     value: array,
     locales,
@@ -247,9 +249,9 @@ export function formatListToParts<T>(
 export function formatRelativeTime(
   value: number,
   unit: Intl.RelativeTimeFormatUnit,
-  options?: LocalesOption & Omit<Intl.RelativeTimeFormatOptions, 'locales'>
+  options: LocalesOption & Omit<Intl.RelativeTimeFormatOptions, 'locales'>
 ): string {
-  const { locales, ...intlOptions } = options ?? {};
+  const { locales, ...intlOptions } = options;
   return _formatRelativeTime({
     value,
     unit,
@@ -268,13 +270,14 @@ export function formatRelativeTime(
  */
 export function formatRelativeTimeFromDate(
   date: Date,
-  options?: LocalesOption &
+  options: LocalesOption &
     Omit<Intl.RelativeTimeFormatOptions, 'locales'> & {
-      baseDate?: Date;
+      /** The date to compare with. This package does not read the clock. */
+      baseDate: Date;
     }
 ): string {
-  const { locales, baseDate, ...intlOptions } = options ?? {};
-  const { value, unit } = _selectRelativeTimeUnit(date, baseDate ?? new Date());
+  const { locales, baseDate, ...intlOptions } = options;
+  const { value, unit } = _selectRelativeTimeUnit(date, baseDate);
   return _formatRelativeTime({
     value,
     unit,

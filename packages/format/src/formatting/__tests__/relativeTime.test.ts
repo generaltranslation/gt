@@ -149,6 +149,7 @@ describe('formatRelativeTimeFromDate', () => {
 describe('_formatRelativeTime', () => {
   it('should format explicit value and unit', () => {
     const result = _formatRelativeTime({
+      options: {},
       value: -1,
       unit: 'day',
       locales: ['en'],
@@ -158,6 +159,7 @@ describe('_formatRelativeTime', () => {
 
   it('should format future relative time', () => {
     const result = _formatRelativeTime({
+      options: {},
       value: 2,
       unit: 'hour',
       locales: ['en'],
@@ -167,6 +169,7 @@ describe('_formatRelativeTime', () => {
 
   it('should format with week unit', () => {
     const result = _formatRelativeTime({
+      options: {},
       value: -1,
       unit: 'week',
       locales: ['en'],
@@ -176,6 +179,7 @@ describe('_formatRelativeTime', () => {
 
   it('should format zero value', () => {
     const result = _formatRelativeTime({
+      options: {},
       value: 0,
       unit: 'day',
       locales: ['en'],
@@ -186,6 +190,7 @@ describe('_formatRelativeTime', () => {
 
   it('should respect locale', () => {
     const result = _formatRelativeTime({
+      options: {},
       value: -2,
       unit: 'day',
       locales: ['es'],

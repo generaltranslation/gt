@@ -5,9 +5,9 @@
 'gt-i18n': patch
 ---
 
-`@generaltranslation/icu` and `@generaltranslation/format` share one cache of Intl formatters, and take the time zone as an argument.
+`@generaltranslation/icu` and `@generaltranslation/format` share one cache of Intl formatters, and take what they format with as arguments.
 
 - `formatMessage` and `formatMessageTree` cache the locale they resolve and the Intl formatters they build, instead of creating them on every call, and return a plain-text message tree as is. Messages that format a number, a plural or a date render about 20 times faster.
-- The time zone of dates and times is required in `@generaltranslation/icu` (`formatMessage`, `formatMessageTree`) and `@generaltranslation/format` (`formatDateTime`, `formatMessage`, `LocaleConfig`). Neither package reads the host's time zone.
-- `generaltranslation` is where the host's time zone is read, once for the process. Its `formatDateTime`, `formatMessage` and `LocaleConfig` take an optional `timeZone` that defaults to it.
+- `@generaltranslation/icu` and `@generaltranslation/format` apply no defaults to their own parameters and read neither the host's time zone nor the clock. The `locales`, a message's `variables`, the `timeZone` of dates and times, and the `baseDate` of `formatRelativeTimeFromDate` are required, as are `LocaleConfig`'s `defaultLocale`, `locales` and `timeZone`.
+- `generaltranslation` resolves what a caller leaves out: its formatting functions and `LocaleConfig` keep their optional arguments. It is where the host's time zone is read, once for the process.
 - The cache holds at most 256 instances of each constructor. It had no limit.

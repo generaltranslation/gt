@@ -1,5 +1,3 @@
-import { libraryDefaultLocale } from '../settings/settings';
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Constructor = new (...args: any[]) => object;
 
@@ -27,6 +25,10 @@ type SharedIntlConstructors = Omit<IntlConstructors, 'DateTimeFormat'> & {
 // Bounds what comes from input, such as a currency or a time zone.
 const MAX_INSTANCES = 256;
 
+type Tail<Tuple extends unknown[]> = Tuple extends [unknown?, ...infer Rest]
+  ? Rest
+  : never;
+
 /**
  * Shares instances of constructors that take `(locales, options)`, like
  * Intl's: building one costs far more than using it. A constructor is read
@@ -40,17 +42,20 @@ export class IntlCache<Constructors extends Record<string, Constructor>> {
     private readonly instances = new WeakMap<Constructor, Map<string, object>>()
   ) {}
 
-  /** The instance for these arguments: the same one until the cache is full. */
+  /**
+   * The instance for these arguments: the same one until the cache is full.
+   * The locales are always passed in: the cache has no default of its own.
+   */
   get<K extends keyof Constructors>(
     constructor: K,
-    ...args: ConstructorParameters<Constructors[K]>
+    locales: Exclude<ConstructorParameters<Constructors[K]>[0], undefined>,
+    ...rest: Tail<ConstructorParameters<Constructors[K]>>
   ): InstanceType<Constructors[K]> {
-    const locales: Intl.LocalesArgument = args[0] ?? libraryDefaultLocale;
     // One copy is both the key and the argument, so they cannot differ: Intl
     // would also read options the copy leaves out, such as inherited ones.
     // A spread and Object.fromEntries define own properties, so a key like
     // `__proto__` from JSON stays a key and adds no option the key lacks.
-    const given: Record<string, unknown> = { ...args[1] };
+    const given: Record<string, unknown> = { ...rest[0] };
     const names = Object.keys(given);
     // Sorted, so the same options in another order share an instance.
     const options =

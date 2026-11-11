@@ -291,14 +291,18 @@ describe('_formatMessageICU', () => {
 
   it('still surfaces missing-variable failures through the package boundary', () => {
     expect(() =>
-      _formatMessageICU('Hello {name}', 'en-US', undefined, timeZone)
+      _formatMessageICU('Hello {name}', 'en-US', {}, timeZone)
     ).toThrow('variable "name" was not provided');
   });
 
   it('preserves FormatJS SyntaxError metadata through the public boundary', () => {
     expect.assertions(3);
     try {
-      publicFormatMessage('{name', { timeZone, locales: 'en-US' });
+      publicFormatMessage('{name', {
+        variables: {},
+        timeZone,
+        locales: 'en-US',
+      });
     } catch (error) {
       const syntaxError = error as SyntaxError & {
         location?: unknown;
@@ -350,12 +354,14 @@ describe('_formatMessageICU', () => {
     const value = new Date(0);
     expect(
       publicFormatMessage('before {value} after', {
+        locales: 'en-US',
         timeZone,
         variables: { value: true },
       })
     ).toBe('before true after');
     expect(
       publicFormatMessage('before {value} after', {
+        locales: 'en-US',
         timeZone,
         variables: { value },
       })
@@ -531,6 +537,7 @@ describe('_formatListToParts', () => {
 
   it('should use default locale when not specified', () => {
     const result = _formatListToParts({
+      locales: 'en-US',
       value: ['one', 'two'],
       options: {},
     });
@@ -683,7 +690,9 @@ describe('the Intl cache', () => {
   });
 
   it('shares one instance of a custom format', () => {
-    expect(formatCutoff('Hello, world!', { maxChars: 8 })).toBe('Hello, …');
+    expect(
+      formatCutoff('Hello, world!', { locales: 'en-US', maxChars: 8 })
+    ).toBe('Hello, …');
     expect(intlCache.get('CutoffFormat', 'en', { maxChars: 8 })).toBe(
       intlCache.get('CutoffFormat', 'en', { maxChars: 8 })
     );

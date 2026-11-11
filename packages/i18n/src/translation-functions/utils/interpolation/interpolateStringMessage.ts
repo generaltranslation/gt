@@ -1,4 +1,5 @@
 import { formatCutoff } from '@generaltranslation/format';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { TranslationOptions } from '../../types/options';
 
 /**
@@ -9,7 +10,7 @@ export function interpolateStringMessage(
   options: TranslationOptions
 ): string {
   const cutoffMessage = formatCutoff(encodedMsg, {
-    locales: options.$locale,
+    locales: options.$locale ?? libraryDefaultLocale,
     maxChars: options.$maxChars,
   });
   return cutoffMessage;
