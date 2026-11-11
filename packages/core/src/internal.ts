@@ -29,7 +29,7 @@ export {
   formatNum,
   formatRelativeTime,
   formatRelativeTimeFromDate,
-} from './formatting';
+} from './formatting/formatting';
 export type { RuntimeTranslateManyOptions } from './types-dir/api/entry';
 export { pluralForms, isAcceptedPluralForm } from './settings/plurals';
 export {

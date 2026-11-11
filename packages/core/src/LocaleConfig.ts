@@ -2,7 +2,7 @@ import {
   LocaleConfig as ResolvedLocaleConfig,
   type LocaleConfigConstructorParams as ResolvedLocaleConfigParams,
 } from '@generaltranslation/format';
-import type { WithOptional } from './formatting';
+import type { WithOptional } from './formatting/formatting';
 import { libraryDefaultLocale } from './settings/settings';
 import { hostTimeZone } from './utils/hostTimeZone';
 

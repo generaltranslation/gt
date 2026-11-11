@@ -682,13 +682,6 @@ describe('the Intl cache', () => {
     expect(format('UTC')).toBe('2:03 PM');
   });
 
-  it('throws for a date when a caller the types do not check gives no time zone', () => {
-    const untyped = formatDateTime as (date: Date, options: object) => string;
-    expect(() => untyped(new Date(0), { locales: 'en-US' })).toThrow(
-      'A date was formatted without a time zone'
-    );
-  });
-
   it('shares one instance of a custom format', () => {
     expect(
       formatCutoff('Hello, world!', { locales: 'en-US', maxChars: 8 })

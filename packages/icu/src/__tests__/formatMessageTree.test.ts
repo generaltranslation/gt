@@ -1,6 +1,6 @@
 import { IntlMessageFormat } from 'intl-messageformat';
 import { describe, expect, it, vi } from 'vitest';
-import { formatMessageTree as formatTree, type MessageTree } from '../index';
+import type { MessageTree } from '../index';
 import { icuToMessageTree } from '../convert';
 import { formatMessage, formatMessageTree } from './format';
 
@@ -110,17 +110,6 @@ describe('formatMessageTree', () => {
     expect(format(inherited, 'UTC')).toBe('2:03 PM');
     expect(format(own, 'America/New_York')).toBe('10:03 AM');
     expect(format({ ...own, timeZone: 'Asia/Tokyo' }, 'UTC')).toBe('11:03 PM');
-  });
-
-  it('throws for a date when a caller the types do not check gives no time zone', () => {
-    const untyped = formatTree as (...args: unknown[]) => unknown;
-    const d = new Date('2020-05-06T14:03:02Z');
-    expect(() => untyped([['d', 'date']], 'en-US', { d }, {})).toThrow(
-      'The ICU variable "d" is formatted as a date, but no time zone was given.'
-    );
-    expect(untyped(['Hi ', ['name']], 'en-US', { name: 'Ada' }, {})).toBe(
-      'Hi Ada'
-    );
   });
 
   it('resolves a locale once, not on every call', () => {

@@ -179,10 +179,7 @@ export class I18nConfig extends LocaleConfig {
     if (!config || !hasI18nConfigParams(config)) {
       return this;
     }
-    return new LocaleConfig({
-      ...getLocaleResolverConfigParams(config),
-      timeZone: this.timeZone,
-    });
+    return new LocaleConfig(getLocaleResolverConfigParams(config));
   }
 
   private determineSupportedLocaleWithConfig(

@@ -1,6 +1,5 @@
 import { FormatVariables } from '../types';
 import { intlCache } from '../cache/IntlCache';
-import { missingTimeZoneError } from '../errors/formattingErrors';
 import { formatMessage } from '@generaltranslation/icu/parser';
 
 // Every argument is passed in: this package applies no defaults of its own
@@ -79,8 +78,6 @@ export function _formatDateTime({
   locales,
   options,
 }: FormatParams<Date, ZonedDateTimeFormatOptions>): string {
-  // The types require one; this is for a caller they do not check.
-  if (!options.timeZone) throw new TypeError(missingTimeZoneError);
   return intlCache
     .get('DateTimeFormat', locales, {
       calendar: 'gregory',

@@ -6,7 +6,6 @@ import {
 import {
   formatCutoff,
   formatDiagnosticErrorDetails,
-  formatMessageTree,
 } from 'generaltranslation/internal';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
 import { createGtI18nDiagnostic } from '../logs/diagnostics';
@@ -159,12 +158,11 @@ function formatTree(
   values: Record<string, unknown>
 ): string {
   const config = getI18nConfig();
-  // Custom aliases must not reach Intl as language codes.
-  const locales = [locale, config.getDefaultLocale()].map((code) =>
-    config.resolveCanonicalLocale(code)
-  );
-  const formatted = formatMessageTree(tree, locales, values, {
-    timeZone: config.timeZone,
+  // The config resolves custom aliases, which must not reach Intl as
+  // language codes, and formats in its time zone.
+  const formatted = config.formatMessageTree(tree, undefined, {
+    locales: [locale, config.getDefaultLocale()],
+    variables: values,
   });
   return Array.isArray(formatted) ? formatted.join('') : String(formatted);
 }

@@ -1,7 +1,7 @@
 import { intlCache } from './cache/IntlCache';
 
 export function getCachedPluralRules(
-  locales: string | readonly string[]
+  locales: NonNullable<Intl.LocalesArgument>
 ): Intl.PluralRules {
   return intlCache.get('PluralRules', locales);
 }

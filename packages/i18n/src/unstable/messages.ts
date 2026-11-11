@@ -72,12 +72,12 @@ function formatSource(
   maxChars: number | undefined
 ): string {
   // Code paths without i18n may never initialize the config.
-  const timeZone = isI18nConfigInitialized()
-    ? getI18nConfig().timeZone
-    : undefined;
-  const formatted = formatMessageTree(tree, libraryDefaultLocale, values, {
-    timeZone,
-  });
+  const formatted = isI18nConfigInitialized()
+    ? getI18nConfig().formatMessageTree(tree, undefined, {
+        locales: libraryDefaultLocale,
+        variables: values,
+      })
+    : formatMessageTree(tree, libraryDefaultLocale, values);
   const output = Array.isArray(formatted)
     ? formatted.join('')
     : String(formatted);

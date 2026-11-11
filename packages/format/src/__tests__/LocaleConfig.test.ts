@@ -196,4 +196,28 @@ describe('determineLocale approved spelling', () => {
     locales[0] = 'EN-us';
     expect(config.determineLocale('en-US')).toBe('EN-us');
   });
+
+  it('formats a message tree in its locales and time zone', () => {
+    const config = new LocaleConfig({
+      defaultLocale: 'en-US',
+      locales: ['en-US'],
+      timeZone: 'Asia/Tokyo',
+    });
+    const at = new Date('2020-05-06T14:03:02Z');
+    const tree = [['at', 'time', 'short']];
+    expect(config.formatMessageTree(tree, 'en-US', { variables: { at } })).toBe(
+      '11:03 PM'
+    );
+    expect(
+      config.formatMessageTree(tree, 'en-US', {
+        variables: { at },
+        timeZone: 'UTC',
+      })
+    ).toBe('2:03 PM');
+    expect(
+      config.formatMessageTree(['Hi ', ['name']], undefined, {
+        variables: { name: 'Ada' },
+      })
+    ).toBe('Hi Ada');
+  });
 });

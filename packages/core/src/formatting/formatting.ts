@@ -15,8 +15,8 @@ import {
   type MessageTree,
   type MessageTreeValues,
 } from '@generaltranslation/icu';
-import { libraryDefaultLocale } from './settings/settings';
-import { hostTimeZone } from './utils/hostTimeZone';
+import { libraryDefaultLocale } from '../settings/settings';
+import { hostTimeZone } from '../utils/hostTimeZone';
 
 // `@generaltranslation/format` and `@generaltranslation/icu` take every
 // argument: they apply no defaults and read neither the host's time zone nor

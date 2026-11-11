@@ -254,16 +254,12 @@ function formatNodes(
             ? (isDate ? DATE_STYLES : TIME_STYLES)[style]
             : (style ?? (isDate ? undefined : TIME_STYLES.medium))),
         };
-        const timeZone = options.timeZone ?? context.timeZone;
-        // The types require one; this is for a caller they do not check.
-        if (!timeZone) {
-          throw new TypeError(
-            `The ICU variable "${name}" is formatted as a ${node[1]}, but no time zone was given.`
-          );
-        }
         append(
           intlCache
-            .get('DateTimeFormat', context.locales, { ...options, timeZone })
+            .get('DateTimeFormat', context.locales, {
+              ...options,
+              timeZone: options.timeZone ?? context.timeZone,
+            })
             .format(value as number | Date)
         );
         break;

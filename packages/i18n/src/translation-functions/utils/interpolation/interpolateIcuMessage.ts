@@ -1,10 +1,10 @@
 import { extractVariables } from '../../../utils/extractVariables';
+import { formatCutoff } from '../formatCutoff';
 import { formatMessage } from '../formatMessage';
 import {
   VAR_IDENTIFIER,
   extractVars,
   condenseVars,
-  formatCutoff,
 } from 'generaltranslation/internal';
 import logger from '../../../logs/logger';
 import { createInterpolationFailureMessage } from '../messages';
@@ -50,9 +50,11 @@ export function interpolateIcuMessage<T extends string | null | undefined>(
       options.$format
     );
     // Apply cutoff formatting
-    const cutoffMessage = formatCutoff(interpolatedMessage, {
-      maxChars: options.$maxChars,
-    });
+    const cutoffMessage = formatCutoff(
+      interpolatedMessage,
+      options.$maxChars,
+      options.$locale
+    );
     return cutoffMessage as T extends string ? string : T;
   } catch {
     logger.warn(createInterpolationFailureMessage(encodedMsg));
@@ -66,9 +68,11 @@ export function interpolateIcuMessage<T extends string | null | undefined>(
     }
 
     // Apply cutoff formatting
-    const cutoffMessage = formatCutoff(encodedMsg, {
-      maxChars: options.$maxChars,
-    });
+    const cutoffMessage = formatCutoff(
+      encodedMsg,
+      options.$maxChars,
+      options.$locale
+    );
     return cutoffMessage as T extends string ? string : T;
   }
 }

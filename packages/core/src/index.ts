@@ -89,7 +89,7 @@ export {
   formatNum,
   formatRelativeTime,
   formatRelativeTimeFromDate,
-} from './formatting';
+} from './formatting/formatting';
 
 export {
   determineLocale,

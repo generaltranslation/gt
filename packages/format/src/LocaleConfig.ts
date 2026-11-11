@@ -8,6 +8,12 @@ import {
   _formatRelativeTime,
   _selectRelativeTimeUnit,
 } from './formatting/format';
+import {
+  formatMessageTree,
+  type FormatMessageTreeOptions,
+  type MessageTree,
+  type MessageTreeValues,
+} from '@generaltranslation/icu';
 import { intlCache } from './cache/IntlCache';
 import {
   _prepareApprovedLocales,
@@ -293,6 +299,28 @@ export class LocaleConfig {
       this.getFormattingLocales(targetLocale, locales),
       variables ?? {},
       this.timeZone
+    );
+  }
+
+  /**
+   * Formats a message tree in this config's locales and time zone, so a
+   * caller passes neither unless it overrides them.
+   */
+  formatMessageTree(
+    tree: MessageTree,
+    targetLocale?: string,
+    options: WithLocales<
+      {
+        variables?: MessageTreeValues<unknown>;
+      } & Partial<FormatMessageTreeOptions>
+    > = {}
+  ): unknown {
+    const { locales, variables, ...context } = options;
+    return formatMessageTree<unknown>(
+      tree,
+      this.getFormattingLocales(targetLocale, locales),
+      variables ?? {},
+      { ...context, timeZone: context.timeZone ?? this.timeZone }
     );
   }
 
