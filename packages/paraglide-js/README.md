@@ -153,8 +153,7 @@ tooling, loaded from the app so versions match:
 | `.gjs`, `.gts`                          | `@glint/ember-tsc`                                                                                   |
 
 A format whose tool is missing is skipped with one warning naming what to
-install. A file that stops parsing mid-edit keeps its last usages until it
-parses again; one that never parsed is skipped.
+install. A file that does not parse is skipped with a warning.
 
 ## Extending
 
