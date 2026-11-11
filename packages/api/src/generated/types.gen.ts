@@ -174,43 +174,49 @@ export const ModelProvider = {
 
 export type ModelProvider = (typeof ModelProvider)[keyof typeof ModelProvider];
 
-export type RuntimeTranslationResponse = {
-  [key: string]:
+export type TranslateContentResponse = {
+  summary: BatchWriteSummary;
+  /**
+   * One result per entry in `requests`, in request order.
+   */
+  results: Array<
     | {
-        success: true;
+        status: 'succeeded';
         translation?: JsonValue;
         dataFormat: DataFormat;
         locale: string;
       }
     | {
-        success: false;
+        status: 'failed';
         error: string;
-        code: ErrorCode;
-      };
+        code: ErrorCode & unknown;
+      }
+  >;
 };
 
-export type RuntimeTranslationRequest = {
-  requests: {
-    [key: string]: {
-      source?: unknown;
-      metadata?: {
-        id?: string;
-        hash?: string;
-        context?: string;
-        maxChars?: number;
-        dataFormat?: DataFormat;
-        fileFormat?: RuntimeFileFormat;
-        actionType?: 'fast' | 'standard';
-        sourceCode?: {
-          [key: string]: Array<{
-            before: string;
-            target: string;
-            after: string;
-          }>;
-        };
+export type TranslateContentRequest = {
+  /**
+   * The content to translate. Entries with the same content are translated separately.
+   */
+  requests: Array<{
+    source?: unknown;
+    metadata?: {
+      id?: string;
+      hash?: string;
+      context?: string;
+      maxChars?: number;
+      dataFormat?: DataFormat;
+      fileFormat?: RuntimeFileFormat;
+      actionType?: 'fast' | 'standard';
+      sourceCode?: {
+        [key: string]: Array<{
+          before: string;
+          target: string;
+          after: string;
+        }>;
       };
     };
-  };
+  }>;
   targetLocale: string;
   sourceLocale: string;
   metadata: {
@@ -228,6 +234,20 @@ export const RuntimeFileFormat = { MD: 'MD', MDX: 'MDX' } as const;
  */
 export type RuntimeFileFormat =
   (typeof RuntimeFileFormat)[keyof typeof RuntimeFileFormat];
+
+export type ProjectApiKey = {
+  id: string;
+  name: string;
+  /**
+   * Permissions the key holds.
+   */
+  permissions: Array<ProjectApiKeyPermission>;
+  createdAt: string;
+  /**
+   * When the key last authenticated a request; `null` when it never has.
+   */
+  lastUsedAt: string | null;
+};
 
 export const ProjectApiKeyPermission = {
   'PROJECT:WRITE': 'project:write',
@@ -3725,9 +3745,7 @@ export type CreateBranchResponses = {
   /**
    * Branch created
    */
-  201: {
-    branch: Branch;
-  };
+  201: Branch;
 };
 
 export type CreateBranchResponse =
@@ -4056,23 +4074,11 @@ export type SetTagResponses = {
   /**
    * Tag replaced. Repeating the request is safe: it writes the same files and message again and advances `updatedAt`.
    */
-  200: {
-    /**
-     * Whether this request created the tag rather than replacing it.
-     */
-    created: boolean;
-    tag: Tag;
-  };
+  200: Tag;
   /**
    * Tag created
    */
-  201: {
-    /**
-     * Whether this request created the tag rather than replacing it.
-     */
-    created: boolean;
-    tag: Tag;
-  };
+  201: Tag;
 };
 
 export type SetTagResponse = SetTagResponses[keyof SetTagResponses];
@@ -4431,7 +4437,7 @@ export type GenerateProjectContextResponse =
   GenerateProjectContextResponses[keyof GenerateProjectContextResponses];
 
 export type TranslateContentData = {
-  body: RuntimeTranslationRequest;
+  body: TranslateContentRequest;
   headers: {
     /**
      * API contract version. Must be `2026-10-08.v1` or later; requests without it or with an older version return 400.
@@ -4527,18 +4533,12 @@ export type TranslateContentError =
 
 export type TranslateContentResponses = {
   /**
-   * Translation results: one result per request key in `translations`. A request that could not be translated has `success: false` with its `error` message and error `code`, so inspect every result.
+   * Translation results: one result per entry in `requests`, in request order. An entry that could not be translated has `status: "failed"` with its `error` message and error `code`, so inspect every result.
    */
-  200: {
-    translations: RuntimeTranslationResponse;
-    /**
-     * Whether this request ran translation; false when every result came from cache or was rejected before translation.
-     */
-    generated: boolean;
-  };
+  200: TranslateContentResponse;
 };
 
-export type TranslateContentResponse =
+export type TranslateContentResponse2 =
   TranslateContentResponses[keyof TranslateContentResponses];
 
 export type GetProjectData = {
@@ -4636,7 +4636,7 @@ export type UpdateProjectData = {
      */
     defaultLocale?: string;
     /**
-     * Enable CDN delivery.
+     * Enable or disable CDN publishing for subsequent operations. Changing this setting does not publish or unpublish existing files.
      */
     cdnEnabled?: boolean;
   };
@@ -4736,6 +4736,97 @@ export type UpdateProjectResponses = {
 
 export type UpdateProjectResponse =
   UpdateProjectResponses[keyof UpdateProjectResponses];
+
+export type ListProjectApiKeysData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    /**
+     * Project ID.
+     */
+    projectId: string;
+  };
+  query?: {
+    /**
+     * The nextCursor from the previous page. Omit for the first page.
+     */
+    cursor?: string;
+    /**
+     * Maximum number of items to return, 1–100. Defaults to 50.
+     */
+    limit?: number;
+  };
+  url: '/v2/projects/{projectId}/api-keys';
+};
+
+export type ListProjectApiKeysErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'cursor_invalid';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type ListProjectApiKeysError =
+  ListProjectApiKeysErrors[keyof ListProjectApiKeysErrors];
+
+export type ListProjectApiKeysResponses = {
+  /**
+   * Page of Project API keys
+   */
+  200: {
+    items: Array<ProjectApiKey>;
+    /**
+     * Opaque cursor for the next page; `null` when there are no more items. Pages are read independently, so items changed between requests may be missed or repeated.
+     */
+    nextCursor: string | null;
+  };
+};
+
+export type ListProjectApiKeysResponse =
+  ListProjectApiKeysResponses[keyof ListProjectApiKeysResponses];
 
 export type CreateProjectApiKeyData = {
   body: {
@@ -4839,24 +4930,176 @@ export type CreateProjectApiKeyResponses = {
   /**
    * Project API key created. Each successful request creates a new key. Store the returned secret securely.
    */
-  201: {
-    apiKey: {
-      id: string;
-      name: string;
-      key: string;
-      projectId: string;
-      /**
-       * Compatibility field. All project API keys work in any environment.
-       *
-       * @deprecated
-       */
-      type: 'production';
-    };
+  201: ProjectApiKey & {
+    /**
+     * The key itself. Returned only on creation; store it securely.
+     */
+    key: string;
   };
 };
 
 export type CreateProjectApiKeyResponse =
   CreateProjectApiKeyResponses[keyof CreateProjectApiKeyResponses];
+
+export type DeleteProjectApiKeyData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    projectId: string;
+    /**
+     * API key ID.
+     */
+    apiKeyId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/api-keys/{apiKeyId}';
+};
+
+export type DeleteProjectApiKeyErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse & {
+    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type DeleteProjectApiKeyError =
+  DeleteProjectApiKeyErrors[keyof DeleteProjectApiKeyErrors];
+
+export type DeleteProjectApiKeyResponses = {
+  /**
+   * Project API key deleted. The key usually stops authenticating at once, and always within 10 minutes. Repeating the request returns 404.
+   */
+  200: {
+    deleted: true;
+  };
+};
+
+export type DeleteProjectApiKeyResponse =
+  DeleteProjectApiKeyResponses[keyof DeleteProjectApiKeyResponses];
+
+export type GetProjectApiKeyData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+  };
+  path: {
+    projectId: string;
+    /**
+     * API key ID.
+     */
+    apiKeyId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/api-keys/{apiKeyId}';
+};
+
+export type GetProjectApiKeyErrors = {
+  /**
+   * The request is malformed or failed validation.
+   */
+  400: ErrorResponse & {
+    code?: 'invalid_request' | 'api_version_unsupported' | 'user_ip_missing';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * The requested resource was not found.
+   */
+  404: ErrorResponse & {
+    code?: 'not_found';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type GetProjectApiKeyError =
+  GetProjectApiKeyErrors[keyof GetProjectApiKeyErrors];
+
+export type GetProjectApiKeyResponses = {
+  /**
+   * Project API key
+   */
+  200: ProjectApiKey;
+};
+
+export type GetProjectApiKeyResponse =
+  GetProjectApiKeyResponses[keyof GetProjectApiKeyResponses];
 
 export type ListProjectsData = {
   body?: never;
@@ -5137,7 +5380,7 @@ export type UnassignContextGroupResponses = {
    * Assignment removed. Does nothing if the group isn't assigned.
    */
   200: {
-    committed: true;
+    deleted: true;
   };
 };
 
@@ -5337,7 +5580,12 @@ export type ReorderContextGroupResponses = {
    * Assignments reordered
    */
   200: {
-    committed: true;
+    groupId: string;
+    groupName: string;
+    /**
+     * Lower values take precedence for duplicate terms.
+     */
+    priority: number;
   };
 };
 
@@ -5427,21 +5675,23 @@ export type AssignContextGroupResponses = {
    * Already assigned; nothing changes, and repeating it never moves a group that was reordered.
    */
   200: {
-    committed: true;
+    groupId: string;
+    groupName: string;
     /**
-     * False when the group was already assigned; nothing changed.
+     * Lower values take precedence for duplicate terms.
      */
-    created: boolean;
+    priority: number;
   };
   /**
    * Context group assigned
    */
   201: {
-    committed: true;
+    groupId: string;
+    groupName: string;
     /**
-     * False when the group was already assigned; nothing changed.
+     * Lower values take precedence for duplicate terms.
      */
-    created: boolean;
+    priority: number;
   };
 };
 
@@ -5876,12 +6126,21 @@ export type CreateOrgApiKeyResponses = {
    * Organization API key created. Each successful request creates a new key. Store the returned secret securely.
    */
   201: {
-    apiKey: {
-      id: string;
-      name: string;
-      key: string;
-      orgId: string;
-    };
+    id: string;
+    name: string;
+    /**
+     * Permissions the key holds.
+     */
+    permissions: Array<OrgApiKeyPermission>;
+    createdAt: string;
+    /**
+     * When the key last authenticated a request; `null` when it never has.
+     */
+    lastUsedAt: string | null;
+    /**
+     * The key itself. Returned only on creation; store it securely.
+     */
+    key: string;
   };
 };
 
@@ -5891,7 +6150,7 @@ export type CreateOrgApiKeyResponse =
 export type CreateProjectData = {
   body: {
     /**
-     * Trimmed Project name, 1–64 characters. Accepts ASCII letters, digits, spaces, dashes, underscores, apostrophes, parentheses, and periods.
+     * Trimmed Project name, 1–64 UTF-16 code units. Accepts letters, numbers, punctuation, symbols, emoji, and spaces in any script, but no control characters.
      */
     name: string;
     /**
@@ -5986,12 +6245,13 @@ export type CreateProjectResponses = {
    * Project created. Each successful request creates a new project.
    */
   201: {
-    project: {
-      id: string;
-      name: string;
-      orgId: string;
-      defaultLocale: string;
-    };
+    id: string;
+    name: string;
+    orgId: string;
+    defaultLocale: string;
+    currentLocales: Array<string>;
+    autoApprove: boolean;
+    cdnEnabled: boolean;
   };
 };
 
@@ -6194,10 +6454,7 @@ export type CreateContextGroupResponses = {
   /**
    * Context group created. Each call creates a new one.
    */
-  201: {
-    committed: true;
-    groupId: string;
-  };
+  201: ContextGroup;
 };
 
 export type CreateContextGroupResponse =
@@ -6278,7 +6535,7 @@ export type DeleteContextGroupResponses = {
    * Context group deleted
    */
   200: {
-    committed: true;
+    deleted: true;
   };
 };
 
@@ -6458,9 +6715,7 @@ export type UpdateContextGroupResponses = {
   /**
    * Context group updated
    */
-  200: {
-    committed: true;
-  };
+  200: ContextGroup;
 };
 
 export type UpdateContextGroupResponse =
@@ -6680,15 +6935,30 @@ export type UpsertContextGlossaryError =
 
 export type UpsertContextGlossaryResponses = {
   /**
-   * Glossary terms written
+   * Glossary terms written. `items` has one entry per term sent, in request order, with its ID and what the write did to it.
    */
   200: {
-    committed: true;
+    /**
+     * How many of the items were created, changed, or already identical.
+     */
     counts: {
       created: number;
       updated: number;
       unchanged: number;
     };
+    /**
+     * One per item sent, in request order.
+     */
+    items: Array<{
+      /**
+       * ID of the stored item.
+       */
+      id: string;
+      /**
+       * Whether the write created the resource, changed an existing one, or left it as it was.
+       */
+      outcome: 'created' | 'updated' | 'unchanged';
+    }>;
   };
 };
 
@@ -6774,7 +7044,7 @@ export type DeleteContextGlossaryEntryResponses = {
    * Glossary term deleted
    */
   200: {
-    committed: true;
+    deleted: true;
   };
 };
 
@@ -6973,7 +7243,9 @@ export type UpdateContextGlossaryEntryResponses = {
    * Glossary term updated. The term ID and translations are kept when the keyword is renamed.
    */
   200: {
-    committed: true;
+    id: string;
+    keyword: string;
+    definition: string | null;
   };
 };
 
@@ -7171,7 +7443,7 @@ export type DeleteContextGlossaryTranslationResponses = {
    * Translation deleted
    */
   200: {
-    committed: true;
+    deleted: true;
   };
 };
 
@@ -7276,15 +7548,19 @@ export type SetContextGlossaryTranslationResponses = {
    * Translation replaced
    */
   200: {
-    committed: true;
-    outcome: 'created' | 'updated' | 'unchanged';
+    id: string;
+    locale: string;
+    translation: string;
+    userDefined: boolean;
   };
   /**
    * Translation created
    */
   201: {
-    committed: true;
-    outcome: 'created' | 'updated' | 'unchanged';
+    id: string;
+    locale: string;
+    translation: string;
+    userDefined: boolean;
   };
 };
 
@@ -7500,15 +7776,30 @@ export type UpsertContextCustomPromptsError =
 
 export type UpsertContextCustomPromptsResponses = {
   /**
-   * Custom prompts written
+   * Custom prompts written. `items` has one entry per prompt sent, in request order, with its ID and what the write did to it.
    */
   200: {
-    committed: true;
+    /**
+     * How many of the items were created, changed, or already identical.
+     */
     counts: {
       created: number;
       updated: number;
       unchanged: number;
     };
+    /**
+     * One per item sent, in request order.
+     */
+    items: Array<{
+      /**
+       * ID of the stored item.
+       */
+      id: string;
+      /**
+       * Whether the write created the resource, changed an existing one, or left it as it was.
+       */
+      outcome: 'created' | 'updated' | 'unchanged';
+    }>;
   };
 };
 
@@ -7594,7 +7885,7 @@ export type DeleteContextCustomPromptResponses = {
    * Custom prompt deleted
    */
   200: {
-    committed: true;
+    deleted: true;
   };
 };
 
@@ -7710,7 +8001,14 @@ export type UpdateContextCustomPromptResponses = {
    * Custom prompt updated
    */
   200: {
-    committed: true;
+    id: string;
+    name: string;
+    description: string | null;
+    /**
+     * Locale the prompt applies to; null applies to all locales.
+     */
+    locale: string | null;
+    value: string;
   };
 };
 
@@ -7811,7 +8109,6 @@ export type ImportContextContentResponses = {
    * Content imported
    */
   200: {
-    committed: true;
     glossary: {
       created: number;
       updated: number;

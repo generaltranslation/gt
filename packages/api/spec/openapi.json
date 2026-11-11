@@ -19,7 +19,11 @@
   "tags": [
     {
       "name": "Projects",
-      "description": "List, create, read and update Projects and their API keys."
+      "description": "List, create, read and update Projects."
+    },
+    {
+      "name": "API keys",
+      "description": "List, create, read and delete Project API keys."
     },
     {
       "name": "Organizations",
@@ -309,54 +313,71 @@
         "type": "string",
         "enum": ["ANTHROPIC", "OPENAI", "XAI", "GOOGLE"]
       },
-      "RuntimeTranslationResponse": {
+      "TranslateContentResponse": {
         "type": "object",
-        "additionalProperties": {
-          "oneOf": [
-            {
-              "type": "object",
-              "properties": {
-                "success": {
-                  "type": "boolean",
-                  "enum": [true]
+        "properties": {
+          "summary": {
+            "$ref": "#/components/schemas/BatchWriteSummary"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["succeeded"]
+                    },
+                    "translation": {
+                      "$ref": "#/components/schemas/JsonValue"
+                    },
+                    "dataFormat": {
+                      "$ref": "#/components/schemas/DataFormat"
+                    },
+                    "locale": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["status", "dataFormat", "locale"]
                 },
-                "translation": {
-                  "$ref": "#/components/schemas/JsonValue"
-                },
-                "dataFormat": {
-                  "$ref": "#/components/schemas/DataFormat"
-                },
-                "locale": {
-                  "type": "string"
+                {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["failed"]
+                    },
+                    "error": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/ErrorCode"
+                        },
+                        {
+                          "description": "Machine-readable cause of the failure. Present when `error` is."
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["status", "error", "code"]
                 }
-              },
-              "required": ["success", "dataFormat", "locale"]
+              ]
             },
-            {
-              "type": "object",
-              "properties": {
-                "success": {
-                  "type": "boolean",
-                  "enum": [false]
-                },
-                "error": {
-                  "type": "string"
-                },
-                "code": {
-                  "$ref": "#/components/schemas/ErrorCode"
-                }
-              },
-              "required": ["success", "error", "code"]
-            }
-          ]
-        }
+            "description": "One result per entry in `requests`, in request order."
+          }
+        },
+        "required": ["summary", "results"]
       },
-      "RuntimeTranslationRequest": {
+      "TranslateContentRequest": {
         "type": "object",
         "properties": {
           "requests": {
-            "type": "object",
-            "additionalProperties": {
+            "type": "array",
+            "items": {
               "type": "object",
               "properties": {
                 "source": {},
@@ -414,7 +435,9 @@
                   }
                 }
               }
-            }
+            },
+            "minItems": 1,
+            "description": "The content to translate. Entries with the same content are translated separately."
           },
           "targetLocale": {
             "type": "string",
@@ -441,6 +464,34 @@
         "type": "string",
         "enum": ["MD", "MDX"],
         "description": "Marks the source as a whole document in this file format. Send the document as a string, with `dataFormat` `STRING` and without `maxChars` or `sourceCode`."
+      },
+      "ProjectApiKey": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectApiKeyPermission"
+            },
+            "description": "Permissions the key holds."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastUsedAt": {
+            "type": ["string", "null"],
+            "format": "date-time",
+            "description": "When the key last authenticated a request; `null` when it never has."
+          }
+        },
+        "required": ["id", "name", "permissions", "createdAt", "lastUsedAt"]
       },
       "ProjectApiKeyPermission": {
         "type": "string",
@@ -620,12 +671,12 @@
                     },
                     "minItems": 1,
                     "maxItems": 100,
-                    "description": "One to 100 supported target locale codes, such as fr or es-MX. Must respect the project locale whitelist. For a GT-managed translated copy, only that copy’s target locale is used."
+                    "description": "One to 100 supported target locale codes, such as fr or es-MX. Must respect the project locale whitelist. For a GT-managed translated copy, only that copy\u2019s target locale is used."
                   },
                   "sourceLocale": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "Optional source locale code, such as en. Defaults to the file’s stored source locale, then the project default. Ignored for a GT-managed translated copy, whose original source locale is used."
+                    "description": "Optional source locale code, such as en. Defaults to the file\u2019s stored source locale, then the project default. Ignored for a GT-managed translated copy, whose original source locale is used."
                   },
                   "force": {
                     "type": "boolean",
@@ -8609,7 +8660,7 @@
       "post": {
         "operationId": "overwriteTranslations",
         "summary": "Overwrite translations",
-        "description": "Replace 1–100 existing translations with full translated file content. Requires `project:files:write`.",
+        "description": "Replace 1\u2013100 existing translations with full translated file content. Requires `project:files:write`.",
         "security": [
           {
             "BearerAuth": []
@@ -8688,7 +8739,7 @@
                     },
                     "minItems": 1,
                     "maxItems": 100,
-                    "description": "1–100 translations; each branch, file, version and locale may appear once."
+                    "description": "1\u2013100 translations; each branch, file, version and locale may appear once."
                   }
                 },
                 "required": ["diffs"]
@@ -9122,7 +9173,7 @@
       "post": {
         "operationId": "moveFiles",
         "summary": "Move or rename files",
-        "description": "Move or rename 1–25 files on a branch. Requires `project:files:write`.",
+        "description": "Move or rename 1\u201325 files on a branch. Requires `project:files:write`.",
         "security": [
           {
             "BearerAuth": []
@@ -9187,7 +9238,7 @@
                     },
                     "minItems": 1,
                     "maxItems": 25,
-                    "description": "1–25 moves; each old and each new file ID may appear once, and no file ID may be both an old and a new file ID."
+                    "description": "1\u201325 moves; each old and each new file ID may appear once, and no file ID may be both an old and a new file ID."
                   }
                 },
                 "required": ["moves"]
@@ -11143,7 +11194,7 @@
       "post": {
         "operationId": "publishFiles",
         "summary": "Publish or unpublish files",
-        "description": "Publish or unpublish the translations of 1–100 file versions on the CDN. Requires `project:files:write` and CDN delivery enabled for the project.",
+        "description": "Publish or unpublish the translations of 1\u2013100 file versions on the CDN. Requires `project:files:write` and CDN delivery enabled for the project.",
         "security": [
           {
             "BearerAuth": []
@@ -11205,7 +11256,7 @@
                     },
                     "minItems": 1,
                     "maxItems": 100,
-                    "description": "1–100 file versions; each branch, file and version may appear once."
+                    "description": "1\u2013100 file versions; each branch, file and version may appear once."
                   }
                 },
                 "required": ["files"]
@@ -11712,7 +11763,7 @@
       "post": {
         "operationId": "uploadSourceFiles",
         "summary": "Upload source files",
-        "description": "Upload 1–100 source files to the project. Requires `project:files:write`.",
+        "description": "Upload 1\u2013100 source files to the project. Requires `project:files:write`.",
         "security": [
           {
             "BearerAuth": []
@@ -11885,7 +11936,7 @@
                     },
                     "minItems": 1,
                     "maxItems": 100,
-                    "description": "1–100 source files; each branch and file may appear once."
+                    "description": "1\u2013100 source files; each branch and file may appear once."
                   },
                   "sourceLocale": {
                     "type": "string",
@@ -12426,7 +12477,7 @@
       "patch": {
         "operationId": "updateFiles",
         "summary": "Update files",
-        "description": "Update 1–100 source files or translations in one atomic batch. Requires `project:files:write`.",
+        "description": "Update 1\u2013100 source files or translations in one atomic batch. Requires `project:files:write`.",
         "security": [
           {
             "BearerAuth": []
@@ -12503,7 +12554,7 @@
                     },
                     "minItems": 1,
                     "maxItems": 100,
-                    "description": "1–100 source files or translations; each branch, file, version and locale may appear once."
+                    "description": "1\u2013100 source files or translations; each branch, file, version and locale may appear once."
                   }
                 },
                 "required": ["files"],
@@ -13000,7 +13051,7 @@
       "post": {
         "operationId": "uploadTranslations",
         "summary": "Upload translations",
-        "description": "Upload translations of 1–100 existing source files. Requires `project:files:write`.",
+        "description": "Upload translations of 1\u2013100 existing source files. Requires `project:files:write`.",
         "security": [
           {
             "BearerAuth": []
@@ -13202,7 +13253,7 @@
                     },
                     "minItems": 1,
                     "maxItems": 100,
-                    "description": "1–100 source files with their translations; each file and locale may appear once."
+                    "description": "1\u2013100 source files with their translations; each file and locale may appear once."
                   }
                 },
                 "required": ["data"]
@@ -13751,7 +13802,7 @@
       "post": {
         "operationId": "createFileUploads",
         "summary": "Create file uploads",
-        "description": "Get presigned URLs to PUT 1–100 files (media up to 2GB, others 150MB) for Upload source files or translations; files over 4MB must use one. Requires `project:files:write`.",
+        "description": "Get presigned URLs to PUT 1\u2013100 files (media up to 2GB, others 150MB) for Upload source files or translations; files over 4MB must use one. Requires `project:files:write`.",
         "security": [
           {
             "BearerAuth": []
@@ -13812,7 +13863,7 @@
                     },
                     "minItems": 1,
                     "maxItems": 100,
-                    "description": "1–100 files; each sha256 may appear once."
+                    "description": "1\u2013100 files; each sha256 may appear once."
                   }
                 },
                 "required": ["files"]
@@ -14281,10 +14332,10 @@
               "minimum": 1,
               "maximum": 100,
               "default": 50,
-              "description": "Maximum number of items to return, 1–100. Defaults to 50."
+              "description": "Maximum number of items to return, 1\u2013100. Defaults to 50."
             },
             "required": false,
-            "description": "Maximum number of items to return, 1–100. Defaults to 50.",
+            "description": "Maximum number of items to return, 1\u2013100. Defaults to 50.",
             "name": "limit",
             "in": "query"
           },
@@ -14297,10 +14348,10 @@
                 "maxLength": 256
               },
               "maxItems": 20,
-              "description": "Branch names to match exactly (case-sensitive); repeat the parameter for up to 20 names. Omit to list every branch. Characters that need percent-encoding cost 3–12 bytes each in the URL, so send fewer such names per request to keep the URL under 8 KB."
+              "description": "Branch names to match exactly (case-sensitive); repeat the parameter for up to 20 names. Omit to list every branch. Characters that need percent-encoding cost 3\u201312 bytes each in the URL, so send fewer such names per request to keep the URL under 8 KB."
             },
             "required": false,
-            "description": "Branch names to match exactly (case-sensitive); repeat the parameter for up to 20 names. Omit to list every branch. Characters that need percent-encoding cost 3–12 bytes each in the URL, so send fewer such names per request to keep the URL under 8 KB.",
+            "description": "Branch names to match exactly (case-sensitive); repeat the parameter for up to 20 names. Omit to list every branch. Characters that need percent-encoding cost 3\u201312 bytes each in the URL, so send fewer such names per request to keep the URL under 8 KB.",
             "name": "name",
             "in": "query"
           },
@@ -14688,13 +14739,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "branch": {
-                      "$ref": "#/components/schemas/Branch"
-                    }
-                  },
-                  "required": ["branch"]
+                  "$ref": "#/components/schemas/Branch"
                 }
               }
             }
@@ -15677,10 +15722,10 @@
               "minimum": 1,
               "maximum": 100,
               "default": 50,
-              "description": "Maximum number of items to return, 1–100. Defaults to 50."
+              "description": "Maximum number of items to return, 1\u2013100. Defaults to 50."
             },
             "required": false,
-            "description": "Maximum number of items to return, 1–100. Defaults to 50.",
+            "description": "Maximum number of items to return, 1\u2013100. Defaults to 50.",
             "name": "limit",
             "in": "query"
           },
@@ -16119,7 +16164,7 @@
                     },
                     "minItems": 1,
                     "maxItems": 5000,
-                    "description": "The 1–5000 source file versions the tag points to, each named once. Replaces every file the tag pointed to before."
+                    "description": "The 1\u20135000 source file versions the tag points to, each named once. Replaces every file the tag pointed to before."
                   },
                   "message": {
                     "type": "string",
@@ -16139,17 +16184,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "created": {
-                      "type": "boolean",
-                      "description": "Whether this request created the tag rather than replacing it."
-                    },
-                    "tag": {
-                      "$ref": "#/components/schemas/Tag"
-                    }
-                  },
-                  "required": ["created", "tag"]
+                  "$ref": "#/components/schemas/Tag"
                 }
               }
             }
@@ -16159,17 +16194,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "created": {
-                      "type": "boolean",
-                      "description": "Whether this request created the tag rather than replacing it."
-                    },
-                    "tag": {
-                      "$ref": "#/components/schemas/Tag"
-                    }
-                  },
-                  "required": ["created", "tag"]
+                  "$ref": "#/components/schemas/Tag"
                 }
               }
             }
@@ -16639,7 +16664,7 @@
                     },
                     "minItems": 1,
                     "maxItems": 100,
-                    "description": "1–100 files; each branch, file and version may appear once. Omitting `branchId` selects the default branch."
+                    "description": "1\u2013100 files; each branch, file and version may appear once. Omitting `branchId` selects the default branch."
                   },
                   "targetLocales": {
                     "type": "array",
@@ -17973,28 +17998,18 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RuntimeTranslationRequest"
+                "$ref": "#/components/schemas/TranslateContentRequest"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Translation results: one result per request key in `translations`. A request that could not be translated has `success: false` with its `error` message and error `code`, so inspect every result.",
+            "description": "Translation results: one result per entry in `requests`, in request order. An entry that could not be translated has `status: \"failed\"` with its `error` message and error `code`, so inspect every result.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "translations": {
-                      "$ref": "#/components/schemas/RuntimeTranslationResponse"
-                    },
-                    "generated": {
-                      "type": "boolean",
-                      "description": "Whether this request ran translation; false when every result came from cache or was rejected before translation."
-                    }
-                  },
-                  "required": ["translations", "generated"]
+                  "$ref": "#/components/schemas/TranslateContentResponse"
                 }
               }
             }
@@ -18912,7 +18927,7 @@
                   },
                   "cdnEnabled": {
                     "type": "boolean",
-                    "description": "Enable CDN delivery."
+                    "description": "Enable or disable CDN publishing for subsequent operations. Changing this setting does not publish or unpublish existing files."
                   }
                 },
                 "additionalProperties": false,
@@ -19364,6 +19379,355 @@
       }
     },
     "/v2/projects/{projectId}/api-keys": {
+      "get": {
+        "operationId": "listProjectApiKeys",
+        "summary": "List Project API keys",
+        "description": "List the project's API keys ordered by ID, without their secrets. Requires `project:api_keys:read`.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "UserBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "description": "Project ID."
+            },
+            "required": true,
+            "description": "Project ID.",
+            "name": "projectId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The nextCursor from the previous page. Omit for the first page."
+            },
+            "required": false,
+            "description": "The nextCursor from the previous page. Omit for the first page.",
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50,
+              "description": "Maximum number of items to return, 1\u2013100. Defaults to 50."
+            },
+            "required": false,
+            "description": "Maximum number of items to return, 1\u2013100. Defaults to 50.",
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/ApiVersion"
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Page of Project API keys",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ProjectApiKey"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": ["string", "null"],
+                      "description": "Opaque cursor for the next page; `null` when there are no more items. Pages are read independently, so items changed between requests may be missed or repeated."
+                    }
+                  },
+                  "required": ["items", "nextCursor"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed or failed validation.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "invalid_request": {
+                    "summary": "invalid_request",
+                    "value": {
+                      "error": "The request is malformed or failed validation.",
+                      "code": "invalid_request"
+                    }
+                  },
+                  "api_version_unsupported": {
+                    "summary": "api_version_unsupported",
+                    "value": {
+                      "error": "The gt-api-version header does not name a known API version.",
+                      "code": "api_version_unsupported"
+                    }
+                  },
+                  "user_ip_missing": {
+                    "summary": "user_ip_missing",
+                    "value": {
+                      "error": "A dashboard-actor token must send the user's IP address header.",
+                      "code": "user_ip_missing"
+                    }
+                  },
+                  "cursor_invalid": {
+                    "summary": "cursor_invalid",
+                    "value": {
+                      "error": "The pagination cursor is malformed or belongs to another query. Omit it to start from the first page.",
+                      "code": "cursor_invalid"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "invalid_request",
+                            "api_version_unsupported",
+                            "user_ip_missing",
+                            "cursor_invalid"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication is missing or invalid.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "unauthenticated": {
+                    "summary": "unauthenticated",
+                    "value": {
+                      "error": "Authentication is missing or invalid.",
+                      "code": "unauthenticated"
+                    }
+                  },
+                  "api_key_invalid": {
+                    "summary": "api_key_invalid",
+                    "value": {
+                      "error": "The API key is not recognized. It may be mistyped, revoked, or rotated.",
+                      "code": "api_key_invalid"
+                    }
+                  },
+                  "token_invalid": {
+                    "summary": "token_invalid",
+                    "value": {
+                      "error": "The access token is invalid or expired. Sign in again.",
+                      "code": "token_invalid"
+                    }
+                  },
+                  "super_user_grant_revoked": {
+                    "summary": "super_user_grant_revoked",
+                    "value": {
+                      "error": "The super-user access grant behind this token is no longer active.",
+                      "code": "super_user_grant_revoked"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unauthenticated",
+                            "api_key_invalid",
+                            "token_invalid",
+                            "super_user_grant_revoked"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller is authenticated but not allowed to perform this operation or access the requested resource.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "scope_missing": {
+                    "summary": "scope_missing",
+                    "value": {
+                      "error": "The user token lacks an OAuth scope this operation requires. The error names the scope.",
+                      "code": "scope_missing"
+                    }
+                  },
+                  "ip_not_allowed": {
+                    "summary": "ip_not_allowed",
+                    "value": {
+                      "error": "The caller's IP address is blocked by the credential's access policy.",
+                      "code": "ip_not_allowed"
+                    }
+                  },
+                  "permission_missing": {
+                    "summary": "permission_missing",
+                    "value": {
+                      "error": "The credential lacks a permission this operation requires. The error names the permission.",
+                      "code": "permission_missing"
+                    }
+                  },
+                  "target_inaccessible": {
+                    "summary": "target_inaccessible",
+                    "value": {
+                      "error": "The target project or organization does not exist, or the credential cannot access it.",
+                      "code": "target_inaccessible"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "scope_missing",
+                            "ip_not_allowed",
+                            "permission_missing",
+                            "target_inaccessible"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. The rate limit was exceeded.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "rate_limited": {
+                    "summary": "rate_limited",
+                    "value": {
+                      "error": "Too many requests. The rate limit was exceeded.",
+                      "code": "rate_limited"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["rate_limited"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected server error occurred.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "internal_error": {
+                    "summary": "internal_error",
+                    "value": {
+                      "error": "An unexpected server error occurred.",
+                      "code": "internal_error"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["internal_error"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["API keys"]
+      },
       "post": {
         "operationId": "createProjectApiKey",
         "summary": "Create a Project API key",
@@ -19409,7 +19773,7 @@
                     "minLength": 1,
                     "maxLength": 255,
                     "examples": ["CI"],
-                    "description": "Key name, 1–255 characters after trimming."
+                    "description": "Key name, 1\u2013255 characters after trimming."
                   },
                   "permissions": {
                     "type": "array",
@@ -19438,34 +19802,21 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "apiKey": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ProjectApiKey"
+                    },
+                    {
                       "type": "object",
                       "properties": {
-                        "id": {
-                          "type": "string"
-                        },
-                        "name": {
-                          "type": "string"
-                        },
                         "key": {
-                          "type": "string"
-                        },
-                        "projectId": {
-                          "type": "string"
-                        },
-                        "type": {
                           "type": "string",
-                          "enum": ["production"],
-                          "deprecated": true,
-                          "description": "Compatibility field. All project API keys work in any environment."
+                          "description": "The key itself. Returned only on creation; store it securely."
                         }
                       },
-                      "required": ["id", "name", "key", "projectId", "type"]
+                      "required": ["key"]
                     }
-                  },
-                  "required": ["apiKey"]
+                  ]
                 }
               }
             }
@@ -19871,7 +20222,718 @@
             }
           }
         },
-        "tags": ["Projects"]
+        "tags": ["API keys"]
+      }
+    },
+    "/v2/projects/{projectId}/api-keys/{apiKeyId}": {
+      "get": {
+        "operationId": "getProjectApiKey",
+        "summary": "Get a Project API key",
+        "description": "Get a project API key's name, permissions and usage, without its secret. Requires `project:api_keys:read`.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "UserBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "required": true,
+            "name": "projectId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "description": "API key ID."
+            },
+            "required": true,
+            "description": "API key ID.",
+            "name": "apiKeyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/ApiVersion"
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Project API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectApiKey"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed or failed validation.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "invalid_request": {
+                    "summary": "invalid_request",
+                    "value": {
+                      "error": "The request is malformed or failed validation.",
+                      "code": "invalid_request"
+                    }
+                  },
+                  "api_version_unsupported": {
+                    "summary": "api_version_unsupported",
+                    "value": {
+                      "error": "The gt-api-version header does not name a known API version.",
+                      "code": "api_version_unsupported"
+                    }
+                  },
+                  "user_ip_missing": {
+                    "summary": "user_ip_missing",
+                    "value": {
+                      "error": "A dashboard-actor token must send the user's IP address header.",
+                      "code": "user_ip_missing"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "invalid_request",
+                            "api_version_unsupported",
+                            "user_ip_missing"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication is missing or invalid.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "unauthenticated": {
+                    "summary": "unauthenticated",
+                    "value": {
+                      "error": "Authentication is missing or invalid.",
+                      "code": "unauthenticated"
+                    }
+                  },
+                  "api_key_invalid": {
+                    "summary": "api_key_invalid",
+                    "value": {
+                      "error": "The API key is not recognized. It may be mistyped, revoked, or rotated.",
+                      "code": "api_key_invalid"
+                    }
+                  },
+                  "token_invalid": {
+                    "summary": "token_invalid",
+                    "value": {
+                      "error": "The access token is invalid or expired. Sign in again.",
+                      "code": "token_invalid"
+                    }
+                  },
+                  "super_user_grant_revoked": {
+                    "summary": "super_user_grant_revoked",
+                    "value": {
+                      "error": "The super-user access grant behind this token is no longer active.",
+                      "code": "super_user_grant_revoked"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unauthenticated",
+                            "api_key_invalid",
+                            "token_invalid",
+                            "super_user_grant_revoked"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller is authenticated but not allowed to perform this operation or access the requested resource.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "scope_missing": {
+                    "summary": "scope_missing",
+                    "value": {
+                      "error": "The user token lacks an OAuth scope this operation requires. The error names the scope.",
+                      "code": "scope_missing"
+                    }
+                  },
+                  "ip_not_allowed": {
+                    "summary": "ip_not_allowed",
+                    "value": {
+                      "error": "The caller's IP address is blocked by the credential's access policy.",
+                      "code": "ip_not_allowed"
+                    }
+                  },
+                  "permission_missing": {
+                    "summary": "permission_missing",
+                    "value": {
+                      "error": "The credential lacks a permission this operation requires. The error names the permission.",
+                      "code": "permission_missing"
+                    }
+                  },
+                  "target_inaccessible": {
+                    "summary": "target_inaccessible",
+                    "value": {
+                      "error": "The target project or organization does not exist, or the credential cannot access it.",
+                      "code": "target_inaccessible"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "scope_missing",
+                            "ip_not_allowed",
+                            "permission_missing",
+                            "target_inaccessible"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The requested resource was not found.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "not_found": {
+                    "summary": "not_found",
+                    "value": {
+                      "error": "The requested resource was not found.",
+                      "code": "not_found"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["not_found"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. The rate limit was exceeded.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "rate_limited": {
+                    "summary": "rate_limited",
+                    "value": {
+                      "error": "Too many requests. The rate limit was exceeded.",
+                      "code": "rate_limited"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["rate_limited"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected server error occurred.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "internal_error": {
+                    "summary": "internal_error",
+                    "value": {
+                      "error": "An unexpected server error occurred.",
+                      "code": "internal_error"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["internal_error"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["API keys"]
+      },
+      "delete": {
+        "operationId": "deleteProjectApiKey",
+        "summary": "Delete a Project API key",
+        "description": "Delete a project API key so it can no longer authenticate. Requires `project:api_keys:write`.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "UserBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "required": true,
+            "name": "projectId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "description": "API key ID."
+            },
+            "required": true,
+            "description": "API key ID.",
+            "name": "apiKeyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/ApiVersion"
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Project API key deleted. The key usually stops authenticating at once, and always within 10 minutes. Repeating the request returns 404.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deleted": {
+                      "type": "boolean",
+                      "enum": [true]
+                    }
+                  },
+                  "required": ["deleted"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed or failed validation.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "invalid_request": {
+                    "summary": "invalid_request",
+                    "value": {
+                      "error": "The request is malformed or failed validation.",
+                      "code": "invalid_request"
+                    }
+                  },
+                  "api_version_unsupported": {
+                    "summary": "api_version_unsupported",
+                    "value": {
+                      "error": "The gt-api-version header does not name a known API version.",
+                      "code": "api_version_unsupported"
+                    }
+                  },
+                  "user_ip_missing": {
+                    "summary": "user_ip_missing",
+                    "value": {
+                      "error": "A dashboard-actor token must send the user's IP address header.",
+                      "code": "user_ip_missing"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "invalid_request",
+                            "api_version_unsupported",
+                            "user_ip_missing"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication is missing or invalid.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "unauthenticated": {
+                    "summary": "unauthenticated",
+                    "value": {
+                      "error": "Authentication is missing or invalid.",
+                      "code": "unauthenticated"
+                    }
+                  },
+                  "api_key_invalid": {
+                    "summary": "api_key_invalid",
+                    "value": {
+                      "error": "The API key is not recognized. It may be mistyped, revoked, or rotated.",
+                      "code": "api_key_invalid"
+                    }
+                  },
+                  "token_invalid": {
+                    "summary": "token_invalid",
+                    "value": {
+                      "error": "The access token is invalid or expired. Sign in again.",
+                      "code": "token_invalid"
+                    }
+                  },
+                  "super_user_grant_revoked": {
+                    "summary": "super_user_grant_revoked",
+                    "value": {
+                      "error": "The super-user access grant behind this token is no longer active.",
+                      "code": "super_user_grant_revoked"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unauthenticated",
+                            "api_key_invalid",
+                            "token_invalid",
+                            "super_user_grant_revoked"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller is authenticated but not allowed to perform this operation or access the requested resource.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "scope_missing": {
+                    "summary": "scope_missing",
+                    "value": {
+                      "error": "The user token lacks an OAuth scope this operation requires. The error names the scope.",
+                      "code": "scope_missing"
+                    }
+                  },
+                  "ip_not_allowed": {
+                    "summary": "ip_not_allowed",
+                    "value": {
+                      "error": "The caller's IP address is blocked by the credential's access policy.",
+                      "code": "ip_not_allowed"
+                    }
+                  },
+                  "permission_missing": {
+                    "summary": "permission_missing",
+                    "value": {
+                      "error": "The credential lacks a permission this operation requires. The error names the permission.",
+                      "code": "permission_missing"
+                    }
+                  },
+                  "target_inaccessible": {
+                    "summary": "target_inaccessible",
+                    "value": {
+                      "error": "The target project or organization does not exist, or the credential cannot access it.",
+                      "code": "target_inaccessible"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "scope_missing",
+                            "ip_not_allowed",
+                            "permission_missing",
+                            "target_inaccessible"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The requested resource was not found.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "not_found": {
+                    "summary": "not_found",
+                    "value": {
+                      "error": "The requested resource was not found.",
+                      "code": "not_found"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["not_found"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. The rate limit was exceeded.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "rate_limited": {
+                    "summary": "rate_limited",
+                    "value": {
+                      "error": "Too many requests. The rate limit was exceeded.",
+                      "code": "rate_limited"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["rate_limited"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected server error occurred.",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "internal_error": {
+                    "summary": "internal_error",
+                    "value": {
+                      "error": "An unexpected server error occurred.",
+                      "code": "internal_error"
+                    }
+                  }
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": ["internal_error"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["API keys"]
       }
     },
     "/v2/projects": {
@@ -19905,10 +20967,10 @@
               "minimum": 1,
               "maximum": 100,
               "default": 50,
-              "description": "Maximum number of items to return, 1–100. Defaults to 50."
+              "description": "Maximum number of items to return, 1\u2013100. Defaults to 50."
             },
             "required": false,
-            "description": "Maximum number of items to return, 1–100. Defaults to 50.",
+            "description": "Maximum number of items to return, 1\u2013100. Defaults to 50.",
             "name": "limit",
             "in": "query"
           },
@@ -20252,10 +21314,10 @@
               "minimum": 1,
               "maximum": 100,
               "default": 50,
-              "description": "Maximum number of items to return, 1–100. Defaults to 50."
+              "description": "Maximum number of items to return, 1\u2013100. Defaults to 50."
             },
             "required": false,
-            "description": "Maximum number of items to return, 1–100. Defaults to 50.",
+            "description": "Maximum number of items to return, 1\u2013100. Defaults to 50.",
             "name": "limit",
             "in": "query"
           },
@@ -21120,16 +22182,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "committed": {
-                      "type": "boolean",
-                      "enum": [true]
+                    "groupId": {
+                      "type": "string"
                     },
-                    "created": {
-                      "type": "boolean",
-                      "description": "False when the group was already assigned; nothing changed."
+                    "groupName": {
+                      "type": "string"
+                    },
+                    "priority": {
+                      "type": "integer",
+                      "description": "Lower values take precedence for duplicate terms."
                     }
                   },
-                  "required": ["committed", "created"]
+                  "required": ["groupId", "groupName", "priority"]
                 }
               }
             }
@@ -21141,16 +22205,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "committed": {
-                      "type": "boolean",
-                      "enum": [true]
+                    "groupId": {
+                      "type": "string"
                     },
-                    "created": {
-                      "type": "boolean",
-                      "description": "False when the group was already assigned; nothing changed."
+                    "groupName": {
+                      "type": "string"
+                    },
+                    "priority": {
+                      "type": "integer",
+                      "description": "Lower values take precedence for duplicate terms."
                     }
                   },
-                  "required": ["committed", "created"]
+                  "required": ["groupId", "groupName", "priority"]
                 }
               }
             }
@@ -21549,12 +22615,12 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "committed": {
+                    "deleted": {
                       "type": "boolean",
                       "enum": [true]
                     }
                   },
-                  "required": ["committed"]
+                  "required": ["deleted"]
                 }
               }
             }
@@ -21971,12 +23037,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "committed": {
-                      "type": "boolean",
-                      "enum": [true]
+                    "groupId": {
+                      "type": "string"
+                    },
+                    "groupName": {
+                      "type": "string"
+                    },
+                    "priority": {
+                      "type": "integer",
+                      "description": "Lower values take precedence for duplicate terms."
                     }
                   },
-                  "required": ["committed"]
+                  "required": ["groupId", "groupName", "priority"]
                 }
               }
             }
@@ -22858,7 +23930,7 @@
                     },
                     "minItems": 1,
                     "maxItems": 100,
-                    "description": "Jobs to read, 1–100; a job ID repeated is rejected."
+                    "description": "Jobs to read, 1\u2013100; a job ID repeated is rejected."
                   }
                 },
                 "required": ["jobs"]
@@ -23355,10 +24427,10 @@
               "minimum": 1,
               "maximum": 100,
               "default": 50,
-              "description": "Maximum number of items to return, 1–100. Defaults to 50."
+              "description": "Maximum number of items to return, 1\u2013100. Defaults to 50."
             },
             "required": false,
-            "description": "Maximum number of items to return, 1–100. Defaults to 50.",
+            "description": "Maximum number of items to return, 1\u2013100. Defaults to 50.",
             "name": "limit",
             "in": "query"
           },
@@ -23709,7 +24781,7 @@
                     "minLength": 1,
                     "maxLength": 255,
                     "examples": ["CI"],
-                    "description": "Key name, 1–255 characters after trimming."
+                    "description": "Key name, 1\u2013255 characters after trimming."
                   },
                   "permissions": {
                     "type": "array",
@@ -23734,26 +24806,41 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "apiKey": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        },
-                        "name": {
-                          "type": "string"
-                        },
-                        "key": {
-                          "type": "string"
-                        },
-                        "orgId": {
-                          "type": "string"
-                        }
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "permissions": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/OrgApiKeyPermission"
                       },
-                      "required": ["id", "name", "key", "orgId"]
+                      "description": "Permissions the key holds."
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "lastUsedAt": {
+                      "type": ["string", "null"],
+                      "format": "date-time",
+                      "description": "When the key last authenticated a request; `null` when it never has."
+                    },
+                    "key": {
+                      "type": "string",
+                      "description": "The key itself. Returned only on creation; store it securely."
                     }
                   },
-                  "required": ["apiKey"]
+                  "required": [
+                    "id",
+                    "name",
+                    "permissions",
+                    "createdAt",
+                    "lastUsedAt",
+                    "key"
+                  ]
                 }
               }
             }
@@ -24168,7 +25255,7 @@
                   "name": {
                     "type": "string",
                     "examples": ["My Project"],
-                    "description": "Trimmed Project name, 1–64 characters. Accepts ASCII letters, digits, spaces, dashes, underscores, apostrophes, parentheses, and periods."
+                    "description": "Trimmed Project name, 1\u201364 UTF-16 code units. Accepts letters, numbers, punctuation, symbols, emoji, and spaces in any script, but no control characters."
                   },
                   "defaultLocale": {
                     "type": "string",
@@ -24195,26 +25282,40 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "project": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        },
-                        "name": {
-                          "type": "string"
-                        },
-                        "orgId": {
-                          "type": "string"
-                        },
-                        "defaultLocale": {
-                          "type": "string"
-                        }
-                      },
-                      "required": ["id", "name", "orgId", "defaultLocale"]
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "orgId": {
+                      "type": "string"
+                    },
+                    "defaultLocale": {
+                      "type": "string"
+                    },
+                    "currentLocales": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "autoApprove": {
+                      "type": "boolean"
+                    },
+                    "cdnEnabled": {
+                      "type": "boolean"
                     }
                   },
-                  "required": ["project"]
+                  "required": [
+                    "id",
+                    "name",
+                    "orgId",
+                    "defaultLocale",
+                    "currentLocales",
+                    "autoApprove",
+                    "cdnEnabled"
+                  ]
                 }
               }
             }
@@ -24650,10 +25751,10 @@
               "minimum": 1,
               "maximum": 100,
               "default": 50,
-              "description": "Maximum number of items to return, 1–100. Defaults to 50."
+              "description": "Maximum number of items to return, 1\u2013100. Defaults to 50."
             },
             "required": false,
-            "description": "Maximum number of items to return, 1–100. Defaults to 50.",
+            "description": "Maximum number of items to return, 1\u2013100. Defaults to 50.",
             "name": "limit",
             "in": "query"
           },
@@ -25085,7 +26186,7 @@
                     "minLength": 1,
                     "maxLength": 255,
                     "examples": ["Marketing"],
-                    "description": "Group name, 1–255 characters."
+                    "description": "Group name, 1\u2013255 characters."
                   }
                 },
                 "required": ["name"],
@@ -25100,17 +26201,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "committed": {
-                      "type": "boolean",
-                      "enum": [true]
-                    },
-                    "groupId": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["committed", "groupId"]
+                  "$ref": "#/components/schemas/ContextGroup"
                 }
               }
             }
@@ -25934,7 +27025,7 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 255,
-                    "description": "New group name, 1–255 characters."
+                    "description": "New group name, 1\u2013255 characters."
                   },
                   "autoUpdate": {
                     "type": "boolean",
@@ -25952,14 +27043,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "committed": {
-                      "type": "boolean",
-                      "enum": [true]
-                    }
-                  },
-                  "required": ["committed"]
+                  "$ref": "#/components/schemas/ContextGroup"
                 }
               }
             }
@@ -26393,12 +27477,12 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "committed": {
+                    "deleted": {
                       "type": "boolean",
                       "enum": [true]
                     }
                   },
-                  "required": ["committed"]
+                  "required": ["deleted"]
                 }
               }
             }
@@ -26778,10 +27862,10 @@
               "minimum": 1,
               "maximum": 100,
               "default": 50,
-              "description": "Maximum number of items to return, 1–100. Defaults to 50."
+              "description": "Maximum number of items to return, 1\u2013100. Defaults to 50."
             },
             "required": false,
-            "description": "Maximum number of items to return, 1–100. Defaults to 50.",
+            "description": "Maximum number of items to return, 1\u2013100. Defaults to 50.",
             "name": "limit",
             "in": "query"
           },
@@ -27193,7 +28277,7 @@
       "post": {
         "operationId": "upsertContextGlossary",
         "summary": "Upsert glossary terms",
-        "description": "Creates or updates 1–100 terms, matched by keyword, in one atomic batch. Requires `org:context:write`.",
+        "description": "Creates or updates 1\u2013100 terms, matched by keyword, in one atomic batch. Requires `org:context:write`.",
         "security": [
           {
             "BearerAuth": []
@@ -27272,7 +28356,7 @@
                     },
                     "minItems": 1,
                     "maxItems": 100,
-                    "description": "1–100 terms, matched by keyword; a keyword may appear once."
+                    "description": "1\u2013100 terms, matched by keyword; a keyword may appear once."
                   }
                 },
                 "required": ["entries"],
@@ -27284,16 +28368,12 @@
         },
         "responses": {
           "200": {
-            "description": "Glossary terms written",
+            "description": "Glossary terms written. `items` has one entry per term sent, in request order, with its ID and what the write did to it.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "committed": {
-                      "type": "boolean",
-                      "enum": [true]
-                    },
                     "counts": {
                       "type": "object",
                       "properties": {
@@ -27307,10 +28387,30 @@
                           "type": "integer"
                         }
                       },
-                      "required": ["created", "updated", "unchanged"]
+                      "required": ["created", "updated", "unchanged"],
+                      "description": "How many of the items were created, changed, or already identical."
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "ID of the stored item."
+                          },
+                          "outcome": {
+                            "type": "string",
+                            "enum": ["created", "updated", "unchanged"],
+                            "description": "Whether the write created the resource, changed an existing one, or left it as it was."
+                          }
+                        },
+                        "required": ["id", "outcome"]
+                      },
+                      "description": "One per item sent, in request order."
                     }
                   },
-                  "required": ["committed", "counts"]
+                  "required": ["counts", "items"]
                 }
               }
             }
@@ -28181,12 +29281,17 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "committed": {
-                      "type": "boolean",
-                      "enum": [true]
+                    "id": {
+                      "type": "string"
+                    },
+                    "keyword": {
+                      "type": "string"
+                    },
+                    "definition": {
+                      "type": ["string", "null"]
                     }
                   },
-                  "required": ["committed"]
+                  "required": ["id", "keyword", "definition"]
                 }
               }
             }
@@ -28669,12 +29774,12 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "committed": {
+                    "deleted": {
                       "type": "boolean",
                       "enum": [true]
                     }
                   },
-                  "required": ["committed"]
+                  "required": ["deleted"]
                 }
               }
             }
@@ -29066,10 +30171,10 @@
               "minimum": 1,
               "maximum": 100,
               "default": 50,
-              "description": "Maximum number of items to return, 1–100. Defaults to 50."
+              "description": "Maximum number of items to return, 1\u2013100. Defaults to 50."
             },
             "required": false,
-            "description": "Maximum number of items to return, 1–100. Defaults to 50.",
+            "description": "Maximum number of items to return, 1\u2013100. Defaults to 50.",
             "name": "limit",
             "in": "query"
           },
@@ -29555,16 +30660,20 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "committed": {
-                      "type": "boolean",
-                      "enum": [true]
+                    "id": {
+                      "type": "string"
                     },
-                    "outcome": {
-                      "type": "string",
-                      "enum": ["created", "updated", "unchanged"]
+                    "locale": {
+                      "type": "string"
+                    },
+                    "translation": {
+                      "type": "string"
+                    },
+                    "userDefined": {
+                      "type": "boolean"
                     }
                   },
-                  "required": ["committed", "outcome"]
+                  "required": ["id", "locale", "translation", "userDefined"]
                 }
               }
             }
@@ -29576,16 +30685,20 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "committed": {
-                      "type": "boolean",
-                      "enum": [true]
+                    "id": {
+                      "type": "string"
                     },
-                    "outcome": {
-                      "type": "string",
-                      "enum": ["created", "updated", "unchanged"]
+                    "locale": {
+                      "type": "string"
+                    },
+                    "translation": {
+                      "type": "string"
+                    },
+                    "userDefined": {
+                      "type": "boolean"
                     }
                   },
-                  "required": ["committed", "outcome"]
+                  "required": ["id", "locale", "translation", "userDefined"]
                 }
               }
             }
@@ -30044,12 +31157,12 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "committed": {
+                    "deleted": {
                       "type": "boolean",
                       "enum": [true]
                     }
                   },
-                  "required": ["committed"]
+                  "required": ["deleted"]
                 }
               }
             }
@@ -30429,10 +31542,10 @@
               "minimum": 1,
               "maximum": 100,
               "default": 50,
-              "description": "Maximum number of items to return, 1–100. Defaults to 50."
+              "description": "Maximum number of items to return, 1\u2013100. Defaults to 50."
             },
             "required": false,
-            "description": "Maximum number of items to return, 1–100. Defaults to 50.",
+            "description": "Maximum number of items to return, 1\u2013100. Defaults to 50.",
             "name": "limit",
             "in": "query"
           },
@@ -30837,7 +31950,7 @@
       "post": {
         "operationId": "upsertContextCustomPrompts",
         "summary": "Upsert custom prompts",
-        "description": "Creates or updates 1–100 prompts, each matched by name and locale, in one atomic batch. Requires `org:context:write`.",
+        "description": "Creates or updates 1\u2013100 prompts, each matched by name and locale, in one atomic batch. Requires `org:context:write`.",
         "security": [
           {
             "BearerAuth": []
@@ -30904,7 +32017,7 @@
                     },
                     "minItems": 1,
                     "maxItems": 100,
-                    "description": "1–100 prompts, matched by name and locale; a name and locale may appear once."
+                    "description": "1\u2013100 prompts, matched by name and locale; a name and locale may appear once."
                   }
                 },
                 "required": ["customPrompts"],
@@ -30916,16 +32029,12 @@
         },
         "responses": {
           "200": {
-            "description": "Custom prompts written",
+            "description": "Custom prompts written. `items` has one entry per prompt sent, in request order, with its ID and what the write did to it.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "committed": {
-                      "type": "boolean",
-                      "enum": [true]
-                    },
                     "counts": {
                       "type": "object",
                       "properties": {
@@ -30939,10 +32048,30 @@
                           "type": "integer"
                         }
                       },
-                      "required": ["created", "updated", "unchanged"]
+                      "required": ["created", "updated", "unchanged"],
+                      "description": "How many of the items were created, changed, or already identical."
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "ID of the stored item."
+                          },
+                          "outcome": {
+                            "type": "string",
+                            "enum": ["created", "updated", "unchanged"],
+                            "description": "Whether the write created the resource, changed an existing one, or left it as it was."
+                          }
+                        },
+                        "required": ["id", "outcome"]
+                      },
+                      "description": "One per item sent, in request order."
                     }
                   },
-                  "required": ["committed", "counts"]
+                  "required": ["counts", "items"]
                 }
               }
             }
@@ -31421,12 +32550,24 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "committed": {
-                      "type": "boolean",
-                      "enum": [true]
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": ["string", "null"]
+                    },
+                    "locale": {
+                      "type": ["string", "null"],
+                      "description": "Locale the prompt applies to; null applies to all locales."
+                    },
+                    "value": {
+                      "type": "string"
                     }
                   },
-                  "required": ["committed"]
+                  "required": ["id", "name", "description", "locale", "value"]
                 }
               }
             }
@@ -31909,12 +33050,12 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "committed": {
+                    "deleted": {
                       "type": "boolean",
                       "enum": [true]
                     }
                   },
-                  "required": ["committed"]
+                  "required": ["deleted"]
                 }
               }
             }
@@ -32321,10 +33462,6 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "committed": {
-                      "type": "boolean",
-                      "enum": [true]
-                    },
                     "glossary": {
                       "type": "object",
                       "properties": {
@@ -32356,7 +33493,7 @@
                       "required": ["created", "updated", "unchanged"]
                     }
                   },
-                  "required": ["committed", "glossary", "customPrompts"]
+                  "required": ["glossary", "customPrompts"]
                 }
               }
             }
@@ -32791,10 +33928,10 @@
               "minimum": 1,
               "maximum": 100,
               "default": 50,
-              "description": "Maximum number of items to return, 1–100. Defaults to 50."
+              "description": "Maximum number of items to return, 1\u2013100. Defaults to 50."
             },
             "required": false,
-            "description": "Maximum number of items to return, 1–100. Defaults to 50.",
+            "description": "Maximum number of items to return, 1\u2013100. Defaults to 50.",
             "name": "limit",
             "in": "query"
           },
@@ -33190,7 +34327,7 @@
       "post": {
         "operationId": "upsertAssets",
         "summary": "Upsert Organization assets",
-        "description": "Uploads 1–10 fonts (`assetType: FONT`, the only asset type today) for Lottie translations across the organization. Requires `org:assets:write`.",
+        "description": "Uploads 1\u201310 fonts (`assetType: FONT`, the only asset type today) for Lottie translations across the organization. Requires `org:assets:write`.",
         "security": [
           {
             "BearerAuth": []
@@ -33266,7 +34403,7 @@
                     },
                     "minItems": 1,
                     "maxItems": 10,
-                    "description": "1–10 assets; OpenType or TrueType fonts (`assetType: FONT`) are the only asset type today. A font is matched by family, weight and italic style, and an identity may appear once. Uploading a matching font replaces it for the whole organization."
+                    "description": "1\u201310 assets; OpenType or TrueType fonts (`assetType: FONT`) are the only asset type today. A font is matched by family, weight and italic style, and an identity may appear once. Uploading a matching font replaces it for the whole organization."
                   }
                 },
                 "required": ["assets"],

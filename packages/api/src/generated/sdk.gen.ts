@@ -41,6 +41,9 @@ import type {
   DeleteContextGroupData,
   DeleteContextGroupErrors,
   DeleteContextGroupResponses,
+  DeleteProjectApiKeyData,
+  DeleteProjectApiKeyErrors,
+  DeleteProjectApiKeyResponses,
   ExportContextContentData,
   ExportContextContentErrors,
   ExportContextContentResponses,
@@ -65,6 +68,9 @@ import type {
   GetJobData,
   GetJobErrors,
   GetJobResponses,
+  GetProjectApiKeyData,
+  GetProjectApiKeyErrors,
+  GetProjectApiKeyResponses,
   GetProjectContextGroupData,
   GetProjectContextGroupErrors,
   GetProjectContextGroupResponses,
@@ -95,6 +101,9 @@ import type {
   ListOrgsData,
   ListOrgsErrors,
   ListOrgsResponses,
+  ListProjectApiKeysData,
+  ListProjectApiKeysErrors,
+  ListProjectApiKeysResponses,
   ListProjectContextGroupsData,
   ListProjectContextGroupsErrors,
   ListProjectContextGroupsResponses,
@@ -914,6 +923,27 @@ export const updateProject = <ThrowOnError extends boolean = false>(
   });
 
 /**
+ * List Project API keys
+ *
+ * List the project's API keys ordered by ID, without their secrets. Requires `project:api_keys:read`.
+ */
+export const listProjectApiKeys = <ThrowOnError extends boolean = false>(
+  options: Options<ListProjectApiKeysData, ThrowOnError>
+) =>
+  options.client.get<
+    ListProjectApiKeysResponses,
+    ListProjectApiKeysErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects/{projectId}/api-keys',
+    ...options,
+  });
+
+/**
  * Create a Project API key
  *
  * Create a project API key. Requires `project:api_keys:write`; project keys cannot create other keys.
@@ -936,6 +966,48 @@ export const createProjectApiKey = <ThrowOnError extends boolean = false>(
       'Content-Type': 'application/json',
       ...options.headers,
     },
+  });
+
+/**
+ * Delete a Project API key
+ *
+ * Delete a project API key so it can no longer authenticate. Requires `project:api_keys:write`.
+ */
+export const deleteProjectApiKey = <ThrowOnError extends boolean = false>(
+  options: Options<DeleteProjectApiKeyData, ThrowOnError>
+) =>
+  options.client.delete<
+    DeleteProjectApiKeyResponses,
+    DeleteProjectApiKeyErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects/{projectId}/api-keys/{apiKeyId}',
+    ...options,
+  });
+
+/**
+ * Get a Project API key
+ *
+ * Get a project API key's name, permissions and usage, without its secret. Requires `project:api_keys:read`.
+ */
+export const getProjectApiKey = <ThrowOnError extends boolean = false>(
+  options: Options<GetProjectApiKeyData, ThrowOnError>
+) =>
+  options.client.get<
+    GetProjectApiKeyResponses,
+    GetProjectApiKeyErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects/{projectId}/api-keys/{apiKeyId}',
+    ...options,
   });
 
 /**
