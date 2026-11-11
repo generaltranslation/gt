@@ -22,7 +22,7 @@ export type ProjectResolverOptions = NodeResolverOptions & {
   bundlerConfigs?: readonly BundlerConfig[];
 };
 
-/** "vite, webpack, or rspack" */
+/** "vite, webpack, or rspack": the warnings are in English. */
 const OR = new Intl.ListFormat('en', { type: 'disjunction' });
 
 export type ProjectResolverEnvironment = {

@@ -50,6 +50,13 @@ type ParaglideModule = {
   compileProject?: CompileProject;
 };
 
+/** Any locale: an empty catalog is compiled only to see the files Paraglide writes. */
+const EMPTY_CATALOG_LOCALE = 'en';
+const EMPTY_CATALOG_SETTINGS = {
+  baseLocale: EMPTY_CATALOG_LOCALE,
+  locales: [EMPTY_CATALOG_LOCALE],
+};
+
 const ESLINT_DISABLE = '/* eslint-disable */';
 
 // `includeEslintDisableComment` adds one of these lines; they carry no meaning.
@@ -259,7 +266,7 @@ async function compileEmpty(
   // Paraglide 3
   if (typeof module.compileCatalog === 'function') {
     return module.compileCatalog({
-      catalog: { settings: { baseLocale: 'en', locales: ['en'] }, bundles: [] },
+      catalog: { settings: EMPTY_CATALOG_SETTINGS, bundles: [] },
     });
   }
 
@@ -282,7 +289,7 @@ async function compileEmptyProject(
   const sdk = await import(pathToFileURL(sdkEntry).href);
   const blob = await sdk.newProject({
     // `telemetry: "off"` keeps older SDKs from reporting the loaded project.
-    settings: { baseLocale: 'en', locales: ['en'], telemetry: 'off' },
+    settings: { ...EMPTY_CATALOG_SETTINGS, telemetry: 'off' },
   });
   const project = await sdk.loadProjectInMemory({ blob });
 
