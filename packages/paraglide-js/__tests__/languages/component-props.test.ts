@@ -1,9 +1,8 @@
-// Findings G3 and G4 of the paraglide-tests apps (FINDINGS.md): props passed to
-// Svelte, Vue and Astro components, imported or auto-imported, are followed into
-// the component.
+// Props passed to Svelte, Vue and Astro components, imported or auto-imported,
+// are followed into the component.
 import { describe, expect, test } from 'vitest';
 import type { GlobalBinding } from '../../src/compiler.js';
-import { analyzeProject, summarize } from '../helpers/project.js';
+import { analyzeProject, describeUsages } from '../helpers/project.js';
 
 const imports = `import { m } from "./paraglide/messages.js";`;
 
@@ -14,12 +13,7 @@ async function usagesIn(
   globals?: readonly GlobalBinding[]
 ): Promise<string[]> {
   const usages = await analyzeProject(files, { entry, loadAll: true, globals });
-  return usages.map((usage) => {
-    const element = usage.element
-      ? ` <${usage.element.element}${usage.element.attribute ? ` ${usage.element.attribute}` : ''}>`
-      : '';
-    return `${summarize([usage])[0]} ${usage.line}${element}`;
-  });
+  return describeUsages(usages);
 }
 
 describe('Svelte', () => {
@@ -88,7 +82,7 @@ describe('Svelte', () => {
     ]);
   });
 
-  test('a test of the prop is not a usage of its own (P1)', async () => {
+  test('a test of the prop is not a usage of its own', async () => {
     expect(
       await usagesIn('/app/src/Label.svelte', {
         '/app/src/Label.svelte': `<script>let { message } = $props();</script>{#if message}<em>{message()}</em>{/if}`,

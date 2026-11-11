@@ -1,18 +1,6 @@
-import path from 'node:path/posix';
-import { parseSync } from 'oxc-parser';
 import { describe, expect, test } from 'vitest';
-import { analyzeModule } from '../../lib/compiler/analysis/analyze.js';
-import { ModuleGraph } from '../../lib/compiler/analysis/module-graph.js';
-import { defaultLanguages } from '../../lib/compiler/languages/index.js';
 import {
-  isSourceFile,
-  parseSource,
-} from '../../lib/compiler/languages/language.js';
-import { defaultTargets } from '../../lib/compiler/paraglide/targets.js';
-import {
-  OUTDIR,
-  REPO_PACKAGES,
-  ROOT,
+  ENTRY,
   analyzeEntry,
   analyzeProject,
   summarize,
@@ -20,6 +8,18 @@ import {
 
 const imports = `import { m } from "./paraglide/messages.js";\n`;
 const call = 'message:greeting:call';
+
+/** Loads every file, as the collector does, then analyzes `entry`. */
+const analyzeAll = (files: Record<string, string>, entry: string) =>
+  analyzeProject(files, { entry, loadAll: true });
+
+/** e.g. `message:flow_first:call 3 Label` */
+async function describeScopes(code: string): Promise<string[]> {
+  const usages = await analyzeProject({ [ENTRY]: code });
+  return usages.map(
+    (usage) => `${summarize([usage])[0]} ${usage.line} ${usage.scope ?? '-'}`
+  );
+}
 
 describe('let and var', () => {
   test.each([
@@ -214,7 +214,7 @@ describe('values passed into functions', () => {
 
     const show = `export function show(t) { return t.greeting(); }\n`;
 
-    // unplugin-auto-import, Nuxt's composables: called without an import (G4).
+    // unplugin-auto-import, Nuxt's composables: called without an import.
     test('an auto-imported function', async () => {
       const usages = await analyzeProject(
         {
@@ -312,42 +312,104 @@ describe('values passed into functions', () => {
   });
 });
 
-/** Loads every file, as the collector does, then analyzes `file`. */
-async function analyzeAll(files: Record<string, string>, file: string) {
-  const all = new Map(
-    Object.entries({ [`${OUTDIR}/messages.js`]: 'export {}', ...files })
-  );
-  const graph = new ModuleGraph({
-    targets: defaultTargets,
-    isOutdir: async (directory) => directory === OUTDIR,
-    shouldFollow: (candidate) => isSourceFile(candidate, defaultLanguages),
-    async resolve(specifier, importer) {
-      const base = path.resolve(path.dirname(importer), specifier);
-      return [
-        base,
-        base.replace(/\.js$/, '.ts'),
-        base.replace(/\.js$/, '.tsx'),
-      ].find((candidate) => all.has(candidate));
-    },
-    async readModule(candidate) {
-      const code = all.get(candidate);
-      if (code === undefined) return undefined;
-      const parsed = await parseSource(
-        candidate,
-        code,
-        (name, source, lang) =>
-          parseSync(name, source, {
-            lang,
-            range: true,
-            astType: 'ts',
-          }) as never,
-        defaultLanguages,
-        REPO_PACKAGES
-      );
-      if ('error' in parsed) throw new Error(parsed.error);
-      return parsed.module;
-    },
+describe('a parameter or prop that receives several values follows each', () => {
+  test('props and arguments', async () => {
+    expect(
+      await describeScopes(
+        [
+          imports,
+          `function Label({ message }) { return <em>{message()}</em>; }`,
+          `const translate = (message) => message();`,
+          `export function Page() {`,
+          `  return <p>`,
+          `    <Label message={m.flow_first} />`,
+          `    <Label message={m.flow_second} />`,
+          `    {translate(m.flow_helper_first)}`,
+          `    {translate(m.flow_helper_second)}`,
+          `  </p>;`,
+          `}`,
+        ].join('\n')
+      )
+    ).toEqual([
+      'message:flow_first:call 3 Label',
+      'message:flow_second:call 3 Label',
+      'message:flow_helper_first:call 4 translate',
+      'message:flow_helper_second:call 4 translate',
+      'message:flow_first:reference 7 Page',
+      'message:flow_second:reference 8 Page',
+      'message:flow_helper_first:reference 9 Page',
+      'message:flow_helper_second:reference 10 Page',
+    ]);
   });
-  for (const name of Object.keys(files)) await graph.loadPath(name);
-  return analyzeModule({ graph, file, root: ROOT });
-}
+
+  test('a let assigned in branches holds each', async () => {
+    expect(
+      await analyzeEntry(`${imports}let t = m.a;\nif (x) t = m.b;\nt();`)
+    ).toEqual(['message:a:call', 'message:b:call']);
+  });
+
+  test('more than 16 names become one dynamic `*`', async () => {
+    const calls = Array.from({ length: 20 }, (_, i) => `t(m.k${i});`).join(
+      '\n'
+    );
+    const usages = await analyzeProject({
+      [ENTRY]: `${imports}const t = (message) => message();\n${calls}`,
+    });
+    const inside = usages.filter((usage) => usage.line === 2);
+    expect(inside).toMatchObject([{ name: '*', dynamic: true, kind: 'call' }]);
+  });
+});
+
+describe('a `let` reassigned away from `m`', () => {
+  test('an unconditional assignment before the read replaces the initializer', async () => {
+    expect(
+      await analyzeEntry(
+        `${imports}let reassigned = m;\nreassigned = { never_reassigned_away: () => "" } as any;\nexport const c = reassigned.never_reassigned_away();`
+      )
+    ).toEqual([]);
+  });
+
+  test('an assignment after the read, or in another function, does not', async () => {
+    expect(
+      await analyzeEntry(
+        `${imports}let t = m;\nexport const a = t.greeting();\nt = {};\nfunction f() { t = {}; }\nexport const b = () => t.later();`
+      )
+    ).toEqual(['message:greeting:call', 'message:later:call']);
+  });
+
+  test('an assignment back to `m` counts again', async () => {
+    expect(
+      await analyzeEntry(`${imports}let t = m;\nt = {};\nt = m;\nt.greeting();`)
+    ).toEqual(['message:greeting:call']);
+  });
+});
+
+describe("a parameter's value that is only passed through or inspected", () => {
+  test('is not a reference; the call site and calls are', async () => {
+    expect(
+      await describeScopes(
+        [
+          imports,
+          `const identity = (value) => value;`,
+          `export const a = identity(m.pass_identity);`,
+          `export function render(message) {`,
+          `  if (!message.parts) return message();`,
+          `  return typeof message === "function" && message;`,
+          `}`,
+          `export const b = render(m.pass_inspected);`,
+          `export const c = (t) => t.greeting;`,
+        ].join('\n')
+      )
+    ).toEqual([
+      'message:pass_identity:reference 4 -',
+      'message:pass_inspected:call 6 render',
+      'message:pass_inspected:reference 9 -',
+    ]);
+  });
+
+  test('a direct reference is still one', async () => {
+    expect(
+      await analyzeEntry(`${imports}export const f = () => m.title;`)
+    ).toEqual(['message:title:reference']);
+  });
+});

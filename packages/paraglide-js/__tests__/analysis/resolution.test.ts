@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import {
+  defaultTargets,
   defineTarget,
   messagesTarget,
   packageTarget,
@@ -215,14 +216,6 @@ describe('bindings and scopes', () => {
     ).toEqual([call]);
   });
 
-  test('let is followed (see value-flow.test.ts)', async () => {
-    expect(
-      await analyzeEntry(
-        `import { m } from "./paraglide/messages.js"; let t = m; t.greeting();`
-      )
-    ).toEqual(['message:greeting:call']);
-  });
-
   test('property names are not references', async () => {
     expect(
       await analyzeEntry(
@@ -335,6 +328,42 @@ describe('targets', () => {
     ).toEqual([
       'react-adapter:ParaglideMessage:component',
       'message:tos:reference',
+    ]);
+  });
+
+  test('a target after defaultTargets relabels a built-in one', async () => {
+    expect(
+      await analyzeEntry(
+        `import { Message } from "@inlang/paraglide-js-react";\nexport const A = () => <Message />;`,
+        {
+          '/app/node_modules/@inlang/paraglide-js-react/index.js': 'export {}',
+        },
+        {
+          targets: [
+            ...defaultTargets,
+            packageTarget('react-adapter', '@inlang/paraglide-js-react'),
+          ],
+        }
+      )
+    ).toEqual(['react-adapter:Message:component']);
+  });
+
+  test("a dependency's resolution starts at node_modules, without pnpm's store path", async () => {
+    // As pnpm resolves it: the real path in the store.
+    const installed =
+      '/app/node_modules/.pnpm/paraglide-adapter@1.0.0_abc/node_modules/paraglide-adapter/index.js';
+    const [usage] = await analyzeProject(
+      {
+        [ENTRY]: `import { ParaglideMessage } from "paraglide-adapter";\nexport const A = () => <ParaglideMessage />;\n`,
+        [installed]: 'export {}',
+      },
+      {
+        targets: [packageTarget('adapter', 'paraglide-adapter')],
+        aliases: { 'paraglide-adapter': installed },
+      }
+    );
+    expect(usage!.resolution).toEqual([
+      'node_modules/paraglide-adapter/index.js',
     ]);
   });
 });

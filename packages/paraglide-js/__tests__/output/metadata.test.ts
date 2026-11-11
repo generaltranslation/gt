@@ -1,6 +1,9 @@
-import { expect, test } from 'vitest';
+import { describe, expect, test } from 'vitest';
 import { renderMetadataFile } from '../../lib/compiler/output/metadata.js';
-import { sourceCodeByMessage } from '../../lib/compiler/output/source-code.js';
+import {
+  sourceCodeByMessage,
+  sourceSnippet,
+} from '../../lib/compiler/output/source-code.js';
 import type {
   FileUsages,
   ParaglideUsage,
@@ -168,8 +171,7 @@ test('usages on the same lines give one snippet', () => {
   });
 });
 
-// Finding D1 of the paraglide-tests apps (FINDINGS.md): the output does not
-// depend on the order the analysis found usages in.
+// The output does not depend on the order the analysis found usages in.
 test('usages at one spot (one prop, several values) render in a fixed order', async () => {
   const code = `<script>let { message } = $props();</script><em>{message()}</em>`;
   const usages = await analyzeProject(
@@ -195,4 +197,24 @@ test('usages at one spot (one prop, several values) render in a fixed order', as
   const forward = renderOrdered(tagged);
   expect(renderOrdered([...tagged].reverse())).toBe(forward);
   expect(forward).toContain('src/Label.svelte');
+});
+
+describe('sourceSnippet', () => {
+  const lines = ['a', 'b', 'c', 'd', 'e'];
+
+  test("splits the usage's lines from those around it", () => {
+    expect(sourceSnippet(lines, { line: 2, endLine: 3 }, 1)).toEqual({
+      before: 'a',
+      target: 'b\nc',
+      after: 'd',
+    });
+  });
+
+  test('clamps to the file', () => {
+    expect(sourceSnippet(lines, { line: 1, endLine: 1 }, 10)).toEqual({
+      before: '',
+      target: 'a',
+      after: 'b\nc\nd\ne',
+    });
+  });
 });

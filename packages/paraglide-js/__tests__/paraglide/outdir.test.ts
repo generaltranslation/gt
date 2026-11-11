@@ -6,6 +6,7 @@ import path from 'node:path';
 import { afterAll, describe, expect, test } from 'vitest';
 import { compileCatalog } from '@inlang/paraglide-js';
 import { OutdirDetector } from '../../lib/compiler/paraglide/outdir.js';
+import { writeFiles } from '../helpers/files.js';
 
 // Inside the package, so `@inlang/paraglide-js` resolves from the outdirs.
 const TMP = path.join(import.meta.dirname, '.tmp', 'outdir');
@@ -46,12 +47,7 @@ function compileOutput(
 }
 
 async function write(directory: string, output: Output): Promise<string> {
-  for (const [file, content] of Object.entries(output)) {
-    await fs.mkdir(path.dirname(path.join(directory, file)), {
-      recursive: true,
-    });
-    await fs.writeFile(path.join(directory, file), content);
-  }
+  await writeFiles(directory, output);
   return directory;
 }
 

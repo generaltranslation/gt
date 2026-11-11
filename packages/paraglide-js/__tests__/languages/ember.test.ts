@@ -6,28 +6,22 @@ import {
   parseSource,
 } from '../../lib/compiler/languages/language.js';
 import {
-  defaultTargets,
-  packageTarget,
-} from '../../lib/compiler/paraglide/targets.js';
-import { analyzeProject, summarize } from '../helpers/project.js';
-
-const targets = [
-  ...defaultTargets,
-  packageTarget('adapter', 'paraglide-adapter'),
-];
-const adapter = { '/app/node_modules/paraglide-adapter/index.js': 'export {}' };
+  ADAPTER_FILES,
+  ADAPTER_TARGETS,
+  analyzeProject,
+  elementLabel,
+  summarize,
+} from '../helpers/project.js';
 
 async function analyze(file: string, lines: string[]) {
   const usages = await analyzeProject(
-    { [file]: lines.join('\n'), ...adapter },
-    { entry: file, targets, languages: [emberLanguage] }
+    { [file]: lines.join('\n'), ...ADAPTER_FILES },
+    { entry: file, targets: ADAPTER_TARGETS, languages: [emberLanguage] }
   );
-  return usages.map((usage) => {
-    const element = usage.element
-      ? ` <${usage.element.element}${usage.element.attribute ? ` ${usage.element.attribute}` : ''}>`
-      : '';
-    return `${summarize([usage])[0]} ${usage.line}:${usage.column}${element}`;
-  });
+  return usages.map(
+    (usage) =>
+      `${summarize([usage])[0]} ${usage.line}:${usage.column}${elementLabel(usage)}`
+  );
 }
 
 const imports = [

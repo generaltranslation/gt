@@ -8,35 +8,25 @@ import {
 import { parseSync } from 'oxc-parser';
 import { markdownLanguage } from '../../lib/compiler/languages/markdown.js';
 import {
-  defaultTargets,
-  packageTarget,
-} from '../../lib/compiler/paraglide/targets.js';
-import { analyzeProject, summarize } from '../helpers/project.js';
+  ADAPTER_FILES,
+  ADAPTER_TARGETS,
+  analyzeProject,
+  describeUsages,
+} from '../helpers/project.js';
 
-const targets = [
-  ...defaultTargets,
-  packageTarget('adapter', 'paraglide-adapter'),
-];
-const adapter = { '/app/node_modules/paraglide-adapter/index.js': 'export {}' };
 const file = '/app/src/docs/guide.md';
 const parse: ParseFunction = (file, code, lang) =>
   parseSync(file, code, { lang }) as never;
 
 async function analyze(lines: string[]) {
   return analyzeProject(
-    { [file]: lines.join('\n'), ...adapter },
-    { entry: file, targets, languages: [...defaultLanguages, markdownLanguage] }
+    { [file]: lines.join('\n'), ...ADAPTER_FILES },
+    {
+      entry: file,
+      targets: ADAPTER_TARGETS,
+      languages: [...defaultLanguages, markdownLanguage],
+    }
   );
-}
-
-/** e.g. `message:greeting:call 3 <p>` */
-function describeUsages(usages: Awaited<ReturnType<typeof analyze>>): string[] {
-  return usages.map((usage) => {
-    const element = usage.element
-      ? ` <${usage.element.element}${usage.element.attribute ? ` ${usage.element.attribute}` : ''}>`
-      : '';
-    return `${summarize([usage])[0]} ${usage.line}${element}`;
-  });
 }
 
 describe('Markdown (VitePress)', () => {

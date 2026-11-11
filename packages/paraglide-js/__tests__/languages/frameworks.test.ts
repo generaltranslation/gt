@@ -4,40 +4,25 @@ import { astroLanguage } from '../../lib/compiler/languages/astro.js';
 import {
   NO_PACKAGES,
   parseSource,
+  type LanguageContext,
   type ParseFunction,
 } from '../../lib/compiler/languages/language.js';
-import {
-  defaultTargets,
-  packageTarget,
-} from '../../lib/compiler/paraglide/targets.js';
 import { sourceSnippet } from '../../lib/compiler/output/source-code.js';
 import { svelteLanguage } from '../../lib/compiler/languages/svelte.js';
 import { vueLanguage } from '../../lib/compiler/languages/vue.js';
 import {
+  ADAPTER_FILES,
+  ADAPTER_TARGETS,
   analyzeProject,
+  describeUsages,
   REPO_PACKAGES,
-  summarize,
 } from '../helpers/project.js';
 
-const targets = [
-  ...defaultTargets,
-  packageTarget('adapter', 'paraglide-adapter'),
-];
-
-const adapter = { '/app/node_modules/paraglide-adapter/index.js': 'export {}' };
-
 async function analyze(file: string, code: string) {
-  return analyzeProject({ [file]: code, ...adapter }, { entry: file, targets });
-}
-
-/** e.g. `message:greeting:call 3 <p>` */
-function describeUsages(usages: Awaited<ReturnType<typeof analyze>>): string[] {
-  return usages.map((usage) => {
-    const element = usage.element
-      ? ` <${usage.element.element}${usage.element.attribute ? ` ${usage.element.attribute}` : ''}>`
-      : '';
-    return `${summarize([usage])[0]} ${usage.line}${element}`;
-  });
+  return analyzeProject(
+    { [file]: code, ...ADAPTER_FILES },
+    { entry: file, targets: ADAPTER_TARGETS }
+  );
 }
 
 describe('Vue', () => {
@@ -209,6 +194,25 @@ describe('Svelte', () => {
     ]);
   });
 
+  test('an expression that does not parse loses only itself', async () => {
+    const usages = await analyze(
+      file,
+      [
+        `<script>`,
+        `  import { m } from "../paraglide/messages.js";`,
+        `</script>`,
+        `<p title={m.broken(1 +)}>{m.after_attribute()}</p>`,
+        `{#if m.block()}<p>{m.broken_too(:)}</p>{/if}`,
+        `<p>{m.last()}</p>`,
+      ].join('\n')
+    );
+    expect(describeUsages(usages)).toEqual([
+      'message:after_attribute:call 4 <p>',
+      'message:block:call 5',
+      'message:last:call 6 <p>',
+    ]);
+  });
+
   test('exports of <script module> are followed', async () => {
     const usages = await analyzeProject(
       {
@@ -346,6 +350,51 @@ describe('Astro', () => {
       'm.bold() 5:38',
       'm.client() 8:20',
     ]);
+  });
+
+  test('an unclosed bracket loses only its own expression', async () => {
+    const usages = await analyze(
+      file,
+      [
+        `---`,
+        `import { m } from "../paraglide/messages.js";`,
+        `---`,
+        `<p title={m.broken(}>{m.after_a()}</p>`,
+        `<p>{m.after_b()}</p>`,
+      ].join('\n')
+    );
+    expect(describeUsages(usages)).toEqual([
+      'message:after_a:call 4 <p>',
+      'message:after_b:call 5 <p>',
+    ]);
+  });
+
+  test('without @astrojs/astro2tsx, @astrojs/compiler reads the same usages', async () => {
+    const page = [
+      `---`,
+      `import { m } from "../paraglide/messages.js";`,
+      `---`,
+      `<h1 title={m.title()}>{m.greeting()}</h1>`,
+      `<Card message={m.tos} />`,
+      `<script>import { m } from "../paraglide/messages.js"; console.log(m.client());</script>`,
+    ].join('\n');
+    const withoutAstro2Tsx: LanguageContext = {
+      load: (name) =>
+        name === '@astrojs/astro2tsx'
+          ? Promise.resolve(undefined)
+          : REPO_PACKAGES.load(name),
+    };
+    const usages = await analyzeProject(
+      { [file]: page },
+      { entry: file, context: withoutAstro2Tsx }
+    );
+    expect(describeUsages(usages)).toEqual([
+      'message:title:call 4 <h1 title>',
+      'message:greeting:call 4 <h1>',
+      'message:tos:reference 5 <Card message>',
+      'message:client:call 6 <script>',
+    ]);
+    expect(usages).toEqual(await analyze(file, page));
   });
 
   test("without Astro's TSX tools in the project, files are skipped and astro2tsx is named", async () => {

@@ -1,14 +1,14 @@
-// `collectContext` and the CLI: which files of a project are
-// analyzed, and what is written and reported.
+// `collectContext` and the CLI: which files of a project are analyzed, and what
+// is written and reported. Import aliases are in resolver/aliases.test.ts.
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { afterAll, describe, expect, test } from 'vitest';
+import { afterAll, describe, expect, test, vi } from 'vitest';
 import { build } from 'vite';
 import { main } from '../lib/compiler/cli/index.js';
-import { collectContext } from '../lib/compiler/context.js';
 import {
   collect,
+  compileMessages,
   greetingIn,
   inlangProject,
   outdir,
@@ -30,23 +30,6 @@ afterAll(() =>
 );
 
 describe('collectContext', () => {
-  test('follows tsconfig paths, package imports, .js → .ts and re-exports', async () => {
-    const root = await writeProject('context-collect', {
-      'package.json': `{ "name": "app", "type": "module", "imports": { "#i18n/*": "./src/paraglide/*" } }`,
-      'tsconfig.json': `{ "compilerOptions": { "baseUrl": ".", "paths": { "~/*": ["./src/*"] } } }`,
-      'src/a.ts': useGreeting('~/paraglide/messages.js'),
-      'src/b.ts': useGreeting('#i18n/messages.js'),
-      'src/c.ts': `export { m } from "./paraglide/messages.js";\n`,
-      'src/d.ts': useGreeting('./c.js'),
-    });
-    await collectContext({ root });
-    expect(await readSnippets(root)).toEqual([
-      greetingIn('src/a.ts'),
-      greetingIn('src/b.ts'),
-      greetingIn('src/d.ts'),
-    ]);
-  });
-
   test('analyzes every format; skips tests, build output, gitignored files and dependencies', async () => {
     const root = await writeProject('context-formats', {
       'src/main.ts': useGreeting('./paraglide/messages.js'),
@@ -95,16 +78,52 @@ describe('collectContext', () => {
     ]);
   });
 
-  test('warns about a Paraglide import that does not resolve', async () => {
-    const root = await writeProject('context-unresolved', {
-      'src/a.ts': useGreeting('$missing/paraglide/messages.js'),
+  test('a dynamic name gives its usage to every message it matches', async () => {
+    const ids = ['error_404', 'error_500', 'greeting'];
+    const root = await writeProject('context-dynamic', {
+      ...filesIn('src/paraglide', await compileMessages(ids)),
+      'messages/en.json': JSON.stringify(
+        Object.fromEntries(ids.map((id) => [id, 'Hi']))
+      ),
+      'src/main.ts': [
+        `import { m } from "./paraglide/messages.js";`,
+        'export const error = (code: number) => m[`error_${code}`]();',
+        'export const hint = (kind: string) => m[`hint_${kind}`]();',
+      ].join('\n'),
     });
     const { warnings } = await collect(root);
-    expect(warnings).toContainEqual(
+    const snippet =
+      'src/main.ts: export const error = (code: number) => m[`error_${code}`]();';
+    expect(await readSnippets(root, { message: 'error_404' })).toEqual([
+      snippet,
+    ]);
+    expect(await readSnippets(root, { message: 'error_500' })).toEqual([
+      snippet,
+    ]);
+    expect(Object.keys(await readMetadata(root))).toEqual([
+      'error_404',
+      'error_500',
+    ]);
+    expect(warnings).toEqual([
       expect.stringContaining(
-        `could not resolve "$missing/paraglide/messages.js" from src/a.ts`
-      )
-    );
+        '1 usage(s) of messages not in the catalog: hint_* (src/main.ts:3:'
+      ),
+    ]);
+  });
+
+  test('a long list of unknown messages is cut', async () => {
+    const root = await writeProject('context-catalog-many', {
+      'src/main.ts': [
+        `import { m } from "./paraglide/messages.js";`,
+        ...Array.from({ length: 12 }, (_, i) => `m.typo${i}();`),
+      ].join('\n'),
+    });
+    const { warnings } = await collect(root);
+    expect(warnings).toEqual([
+      expect.stringMatching(
+        /12 usage\(s\) of messages not in the catalog: typo0 .*typo9 \(src\/main\.ts:11:1\), and 2 more$/
+      ),
+    ]);
   });
 
   test('a format whose tools are not installed: one warning with the install command', async () => {
@@ -124,6 +143,23 @@ describe('collectContext', () => {
       '[paraglide-context] 2 .vue file(s) were not analyzed (e.g. src/App.vue): they need ' +
         '@vue/language-core and typescript, which are not installed. ' +
         'Install them: pnpm add -D vue-tsc typescript (vue-tsc includes @vue/language-core)',
+    ]);
+  });
+
+  test('a format whose tool is installed but unusable: one warning with the reason', async () => {
+    const root = await writeProject('context-typescript-7', {
+      'src/main.ts': useGreeting('./paraglide/messages.js'),
+      'src/App.vue': `<template><p>{{ m.greeting() }}</p></template>\n`,
+      // TypeScript 7 has no JavaScript API.
+      'node_modules/typescript/package.json': `{ "name": "typescript", "main": "index.js" }`,
+      'node_modules/typescript/index.js': 'module.exports = {};\n',
+    });
+    const { usages, warnings } = await collect(root);
+    expect(usages).toEqual([greetingIn('src/main.ts')]);
+    expect(warnings).toEqual([
+      '[paraglide-context] 1 .vue file(s) were not analyzed (e.g. src/App.vue): ' +
+        "the project's typescript has no JavaScript API (TypeScript 7), which @vue/language-core needs; " +
+        'it works with typescript 5 or 6.',
     ]);
   });
 });
@@ -209,11 +245,12 @@ describe('project layouts', () => {
       'src/a.ts': useGreeting('./paraglide/messages.js'),
       'src/b.stories.tsx': useGreeting('./paraglide/messages.js'),
       'lib/c.ts': useGreeting('../src/paraglide/messages.js'),
+      'lib/skipped.ts': useGreeting('../src/paraglide/messages.js'),
       'other/d.ts': useGreeting('../src/paraglide/messages.js'),
     });
     const { usages, warnings } = await collect(root, {
       include: ['src', 'lib/*.ts', 'missing'],
-      exclude: ['**/*.stories.tsx'],
+      exclude: ['**/*.stories.tsx', 'lib/skipped.ts'],
     });
     expect(usages).toEqual([greetingIn('lib/c.ts'), greetingIn('src/a.ts')]);
     expect(warnings).toEqual([
@@ -225,18 +262,35 @@ describe('project layouts', () => {
 describe('auto-imports', () => {
   const usesGlobal = 'export const text = m.greeting();\n';
 
-  test('unplugin-auto-import declarations', async () => {
+  const declarations = [
+    'export {}',
+    'declare global {',
+    "  const m: typeof import('./src/paraglide/messages')['m']",
+    "  const t: typeof import('./src/i18n')['t']",
+    "  const ref: typeof import('vue')['ref']",
+    '}',
+  ].join('\n');
+
+  test('unplugin-auto-import declarations, of Paraglide and of a module that re-exports it', async () => {
     const root = await writeProject('context-auto-imports', {
       'src/main.ts': usesGlobal,
-      'auto-imports.d.ts': [
-        'export {}',
-        'declare global {',
-        "  const m: typeof import('./src/paraglide/messages')['m']",
-        "  const ref: typeof import('vue')['ref']",
-        '}',
-      ].join('\n'),
+      'src/i18n.ts': `export { m as t } from "./paraglide/messages.js";\n`,
+      'src/other.ts': 'export const text = t.greeting();\n',
+      'auto-imports.d.ts': declarations,
     });
-    expect((await collect(root)).usages).toEqual([greetingIn('src/main.ts')]);
+    expect((await collect(root)).usages).toEqual([
+      greetingIn('src/main.ts'),
+      'src/other.ts: export const text = t.greeting();',
+    ]);
+  });
+
+  test('`autoImports: false` reads no declarations', async () => {
+    const root = await writeProject('context-auto-imports-off', {
+      'src/main.ts': usesGlobal,
+      'auto-imports.d.ts': declarations,
+    });
+    const { usages } = await collect(root, { autoImports: false });
+    expect(usages).toEqual([]);
   });
 
   test('Nuxt declarations', async () => {
@@ -335,6 +389,7 @@ describe('the CLI', () => {
   test('--include, --alias, --project', async () => {
     const root = await writeProject('context-cli', {
       'src/a.ts': useGreeting('@/paraglide/messages.js'),
+      'src/c.ts': useGreeting('#absolute/paraglide/messages.js'),
       'lib/b.ts': useGreeting('../src/paraglide/messages.js'),
       // Not found by detection: it is not in the project root.
       'i18n/project.inlang/settings.json':
@@ -347,14 +402,31 @@ describe('the CLI', () => {
       'src',
       '--alias',
       '@=./src',
+      '--alias',
+      `#absolute=${path.join(root, 'src')}`,
       '--project',
       'i18n/project.inlang',
     ]);
     expect(code).toBe(0);
     expect(
       await readSnippets(root, { file: 'i18n/messages/en.metadata.json' })
-    ).toEqual([greetingIn('src/a.ts')]);
+    ).toEqual([greetingIn('src/a.ts'), greetingIn('src/c.ts')]);
     expect(await readSnippets(root)).toEqual([]);
-    expect(await main(['--radius', 'x'])).toBe(2);
+  });
+
+  test('wrong arguments print the usage and exit with 2; --help prints it', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const usage = expect.stringContaining('Usage: paraglide-context');
+
+    for (const argv of [['--unknown'], ['--radius', 'x'], ['a', 'b']]) {
+      expect(await main(argv)).toBe(2);
+      expect(error).toHaveBeenLastCalledWith(usage);
+    }
+    expect(error).toHaveBeenCalledTimes(3);
+
+    expect(await main(['--help'])).toBe(0);
+    expect(log).toHaveBeenCalledWith(usage);
+    vi.restoreAllMocks();
   });
 });

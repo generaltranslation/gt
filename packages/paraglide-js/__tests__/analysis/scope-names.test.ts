@@ -9,7 +9,7 @@ async function scopes(file: string, code: string): Promise<string[]> {
   return usages.map((usage) => `${usage.name} ${usage.scope ?? '-'}`);
 }
 
-describe('S1: class field initializers', () => {
+describe('class field initializers', () => {
   test('instance, static, object, accessor and #private fields', async () => {
     expect(
       await scopes(
@@ -39,7 +39,7 @@ describe('S1: class field initializers', () => {
   });
 });
 
-describe('S2: #private methods', () => {
+describe('#private methods', () => {
   test('Class.#method', async () => {
     expect(
       await scopes(
@@ -51,7 +51,7 @@ describe('S2: #private methods', () => {
   });
 });
 
-describe('S3: wrapper callbacks are weak names', () => {
+describe('wrapper callbacks are weak names', () => {
   test("hooks inside a component take the component's name", async () => {
     expect(
       await scopes(
@@ -90,7 +90,7 @@ describe('S3: wrapper callbacks are weak names', () => {
   });
 });
 
-describe('S4: chains, parentheses, satisfies and arrays', () => {
+describe('chains, parentheses, satisfies and arrays', () => {
   test('climb to the variable', async () => {
     expect(
       await scopes(
@@ -115,7 +115,7 @@ describe('S4: chains, parentheses, satisfies and arrays', () => {
   });
 });
 
-describe('S5: generic names', () => {
+describe('generic names', () => {
   test('default exports are named after the file', async () => {
     expect(
       await scopes(
@@ -186,4 +186,34 @@ describe('S5: generic names', () => {
       )
     ).toEqual(['key_arrow foo']);
   });
+});
+
+describe('inline event handlers are scoped to the component', () => {
+  test.each([
+    [
+      'Svelte',
+      '/app/src/Page.svelte',
+      `<script>\n${IMPORT}</script>\n<button onclick={() => m.handler()}>x</button>\n`,
+    ],
+    [
+      'Vue',
+      '/app/src/Page.vue',
+      `<script setup>\n${IMPORT}</script>\n<template>\n  <button @click="() => m.handler()">x</button>\n</template>\n`,
+    ],
+  ])('%s', async (_name, file, code) => {
+    expect(await scopes(file, code)).toEqual(['handler Page']);
+  });
+});
+
+test('static members are named apart from instance members', async () => {
+  expect(
+    await scopes(
+      '/app/src/greeter.ts',
+      `${IMPORT}export class Greeter {\n  label = m.instance();\n  static label = m.statik();\n  static greet() { return m.method(); }\n}`
+    )
+  ).toEqual([
+    'instance Greeter.label',
+    'statik static Greeter.label',
+    'method static Greeter.greet',
+  ]);
 });

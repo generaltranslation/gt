@@ -2,7 +2,7 @@
 // project's bundler config, or the `alias` option. An alias nothing declares
 // is reported, and the rest of the project is still analyzed.
 import path from 'node:path';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import type { BundlerConfig } from '../../lib/compiler/bundler-configs/bundler-config.js';
 import { main } from '../../lib/compiler/cli/index.js';
 import {
@@ -225,10 +225,15 @@ describe('aliases no config declares', () => {
       expect.stringContaining('--alias: no bundler config is read.')
     );
 
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     expect(await main([root, '--no-bundler-config'])).toBe(0);
     expect(await readSnippets(root)).toEqual([]);
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('--alias: no bundler config is read.')
+    );
     expect(await main([root])).toBe(0);
     expect(await readSnippets(root)).toEqual([greetingIn('src/a.ts')]);
+    warn.mockRestore();
   });
 
   test('with a bundler config read, unresolved imports are its virtual modules, not unknown aliases', async () => {

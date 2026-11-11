@@ -18,6 +18,7 @@ import type {
 } from '../../lib/compiler/languages/language.js';
 import {
   defaultTargets,
+  packageTarget,
   type ParaglideTarget,
 } from '../../lib/compiler/paraglide/targets.js';
 import type { ParaglideUsage } from '../../lib/compiler/analysis/types.js';
@@ -29,6 +30,15 @@ export const REPO_PACKAGES = projectPackages(
 );
 export const OUTDIR = '/app/src/paraglide';
 export const ENTRY = '/app/src/App.tsx';
+
+/** A package of Paraglide components, e.g. `<ParaglideMessage />`, and its target. */
+export const ADAPTER_FILES = {
+  '/app/node_modules/paraglide-adapter/index.js': 'export {}',
+};
+export const ADAPTER_TARGETS = [
+  ...defaultTargets,
+  packageTarget('adapter', 'paraglide-adapter'),
+];
 
 /** Targets match by path, so the contents do not matter. */
 const generated = Object.fromEntries(
@@ -121,6 +131,22 @@ export function summarize(usages: ParaglideUsage[]): string[] {
   return usages.map(
     (usage) =>
       `${usage.target}:${usage.name}:${usage.kind}${usage.method ? `.${usage.method}` : ''}`
+  );
+}
+
+/** e.g. ` <p title>`; empty for a usage outside an element. */
+export function elementLabel({ element }: ParaglideUsage): string {
+  if (!element) return '';
+
+  const attribute = element.attribute ? ` ${element.attribute}` : '';
+
+  return ` <${element.element}${attribute}>`;
+}
+
+/** e.g. `message:greeting:call 3 <p title>` */
+export function describeUsages(usages: ParaglideUsage[]): string[] {
+  return usages.map(
+    (usage) => `${summarize([usage])[0]} ${usage.line}${elementLabel(usage)}`
   );
 }
 

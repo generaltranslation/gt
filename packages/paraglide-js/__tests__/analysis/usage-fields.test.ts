@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'vitest';
-import { sourceSnippet } from '../../lib/compiler/output/source-code.js';
 import { ENTRY, analyzeProject } from '../helpers/project.js';
 
 describe('usage context', () => {
@@ -57,25 +56,5 @@ describe('usage context', () => {
       [ENTRY]: `import { m } from "./paraglide/messages.js";\nconst x = "héllo 👋"; m.a();`,
     });
     expect(usages[0]).toMatchObject({ line: 2, column: 23 });
-  });
-});
-
-describe('sourceSnippet', () => {
-  const lines = ['a', 'b', 'c', 'd', 'e'];
-
-  test("splits the usage's lines from those around it", () => {
-    expect(sourceSnippet(lines, { line: 2, endLine: 3 }, 1)).toEqual({
-      before: 'a',
-      target: 'b\nc',
-      after: 'd',
-    });
-  });
-
-  test('clamps to the file', () => {
-    expect(sourceSnippet(lines, { line: 1, endLine: 1 }, 10)).toEqual({
-      before: '',
-      target: 'a',
-      after: 'b\nc\nd\ne',
-    });
   });
 });

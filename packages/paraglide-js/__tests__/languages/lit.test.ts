@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { analyzeProject, summarize } from '../helpers/project.js';
+import { analyzeProject, describeUsages } from '../helpers/project.js';
 
 const file = '/app/src/element.ts';
 
@@ -8,12 +8,7 @@ async function analyze(lines: string[]) {
     { [file]: lines.join('\n') },
     { entry: file }
   );
-  return usages.map((usage) => {
-    const element = usage.element
-      ? ` <${usage.element.element}${usage.element.attribute ? ` ${usage.element.attribute}` : ''}>`
-      : '';
-    return `${summarize([usage])[0]} ${usage.line}${element}`;
-  });
+  return describeUsages(usages);
 }
 
 test('text, attributes, properties, events, booleans and element bindings', async () => {

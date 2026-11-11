@@ -1,9 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test } from 'vitest';
+import { createCollector } from '../../lib/compiler/collector/create.js';
 import { OutdirProjects } from '../../lib/compiler/collector/outdir-projects.js';
 import { MetadataFiles } from '../../lib/compiler/collector/metadata-files.js';
 import type { CollectContextOptions } from '../../lib/compiler/context.js';
+import { nodeResolver } from '../../lib/compiler/resolver/node-resolver.js';
 import {
   collect as collectProject,
   compileMessages,
@@ -158,6 +160,26 @@ test('hand-written fields survive a rewrite; snippets of removed usages do not',
     greeting: { context: 'Shown on the home page', maxChars: 20 },
     later: { context: 'Not used yet' },
   });
+});
+
+test('a collector that scans again drops the usages of files that are gone', async () => {
+  const root = await writeProject('metadata-rescan', {
+    'src/a.ts': use('./paraglide/messages.js', 'greeting'),
+    'src/b.ts': use('./paraglide/messages.js', 'greeting'),
+  });
+  const collector = createCollector(
+    {},
+    { root, logger: { warn() {}, info() {} }, resolver: nodeResolver() }
+  );
+  const scan = async () => {
+    await collector.scanAll();
+    await collector.write();
+    return Object.keys((await readMetadata(root)).greeting?.sourceCode ?? {});
+  };
+
+  expect(await scan()).toEqual(['src/a.ts', 'src/b.ts']);
+  await fs.rm(path.join(root, 'src/b.ts'));
+  expect(await scan()).toEqual(['src/a.ts']);
 });
 
 test('a metadata file that is not a JSON object is left alone, with a warning', async () => {

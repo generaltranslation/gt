@@ -12,8 +12,8 @@ import {
 } from '../../lib/compiler/languages/language.js';
 import {
   analyzeProject,
+  describeUsages,
   REPO_PACKAGES,
-  summarize,
 } from '../helpers/project.js';
 
 const languages = [
@@ -30,16 +30,6 @@ function analyze(
   files: Record<string, string>
 ): Promise<Usages> {
   return analyzeProject(files, { entry, languages });
-}
-
-/** e.g. `message:greeting:call 3 <p>` */
-function describeUsages(usages: Usages): string[] {
-  return usages.map((usage) => {
-    const element = usage.element
-      ? ` <${usage.element.element}${usage.element.attribute ? ` ${usage.element.attribute}` : ''}>`
-      : '';
-    return `${summarize([usage])[0]} ${usage.line}${element}`;
-  });
 }
 
 const lines = (...code: string[]) => code.join('\n');

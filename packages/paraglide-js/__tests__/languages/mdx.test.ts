@@ -8,33 +8,23 @@ import {
 } from '../../lib/compiler/languages/language.js';
 import { mdxLanguage } from '../../lib/compiler/languages/mdx.js';
 import {
-  defaultTargets,
-  packageTarget,
-} from '../../lib/compiler/paraglide/targets.js';
-import { analyzeProject, summarize } from '../helpers/project.js';
+  ADAPTER_FILES,
+  ADAPTER_TARGETS,
+  analyzeProject,
+  describeUsages,
+} from '../helpers/project.js';
 
-const targets = [
-  ...defaultTargets,
-  packageTarget('adapter', 'paraglide-adapter'),
-];
-const adapter = { '/app/node_modules/paraglide-adapter/index.js': 'export {}' };
 const file = '/app/src/pages/guide.mdx';
 
 async function analyze(lines: string[]) {
   return analyzeProject(
-    { [file]: lines.join('\n'), ...adapter },
-    { entry: file, targets, languages: [...defaultLanguages, mdxLanguage] }
+    { [file]: lines.join('\n'), ...ADAPTER_FILES },
+    {
+      entry: file,
+      targets: ADAPTER_TARGETS,
+      languages: [...defaultLanguages, mdxLanguage],
+    }
   );
-}
-
-/** e.g. `message:greeting:call 3 <p>` */
-function describeUsages(usages: Awaited<ReturnType<typeof analyze>>): string[] {
-  return usages.map((usage) => {
-    const element = usage.element
-      ? ` <${usage.element.element}${usage.element.attribute ? ` ${usage.element.attribute}` : ''}>`
-      : '';
-    return `${summarize([usage])[0]} ${usage.line}${element}`;
-  });
 }
 
 describe('MDX, through @mdx-js/language-service', () => {

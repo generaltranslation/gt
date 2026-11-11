@@ -7,6 +7,7 @@ import {
   matchesPattern,
   readCatalog,
 } from '../../lib/compiler/paraglide/catalog.js';
+import { writeFiles } from '../helpers/files.js';
 
 const TMP = path.join(import.meta.dirname, '.tmp', 'catalog');
 
@@ -40,12 +41,7 @@ type Output = Record<string, string>;
 let count = 0;
 async function write(output: Output): Promise<string> {
   const directory = path.join(TMP, `outdir-${count++}`);
-  for (const [file, content] of Object.entries(output)) {
-    await fs.mkdir(path.dirname(path.join(directory, file)), {
-      recursive: true,
-    });
-    await fs.writeFile(path.join(directory, file), content);
-  }
+  await writeFiles(directory, output);
   return directory;
 }
 
@@ -80,18 +76,10 @@ describe('Paraglide 3', () => {
       '../../node_modules/@inlang/paraglide-js/dist/bundler-plugins/virtual-messages.js'
     );
     const { virtualMessageOutput } = await import(plugins);
-    await write(output);
     const { disk } = virtualMessageOutput(output, directory, undefined);
-    for (const [file, content] of Object.entries(disk as Output)) {
-      await fs.mkdir(path.dirname(path.join(directory, file)), {
-        recursive: true,
-      });
-      await fs.writeFile(path.join(directory, file), content);
-    }
-    await fs.rm(path.join(directory, 'messages'), {
-      recursive: true,
-      force: true,
-    });
+    // No message modules on disk: only the declarations name the messages.
+    expect(Object.keys(disk as Output).join()).not.toContain('messages/');
+    await writeFiles(directory, disk as Output);
     expect(sorted(await readCatalog(directory))).toEqual([...IDS].sort());
   });
 });
