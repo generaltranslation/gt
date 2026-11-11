@@ -258,12 +258,12 @@ describe('unstableHashInjectionPass', () => {
     ],
     [
       'timeZone',
-      "t`${date({ d }, { dateStyle: 'medium', timeZone: zone })}`;",
+      "t`${date({ d }, { style: 'medium', timeZone: zone })}`;",
       [['d', 'date', 'medium']],
     ],
     [
       'timeZone on time()',
-      "t`${time({ s }, { timeStyle: 'short', timeZone: `${zone}` })}`;",
+      "t`${time({ s }, { style: 'short', timeZone: `${zone}` })}`;",
       [['s', 'time', 'short']],
     ],
     [

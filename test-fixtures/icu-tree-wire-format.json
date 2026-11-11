@@ -148,21 +148,21 @@
   },
   {
     "name": "date",
-    "template": "gt`Due ${date({ due }, { dateStyle: 'medium' })}`",
+    "template": "gt`Due ${date({ due }, { style: 'medium' })}`",
     "options": {},
     "tree": ["Due ", ["due", "date", "medium"]],
     "hash": "7d1e546676f9c40b"
   },
   {
     "name": "date-style-dynamic-time-zone",
-    "template": "gt`Due ${date({ due }, { dateStyle: 'medium', timeZone })}`",
+    "template": "gt`Due ${date({ due }, { style: 'medium', timeZone })}`",
     "options": {},
     "tree": ["Due ", ["due", "date", "medium"]],
     "hash": "7d1e546676f9c40b"
   },
   {
     "name": "time-style",
-    "template": "gt`Starts at ${time({ start }, { timeStyle: 'short' })}`",
+    "template": "gt`Starts at ${time({ start }, { style: 'short' })}`",
     "options": {},
     "tree": ["Starts at ", ["start", "time", "short"]],
     "hash": "baa7f74d4cb57efb"

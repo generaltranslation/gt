@@ -12,6 +12,8 @@ import {
   NUMBER_CONTEXT_OPTIONS,
   NUMBER_MESSAGE_OPTIONS,
   TIME_MESSAGE_OPTIONS,
+  type DateMessageOptions,
+  type DateTimeFormattingContext,
   type MessageFormattingContext,
   type MessageTreeFormats,
 } from '../settings/formatOptions';
@@ -54,21 +56,22 @@ type HoleVariable = { name?: string; value?: unknown };
 /** Kinds whose value picks one of several branches. */
 export type MessageTreeChoiceKind = (PluralNode | SelectNode)[1];
 
+// A time's options are among a date's, and each kind's are checked when built.
+type DateTimeOptions = DateMessageOptions & DateTimeFormattingContext;
+
 /**
  * Plain-data description of one template hole. Values never become part of
  * the tree, so the built tree depends only on the message's structure. A
- * format's `options` are all its Intl options; the builder keeps the message
- * options in the tree and returns the formatting context in `formats`.
+ * format's `options` are Intl's, except that a date's or a time's named style
+ * is `style`; the builder keeps the message options in the tree and returns
+ * the formatting context in `formats`.
  */
 export type MessageTreeHole =
   | { kind: 'argument'; name: string }
   /** A value without a name; it becomes the next `_gt_N` argument. */
   | { kind: 'anonymous'; value?: unknown }
   | ({ kind: NumberNode[1]; options?: Intl.NumberFormatOptions } & HoleVariable)
-  | ({
-      kind: DateTimeNode[1];
-      options?: Intl.DateTimeFormatOptions;
-    } & HoleVariable)
+  | ({ kind: DateTimeNode[1]; options?: DateTimeOptions } & HoleVariable)
   | ({
       kind: MessageTreeChoiceKind;
       branches: Readonly<Record<string, MessageTreeBranch | undefined>>;
@@ -233,7 +236,7 @@ function buildHole(
 function splitOptions(
   name: string,
   kind: (NumberNode | DateTimeNode)[1],
-  options: Intl.NumberFormatOptions | Intl.DateTimeFormatOptions = {}
+  options: Intl.NumberFormatOptions | DateTimeOptions = {}
 ): [node: NumberNode | DateTimeNode, formatting: MessageFormattingContext] {
   const messageKeys: readonly string[] =
     kind === 'number'
@@ -268,8 +271,7 @@ function splitOptions(
           ? undefined
           : message.style;
   } else {
-    const { dateStyle, timeStyle, ...fields } = message;
-    const named = dateStyle ?? timeStyle;
+    const { style: named, ...fields } = message;
     if (named !== undefined && Object.keys(fields).length) {
       // Intl throws a TypeError for this too.
       throw invalid(`a style name cannot be combined with fields`);

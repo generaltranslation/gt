@@ -49,17 +49,13 @@ export const DATE_FIELD_OPTIONS = [
   ...TIME_FIELD_OPTIONS,
 ] as const;
 
-/** Date options that are part of the message: `dateStyle` or fields. */
-export const DATE_MESSAGE_OPTIONS = [
-  'dateStyle',
-  ...DATE_FIELD_OPTIONS,
-] as const;
+// A date or a time has one named style, so it is `style`, as for a number.
+// Intl has `dateStyle` and `timeStyle` because one of its formatters takes both.
+/** Date options that are part of the message: a named `style` or fields. */
+export const DATE_MESSAGE_OPTIONS = ['style', ...DATE_FIELD_OPTIONS] as const;
 
-/** Time options that are part of the message: `timeStyle` or time fields. */
-export const TIME_MESSAGE_OPTIONS = [
-  'timeStyle',
-  ...TIME_FIELD_OPTIONS,
-] as const;
+/** Time options that are part of the message: a named `style` or time fields. */
+export const TIME_MESSAGE_OPTIONS = ['style', ...TIME_FIELD_OPTIONS] as const;
 
 /** Date and time options set where the message is used. */
 export const DATE_TIME_CONTEXT_OPTIONS = [
@@ -92,14 +88,9 @@ export type TimeFieldOptions = PickAvailable<
   Intl.DateTimeFormatOptions,
   (typeof TIME_FIELD_OPTIONS)[number]
 >;
-export type DateMessageOptions = PickAvailable<
-  Intl.DateTimeFormatOptions,
-  (typeof DATE_MESSAGE_OPTIONS)[number]
->;
-export type TimeMessageOptions = PickAvailable<
-  Intl.DateTimeFormatOptions,
-  (typeof TIME_MESSAGE_OPTIONS)[number]
->;
+type NamedStyle = { style?: DateTimeStyleName };
+export type DateMessageOptions = NamedStyle & DateFieldOptions;
+export type TimeMessageOptions = NamedStyle & TimeFieldOptions;
 export type DateTimeFormattingContext = PickAvailable<
   Intl.DateTimeFormatOptions,
   (typeof DATE_TIME_CONTEXT_OPTIONS)[number]

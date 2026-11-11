@@ -252,7 +252,7 @@ describe('messageTreeToIcu', () => {
   it.each<[string, unknown]>([
     ['a currency', ['p', 'number', { currency: 'USD', style: 'currency' }]],
     ['a time zone', ['d', 'date', { timeZone: 'UTC', year: 'numeric' }]],
-    ['dateStyle as an option', ['d', 'date', { dateStyle: 'medium' }]],
+    ['a style as an option', ['d', 'date', { style: 'medium' }]],
     ['date fields on a time', ['t', 'time', { year: 'numeric' }]],
     ['an unknown style name', ['n', 'number', 'integer']],
   ])('throws for %s, which a tree cannot hold', (_name, node) => {

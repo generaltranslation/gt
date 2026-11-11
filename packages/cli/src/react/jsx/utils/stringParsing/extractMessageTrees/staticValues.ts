@@ -124,7 +124,7 @@ export function getIntlOptions(
 ): Record<string, string | number | boolean> {
   if (!t.isObjectExpression(node)) {
     throw new NonStaticMessageError(
-      'the Intl options are not an object literal',
+      'the options are not an object literal',
       node
     );
   }
@@ -141,7 +141,7 @@ export function getIntlOptions(
       (t.isBooleanLiteral(value) ? value.value : readStaticText(value));
     if (literal === undefined) {
       throw new NonStaticMessageError(
-        `the Intl option "${key}" is not a literal`,
+        `the option "${key}" is not a literal`,
         value,
         undefined,
         'Write it as a literal: only options that do not change the message, such as currency and timeZone, can be expressions'

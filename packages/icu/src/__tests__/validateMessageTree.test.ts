@@ -82,14 +82,9 @@ describe('validateMessageTree', () => {
       [0, 2, 'timeZone'],
     ],
     [
-      'dateStyle as an option',
-      [['d', 'date', { dateStyle: 'short' }]],
-      [0, 2, 'dateStyle'],
-    ],
-    [
-      'timeStyle on a date',
-      [['d', 'date', { timeStyle: 'short' }]],
-      [0, 2, 'timeStyle'],
+      'a style as an option',
+      [['d', 'date', { style: 'short' }]],
+      [0, 2, 'style'],
     ],
     [
       'a date field on a time',
@@ -147,11 +142,8 @@ describe('validateMessageTree', () => {
       '"timeZone" is formatting context, which a message tree does not hold'
     );
     expect(
-      validateMessageTree([['d', 'date', { dateStyle: 'short' }]])?.message
-    ).toBe('"dateStyle" is written as a style name, like "medium"');
-    expect(
-      validateMessageTree([['t', 'time', { dateStyle: 'short' }]])?.message
-    ).toBe('a time has no "dateStyle" option');
+      validateMessageTree([['t', 'time', { style: 'short' }]])?.message
+    ).toBe('"style" is written as a style name, like "medium"');
     expect(
       validateMessageTree([['t', 'time', { day: 'numeric' }]])?.message
     ).toBe('a time has no "day" option');

@@ -809,13 +809,13 @@ describe('createInlineUpdates: unstable tagged templates', () => {
       ],
       [
         'timeZone',
-        "t`${date({ d }, { dateStyle: 'medium', timeZone: zone })}`",
-        "t`${date({ d }, { dateStyle: 'medium', timeZone: 'UTC' })}`",
+        "t`${date({ d }, { style: 'medium', timeZone: zone })}`",
+        "t`${date({ d }, { style: 'medium', timeZone: 'UTC' })}`",
       ],
       [
         'timeZone on time()',
-        "t`${time({ s }, { timeStyle: 'short', timeZone: zone })}`",
-        't`${time({ s }, { timeStyle: `short` })}`',
+        "t`${time({ s }, { style: 'short', timeZone: zone })}`",
+        't`${time({ s }, { style: `short` })}`',
       ],
     ])(
       'extracts a dynamic %s with the hash of a literal one',
@@ -833,7 +833,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
     it('extracts time() as a time placeholder', async () => {
       const { warnings, updates } = await extractTrees(
-        "t`Starts ${time({ s }, { timeStyle: 'short' })} or ${time({ s })}`"
+        "t`Starts ${time({ s }, { style: 'short' })} or ${time({ s })}`"
       );
 
       expect(warnings).toEqual([]);
@@ -843,7 +843,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
     });
 
     it.each([
-      ['dateStyle', 't`${date({ d }, { dateStyle: zone as "short" })}`'],
+      ['style', 't`${date({ d }, { style: zone as "short" })}`'],
       ['style', 't`${number({ p }, { style: zone as "percent" })}`'],
       ['unit', "t`${number({ p }, { style: 'unit', unit: code() })}`"],
     ])('skips a non-literal %s with a warning', async (key, message) => {
@@ -851,27 +851,27 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
       expect(updates).toEqual([]);
       expect(warnings.join('\n')).toContain(
-        `the Intl option "${key}" is not a literal`
+        `the option "${key}" is not a literal`
       );
     });
 
     it('skips an option of the wrong helper with the builder error', async () => {
       const { warnings, updates } = await extractTrees(
-        "t`${date({ d }, { timeStyle: 'short' })}`"
+        "t`${time({ s }, { year: 'numeric' })}`"
       );
 
       expect(updates).toEqual([]);
-      expect(warnings.join('\n')).toContain('a date has no "timeStyle" option');
+      expect(warnings.join('\n')).toContain('a time has no "year" option');
     });
 
     it.each([
       [
         'two named styles',
-        "t`${date({ d }, { dateStyle: 'short' })} / ${date({ d }, { dateStyle: 'long' })}`",
+        "t`${date({ d }, { style: 'short' })} / ${date({ d }, { style: 'long' })}`",
       ],
       [
         'the same context in another order',
-        "t`${date({ d }, { dateStyle: 'short', timeZone: 'UTC', calendar: 'gregory' })} ${date({ d }, { calendar: 'gregory', timeZone: 'UTC' })}`",
+        "t`${date({ d }, { style: 'short', timeZone: 'UTC', calendar: 'gregory' })} ${date({ d }, { calendar: 'gregory', timeZone: 'UTC' })}`",
       ],
       [
         // Formatting context never reaches the tree; the runtime reports this.

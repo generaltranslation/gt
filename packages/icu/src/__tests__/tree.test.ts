@@ -408,14 +408,14 @@ describe('buildMessageTree', () => {
       {
         kind: 'date',
         name: 'd',
-        options: { dateStyle: 'medium', timeZone: 'Asia/Tokyo' },
+        options: { style: 'medium', timeZone: 'Asia/Tokyo' },
       },
       [['d', 'date', 'medium']],
       { d: { timeZone: 'Asia/Tokyo' } },
     ],
     [
       'a time style',
-      { kind: 'time', name: 't', options: { timeStyle: 'short' } },
+      { kind: 'time', name: 't', options: { style: 'short' } },
       [['t', 'time', 'short']],
       {},
     ],
@@ -528,11 +528,6 @@ describe('buildMessageTree', () => {
 
   it.each<[string, MessageTreeHole, string]>([
     [
-      'a timeStyle on a date',
-      { kind: 'date', name: 'd', options: { timeStyle: 'short' } },
-      'a date has no "timeStyle" option',
-    ],
-    [
       'a date field on a time',
       { kind: 'time', name: 't', options: { year: 'numeric' } },
       'a time has no "year" option',
@@ -542,7 +537,7 @@ describe('buildMessageTree', () => {
       {
         kind: 'date',
         name: 'd',
-        options: { dateStyle: 'short', year: 'numeric' },
+        options: { style: 'short', year: 'numeric' },
       },
       'a style name cannot be combined with fields',
     ],

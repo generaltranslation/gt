@@ -28,7 +28,7 @@ export function assertPlainValue(
       'a Date needs date() to be formatted',
       expression,
       undefined,
-      'Write ${date({ due })} or ${date(due, { dateStyle: "medium" })}'
+      'Write ${date({ due })} or ${date(due, { style: "medium" })}'
     );
   }
   if (!plain) {

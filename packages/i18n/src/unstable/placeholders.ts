@@ -1,4 +1,9 @@
 import type {
+  DateMessageOptions,
+  DateTimeFormattingContext,
+  TimeMessageOptions,
+} from '@generaltranslation/icu';
+import type {
   FALLBACK_BRANCH_KEY,
   MessageTreeChoiceKind,
 } from '@generaltranslation/icu/internal';
@@ -42,7 +47,7 @@ type DateTimePlaceholder = {
   readonly [PLACEHOLDER]: 'date' | 'time';
   readonly name: string | undefined;
   readonly value: Primitive;
-  readonly options?: Intl.DateTimeFormatOptions;
+  readonly options?: DateOptions;
 };
 type ChoicePlaceholder<UsesDyn extends boolean = boolean> = {
   readonly [PLACEHOLDER]: MessageTreeChoiceKind;
@@ -360,24 +365,28 @@ export function number<const O extends Record<string, number | bigint>>(
   return { [PLACEHOLDER]: 'number', name, value: v, options };
 }
 
+// A time's options are among a date's.
+type DateOptions = DateMessageOptions & DateTimeFormattingContext;
+
 /**
- * `dateStyle` or date and time fields are part of the message, so they are
- * literals; the other options, such as `timeZone`, may be any value.
+ * A named `style`, like `'medium'`, or date and time fields are part of the
+ * message, so they are literals; the other options, such as `timeZone`, may
+ * be any value.
  */
 export function date<const O extends Record<string, Date | number>>(
   value: Date | number | OneKey<O>,
-  options?: Intl.DateTimeFormatOptions
+  options?: DateOptions
 ): Placeholder {
   return dateTime('date', value, options);
 }
 
 /**
- * `timeStyle` or time fields are part of the message, so they are literals;
- * the other options, such as `timeZone`, may be any value.
+ * A named `style`, like `'short'`, or time fields are part of the message, so
+ * they are literals; the other options, such as `timeZone`, may be any value.
  */
 export function time<const O extends Record<string, Date | number>>(
   value: Date | number | OneKey<O>,
-  options?: Intl.DateTimeFormatOptions
+  options?: TimeMessageOptions & DateTimeFormattingContext
 ): Placeholder {
   return dateTime('time', value, options);
 }
@@ -385,7 +394,7 @@ export function time<const O extends Record<string, Date | number>>(
 function dateTime(
   kind: DateTimePlaceholder[typeof PLACEHOLDER],
   value: unknown,
-  options: Intl.DateTimeFormatOptions | undefined
+  options: DateOptions | undefined
 ): Placeholder {
   const [name, v] = entry(value);
   return { [PLACEHOLDER]: kind, name, value: v, options };

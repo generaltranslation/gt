@@ -175,7 +175,7 @@ export function styleProblem(
     if (fields.includes(key)) continue;
     const message = contextOptions.includes(key)
       ? `"${key}" is formatting context, which a message tree does not hold`
-      : key === `${kind}Style`
+      : key === 'style'
         ? `"${key}" is written as a style name, like "medium"`
         : `a ${kind} has no "${key}" option`;
     return { key, message };

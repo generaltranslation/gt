@@ -318,7 +318,7 @@ describe('gt-i18n/unstable rendering', () => {
     const count = 2;
     const role = 'admin' as 'admin' | 'member';
     expect(
-      gt`${plural(count, { one: 'One file', other: part`${n} files` })} for ${select(role, { admin: 'admins', member: 'members' })}, ${number(0.5, { style: 'percent' })} done by ${date(new Date(Date.UTC(2024, 0, 2)), { timeZone: 'UTC', dateStyle: 'medium' })}`
+      gt`${plural(count, { one: 'One file', other: part`${n} files` })} for ${select(role, { admin: 'admins', member: 'members' })}, ${number(0.5, { style: 'percent' })} done by ${date(new Date(Date.UTC(2024, 0, 2)), { timeZone: 'UTC', style: 'medium' })}`
     ).toBe('2 files for admins, 50% done by Jan 2, 2024');
   });
 
@@ -394,9 +394,7 @@ describe('gt-i18n/unstable rendering', () => {
       `Total : ${new Intl.NumberFormat('fr', { style: 'currency', currency }).format(price)}`
     );
     // A miss formats the source in the source locale.
-    expect(
-      gt`Due ${date({ due }, { dateStyle: 'medium', timeZone: 'UTC' })}`
-    ).toBe(
+    expect(gt`Due ${date({ due }, { style: 'medium', timeZone: 'UTC' })}`).toBe(
       `Due ${new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeZone: 'UTC' }).format(due)}`
     );
   });

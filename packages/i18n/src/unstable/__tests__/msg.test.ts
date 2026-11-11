@@ -139,7 +139,7 @@ describe('gt-i18n/unstable msg', () => {
     const m = await setup();
     const due = new Date(Date.UTC(2024, 0, 15));
     const nickname = undefined;
-    const message = msg`Due ${date({ due }, { dateStyle: 'medium', timeZone: 'UTC' })}, ${number({ id: 12n })}, ${{ ratio: NaN }}, ${plural(Infinity, { other: part`${n} left` })}, hi ${{ nickname }}`;
+    const message = msg`Due ${date({ due }, { style: 'medium', timeZone: 'UTC' })}, ${number({ id: 12n })}, ${{ ratio: NaN }}, ${plural(Infinity, { other: part`${n} left` })}, hi ${{ nickname }}`;
     const expected = 'Due Jan 15, 2024, 12, NaN, ∞ left, hi ';
     expect((message as Msg).values).toEqual({
       due,
@@ -193,7 +193,7 @@ describe('gt-i18n/unstable msg', () => {
         tree: [['d', 'date']],
         values: { d: 0 },
         $_hash: 'h',
-        formats: { d: { dateStyle: 'medium' } },
+        formats: { d: { style: 'medium' } },
       },
       { tree: ['Hi'], values: {}, $_hash: 'h', formats: [] },
       { tree: ['Hi'], values: {}, $_hash: 'h', formats: { n: [] } },

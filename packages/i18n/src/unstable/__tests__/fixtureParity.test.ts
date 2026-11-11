@@ -105,11 +105,10 @@ const cases: Record<string, (gt: GT) => string> = {
     gt`Total: ${number({ price }, { style: 'currency', currency, currencyDisplay: 'code' })}`,
   'number-unit': (gt) =>
     gt`${number({ distance }, { style: 'unit', unit: 'kilometer', maximumFractionDigits: 1 })} away`,
-  date: (gt) => gt`Due ${date({ due }, { dateStyle: 'medium' })}`,
+  date: (gt) => gt`Due ${date({ due }, { style: 'medium' })}`,
   'date-style-dynamic-time-zone': (gt) =>
-    gt`Due ${date({ due }, { dateStyle: 'medium', timeZone })}`,
-  'time-style': (gt) =>
-    gt`Starts at ${time({ start }, { timeStyle: 'short' })}`,
+    gt`Due ${date({ due }, { style: 'medium', timeZone })}`,
+  'time-style': (gt) => gt`Starts at ${time({ start }, { style: 'short' })}`,
   'date-fields-hour': (gt) =>
     gt`Due ${date({ due }, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`,
   'time-fractional-seconds': (gt) =>
