@@ -228,7 +228,7 @@ export class BranchStep {
   /** A concurrent run can create the branch after the lookup; `already_exists` reuses it. */
   private async createBranch(name: string, isDefault: boolean) {
     try {
-      return (await this.gt.createBranch({ name, isDefault })).branch;
+      return await this.gt.createBranch({ name, isDefault });
     } catch (error) {
       if (
         !(error instanceof ApiError) ||

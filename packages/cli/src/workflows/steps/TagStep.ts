@@ -30,9 +30,7 @@ export class TagStep {
         message: this.settings.tagMessage,
       });
       if (this.userProvided) {
-        this.spinner.stop(
-          chalk.green(`Tagged as ${chalk.bold(result.tag.tagId)}`)
-        );
+        this.spinner.stop(chalk.green(`Tagged as ${chalk.bold(result.tagId)}`));
       }
       return result;
     } catch (error) {

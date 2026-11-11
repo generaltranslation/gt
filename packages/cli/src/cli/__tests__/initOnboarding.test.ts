@@ -149,13 +149,12 @@ describe('init and configure onboarding', () => {
     vi.mocked(hasLogin).mockResolvedValue(true);
     vi.mocked(api.listProjects).mockResolvedValue(projects);
     vi.mocked(api.createProjectApiKey).mockResolvedValue({
-      apiKey: {
-        id: 'key-id',
-        name: 'Development key (gt init)',
-        key: SECRET_KEY,
-        projectId: 'p2',
-        type: 'production',
-      },
+      id: 'key-id',
+      name: 'Development key (gt init)',
+      key: SECRET_KEY,
+      permissions: ['project:translations:generate'],
+      createdAt: '2026-01-01T00:00:00.000Z',
+      lastUsedAt: null,
     });
     stdoutEvents = [];
     const writeSync = fs.writeSync;
@@ -1118,7 +1117,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
     it('creates a new project with the resolved default locale', async () => {
       vi.mocked(api.listOrgs).mockResolvedValue([{ id: 'o1', name: 'Acme' }]);
       vi.mocked(api.createProject).mockResolvedValue({
-        project: { id: 'p-new', name: 'App', orgId: 'o1', defaultLocale: 'es' },
+        id: 'p-new',
+        name: 'App',
+        orgId: 'o1',
+        defaultLocale: 'es',
+        currentLocales: [],
+        autoApprove: false,
+        cdnEnabled: false,
       });
 
       await run(

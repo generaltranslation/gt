@@ -134,12 +134,13 @@ describe('CLI API clients', () => {
       expect(body.defaultLocale).toBe('en-US');
       return Response.json(
         {
-          project: {
-            id: 'project-id',
-            name: 'Project',
-            orgId: 'org-id',
-            defaultLocale: 'en-US',
-          },
+          id: 'project-id',
+          name: 'Project',
+          orgId: 'org-id',
+          defaultLocale: 'en-US',
+          currentLocales: [],
+          autoApprove: false,
+          cdnEnabled: false,
         },
         { status: 201 }
       );
@@ -150,8 +151,13 @@ describe('CLI API clients', () => {
       customMapping: { 'brand-english': { code: 'en-us' } },
     });
 
-    await account!.org('org-id').createProject({
+    const project = await account!.org('org-id').createProject({
       name: 'Project',
+      defaultLocale: 'brand-english',
+    });
+
+    expect(project).toMatchObject({
+      id: 'project-id',
       defaultLocale: 'brand-english',
     });
 
@@ -166,13 +172,12 @@ describe('CLI API clients', () => {
       body = JSON.parse(await req.text());
       return Response.json(
         {
-          apiKey: {
-            id: 'key-id',
-            name: 'Dev',
-            key: 'gtx-secret',
-            projectId: 'p1',
-            type: 'production',
-          },
+          id: 'key-id',
+          name: 'Dev',
+          key: 'gtx-secret',
+          permissions: ['project:translations:generate'],
+          createdAt: '2026-01-01T00:00:00.000Z',
+          lastUsedAt: null,
         },
         { status: 201 }
       );
@@ -190,6 +195,6 @@ describe('CLI API clients', () => {
       name: 'Dev',
       permissions: ['project:translations:generate'],
     });
-    expect(result.apiKey.key).toBe('gtx-secret');
+    expect(result.key).toBe('gtx-secret');
   });
 });

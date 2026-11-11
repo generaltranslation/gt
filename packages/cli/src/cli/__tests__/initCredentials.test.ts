@@ -83,13 +83,12 @@ const projects = [
   { id: 'p2', name: 'App', orgId: 'o1', orgName: 'Acme' },
 ];
 const mintedKey = {
-  apiKey: {
-    id: 'key-id',
-    name: 'Development key (gt init)',
-    key: 'gtx-secret-development-key',
-    projectId: 'p2',
-    type: 'production' as const,
-  },
+  id: 'key-id',
+  name: 'Development key (gt init)',
+  key: 'gtx-secret-development-key',
+  permissions: ['project:translations:generate' as const],
+  createdAt: '2026-01-01T00:00:00.000Z',
+  lastUsedAt: null,
 };
 const GT_ENV = [
   'GT_API_KEY',
@@ -351,12 +350,13 @@ describe('init development credentials', () => {
     vi.mocked(promptSelect).mockResolvedValueOnce('o2');
     vi.mocked(promptText).mockResolvedValueOnce(' New App ');
     vi.mocked(api.createProject).mockResolvedValue({
-      project: {
-        id: 'p-new',
-        name: 'New App',
-        orgId: 'o2',
-        defaultLocale: 'en',
-      },
+      id: 'p-new',
+      name: 'New App',
+      orgId: 'o2',
+      defaultLocale: 'en',
+      currentLocales: [],
+      autoApprove: false,
+      cdnEnabled: false,
     });
 
     await runInit();
@@ -379,12 +379,13 @@ describe('init development credentials', () => {
     vi.mocked(api.listOrgs).mockResolvedValue([{ id: 'o1', name: 'Acme' }]);
     vi.mocked(promptText).mockResolvedValueOnce('New App');
     vi.mocked(api.createProject).mockResolvedValue({
-      project: {
-        id: 'p-new',
-        name: 'New App',
-        orgId: 'o1',
-        defaultLocale: 'en',
-      },
+      id: 'p-new',
+      name: 'New App',
+      orgId: 'o1',
+      defaultLocale: 'en',
+      currentLocales: [],
+      autoApprove: false,
+      cdnEnabled: false,
     });
 
     await runInit();

@@ -496,7 +496,7 @@ export class BaseCLI {
         if (!hasValidServiceLocales(settings)) return exitSync(1);
         const { account } = createClients(settings);
         if (!account) return logErrorAndExit(projectKeyProjectCreationError);
-        const { project } = await account.org(options.orgId).createProject({
+        const project = await account.org(options.orgId).createProject({
           name: options.name,
           defaultLocale: options.defaultLocale,
           cdnEnabled: options.cdnEnabled,
@@ -591,16 +591,14 @@ export class BaseCLI {
               apiKey: undefined,
               projectId: undefined,
             });
-            const { apiKey } = await account!.org(options.orgId).createApiKey({
+            const apiKey = await account!.org(options.orgId).createApiKey({
               name: options.name,
               permissions: options.permission,
             });
             key = apiKey.key;
           } else {
             if (!hasValidCredentials(settings)) return exitSync(1);
-            const { apiKey } = await createClients(
-              settings
-            ).project!.createApiKey({
+            const apiKey = await createClients(settings).project!.createApiKey({
               name: options.name,
               permissions: projectPermissions,
             });

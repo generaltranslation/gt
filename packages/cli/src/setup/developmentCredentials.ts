@@ -307,7 +307,7 @@ export async function provisionDevelopmentCredentials(
     const { orgId, name } = project.create;
     const { account } = createClients(settings);
     if (!account) throw new OnboardingError(projectKeyDiscoveryError);
-    const { project: created } = await account
+    const created = await account
       .org(orgId)
       .createProject({ name, defaultLocale: settings.defaultLocale })
       .catch(
@@ -321,7 +321,7 @@ export async function provisionDevelopmentCredentials(
     projectName = created.name;
   }
   // The project is set, so the project-scoped client exists.
-  const { apiKey } = await createClients({ ...settings, projectId })
+  const apiKey = await createClients({ ...settings, projectId })
     .project!.createApiKey({
       name: DEVELOPMENT_KEY_NAME,
       permissions: [ProjectApiKeyPermission['PROJECT:TRANSLATIONS:GENERATE']],

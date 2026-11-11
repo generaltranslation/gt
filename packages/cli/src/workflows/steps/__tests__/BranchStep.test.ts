@@ -246,7 +246,7 @@ describe('BranchStep', () => {
 
     it('creates the default branch by name when none exists', async () => {
       mockBranchLists({ branches: [], defaultBranch: null });
-      mockGt.createBranch.mockResolvedValue({ branch: defaultBranch });
+      mockGt.createBranch.mockResolvedValue(defaultBranch);
 
       const step = new BranchStep(mockGt, makeSettings({ enabled: false }));
       const result = await step.run();
@@ -336,7 +336,8 @@ describe('BranchStep', () => {
         defaultBranch,
       });
       mockGt.createBranch.mockResolvedValue({
-        branch: { id: 'new-id', name: 'new-branch' },
+        id: 'new-id',
+        name: 'new-branch',
       });
 
       const step = new BranchStep(mockGt, makeSettings());
@@ -479,7 +480,7 @@ describe('BranchStep', () => {
     it('creates the branch as the default when the project has no branches', async () => {
       mockBranchLists({ branches: [], defaultBranch: null });
       const created = { id: 'master-id', name: 'master', isDefault: true };
-      mockGt.createBranch.mockResolvedValue({ branch: created });
+      mockGt.createBranch.mockResolvedValue(created);
 
       const result = await new BranchStep(mockGt, makeSettings()).run();
 

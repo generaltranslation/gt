@@ -14,7 +14,7 @@ export async function getDefaultBranchId(
   } = await project.listBranches({ name: ['main'] });
   if (main) return main.id;
   try {
-    const { branch } = await project.createBranch({
+    const branch = await project.createBranch({
       name: 'main',
       isDefault: true,
     });

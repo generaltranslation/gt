@@ -80,13 +80,12 @@ describe('api-key create', () => {
     vi.clearAllMocks();
     vi.mocked(generateSettings).mockResolvedValue(settings);
     vi.mocked(api.createProjectApiKey).mockResolvedValue({
-      apiKey: {
-        id: 'key-id',
-        name: 'CI',
-        key: SECRET,
-        projectId: 'project-id',
-        type: 'production',
-      },
+      id: 'key-id',
+      name: 'CI',
+      key: SECRET,
+      permissions: ['project:files:read'],
+      createdAt: '2026-01-01T00:00:00.000Z',
+      lastUsedAt: null,
     });
     stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
     appDirectory = fs.mkdtempSync(path.join(tmpdir(), 'gt-api-key-'));
@@ -202,7 +201,12 @@ describe('api-key create', () => {
       userTokenProvider,
     } as unknown as Settings);
     vi.mocked(api.createOrgApiKey).mockResolvedValue({
-      apiKey: { id: 'key-id', name: 'CI', key: SECRET, orgId: 'org-1' },
+      id: 'key-id',
+      name: 'CI',
+      key: SECRET,
+      permissions: ['org:context:read'],
+      createdAt: '2026-01-01T00:00:00.000Z',
+      lastUsedAt: null,
     });
 
     await run([

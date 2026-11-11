@@ -66,12 +66,13 @@ describe('project commands', () => {
       apiKey: 'gtx-organization-key',
     } as Settings);
     vi.mocked(api.createProject).mockResolvedValue({
-      project: {
-        id: 'new-project-id',
-        name: 'Project',
-        orgId: 'org-id',
-        defaultLocale: 'en',
-      },
+      id: 'new-project-id',
+      name: 'Project',
+      orgId: 'org-id',
+      defaultLocale: 'en',
+      currentLocales: [],
+      autoApprove: false,
+      cdnEnabled: false,
     });
 
     await createProgram().parseAsync(

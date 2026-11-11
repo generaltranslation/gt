@@ -64,9 +64,9 @@ describe('getDefaultBranchId', () => {
       items: [],
       nextCursor: null,
     });
-    vi.mocked(api.createBranch).mockResolvedValue({
-      branch: branch('main-id', 'main', true),
-    });
+    vi.mocked(api.createBranch).mockResolvedValue(
+      branch('main-id', 'main', true)
+    );
 
     await expect(getDefaultBranchId(project)).resolves.toBe('main-id');
     expect(api.createBranch).toHaveBeenCalledWith({
