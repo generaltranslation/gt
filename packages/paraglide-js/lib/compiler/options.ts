@@ -2,7 +2,7 @@ import type { SourceLanguage } from './languages/language.js';
 import type { ParaglideTarget } from './paraglide/targets.js';
 import type { AutoImportOptions } from './project/auto-imports.js';
 
-/** Options of `collectContext`, `watchContext` and the CLI. */
+/** Options of `collectContext` and the CLI. */
 export type ParaglideContextOptions = {
   /**
    * Paths or globs analyzed for usages, relative to the project root (the

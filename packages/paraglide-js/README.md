@@ -18,22 +18,17 @@ files.
 **CLI:**
 
 ```bash
-npx paraglide-context [root] [--watch] [--verbose] [options]
+npx paraglide-context [root] [--verbose] [options]
 ```
 
-`--watch` keeps the files up to date; `--verbose` prints a summary.
+`--verbose` prints a summary.
 
 **Library:**
 
 ```ts
-import {
-  collectContext,
-  watchContext,
-} from '@generaltranslation/paraglide-js/compiler';
+import { collectContext } from '@generaltranslation/paraglide-js/compiler';
 
 await collectContext({ root: './apps/web', include: ['src'] });
-
-const watcher = watchContext(); // { ready, close() }
 ```
 
 Everything is exported from `@generaltranslation/paraglide-js/compiler`. The
@@ -93,7 +88,7 @@ Paths are relative to the project root: the nearest `package.json` at or above
 | `alias`          | `--alias ~=./src …`   | none                    | Import aliases: `{ "~": "/abs/src" }` or a list of `{ find, replacement }`.          |
 | `bundlerConfigs` | `--no-bundler-config` | `defaultBundlerConfigs` | Bundler configs to read aliases from. `[]`: none.                                    |
 
-`collectContext` and `watchContext` also take `logger` (`{ warn, info }`),
+`collectContext` also takes `logger` (`{ warn, info }`),
 `conditions` (package export conditions) and `rootDirectory` (where `/src/a.js`
 resolves from).
 
@@ -140,11 +135,6 @@ reported in a warning.
 
 **Auto-imports** from unplugin-auto-import, unplugin-vue-components and Nuxt
 are read from their `.d.ts` files.
-
-**Watching.** A change re-analyzes the file and its dependents; adding or
-deleting a file re-scans. If the app's dev server runs too, Paraglide's plugin
-watches the messages directory, so it recompiles once after a metadata file
-changes.
 
 ## File formats
 
@@ -282,7 +272,7 @@ pnpm --filter @generaltranslation/paraglide-js typecheck
 ```
 src/                    entry points: index.ts (empty), compiler.ts (the public API)
 lib/compiler/
-  context.ts            collectContext, watchContext
+  context.ts            collectContext
   options.ts            their options, and the CLI's
   cli/                  the `paraglide-context` command
   collector/            orchestration and the metadata files

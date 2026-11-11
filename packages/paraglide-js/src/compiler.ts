@@ -1,9 +1,7 @@
 // Writing the metadata files: what the `paraglide-context` CLI runs.
 export {
   collectContext,
-  watchContext,
   type CollectContextOptions,
-  type ContextWatcher,
 } from '../lib/compiler/context.js';
 export type { ParaglideContextOptions } from '../lib/compiler/options.js';
 

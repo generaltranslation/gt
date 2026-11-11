@@ -158,8 +158,8 @@ export class ModuleGraph {
     await Promise.all(outdirCandidates(file).map(detect));
   }
 
-  /** Loads `entry` and every module reachable from it. Returns the files visited. */
-  async loadPath(entry: string): Promise<Set<string>> {
+  /** Loads `entry` and every module reachable from it. */
+  async loadPath(entry: string): Promise<void> {
     const visited = new Set<string>();
     let frontier = [entry];
 
@@ -178,14 +178,6 @@ export class ModuleGraph {
         (file) => !visited.has(file) && this.shouldFollow(file)
       );
     }
-
-    return visited;
-  }
-
-  invalidate(file: string): void {
-    this.loading.delete(file);
-    this.records.delete(file);
-    this.generation++;
   }
 
   clear(): void {
@@ -509,7 +501,7 @@ export class ModuleGraph {
 
     if (!loading) {
       loading = this.readRecord(file).then((record) => {
-        // A load that `invalidate()` superseded is dropped.
+        // A load that `clear()` superseded is dropped.
         const isCurrent = this.loading.get(file) === loading;
 
         if (record && isCurrent) {

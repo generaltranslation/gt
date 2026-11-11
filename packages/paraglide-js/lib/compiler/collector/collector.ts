@@ -99,14 +99,8 @@ export class ContextCollector {
   /** Per analyzed file, its usages of messages that are not in the catalog. */
   private readonly unknownMessages = new Map<string, string[]>();
   private readonly packages: LanguageContext;
-  /** The modules each analyzed file depends on. */
-  private readonly dependencies = new Map<string, Set<string>>();
   /** Files `include` selects. */
   private included = new Set<string>();
-  /** Auto-import declaration files and the modules their imports reach. */
-  private globalDependencies = new Set<string>();
-  /** Each file's last successful parse, used while it does not parse (mid-edit). */
-  private readonly lastParsed = new Map<string, ParsedModule>();
   /** Files skipped because their language's tools are unavailable, by language. */
   private readonly missingTools = new Map<
     string,
@@ -141,7 +135,6 @@ export class ContextCollector {
     this.moduleGraph.clear();
     this.missingTools.clear();
     this.outDirDetector.clear();
-    this.dependencies.clear();
     const previous = new Set(this.analyzed.keys());
     this.analyzed.clear();
     this.catalogs.clear();
@@ -160,7 +153,7 @@ export class ContextCollector {
     const sources = files.filter((file) => this.isSource(file));
     // Every source is loaded before any is analyzed: a value can flow from one
     // module into another's function, e.g. `show(m)` into `function show(t)`.
-    await Promise.all(sources.map((file) => this.load(file)));
+    await Promise.all(sources.map((file) => this.moduleGraph.loadPath(file)));
     await this.loadCatalogs();
     for (const file of sources) this.analyzeLoaded(file);
     for (const file of previous) {
@@ -188,36 +181,6 @@ export class ContextCollector {
     );
   }
 
-  /** Re-analyzes `changed` and every file that depends on it. */
-  async updateChangedFileFromPath(changed: string): Promise<void> {
-    if (this.globalDependencies.has(changed)) return this.scanAll();
-    // Paraglide recompiled: the catalog may have changed.
-    const outdir = this.outdirOf(changed);
-    if (outdir) return this.refreshCatalog(outdir);
-    this.moduleGraph.invalidate(changed);
-    const affected = new Set<string>();
-    if (this.isSource(changed)) affected.add(changed);
-    // Files whose analysis read `changed`, e.g. through a re-export.
-    for (const [file, dependencies] of this.dependencies) {
-      if (dependencies.has(changed)) affected.add(file);
-    }
-    // Files `changed` imports: it can pass them values, e.g. `show(m)`.
-    for (const file of await this.load(changed)) {
-      if (this.isSource(file)) affected.add(file);
-    }
-    for (const file of affected) await this.analyze(file);
-  }
-
-  /** Whether a change to `file` can change the output. */
-  isWatched(file: string): boolean {
-    return (
-      this.isSourceFile(file) ||
-      this.globalDependencies.has(file) ||
-      // e.g. virtual-modules' `messages.virtual.d.ts`, which lists the messages.
-      this.outdirOf(file) !== undefined
-    );
-  }
-
   async write(): Promise<void> {
     for (const { file, reason } of await this.output.write()) {
       this.warn(`${this.relative(file)} was not updated: ${reason}`);
@@ -226,19 +189,6 @@ export class ContextCollector {
 
   private isSourceFile(file: string): boolean {
     return isSourceFile(file, this.settings.languages);
-  }
-
-  private async analyze(file: string): Promise<void> {
-    await this.load(file);
-    await this.loadCatalogs();
-    this.analyzeLoaded(file);
-  }
-
-  /** Loads `file` and the modules it reaches. Returns them. */
-  private async load(file: string): Promise<Set<string>> {
-    const dependencies = await this.moduleGraph.loadPath(file);
-    this.dependencies.set(file, dependencies);
-    return dependencies;
   }
 
   private analyzeLoaded(file: string): void {
@@ -292,25 +242,6 @@ export class ContextCollector {
       `${this.relative(project.directory)} has no base-locale message files in the inlang message format ` +
         '(`plugin.inlang.messageFormat`); its messages get no metadata file'
     );
-  }
-
-  /** Re-reads an outdir's catalog; re-checks every file if it changed. */
-  private async refreshCatalog(outdir: string): Promise<void> {
-    const before = this.catalogs.get(outdir);
-    const after = await readCatalog(outdir).catch(() => undefined);
-    const same =
-      before !== undefined &&
-      after !== undefined &&
-      before.size === after.size &&
-      [...after].every((id) => before.has(id));
-    if (
-      same ||
-      (before === undefined && after === undefined && this.catalogs.has(outdir))
-    )
-      return;
-    this.catalogs.set(outdir, after);
-    await this.pairProject(outdir, after);
-    for (const file of this.analyzed.keys()) this.analyzeLoaded(file);
   }
 
   /** Records on each message usage the inlang project its outdir is paired with. */
@@ -393,16 +324,14 @@ export class ContextCollector {
     declarationFiles: readonly string[]
   ): Promise<void> {
     const { autoImports, projectRoot } = this.settings;
-    this.globalDependencies = new Set();
     if (autoImports === false) {
       this.moduleGraph.setGlobals([]);
       return;
     }
     const detected = await detectAutoImports(projectRoot, declarationFiles);
-    for (const file of detected.files) this.globalDependencies.add(file);
     const imports = [
       ...autoImportsFromOptions(autoImports ?? {}, projectRoot),
-      ...detected.imports,
+      ...detected,
     ];
 
     const globals: GlobalBinding[] = [];
@@ -431,9 +360,7 @@ export class ContextCollector {
           this.isSourceFile(file) &&
           !isDependency(file)
         ) {
-          for (const visited of await this.moduleGraph.loadPath(file)) {
-            this.globalDependencies.add(visited);
-          }
+          await this.moduleGraph.loadPath(file);
         }
       })
     );
@@ -568,18 +495,10 @@ export class ContextCollector {
         entry.files.add(file);
         this.missingTools.set(parsed.language, entry);
       } else {
-        // While a file is being edited, its last version that parsed stands in.
-        const last = this.lastParsed.get(file);
-        this.warn(
-          last
-            ? `${this.relative(file)} does not parse (${parsed.error}); its last version that did is used`
-            : `skipped ${this.relative(file)}: ${parsed.error}`
-        );
-        return last;
+        this.warn(`skipped ${this.relative(file)}: ${parsed.error}`);
       }
       return undefined;
     }
-    this.lastParsed.set(file, parsed.module);
     return parsed.module;
   }
 }

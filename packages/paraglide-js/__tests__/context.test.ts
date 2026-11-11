@@ -1,4 +1,4 @@
-// `collectContext`, `watchContext` and the CLI: which files of a project are
+// `collectContext` and the CLI: which files of a project are
 // analyzed, and what is written and reported.
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -6,7 +6,7 @@ import path from 'node:path';
 import { afterAll, describe, expect, test } from 'vitest';
 import { build } from 'vite';
 import { main } from '../lib/compiler/cli/index.js';
-import { collectContext, watchContext } from '../lib/compiler/context.js';
+import { collectContext } from '../lib/compiler/context.js';
 import {
   collect,
   greetingIn,
@@ -356,24 +356,5 @@ describe('the CLI', () => {
     ).toEqual([greetingIn('src/a.ts')]);
     expect(await readSnippets(root)).toEqual([]);
     expect(await main(['--radius', 'x'])).toBe(2);
-  });
-});
-
-describe('watchContext', () => {
-  test('updates the files as sources change', async () => {
-    const root = await writeProject('context-watch', {
-      'src/a.ts': useGreeting('./paraglide/messages.js'),
-    });
-    const watcher = watchContext({ root });
-    await watcher.ready;
-    expect(await readSnippets(root)).toEqual([greetingIn('src/a.ts')]);
-    await fs.writeFile(
-      path.join(root, 'src/b.ts'),
-      useGreeting('./paraglide/messages.js')
-    );
-    await expect
-      .poll(() => readSnippets(root), { timeout: 5000 })
-      .toEqual([greetingIn('src/a.ts'), greetingIn('src/b.ts')]);
-    watcher.close();
   });
 });

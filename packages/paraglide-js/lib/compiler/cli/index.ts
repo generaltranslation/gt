@@ -3,7 +3,7 @@ import { realpathSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
-import { collectContext, watchContext } from '../context.js';
+import { collectContext } from '../context.js';
 
 const USAGE = `Usage: paraglide-context [root] [options]
 
@@ -24,11 +24,10 @@ Options:
   --alias <a=path>    import alias, e.g. ~=./src; repeatable
   --no-bundler-config do not read aliases from a bundler config
   --radius <lines>    lines of context around each usage (default: 10)
-  --watch             keep the files up to date
   --verbose           print a summary
   -h, --help          show this help`;
 
-/** Runs the CLI. Returns the exit code; with `--watch`, resolves once watching. */
+/** Runs the CLI. Returns the exit code. */
 export async function main(argv: string[]): Promise<number> {
   let parsed;
   try {
@@ -43,7 +42,6 @@ export async function main(argv: string[]): Promise<number> {
         alias: { type: 'string', multiple: true },
         'no-bundler-config': { type: 'boolean' },
         radius: { type: 'string' },
-        watch: { type: 'boolean' },
         verbose: { type: 'boolean' },
         help: { type: 'boolean', short: 'h' },
       },
@@ -80,15 +78,6 @@ export async function main(argv: string[]): Promise<number> {
         values.verbose ? console.log(message) : undefined,
     },
   };
-  if (values.watch) {
-    const watcher = watchContext(options);
-    await watcher.ready;
-    process.once('SIGINT', () => {
-      watcher.close();
-      process.exit(0);
-    });
-    return 0;
-  }
   await collectContext(options);
   return 0;
 }

@@ -54,7 +54,7 @@ export function autoImportsFromOptions(
 export async function detectAutoImports(
   projectRoot: string,
   extraFiles: readonly string[] = []
-): Promise<{ imports: AutoImport[]; files: string[] }> {
+): Promise<AutoImport[]> {
   const candidates = [
     ...new Set([
       ...DECLARATION_FILES.map((file) => path.join(projectRoot, file)),
@@ -62,14 +62,12 @@ export async function detectAutoImports(
     ]),
   ];
   const imports: AutoImport[] = [];
-  const files: string[] = [];
   for (const file of candidates) {
     const code = await fs.readFile(file, 'utf8').catch(() => undefined);
     if (code === undefined) continue;
-    files.push(file);
     imports.push(...parseAutoImportDeclarations(code, file));
   }
-  return { imports: unique(imports), files };
+  return unique(imports);
 }
 
 /**
