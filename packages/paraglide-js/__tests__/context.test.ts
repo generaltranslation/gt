@@ -31,6 +31,38 @@ afterAll(() =>
   )
 );
 
+/**
+ * A project outside this repository, so that none of its tools resolve: only
+ * `packages`, which are linked into the project's node_modules.
+ */
+async function writeOutsideProject(
+  files: Record<string, string>,
+  packages: readonly string[] = []
+): Promise<string> {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'paraglide-context-'));
+  outside.push(root);
+
+  await writeFiles(root, {
+    'package.json': `{ "name": "app", "type": "module" }`,
+    'pnpm-lock.yaml': "lockfileVersion: '9.0'\n",
+    ...files,
+  });
+
+  for (const name of packages) {
+    const installed = path.resolve(
+      import.meta.dirname,
+      '../node_modules',
+      name
+    );
+    const link = path.join(root, 'node_modules', name);
+
+    await fs.mkdir(path.dirname(link), { recursive: true });
+    await fs.symlink(await fs.realpath(installed), link);
+  }
+
+  return root;
+}
+
 describe('collectContext', () => {
   test('analyzes every format; skips tests, build output, gitignored files and dependencies', async () => {
     const root = await writeProject('context-formats', {
@@ -130,22 +162,76 @@ describe('collectContext', () => {
   });
 
   test('a format whose tools are not installed: one warning with the install command', async () => {
-    // Outside this repository, so none of its tools resolve.
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'paraglide-context-'));
-    outside.push(root);
-    const files: Record<string, string> = {
-      'package.json': `{ "name": "app", "type": "module" }`,
-      'pnpm-lock.yaml': "lockfileVersion: '9.0'\n",
+    const root = await writeOutsideProject({
       'src/main.ts': 'export {};\n',
       'src/App.vue': `<template><p>{{ m.greeting() }}</p></template>\n`,
       'src/Card.vue': `<template><p>{{ m.card() }}</p></template>\n`,
-    };
-    await writeFiles(root, files);
+    });
     const { warnings } = await collect(root);
     expect(warnings.filter((warning) => warning.includes('.vue'))).toEqual([
       '[paraglide-context] 2 .vue file(s) were not analyzed (e.g. src/App.vue): they need ' +
         '@vue/language-core and typescript, which are not installed. ' +
         'Install them: pnpm add -D vue-tsc typescript (vue-tsc includes @vue/language-core)',
+    ]);
+  });
+
+  test('Markdown without the Vue tools: only a page with a script is reported', async () => {
+    const root = await writeOutsideProject({
+      'src/main.ts': 'export {};\n',
+      'README.md': '# App\n\nRun `pnpm dev`.\n',
+      'docs/index.md': `<script setup>\nimport { m } from "../src/paraglide/messages.js";\n</script>\n\n# {{ m.greeting() }}\n`,
+    });
+    const { warnings } = await collect(root);
+    expect(warnings.filter((warning) => warning.includes('.md'))).toEqual([
+      '[paraglide-context] 1 .md file(s) were not analyzed (e.g. docs/index.md): they need ' +
+        '@vue/language-core and typescript, which are not installed. ' +
+        'Install them: pnpm add -D vue-tsc typescript (vue-tsc includes @vue/language-core)',
+    ]);
+  });
+
+  test('a pug template without its plugin: one warning, and the script is still analyzed', async () => {
+    const root = await writeOutsideProject(
+      {
+        '.git/HEAD': 'ref: refs/heads/main\n',
+        ...inlangProject,
+        ...filesIn('src/paraglide', outdir),
+        'src/App.vue': [
+          `<script setup>`,
+          `import { m } from "./paraglide/messages.js";`,
+          `const label = m.greeting();`,
+          `</script>`,
+          `<template lang="pug">`,
+          `p {{ m.greeting() }}`,
+          `</template>`,
+          ``,
+        ].join('\n'),
+        // The Vue tooling's TypeScript imports from "vue", which an app has installed.
+        'node_modules/vue/package.json': `{ "name": "vue", "main": "index.js" }`,
+        'node_modules/vue/index.js': '',
+      },
+      ['@inlang/paraglide-js', '@vue/language-core', 'typescript']
+    );
+    const { usages, warnings } = await collect(root);
+    expect(usages).toEqual(['src/App.vue: const label = m.greeting();']);
+    expect(warnings).toEqual([
+      '[paraglide-context] pug templates in 1 .vue file(s) were not analyzed (e.g. src/App.vue): they need ' +
+        '@vue/language-plugin-pug, which is not installed. ' +
+        'Install it: pnpm add -D @vue/language-plugin-pug',
+    ]);
+  });
+
+  test('a format whose tool is installed but fails to load: one warning that names it', async () => {
+    const root = await writeProject('context-broken-tool', {
+      'src/main.ts': useGreeting('./paraglide/messages.js'),
+      'src/Card.svelte': `<p>{m.greeting()}</p>\n`,
+      'node_modules/svelte2tsx/package.json': `{ "name": "svelte2tsx", "main": "index.js" }`,
+      'node_modules/svelte2tsx/index.js': 'throw new Error("broken");\n',
+    });
+    const { usages, warnings } = await collect(root);
+    expect(usages).toEqual([greetingIn('src/main.ts')]);
+    expect(warnings).toEqual([
+      '[paraglide-context] 1 .svelte file(s) were not analyzed (e.g. src/Card.svelte): ' +
+        'svelte2tsx could not be loaded.',
     ]);
   });
 

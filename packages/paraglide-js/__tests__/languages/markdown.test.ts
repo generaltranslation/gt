@@ -114,17 +114,15 @@ describe('Markdown (VitePress)', () => {
     expect(usages).toEqual([]);
   });
 
-  test('skipped, naming the packages, without @vue/language-core', async () => {
-    const result = await parseSource(
-      file,
-      '# Title\n',
-      parse,
-      [markdownLanguage],
-      NO_PACKAGES
-    );
-    expect(result).toMatchObject({
-      missing: ['@vue/language-core', 'typescript'],
-    });
+  test('without @vue/language-core, a page with a script is skipped, naming the packages', async () => {
+    const withoutTools = (code: string) =>
+      parseSource(file, code, parse, [markdownLanguage], NO_PACKAGES);
+
+    expect(
+      await withoutTools('<script setup>\nconst a = 1;\n</script>\n\n# Title\n')
+    ).toMatchObject({ missing: ['@vue/language-core', 'typescript'] });
+    // Plain Markdown, like a README, has nothing to analyze.
+    expect(await withoutTools('# Title\n')).toHaveProperty('module');
   });
 
   test('an expression that does not parse is skipped, not the file', async () => {

@@ -64,6 +64,16 @@ export type GeneratedSource = {
    * with `code`.
    */
   scripts?: readonly GeneratedScript[];
+  /** A part of the file that was left out, while the rest is analyzed. */
+  skipped?: SkippedPart;
+};
+
+/** A part of a file whose tool is not installed, e.g. a Vue component's pug template. */
+export type SkippedPart = {
+  /** In the plural, as the warning counts files: "pug templates". */
+  name: string;
+  /** The packages the part needs in the project. */
+  requires: readonly string[];
 };
 
 export type GeneratedScript = Pick<
@@ -112,7 +122,7 @@ export type SourceLanguage = {
   ): GeneratedSource | undefined | Promise<GeneratedSource | undefined>;
 };
 
-/** Why a file was not analyzed. */
+/** Why a file, or a part of it, was not analyzed. */
 export type ParseFailure = {
   error: string;
   /** Set, with `missing`, when the language's tools are unavailable. */
@@ -120,7 +130,12 @@ export type ParseFailure = {
   missing?: readonly string[];
   /** Why an installed tool is unusable. */
   reason?: string;
+  /** What was left out when the rest of the file was analyzed: "pug templates". */
+  part?: string;
 };
+
+/** A file's module; `skipped` when a part of the file is not in it. */
+export type ParsedSource = { module: ParsedModule; skipped?: ParseFailure };
 
 type LanguageMatch = { language: SourceLanguage; extension: string };
 
@@ -151,7 +166,7 @@ export async function parseSource(
   parse: ParseFunction,
   languages: readonly SourceLanguage[],
   context: LanguageContext = NO_PACKAGES
-): Promise<{ module: ParsedModule } | ParseFailure> {
+): Promise<ParsedSource | ParseFailure> {
   const match = languageOf(file, code, languages);
   if (match) return parseWithLanguage(file, code, parse, match, context);
 
@@ -186,7 +201,7 @@ async function parseWithLanguage(
   parse: ParseFunction,
   { language, extension }: LanguageMatch,
   context: LanguageContext
-): Promise<{ module: ParsedModule } | ParseFailure> {
+): Promise<ParsedSource | ParseFailure> {
   let generated: GeneratedSource | undefined;
 
   try {
@@ -214,8 +229,10 @@ async function parseWithLanguage(
   }
 
   const component = path.basename(file, extension).replace(/\.component$/, '');
+  const module = generatedModule(code, programs, component, generated);
+  if (!generated.skipped) return { module };
 
-  return { module: generatedModule(code, programs, component, generated) };
+  return { module, skipped: skippedPartFailure(language, generated.skipped) };
 }
 
 function generationFailure(
@@ -243,6 +260,18 @@ function missingToolsFailure(language: SourceLanguage): ParseFailure {
     error: `${language.name} files need ${missing.join(' and ')} in the project`,
     language: language.name,
     missing,
+  };
+}
+
+function skippedPartFailure(
+  language: SourceLanguage,
+  { name, requires }: SkippedPart
+): ParseFailure {
+  return {
+    error: `${name} need ${requires.join(' and ')} in the project`,
+    language: language.name,
+    missing: requires,
+    part: name,
   };
 }
 
