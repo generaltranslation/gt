@@ -437,7 +437,7 @@ describe('gt-i18n/unstable rendering', () => {
 
   it('rejects an invalid config time zone', () => {
     expect(() => setup({ timeZone: 'Mars/Olympus' })).toThrow(
-      'Invalid I18nConfig time zone "Mars/Olympus"'
+      'Invalid time zone "Mars/Olympus"'
     );
   });
 
