@@ -54,6 +54,7 @@ import { TranslateOptions } from './types-dir/api/entry';
  * @property {string} [projectId] - The project ID for the translation service
  * @property {string} [baseUrl] - The base URL for the translation service
  * @property {CustomMapping} [customMapping] - Custom mapping of locale codes to their names
+ * @property {string} [timeZone] - IANA time zone for dates and times formatted without one; the host's by default
  */
 export type GTConstructorParams = {
   apiKey?: string;
@@ -65,6 +66,7 @@ export type GTConstructorParams = {
   projectId?: string;
   baseUrl?: string;
   customMapping?: CustomMapping;
+  timeZone?: string;
   userTokenProvider?: UserTokenProvider;
 };
 
@@ -110,6 +112,9 @@ export class GTRuntime {
 
   /** Custom mapping for locale codes to their names */
   customMapping?: CustomMapping;
+
+  /** Time zone for dates and times formatted without one; the host's when unset */
+  timeZone?: string;
 
   /** Lazily derived reverse custom mapping for alias locales */
   reverseCustomMapping?: Record<string, string>;
@@ -160,6 +165,7 @@ export class GTRuntime {
     locales,
     projectId,
     customMapping,
+    timeZone,
     baseUrl,
     userTokenProvider,
   }: GTConstructorParams) {
@@ -206,6 +212,7 @@ export class GTRuntime {
 
     // ----- Other properties ----- //
     if (baseUrl) this.baseUrl = baseUrl;
+    if (timeZone) this.timeZone = timeZone;
     if (customMapping) {
       this.customMapping = customMapping;
       this.reverseCustomMapping = Object.fromEntries(
@@ -220,6 +227,7 @@ export class GTRuntime {
       defaultLocale: this.sourceLocale,
       locales: this.locales ?? [],
       customMapping: this.customMapping,
+      timeZone: this.timeZone,
     });
   }
 

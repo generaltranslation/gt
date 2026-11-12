@@ -182,6 +182,7 @@ export class I18nConfig extends LocaleConfig {
       targetLocale: locale,
       locales: this.getLocales(),
       customMapping: this.getCustomMapping(),
+      timeZone: this.timeZone,
       projectId: this.runtimeConfig.projectId,
       baseUrl: this.runtimeConfig.runtimeUrl || undefined,
       apiKey: this.runtimeConfig.apiKey,
