@@ -122,6 +122,24 @@
                 "translations/[locale].json"
               ]
             },
+            "inlineTranslations": {
+              "type": "object",
+              "description": "Experimental: embed translations for the given locales at build time",
+              "properties": {
+                "locales": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "Locales to embed, usually the most visited ones"
+                },
+                "msgOutput": {
+                  "type": "string",
+                  "description": "Output path pattern with [locale] placeholder for a copy of each embedded locale's translations file that keeps only msg() and useMessages()/getMessages() entries, which are never embedded",
+                  "examples": ["public/i18n/[locale].msg.json"]
+                }
+              },
+              "required": ["locales"],
+              "additionalProperties": false
+            },
             "parsingFlags": {
               "type": "object",
               "description": "Options controlling inline source extraction",

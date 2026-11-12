@@ -46,6 +46,8 @@ export function dedupeUpdates(updates: Updates): void {
       mergedByHash.set(hash, update);
       continue;
     }
+    // Replayed helper updates repeat the same object; merging it into itself would duplicate its source code
+    if (existing === update) continue;
 
     const existingPaths = Array.isArray(existing.metadata.filePaths)
       ? existing.metadata.filePaths.slice()
