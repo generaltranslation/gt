@@ -1,8 +1,8 @@
 import { IntlMessageFormat } from 'intl-messageformat';
 import { describe, expect, it, vi } from 'vitest';
-import { formatMessageTree, type MessageTree } from '../index';
+import type { MessageTree } from '../index';
 import { icuToMessageTree } from '../convert';
-import { formatMessage } from '../parser';
+import { formatMessage, formatMessageTree } from './format';
 
 describe('formatMessageTree', () => {
   it('matches formatMessage for a localized currency', () => {
@@ -78,6 +78,56 @@ describe('formatMessageTree', () => {
     }
     expect(() => formatMessageTree(tree, [])).toThrow(TypeError);
     expect(() => formatMessageTree(tree, 'not a locale!')).toThrow(RangeError);
+  });
+
+  it('formats a date with its own options only', () => {
+    const d = new Date(Date.UTC(2020, 4, 6, 12));
+    // An inherited option is not in the formatter's cache key, so a formatter
+    // built with it would be shared with every date that has no options.
+    const tree = [
+      ['d', 'date', Object.create({ year: 'numeric' })],
+    ] as unknown as MessageTree;
+    expect(formatMessageTree(tree, 'en-TT', { d })).toBe(
+      new Intl.DateTimeFormat('en-TT').format(d)
+    );
+  });
+
+  it('formats a date in the time zone it is given, or in its own', () => {
+    const d = new Date('2020-05-06T14:03:02Z');
+    const own = { hour: 'numeric', minute: '2-digit' } as const;
+    // An inherited time zone is not an option of the date.
+    const inherited = Object.assign(
+      Object.create({ timeZone: 'Pacific/Kiritimati' }),
+      own
+    );
+    const format = (options: object, timeZone: string) =>
+      formatMessageTree(
+        [['d', 'time', options]] as unknown as MessageTree,
+        'en-US',
+        { d },
+        { timeZone }
+      );
+    expect(format(inherited, 'UTC')).toBe('2:03 PM');
+    expect(format(own, 'America/New_York')).toBe('10:03 AM');
+    expect(format({ ...own, timeZone: 'Asia/Tokyo' }, 'UTC')).toBe('11:03 PM');
+  });
+
+  it('resolves a locale once, not on every call', () => {
+    const supportedLocalesOf = vi.spyOn(
+      Intl.NumberFormat,
+      'supportedLocalesOf'
+    );
+    try {
+      // A locale no other test uses, so it is not cached yet.
+      for (let i = 0; i < 3; i++) {
+        expect(formatMessageTree(['Hi ', ['n']], 'se-NO', { n: 'Ada' })).toBe(
+          'Hi Ada'
+        );
+      }
+      expect(supportedLocalesOf).toHaveBeenCalledTimes(1);
+    } finally {
+      supportedLocalesOf.mockRestore();
+    }
   });
 });
 

@@ -3,8 +3,8 @@
  * while using only native Intl APIs. See THIRD_PARTY_NOTICES.md.
  */
 
+import { intlCache } from '../cache/IntlCache';
 import { resolveLocale } from './locale';
-import { libraryDefaultLocale } from '../settings/settings';
 import { FALLBACK_BRANCH_KEY, isPluralCategoryKey } from '../settings/syntax';
 import type {
   ExtendedNumberFormatOptions,
@@ -104,54 +104,67 @@ export type FormattedMessage<R> = [R] extends [string]
   ? string
   : string | R | Array<string | R>;
 
-type FormatContext = {
+/** What a message is formatted with, besides its locales and values. */
+export type FormatMessageTreeOptions = {
+  /**
+   * The time zone of a date or time whose options set none. It is always
+   * passed in: this package does not read the host's.
+   */
+  timeZone: string;
+};
+
+type FormatContext = FormatMessageTreeOptions & {
   message: string;
   locales: string | string[];
   variables: MessageVariables;
-  numberFormats?: Map<string, Intl.NumberFormat>;
-  dateTimeFormats?: Map<string, Intl.DateTimeFormat>;
-  pluralRules?: Map<Intl.PluralRuleType, Intl.PluralRules>;
 };
 
 /**
  * Formats a message tree without parsing, with native Intl. Plain values
  * format as text, so the result is a string:
  *
- *   formatMessageTree(['Hi ', ['name']], 'en', { name: 'Ada' }); // 'Hi Ada'
+ *   formatMessageTree(['Hi ', ['name']], 'en', { name: 'Ada' }, { timeZone });
+ *   // 'Hi Ada'
  *
  * A rich value, or a tag formatter's result, is kept as a part:
  *
- *   formatMessageTree(['Read the ', ['b', 'tag', ['terms']]], 'en', {
- *     b: (parts) => <b>{parts}</b>,
- *   }); // ['Read the ', <b>terms</b>]
+ *   formatMessageTree(
+ *     ['Read the ', ['b', 'tag', ['terms']]],
+ *     'en',
+ *     { b: (parts) => <b>{parts}</b> },
+ *     { timeZone }
+ *   ); // ['Read the ', <b>terms</b>]
  *
  * Locales are validated the same way as `formatMessage` from
  * `@generaltranslation/icu/parser`.
  */
 export function formatMessageTree(
   tree: MessageTree,
-  locales?: string | string[],
-  variables?: Readonly<Record<string, MessagePlainValue>>
+  locales: string | string[],
+  variables: Readonly<Record<string, MessagePlainValue>>,
+  options: FormatMessageTreeOptions
 ): string;
 /**
  * With rich values or tag formatters, the result is a string, a rich value,
  * or the parts around them. TypeScript infers `R` from rich values; a tag
  * formatter alone needs it written, as in
- * `formatMessageTree<ReactNode>(tree, locale, { b: (parts) => <b>{parts}</b> })`,
+ * `formatMessageTree<ReactNode>(tree, locale, { b: (parts) => <b>{parts}</b> }, options)`,
  * since `R` types its `parts`.
  */
 export function formatMessageTree<R>(
   tree: MessageTree,
-  locales: string | string[] | undefined,
-  variables: MessageTreeValues<R> & OnePartValues<R>
+  locales: string | string[],
+  variables: MessageTreeValues<R> & OnePartValues<R>,
+  options: FormatMessageTreeOptions
 ): FormattedMessage<R>;
 export function formatMessageTree(
   tree: MessageTree,
-  locales: string | string[] = libraryDefaultLocale,
-  variables: MessageVariables = {}
+  locales: string | string[],
+  variables: MessageVariables,
+  options: FormatMessageTreeOptions
 ): unknown {
   resolveLocale(locales);
-  return formatParsedTree(tree, '', locales, variables);
+  return formatParsedTree(tree, '', locales, variables, options);
 }
 
 /** Formats a tree whose locales were already validated; `message` is reported on errors. */
@@ -159,9 +172,17 @@ export function formatParsedTree(
   tree: MessageTree,
   message: string,
   locales: string | string[],
-  variables: MessageVariables
+  variables: MessageVariables,
+  { timeZone }: FormatMessageTreeOptions
 ): unknown {
-  const parts = formatNodes(tree, { message, locales, variables });
+  // Most messages are plain text, which needs no formatter state.
+  if (tree.length === 1 && typeof tree[0] === 'string') return tree[0];
+  const parts = formatNodes(tree, {
+    message,
+    locales,
+    variables,
+    timeZone,
+  });
   if (parts.length === 1) return parts[0];
   return parts.length ? parts : '';
 }
@@ -191,7 +212,11 @@ function formatNodes(
     }
     if (node === 0) {
       if (currentPluralValue !== undefined) {
-        append(getNumberFormat(context).format(currentPluralValue));
+        append(
+          intlCache
+            .get('NumberFormat', context.locales)
+            .format(currentPluralValue)
+        );
       }
       continue;
     }
@@ -212,7 +237,9 @@ function formatNodes(
         const { scale, ...intlOptions } = options;
         const scaledValue = applyScale(value, scale);
         append(
-          getNumberFormat(context, intlOptions).format(scaledValue as number)
+          intlCache
+            .get('NumberFormat', context.locales, intlOptions)
+            .format(scaledValue as number)
         );
         break;
       }
@@ -221,12 +248,19 @@ function formatNodes(
         const value = requireVariable(context.variables, name);
         const isDate = node[1] === 'date';
         const style = (node as DateTimeNode)[2];
-        const options =
-          typeof style === 'string'
+        // Own options only: Intl would also read inherited ones.
+        const options: Intl.DateTimeFormatOptions = {
+          ...(typeof style === 'string'
             ? (isDate ? DATE_STYLES : TIME_STYLES)[style]
-            : (style ?? (isDate ? undefined : TIME_STYLES.medium));
+            : (style ?? (isDate ? undefined : TIME_STYLES.medium))),
+        };
         append(
-          getDateTimeFormat(context, options).format(value as number | Date)
+          intlCache
+            .get('DateTimeFormat', context.locales, {
+              ...options,
+              timeZone: options.timeZone ?? context.timeZone,
+            })
+            .format(value as number | Date)
         );
         break;
       }
@@ -330,28 +364,6 @@ function applyScale(value: unknown, scale?: number): unknown {
   return Number(value) * scale;
 }
 
-function getNumberFormat(
-  context: FormatContext,
-  options: Intl.NumberFormatOptions = {}
-): Intl.NumberFormat {
-  const cache = (context.numberFormats ??= new Map());
-  const key = JSON.stringify(options);
-  return getCachedFormatter(cache, key, () => {
-    return new Intl.NumberFormat(context.locales, options);
-  });
-}
-
-function getDateTimeFormat(
-  context: FormatContext,
-  options?: Intl.DateTimeFormatOptions
-): Intl.DateTimeFormat {
-  const cache = (context.dateTimeFormats ??= new Map());
-  const key = options ? JSON.stringify(options) : '';
-  return getCachedFormatter(cache, key, () => {
-    return new Intl.DateTimeFormat(context.locales, options);
-  });
-}
-
 function getPluralRules(
   context: FormatContext,
   type: Intl.PluralRuleType
@@ -365,22 +377,7 @@ function getPluralRules(
     error.originalMessage = context.message;
     throw error;
   }
-  const cache = (context.pluralRules ??= new Map());
-  return getCachedFormatter(cache, type, () => {
-    return new Intl.PluralRules(context.locales, { type });
-  });
-}
-
-function getCachedFormatter<Key, Value>(
-  cache: Map<Key, Value>,
-  key: Key,
-  create: () => Value
-): Value {
-  const cached = cache.get(key);
-  if (cached) return cached;
-  const formatter = create();
-  cache.set(key, formatter);
-  return formatter;
+  return intlCache.get('PluralRules', context.locales, { type });
 }
 
 function toPluralRulesNumber(value: PluralValue): number {

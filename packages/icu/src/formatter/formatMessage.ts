@@ -1,9 +1,9 @@
 import { parse } from '../parser/parse';
 import { toMessageTree } from '../convert/syntaxTree';
-import { libraryDefaultLocale } from '../settings/settings';
 import type { MessageVariables } from '../types-dir/ast';
 import {
   formatParsedTree,
+  type FormatMessageTreeOptions,
   type FormattedMessage,
   type MessagePlainValue,
   type MessageTreeValues,
@@ -15,12 +15,13 @@ import { resolveLocale } from './locale';
  * Formats an ICU MessageFormat string: it is parsed to a message tree and
  * formatted like `formatMessageTree`, with the same values and result types.
  *
- *   formatMessage('Hi {name}', 'en', { name: 'Ada' }); // 'Hi Ada'
+ *   formatMessage('Hi {name}', 'en', { name: 'Ada' }, { timeZone }); // 'Hi Ada'
  */
 export function formatMessage(
   message: string,
-  locales?: string | string[],
-  variables?: Readonly<Record<string, MessagePlainValue>>
+  locales: string | string[],
+  variables: Readonly<Record<string, MessagePlainValue>>,
+  options: FormatMessageTreeOptions
 ): string;
 /**
  * With rich values or tag formatters, the result is a string, a rich value,
@@ -28,15 +29,17 @@ export function formatMessage(
  */
 export function formatMessage<R>(
   message: string,
-  locales: string | string[] | undefined,
-  variables: MessageTreeValues<R> & OnePartValues<R>
+  locales: string | string[],
+  variables: MessageTreeValues<R> & OnePartValues<R>,
+  options: FormatMessageTreeOptions
 ): FormattedMessage<R>;
 export function formatMessage(
   message: string,
-  locales: string | string[] = libraryDefaultLocale,
-  variables: MessageVariables = {}
+  locales: string | string[],
+  variables: MessageVariables,
+  options: FormatMessageTreeOptions
 ): unknown {
   const locale = resolveLocale(locales);
   const tree = toMessageTree(parse(message, { locale }));
-  return formatParsedTree(tree, message, locales, variables);
+  return formatParsedTree(tree, message, locales, variables, options);
 }

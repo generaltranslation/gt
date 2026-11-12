@@ -2,8 +2,8 @@ import type {
   EncodedTranslationOptions,
   GTTranslationOptions,
 } from '../types/options';
-import { formatMessage } from '@generaltranslation/format';
 import {
+  formatMessage,
   libraryDefaultLocale,
   VAR_IDENTIFIER,
 } from 'generaltranslation/internal';

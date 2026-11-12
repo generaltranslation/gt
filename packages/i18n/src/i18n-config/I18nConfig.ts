@@ -1,10 +1,10 @@
-import {
-  LocaleConfig,
-  type LocaleConfigConstructorParams,
-} from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import { GTRuntime } from 'generaltranslation/runtime';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import {
+  libraryDefaultLocale,
+  LocaleConfig,
+  type LocaleConfigConstructorParams,
+} from 'generaltranslation/internal';
 import type { GTConfig } from '../config/types';
 import {
   getLoadTranslationsType,

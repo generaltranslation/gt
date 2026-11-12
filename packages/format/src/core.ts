@@ -7,6 +7,7 @@ import {
   _formatNum,
   _formatRelativeTime,
   _selectRelativeTimeUnit,
+  type ZonedDateTimeFormatOptions,
 } from './formatting/format';
 import { intlCache } from './cache/IntlCache';
 import type { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
@@ -37,13 +38,17 @@ export {
   type CustomRegionMapping,
 } from './locales/getRegionProperties';
 
+// Every argument is passed in: these functions apply no defaults of their own
+// to them. `generaltranslation` resolves what a caller leaves out.
 type LocalesOption = {
-  locales?: string | string[];
+  locales: string | string[];
 };
 
 type MessageFormatOptions = LocalesOption & {
-  variables?: FormatVariables;
+  variables: FormatVariables;
   dataFormat?: StringFormat;
+  /** The time zone of the dates and times in the message. */
+  timeZone: string;
 };
 
 /**
@@ -98,9 +103,9 @@ type MessageFormatOptions = LocalesOption & {
  */
 export function formatCutoff(
   value: string,
-  options?: LocalesOption & CutoffFormatOptions
+  options: LocalesOption & CutoffFormatOptions
 ) {
-  const { locales, ...formatOptions } = options ?? {};
+  const { locales, ...formatOptions } = options;
   return intlCache.get('CutoffFormat', locales, formatOptions).format(value);
 }
 
@@ -112,21 +117,21 @@ export function formatCutoff(
  * @param {string | string[]} [options.locales] - The locales to use for formatting.
  * @param {FormatVariables} [options.variables] - The variables to use for formatting.
  * @param {StringFormat} [options.dataFormat='ICU'] - The format of the message. When STRING, the message is returned as is.
+ * @param {string} options.timeZone - The time zone of the dates and times in the message.
  * @returns {string} The formatted message.
  *
  * @example
- * formatMessage('Hello {name}', { variables: { name: 'John' } });
+ * formatMessage('Hello {name}', { variables: { name: 'John' }, timeZone: 'UTC' });
  * // Returns: "Hello John"
- *
- * @example
- * formatMessage('Hello {name}', {
- *   locales: ['fr'],
- *   variables: { name: 'John' }
- * });
  */
-export function formatMessage(message: string, options?: MessageFormatOptions) {
-  if (options?.dataFormat === 'STRING') return message;
-  return _formatMessageICU(message, options?.locales, options?.variables);
+export function formatMessage(message: string, options: MessageFormatOptions) {
+  if (options.dataFormat === 'STRING') return message;
+  return _formatMessageICU(
+    message,
+    options.locales,
+    options.variables,
+    options.timeZone
+  );
 }
 
 /**
@@ -139,9 +144,9 @@ export function formatMessage(message: string, options?: MessageFormatOptions) {
  */
 export function formatNum(
   number: number,
-  options?: LocalesOption & Intl.NumberFormatOptions
+  options: LocalesOption & Intl.NumberFormatOptions
 ): string {
-  const { locales, ...intlOptions } = options ?? {};
+  const { locales, ...intlOptions } = options;
   return _formatNum({
     value: number,
     locales,
@@ -153,15 +158,15 @@ export function formatNum(
  * Formats a date according to the specified languages and options.
  * @param {Object} params - The parameters for the date formatting.
  * @param {Date} params.value - The date to format.
- * @param {Intl.DateTimeFormatOptions} [params.options] - Additional options for date formatting.
+ * @param {ZonedDateTimeFormatOptions} params.options - Options for date formatting, with the time zone.
  * @param {string | string[]} [params.options.locales] - The languages to use for formatting.
  * @returns {string} The formatted date.
  */
 export function formatDateTime(
   date: Date,
-  options?: LocalesOption & Intl.DateTimeFormatOptions
+  options: LocalesOption & ZonedDateTimeFormatOptions
 ): string {
-  const { locales, ...intlOptions } = options ?? {};
+  const { locales, ...intlOptions } = options;
   return _formatDateTime({
     value: date,
     locales,
@@ -181,9 +186,9 @@ export function formatDateTime(
 export function formatCurrency(
   value: number,
   currency: string,
-  options?: LocalesOption & Intl.NumberFormatOptions
+  options: LocalesOption & Intl.NumberFormatOptions
 ): string {
-  const { locales, ...intlOptions } = options ?? {};
+  const { locales, ...intlOptions } = options;
   return _formatCurrency({
     value,
     currency,
@@ -202,9 +207,9 @@ export function formatCurrency(
  */
 export function formatList(
   array: Array<string | number>,
-  options?: LocalesOption & Intl.ListFormatOptions
+  options: LocalesOption & Intl.ListFormatOptions
 ): string {
-  const { locales, ...intlOptions } = options ?? {};
+  const { locales, ...intlOptions } = options;
   return _formatList({
     value: array,
     locales,
@@ -222,9 +227,9 @@ export function formatList(
  */
 export function formatListToParts<T>(
   array: Array<T>,
-  options?: LocalesOption & Intl.ListFormatOptions
+  options: LocalesOption & Intl.ListFormatOptions
 ): Array<T | string> {
-  const { locales, ...intlOptions } = options ?? {};
+  const { locales, ...intlOptions } = options;
   return _formatListToParts<T>({
     value: array,
     locales,
@@ -244,9 +249,9 @@ export function formatListToParts<T>(
 export function formatRelativeTime(
   value: number,
   unit: Intl.RelativeTimeFormatUnit,
-  options?: LocalesOption & Omit<Intl.RelativeTimeFormatOptions, 'locales'>
+  options: LocalesOption & Omit<Intl.RelativeTimeFormatOptions, 'locales'>
 ): string {
-  const { locales, ...intlOptions } = options ?? {};
+  const { locales, ...intlOptions } = options;
   return _formatRelativeTime({
     value,
     unit,
@@ -265,13 +270,14 @@ export function formatRelativeTime(
  */
 export function formatRelativeTimeFromDate(
   date: Date,
-  options?: LocalesOption &
+  options: LocalesOption &
     Omit<Intl.RelativeTimeFormatOptions, 'locales'> & {
-      baseDate?: Date;
+      /** The date to compare with. This package does not read the clock. */
+      baseDate: Date;
     }
 ): string {
-  const { locales, baseDate, ...intlOptions } = options ?? {};
-  const { value, unit } = _selectRelativeTimeUnit(date, baseDate ?? new Date());
+  const { locales, baseDate, ...intlOptions } = options;
+  const { value, unit } = _selectRelativeTimeUnit(date, baseDate);
   return _formatRelativeTime({
     value,
     unit,

@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { formatMessage } from '../parser';
+import { formatMessage } from './format';
 
 describe('formatMessage', () => {
   it('interpolates direct arguments without dropping zero', () => {
@@ -391,7 +391,7 @@ describe('formatMessage', () => {
     }
   );
 
-  it('reuses equivalent Intl formatters within one message', () => {
+  it('builds each Intl formatter once, across messages and calls', () => {
     const originalNumberFormat = Intl.NumberFormat;
     const originalDateTimeFormat = Intl.DateTimeFormat;
     const originalPluralRules = Intl.PluralRules;
@@ -428,17 +428,20 @@ describe('formatMessage', () => {
 
     try {
       const value = new Date('2020-05-06T14:03:02Z');
-      formatMessage(
-        '{n, number} {n, number} {d, date, short} {d, date, short} ' +
-          '{n, plural, one {# item} other {# items}} ' +
-          '{n, plural, one {# item} other {# items}}',
-        'en-US',
-        { n: 2, d: value }
-      );
+      // A locale no other test uses, so no formatter is cached yet.
+      for (let call = 0; call < 2; call++) {
+        formatMessage(
+          '{n, number} {n, number} {d, date, short} {d, date, short} ' +
+            '{n, plural, one {# item} other {# items}} ' +
+            '{n, plural, one {# item} other {# items}}',
+          'en-ZW',
+          { n: 2, d: value }
+        );
+      }
 
       expect(numberFormat).toHaveBeenCalledTimes(1);
-      expect(dateTimeFormat).toHaveBeenCalledTimes(1);
       expect(pluralRules).toHaveBeenCalledTimes(1);
+      expect(dateTimeFormat).toHaveBeenCalledTimes(1);
     } finally {
       Object.defineProperties(Intl, {
         NumberFormat: { value: originalNumberFormat },

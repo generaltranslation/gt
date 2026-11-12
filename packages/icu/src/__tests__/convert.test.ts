@@ -6,8 +6,7 @@ import {
   findConflictingFormat,
   type MessageTreeHole,
 } from '../internal';
-import { formatMessage } from '../parser';
-import { formatMessageTree } from '../index';
+import { formatMessage, formatMessageTree } from './format';
 import type { ExtendedNumberFormatOptions } from '../types-dir/ast';
 import { DATE_SKELETONS, NUMBER_SKELETONS } from './skeletonCases';
 

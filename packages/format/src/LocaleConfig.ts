@@ -8,6 +8,12 @@ import {
   _formatRelativeTime,
   _selectRelativeTimeUnit,
 } from './formatting/format';
+import {
+  formatMessageTree,
+  type FormatMessageTreeOptions,
+  type MessageTree,
+  type MessageTreeValues,
+} from '@generaltranslation/icu';
 import { intlCache } from './cache/IntlCache';
 import {
   _prepareApprovedLocales,
@@ -31,10 +37,17 @@ import { getCustomLocaleCode } from './locales/customLocaleMapping';
 import type { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
 import type { StringFormat } from './types-dir/jsx/content';
 
+// Every setting but the custom mapping is passed in: this package applies no
+// defaults of its own to them. `generaltranslation` and gt-i18n resolve them.
 export type LocaleConfigConstructorParams = {
-  defaultLocale?: string;
-  locales?: string[];
+  defaultLocale: string;
+  locales: string[];
   customMapping?: CustomMapping;
+  /**
+   * The time zone of the dates and times this config formats. It is always
+   * passed in: this package does not read the host's.
+   */
+  timeZone: string;
 };
 
 type LocalesOption = {
@@ -71,6 +84,7 @@ export class LocaleConfig {
   readonly defaultLocale: string;
   readonly locales: string[];
   readonly customMapping?: CustomMapping;
+  readonly timeZone: string;
   // Built lazily so construction stays cheap for instances that never resolve
   // locales. The snapshot is refreshed if callers mutate the public locale or
   // custom-mapping collections retained by this instance.
@@ -150,13 +164,15 @@ export class LocaleConfig {
   }
 
   constructor({
-    defaultLocale = libraryDefaultLocale,
-    locales = [],
+    defaultLocale,
+    locales,
     customMapping,
-  }: LocaleConfigConstructorParams = {}) {
+    timeZone,
+  }: LocaleConfigConstructorParams) {
     this.defaultLocale = defaultLocale;
     this.locales = locales;
     this.customMapping = customMapping;
+    this.timeZone = timeZone;
   }
 
   private getFormattingLocales(
@@ -196,7 +212,10 @@ export class LocaleConfig {
     return _formatDateTime({
       value,
       locales: this.getFormattingLocales(targetLocale, locales),
-      options: intlOptions,
+      options: {
+        ...intlOptions,
+        timeZone: intlOptions.timeZone ?? this.timeZone,
+      },
     });
   }
 
@@ -232,16 +251,16 @@ export class LocaleConfig {
 
   formatRelativeTimeFromDate(
     date: Date,
-    targetLocale?: string,
+    targetLocale: string | undefined,
     options: WithLocales<
-      Intl.RelativeTimeFormatOptions & { baseDate?: Date }
-    > = {}
+      Intl.RelativeTimeFormatOptions & {
+        /** The date to compare with. This package does not read the clock. */
+        baseDate: Date;
+      }
+    >
   ) {
     const { locales, baseDate, ...intlOptions } = options;
-    const { value, unit } = _selectRelativeTimeUnit(
-      date,
-      baseDate ?? new Date()
-    );
+    const { value, unit } = _selectRelativeTimeUnit(date, baseDate);
     return _formatRelativeTime({
       value,
       unit,
@@ -278,7 +297,30 @@ export class LocaleConfig {
     return _formatMessageICU(
       message,
       this.getFormattingLocales(targetLocale, locales),
-      variables
+      variables ?? {},
+      this.timeZone
+    );
+  }
+
+  /**
+   * Formats a message tree in this config's locales and time zone, so a
+   * caller passes neither unless it overrides them.
+   */
+  formatMessageTree(
+    tree: MessageTree,
+    targetLocale?: string,
+    options: WithLocales<
+      {
+        variables?: MessageTreeValues<unknown>;
+      } & Partial<FormatMessageTreeOptions>
+    > = {}
+  ): unknown {
+    const { locales, variables, ...context } = options;
+    return formatMessageTree<unknown>(
+      tree,
+      this.getFormattingLocales(targetLocale, locales),
+      variables ?? {},
+      { ...context, timeZone: context.timeZone ?? this.timeZone }
     );
   }
 

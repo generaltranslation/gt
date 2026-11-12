@@ -5,7 +5,7 @@ import {
   getI18nConfig,
   isI18nConfigInitialized,
 } from '../../i18n-config/singleton-operations';
-import { formatMessage as formatUnconfiguredMessage } from '@generaltranslation/format';
+import { formatMessage as formatUnconfiguredMessage } from 'generaltranslation/internal';
 
 /**
  * Given an encoded message and variables, formats the message.

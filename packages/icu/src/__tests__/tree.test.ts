@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
-  formatMessageTree,
   validateMessageTree,
   type MessageTree,
   type SelectNode,
 } from '../index';
+import { formatMessageTree } from './format';
 import { buildMessageTree, type MessageTreeHole } from '../internal';
 import { icuToMessageTree, messageTreeToIcu } from '../convert';
 import { normalizeTree } from '../tree/canonical';

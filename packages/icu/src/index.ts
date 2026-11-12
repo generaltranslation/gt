@@ -1,5 +1,6 @@
 export {
   formatMessageTree,
+  type FormatMessageTreeOptions,
   type FormattedMessage,
   type MessagePlainValue,
   type MessageTagFormatter,

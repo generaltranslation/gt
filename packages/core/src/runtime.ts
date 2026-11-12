@@ -4,7 +4,6 @@
 // ----- IMPORTS ----- //
 
 import {
-  LocaleConfig,
   getRegionProperties as _getRegionProperties,
   isValidLocale as _isValidLocale,
   requiresTranslation as _requiresTranslation,
@@ -12,6 +11,7 @@ import {
   resolveCanonicalLocale as _resolveCanonicalLocale,
   standardizeLocale as _standardizeLocale,
 } from '@generaltranslation/format';
+import { LocaleConfig } from './LocaleConfig';
 import type {
   CustomMapping,
   CustomRegionMapping,

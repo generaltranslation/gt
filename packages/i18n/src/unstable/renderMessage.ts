@@ -1,14 +1,12 @@
-import {
-  formatMessageTree,
-  isMessageTree,
-  type MessageTree,
-} from '@generaltranslation/icu';
-import { formatCutoff } from '@generaltranslation/format';
+import { isMessageTree, type MessageTree } from '@generaltranslation/icu';
 import {
   hashSource,
   type MessageTreeHashMetadata,
 } from 'generaltranslation/id';
-import { formatDiagnosticErrorDetails } from 'generaltranslation/internal';
+import {
+  formatCutoff,
+  formatDiagnosticErrorDetails,
+} from 'generaltranslation/internal';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
 import { createGtI18nDiagnostic } from '../logs/diagnostics';
 import logger from '../logs/logger';
@@ -160,11 +158,12 @@ function formatTree(
   values: Record<string, unknown>
 ): string {
   const config = getI18nConfig();
-  // Custom aliases must not reach Intl as language codes.
-  const locales = [locale, config.getDefaultLocale()].map((code) =>
-    config.resolveCanonicalLocale(code)
-  );
-  const formatted = formatMessageTree(tree, locales, values);
+  // The config resolves custom aliases, which must not reach Intl as
+  // language codes, and formats in its time zone.
+  const formatted = config.formatMessageTree(tree, undefined, {
+    locales: [locale, config.getDefaultLocale()],
+    variables: values,
+  });
   return Array.isArray(formatted) ? formatted.join('') : String(formatted);
 }
 
