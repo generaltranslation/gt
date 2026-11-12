@@ -53,7 +53,9 @@ export async function upload(
     transformFormats,
   } = settings.files;
 
-  await collectParaglideContext(settings);
+  if (settings.files?.parsingFlags?.json?.includeSourceCodeContext) {
+    await collectParaglideContext();
+  }
 
   // Reuse the same source aggregation path as translate/stage so source
   // parsing behavior stays consistent across commands.

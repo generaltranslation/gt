@@ -2,7 +2,6 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { logger } from '../console/logger.js';
-import type { Settings } from '../types/index.js';
 
 const PARAGLIDE_COMPILER = '@generaltranslation/paraglide-js/compiler';
 
@@ -21,11 +20,8 @@ type ParaglideCompiler = {
  * first. Failures only warn.
  */
 export async function collectParaglideContext(
-  settings: Settings,
   projectRoot: string = process.cwd()
 ): Promise<void> {
-  if (!settings.files?.parsingFlags?.json?.includeSourceCodeContext) return;
-
   const compilerPath = resolveParaglideCompiler(projectRoot);
   if (!compilerPath) return;
 
