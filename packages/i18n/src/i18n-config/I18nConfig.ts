@@ -20,7 +20,7 @@ import {
   type GeneralTranslationLogLevel,
 } from '../logs/logLevel';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
-import { validateI18nConfigParams, validateTimeZone } from './validation';
+import { validateI18nConfigParams } from './validation';
 
 export type I18nConfigParams = Pick<
   GTConfig,
@@ -56,8 +56,6 @@ export class I18nConfig extends LocaleConfig {
 
   constructor(params: I18nConfigParams = {}) {
     const gtServicesEnabled = resolveGTServicesEnabled(params);
-    // Validated first: the locale config formats with it.
-    validateTimeZone(params.timeZone);
     super({
       ...getLocaleConfigParams(params, gtServicesEnabled),
       timeZone: params.timeZone,

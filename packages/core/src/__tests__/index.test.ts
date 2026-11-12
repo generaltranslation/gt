@@ -288,6 +288,13 @@ describe.sequential('GT Translation Methods', () => {
 });
 
 describe('LocaleConfig', () => {
+  it.each([
+    ['LocaleConfig', () => new LocaleConfig({ timeZone: 'Mars/Olympus' })],
+    ['GT', () => new GT({ timeZone: 'Mars/Olympus' })],
+  ])('%s rejects a time zone Intl does not know', (_name, create) => {
+    expect(create).toThrow('Invalid time zone "Mars/Olympus"');
+  });
+
   it('formats with a custom alias by resolving to the canonical locale', () => {
     const localeConfig = new LocaleConfig({
       defaultLocale: 'en-US',
