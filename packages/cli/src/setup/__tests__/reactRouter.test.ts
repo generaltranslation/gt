@@ -15,10 +15,22 @@ import {
 
 const CONFIG = 'react-router.config.ts';
 const UNREADABLE = 'setup cannot read the options react-router.config exports';
-/** The CDN initializeGT call, quoted the way the root module quotes strings. */
-const cdnCall = (quote: string) =>
-  `initializeGT({ ...gtConfig, projectId: (${quote}projectId${quote} in gtConfig && typeof gtConfig.projectId === ${quote}string${quote} && gtConfig.projectId) || import.meta.env.VITE_GT_PROJECT_ID })`;
-const CDN_CALL = cdnCall('"');
+/** The CDN initializeGT call; gt-react reads the project ID itself. */
+const CDN_CALL = 'initializeGT(gtConfig)';
+/** The create-react-router Vite config, before and after setup. */
+const VITE_CONFIG = `import { reactRouter } from "@react-router/dev/vite";
+import tailwindcss from "@tailwindcss/vite";
+import { defineConfig } from "vite";
+import tsconfigPaths from "vite-tsconfig-paths";
+
+export default defineConfig({
+  plugins: [tailwindcss(), reactRouter(), tsconfigPaths()],
+});
+`;
+const CONFIGURED_VITE_CONFIG = VITE_CONFIG.replace(
+  'import tsconfigPaths from "vite-tsconfig-paths";',
+  'import tsconfigPaths from "vite-tsconfig-paths";\nimport { gtReact } from "gt-react/vite";'
+).replace('tsconfigPaths()]', 'tsconfigPaths(), gtReact()]');
 const LOCAL_STORAGE_CALL =
   "initializeGT({ ...gtConfig, loadTranslations }) and add import loadTranslations from './loadTranslations'";
 const MISSING_EXPORT =
@@ -392,6 +404,7 @@ describe('reactRouterSetup', () => {
     appDirectory = fs.mkdtempSync(path.join(tmpdir(), 'gt-react-router-'));
     write('gt.config.json', '{}');
     write('app/root.tsx', ROOT);
+    write('vite.config.ts', CONFIGURED_VITE_CONFIG);
   });
 
   afterEach(() => {
@@ -403,7 +416,7 @@ describe('reactRouterSetup', () => {
     const PRERENDER = 'pre-renders pages';
     const APP_DIRECTORY = 'appDirectory other than app';
     const NOT_FRAMEWORK = 'neither @react-router/dev nor a react-router.config';
-    const OUTDATED = 'gt-react versions older than 11.1.3';
+    const OUTDATED = 'gt-react versions older than 12.0.0';
     const packageJson = (dependencies: Record<string, string>) => ({
       'package.json': JSON.stringify({ dependencies }),
     });
@@ -422,7 +435,11 @@ describe('reactRouterSetup', () => {
       // Values React Router treats like its defaults.
       'export default { prerender: [], appDirectory: "./app" };',
       packageJson({ '@react-router/dev': '^7.0.0' }),
-      packageJson({ '@react-router/dev': '^7.0.0', 'gt-react': '^11.1.3' }),
+      packageJson({ '@react-router/dev': '^7.0.0', 'gt-react': '^12.0.0' }),
+      packageJson({
+        '@react-router/dev': '^7.0.0',
+        'gt-react': '^12.0.0-samsara.2',
+      }),
       // A monorepo may install @react-router/dev at its root.
       { 'package.json': '{}', [CONFIG]: 'export default {};' },
     ])('accepts %s', async (files) => {
@@ -463,13 +480,9 @@ describe('reactRouterSetup', () => {
       // A Vite app using React Router as a library, and a Remix app.
       [packageJson({ 'react-router': '^7.0.0' }), NOT_FRAMEWORK],
       [packageJson({ '@remix-run/dev': '^2.0.0' }), NOT_FRAMEWORK],
-      // parseLocale is new in 11.0.4; Oxygen's worker build needs 11.1.3.
+      // gtReact() from gt-react/vite is new in 12.
       [
-        packageJson({ '@react-router/dev': '^7.0.0', 'gt-react': '^11.0.3' }),
-        OUTDATED,
-      ],
-      [
-        packageJson({ '@react-router/dev': '^7.0.0', 'gt-react': '11.1.1' }),
+        packageJson({ '@react-router/dev': '^7.0.0', 'gt-react': '^11.1.3' }),
         OUTDATED,
       ],
       [
@@ -497,6 +510,28 @@ describe('reactRouterSetup', () => {
   });
 
   describe('apply', () => {
+    it('adds gtReact() to the Vite config once', async () => {
+      write(
+        'node_modules/gt-react/package.json',
+        JSON.stringify({ exports: { './vite': './vite.mjs' } })
+      );
+      write('vite.config.ts', VITE_CONFIG);
+
+      const result = await reactRouterSetup.apply(ctx('app/_gt'));
+
+      expect(read('vite.config.ts')).toBe(CONFIGURED_VITE_CONFIG);
+      expect(result).toEqual({
+        steps: [
+          'configured vite.config.ts',
+          'created app/loadTranslations.ts',
+          'configured app/root.tsx',
+        ],
+        manualActions: [],
+      });
+      expect((await reactRouterSetup.apply(ctx('app/_gt'))).steps).toEqual([]);
+      expect(read('vite.config.ts')).toBe(CONFIGURED_VITE_CONFIG);
+    });
+
     it.each([
       ['create-react-router', ROOT, CONFIGURED_CREATE_REACT_ROUTER_ROOT],
       ['Hydrogen', HYDROGEN_ROOT, CONFIGURED_HYDROGEN_ROOT],
@@ -551,7 +586,7 @@ describe('reactRouterSetup', () => {
         undefined,
         [],
         'initializes GT for local translation files',
-        `${cdnCall("'")} and remove the loadTranslations import`,
+        `${CDN_CALL} and remove the loadTranslations import`,
       ],
     ])(
       'reports a rerun that switched %s',

@@ -20,12 +20,35 @@ import { envFiles } from '../utils/loadEnv.js';
 import { createUserAuthError } from '../auth/errors.js';
 import { loginInteractively } from '../auth/interactiveLogin.js';
 import { OnboardingError, type OnboardingSession } from './onboarding.js';
+import type { ManualAction } from './buildTools/index.js';
 
 const DEVELOPMENT_KEY_NAME = 'Development key (gt init)';
 
 /** .env.local never reaches production; the runtime key there is set on the host. */
 export function productionRuntimeKeyGuidance(dashboardUrl: string): string {
   return `${chalk.dim('For runtime translation in production, create an API key in the dashboard')} ${chalk.cyan(dashboardUrl)} ${chalk.dim('and set GT_API_KEY and GT_PROJECT_ID in your hosting environment.')}`;
+}
+
+// Frameworks without a GT adapter that passes .env.local to client code.
+const NO_ADAPTER_FRAMEWORKS: Partial<
+  Record<NonNullable<SupportedFrameworks>, string>
+> = {
+  gatsby: 'Gatsby',
+  react: 'Create React App',
+  redwood: 'RedwoodJS',
+};
+
+/** How to pass the development credentials where no adapter does it. */
+export function manualCredentialsGuidance(
+  framework: SupportedFrameworks | undefined
+): ManualAction | undefined {
+  const name = framework && NO_ADAPTER_FRAMEWORKS[framework];
+  return name
+    ? {
+        whatHappened: `${name} has no GT plugin that reads .env.local`,
+        fix: 'In development, pass { projectId, apiKey } to your GT setup explicitly, and never include the API key in production builds',
+      }
+    : undefined;
 }
 
 /**
@@ -299,7 +322,6 @@ export async function provisionDevelopmentCredentials(
   session: OnboardingSession,
   project: DevelopmentProject,
   settings: Settings,
-  framework: SupportedFrameworks | undefined,
   cwd: string = process.cwd()
 ): Promise<void> {
   // Set exactly when the API client sends it in place of the sign-in.
@@ -337,7 +359,7 @@ export async function provisionDevelopmentCredentials(
       )
     );
   session.step('created a development key');
-  await setCredentials({ projectId, apiKey: apiKey.key }, framework, cwd);
+  await setCredentials({ projectId, apiKey: apiKey.key }, cwd);
   session.step('saved development credentials to .env.local');
   const projectLabel = projectName
     ? `${projectName} (${projectId})`

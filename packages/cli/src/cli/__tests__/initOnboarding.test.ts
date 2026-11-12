@@ -135,6 +135,14 @@ describe('init and configure onboarding', () => {
     fs.writeFileSync(file('package.json'), JSON.stringify(packageJson));
     process.chdir(appDirectory);
   }
+  /** Stands in for the mocked install: setup only imports an installed plugin. */
+  function installGTReact() {
+    fs.mkdirSync(file('node_modules/gt-react'), { recursive: true });
+    fs.writeFileSync(
+      file('node_modules/gt-react/package.json'),
+      JSON.stringify({ name: 'gt-react', exports: { './vite': './vite.mjs' } })
+    );
+  }
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -462,10 +470,15 @@ describe('init and configure onboarding', () => {
         dependencies: { 'react-router': '*', react: '*' },
         devDependencies: { '@react-router/dev': '*', vite: '*' },
       });
+      installGTReact();
       vi.mocked(detectFramework).mockResolvedValue({
         name: 'react-router',
         type: 'react',
       });
+      fs.writeFileSync(
+        file('vite.config.ts'),
+        "import { reactRouter } from '@react-router/dev/vite'\nimport { defineConfig } from 'vite'\n\nexport default defineConfig({\n  plugins: [reactRouter()],\n})\n"
+      );
       fs.mkdirSync(file('app'), { recursive: true });
       fs.writeFileSync(
         file('app/root.tsx'),
@@ -488,12 +501,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
     it.each([['configure'], ['init', '--no-react-setup']])(
       'reports the complete CDN initializer when switching storage with %s',
       async (...command) => {
-        vi.stubEnv('VITE_GT_PROJECT_ID', undefined);
-        vi.stubEnv('VITE_GT_DEV_API_KEY', undefined);
         const packageJson = JSON.parse(
           fs.readFileSync(file('package.json'), 'utf8')
         );
-        packageJson.dependencies['gt-react'] = '^11.1.3';
+        packageJson.dependencies['gt-react'] = '^12.0.0';
         packageJson.devDependencies.gt = '*';
         fs.writeFileSync(file('package.json'), JSON.stringify(packageJson));
 
@@ -511,7 +522,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         const loader = fs.readFileSync(file('app/loadTranslations.ts'), 'utf8');
         expect(readConfig().projectId).toBeUndefined();
         expect(fs.readFileSync(file('.env.local'), 'utf8')).toContain(
-          'VITE_GT_PROJECT_ID=p1'
+          'GT_PROJECT_ID=p1'
         );
         vi.mocked(logger.warn).mockClear();
 
@@ -532,7 +543,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         );
         expect(logger.warn).toHaveBeenCalledWith(
           expect.stringContaining(
-            "initializeGT({ ...gtConfig, projectId: ('projectId' in gtConfig && typeof gtConfig.projectId === 'string' && gtConfig.projectId) || import.meta.env.VITE_GT_PROJECT_ID }) and remove the loadTranslations import"
+            'initializeGT(gtConfig) and remove the loadTranslations import'
           )
         );
       }
@@ -540,12 +551,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
     // The root never received the loader, so configure has nothing to report.
     it('reports nothing when configure moves a CDN root back to the CDN', async () => {
-      vi.stubEnv('VITE_GT_PROJECT_ID', undefined);
-      vi.stubEnv('VITE_GT_DEV_API_KEY', undefined);
       const packageJson = JSON.parse(
         fs.readFileSync(file('package.json'), 'utf8')
       );
-      packageJson.dependencies['gt-react'] = '^11.1.3';
+      packageJson.dependencies['gt-react'] = '^12.0.0';
       packageJson.devDependencies.gt = '*';
       fs.writeFileSync(file('package.json'), JSON.stringify(packageJson));
       const options = ['--json', '--defaults', '--no-dev-credentials'];
@@ -585,12 +594,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
       expect(fs.readFileSync(file('app/root.tsx'), 'utf8')).toContain(
         'initializeGT({ ...gtConfig, loadTranslations })'
       );
+      expect(fs.readFileSync(file('vite.config.ts'), 'utf8')).toContain(
+        'plugins: [reactRouter(), gtReact()]'
+      );
       expect(fs.readFileSync(file('app/_gt/es.json'), 'utf8')).toBe('{}\n');
       expect(events().at(-1)).toMatchObject({
         outcome: 'success',
         completedSteps: [
           'installed gt-react',
           'created gt.config.json',
+          'configured vite.config.ts',
           'created app/loadTranslations.ts',
           'configured app/root.tsx',
           'installed gt',
@@ -695,7 +708,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       );
     });
 
-    it('writes Vite runtime credentials for live translations', async () => {
+    it('writes runtime credentials for live translations', async () => {
       await run(
         'init',
         '--json',
@@ -708,7 +721,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       );
 
       expect(fs.readFileSync(file('.env.local'), 'utf8')).toBe(
-        `VITE_GT_PROJECT_ID=p1\nVITE_GT_DEV_API_KEY=${SECRET_KEY}\n`
+        `GT_PROJECT_ID=p1\nGT_API_KEY=${SECRET_KEY}\n`
       );
       expect(events().at(-1)).toMatchObject({ outcome: 'success' });
     });
@@ -1067,13 +1080,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
     expect(events().at(-1)).toMatchObject({ outcome: 'success' });
   });
 
-  it('lets configure match an unsaved detected framework to its development key', async () => {
+  // No adapter passes .env.local to Gatsby client code.
+  it('tells a Gatsby app to pass the development credentials explicitly', async () => {
     vi.mocked(detectFramework).mockResolvedValue({
       name: 'gatsby',
       type: 'react',
     });
-    vi.stubEnv('GATSBY_GT_PROJECT_ID', 'p1');
-    vi.stubEnv('GATSBY_GT_DEV_API_KEY', SECRET_KEY);
 
     await run(
       'init',
@@ -1081,16 +1093,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
       '--defaults',
       '--no-react-setup',
       '--locales',
-      'fr'
+      'fr',
+      '--dev-credentials',
+      '--project-id',
+      'p1'
     );
-    expect(readConfig().framework).toBeUndefined();
 
-    await run('configure', '--json', '--defaults');
-
-    expect(api.createProjectApiKey).not.toHaveBeenCalled();
-    expect(readConfig().framework).toBeUndefined();
-    expect(fs.existsSync(file('.env.local'))).toBe(false);
-    expect(events().at(-1)).toMatchObject({ outcome: 'success' });
+    expect(fs.readFileSync(file('.env.local'), 'utf8')).toBe(
+      `GT_PROJECT_ID=p1\nGT_API_KEY=${SECRET_KEY}\n`
+    );
+    expect(events().at(-1)).toMatchObject({
+      outcome: 'needs_human_action',
+      actions: [
+        expect.stringContaining('pass { projectId, apiKey } to your GT setup'),
+      ],
+    });
   });
 
   it('requires explicit consent and inputs for remote projects and keys', async () => {
@@ -2037,6 +2054,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
         );
         fs.mkdirSync(file('src'));
         fs.writeFileSync(file('src/main.tsx'), '// app');
+        installGTReact();
+        fs.writeFileSync(
+          file('vite.config.ts'),
+          "import { defineConfig } from 'vite'\n\nexport default defineConfig({\n  plugins: [],\n})\n"
+        );
         await configure('--locales', 'fr', '--translations-dir', 'old-tx');
         await run(
           'init',
@@ -2046,6 +2068,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
           '--react-setup'
         );
         expect(viteLoader()).toContain('import(`../old-tx/${locale}.json`)');
+        expect(fs.readFileSync(file('vite.config.ts'), 'utf8')).toContain(
+          'plugins: [gtReact()]'
+        );
         stdoutEvents = [];
       });
 
@@ -2237,14 +2262,13 @@ await import('./main');
       });
     });
 
-    it('matches the framework project to its development key', async () => {
+    it('replaces runtime credentials for another project only when asked', async () => {
       vi.mocked(detectFramework).mockResolvedValue({
         name: 'vite',
         type: 'react',
       });
-      vi.stubEnv('GT_PROJECT_ID', 'p2');
-      vi.stubEnv('VITE_GT_PROJECT_ID', 'p1');
-      vi.stubEnv('VITE_GT_DEV_API_KEY', 'gtx-fake-p1-key');
+      vi.stubEnv('GT_PROJECT_ID', 'p1');
+      vi.stubEnv('GT_API_KEY', 'gtx-fake-p1-key');
       const args = [
         'init',
         '--json',
@@ -2266,7 +2290,7 @@ await import('./main');
         expect.anything()
       );
       expect(fs.readFileSync(file('.env.local'), 'utf8')).toBe(
-        `VITE_GT_PROJECT_ID=p2\nVITE_GT_DEV_API_KEY=${SECRET_KEY}\n`
+        `GT_PROJECT_ID=p2\nGT_API_KEY=${SECRET_KEY}\n`
       );
     });
 

@@ -96,8 +96,6 @@ const GT_ENV = [
   'GT_DEV_API_KEY',
   'NEXT_PUBLIC_GT_PROJECT_ID',
   'NEXT_PUBLIC_GT_DEV_API_KEY',
-  'VITE_GT_PROJECT_ID',
-  'VITE_GT_DEV_API_KEY',
 ];
 
 async function runInit(...args: string[]): Promise<void> {
@@ -564,7 +562,7 @@ describe('init development credentials', () => {
       );
       if (enableLiveTranslations) {
         expect(fs.readFileSync(envPath(), 'utf8')).toBe(
-          'VITE_GT_PROJECT_ID=p1\nVITE_GT_DEV_API_KEY=gtx-secret-development-key\n'
+          'GT_PROJECT_ID=p1\nGT_API_KEY=gtx-secret-development-key\n'
         );
       } else {
         expect(api.listProjects).not.toHaveBeenCalled();
@@ -573,34 +571,75 @@ describe('init development credentials', () => {
     }
   );
 
-  it('mints a browser key for local Vite when only the tooling key and project are configured', async () => {
+  // gtReact() passes GT_API_KEY to Vite client code, so no separate key is needed.
+  it('does not mint a key for local Vite when GT_API_KEY and a project are configured', async () => {
     setUpLocalVite(true);
-    vi.stubEnv('GT_API_KEY', 'gtx-tooling-key');
+    vi.stubEnv('GT_API_KEY', 'gtx-api-key');
     fs.writeFileSync(
       path.join(appDirectory, 'gt.config.json'),
       JSON.stringify({ projectId: 'configured-project', defaultLocale: 'en' })
     );
+    const viteConfig =
+      "import { defineConfig } from 'vite'\n\nexport default defineConfig({ plugins: [] })\n";
+    fs.writeFileSync(path.join(appDirectory, 'vite.config.ts'), viteConfig);
 
     await runInit();
 
-    expect(login).not.toHaveBeenCalled();
-    expect(api.listProjects).not.toHaveBeenCalled();
-    expect(api.createProjectApiKey).toHaveBeenCalledTimes(1);
-    expect(api.createProjectApiKey).toHaveBeenCalledWith('configured-project', {
-      name: 'Development key (gt init)',
-      permissions: ['project:translations:generate'],
-    });
-    expect(fs.readFileSync(envPath(), 'utf8')).toBe(
-      'VITE_GT_PROJECT_ID=configured-project\nVITE_GT_DEV_API_KEY=gtx-secret-development-key\n'
+    expect(promptConfirm).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('live development translations'),
+      })
     );
-    expect(process.env.GT_API_KEY).toBe('gtx-tooling-key');
-    expect(loggedOutput()).not.toContain('gtx-secret-development-key');
+    expect(api.createProjectApiKey).not.toHaveBeenCalled();
+    expect(fs.existsSync(envPath())).toBe(false);
+    // The existing credentials still need gtReact() to reach the browser.
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('add gtReact() to the plugins of defineConfig')
+    );
+    expect(
+      fs.readFileSync(path.join(appDirectory, 'vite.config.ts'), 'utf8')
+    ).toBe(viteConfig);
   });
 
-  it('explains a denied mint through the tooling key without falling back to login', async () => {
+  it('does not count a framework-prefixed project ID as credentials', async () => {
     setUpLocalVite(true);
     vi.stubEnv('GT_API_KEY', 'gtx-tooling-key');
-    vi.stubEnv('VITE_GT_PROJECT_ID', 'configured-project');
+    vi.stubEnv('VITE_GT_PROJECT_ID', 'prefixed-project');
+
+    await runInit();
+
+    expect(fs.readFileSync(envPath(), 'utf8')).toBe(
+      'GT_PROJECT_ID=p1\nGT_API_KEY=gtx-secret-development-key\n'
+    );
+  });
+
+  // The React setup that registers gtReact() is declined here.
+  it('reports the gtReact() plugin when credentials are saved without the React setup', async () => {
+    setUpLocalVite(true);
+    const viteConfig =
+      "import { defineConfig } from 'vite'\n\nexport default defineConfig({ plugins: [] })\n";
+    fs.writeFileSync(path.join(appDirectory, 'vite.config.ts'), viteConfig);
+
+    await runInit();
+
+    expect(fs.existsSync(envPath())).toBe(true);
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('add gtReact() to the plugins of defineConfig')
+    );
+    expect(
+      fs.readFileSync(path.join(appDirectory, 'vite.config.ts'), 'utf8')
+    ).toBe(viteConfig);
+  });
+
+  it('explains a denied mint through GT_API_KEY without falling back to login', async () => {
+    setUpLocalVite(true);
+    vi.stubEnv('GT_API_KEY', 'gtx-tooling-key');
+    // A key for another project does not count for this one.
+    vi.stubEnv('GT_PROJECT_ID', 'other-project');
+    fs.writeFileSync(
+      path.join(appDirectory, 'gt.config.json'),
+      JSON.stringify({ projectId: 'configured-project', defaultLocale: 'en' })
+    );
     const details = 'Project API keys cannot create other keys';
     vi.mocked(api.createProjectApiKey).mockRejectedValue(
       new ApiError(details, 403, ErrorCode.PERMISSION_MISSING)

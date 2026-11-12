@@ -13,7 +13,6 @@ import {
 import { resolveFiles } from '../fs/config/parseFilesConfig.js';
 import { validateSettings } from './validateSettings.js';
 import { DEFAULT_GIT_REMOTE_NAME } from '../utils/constants.js';
-import { resolveProjectId } from '../fs/utils.js';
 import { createUserTokenProvider } from '../auth/oauth.js';
 import { resolveCliApiKey } from '../auth/cliApiKey.js';
 import crypto from 'node:crypto';
@@ -118,7 +117,7 @@ export async function generateSettings(
     }
   }
 
-  const projectIdEnv = resolveProjectId();
+  const projectIdEnv = process.env.GT_PROJECT_ID;
   // Resolve mismatched projectIds
   if (
     gtConfig.projectId &&
@@ -199,7 +198,8 @@ export async function generateSettings(
   );
 
   // Add projectId if not provided
-  mergedOptions.projectId = mergedOptions.projectId || resolveProjectId();
+  mergedOptions.projectId =
+    mergedOptions.projectId || process.env.GT_PROJECT_ID;
 
   mergedOptions.baseUrl = resolveApiBaseUrl(mergedOptions.baseUrl);
 

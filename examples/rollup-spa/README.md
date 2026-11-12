@@ -57,14 +57,7 @@ These files are keyed by a content hash of each source message, so editing trans
 
 ## Credentials
 
-GT credentials are read from the environment at build time and inlined by `@rollup/plugin-replace`:
-
-- `GT_PROJECT_ID`
-- `GT_DEV_API_KEY`
-
-Copy `.env.example` to `.env` and fill in the values from your GT dashboard if you want them inlined into the bundle.
-
-In this plain-Rollup setup, on-the-fly dev translation fetching does not activate, so these values are not needed to run the app. `gt-react` only fetches translations in the browser when the bundler exposes a development env signal; a plain Rollup build has no `process` global and injects no `import.meta.env`, so `gt-react` always resolves to its production runtime and never calls the API. The committed files under `src/_gt/` are what renders in both dev and prod. The credential wiring is kept here for parity with the other examples and for bundlers that do supply a dev env signal, so the values can stay empty.
+This example needs no project ID or API key: the committed files under `src/_gt/` are what renders in both dev and prod.
 
 ## Dev mode and hot reload
 

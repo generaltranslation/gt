@@ -11,6 +11,7 @@ import {
 } from '../setupViteSPA.js';
 import type { BuildToolSetup } from './index.js';
 import { getLoaderUpdateActions } from './shared/loader.js';
+import { configureGTReactPlugin } from './shared/viteConfig.js';
 
 export const VITE_LOADER_FILE = 'src/loadTranslations.ts';
 
@@ -69,18 +70,25 @@ export const viteSetup: BuildToolSetup = {
           : [],
     };
   },
+  checkCredentialsPlugin: (appDirectory) =>
+    configureGTReactPlugin(appDirectory, true),
   async apply(ctx) {
     const { manualAction } = await setupViteSPA(ctx);
+    const plugin = await configureGTReactPlugin(ctx.appDirectory, false);
     return manualAction
       ? {
-          steps: [],
+          steps: plugin.steps,
           manualActions: [
             {
               whatHappened: 'The existing Vite setup needs a manual review',
               fix: manualAction,
             },
+            ...plugin.manualActions,
           ],
         }
-      : { steps: ['configured initializeGTSPA'], manualActions: [] };
+      : {
+          steps: ['configured initializeGTSPA', ...plugin.steps],
+          manualActions: plugin.manualActions,
+        };
   },
 };

@@ -26,11 +26,8 @@ export const ROOT_MODULE = `${SOURCE_DIRECTORY}/root`;
 
 export const LOADER_FILE = `${SOURCE_DIRECTORY}/loadTranslations.ts`;
 
-/**
- * The configured root imports parseLocale, new in gt-react 11.0.4, and
- * Oxygen's worker build resolves gt-react's server entry from 11.1.3.
- */
-const MINIMUM_GT_REACT = '11.1.3';
+/** The configured root relies on gtReact() from gt-react/vite, new in 12. */
+const MINIMUM_GT_REACT = '12.0.0';
 
 /** The extensions React Router resolves react-router.config with. */
 const CONFIG_EXTENSIONS = ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.mts'];
@@ -175,7 +172,8 @@ export async function inspectReactRouter(appDirectory: string) {
     if (installed('@vitejs/plugin-rsc')) throw new Error(rscRefusal);
     // An undeclared gt-react is installed at its latest version.
     const gtReact = getPackageVersion(Libraries.GT_REACT, packageJson);
-    if (gtReact && permitsVersionBelow(gtReact, MINIMUM_GT_REACT)) {
+    // -0 admits the prereleases of the minimum, which ship the plugin.
+    if (gtReact && permitsVersionBelow(gtReact, `${MINIMUM_GT_REACT}-0`)) {
       throw new Error(outdatedGtReactRefusal);
     }
   }
