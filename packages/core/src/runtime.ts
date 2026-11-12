@@ -53,7 +53,7 @@ export class GTRuntime {
     this.apiKey = params.apiKey;
     this.userTokenProvider = params.userTokenProvider;
     this.baseUrl = params.baseUrl;
-    this.localeConfig = snapshotLocaleConfig(params.localeConfig);
+    this.localeConfig = snapshotLocaleConfig(params.localeConfig ?? {});
     // Subclasses freeze themselves after assigning their own fields.
     if (new.target === GTRuntime) Object.freeze(this);
   }
@@ -83,13 +83,13 @@ export class GTRuntime {
     options: string | TranslateOptions,
     timeout?: number
   ): Promise<TranslationResult> {
-    const [result] = (await translateEntries(
+    const [result] = await translateEntries(
       this,
       'translate',
       [source],
       options,
       timeout
-    )) as TranslateManyResult;
+    );
     return result;
   }
 

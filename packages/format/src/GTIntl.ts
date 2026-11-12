@@ -52,7 +52,6 @@ function getCustomRegionMapping(
   const customRegionMapping: CustomRegionMapping = {};
   for (const [locale, lp] of Object.entries(customMapping)) {
     if (
-      lp &&
       typeof lp === 'object' &&
       lp.regionCode &&
       !customRegionMapping[lp.regionCode]

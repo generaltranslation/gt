@@ -17,7 +17,7 @@ export function snapshotLocaleConfig({
   defaultLocale,
   locales,
   customMapping,
-}: LocaleConfig = {}): Readonly<LocaleConfig> {
+}: LocaleConfig): Readonly<LocaleConfig> {
   return Object.freeze({
     defaultLocale,
     locales: locales && Object.freeze([...locales]),

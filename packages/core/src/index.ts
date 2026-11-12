@@ -51,7 +51,7 @@ class GTAccount {
     }
     this.params = Object.freeze({
       ...params,
-      localeConfig: snapshotLocaleConfig(params.localeConfig),
+      localeConfig: snapshotLocaleConfig(params.localeConfig ?? {}),
     });
     Object.freeze(this);
   }

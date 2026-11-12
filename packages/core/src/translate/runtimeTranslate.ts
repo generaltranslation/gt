@@ -37,7 +37,7 @@ type HashedRequest = [hash: string, request: RuntimeRequest];
 // The API rejects translate request bodies over 4MB.
 const MAX_REQUEST_BYTES = 4_000_000;
 
-const byteLength = (value: unknown) =>
+const byteLength = (value: TranslateContentData['body'] | RuntimeRequest) =>
   new TextEncoder().encode(JSON.stringify(value)).byteLength;
 
 /**
@@ -165,6 +165,20 @@ function toTranslationResult(
  * Translates entries for a `GTRuntime`, in as many requests as the API's
  * request size limit needs.
  */
+export function translateEntries(
+  runtime: GTRuntime,
+  functionName: 'translate' | 'translateMany',
+  requests: TranslateManyEntry[],
+  options: string | TranslateOptions,
+  timeoutMs?: number
+): Promise<TranslateManyResult>;
+export function translateEntries(
+  runtime: GTRuntime,
+  functionName: 'translate' | 'translateMany',
+  requests: TranslateManyEntry[] | Record<string, TranslateManyEntry>,
+  options: string | TranslateOptions,
+  timeoutMs?: number
+): Promise<TranslateManyResult | Record<string, TranslationResult>>;
 export async function translateEntries(
   runtime: GTRuntime,
   functionName: 'translate' | 'translateMany',
