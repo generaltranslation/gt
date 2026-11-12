@@ -18,7 +18,6 @@ vi.mock('../../fs/config/parseFilesConfig', () => ({
 vi.mock('../../console/logging.js', () => ({
   logErrorAndExit: vi.fn(),
   displayProjectId: vi.fn(),
-  warnApiKeyInConfig: vi.fn(),
 }));
 vi.mock('../../console/logger.js', () => ({
   logger: {
@@ -234,6 +233,40 @@ describe('generateSettings - composite patterns', () => {
     expect(mockLogWarning).toHaveBeenCalledWith(
       expect.stringContaining('Config IDs will be omitted')
     );
+  });
+
+  it('warns once about unknown top-level config keys', async () => {
+    mockResolveConfig.mockReturnValueOnce({
+      config: { locales: ['fr'], custom: true, locale: 'de' },
+      path: '/test/gt.config.json',
+    });
+
+    await generateSettings({}, '/test/cwd');
+
+    const warnings = mockLogWarning.mock.calls
+      .map(([message]) => message)
+      .filter((message) => message.includes('does not read'));
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain(
+      'gt Warning: /test/gt.config.json has keys the CLI does not read'
+    );
+    expect(warnings[0]).toContain('custom, locale');
+  });
+
+  it('reads tag and tagMessage from the config without warning', async () => {
+    mockResolveConfig.mockReturnValueOnce({
+      config: { locales: ['fr'], tag: 'release', tagMessage: 'Launch' },
+      path: '/test/gt.config.json',
+    });
+
+    const settings = await generateSettings({}, '/test/cwd');
+
+    expect(
+      mockLogWarning.mock.calls.filter(([message]) =>
+        message.includes('does not read')
+      )
+    ).toEqual([]);
+    expect(settings).toMatchObject({ tag: 'release', tagMessage: 'Launch' });
   });
 
   it('rejects a docsUrlPattern list entry without [locale]', async () => {

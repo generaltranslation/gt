@@ -5,9 +5,16 @@ import {
   resolveLocalesFailedWarning,
 } from '../../errors-dir/warnings';
 import { defaultDefaultLocale } from 'generaltranslation/internal';
-import { failedToReadConfigFileError } from '../../errors-dir/errors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
 import path from 'path';
+import { safeParse } from 'valibot';
+import {
+  GTConfigSchema,
+  describeConfigIssues,
+  describeConfigParseError,
+} from 'generaltranslation/config-schema';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
+import { PACKAGE_NAME } from '../../errors-dir/constants';
 
 const DEFAULT_CONFIG_FILE_PATHS = [
   path.join(process.cwd(), 'gt.config.json'),
@@ -70,30 +77,45 @@ function resolveLocalesFromConfig(configFilePath: string | undefined) {
   let result: string[] = [];
 
   for (const filePath of configFilePaths) {
+    if (!fs.existsSync(filePath)) {
+      console.warn(couldNotLocateConfigWarning(filePath));
+      continue;
+    }
+
+    let config: unknown;
     try {
-      if (!fs.existsSync(filePath)) {
-        console.warn(couldNotLocateConfigWarning(filePath));
-        continue;
-      }
-
-      const resolvedConfig = JSON.parse(fs.readFileSync(filePath, 'utf8')) as {
-        defaultLocale?: string;
-        locales?: string[];
-      };
-
-      result = Array.from(
-        new Set([
-          ...(resolvedConfig.defaultLocale
-            ? [resolvedConfig.defaultLocale]
-            : []),
-          ...(resolvedConfig.locales || []),
-        ])
+      config = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    } catch (error) {
+      console.error(
+        createDiagnosticMessage({
+          source: PACKAGE_NAME,
+          severity: 'Error',
+          ...describeConfigParseError(error, filePath),
+        })
       );
       break;
-    } catch (error) {
-      console.error(failedToReadConfigFileError(filePath), error);
-      break;
     }
+
+    // An invalid config stops the build rather than polyfilling only the default locale.
+    const parsed = safeParse(GTConfigSchema, config);
+    if (!parsed.success) {
+      throw new Error(
+        createDiagnosticMessage({
+          source: PACKAGE_NAME,
+          severity: 'Error',
+          ...describeConfigIssues(parsed.issues, filePath),
+        })
+      );
+    }
+    const resolvedConfig = parsed.output;
+
+    result = Array.from(
+      new Set([
+        ...(resolvedConfig.defaultLocale ? [resolvedConfig.defaultLocale] : []),
+        ...(resolvedConfig.locales || []),
+      ])
+    );
+    break;
   }
   return result;
 }

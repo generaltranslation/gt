@@ -116,6 +116,12 @@ it('loads published ESM/CJS, typechecks NodeNext declarations and keeps the publ
       join(nodeModules, '@noble/hashes'),
       'junction'
     );
+    // Declarations reference valibot for GTConfig; the runtime graph must not.
+    symlinkSync(
+      realpathSync(join(packageRoot, 'node_modules/valibot')),
+      join(nodeModules, 'valibot'),
+      'junction'
+    );
 
     // Traverse the actual published runtime dependency graph in BOTH formats.
     // Relative chunks must exist; bare imports may only be declared lean deps.

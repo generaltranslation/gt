@@ -77,6 +77,14 @@ describe('checkMonorepoVersionConsistency', () => {
     expect(logger.error).not.toHaveBeenCalled();
   });
 
+  it('does not require an explicit --config file to exist yet', () => {
+    mockExistsSync.mockReturnValue(false);
+    checkMonorepoVersionConsistency(REACT_LIBRARIES, 'custom');
+    expect(mockReadFileSync).not.toHaveBeenCalled();
+    expect(process.exit).not.toHaveBeenCalled();
+    expect(logger.error).not.toHaveBeenCalled();
+  });
+
   it.each<
     [
       string,

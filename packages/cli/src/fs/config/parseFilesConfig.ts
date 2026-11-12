@@ -11,6 +11,7 @@ import {
   TransformOption,
 } from '../../types/index.js';
 import { logErrorAndExit } from '../../console/logging.js';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import fg from 'fast-glob';
 import { SUPPORTED_FILE_EXTENSIONS } from '../../formats/files/supportedFiles.js';
 import { logger } from '../../console/logger.js';
@@ -115,12 +116,7 @@ export function resolveFiles(
     if (fileType === 'xcstrings') validateXcstringsInPlace(files.xcstrings);
     // ==== TRANSFORMS ==== //
     const transform = files[fileType]?.transform;
-    if (
-      transform &&
-      (typeof transform === 'string' ||
-        typeof transform === 'object' ||
-        Array.isArray(transform))
-    ) {
+    if (transform) {
       transformPaths[fileType] = transform;
     }
     // Validate source -> output format transforms during settings generation.
@@ -163,7 +159,7 @@ export function resolveFiles(
       // Classify resolved paths by effective requiresReview policy
       classifyRequiresReviewPaths(
         filePaths.resolvedPaths,
-        validateRequiresReviewConfig(files[fileType]?.requiresReview, fileType),
+        files[fileType]?.requiresReview,
         requiresReviewDefault,
         cwd,
         locale,
@@ -406,7 +402,13 @@ function validateXcstringsInPlace(config: FilesOptions['xcstrings']): void {
   if (!config) return;
   if (config.transform) {
     logErrorAndExit(
-      'files.xcstrings.transform is not supported. An .xcstrings catalog holds every locale in one file and is updated in place, so remove the transform.'
+      createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Error',
+        whatHappened: 'files.xcstrings.transform is not supported',
+        why: 'an .xcstrings catalog holds every locale in one file and is updated in place',
+        fix: 'Remove the transform',
+      })
     );
   }
   const localePatterns = normalizeIncludePatterns(
@@ -414,47 +416,16 @@ function validateXcstringsInPlace(config: FilesOptions['xcstrings']): void {
   ).paths.filter((pattern) => pattern.includes('[locale]'));
   if (localePatterns.length > 0) {
     logErrorAndExit(
-      `files.xcstrings.include must not contain [locale]: ${localePatterns
-        .map((pattern) => `"${pattern}"`)
-        .join(
-          ', '
-        )}. An .xcstrings catalog holds every locale in one file and is updated in place, so point the pattern at the catalog itself.`
+      createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Error',
+        whatHappened: 'files.xcstrings.include must not contain [locale]',
+        why: 'an .xcstrings catalog holds every locale in one file and is updated in place',
+        details: localePatterns.map((pattern) => `"${pattern}"`),
+        fix: 'Point the pattern at the catalog itself',
+      })
     );
   }
-}
-
-/**
- * Validates a file-type requiresReview config value. Only a boolean or an
- * object of include/exclude glob string arrays is accepted — notably not
- * string "true"/"false", so a misquoted boolean fails loudly instead of
- * silently changing review policy (and with it, version identity).
- */
-function validateRequiresReviewConfig(
-  config: unknown,
-  fileType: string
-): RequiresReviewConfig | undefined {
-  if (config === undefined || typeof config === 'boolean') {
-    return config;
-  }
-  const isStringArray = (value: unknown): value is string[] =>
-    Array.isArray(value) && value.every((item) => typeof item === 'string');
-  if (
-    config !== null &&
-    typeof config === 'object' &&
-    !Array.isArray(config) &&
-    Object.keys(config).every((key) => key === 'include' || key === 'exclude')
-  ) {
-    const { include, exclude } = config as Record<string, unknown>;
-    if (
-      (include === undefined || isStringArray(include)) &&
-      (exclude === undefined || isStringArray(exclude))
-    ) {
-      return config as RequiresReviewConfig;
-    }
-  }
-  return logErrorAndExit(
-    `files.${fileType}.requiresReview must be a boolean or an object of glob string arrays: { include?: string[], exclude?: string[] }`
-  );
 }
 
 /**
