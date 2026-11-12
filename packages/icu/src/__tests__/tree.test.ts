@@ -5,7 +5,11 @@ import {
   type SelectNode,
 } from '../index';
 import { formatMessageTree } from './format';
-import { templateToMessage, type TemplateHole } from '../internal';
+import {
+  templateToMessage,
+  forEachPlaceholder,
+  type TemplateHole,
+} from '../internal';
 import { icuToMessage, messageTreeToIcu } from '../convert';
 import { normalizeMessageTree } from '../tree/canonical';
 
@@ -47,13 +51,40 @@ describe('normalizeMessageTree', () => {
         ['n', 'plural', { '=0': '', one: 'one', other: [0, 'xy'] }],
         ['d', 'date', { month: 'short', year: 'numeric' }],
         ['d', 'date'],
-        ['b', 'tag', ['cd']],
+        ['b', 'tag', 'cd'],
       ])
     );
     // An empty style is invalid, so it stays for validation and printing to reject.
     expect(normalizeMessageTree([['t', 'time', {}]])).toEqual([
       ['t', 'time', {}],
     ]);
+  });
+
+  it('rewrites a message without placeholders to one string', () => {
+    expect(normalizeMessageTree(['Sa', '', 've'])).toBe('Save');
+    expect(normalizeMessageTree('Save')).toBe('Save');
+    expect(normalizeMessageTree([])).toBe('');
+    expect(normalizeMessageTree([''])).toBe('');
+    expect(normalizeMessageTree([['b', 'tag', []]])).toEqual([
+      ['b', 'tag', ''],
+    ]);
+  });
+});
+
+describe('forEachPlaceholder', () => {
+  it('visits no text, whether a message, branch or tag is a string', () => {
+    const names: string[] = [];
+    const visit = ([name]: readonly [string, ...unknown[]]) => names.push(name);
+    forEachPlaceholder('Save {x}', visit);
+    forEachPlaceholder('', visit);
+    forEachPlaceholder(
+      [
+        ['s', 'select', { a: 'Save', other: ['Hi ', ['x']] }],
+        ['b', 'tag', 'y'],
+      ],
+      visit
+    );
+    expect(names).toEqual(['s', 'x', 'b']);
   });
 });
 
@@ -71,8 +102,9 @@ describe('templateToMessage', () => {
         { kind: 'fragment', strings: ['x'], holes: [] },
         { kind: 'fragment', strings: ['b', 'c'], holes: [] }
       )
-    ).toEqual(['xabc']);
-    expect(tree([''])).toEqual([]);
+    ).toBe('xabc');
+    expect(tree(['Save'])).toBe('Save');
+    expect(tree([''])).toBe('');
   });
 
   it('builds the plural count from a pound hole and keeps # literal', () => {

@@ -8,23 +8,28 @@ import type {
 
 /**
  * A message as compact JSON, the form catalogs ship and keys are hashed from.
- * Text is a bare string, `#` is `0`, and each placeholder is a tuple that
- * starts with its variable name:
+ * A message without placeholders is one string, `''` when empty; any other
+ * is an array of nodes, where text is a bare string, `#` is `0`, and each
+ * placeholder is a tuple that starts with its variable name:
  *
+ *   'Save'                                      -> 'Save'
  *   'Hi {name}!'                                -> ['Hi ', ['name'], '!']
  *   '{n, plural, one {# item} other {# items}}' -> [['n', 'plural', { one: [0, ' item'], other: [0, ' items'] }]]
  *   '{role, select, admin {Admins} other {All}}'-> [['role', 'select', { admin: 'Admins', other: 'All' }]]
+ *   '<b>bold</b> text'                          -> [['b', 'tag', 'bold'], ' text']
  *   '{price, number, currency}'                 -> [['price', 'number', 'currency']]
  *   '{due, date, ::yMMMd}'                      -> [['due', 'date', { day: 'numeric', month: 'short', year: 'numeric' }]]
  *
- * A branch without placeholders is one string, so it reads like the branch
- * a developer wrote. A tree holds only what ICU can spell, so it converts to
- * an ICU string and back without loss, with `messageTreeToIcu` and
- * `icuToMessage` from `@generaltranslation/icu/convert`. Other Intl
- * options, like a currency or a time zone, are formatting context, passed to
- * `formatMessageTree` as `formats`.
+ * The same rule holds for a plural or select branch and a tag's children.
+ * A string is iterable, so check for one before walking a tree's nodes, or
+ * the walk visits characters. A tree holds only what ICU can spell,
+ * so it converts to an ICU string and back without loss, with
+ * `messageTreeToIcu` and `icuToMessage` from
+ * `@generaltranslation/icu/convert`. Other Intl options, like a currency or
+ * a time zone, are formatting context, passed to `formatMessageTree` as
+ * `formats`.
  */
-export type MessageTree = MessageNode[];
+export type MessageTree = string | MessageNode[];
 
 /**
  * A message in full: its tree, which is what is translated and hashed, and
@@ -100,4 +105,4 @@ export type TagNode = readonly [
   children: MessageTree,
 ];
 
-export type MessageBranches = Record<string, string | MessageTree>;
+export type MessageBranches = Record<string, MessageTree>;

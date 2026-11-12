@@ -12,10 +12,11 @@ drops comments, and coalesces adjacent text nodes, while React follows
 `icu-tree-wire-format.json` pins `hashSource` from `generaltranslation/id` with `dataFormat: 'ICU_TREE'`
 for tagged-template messages. Each case records the user-code `template`, its
 hash `options`, the canonical message `tree` (the compact `MessageTree` from
-`@generaltranslation/icu`: adjacent text merged, a branch without placeholders
-as one string, `other` on every select/plural, branch keys and date/time fields
-sorted), and the persisted `hash`. Builders and extractors must produce the
-same tree for the same template.
+`@generaltranslation/icu`: adjacent text merged, a message or branch without
+placeholders as one string, such as `"Save"`, never `["Save"]`, `other` on
+every select/plural, branch keys and date/time fields sorted), and the
+persisted `hash`. Builders and extractors must produce the same tree for the
+same template.
 
 A tree holds only the message options of `number()`, `date()` and `time()`
 (a style or unit, a date or time style, or date and time fields). Formatting

@@ -170,7 +170,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
     });
     expect(update.metadata.hash).toBe(
       hashSource({
-        source: ['Read more'],
+        source: 'Read more',
         dataFormat: 'ICU_TREE',
         maxChars: 12,
         requiresReview: true,
@@ -189,7 +189,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
       'the gt() option "locale" is not supported'
     );
     expect(treeUpdates(result).map((u) => u.source)).toEqual([
-      ['Still extracted'],
+      'Still extracted',
     ]);
   });
 
@@ -221,8 +221,8 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
     const updates = treeUpdates(result);
     expect(updates.map((u) => u.source)).toEqual([
-      ['Good evening'],
-      ['Good morning'],
+      'Good evening',
+      'Good morning',
     ]);
     expect(updates[0].metadata.staticId).toBeTruthy();
     expect(updates[0].metadata.staticId).toBe(updates[1].metadata.staticId);
@@ -247,7 +247,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
     expect(result.errors).toEqual([]);
     expect(treeUpdates(result).map((u) => u.source)).toEqual([
-      ['Still extracted'],
+      'Still extracted',
     ]);
     const skipped = result.warnings.filter((warning) =>
       warning.includes('Skipped a tagged-template message')
@@ -282,7 +282,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
       );
 
       expect(treeUpdates(result).map((u) => u.source)).toEqual([
-        ['Still extracted'],
+        'Still extracted',
       ]);
       expect(result.warnings.join('\n')).toContain(
         'the derive() value is typed as any string'
@@ -306,7 +306,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
           }
         );
 
-      expect(treeUpdates(await run()).map((u) => u.source)).toEqual([['A']]);
+      expect(treeUpdates(await run()).map((u) => u.source)).toEqual(['A']);
       // Same length, so stale types would still find a literal there.
       fs.writeFileSync(file, `${header}t\`${'$'}{derive(txt)}\`;\n`);
       const edited = await run();
@@ -341,8 +341,8 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
       expect(result.warnings).toEqual([]);
       expect(treeUpdates(result).map((u) => u.source)).toEqual([
-        ['Signed in as Guest'],
-        ['Signed in as Member'],
+        'Signed in as Guest',
+        'Signed in as Member',
       ]);
     });
 
@@ -360,8 +360,8 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
       expect(result.warnings).toEqual([]);
       expect(treeUpdates(result).map((u) => u.source)).toEqual([
-        ['Admin'],
-        ['Member'],
+        'Admin',
+        'Member',
       ]);
     });
 
@@ -377,7 +377,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
         )
       );
 
-      expect(derived.source).toEqual(['Hello world']);
+      expect(derived.source).toEqual('Hello world');
       expect(derived.metadata.hash).toBe(written.metadata.hash);
     });
   });
@@ -540,8 +540,8 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
     expect(result.warnings).toEqual([]);
     expect(treeUpdates(result).map((u) => u.source)).toEqual([
-      ['Label '],
-      ['Label A'],
+      'Label ',
+      'Label A',
     ]);
   });
 
@@ -619,8 +619,8 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
       expect(result.warnings).toEqual([]);
       expect(treeUpdates(result).map((u) => u.source)).toEqual([
-        ['Hello'],
-        ['Bye'],
+        'Hello',
+        'Bye',
       ]);
     });
 
@@ -641,11 +641,11 @@ describe('createInlineUpdates: unstable tagged templates', () => {
       const updates = treeUpdates(result);
       expect(updates.map((u) => u.metadata.hash)).toEqual([
         hashSource({
-          source: ['Save'],
+          source: 'Save',
           dataFormat: 'ICU_TREE',
           context: 'button',
         }),
-        hashSource({ source: ['Open'], dataFormat: 'ICU_TREE', maxChars: 4 }),
+        hashSource({ source: 'Open', dataFormat: 'ICU_TREE', maxChars: 4 }),
       ]);
     });
 
@@ -665,7 +665,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
       `);
 
       expect(treeUpdates(result).map((u) => u.source)).toEqual([
-        ['Still extracted'],
+        'Still extracted',
       ]);
       const untracked = result.warnings.filter((w) =>
         w.includes('Could not follow this use')
@@ -694,10 +694,10 @@ describe('createInlineUpdates: unstable tagged templates', () => {
       expect(
         treeUpdates(result).map((u) => [u.source, u.metadata.hash])
       ).toEqual([
-        [['Save'], hashSource({ source: ['Save'], dataFormat: 'ICU_TREE' })],
+        ['Save', hashSource({ source: 'Save', dataFormat: 'ICU_TREE' })],
         [
-          ['Hello {name}'],
-          hashSource({ source: ['Hello {name}'], dataFormat: 'ICU_TREE' }),
+          'Hello {name}',
+          hashSource({ source: 'Hello {name}', dataFormat: 'ICU_TREE' }),
         ],
       ]);
     });
@@ -711,9 +711,9 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
       expect(result.warnings).toEqual([]);
       expect(treeUpdates(result).map((u) => u.metadata.hash)).toEqual([
-        hashSource({ source: ['Save'], dataFormat: 'ICU_TREE' }),
+        hashSource({ source: 'Save', dataFormat: 'ICU_TREE' }),
         hashSource({
-          source: ['Save'],
+          source: 'Save',
           dataFormat: 'ICU_TREE',
           context: 'button',
         }),
@@ -734,9 +734,9 @@ describe('createInlineUpdates: unstable tagged templates', () => {
       expect(
         treeUpdates(result).map((u) => [u.source, u.metadata.context])
       ).toEqual([
-        [['Hi'], undefined],
-        [['Bye'], undefined],
-        [['Save'], 'button'],
+        ['Hi', undefined],
+        ['Bye', undefined],
+        ['Save', 'button'],
       ]);
     });
 
@@ -771,7 +771,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
       `);
 
       expect(result.warnings).toEqual([]);
-      expect(result.updates.map((u) => u.source)).toEqual([['Save']]);
+      expect(result.updates.map((u) => u.source)).toEqual(['Save']);
     });
   });
 
@@ -789,7 +789,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
       'Details: Error: Message variable "_gt_name" uses the reserved "_gt_" prefix.'
     );
     expect(treeUpdates(result).map((u) => u.source)).toEqual([
-      ['Still extracted'],
+      'Still extracted',
     ]);
   });
 
@@ -904,7 +904,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
     expect(result.warnings.join('\n')).toContain('variants');
     expect(treeUpdates(result).map((u) => u.source)).toEqual([
-      ['Still extracted'],
+      'Still extracted',
     ]);
   });
 
@@ -919,7 +919,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
     expect(result.warnings.join('\n')).toContain('variants');
     expect(treeUpdates(result).map((u) => u.source)).toEqual([
-      ['Still extracted'],
+      'Still extracted',
     ]);
   });
 

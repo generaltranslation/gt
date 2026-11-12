@@ -89,9 +89,15 @@ describe.sequential('runtime translation requests', () => {
         locale: 'es',
         dataFormat: 'ICU_TREE',
       },
-      invalidTree: {
+      textTree: {
         success: true,
         translation: 'Hola',
+        locale: 'es',
+        dataFormat: 'ICU_TREE',
+      },
+      invalidTree: {
+        success: true,
+        translation: [{ text: 'Hola' }],
         locale: 'es',
         dataFormat: 'ICU_TREE',
       },
@@ -105,8 +111,12 @@ describe.sequential('runtime translation requests', () => {
           source: ['Hello, ', ['name']],
           metadata: { dataFormat: 'ICU_TREE' },
         },
+        textTree: {
+          source: 'Hello',
+          metadata: { dataFormat: 'ICU_TREE' },
+        },
         invalidTree: {
-          source: ['Hello'],
+          source: 'Hello',
           metadata: { dataFormat: 'ICU_TREE' },
         },
       },
@@ -129,6 +139,12 @@ describe.sequential('runtime translation requests', () => {
       tree: {
         success: true,
         translation: ['Hola, ', ['name']],
+        locale: 'es',
+        dataFormat: 'ICU_TREE',
+      },
+      textTree: {
+        success: true,
+        translation: 'Hola',
         locale: 'es',
         dataFormat: 'ICU_TREE',
       },
