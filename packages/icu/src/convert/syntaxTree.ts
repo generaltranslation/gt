@@ -119,11 +119,8 @@ function toNode<Format>(
 export function dateTimeOptions(
   skeleton: DateTimeSkeleton
 ): Intl.DateTimeFormatOptions {
-  return parseDateTimeSkeletonOptions(skeleton.pattern, { localeHour: true });
+  return parseDateTimeSkeletonOptions(skeleton.pattern, true);
 }
-
-// The parser shows at most three fractional digits, as Intl does.
-const FOUR_FRACTIONAL_DIGITS = /S{4}/;
 
 /**
  * A formatted placeholder split in two: its node, with the style a tree
@@ -166,7 +163,10 @@ function splitFormat(
       intlOptions,
       fail
     );
-    return [node, scale ? sortRecord({ ...context, scale }) : context];
+    return [
+      node,
+      scale === undefined ? context : sortRecord({ ...context, scale }),
+    ];
   }
   const style = element.style;
   let options: DateTimeOptions | undefined;
@@ -178,9 +178,6 @@ function splitFormat(
     );
     if (!options) throw unknownStyle(style);
   } else if (style) {
-    if (FOUR_FRACTIONAL_DIGITS.test(style.pattern.replace(/'[^']*'/g, ''))) {
-      throw fail('fractional seconds have at most three digits, SSS');
-    }
     options = dateTimeOptions(style);
   }
   return splitOptions(element.value, kind, options ?? {}, fail);

@@ -232,9 +232,6 @@ describe('formatMessage', () => {
     const expected = '123,456,789,012,345,678,901,234,567,890';
 
     expect(formatMessage('{n, number}', 'en-US', { n: value })).toBe(expected);
-    expect(formatMessage('{n, number, ::scale/0}', 'en-US', { n: value })).toBe(
-      expected
-    );
   });
 
   it('formats number skeleton precision, grouping, currency, and scale', () => {
@@ -248,23 +245,23 @@ describe('formatMessage', () => {
         n: 123456.789,
       })
     ).toBe('£123,456.79');
+    // ICU's percent does not multiply by 100, and a scale of 0 multiplies by it.
     expect(
       formatMessage('{n, number, ::percent scale/0.01}', 'en-US', { n: 12.3 })
-    ).toBe('12%');
+    ).toBe('0.123%');
     expect(formatMessage('{n, number, ::scale/0}', 'en-US', { n: 12.34 })).toBe(
-      '12.34'
+      '0'
     );
   });
 
-  it.each([
-    ['scale', 3, '3'],
-    ['scale/0x10', 3, '3'],
-    ['scale/2foo', 3, '6'],
-  ])('preserves FormatJS parsing of ::%s', (skeleton, value, expected) => {
-    expect(
-      formatMessage(`{n, number, ::${skeleton}}`, 'en-US', { n: value })
-    ).toBe(expected);
-  });
+  it.each(['scale', 'scale/0x10', 'scale/2foo'])(
+    'rejects ::%s, whose scale is not a number',
+    (skeleton) => {
+      expect(() =>
+        formatMessage(`{n, number, ::${skeleton}}`, 'en-US', { n: 3 })
+      ).toThrow(`"${skeleton}" is not an ICU number skeleton token.`);
+    }
+  );
 
   it('formats minimum integer-width skeletons', () => {
     expect(
@@ -272,14 +269,14 @@ describe('formatMessage', () => {
     ).toBe('007');
   });
 
-  it.each([
-    ['000', 'exact integer digits'],
-    ['##00', 'maximum integer digits'],
-  ])('matches FormatJS rejection of integer-width/%s', (width, error) => {
-    expect(() =>
-      formatMessage(`{n, number, ::integer-width/${width}}`, 'en', { n: 7 })
-    ).toThrow(error);
-  });
+  it.each(['000', '##00'])(
+    'rejects integer-width/%s, a maximum of integer digits',
+    (width) => {
+      expect(() =>
+        formatMessage(`{n, number, ::integer-width/${width}}`, 'en', { n: 7 })
+      ).toThrow('Intl shows every integer digit');
+    }
+  );
 
   it('supports bigint number and plural formatting', () => {
     expect(
@@ -374,22 +371,12 @@ describe('formatMessage', () => {
     );
   });
 
-  it.each([
-    ['en-US', 'Ch', '2 PM'],
-    ['en-US', 'hC', '2 PM'],
-    ['en-US', 'Cj', '2 PM'],
-    ['en-US', 'Jj', '02 PM'],
-    ['en-US', 'jJ', '2 PM'],
-    ['de-DE', 'hj', '14 Uhr'],
-  ])(
-    'preserves FormatJS hour skeleton ordering for %s ::%s',
-    (locale, skeleton, expected) => {
-      const value = new Date(2020, 4, 6, 14, 3, 2);
-      expect(
-        formatMessage(`{d, time, ::${skeleton}}`, locale, { d: value })
-      ).toBe(expected);
-    }
-  );
+  it('preserves FormatJS hour skeleton ordering for de-DE ::hj', () => {
+    const value = new Date(2020, 4, 6, 14, 3, 2);
+    expect(formatMessage('{d, time, ::hj}', 'de-DE', { d: value })).toBe(
+      '14 Uhr'
+    );
+  });
 
   it('honors Unicode region overrides and sparse locale fallbacks', () => {
     const value = new Date(2020, 4, 6, 7, 3, 2);
@@ -406,13 +393,13 @@ describe('formatMessage', () => {
     expect(() => formatMessage('{d, time, ::j}', [], { d: value })).toThrow();
   });
 
-  it.each(['C', 'A'])(
-    'preserves FormatJS handling of the %s date/time skeleton field',
+  // FormatJS skips `C` and `A` and reads `J` as `H`.
+  it.each(['C', 'A', 'J'])(
+    'rejects the %s date/time skeleton field, which Intl cannot format',
     (field) => {
-      const value = new Date('2020-05-06T14:03:02Z');
-      expect(
-        formatMessage(`{d, time, ::${field}}`, 'en-US', { d: value })
-      ).toBe(new Intl.DateTimeFormat('en-US').format(value));
+      expect(() =>
+        formatMessage(`{d, time, ::${field}}`, 'en-US', { d: new Date() })
+      ).toThrow(`Unsupported date/time skeleton field: ${field}.`);
     }
   );
 

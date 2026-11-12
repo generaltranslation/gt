@@ -10,13 +10,17 @@ import {
 } from '../evaluateJsx.js';
 
 describe('isValidIcu', () => {
+  it('preserves FormatJS acceptance for a style with a brace', () => {
+    expect(isValidIcu('{n, number, foo{bar}baz}')).toEqual({ isValid: true });
+  });
+
+  // ICU rejects a token that is not its own, and Intl cannot format some.
   it.each([
-    '{n, number, foo{bar}baz}',
-    '{n, number, ::integer-width/*}',
     '{n, number, ::integer-width/x*00}',
     '{n, number, ::currency}',
-  ])('preserves FormatJS acceptance for %j', (message) => {
-    expect(isValidIcu(message)).toEqual({ isValid: true });
+    '{n, number, ::permille}',
+  ])('rejects the number skeleton of %j', (message) => {
+    expect(isValidIcu(message).isValid).toBe(false);
   });
 });
 

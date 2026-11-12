@@ -272,17 +272,10 @@ describe('parse', () => {
     '__proto__',
     'valueOf',
     'hasOwnProperty',
-  ])('ignores inherited rounding-mode map key %j', (stem) => {
-    const [element] = parse(`{amount, number, ::${stem}}`);
-    if (
-      element.type !== TYPE.number ||
-      element.style == null ||
-      typeof element.style === 'string'
-    ) {
-      throw new Error('Expected a parsed number skeleton');
-    }
-
-    expect(element.style.parsedOptions).toEqual({});
+  ])('rejects %j, an inherited key that is not a stem', (stem) => {
+    expect(() => parse(`{amount, number, ::${stem}}`)).toThrow(
+      new SyntaxError(`"${stem}" is not an ICU number skeleton token.`)
+    );
   });
 
   it.each([
@@ -311,23 +304,44 @@ describe('parse', () => {
     }
   );
 
-  it.each(['C', 'A'])(
-    'preserves FormatJS parsing of the %s date/time skeleton field',
-    (field) => {
-      expect(
-        parse(`{date, time, ::${field}}`, {
+  // ICU4C formats each of these; FormatJS skips them or reads them as another.
+  it.each(['A', 'C', 'J', 'g', 'EEEEEE', 'yyyyy', 'SSSS', 'haaaaa', 'jjjjj'])(
+    'rejects the date/time skeleton ::%s, which Intl cannot format',
+    (skeleton) => {
+      expect(() =>
+        parse(`{date, time, ::${skeleton}}`, {
           locale: new Intl.Locale('en-US'),
-        })[0]
-      ).toMatchObject({
-        type: TYPE.time,
-        style: {
-          type: SKELETON_TYPE.dateTime,
-          pattern: field,
-          parsedOptions: {},
-        },
-      });
+        })
+      ).toThrow(RangeError);
     }
   );
+
+  it('reads a, the AM/PM marker, as nothing more than its hour', () => {
+    const options = (skeleton: string) =>
+      parse(`{date, time, ::${skeleton}}`)[0];
+    expect(options('ha')).toMatchObject({
+      style: { parsedOptions: { hour: 'numeric', hourCycle: 'h12' } },
+    });
+    // ICU4C shows 23 for `Ha`, where FormatJS turns the clock to 12 hours.
+    expect(options('Ha')).toMatchObject({
+      style: { parsedOptions: { hour: 'numeric', hourCycle: 'h23' } },
+    });
+    expect(() => options('a')).toThrow(
+      new RangeError(
+        'The date/time skeleton field a, the AM/PM marker, needs an hour field.'
+      )
+    );
+  });
+
+  it.each([
+    ['eee', 'short'],
+    ['cccc', 'long'],
+    ['eeeee', 'narrow'],
+  ])('reads the weekday ::%s as ICU4C does: %s', (skeleton, weekday) => {
+    expect(parse(`{date, date, ::${skeleton}}`)[0]).toMatchObject({
+      style: { parsedOptions: { weekday } },
+    });
+  });
 
   it('can skip skeleton option parsing while preserving tokens', () => {
     expect(
@@ -344,7 +358,7 @@ describe('parse', () => {
 
   it('rejects an empty number skeleton stem only when parsing options', () => {
     expect(() => parse('{amount, number, ::/USD}')).toThrow(
-      'Number skeleton token stem cannot be empty'
+      '"/USD" is not an ICU number skeleton token.'
     );
     expect(
       parse('{amount, number, ::/USD}', { shouldParseSkeletons: false })[0]
@@ -509,7 +523,7 @@ describe('parse', () => {
     '.00/r',
   ])('rejects malformed significant-precision skeleton ::%s', (skeleton) => {
     expect(() => parse(`{n, number, ::${skeleton}}`)).toThrow(
-      'Significant precision must start with @'
+      new SyntaxError(`"${skeleton}" is not an ICU number skeleton token.`)
     );
   });
 
@@ -546,21 +560,40 @@ describe('parse', () => {
     ['<b>text', 'UNCLOSED_TAG'],
     ['{n, number, ::}', 'INVALID_NUMBER_SKELETON'],
     ['{n, number, ::currency/}', 'INVALID_NUMBER_SKELETON'],
-    ['{n, number, ::unit}', 'unit requires an option'],
-    ['{n, number, ::integer-width}', 'integer-width requires an option'],
+    ['{n, number, ::unit}', '"unit" is not an ICU number skeleton token.'],
     [
-      '{n, number, ::integer-width/000}',
-      'We currently do not support exact integer digits',
-    ],
-    [
-      '{n, number, ::integer-width/##00}',
-      'We currently do not support maximum integer digits',
+      '{n, number, ::integer-width}',
+      '"integer-width" is not an ICU number skeleton token.',
     ],
     [
       '{n, number, ::integer-width/*00/foo}',
-      'integer-width stems only accept a single optional option',
+      '"integer-width/*00/foo" is not an ICU number skeleton token.',
     ],
-    ['{n, number, ::Efoo}', 'Malformed concise eng/scientific notation'],
+    ['{n, number, ::Efoo}', '"Efoo" is not an ICU number skeleton token.'],
+    [
+      '{n, number, ::currency}',
+      '"currency" is not an ICU number skeleton token.',
+    ],
+    [
+      '{n, number, ::scale/2x}',
+      '"scale/2x" is not an ICU number skeleton token.',
+    ],
+    [
+      '{n, number, ::.##/@@@}',
+      '".##/@@@" is not an ICU number skeleton token.',
+    ],
+    ['{n, number, ::bogus}', '"bogus" is not an ICU number skeleton token.'],
+    // A setting given twice: the second token is the error.
+    ['{n, number, ::.00 .##}', '".##" is not an ICU number skeleton token.'],
+    ['{n, number, ::.00 @@@}', '"@@@" is not an ICU number skeleton token.'],
+    [
+      '{n, number, ::sign-accounting sign-always}',
+      '"sign-always" is not an ICU number skeleton token.',
+    ],
+    [
+      '{n, number, ::latin numbering-system/arab}',
+      '"numbering-system/arab" is not an ICU number skeleton token.',
+    ],
     ["{n, number, 'unclosed}", 'UNCLOSED_QUOTE_IN_ARGUMENT_STYLE'],
   ])('rejects malformed ICU %j', (message, error) => {
     expect(() => parse(message)).toThrow(error);
@@ -573,16 +606,6 @@ describe('parse', () => {
       'Unsupported date/time skeleton field: vv.',
     ],
     ['{d, date, ::b}', RangeError, 'Unsupported date/time skeleton field: b.'],
-    [
-      '{n, number, ::#}',
-      SyntaxError,
-      'Significant precision must start with @.',
-    ],
-    [
-      '{n, number, ::Efoo}',
-      SyntaxError,
-      'Malformed concise eng/scientific notation',
-    ],
   ])(
     'uses stable diagnostics instead of FormatJS incidental errors for %j',
     (message, ErrorType, error) => {
