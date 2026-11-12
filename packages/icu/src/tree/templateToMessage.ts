@@ -5,7 +5,11 @@ import {
   createPluralCountOutsidePluralError,
   createReservedVariablePrefixError,
 } from '../errors/treeErrors';
-import { FALLBACK_BRANCH_KEY, isArgumentName } from '../settings/syntax';
+import {
+  FALLBACK_BRANCH_KEY,
+  isArgumentName,
+  isExactKey,
+} from '../settings/syntax';
 import { appendText, compareKeys, toMessageTree } from './canonical';
 import type {
   DateTimeNode,
@@ -211,9 +215,4 @@ function buildHole(
       out.push([name, hole.kind, branches]);
     }
   }
-}
-
-// `=N` with N an integer the parser reads: it rejects unsafe integers.
-function isExactKey(key: string): boolean {
-  return /^=-?\d+$/.test(key) && Number.isSafeInteger(Number(key.slice(1)));
 }

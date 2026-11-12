@@ -202,23 +202,18 @@ describe('parse', () => {
     });
   });
 
-  it('preserves exact plural selector spelling without treating equivalents as duplicates', () => {
+  it('reads an exact plural selector as its number, as ICU4C does', () => {
     const [element] = parse(
-      '{count, plural, =1 {canonical} =01 {leading} =+1 {positive} =0 {zero} =-0 {negative zero} =-01 {negative leading} other {other}}'
+      '{count, plural, =01 {one} =-0 {zero} =-01 {minus one} other {other}}'
     );
 
     expect(element).toMatchObject({
       type: TYPE.plural,
-      options: {
-        '=1': {},
-        '=01': {},
-        '=+1': {},
-        '=0': {},
-        '=-0': {},
-        '=-01': {},
-        other: {},
-      },
+      options: { '=1': {}, '=0': {}, '=-1': {}, other: {} },
     });
+    expect(() => parse('{count, plural, =1 {a} =+1 {b} other {c}}')).toThrow(
+      'A branch key appears twice'
+    );
   });
 
   it('parses ordinal plurals', () => {
@@ -320,7 +315,7 @@ describe('parse', () => {
     const options = (skeleton: string) =>
       parse(`{date, time, ::${skeleton}}`)[0];
     expect(options('ha')).toMatchObject({
-      style: { parsedOptions: { hour: 'numeric', hourCycle: 'h12' } },
+      style: { parsedOptions: { hour: 'numeric', hour12: true } },
     });
     // ICU4C shows 23 for `Ha`, where FormatJS turns the clock to 12 hours.
     expect(options('Ha')).toMatchObject({
@@ -367,7 +362,7 @@ describe('parse', () => {
     });
   });
 
-  it('parses nested tags and normalizes self-closing tags as literals', () => {
+  it('parses nested tags and keeps a self-closing tag as the text it is', () => {
     expect(parse('this is <a>nested <b>{name}</b></a>')).toMatchObject([
       { type: TYPE.literal, value: 'this is ' },
       {
@@ -384,7 +379,7 @@ describe('parse', () => {
       },
     ]);
     expect(parse('<test-tag />')).toEqual([
-      { type: TYPE.literal, value: '<test-tag/>' },
+      { type: TYPE.literal, value: '<test-tag />' },
     ]);
   });
 
@@ -452,7 +447,7 @@ describe('parse', () => {
 
   it('allows missing other only when explicitly configured', () => {
     expect(() => parse('{x, select, one {One}}')).toThrow(
-      'MISSING_OTHER_CLAUSE'
+      'A plural, select or selectordinal needs an other branch.'
     );
     expect(() =>
       parse('{x, select, one {One}}', { requiresOtherClause: false })
@@ -533,11 +528,12 @@ describe('parse', () => {
       parse('{name');
     } catch (error) {
       const syntaxError = error as SyntaxError & {
+        code?: string;
         location?: Location;
         originalMessage?: string;
       };
       expect(syntaxError).toBeInstanceOf(SyntaxError);
-      expect(syntaxError.message).toBe('EXPECT_ARGUMENT_CLOSING_BRACE');
+      expect(syntaxError.code).toBe('EXPECT_ARGUMENT_CLOSING_BRACE');
       expect(syntaxError.location).toEqual({
         start: { offset: 0, line: 1, column: 1 },
         end: { offset: 5, line: 1, column: 6 },
@@ -595,8 +591,13 @@ describe('parse', () => {
       '"numbering-system/arab" is not an ICU number skeleton token.',
     ],
     ["{n, number, 'unclosed}", 'UNCLOSED_QUOTE_IN_ARGUMENT_STYLE'],
+    // ICU4C skips a letter that is no field, so a typo disappears.
+    ['{d, date, ::yMMMdT}', '"T" is not a date or time field.'],
   ])('rejects malformed ICU %j', (message, error) => {
-    expect(() => parse(message)).toThrow(error);
+    // An error in capitals is the code; the message is a sentence.
+    expect(() => parse(message)).toThrow(
+      /^[A-Z_]+$/.test(error) ? expect.objectContaining({ code: error }) : error
+    );
   });
 
   it.each([

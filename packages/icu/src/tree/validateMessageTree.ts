@@ -8,6 +8,7 @@ import {
   NUMBER_STYLE_NAMES,
   TIME_FIELD_OPTIONS,
 } from '../settings/formatOptions';
+import { isExactKey, MAX_NESTING_DEPTH } from '../settings/syntax';
 import type { FormattedNode, MessageTree } from './messageTree';
 
 export interface MessageTreeValidationOptions {
@@ -45,7 +46,10 @@ interface WalkState {
  */
 export function validateMessageTree(
   value: unknown,
-  { maxDepth = 64, maxNodes = 10_000 }: MessageTreeValidationOptions = {}
+  {
+    maxDepth = MAX_NESTING_DEPTH,
+    maxNodes = 10_000,
+  }: MessageTreeValidationOptions = {}
 ): MessageTreeValidationError | undefined {
   return treeError(value, [], 0, { maxDepth, maxNodes, nodes: 0 });
 }
@@ -146,6 +150,17 @@ function kindError(
       }
       if (offset === 0) {
         return { path: [...path, 3], message: 'leave out an offset of 0' };
+      }
+      // A plural matches `=N` by number, so `=01` would match nothing.
+      const inexact = isRecord(node[2])
+        ? Object.keys(node[2]).find((key) => key[0] === '=' && !isExactKey(key))
+        : undefined;
+      if (inexact !== undefined) {
+        return {
+          path: [...path, 2, inexact],
+          message:
+            'expected = and a safe integer as JavaScript writes it, like =1',
+        };
       }
       return branchesError(node[2], [...path, 2], depth, state);
     }

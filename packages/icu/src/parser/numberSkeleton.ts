@@ -15,6 +15,7 @@ import {
   createInvalidNumberSkeletonTokenError,
   createUnsupportedNumberSkeletonTokenError,
 } from '../errors/skeletonErrors';
+import { DECIMAL_NUMBER } from '../settings/syntax';
 import {
   SKELETON_TYPE,
   type ExtendedNumberFormatOptions,
@@ -179,7 +180,6 @@ const FRACTION_PRECISION = /^\.(0*)(#*|[*+])$/;
 // `@@@`, `@@#` and `@@*`; as the option of a fraction, also `@##r` and `@##s`.
 const SIGNIFICANT_PRECISION = /^(@+)(#*|[*+])([rs]?)$/;
 const INTEGER_WIDTH = /^([*+]|#*)(0*)$/;
-const DECIMAL_NUMBER = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i;
 const CONCISE_EXPONENT = /^EE?(\+[!?])?(0+)$/;
 
 export function parseNumberSkeletonTokens(
@@ -208,7 +208,8 @@ export function parseNumberSkeletonOptions(
   const set = new Set<string>();
   for (const token of tokens) {
     const options = readToken(token);
-    const keys = Object.keys(options);
+    // `base-unit` says no unit, which sets the unit as much as a unit does.
+    const keys = token.stem === 'base-unit' ? [...UNIT] : Object.keys(options);
     // `%x100` is `percent scale/100`, so it sets the scale too.
     if (token.stem === '%x100') keys.push('scale');
     // ICU takes each setting once: `.00 .##` is an error, not the last one.

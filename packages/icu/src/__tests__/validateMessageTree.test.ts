@@ -89,6 +89,11 @@ describe('validateMessageTree', () => {
       [0, 3],
       'leave out an offset of 0',
     ],
+    ...['=01', '=+1', '=-0', '=1.5', '=1e3', '=9007199254740993'].map((key) => [
+      [['n', 'plural', { [key]: 'exact', other: 'other' }]],
+      [0, 2, key],
+      'expected = and a safe integer as JavaScript writes it, like =1',
+    ]),
   ])('rejects the other form %j of a message', (tree, path, message) => {
     expect(validateMessageTree(tree)).toEqual({ path, message });
   });

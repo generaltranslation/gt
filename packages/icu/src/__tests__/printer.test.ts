@@ -146,8 +146,8 @@ describe('printAST', () => {
       '{count,plural,offset:2 =0{none} one{# item} other{# items}}',
     ],
     [
-      '{count, plural, =1 {canonical} =01 {leading} =+1 {positive} =-0 {negative zero} =-01 {negative leading} other {other}}',
-      '{count,plural,=1{canonical} =01{leading} =+1{positive} =-0{negative zero} =-01{negative leading} other{other}}',
+      '{count, plural, =01 {leading} =-0 {negative zero} =-02 {negative leading} other {other}}',
+      '{count,plural,=1{leading} =0{negative zero} =-2{negative leading} other{other}}',
     ],
     [
       '{place, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}',
@@ -178,7 +178,7 @@ describe('printAST', () => {
     '{a}{b}{c}',
     '{status, select, yes {{name} accepted} other {none}}',
     '{count, plural, one {<b># item</b>} other {<b># items</b>}}',
-    '{count, plural, =1 {canonical} =01 {leading} =+1 {positive} =-0 {negative zero} =-01 {negative leading} other {other}}',
+    '{count, plural, =01 {leading} =-0 {negative zero} =-02 {negative leading} other {other}}',
     "{count, plural, other {'##' and '{#}'}}",
     "{count, plural, other {<b>'##'</b>}}",
     '{count, plural, one {{status, select, yes {{name}} other {none}}} other {No}}',
@@ -188,6 +188,7 @@ describe('printAST', () => {
     '{n, number, custom<a}',
     '{n, number, custom<a>}',
     "'}'<br/> done",
+    "'}'<br /> done",
     "'<x>'<br/>",
     "<a1/>''''",
   ])('preserves the AST through print and reparse for %j', (message) => {
@@ -216,6 +217,8 @@ describe('printAST', () => {
 
   it.each([
     ["'}'<br/> done", "'}'<br/> done"],
+    ["'}'<br /> done", "'}'<br /> done"],
+    ["'{'<br\t/>", "'{'<br\t/>"],
     ["'<x>'<br/>", "'<x>'<br/>"],
     ["<a1/>''''", "<a1/>'''"],
     ["'}'<a-é/> done", "'}'<a-é/> done"],

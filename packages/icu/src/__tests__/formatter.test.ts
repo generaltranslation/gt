@@ -47,34 +47,15 @@ describe('formatMessage', () => {
     );
   });
 
-  it('reads inherited and proxy-backed variables like intl-messageformat', () => {
-    const inherited = Object.create({
-      name: 'Ada',
-      count: '2',
-      kind: 'yes',
-    }) as Record<string, unknown>;
+  it('reads own values only, so no name is found on every object', () => {
+    const inherited = Object.create({ name: 'Ada' }) as Record<string, unknown>;
 
-    expect(formatMessage('Hello {name}', 'en', inherited)).toBe('Hello Ada');
-    expect(formatMessage('{count, number}', 'en', inherited)).toBe('2');
-    expect(
-      formatMessage(
-        '{count, plural, one {one} other {# items}}',
-        'en',
-        inherited
-      )
-    ).toBe('2 items');
-    expect(
-      formatMessage('{kind, select, yes {yes} other {other}}', 'en', inherited)
-    ).toBe('yes');
-
-    const proxy = new Proxy<Record<string, unknown>>(
-      {},
-      {
-        get: (_target, key) => (key === 'name' ? 'Grace' : undefined),
-        has: (_target, key) => key === 'name',
-      }
+    expect(() => formatMessage('Hello {name}', 'en', inherited)).toThrow(
+      'The ICU message variable "name" was not provided.'
     );
-    expect(formatMessage('Hello {name}', 'en', proxy)).toBe('Hello Grace');
+    expect(() => formatMessage('{toString}', 'en', {})).toThrow(
+      'The ICU message variable "toString" was not provided.'
+    );
   });
 
   it('does not require the ES2022 Object.hasOwn API', () => {
@@ -134,28 +115,25 @@ describe('formatMessage', () => {
   });
 
   it.each([
-    [1, 'canonical'],
-    ['1', 'canonical'],
-    ['01', 'leading'],
-    ['+1', 'positive'],
+    [1, 'one'],
+    ['1', 'one'],
+    ['01', 'one'],
+    ['+1', 'one'],
     [0, 'zero'],
-    ['0', 'zero'],
-    ['-0', 'negative zero'],
-    ['-01', 'negative leading'],
-  ])(
-    'preserves raw exact plural selector matching for %j',
-    (count, expected) => {
-      const message =
-        '{count, plural, =1 {canonical} =01 {leading} =+1 {positive} =0 {zero} =-0 {negative zero} =-01 {negative leading} other {other}}';
+    ['-0', 'zero'],
+    [-1, 'minus one'],
+    [2, 'other'],
+  ])('matches an exact plural selector by number for %j', (count, expected) => {
+    const message =
+      '{count, plural, =1 {one} =0 {zero} =-01 {minus one} other {other}}';
 
-      expect(formatMessage(message, 'en', { count })).toBe(expected);
-    }
-  );
+    expect(formatMessage(message, 'en', { count })).toBe(expected);
+  });
 
   it.each([
     ['2', '{count, plural, =2 {exact} other {# items}}', 'exact'],
-    ['02', '{count, plural, =2 {exact} other {# items}}', '2 items'],
-    [' 2 ', '{count, plural, =2 {exact} other {# items}}', '2 items'],
+    ['02', '{count, plural, =2 {exact} other {# items}}', 'exact'],
+    [' 2 ', '{count, plural, =2 {exact} other {# items}}', 'exact'],
     ['1', '{count, plural, one {one item} other {# items}}', 'one item'],
     ['2.5', '{count, plural, one {one item} other {# items}}', '2.5 items'],
     ['', '{count, plural, one {one item} other {# items}}', '0 items'],
@@ -164,12 +142,9 @@ describe('formatMessage', () => {
       '{count, plural, one {one item} other {# items}}',
       'NaN items',
     ],
-  ])(
-    'coerces plural string %j while preserving raw exact matching',
-    (count, message, expected) => {
-      expect(formatMessage(message, 'en', { count })).toBe(expected);
-    }
-  );
+  ])('reads the plural string %j as its number', (count, message, expected) => {
+    expect(formatMessage(message, 'en', { count })).toBe(expected);
+  });
 
   it('uses ordinal plural rules', () => {
     const message =
@@ -232,6 +207,24 @@ describe('formatMessage', () => {
     const expected = '123,456,789,012,345,678,901,234,567,890';
 
     expect(formatMessage('{n, number}', 'en-US', { n: value })).toBe(expected);
+  });
+
+  it.each([
+    [3, '0.3'],
+    ['3', '0.3'],
+    [' 3 ', '0.3'],
+    ['1.1E1', '1.1'],
+    ['0x10', '1.6'],
+    [
+      '123456789012345678901234567890',
+      '12,345,678,901,234,567,890,123,456,789',
+    ],
+  ])('scales %j as a decimal', (n, expected) => {
+    expect(
+      formatMessage('{n, number, ::scale/0.1 precision-unlimited}', 'en-US', {
+        n,
+      })
+    ).toBe(expected);
   });
 
   it('formats number skeleton precision, grouping, currency, and scale', () => {
@@ -302,6 +295,26 @@ describe('formatMessage', () => {
       })
     ).toBe('123,456,789,012,345,678,901,000,000,000');
   });
+
+  // `h` and `K` are the 12-hour clock the locale prefers, which counts
+  // midnight as 12 in English and 0 in Japanese; `k` is the 24-hour clock.
+  it.each([
+    ['::Ka', 'en-US', '12 AM'],
+    ['::ha', 'ja-JP', '午前0時'],
+    ['::k', 'en-US', '00'],
+  ])(
+    'formats midnight for %s in %s as ICU4C does',
+    (skeleton, locale, text) => {
+      expect(
+        formatMessage(
+          `{d, time, ${skeleton}}`,
+          locale,
+          { d: new Date('2020-05-06T00:00:00Z') },
+          { timeZone: 'UTC' }
+        )
+      ).toBe(text);
+    }
+  );
 
   it('rejects unsafe bigint plural selection instead of losing precision', () => {
     const count = 1000000000000000001n;
