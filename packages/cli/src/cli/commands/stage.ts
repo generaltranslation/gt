@@ -17,6 +17,7 @@ import { convertToFileTranslationData } from '../../formats/files/convertToFileT
 import { hasValidCredentials, hasValidLocales } from './utils/validation.js';
 import { warnManualReviewSetup } from '../../translation/reviewSetupWarning.js';
 import type { InlineLibrary } from '../../types/libraries.js';
+import { collectParaglideContext } from '../../paraglide/collectParaglideContext.js';
 
 export async function handleStage(
   options: TranslateFlags,
@@ -34,6 +35,8 @@ export async function handleStage(
     return exitSync(1);
   // Validate credentials if not in dry run
   if (!options.dryRun && !hasValidCredentials(settings)) return exitSync(1);
+
+  await collectParaglideContext(settings);
 
   const {
     files: allFiles,

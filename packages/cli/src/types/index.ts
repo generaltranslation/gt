@@ -6,7 +6,7 @@ import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import {
   ParsingConfigOptions,
   GTParsingFlags,
-  BaseParsingFlags,
+  ParsingFlagsFor,
   ParseFlagsByFileType,
 } from './parsing.js';
 import { Libraries, InlineLibrary } from './libraries.js';
@@ -227,7 +227,7 @@ export type FilesOptions = {
     exclude?: string[];
     transform?: string | TransformOption | TransformOption[];
     transformationFormat?: FileFormat;
-    parsingFlags?: BaseParsingFlags; // Flags for parsing inline content
+    parsingFlags?: ParsingFlagsFor<K>; // Flags for parsing inline content
     requiresReview?: RequiresReviewConfig; // Whether translated versions of matched files require approval before use
   };
 } & {

@@ -31,6 +31,7 @@ import {
   type XcstringsCatalog,
 } from '../../formats/xcstrings/parseXcstrings.js';
 import { api } from '../../utils/api.js';
+import { collectParaglideContext } from '../../paraglide/collectParaglideContext.js';
 
 /**
  * Sends multiple files to the API for translation
@@ -51,6 +52,8 @@ export async function upload(
     transformPaths,
     transformFormats,
   } = settings.files;
+
+  await collectParaglideContext(settings);
 
   // Reuse the same source aggregation path as translate/stage so source
   // parsing behavior stays consistent across commands.
