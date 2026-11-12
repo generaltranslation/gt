@@ -1,5 +1,15 @@
 # gt-next
 
+## 11.4.21
+
+### Patch Changes
+
+- [#2645](https://github.com/generaltranslation/gt/pull/2645) [`69738aa`](https://github.com/generaltranslation/gt/commit/69738aa6f8a67aca67a10e3717d942db9f7410ac) Thanks [@eoinest](https://github.com/eoinest)! - The `withGTConfig` warning for a Next.js `i18n` mismatch now lists the GT locales it compared, including the default locale.
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.4.21
+  - gt-react@11.4.21
+
 ## 11.4.20
 
 ### Patch Changes
