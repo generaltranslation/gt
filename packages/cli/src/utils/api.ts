@@ -1,33 +1,68 @@
-import type { CustomMapping } from '@generaltranslation/format/types';
-import type { ApiClientConfig } from 'generaltranslation/api';
-import { createGtApiAdapter } from 'generaltranslation/internal';
+import {
+  GeneralTranslation,
+  type GTAccount,
+  type ProjectHandle,
+} from 'generaltranslation';
+import {
+  resolveCanonicalLocale as resolveCanonicalCode,
+  standardizeLocale,
+} from '@generaltranslation/format';
+import { snapshotLocaleConfig } from '@generaltranslation/format/internal';
+import { credentialScope } from 'generaltranslation/internal';
+import type { CustomMapping } from 'generaltranslation/types';
+import type { Settings } from '../types/index.js';
+import { noProjectIdError } from '../console/index.js';
 
-const {
-  configure: configureSharedApi,
-  getClient: _getClient,
-  loadJobStatuses,
-  loadProjectInfo,
-  ...sharedApi
-} = createGtApiAdapter();
+// Format modules resolve locales without settings, so the mapping is module state.
+let sharedCustomMapping: CustomMapping | undefined;
 
-export function configureApiClient(
-  config: ApiClientConfig & { customMapping?: CustomMapping }
+/** Sets the custom mapping that `resolveCanonicalLocale` applies. */
+export function configureCustomMapping(
+  customMapping: CustomMapping | undefined
 ): void {
-  configureSharedApi(config);
+  sharedCustomMapping = snapshotLocaleConfig({ customMapping }).customMapping;
 }
 
-// CLI keeps the raw service views: unaliased project locales and nullable
-// job errors, plus per-request cancellation for polling.
-export const api = {
-  ...sharedApi,
+/** Standardized so configured spellings such as en-us match catalog keys. */
+export function resolveCanonicalLocale(locale: string): string {
+  return standardizeLocale(resolveCanonicalCode(locale, sharedCustomMapping));
+}
 
-  async checkJobStatus(jobIds: string[], signal?: AbortSignal) {
-    return loadJobStatuses(jobIds, { signal });
-  },
+/**
+ * The project-scoped client when a project ID resolves, and the
+ * account-scoped client unless the API key is a project key.
+ */
+export function createClients(
+  settings: Pick<
+    Settings,
+    'apiKey' | 'userTokenProvider' | 'projectId' | 'baseUrl' | 'customMapping'
+  >
+): { project?: ProjectHandle; account?: GTAccount } {
+  const params = {
+    ...(settings.apiKey
+      ? { apiKey: settings.apiKey }
+      : {
+          userTokenProvider: settings.userTokenProvider,
+        }),
+    baseUrl: settings.baseUrl,
+    localeConfig: { customMapping: settings.customMapping },
+  };
+  return {
+    project: settings.projectId
+      ? new GeneralTranslation({ ...params, projectId: settings.projectId })
+      : undefined,
+    account:
+      credentialScope(params) === 'account'
+        ? new GeneralTranslation(params)
+        : undefined,
+  };
+}
 
-  async getProjectInfo(timeoutMs: number) {
-    return loadProjectInfo(undefined, timeoutMs);
-  },
-};
-
-export type ApiClient = typeof api;
+/** The project-scoped client; throws when no project ID resolves. */
+export function requireProject(
+  settings: Parameters<typeof createClients>[0] & Pick<Settings, 'dashboardUrl'>
+): ProjectHandle {
+  const { project } = createClients(settings);
+  if (!project) throw new Error(noProjectIdError(settings.dashboardUrl));
+  return project;
+}

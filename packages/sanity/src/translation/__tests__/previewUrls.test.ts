@@ -6,15 +6,17 @@ import { createGroqClient } from '../../utils/__tests__/groqClient';
 import { resolvePreviewUrls, type PreviewUrlConfig } from '../previewUrls';
 import { updateTranslationPreviewUrls } from '../updatePreviewUrls';
 
-const mocks = vi.hoisted(() => ({
-  updateFiles: vi.fn(),
-  overrideConfig: vi.fn(),
-}));
+const mocks = vi.hoisted(() => {
+  const updateFiles = vi.fn();
+  return {
+    updateFiles,
+    projectFor: vi.fn((_secrets: unknown) => ({ updateFiles })),
+  };
+});
 
 vi.mock('../../adapter/core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../adapter/core')>()),
-  api: { updateFiles: mocks.updateFiles },
-  overrideConfig: mocks.overrideConfig,
+  projectFor: mocks.projectFor,
 }));
 
 const config: PreviewUrlConfig = {
@@ -452,7 +454,7 @@ describe('updateTranslationPreviewUrls', () => {
   beforeEach(() => {
     mocks.updateFiles.mockReset();
     mocks.updateFiles.mockResolvedValue({ files: [] });
-    mocks.overrideConfig.mockReset();
+    mocks.projectFor.mockClear();
     vi.spyOn(pluginConfig, 'getPreviewUrl').mockReturnValue({
       origin: 'https://staging.acme.test',
       locations: {
@@ -479,7 +481,7 @@ describe('updateTranslationPreviewUrls', () => {
     );
 
     expect(failures).toEqual([]);
-    expect(mocks.overrideConfig).toHaveBeenCalledWith(secrets);
+    expect(mocks.projectFor).toHaveBeenCalledWith(secrets);
     expect(mocks.updateFiles).toHaveBeenCalledWith([
       {
         branchId: 'branch',

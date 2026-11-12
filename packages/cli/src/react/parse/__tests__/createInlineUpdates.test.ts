@@ -102,15 +102,9 @@ describe('<T> props', () => {
     );
 
   /**
-   * <T> props written as plain string literals ($context="...", $id="...")
-   * must be name-mapped into metadata so hashing and registration see them.
-   *
-   * Previously only the expression-container path ($context={"..."}) applied
-   * mapAttributeName; the string-literal path stored metadata.$context, which
-   * calculateHashes (reads metadata.context) never saw. Every
-   * <T $context="..."> was therefore registered under a context-LESS hash,
-   * while the runtime and the compiler both compute context-FUL hashes — so
-   * translation lookups for context-carrying <T> components always missed.
+   * <T> props written as plain string literals (context="...", id="...") must
+   * reach metadata so hashing and registration see them, giving the same
+   * context-ful hash the runtime and the compiler compute.
    */
   describe('string-literal props', () => {
     test('reach the metadata and the hash', async () => {
@@ -137,91 +131,23 @@ describe('<T> props', () => {
         );
       }
 
-      // The unprefixed form keeps working
-      expect(updatesWith('"Cover"').map((u) => u.metadata.context)).toEqual([
-        'an unprefixed context prop',
-      ]);
+      // $context="..." is not read as the context
+      const [prefixed] = updatesWith('"Cover"');
+      expect(prefixed.metadata.context).toBeUndefined();
+      expect(prefixed.metadata.hash).toEqual(
+        hashSource({ source: prefixed.source, dataFormat: prefixed.dataFormat })
+      );
 
-      // $id="..." maps to metadata.id
       const [withId] = updatesWith('"Spine"');
       expect(withId.metadata.id).toEqual('book-id');
-      expect(withId.metadata).not.toHaveProperty('$id');
     });
 
-    test('$maxChars="10" (string-typed) is rejected like maxChars={"10"}', async () => {
+    test('maxChars="10" (string-typed) is rejected like maxChars={"10"}', async () => {
       const result = await scanFixtures('max-chars-string.tsx');
 
       expect(
         result.errors.some((e) => e.toLowerCase().includes('maxchars'))
       ).toBe(true);
-    });
-  });
-
-  /**
-   * The CLI scan emits ONE consolidated warning (never an error) listing
-   * every occurrence of deprecated $-prefixed sugar props on <T> components
-   * as file:line:column, covering both the string-literal ($context="...")
-   * and expression-container ($context={"..."}) forms.
-   */
-  describe('deprecated $-prefixed prop warning', () => {
-    /**
-     * Expected file:line:column for each occurrence of an attribute in a
-     * fixture. Bare boolean attributes (`<T $requiresReview>`) carry no `=`,
-     * so they are matched on the closing bracket instead.
-     */
-    function expectedLocations(file: string, attr: string, bare = false) {
-      const fullPath = path.join(FIXTURES, file);
-      const lines = fs.readFileSync(fullPath, 'utf8').split('\n');
-      return lines.flatMap((line, index) => {
-        const column = line.indexOf(bare ? `${attr}>` : `${attr}=`);
-        return column === -1
-          ? []
-          : [`${fullPath}:${index + 1}:${column} (${attr})`];
-      });
-    }
-
-    test('one consolidated warning lists all occurrences across files and forms', async () => {
-      const result = await scanFixtures('page.tsx', 'expression-container.tsx');
-
-      expect(result.errors).toEqual([]);
-      // Fires exactly once, no matter how many occurrences
-      const deprecations = result.warnings.filter((w) =>
-        w.includes('deprecated')
-      );
-      expect(deprecations).toHaveLength(1);
-      const [warning] = deprecations;
-
-      // String-literal forms: two $context and one $id in page.tsx
-      // Expression-container forms: $context={...}, $maxChars={...}, and
-      // $requiresReview in both the bare and ={true} forms
-      const expected = [
-        ...expectedLocations('page.tsx', '$context'),
-        ...expectedLocations('page.tsx', '$id'),
-        ...expectedLocations('expression-container.tsx', '$context'),
-        ...expectedLocations('expression-container.tsx', '$maxChars'),
-        ...expectedLocations('expression-container.tsx', '$requiresReview'),
-        ...expectedLocations(
-          'expression-container.tsx',
-          '$requiresReview',
-          true
-        ),
-      ];
-      expect(expected).toHaveLength(7);
-      for (const location of expected) {
-        expect(warning).toContain(location);
-      }
-      // Advises the unprefixed forms and the removal horizon
-      expect(warning).toContain('unprefixed');
-      expect(warning).toContain('next major version');
-    });
-
-    test('no deprecation warning when only unprefixed props are used', async () => {
-      const result = await scanFixtures('unprefixed.tsx');
-
-      expect(result.errors).toEqual([]);
-      expect(result.warnings.filter((w) => w.includes('deprecated'))).toEqual(
-        []
-      );
     });
   });
 });

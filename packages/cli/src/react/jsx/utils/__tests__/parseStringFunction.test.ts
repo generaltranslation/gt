@@ -755,14 +755,14 @@ describe('parseStrings', () => {
     [
       't() with a template literal',
       't',
-      `import { t } from 'gt-react/browser';
+      `import { t } from 'gt-react';
        const name = "John";
        t(\`Hello, \${name}\`);`,
     ],
     [
       't() with a concatenation',
       't',
-      `import { t } from 'gt-react/browser';
+      `import { t } from 'gt-react';
        const name = "John";
        t("Hello, " + name);`,
     ],

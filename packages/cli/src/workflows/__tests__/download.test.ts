@@ -6,7 +6,6 @@ import { displayTranslateSummary } from '../../console/displayTranslateSummary.j
 import { clearWarnings, getWarnings } from '../../state/translateWarnings.js';
 import { TEMPLATE_FILE_NAME } from '../../utils/constants.js';
 import { clearLocaleDirs } from '../../fs/clearLocaleDirs.js';
-import { api } from '../../utils/api.js';
 import { downloadFileBatch } from '../../api/downloadFileBatch.js';
 import { runDownloadWorkflow } from '../download.js';
 
@@ -26,12 +25,13 @@ vi.mock('../../fs/clearLocaleDirs.js', () => ({
   clearLocaleDirs: vi.fn(),
 }));
 
+const api = vi.hoisted(() => ({
+  queryFiles: vi.fn(),
+  awaitJobs: vi.fn(),
+}));
 vi.mock('../../utils/api.js', () => ({
-  api: {
-    queryFileData: vi.fn(),
-    awaitJobs: vi.fn(),
-    resolveAliasLocale: vi.fn((locale: string) => locale),
-  },
+  requireProject: () => api,
+  resolveCanonicalLocale: (locale: string) => locale,
 }));
 
 vi.mock('../../api/downloadFileBatch.js', () => ({
@@ -76,8 +76,8 @@ describe('runDownloadWorkflow', () => {
   });
 
   it('does not clear locale dirs when no translations are completed', async () => {
-    vi.mocked(api.queryFileData).mockResolvedValue({
-      translatedFiles: [],
+    vi.mocked(api.queryFiles).mockResolvedValue({
+      results: [{ status: 'pending', fileId: 'file-1', locale: 'es' }],
     });
 
     await runDownloadWorkflow({
@@ -95,9 +95,10 @@ describe('runDownloadWorkflow', () => {
   });
 
   it('clears locale dirs only after translations are confirmed completed', async () => {
-    vi.mocked(api.queryFileData).mockResolvedValue({
-      translatedFiles: [
+    vi.mocked(api.queryFiles).mockResolvedValue({
+      results: [
         {
+          status: 'found',
           branchId: 'branch-1',
           fileId: 'file-1',
           versionId: 'version-1',
@@ -166,7 +167,7 @@ describe('runDownloadWorkflow', () => {
     'shows the billing error from %s job statuses in both error output and the summary',
     async (delivery) => {
       const jobs = [
-        { jobId: 'job-nb', status: 'failed', error: { message: billingError } },
+        { id: 'job-nb', status: 'failed', error: billingError },
       ] satisfies JobResult[];
       vi.mocked(api.awaitJobs).mockImplementation(async (_jobIds, options) => {
         if (delivery === 'poll') options?.onPoll?.(jobs);
@@ -218,12 +219,10 @@ describe('runDownloadWorkflow', () => {
     'reports the locale and file when the server reason is %j',
     async (message) => {
       vi.mocked(api.awaitJobs).mockImplementation(async (_jobIds, options) => {
-        options?.onPoll?.([
-          { jobId: 'job-nb', status: 'failed', error: { message } },
-        ]);
+        options?.onPoll?.([{ id: 'job-nb', status: 'failed', error: message }]);
         return {
           complete: true,
-          jobs: [{ jobId: 'job-nb', status: 'failed' }],
+          jobs: [{ id: 'job-nb', status: 'failed' }],
         };
       });
 
@@ -255,16 +254,17 @@ describe('runDownloadWorkflow', () => {
 
   it('keeps the failure reason while downloading only successful locales', async () => {
     const jobs = [
-      { jobId: 'job-nb', status: 'failed', error: { message: billingError } },
-      { jobId: 'job-fr', status: 'completed' },
+      { id: 'job-nb', status: 'failed', error: billingError },
+      { id: 'job-fr', status: 'completed' },
     ] satisfies JobResult[];
     vi.mocked(api.awaitJobs).mockImplementation(async (_jobIds, options) => {
       options?.onPoll?.(jobs);
       return { complete: true, jobs };
     });
-    vi.mocked(api.queryFileData).mockResolvedValue({
-      translatedFiles: [
+    vi.mocked(api.queryFiles).mockResolvedValue({
+      results: [
         {
+          status: 'found',
           branchId: 'branch-1',
           fileId: 'file-1',
           versionId: 'version-1',
@@ -295,16 +295,14 @@ describe('runDownloadWorkflow', () => {
         reason: expect.stringContaining(billingError),
       },
     ]);
-    expect(api.queryFileData).toHaveBeenCalledExactlyOnceWith({
-      translatedFiles: [
-        {
-          branchId: 'branch-1',
-          fileId: 'file-1',
-          versionId: 'version-1',
-          locale: 'fr',
-        },
-      ],
-    });
+    expect(api.queryFiles).toHaveBeenCalledExactlyOnceWith([
+      expect.objectContaining({
+        branchId: 'branch-1',
+        fileId: 'file-1',
+        versionId: 'version-1',
+        locale: 'fr',
+      }),
+    ]);
     expect(downloadFileBatch).toHaveBeenCalledTimes(1);
     expect([...vi.mocked(clearLocaleDirs).mock.calls[0][0]]).toEqual([
       'messages/fr.json',

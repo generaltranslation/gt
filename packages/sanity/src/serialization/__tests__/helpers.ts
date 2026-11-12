@@ -6,7 +6,7 @@ import {
   customBlockDeserializers,
 } from '../BaseSerializationConfig';
 import { PortableTextBlock, SanityDocument, TypedObject } from 'sanity';
-import { SerializedDocument, TranslationLevel } from '../types';
+import { SerializedDocument } from '../types';
 import schema from './__fixtures__/schema';
 import clone from 'just-clone';
 
@@ -15,9 +15,7 @@ export { default as schema } from './__fixtures__/schema';
 export { default as documentLevelArticle } from './__fixtures__/documentLevelArticle.json';
 export { default as docWithInlineMarks } from './__fixtures__/documentInlineMarks.json';
 export { default as inlineDocumentLevelArticle } from './__fixtures__/inlineDocumentLevelArticle.json';
-export { default as fieldLevelArticle } from './__fixtures__/fieldLevelArticle.json';
 export { default as annotationAndInlineBlocks } from './__fixtures__/annotationAndInlineBlocks.json';
-export { default as nestedLanguageFields } from './__fixtures__/nestedLanguageFields.json';
 
 type ArticleBlock = {
   _key: string;
@@ -31,10 +29,7 @@ type ArticleObject = {
   objectAsField: { title: string; content: ArticleBlock[] };
 };
 
-/**
- * The translatable fields the document-level and field-level article fixtures
- * share. The field-level fixture holds each of them under a language key.
- */
+/** The translatable fields of the document-level article fixture. */
 export type ArticleFields = {
   title: string;
   snippet: string;
@@ -53,18 +48,16 @@ export const findByClass = (
 };
 
 export const getSerialized = <TDocument extends SanityDocument>(
-  document: TDocument,
-  level: TranslationLevel
+  document: TDocument
 ): SerializedDocument => {
   const serializer = BaseDocumentSerializer(schema);
-  return serializer.serializeDocument(document, level);
+  return serializer.serializeDocument(document);
 };
 
 export const getDeserialized = <TDocument extends SanityDocument>(
-  document: TDocument,
-  level: TranslationLevel
+  document: TDocument
 ): TDocument => {
-  const serialized = getSerialized(document, level);
+  const serialized = getSerialized(document);
   const deserializer = BaseDocumentDeserializer;
   return deserializer.deserializeDocument(serialized.content) as TDocument;
 };

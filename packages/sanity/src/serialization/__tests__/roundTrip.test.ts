@@ -890,8 +890,6 @@ describe('top-level object fields', () => {
     };
     const { content } = BaseDocumentSerializer(ctaSchema).serializeDocument(
       document,
-      'document',
-      'en',
       defaultStopTypes,
       serializers
     );

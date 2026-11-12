@@ -383,19 +383,13 @@ describe('injection pass', () => {
       expect(inject(page('<div>Hello</div>')).imports).toEqual(['gt-react']);
     });
 
-    it('imports from gt-react/browser for the legacy import source', () => {
-      expect(inject(page('<div>Hello</div>'), true).imports).toEqual([
-        'gt-react/browser',
-      ]);
-    });
-
     it('does not import the internal components twice', () => {
       const { imports } = inject(`
-        import { GtInternalTranslateJsx, GtInternalVar } from "gt-react/browser";
+        import { GtInternalTranslateJsx, GtInternalVar } from "gt-react";
         export default function Page() { return <div>Hello</div>; }
       `);
 
-      expect(imports).toEqual(['gt-react/browser']);
+      expect(imports).toEqual(['gt-react']);
     });
   });
 });

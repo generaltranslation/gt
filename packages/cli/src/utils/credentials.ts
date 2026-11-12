@@ -8,7 +8,7 @@ import { Settings, SupportedFrameworks } from '../types/index.js';
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
-} from 'generaltranslation/internal';
+} from 'generaltranslation/diagnostics';
 
 const execFileAsync = promisify(execFile);
 

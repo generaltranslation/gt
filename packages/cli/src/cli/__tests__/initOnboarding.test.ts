@@ -2,17 +2,18 @@ import { Command } from 'commander';
 import fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { ApiError } from 'generaltranslation/errors';
+import { ApiError, ErrorCode } from 'generaltranslation/api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../utils/api.js', () => ({
-  configureApiClient: vi.fn(),
-  api: {
-    createProject: vi.fn(),
-    createProjectApiKey: vi.fn(),
-    listOrgs: vi.fn(),
-    listProjects: vi.fn(),
-  },
+const api = vi.hoisted(() => ({
+  createProject: vi.fn(),
+  createProjectApiKey: vi.fn(),
+  listOrgs: vi.fn(),
+  listProjects: vi.fn(),
+}));
+vi.mock('generaltranslation', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('generaltranslation')>()),
+  GeneralTranslation: (await import('./forwardingGT.js')).forwardingGT(api),
 }));
 vi.mock('../../auth/oauth.js', () => ({
   createUserTokenProvider: vi.fn(() => ({})),
@@ -73,7 +74,6 @@ import { detectFramework } from '../../setup/detectFramework.js';
 import { resolveDevelopmentProject } from '../../setup/developmentCredentials.js';
 import { OnboardingSession } from '../../setup/onboarding.js';
 import type { Settings } from '../../types/index.js';
-import { api } from '../../utils/api.js';
 import { installPackage } from '../../utils/installPackage.js';
 import { BaseCLI } from '../base.js';
 
@@ -149,13 +149,12 @@ describe('init and configure onboarding', () => {
     vi.mocked(hasLogin).mockResolvedValue(true);
     vi.mocked(api.listProjects).mockResolvedValue(projects);
     vi.mocked(api.createProjectApiKey).mockResolvedValue({
-      apiKey: {
-        id: 'key-id',
-        name: 'Development key (gt init)',
-        key: SECRET_KEY,
-        projectId: 'p2',
-        type: 'production',
-      },
+      id: 'key-id',
+      name: 'Development key (gt init)',
+      key: SECRET_KEY,
+      permissions: ['project:translations:generate'],
+      createdAt: '2026-01-01T00:00:00.000Z',
+      lastUsedAt: null,
     });
     stdoutEvents = [];
     const writeSync = fs.writeSync;
@@ -1296,7 +1295,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
     it('creates a new project with the resolved default locale', async () => {
       vi.mocked(api.listOrgs).mockResolvedValue([{ id: 'o1', name: 'Acme' }]);
       vi.mocked(api.createProject).mockResolvedValue({
-        project: { id: 'p-new', name: 'App', orgId: 'o1', defaultLocale: 'es' },
+        id: 'p-new',
+        name: 'App',
+        orgId: 'o1',
+        defaultLocale: 'es',
+        currentLocales: [],
+        autoApprove: false,
+        cdnEnabled: false,
       });
 
       await run(
@@ -1328,7 +1333,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
             ? 'Missing required permission: org:projects:create'
             : 'Service unavailable';
         vi.mocked(api.createProject).mockRejectedValueOnce(
-          new ApiError(details, status, details)
+          new ApiError(
+            details,
+            status,
+            status === 403 ? ErrorCode.PERMISSION_MISSING : undefined
+          )
         );
 
         await expect(

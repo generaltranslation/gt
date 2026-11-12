@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mergeJson, applyTransformations } from '../mergeJson';
 import { logger } from '../../../console/logger.js';
 import { exitSync } from '../../../console/logging.js';
-import { configureApiClient } from '../../../utils/api.js';
+import { configureCustomMapping } from '../../../utils/api.js';
 import type { AdditionalOptions } from '../../../types/index.js';
 
 vi.mock('../../../console/logger.js');
@@ -358,10 +358,7 @@ describe('mergeJson', () => {
       });
 
       it('uses the canonical locale as the key when experimentalCanonicalLocaleKeys is set', () => {
-        configureApiClient({
-          baseUrl: 'https://api.example.com',
-          customMapping: { 'fr-ca': { code: 'fr-CA' } },
-        });
+        configureCustomMapping({ 'fr-ca': { code: 'fr-CA' } });
 
         const [merged] = merge(
           original,
@@ -382,7 +379,7 @@ describe('mergeJson', () => {
             options: { experimentalCanonicalLocaleKeys: true },
           }
         );
-        configureApiClient({ baseUrl: 'https://api.example.com' });
+        configureCustomMapping(undefined);
 
         expect(merged.navigation.languages).toEqual([
           ...original.navigation.languages,

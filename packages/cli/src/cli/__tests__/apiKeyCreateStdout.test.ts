@@ -45,13 +45,12 @@ function fakeApi(handler: (request: Request) => Response) {
 
 const createdKey = () =>
   json(201, {
-    apiKey: {
-      id: 'key-id',
-      name: 'CI',
-      key: SECRET,
-      projectId: PROJECT_ID,
-      type: 'production',
-    },
+    id: 'key-id',
+    name: 'CI',
+    key: SECRET,
+    permissions: ['project:files:read'],
+    createdAt: '2026-01-01T00:00:00.000Z',
+    lastUsedAt: null,
   });
 
 function writeJson(file: string, value: unknown) {

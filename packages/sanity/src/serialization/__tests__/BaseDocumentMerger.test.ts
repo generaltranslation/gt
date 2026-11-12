@@ -5,9 +5,7 @@ import { beforeEach, describe, expect, test } from 'vitest';
 import { BaseDocumentMerger } from '../BaseDocumentMerger';
 import {
   documentLevelArticle,
-  fieldLevelArticle,
   getDeserialized,
-  nestedLanguageFields,
   type ArticleFields,
 } from './helpers';
 
@@ -40,14 +38,6 @@ const translateFields = (
   };
 };
 
-const englishFields = (article: typeof fieldLevelArticle) =>
-  ({
-    title: article.title.en,
-    snippet: article.snippet.en,
-    config: article.config.en,
-    content: article.content.en,
-  }) as unknown as ArticleFields;
-
 type Translation = {
   /** The translated fields; changes made before `merge` are merged too. */
   translated: ArticleFields;
@@ -55,7 +45,7 @@ type Translation = {
 };
 
 const translateDocumentLevel = (): Translation => {
-  const newDocument = getDeserialized(documentLevelArticle, 'document');
+  const newDocument = getDeserialized(documentLevelArticle);
   const translated = translateFields(
     newDocument as unknown as ArticleFields,
     documentLevelArticle as unknown as ArticleFields
@@ -73,53 +63,11 @@ const translateDocumentLevel = (): Translation => {
   };
 };
 
-const translateFieldLevel = (): Translation => {
-  const newDocument = getDeserialized(fieldLevelArticle, 'field');
-  const translated = translateFields(
-    englishFields(newDocument),
-    englishFields(fieldLevelArticle)
-  );
-  Object.assign(newDocument.title, { en: translated.title });
-  Object.assign(newDocument.snippet, { en: translated.snippet });
-  Object.assign(newDocument.config, { en: translated.config });
-  Object.assign(newDocument.content, { en: translated.content });
-  return {
-    translated,
-    merge: () => {
-      const result = BaseDocumentMerger.fieldLevelMerge(
-        newDocument,
-        fieldLevelArticle,
-        'es_ES',
-        'en'
-      );
-      return {
-        result,
-        merged: {
-          title: result['title.es_ES'],
-          snippet: result['snippet.es_ES'],
-          config: result['config.es_ES'],
-          content: result['content.es_ES'],
-        } as ArticleFields,
-      };
-    },
-  };
-};
-
-/*
- * The same article at both translation levels. A document-level merge returns
- * the whole document; a field-level merge returns patches for the target
- * language, keyed by path.
- */
 const levels = [
   {
     level: 'document',
     original: documentLevelArticle as unknown as ArticleFields,
     translate: translateDocumentLevel,
-  },
-  {
-    level: 'field',
-    original: englishFields(fieldLevelArticle),
-    translate: translateFieldLevel,
   },
 ];
 
@@ -222,44 +170,6 @@ for (const { level, original, translate } of levels) {
           expect(mergedBlock._key).toEqual(originalBlock._key);
         }
       });
-    } else {
-      test('Top-level fields are patched to the new language only', () => {
-        expect(result['title.en']).toBeUndefined();
-        expect(result['snippet.en']).toBeUndefined();
-      });
     }
   });
 }
-
-test('nested locale fields will be merged', () => {
-  const newNestedFields = clone(nestedLanguageFields);
-  newNestedFields.pageFields.name.en = 'This is a new page field name';
-  newNestedFields.slices[0]!.en![0]!.children![0]!.text =
-    'This is new slice text';
-  const baseDocumentWithNestedFields = {
-    ...fieldLevelArticle,
-    ...nestedLanguageFields,
-  };
-  const newDocumentWithNestedFields = getDeserialized(
-    { ...fieldLevelArticle, ...newNestedFields },
-    'field'
-  );
-  const nestedFieldLevelPatches = BaseDocumentMerger.fieldLevelMerge(
-    newDocumentWithNestedFields,
-    baseDocumentWithNestedFields,
-    'es_ES',
-    'en'
-  ) as {
-    'slices[0].es_ES': NonNullable<
-      (typeof nestedLanguageFields.slices)[number]['en']
-    >;
-    'pageFields.name.es_ES': string;
-  };
-
-  expect(
-    nestedFieldLevelPatches['slices[0].es_ES'][0]!.children![0]!.text
-  ).toEqual(newDocumentWithNestedFields.slices[0]!.en![0]!.children![0]!.text);
-  expect(nestedFieldLevelPatches['pageFields.name.es_ES']).toEqual(
-    newDocumentWithNestedFields.pageFields.name.en
-  );
-});

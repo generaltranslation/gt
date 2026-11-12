@@ -1,8 +1,10 @@
-import { GeneralTranslation } from 'generaltranslation';
-import { configureApiClient } from './api';
-
-export { api } from './api';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import {
+  GeneralTranslation,
+  GTIntl,
+  type LocaleConfig,
+  type ProjectHandle,
+} from 'generaltranslation';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import type { Secrets } from '../types';
 import type {
   TranslateDocumentFilter,
@@ -16,7 +18,13 @@ import { SECRETS_NAMESPACE } from '../utils/shared';
 import type { PortableTextHtmlComponents } from '@portabletext/to-html';
 import type { CustomDeserializers } from '../serialization/types';
 import type { PreviewUrlConfig } from '../translation/previewUrls';
-export const gt = new GeneralTranslation();
+/** The plugin's source locale and custom mapping; no credentials. */
+export let gt = new GTIntl();
+
+/** Replaces `gt` with one built from the plugin options. */
+export function configureGt(localeConfig: LocaleConfig) {
+  gt = new GTIntl(localeConfig);
+}
 
 /**
  * Built-in defaults for the automatic actions.
@@ -41,14 +49,33 @@ export const DEFAULT_TRANSLATION_PREFERENCES: TranslationPreferences = {
   preserveExistingTranslations: false,
 };
 
-export function overrideConfig(secrets: Secrets | null) {
-  const config = {
-    ...(secrets?.project && { projectId: secrets.project }),
-    ...(secrets?.secret && { apiKey: secrets.secret }),
-  };
-  gt.setConfig(config);
-  configureApiClient({ ...config, customMapping: gt.customMapping });
+/** The project in the Studio secrets, authenticated with their API key. */
+export function projectFor(secrets: Secrets | null): ProjectHandle {
+  if (!secrets?.secret) throw new Error(missingSecretDiagnostic);
+  if (!secrets.project) throw new Error(missingProjectDiagnostic);
+  return new GeneralTranslation({
+    apiKey: secrets.secret,
+    projectId: secrets.project,
+    localeConfig: {
+      defaultLocale: gt.defaultLocale,
+      customMapping: gt.customMapping,
+    },
+  });
 }
+
+const missingSecretDiagnostic = createDiagnosticMessage({
+  source: 'gt-sanity',
+  severity: 'Error',
+  whatHappened: 'Translation needs a General Translation API key',
+  fix: 'Add the API key to the plugin secrets in the Studio',
+});
+
+const missingProjectDiagnostic = createDiagnosticMessage({
+  source: 'gt-sanity',
+  severity: 'Error',
+  whatHappened: 'Translation needs a General Translation project ID',
+  fix: 'Add the project ID to the plugin secrets in the Studio',
+});
 
 export class GTConfig {
   secretsNamespace: string;
@@ -119,7 +146,7 @@ export class GTConfig {
       this.instance = new GTConfig(
         SECRETS_NAMESPACE,
         'language',
-        gt.sourceLocale || libraryDefaultLocale,
+        gt.defaultLocale,
         [],
         [],
         () => '',
