@@ -4,7 +4,11 @@ import {
   type EncodedSourceMap,
   type SourceMapSegment,
 } from '@jridgewell/trace-mapping';
-import { computeLineStarts, type ESTree } from '../analysis/ast.js';
+import {
+  computeLineStarts,
+  forEachNode,
+  type ESTree,
+} from '../analysis/ast.js';
 
 /**
  * Generated `[generated, generated + length)` stands for source
@@ -81,7 +85,7 @@ export function remapProgram(
   const sourceStartAt = sourceOffsets(outermostFirst, generatedLength);
   const sourceEndAt = offsetTable(outermostFirst, generatedLength, sourceEndOf);
 
-  forEachPositionedNode(program, (node) => {
+  forEachNode(program, (node) => {
     const start = sourceStartAt[node.start] ?? UNMAPPED;
     const end = lastMappedSourceEnd(node, sourceEndAt) ?? start;
     const isMapped = start !== UNMAPPED;
@@ -216,27 +220,6 @@ function lastMappedSourceEnd(
   }
 
   return undefined;
-}
-
-function forEachPositionedNode(
-  root: unknown,
-  visit: (node: PositionedNode) => void
-): void {
-  if (typeof root !== 'object' || root === null) return;
-
-  if (isPositionedNode(root)) visit(root);
-
-  for (const child of Object.values(root)) forEachPositionedNode(child, visit);
-}
-
-function isPositionedNode(value: object): value is PositionedNode {
-  const node = value as { type?: unknown; start?: unknown; end?: unknown };
-
-  return (
-    typeof node.type === 'string' &&
-    node.start !== undefined &&
-    node.end !== undefined
-  );
 }
 
 function sourceStartOf(mapping: Mapping, offset: number): number {
