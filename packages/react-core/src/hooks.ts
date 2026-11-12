@@ -16,7 +16,6 @@ export {
 } from './hooks/i18n-config';
 export { useGT } from './hooks/useGT';
 export { useMessages } from './hooks/useMessages';
-export { useTranslations } from './hooks/useTranslations';
 export {
   useFormatLocales,
   useLocaleProperties,

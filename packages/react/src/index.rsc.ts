@@ -4,12 +4,7 @@ export { parseLocale } from './functions/parseLocale';
 
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import type { CustomMapping } from '@generaltranslation/format';
-import {
-  getGT,
-  getI18nConfig,
-  getMessages,
-  getTranslations,
-} from 'gt-i18n/internal';
+import { getGT, getI18nConfig, getMessages } from 'gt-i18n/internal';
 import { getLocale, getRegion } from 'gt-i18n';
 import { use } from 'react';
 
@@ -53,9 +48,6 @@ export {
 
 export function useGT() {
   return use(getGT());
-}
-export function useTranslations(rootId?: string) {
-  return use(getTranslations(rootId));
 }
 export function useMessages() {
   return use(getMessages());

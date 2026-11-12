@@ -1,4 +1,4 @@
-import { getTranslations } from 'gt-next/server';
+import { getTranslations } from 'gt-next/compat/server';
 
 export default async function Page() {
   const d = await getTranslations();

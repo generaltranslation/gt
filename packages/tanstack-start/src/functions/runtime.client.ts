@@ -21,10 +21,3 @@ export const getGT = runtime.getGT;
  * `useMessages()`.
  */
 export const getMessages = runtime.getMessages;
-
-/**
- * Return a dictionary translation function for the current locale. Use it in
- * loaders, `head` data and server functions; in components, use
- * `useTranslations()`.
- */
-export const getTranslations = runtime.getTranslations;

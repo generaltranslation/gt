@@ -22,7 +22,6 @@ import type { CustomMapping } from '@generaltranslation/format';
 import { I18nCache } from '../I18nCache';
 import type { TranslationsCacheMissEvent } from '../I18nCache';
 import type { I18nCacheConstructorParams } from '../types';
-import type { Dictionary } from '../translations-manager/utils/types/dictionary';
 import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
 import { hashContent } from '../../utils/hashContent';
 import type { LookupOptions } from '../../translation-functions/types/options';
@@ -157,18 +156,6 @@ describe('I18nCache', () => {
   });
 
   describe('constructor validation', () => {
-    it('throws and logs an error when loadDictionary is provided without a source dictionary', () => {
-      expect(() => new I18nCache({ loadDictionary: async () => ({}) })).toThrow(
-        'Validation errors occurred'
-      );
-
-      const errors = callsContaining(errorSpy, 'I18nCache:');
-      expect(errors.length).toBe(1);
-      expect(String(errors[0][0])).toContain(
-        'loadDictionary needs a source dictionary'
-      );
-    });
-
     it('warns but does not throw when a custom runtimeUrl has no projectId or api keys', () => {
       expect(
         () =>
@@ -193,10 +180,6 @@ describe('I18nCache', () => {
         projectId: 'test-project',
         apiKey: 'test-api-key',
         loadTranslations: async () => ({}),
-      });
-      new I18nCache({
-        dictionary: { greeting: 'Hello' },
-        loadDictionary: async () => ({}),
       });
 
       expect(callsContaining(warnSpy, 'I18nCache:').length).toBe(0);
@@ -540,30 +523,14 @@ describe('I18nCache', () => {
     });
 
     it('keeps the loaded snapshot when cacheExpiryTime is 0', async () => {
-      const cache = createCache({
-        cacheExpiryTime: 0,
-        dictionary: { greeting: 'Hello', user: { profile: { name: 'Name' } } },
-        loadDictionary: vi.fn().mockResolvedValue({
-          greeting: 'Bonjour',
-          user: { profile: { name: 'Nom' } },
-        }),
-      });
+      const cache = createCache({ cacheExpiryTime: 0 });
 
       const lookupTranslation = await cache.getLookupTranslation('fr');
-      const { lookupDictionary, lookupDictionaryObj } =
-        await cache.getLookupDictionary('fr');
 
       expect(
         cache.lookupTranslation('fr', message, lookupOptions)
       ).toBeUndefined();
-      expect(cache.lookupDictionary('fr', 'greeting')).toBeUndefined();
-      expect(cache.lookupDictionaryObj('fr', 'user.profile')).toBeUndefined();
       expect(lookupTranslation(message, lookupOptions)).toBe(translatedString);
-      expect(lookupDictionary('greeting')).toEqual({
-        entry: 'Bonjour',
-        options: {},
-      });
-      expect(lookupDictionaryObj('user.profile')).toEqual({ name: 'Nom' });
     });
 
     describe('prefetchEntries', () => {
@@ -850,87 +817,23 @@ describe('I18nCache', () => {
       );
     });
 
-    it('expires loaded dictionaries after the default TTL and reloads on demand', async () => {
-      const loadDictionary = vi
-        .fn()
-        .mockResolvedValueOnce({ greeting: 'Bonjour' })
-        .mockResolvedValueOnce({ greeting: 'Salut' });
-      const cache = createCache({
-        dictionary: { greeting: 'Hello' },
-        loadDictionary,
-      });
-
-      // Two loads within the TTL share one loader call
-      await cache.loadDictionary('fr');
-      await cache.loadDictionary('fr');
-      expect(loadDictionary).toHaveBeenCalledTimes(1);
-      expect(cache.lookupDictionary('fr', 'greeting')).toEqual({
-        entry: 'Bonjour',
-        options: {},
-      });
-
-      // Past the default TTL: sync lookups miss
-      vi.advanceTimersByTime(DEFAULT_TTL + 1);
-      expect(cache.lookupDictionary('fr', 'greeting')).toBeUndefined();
-
-      const reloaded = await cache.loadDictionary('fr');
-      expect(loadDictionary).toHaveBeenCalledTimes(2);
-      expect(reloaded).toEqual({ greeting: 'Salut' });
-      expect(cache.lookupDictionary('fr', 'greeting')).toEqual({
-        entry: 'Salut',
-        options: {},
-      });
-    });
-
-    it('cacheExpiryTime: null never expires translations or dictionaries', async () => {
+    it('cacheExpiryTime: null never expires translations', async () => {
       const loadTranslations = vi
         .fn()
         .mockResolvedValue({ [expectedHash]: translatedString });
-      const loadDictionary = vi.fn().mockResolvedValue({ greeting: 'Bonjour' });
-      const cache = createCache({
-        cacheExpiryTime: null,
-        loadTranslations,
-        dictionary: { greeting: 'Hello' },
-        loadDictionary,
-      });
+      const cache = createCache({ cacheExpiryTime: null, loadTranslations });
 
       await cache.loadTranslations('fr');
-      await cache.loadDictionary('fr');
 
       vi.advanceTimersByTime(999_999_999);
 
       expect(cache.lookupTranslation('fr', message, lookupOptions)).toBe(
         translatedString
       );
-      expect(cache.lookupDictionary('fr', 'greeting')).toEqual({
-        entry: 'Bonjour',
-        options: {},
-      });
 
-      // Re-loading does not hit the loaders again
+      // Re-loading does not hit the loader again
       await cache.loadTranslations('fr');
-      await cache.loadDictionary('fr');
       expect(loadTranslations).toHaveBeenCalledTimes(1);
-      expect(loadDictionary).toHaveBeenCalledTimes(1);
-    });
-
-    it('never expires or loads the default-locale source dictionary', async () => {
-      const loadDictionary = vi.fn().mockResolvedValue({ greeting: 'Bonjour' });
-      const cache = createCache({
-        dictionary: { greeting: 'Hello' },
-        loadDictionary,
-      });
-
-      vi.advanceTimersByTime(999_999_999);
-
-      expect(cache.lookupDictionary('en', 'greeting')).toEqual({
-        entry: 'Hello',
-        options: {},
-      });
-      await expect(cache.loadDictionary('en')).resolves.toEqual({
-        greeting: 'Hello',
-      });
-      expect(loadDictionary).not.toHaveBeenCalled();
     });
 
     it('starts the TTL when the load resolves, not when it starts', async () => {
@@ -964,410 +867,16 @@ describe('I18nCache', () => {
       const loadTranslations = vi
         .fn()
         .mockResolvedValue({ [expectedHash]: translatedString });
-      const loadDictionary = vi.fn().mockResolvedValue({ greeting: 'Bonjour' });
-      const cache = createCache({
-        loadTranslations,
-        dictionary: { greeting: 'Hello' },
-        loadDictionary,
-      });
+      const cache = createCache({ loadTranslations });
       expect(loadTranslations).not.toHaveBeenCalled();
-      expect(loadDictionary).not.toHaveBeenCalled();
 
       const [translationsA, translationsB] = await Promise.all([
         cache.loadTranslations('fr'),
         cache.loadTranslations('fr'),
       ]);
-      const [dictionaryA, dictionaryB] = await Promise.all([
-        cache.loadDictionary('fr'),
-        cache.loadDictionary('fr'),
-      ]);
 
       expect(loadTranslations).toHaveBeenCalledExactlyOnceWith('fr');
-      expect(loadDictionary).toHaveBeenCalledExactlyOnceWith('fr');
       expect(translationsA).toEqual(translationsB);
-      expect(dictionaryA).toEqual({ greeting: 'Bonjour' });
-      expect(dictionaryB).toEqual({ greeting: 'Bonjour' });
-    });
-  });
-
-  describe('dictionaries', () => {
-    const source: Dictionary = {
-      greeting: 'Hello',
-      header: ['Welcome', { $context: 'homepage', $maxChars: 10 }],
-      user: { profile: { name: 'Name', title: 'Title' } },
-    };
-    const target: Dictionary = {
-      greeting: 'Bonjour',
-      header: ['Bienvenue', { $context: 'homepage' }],
-      user: { profile: { name: 'Nom' } },
-    };
-
-    function createDictionaryCache(
-      loaded: Dictionary = target,
-      overrides: I18nCacheConstructorParams & LocaleConfig = {}
-    ) {
-      const loadDictionary = vi.fn().mockResolvedValue(loaded);
-      const cache = createCache({
-        dictionary: source,
-        loadDictionary,
-        ...overrides,
-      });
-      return { cache, loadDictionary };
-    }
-
-    it('loadDictionary() loads once and returns deep copies', async () => {
-      const { cache, loadDictionary } = createDictionaryCache();
-
-      const dictionary = (await cache.loadDictionary('fr')) as {
-        greeting: string;
-        user: { profile: { name: string } };
-      };
-      const cachedDictionary = await cache.loadDictionary('fr');
-
-      expect(loadDictionary).toHaveBeenCalledExactlyOnceWith('fr');
-      expect(dictionary).toEqual(target);
-      expect(cachedDictionary).toEqual(dictionary);
-      expect(cachedDictionary).not.toBe(dictionary);
-
-      dictionary.greeting = 'Salut';
-      dictionary.user.profile.name = 'Changed';
-      await expect(cache.loadDictionary('fr')).resolves.toEqual(target);
-    });
-
-    it('updateDictionaries() merges into source and target dictionaries', () => {
-      const cache = createCache({
-        dictionary: {
-          greeting: 'Hello',
-          cta: 'Click me',
-          navigation: { about: 'About' },
-        },
-      });
-
-      cache.updateDictionaries({
-        en: { greeting: 'Hi', navigation: { home: 'Home' } },
-        fr: { greeting: 'Bonjour', navigation: { home: 'Accueil' } },
-      });
-
-      expect(cache.lookupDictionary('en', 'greeting')).toEqual({
-        entry: 'Hi',
-        options: {},
-      });
-      expect(cache.lookupDictionaryObj('en', 'navigation')).toEqual({
-        about: 'About',
-        home: 'Home',
-      });
-      expect(cache.lookupDictionary('en', 'cta')).toEqual({
-        entry: 'Click me',
-        options: {},
-      });
-      expect(cache.lookupDictionary('fr', 'greeting')).toEqual({
-        entry: 'Bonjour',
-        options: {},
-      });
-      expect(cache.lookupDictionaryObj('fr', 'navigation')).toEqual({
-        home: 'Accueil',
-      });
-    });
-
-    describe('for a dialect locale', () => {
-      const british: Dictionary = {
-        greeting: 'Hello mate',
-        header: ['Welcome mate', { $context: 'homepage' }],
-        user: { profile: { name: 'Mate', title: 'Boss' } },
-      };
-
-      it.each([
-        [
-          'loadDictionary()',
-          (cache: I18nCache) => cache.loadDictionary('en-GB'),
-          british,
-        ],
-        [
-          'lookupDictionaryWithFallback()',
-          (cache: I18nCache) =>
-            cache.lookupDictionaryWithFallback('en-GB', 'greeting'),
-          { entry: 'Hello mate', options: {} },
-        ],
-        [
-          'lookupDictionaryObjWithFallback()',
-          (cache: I18nCache) =>
-            cache.lookupDictionaryObjWithFallback('en-GB', 'user.profile'),
-          { name: 'Mate', title: 'Boss' },
-        ],
-      ])('%s uses the cache locale', async (_method, read, expected) => {
-        const { cache, loadDictionary } = createDictionaryCache(british, {
-          defaultLocale: 'en-US',
-          locales: ['en-US', 'en'],
-        });
-
-        await expect(read(cache)).resolves.toEqual(expected);
-
-        expect(loadDictionary).toHaveBeenCalledExactlyOnceWith('en-GB');
-        expect(cache.lookupDictionary('en-GB', 'greeting')).toEqual({
-          entry: 'Hello mate',
-          options: {},
-        });
-      });
-    });
-
-    it('lookupDictionary() returns loaded target leaves, never subtrees', async () => {
-      const { cache } = createDictionaryCache();
-
-      await cache.loadDictionary('fr');
-
-      expect(cache.lookupDictionary('fr', 'greeting')).toEqual({
-        entry: 'Bonjour',
-        options: {},
-      });
-      expect(cache.lookupDictionary('fr', 'user.profile.name')).toEqual({
-        entry: 'Nom',
-        options: {},
-      });
-      // A metadata tuple leaf yields its entry and its own options
-      expect(cache.lookupDictionary('fr', 'header')).toEqual({
-        entry: 'Bienvenue',
-        options: { $context: 'homepage' },
-      });
-      expect(cache.lookupDictionary('fr', 'user.profile')).toBeUndefined();
-      // Missing in the target, present in the source
-      expect(
-        cache.lookupDictionary('fr', 'user.profile.title')
-      ).toBeUndefined();
-      expect(cache.lookupDictionary('en', 'user.profile.title')).toEqual({
-        entry: 'Title',
-        options: {},
-      });
-    });
-
-    it('lookupDictionary() and lookupDictionaryObj() miss unloaded locales and unknown ids', async () => {
-      const { cache } = createDictionaryCache();
-
-      expect(cache.lookupDictionary('fr', 'greeting')).toBeUndefined();
-      expect(cache.lookupDictionaryObj('fr', 'user.profile')).toBeUndefined();
-      expect(cache.lookupDictionary('en', 'greeting')).toEqual({
-        entry: 'Hello',
-        options: {},
-      });
-
-      await cache.loadDictionary('fr');
-
-      for (const locale of ['en', 'fr']) {
-        expect(cache.lookupDictionary(locale, 'missing')).toBeUndefined();
-        expect(cache.lookupDictionaryObj(locale, 'missing')).toBeUndefined();
-      }
-    });
-
-    it('lookupDictionaryObj() returns leaves and copies of subtrees', async () => {
-      const { cache } = createDictionaryCache();
-
-      await cache.loadDictionary('fr');
-
-      expect(cache.lookupDictionaryObj('en', 'greeting')).toBe('Hello');
-      expect(cache.lookupDictionaryObj('fr', 'greeting')).toBe('Bonjour');
-      expect(cache.lookupDictionaryObj('fr', 'user.profile')).toEqual({
-        name: 'Nom',
-      });
-
-      const profile = cache.lookupDictionaryObj('en', 'user.profile');
-      expect(profile).toEqual({ name: 'Name', title: 'Title' });
-      (profile as { name: string }).name = 'Changed';
-      expect(cache.lookupDictionaryObj('en', 'user.profile')).toEqual({
-        name: 'Name',
-        title: 'Title',
-      });
-    });
-
-    it('lookupDictionaryObj() does not clone leaf values', async () => {
-      const { cache } = createDictionaryCache();
-      await cache.loadDictionary('fr');
-      const structuredCloneSpy = vi.spyOn(globalThis, 'structuredClone');
-
-      expect(cache.lookupDictionaryObj('fr', 'greeting')).toBe('Bonjour');
-      expect(structuredCloneSpy).not.toHaveBeenCalled();
-    });
-
-    it('getLookupDictionary() resolves the source dictionary for the default locale', async () => {
-      const { cache, loadDictionary } = createDictionaryCache();
-
-      const { lookupDictionary, lookupDictionaryObj } =
-        await cache.getLookupDictionary('en');
-
-      expect(lookupDictionary('greeting')).toEqual({
-        entry: 'Hello',
-        options: {},
-      });
-      expect(lookupDictionaryObj('user.profile')).toEqual({
-        name: 'Name',
-        title: 'Title',
-      });
-      expect(lookupDictionary('missing')).toBeUndefined();
-      expect(lookupDictionaryObj('missing')).toBeUndefined();
-      expect(loadDictionary).not.toHaveBeenCalled();
-    });
-
-    it('getLookupDictionary() resolves the loaded target dictionary for a translated locale', async () => {
-      const { cache } = createDictionaryCache();
-
-      const { lookupDictionary, lookupDictionaryObj } =
-        await cache.getLookupDictionary('fr');
-
-      expect(lookupDictionary('greeting')).toEqual({
-        entry: 'Bonjour',
-        options: {},
-      });
-      expect(lookupDictionaryObj('user.profile')).toEqual({ name: 'Nom' });
-      expect(lookupDictionary('missing.path')).toBeUndefined();
-      expect(lookupDictionaryObj('missing.path')).toBeUndefined();
-    });
-
-    describe('with fallback', () => {
-      it('returns the source dictionary for the default locale without loading', async () => {
-        const { cache, loadDictionary } = createDictionaryCache();
-
-        await expect(
-          cache.lookupDictionaryWithFallback('en', 'greeting')
-        ).resolves.toEqual({ entry: 'Hello', options: {} });
-        await expect(
-          cache.lookupDictionaryObjWithFallback('en', 'greeting')
-        ).resolves.toBe('Hello');
-        await expect(
-          cache.lookupDictionaryObjWithFallback('en', 'user.profile')
-        ).resolves.toEqual({ name: 'Name', title: 'Title' });
-        expect(loadDictionary).not.toHaveBeenCalled();
-      });
-
-      it.each([
-        [
-          'lookupDictionaryWithFallback() returns a loaded target entry',
-          (cache: I18nCache) =>
-            cache.lookupDictionaryWithFallback('fr', 'greeting'),
-          { entry: 'Bonjour', options: {} },
-          [],
-        ],
-        [
-          'lookupDictionaryObjWithFallback() fills only the leaves a loaded target subtree lacks',
-          (cache: I18nCache) =>
-            cache.lookupDictionaryObjWithFallback('fr', 'user.profile'),
-          { name: 'Nom', title: 'Titre' },
-          [icuHash('Title')],
-        ],
-      ])('%s', async (_name, read, expected, misses) => {
-        translateMany.mockResolvedValue(
-          translated({ [icuHash('Title')]: 'Titre' })
-        );
-        const { cache, loadDictionary } = createDictionaryCache();
-
-        await expect(settle<unknown>(read(cache))).resolves.toEqual(expected);
-
-        expect(loadDictionary).toHaveBeenCalledExactlyOnceWith('fr');
-        expect(
-          translateMany.mock.calls.flatMap(([sources]) => Object.keys(sources))
-        ).toEqual(misses);
-        expect(cache.lookupDictionaryObj('fr', 'user.profile')).toEqual(
-          misses.length ? expected : { name: 'Nom' }
-        );
-      });
-
-      it.each([
-        ['a plain string as ICU', 'Hello {name}', icu],
-        [
-          'a tuple without a format as ICU with its context',
-          ['Hello {name}', { $context: 'homepage' }],
-          { $format: 'ICU', $context: 'homepage' },
-        ],
-        [
-          'a tuple with its own format and context',
-          ['Hello {name}', { $format: 'I18NEXT', $context: 'homepage' }],
-          { $format: 'I18NEXT', $context: 'homepage' },
-        ],
-      ] as const)(
-        'lookupDictionaryWithFallback() runtime translates and caches %s',
-        async (_name, entry, sourceOptions) => {
-          translateMany.mockResolvedValue(
-            translated({
-              [hashContent('Hello {name}', sourceOptions)]: 'Bonjour {name}',
-            })
-          );
-          // No loadDictionary: the target dictionary starts out empty
-          const cache = createCache({
-            dictionary: { greeting: entry } as never,
-          });
-
-          await expect(
-            settle(cache.lookupDictionaryWithFallback('fr', 'greeting'))
-          ).resolves.toEqual({ entry: 'Bonjour {name}', options: {} });
-          expect(cache.lookupDictionary('fr', 'greeting')).toEqual({
-            entry: 'Bonjour {name}',
-            options: {},
-          });
-        }
-      );
-
-      it('lookupDictionaryObjWithFallback() runtime translates and caches missing subtrees', async () => {
-        translateMany.mockResolvedValue(
-          translated({ [icuHash('Name')]: 'Nom', [icuHash('Title')]: 'Titre' })
-        );
-        const { cache } = createDictionaryCache({});
-
-        await expect(
-          settle(cache.lookupDictionaryObjWithFallback('fr', 'user.profile'))
-        ).resolves.toEqual({ name: 'Nom', title: 'Titre' });
-        expect(cache.lookupDictionaryObj('fr', 'user.profile')).toEqual({
-          name: 'Nom',
-          title: 'Titre',
-        });
-      });
-
-      it('lookupDictionaryObjWithFallback() returns loaded target subtrees when the source is missing', async () => {
-        const { cache } = createDictionaryCache({
-          extra: { label: 'Supplement' },
-        });
-
-        await expect(
-          cache.lookupDictionaryObjWithFallback('fr', 'extra')
-        ).resolves.toEqual({ label: 'Supplement' });
-        expect(translateMany).not.toHaveBeenCalled();
-      });
-
-      it('lookupDictionaryWithFallback() rejects when the runtime translation is not a string', async () => {
-        vi.stubEnv('NODE_ENV', 'development');
-        translateMany.mockResolvedValue(
-          translated({ [icuHash('Hello')]: ['Bonjour'] })
-        );
-        const { cache } = createDictionaryCache({});
-
-        await expect(
-          settle(cache.lookupDictionaryWithFallback('fr', 'greeting'))
-        ).rejects.toThrow(
-          'Dictionary entry "greeting" could not be translated into a string. Check the source entry and translation loader output.'
-        );
-      });
-
-      // DictionarySourceNotFoundError always propagates, in every environment
-      // and whether or not the locale requires translation.
-      it.each([
-        ['production', 'fr'],
-        ['development', 'fr'],
-        ['production', 'en'],
-      ])(
-        'rejects a missing source entry in %s for %s',
-        async (environment, locale) => {
-          vi.stubEnv('NODE_ENV', environment);
-          const { cache } = createDictionaryCache({});
-          const sourceNotFound = {
-            name: 'DictionarySourceNotFoundError',
-            message:
-              'I18nCache: source dictionary entry missing is not defined',
-          };
-
-          await expect(
-            cache.lookupDictionaryWithFallback(locale, 'missing')
-          ).rejects.toMatchObject(sourceNotFound);
-          await expect(
-            cache.lookupDictionaryObjWithFallback(locale, 'missing')
-          ).rejects.toMatchObject(sourceNotFound);
-        }
-      );
     });
   });
 
@@ -1381,10 +890,6 @@ describe('I18nCache', () => {
 
       expect(
         cache.lookupTranslation(invalidLocale, message, lookupOptions)
-      ).toBeUndefined();
-      expect(cache.lookupDictionary(invalidLocale, 'greeting')).toBeUndefined();
-      expect(
-        cache.lookupDictionaryObj(invalidLocale, 'greeting')
       ).toBeUndefined();
       expect(errorSpy).not.toHaveBeenCalled();
     });

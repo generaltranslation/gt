@@ -11,6 +11,7 @@ import type {
   GTDehydratedRouterData,
   GTIntegrableRouter,
   GTRouterOptions,
+  GTRouterState,
   SetupRouterGTIntegrationOptions,
 } from './types';
 
@@ -22,10 +23,30 @@ const integratedRouters = new WeakSet<GTIntegrableRouter>();
  * localeRouting, also rewrites locale prefixes so routes and links stay
  * locale-free.
  */
-export function setupRouterGTIntegration({
-  router,
-  localeRewrite,
-}: SetupRouterGTIntegrationOptions): void {
+export function setupRouterGTIntegration(
+  options: SetupRouterGTIntegrationOptions
+): void {
+  integrateRouter(options, {
+    Provider: GTProvider,
+    loadState: readGTRouterState,
+  });
+}
+
+/**
+ * @internal Wires GT into a router with the given provider and state, so the
+ * `/compat` entry can add dictionaries to both.
+ */
+export function integrateRouter<State extends GTRouterState>(
+  { router, localeRewrite }: SetupRouterGTIntegrationOptions,
+  {
+    Provider,
+    loadState,
+  }: Pick<Parameters<typeof createGTRouterWrap<State>>[0], 'Provider'> & {
+    loadState: (
+      conditionStore: ReturnType<typeof getReadonlyConditionStore>
+    ) => Promise<State>;
+  }
+): void {
   if (integratedRouters.has(router)) return;
   integratedRouters.add(router);
   ensureInitialized();
@@ -33,20 +54,21 @@ export function setupRouterGTIntegration({
   const { hydrate: originalHydrate } = router.options;
   const gt = createGTRouterWrap({
     Wrap: router.options.Wrap,
-    Provider: GTProvider,
+    Provider,
     // The visitor's state, for client-only roots (ssr: false) and SPA shells.
-    loadState: () => readGTRouterState(getReadonlyConditionStore()),
+    loadState: () => loadState(getReadonlyConditionStore()),
   });
   const options: Partial<GTRouterOptions> = {
     // Apply the server's locale first, so the app's hydrate callback and the
     // links it builds see it.
-    hydrate: async (dehydrated: GTDehydratedRouterData) => {
+    hydrate: async (dehydrated: GTDehydratedRouterData<State>) => {
       if (dehydrated?.gt?.shell) {
         const { shell: _shell, ...state } = dehydrated.gt;
         // The condition store keeps the visitor's locale. Their state loads
         // before hydration, so the provider never commits the shell's locale
         // to the locale cookie. A load failure is thrown from Wrap.
-        gt.hydrateShell(state);
+        // (TypeScript types a generic's rest as an Omit it cannot relate to State.)
+        gt.hydrateShell(state as State);
         // A static host can't redirect to the visitor's locale like the
         // server does.
         if (rewrite) {

@@ -113,6 +113,34 @@
       },
       "default": "./dist/unstable.server.mjs"
     },
+    "./compat": {
+      "workerd": {
+        "import": {
+          "types": "./dist/compat.server.d.mts",
+          "default": "./dist/compat.server.mjs"
+        },
+        "default": "./dist/compat.server.mjs"
+      },
+      "worker": {
+        "import": {
+          "types": "./dist/compat.server.d.mts",
+          "default": "./dist/compat.server.mjs"
+        },
+        "default": "./dist/compat.server.mjs"
+      },
+      "browser": {
+        "import": {
+          "types": "./dist/compat.client.d.mts",
+          "default": "./dist/compat.client.mjs"
+        },
+        "default": "./dist/compat.client.mjs"
+      },
+      "import": {
+        "types": "./dist/compat.server.d.mts",
+        "default": "./dist/compat.server.mjs"
+      },
+      "default": "./dist/compat.server.mjs"
+    },
     "./plugin/vite": {
       "import": {
         "types": "./dist/plugin/vite.d.mts",
@@ -126,6 +154,13 @@
         "default": "./dist/internal/_config.mjs"
       },
       "default": "./dist/internal/_config.mjs"
+    },
+    "./internal/_compat-config": {
+      "import": {
+        "types": "./dist/internal/_compat-config.d.mts",
+        "default": "./dist/internal/_compat-config.mjs"
+      },
+      "default": "./dist/internal/_compat-config.mjs"
     },
     "./internal/localeRouting": {
       "import": {

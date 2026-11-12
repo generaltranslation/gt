@@ -26,7 +26,6 @@ export {
   useFormatLocales,
   useGT,
   useMessages,
-  useTranslations,
 } from '@generaltranslation/react-core/hooks';
 // ===== Functions ===== //
 export { msg, decodeMsg, decodeOptions, mFallback, gtFallback } from 'gt-i18n';

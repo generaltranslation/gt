@@ -31,6 +31,9 @@ const entries = [
   'src/index.client.ts',
   'src/index.server.ts',
   'src/index.types.ts',
+  'src/compat.rsc.ts',
+  'src/compat.client.ts',
+  'src/compat.server.ts',
   'src/macros.ts',
   'src/unstable.ts',
   'src/unstable.rsc.ts',
@@ -44,12 +47,11 @@ const typesOnlyEntry = 'src/index.types.ts';
 export default defineConfig(
   withPackageChecks(
     entries.flatMap((entry, index) => {
-      // unstable entries import gt-i18n and react-core like the index entries,
-      // so they share one copy of those packages with the app.
-      const entryDeps =
-        entry.startsWith('src/index.') || entry.startsWith('src/unstable')
-          ? contextDeps
-          : deps;
+      // Entries that share React context and singletons keep react-core and
+      // gt-i18n external; unstable entries import them like the index entries.
+      const entryDeps = /^src\/(?:index|compat|unstable)\./.test(entry)
+        ? contextDeps
+        : deps;
       const [cjsConfig, esmConfig] = createTsdownConfig([entry], entryDeps);
 
       return [

@@ -5,8 +5,6 @@ const { mockInitializeReactGT, pluginModule } = vi.hoisted(() => ({
   pluginModule: {
     config: { defaultLocale: 'en', locales: ['fr'], localeCookieName: 'lc' },
     loadTranslations: async () => ({}),
-    dictionary: { greeting: 'Hello' },
-    loadDictionary: async () => ({}),
   },
 }));
 
@@ -33,7 +31,7 @@ describe.sequential('ensureInitialized', () => {
     { side: 'server', load: () => import('../initializeGT.server') },
     { side: 'client', load: () => import('../initializeGT.client') },
   ])(
-    "passes the plugin's config, loaders and dictionary to GT ($side)",
+    "passes the plugin's config and translation loader to GT ($side)",
     async ({ load }) => {
       mockInitializeReactGT.mockReset();
       const { ensureInitialized } = await load();
@@ -44,8 +42,6 @@ describe.sequential('ensureInitialized', () => {
       expect(mockInitializeReactGT).toHaveBeenCalledWith({
         ...pluginModule.config,
         loadTranslations: pluginModule.loadTranslations,
-        dictionary: pluginModule.dictionary,
-        loadDictionary: pluginModule.loadDictionary,
       });
     }
   );

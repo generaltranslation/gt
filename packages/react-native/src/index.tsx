@@ -28,7 +28,6 @@ export {
   useSetEnableI18n,
   useSetLocale,
   useSetRegion,
-  useTranslations,
 } from '@generaltranslation/react-core/hooks';
 export { useLocaleSelector, useRegionSelector } from './hooks/selectors';
 

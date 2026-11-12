@@ -10,12 +10,7 @@ import {
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GTRuntime } from 'generaltranslation/runtime';
-import {
-  GTProvider,
-  initializeGT,
-  useGT,
-  useTranslations,
-} from '../index.client';
+import { GTProvider, initializeGT, useGT } from '../index.client';
 import type { GTFunctionType } from 'gt-i18n';
 
 type TestGlobal = typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean };
@@ -242,34 +237,6 @@ describe('client hooks', () => {
       await vi.waitFor(() => expect(requestedSources).toContain('Child-only'), {
         timeout: 2000,
       });
-    });
-
-    it('updates memoized useTranslations dictionary objects when a translation arrives', async () => {
-      stubRuntimeApi({ Welcome: 'Bienvenue' });
-
-      function Group() {
-        const t = useTranslations();
-        const title = () => (t.obj('group') as { title: string }).title;
-        const direct = title();
-        const memoized = useMemo(title, [t]);
-        return <span>{`${direct}|${memoized}`}</span>;
-      }
-
-      await act(async () => {
-        root.render(
-          <GTProvider
-            locale='fr'
-            translations={{ fr: {} }}
-            dictionaries={{ en: { group: { title: 'Welcome' } } }}
-          >
-            <Group />
-          </GTProvider>
-        );
-      });
-      await vi.waitFor(
-        () => expect(element.textContent).toBe('Bienvenue|Bienvenue'),
-        { timeout: 2000 }
-      );
     });
   });
 });

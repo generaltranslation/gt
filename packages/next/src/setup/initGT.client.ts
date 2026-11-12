@@ -20,8 +20,8 @@ export function initializeGTClient(
     ...nextI18nCacheParams,
     /**
      * Always disable cache expiry for client-side lookups.
-     * Translations and dictionaries are exclusively passed from server to
-     * client, so the client has no loader to refresh expired entries.
+     * Translations are exclusively passed from server to client, so the
+     * client has no loader to refresh expired entries.
      */
     cacheExpiryTime: null,
   });

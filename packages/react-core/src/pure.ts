@@ -35,8 +35,4 @@ export { I18nStore } from './i18n-store/I18nStore';
 export { getI18nConfig, initializeI18nConfig } from './setup/i18nConfig';
 export { getReadonlyConditionStore } from './condition-store/singleton-operations';
 export type { ReactI18nConfigParams as I18nConfigParams } from './setup/i18nConfig';
-export type {
-  OnMissingDictionaryObj,
-  OnMissingDictionaryEntry,
-  OnMissingTranslation,
-} from './hooks/utils/missing-translation';
+export type { OnMissingTranslation } from './hooks/utils/missing-translation';

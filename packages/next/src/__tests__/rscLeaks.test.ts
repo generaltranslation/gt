@@ -1,8 +1,9 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { getRuntimeImports, resolveRelative } from './utils/importGraph';
 
 // Transitive RSC import-graph check. Starting from the RSC-safe entrypoints
 // and the gt-next server wrappers, walks every static runtime import and
@@ -18,9 +19,12 @@ const repoRoot = resolve(packageRoot, '../..');
 const entrypoints = [
   'packages/react-core/src/components-rsc.ts',
   'packages/react/src/index.rsc.ts',
+  'packages/react/src/compat.rsc.ts',
   'packages/react/src/unstable.rsc.ts',
   'packages/next/src/index.server.ts',
   'packages/next/src/server.ts',
+  'packages/next/src/compat.rsc.ts',
+  'packages/next/src/compat/server.ts',
   'packages/next/src/unstable.rsc.ts',
   'packages/next/src/unstable/server.ts',
   ...listSourceFiles('packages/next/src/server-dir'),
@@ -32,6 +36,7 @@ const entrypoints = [
 const workspaceSourceMap: Record<string, string> = {
   '#context-server': 'packages/react/src/index.server.ts',
   'gt-react': 'packages/react/src/index.rsc.ts',
+  'gt-react/compat': 'packages/react/src/compat.rsc.ts',
   '@generaltranslation/react-core/pure': 'packages/react-core/src/pure.ts',
   '@generaltranslation/react-core/components-rsc':
     'packages/react-core/src/components-rsc.ts',
@@ -93,29 +98,6 @@ function listSourceFiles(dir: string): string[] {
     }
     return [join(dir, name)];
   });
-}
-
-function getRuntimeImports(code: string): string[] {
-  const pattern =
-    /(?:^|\n)\s*(?:import|export)\s+(type\s+)?[^'";]*?from\s*['"]([^'"]+)['"]|(?:^|\n)\s*import\s*['"]([^'"]+)['"]/g;
-  const specifiers: string[] = [];
-  for (const match of code.matchAll(pattern)) {
-    const isTypeOnly = Boolean(match[1]);
-    const specifier = match[2] ?? match[3];
-    if (!isTypeOnly && specifier) specifiers.push(specifier);
-  }
-  return specifiers;
-}
-
-function resolveRelative(specifier: string, fromFile: string): string | null {
-  const base = resolve(repoRoot, dirname(fromFile), specifier);
-  for (const suffix of ['', '.ts', '.tsx', '/index.ts', '/index.tsx']) {
-    const candidate = base + suffix;
-    if (existsSync(candidate) && statSync(candidate).isFile()) {
-      return relative(repoRoot, candidate);
-    }
-  }
-  return null;
 }
 
 function isClientBoundary(code: string): boolean {
@@ -186,7 +168,7 @@ function walk(): Violation[] {
       }
 
       const resolved = specifier.startsWith('.')
-        ? resolveRelative(specifier, file)
+        ? resolveRelative(repoRoot, specifier, file)
         : (workspaceSourceMap[specifier] ?? null);
       if (!resolved) continue; // external module (react, gt-i18n, next/headers, ...)
 
@@ -231,7 +213,11 @@ function formatViolations(violations: Violation[]): string {
 
 // ===== Built output scan ===== //
 
-const serverArtifacts = ['dist/index.server.js', 'dist/server.js'];
+const serverArtifacts = [
+  'dist/index.server.js',
+  'dist/server.js',
+  'dist/compat/server.js',
+];
 
 function buildPackage(): void {
   // npm_execpath may be a JS CLI (corepack pnpm.cjs, runnable via node) or

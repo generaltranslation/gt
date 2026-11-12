@@ -19,11 +19,9 @@ export function ServerGTProvider({
     i18nStoreRef.current = new I18nStore();
   }
 
-  const {
-    onMissingTranslation,
-    onMissingDictionaryEntry,
-    onMissingDictionaryObj,
-  } = useHandleMissingTranslations(i18nStoreRef.current);
+  const { onMissingTranslation } = useHandleMissingTranslations(
+    i18nStoreRef.current
+  );
 
   return (
     <InternalGTProvider
@@ -36,8 +34,6 @@ export function ServerGTProvider({
       setEnableI18n={noopSetEnableI18n}
       i18nStore={i18nStoreRef.current}
       onMissingTranslation={onMissingTranslation}
-      onMissingDictionaryEntry={onMissingDictionaryEntry}
-      onMissingDictionaryObj={onMissingDictionaryObj}
     />
   );
 }

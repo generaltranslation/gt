@@ -360,6 +360,32 @@ ruleTester.run('static-jsx: imports', staticJsx, {
       ),
       errors: errors(),
     },
+    {
+      name: 'Var added to the native import after compat and type-only imports',
+      code: component(
+        "import { useTranslations } from 'gt-react/compat';\nimport type { GTProviderProps } from 'gt-react';\nimport { T } from 'gt-react';",
+        '<T>{name}</T>'
+      ),
+      output: component(
+        "import { useTranslations } from 'gt-react/compat';\nimport type { GTProviderProps } from 'gt-react';\nimport { T, Var } from 'gt-react';",
+        '<T><Var>{name}</Var></T>'
+      ),
+      options: [{ libs: ['gt-react'] }],
+      errors: errors(),
+    },
+    {
+      name: 'Branch added to the native import after a compat import',
+      code: component(
+        "import { useTranslations } from 'gt-next/compat';\nimport { T } from 'gt-next';",
+        '<T>{cond ? "yes" : "no"}</T>'
+      ),
+      output: component(
+        "import { useTranslations } from 'gt-next/compat';\nimport { T, Branch } from 'gt-next';",
+        '<T><Branch branch={cond} true="yes">no</Branch></T>'
+      ),
+      options: [{ libs: ['gt-next'] }],
+      errors: errors(),
+    },
   ],
 });
 

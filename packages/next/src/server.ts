@@ -21,8 +21,4 @@ export { getRegion } from './request/getRegion';
 // Translation
 export { tx } from './server-dir/runtime/tx';
 export { Tx } from './server-dir/runtime/_Tx';
-export {
-  getTranslations,
-  getMessages,
-  getGT,
-} from './server-dir/buildtime/strings';
+export { getMessages, getGT } from './server-dir/buildtime/strings';

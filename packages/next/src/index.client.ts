@@ -72,7 +72,6 @@ export {
   useMessages,
   useRegion,
   useSetLocale,
-  useTranslations,
 } from 'gt-react';
 
 // ===== Functions ===== //

@@ -4,14 +4,12 @@ const {
   mockGetGTInternal,
   mockGetMessagesInternal,
   mockGetRequestConditions,
-  mockGetTranslationsInternal,
   mockRscT,
   mockUse,
 } = vi.hoisted(() => ({
   mockGetGTInternal: vi.fn(),
   mockGetMessagesInternal: vi.fn(),
   mockGetRequestConditions: vi.fn(),
-  mockGetTranslationsInternal: vi.fn(),
   mockRscT: vi.fn(),
   mockUse: vi.fn(),
 }));
@@ -23,7 +21,6 @@ vi.mock('../renderPipeline', () => ({ renderPreparedT: vi.fn() }));
 vi.mock('gt-i18n/internal', () => ({
   getGTInternal: mockGetGTInternal,
   getMessagesInternal: mockGetMessagesInternal,
-  getTranslationsInternal: mockGetTranslationsInternal,
 }));
 
 vi.mock('../../../request/getRequestConditions', () => ({
@@ -93,42 +90,9 @@ describe('buildtime translation helpers', () => {
     });
   });
 
-  it('getTranslations passes request conditions to gt-i18n', async () => {
-    const translations = vi.fn();
-    mockGetTranslationsInternal.mockReturnValue(translations);
-    const { getTranslations } = await import('../strings');
-
-    await expect(getTranslations()).resolves.toBe(translations);
-
-    expect(mockGetTranslationsInternal).toHaveBeenCalledWith({
-      locale: 'fr',
-      enableI18n: false,
-      rootId: undefined,
-    });
-  });
-
-  it('getTranslations forwards root id to gt-i18n', async () => {
-    const translations = vi.fn();
-    mockGetRequestConditions.mockResolvedValue({
-      _locale: 'fr',
-      _enableI18n: true,
-    });
-    mockGetTranslationsInternal.mockReturnValue(translations);
-    const { getTranslations } = await import('../strings');
-
-    await expect(getTranslations('metadata')).resolves.toBe(translations);
-
-    expect(mockGetTranslationsInternal).toHaveBeenCalledWith({
-      locale: 'fr',
-      enableI18n: true,
-      rootId: 'metadata',
-    });
-  });
-
   it.each([
     ['useGT', 'getGT', mockGetGTInternal],
     ['useMessages', 'getMessages', mockGetMessagesInternal],
-    ['useTranslations', 'getTranslations', mockGetTranslationsInternal],
   ] as const)(
     '%s returns the resolved promise through use()',
     async (_, __, mock) => {
@@ -166,26 +130,5 @@ describe('buildtime translation helpers', () => {
       },
       messages
     );
-  });
-
-  it('useTranslations forwards root id through getTranslations', async () => {
-    const value = vi.fn();
-    mockGetTranslationsInternal.mockReturnValue(value);
-    mockUse.mockReturnValue(value);
-    const { useTranslations } = await import('../strings');
-
-    const result = useTranslations('metadata');
-
-    expect(result).toBe(value);
-    expect(mockUse).toHaveBeenCalledWith(expect.any(Promise));
-    expect(mockGetTranslationsInternal).not.toHaveBeenCalled();
-
-    await expect(mockUse.mock.calls[0][0]).resolves.toBe(value);
-
-    expect(mockGetTranslationsInternal).toHaveBeenCalledWith({
-      locale: 'fr',
-      enableI18n: false,
-      rootId: 'metadata',
-    });
   });
 });

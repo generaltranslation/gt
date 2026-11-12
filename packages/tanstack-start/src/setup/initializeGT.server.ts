@@ -1,8 +1,6 @@
 import { initializeGT as initializeReactGT } from 'gt-react';
 import {
   config as pluginConfig,
-  dictionary as pluginDictionary,
-  loadDictionary as pluginLoadDictionary,
   loadTranslations as pluginLoadTranslations,
 } from 'gt-tanstack-start/internal/_config';
 import { AsyncLocalConditionStore } from '../condition-store/AsyncLocalConditionStore';
@@ -36,8 +34,6 @@ export function ensureInitialized(): void {
   initialize({
     ...pluginConfig,
     loadTranslations: pluginLoadTranslations,
-    dictionary: pluginDictionary,
-    loadDictionary: pluginLoadDictionary,
   });
 }
 
