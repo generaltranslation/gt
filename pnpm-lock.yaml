@@ -1950,6 +1950,12 @@ importers:
         specifier: ^3.5.0
         version: 3.5.40(typescript@5.9.3)
 
+  tests/apps/cli-paraglide-binary-test:
+    devDependencies:
+      '@generaltranslation/paraglide-js':
+        specifier: workspace:*
+        version: link:../../../packages/paraglide-js
+
   tests/apps/cli-test-app:
     dependencies:
       gt:
