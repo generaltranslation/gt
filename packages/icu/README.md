@@ -97,14 +97,15 @@ not read the host's time zone; its caller passes them in.
 
 ## ICU compatibility
 
-A number or date skeleton means here what it means in ICU4C, or it throws: a
-`RangeError` that names the token or field when Intl cannot format it, and a
-`SyntaxError` when it is not ICU's. What a message leaves out, like how to
-round a tie, is filled in by Intl, not by ICU.
+An ICU string means here what it means in ICU4C, or it throws: a `RangeError`
+that names the token or field when Intl cannot format it, and a `SyntaxError`
+when it is not valid, with the kind of error as its `code` and the place in
+the message as its `location`. What a message leaves out, like how to round a
+tie, is filled in by Intl, not by ICU.
 
-`src/__tests__/icu4c-conformance.test.ts` formats about 2,200 cases and checks
-each result against what ICU4C 78.3 prints for it. It holds every difference,
-each with its reason.
+`src/__tests__/icu4c-messages.test.ts` and `icu4c-conformance.test.ts` format
+about 3,500 cases and check each result against what ICU4C 78.3 prints for it.
+They hold every difference, each with its reason.
 
 Parts of the compatibility behavior and regression suite are adapted from
 FormatJS. See `THIRD_PARTY_NOTICES.md` for attribution and license details.

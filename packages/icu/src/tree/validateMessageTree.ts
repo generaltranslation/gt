@@ -8,6 +8,7 @@ import {
   NUMBER_STYLE_NAMES,
   TIME_FIELD_OPTIONS,
 } from '../settings/formatOptions';
+import { MAX_NESTING_DEPTH } from '../settings/syntax';
 import type { FormattedNode, MessageTree } from './messageTree';
 
 export interface MessageTreeValidationOptions {
@@ -45,7 +46,10 @@ interface WalkState {
  */
 export function validateMessageTree(
   value: unknown,
-  { maxDepth = 64, maxNodes = 10_000 }: MessageTreeValidationOptions = {}
+  {
+    maxDepth = MAX_NESTING_DEPTH,
+    maxNodes = 10_000,
+  }: MessageTreeValidationOptions = {}
 ): MessageTreeValidationError | undefined {
   return treeError(value, [], 0, { maxDepth, maxNodes, nodes: 0 });
 }
