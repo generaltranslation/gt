@@ -1,5 +1,23 @@
+/*
+ * Formatting an ICU string without making it a message. Everything that
+ * exists only for that is in this file: the tree it is parsed to, how that
+ * tree is made, and `formatMessage`. A message is formatted by
+ * `formatMessageTree`, which never loads the parser.
+ */
+
 import { parse } from '../parser/parse';
-import { toParsedTree } from '../convert/syntaxTree';
+import {
+  dateTimeOptions,
+  toNodes,
+  type FormatElement,
+} from '../convert/syntaxTree';
+import { toMessageTree } from '../tree/canonical';
+import type { MessageTree } from '../tree/messageTree';
+import {
+  TYPE,
+  type ExtendedNumberFormatOptions,
+  type MessageFormatElement,
+} from '../types-dir/ast';
 import {
   formatParsedTree,
   type FormatMessageTreeOptions,
@@ -9,6 +27,54 @@ import {
   type OnePartValues,
 } from './formatMessageTree';
 import { resolveLocale } from './locale';
+
+/**
+ * A number, date or time as the formatter reads it. A message tree's nodes
+ * are these too. An ICU string's can also hold any style name and every Intl
+ * option of a skeleton, which a message tree does not hold.
+ */
+export type ParsedNode =
+  | readonly [
+      name: string,
+      kind: 'number',
+      style?: string | ExtendedNumberFormatOptions,
+    ]
+  | readonly [
+      name: string,
+      kind: 'date' | 'time',
+      style?: string | Intl.DateTimeFormatOptions,
+    ];
+
+/** What the formatter reads: a message tree, or an ICU string's syntax tree. */
+export type ParsedTree = MessageTree<ParsedNode>;
+
+/**
+ * The parser's syntax tree as the formatter reads it: a formatted placeholder
+ * keeps every Intl option its skeleton spells, which a message tree cannot
+ * hold.
+ */
+function toParsedTree(ast: MessageFormatElement[]): ParsedTree {
+  // Plain text as one string takes the formatter's fast path.
+  return toMessageTree(toNodes(ast, parsedNode));
+}
+
+/** The style is the name, or every Intl option the skeleton spells. */
+function parsedNode(element: FormatElement): ParsedNode {
+  if (element.type === TYPE.number) {
+    const style = element.style ?? undefined;
+    return [
+      element.value,
+      'number',
+      typeof style === 'object' ? style.parsedOptions : style,
+    ];
+  }
+  const style = element.style ?? undefined;
+  return [
+    element.value,
+    element.type === TYPE.date ? 'date' : 'time',
+    typeof style === 'object' ? dateTimeOptions(style) : style,
+  ];
+}
 
 /** An ICU string spells its own formatting context, so it takes none. */
 export type FormatMessageOptions = Pick<FormatMessageTreeOptions, 'timeZone'>;

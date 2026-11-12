@@ -6,7 +6,7 @@ import {
   type MessageTree,
 } from '../index';
 import { formatMessage } from '../parser';
-import type { ParsedTree } from '../tree/messageTree';
+import type { ParsedTree } from '../formatter/formatMessage';
 
 type Equal<A, B> =
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2

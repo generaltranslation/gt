@@ -8,12 +8,11 @@ import { resolveLocale } from './locale';
 import { FALLBACK_BRANCH_KEY, isPluralCategoryKey } from '../settings/syntax';
 import type { ExtendedNumberFormatOptions } from '../types-dir/ast';
 import type {
-  ParsedNode,
-  ParsedTree,
   MessageBranches,
   MessageNode,
   MessageTree,
 } from '../tree/messageTree';
+import type { ParsedNode, ParsedTree } from './formatMessage';
 import { messageTreeNodes } from '../tree/walk';
 import {
   DATE_TIME_STYLE_NAMES,

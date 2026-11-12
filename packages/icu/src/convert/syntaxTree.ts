@@ -7,12 +7,10 @@ import {
   type DateTimeStyleName,
   type MessageFormattingContext,
 } from '../settings/formatOptions';
-import { sortRecord, toMessageTree } from '../tree/canonical';
+import { sortRecord } from '../tree/canonical';
 import type {
   FormattedNode,
   Message,
-  ParsedNode,
-  ParsedTree,
   MessageBranches,
   MessageNode,
   MessageTree,
@@ -41,7 +39,7 @@ import {
 
 const DATE_TIME_STYLES = new Set<string>(DATE_TIME_STYLE_NAMES);
 
-type FormatElement = NumberElement | DateElement | TimeElement;
+export type FormatElement = NumberElement | DateElement | TimeElement;
 type FormatReader<Format> = (element: FormatElement) => Format;
 
 /**
@@ -67,7 +65,7 @@ export function readMessage(
   styles: NamedStyles
 ): Message {
   const contexts: ContextByVariable = new Map();
-  const tree = convert(ast, (element) => {
+  const tree = toNodes(ast, (element) => {
     const [node, context] = splitFormat(element, styles);
     addContext(contexts, element.value, context);
     return node;
@@ -76,16 +74,11 @@ export function readMessage(
 }
 
 /**
- * Converts the parser's syntax tree for formatting an ICU string: a formatted
- * placeholder keeps every Intl option its skeleton spells, which a message
- * tree cannot hold, and the formatter reads them like a tree's styles.
+ * The nodes of a syntax tree, in the parsed order. `readFormat` makes each
+ * number, date and time node, so the same walk builds a message tree and the
+ * tree `formatMessage` formats.
  */
-export function toParsedTree(ast: MessageFormatElement[]): ParsedTree {
-  // Plain text as one string takes the formatter's fast path.
-  return toMessageTree(convert(ast, parsedNode));
-}
-
-function convert<Format>(
+export function toNodes<Format>(
   ast: MessageFormatElement[],
   readFormat: FormatReader<Format>
 ): MessageNode<Format>[] {
@@ -118,33 +111,12 @@ function toNode<Format>(
         : [element.value, kind, branches];
     }
     case TYPE.tag:
-      return [element.value, 'tag', convert(element.children, readFormat)];
+      return [element.value, 'tag', toNodes(element.children, readFormat)];
   }
-}
-
-/**
- * A formatted placeholder for the formatter only: the style is the name, or
- * every Intl option the skeleton spells.
- */
-function parsedNode(element: FormatElement): ParsedNode {
-  if (element.type === TYPE.number) {
-    const style = element.style ?? undefined;
-    return [
-      element.value,
-      'number',
-      typeof style === 'object' ? style.parsedOptions : style,
-    ];
-  }
-  const style = element.style ?? undefined;
-  return [
-    element.value,
-    element.type === TYPE.date ? 'date' : 'time',
-    typeof style === 'object' ? dateTimeOptions(style) : style,
-  ];
 }
 
 // Parsed without a locale, `::j` would otherwise lose its hour.
-function dateTimeOptions(
+export function dateTimeOptions(
   skeleton: DateTimeSkeleton
 ): Intl.DateTimeFormatOptions {
   return parseDateTimeSkeletonOptions(skeleton.pattern, { localeHour: true });
@@ -251,7 +223,7 @@ function toBranches<Format>(
   return Object.fromEntries(
     Object.keys(options).map((key) => [
       key,
-      convert(options[key].value, readFormat),
+      toNodes(options[key].value, readFormat),
     ])
   );
 }

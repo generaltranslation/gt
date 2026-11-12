@@ -5,7 +5,6 @@ import type {
   NumberStyleName,
   TimeFieldOptions,
 } from '../settings/formatOptions';
-import type { ExtendedNumberFormatOptions } from '../types-dir/ast';
 
 /**
  * A message as compact JSON, the form catalogs ship and keys are hashed from.
@@ -122,23 +121,3 @@ export type MessageBranches<Format = FormattedNode> = Record<
   string,
   MessageTree<Format>
 >;
-
-/**
- * A number, date or time as the formatter reads it. A message tree's nodes
- * are these too. An ICU string's can also hold any style name and every Intl
- * option of a skeleton, which a message tree does not hold.
- */
-export type ParsedNode =
-  | readonly [
-      name: string,
-      kind: 'number',
-      style?: string | ExtendedNumberFormatOptions,
-    ]
-  | readonly [
-      name: string,
-      kind: 'date' | 'time',
-      style?: string | Intl.DateTimeFormatOptions,
-    ];
-
-/** What the formatter reads: a message tree, or an ICU string's syntax tree. */
-export type ParsedTree = MessageTree<ParsedNode>;
