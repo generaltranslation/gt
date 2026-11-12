@@ -10,7 +10,7 @@ type RuntimeEnv = {
 
 export function addRuntimeCredentials<T extends RuntimeCredentials>(
   config: T
-): T {
+): Omit<T, keyof RuntimeCredentials> & RuntimeCredentials {
   const credentials = getRuntimeCredentials();
   let apiKey = config.apiKey || credentials.apiKey;
   // Anyone can read a key from a production browser bundle, so production
