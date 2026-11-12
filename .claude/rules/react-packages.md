@@ -10,11 +10,12 @@ paths:
 # React Package Rules
 
 - These packages provide i18n components and hooks for React-based frameworks.
-- `react-core` is the foundation. `react` and `react-native` extends it. `next` and `tanstack-start` extend `react`.
-- Exports are split by entry point (e.g., `/client`, `/server`, `/internal`). Check `package.json` `exports` field before adding new public API.
+- `react-core` is the foundation. `react` and `react-native` extend it. `next` and `tanstack-start` extend `react`.
+- Exports are split by entry point and export condition (e.g., gt-next's `/server`, `/link`, `/compat`, and its `react-server`/`browser` conditions). Check `package.json` `exports` field before adding new public API.
+- Compatibility APIs (the dictionary API) go under `/compat`, following "Compatibility APIs" in `AGENTS.md`. Keep `gt-react/compat` and `gt-react-native/compat` at parity like the main entries.
 - `packages/react/src/i18n-context/` has restricted imports: only `gt-i18n` or `gt-i18n/internal`. This is enforced by ESLint. This is an alternative approach to i18n react that does NOT use react context.
 - Never import from framework-specific packages (like `next`) in `react-core` or `react` — they must stay framework-agnostic.
-- Use React Server Components patterns in `gt-next`: separate `index.server.ts` and `index.client.ts` entry points.
+- Use React Server Components patterns in `gt-next`: separate `index.client.ts`, `index.server.ts` and `index.rsc.ts` entry points.
 - Run tests with `pnpm --filter <package-name> test`.
 
 ## Feature Parity: gt-react ↔ gt-react-native
@@ -27,5 +28,5 @@ These re-exports follow "Imports and re-exports" in `AGENTS.md`; `pnpm check:ree
 
 - If a new component, hook, or function is added to `gt-react`, check whether an equivalent should be added to `gt-react-native` (and vice versa). Most exports from `react-core` should be re-exported from both packages.
 - Platform-specific features (e.g., `LocaleSelector`/`RegionSelector` are DOM-only) are exempt from parity.
-- Compare `packages/react/src/index.ts` and `packages/react-native/src/index.tsx` exports to spot gaps.
+- Compare `packages/react/src/index.*.ts` and `packages/react-native/src/index.tsx` exports to spot gaps.
 - If a change intentionally breaks parity, the PR description should explain why.
