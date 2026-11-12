@@ -80,6 +80,13 @@ function buildParams(props?: GTProps, nextConfig: NextConfig = {}) {
   );
 }
 
+/** Runs withGTConfig() and parses the serialized client config params. */
+function buildClientParams(props?: GTProps) {
+  return JSON.parse(
+    buildEnv(props).NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS!
+  );
+}
+
 /** Makes exactly these paths exist, as given (not resolved). */
 function mockExistingPaths(...paths: string[]) {
   vi.mocked(fs.existsSync).mockImplementation((p) => paths.includes(String(p)));
@@ -624,12 +631,6 @@ describe('withGTConfig', () => {
         enabled: 'true',
       },
       {
-        name: 'a project ID in both the env and the config file',
-        env: { GT_PROJECT_ID: 'env-project-id' },
-        fileConfig: { projectId: 'config-project-id' },
-        enabled: 'false',
-      },
-      {
         // The remote cache alone does not enable services.
         name: 'a project ID without an API key',
         env: { GT_PROJECT_ID: 'proj' },
@@ -672,6 +673,42 @@ describe('withGTConfig', () => {
         expect(result._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe(enabled);
       }
     );
+
+    it('serializes a projectId from gt.config.json for the runtime, never the API key', () => {
+      // Development builds pass the key to client code for hot reload.
+      stubCredentials({ NODE_ENV: 'production', GT_API_KEY: 'api-key-value' });
+      mockConfigFile({ projectId: 'config-project-id' });
+
+      expect(buildClientParams().projectId).toBe('config-project-id');
+      expect(JSON.stringify(buildEnv())).not.toContain('api-key-value');
+    });
+
+    it('serializes a projectId from props for the runtime', () => {
+      expect(
+        buildClientParams({ projectId: 'props-project-id' }).projectId
+      ).toBe('props-project-id');
+    });
+
+    // Each deployment reads its own GT_PROJECT_ID, so a build must not freeze it.
+    it('does not serialize a projectId that only the environment sets', () => {
+      stubCredentials({
+        NODE_ENV: 'production',
+        GT_PROJECT_ID: 'env-project-id',
+      });
+
+      expect(buildClientParams().projectId).toBeUndefined();
+    });
+
+    it('throws when the configured projectId and GT_PROJECT_ID differ', () => {
+      stubCredentials({ GT_PROJECT_ID: 'env-project-id' });
+
+      expect(() => withGTConfig({}, { projectId: 'props-project-id' })).toThrow(
+        /project IDs do not match[\s\S]*props-project-id[\s\S]*env-project-id/
+      );
+      expect(() =>
+        withGTConfig({}, { projectId: 'env-project-id' })
+      ).not.toThrow();
+    });
 
     it('exposes GT_PROJECT_ID and GT_API_KEY to client code for development hot reload', () => {
       stubCredentials(devKeys);

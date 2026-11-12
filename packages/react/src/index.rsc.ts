@@ -101,7 +101,7 @@ export {
 export { decodeVars, declareVar, derive } from 'generaltranslation';
 
 // ===== Setup ===== //
-export { internalInitializeGTSRA as initializeGT } from '@generaltranslation/react-core/pure';
+export { initializeGTSRA as initializeGT } from './setup/initializeGTSRA';
 
 // ===== Types ===== //
 export type {

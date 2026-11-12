@@ -9,6 +9,7 @@ import {
   resolveAutoderive,
 } from 'generaltranslation/config-schema';
 import { GTNextConfigSchema } from './config-dir/schema';
+import { credentialEnvNames } from 'generaltranslation/internal';
 import { defaultWithGTConfigProps } from './config-dir/props/defaultWithGTConfigProps';
 import {
   type BaseWithGTConfigProps,
@@ -22,6 +23,7 @@ import {
   createNextI18nConfigMismatchWarning,
   invalidCanonicalLocalesError,
   invalidLocalesError,
+  createProjectIdMismatchError,
   projectIdMissingWarn,
   standardizedCanonicalLocalesWarning,
   unresolvedLoadDictionaryBuildError,
@@ -231,7 +233,15 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
 
   // ---------- LOAD ENVIRONMENT VARIABLES ---------- //
 
-  const { projectId, apiKey } = getRuntimeCredentials();
+  // The runtime uses the configured project ID before GT_PROJECT_ID, so a
+  // build that sees two different ones would not run as either says.
+  const configuredProjectId = props.projectId || loadedConfig.projectId;
+  const { projectId, apiKey } = getRuntimeCredentials({});
+  if (configuredProjectId && projectId && configuredProjectId !== projectId) {
+    throw new Error(
+      createProjectIdMismatchError(configuredProjectId, projectId)
+    );
+  }
 
   // conditionally add environment variables to config
   const envConfig: Partial<InternalGTConfigProps> = {
@@ -596,6 +606,9 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     splitMiddlewareConfig(privateConfigParams);
   const I18NConfigParams = JSON.stringify(otherConfig);
   const clientI18NConfigParams = {
+    // Not a secret: it is in every CDN URL. One that only the environment
+    // sets is left out, so each deployment reads its own GT_PROJECT_ID.
+    projectId: configuredProjectId,
     defaultLocale: mergedConfig.defaultLocale,
     locales: mergedConfig.locales,
     customMapping: mergedConfig.customMapping,
@@ -708,8 +721,8 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
       // get no key.
       ...(isDevHotReloadEnabled(mergedConfig) &&
         !mergedConfig._disableDevHotReload && {
-          GT_PROJECT_ID: mergedConfig.projectId,
-          GT_API_KEY: mergedConfig.apiKey,
+          [credentialEnvNames.projectId]: mergedConfig.projectId,
+          [credentialEnvNames.apiKey]: mergedConfig.apiKey,
         }),
       // nextConfig.env intentionally makes this available to client-boundary.tsx.
       ...(mergedConfig.pathRegex !== undefined && {

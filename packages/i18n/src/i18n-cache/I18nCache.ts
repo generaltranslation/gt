@@ -20,6 +20,7 @@ import type {
 } from './translations-manager/TranslationsCache';
 import { handleCacheError } from './utils/handleCacheError';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
+import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 
 /**
  * Default translation timeout in milliseconds for a runtime translation request
@@ -84,6 +85,9 @@ class I18nCache<TranslationValue extends Content = Content> {
    * Creates a locale-bound translateMany for runtime translation
    */
   private createTranslateMany: CreateTranslateMany;
+
+  /** Read once at construction; decides whether cache errors throw or log. */
+  private environment = getRuntimeEnvironment();
 
   /**
    * Creates an instance of I18nCache.
@@ -164,6 +168,11 @@ class I18nCache<TranslationValue extends Content = Content> {
    */
   getVersionId(): string | undefined {
     return this.config._versionId;
+  }
+
+  /** The configured translation TTL: `null` never expires, `undefined` uses the default. */
+  getCacheExpiryTime(): number | null | undefined {
+    return this.config.cacheExpiryTime;
   }
 
   // ========== Translation Updates ========== //
@@ -344,7 +353,7 @@ class I18nCache<TranslationValue extends Content = Content> {
    * Soft error in production, throw in development
    */
   private handleError(error: unknown) {
-    handleCacheError('I18nCache', error);
+    handleCacheError('I18nCache', error, this.environment);
   }
 
   private async lookupTranslationWithFallbackResolved<

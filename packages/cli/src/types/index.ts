@@ -228,6 +228,12 @@ export type Settings = {
   apiKey?: string;
   userTokenProvider: UserTokenProvider;
   projectId?: string;
+  /**
+   * The app's runtime credentials found in the environment when the settings
+   * were built. `apiKey` drops an env-file key while the user is signed in, so
+   * whether that key exists is kept here, without a copy of it.
+   */
+  runtimeCredentials: { projectId: string | undefined; hasApiKey: boolean };
   defaultLocale: string;
   locales: string[];
   customMapping?: CustomMapping;

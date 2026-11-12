@@ -3,6 +3,7 @@ import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { handleCacheError } from '../i18n-cache/utils/handleCacheError';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
 import { getI18nCache } from '../i18n-cache/singleton-operations';
+import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { ResourceCache } from '../i18n-cache/translations-manager/ResourceCache';
 import type { Locale } from '../i18n-cache/translations-manager/TranslationsCache';
 import { DictionaryCache } from './DictionaryCache';
@@ -35,6 +36,7 @@ type DictionaryResolvers = {
  */
 export class DictionaryManager {
   private dictionaries: ResourceCache<Locale, DictionaryCache>;
+  private environment = getRuntimeEnvironment();
 
   constructor(params: DictionaryManagerParams = {}) {
     // loadDictionary requires dictionary so the default locale always has a
@@ -270,6 +272,6 @@ export class DictionaryManager {
     if (error instanceof DictionarySourceNotFoundError) {
       throw error;
     }
-    handleCacheError('DictionaryManager', error);
+    handleCacheError('DictionaryManager', error, this.environment);
   }
 }

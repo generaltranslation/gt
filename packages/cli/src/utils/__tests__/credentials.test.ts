@@ -554,24 +554,32 @@ describe('setCredentials', () => {
 });
 
 describe('areCredentialsSet', () => {
-  afterEach(() => {
-    vi.unstubAllEnvs();
-  });
+  const noRuntime = { projectId: undefined, hasApiKey: false };
+  const runtimeKey = { projectId: undefined, hasApiKey: true };
 
   it('is complete with a project and GT_API_KEY in the environment', () => {
-    vi.stubEnv('GT_API_KEY', 'gtx-api-key');
-    expect(areCredentialsSet({ projectId: 'project-id' })).toBe(true);
+    expect(
+      areCredentialsSet({
+        projectId: 'project-id',
+        runtimeCredentials: runtimeKey,
+      })
+    ).toBe(true);
   });
 
   it('is complete with a project and an explicit key', () => {
     expect(
-      areCredentialsSet({ projectId: 'project-id', apiKey: 'gtx-prod' })
+      areCredentialsSet({
+        projectId: 'project-id',
+        apiKey: 'gtx-prod',
+        runtimeCredentials: noRuntime,
+      })
     ).toBe(true);
   });
 
   it('is incomplete without a project ID even when a key exists', () => {
-    vi.stubEnv('GT_API_KEY', 'gtx-dev');
-    expect(areCredentialsSet({ apiKey: 'gtx-prod' })).toBe(false);
-    expect(areCredentialsSet({})).toBe(false);
+    expect(
+      areCredentialsSet({ apiKey: 'gtx-prod', runtimeCredentials: runtimeKey })
+    ).toBe(false);
+    expect(areCredentialsSet({ runtimeCredentials: noRuntime })).toBe(false);
   });
 });

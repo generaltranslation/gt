@@ -1464,7 +1464,7 @@ See https://www.npmjs.com/package/gt-vue`);
       { resolvedConfig: effectiveConfig }
     );
     // Runtime credentials only count for the project this setup uses.
-    const runtimeProjectId = process.env.GT_PROJECT_ID;
+    const runtimeProjectId = settings.runtimeCredentials.projectId;
     const runtimeProjectMatches =
       runtimeProjectId === undefined || runtimeProjectId === settings.projectId;
     const credentialsSet = runtimeProjectMatches && areCredentialsSet(settings);

@@ -48,6 +48,4 @@ export type withGTConfigProps = BaseWithGTConfigProps & {
   apiKey?: never;
   /** Use GT_API_KEY instead. */
   devApiKey?: never;
-  /** Use GT_PROJECT_ID instead. */
-  projectId?: never;
 };

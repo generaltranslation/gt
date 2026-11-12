@@ -78,17 +78,14 @@ export class I18nConfig extends GTIntl {
   }
 
   /**
-   * The runtime for runtime translation, with the API key from `apiKey`, then
-   * the GT_API_KEY environment variable.
+   * The runtime for runtime translation. Each framework's initialization
+   * resolves the credentials, from its config and then its environment.
    *
    * @throws {Error} Without a projectId or an API key.
    */
   getTranslationRuntime(): GTRuntime {
-    const { projectId, runtimeUrl } = this.runtimeConfig;
+    const { projectId, apiKey, runtimeUrl } = this.runtimeConfig;
     if (!projectId) throw new Error(missingRuntimeProjectIdError);
-    const apiKey =
-      this.runtimeConfig.apiKey ||
-      (typeof process !== 'undefined' && process.env?.GT_API_KEY);
     if (!apiKey) throw new Error(missingRuntimeApiKeyError);
     return new GTRuntime({
       apiKey,

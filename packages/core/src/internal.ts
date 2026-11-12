@@ -22,6 +22,12 @@ export {
 } from './formatting/formatting';
 export type { RuntimeTranslateManyOptions } from './types-dir/api/entry';
 export { credentialScope } from './client/clientConfig';
+export {
+  credentialEnvNames,
+  resolveCredentials,
+  type CredentialsEnv,
+  type ResolvedCredentials,
+} from './config/credentials';
 export { isAcceptedPluralForm } from './settings/plurals';
 export type {
   InjectionType,

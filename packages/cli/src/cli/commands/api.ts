@@ -9,6 +9,7 @@ import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/diagnostics';
+import { credentialEnvNames } from 'generaltranslation/internal';
 import { resolveApiBaseUrl } from '../../utils/apiBaseUrl.js';
 import { createUserTokenProvider } from '../../auth/oauth.js';
 import { resolveCliApiKey } from '../../auth/cliApiKey.js';
@@ -273,7 +274,7 @@ function resolveApiProjectId(
 ): string | undefined {
   const configProjectId =
     typeof config.projectId === 'string' ? config.projectId : undefined;
-  const environmentProjectId = process.env.GT_PROJECT_ID;
+  const environmentProjectId = process.env[credentialEnvNames.projectId];
 
   if (configProjectId && flagProjectId && configProjectId !== flagProjectId) {
     fail(
@@ -375,7 +376,9 @@ export async function handleApiCommand(
     : (resolveConfig(process.cwd())?.config ?? {});
   const baseUrl = resolveApiBaseUrl(config.baseUrl);
   const client = createApiClient({
-    apiKey: options.apiKey ?? (await resolveCliApiKey(baseUrl)),
+    apiKey:
+      options.apiKey ??
+      (await resolveCliApiKey(process.env[credentialEnvNames.apiKey], baseUrl)),
     userTokenProvider: createUserTokenProvider({ baseUrl }),
     baseUrl,
     fetch: dependencies.fetch,

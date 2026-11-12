@@ -964,7 +964,8 @@ describe('I18nCache', () => {
       'development: runtime translation without %s rejects each request with framework guidance',
       async (_name, missing, error) => {
         vi.stubEnv('NODE_ENV', 'development');
-        vi.stubEnv('GT_API_KEY', '');
+        // The entry point resolves the key; a key in the environment is not read here.
+        vi.stubEnv('GT_API_KEY', 'env-key');
         const fetchSpy = mockFetchResponse({});
         initConfig(missing);
         const cache = new I18nCache({

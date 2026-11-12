@@ -87,6 +87,13 @@ Turbo tasks: `build`, `test`, `lint`, `lint:fix`, `format`, `format:fix`, `trans
 - Key long-lived caches by configured values only. For request-controlled strings, build per-call objects (for example `new Intl.Locale(tag)`) and cap parsed lists (`parseAcceptLanguage` keeps 32 entries).
 - Name the failing key or file in diagnostics, and keep secrets out of them. `describeConfigIssues()` from `generaltranslation/config-schema` echoes invalid values except under `apiKey` and `devApiKey`; `describeConfigParseError()` drops the input that V8 quotes in `JSON.parse` messages.
 
+### Credentials and the environment
+
+- `GT_PROJECT_ID` and `GT_API_KEY` are named once, in `credentialEnvNames` (`packages/core/src/config/credentials.ts`, exported from `generaltranslation/internal`). `resolveCredentials(config, env)` there owns the precedence (config, then environment; an empty string is unset) and takes the environment as an argument.
+- Each entry point reads its environment once, when it is initialized, and passes it to `resolveCredentials()`: gt-node's `initializeGT()`, gt-react's `addRuntimeCredentials()`, gt-next's `getRuntimeCredentials()`, gt-payload's `gtPlugin()`, and the CLI's `generateSettings()` and `gt api`. Everything below takes credentials as values; gt-i18n reads no credential variable.
+- gt-react and gt-next keep the literal `import.meta.env.GT_*` and `process.env.GT_*` member expressions, because Vite's and Next.js's `define` replace only that form.
+- A static `process.env.NODE_ENV` comparison that lets bundlers drop development code (for example `packages/react-core/src/compat/missing-dictionary.ts`) is the exception: it stays where the code is gated.
+
 ### Single source of truth
 
 - Give each type, value list, default and option doc one owner, and derive the rest from it:

@@ -10,6 +10,7 @@ export const createMockSettings = (
     dashboardUrl: '',
     apiKey: '',
     projectId: '',
+    runtimeCredentials: { projectId: undefined, hasApiKey: false },
     options: {},
     defaultLocale: 'en',
     config: '',

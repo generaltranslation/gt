@@ -9,6 +9,7 @@ import { FilesOptions, JsonSchema, Settings } from '../types/index.js';
 import {
   defaultDashboardUrl,
   defaultDefaultLocale,
+  resolveCredentials,
 } from 'generaltranslation/internal';
 import { resolveFiles } from '../fs/config/parseFilesConfig.js';
 import { validateSettings } from './validateSettings.js';
@@ -117,7 +118,12 @@ export async function generateSettings(
     }
   }
 
-  const projectIdEnv = process.env.GT_PROJECT_ID;
+  // Settings are built once per command, after loadEnv() loaded the env files.
+  // Nothing later reads the credential variables: it takes them from the settings.
+  const { projectId: projectIdEnv, apiKey: apiKeyEnv } = resolveCredentials(
+    {},
+    process.env
+  );
   // Resolve mismatched projectIds
   if (
     gtConfig.projectId &&
@@ -198,14 +204,18 @@ export async function generateSettings(
   );
 
   // Add projectId if not provided
-  mergedOptions.projectId =
-    mergedOptions.projectId || process.env.GT_PROJECT_ID;
+  mergedOptions.projectId = mergedOptions.projectId || projectIdEnv;
 
   mergedOptions.baseUrl = resolveApiBaseUrl(mergedOptions.baseUrl);
 
   // API clients use apiKey when set, otherwise this lazy provider.
   mergedOptions.apiKey =
-    mergedOptions.apiKey || (await resolveCliApiKey(mergedOptions.baseUrl));
+    mergedOptions.apiKey ||
+    (await resolveCliApiKey(apiKeyEnv, mergedOptions.baseUrl));
+  mergedOptions.runtimeCredentials = {
+    projectId: projectIdEnv,
+    hasApiKey: Boolean(apiKeyEnv),
+  };
   mergedOptions.userTokenProvider = createUserTokenProvider({
     baseUrl: mergedOptions.baseUrl,
   });

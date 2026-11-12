@@ -35,7 +35,9 @@ describe('resolveCliApiKey', () => {
     fs.writeFileSync('.env.local', 'GT_API_KEY=gtx-runtime\n');
     loadEnv();
 
-    await expect(resolveCliApiKey(baseUrl)).resolves.toBeUndefined();
+    await expect(
+      resolveCliApiKey(process.env.GT_API_KEY, baseUrl)
+    ).resolves.toBeUndefined();
     expect(hasLogin).toHaveBeenCalledWith({ baseUrl });
   });
 
@@ -44,7 +46,9 @@ describe('resolveCliApiKey', () => {
     fs.writeFileSync('.env.local', 'GT_API_KEY=gtx-runtime\n');
     loadEnv();
 
-    await expect(resolveCliApiKey(baseUrl)).resolves.toBe('gtx-runtime');
+    await expect(
+      resolveCliApiKey(process.env.GT_API_KEY, baseUrl)
+    ).resolves.toBe('gtx-runtime');
   });
 
   it.each([true, false])(
@@ -55,7 +59,9 @@ describe('resolveCliApiKey', () => {
       fs.writeFileSync('.env.local', 'GT_API_KEY=gtx-runtime\n');
       loadEnv();
 
-      await expect(resolveCliApiKey(baseUrl)).resolves.toBe('gtx-ci');
+      await expect(
+        resolveCliApiKey(process.env.GT_API_KEY, baseUrl)
+      ).resolves.toBe('gtx-ci');
       expect(hasLogin).not.toHaveBeenCalled();
     }
   );

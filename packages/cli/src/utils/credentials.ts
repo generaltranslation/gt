@@ -9,6 +9,7 @@ import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/diagnostics';
+import { credentialEnvNames } from 'generaltranslation/internal';
 
 const execFileAsync = promisify(execFile);
 
@@ -82,20 +83,18 @@ function gitCheckFailedError(file: string, stderr: string): string {
 
 export type Credentials = { apiKey: string; projectId: string };
 
-// Every framework adapter (gt-next, the gt-react/vite and gt-tanstack-start
-// plugins) reads these and exposes the key to client code in development only.
-const ENV_NAMES = { projectId: 'GT_PROJECT_ID', apiKey: 'GT_API_KEY' };
-
 /**
  * Whether the project has a runtime key. `settings.apiKey` drops a
- * .env.local GT_API_KEY while the user is signed in, so the environment is
- * checked too. Login is checked separately.
+ * .env.local GT_API_KEY while the user is signed in, so the key found in the
+ * environment when the settings were built counts too. Login is checked
+ * separately.
  */
 export function areCredentialsSet(
-  settings: Pick<Settings, 'projectId' | 'apiKey'>
+  settings: Pick<Settings, 'projectId' | 'apiKey' | 'runtimeCredentials'>
 ): boolean {
   return Boolean(
-    settings.projectId && (process.env[ENV_NAMES.apiKey] || settings.apiKey)
+    settings.projectId &&
+    (settings.runtimeCredentials.hasApiKey || settings.apiKey)
   );
 }
 
@@ -316,7 +315,7 @@ function updateCredentialsEnvContent(
   envContent: string,
   credentials: Credentials
 ): string {
-  const targetNames = Object.values(ENV_NAMES);
+  const targetNames: string[] = Object.values(credentialEnvNames);
   const targetOpensMultiline = envContent
     .split('\n')
     .some(
@@ -327,17 +326,17 @@ function updateCredentialsEnvContent(
   const original = dotenv.parse(envContent);
   const expected = {
     ...original,
-    [ENV_NAMES.projectId]: credentials.projectId,
-    [ENV_NAMES.apiKey]: credentials.apiKey,
+    [credentialEnvNames.projectId]: credentials.projectId,
+    [credentialEnvNames.apiKey]: credentials.apiKey,
   };
   let updatedContent = upsertEnvAssignment(
     envContent,
-    ENV_NAMES.projectId,
+    credentialEnvNames.projectId,
     credentials.projectId
   );
   updatedContent = upsertEnvAssignment(
     updatedContent,
-    ENV_NAMES.apiKey,
+    credentialEnvNames.apiKey,
     credentials.apiKey
   );
 

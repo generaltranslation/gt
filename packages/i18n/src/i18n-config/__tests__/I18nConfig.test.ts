@@ -199,21 +199,21 @@ describe('I18nConfig', () => {
     ).toBe('en-GB');
   });
 
-  it('prefers apiKey over the GT_API_KEY environment variable', () => {
+  it('does not read the API key from the environment', () => {
     vi.stubEnv('GT_API_KEY', 'env-key');
-    const runtime = (params: { apiKey?: string }) =>
+
+    expect(() =>
+      new I18nConfig({ projectId: 'project' }).getTranslationRuntime()
+    ).toThrow('Runtime translation needs an API key');
+    expect(
       new I18nConfig({
         projectId: 'project',
-        ...params,
-      }).getTranslationRuntime();
-
-    expect(runtime({}).apiKey).toBe('env-key');
-    expect(runtime({ apiKey: 'key' }).apiKey).toBe('key');
+        apiKey: 'key',
+      }).getTranslationRuntime().apiKey
+    ).toBe('key');
   });
 
   it('builds a translation runtime only with a projectId and an API key', () => {
-    vi.stubEnv('GT_API_KEY', '');
-
     expect(() =>
       new I18nConfig({ projectId: 'project' }).getTranslationRuntime()
     ).toThrow('Runtime translation needs an API key');
