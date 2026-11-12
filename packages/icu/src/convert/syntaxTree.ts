@@ -20,11 +20,11 @@ import type {
   TagNode,
 } from '../tree/messageTree';
 import {
-  bindFormatting,
-  boundFormats,
+  addContext,
+  toFormats,
   splitOptions,
   type DateTimeOptions,
-  type FormatBindings,
+  type ContextByVariable,
 } from '../tree/splitOptions';
 import { styleProblem } from '../tree/validateMessageTree';
 import { branchNodes } from '../tree/walk';
@@ -76,13 +76,13 @@ export function readMessage(
   ast: MessageFormatElement[],
   styles: NamedStyles
 ): Message {
-  const bindings: FormatBindings = new Map();
+  const contexts: ContextByVariable = new Map();
   const tree = convert(ast, (element, kind) => {
-    const [node, formatting] = splitFormat(element, kind, styles);
-    bindFormatting(bindings, element.value, formatting);
+    const [node, context] = splitFormat(element, kind, styles);
+    addContext(contexts, element.value, context);
     return node;
   });
-  return { tree, formats: boundFormats(bindings) };
+  return { tree, formats: toFormats(contexts) };
 }
 
 /**
@@ -175,7 +175,7 @@ function splitFormat(
   element: FormatElement,
   kind: FormatKind,
   styles: NamedStyles
-): [node: NumberNode | DateTimeNode, formatting: MessageFormattingContext] {
+): [node: NumberNode | DateTimeNode, context: MessageFormattingContext] {
   const fail = (reason: string) =>
     new Error(createUnsupportedTreeFormatError(printAST([element]), reason));
   const unknownStyle = (name: string) =>
@@ -194,13 +194,13 @@ function splitFormat(
     }
     // ICU's `scale/100` is no Intl option, so it is kept beside the context.
     const { scale, ...intlOptions } = options ?? {};
-    const [node, formatting] = splitOptions(
+    const [node, context] = splitOptions(
       element.value,
       kind,
       intlOptions,
       fail
     );
-    return [node, scale ? sortRecord({ ...formatting, scale }) : formatting];
+    return [node, scale ? sortRecord({ ...context, scale }) : context];
   }
   const style = element.style;
   let options: DateTimeOptions | undefined;

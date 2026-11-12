@@ -17,11 +17,11 @@ import type {
   SelectNode,
 } from './messageTree';
 import {
-  bindFormatting,
-  boundFormats,
+  addContext,
+  toFormats,
   splitOptions,
   type DateTimeOptions,
-  type FormatBindings,
+  type ContextByVariable,
 } from './splitOptions';
 
 // ===== Hole IR ===== //
@@ -67,9 +67,9 @@ export type TemplateHole =
 
 // ===== Builder ===== //
 
-type BuildContext = {
+type BuildState = {
   values: [name: string, value: unknown][];
-  formats: FormatBindings;
+  contexts: ContextByVariable;
 };
 
 // Anonymous values are named `_gt_N`; user names must not collide.
@@ -96,12 +96,12 @@ export function buildMessageTree(
   strings: readonly string[],
   holes: readonly TemplateHole[]
 ): BuiltMessageTree {
-  const context: BuildContext = { values: [], formats: new Map() };
-  const tree = build(strings, holes, context, false);
+  const state: BuildState = { values: [], contexts: new Map() };
+  const tree = build(strings, holes, state, false);
   return {
     tree,
-    values: context.values,
-    formats: boundFormats(context.formats),
+    values: state.values,
+    formats: toFormats(state.contexts),
   };
 }
 
@@ -118,23 +118,23 @@ function validateName(name: string): void {
 }
 
 // Every anonymous value adds one entry, so the count numbers the next one.
-function addAnonymousValue(context: BuildContext, value: unknown): string {
-  const name = `${RESERVED_NAME_PREFIX}${context.values.length + 1}`;
-  context.values.push([name, value]);
+function addAnonymousValue(state: BuildState, value: unknown): string {
+  const name = `${RESERVED_NAME_PREFIX}${state.values.length + 1}`;
+  state.values.push([name, value]);
   return name;
 }
 
 function build(
   strings: readonly string[],
   holes: readonly TemplateHole[],
-  context: BuildContext,
+  state: BuildState,
   inPlural: boolean
 ): MessageNode[] {
   const out: MessageNode[] = [];
   // Template text is always literal, ICU syntax such as `#` and `{` included.
   strings.forEach((text, i) => {
     appendText(out, text);
-    if (i < holes.length) buildHole(out, holes[i], context, inPlural);
+    if (i < holes.length) buildHole(out, holes[i], state, inPlural);
   });
   return out;
 }
@@ -142,7 +142,7 @@ function build(
 function buildHole(
   out: MessageNode[],
   hole: TemplateHole,
-  context: BuildContext,
+  state: BuildState,
   inPlural: boolean
 ): void {
   if ('name' in hole && hole.name !== undefined) validateName(hole.name);
@@ -151,10 +151,10 @@ function buildHole(
       out.push([hole.name]);
       return;
     case 'anonymous':
-      out.push([addAnonymousValue(context, hole.value)]);
+      out.push([addAnonymousValue(state, hole.value)]);
       return;
     case 'fragment':
-      for (const node of build(hole.strings, hole.holes, context, inPlural)) {
+      for (const node of build(hole.strings, hole.holes, state, inPlural)) {
         if (typeof node === 'string') appendText(out, node);
         else out.push(node);
       }
@@ -167,15 +167,15 @@ function buildHole(
     case 'number':
     case 'date':
     case 'time': {
-      const name = hole.name ?? addAnonymousValue(context, hole.value);
-      const [node, formatting] = splitOptions(
+      const name = hole.name ?? addAnonymousValue(state, hole.value);
+      const [node, context] = splitOptions(
         name,
         hole.kind,
         hole.options ?? {},
         (reason) =>
           new Error(createInvalidFormatOptionError(name, hole.kind, reason))
       );
-      bindFormatting(context.formats, name, formatting);
+      addContext(state.contexts, name, context);
       out.push(node);
       return;
     }
@@ -183,7 +183,7 @@ function buildHole(
     case 'selectordinal':
     case 'select': {
       // Named before its branches, so numbering follows tree order.
-      const name = hole.name ?? addAnonymousValue(context, hole.value);
+      const name = hole.name ?? addAnonymousValue(state, hole.value);
       const isSelect = hole.kind === 'select';
       const branchInPlural = !isSelect;
       const keys = Object.keys(hole.branches).filter(
@@ -203,8 +203,8 @@ function buildHole(
           branch == null
             ? []
             : typeof branch === 'string'
-              ? build([branch], [], context, branchInPlural)
-              : build(branch.strings, branch.holes, context, branchInPlural)
+              ? build([branch], [], state, branchInPlural)
+              : build(branch.strings, branch.holes, state, branchInPlural)
         );
       }
       Object.setPrototypeOf(branches, Object.prototype);

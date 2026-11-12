@@ -18,17 +18,17 @@ import { formattedNode } from './validateMessageTree';
 export type DateTimeOptions = DateMessageOptions & DateTimeFormattingContext;
 
 /**
- * Splits a formatted placeholder's Intl options into its tree node, which
- * holds the style, and its sorted formatting context, by the option
- * classification. A tagged
- * template's options and an ICU string's are split here alike.
+ * Splits a formatted placeholder's Intl options in two: its tree node, from
+ * the options that are part of the message, like the style, and its
+ * formatting context, sorted, from the rest. A tagged template's options and
+ * an ICU string's are split here alike.
  */
 export function splitOptions(
   name: string,
   kind: (NumberNode | DateTimeNode)[1],
   options: Intl.NumberFormatOptions | DateTimeOptions,
-  invalid: (reason: string) => Error
-): [node: NumberNode | DateTimeNode, formatting: MessageFormattingContext] {
+  fail: (reason: string) => Error
+): [node: NumberNode | DateTimeNode, context: MessageFormattingContext] {
   const messageKeys: readonly string[] =
     kind === 'number'
       ? NUMBER_MESSAGE_OPTIONS
@@ -37,61 +37,61 @@ export function splitOptions(
         : TIME_MESSAGE_OPTIONS;
   const contextKeys: readonly string[] =
     kind === 'number' ? NUMBER_CONTEXT_OPTIONS : DATE_TIME_CONTEXT_OPTIONS;
-  const message: Record<string, unknown> = {};
-  const formatting: Record<string, unknown> = {};
+  const messageOptions: Record<string, unknown> = {};
+  const context: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(options)) {
     // Intl reads an undefined option as an absent one.
     if (value === undefined) continue;
-    if (messageKeys.includes(key)) message[key] = value;
-    else if (contextKeys.includes(key)) formatting[key] = value;
-    else throw invalid(`a ${kind} has no "${key}" option`);
+    if (messageKeys.includes(key)) messageOptions[key] = value;
+    else if (contextKeys.includes(key)) context[key] = value;
+    else throw fail(`a ${kind} has no "${key}" option`);
   }
 
   let style: unknown;
   if (kind === 'number') {
     // Intl ignores `unit` without a unit style, so it would not be in the message.
-    if (message.unit !== undefined && message.style !== 'unit') {
-      throw invalid(`"unit" needs style: 'unit'`);
+    if (messageOptions.unit !== undefined && messageOptions.style !== 'unit') {
+      throw fail(`"unit" needs style: 'unit'`);
     }
     style =
-      message.style === 'unit'
-        ? { style: 'unit', unit: message.unit }
-        : message.style === 'decimal'
+      messageOptions.style === 'unit'
+        ? { style: 'unit', unit: messageOptions.unit }
+        : messageOptions.style === 'decimal'
           ? undefined
-          : message.style;
+          : messageOptions.style;
   } else {
-    const { style: named, ...fields } = message;
-    if (named !== undefined && Object.keys(fields).length) {
+    const { style: styleName, ...fields } = messageOptions;
+    if (styleName !== undefined && Object.keys(fields).length) {
       // Intl throws a TypeError for this too.
-      throw invalid(`a style name cannot be combined with fields`);
+      throw fail(`a style name cannot be combined with fields`);
     }
-    style = named ?? canonicalStyle(fields);
+    style = styleName ?? canonicalStyle(fields);
   }
-  return [formattedNode(name, kind, style, invalid), sortRecord(formatting)];
+  return [formattedNode(name, kind, style, fail), sortRecord(context)];
 }
 
 /** Each formatted variable's context, empty included, to find conflicts. */
-export type FormatBindings = Map<string, MessageFormattingContext>;
+export type ContextByVariable = Map<string, MessageFormattingContext>;
 
 /**
- * Binds a variable to its formatting context. `formats` is keyed by variable,
- * so one variable formatted with two contexts throws.
+ * Adds a variable's formatting context. `formats` is keyed by variable, so
+ * one variable formatted with two contexts throws.
  */
-export function bindFormatting(
-  bindings: FormatBindings,
+export function addContext(
+  contexts: ContextByVariable,
   name: string,
-  formatting: MessageFormattingContext
+  context: MessageFormattingContext
 ): void {
-  const bound = bindings.get(name);
-  if (bound && JSON.stringify(bound) !== JSON.stringify(formatting)) {
+  const existing = contexts.get(name);
+  if (existing && JSON.stringify(existing) !== JSON.stringify(context)) {
     throw new Error(createConflictingFormatsError(name));
   }
-  bindings.set(name, formatting);
+  contexts.set(name, context);
 }
 
-/** The contexts that hold an option, as `formatMessageTree` takes them. */
-export function boundFormats(bindings: FormatBindings): MessageTreeFormats {
+/** A message's `formats`: each variable's context that holds an option. */
+export function toFormats(contexts: ContextByVariable): MessageTreeFormats {
   return Object.fromEntries(
-    [...bindings].filter(([, formatting]) => Object.keys(formatting).length)
+    [...contexts].filter(([, context]) => Object.keys(context).length)
   );
 }
