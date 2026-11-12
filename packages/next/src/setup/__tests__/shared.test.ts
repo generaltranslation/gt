@@ -8,6 +8,7 @@ function setConfigEnv() {
     JSON.stringify({
       defaultLocale: 'en',
       locales: ['en', 'fr'],
+      timeZone: 'Asia/Tokyo',
       runtimeUrl: 'https://runtime.example.com',
       cacheUrl: 'https://cache.example.com',
       renderSettings: { timeout: 123 },
@@ -57,6 +58,7 @@ describe('getParams', () => {
       apiKey: 'api-key',
       devApiKey: 'api-key',
       cacheUrl: 'https://cache.example.com',
+      timeZone: 'Asia/Tokyo',
       localeCookieName: 'custom-locale',
       enableI18nCookieName: 'custom-enable-i18n',
     });

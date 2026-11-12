@@ -11,7 +11,7 @@ import {
   resolveCanonicalLocale as _resolveCanonicalLocale,
   standardizeLocale as _standardizeLocale,
 } from '@generaltranslation/format';
-import { LocaleConfig } from './LocaleConfig';
+import { checkTimeZone, LocaleConfig } from './LocaleConfig';
 import type {
   CustomMapping,
   CustomRegionMapping,
@@ -54,6 +54,7 @@ import { TranslateOptions } from './types-dir/api/entry';
  * @property {string} [projectId] - The project ID for the translation service
  * @property {string} [baseUrl] - The base URL for the translation service
  * @property {CustomMapping} [customMapping] - Custom mapping of locale codes to their names
+ * @property {string} [timeZone] - IANA time zone for dates and times formatted without one; the host's by default
  */
 export type GTConstructorParams = {
   apiKey?: string;
@@ -65,6 +66,7 @@ export type GTConstructorParams = {
   projectId?: string;
   baseUrl?: string;
   customMapping?: CustomMapping;
+  timeZone?: string;
   userTokenProvider?: UserTokenProvider;
 };
 
@@ -110,6 +112,9 @@ export class GTRuntime {
 
   /** Custom mapping for locale codes to their names */
   customMapping?: CustomMapping;
+
+  /** Time zone for dates and times formatted without one; the host's when unset */
+  timeZone?: string;
 
   /** Lazily derived reverse custom mapping for alias locales */
   reverseCustomMapping?: Record<string, string>;
@@ -160,10 +165,14 @@ export class GTRuntime {
     locales,
     projectId,
     customMapping,
+    timeZone,
     baseUrl,
     userTokenProvider,
   }: GTConstructorParams) {
     const effectiveCustomMapping = customMapping ?? this.customMapping;
+    // Checked before any field changes, so a rejected zone changes none.
+    const nextTimeZone =
+      timeZone === undefined ? this.timeZone : checkTimeZone(timeZone);
 
     // ----- Environment properties ----- //
     if (apiKey) this.apiKey = apiKey;
@@ -220,7 +229,9 @@ export class GTRuntime {
       defaultLocale: this.sourceLocale,
       locales: this.locales ?? [],
       customMapping: this.customMapping,
+      timeZone: nextTimeZone,
     });
+    this.timeZone = nextTimeZone;
   }
 
   // -------------- Private Methods -------------- //

@@ -27,6 +27,7 @@ export type I18nConfigParams = Pick<
   | 'defaultLocale'
   | 'locales'
   | 'customMapping'
+  | 'timeZone'
   | 'projectId'
   | 'devApiKey'
   | 'apiKey'
@@ -168,6 +169,7 @@ export class I18nConfig extends LocaleConfig {
       targetLocale: locale,
       locales: this.getLocales(),
       customMapping: this.getCustomMapping(),
+      timeZone: this.timeZone,
       projectId: this.runtimeConfig.projectId,
       baseUrl: this.runtimeConfig.runtimeUrl || undefined,
       apiKey: this.runtimeConfig.apiKey,
@@ -220,6 +222,7 @@ function getLocaleConfigParams(
     defaultLocale,
     locales: Array.from(new Set([defaultLocale, ...locales])),
     customMapping: customMapping || {},
+    timeZone: params.timeZone,
   };
 }
 

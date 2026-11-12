@@ -288,6 +288,15 @@ describe.sequential('GT Translation Methods', () => {
 });
 
 describe('LocaleConfig', () => {
+  it.each(['Mars/Olympus', ''])(
+    'rejects the time zone %j, which Intl does not know',
+    (timeZone) => {
+      const message = `Invalid time zone ${JSON.stringify(timeZone)}`;
+      expect(() => new LocaleConfig({ timeZone })).toThrow(message);
+      expect(() => new GT({ timeZone })).toThrow(message);
+    }
+  );
+
   it('formats with a custom alias by resolving to the canonical locale', () => {
     const localeConfig = new LocaleConfig({
       defaultLocale: 'en-US',
@@ -338,6 +347,45 @@ describe('GT LocaleConfig delegation', () => {
     expect(() =>
       gt.setConfig({ targetLocale: 'brand-french', customMapping: {} })
     ).toThrow();
+  });
+
+  it('formats dates and times in its time zone unless the call names one', () => {
+    const gt = new GT({ sourceLocale: 'en-US', timeZone: 'Asia/Tokyo' });
+    const date = new Date('2020-05-06T14:03:02Z');
+    const format = (timeZone: string) =>
+      new Intl.DateTimeFormat('en-US', { timeStyle: 'short', timeZone }).format(
+        date
+      );
+
+    expect(gt.formatDateTime(date, { timeStyle: 'short' })).toBe(
+      format('Asia/Tokyo')
+    );
+    expect(
+      gt.formatDateTime(date, { timeStyle: 'short', timeZone: 'UTC' })
+    ).toBe(format('UTC'));
+  });
+
+  it('changes nothing when an update names a time zone Intl does not know', () => {
+    const customMapping = { brand: { code: 'fr' } };
+    const gt = new GT({
+      sourceLocale: 'en-US',
+      locales: ['en-US', 'brand'],
+      customMapping,
+      timeZone: 'Asia/Tokyo',
+    });
+
+    expect(() =>
+      gt.setConfig({
+        sourceLocale: 'de-DE',
+        customMapping: { brand: { code: 'de' } },
+        timeZone: 'Mars/Olympus',
+      })
+    ).toThrow('Invalid time zone "Mars/Olympus"');
+    expect(gt.sourceLocale).toBe('en-US');
+    expect(gt.customMapping).toBe(customMapping);
+    expect(gt.resolveCanonicalLocale('brand')).toBe('fr');
+    expect(() => gt.setConfig({ targetLocale: 'fr-FR' })).not.toThrow();
+    expect(gt.localeConfig.timeZone).toBe('Asia/Tokyo');
   });
 
   it('formats with a custom target locale alias through LocaleConfig', () => {

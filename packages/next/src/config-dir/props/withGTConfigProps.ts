@@ -43,6 +43,8 @@ export type BaseWithGTConfigProps = MiddlewareConfig & {
   defaultLocale?: string;
   ignoreBrowserLocales?: boolean;
   disableInvalidLocaleWarning?: boolean;
+  /** IANA time zone for dates and times formatted without one. */
+  timeZone?: string;
   /** Regular expression source that limits i18n middleware routing by pathname, written for paths without the locale prefix. `<Link>`, `useLocalizeHref()` and `getLocalizeHref()` leave non-matching paths unprefixed. */
   pathRegex?: string;
   // Rendering
