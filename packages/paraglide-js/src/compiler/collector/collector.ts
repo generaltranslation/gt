@@ -97,6 +97,8 @@ export class ContextCollector {
   /** The analyzed files, and how many usages each has. */
   private readonly analyzed = new Map<string, number>();
   private readonly catalogs = new Map<string, Catalog>();
+  /** By message file, absolute. */
+  private readonly messageOutdirs = new Map<string, string | undefined>();
   /** Usages of messages that are not in their catalog. */
   private readonly unknownMessages: string[] = [];
   private readonly missingTools: MissingTools;
@@ -374,9 +376,18 @@ export class ContextCollector {
   private messageOutdir(usage: ParaglideUsage): string | undefined {
     if (usage.target !== 'message') return undefined;
 
+    const { targetFile } = usage;
+    if (!this.messageOutdirs.has(targetFile)) {
+      this.messageOutdirs.set(targetFile, this.outdirOf(targetFile));
+    }
+
+    return this.messageOutdirs.get(targetFile);
+  }
+
+  private outdirOf(messageFile: string): string | undefined {
     // The innermost one, if outdirs are nested.
     return this.moduleGraph.outdirs.find((outdir) =>
-      isWithin(outdir, usage.targetFile)
+      isWithin(outdir, messageFile)
     );
   }
 
