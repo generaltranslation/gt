@@ -1,9 +1,16 @@
 import { createUnsupportedTreeFormatError } from '../errors/convertErrors';
 import { parseDateTimeSkeletonOptions } from '../parser/skeleton';
 import { printAST } from '../parser/printer';
-import { canonicalStyle } from '../tree/canonical';
+import {
+  DATE_TIME_STYLE_NAMES,
+  NAMED_NUMBER_STYLES,
+  type DateTimeStyleName,
+  type MessageFormattingContext,
+} from '../settings/formatOptions';
+import { sortRecord } from '../tree/canonical';
 import type {
   DateTimeNode,
+  Message,
   MessageBranches,
   MessageNode,
   MessageTree,
@@ -12,7 +19,14 @@ import type {
   SelectNode,
   TagNode,
 } from '../tree/messageTree';
-import { formattedNode, styleProblem } from '../tree/validateMessageTree';
+import {
+  bindFormatting,
+  boundFormats,
+  splitOptions,
+  type DateTimeOptions,
+  type FormatBindings,
+} from '../tree/splitOptions';
+import { styleProblem } from '../tree/validateMessageTree';
 import { branchNodes } from '../tree/walk';
 import { printDateTimeSkeleton } from './skeleton';
 import {
@@ -27,6 +41,8 @@ import {
   type TimeElement,
 } from '../types-dir/ast';
 
+const DATE_TIME_STYLES = new Set<string>(DATE_TIME_STYLE_NAMES);
+
 type FormatElement = NumberElement | DateElement | TimeElement;
 type FormatKind = (NumberNode | DateTimeNode)[1];
 // A style as an ICU string spells it: a name, or the Intl options of a skeleton.
@@ -39,19 +55,40 @@ type IntlStyle =
 type FormatReader = (element: FormatElement, kind: FormatKind) => MessageNode;
 
 /**
- * Converts the parser's syntax tree to a message tree node for node, in the
- * parsed order; `normalizeTree` gives the form keys are hashed from.
- * Locations are dropped. Throws for a format a tree cannot hold, such as a
- * number skeleton with digits: its options are formatting context.
+ * An app's own style names by kind, in the shape of react-intl's `formats`
+ * prop (not a message's `formats`, which is its formatting context):
+ * `{ number: { EUR: { style: 'currency', currency: 'EUR' } } }`.
  */
-export function toMessageTree(ast: MessageFormatElement[]): MessageTree {
-  return convert(ast, treeNode);
+export type NamedStyles = {
+  number?: Readonly<Record<string, ExtendedNumberFormatOptions>>;
+  date?: Readonly<Record<string, Intl.DateTimeFormatOptions>>;
+  time?: Readonly<Record<string, Intl.DateTimeFormatOptions>>;
+};
+
+/**
+ * Converts the parser's syntax tree to a message: its tree, node for node in
+ * the parsed order, and the formatting context its formatted placeholders
+ * spell, by variable. `normalizeTree` gives the form keys are hashed from. Locations
+ * are dropped. One variable formatted with two contexts throws, as does a
+ * style name that is neither ICU's nor in `styles`.
+ */
+export function readMessage(
+  ast: MessageFormatElement[],
+  styles: NamedStyles = {}
+): Message {
+  const bindings: FormatBindings = new Map();
+  const tree = convert(ast, (element, kind) => {
+    const [node, formatting] = splitFormat(element, kind, styles);
+    bindFormatting(bindings, element.value, formatting);
+    return node;
+  });
+  return { tree, formats: boundFormats(bindings) };
 }
 
 /**
- * Converts the parser's syntax tree for formatting an ICU string: a format
- * keeps every Intl option its skeleton spells, which a message tree cannot
- * hold, and the formatter reads them like a tree's styles.
+ * Converts the parser's syntax tree for formatting an ICU string: a formatted
+ * placeholder keeps every Intl option its skeleton spells, which a message
+ * tree cannot hold, and the formatter reads them like a tree's styles.
  */
 export function toParsedTree(ast: MessageFormatElement[]): MessageTree {
   return convert(ast, parsedNode);
@@ -102,8 +139,8 @@ function toNode(
 }
 
 /**
- * A format for the formatter only: the style is the name, or every Intl
- * option the skeleton spells.
+ * A formatted placeholder for the formatter only: the style is the name, or
+ * every Intl option the skeleton spells.
  */
 function parsedNode(element: FormatElement, kind: FormatKind): MessageNode {
   const skeleton = element.style;
@@ -126,36 +163,90 @@ function dateTimeOptions(
   return parseDateTimeSkeletonOptions(skeleton.pattern, { localeHour: true });
 }
 
+// The parser shows at most three fractional digits, as Intl does.
+const FOUR_FRACTIONAL_DIGITS = /S{4}/;
+
 /**
- * A format with the style a tree holds: a style name, a number's `::unit/…`,
- * or date and time fields. An hour symbol is the hour; its cycle, from `h`,
- * `H`, `K`, `k`, `J` or a day period `a`, is formatting context and is dropped.
+ * A formatted placeholder split in two: its node, with the style a tree
+ * holds, and the formatting context its string spells, like a currency,
+ * digits or an hour cycle. `splitOptions` splits a tagged template's options the same way.
  */
-function treeNode(element: FormatElement, kind: FormatKind): MessageNode {
+function splitFormat(
+  element: FormatElement,
+  kind: FormatKind,
+  styles: NamedStyles
+): [node: NumberNode | DateTimeNode, formatting: MessageFormattingContext] {
   const fail = (reason: string) =>
     new Error(createUnsupportedTreeFormatError(printAST([element]), reason));
-  let style: IntlStyle;
-  const skeleton = element.style;
-  if (skeleton == null || typeof skeleton === 'string') {
-    style = skeleton;
-  } else if (skeleton.type === SKELETON_TYPE.number) {
-    const [token, ...rest] = skeleton.tokens;
-    if (rest.length || token.stem !== 'unit' || token.options.length !== 1) {
-      throw fail(
-        'a number skeleton can only be ::unit/<unit>; other number options are formatting context'
-      );
+  const unknownStyle = (name: string) =>
+    fail(
+      `"${name}" is not a style name; pass the app's own style names as \`styles\``
+    );
+  if (element.type === TYPE.number) {
+    const style = element.style;
+    let options: ExtendedNumberFormatOptions | undefined;
+    if (typeof style === 'string') {
+      // The app's own names first, as FormatJS reads them, then ICU's.
+      options = own(styles.number, style) ?? own(NAMED_NUMBER_STYLES, style);
+      if (!options) throw unknownStyle(style);
+    } else {
+      options = style?.parsedOptions;
     }
-    // Read like ICU4C, which takes the whole identifier, as in `unit/kilometer-per-hour`.
-    style = { style: 'unit', unit: token.options[0] };
-  } else {
-    // The parser shows at most three fractional digits, as Intl does.
-    if (/S{4}/.test(skeleton.pattern.replace(/'[^']*'/g, ''))) {
+    // ICU's `scale/100` is no Intl option, so it is kept beside the context.
+    const { scale, ...intlOptions } = options ?? {};
+    const [node, formatting] = splitOptions(
+      element.value,
+      kind,
+      intlOptions,
+      fail
+    );
+    return [node, scale ? sortRecord({ ...formatting, scale }) : formatting];
+  }
+  const style = element.style;
+  let options: DateTimeOptions | undefined;
+  if (typeof style === 'string') {
+    options = namedDateTimeStyle(
+      own(element.type === TYPE.date ? styles.date : styles.time, style),
+      element.type === TYPE.date ? 'dateStyle' : 'timeStyle',
+      style
+    );
+    if (!options) throw unknownStyle(style);
+  } else if (style) {
+    if (FOUR_FRACTIONAL_DIGITS.test(style.pattern.replace(/'[^']*'/g, ''))) {
       throw fail('fractional seconds have at most three digits, SSS');
     }
-    const { hourCycle: _, hour12: __, ...fields } = dateTimeOptions(skeleton);
-    style = canonicalStyle(fields);
+    options = dateTimeOptions(style);
   }
-  return formattedNode(element.value, kind, style, fail);
+  return splitOptions(element.value, kind, options, fail);
+}
+
+/**
+ * The options of a date or time style name. A message calls its style
+ * `style`, so Intl's `dateStyle` or `timeStyle` in an app's own style is
+ * read as that.
+ */
+function namedDateTimeStyle(
+  custom: Intl.DateTimeFormatOptions | undefined,
+  intlStyle: 'dateStyle' | 'timeStyle',
+  name: string
+): DateTimeOptions | undefined {
+  if (custom) {
+    const { [intlStyle]: style, ...rest } = custom;
+    return style === undefined ? rest : { ...rest, style };
+  }
+  return DATE_TIME_STYLES.has(name)
+    ? { style: name as DateTimeStyleName }
+    : undefined;
+}
+
+// A style name comes from the string, so an inherited key is not a style.
+function own<T>(
+  record: Readonly<Record<string, T>> | undefined,
+  key: string
+): T | undefined {
+  return record && Object.prototype.hasOwnProperty.call(record, key)
+    ? record[key]
+    : undefined;
 }
 
 function toBranches(

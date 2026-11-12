@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { icuToMessageTree, messageTreeToIcu } from '../convert';
+import { icuToMessage, messageTreeToIcu } from '../convert';
 import {
   validateMessageTree,
   type DateTimeNode,
@@ -16,13 +16,14 @@ import {
 import { DATE_TIME_FIELD_SYMBOLS } from '../convert/skeleton';
 import { normalizeTree } from '../tree/canonical';
 import { formatMessage, formatMessageTree } from './format';
+import { DATE_SKELETONS, NUMBER_SKELETONS } from './skeletonCases';
 
 const POUND: TemplateHole = { kind: 'pound' };
 
-describe('icuToMessageTree', () => {
+describe('icuToMessage', () => {
   it('converts an ICU string to a message tree', () => {
     expect(
-      icuToMessageTree('Hi {name}, {n, plural, one {# file} other {# files}}')
+      icuToMessage('Hi {name}, {n, plural, one {# file} other {# files}}').tree
     ).toEqual([
       'Hi ',
       ['name'],
@@ -32,9 +33,9 @@ describe('icuToMessageTree', () => {
   });
 
   it('sorts branches and fields like buildMessageTree', () => {
-    const tree = icuToMessageTree(
+    const tree = icuToMessage(
       '{n, plural, other {#} one {one} =2 {two}} {d, date, ::yMMMd}'
-    );
+    ).tree;
     expect(Object.keys((tree[0] as SelectNode)[2])).toEqual([
       '=2',
       'one',
@@ -60,16 +61,16 @@ describe('icuToMessageTree', () => {
       ]
     ).tree;
     expect(
-      icuToMessageTree(
+      icuToMessage(
         'You have {count, plural, other {# messages} one {# message}}'
-      )
+      ).tree
     ).toEqual(built);
   });
 
   it('keeps tags, offsets, named styles, and a __proto__ branch', () => {
-    const tree = icuToMessageTree(
+    const tree = icuToMessage(
       '<b>{n, plural, offset:1 other {#}}</b> {p, number, percent} {k, select, __proto__ {P} other {O}}'
-    );
+    ).tree;
     expect(tree).toEqual([
       ['b', 'tag', [['n', 'plural', { other: [0] }, 1]]],
       ' ',
@@ -87,14 +88,14 @@ describe('icuToMessageTree', () => {
   it.each(['j', 'J', 'h', 'H', 'K', 'k', 'ha'])(
     'reads the hour symbol in ::%smm as the hour',
     (hour) => {
-      expect(icuToMessageTree(`{d, time, ::${hour}mm}`)).toEqual([
+      expect(icuToMessage(`{d, time, ::${hour}mm}`).tree).toEqual([
         ['d', 'time', { hour: 'numeric', minute: '2-digit' }],
       ]);
     }
   );
 
   it('reads a skeleton of only formatting context as no style, never {}', () => {
-    expect(icuToMessageTree('{t, time, ::a}{d, date, ::a}')).toEqual([
+    expect(icuToMessage('{t, time, ::a}{d, date, ::a}').tree).toEqual([
       ['t', 'time'],
       ['d', 'date'],
     ]);
@@ -104,7 +105,7 @@ describe('icuToMessageTree', () => {
     const d = new Date(2026, 0, 1, 13, 5);
     for (const icu of ['{d, time, ::j}', '{d, time, ::jjmm}']) {
       for (const locale of ['en-US', 'de']) {
-        expect(formatMessageTree(icuToMessageTree(icu), locale, { d })).toBe(
+        expect(formatMessageTree(icuToMessage(icu).tree, locale, { d })).toBe(
           formatMessage(icu, locale, { d })
         );
       }
@@ -113,9 +114,8 @@ describe('icuToMessageTree', () => {
 
   it('reads fractional seconds, day periods and time zone names', () => {
     expect(
-      icuToMessageTree(
-        '{d, time, ::jmmssSSS} {d, time, ::hB} {d, date, ::vvvv}'
-      )
+      icuToMessage('{d, time, ::jmmssSSS} {p, time, ::hB} {z, date, ::vvvv}')
+        .tree
     ).toEqual([
       [
         'd',
@@ -128,40 +128,169 @@ describe('icuToMessageTree', () => {
         },
       ],
       ' ',
-      ['d', 'time', { dayPeriod: 'short', hour: 'numeric' }],
+      ['p', 'time', { dayPeriod: 'short', hour: 'numeric' }],
       ' ',
-      ['d', 'date', { timeZoneName: 'longGeneric' }],
+      ['z', 'date', { timeZoneName: 'longGeneric' }],
     ]);
   });
 
   it('reads a unit as ICU4C does, the whole identifier', () => {
-    expect(icuToMessageTree('{s, number, ::unit/kilometer-per-hour}')).toEqual([
-      ['s', 'number', { style: 'unit', unit: 'kilometer-per-hour' }],
+    expect(icuToMessage('{s, number, ::unit/kilometer-per-hour}').tree).toEqual(
+      [['s', 'number', { style: 'unit', unit: 'kilometer-per-hour' }]]
+    );
+  });
+
+  // The message options stay in the tree; the rest is the variable's formats.
+  it.each<[string, MessageTree, Record<string, object>]>([
+    [
+      '{n, number, ::currency/EUR .00}',
+      [['n', 'number', 'currency']],
+      {
+        n: {
+          currency: 'EUR',
+          maximumFractionDigits: 2,
+          minimumFractionDigits: 2,
+        },
+      },
+    ],
+    [
+      '{n, number, ::compact-short}',
+      [['n', 'number']],
+      { n: { compactDisplay: 'short', notation: 'compact' } },
+    ],
+    [
+      '{n, number, integer}',
+      [['n', 'number']],
+      { n: { maximumFractionDigits: 0 } },
+    ],
+    [
+      '{n, number, ::percent .0}',
+      [['n', 'number', 'percent']],
+      { n: { maximumFractionDigits: 1, minimumFractionDigits: 1 } },
+    ],
+    [
+      '{n, number, ::measure-unit/length-meter unit-width-full-name}',
+      [['n', 'number', { style: 'unit', unit: 'meter' }]],
+      { n: { currencyDisplay: 'name', unitDisplay: 'long' } },
+    ],
+    ['{n, number, ::scale/100}', [['n', 'number']], { n: { scale: 100 } }],
+    [
+      '{t, time, ::Hmm}',
+      [['t', 'time', { hour: 'numeric', minute: '2-digit' }]],
+      { t: { hourCycle: 'h23' } },
+    ],
+    [
+      '{n, number, percent} {d, date, long}',
+      [['n', 'number', 'percent'], ' ', ['d', 'date', 'long']],
+      {},
+    ],
+  ])('splits %s into its tree and formats', (icu, tree, formats) => {
+    expect(icuToMessage(icu)).toEqual({ tree, formats });
+  });
+
+  it('reads the same sentence in two currencies as one tree', () => {
+    const euros = icuToMessage('Total: {total, number, ::currency/EUR}');
+    const dollars = icuToMessage('Total: {total, number, ::currency/USD}');
+    expect(dollars.tree).toEqual(euros.tree);
+    expect([euros.formats, dollars.formats]).toEqual([
+      { total: { currency: 'EUR' } },
+      { total: { currency: 'USD' } },
     ]);
   });
 
+  // A message formats as its string does: nothing the string says is lost.
   it.each([
-    '{n, number, ::currency/USD}',
-    '{n, number, ::percent}',
-    '{n, number, ::unit/meter unit-width-full-name}',
-    '{n, number, ::measure-unit/length-meter}',
+    ...NUMBER_SKELETONS.map(({ skeleton }) => `{n, number, ::${skeleton}}`),
+    // A skeleton that spells no field, like `::A`, is an unstyled date in a
+    // message, which formats as ICU's medium style; `SSSS` is rejected.
+    ...DATE_SKELETONS.filter(
+      ({ skeleton, options }) =>
+        !skeleton.includes('SSSS') &&
+        Object.keys(options).some((key) =>
+          (DATE_FIELD_OPTIONS as readonly string[]).includes(key)
+        )
+    ).map(({ skeleton }) => `{d, date, ::${skeleton}}`),
     '{n, number, integer}',
+    '{n, number, percent}',
+    '{d, date, full} {d, time, short}',
+  ])('formats the message of %s like the string', (icu) => {
+    const { tree, formats } = icuToMessage(icu);
+    const values = { n: 1234.567, d: new Date(2020, 4, 6, 23, 30, 5, 123) };
+    for (const locale of ['en-US', 'de', 'ja']) {
+      expect(formatMessageTree(tree, locale, values, { formats })).toBe(
+        formatMessage(icu, locale, values)
+      );
+    }
+  });
+
+  it('reads a style name of the app from `styles`', () => {
+    const styles = {
+      number: { EUR: { style: 'currency', currency: 'EUR' } },
+      // Intl's name for a date's style is read as the message's `style`.
+      date: { day: { dateStyle: 'full', timeZone: 'UTC' } },
+      time: { clock: { hour: 'numeric', hour12: false } },
+    } as const;
+    expect(
+      icuToMessage('{n, number, EUR} {d, date, day} {t, time, clock}', {
+        styles,
+      })
+    ).toEqual({
+      tree: [
+        ['n', 'number', 'currency'],
+        ' ',
+        ['d', 'date', 'full'],
+        ' ',
+        ['t', 'time', { hour: 'numeric' }],
+      ],
+      formats: {
+        n: { currency: 'EUR' },
+        d: { timeZone: 'UTC' },
+        t: { hour12: false },
+      },
+    });
+    // The app's own name wins over ICU's, as in FormatJS.
+    expect(
+      icuToMessage('{n, number, percent}', {
+        styles: { number: { percent: { maximumFractionDigits: 1 } } },
+      })
+    ).toEqual({
+      tree: [['n', 'number']],
+      formats: { n: { maximumFractionDigits: 1 } },
+    });
+  });
+
+  it.each([
+    '{n, number, EUR}',
+    // An inherited key is not a style name.
+    '{n, number, constructor}',
     '{d, date, ::yMd}{d, date, foo}',
     '{t, time, ::E}',
-  ])('rejects %s, which a tree cannot hold', (icu) => {
-    expect(() => icuToMessageTree(icu)).toThrow(
+  ])('rejects %s, which no message holds', (icu) => {
+    expect(() => icuToMessage(icu)).toThrow(
       /cannot be part of a message tree: /
     );
   });
 
+  it('rejects one variable with two formatting contexts', () => {
+    expect(() =>
+      icuToMessage('{n, number, ::.00} or about {n, number, ::compact-short}')
+    ).toThrow(
+      'Message variable "n" is formatted with different formatting context in one message; give each its own variable name.'
+    );
+    // The same options twice are one context.
+    expect(
+      icuToMessage('{n, number, ::.00} of {n, number, ::.00}').formats
+    ).toEqual({ n: { maximumFractionDigits: 2, minimumFractionDigits: 2 } });
+  });
+
   it('names the problem and the placeholder', () => {
-    expect(() => icuToMessageTree('{n, number, ::.00}')).toThrow(
-      '{n, number, ::.00} cannot be part of a message tree: a number skeleton can only be ::unit/<unit>; other number options are formatting context.'
+    expect(() => icuToMessage('{n, number, EUR}')).toThrow(
+      '{n, number, EUR} cannot be part of a message tree: "EUR" is not a style name; pass the app\'s own style names as `styles`.'
     );
-    expect(() => icuToMessageTree('{t, time, ::yMd}')).toThrow(
-      '{t, time, ::yMd} cannot be part of a message tree: a time has no "day" option.'
+    expect(() => icuToMessage('{t, time, ::yMd}').tree).toThrow(
+      '{t, time, ::yMd} cannot be part of a message tree: a time has no "year" option.'
     );
-    expect(() => icuToMessageTree('{t, time, ::ssSSSS}')).toThrow(
+    expect(() => icuToMessage('{t, time, ::ssSSSS}').tree).toThrow(
       '{t, time, ::ssSSSS} cannot be part of a message tree: fractional seconds have at most three digits, SSS.'
     );
   });
@@ -174,7 +303,9 @@ describe('icuToMessageTree', () => {
   });
 
   it('throws a SyntaxError for an invalid ICU string', () => {
-    expect(() => icuToMessageTree('{n, plural, one {x}}')).toThrow(SyntaxError);
+    expect(() => icuToMessage('{n, plural, one {x}}').tree).toThrow(
+      SyntaxError
+    );
   });
 });
 
@@ -237,13 +368,13 @@ describe('messageTreeToIcu', () => {
     ],
   ])('prints %j as %s', (tree, icu) => {
     expect(messageTreeToIcu(tree)).toBe(icu);
-    expect(icuToMessageTree(icu)).toEqual(tree);
+    expect(icuToMessage(icu).tree).toEqual(tree);
   });
 
   it('prints adjacent text as one literal', () => {
     // Quoting '{' and '}' separately would print '{''}', an escaped quote.
     const tree: MessageTree = ['{', '}', ['b', 'tag', ["'", '{']]];
-    expect(icuToMessageTree(messageTreeToIcu(tree))).toEqual([
+    expect(icuToMessage(messageTreeToIcu(tree)).tree).toEqual([
       '{}',
       ['b', 'tag', ["'{"]],
     ]);
@@ -282,8 +413,8 @@ describe('messageTreeToIcu', () => {
   });
 
   it('prints an offset branch where it cannot read as offset:', () => {
-    const tree = icuToMessageTree('{n, plural, other {O} offset {X}}');
-    expect(icuToMessageTree(messageTreeToIcu(tree))).toEqual(tree);
+    const tree = icuToMessage('{n, plural, other {O} offset {X}}').tree;
+    expect(icuToMessage(messageTreeToIcu(tree)).tree).toEqual(tree);
   });
 });
 
@@ -400,7 +531,7 @@ describe('the tree and ICU text', () => {
     (_json, tree) => {
       expect(validateMessageTree(tree)).toBeUndefined();
       expect(normalizeTree(tree)).toEqual(tree);
-      expect(icuToMessageTree(messageTreeToIcu(tree))).toEqual(tree);
+      expect(icuToMessage(messageTreeToIcu(tree)).tree).toEqual(tree);
     }
   );
 

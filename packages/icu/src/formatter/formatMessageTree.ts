@@ -19,15 +19,10 @@ import type {
 import { branchNodes } from '../tree/walk';
 import {
   DATE_TIME_STYLE_NAMES,
+  NAMED_NUMBER_STYLES,
   type DateTimeStyleName,
   type MessageTreeFormats,
 } from '../settings/formatOptions';
-
-const NUMBER_STYLES: Record<string, Intl.NumberFormatOptions> = {
-  integer: { maximumFractionDigits: 0 },
-  currency: { style: 'currency' },
-  percent: { style: 'percent' },
-};
 
 const DATE_TIME_STYLES = new Set<string>(DATE_TIME_STYLE_NAMES);
 
@@ -233,7 +228,7 @@ function formatNodes<R>(
           | ExtendedNumberFormatOptions
           | undefined;
         const { scale, ...intlOptions }: ExtendedNumberFormatOptions = {
-          ...(typeof style === 'string' ? NUMBER_STYLES[style] : style),
+          ...(typeof style === 'string' ? NAMED_NUMBER_STYLES[style] : style),
           ...formatsOf(context, name),
         };
         if (intlOptions.style === 'currency' && !intlOptions.currency) {

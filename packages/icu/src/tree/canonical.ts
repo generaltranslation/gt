@@ -40,8 +40,9 @@ export function toBranch(nodes: MessageNode[]): string | MessageTree {
 }
 
 /**
- * A format's canonical style from its fields: sorted, and no style when there
- * are none, so builders never write `{}`, which a tree does not hold.
+ * A formatted placeholder's canonical style from its fields: sorted, and no
+ * style when there are none, so builders never write `{}`, which a tree does
+ * not hold.
  */
 export function canonicalStyle<T extends object>(fields: T): T | undefined {
   return Object.keys(fields).length ? sortRecord(fields) : undefined;

@@ -1,40 +1,27 @@
 import {
-  createConflictingFormatsError,
   createInvalidBranchKeyError,
-  createInvalidFormatOptionError,
   createInvalidVariableNameError,
   createPluralCountOutsidePluralError,
   createReservedVariablePrefixError,
 } from '../errors/treeErrors';
-import {
-  DATE_MESSAGE_OPTIONS,
-  DATE_TIME_CONTEXT_OPTIONS,
-  NUMBER_CONTEXT_OPTIONS,
-  NUMBER_MESSAGE_OPTIONS,
-  TIME_MESSAGE_OPTIONS,
-  type DateMessageOptions,
-  type DateTimeFormattingContext,
-  type MessageFormattingContext,
-  type MessageTreeFormats,
-} from '../settings/formatOptions';
 import { FALLBACK_BRANCH_KEY, isArgumentName } from '../settings/syntax';
-import {
-  appendText,
-  canonicalStyle,
-  compareKeys,
-  sortRecord,
-  toBranch,
-} from './canonical';
+import { appendText, compareKeys, toBranch } from './canonical';
 import type {
   DateTimeNode,
+  Message,
   MessageBranches,
   MessageNode,
-  MessageTree,
   NumberNode,
   PluralNode,
   SelectNode,
 } from './messageTree';
-import { formattedNode } from './validateMessageTree';
+import {
+  bindFormatting,
+  boundFormats,
+  splitOptions,
+  type DateTimeOptions,
+  type FormatBindings,
+} from './splitOptions';
 
 // ===== Hole IR ===== //
 
@@ -55,9 +42,6 @@ type HoleVariable = { name?: string; value?: unknown };
 
 /** Kinds whose value picks one of several branches. */
 export type BranchingKind = (PluralNode | SelectNode)[1];
-
-// A time's options are among a date's, and each kind's are checked when built.
-type DateTimeOptions = DateMessageOptions & DateTimeFormattingContext;
 
 /**
  * Plain-data description of one template hole. Values never become part of
@@ -84,21 +68,17 @@ export type TemplateHole =
 
 type BuildContext = {
   values: [name: string, value: unknown][];
-  /** Each formatted variable's context, empty included, to find conflicts. */
-  formats: Map<string, MessageFormattingContext>;
+  formats: FormatBindings;
 };
 
 // Anonymous values are named `_gt_N`; user names must not collide.
 export const RESERVED_NAME_PREFIX = '_gt_';
 
-export type BuiltMessageTree = {
-  tree: MessageTree;
+export type BuiltMessageTree = Message & {
   /**
    * Values of anonymous holes, in tree order.
    */
   values: [name: string, value: unknown][];
-  /** The formatting context of each formatted variable that has one. */
-  formats: MessageTreeFormats;
 };
 
 /**
@@ -117,10 +97,11 @@ export function buildMessageTree(
 ): BuiltMessageTree {
   const context: BuildContext = { values: [], formats: new Map() };
   const tree = build(strings, holes, context, false);
-  const formats = Object.fromEntries(
-    [...context.formats].filter(([, options]) => Object.keys(options).length)
-  );
-  return { tree, values: context.values, formats };
+  return {
+    tree,
+    values: context.values,
+    formats: boundFormats(context.formats),
+  };
 }
 
 function validateName(name: string): void {
@@ -187,11 +168,7 @@ function buildHole(
     case 'time': {
       const name = hole.name ?? addAnonymousValue(context, hole.value);
       const [node, formatting] = splitOptions(name, hole.kind, hole.options);
-      const bound = context.formats.get(name);
-      if (bound && JSON.stringify(bound) !== JSON.stringify(formatting)) {
-        throw new Error(createConflictingFormatsError(name));
-      }
-      context.formats.set(name, formatting);
+      bindFormatting(context.formats, name, formatting);
       out.push(node);
       return;
     }
@@ -227,58 +204,6 @@ function buildHole(
       out.push([name, hole.kind, branches]);
     }
   }
-}
-
-/**
- * Splits a format's Intl options into its tree node, which holds the style,
- * and its sorted formatting context, by the option classification.
- */
-function splitOptions(
-  name: string,
-  kind: (NumberNode | DateTimeNode)[1],
-  options: Intl.NumberFormatOptions | DateTimeOptions = {}
-): [node: NumberNode | DateTimeNode, formatting: MessageFormattingContext] {
-  const messageKeys: readonly string[] =
-    kind === 'number'
-      ? NUMBER_MESSAGE_OPTIONS
-      : kind === 'date'
-        ? DATE_MESSAGE_OPTIONS
-        : TIME_MESSAGE_OPTIONS;
-  const contextKeys: readonly string[] =
-    kind === 'number' ? NUMBER_CONTEXT_OPTIONS : DATE_TIME_CONTEXT_OPTIONS;
-  const invalid = (reason: string) =>
-    new Error(createInvalidFormatOptionError(name, kind, reason));
-  const message: Record<string, unknown> = {};
-  const formatting: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(options)) {
-    // Intl reads an undefined option as an absent one.
-    if (value === undefined) continue;
-    if (messageKeys.includes(key)) message[key] = value;
-    else if (contextKeys.includes(key)) formatting[key] = value;
-    else throw invalid(`a ${kind} has no "${key}" option`);
-  }
-
-  let style: unknown;
-  if (kind === 'number') {
-    // Intl ignores `unit` without a unit style, so it would not be in the message.
-    if (message.unit !== undefined && message.style !== 'unit') {
-      throw invalid(`"unit" needs style: 'unit'`);
-    }
-    style =
-      message.style === 'unit'
-        ? { style: 'unit', unit: message.unit }
-        : message.style === 'decimal'
-          ? undefined
-          : message.style;
-  } else {
-    const { style: named, ...fields } = message;
-    if (named !== undefined && Object.keys(fields).length) {
-      // Intl throws a TypeError for this too.
-      throw invalid(`a style name cannot be combined with fields`);
-    }
-    style = named ?? canonicalStyle(fields);
-  }
-  return [formattedNode(name, kind, style, invalid), sortRecord(formatting)];
 }
 
 // `=N` with N an integer the parser reads: it rejects unsafe integers.

@@ -1,14 +1,14 @@
 import { IntlMessageFormat } from 'intl-messageformat';
 import { describe, expect, it, vi } from 'vitest';
 import type { MessageTree } from '../index';
-import { icuToMessageTree } from '../convert';
+import { icuToMessage } from '../convert';
 import { formatMessage, formatMessageTree } from './format';
 
 describe('formatMessageTree', () => {
   it('matches formatMessage for a localized currency', () => {
     expect(
       formatMessageTree(
-        icuToMessageTree('{n, number, currency}'),
+        icuToMessage('{n, number, currency}').tree,
         'de',
         { n: 1234.5 },
         { formats: { n: { currency: 'EUR' } } }
@@ -260,7 +260,7 @@ describe('empty branches', () => {
     expect(formatMessage(message, 'en', values)).toBe(
       new IntlMessageFormat(message, 'en').format(values)
     );
-    expect(formatMessageTree(icuToMessageTree(message), 'en', values)).toBe(
+    expect(formatMessageTree(icuToMessage(message).tree, 'en', values)).toBe(
       rich
     );
   });

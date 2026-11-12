@@ -6,7 +6,7 @@ import {
 } from '../index';
 import { formatMessageTree } from './format';
 import { buildMessageTree, type TemplateHole } from '../internal';
-import { icuToMessageTree, messageTreeToIcu } from '../convert';
+import { icuToMessage, messageTreeToIcu } from '../convert';
 import { normalizeTree } from '../tree/canonical';
 
 function tree(
@@ -21,7 +21,7 @@ function tree(
   return result;
 }
 
-const parseTree = (message: string) => icuToMessageTree(message);
+const parseTree = (message: string) => icuToMessage(message).tree;
 
 // Trees without Intl-option styles survive printing and reparsing.
 function expectPrintRoundTrip(result: MessageTree): void {

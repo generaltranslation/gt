@@ -1,28 +1,46 @@
 import { parse } from '../parser/parse';
 import { printAST } from '../parser/printer';
 import { normalizeTree } from '../tree/canonical';
-import type { MessageTree } from '../tree/messageTree';
-import { fromMessageTree, toMessageTree } from './syntaxTree';
+import type { Message, MessageTree } from '../tree/messageTree';
+import { fromMessageTree, readMessage, type NamedStyles } from './syntaxTree';
+
+export type IcuToMessageOptions = {
+  /**
+   * The app's own style names, for a string like `{n, number, EUR}`, in the
+   * shape react-intl takes as its `formats` prop. A name that is neither
+   * here nor ICU's throws.
+   */
+  styles?: NamedStyles;
+};
 
 /**
- * Converts an ICU MessageFormat string to a canonical message tree, sorted
- * like `buildMessageTree` output so it hashes the same way:
+ * Converts an ICU MessageFormat string to a message. Its tree is canonical,
+ * sorted like `buildMessageTree` output so it hashes the same way, and holds
+ * what a translator sees. The formatting context the string spells, like a
+ * currency, digits or an hour cycle, is its `formats`, by variable:
  *
- *   icuToMessageTree('{n, plural, one {# file} other {# files}}')
- *   // [['n', 'plural', { one: [0, ' file'], other: [0, ' files'] }]]
+ *   icuToMessage('{n, plural, one {# file} other {# files}}')
+ *   // { tree: [['n', 'plural', { one: [0, ' file'], other: [0, ' files'] }]], formats: {} }
+ *   icuToMessage('Total: {total, number, ::currency/EUR .00}')
+ *   // { tree: ['Total: ', ['total', 'number', 'currency']],
+ *   //   formats: { total: { currency: 'EUR', maximumFractionDigits: 2, minimumFractionDigits: 2 } } }
  *
- * A tree holds only what ICU spells, so a translation of a tree printed with
- * `messageTreeToIcu` converts back on its own. Throws a `SyntaxError` for an
- * invalid ICU string, and an `Error` for a format a tree cannot hold, such as
- * `{n, number, ::.00}`, whose options are formatting context.
+ * `formatMessageTree(tree, locales, values, { formats, timeZone })` formats
+ * it as the string would format. Throws a `SyntaxError` for an invalid ICU
+ * string, and an `Error` for one variable with two formatting contexts,
+ * since `formats` is by variable.
  */
-export function icuToMessageTree(icu: string): MessageTree {
-  return normalizeTree(toMessageTree(parse(icu)));
+export function icuToMessage(
+  icu: string,
+  { styles }: IcuToMessageOptions = {}
+): Message {
+  const { tree, formats } = readMessage(parse(icu), styles);
+  return { tree: normalizeTree(tree), formats };
 }
 
 /**
  * Prints a message tree as an ICU MessageFormat string, e.g. for a
- * translator, without loss: `icuToMessageTree` reads it back as the same
+ * translator, without loss: `icuToMessage` reads it back as the same
  * tree. Named styles print as is, a unit as `::unit/…`, and date and time
  * fields as a skeleton whose hour is `j`, the locale's hour:
  *

@@ -9,6 +9,7 @@ export {
 export type {
   ArgumentNode,
   DateTimeNode,
+  Message,
   MessageBranches,
   MessageNode,
   MessageTree,

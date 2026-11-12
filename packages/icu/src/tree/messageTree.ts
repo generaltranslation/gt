@@ -1,6 +1,7 @@
 import type {
   DateFieldOptions,
   DateTimeStyleName,
+  MessageTreeFormats,
   NumberStyleName,
   TimeFieldOptions,
 } from '../settings/formatOptions';
@@ -19,11 +20,22 @@ import type {
  * A branch without placeholders is one string, so it reads like the branch
  * a developer wrote. A tree holds only what ICU can spell, so it converts to
  * an ICU string and back without loss, with `messageTreeToIcu` and
- * `icuToMessageTree` from `@generaltranslation/icu/convert`. Other Intl
+ * `icuToMessage` from `@generaltranslation/icu/convert`. Other Intl
  * options, like a currency or a time zone, are formatting context, passed to
  * `formatMessageTree` as `formats`.
  */
 export type MessageTree = MessageNode[];
+
+/**
+ * A message in full: its tree, which is what is translated and hashed, and
+ * the formatting context of its formatted variables, which is neither.
+ * Together they hold everything an ICU string can say.
+ */
+export type Message = {
+  tree: MessageTree;
+  /** The formatting context of each formatted variable that has one. */
+  formats: MessageTreeFormats;
+};
 
 export type MessageNode =
   | string

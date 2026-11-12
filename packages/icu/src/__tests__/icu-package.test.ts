@@ -107,7 +107,7 @@ describe('@generaltranslation/icu package artifacts', () => {
       const internal = LOAD('@generaltranslation/icu/internal');
       assert.equal(parser.toMessageTree, undefined);
       assert.equal(root.buildMessageTree, undefined);
-      assert.equal(root.formatMessageTree(convert.icuToMessageTree('Hi {name}'), 'en', { name: 'Ada' }, { timeZone: 'UTC' }), 'Hi Ada');
+      assert.equal(root.formatMessageTree(convert.icuToMessage('Hi {name}').tree, 'en', { name: 'Ada' }, { timeZone: 'UTC' }), 'Hi Ada');
       assert.equal(convert.messageTreeToIcu(internal.buildMessageTree(['Hi ', ''], [{ kind: 'argument', name: 'name' }]).tree), 'Hi {name}');
     `;
     for (const esm of [true, false]) {

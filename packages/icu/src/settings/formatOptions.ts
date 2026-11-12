@@ -96,12 +96,19 @@ export type DateTimeFormattingContext = PickAvailable<
   (typeof DATE_TIME_CONTEXT_OPTIONS)[number]
 >;
 
-/** A formatted placeholder's formatting context. */
+/**
+ * A formatted placeholder's formatting context. `scale` multiplies a number
+ * before it is formatted, as ICU's `scale/100`. It is no Intl option, and
+ * only an ICU string sets it.
+ */
 export type MessageFormattingContext =
-  | NumberFormattingContext
+  | (NumberFormattingContext & { scale?: number })
   | DateTimeFormattingContext;
 
-/** Formatting context by variable name, as `buildMessageTree` returns it. */
+/**
+ * Formatting context by variable name: a message's `formats`, as
+ * `buildMessageTree` and `icuToMessage` return it.
+ */
 export type MessageTreeFormats = Readonly<
   Record<string, MessageFormattingContext>
 >;
@@ -118,3 +125,15 @@ export type DateTimeStyleName = (typeof DATE_TIME_STYLE_NAMES)[number];
 /** Named number styles a tree holds; a unit is the `::unit/…` skeleton. */
 export const NUMBER_STYLE_NAMES = ['currency', 'percent'] as const;
 export type NumberStyleName = (typeof NUMBER_STYLE_NAMES)[number];
+
+/**
+ * The number style names of an ICU string, as Intl options. `integer` sets
+ * digits, which is formatting context, so a tree does not hold it.
+ */
+export const NAMED_NUMBER_STYLES: Readonly<
+  Record<string, Intl.NumberFormatOptions>
+> = {
+  integer: { maximumFractionDigits: 0 },
+  currency: { style: 'currency' },
+  percent: { style: 'percent' },
+};

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { isMessageTree, validateMessageTree } from '../index';
-import { icuToMessageTree } from '../convert';
+import { icuToMessage } from '../convert';
 
 const select = (branches: unknown) => ['x', 'select', branches];
 
@@ -17,11 +17,11 @@ describe('validateMessageTree', () => {
     '{rank, selectordinal, one {#st} two {#nd} other {#th}}',
     '{role, select, admin {<b>{name}</b> is an admin} other {Hi}}',
     '{amount, number, currency} {pct, number, percent} {d, number, ::unit/meter}',
-    '{when, date, short} {when, time, ::Hms} {when, date, ::yyyyMMMdd}',
+    '{when, date, short} {when, time, ::jms} {when, date, ::yyyyMMMdd}',
     '{when, time, full} {when, time, ::jmmssSSSBz}',
     'Click <link>here <i>now</i></link> <br/>',
   ])('accepts converted parse() output for %j', (message) => {
-    expect(validateMessageTree(icuToMessageTree(message))).toBeUndefined();
+    expect(validateMessageTree(icuToMessage(message).tree)).toBeUndefined();
   });
 
   it('accepts pound, absent and null styles, and entries past the known ones', () => {
