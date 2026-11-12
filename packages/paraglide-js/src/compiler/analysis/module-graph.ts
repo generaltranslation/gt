@@ -317,10 +317,13 @@ export class ModuleGraph {
       if (!record) continue;
       if (!hasEsmExports(record.program)) return undefined;
 
-      for (const name of exportingStatements(record.program).keys())
+      for (const name of exportingStatements(record.program).keys()) {
         names.add(name);
-      for (const reexported of starExportedFiles(record))
+      }
+
+      for (const reexported of starExportedFiles(record)) {
         modules.add(reexported);
+      }
     }
 
     return names;
