@@ -6,8 +6,10 @@ import { evaluate, followCandidate, memberOf } from './evaluate.js';
 import { ImporterIndex, type GlobalExport } from './importers.js';
 import {
   declaredNames,
+  exportingStatements,
   hasEsmExports,
   loadedSpecifiers,
+  type ExportStatement,
 } from './module-syntax.js';
 import { Scope, type Binding, type ModuleHost } from './scope.js';
 import { symbolFromSpec } from './tracked-symbols.js';
@@ -108,6 +110,10 @@ export class ModuleGraph {
   private globalExports: GlobalExport[] = [];
 
   private readonly exportsBeingResolved = new Set<string>();
+  private readonly exportNames = new Map<
+    string,
+    ReadonlySet<string> | undefined
+  >();
   private readonly importers = new ImporterIndex({
     records: this.records,
     all: () => [...this.records.values()].flatMap(modulesOf),
@@ -258,20 +264,24 @@ export class ModuleGraph {
     record: ModuleRecord,
     name: string
   ): TrackedSymbol | undefined {
-    const scope = this.moduleScope(record.file)!;
+    const { program } = record;
+    const exporting = exportingStatements(program).get(name) ?? [];
 
-    for (const statement of record.program.body) {
+    for (const statement of exporting) {
+      const scope = this.scopeOf(record);
       const found = this.exportDeclaredBy(statement, name, record, scope);
       if (found) return found.symbol;
     }
 
-    if (!hasEsmExports(record.program))
-      return this.commonJsExport(record, scope, name);
+    if (!hasEsmExports(program))
+      return this.commonJsExport(record, this.scopeOf(record), name);
 
     // `export *` does not re-export "default".
     if (name === 'default') return undefined;
 
     for (const file of starExportedFiles(record)) {
+      if (!this.mayExport(file, name)) continue;
+
       const symbol = this.exportOf(file, name);
       if (symbol) return symbol;
     }
@@ -279,9 +289,76 @@ export class ModuleGraph {
     return undefined;
   }
 
+  /** False only when `file` is known not to export `name`. */
+  private mayExport(file: string, name: string): boolean {
+    const names = this.exportNamesOf(file);
+
+    return names === undefined || names.has(name);
+  }
+
+  /** Undefined when unknown: a target or a CommonJS module is among its `export *`. */
+  private exportNamesOf(file: string): ReadonlySet<string> | undefined {
+    if (!this.exportNames.has(file)) this.listExportNames(file, new Map(), []);
+
+    return this.exportNames.get(file);
+  }
+
+  /**
+   * Lists the names of `file` and of the modules below it not listed yet, each
+   * from the lists of the modules it `export *`s. The modules of a cycle share
+   * one list (Tarjan's algorithm). Returns the order of the first module still
+   * being listed that `file` reaches.
+   */
+  private listExportNames(
+    file: string,
+    order: Map<string, number>,
+    listing: NamesListing[]
+  ): number {
+    const index = order.size;
+    const depth = listing.length;
+    const own: NamesListing = { file, parts: [] };
+    let first = index;
+
+    order.set(file, index);
+    listing.push(own);
+
+    const record = this.records.get(file);
+    if (this.targetOf(file) || (record && !hasEsmExports(record.program))) {
+      own.parts = undefined;
+    } else if (record) {
+      const exporting = exportingStatements(record.program);
+      if (exporting.size > 0) own.parts?.push(new Set(exporting.keys()));
+
+      for (const reexported of starExportedFiles(record)) {
+        if (!this.exportNames.has(reexported)) {
+          const reached =
+            order.get(reexported) ??
+            this.listExportNames(reexported, order, listing);
+          first = Math.min(first, reached);
+        }
+
+        // Still not listed when in a cycle with `file`: the cycle's list has its names.
+        if (!this.exportNames.has(reexported)) continue;
+
+        const names = this.exportNames.get(reexported);
+        if (names) own.parts?.push(names);
+        else own.parts = undefined;
+      }
+    }
+
+    if (first === index) {
+      // `file` is the first module of its cycle, if it is in one.
+      const cycle = listing.splice(depth);
+      const names = joinedNames(cycle);
+      for (const module of cycle) this.exportNames.set(module.file, names);
+    }
+
+    return first;
+  }
+
   /** The export `name`, if `statement` is the one that declares it. */
   private exportDeclaredBy(
-    statement: ESTree.Statement | ESTree.Directive,
+    statement: ExportStatement,
     name: string,
     record: ModuleRecord,
     scope: Scope
@@ -295,8 +372,6 @@ export class ModuleGraph {
         return this.namespaceExport(statement, name, record);
       case 'ExportNamedDeclaration':
         return this.namedExport(statement, name, record, scope);
-      default:
-        return undefined;
     }
   }
 
@@ -486,6 +561,7 @@ export class ModuleGraph {
       (a, b) => b.length - a.length
     );
     this.targets.clear();
+    this.exportNames.clear();
   }
 
   private shouldFollow(file: string): boolean {
@@ -501,6 +577,7 @@ export class ModuleGraph {
       loading = this.readRecord(file).then((record) => {
         if (record) {
           this.records.set(file, record);
+          this.exportNames.clear();
           this.generation++;
         }
 
@@ -588,6 +665,25 @@ function starExportedFiles(record: ModuleRecord): string[] {
   }
 
   return files;
+}
+
+/** Its own names and the lists below it; undefined when unknown. */
+type NamesListing = { file: string; parts: ReadonlySet<string>[] | undefined };
+
+/** The list of a cycle's modules. A list that is its only part is shared. */
+function joinedNames(
+  cycle: readonly NamesListing[]
+): ReadonlySet<string> | undefined {
+  const parts: ReadonlySet<string>[] = [];
+
+  for (const module of cycle) {
+    if (!module.parts) return undefined;
+    parts.push(...module.parts);
+  }
+
+  if (parts.length === 1) return parts[0];
+
+  return new Set(parts.flatMap((part) => [...part]));
 }
 
 /**

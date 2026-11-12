@@ -156,6 +156,29 @@ describe('following re-exports', () => {
     ).toEqual([call]);
   });
 
+  test('a name behind nested barrels, past the modules that do not export it', async () => {
+    expect(
+      await analyzeEntry(`import { m } from "./index.js"; m.greeting()`, {
+        '/app/src/index.ts': `export * from "./a/index.js"; export * from "./b/index.js";`,
+        '/app/src/a/index.ts': `export * from "./one.js"; export * from "./two.js";`,
+        '/app/src/a/one.ts': `export const one = 1;`,
+        '/app/src/a/two.ts': `export function two() {}`,
+        '/app/src/b/index.ts': `export * from "./i18n.js";`,
+        '/app/src/b/i18n.ts': `export { m } from "../paraglide/messages.js";`,
+      })
+    ).toEqual([call]);
+  });
+
+  test('export * of a CommonJS module, whose exports are not listed', async () => {
+    expect(
+      await analyzeEntry(`import { m } from "./barrel.js"; m.greeting()`, {
+        '/app/src/barrel.ts': `export * from "./one.js"; export * from "./legacy.js";`,
+        '/app/src/one.ts': `export const one = 1;`,
+        '/app/src/legacy.js': `const { m } = require("./paraglide/messages.js"); module.exports = { m };`,
+      })
+    ).toEqual([call]);
+  });
+
   test('dynamic import and require', async () => {
     expect(
       await analyzeEntry(
