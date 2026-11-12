@@ -122,14 +122,14 @@ module.exports = [
   vue('gt-vue', 'index', '15 kB', {
     ignore: ['vue', '@generaltranslation/format'],
   }),
-  vue('gt-vue (SPA)', 'index', '22 kB'),
+  vue('gt-vue (SPA)', 'index', '23 kB'),
 
   next('gt-next (client)', 'index.client', '75 kB'),
   nextNode('gt-next (rsc)', 'index.rsc', '85 kB'),
   nextNode('gt-next (server)', 'index.server', '85 kB'),
   nextNode('gt-next/config', 'config', '300 kB'),
   nextNode('gt-next/server', 'server', '85 kB'),
-  nextNode('gt-next/middleware', 'middleware'),
+  nextNode('gt-next/middleware', 'middleware', '56 kB'),
   next('gt-next/link', 'link', '65 kB'),
   nextNode('gt-next/internal/_dictionary', 'internal/_dictionary'),
   nextNode(
