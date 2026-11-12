@@ -8,13 +8,13 @@ import {
   type SelectNode,
 } from '../index';
 import {
-  buildMessageTree,
+  templateToMessage,
   DATE_FIELD_OPTIONS,
   TIME_FIELD_OPTIONS,
   type TemplateHole,
 } from '../internal';
 import { DATE_TIME_FIELD_SYMBOLS } from '../convert/skeleton';
-import { normalizeTree } from '../tree/canonical';
+import { normalizeMessageTree } from '../tree/canonical';
 import { formatMessage, formatMessageTree } from './format';
 import { DATE_SKELETONS, NUMBER_SKELETONS } from './skeletonCases';
 
@@ -32,7 +32,7 @@ describe('icuToMessage', () => {
     ]);
   });
 
-  it('sorts branches and fields like buildMessageTree', () => {
+  it('sorts branches and fields like templateToMessage', () => {
     const tree = icuToMessage(
       '{n, plural, other {#} one {one} =2 {two}} {d, date, ::yMMMd}'
     ).tree;
@@ -47,7 +47,7 @@ describe('icuToMessage', () => {
   });
 
   it('matches the tree built from the equivalent template', () => {
-    const built = buildMessageTree(
+    const built = templateToMessage(
       ['You have ', ''],
       [
         {
@@ -530,7 +530,7 @@ describe('the tree and ICU text', () => {
     'convert without loss: %s',
     (_json, tree) => {
       expect(validateMessageTree(tree)).toBeUndefined();
-      expect(normalizeTree(tree)).toEqual(tree);
+      expect(normalizeMessageTree(tree)).toEqual(tree);
       expect(icuToMessage(messageTreeToIcu(tree)).tree).toEqual(tree);
     }
   );

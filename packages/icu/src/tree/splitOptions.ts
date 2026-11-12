@@ -8,7 +8,7 @@ import {
   type DateMessageOptions,
   type DateTimeFormattingContext,
   type MessageFormattingContext,
-  type MessageTreeFormats,
+  type MessageFormats,
 } from '../settings/formatOptions';
 import { canonicalStyle, sortRecord } from './canonical';
 import type { DateTimeNode, NumberNode } from './messageTree';
@@ -90,7 +90,7 @@ export function addContext(
 }
 
 /** A message's `formats`: each variable's context that holds an option. */
-export function toFormats(contexts: ContextByVariable): MessageTreeFormats {
+export function toFormats(contexts: ContextByVariable): MessageFormats {
   return Object.fromEntries(
     [...contexts].filter(([, context]) => Object.keys(context).length)
   );

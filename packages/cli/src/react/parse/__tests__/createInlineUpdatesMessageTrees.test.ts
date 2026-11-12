@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
-import { buildMessageTree } from '@generaltranslation/icu/internal';
+import { templateToMessage } from '@generaltranslation/icu/internal';
 import { hashSource } from 'generaltranslation/id';
 import { createInlineUpdates } from '../createInlineUpdates.js';
 import { Libraries, type GTLibrary } from '../../../types/libraries.js';
@@ -979,7 +979,7 @@ describe('createInlineUpdates: unstable tagged templates', () => {
 
   describe('__proto__ keys', () => {
     const select = (branches: Record<string, string>) =>
-      buildMessageTree(['', ''], [{ kind: 'select', name: 'role', branches }])
+      templateToMessage(['', ''], [{ kind: 'select', name: 'role', branches }])
         .tree;
 
     it.each(["__proto__: 'Proto'", "'__proto__': 'Proto'"])(

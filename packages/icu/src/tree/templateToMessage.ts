@@ -75,7 +75,7 @@ type BuildState = {
 // Anonymous values are named `_gt_N`; user names must not collide.
 export const RESERVED_NAME_PREFIX = '_gt_';
 
-export type BuiltMessageTree = Message & {
+export type TemplateMessage = Message & {
   /**
    * Values of anonymous holes, in tree order.
    */
@@ -83,8 +83,8 @@ export type BuiltMessageTree = Message & {
 };
 
 /**
- * Builds a canonical message tree from template strings and holes: adjacent
- * text is merged, a branch without placeholders is one string, and
+ * A message from template strings and holes. Its tree is the canonical one:
+ * adjacent text is merged, a branch without placeholders is one string, and
  * plural/select keys and Intl options are sorted, so equal messages produce
  * equal tree JSON. Anonymous holes become `_gt_N`
  * arguments, numbered in tree order from 1. Their values are returned
@@ -92,10 +92,10 @@ export type BuiltMessageTree = Message & {
  * variable's formatting context: one variable formatted with two contexts
  * throws.
  */
-export function buildMessageTree(
+export function templateToMessage(
   strings: readonly string[],
   holes: readonly TemplateHole[]
-): BuiltMessageTree {
+): TemplateMessage {
   const state: BuildState = { values: [], contexts: new Map() };
   const tree = build(strings, holes, state, false);
   return {

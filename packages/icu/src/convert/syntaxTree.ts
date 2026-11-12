@@ -68,7 +68,7 @@ export type NamedStyles = {
 /**
  * Converts the parser's syntax tree to a message: its tree, node for node in
  * the parsed order, and the formatting context its formatted placeholders
- * spell, by variable. `normalizeTree` gives the form keys are hashed from. Locations
+ * spell, by variable. `normalizeMessageTree` gives the form keys are hashed from. Locations
  * are dropped. One variable formatted with two contexts throws, as does a
  * style name that is neither ICU's nor in `styles`.
  */

@@ -13,7 +13,7 @@ import {
   formatMessageTree as _formatMessageTree,
   type FormatMessageTreeOptions,
   type MessageTree,
-  type MessageTreeValues,
+  type MessageValues,
 } from '@generaltranslation/icu';
 import { libraryDefaultLocale } from '../settings/settings';
 import { hostTimeZone } from '../utils/hostTimeZone';
@@ -230,7 +230,7 @@ export function formatMessage(
 export function formatMessageTree(
   tree: MessageTree,
   locales: string | string[] = libraryDefaultLocale,
-  values: MessageTreeValues<unknown> = {},
+  values: MessageValues<unknown> = {},
   options?: Partial<FormatMessageTreeOptions>
 ): unknown {
   return _formatMessageTree<unknown>(tree, locales, values, {

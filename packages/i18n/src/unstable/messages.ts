@@ -1,4 +1,4 @@
-import type { MessageTree, MessageTreeFormats } from '@generaltranslation/icu';
+import type { MessageTree, MessageFormats } from '@generaltranslation/icu';
 import { forEachPlaceholder } from '@generaltranslation/icu/internal';
 import {
   formatCutoff,
@@ -32,7 +32,7 @@ export type M = <T extends string | Msg | null | undefined>(
 type RenderableMessage = {
   tree: MessageTree;
   values: Record<string, unknown>;
-  formats: MessageTreeFormats;
+  formats: MessageFormats;
   metadata: MessageTreeMetadata;
 };
 
@@ -77,7 +77,7 @@ const invalidMsgError = createGtI18nDiagnostic({
 function formatSource(
   tree: MessageTree,
   values: Record<string, unknown>,
-  formats: MessageTreeFormats,
+  formats: MessageFormats,
   maxChars: number | undefined
 ): string {
   // Code paths without i18n may never initialize the config.

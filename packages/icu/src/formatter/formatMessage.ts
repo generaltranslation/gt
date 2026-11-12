@@ -5,7 +5,7 @@ import {
   type FormatMessageTreeOptions,
   type FormattedMessage,
   type MessagePlainValue,
-  type MessageTreeValues,
+  type MessageValues,
   type OnePartValues,
 } from './formatMessageTree';
 import { resolveLocale } from './locale';
@@ -14,8 +14,8 @@ import { resolveLocale } from './locale';
 export type FormatMessageOptions = Pick<FormatMessageTreeOptions, 'timeZone'>;
 
 /**
- * Formats an ICU MessageFormat string: it is parsed to a message tree and
- * formatted like `formatMessageTree`, with the same values and result types.
+ * Formats an ICU MessageFormat string: it is parsed to a tree and formatted
+ * like `formatMessageTree`, with the same values and result types.
  *
  *   formatMessage('Hi {name}', 'en', { name: 'Ada' }, { timeZone }); // 'Hi Ada'
  */
@@ -32,13 +32,13 @@ export function formatMessage(
 export function formatMessage<R>(
   message: string,
   locales: string | string[],
-  values: MessageTreeValues<R> & OnePartValues<R>,
+  values: MessageValues<R> & OnePartValues<R>,
   options: FormatMessageOptions
 ): FormattedMessage<R>;
 export function formatMessage<R>(
   message: string,
   locales: string | string[],
-  values: MessageTreeValues<R>,
+  values: MessageValues<R>,
   options: FormatMessageOptions
 ): string | R | Array<string | R> {
   const locale = resolveLocale(locales);

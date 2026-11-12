@@ -1,4 +1,4 @@
-import type { MessageTree, MessageTreeFormats } from '@generaltranslation/icu';
+import type { MessageTree, MessageFormats } from '@generaltranslation/icu';
 import type { MessageTreeHashMetadata } from 'generaltranslation/id';
 import { getWritableConditionStore } from '../condition-store/singleton-operations';
 import { getI18nCache } from '../i18n-cache/singleton-operations';
@@ -41,7 +41,7 @@ export type CreateGTParams = {
 export type RenderTree = (
   tree: MessageTree,
   values: Record<string, unknown>,
-  formats: MessageTreeFormats,
+  formats: MessageFormats,
   options: MessageTreeMetadata
 ) => string;
 

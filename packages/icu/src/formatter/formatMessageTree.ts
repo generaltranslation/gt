@@ -21,7 +21,7 @@ import {
   DATE_TIME_STYLE_NAMES,
   NAMED_NUMBER_STYLES,
   type DateTimeStyleName,
-  type MessageTreeFormats,
+  type MessageFormats,
 } from '../settings/formatOptions';
 
 const DATE_TIME_STYLES = new Set<string>(DATE_TIME_STYLE_NAMES);
@@ -58,7 +58,7 @@ export type MessageTagFormatter<R> = (
  * Values for `formatMessageTree`: plain values, rich values `R` (such as
  * React elements), and tag formatters that return them.
  */
-export type MessageTreeValues<R> = Readonly<
+export type MessageValues<R> = Readonly<
   Record<string, MessagePlainValue | R | MessageTagFormatter<R>>
 >;
 
@@ -83,10 +83,10 @@ export type FormattedMessage<R> = [R] extends [string]
 export type FormatMessageTreeOptions = {
   /**
    * Each formatted variable's formatting context, such as a currency or
-   * `timeZone`, as `buildMessageTree` returns it; `{}` when the message has
+   * `timeZone`, as `templateToMessage` returns it; `{}` when the message has
    * none. It is merged over the placeholder's style.
    */
-  formats: MessageTreeFormats;
+  formats: MessageFormats;
   /**
    * The time zone of a date or time whose formats set none. It is always
    * passed in: this package does not read the host's.
@@ -96,12 +96,12 @@ export type FormatMessageTreeOptions = {
 
 /** One part of a formatted message: text, or a rich value. */
 type Part<R> = string | R;
-type MessageValue<R> = MessageTreeValues<R>[string];
+type MessageValue<R> = MessageValues<R>[string];
 
 type FormatContext<R> = FormatMessageTreeOptions & {
   message: string;
   locales: string | string[];
-  values: MessageTreeValues<R>;
+  values: MessageValues<R>;
 };
 
 /**
@@ -148,13 +148,13 @@ export function formatMessageTree(
 export function formatMessageTree<R>(
   tree: MessageTree,
   locales: string | string[],
-  values: MessageTreeValues<R> & OnePartValues<R>,
+  values: MessageValues<R> & OnePartValues<R>,
   options: FormatMessageTreeOptions
 ): FormattedMessage<R>;
 export function formatMessageTree<R>(
   tree: MessageTree,
   locales: string | string[],
-  values: MessageTreeValues<R>,
+  values: MessageValues<R>,
   options: FormatMessageTreeOptions
 ): Part<R> | Part<R>[] {
   resolveLocale(locales);
@@ -166,7 +166,7 @@ export function formatParsedTree<R>(
   tree: MessageTree,
   message: string,
   locales: string | string[],
-  values: MessageTreeValues<R>,
+  values: MessageValues<R>,
   { formats, timeZone }: FormatMessageTreeOptions
 ): Part<R> | Part<R>[] {
   // Most messages are plain text, which needs no formatter state.
@@ -330,7 +330,7 @@ function formatNodes<R>(
 function formatsOf<R>(
   context: FormatContext<R>,
   name: string
-): MessageTreeFormats[string] | undefined {
+): MessageFormats[string] | undefined {
   return ownOption(context.formats, name);
 }
 
@@ -355,7 +355,7 @@ function plainValueText<R>(value: MessageValue<R>): Part<R> {
 }
 
 function requireVariable<R>(
-  values: MessageTreeValues<R>,
+  values: MessageValues<R>,
   name: string
 ): MessageValue<R> {
   // intl-messageformat intentionally used `name in values`, so inherited and

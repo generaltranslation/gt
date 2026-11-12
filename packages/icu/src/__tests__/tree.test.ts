@@ -5,19 +5,19 @@ import {
   type SelectNode,
 } from '../index';
 import { formatMessageTree } from './format';
-import { buildMessageTree, type TemplateHole } from '../internal';
+import { templateToMessage, type TemplateHole } from '../internal';
 import { icuToMessage, messageTreeToIcu } from '../convert';
-import { normalizeTree } from '../tree/canonical';
+import { normalizeMessageTree } from '../tree/canonical';
 
 function tree(
   strings: readonly string[],
-  ...holes: Parameters<typeof buildMessageTree>[1]
+  ...holes: Parameters<typeof templateToMessage>[1]
 ): MessageTree {
-  const result = buildMessageTree(strings, holes).tree;
+  const result = templateToMessage(strings, holes).tree;
   // Every built tree must pass the catalog validator, and is built canonical,
   // so it hashes like the same message converted from ICU.
   expect(validateMessageTree(result)).toBeUndefined();
-  expect(normalizeTree(result)).toEqual(result);
+  expect(normalizeMessageTree(result)).toEqual(result);
   return result;
 }
 
@@ -30,8 +30,8 @@ function expectPrintRoundTrip(result: MessageTree): void {
 
 const POUND: TemplateHole = { kind: 'pound' };
 
-describe('normalizeTree', () => {
-  it('rewrites a tree to the form buildMessageTree builds', () => {
+describe('normalizeMessageTree', () => {
+  it('rewrites a tree to the form templateToMessage builds', () => {
     const tree: MessageTree = [
       'a',
       '',
@@ -41,7 +41,7 @@ describe('normalizeTree', () => {
       ['d', 'date', null as unknown as undefined],
       ['b', 'tag', ['c', 'd']],
     ];
-    expect(JSON.stringify(normalizeTree(tree))).toBe(
+    expect(JSON.stringify(normalizeMessageTree(tree))).toBe(
       JSON.stringify([
         'ab',
         ['n', 'plural', { '=0': '', one: 'one', other: [0, 'xy'] }],
@@ -51,11 +51,13 @@ describe('normalizeTree', () => {
       ])
     );
     // An empty style is invalid, so it stays for validation and printing to reject.
-    expect(normalizeTree([['t', 'time', {}]])).toEqual([['t', 'time', {}]]);
+    expect(normalizeMessageTree([['t', 'time', {}]])).toEqual([
+      ['t', 'time', {}],
+    ]);
   });
 });
 
-describe('buildMessageTree', () => {
+describe('templateToMessage', () => {
   it('builds arguments between text', () => {
     const result = tree(['Hello ', '!'], { kind: 'argument', name: 'name' });
     expect(result).toEqual(['Hello ', ['name'], '!']);
@@ -206,7 +208,7 @@ describe('buildMessageTree', () => {
         },
       },
     ];
-    const { tree: result, values } = buildMessageTree(
+    const { tree: result, values } = templateToMessage(
       ['', ' ', ' / ', ''],
       holes
     );
@@ -230,7 +232,7 @@ describe('buildMessageTree', () => {
       tree: result,
       values,
       formats,
-    } = buildMessageTree(
+    } = templateToMessage(
       ['', ' ', ' ', ''],
       [
         {
@@ -321,12 +323,12 @@ describe('buildMessageTree', () => {
       name: 's',
       branches: { other: { strings: ['', ''], holes: [POUND] } },
     };
-    expect(() => buildMessageTree(['', ' items'], [POUND])).toThrow(
+    expect(() => templateToMessage(['', ' items'], [POUND])).toThrow(
       /plural count is used outside/
     );
     // Like ICU, a nested select resets the count context.
     expect(() =>
-      buildMessageTree(
+      templateToMessage(
         ['', ''],
         [
           {
@@ -473,7 +475,7 @@ describe('buildMessageTree', () => {
     'keeps the message options of %s in the tree and returns its context',
     (_name, hole, expected, formats) => {
       expect(tree(['', ''], hole)).toEqual(expected);
-      expect(buildMessageTree(['', ''], [hole]).formats).toEqual(formats);
+      expect(templateToMessage(['', ''], [hole]).formats).toEqual(formats);
     }
   );
 
@@ -509,17 +511,17 @@ describe('buildMessageTree', () => {
       options: { style: 'currency', currency, currencyDisplay: 'code' },
     });
     expect(
-      buildMessageTree(['', ' ', ''], [currency('USD'), currency('USD')])
+      templateToMessage(['', ' ', ''], [currency('USD'), currency('USD')])
         .formats
     ).toEqual({ p: { currency: 'USD', currencyDisplay: 'code' } });
     expect(() =>
-      buildMessageTree(['', ' ', ''], [currency('USD'), currency('EUR')])
+      templateToMessage(['', ' ', ''], [currency('USD'), currency('EUR')])
     ).toThrow(
       'Message variable "p" is formatted with different formatting context in one message'
     );
     // No context is a context too.
     expect(() =>
-      buildMessageTree(
+      templateToMessage(
         ['', ' ', ''],
         [currency('USD'), { kind: 'number', name: 'p' }]
       )
@@ -579,6 +581,6 @@ describe('buildMessageTree', () => {
       'expected one of: numeric, 2-digit, short, long, narrow',
     ],
   ])('rejects %s', (_name, hole, reason) => {
-    expect(() => buildMessageTree(['', ''], [hole])).toThrow(reason);
+    expect(() => templateToMessage(['', ''], [hole])).toThrow(reason);
   });
 });

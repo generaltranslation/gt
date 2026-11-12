@@ -1,6 +1,6 @@
 import type { NodePath } from '@babel/traverse';
 import type * as t from '@babel/types';
-import { buildMessageTree } from '@generaltranslation/icu/internal';
+import { templateToMessage } from '@generaltranslation/icu/internal';
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
 import { randomUUID } from 'node:crypto';
 import { warnNonStaticMessageTreeSync } from '../../../../../console/index.js';
@@ -40,7 +40,7 @@ export function processMessage(
     // Build every tree first so a failing variant skips the whole message.
     const trees = variants.map(({ strings, holes }) => {
       try {
-        return buildMessageTree(strings, holes).tree;
+        return templateToMessage(strings, holes).tree;
       } catch (error) {
         // The builder rejects variable names that use its reserved prefix
         // and options a helper does not have.
