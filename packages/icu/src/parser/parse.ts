@@ -15,9 +15,11 @@ import {
   type PluralOrSelectOption,
 } from '../types-dir/ast';
 import {
-  parseDateTimeSkeletonOptions,
   parseNumberSkeletonOptions,
   parseNumberSkeletonTokens,
+} from './numberSkeleton';
+import {
+  parseDateTimeSkeletonOptions,
   resolveLocaleHourSkeleton,
 } from './skeleton';
 import { isAsciiLetter, isTagNameCharacter } from './tag';
@@ -301,7 +303,7 @@ class IcuParser {
             pattern,
             ...(styleLocation ? { location: styleLocation } : {}),
             parsedOptions: this.options.shouldParseSkeletons
-              ? parseDateTimeSkeletonOptions(pattern)
+              ? parseDateTimeSkeletonOptions(pattern, false)
               : {},
           };
         }

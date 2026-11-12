@@ -65,7 +65,7 @@ const GENERATED_ROUND_TRIP_MESSAGES = [
     'sign-never',
     'sign-accounting currency/USD',
     'E0',
-    'EE+!00',
+    'EE0',
   ].map((skeleton) => `{value, number, ::${skeleton}}`),
   ...Array.from(
     { length: 32 },

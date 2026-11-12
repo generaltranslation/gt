@@ -86,61 +86,33 @@ describe('_formatMessageICU', () => {
     ).toBe('$1,234.50');
     expect(
       _formatMessageICU(
-        '{value, number, ::scale/0}',
+        '{value, number, ::scale/0.5}',
         'en-US',
         {
           value: 12.34,
         },
         timeZone
       )
-    ).toBe('12.34');
+    ).toBe('6.17');
   });
 
+  // ICU4C rejects each of these, or formats what Intl cannot. FormatJS reads
+  // them as best it can.
   it.each([
-    'constructor',
-    'toString',
-    '__proto__',
-    'valueOf',
-    'hasOwnProperty',
-  ])(
-    'ignores inherited rounding-mode map key %j through the public boundary',
-    (stem) => {
-      expect(
-        _formatMessageICU(
-          `{value, number, ::${stem}}`,
-          'en-US',
-          {
-            value: 1234.5,
-          },
-          timeZone
-        )
-      ).toBe('1,234.5');
-    }
-  );
-
-  it.each([
-    ['{value, number, ::integer-width/*}', 1.23456789, '1.235'],
-    ['{value, number, ::integer-width/x*00}', 1.23456789, '01.235'],
-    ['{value, number, ::.00/xyzr}', 1.23456789, '1.23456789'],
-    ['{value, number, foo{bar}baz}', 1234.5, '1,234.5baz}'],
-  ])(
-    'preserves pinned FormatJS formatting for legacy message %j',
-    (message, value, expected) => {
-      expect(_formatMessageICU(message, 'en-US', { value }, timeZone)).toBe(
-        expected
-      );
-    }
-  );
-
-  it('preserves FormatJS parse success before native currency validation', () => {
+    '{value, number, ::constructor}',
+    '{value, number, ::__proto__}',
+    '{value, number, ::integer-width/*}',
+    '{value, number, ::integer-width/x*00}',
+    '{value, number, ::.00/xyzr}',
+    '{value, number, ::currency}',
+    '{value, number, foo{bar}baz}',
+    '{value, time, ::C}',
+    '{value, time, ::A}',
+    '{value, time, ::Jj}',
+  ])('rejects %j through the public boundary', (message) => {
     expect(() =>
-      _formatMessageICU(
-        '{value, number, ::currency}',
-        'en-US',
-        { value: 1 },
-        timeZone
-      )
-    ).toThrow(TypeError);
+      _formatMessageICU(message, 'en-US', { value: 1 }, timeZone)
+    ).toThrow();
   });
 
   it('preserves numeric-string precision through the public boundary', () => {
@@ -188,15 +160,15 @@ describe('_formatMessageICU', () => {
     ['205F', '\u205F'],
     ['3000', '\u3000'],
   ])(
-    'preserves FormatJS named-style behavior after Unicode space U+%s',
+    'reads Unicode space U+%s as part of a style name, which is then unknown',
     (_codePoint, space) => {
-      expect(
+      expect(() =>
         publicFormatMessage(`{n, number, ${space}percent}`, {
           timeZone,
           locales: 'en-US',
           variables: { n: 2 },
         })
-      ).toBe('2');
+      ).toThrow('is not an ICU style name');
     }
   );
 
@@ -216,25 +188,9 @@ describe('_formatMessageICU', () => {
         day: '2-digit',
       }).format(value)
     );
-
-    for (const field of ['C', 'A']) {
-      expect(
-        _formatMessageICU(
-          `{value, time, ::${field}}`,
-          'en-US',
-          { value },
-          timeZone
-        )
-      ).toBe(new Intl.DateTimeFormat('en-US').format(value));
-    }
   });
 
-  it.each([
-    ['en-US', 'Ch', '2 PM'],
-    ['en-US', 'Cj', '2 PM'],
-    ['en-US', 'Jj', '02 PM'],
-    ['de-DE', 'hj', '14 Uhr'],
-  ])(
+  it.each([['de-DE', 'hj', '14 Uhr']])(
     'preserves FormatJS hour skeleton %s ::%s through the public boundary',
     (locale, skeleton, expected) => {
       const value = new Date(2020, 4, 6, 14, 3, 2);

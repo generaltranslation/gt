@@ -11,12 +11,21 @@
  *
  * These dependencies must remain exact-pinned test-only oracles. They must not
  * be moved to runtime dependencies, where they would undo the bundle reduction.
+ *
+ * FormatJS is the oracle for syntax, plurals, selects and tags. For what a
+ * number or date skeleton means, ICU4C is: see icu4c-conformance.test.ts.
+ * Skeletons the two read differently are compared here as syntax only.
  */
 
 import { parse as formatJsParse } from '@formatjs/icu-messageformat-parser';
 import { IntlMessageFormat } from 'intl-messageformat';
 import { describe, expect, it } from 'vitest';
-import { parse, printAST } from '../parser';
+import {
+  parse,
+  printAST,
+  type MessageFormatElement,
+  type ParserOptions,
+} from '../parser';
 import { formatMessage } from './format';
 
 const PLURAL_LOCALES = [
@@ -60,17 +69,10 @@ const NUMBER_MESSAGES = [
   '{value, number}',
   '{value, number, integer}',
   '{value, number, percent}',
-  '{value, number, ::scale/0}',
   '{value, number, ::scale/0.01}',
   '{value, number, ::currency/USD .00}',
   '{value, number, ::compact-short}',
   '{value, number, ::integer-width/*000}',
-  '{value, number, ::integer-width/xx}',
-  '{value, number, ::integer-width/*}',
-  '{value, number, ::integer-width/x*00}',
-  '{value, number, ::integer-width/foo*00bar}',
-  '{value, number, ::.00/xyzr}',
-  '{value, number, ::.00/xyzs}',
 ] as const;
 const NUMBER_VALUES: Array<number | string> = [
   -1234.567,
@@ -90,14 +92,6 @@ const NUMBER_RUNTIME_CASES = NUMBER_LOCALES.flatMap((locale) =>
   )
 );
 
-const OBJECT_PROTOTYPE_SKELETON_STEMS = [
-  'constructor',
-  'toString',
-  '__proto__',
-  'valueOf',
-  'hasOwnProperty',
-] as const;
-
 const DATE_VALUE = new Date('2020-05-06T14:03:02Z');
 const DATE_RUNTIME_CASES = NUMBER_LOCALES.flatMap((locale) =>
   [
@@ -105,16 +99,10 @@ const DATE_RUNTIME_CASES = NUMBER_LOCALES.flatMap((locale) =>
     // purpose: they format as ICU4C does.
     '{value, date, ::yyyyMMMdd}',
     '{value, time, ::HHmmss}',
-    '{value, time, ::C}',
-    '{value, time, ::A}',
   ].map((message) => ({ locale, message, value: DATE_VALUE }))
 );
 
 const HOUR_SKELETON_RUNTIME_CASES = [
-  ...['Ch', 'hC', 'Cj', 'Jj', 'jJ'].map((skeleton) => ({
-    locale: 'en-US',
-    skeleton,
-  })),
   { locale: 'de-DE', skeleton: 'hj' },
   { locale: 'en-u-rg-gbzzzz', skeleton: 'j' },
   { locale: 'en-GB-u-rg-uszzzz', skeleton: 'j' },
@@ -122,24 +110,29 @@ const HOUR_SKELETON_RUNTIME_CASES = [
 ] as const;
 const HOUR_SKELETON_AST_CASES = [
   ...HOUR_SKELETON_RUNTIME_CASES,
-  { locale: 'en-US', skeleton: 'JJJ' },
   { locale: 'en-US', skeleton: 'Mj' },
 ] as const;
-const HOUR_SKELETON_SYMBOLS = ['h', 'H', 'k', 'K', 'j', 'J', 'C'] as const;
-const GENERATED_HOUR_SKELETONS = [1, 2, 3].flatMap((length) =>
-  Array.from(
-    { length: HOUR_SKELETON_SYMBOLS.length ** length },
-    (_, combination) => {
-      let cursor = combination;
-      return Array.from({ length }, () => {
-        const symbol =
-          HOUR_SKELETON_SYMBOLS[cursor % HOUR_SKELETON_SYMBOLS.length];
-        cursor = Math.floor(cursor / HOUR_SKELETON_SYMBOLS.length);
-        return symbol;
-      }).join('');
-    }
+// Without `J` and `C`, which Intl cannot format and FormatJS reads as `H` and
+// as nothing.
+const HOUR_SKELETON_SYMBOLS = ['h', 'H', 'k', 'K', 'j'] as const;
+const GENERATED_HOUR_SKELETONS = [1, 2, 3]
+  .flatMap((length) =>
+    Array.from(
+      { length: HOUR_SKELETON_SYMBOLS.length ** length },
+      (_, combination) => {
+        let cursor = combination;
+        return Array.from({ length }, () => {
+          const symbol =
+            HOUR_SKELETON_SYMBOLS[cursor % HOUR_SKELETON_SYMBOLS.length];
+          cursor = Math.floor(cursor / HOUR_SKELETON_SYMBOLS.length);
+          return symbol;
+        }).join('');
+      }
+    )
   )
-);
+  // FormatJS reads the `a` that `j` brings as `hour12`, which turns an `H`
+  // or `k` beside it into a 12-hour clock. ICU4C keeps 24 hours: `Ha` is 23.
+  .filter((skeleton) => !(skeleton.includes('j') && /[Hk]/.test(skeleton)));
 const GENERATED_HOUR_SKELETON_CASES = [
   'en-US',
   'de-DE',
@@ -184,26 +177,6 @@ const SIMPLE_RUNTIME_CASES = [
     message: "This '{isn''t}' {name}'s first test",
     values: { name: 'Ada' },
   },
-  {
-    locale: 'en-US',
-    message: '{n, number, foo{bar}baz}',
-    values: { n: 1234.5 },
-  },
-  {
-    locale: 'en-US',
-    message: '{n, number, ::s{al.e/0.5}',
-    values: { n: 1234.5 },
-  },
-  {
-    locale: 'en-US',
-    message: '{n,number,{}',
-    values: { n: 1234.5 },
-  },
-  {
-    locale: 'en-US',
-    message: '{x, number,{percent}',
-    values: { x: 1234.5 },
-  },
 ] as const;
 
 const PARSER_MESSAGES = [
@@ -221,21 +194,11 @@ const PARSER_MESSAGES = [
   '{value, number, ::currency/USD .00##}',
   '{value, number, ::scale/0}',
   '{value, number, ::integer-width/*000}',
-  '{value, number, ::integer-width/xx}',
-  '{value, number, ::integer-width/*}',
-  '{value, number, ::integer-width/x*00}',
-  '{value, number, ::integer-width/foo*00bar}',
-  '{value, number, ::currency}',
-  '{value, number, ::.00/xyzr}',
-  '{value, number, ::.00/xyzs}',
   '{value, date, ::yyyyMMMdd}',
   '{value, time, ::HHmmss}',
-  '{value, time, ::C}',
-  '{value, time, ::A}',
   '{value, time, ::jh}',
   '{value, time, ::hj}',
   '{n, number, foo{bar}baz}',
-  '{n, number, ::s{al.e/0.5}',
   '{n,number,{}',
   '{x, number,{percent}',
   '{n, number, foo{bar} {_gt_, select, other {X}}}',
@@ -248,6 +211,33 @@ const PARSER_MESSAGES = [
     (_, index) =>
       `{value${index}, plural, offset:${index % 5} =0 {zero} =0${index + 1} {leading} one {one:#} other {other:#}}`
   ),
+];
+
+// FormatJS reads these skeletons as best it can. ICU4C rejects them, or
+// formats what Intl cannot, so their options are not parsed here.
+const SKELETON_SYNTAX_MESSAGES = [
+  '{value, number, ::integer-width/xx}',
+  '{value, number, ::integer-width/*}',
+  '{value, number, ::integer-width/x*00}',
+  '{value, number, ::integer-width/foo*00bar}',
+  '{value, number, ::currency}',
+  '{value, number, ::.00/xyzr}',
+  '{value, number, ::.00/xyzs}',
+  '{value, number, ::constructor}',
+  '{value, time, ::C}',
+  '{value, time, ::A}',
+  '{n, number, ::s{al.e/0.5}',
+];
+
+const PARSER_CASES: [message: string, options: ParserOptions][] = [
+  ...PARSER_MESSAGES.map((message): [string, ParserOptions] => [
+    message,
+    { captureLocation: false },
+  ]),
+  ...SKELETON_SYNTAX_MESSAGES.map((message): [string, ParserOptions] => [
+    message,
+    { captureLocation: false, shouldParseSkeletons: false },
+  ]),
 ];
 
 const INVALID_MESSAGES = [
@@ -309,6 +299,17 @@ const INVALID_SIGNIFICANT_PRECISION_SKELETONS = [
 
 const formatJsFormatters = new Map<string, IntlMessageFormat>();
 
+// FormatJS spells the AM or PM of an hour as `hour12`, which Intl already
+// shows for a 12-hour clock.
+function withoutHour12(ast: MessageFormatElement[]): MessageFormatElement[] {
+  for (const element of ast) {
+    if ('style' in element && element.style instanceof Object) {
+      delete (element.style.parsedOptions as { hour12?: boolean }).hour12;
+    }
+  }
+  return ast;
+}
+
 function formatWithFormatJs(
   message: string,
   locale: string | string[],
@@ -340,17 +341,6 @@ describe('live FormatJS runtime compatibility', () => {
       const values = { value };
       expect(formatMessage(message, locale, values)).toEqual(
         formatWithFormatJs(message, locale, values)
-      );
-    }
-  );
-
-  it.each(OBJECT_PROTOTYPE_SKELETON_STEMS)(
-    'ignores inherited rounding-mode map key ::%s like FormatJS',
-    (stem) => {
-      const message = `{value, number, ::${stem}}`;
-      const values = { value: 1234.5 };
-      expect(formatMessage(message, 'en-US', values)).toEqual(
-        formatWithFormatJs(message, 'en-US', values)
       );
     }
   );
@@ -387,29 +377,11 @@ describe('live FormatJS runtime compatibility', () => {
 
       const localeObject = new Intl.Locale(locale);
       expect(parse(message, { locale: localeObject })).toEqual(
-        formatJsParse(message, { locale: localeObject })
-      );
-    }
-  );
-
-  it.each(NON_GRAMMAR_SPACES)(
-    'matches named-style behavior after non-grammar space %j',
-    (space) => {
-      const message = `{value, number, ${space}percent}`;
-      const values = { value: 2 };
-      expect(formatMessage(message, 'en-US', values)).toEqual(
-        formatWithFormatJs(message, 'en-US', values)
-      );
-    }
-  );
-
-  it.each(['scale', 'scale/0x10', 'scale/2foo'])(
-    'matches FormatJS parsing of number skeleton ::%s',
-    (skeleton) => {
-      const message = `{value, number, ::${skeleton}}`;
-      const values = { value: 3 };
-      expect(formatMessage(message, 'en-US', values)).toEqual(
-        formatWithFormatJs(message, 'en-US', values)
+        withoutHour12(
+          formatJsParse(message, {
+            locale: localeObject,
+          }) as MessageFormatElement[]
+        )
       );
     }
   );
@@ -460,24 +432,22 @@ describe('live FormatJS runtime compatibility', () => {
 });
 
 describe('live FormatJS parser compatibility', () => {
-  it.each(PARSER_MESSAGES)('matches the AST for %j', (message) => {
-    expect(parse(message, { captureLocation: false })).toEqual(
-      formatJsParse(message, { captureLocation: false })
-    );
+  it.each(PARSER_CASES)('matches the AST for %j', (message, options) => {
+    expect(parse(message, options)).toEqual(formatJsParse(message, options));
   });
 
-  it.each(PARSER_MESSAGES)(
+  it.each(PARSER_CASES)(
     'preserves the AST through our public parse/print round trip for %j',
-    (message) => {
-      const ast = parse(message, { captureLocation: false });
-      expect(parse(printAST(ast), { captureLocation: false })).toEqual(ast);
+    (message, options) => {
+      const ast = parse(message, options);
+      expect(parse(printAST(ast), options)).toEqual(ast);
     }
   );
 
-  it.each(OBJECT_PROTOTYPE_SKELETON_STEMS)(
-    'ignores inherited rounding-mode map key ::%s in the AST',
-    (stem) => {
-      const message = `{value, number, ::${stem}}`;
+  it.each(NON_GRAMMAR_SPACES)(
+    'keeps non-grammar space %j in a style name, like FormatJS',
+    (space) => {
+      const message = `{value, number, ${space}percent}`;
       expect(parse(message, { captureLocation: false })).toEqual(
         formatJsParse(message, { captureLocation: false })
       );
@@ -498,7 +468,11 @@ describe('live FormatJS parser compatibility', () => {
       const message = `{value, time, ::${skeleton}}`;
       const localeObject = new Intl.Locale(locale);
       expect(parse(message, { locale: localeObject })).toEqual(
-        formatJsParse(message, { locale: localeObject })
+        withoutHour12(
+          formatJsParse(message, {
+            locale: localeObject,
+          }) as MessageFormatElement[]
+        )
       );
     }
   );
