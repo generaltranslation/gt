@@ -80,16 +80,20 @@ export function walk(root: Node, visitor: Visitor): void {
 }
 
 /** Unlike `walk`, visits type annotations too. */
-export function forEachNode(root: Node, visit: (node: Node) => void): void {
-  visit(root);
+export function forEachNode(
+  root: Node,
+  visit: (node: Node, parent: Node | undefined) => void,
+  parent?: Node
+): void {
+  visit(root, parent);
 
   for (const key of (visitorKeys[root.type] ?? []) as (keyof Node)[]) {
     const value = root[key] as Child;
 
     if (Array.isArray(value)) {
-      for (const item of value) if (item) forEachNode(item, visit);
+      for (const item of value) if (item) forEachNode(item, visit, root);
     } else if (value) {
-      forEachNode(value, visit);
+      forEachNode(value, visit, root);
     }
   }
 }
