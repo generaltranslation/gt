@@ -1,4 +1,5 @@
 import type * as ESTree from '@oxc-project/types';
+import { visitorKeys } from 'oxc-parser';
 
 export type { ESTree };
 export type Node = ESTree.Node;
@@ -30,6 +31,13 @@ const TYPE_ANNOTATION_KEYS = new Set([
   'implements',
 ]);
 
+const CHILD_KEYS: ReadonlyMap<string, readonly string[]> = new Map(
+  Object.entries(visitorKeys).map(([type, keys]) => [
+    type,
+    keys.filter((key) => !TYPE_ANNOTATION_KEYS.has(key)),
+  ])
+);
+
 /** Expressions that wrap another without changing what it is: `(m as any)!`. */
 export const TRANSPARENT_WRAPPERS: ReadonlySet<Node['type']> = new Set<
   Node['type']
@@ -52,21 +60,27 @@ export function walk(root: Node, visitor: Visitor): void {
 
     ancestors.push(node);
 
-    for (const [key, value] of Object.entries(node)) {
-      if (TYPE_ANNOTATION_KEYS.has(key)) continue;
+    for (const key of childKeysOf(node)) {
+      const value = (node as unknown as Record<string, unknown>)[key];
 
-      if (Array.isArray(value)) value.forEach(visitIfNode);
-      else visitIfNode(value);
+      if (Array.isArray(value)) {
+        for (const item of value) if (isNode(item)) visit(item);
+      } else if (isNode(value)) {
+        visit(value);
+      }
     }
 
     ancestors.pop();
   };
 
-  const visitIfNode = (value: unknown) => {
-    if (isNode(value)) visit(value);
-  };
-
   visit(root);
+}
+
+function childKeysOf(node: Node): readonly string[] {
+  return (
+    CHILD_KEYS.get(node.type) ??
+    Object.keys(node).filter((key) => !TYPE_ANNOTATION_KEYS.has(key))
+  );
 }
 
 function isNode(value: unknown): value is Node {
