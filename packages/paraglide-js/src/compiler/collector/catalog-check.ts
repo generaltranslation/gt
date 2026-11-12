@@ -1,5 +1,6 @@
 import type { CatalogCheck, ParaglideUsage } from '../analysis/types.js';
 import { patternMatcher } from '../paraglide/catalog.js';
+import type { Diagnostic } from '../utils/diagnostics.js';
 
 /** A dynamic name lists at most this many matching messages. */
 const MAX_MATCHES = 50;
@@ -19,19 +20,22 @@ export function checkCatalog(
 }
 
 /**
- * "12 usage(s) of messages not in the catalog: typo (src/main.ts:3:21), …,
- * and 2 more"; undefined if there are none. `usages` are already described.
+ * "12 usage(s) of messages not in the catalog get no metadata", with details
+ * "typo (src/main.ts:3:21), …, and 2 more"; undefined if there are none.
+ * `usages` are already described.
  */
 export function unknownMessagesWarning(
   usages: readonly string[]
-): string | undefined {
+): Diagnostic | undefined {
   if (usages.length === 0) return undefined;
 
-  const listed = usages.slice(0, MAX_LISTED).join(', ');
   const unlisted = usages.length - MAX_LISTED;
-  const more = unlisted > 0 ? `, and ${unlisted} more` : '';
+  const more = unlisted > 0 ? [`and ${unlisted} more`] : [];
 
-  return `${usages.length} usage(s) of messages not in the catalog: ${listed}${more}`;
+  return {
+    whatHappened: `${usages.length} usage(s) of messages not in the catalog get no metadata`,
+    details: [...usages.slice(0, MAX_LISTED), ...more],
+  };
 }
 
 function firstMatches(matches: string[]): string[] {

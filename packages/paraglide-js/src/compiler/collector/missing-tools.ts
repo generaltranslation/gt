@@ -105,7 +105,7 @@ export class MissingTools {
 
   /**
    * "they need @vue/language-core, which is not installed. Install it:
-   * pnpm add -D vue-tsc (vue-tsc includes @vue/language-core)"
+   * `pnpm add -D vue-tsc` (vue-tsc includes @vue/language-core)"
    */
   private async installAdvice(
     language: string,
@@ -128,7 +128,7 @@ export class MissingTools {
 
     return (
       `they need ${missing.join(' and ')}, which ${isOne ? 'is' : 'are'} not installed. ` +
-      `Install ${isOne ? 'it' : 'them'}: ${command}${includes}`
+      `Install ${isOne ? 'it' : 'them'}: \`${command}\`${includes}`
     );
   }
 }

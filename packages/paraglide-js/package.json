@@ -50,6 +50,7 @@
     "@jridgewell/trace-mapping": "^0.3.31",
     "@oxc-project/types": "^0.157.0",
     "@typescript-eslint/scope-manager": "^8.72.1",
+    "generaltranslation": "workspace:*",
     "globby": "^16.2.0",
     "oxc-parser": "^0.157.0",
     "oxc-resolver": "^11.24.2",
