@@ -3,7 +3,7 @@ import {
   getVariableProps,
   isVariableElementProps,
 } from '../variables/_getVariableProps';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from 'generaltranslation/internal';
 import { TaggedChild, TaggedChildren, TaggedElement } from '../types';
 import { getGTTag } from './getGTTag';
 import { getPluralBranch } from '../plurals/getPluralBranch';
@@ -29,7 +29,7 @@ function createRenderDefaultChildren({
 }): (args: RenderDefaultChildrenArgs) => React.ReactNode {
   return function renderDefaultChildren({
     children,
-    defaultLocale = libraryDefaultLocale,
+    defaultLocale = defaultDefaultLocale,
     enableI18n,
   }: RenderDefaultChildrenArgs): React.ReactNode {
     const handleSingleChildElement = (child: TaggedElement): ReactNode => {

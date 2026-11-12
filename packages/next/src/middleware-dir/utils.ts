@@ -298,14 +298,11 @@ export function getLocaleFromRequest(
     candidates.push(...parseAcceptLanguage(headerList.get('accept-language')));
   }
 
-  // Get default locale
-  candidates.push(defaultLocale);
+  // The default locale is the fallback below, not a candidate: as a candidate it
+  // would join the same-language Lookup pass and win over a closer match.
 
   // determine userLocale
-  const userLocale =
-    gt.determineLocale(
-      candidates.filter((locale) => gt.isValidLocale(locale))
-    ) || defaultLocale;
+  const userLocale = gt.determineLocale(candidates) || defaultLocale;
 
   return {
     userLocale,

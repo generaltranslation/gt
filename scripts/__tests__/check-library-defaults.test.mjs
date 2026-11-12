@@ -93,13 +93,13 @@ describe('validateRepository', () => {
   test('detects no-substitution template literals', async () => {
     const repositoryRoot = await createRepository({
       'packages/core/src/settings.ts':
-        "export const libraryDefaultLocale = 'en';\n",
+        "export const defaultDefaultLocale = 'en';\n",
       'packages/consumer/src/index.ts':
         'export const accidentalFallback = `en`;\n',
     });
     const groups = [
       {
-        name: 'libraryDefaultLocale',
+        name: 'defaultDefaultLocale',
         declarations: ['packages/core/src/settings.ts'],
         exceptions: [],
       },
@@ -109,7 +109,7 @@ describe('validateRepository', () => {
 
     expect(result.violations).toEqual([
       expect.stringContaining(
-        'packages/consumer/src/index.ts:1:35 repeats libraryDefaultLocale'
+        'packages/consumer/src/index.ts:1:35 repeats defaultDefaultLocale'
       ),
     ]);
   });

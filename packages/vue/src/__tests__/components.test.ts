@@ -6,7 +6,7 @@ import {
   renderTranslatedChildren as renderReactTranslatedChildren,
 } from '@generaltranslation/react-core/components-rsc';
 import { initializeI18nConfig as initializeReactI18nConfig } from '@generaltranslation/react-core/pure';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from 'generaltranslation/internal';
 import type { JsxChildren } from 'generaltranslation/types';
 import * as React from 'react';
 import {
@@ -847,8 +847,8 @@ describe('gt-vue formatting components', () => {
 
   it('uses only the default locale when it is active', () => {
     expect(getFormatLocales(['fr-CA'], 'en', 'en')).toEqual(['en']);
-    expect(getFormatLocales(['fr-CA'], libraryDefaultLocale)).toEqual([
-      libraryDefaultLocale,
+    expect(getFormatLocales(['fr-CA'], defaultDefaultLocale)).toEqual([
+      defaultDefaultLocale,
     ]);
   });
 

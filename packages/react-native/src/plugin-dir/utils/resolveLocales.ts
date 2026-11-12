@@ -4,7 +4,7 @@ import {
   invalidLocalesWarning,
   resolveLocalesFailedWarning,
 } from '../../errors-dir/warnings';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from 'generaltranslation/internal';
 import { failedToReadConfigFileError } from '../../errors-dir/errors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
 import path from 'path';
@@ -51,7 +51,7 @@ export function resolveLocales({
   // Fallback to default locale if no locales were found
   if (result.length === 0) {
     console.warn(resolveLocalesFailedWarning);
-    result = [libraryDefaultLocale];
+    result = [defaultDefaultLocale];
   }
 
   return result;

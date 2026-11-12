@@ -659,6 +659,7 @@ describe('withGTConfig', () => {
         customMetadata: 'server-only metadata',
         cacheExpiryTime: 12345,
         timeZone: 'Asia/Tokyo',
+        localeMatcher: 'lookup',
         _versionId: 'version-id',
         _disableDevHotReload: true,
       });
@@ -668,6 +669,7 @@ describe('withGTConfig', () => {
       ).toEqual({
         defaultLocale: expect.any(String),
         locales: expect.any(Array),
+        localeMatcher: 'lookup',
         runtimeUrl: expect.any(String),
         cacheUrl: expect.any(String),
         cacheExpiryTime: 12345,

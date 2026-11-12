@@ -4,7 +4,7 @@ import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/diagnostics';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from 'generaltranslation/internal';
 import type {
   CreateGTOptions,
   GTPlugin,
@@ -81,7 +81,7 @@ export function createGT(options: CreateGTOptions = {}): GTPlugin {
 export function createGTRuntime(
   {
     customMapping,
-    defaultLocale = libraryDefaultLocale,
+    defaultLocale = defaultDefaultLocale,
     loadTranslations,
     locale: explicitLocale,
     localeCookieName = defaultLocaleCookieName,

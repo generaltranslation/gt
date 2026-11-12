@@ -15,7 +15,7 @@ import {
   type MessageTree,
   type MessageValues,
 } from '@generaltranslation/icu';
-import { libraryDefaultLocale } from '../settings/settings';
+import { defaultDefaultLocale } from '../settings/settings';
 import { hostTimeZone } from '../utils/hostTimeZone';
 
 // `@generaltranslation/format` and `@generaltranslation/icu` take every
@@ -37,7 +37,7 @@ type Options<
 
 const withLocales = <Given extends { locales?: string | string[] }>(
   options: Given | undefined
-) => ({ ...options, locales: options?.locales ?? libraryDefaultLocale });
+) => ({ ...options, locales: options?.locales ?? defaultDefaultLocale });
 
 /**
  * Formats a number according to the specified locales and options.
@@ -229,7 +229,7 @@ export function formatMessage(
  */
 export function formatMessageTree(
   tree: MessageTree,
-  locales: string | string[] = libraryDefaultLocale,
+  locales: string | string[] = defaultDefaultLocale,
   values: MessageValues<unknown> = {},
   options?: Partial<FormatMessageTreeOptions>
 ): unknown {

@@ -10,8 +10,8 @@ import {
 } from './formatting/format';
 import { formatIcu } from '@generaltranslation/icu/parser';
 import { intlCache } from './cache/IntlCache';
+import { GTIntl } from './intl/GTIntl';
 import type { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
-import { _determineLocale } from './locales/determineLocale';
 import { _getLocaleDirection } from './locales/getLocaleDirection';
 import { _getLocaleEmoji } from './locales/getLocaleEmoji';
 import {
@@ -28,6 +28,10 @@ import { _resolveAliasLocale } from './locales/resolveAliasLocale';
 import { _resolveCanonicalLocale } from './locales/resolveCanonicalLocale';
 import type { CustomMapping, FormatVariables } from './types';
 import type { StringFormat } from './types-dir/jsx/content';
+import {
+  defaultLocaleMatcher,
+  defaultDefaultLocale,
+} from './settings/settings';
 
 export { getRegionProperties } from './locales/getRegionProperties';
 
@@ -450,7 +454,14 @@ export function determineLocale(
   approvedLocales: string[] | undefined = [],
   customMapping: CustomMapping | undefined = undefined
 ): string | undefined {
-  return _determineLocale(locales, approvedLocales, customMapping);
+  // Matching reads neither the default locale nor the time zone.
+  return new GTIntl({
+    defaultLocale: defaultDefaultLocale,
+    timeZone: 'UTC',
+    localeMatcher: defaultLocaleMatcher,
+    locales: approvedLocales,
+    customMapping,
+  }).determineLocale(locales);
 }
 
 /**

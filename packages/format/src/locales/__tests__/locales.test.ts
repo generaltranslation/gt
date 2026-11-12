@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { intlCache } from '../../cache/IntlCache';
 import { getRegionProperties } from '../../core';
 import type { CustomMapping } from '../customLocaleMapping';
-import { _determineLocale, findMatchingCode } from '../determineLocale';
+import { _determineLocale, type MatchLocale } from '../determineLocale';
 import { _getLocaleDirection } from '../getLocaleDirection';
 import {
   _getLocaleEmoji,
@@ -142,190 +142,60 @@ describe('_standardizeLocale', () => {
   });
 });
 
-describe('_determineLocale', () => {
-  it.each<[string, string | string[], string[], string | undefined]>([
-    ['an exact match', ['en-US', 'fr-FR'], ['en-US', 'es-ES'], 'en-US'],
-    ['a single locale string', 'en-US', ['en-US', 'es-ES'], 'en-US'],
-    [
-      'the first preferred locale over approved order',
-      ['en-US', 'fr-FR', 'de-DE'],
-      ['fr-FR', 'en-US', 'de-DE'],
-      'en-US',
-    ],
-    [
-      'an earlier preference matched by language over a later exact match',
-      ['fr-CA', 'en-US'],
-      ['en-US', 'fr-FR'],
-      'fr-FR',
-    ],
-    ['a noncanonical spelling', ['en-us'], ['en-US'], 'en-US'],
-    ['the most likely region of the language', ['fr-CA'], ['fr-FR'], 'fr-FR'],
-    [
-      'the most likely region among several dialects',
-      ['en-AU'],
-      ['en-US', 'en-GB', 'fr-FR'],
-      'en-US',
-    ],
-    ['the minimized locale', ['de-DE'], ['de', 'en-US'], 'de'],
-    ['the bare language', ['es-MX'], ['es', 'en-US'], 'es'],
-    [
-      'the bare language before other dialects',
-      ['pt-BR'],
-      ['pt-PT', 'pt', 'en-US'],
-      'pt',
-    ],
-    [
-      'the bare language before another script',
-      ['sr-Latn'],
-      ['sr-Cyrl', 'sr', 'en-US'],
-      'sr',
-    ],
-    [
-      'a language-script candidate',
-      ['zh-Hans-SG'],
-      ['zh-Hans', 'zh', 'en-SG'],
-      'zh-Hans',
-    ],
-    [
-      'no arbitrary dialect of the same language',
-      ['en-AU'],
-      ['en-GB', 'en-CA', 'fr-FR'],
-      undefined,
-    ],
-    [
-      'no script-region candidate from a script-only locale',
-      ['zh-Hans'],
-      ['zh-Hans-CN', 'zh-Hant-TW', 'en-US'],
-      undefined,
-    ],
-    [
-      'no candidate with a different region or script',
-      ['zh-Hans-HK'],
-      ['zh-Hans-CN', 'zh-Hant-TW', 'zh-Hant-HK'],
-      undefined,
-    ],
-    ['no other language', ['ja-JP'], ['en-US', 'ko-KR', 'zh-CN'], undefined],
-    [
-      'a valid locale after invalid ones',
-      ['invalid-locale', 'en-US', 'another-invalid'],
-      ['en-US', 'fr-FR'],
-      'en-US',
-    ],
-    [
-      'a valid approved locale among invalid ones',
-      ['en-US'],
-      ['invalid-approved', 'en-US', 'another-invalid'],
-      'en-US',
-    ],
-    ['nothing without candidates', [], ['en-US'], undefined],
-    ['nothing without approved locales', ['en-US'], [], undefined],
-  ])('resolves %s', (_label, locales, approvedLocales, expected) => {
-    expect(_determineLocale(locales, approvedLocales)).toBe(expected);
-  });
-
-  it.each<[string, string[], string[], string | undefined]>([
-    [
-      'an approved alias',
-      ['custom-locale', 'alias-locale'],
-      ['custom-locale', 'en-US'],
-      'custom-locale',
-    ],
-    // _determineLocale returns the standardized alias; LocaleConfig restores
-    // the approved spelling.
-    [
-      'the standardized spelling of an approved alias',
-      ['custom-en', 'fr-FR'],
-      ['custom-en', 'de-DE'],
-      'custom-EN',
-    ],
-    [
-      'no canonical code for an alias that is not approved',
-      ['alias-locale'],
-      ['en-US', 'fr-FR'],
-      undefined,
-    ],
-    [
-      'nothing for an approved name-only mapping',
-      ['en-US'],
-      ['name-only', 'fr-FR'],
-      undefined,
-    ],
-  ])(
-    'resolves %s with a custom mapping',
-    (_label, locales, approvedLocales, expected) => {
-      const customMapping: CustomMapping = {
-        'custom-locale': { code: 'fr-FR', name: 'Custom Language' },
-        'alias-locale': { code: 'en-US', name: 'Aliased American English' },
-        'custom-en': { code: 'en-US', name: 'Custom English' },
-        'name-only': { name: 'Custom Approved Language' },
-      };
-      expect(_determineLocale(locales, approvedLocales, customMapping)).toBe(
-        expected
-      );
-    }
-  );
+const matchLocale = (tag: string, script = ''): MatchLocale => ({
+  tag,
+  language: tag.split('-')[0],
+  script,
 });
 
-describe('findMatchingCode', () => {
-  it.each<[string, string, string[], string | undefined]>([
-    // exact matches
-    ['an exact locale', 'en-US', ['en-US'], 'en-US'],
-    ['an exact bare language', 'pt', ['pt', 'pt-BR'], 'pt'],
-    [
-      'an exact match over every derived match',
-      'zh-Hans-HK',
-      ['zh-Hans', 'zh-HK', 'zh-Hans-HK'],
-      'zh-Hans-HK',
-    ],
-    ['an exact variant', 'sl-rozaj', ['sl-rozaj'], 'sl-rozaj'],
-    // derived matches
-    ['a language-region candidate', 'zh-Hans-HK', ['zh-HK'], 'zh-HK'],
-    ['a language-script candidate', 'zh-Hant-TW', ['zh-Hant'], 'zh-Hant'],
-    ['a region inferred from the script', 'zh-Hant', ['zh-TW'], 'zh-TW'],
-    ['a script inferred from the region', 'zh-TW', ['zh-Hant'], 'zh-Hant'],
-    ['a numeric region subtag', 'es-Latn-419', ['es-419'], 'es-419'],
-    ['the likely region of a bare language', 'pt', ['pt-BR'], 'pt-BR'],
-    ['the likely script of a bare language', 'sr', ['sr-Cyrl'], 'sr-Cyrl'],
-    ['the minimized locale', 'en-Latn-US', ['en'], 'en'],
-    [
-      'the minimized locale with its Unicode extension',
-      'en-Latn-US-u-ca-buddhist',
-      ['en-u-ca-buddhist'],
-      'en-u-ca-buddhist',
-    ],
-    [
-      'a candidate derived from a locale with a variant',
-      'sl-Latn-SI-rozaj',
-      ['sl-SI'],
-      'sl-SI',
-    ],
-    // precedence
-    ['a region over a script', 'zh-Hans-HK', ['zh-Hans', 'zh-HK'], 'zh-HK'],
-    [
-      'a region over a script regardless of insertion order',
-      'zh-Hans-HK',
-      ['zh-HK', 'zh-Hans'],
-      'zh-HK',
-    ],
-    [
-      'a script over the minimized locale',
-      'en-Latn-US-u-ca-buddhist',
-      ['en-u-ca-buddhist', 'en-Latn'],
-      'en-Latn',
-    ],
-    [
-      'a likely region over a likely script',
-      'sr',
-      ['sr-Cyrl', 'sr-RS'],
-      'sr-RS',
-    ],
-    // no match
-    ['nothing in an empty candidate set', 'en-US', [], undefined],
-    ['no arbitrary dialect of the language', 'en-AU', ['en-GB'], undefined],
-    ['no prefix or partial match', 'en-US', ['en-U', 'en-US-extra'], undefined],
-    ['no unrelated language', 'en-US', ['fr-FR'], undefined],
-  ])('matches %s', (_label, locale, candidates, expected) => {
-    expect(findMatchingCode(locale, new Set(candidates))).toBe(expected);
+const tags = (...values: string[]) => values.map((tag) => matchLocale(tag));
+
+describe('_determineLocale', () => {
+  it.each([
+    ['zh-Hant-CN-x-private1-private2', 'zh-Hant-CN-x-private1'],
+    ['zh-Hant-CN-x-private1', 'zh-Hant-CN'],
+    ['zh-Hant-CN', 'zh-Hant'],
+    ['zh-Hant', 'zh'],
+  ])('lookup truncates %s to %s', (requested, available) => {
+    expect(
+      _determineLocale(tags(requested), tags(available), 'lookup')?.available
+        .tag
+    ).toBe(available);
+  });
+
+  it('removes a single-character subtag together with its trailing subtag', () => {
+    expect(
+      _determineLocale(
+        tags('zh-Hant-CN-x-private1'),
+        tags('zh-Hant-CN-x'),
+        'lookup'
+      )
+    ).toBeUndefined();
+  });
+
+  it('tries every truncation of a range before the next range', () => {
+    expect(
+      _determineLocale(tags('en-GB', 'fr'), tags('fr', 'en'), 'lookup')
+        ?.available.tag
+    ).toBe('en');
+  });
+
+  it('matches tags without a derivable script as empty scripts in best fit', () => {
+    expect(
+      _determineLocale(tags('qaa-QM'), tags('qaa-QN'), 'best fit')?.available
+        .tag
+    ).toBe('qaa-QN');
+    expect(
+      _determineLocale(tags('qaa-QM'), tags('qaa-QN'), 'lookup')
+    ).toBeUndefined();
+  });
+
+  it('reports the requested record that produced the match', () => {
+    const requested = tags('de', 'fr-CA-x-test');
+    const available = tags('fr-CA');
+    const match = _determineLocale(requested, available, 'lookup');
+    expect(match?.requested).toBe(requested[1]);
+    expect(match?.available).toBe(available[0]);
   });
 });
 

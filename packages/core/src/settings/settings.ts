@@ -1,1 +1,1 @@
-export const libraryDefaultLocale = 'en' as const;
+export const defaultDefaultLocale = 'en' as const;

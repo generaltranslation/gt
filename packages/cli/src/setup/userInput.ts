@@ -1,4 +1,4 @@
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from 'generaltranslation/internal';
 import type { CustomMapping } from 'generaltranslation/types';
 import { promptLocale, promptLocaleList } from '../console/logging.js';
 import { validateLocale } from '../console/promptParsing.js';
@@ -50,11 +50,11 @@ export async function getDesiredLocales(
   const defaultLocale = await session.answer('--default-locale', {
     explicit: explicit.defaultLocale,
     configured: configuredDefaultLocale,
-    recommended: libraryDefaultLocale,
+    recommended: defaultDefaultLocale,
     ask: () =>
       promptLocale({
         message: 'What is the default locale for your project?',
-        defaultValue: libraryDefaultLocale,
+        defaultValue: defaultDefaultLocale,
         customMapping,
       }),
   });

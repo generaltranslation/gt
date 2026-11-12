@@ -331,22 +331,22 @@ describe('response properties', () => {
 });
 
 describe('getLocaleFromRequest', () => {
-  const gt = new GTIntl({ locales: ['en', 'fr', 'es', 'de'] });
-
   function resolveLocale(
     req: NextRequest,
-    defaultLocalePaths: PathMatcher = createPathMatcher([])
+    defaultLocalePaths: PathMatcher = createPathMatcher([]),
+    defaultLocale = 'en',
+    locales = ['en', 'fr', 'es', 'de']
   ) {
     return getLocaleFromRequest(
       req,
-      'en',
+      defaultLocale,
       true,
       false,
       defaultLocalePaths,
       REFERRER_COOKIE,
       LOCALE_COOKIE,
       RESET_COOKIE,
-      gt
+      new GTIntl({ locales })
     );
   }
 
@@ -436,6 +436,30 @@ describe('getLocaleFromRequest', () => {
       resolveLocale(req, createPathMatcher([['/about-us', '/about']]))
         .userLocale
     ).toBe('en');
+  });
+
+  it('prefers a same-script match over the default locale in the same language', () => {
+    stubRoutingEnv({ browserLocales: true });
+
+    expect(
+      resolveLocale(request('/', { browser: 'zh-Hant' }), undefined, 'zh-CN', [
+        'zh-CN',
+        'zh-TW',
+      ]).userLocale
+    ).toBe('zh-TW');
+  });
+
+  it('matches a header preference with extension subtags', () => {
+    stubRoutingEnv({ browserLocales: true });
+
+    expect(
+      resolveLocale(
+        request('/', { browser: 'fr-CA-u-nu-latn' }),
+        undefined,
+        'en',
+        ['en', 'fr-FR']
+      ).userLocale
+    ).toBe('fr-FR');
   });
 });
 

@@ -1,5 +1,5 @@
 import { intlCache } from '../cache/IntlCache';
-import { libraryDefaultLocale } from '../settings/settings';
+import { defaultDefaultLocale } from '../settings/settings';
 import { defaultEmoji, getRegionEmoji } from './getLocaleEmoji';
 
 export type CustomRegionMapping = {
@@ -16,12 +16,12 @@ export type CustomRegionMapping = {
  * - Accepts ISO 3166-1 alpha-2 or UN M.49 region codes (e.g., `"US"`, `"FR"`, `"419"`).
  * - If `customMapping` contains a `name` or `emoji` for the region, those override the default values.
  * - Otherwise, uses `Intl.DisplayNames` to get the localized region name in the given `defaultLocale`,
- *   falling back to `libraryDefaultLocale`.
+ *   falling back to `defaultDefaultLocale`.
  * - Falls back to the region code as `name` if display name resolution fails.
  * - Falls back to `defaultEmoji` if no emoji can be computed or found in `customMapping`.
  *
  * @param {string} region - The region code to look up (e.g., `"US"`, `"GB"`, `"DE"`).
- * @param {string} [defaultLocale=libraryDefaultLocale] - The locale to use when localizing the region name.
+ * @param {string} [defaultLocale=defaultDefaultLocale] - The locale to use when localizing the region name.
  * @param {CustomRegionMapping} [customMapping] - Optional mapping of region codes to custom names and/or emojis.
  * @returns {{ code: string, name: string, emoji: string, locale?: string }} An object containing:
  *  - `code`: the input region code
@@ -43,7 +43,7 @@ export type CustomRegionMapping = {
  */
 export function getRegionProperties(
   region: string,
-  defaultLocale: string = libraryDefaultLocale,
+  defaultLocale: string = defaultDefaultLocale,
   customMapping?: CustomRegionMapping
 ): {
   code: string;
@@ -51,13 +51,13 @@ export function getRegionProperties(
   emoji: string;
   locale?: string; // locale is a hidden return field, because we don't want to guarantee it, but we also need customMapping to work with it
 } {
-  defaultLocale ||= libraryDefaultLocale;
+  defaultLocale ||= defaultDefaultLocale;
   let name = region;
   let emoji = defaultEmoji;
   try {
     const displayNames = intlCache.get(
       'DisplayNames',
-      [defaultLocale, libraryDefaultLocale], // default language order
+      [defaultLocale, defaultDefaultLocale], // default language order
       { type: 'region' }
     );
     name = displayNames.of(region) || region;

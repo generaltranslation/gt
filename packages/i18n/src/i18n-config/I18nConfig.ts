@@ -2,7 +2,7 @@ import type { LocaleConfig } from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import { GTRuntime } from 'generaltranslation/runtime';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import { GTIntl, libraryDefaultLocale } from 'generaltranslation/internal';
+import { GTIntl, defaultDefaultLocale } from 'generaltranslation/internal';
 import type { GTConfig } from '../config/types';
 import {
   getLoadTranslationsType,
@@ -26,6 +26,7 @@ export type I18nConfigParams = Pick<
   | 'locales'
   | 'customMapping'
   | 'timeZone'
+  | 'localeMatcher'
   | 'projectId'
   | 'apiKey'
   | 'cacheUrl'
@@ -170,9 +171,23 @@ export class I18nConfig extends GTIntl {
 
   private getLocaleConfig(config?: I18nConfigParams): GTIntl {
     if (!config || !hasI18nConfigParams(config)) {
-      return this;
+      // A matcher-only override keeps this instance's locales.
+      return config?.localeMatcher === undefined ||
+        config.localeMatcher === this.localeMatcher
+        ? this
+        : new GTIntl({
+            defaultLocale: this.defaultLocale,
+            locales: [...this.locales],
+            customMapping: this.customMapping,
+            localeMatcher: config.localeMatcher,
+          });
     }
-    return new GTIntl(getLocaleResolverConfigParams(config));
+    return new GTIntl(
+      getLocaleResolverConfigParams({
+        ...config,
+        localeMatcher: config.localeMatcher ?? this.localeMatcher,
+      })
+    );
   }
 
   private determineSupportedLocaleWithConfig(
@@ -194,9 +209,10 @@ function getLocaleConfigParams(
   gtServicesEnabled: boolean
 ): LocaleConfig {
   const {
-    defaultLocale = libraryDefaultLocale,
+    defaultLocale = defaultDefaultLocale,
     locales = [],
     customMapping,
+    localeMatcher,
   } = params;
 
   validateI18nConfigParams(
@@ -214,19 +230,22 @@ function getLocaleConfigParams(
     locales: Array.from(new Set([defaultLocale, ...locales])),
     customMapping: customMapping || {},
     timeZone: params.timeZone,
+    localeMatcher,
   };
 }
 
 function getLocaleResolverConfigParams({
-  defaultLocale = libraryDefaultLocale,
+  defaultLocale = defaultDefaultLocale,
   locales = [],
   customMapping,
+  localeMatcher,
 }: I18nConfigParams = {}): LocaleConfig {
   return {
     defaultLocale,
     // As in the constructor, the default locale is always supported.
     locales: Array.from(new Set([defaultLocale, ...(locales ?? [])])),
     customMapping: customMapping || {},
+    localeMatcher,
   };
 }
 

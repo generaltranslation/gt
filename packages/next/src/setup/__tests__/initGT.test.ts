@@ -139,6 +139,7 @@ function setConfigEnv() {
       defaultLocale: 'en',
       locales: ['en', 'fr'],
       timeZone: 'Asia/Tokyo',
+      localeMatcher: 'lookup',
       runtimeUrl: 'https://runtime.example.com',
       cacheUrl: 'https://cache.example.com',
       renderSettings: { timeout: 123 },
@@ -184,6 +185,7 @@ describe('getParams', () => {
 
     // In development, GT_API_KEY is also the hot-reload key.
     expect(i18nConfigParams).toMatchObject({
+      localeMatcher: 'lookup',
       projectId: 'project-id',
       apiKey: 'api-key',
       devApiKey: 'api-key',

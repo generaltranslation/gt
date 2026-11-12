@@ -47,7 +47,7 @@ export const defaultGroups = [
     exceptions: [],
   },
   {
-    name: 'libraryDefaultLocale',
+    name: 'defaultDefaultLocale',
     declarations: [
       'packages/core/src/settings/settings.ts',
       'packages/format/src/settings/settings.ts',
@@ -163,6 +163,11 @@ export const defaultGroups = [
   {
     name: 'defaultLocaleHeaderName',
     declarations: ['packages/next/src/utils/headers.ts'],
+    exceptions: [],
+  },
+  {
+    name: 'defaultLocaleMatcher',
+    declarations: ['packages/format/src/settings/settings.ts'],
     exceptions: [],
   },
 ];

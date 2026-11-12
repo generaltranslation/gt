@@ -1,4 +1,9 @@
 import type { LocaleProperties } from '../locales/getLocaleProperties';
+import { defaultLocaleMatcher } from '../settings/settings';
+
+/** The ECMA-402 locale matching algorithms `determineLocale` supports. */
+export const localeMatchers = ['lookup', defaultLocaleMatcher] as const;
+export type LocaleMatcher = (typeof localeMatchers)[number];
 
 /** The locales an app supports; plain data shared by GTIntl, GTRuntime and GT. */
 export type LocaleConfig = {
@@ -9,6 +14,7 @@ export type LocaleConfig = {
   };
   /** The IANA time zone of the dates and times formatted without one. */
   timeZone?: string;
+  localeMatcher?: LocaleMatcher;
 };
 
 /**
@@ -17,7 +23,7 @@ export type LocaleConfig = {
  * because leaving it out means no approved-locales restriction.
  */
 export type ResolvedLocaleConfig = LocaleConfig &
-  Required<Pick<LocaleConfig, 'defaultLocale' | 'timeZone'>>;
+  Required<Pick<LocaleConfig, 'defaultLocale' | 'timeZone' | 'localeMatcher'>>;
 
 /**
  * Copies and freezes a locale configuration, so later changes to the caller's
@@ -28,10 +34,12 @@ export function snapshotLocaleConfig({
   locales,
   customMapping,
   timeZone,
+  localeMatcher,
 }: LocaleConfig): Readonly<LocaleConfig> {
   return Object.freeze({
     defaultLocale,
     timeZone,
+    localeMatcher,
     locales: locales && Object.freeze([...locales]),
     customMapping:
       customMapping &&

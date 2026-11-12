@@ -340,6 +340,27 @@ describe('custom-mapped locale aliases', () => {
       }
     );
   });
+
+  describe('configured locale matcher', () => {
+    it.each([
+      [undefined, 307, '/en-GB/pricing'],
+      ['lookup', 200, undefined],
+    ])(
+      'routes a browser "en" preference with localeMatcher=%s',
+      (localeMatcher, status, target) => {
+        configure({
+          defaultLocale: 'fr',
+          locales: ['fr', 'en-GB'],
+          localeMatcher,
+        });
+        check(
+          createNextMiddleware()(request('/pricing', { browser: 'en' })),
+          status,
+          target
+        );
+      }
+    );
+  });
 });
 
 describe('resolved locale prefixes', () => {

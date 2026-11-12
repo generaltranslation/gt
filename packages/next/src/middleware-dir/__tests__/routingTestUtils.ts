@@ -8,6 +8,7 @@ export type RoutingEnv = {
   defaultLocale?: string;
   locales?: readonly string[];
   customMapping?: CustomMapping;
+  localeMatcher?: string;
   headersAndCookies?: Record<string, string>;
   /** Mirrors `_GENERALTRANSLATION_GT_SERVICES_ENABLED`. */
   services?: boolean;
