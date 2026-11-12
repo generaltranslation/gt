@@ -1,10 +1,10 @@
 import path from 'node:path';
 import type * as AngularCompiler from '@angular/compiler';
-import { parseSync } from 'oxc-parser';
 import { parse, parseFragment, type DefaultTreeAdapterMap } from 'parse5';
 import { staticKeyName, type ESTree } from '../analysis/ast.js';
 import { topLevelClasses } from '../analysis/module-syntax.js';
 import type { SourceRange } from '../analysis/types.js';
+import { parseCode } from '../utils/parse.js';
 import { GeneratedCode } from './angular/generated-code.js';
 import { writeTemplate } from './angular/template.js';
 
@@ -130,7 +130,7 @@ function loadCompiler(context: LanguageContext) {
 }
 
 function inlineTemplates(source: string, file: string): InlineTemplate[] {
-  const { program } = parseSync(file, source, { lang: 'ts' });
+  const { program } = parseCode(file, source, { lang: 'ts' });
 
   return topLevelClasses(program).flatMap(inlineTemplatesOf);
 }
