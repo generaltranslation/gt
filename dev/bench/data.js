@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1794014553225,
+  "lastUpdate": 1794508991215,
   "repoUrl": "https://github.com/generaltranslation/gt",
   "entries": {
     "Middleware Benchmarks": [
@@ -12992,6 +12992,122 @@ window.BENCHMARK_DATA = {
             "value": 90.60000000000582,
             "unit": "ms",
             "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.20\"\n}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "2d80a60feb08923d8573bc1f0cd4f797f13b3911",
+          "message": "[ci] release (#2676)",
+          "timestamp": "2026-11-12T18:36:01Z",
+          "url": "https://github.com/generaltranslation/gt/commit/2d80a60feb08923d8573bc1f0cd4f797f13b3911"
+        },
+        "date": 1794508990064,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "gt-next > unit > middleware: factory creation latency > createNextMiddleware() (mean)",
+            "value": 0.01946197263739668,
+            "range": "±0.0141",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.21\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > default locale request (/) (mean)",
+            "value": 0.05106618331290691,
+            "range": "±0.0476",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.21\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > non-default locale request (/fr) (mean)",
+            "value": 0.062169321024493296,
+            "range": "±0.0649",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.21\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > nested route (/fr/about) (mean)",
+            "value": 0.056299496397207265,
+            "range": "±0.0406",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > ttfb",
+            "value": 88.09999999997672,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > domContentLoaded",
+            "value": 96.79999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > load",
+            "value": 161.39999999999418,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > elapsed",
+            "value": 93,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > ttfb",
+            "value": 11.800000000017462,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > domContentLoaded",
+            "value": 19.70000000001164,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > load",
+            "value": 84.30000000001746,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: locale-switch-en-to-fr > elapsed",
+            "value": 577,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > ttfb",
+            "value": 8.800000000017462,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > domContentLoaded",
+            "value": 16.10000000000582,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > load",
+            "value": 75.30000000001746,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.21\"\n}"
           }
         ]
       }
