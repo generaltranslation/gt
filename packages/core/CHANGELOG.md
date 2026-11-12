@@ -1,5 +1,30 @@
 # generaltranslation
 
+## 10.0.0-samsara.4
+
+### Patch Changes
+
+- 7ef8d91: ICU dates and times format as ICU does. The named styles, as in `{d, date, medium}` and `{t, time, short}`, use Intl's `dateStyle` and `timeStyle`, and a date or time without a style is the medium style: `{d, date}` is `May 6, 2020` in `en-US`, not `5/6/2020`. Skeletons read `S` as fractional seconds, `B` as the day period and `O` or `v` as the time zone name, and `::unit/` keeps a compound unit such as `kilometer-per-hour`.
+- 7ef8d91: In the `/unstable` entries, `number()`, `date()` and the new `time()` split their options. Message options (`style`, `unit`, date and time fields) are part of the message and must be one literal. `date()` and `time()` name their style `style`, as `number()` does: `date({ due }, { style: 'medium' })` and `time({ start }, { style: 'short' })`, not Intl's `dateStyle` and `timeStyle`. Formatting context, such as `currency` or `timeZone`, may be any value and never changes the message's hash, so `currency: order.currency` is translated once; a `Msg` carries it in `formats`, which is `{}` when there is none. A `timeZone` in `gt.config.json`, `initializeGT()` or `withGTConfig()` sets the default time zone of every date and time formatted without one, in a message or in `<DateTime>`; the `GT` class takes the same `timeZone`. A message without placeholders is one string tree, so its hash changes once.
+- 3c013b5: `@generaltranslation/icu` and `@generaltranslation/format` share one cache of Intl formatters, and take what they format with as arguments.
+  - `formatMessage` and `formatMessageTree` cache the locale they resolve and the Intl formatters they build, instead of creating them on every call, and return a plain-text message tree as is. Messages that format a number, a plural or a date render about 20 times faster.
+  - `@generaltranslation/icu` and `@generaltranslation/format` apply no defaults to their own parameters and read neither the host's time zone nor the clock. The `locales`, a message's `variables`, the `timeZone` of dates and times, and the `baseDate` of `formatRelativeTimeFromDate` are required, as are `LocaleConfig`'s `defaultLocale`, `locales` and `timeZone`.
+  - `generaltranslation` is the only package that resolves what a caller leaves out: its formatting functions and `LocaleConfig` keep their optional arguments, and it reads the host's time zone, once for the process. gt-i18n formats through it and no longer fills in a default itself.
+  - The cache holds at most 256 instances of each constructor. It had no limit.
+  - gt-i18n cuts an ICU message with `$maxChars` using the terminator of its locale, as it does a plain string. It used the English one.
+
+- Updated dependencies [7ef8d91]
+- Updated dependencies [7ef8d91]
+- Updated dependencies [3c013b5]
+- Updated dependencies [c7ae5e3]
+- Updated dependencies [7ef8d91]
+- Updated dependencies [884e499]
+- Updated dependencies [a186111]
+- Updated dependencies [2eadfe1]
+- Updated dependencies [b7fdac5]
+  - @generaltranslation/icu@0.2.0-samsara.3
+  - @generaltranslation/format@1.0.0-samsara.4
+
 ## 10.0.0-samsara.3
 
 ### Patch Changes

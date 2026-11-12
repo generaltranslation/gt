@@ -1,5 +1,20 @@
 # @generaltranslation/react-core
 
+## 12.0.0-samsara.4
+
+### Minor Changes
+
+- 7ef8d91: In the `/unstable` entries, `number()`, `date()` and the new `time()` split their options. Message options (`style`, `unit`, date and time fields) are part of the message and must be one literal. `date()` and `time()` name their style `style`, as `number()` does: `date({ due }, { style: 'medium' })` and `time({ start }, { style: 'short' })`, not Intl's `dateStyle` and `timeStyle`. Formatting context, such as `currency` or `timeZone`, may be any value and never changes the message's hash, so `currency: order.currency` is translated once; a `Msg` carries it in `formats`, which is `{}` when there is none. A `timeZone` in `gt.config.json`, `initializeGT()` or `withGTConfig()` sets the default time zone of every date and time formatted without one, in a message or in `<DateTime>`; the `GT` class takes the same `timeZone`. A message without placeholders is one string tree, so its hash changes once.
+
+### Patch Changes
+
+- Updated dependencies [7ef8d91]
+- Updated dependencies [7ef8d91]
+- Updated dependencies [3c013b5]
+  - @generaltranslation/format@1.0.0-samsara.4
+  - generaltranslation@10.0.0-samsara.4
+  - gt-i18n@2.0.0-samsara.4
+
 ## 12.0.0-samsara.3
 
 ### Patch Changes
