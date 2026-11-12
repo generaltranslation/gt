@@ -6,7 +6,7 @@ import { parseArgs } from 'node:util';
 import { collectContext, type CollectContextOptions } from '../context.js';
 import { findProjectRoot } from '../project/roots.js';
 import { install } from './install.js';
-import { printUsageError } from './print.js';
+import { print, printUsageError } from './print.js';
 
 const USAGE = `Usage: paraglide-context [root] [options]
        paraglide-context install <language...> [options]
@@ -52,7 +52,7 @@ export async function main(argv: string[]): Promise<number> {
   const { values, positionals } = parsed;
 
   if (values.help) {
-    console.log(USAGE);
+    print(USAGE);
     return 0;
   }
 
@@ -113,7 +113,7 @@ function contextOptions(
     bundlerConfigs: values['no-bundler-config'] ? [] : undefined,
     logger: {
       warn: (message) => console.warn(message),
-      info: (message) => (values.verbose ? console.log(message) : undefined),
+      info: (message) => (values.verbose ? print(message) : undefined),
     },
   };
 }

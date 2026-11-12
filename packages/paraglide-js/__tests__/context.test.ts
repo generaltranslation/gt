@@ -474,7 +474,9 @@ describe('the CLI', () => {
 
   test('wrong arguments print the usage and exit with 2; --help prints it', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const log = vi
+      .spyOn(process.stdout, 'write')
+      .mockImplementation(() => true);
     const usage = expect.stringContaining('Usage: paraglide-context');
 
     const cases: [string[], string][] = [
@@ -511,7 +513,9 @@ describe('the install command', () => {
   });
 
   test('installs the packages the languages need and the project lacks, with its package manager', async () => {
-    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const log = vi
+      .spyOn(process.stdout, 'write')
+      .mockImplementation(() => true);
     const root = await writeOutsideProject({
       'node_modules/svelte/package.json': `{ "name": "svelte", "main": "index.js" }`,
       'node_modules/svelte/index.js': '',
@@ -534,11 +538,13 @@ describe('the install command', () => {
       { command: 'pnpm', args },
       root
     );
-    expect(log).toHaveBeenCalledWith(`Running pnpm ${args.join(' ')}`);
+    expect(log).toHaveBeenCalledWith(`Running pnpm ${args.join(' ')}\n`);
   });
 
   test('nothing to install: does not run the package manager', async () => {
-    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const log = vi
+      .spyOn(process.stdout, 'write')
+      .mockImplementation(() => true);
     const root = await writeOutsideProject({
       'node_modules/@angular/compiler/package.json': `{ "name": "@angular/compiler", "main": "index.js" }`,
       'node_modules/@angular/compiler/index.js': '',
@@ -546,12 +552,12 @@ describe('the install command', () => {
 
     expect(await main(['install', 'angular', '--root', root])).toBe(0);
     expect(runCommand).not.toHaveBeenCalled();
-    expect(log).toHaveBeenCalledWith('Already installed: @angular/compiler');
+    expect(log).toHaveBeenCalledWith('Already installed: @angular/compiler\n');
   });
 
   test('a package manager that cannot run: exits with 1', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
     vi.mocked(runCommand).mockRejectedValueOnce(new Error('spawn pnpm ENOENT'));
     const root = await writeOutsideProject({});
 

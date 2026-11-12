@@ -9,6 +9,7 @@ import {
 } from '../project/package-manager.js';
 import { projectPackages } from '../project/packages.js';
 import { findProjectRoot } from '../project/roots.js';
+import { print } from './print.js';
 
 /** Version ranges for packages whose latest version does not work. */
 const VERSION_RANGES: Readonly<Record<string, string>> = {
@@ -44,7 +45,7 @@ export async function install(argv: string[]): Promise<number> {
   const { values, positionals } = parsed;
 
   if (values.help) {
-    console.log(INSTALL_USAGE);
+    print(INSTALL_USAGE);
     return 0;
   }
 
@@ -84,7 +85,7 @@ async function installPackages(
 ): Promise<number> {
   const missing = await notInstalled(projectRoot, required);
   if (missing.length === 0) {
-    console.log(`Already installed: ${required.join(', ')}`);
+    print(`Already installed: ${required.join(', ')}`);
     return 0;
   }
 
@@ -92,7 +93,7 @@ async function installPackages(
     VERSION_RANGES[name] ? `${name}@${VERSION_RANGES[name]}` : name
   );
   const command = await devDependencyCommand(projectRoot, specifiers);
-  console.log(`Running ${commandLine(command)}`);
+  print(`Running ${commandLine(command)}`);
 
   try {
     return await runCommand(command, projectRoot);
