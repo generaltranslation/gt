@@ -294,6 +294,15 @@ describe('formatMessage', () => {
     ).toThrow('Cannot apply fractional scale');
   });
 
+  // ICU4C keeps every digit; Intl keeps at most 21 significant digits.
+  it('rounds a bigint past 21 significant digits for an unlimited ::@@@*', () => {
+    expect(
+      formatMessage('{n, number, ::@@@*}', 'en', {
+        n: 123456789012345678901234567890n,
+      })
+    ).toBe('123,456,789,012,345,678,901,000,000,000');
+  });
+
   it('rejects unsafe bigint plural selection instead of losing precision', () => {
     const count = 1000000000000000001n;
     expect(

@@ -170,7 +170,6 @@ const ROUNDING_INCREMENTS: NonNullable<Options['roundingIncrement']>[] = [
 const FRACTION_PRECISION = /^\.(0*)(#*|[*+])$/;
 // `@@@`, `@@#` and `@@*`; as the option of a fraction, also `@##r` and `@##s`.
 const SIGNIFICANT_PRECISION = /^(@+)(#*|[*+])([rs]?)$/;
-const PRECISION_INCREMENT = /^(\d*)(?:\.(\d*))?$/;
 const INTEGER_WIDTH = /^([*+]|#*)(0*)$/;
 const DECIMAL_NUMBER = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i;
 const CONCISE_EXPONENT = /^EE?(\+[!?])?(0+)$/;
@@ -202,6 +201,8 @@ export function parseNumberSkeletonOptions(
   for (const token of tokens) {
     const options = readToken(token);
     const keys = Object.keys(options);
+    // `%x100` is `percent scale/100`, so it sets the scale too.
+    if (token.stem === '%x100') keys.push('scale');
     // ICU takes each setting once: `.00 .##` is an error, not the last one.
     if (keys.some((key) => set.has(key))) throw invalid(token);
     for (const setting of SETTINGS) {
@@ -210,6 +211,14 @@ export function parseNumberSkeletonOptions(
       }
     }
     Object.assign(result, options);
+  }
+  // Intl's percent style has no width, so `%x100 unit-width-full-name` is
+  // the percent unit, which spells out its name, at `scale/100`.
+  if (
+    result.style === 'percent' &&
+    tokens.some(({ stem }) => stem === 'unit-width-full-name')
+  ) {
+    Object.assign(result, { style: 'unit', unit: 'percent', scale: 100 });
   }
   // A unit width is a currency's or a unit's; ICU ignores it for other numbers.
   if (result.style !== 'currency') delete result.currencyDisplay;
@@ -384,15 +393,29 @@ function readFractionSignificant(
   };
 }
 
-// `precision-increment/0.05` rounds to 5 at two fraction digits.
+/**
+ * `precision-increment/0.05` rounds to 5 at two fraction digits. ICU4C reads
+ * the option as a decimal number, like `5e-2` or `+0.05`, and shows as many
+ * fraction digits as follow its `.`, exponent included, or else as many as
+ * the increment has.
+ */
 function readIncrement(
   token: NumberSkeletonToken,
   option: string | undefined
 ): Options {
-  const match = option === undefined ? null : PRECISION_INCREMENT.exec(option);
-  if (!match || !/\d/.test(option!)) throw invalid(token);
-  const [, integer, fraction = ''] = match;
-  const digits = Number(integer + fraction);
+  if (option === undefined || !DECIMAL_NUMBER.test(option)) {
+    throw invalid(token);
+  }
+  const [mantissa, exponent] = Math.abs(Number(option))
+    .toExponential()
+    .split('e');
+  const [whole, decimals = ''] = mantissa.split('.');
+  const ownFractionDigits = decimals.length - Number(exponent);
+  const dot = option.indexOf('.');
+  const fractionDigits =
+    dot === -1 ? Math.max(ownFractionDigits, 0) : option.length - dot - 1;
+  const digits =
+    Number(whole + decimals) * 10 ** (fractionDigits - ownFractionDigits);
   const roundingIncrement = ROUNDING_INCREMENTS.find(
     (increment) => increment === digits
   );
@@ -403,8 +426,8 @@ function readIncrement(
     );
   }
   return {
-    minimumFractionDigits: fraction.length,
-    maximumFractionDigits: fraction.length,
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
     roundingIncrement,
   };
 }

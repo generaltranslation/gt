@@ -2167,3 +2167,53 @@ Hello, {s}!	Ada	Hello, Ada!
 <b>{s}</b>	x	<b>x</b>
 a '<b>' b {s}	x	a '<b>' b x
 {s} | {n, number, ::.00}	3	3 | 3.00
+{n, number, ::precision-increment/5e-2}	1234.5	1,234.50
+{n, number, ::precision-increment/5e-2}	0.256	0.25
+{n, number, ::precision-increment/5e-2}	-5	-5.00
+{n, number, ::precision-increment/5e-2}	0	0.00
+{n, number, ::precision-increment/5e-2}	2.5	2.50
+{n, number, ::precision-increment/5e-2}	15000	15,000.00
+{n, number, ::precision-increment/5e-2}	0.0625	0.05
+{n, number, ::precision-increment/5e-2}	1234	1,234.00
+{n, number, ::precision-increment/+0.05}	1234.5	1,234.50
+{n, number, ::precision-increment/+0.05}	0.256	0.25
+{n, number, ::precision-increment/+0.05}	-5	-5.00
+{n, number, ::precision-increment/+0.05}	0	0.00
+{n, number, ::precision-increment/+0.05}	2.5	2.50
+{n, number, ::precision-increment/+0.05}	15000	15,000.00
+{n, number, ::precision-increment/+0.05}	0.0625	0.05
+{n, number, ::precision-increment/+0.05}	1234	1,234.00
+{n, number, ::precision-increment/5.0e-2}	1234.5	1,234.5000
+{n, number, ::precision-increment/5.0e-2}	0.256	0.2500
+{n, number, ::precision-increment/5.0e-2}	-5	-5.0000
+{n, number, ::precision-increment/5.0e-2}	0	0.0000
+{n, number, ::precision-increment/5.0e-2}	2.5	2.5000
+{n, number, ::precision-increment/5.0e-2}	15000	15,000.0000
+{n, number, ::precision-increment/5.0e-2}	0.0625	0.0500
+{n, number, ::precision-increment/5.0e-2}	1234	1,234.0000
+{n, number, ::%x100 unit-width-full-name}	1234.5	123,450 percent
+{n, number, ::%x100 unit-width-full-name}	0.256	25.6 percent
+{n, number, ::%x100 unit-width-full-name}	-5	-500 percent
+{n, number, ::%x100 unit-width-full-name}	0	0 percent
+{n, number, ::%x100 unit-width-full-name}	2.5	250 percent
+{n, number, ::%x100 unit-width-full-name}	15000	1,500,000 percent
+{n, number, ::%x100 unit-width-full-name}	0.0625	6.25 percent
+{n, number, ::%x100 unit-width-full-name}	1234	123,400 percent
+{n, number, ::%x100 scale/100}	1234.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::%x100 scale/100}	0.256	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::%x100 scale/100}	-5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::%x100 scale/100}	0	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::%x100 scale/100}	2.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::%x100 scale/100}	15000	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::%x100 scale/100}	0.0625	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::%x100 scale/100}	1234	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::scale/100 %x100}	1234.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::scale/100 %x100}	0.256	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::scale/100 %x100}	-5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::scale/100 %x100}	0	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::scale/100 %x100}	2.5	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::scale/100 %x100}	15000	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::scale/100 %x100}	0.0625	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::scale/100 %x100}	1234	PARSE ERROR U_NUMBER_SKELETON_SYNTAX_ERROR
+{n, number, ::.00*}	1e-101	0.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001
+{n, number, ::precision-unlimited}	1e-101	0.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001

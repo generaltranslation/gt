@@ -143,6 +143,19 @@ const DIFFERENCES: Difference[] = [
     },
   },
   {
+    // `@@@*` keeps at most 21 significant digits the same way, which only a
+    // bigint or a numeric string has: formatter.test.ts checks it.
+    why: 'Intl keeps at most 100 fraction digits, where .00* and precision-unlimited keep every one',
+    messages: ['.00*', 'precision-unlimited'].map(number),
+    check: (row) => {
+      if (Math.abs(Number(row.value)) < 1e-100) {
+        expect(Number(format(row))).toBe(0);
+      } else {
+        expect(format(row)).toBe(row.icu);
+      }
+    },
+  },
+  {
     why: 'ICU4C rounds to two digits for precision-currency-standard without a currency',
     messages: [number('precision-currency-standard')],
     check: (row) => {

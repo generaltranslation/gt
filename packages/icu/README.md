@@ -98,6 +98,12 @@ Spell them out to get ICU's result: `rounding-mode-half-even`, or a precision
 like `.######`. V8 also writes a plain space before AM and PM, where ICU4C
 writes a narrow no-break space.
 
+Intl also keeps at most 21 significant digits and 100 fraction digits, where
+ICU4C keeps every digit that `@@@*`, `.00*` and `precision-unlimited` ask
+for: `::@@@*` prints 123456789012345678901234567890n as
+`123,456,789,012,345,678,901,000,000,000`, and `::.00*` prints 1e-101 as
+`0.00`.
+
 ### What Intl cannot format
 
 Reading any of these throws a `RangeError` that names the token or field.
