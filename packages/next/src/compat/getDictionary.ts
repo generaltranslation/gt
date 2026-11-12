@@ -2,7 +2,7 @@ import type { Dictionary } from 'gt-i18n';
 
 export let internalDictionary: Dictionary | undefined = undefined;
 
-export function getDictionary(): Dictionary | undefined {
+export function getDictionary(): Dictionary {
   // Singleton pattern
   if (internalDictionary !== undefined) return internalDictionary;
 

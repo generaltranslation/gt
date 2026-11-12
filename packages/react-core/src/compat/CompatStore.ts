@@ -98,7 +98,7 @@ export class CompatStore {
 
   getDictionaryEntrySnapshot = (
     lookup: DictionaryLookup,
-    dictionariesSnapshot: Record<Locale, Dictionary> = {}
+    dictionariesSnapshot: Record<Locale, Dictionary>
   ): DictionaryEntrySnapshot => {
     return (
       lookupDictionaryEntry(dictionariesSnapshot, lookup) ??
@@ -108,7 +108,7 @@ export class CompatStore {
 
   getDictionaryObjectSnapshot = (
     lookup: DictionaryLookup,
-    dictionariesSnapshot: Record<Locale, Dictionary> = {}
+    dictionariesSnapshot: Record<Locale, Dictionary>
   ): DictionaryObjectSnapshot => {
     return (
       lookupDictionaryObject(dictionariesSnapshot, lookup) ??

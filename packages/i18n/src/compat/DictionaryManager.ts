@@ -195,7 +195,7 @@ export class DictionaryManager {
       const dictionaryLocale = getI18nCache().resolveCacheLocale(locale);
 
       if (!dictionaryLocale) {
-        return this.getSourceDictionaryObject(id);
+        return this.getSourceDictionaryObject(id, { throwOnMissing: true });
       }
 
       const dictionaryCache =
@@ -247,7 +247,7 @@ export class DictionaryManager {
 
   private getSourceDictionaryObject(
     id: string,
-    { throwOnMissing = true }: { throwOnMissing?: boolean } = {}
+    { throwOnMissing }: { throwOnMissing: boolean }
   ): DictionaryObject | undefined {
     const sourceObject = this.getDefaultDictionaryCache()?.getValue(id);
     if (sourceObject === undefined && throwOnMissing) {

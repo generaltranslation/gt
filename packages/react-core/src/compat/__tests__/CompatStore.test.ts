@@ -87,8 +87,8 @@ describe('CompatStore dictionary manager', () => {
     const store = new CompatStore();
     const lookup = { locale: 'fr', id: 'greeting' };
 
-    expect(store.getDictionaryEntrySnapshot(lookup)).toBeUndefined();
-    expect(store.getDictionaryObjectSnapshot(lookup)).toBeUndefined();
+    expect(store.getDictionaryEntrySnapshot(lookup, {})).toBeUndefined();
+    expect(store.getDictionaryObjectSnapshot(lookup, {})).toBeUndefined();
     store.translateDictionaryEntry(lookup);
     store.translateDictionaryObject(lookup);
 
@@ -105,7 +105,7 @@ describe('CompatStore dictionary manager', () => {
 
     expect(isDictionaryManagerInitialized()).toBe(true);
     expect(
-      store.getDictionaryEntrySnapshot({ locale: 'fr', id: 'greeting' })
+      store.getDictionaryEntrySnapshot({ locale: 'fr', id: 'greeting' }, {})
     ).toEqual({ entry: 'Bonjour', options: {} });
   });
 });

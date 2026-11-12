@@ -18,7 +18,7 @@ export function ensureNextDictionaryManager(): void {
   if (isDictionaryManagerInitialized()) return;
   const loadDictionary = resolveDictionaryLoader();
   initializeDictionaryManager({
-    dictionary: getDictionary() ?? {},
+    dictionary: getDictionary(),
     ...(loadDictionary && {
       loadDictionary: async (locale: string) =>
         ((await loadDictionary(locale)) || {}) as Dictionary,
@@ -39,7 +39,7 @@ export async function loadDictionaries(
   return {
     [locale]: await getDictionaryManager().loadDictionary(locale),
     ...(locale !== defaultLocale && {
-      [defaultLocale]: getDictionary() || {},
+      [defaultLocale]: getDictionary(),
     }),
   };
 }
