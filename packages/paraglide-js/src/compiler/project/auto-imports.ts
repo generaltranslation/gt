@@ -1,11 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { parseSync } from 'oxc-parser';
 import {
   moduleExportName,
   staticString,
   type ESTree,
 } from '../analysis/ast.js';
+import { parseCode } from '../utils/parse.js';
 
 /** A name the app uses without importing it. */
 export type AutoImport = {
@@ -98,7 +98,7 @@ export function parseAutoImportDeclarations(
   code: string,
   importer: string
 ): AutoImport[] {
-  const { program } = parseSync(importer, code, { lang: 'dts' });
+  const { program } = parseCode(importer, code, { lang: 'dts' });
 
   return program.body
     .flatMap((statement) => declaredImports(statement))
