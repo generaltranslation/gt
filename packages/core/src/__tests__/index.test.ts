@@ -340,6 +340,22 @@ describe('GT LocaleConfig delegation', () => {
     ).toThrow();
   });
 
+  it('formats dates and times in its time zone unless the call names one', () => {
+    const gt = new GT({ sourceLocale: 'en-US', timeZone: 'Asia/Tokyo' });
+    const date = new Date('2020-05-06T14:03:02Z');
+    const format = (timeZone: string) =>
+      new Intl.DateTimeFormat('en-US', { timeStyle: 'short', timeZone }).format(
+        date
+      );
+
+    expect(gt.formatDateTime(date, { timeStyle: 'short' })).toBe(
+      format('Asia/Tokyo')
+    );
+    expect(
+      gt.formatDateTime(date, { timeStyle: 'short', timeZone: 'UTC' })
+    ).toBe(format('UTC'));
+  });
+
   it('formats with a custom target locale alias through LocaleConfig', () => {
     const gt = new GT({
       sourceLocale: 'en-US',

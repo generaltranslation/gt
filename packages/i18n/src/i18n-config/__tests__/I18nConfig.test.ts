@@ -48,6 +48,23 @@ describe('I18nConfig', () => {
     );
   });
 
+  it('gives its time zone to the GT class', () => {
+    const config = new I18nConfig({
+      defaultLocale: 'en-US',
+      timeZone: 'Asia/Tokyo',
+    });
+    const date = new Date('2020-05-06T14:03:02Z');
+
+    expect(
+      config.getGTClass().formatDateTime(date, { timeStyle: 'short' })
+    ).toBe(
+      new Intl.DateTimeFormat('en-US', {
+        timeStyle: 'short',
+        timeZone: 'Asia/Tokyo',
+      }).format(date)
+    );
+  });
+
   it('defaults locales to the resolved default locale', () => {
     const config = new I18nConfig({ defaultLocale: 'fr' });
 

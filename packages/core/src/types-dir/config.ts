@@ -82,7 +82,7 @@ export type GTConfig = {
   /** Enable framework-provided locale path routing when supported. */
   localeRouting?: boolean;
   /**
-   * IANA time zone for dates and times a message formats without one, such as
+   * IANA time zone for dates and times formatted without one, such as
    * `'America/New_York'`. Defaults to the host's time zone, read once for the
    * process.
    */
