@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   I18nCache,
@@ -70,5 +71,13 @@ describe('AsyncConditionStore', () => {
     });
 
     expect(store.run('fr', () => store.getLocale())).toBe('fr');
+  });
+
+  it('resolves locales written by an injected AsyncLocalStorage', () => {
+    setTestCache();
+    const storage = new AsyncLocalStorage<{ locale: string }>();
+    const store = new AsyncConditionStore({ store: storage });
+
+    expect(storage.run({ locale: 'FR' }, () => store.getLocale())).toBe('fr');
   });
 });

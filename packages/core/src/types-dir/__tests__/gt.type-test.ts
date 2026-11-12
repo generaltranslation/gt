@@ -136,7 +136,7 @@ intl.getLocaleProperties(undefined, { locale: 'de' });
 intl.getLocaleEmoji();
 intl.getLocaleDirection(undefined, { locale: 'ar' });
 intl.getRegionProperties('US', { locale: 'de' });
-intl.requiresTranslation({ locale: 'fr', approvedLocales: [] });
+intl.requiresTranslation({ locale: 'fr' });
 // @ts-expect-error the display locale goes in the options object.
 intl.getLocaleName('fr', 'de');
 // @ts-expect-error getRegionProperties needs a region.

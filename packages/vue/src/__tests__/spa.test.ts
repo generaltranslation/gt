@@ -155,6 +155,19 @@ describe('gt-vue SPA runtime', () => {
     expect(browser.cookies.get('generaltranslation.locale')).toBe('pirate');
   });
 
+  it('prefers the alias whose mapped code matches the cookie exactly', async () => {
+    installBrowser('generaltranslation.locale=en-GB');
+
+    const plugin = await initializeGTSPA({
+      defaultLocale: 'fr',
+      locales: ['brand', 'canonical'],
+      customMapping: { brand: { code: 'en-gb' }, canonical: { code: 'en-GB' } },
+      loadTranslations: vi.fn(async () => ({})),
+    });
+
+    expect(plugin.getLocale()).toBe('canonical');
+  });
+
   it('uses a custom alias canonical locale for standalone and rich formatting', async () => {
     installBrowser('generaltranslation.locale=pirate');
     const date = new Date('2024-01-02T00:00:00.000Z');

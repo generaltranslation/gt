@@ -8,20 +8,19 @@ import { _resolveCanonicalLocale } from './resolveCanonicalLocale';
  * Retrieves the display name(s) of locale code(s) using Intl.DisplayNames.
  *
  * @param {string} locale - A BCP-47 locale code.
- * @param {string} [defaultLocale=defaultDefaultLocale] - The locale for display names.
+ * @param {string} defaultLocale - The locale for display names.
  * @returns {string} The display name(s) corresponding to the code(s), or empty string(s) if invalid.
  * @internal
  */
 export function _getLocaleName(
   locale: string,
-  defaultLocale: string = defaultDefaultLocale,
+  defaultLocale: string,
   customMapping?: CustomMapping
 ): string {
   // Check for canonical locale
   const aliasedLocale = locale;
   locale = _resolveCanonicalLocale(locale, customMapping);
 
-  defaultLocale ||= defaultDefaultLocale;
   try {
     const standardizedLocale = _standardizeLocale(locale);
     if (customMapping) {

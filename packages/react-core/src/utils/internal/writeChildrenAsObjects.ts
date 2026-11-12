@@ -19,9 +19,8 @@ import type { Transformation } from 'generaltranslation/types';
  * @returns {string} - The tag name of the React element.
  */
 const getTagName = (child: TaggedElement): string => {
-  if (!child) return '';
   const { type, props } = child;
-  if (type && typeof type === 'function') {
+  if (typeof type === 'function') {
     if (
       'displayName' in type &&
       typeof type.displayName === 'string' &&

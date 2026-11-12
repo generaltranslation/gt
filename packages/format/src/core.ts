@@ -354,7 +354,11 @@ export function getLocaleName(
   defaultLocale?: string,
   customMapping?: CustomMapping
 ): string {
-  return _getLocaleName(locale, defaultLocale, customMapping);
+  return _getLocaleName(
+    locale,
+    defaultLocale || defaultDefaultLocale,
+    customMapping
+  );
 }
 
 /**
@@ -412,7 +416,11 @@ export function getLocaleProperties(
   defaultLocale?: string,
   customMapping?: CustomMapping
 ): LocaleProperties {
-  return _getLocaleProperties(locale, defaultLocale, customMapping);
+  return _getLocaleProperties(
+    locale,
+    defaultLocale || defaultDefaultLocale,
+    customMapping
+  );
 }
 
 /**
@@ -471,7 +479,7 @@ export function determineLocale(
  * @returns {string} 'rtl' if the locale is right-to-left; otherwise 'ltr'.
  */
 export function getLocaleDirection(locale: string): 'ltr' | 'rtl' {
-  return _getLocaleDirection(locale);
+  return _getLocaleDirection(locale, defaultDefaultLocale);
 }
 
 /**

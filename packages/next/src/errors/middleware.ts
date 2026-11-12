@@ -1,8 +1,5 @@
 import { getLocaleProperties } from '@generaltranslation/format';
-import {
-  createGtNextDiagnostic,
-  formatDiagnosticErrorDetails,
-} from './diagnostics';
+import { createGtNextDiagnostic } from './diagnostics';
 
 export const createUnsupportedLocalesWarning = (locales: string[]) =>
   `gt-next: The following locales are currently unsupported by our service: ${locales
@@ -12,17 +9,13 @@ export const createUnsupportedLocalesWarning = (locales: string[]) =>
     })
     .join(', ')}`;
 
-export const createInvalidMiddlewareEnvConfigError = (
-  envName: string,
-  error: unknown
+export const createInvalidMiddlewareDefaultLocaleError = (
+  defaultLocale: string
 ) =>
   createGtNextDiagnostic({
     severity: 'Error',
-    whatHappened: `${envName} is not valid JSON`,
-    reassurance:
-      'gt-next ignores this variable; options passed to createNextMiddleware() still apply',
-    fix: 'Configure gt-next through withGTConfig() instead of setting this variable manually',
-    details: formatDiagnosticErrorDetails(error),
+    whatHappened: `The middleware defaultLocale "${defaultLocale}" is not a valid locale`,
+    fix: 'Set defaultLocale in withGTConfig() to a valid BCP 47 locale code',
   });
 
 export const createLinkRoutingConfigMismatchWarning = (options: string[]) =>

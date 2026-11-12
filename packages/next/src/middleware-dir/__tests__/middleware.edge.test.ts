@@ -15,10 +15,7 @@ import {
   createNextMiddleware,
   type RouteOverrides,
 } from '../createNextMiddleware';
-import {
-  defaultMiddlewareConfig,
-  splitMiddlewareConfig,
-} from '../defaultMiddlewareConfig';
+import { splitMiddlewareConfig } from '../defaultMiddlewareConfig';
 import { resolveMiddlewareConfig } from '../resolveMiddlewareConfig';
 import type { MiddlewareConfig } from '../types';
 import {
@@ -561,10 +558,11 @@ describe('middleware config', () => {
 
   describe('parseEnvConfig', () => {
     it('treats valid non-object JSON as unset', () => {
+      const unset = resolveMiddlewareConfig();
       stubMiddlewareEnv('null');
       vi.stubEnv('_GENERALTRANSLATION_I18N_CONFIG_PARAMS', 'null');
 
-      expect(resolveMiddlewareConfig()).toEqual(defaultMiddlewareConfig);
+      expect(resolveMiddlewareConfig()).toEqual(unset);
       expect(() => createNextMiddleware()).not.toThrow();
     });
   });
