@@ -1044,4 +1044,102 @@ describe('checkTranslation', () => {
       ).toContain('"name" is missing from the translation');
     }
   );
+
+  describe('with a locale, checks the plural branches', () => {
+    const files: MessageTree = [
+      ['n', 'plural', { one: [0, ' file'], other: [0, ' files'] }],
+    ];
+    const check = (icu: string, locale?: string, source = files) =>
+      checkTranslation(source, icuToMessage(icu), { locale });
+    const problem = (text: string) =>
+      `The translation does not match its source: ${text}.`;
+
+    it('needs a branch for every category the locale has', () => {
+      // 2 and 22 are `few` in Russian, and would read as `other` does.
+      expect(check('{n, plural, one {# файл} other {# файлов}}', 'ru')).toBe(
+        problem('"n" is missing the plural branches few, many, which ru needs')
+      );
+      expect(
+        check(
+          '{n, plural, one {# файл} few {# файла} many {# файлов} other {# файла}}',
+          'ru'
+        )
+      ).toBeUndefined();
+      // A million is `many` in French: 1 000 000 de fichiers.
+      expect(
+        check('{n, plural, one {# fichier} other {# fichiers}}', 'fr')
+      ).toBe(problem('"n" is missing the plural branch many, which fr needs'));
+    });
+
+    it('asks for no more than `other` where the locale has only that', () => {
+      expect(check('{n, plural, other {#件}}', 'ja')).toBeUndefined();
+    });
+
+    it('leaves alone a category the locale does not have', () => {
+      // Never chosen in Japanese, so it does no harm.
+      expect(check('{n, plural, one {#件} other {#件}}', 'ja')).toBeUndefined();
+    });
+
+    it('rejects a branch that is no category', () => {
+      expect(
+        check('{n, plural, one {# file} lots {many} other {# files}}', 'en')
+      ).toBe(
+        problem(
+          '"n" has the plural branch lots, which is not a plural category'
+        )
+      );
+    });
+
+    it('keeps exact branches out of it', () => {
+      expect(
+        check('{n, plural, =0 {none} one {# file} other {# files}}', 'en')
+      ).toBeUndefined();
+    });
+
+    it('checks an ordinal by the locale’s ordinal categories', () => {
+      const place: MessageTree = [
+        ['n', 'selectordinal', { one: [0, 'er'], other: [0, 'e'] }],
+      ];
+      expect(
+        check('{n, selectordinal, one {#st} other {#th}}', 'en', place)
+      ).toBe(
+        problem('"n" is missing the ordinal branches two, few, which en needs')
+      );
+      expect(
+        check(
+          '{n, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}',
+          'en',
+          place
+        )
+      ).toBeUndefined();
+    });
+
+    it('checks a plural inside a branch, and reports each plural once', () => {
+      const nested: MessageTree = [
+        [
+          'g',
+          'select',
+          {
+            a: [['n', 'plural', { one: 'x', other: 'y' }]],
+            other: [['n', 'plural', { one: 'x', other: 'y' }]],
+          },
+        ],
+      ];
+      expect(
+        check(
+          '{g, select, a {{n, plural, one {x} other {y}}} other {{n, plural, one {x} other {y}}}}',
+          'pl',
+          nested
+        )
+      ).toBe(
+        problem('"n" is missing the plural branches few, many, which pl needs')
+      );
+    });
+
+    it('checks no branches without a locale, or with one Intl has no rules for', () => {
+      expect(check('{n, plural, other {# файлов}}')).toBeUndefined();
+      // Intl would answer for the host's language.
+      expect(check('{n, plural, other {# x}}', 'zz')).toBeUndefined();
+    });
+  });
 });
