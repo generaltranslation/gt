@@ -483,16 +483,14 @@ describe('the CLI', () => {
       [['--unknown'], "Unknown option '--unknown'"],
       [['--radius', 'x'], '--radius must be a whole number. Details: x.'],
       [['a', 'b'], 'More than one root was given. Details: a, b.'],
+      [['install'], 'No language was given.'],
+      [['install', 'vue', '--unknown'], "Unknown option '--unknown'"],
     ];
     for (const [argv, whatHappened] of cases) {
       expect(await main(argv)).toBe(2);
       const [message] = error.mock.lastCall ?? [];
       expect(message).toMatch(/^paraglide-context Error: [^]*\n\nUsage: /);
       expect(message).toContain(`Error: ${whatHappened}`);
-    }
-    for (const argv of [['install'], ['install', 'vue', '--unknown']]) {
-      expect(await main(argv)).toBe(2);
-      expect(error).toHaveBeenLastCalledWith(usage);
     }
     expect(error).toHaveBeenCalledTimes(5);
 
@@ -550,8 +548,8 @@ describe('the install command', () => {
     expect(await main(['install', 'vue', 'angular', '--root', root])).toBe(1);
     expect(runCommand).not.toHaveBeenCalled();
     expect(error).toHaveBeenCalledWith(
-      "The project's typescript has no JavaScript API (TypeScript 7), which vue files need. " +
-        'Install typescript 6: pnpm add -D typescript@^6'
+      "paraglide-context Error: The project's typescript cannot be used for vue files because TypeScript 7 has no JavaScript API. " +
+        'Install typescript 6 with `pnpm add -D typescript@^6`.'
     );
   });
 
@@ -576,7 +574,10 @@ describe('the install command', () => {
     const root = await writeOutsideProject({});
 
     expect(await main(['install', 'ember', '--root', root])).toBe(1);
-    expect(error).toHaveBeenCalledWith('Could not run pnpm: spawn pnpm ENOENT');
+    expect(error).toHaveBeenCalledWith(
+      'paraglide-context Error: pnpm could not be run. ' +
+        'Install the packages yourself with `pnpm add -D @glint/ember-tsc`. Details: spawn pnpm ENOENT.'
+    );
   });
 
   test('an unknown language: exits with 2 and lists the languages', async () => {
@@ -584,7 +585,8 @@ describe('the install command', () => {
 
     expect(await main(['install', 'vue', 'react'])).toBe(2);
     expect(error).toHaveBeenCalledWith(
-      'Unknown language(s): react. Languages: vue, svelte, astro, mdx, markdown, angular, analog, marko, ember'
+      'paraglide-context Error: react is not a known language. ' +
+        'Choose from vue, svelte, astro, mdx, markdown, angular, analog, marko, ember.'
     );
     expect(runCommand).not.toHaveBeenCalled();
   });

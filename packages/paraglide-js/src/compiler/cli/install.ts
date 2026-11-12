@@ -9,7 +9,8 @@ import {
 } from '../project/package-manager.js';
 import { projectPackages } from '../project/packages.js';
 import { findProjectRoot } from '../project/roots.js';
-import { print } from './print.js';
+import { errorMessage } from '../utils/diagnostics.js';
+import { print, printUsageError } from './print.js';
 
 /** Version ranges for packages whose latest version does not work. */
 const VERSION_RANGES: Readonly<Record<string, string>> = {
@@ -38,7 +39,7 @@ export async function install(argv: string[]): Promise<number> {
   try {
     parsed = parseInstallArguments(argv);
   } catch (error) {
-    console.error(`${(error as Error).message}\n\n${INSTALL_USAGE}`);
+    printUsageError({ whatHappened: (error as Error).message }, INSTALL_USAGE);
     return 2;
   }
 
@@ -50,14 +51,18 @@ export async function install(argv: string[]): Promise<number> {
   }
 
   if (positionals.length === 0) {
-    console.error(INSTALL_USAGE);
+    printUsageError({ whatHappened: 'No language was given' }, INSTALL_USAGE);
     return 2;
   }
 
   const unknown = positionals.filter((name) => !LANGUAGE_NAMES.includes(name));
   if (unknown.length > 0) {
+    const isOne = unknown.length === 1;
     console.error(
-      `Unknown language(s): ${unknown.join(', ')}. Languages: ${LANGUAGE_NAMES.join(', ')}`
+      errorMessage({
+        whatHappened: `${unknown.join(', ')} ${isOne ? 'is not a known language' : 'are not known languages'}`,
+        fix: `Choose from ${LANGUAGE_NAMES.join(', ')}`,
+      })
     );
     return 2;
   }
@@ -112,7 +117,11 @@ async function addPackages(
     return await runCommand(command, projectRoot);
   } catch (error) {
     console.error(
-      `Could not run ${command.command}: ${(error as Error).message}`
+      errorMessage({
+        whatHappened: `${command.command} could not be run`,
+        fix: `Install the packages yourself with \`${commandLine(command)}\``,
+        details: (error as Error).message,
+      })
     );
     return 1;
   }
@@ -130,8 +139,11 @@ async function reportTypescriptWithoutApi(
   ]);
 
   console.error(
-    `The project's typescript has no JavaScript API (TypeScript 7), which ${needing.join(' and ')} files need. ` +
-      `Install typescript 6: ${commandLine(command)}`
+    errorMessage({
+      whatHappened: `The project's typescript cannot be used for ${needing.join(' and ')} files`,
+      why: 'TypeScript 7 has no JavaScript API',
+      fix: `Install typescript 6 with \`${commandLine(command)}\``,
+    })
   );
   return 1;
 }
